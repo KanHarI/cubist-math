@@ -177,7 +177,7 @@ two argument types definitionally equal. Review shape analysis in
 [morphisms.mjs](../../web/cubist/morphisms.mjs) alongside the separate
 initial/free admissibility analysis.
 
-## G4: nested derived matches lose access to evidence
+## G4: flat and nested derived matches lose access to evidence
 
 ```cubist
 import hlevels;
@@ -198,10 +198,11 @@ theory T(U < UU0) {
 cannot find evidence that `m.M` is a set. That evidence is already a
 checked field of the model. An inherited copy has the same failure.
 Nesting is not required: replacing both `cons` clauses with the flat
-`cons(b, rest) => c` also fails with E546, for `Bits.squash`.
+`cons(b, rest) => c` also fails with E546, for `Bits.squash`. Both forms
+are pinned as separate G4 expected failures.
 
-Expected: nested clause elaboration receives the applicable checked model
-evidence, transformed with its context. The required proof is still
+Expected: flat and nested clause elaboration receives the applicable checked
+model evidence, transformed with its context. The required proof is still
 checked against the actual motive and boundaries. This does not authorize
 arbitrary missing path clauses, false equalities, or a broader elimination
 principle. Audit evidence discovery in
@@ -237,11 +238,12 @@ generated interface, even when their names are unused in the result type.
 Advice must preserve supported derivations and public calling conventions,
 or explain the interface change rather than present it as a simplification.
 Start in [lint.mjs](../../web/cubist/lint.mjs); acceptance includes checking
-the suggested replacement through actual clients. The executable G5 uses
-the supported positional call `S.op(a, a)`: named operation calls such as
+the suggested replacement through actual clients. The executable G5 covers
+both single and grouped binders through the supported positional calls
+`S.op(a)` and `S.op(a, a)`: named operation calls such as
 `S.op(x := a, y := a)` are independently unsupported (E378) and would mask
-this lint failure. A passing control retains W705 for ordinary safe
-unused binders.
+this lint failure. Passing controls retain W705 and W706 for ordinary safe
+unused binders and check both arrow-form rewrites.
 
 ## G6: an invalid parent is re-expanded as a child's own error
 

@@ -8,7 +8,7 @@ import {parse} from "../web/cubist/parser.mjs";
 import {cubistTestModules} from "../web/cubist/modules.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
-import {gaps, expectedFailures, historicalCoverage, passingCoverage, collisionVariants, captureVariants, captureSource} from "./fixtures/frontend-generation.mjs";
+import {gaps, expectedFailures, historicalCoverage, passingCoverage, collisionVariants, matchVariants, lintVariants, captureVariants, captureSource} from "./fixtures/frontend-generation.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}) => {
@@ -28,10 +28,40 @@ const gap = (checked, name) => {
   assert.ok(found, `missing refusal for ${name}`);
   return found;
 };
+const observationPositions = ({source, observations}) => {
+  const start = source.indexOf(observations.scope);
+  return [...observations.scope.matchAll(/\b\w+\b/g)]
+    .filter(match => match[0] === observations.label).map(match => start + match.index);
+};
+const validateFixture = ({source, diagnostic, observations, rewrite}) => {
+  const contains = (text, fragment, label) => {
+    assert.ok(typeof fragment === "string" && fragment.length > 0, `${label} must be nonempty`);
+    assert.ok(text.includes(fragment), `${label} must exist in its source`);
+  };
+  if (diagnostic && ("scope" in diagnostic || "token" in diagnostic)) {
+    contains(source, diagnostic.scope, "diagnostic scope");
+    contains(diagnostic.scope, diagnostic.token, "diagnostic token");
+  }
+  if (diagnostic && "conflict" in diagnostic) {
+    contains(source, diagnostic.conflict, "diagnostic conflict");
+    contains(diagnostic.conflict, "succ(c)", "conflicting binder");
+    contains(diagnostic.conflict, "k(c)", "conflicting helper call");
+  }
+  if (observations) {
+    contains(source, observations.scope, "observation scope");
+    contains(observations.scope, observations.label, "observation label");
+    assert.ok(Number.isInteger(observations.sites) && observations.sites > 0, "observation count must be positive");
+    assert.equal(observationPositions({source, observations}).length, observations.sites, "observation sites must match the fixture");
+  }
+  if (rewrite) {
+    contains(source, rewrite.from, "lint rewrite target");
+    assert.ok(typeof rewrite.to === "string" && rewrite.to.length > 0, "lint replacement must be nonempty");
+    assert.notEqual(rewrite.from, rewrite.to, "lint rewrite must change the source");
+  }
+};
 const coversOriginalToken = (actual, {source, diagnostic}) => {
   const scope = source.indexOf(diagnostic.scope);
   const token = scope + diagnostic.scope.lastIndexOf(diagnostic.token);
-  assert.ok(scope >= 0 && token >= scope, "the expected source site must exist");
   assert.ok(actual.end > actual.start, "diagnostic range must be nonempty");
   assert.ok(actual.start >= scope && actual.end <= scope + diagnostic.scope.length,
     "diagnostic range must stay within the original body or law");
@@ -59,16 +89,16 @@ const contracts = {
     for (const name of ["op", "p", "l"]) assert.match(refusal.reason, new RegExp(`\\b${name}\\b`));
     assert.match(refusal.reason, /depend|transport|unsupported/i);
   },
-  G4(checked) { complete(checked); accepted(checked, gaps.G4.clients); },
-  async G5(checked, t) {
-    complete(checked); accepted(checked, gaps.G5.clients);
-    const advice = lint(gaps.G5.source).filter(w => ["W705", "W706"].includes(w.code));
+  G4(checked, t, fixture) { complete(checked); accepted(checked, fixture.clients); },
+  async G5(checked, t, fixture) {
+    complete(checked); accepted(checked, fixture.clients);
+    const advice = lint(fixture.source).filter(w => ["W705", "W706"].includes(w.code));
     if (advice.length) {
       // This is the rewrite the warning actually recommends. A standalone
       // function type remaining equivalent is insufficient: recheck clients.
-      const rewritten = gaps.G5.source.replace("forall x, y : M. M", "M -> M -> M");
+      const rewritten = fixture.source.replace(fixture.rewrite.from, fixture.rewrite.to);
       const result = await check(t, rewritten);
-      complete(result); accepted(result, gaps.G5.clients);
+      complete(result); accepted(result, fixture.clients);
     }
   },
   G6(checked) {
@@ -86,12 +116,10 @@ const contracts = {
   },
   G9(checked) {
     complete(checked); accepted(checked, gaps.G9.clients);
-    const {source, observations} = gaps.G9;
-    const start = source.indexOf(observations.scope), binder = start + observations.scope.indexOf("c");
-    const positions = [...observations.scope.matchAll(/\bc\b/g)].map(match => start + match.index);
-    assert.equal(positions.length, observations.sites);
+    const {observations} = gaps.G9;
+    const positions = observationPositions(gaps.G9), binder = positions[0];
     for (const position of positions) {
-      const links = checked.result.links.filter(link => link.start === position && link.end === position + 1);
+      const links = checked.result.links.filter(link => link.start === position && link.end === position + observations.label.length);
       assert.ok(links.length, `missing link at ${position}`);
       for (const link of links) {
         assert.equal(link.name, observations.label);
@@ -123,6 +151,8 @@ const contracts = {
 };
 
 function contractTest(id, fixture, label = fixture.contract) { test(`${id}: ${label}`, async t => {
+  // Fixture mistakes are setup failures, outside the expected-defect catch.
+  validateFixture(fixture);
   const checked = await check(t, fixture.source);
   if (!expectedFailures.has(id) || process.env.CUBIST_GENERATION_STRICT === "1") return contracts[id](checked, t, fixture);
   let failure;
@@ -135,12 +165,18 @@ function contractTest(id, fixture, label = fixture.contract) { test(`${id}: ${la
   t.todo(`${fixture.phase}: documented open contract; never counts as completion`);
   throw failure;
 }); }
-for (const [id, fixture] of Object.entries(gaps)) contractTest(id, fixture);
-for (const variant of collisionVariants) contractTest("G1", {...gaps.G1, ...variant});
-for (const variant of captureVariants) contractTest("G11", {...gaps.G11, source: captureSource(variant)}, variant.name);
+const fixtures = [
+  ...Object.entries(gaps),
+  ...collisionVariants.map(variant => ["G1", {...gaps.G1, ...variant}]),
+  ...matchVariants.map(variant => ["G4", {...gaps.G4, ...variant}]),
+  ...lintVariants.map(variant => ["G5", {...gaps.G5, ...variant}]),
+  ...captureVariants.map(variant => ["G11", {...gaps.G11, source: captureSource(variant), contract: variant.name}]),
+];
+for (const [id, fixture] of fixtures) contractTest(id, fixture);
 
 test("FG0 maps historical fixes and passing controls to existing executable tests", async () => {
   assert.deepEqual(Object.keys(contracts), Object.keys(gaps));
+  for (const [, fixture] of fixtures) validateFixture(fixture);
   for (const [file, name] of [...Object.values(historicalCoverage), ...passingCoverage]) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
     if (file.endsWith(".cubist")) {
@@ -215,10 +251,12 @@ def initial_computation : N.model.iter(zero) = N.c { rfl; }
   complete(checked); accepted(checked, ["inherited", "initial_computation"]);
 });
 
-test("FG0 controls: safe unused-binder advice remains available", async t => {
-  const source = "def g : forall x : Unit. Unit := fun (x : Unit) => tt;";
-  assert.ok(lint(source).some(w => w.code === "W705"), "safe unused-binder advice must remain available");
-  for (const candidate of [source, source.replace("forall x : Unit. Unit", "Unit -> Unit")]) {
+for (const {source, code, from, to} of [
+  {source: "def g : forall x : Unit. Unit := fun (x : Unit) => tt;", code: "W705", from: "forall x : Unit. Unit", to: "Unit -> Unit"},
+  {source: "def g : forall x, y : Unit. Unit := fun (x, y : Unit) => tt;", code: "W706", from: "forall x, y : Unit. Unit", to: "Unit -> Unit -> Unit"},
+]) test(`FG0 controls: safe unused-binder advice remains available (${code})`, async t => {
+  assert.ok(lint(source).some(w => w.code === code), `${code} safe unused-binder advice must remain available`);
+  for (const candidate of [source, source.replace(from, to)]) {
     const checked = await check(t, candidate);
     complete(checked); accepted(checked, ["g"]);
   }

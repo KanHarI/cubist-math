@@ -12,10 +12,12 @@ orders of definition/inductive collisions, definition/initial-model
 collisions, and same-kind duplicates, preserving the first binding and its
 clients. G2's clients fix the public Hom/Iso types and composition
 computation at U0 and U1. G3 preserves the base theory while withholding
-both unsupported artifact families. G5 uses positional operation calls,
-identity and a generated model/fold to test the actual lint rewrite. Named
-operation calls are not currently supported. A passing control requires
-W705 for an ordinary safe unused binder and checks its arrow-form rewrite.
+both unsupported artifact families. G4 covers both flat and nested matches.
+G5 uses positional operation calls, identity and a generated model/fold to
+test the actual lint rewrite for both single and grouped operation binders.
+Named operation calls are not currently supported. Passing controls require
+W705 and W706 for ordinary safe unused binders and check their arrow-form
+rewrites.
 G11 requires opposite outcomes for intended and captured
 equations, including helper chains, grouped/dependent binders, inheritance
 and generated clients. G12 checks a computing call and keeps a passing
@@ -41,8 +43,10 @@ law binders, initial-model recursion and explicit path bodies.
 
 `expectedFailures` is temporary, executable debt. Each listed contract is
 run, must fail an assertion, and is reported as TODO. Crashes and setup
-errors fail the suite. An unexpected pass fails too: remove that ID from
-the set in the fixing PR. `CUBIST_GENERATION_STRICT=1` runs every contract
+errors fail the suite. Every fixture's source sites, observation counts and
+lint rewrite targets are validated outside the expected-failure handler and
+in the always-running mapping test. An unexpected pass fails too: remove that
+ID from the set in the fixing PR. `CUBIST_GENERATION_STRICT=1` runs every contract
 as an ordinary assertion, useful to expose the complete unresolved list.
 TODO tests never count as evidence that an implementation phase is done.
 

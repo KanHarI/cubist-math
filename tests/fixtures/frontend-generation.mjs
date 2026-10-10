@@ -36,7 +36,7 @@ def unsupported(S : T(U0)) := T.Hom.id(S);`,
     absentFamilies: ["T.Hom", "T.Iso"], refusedClients: ["unsupported"],
   },
   G4: {
-    phase: "FG4", contract: "nested matches retain checked carrier evidence",
+    phase: "FG4", contract: "derived matches retain checked carrier evidence (nested clauses)",
     source: `import hlevels;
 inductive Bit : set U0 { off; yes; }
 inductive Bits : set U0 { nil; cons(b : Bit, rest : Bits); }
@@ -47,13 +47,14 @@ def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
     clients: ["T.value", "computation"],
   },
   G5: {
-    phase: "FG5", contract: "unused-binder advice preserves supported calls and generated interfaces",
+    phase: "FG5", contract: "grouped-binder advice preserves supported calls and generated interfaces",
     source: `import hlevels;
 theory T(U < UU0) { M : set U; op : forall x, y : M. M; }
 def identity(S : T(U0)) := T.Hom.id(S);
 def applied(S : T(U0), a : S.M) : S.M := S.op(a, a);
 initial N : T(U0);`,
     clients: ["identity", "applied", "N", "N.model", "N.fold"],
+    rewrite: {from: "forall x, y : M. M", to: "M -> M -> M"},
   },
   G6: {
     phase: "FG1", contract: "a child reports the failed parent once without repeating its root error",
@@ -147,6 +148,31 @@ def independent : Unit := tt;`,
 def N : U0 := Unit;
 def original : Unit := N;
 def independent : Unit := tt;`,
+  },
+];
+
+export const matchVariants = [
+  {
+    contract: "derived matches retain checked carrier evidence (flat clauses)",
+    source: `import hlevels;
+inductive Bit : set U0 { off; yes; }
+inductive Bits : set U0 { nil; cons(b : Bit, rest : Bits); }
+theory T(U < UU0) { M : set U; c : M;
+  def value(n : Bits) : M := match n { nil => c; cons(b, rest) => c; };
+}
+def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
+  },
+];
+
+export const lintVariants = [
+  {
+    contract: "single-binder advice preserves supported calls and generated interfaces",
+    source: `import hlevels;
+theory T(U < UU0) { M : set U; op : forall x : M. M; }
+def identity(S : T(U0)) := T.Hom.id(S);
+def applied(S : T(U0), a : S.M) : S.M := S.op(a);
+initial N : T(U0);`,
+    rewrite: {from: "forall x : M. M", to: "M -> M"},
   },
 ];
 
