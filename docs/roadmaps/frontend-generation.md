@@ -8,11 +8,11 @@ failures. This document proposes implementation work; it does not mark
 those defects fixed. The [work plan](work-plan.md#frontend-generation-track)
 records its scheduling dependencies.
 
-FG0's evidence harness is implemented in
-[frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs)
-with its [comparison manifest](../../tests/fixtures/frontend-generation.md).
-G1–G6 and G8–G12 remain explicit expected failures; FG1–FG6 implementation
-is still planned. G12's refusal range is tracked separately as `G12-range`.
+Follow-up implementation evidence is maintained in the inventory's
+[fixing-commit table](../reports/frontend-generation-gaps.md) and the
+[FG6 gate report](../reports/frontend-generation-fg6.md). The planned
+contracts below remain the reference; the report records the unresolved
+historical skipped-mutation evidence rather than declaring it completed.
 
 The goal is to preserve the meaning and interface of a declaration through
 capture, inheritance, substitution, generation and elaboration. The
