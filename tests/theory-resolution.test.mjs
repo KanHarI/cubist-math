@@ -61,14 +61,12 @@ def identity(S : T(U0, zero)) : T.Hom(S, S) := T.Hom.id(S);
 });
 
 test("a captured field global can be shadowed by the generated model's name", async t => {
-  await checked(t, `import hlevels;
-def A : U0 := Unit;
-theory T(U < UU0) { M : set U; point(a : A) : M; }
+  await checked(t, `import fixture;
 initial A : T(U0);
 def use_it : A := A.point(tt);
 free W(A : U0) : T(U0) on A;
 def free_argument : W(Nat) := W.point(tt);
-`);
+`, {fixture: "import hlevels; def A : U0 := Unit; theory T(U < UU0) { M : set U; point(a : A) : M; }"});
 });
 
 test("initial and free models retain imported global types and law constants", async t => {

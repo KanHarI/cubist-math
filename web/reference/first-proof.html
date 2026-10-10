@@ -439,7 +439,7 @@ use nat;
 
 def twice_named := 0;
 
-def twice_named := 1;  // Error: Definition symbol is already registered.</code></pre>
+def twice_named := 1;  // Error: Duplicate declaration twice_named: a declaration in this module already owns that name.</code></pre>
             <p>Inside a declaration, parameters and local names shadow outer ones. Pick fresh local names when a clash would be confusing to the reader.</p>
           </section>
 

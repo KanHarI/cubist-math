@@ -54,14 +54,14 @@ export function reported(source, result, main) {
   const lineAt = offset => source.slice(0, offset).split("\n").length - 1;
   const prints = (result.prints ?? []).filter(print => print.module === main);
   const starts = [...result.outputs.map(output => lineAt(output.start)), ...prints.map(print => lineAt(print.start)),
-    ...(result.gaps ?? []).filter(gap => gap.directive && gap.module === main && gap.start !== undefined).map(gap => lineAt(gap.start))]
+    ...(result.gaps ?? []).filter(gap => (gap.directive || gap.duplicate) && gap.module === main && gap.start !== undefined).map(gap => lineAt(gap.start))]
     .sort((a, b) => a - b);
   const labelled = (code, message) => normal(code ? `${code}: ${message}` : message);
   const items = [];
   for (const output of result.outputs)
     if (!output.verified) items.push({ line: lineAt(output.start), label: "Error", text: labelled(output.code, output.reason) });
   for (const gap of result.gaps ?? [])
-    if (gap.directive && gap.module === main) items.push({ line: lineAt(gap.start ?? 0), label: "Error", text: labelled(gap.code, gap.reason) });
+    if ((gap.directive || gap.duplicate) && gap.module === main) items.push({ line: lineAt(gap.start ?? 0), label: "Error", text: labelled(gap.code, gap.reason) });
   for (const print of prints) items.push({ line: lineAt(print.start), label: "Output", text: normal(print.text, "Output") });
   for (const warning of result.warnings ?? []) {
     const line = warning.line - 1;

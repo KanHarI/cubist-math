@@ -479,6 +479,20 @@ function renderResult() {
     line.append(dependencies);
     $("result").append(line);
   }
+  // A duplicate or directive has no new symbol to inspect: an earlier
+  // declaration still owns its name. Show its separate diagnostic.
+  for (const gap of last.gaps ?? []) if (gap.duplicate || gap.directive) {
+    const line = document.createElement("div");
+    line.className = "declaration-error";
+    line.append("Not checked ", ...codeLink(gap.code), ": ", gap.reason);
+    if (gap.module === proofId && Number.isInteger(gap.start)) {
+      const at = document.createElement("button");
+      at.textContent = "View source";
+      at.onclick = () => revealSource(gap);
+      line.append(" ", at);
+    }
+    $("result").append(line);
+  }
   // Lint warnings: bindings that are never used and can be removed.
   for (const warning of last.warnings ?? []) {
     const line = document.createElement("div"), at = document.createElement("button");

@@ -576,7 +576,8 @@ function theoryFields(theory, lookup, proposition, capture) {
 
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
-export function expandTheory(theory, lookup = () => null, proposition = () => false, capture = node => node, reference = node => node) {
+export function expandTheory(theory, lookup = () => null, proposition = () => false, capture = node => node, reference = node => node,
+  knownTheory = other => Boolean(lookup(other))) {
   // What the expansion places at the theory's name is generated, and links
   // nowhere there (cubical-program.mjs): the name links to its models' type.
   const T = theory.name.text, at = { ...theory.name, synthetic: true };
@@ -609,7 +610,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     kind: "def", name: token(declName, span), params: declParams, type, ...(theory.uses ? { uses: theory.uses } : {}),
     ...(declParams.some(p => p.implicit) ? { implicitParameters: place(span) } : {}),
     body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
-    generated: { theory: T, ...generated }, ...extra,
+    generated: { theory: T, family: generated.role === "derived" ? `derived:${generated.field}` : "base", ...generated }, ...extra,
   });
   // Retain both internal universe names and public labels. Inheritance and
   // named arguments use the labels; fresh internal binders are not an API.
@@ -683,7 +684,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // carrier's variance (morphisms.mjs): their source, parsed and placed at the theory's
   // name. A generated definition's name is dotted, which a def cannot
   // spell, so each is parsed under a placeholder and then renamed.
-  const morphisms = morphismSource(record, other => Boolean(lookup(other)));
+  const morphisms = morphismSource(record, knownTheory);
   if (morphisms.missing) record.noMorphisms = morphisms.missing;
   else {
     // Homomorphisms without isomorphisms: the source stops after Hom's.
@@ -707,13 +708,13 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
         return global ? reference({...n, name: global.name}, global.scope) : n;
       }));
     parsed.forEach((d, k) => {
-      const { name: declName, role, field, record: morphismRecord, labels = {} } = morphisms.declarations[k];
+      const { name: declName, role, family, field, record: morphismRecord, labels = {} } = morphisms.declarations[k];
       // A parameter whose binder is named apart from its field is called
       // by the field's name.
       for (const p of d.params ?? []) if (Object.hasOwn(labels, p.name.text)) p.label = labels[p.name.text];
       // Generated from text, all of it stands at the theory's name.
       out.push({ ...relocated(d, at), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
-        generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
+        generated: { theory: T, role, family, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
     });
   }
   return out;

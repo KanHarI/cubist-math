@@ -78,9 +78,12 @@ function derivation(program, view) {
 // Every declaration of `module`, in source order.
 export function elaboration(program, module) {
   const source = program.sources[module] ?? "";
-  const declarations = Object.values(program.symbols)
-    .filter(info => info.binding?.startsWith(`${module}__`) && Number.isInteger(info.start))
-    .sort((a, b) => a.start - b.start);
+  const declarations = [
+    ...Object.values(program.symbols).filter(info => info.binding?.startsWith(`${module}__`) && Number.isInteger(info.start)),
+    ...program.gaps.filter(gap => gap.module === module && gap.duplicate).map(gap => ({
+      name:gap.name, verified:false, reason:gap.reason, start:gap.declarationStart, end:gap.declarationEnd,
+    })),
+  ].sort((a, b) => a.start - b.start);
   return declarations.map(info => {
     const result = { name: info.name, source: source.slice(info.start, info.end), verified: !!info.verified };
     if (!info.verified) return { ...result, reason: info.reason };
