@@ -1,7 +1,7 @@
 // Sources are independent clients, not snapshots of generated syntax. Keep
 // expected failures here until the responsible implementation slice lands.
 export const baseline = "00d4ecce016f7e18d13eedeced07dc098a2277cb";
-export const expectedFailures = new Set(["G4", "G5", "G8", "G9"]);
+export const expectedFailures = new Set(["G5", "G9"]);
 export const gaps = {
   G1: {
     phase: "FG1", contract: "a duplicate declaration preserves the first binding and its clients",

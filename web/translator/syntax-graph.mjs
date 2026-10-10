@@ -6,7 +6,7 @@
 export function syntaxGraphBudget({checkDeadline,maxVisits=500000}={}) {
   let visits=0;
   return {tick() {
-    if(++visits>maxVisits)throw Error('Cubical syntax construction term-size budget exceeded.');
+    if(++visits>maxVisits)throw Object.assign(Error('Cubical syntax construction term-size budget exceeded.'),{kind:"budget"});
     if((visits&255)===1)checkDeadline?.();
   }};
 }
