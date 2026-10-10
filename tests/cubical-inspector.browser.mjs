@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
+import { gaps } from "./fixtures/frontend-generation.mjs";
 // The page loads the WASM kernel from web/dist.
 assertFreshBuild();
 const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
@@ -68,6 +69,21 @@ try {
   assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), "2");
   await page.locator('#read-source button[data-name="kept"]').first().click(); await inspected("kept");
   assert.equal(await page.locator("#kernel-type").textContent(), "Unit");
+  // G9: every freshened law occurrence has its written label and navigates
+  // to the binder, even when the uses occupy different source lines.
+  const lawSource = gaps.G9.source.replace("law l(c : M) : k(c) = op(c, c);",
+    "law l(c : M) :\n    k(c) =\n    op(c, c);");
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(lawSource).toString("base64url")}`);
+  await page.reload(); await idle(); await page.locator("#read-mode").click();
+  const lawOccurrences = page.locator('#read-source .source-line:is([data-line="4"], [data-line="5"], [data-line="6"]) button[data-name="c"]');
+  assert.equal(await lawOccurrences.count(), 4);
+  for (let index = 0; index < 4; index++) {
+    await lawOccurrences.nth(index).click(); await inspected("c");
+    assert.equal(await page.locator("#kernel-expression").textContent(), "c");
+    assert.doesNotMatch(await page.locator("#kernel-context").textContent(), /\bc1\b/);
+    await page.locator("#view-source").click();
+    assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), "4");
+  }
   // An inductive header wrapped over lines keeps its h-level keyword, which
   // the highlighter finds in the whole source, not the line alone (H1).
   const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")

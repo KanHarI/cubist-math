@@ -32,6 +32,18 @@ export function lint(source, ast = parse(source)) {
     for (const value of Object.values(node)) if (value && typeof value === "object") named(value);
   };
   named(ast.declarations);
+  // An operation/law telescope is also a generated public interface. Its
+  // labels determine constructor arguments and Hom/initial admissibility.
+  // Arrow advice must preserve those clients, not only the function type.
+  const publicTelescopes = new WeakSet();
+  for (const declaration of ast.declarations) if (declaration.kind === "theory")
+    for (const field of declaration.fields) if (["operation", "law"].includes(field.kind)) {
+      let type = field.type;
+      while ((type?.binderKind ?? type?.kind) === "forall") {
+        publicTelescopes.add(type);
+        type = type.body;
+      }
+    }
   const used = (name, start, end) => (positions.get(name) ?? []).some(at => at >= start && at < end && !parameterNames.has(at));
   const text = node => source.slice(node.start, node.end);
   const warnings = [];
@@ -77,7 +89,7 @@ export function lint(source, ast = parse(source)) {
     // A quantifier's variable the body does not mention; a universe variable
     // has no unnamed form.
     const quantifier = node.binderKind ?? node.kind;
-    if ((quantifier === "forall" || quantifier === "exists") && !node.bound && node.body) {
+    if ((quantifier === "forall" || quantifier === "exists") && !node.bound && node.body && !publicTelescopes.has(node)) {
       const names = node.names ?? [node.name], domain = text(node.domain);
       const plain = quantifier === "forall" ? `${domain} -> …` : `${domain} and …`;
       for (const token of names) if (!used(token.text, node.body.start, node.body.end))
