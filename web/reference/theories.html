@@ -350,8 +350,7 @@ theory CommMonoid(U &lt; UU0) extends Monoid {
   law mul_comm(x, y : M) : x * y = y * x;
 }
 
-theory CommGroup(U &lt; UU0) extends Group, CommMonoid {
-}
+theory CommGroup(U &lt; UU0) extends Group, CommMonoid {}
 
 def forget(G : CommGroup(U0)) : Monoid(U0) := G.group.monoid;
 

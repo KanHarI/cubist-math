@@ -5,8 +5,8 @@ import interval_sampling;
 // Coarse tags remain in their own coarse intervals; every refined tag lies
 // within its refined interval. The mesh restriction is on coarse widths.
 def IntervalSubdivisionFine(
-  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
-  a, b, tag : FieldUnitInterval(F, zero, one, lt),
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F, a, b,
+  tag : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :=
   typed(
@@ -20,8 +20,8 @@ def IntervalSubdivisionFine(
   );
 
 def interval_refinement_radius(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, delta, length : F,
-  a, b, tag : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, delta,
+  length : F, a, b, tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   mulF(delta, interval_weight(F, zero, one, addF, mulF, negF, lt, length, a, b, tag));
 

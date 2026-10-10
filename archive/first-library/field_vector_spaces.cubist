@@ -23,11 +23,10 @@ def field_additive_laws(F : AlgebraicField) :
   );
 }
 
-def FieldAdditiveGroup(F : AlgebraicField) :=
-  group_object(
-    af_carrier(F), af_zero(af_carrier(F), af_operations(F)),
-    af_add(af_carrier(F), af_operations(F)), field_additive_laws(F)
-  );
+def FieldAdditiveGroup(F : AlgebraicField) := group_object(
+  af_carrier(F), af_zero(af_carrier(F), af_operations(F)), af_add(af_carrier(F), af_operations(F)),
+  field_additive_laws(F)
+);
 
 def field_additive_abelian(F : AlgebraicField) : IsAbelian(FieldAdditiveGroup(F)) {
   obtain (addLaws, mulLaws) := field_ring_data(af_carrier(F), af_operations(F), af_laws(F));
@@ -77,11 +76,10 @@ def field_scalar_laws(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :
   );
 }
 
-def field_vector_space(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
-  vector_space(
-    K, FieldAdditiveGroup(L), field_scalar_action(K, L, e), field_additive_abelian(L),
-    field_scalar_laws(K, L, e)
-  );
+def field_vector_space(K, L : AlgebraicField, e : FieldEmbedding(K, L)) := vector_space(
+  K, FieldAdditiveGroup(L), field_scalar_action(K, L, e), field_additive_abelian(L),
+  field_scalar_laws(K, L, e)
+);
 
 def ScalarSpace(K : AlgebraicField) := field_vector_space(K, K, field_embedding_identity(K));
 

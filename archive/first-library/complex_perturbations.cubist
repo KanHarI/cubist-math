@@ -26,8 +26,8 @@ def complex_perturbation_zero(
 def complex_perturbation_add(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  oldLeft, freshLeft, oldRight, freshRight : Complex(F), r, s : F,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), oldLeft, freshLeft, oldRight,
+  freshRight : Complex(F), r, s : F,
   left_ : ComplexPerturbation(F, addF, negF, lt, oldLeft, freshLeft, r),
   right_ : ComplexPerturbation(F, addF, negF, lt, oldRight, freshRight, s)
 ) :
@@ -41,11 +41,10 @@ def complex_perturbation_add(
   let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
   let rewriteLeft := cong((fun (v : Complex(F)) => addC(v, freshRight)), leftPath);
   let rewriteRight := cong(addC(addC(oldLeft, e)), rightPath);
-  let shuffle :=
-    ring_add_shuffle(
-      Complex(F), complex_zero(F, zero), complex_one(F, zero, one), addC,
-      complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, oldLeft, e, oldRight, f
-    );
+  let shuffle := ring_add_shuffle(
+    Complex(F), complex_zero(F, zero), complex_one(F, zero, one), addC,
+    complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, oldLeft, e, oldRight, f
+  );
   exact (
     addC(e, f), trans(rewriteLeft, trans(rewriteRight, shuffle)),
     complex_box_add(

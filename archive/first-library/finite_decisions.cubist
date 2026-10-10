@@ -51,7 +51,7 @@ def finite_decision_step(
     left first => match tail return Decidable(U0, forall x : Fin(succ(n)). P(x)) {
       left rest => left(fun (x : Fin(succ(n))) => match typed(Unit or Fin(n), x) as z return P(z) {
           left u => (
-            along((fun (v : Unit) => P(typed(Unit or Fin(n), left(v))))) by unit_equal(u) from first
+            along ((fun (v : Unit) => P(typed(Unit or Fin(n), left(v))))) by unit_equal(u) from first
           );
           right y => typed((forall t : Fin(n). P(typed(Unit or Fin(n), right(t)))), rest)(y);
         });

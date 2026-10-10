@@ -8,18 +8,20 @@ use nat;
 // Adjoining one vector gives a proposition-valued subset. Membership is
 // truncated; it does not expose a particular side of the disjunction.
 def AdjoinVector(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x, y : vector_carrier(K, V)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
+  y : vector_carrier(K, V)
 ) :=
   Truncate(U0, P(y) or (y = x));
 
 def adjoin_vector_prop(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x, y : vector_carrier(K, V)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
+  y : vector_carrier(K, V)
 ) :=
   TruncateProp(U0, P(y) or (y = x));
 
 def adjoin_vector_old(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  x, y : vector_carrier(K, V), member : P(y)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
+  y : vector_carrier(K, V), member : P(y)
 ) :
   AdjoinVector(K, V, P, x, y) {
   exact TruncateIntro(U0, P(y) or (y = x), left(member));
@@ -75,15 +77,16 @@ def independent_zero_omission(
   let omittedV := fun (t : Fin(n)) => v(omit(t));
   let omittedA := fun (t : Fin(n)) => a(omit(t));
   let omittedZero : forall t : Fin(n).
-  omittedA(t) = af_zero(af_carrier(K), af_operations(K)) := independent(
-    n, omittedV,
-    (
-      fun (s, t : Fin(n), same : omittedV(s) = omittedV(t)) => fin_omit_injective(
-        n, i, s, t, distinct(omit(s), omit(t), same)
-      )
-    ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
-    trans(linear_combination_omit(K, V, n, v, a, i), restZero)
-  );
+  omittedA(t) = af_zero(af_carrier(K), af_operations(K)) :=
+    independent(
+      n, omittedV,
+      (
+        fun (s, t : Fin(n), same : omittedV(s) = omittedV(t)) => fin_omit_injective(
+          n, i, s, t, distinct(omit(s), omit(t), same)
+        )
+      ), (fun (t : Fin(n)) => others(omit(t), fin_omit_avoids(n, i, t))), omittedA,
+      trans(linear_combination_omit(K, V, n, v, a, i), restZero)
+    );
   match fin_omit_cover(n, i, j) {
     left(same) => {
       exact trans(cong(a, same), zero);

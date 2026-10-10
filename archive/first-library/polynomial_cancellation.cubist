@@ -7,28 +7,26 @@ def polynomial_cancel_nonzero(
 ) :
   b = c {
   let difference := polynomial_subtract(K, b, c);
-  let product : polynomial_mul(K, a, difference) = polynomial_zero(K) :=
+  let product : polynomial_mul(K, a, difference) = polynomial_zero(K) := trans(
+    polynomial_mul_comm(K, a, difference),
     trans(
-      polynomial_mul_comm(K, a, difference),
+      polynomial_subtract_mul(K, b, c, a),
       trans(
-        polynomial_subtract_mul(K, b, c, a),
-        trans(
-          cong(
-            (fun (p : Polynomial(K)) => polynomial_subtract(K, p, polynomial_mul(K, c, a))),
-            trans(polynomial_mul_comm(K, b, a), trans(same, polynomial_mul_comm(K, a, c)))
-          ), polynomial_add_inverse_right(K, polynomial_mul(K, c, a))
-        )
+        cong(
+          (fun (p : Polynomial(K)) => polynomial_subtract(K, p, polynomial_mul(K, c, a))),
+          trans(polynomial_mul_comm(K, b, a), trans(same, polynomial_mul_comm(K, a, c)))
+        ), polynomial_add_inverse_right(K, polynomial_mul(K, c, a))
       )
-    );
-  let zero : difference = polynomial_zero(K) :=
-    double_negation(
-      difference = polynomial_zero(K), polynomial_set(K, difference, polynomial_zero(K)),
-      (
-        fun (nz : PolynomialNonzero(K, difference)) => polynomial_product_nonzero(
-          K, a, difference, nonzero, nz, product
-        )
+    )
+  );
+  let zero : difference = polynomial_zero(K) := double_negation(
+    difference = polynomial_zero(K), polynomial_set(K, difference, polynomial_zero(K)),
+    (
+      fun (nz : PolynomialNonzero(K, difference)) => polynomial_product_nonzero(
+        K, a, difference, nonzero, nz, product
       )
-    );
+    )
+  );
   exact polynomial_subtract_zero_equal(K, b, c, zero);
 }
 
@@ -81,7 +79,7 @@ def polynomial_small_divisible_zero(
     obtain (q, equation) := witness_;
     let product := trans(equation, polynomial_mul_comm(K, divisor, q));
     let productSupport :=
-      along((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by product from support;
+      along ((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by product from support;
     let zero := polynomial_small_multiple_zero(K, q, divisor, d, degree, productSupport);
     exact trans(
       product,

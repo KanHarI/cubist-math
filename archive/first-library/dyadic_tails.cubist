@@ -10,11 +10,10 @@ def nonnegative_half_le(
   sum : addF(halfWidth, halfWidth) = width, nonnegativeWidth : FieldLe(F, lt, zero, width)
 ) :
   FieldLe(F, lt, halfWidth, width) {
-  let nonnegativeHalf :=
-    nonnegative_half_from_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum,
-      nonnegativeWidth
-    );
+  let nonnegativeHalf := nonnegative_half_from_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, width, halfWidth, sum,
+    nonnegativeWidth
+  );
   exact along FieldLe(F, lt, halfWidth) by sum from order_le_add_nonnegative(
     F, zero, one, addF, mulF, negF, lt, ring, arithmetic, halfWidth, halfWidth, nonnegativeHalf
   );
@@ -66,7 +65,7 @@ def field_sequence_antitone_step(
       );
     }
     right(same) => {
-      exact along((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))) by sym(same) from order_le_refl(
+      exact along ((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))) by sym(same) from order_le_refl(
         F, lt, order, sequence(succ(n))
       );
     }
@@ -81,7 +80,7 @@ def field_sequence_antitone(
   forall m : Nat. IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
   let base : forall m : Nat. IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
     intro m, ordered;
-    exact along((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))) by sym(
+    exact along ((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))) by sym(
       nat_le_zero(m, ordered)
     ) from order_le_refl(F, lt, order, sequence(0));
   }
@@ -151,11 +150,10 @@ def dyadic_width_eventually_small(
     -> lt(dyadic_width(F, half, n, width), epsilon)
   ) {
   let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), epsilon));
-  let B :=
-    (
-      exists bound : Nat. forall n : Nat. IndexLE(bound, n)
-      -> lt(dyadic_width(F, half, n, width), epsilon)
-    );
+  let B := (
+    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+    -> lt(dyadic_width(F, half, n, width), epsilon)
+  );
   let mapping : A -> B {
     intro data;
     obtain (bound, small) := data;

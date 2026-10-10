@@ -7,8 +7,8 @@ import dyadic_sampling;
 // not an assertion that arbitrary sample lists with equal sums are identical.
 def SubdivisionRefinementSum(
   C, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G,
-  condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), a, b : C,
-  coarse, fine : SampleSubdivision(C, a, b)
+  condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), a, b : C, coarse,
+  fine : SampleSubdivision(C, a, b)
 ) :=
   exists pieces : SampleSubdivisions(
     C, subdivision_count(C, a, b, coarse), subdivision_vertices(C, a, b, coarse)
@@ -59,20 +59,18 @@ def subdivision_refinement_sum_join(
   let same := trans(lastLeft, sym(firstRight));
   let pieces :=
     join_subdivision_families(C, n, vertices, leftPieces, m, rightVertices, rightPieces, same);
-  let valid :=
-    subdivision_tagged_join(
-      C, condition, n, vertices, tags, leftPieces, m, rightVertices, rightTags, rightPieces, same,
-      leftValid, rightValid
-    );
+  let valid := subdivision_tagged_join(
+    C, condition, n, vertices, tags, leftPieces, m, rightVertices, rightTags, rightPieces, same,
+    leftValid, rightValid
+  );
   let leftTotal := subdivision_total(C, G, zero, addG, edge, n, vertices, leftPieces);
   let rightFine := subdivision_sum(C, G, zero, addG, edge, b, c, fineRight);
   let joinFine :=
     subdivision_sum_join(C, G, zero, addG, unitLaw, assoc, edge, a, b, c, fineLeft, fineRight);
-  let joinTotal :=
-    subdivision_total_join(
-      C, G, zero, addG, unitLaw, assoc, edge, n, vertices, leftPieces, m, rightVertices,
-      rightPieces, same
-    );
+  let joinTotal := subdivision_total_join(
+    C, G, zero, addG, unitLaw, assoc, edge, n, vertices, leftPieces, m, rightVertices, rightPieces,
+    same
+  );
   exact (
     pieces, valid,
     trans(
