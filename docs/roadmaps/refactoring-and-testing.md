@@ -100,6 +100,43 @@ Update those consumers in the same change if that lookup is later removed.
 RC5 remains responsible for changing production diagnostic representations;
 compact observations in this test harness do not implement RC5.
 
+## Coordination with the generated Cubist view
+
+The companion [generated-source utility (#214)](https://github.com/KanHarI/cubist-math/pull/214)
+is based on #211, separately from this documentation PR. It adds **Generated
+Cubist** beside Read and Edit in `proof.html`, with a module selector and a
+read-only view of the last check's theory, initial and free-model expansions.
+The audited counts below remain measurements of `c1780211`; they do not include
+this later UI work.
+
+The utility retains generated declarations before reference lowering only when
+requested by the browser program. Its renderer consumes that retained syntax
+and the existing publication-family states; it does not run a second generator,
+publish definitions or introduce another checking path. Failed and blocked
+families remain visible with their actual state. Captured references use display
+names, so the output is an inspection view, not a standalone Cubist module or a
+replacement for checked-proof export. Unsupported display forms are reported by
+declaration name without changing proof validity.
+
+Carry these constraints into the planned work:
+
+- **RC3:** preserve the inspection snapshot and family identity/status together
+  across rollback, failed imports and rechecks. Retaining failed syntax for
+  inspection must never make its bindings available to clients.
+- **RC4/RC11:** migrate the generated-syntax renderer with any telescope, syntax
+  or naming representation change. Keep grouped domains, implicit arguments,
+  constructor patterns and captured references meaningful in the view. Share
+  existing formatting and scope machinery where it reduces duplication; do not
+  turn the display into a second expansion or elaboration implementation.
+- **RC6/RC7:** retain host-side rendering and browser coverage for module
+  selection, read-only behavior, stale-source notices, recheck invalidation,
+  parse-failure recovery and static-site worker loading. The proof page's
+  generation request belongs in the future shared worker client. Display tests
+  remain host tests; ordinary Cubist tests continue to own proof validity.
+
+This utility does not implement RC0–RC11, change the proposed pragma grammar,
+or resolve the historical mutation-manifest or performance-budget follow-ups.
+
 ## What grew, and what was already large
 
 These are physical lines, including comments and blanks, from tracked
