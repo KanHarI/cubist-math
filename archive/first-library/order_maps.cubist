@@ -91,11 +91,9 @@ def antitone_connection_closure_idempotent(
   let swapped := antitone_connection_swap(A, B, leA, leB, f, g, connection);
   let reversesG :=
     antitone_connection_reverses(B, A, leB, leA, g, f, swapped, transitiveB, reflexiveA);
-  let lower :=
-    reversesG(
-      f(a), f(g(f(a))),
-      antitone_connection_extensive(B, A, leB, leA, g, f, swapped, reflexiveA, f(a))
-    );
+  let lower := reversesG(
+    f(a), f(g(f(a))), antitone_connection_extensive(B, A, leB, leA, g, f, swapped, reflexiveA, f(a))
+  );
   let upper := antitone_connection_extensive(A, B, leA, leB, f, g, connection, reflexiveB, g(f(a)));
   exact antisymmetricA(g(f(g(f(a)))), g(f(a)), lower, upper);
 }

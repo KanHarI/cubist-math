@@ -18,10 +18,9 @@ def cut_lower(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) : Q -> U0 {
   );
 }
 
-def cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :=
-  field_second(
-    Q -> U0, (fun (lower : Q -> U0) => exists upper : Q -> U0. CutLaws(Q, ltQ, lower, upper)), cut
-  );
+def cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) := field_second(
+  Q -> U0, (fun (lower : Q -> U0) => exists upper : Q -> U0. CutLaws(Q, ltQ, lower, upper)), cut
+);
 
 def cut_upper(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) : Q -> U0 {
   exact field_first(Q -> U0, CutLaws(Q, ltQ, cut_lower(Q, ltQ, cut)), cut_rest(Q, ltQ, cut));
@@ -55,28 +54,22 @@ def principal_cut_laws(
   CutLaws(Q, ltQ, (fun (x : Q) => ltQ(x, q)), (fun (x : Q) => ltQ(q, x))) {
   obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (below, above) := unbounded(q);
-  let lowerBack :=
-    fun (x : Q) => field_exists_elim(
-      (exists y : Q. ltQ(x, y) and ltQ(y, q)), ltQ(x, q), prop_(x, q),
-      (
-        fun (p : (exists y : Q. ltQ(x, y) and ltQ(y, q))) => unpack p as (y, edges) return ltQ(x, q) {
-          unpack edges as (xy, yq) return ltQ(x, q) {
-            transitive(x, y, q, xy, yq);
-          };
-        }
-      )
-    );
-  let upperBack :=
-    fun (y : Q) => field_exists_elim(
-      (exists x : Q. ltQ(q, x) and ltQ(x, y)), ltQ(q, y), prop_(q, y),
-      (
-        fun (p : (exists x : Q. ltQ(q, x) and ltQ(x, y))) => unpack p as (x, edges) return ltQ(q, y) {
-          unpack edges as (qx, xy) return ltQ(q, y) {
-            transitive(q, x, y, qx, xy);
-          };
-        }
-      )
-    );
+  let lowerBack := fun (x : Q) => field_exists_elim(
+    (exists y : Q. ltQ(x, y) and ltQ(y, q)), ltQ(x, q), prop_(x, q),
+    (fun (p : (exists y : Q. ltQ(x, y) and ltQ(y, q))) => unpack p as (y, edges) return ltQ(x, q) {
+        unpack edges as (xy, yq) return ltQ(x, q) {
+          transitive(x, y, q, xy, yq);
+        };
+      })
+  );
+  let upperBack := fun (y : Q) => field_exists_elim(
+    (exists x : Q. ltQ(q, x) and ltQ(x, y)), ltQ(q, y), prop_(q, y),
+    (fun (p : (exists x : Q. ltQ(q, x) and ltQ(x, y))) => unpack p as (x, edges) return ltQ(q, y) {
+        unpack edges as (qx, xy) return ltQ(q, y) {
+          transitive(q, x, y, qx, xy);
+        };
+      })
+  );
   exact (
     (fun (x : Q) => prop_(x, q)), (fun (x : Q) => prop_(q, x)), below, above,
     (
@@ -275,7 +268,7 @@ def principal_cut_injective(
     (
       fun (qp : ltQ(q, p)) => cut_less_irreflexive(
         Q, ltQ, cutQ,
-        along((fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cutQ, cut))) by same from forwardQP(
+        along ((fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cutQ, cut))) by same from forwardQP(
           qp
         )
       )
@@ -283,7 +276,7 @@ def principal_cut_injective(
     (
       fun (pq : ltQ(p, q)) => cut_less_irreflexive(
         Q, ltQ, cutQ,
-        along((fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cut, cutQ))) by same from forwardPQ(
+        along ((fun (cut : DedekindCut(Q, ltQ)) => CutLess(Q, ltQ, cut, cutQ))) by same from forwardPQ(
           pq
         )
       )

@@ -8,8 +8,8 @@ def QuotientComparison(A : U1, relation : A -> A -> U0, q, r : SetQuotient(A, re
   FieldIff(quotient_predicate(A, relation, q, a), quotient_predicate(A, relation, r, a));
 
 def quotient_comparison_prop(
-  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
-  q, r : SetQuotient(A, relation)
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), q,
+  r : SetQuotient(A, relation)
 ) :
   FieldProp(QuotientComparison(A, relation, q, r)) {
   let P := quotient_predicate(A, relation, q);
@@ -45,8 +45,8 @@ def quotient_path_comparison(
 }
 
 def quotient_comparison_path(
-  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
-  q, r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), q,
+  r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
 ) :
   q = r {
   exact quotient_ext(
@@ -63,10 +63,9 @@ def quotient_comparison_path(
 // argument. No decidable equality, representative choice, or resizing is used.
 def quotient_is_set(A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation)) :
   FieldSet(SetQuotient(A, relation)) {
-  let compare :=
-    fun (q, r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
-      A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p)
-    );
+  let compare := fun (q, r : SetQuotient(A, relation), p : q = r) => quotient_comparison_path(
+    A, relation, laws, q, r, quotient_path_comparison(A, relation, q, r, p)
+  );
   exact constant_paths_are_set(
     SetQuotient(A, relation), compare,
     (

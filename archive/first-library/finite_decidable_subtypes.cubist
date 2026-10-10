@@ -81,7 +81,7 @@ def finite_selected_bool_step(
       Selected(Fin(succ(k)), predicate_join(A, first, q))
     ) {
       left u => (
-        along(
+        along (
           (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q))))
         ) by cong((fun (v : Unit) => typed(Bool, left(v))), unit_equal(u)) from typed(
           HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, yes, q))),
@@ -89,7 +89,7 @@ def finite_selected_bool_step(
         )
       );
       right u => (
-        along(
+        along (
           (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q))))
         ) by cong((fun (v : Unit) => typed(Bool, right(v))), unit_equal(u)) from typed(
           HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, no, q))),
@@ -158,14 +158,13 @@ def subtype_reindex_bijection(
   let X := exists a : A. Q(a);
   let Y := exists b : B. P(b);
   let f := fun (x : X) => typed(Y, (forward(A, B, e, sigma_first(A, Q, x)), sigma_second(A, Q, x)));
-  let g :=
-    fun (y : Y) => typed(
-      X,
-      (
-        backward(A, B, e, sigma_first(B, P, y)),
-        along P by sym(right_inverse(A, B, e, sigma_first(B, P, y))) from sigma_second(B, P, y)
-      )
-    );
+  let g := fun (y : Y) => typed(
+    X,
+    (
+      backward(A, B, e, sigma_first(B, P, y)),
+      along P by sym(right_inverse(A, B, e, sigma_first(B, P, y))) from sigma_second(B, P, y)
+    )
+  );
   exact (
     f, g,
     (
@@ -191,15 +190,14 @@ def finite_predicate_from_enumeration(
   let propQ := fun (i : Fin(n)) => prop_(forward(Fin(n), A, enumeration, i));
   let p := classical_predicate_bool(Fin(n), Q, propQ);
   let decide := fun (i : Fin(n)) => classical_predicate_truth(Fin(n), Q, propQ, i);
-  let selectedToSubtype :=
-    reverse_bijection(
-      (exists i : Fin(n). Q(i)), Selected(Fin(n), p),
-      subtype_bijection(
-        Fin(n), Q, (fun (i : Fin(n)) => Truth(p(i))), propQ, (fun (i : Fin(n)) => truth_prop(p(i))),
-        (fun (i : Fin(n)) => fst(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i))),
-        (fun (i : Fin(n)) => snd(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i)))
-      )
-    );
+  let selectedToSubtype := reverse_bijection(
+    (exists i : Fin(n). Q(i)), Selected(Fin(n), p),
+    subtype_bijection(
+      Fin(n), Q, (fun (i : Fin(n)) => Truth(p(i))), propQ, (fun (i : Fin(n)) => truth_prop(p(i))),
+      (fun (i : Fin(n)) => fst(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i))),
+      (fun (i : Fin(n)) => snd(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i)))
+    )
+  );
   let reindex := subtype_reindex_bijection(Fin(n), A, P, prop_, enumeration);
   exact finite_cardinality_bijection(
     Selected(Fin(n), p), (exists a : A. P(a)),

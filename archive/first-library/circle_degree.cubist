@@ -18,12 +18,12 @@ def circle_map_from_loop(X : U0, point : X, p : point = point, x : S1) :=
 def circle_map_generator(X : U0, point : X, p : point = point) :
   cong(circle_map_from_loop(X, point, p), loop) = p {
   let f := circle_map_from_loop(X, point, p);
-  let upperLaw :=
-    suspension_rec_beta(S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, left(tt)));
-  let lowerLaw :=
-    suspension_rec_beta(
-      S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, right(tt))
-    );
+  let upperLaw := suspension_rec_beta(
+    S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, left(tt))
+  );
+  let lowerLaw := suspension_rec_beta(
+    S0, X, point, point, circle_map_meridians(X, point, p), typed(S0, right(tt))
+  );
   exact trans(
     map_concat(S1, X, f, base, south_pole, base, upper, lower_inverse),
     trans(

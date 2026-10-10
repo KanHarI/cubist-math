@@ -103,24 +103,22 @@ def uniform_refinement_tag_bounds(
         ), epsilon
       ) {
       intro x, y, oldTag, newTag, unitWitness, oldWithin, newWithin;
-      let closeParameters :=
-        interval_tags_close(
-          F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, newTag, oldTag, newWithin,
-          oldWithin, mesh, small
-        );
+      let closeParameters := interval_tags_close(
+        F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, newTag, oldTag, newWithin,
+        oldWithin, mesh, small
+      );
       exact complex_close_difference_bound(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, values(oldTag), values(newTag),
         epsilon, closeValues(newTag, oldTag, closeParameters)
       );
     }
     let oldValid := sample_repeat_tags_valid(I, within, coarseTag, coarseWithin, n, vertices);
-    let newValid :=
-      interval_refinement_tags_global(
-        F, zero, one, addF, mulF, lt, order, arithmetic, n, vertices, tags, valid
-      );
+    let newValid := interval_refinement_tags_global(
+      F, zero, one, addF, mulF, lt, order, arithmetic, n, vertices, tags, valid
+    );
     exact parameter_tag_bounds_from_samples(
-      I, F, addF, negF, lt, values, epsilon, (fun (x, y : I) => Unit), constantCondition, localBound,
-      n, vertices, sample_repeat_tags(I, n, coarseTag), tags,
+      I, F, addF, negF, lt, values, epsilon, (fun (x, y : I) => Unit), constantCondition,
+      localBound, n, vertices, sample_repeat_tags(I, n, coarseTag), tags,
       sample_adjacent_constant(I, Unit, tt, n, vertices), oldValid, newValid
     );
   }

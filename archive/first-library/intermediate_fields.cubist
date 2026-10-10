@@ -26,11 +26,10 @@ def intermediate_laws(K : AlgebraicField, E : FieldExt(K), M : IntermediateField
 def intermediate_subfield(K : AlgebraicField, E : FieldExt(K), M : IntermediateField(K, E)) :
   Subfield(extension_field(K, E)) {
   let P := intermediate_members(K, E, M);
-  let closure :=
-    fst(
-      SubfieldLaws(extension_field(K, E), P),
-      (forall k : af_carrier(K). P(extension_inclusion(K, E, k))), intermediate_laws(K, E, M)
-    );
+  let closure := fst(
+    SubfieldLaws(extension_field(K, E), P),
+    (forall k : af_carrier(K). P(extension_inclusion(K, E, k))), intermediate_laws(K, E, M)
+  );
   exact (P, closure);
 }
 
@@ -43,8 +42,8 @@ def intermediate_contains_base(
 }
 
 def intermediate_laws_prop(
-  K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0,
-  p, q : IntermediateFieldLaws(K, E, P)
+  K : AlgebraicField, E : FieldExt(K), P : extension_carrier(K, E) -> U0, p,
+  q : IntermediateFieldLaws(K, E, P)
 ) :
   p = q {
   let F := extension_field(K, E);

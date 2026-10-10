@@ -37,17 +37,15 @@ def affine_coordinate_length_nonnegative(
   let imag := complex_imag(F, slope);
   let r := maxF(real, negF(real));
   let s := maxF(imag, negF(imag));
-  let nonnegativeR :=
-    field_magnitude_radius_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, real, r,
-      field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, real)
-    );
-  let nonnegativeS :=
-    field_magnitude_radius_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, imag, s,
-      field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag)
-    );
-  exact along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by ring_add_zero(
+  let nonnegativeR := field_magnitude_radius_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, real, r,
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, real)
+  );
+  let nonnegativeS := field_magnitude_radius_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, imag, s,
+    field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, imag)
+  );
+  exact along ((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by ring_add_zero(
     F, zero, one, addF, mulF, negF, ring, zero
   ) from order_le_add(
     F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
@@ -63,8 +61,8 @@ def affine_dyadic_cauchy(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope : Complex(F), integrand : Complex(F)
-  -> Complex(F),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope : Complex(F),
+  integrand : Complex(F) -> Complex(F),
   uniform : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -85,34 +83,29 @@ def affine_dyadic_cauchy(
       integrand, a, b, ordered
     )
   ) {
-  let sequence :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
-      integrand, a, b, ordered
-    );
+  let sequence := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
+    a, b, ordered
+  );
   let width := interval_difference(F, zero, one, addF, negF, lt)(a, b);
   let length := affine_coordinate_length(F, addF, negF, maxF, slope);
   let scale := mulF(width, length);
-  let nonnegativeWidth :=
-    field_difference_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
-      field_interval_coordinate(F, zero, one, lt)(a),
-      field_interval_coordinate(F, zero, one, lt)(b), ordered
-    );
-  let nonnegativeLength :=
-    affine_coordinate_length_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, slope
-    );
-  let nonnegativeScale :=
-    order_mul_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, width, length, nonnegativeWidth,
-      nonnegativeLength
-    );
-  let widthsVanish :=
-    dyadic_width_converges_from_bounds(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, bounds,
-      width, nonnegativeWidth
-    );
+  let nonnegativeWidth := field_difference_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
+    field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b),
+    ordered
+  );
+  let nonnegativeLength := affine_coordinate_length_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, slope
+  );
+  let nonnegativeScale := order_mul_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, width, length, nonnegativeWidth,
+    nonnegativeLength
+  );
+  let widthsVanish := dyadic_width_converges_from_bounds(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses, bounds,
+    width, nonnegativeWidth
+  );
   let refines :
     forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. forall extra : Nat.
     IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
@@ -143,13 +136,12 @@ def affine_dyadic_cauchy(
     }
     exact (bound, tail);
   }
-  let positiveHalf :=
-    (
-      fun (epsilon : F, positive : lt(zero, epsilon)) => positive_half_from_sum(
-        F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), halfSum(epsilon),
-        positive
-      )
-    );
+  let positiveHalf := (
+    fun (epsilon : F, positive : lt(zero, epsilon)) => positive_half_from_sum(
+      F, zero, one, addF, mulF, lt, order, arithmetic, epsilon, half(epsilon), halfSum(epsilon),
+      positive
+    )
+  );
   let halving := typed(Halving(F, zero, addF, lt), (half, halfSum, positiveHalf));
   exact complex_cauchy_from_refinements(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, sequence, refines

@@ -10,64 +10,59 @@ import contractible_maps;
 
 // Glue eta for a variable: glue(unglue(g), face(k, 0, g)) is g, and its value
 // on k = 0 is g itself, of the Glue type, which is A there.
-def glue_eta(A : U0) :=
-  path(
-    fun (k : Interval) => forall g : Glue(A, face(k, 0, A, id_contr_equiv(U0, A))). g = g,
-    fun (k : Interval) => fun (g : Glue(A, face(k, 0, A, id_contr_equiv(U0, A)))) => path i => glue(
-      unglue(g), face(k, 0, g)
-    )
-  );
+def glue_eta(A : U0) := path(
+  fun (k : Interval) => forall g : Glue(A, face(k, 0, A, id_contr_equiv(U0, A))). g = g,
+  fun (k : Interval) => fun (g : Glue(A, face(k, 0, A, id_contr_equiv(U0, A)))) => path i => glue(
+    unglue(g), face(k, 0, g)
+  )
+);
 
 // A composition whose tube is a variable of a type that mentions the tube's
 // face: x : loop @ k is in the family there, loop @ 0, only on k = 0.
-def tube_on_its_face(A : U0, loop : A = A) :=
-  path(
-    fun (k : Interval) => loop @ k -> loop @ k,
-    fun (k : Interval) => fun (x : loop @ k) => comp(
-      fun (i : Interval) => loop @ k, x, face(k, 0, fun (i : Interval) => x)
-    )
-  );
+def tube_on_its_face(A : U0, loop : A = A) := path(
+  fun (k : Interval) => loop @ k -> loop @ k,
+  fun (k : Interval) => fun (x : loop @ k) => comp(
+    fun (i : Interval) => loop @ k, x, face(k, 0, fun (i : Interval) => x)
+  )
+);
 
 // The variable is used inside the tube, as the argument of a function on
 // loop @ 0, which it is there.
-def variable_inside_a_tube(A : U0, loop : A = A) :=
-  path(
-    fun (k : Interval) => loop @ k -> loop @ k,
-    fun (k : Interval) => fun (x : loop @ k) => comp(
-      fun (i : Interval) => loop @ k, x,
-      face(k, 0, fun (i : Interval) => (fun (y : loop @ 0) => y)(x))
-    )
-  );
+def variable_inside_a_tube(A : U0, loop : A = A) := path(
+  fun (k : Interval) => loop @ k -> loop @ k,
+  fun (k : Interval) => fun (x : loop @ k) => comp(
+    fun (i : Interval) => loop @ k, x,
+    face(k, 0, fun (i : Interval) => (fun (y : loop @ 0) => y)(x))
+  )
+);
 
 // The same, with the variable given its type there: in the tube, the
 // coordinate k is 0, so typed(loop @ 0, x) is checked where x is at loop @ 0.
-def typed_inside_a_tube(A : U0, loop : A = A) :=
-  path(
-    fun (k : Interval) => loop @ k -> loop @ k,
-    fun (k : Interval) => fun (x : loop @ k) => comp(
-      fun (i : Interval) => loop @ k, x, face(k, 0, fun (i : Interval) => typed(loop @ 0, x))
-    )
-  );
+def typed_inside_a_tube(A : U0, loop : A = A) := path(
+  fun (k : Interval) => loop @ k -> loop @ k,
+  fun (k : Interval) => fun (x : loop @ k) => comp(
+    fun (i : Interval) => loop @ k, x, face(k, 0, fun (i : Interval) => typed(loop @ 0, x))
+  )
+);
 
 // Two such tubes agree where both faces hold, j = 0 and k = 0.
-def overlapping_tubes(A : U0, loop : A = A) :=
-  path(
-    fun (j : Interval) => PathP(
-      fun (k : Interval) => loop @ k -> loop @ k,
-      fun (x : loop @ 0) => comp(
-        fun (i : Interval) => loop @ 0, x, face(j, 0, fun (i : Interval) => x),
-        face_when(1, fun (i : Interval) => x)
-      ),
-      fun (x : loop @ 1) => comp(
-        fun (i : Interval) => loop @ 1, x, face(j, 0, fun (i : Interval) => x),
-        face_when(0, fun (i : Interval) => x)
-      )
+def overlapping_tubes(A : U0, loop : A = A) := path(
+  fun (j : Interval) => PathP(
+    fun (k : Interval) => loop @ k -> loop @ k,
+    fun (x : loop @ 0) => comp(
+      fun (i : Interval) => loop @ 0, x, face(j, 0, fun (i : Interval) => x),
+      face_when(1, fun (i : Interval) => x)
     ),
-    fun (j : Interval) => path k => fun (x : loop @ k) => comp(
-      fun (i : Interval) => loop @ k, x, face(j, 0, fun (i : Interval) => x),
-      face(k, 0, fun (i : Interval) => x)
+    fun (x : loop @ 1) => comp(
+      fun (i : Interval) => loop @ 1, x, face(j, 0, fun (i : Interval) => x),
+      face_when(0, fun (i : Interval) => x)
     )
-  );
+  ),
+  fun (j : Interval) => path k => fun (x : loop @ k) => comp(
+    fun (i : Interval) => loop @ k, x, face(j, 0, fun (i : Interval) => x),
+    face(k, 0, fun (i : Interval) => x)
+  )
+);
 
 // Tubes on both ends of one coordinate, each typing g at the piece of its
 // face, T0 where i = 0 and T1 where i = 1. At either end of the line the
@@ -83,10 +78,9 @@ def tubes_on_both_ends(A, T0, T1 : U0, e0 : ContrEquiv(U0, T0, A), e1 : ContrEqu
 
 // glue where its face holds is its value there, at the type expected: in
 // the tube, i is 0, so the glue is t, of T0.
-def glue_where_its_face_holds(A, T0 : U0, e0 : ContrEquiv(U0, T0, A), t : T0) :=
-  path(
-    fun (i : Interval) => T0,
-    fun (i : Interval) => comp(
-      fun (l : Interval) => T0, t, face(i, 0, fun (l : Interval) => glue(e0.1(t), face(i, 0, t)))
-    )
-  );
+def glue_where_its_face_holds(A, T0 : U0, e0 : ContrEquiv(U0, T0, A), t : T0) := path(
+  fun (i : Interval) => T0,
+  fun (i : Interval) => comp(
+    fun (l : Interval) => T0, t, face(i, 0, fun (l : Interval) => glue(e0.1(t), face(i, 0, t)))
+  )
+);

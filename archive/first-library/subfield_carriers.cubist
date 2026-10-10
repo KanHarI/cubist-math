@@ -79,11 +79,10 @@ def subfield_carrier_mul(F : AlgebraicField, S : Subfield(F), x, y : SubfieldCar
   );
 }
 
-def subfield_carrier_ops(F : AlgebraicField, S : Subfield(F)) :=
-  field_ops(
-    SubfieldCarrier(F, S), subfield_carrier_zero(F, S), subfield_carrier_one(F, S),
-    subfield_carrier_neg(F, S), subfield_carrier_add(F, S), subfield_carrier_mul(F, S)
-  );
+def subfield_carrier_ops(F : AlgebraicField, S : Subfield(F)) := field_ops(
+  SubfieldCarrier(F, S), subfield_carrier_zero(F, S), subfield_carrier_one(F, S),
+  subfield_carrier_neg(F, S), subfield_carrier_add(F, S), subfield_carrier_mul(F, S)
+);
 
 def subfield_carrier_add_assoc(F : AlgebraicField, S : Subfield(F), x, y, z : SubfieldCarrier(F, S)) :
   subfield_carrier_add(F, S, subfield_carrier_add(F, S, x, y), z) = subfield_carrier_add(
@@ -189,7 +188,9 @@ def subfield_carrier_mul_one(F : AlgebraicField, S : Subfield(F), x : SubfieldCa
   );
 }
 
-def subfield_carrier_distribute(F : AlgebraicField, S : Subfield(F), x, y, z : SubfieldCarrier(F, S)) :
+def subfield_carrier_distribute(
+  F : AlgebraicField, S : Subfield(F), x, y, z : SubfieldCarrier(F, S)
+) :
   subfield_carrier_mul(F, S, x, subfield_carrier_add(F, S, y, z)) = subfield_carrier_add(
     F, S, subfield_carrier_mul(F, S, x, y), subfield_carrier_mul(F, S, x, z)
   ) {
@@ -271,11 +272,10 @@ def subfield_carrier_field_laws(F : AlgebraicField, S : Subfield(F)) :
   );
 }
 
-def subfield_as_field(F : AlgebraicField, S : Subfield(F)) :=
-  algebraic_field(
-    SubfieldCarrier(F, S), subfield_carrier_ops(F, S), subfield_carrier_is_set(F, S),
-    subfield_carrier_field_laws(F, S)
-  );
+def subfield_as_field(F : AlgebraicField, S : Subfield(F)) := algebraic_field(
+  SubfieldCarrier(F, S), subfield_carrier_ops(F, S), subfield_carrier_is_set(F, S),
+  subfield_carrier_field_laws(F, S)
+);
 
 // The actual embedding into the ambient field, including operation preservation
 // and injectivity. It is the first projection of the subtype.

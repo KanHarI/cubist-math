@@ -19,44 +19,37 @@ def dyadic_width_small_from_natural_bound(
   let factor := natural(succ(n));
   let divided := mulF(width, reciprocal);
   let sampledWidth := dyadic_width(F, half, n, width);
-  let nonnegativeOne :=
-    ordered_lt_implies_le(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
-    );
-  let nextNatural :=
-    order_le_add_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, natural(n), one, nonnegativeOne
-    );
+  let nonnegativeOne := ordered_lt_implies_le(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
+  );
+  let nextNatural := order_le_add_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, natural(n), one, nonnegativeOne
+  );
   let largeFactor := ltLe(divided, natural(n), factor, large, nextNatural);
-  let positiveFactor :=
-    ltLe(
-      zero, one, factor, positiveOne,
-      field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
-    );
+  let positiveFactor := ltLe(
+    zero, one, factor, positiveOne,
+    field_natural_successor_ge_one(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
+  );
   obtain (multiply, unMultiply) := scale(divided, factor, epsilon, positiveEpsilon);
-  let restores : mulF(divided, epsilon) = width :=
+  let restores : mulF(divided, epsilon) = width := trans(
+    ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
     trans(
-      ring_mul_assoc(F, zero, one, addF, mulF, negF, ring, width, reciprocal, epsilon),
-      trans(
-        cong(
-          mulF(width),
-          trans(
-            ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw
-          )
-        ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
-      )
-    );
+      cong(
+        mulF(width),
+        trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, epsilon), inverseLaw)
+      ), ring_mul_one_right(F, zero, one, addF, mulF, negF, ring, width)
+    )
+  );
   let aboveWidth :=
-    along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by restores from multiply(largeFactor);
-  let bounded :=
-    dyadic_width_growth_bound(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
-      nonnegativeWidth
-    );
+    along ((fun (v : F) => lt(v, mulF(factor, epsilon)))) by restores from multiply(largeFactor);
+  let bounded := dyadic_width_growth_bound(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
+    nonnegativeWidth
+  );
   let productLess :=
     leLt(mulF(factor, sampledWidth), width, mulF(factor, epsilon), bounded, aboveWidth);
   let leftCommutes :=
-    along((fun (v : F) => lt(v, mulF(factor, epsilon)))) by ring_mul_comm(
+    along ((fun (v : F) => lt(v, mulF(factor, epsilon)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, factor, sampledWidth
     ) from productLess;
   let rightCommutes :=
