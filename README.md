@@ -37,6 +37,9 @@ source inspector to retain its names and return navigation.
 
 ## Development checks
 
+Use the [regression contract checklist](docs/guides/regression-contracts.md)
+when adding or changing behavioral tests, especially expected-failure cases.
+
 ```sh
 npm test -- euclid                       # Selected source and its imports
 npm test -- archive/first-library/circle.cubist
