@@ -72,6 +72,7 @@ const contracts = {
     assert.ok(actual.reason.includes(expected.found)); assert.ok(actual.reason.includes(expected.expected));
     const start = gaps.G8.source.lastIndexOf("t1");
     assert.equal(actual.start, start); assert.equal(actual.end, start + 2);
+    assert.equal(checked.get("h").searchFuel.searches,0,"a nonrecursive boundary must not start coherence search");
   },
   G9(checked) {
     complete(checked); accepted(checked, gaps.G9.clients);

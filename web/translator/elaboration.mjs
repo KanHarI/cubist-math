@@ -4,7 +4,7 @@
 // and a freeze replay elaborates in a derived unit. Neither grants
 // authority: every term they help build is checked.
 import {NameSupply} from "./names.mjs";
-import {freeNames,onFace} from "./core.mjs";
+import {T,freeNames,onFace,substituteTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 
 export const emptyRewriteWork = () => ({
@@ -66,18 +66,53 @@ function hide(env,name) {
 
 // A lexical scope: the term telescope (`context`, name to type), the source
 // names (`env`, source name to term) and the live interval dimensions
-// (name to slot). A face is represented by its restriction: on a face of one
+// (name to slot). `evidence` holds checked model projections independently
+// of source aliases, with their types and declaration dependencies.
+// A face is represented by its restriction: on a face of one
 // clause, each type of the context is at the clause's endpoints (onFace).
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map()) {
-    Object.assign(this,{unit,context,env,dimensions});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),evidence=[]) {
+    Object.assign(this,{unit,context,env,dimensions,evidence});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
-  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions);}
-  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions);}
+  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions,this.evidence);}
+  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions,this.evidence);}
+  withEvidence(evidence) {return new Scope(this.unit,this.context,this.env,this.dimensions,evidence);}
+  // A checked model contributes checked projections, with their actual types
+  // and declaration dependencies. No source alias or lookup by display name
+  // is needed to find this evidence in a nested match.
+  modelEvidence(model,type=null) {
+    if(!this.checker.theories?.size)return this;
+    if(this.evidence.some(e=>e.model===model||model.tag==="Var"&&e.model?.tag==="Var"&&e.model.name===model.name))return this;
+    let head=type??this.infer(model).type;
+    const arguments_=[];
+    while(head?.tag==="App"||head?.tag==="LApp") {arguments_.unshift(head);head=head.fn;}
+    const record=head?.tag==="DefRef"?this.checker.theories.get(head.name):null;
+    if(!record)return this;
+    const added=[];
+    for(const field of record.fields.filter(field=>field.kind==="evidence")) {
+      const projection=this.env.get(field.reference??field.projection);
+      // Base projections are checked in order. A reservation, current
+      // projection or failed dependency supplies no evidence.
+      if(projection?.tag!=="DefRef")continue;
+      let term=projection;
+      for(const argument of arguments_)term=argument.tag==="LApp"?T.levelApply(term,argument.level):T.app(term,argument.arg);
+      const checked=this.infer(T.app(term,model));
+      added.push({term:checked.term,type:checked.type,model,
+        dependencies:[record.dependencies?.owner??record.reference??head.name,field.identity??field.reference??field.projection]});
+    }
+    return added.length?this.withEvidence([...this.evidence,...added]):this;
+  }
+  // Refining or generalizing locals changes both a witness and its type.
+  // The destination checks every candidate it actually uses.
+  refineEvidence(values) {
+    if(!values.size||!this.evidence.length)return this;
+    const replace=term=>[...values].reduce((term,[name,value])=>substituteTerm(term,name,value),term);
+    return this.withEvidence(this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)})));
+  }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
   // source as in the types of the context. On a face of more than one
@@ -87,7 +122,8 @@ export class Scope {
     const ends=new Map(face[0].map(literal=>[literal.slice(0,literal.lastIndexOf(":")),literal.endsWith(":1")?1:0]));
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
-    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions);
+    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions,
+      this.evidence.map(e=>({...e,term:onFace(e.term,face),type:onFace(e.type,face),model:onFace(e.model,face)})));
   }
   alias(name,value) {
     const env=new Map(this.env);
@@ -118,14 +154,14 @@ export class Scope {
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
-    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions);
+    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions,this.evidence).modelEvidence(T.variable(name),type);
   }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
     if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
-    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index));
+    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index),this.evidence);
   }
   // A name from the unit's supply that nothing here binds: a scope built
   // apart from elaboration may bind names another supply gave.

@@ -163,11 +163,11 @@ function instance(shape, universe, type, scope) {
   };
   if (!fits(type)) {
     let normal;
-    try { normal = scope.nf(type); } catch { return null; }
+    try { normal = scope.nf(type); } catch(error) { failedCandidate(error);return null; }
     if (!fits(normal)) return null;
   }
   try { if (!scope.equal(substituteAll(conclusion.type, values), type)) return null; }
-  catch { return null; }
+  catch(error) { failedCandidate(error);return null; }
   return values;
 }
 
@@ -216,7 +216,7 @@ export class HLevelSearch {
     const proving = this.active.find(obligation => obligation.level === level && attempt(() => scope.equal(obligation.type, type)));
     if (proving) return null;
     const quantified = [...[...scope.context].map(([name, stated]) => ({ term: T.variable(name), type: stated })),
-      ...this.locals, ...this.hints].flatMap(evidence => {
+      ...this.locals, ...this.hints, ...scope.evidence].flatMap(evidence => {
         const body = headBeta(evidence.type);
         if (body?.tag !== "Pi" && body?.tag !== "LPi") return [];
         const shape = ruleShape(evidence.type);
@@ -273,7 +273,7 @@ export class HLevelSearch {
   // Evidence in scope, local or a hint, stating the level or a lower one.
   evidence(level, universe, type, scope) {
     const candidates = [...[...scope.context].map(([name, stated]) => [T.variable(name), stated]),
-      ...[...this.locals, ...this.hints].map(evidence => [evidence.term, evidence.type])];
+      ...[...this.locals, ...this.hints, ...scope.evidence].map(evidence => [evidence.term, evidence.type])];
     for (let [term, stated] of candidates) {
       if (this.instantiate) {
         const specialized = specializeEvidence(term, stated, type, scope);
@@ -396,7 +396,11 @@ export class HLevelSearch {
 
 // A level with the rule's universe parameters given their values.
 const substituteLevel = (level, values) => substituteAll({ tag: "U", level }, values).level;
-const attempt = check => { try { return check(); } catch { return false; } };
+const failedCandidate = error => {
+  if(["fuel","budget","deadline"].includes(error?.kind))throw error;
+  return false;
+};
+const attempt = check => { try { return check(); } catch(error) { return failedCandidate(error); } };
 
 // Automatic clauses may use evidence for every fiber of a motive. Match
 // the carrier of a folded h-level statement against the wanted carrier to

@@ -15,12 +15,13 @@ import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {abstractMotive} from "./motives.mjs";
 import {Goal} from "./proof-goals.mjs";
-import {SearchFuel} from "./fuel.mjs";
+import {SearchLimit} from "./proof-rewrite.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
+const resourceFailure = error => ["fuel","budget","deadline"].includes(error?.kind)||error instanceof SearchLimit;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
@@ -95,34 +96,26 @@ function recursively(translator, scope, recursion, elaborate) {
   if (!recursion?.generalizable.some(Boolean))
     return elaborate(scope, recursion && { ...recursion, state: { varied: false, called: false } }, []);
   const first = attempt(translator, scope, recursion, [], elaborate);
+  if(resourceFailure(first.failure))return first.keep();
   if (!first.state.varied && !first.failure) return first.keep();
   const second = attempt(translator, scope, recursion,
     recursion.fixed.filter((_, i) => recursion.generalizable[i]).map(binding => binding.name), elaborate);
+  if(resourceFailure(second.failure))return second.keep();
   return (first.state.varied || first.failure && !second.failure ? second : first).keep();
 }
 
-// One elaboration of a recursive match, apart: its fuel starts where the
-// declaration's stands, with its limits, and its search and work records are
-// its own, as are what it records for the inspector and the proof view. Only
-// the attempt kept passes them on, so an abandoned one spends nothing of the
-// declaration's; keep() returns its term or throws its error.
+// All attempts spend the declaration's shared fuel and work counters once.
+// Only inspection records are speculative: keep() publishes the selected
+// attempt's records and returns its term or throws its error.
 function attempt(translator, scope, recursion, generalizing, elaborate) {
   const unit = scope.unit, state = { varied: false, called: false };
   const references = [], steps = [], sink = unit.references, onStep = translator.onStep;
-  const fuel = unit.fuel && new SearchFuel(unit.fuel.search, unit.fuel.limits, { declaration: unit.fuel.declaration });
-  if (fuel) fuel.used = { ...unit.fuel.used };
-  const searches = { searches: unit.searches.searches, most: { ...unit.searches.most } }, work = { ...unit.work };
-  const apart = scope.withUnit(unit.with({ fuel, searches, work, references: sink && ((...record) => references.push(record)) }));
+  const apart = scope.withUnit(unit.with({references: sink && ((...record) => references.push(record))}));
   let result, failure;
   translator.onStep = onStep && (record => steps.push(record));
   try { result = elaborate(apart, { ...recursion, state }, generalizing); } catch (error) { failure = error; }
   finally { translator.onStep = onStep; }
   return { state, failure, keep() {
-    if (fuel) for (const [kind, used] of Object.entries(fuel.used))
-      if (used > unit.fuel.used[kind]) unit.fuel.spend(kind, used - unit.fuel.used[kind]);
-    Object.assign(unit.work, work);
-    unit.searches.searches = searches.searches;
-    Object.assign(unit.searches.most, searches.most);
     for (const record of references) sink(...record);
     for (const record of steps) onStep(record);
     if (failure) throw failure;
@@ -329,7 +322,7 @@ function branch(translator, motive, value, scope, inner, built) {
   const {transition, renamed} = motive.introduce(motive.instance([built], inner));
   const values = new Map(renamed);
   if (value.tag === "Var") values.set(value.name, built);
-  let at = transition.next.scope.supersede(renamed.keys());
+  let at = transition.next.scope.supersede(renamed.keys()).refineEvidence(values);
   // An enclosing recursive match's calls, and the names matches took apart
   // for them.
   const enclosing = scope.env.get(RECURSIVE), current = enclosing && at.env.get(RECURSIVE);
@@ -459,8 +452,29 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   // of the wildcard body. Keep the written body when it fits; otherwise
   // construct the coherence from checked h-level evidence, as for an
   // omitted squash. Explicit path clauses never take this route.
-  if (source.implicitPath && !scope.accepts(term, clauseType))
-    return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
+  if (source.implicitPath) {
+    let primary;
+    try {scope.check(term,clauseType);}
+    catch(error) {
+      if(error.kind!=="mismatch")throw error;
+      primary=scope.unit.locate(error,source.implicitPathSite??source.body);
+    }
+    if(primary) {
+      if(!shape.positions)throw primary;
+      // Optional coherence owns no diagnostic or inspection artifacts until
+      // it has constructed a checked clause at this exact clause type.
+      const references=[],steps=[],sink=scope.unit.references,onStep=translator.onStep;
+      const speculative=scope.withUnit(scope.unit.with({references:sink&&((...record)=>references.push(record))}));
+      let coherence;
+      translator.onStep=onStep&&(record=>steps.push(record));
+      try {coherence=automaticClause(translator,speculative,clauseType,name,node,obligationProof,index);}
+      catch(error) {throw resourceFailure(error)?error:primary;}
+      finally {translator.onStep=onStep;}
+      for(const record of references)sink(...record);
+      for(const record of steps)onStep(record);
+      return coherence;
+    }
+  }
   return term;
 }
 
