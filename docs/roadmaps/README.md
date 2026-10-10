@@ -226,12 +226,10 @@ and the runtime/numerical track and revised initial/free contract. The
 
 ## Language tooling
 
-- [Frontend generation](frontend-generation.md): planned design work after
-  PR #188, with its failures as evidence. Unifies declaration ownership,
-  supported dependency analysis, universe calculation, contextual evidence
-  and public provenance, with semantic preservation tests. The
-  [gap inventory](../reports/frontend-generation-gaps.md) pins current
-  reproductions and separates them from fixed bugs and prototype limits.
+- [Frontend generation](frontend-generation.md): normative generation contracts
+  and remaining audit/measurement work. The [gap inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+  owns finding status and regression evidence; the [work plan](work-plan.md#frontend-generation-track)
+  owns delivery and scheduling.
 - [Refactoring and Cubist tests](refactoring-and-testing.md): proposed
   follow-up to FG6, covering both the FG stack and earlier code. Identifies
   obsolete and duplicate tests, runner primitives for moving behavioral

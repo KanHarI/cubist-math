@@ -54,7 +54,7 @@ the library instead; the archive keeps checking completely. So far `nat`'s
 arithmetic (from `primes`) and `sets` (for `hlevels`) are gone. What the
 library builds differently stays until it is migrated: the archive's
 `truncation` and `classical` rest on the legacy `Truncate` assumptions
-(K2.5's remedies, first action 11), its `set_quotients` are predicate
+(K2.5's remedies), its `set_quotients` are predicate
 quotients over them, and its `equivalences` are bijections and half-adjoint
 equivalences, where the library has contractible maps.
 
@@ -411,7 +411,10 @@ between a sort's universe and its parameter telescope's universe.
 legacy assumptions available to archive checks until each intentional
 migration is justified. Record changed public universes, removed assumptions
 and affected consumers; do not add resizing to the rebuilt foundation.
-The ordinary migration check stays strict for unrelated changes. The [ledger verifier and scoped migrations](h1-truncation-migration.md) are implemented since 2026-09-30; the archive keeps its legacy assumptions.
+The library still needs one module for classical assumptions over computing
+`Trunc`. The two H2-dependent tower declarations stay deferred; removing
+every legacy truncation assumption is not required. The ordinary migration
+check stays strict for unrelated changes. The [ledger verifier and scoped migrations](h1-truncation-migration.md) are implemented since 2026-09-30; the archive keeps its legacy assumptions.
 
 **Release fixtures,** updated 2026-09-30: declared Nat, sum, W
 and pushout comparisons (K2.4a implemented, with the X2 remainder in its evidence record); a circle with computed winding
@@ -607,7 +610,7 @@ presentation work remains deferred.
   [reals roadmap's R1](reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
   property. That work targets the new `Z` and `Q` and still awaits first
-  action 8's scope decision; it is not a NUM2 prerequisite.
+  the number-order scope decision below; it is not a NUM2 prerequisite.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
   EVAL5 specifies observation and typed readback; a successful
   `euclid(4).1` does not close the failure of full `euclid(4)`.
@@ -622,40 +625,34 @@ presentation work remains deferred.
 
 ## Frontend generation track
 
-**2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
-[frontend generation roadmap](frontend-generation.md) uses that PR's
-failures as evidence for shared contracts. The
-[gap inventory](../reports/frontend-generation-gaps.md) pins eleven remaining
-findings (G1–G6 and G8–G12) and distinguishes them from fixed examples,
-historical symptoms and L2.6's incomplete planned capabilities. These
-packages do not mark implementation complete or resume paused mathematics.
+The FG0–FG6 implementation sequence is present in the stack through
+[PR #211](https://github.com/KanHarI/cubist-math/pull/211), inherited by #212;
+this records delivery on the branch, not a merge into main. The
+[gap inventory](../reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+owns individual finding status, fixes and distinguishing regressions.
+The [frontend roadmap](frontend-generation.md) retains normative contracts
+and the remaining evidence work; the [phase reports](../reports/README.md#frontend-generation-evidence)
+retain revision-specific validation.
 
-Follow-up FG0–FG5 fixing commits and distinguishing tests are recorded in
-the inventory. The [FG6 report](../reports/frontend-generation-fg6.md)
-records the implemented deterministic/mutation gate, validation and the
-remaining unidentified historical skipped-mutation evidence. No new L2.6
-deriving capability is implied by those frontend changes.
+| ID | Delivered package | Implementation dependency |
+| --- | --- | --- |
+| FG0 | Executable reproductions, interface manifests and independent meaning checks | #188's captured-syntax baseline |
+| FG1 | Shared declaration ownership, dependency state and publication groups | FG0 |
+| FG2 | Complete telescopes, dependency/support analysis, call classification and notation consolidation | FG0; FG1 for publication |
+| FG3 | Universe inference from complete generated telescopes | FG1, FG2 |
+| FG4 | Checked contextual evidence and diagnostic-preserving optional coherence | FG1, FG2 |
+| FG5 | Public interfaces, labels and source provenance | FG0, FG2; FG1 for publication metadata |
+| FG6 | Bounded composition/mutation gate and resource measurements | FG0–FG5 |
 
-| ID | Package and exit evidence | Depends on | Size |
-| --- | --- | --- | --- |
-| FG0 | Reproductions, public-interface manifests and independent meaning checks; every open gap has an expected outcome | #188's captured-syntax baseline | S |
-| FG1 | Shared declaration ownership, dependency state and publication groups; collisions and failures preserve existing checked state | FG0 | L |
-| FG2 | Complete declaration telescopes, dependency/support analysis, value/type call classification and notation-scope consolidation; meaning and supported calls survive expansion | FG0; FG1 for publication | L |
-| FG3 | Universe inference from complete generated telescopes; Hom/Iso clients and genuine lowering refusals | FG1, FG2 | M |
-| FG4 | Checked evidence and recursion state follow scope refinements; eligible wildcard fallback preserves primary errors on failure; nested matches check without new assumptions | FG1, FG2; focused fallback fix can land after FG0 | M |
-| FG5 | Separate alias keys, labels and exact source origins; binder/use links, refusal ranges and public interfaces survive transformation | FG0, FG2; FG1 for publication metadata | M |
-| FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
-
-Start FG0 and prioritize G11's silent capture alongside FG1's ownership
-fix. G8–G10's focused fixes and regression checks can land on #188 before
-the broader dependency/publication work; update their evidence status when
-fixed. Complete FG2's call classification (G12) and notation-alias audit.
-FG3 and the broader FG4 work follow those contracts; FG5's
-focused lint fix can land earlier with its checked-client regression.
-FG6 accumulates alongside every slice. The complete gate precedes
-publication of new deriving capabilities under L2.4d/L2.6 and extensions
-of generated interfaces. It supplements their proof obligations; it does
-not delay unrelated fixes or replace uniqueness and universal proofs.
+Next, recover the original mutation manifest for the inventory's
+[audit evidence request](../reports/frontend-generation-gaps.md#mutation-audit-and-remaining-evidence),
+and investigate [P1's resource cost](../reports/frontend-generation-gaps.md#performance-observations-p1)
+before setting a performance budget. These evidence follow-ups do not
+restart the implementation slices. Apply the existing semantic gate to
+[RC0–RC11's refactoring](refactoring-and-testing.md) and to future generator
+extensions. L2.4d/L2.6 still require their own checked capability and universal
+proofs; preservation tests neither replace those proofs nor resume paused
+mathematics.
 
 ## Release checks and documentation
 
@@ -904,89 +901,12 @@ H1 construction may be developed separately, but a type and fold alone
 must not register `free` or `initial`. This supplements the current ordering above;
 the other categorical and homological proposals do not resume paused work.
 
-**2026-10-09 addition:** start [FG0 and FG1](#frontend-generation-track)
-from PR #188's remaining failures before extending its generators. The
-track's shared contracts and semantic gate precede publication of new
-deriving capabilities. This supplements the current ordering above; L2.6's
-universal-property work remains separately required.
-
-Suggested next on 2026-10-05, in order. This list is superseded: the
-order above replaces it, and continues with items 8–12.
-
-1. **L2.10i, `~` for reversal (S). Done** on 2026-10-06, in two commits,
-   as the retirement of `cases` was: `~p` and `~i` accepted beside `-`,
-   and the 25 uses in `library/` and `cubist-tests/` moved, identical by
-   `node tools/verify-proof-migration.mjs` while `-` still parsed; then
-   `-` refused, with a message naming `~` (E176). The goal printer, the
-   tests and the reference's `cubical.html` and `paths.html` moved with
-   it.
-2. **L2.4c, the theory syntax revision (M). Done** on 2026-10-06. As
-   [decided](core-theories.md#revision-l24c): carriers as fields with an
-   h-level, the universe named in the header, `Monoid(U)` as the type of
-   models, theory families, the combination of independent theories, and
-   qualified operators. First, because L2.10k needs the named universe and
-   N1 the families, and because the library's theories are few today.
-3. **L2.10k, a partial field inverse (M). Done** on 2026-10-06. First the gap in theories
-   it names that L2.4c leaves: the law check accepts a type declared at
-   `prop`, as `Trunc` is. Then `Field` states
-   invertibility as a truncated law, `inv` is derived by unique choice,
-   the rationals supply the law with `merely`, and `Field.Hom` becomes
-   `CommRing`'s. It does not depend on views.
-4. **The views' pilots, L2.10a–e (L). Done** on 2026-10-06. Settle the
-   [notation roadmap](notation.md)'s remaining grammar and elaboration
-   contracts first, then pilot them on the library: two models on one
-   carrier, `Nat`'s two monoids; `integers.(x + y = y + x)`; literals read
-   from their `Lexeme` by the library's parsers and checked by evaluation,
-   as `rationals.(1/2 + 1/3 = 5/6)`, where `1/2` is one literal; and
-   faithful printing. Existing `open` and sections keep their meaning.
-5. **L2.10j, retiring name-based operators and numerals (M),** once the
-   `nat` view exists: every module that relies on the fallback gains
-   `use nat;`, checked while the fallback still works; then an operator
-   or numeral outside any view is an error that suggests `use nat;`.
-   **Done** on 2026-10-06.
-6. **Equivalences, then structure identity (L3.1, L3.2, L2.4b).**
-   Composition and the Π, Σ and product equivalences, `equiv_eq`, and the
-   `ua` builtin on `ContrEquiv`; then Σ and universe `ext`; then each
-   theory's generated `T.equality : (M = N) ≃ T.Iso(M, N)`, beginning with
-   groups: the first result to use theories and univalence together.
-7. **h-level rules, L2.5b's remainder (M).** `hlevel_rule` registration,
-   quantified hints and setness fields **done** on 2026-10-06. Open:
-   Hedberg from registered decidable equality, one layer of unfolding for
-   registered definitions, `Truncate`, and the inspector's record of the
-   witnesses chosen.
-8. **The order on the new numbers (M). Proposed; it extends the resumed
-   library scope, so it waits for the maintainer's decision.** Ordered
-   commutative rings and fields as theories with `<` and `<=`; the
-   NUM2 integers' and rationals' orders, decidable; positive rationals
-   `PosRat`; and the Archimedean property with binary natural bounds.
-   The [reals roadmap](reals-roadmap.md)'s R1 owns this work, and its R2
-   interface needs them; no language package does. Rationals in lowest
-   terms, which print reduced, wait for L2.7's canonical quotients.
-9. **Runtime evaluation and binary numerical foundations.** The
-   [runtime evaluation track](#runtime-evaluation-track) has EVAL0's
-   baseline (2026-10-08); it continues with EVAL1's one-pass REPL
-   evaluation and NUM0/NUM1's unary/binary foundations and H1 strong
-   induction, followed by NUM2's new binary-backed `Z` and `Q`. This
-   includes library work and proceeds independently of action 8's proposed
-   order extension. The `Nat` spelling decision below gates the public-name
-   transition, not these constructions.
-10. **Independent language work.** The revised universal-property contract
-   governs L2.6 and L2.3's `universal` slice; L1.3's worker cancellation; N0, and
-   N1's checked operation and law records on L2.4c's theory families, then
-   N2/N4. L2.9a's expected-value patterns and L2.9b's closed witness readout
-   are done (2026-10-06, [#181](https://github.com/KanHarI/cubist-math/pull/181)
-   and [#182](https://github.com/KanHarI/cubist-math/pull/182)); their
-   full-normalization cost is covered by EVAL5. Keep canonical quotient and
-   view examples finite and computable.
-11. **K2.5's remaining archive remedies,** and in the library one module for
-   the classical assumptions over the computing `Trunc`. The two
-   H2-dependent tower declarations stay deferred; complete removal of the
-   legacy truncation assumptions is not required.
-12. **H2, then the H3 research gate.** Specify the representation and
-   computation changes (K4.2, K5.2) before implementing them. H2's indexed
-   families will need implicit indices, which L4.1b supplies. Keep the full
-   Cauchy reals deferred; the reals roadmap's corrected R2 interface and R3
-   obligations give later work a usable contract.
+For generator changes, use the current [frontend generation track](#frontend-generation-track).
+Independent work continues in the [runtime evaluation track](#runtime-evaluation-track),
+K2.5's archive remedies, the H2/H3 research gates and the package tables
+above. The [open decisions](#open-decisions) retain the proposed number-order
+extension and public `Nat` transition; neither is implicitly approved by
+this sequence.
 
 Learned-search phases 3–5 may proceed separately; they do not block this
 language sequence. H4, E1/E2, trained
@@ -1002,7 +922,7 @@ keeps a conservative behavior until a design is chosen.
 
 **Needed before the named work**
 
-1. **The order on the numbers** (first action 8) extends the resumed
+1. **The order on the numbers** extends the resumed
    library scope: ordered commutative rings and fields, NUM2's new integers'
    and rationals' decidable orders, positive rationals and the Archimedean
    property. The reals roadmap's R1 and R2 need it; NUM0–NUM2 and the

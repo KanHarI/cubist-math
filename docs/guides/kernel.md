@@ -10,13 +10,17 @@ terms, but cannot publish unchecked definitions in the native registry.
 
 ## A reading route
 
-1. [check.c](../../kernel/src/check.c) validates contexts, dispatches rules, and publishes results.
-2. [check_functions.c](../../kernel/src/check_functions.c) implements dependent functions and pairs.
-3. [check_paths.c](../../kernel/src/check_paths.c) checks interval paths and their boundaries.
-4. [check_composition.c](../../kernel/src/check_composition.c) checks the base, tubes, and every required overlap.
-5. [check_glue.c](../../kernel/src/check_glue.c) checks gluing data and equivalences.
-6. [term_conversion.c](../../kernel/src/term_conversion.c) compares terms, unfolding only demanded heads.
-7. [term_substitution.c](../../kernel/src/term_substitution.c) handles capture-avoiding substitution.
+1. [instructions.c](../../kernel/src/instructions.c) checks explicit typing premises for contexts, universes, functions, pairs and definition admission.
+2. [instruction_paths.c](../../kernel/src/instruction_paths.c) checks paths, their boundaries, and composition one tube at a time.
+3. [instruction_glue.c](../../kernel/src/instruction_glue.c) checks gluing data and equivalences through explicit instructions.
+4. [instruction_equality.c](../../kernel/src/instruction_equality.c) checks equality, conversion and explicit reduction steps.
+5. [term_conversion.c](../../kernel/src/term_conversion.c) supplies the term comparisons used by those rules.
+6. [term_substitution.c](../../kernel/src/term_substitution.c) handles capture-avoiding substitution.
+
+The untrusted [instruction driver](../../web/cubical-instruction-driver.mjs)
+chooses the derivation; each native instruction validates its own premises.
+The former term-checker files were retired. The [instruction-kernel contract](../roadmaps/kernel-instructions.md)
+explains the trust boundary.
 
 The [kernel overview](../../kernel/README.md) maps the remaining files to their
 mathematical responsibilities. It includes storage, dimensions, and API contracts.
@@ -46,8 +50,9 @@ expression, but the face `(i=0) ∧ (i=1)` is impossible.
 
 ## Definitions and inspection
 
-`cc_kernel_define` checks a closed body and optional expected type using already
-checked definitions. Only success adds the named reference to the registry.
+`cc_instr_define` accepts an already checked, closed typing judgement.
+It rejects open judgements and duplicate definition symbols; only success
+adds the named reference to the registry.
 Conversion can expose its body when required, but ordinary storage keeps the
 reference. The browser's folded view adds source labels and abbreviations;
 the assembly view shows the actual native constructors, operands, and handles.

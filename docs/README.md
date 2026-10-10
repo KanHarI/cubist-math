@@ -15,6 +15,8 @@ Moving these documents does not change their recorded status or resume paused wo
   baseline revision and findings behind the current statuses.
 - [Historical plans and specifications](roadmaps/historical/README.md):
   completed work, including the implemented G0 universe specification.
+- [Reports and historical evidence](reports/README.md): revision-specific
+  validation and progress snapshots, with their current status owners.
 - [Results of the first library](library-results.md): the frontier and iconic
   theorems of the archived library in mathematical English, with their
   logical assumptions. It is the specification the rebuild starts from.
@@ -62,10 +64,9 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
-- [Frontend generation](roadmaps/frontend-generation.md): design changes
-  motivated by PR #188's review failures, with phased implementation and
-  semantic acceptance criteria. The [current gap inventory](reports/frontend-generation-gaps.md)
-  records reproducible failures separately from planned functionality.
+- [Frontend generation](roadmaps/frontend-generation.md): generation contracts
+  and remaining audit/measurement work. The [gap inventory](reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+  owns finding status, fixes and distinguishing regressions.
 - [Morphisms, categories and universal constructions](roadmaps/categories.md):
   opt-in morphisms and checked initial/free derivations, which may fail;
   general propositional laws and the proposed categorical library. The
