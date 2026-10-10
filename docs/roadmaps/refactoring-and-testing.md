@@ -140,11 +140,13 @@ where wording is itself the contract.
 ### Add runner primitives, not reflective kernel operations
 
 Put ordinary programs and their expectations together in `.cubist` test
-files. Start with test-only structured comment directives interpreted by
-the runner: no production grammar change, runtime exception mechanism,
-string evaluation or privileged assertion axiom. A thin JS runner still
-observes compiler results; the test programs and contracts live beside
-the Cubist source.
+files, using **parsed declaration pragmas** for semantic expectations.
+The parser attaches each pragma to its target; unknown names, malformed
+arguments and dangling annotations are errors. This makes expectations
+discoverable and prevents a misspelled comment from silently doing
+nothing. Keep comments for explanations and selected presentation goldens.
+A thin JS runner observes compiler results; no runtime exception mechanism,
+string evaluation or privileged assertion axiom is needed.
 
 Reuse [`tests/check-program.mjs`](../../tests/check-program.mjs),
 [`tools/module-sources.mjs`](../../tools/module-sources.mjs) and the
@@ -170,18 +172,30 @@ timeout must never satisfy an expected type mismatch. Expected failures
 may make the compiler result incomplete while the test passes, but all
 remaining declarations and diagnostics must still be accounted for.
 
-Illustrative directives below are **proposed syntax, not implemented
-features**. The Cubist program itself was checked at the audited head:
+### Proposed pragma syntax and semantics
+
+Prefer a small, fixed set of pragmas over user-defined decorators that
+transform declarations. Each `# name(arguments)` occupies its own line
+and attaches to the next declaration or supported executable directive;
+several pragmas may attach to the same item. Argument payloads are
+restricted data such as names, codes, integers and lists, not executable
+Cubist expressions. Pragma names are contextual after `#`, so `test` or
+`assumptions` need not become globally reserved identifiers.
+
+Illustrative syntax below is **proposed, not implemented**. With the
+pragma lines omitted, the Cubist program was checked at the audited head:
 `hom_level` verifies without assumptions and `too_low` reports E606.
 
 ```text
-// Test: generation.hom-universe
-// Expect: checked hom_level
-// Expect: assumptions hom_level = []
-// Expect: error E606 phase elaboration declaration too_low count 1
 import hlevels;
 theory T(U < UU0) { M : set U; op(A : U1, x : A) : M; }
+
+# test(generation.hom_universe)
+# assumptions([])
 def hom_level(S : T(U0)) : U2 := T.Hom(S, S);
+
+# test(generation.hom_universe_too_low)
+# expect_error(E606)
 def too_low(S : T(U0)) : U1 := T.Hom(S, S);
 ```
 
@@ -189,6 +203,57 @@ This tests acceptance at U2 and refusal at U1, not a general exact-type
 query. Expected equations and values must be authored independently of
 the generator. Never derive the expected law from another artifact of the
 same expansion: both can share the same capture bug.
+
+The initial surface should be `test(id)`, `expect_error(code)`,
+`expect_warning(code)` and `assumptions([...])`. Successful checking is
+the default, so ordinary positive definitions need no extra `succeeds`
+annotation. `test(id)` gives a durable selectable case ID and requires
+its target to exist. `assumptions([...])` specifies the exact resolved
+assumption set; the empty list asserts none. Subset/nonempty options,
+artifact queries, source observations and work limits follow when their
+migration batch needs them, rather than adding many synonyms up front.
+
+`# throws(E606)` is a possible spelling, but **`expect_error` is preferred**:
+this observes a compiler diagnostic, not a runtime exception. Its short
+form expects exactly one error with that code owned by the annotated
+item's elaboration/checking attempt. It neither matches an unrelated
+declaration's error nor consumes cascading errors in later clients.
+`expect_warning` similarly accounts for a warning without implying that
+the declaration should fail. Additional phase, count and source selectors
+can refine these contracts; all unaccounted diagnostics still fail.
+
+Pragmas are metadata: they do not change the declaration's mathematical
+meaning, proof search or publication policy. A failed declaration stays
+failed and unpublished; only the test runner may report that the expected
+refusal passed its test. Ordinary checking still reports that failure.
+Never allow an expectation to swallow a pragma validation error, host
+exception, resource exhaustion or missing import. Reject contradictory
+expectations and unsupported targets before running the case.
+
+An annotation targets an item in its enclosing source fixture, not a
+request to recompile the file separately for every annotated declaration.
+Declarations retain their ordinary lexical order and shared module context;
+independent fixtures get fresh state. Preserve explicit sequential edit
+scenarios separately. Annotating a theory observes its owned expansion;
+do not copy the test annotation onto every generated member. Public
+artifact assertions can select a particular member explicitly.
+
+Implementation belongs in T0/T1: [`parser.mjs`](../../web/cubist/parser.mjs)
+currently rejects `#`, and [`formatter.mjs`](../../web/cubist/formatter.mjs)
+uses parsed item boundaries. Add a single shared grammar and AST metadata,
+preserve pragma spans separately from declaration spans, and make
+formatting/highlighting preserve attachment. Do not strip pragma lines
+with a runner-specific regex, which would lose source positions and create
+a second grammar. Keep unknown/malformed pragma and round-trip tests in
+JS. For malformed Cubist that cannot produce an AST, keep isolated raw
+source parser tests in the host initially; `expect_error` is not parser
+error recovery.
+
+Existing `// Error:` and `// Output:` goldens can coexist during migration.
+Replace a migrated semantic error golden with its pragma in the same
+change; avoid asserting the same diagnostic through two independent
+mechanisms unless its exact wording is intentionally under test. The
+golden-update command must never create or rewrite pragmas automatically.
 
 ### Concrete migration batches
 
@@ -314,7 +379,7 @@ stated boundary. RC0 is the recommended next PR after this document.
 | ID | Deliverable | Depends on | Risk and exit evidence |
 | --- | --- | --- | --- |
 | RC0 | Delete obsolete FG scaffolding and redundant checks listed above. | This roadmap | Low. Net test/helper deletion; surviving cases named; full suite and 13 required mutation kills unchanged. |
-| RC1 | T0/T1 in the existing runner, plus the first initial-model/theory migrations. | RC0 | Medium. Missing/duplicate case, unexpected failure and assumption mismatch demonstrably fail; old wrappers removed in the same PR. No second module loader. |
+| RC1 | Parse/format the initial pragmas, implement T0/T1 in the existing runner, and migrate the first initial-model/theory cases. | RC0 | Medium. Unknown/dangling pragmas, missing/duplicate cases, unexpected failures and assumption mismatches demonstrably fail; formatting preserves attachment and spans. Old wrappers removed in the same PR; no second module loader. |
 | RC2 | T2 source/work observations, then migrate FG source assertions. Add T3 module scenarios as a separate sub-PR when needed. | RC1 | Medium. Every migrated contract detects the same deliberate defect; retain browser and native fault injection. |
 | RC3 | Consolidate publication lifecycle and declaration scheduling. | RC0; RC1 useful, not required | High. Rollback, observer failure, import repair and partial-family controls pass; native handles and frontend metadata agree. Compare allocation/work counters. |
 | RC4 | Pilot telescope/builder consolidation for Hom, then widen by family. | RC1; coordinate with RC3 | High. Intended/captured law pairs, universe matrix, assumptions and source origins preserved; old conversion path deleted for each migrated slice. |
