@@ -1,10 +1,19 @@
 # Proof ergonomics: implementation plan and executable design examples
 
+Status: historical implementation sequence, archived on 2026-10-10 from
+main `cb525f07`. Most packages shipped or were superseded; this is not a
+claim that all proposed features were implemented. The active
+[ergonomics roadmap](../proof-ergonomics-roadmap.md#remaining-implementation-contracts)
+owns every remaining obligation and links the lowering/measurement contracts
+below. The [work plan](../work-plan.md#first-actions) owns scheduling.
+Dated status, code descriptions and suggested ordering below are retained
+as historical context, not instructions to restart completed work.
+
 Implementation checkpoint reviewed 2026-10-07. This refines the
-[roadmap](proof-ergonomics-roadmap.md). The [example directory](../examples/proof-ergonomics/README.md)
+[roadmap](../proof-ergonomics-roadmap.md). The [example directory](../../examples/proof-ergonomics/README.md)
 pairs explicit current programs with native-checked new syntax. The remaining
 scoped algebra fixture ends in `.cubist.proposed` and is exploratory. Read the
-[tactical handoff](../tactical/proof-ergonomics-handoff.md) before extending the
+[tactical handoff](../../tactical/proof-ergonomics-handoff.md) before extending the
 implementation. No mathematical roadmap is resumed.
 
 ## Recommended order
@@ -19,7 +28,7 @@ to measure their costs independently.
 Status on 2026-09-27: PRs 1 and 3–7 have delivered their first syntax releases;
 the remaining fuel, cancellation and diagnostics work belongs to HoTT A4/A6.
 PR 2's declaration transactions and core single-goal transitions are delivered
-through the [HoTT roadmap](hott-automation-roadmap.md)'s goal layer (A5).
+through the [HoTT roadmap](../hott-automation-roadmap.md)'s goal layer (A5).
 PR 8 is delivered
 except general proposition premises, deferred to HoTT D1. PR 10 moved to the
 HoTT roadmap (A5, B1, E1). PR 9 was delivered as L4.1a and L4.1b on
@@ -29,7 +38,7 @@ L2.4 on 2026-10-05; generated identity follows structure descriptions
 are dependency-sized work packages, not estimates of elapsed development time.
 
 Update, 2026-09-25: the roadmap adopted milestones 6–8, summarized below. The
-[work plan](work-plan.md) sequences their work packages. Theories (L2.4, L2.4c) and named notations
+[work plan](../work-plan.md) sequences their work packages. Theories (L2.4, L2.4c) and named notations
 (L2.10) have since delivered what the notation and record sections below
 proposed; those sections are design history.
 - **Milestone 6, theories:** these supersede PR 11's notation packs,
@@ -55,17 +64,17 @@ equivalences and transfer maps.
 
 | Existing seam | Consequence for implementation |
 | --- | --- |
-| [`Translator.block`](../../web/translator/translate.mjs) recursively translates the remaining statements, wrapping introductions in lambdas and checking local `let` proofs | Preserve this continuation model for one residual goal. A multi-goal scheduler is unnecessary for the first `rw` and `simp`. |
-| [`NativeCubicalElaborator`](../../web/cubical-elaborator.mjs) supplies `infer`, `check`, `nf`, `equal`, `expect`, and `ascribe` | `nf` exposes the native **head**, not a full normal form. `equal` tests conversion; `expect` permits directed cumulative typing. Use each deliberately. |
-| `sym`, `trans`, and `cong` preserve compact signatures using a checked identity application; [`path-algebra.mjs`](../../web/translator/path-algebra.mjs) supplies inert path builders | Factor shared builders and checked signature wrappers; do not independently reimplement their semantics for tactics. |
+| [`Translator.block`](../../../web/translator/translate.mjs) recursively translates the remaining statements, wrapping introductions in lambdas and checking local `let` proofs | Preserve this continuation model for one residual goal. A multi-goal scheduler is unnecessary for the first `rw` and `simp`. |
+| [`NativeCubicalElaborator`](../../../web/cubical-elaborator.mjs) supplies `infer`, `check`, `nf`, `equal`, `expect`, and `ascribe` | `nf` exposes the native **head**, not a full normal form. `equal` tests conversion; `expect` permits directed cumulative typing. Use each deliberately. |
+| `sym`, `trans`, and `cong` preserve compact signatures using a checked identity application; [`path-algebra.mjs`](../../../web/translator/path-algebra.mjs) supplies inert path builders | Factor shared builders and checked signature wrappers; do not independently reimplement their semantics for tactics. |
 | Ordinary application propagates argument types, but eagerly infers its growing application spine | Add application-spine elaboration with a known signature before adding broad inference. Repeated native inference may otherwise consume any savings from shorter source. |
 | `path`/`PathP`/`comp` bind dimensions separately from terms; `FunExt` already constructs a cubical path of functions | Expected-type path notation and pointwise equality can be small elaborator extensions with ordinary core output. |
-| [`CubicalProgram`](../../web/cubical-program.mjs) records source references, qualified definitions, level arguments, and assumptions; [`proof-goals.mjs`](../../web/translator/proof-goals.mjs) supplies shared transitions | The core is delivered; filling, restricted-face contexts and persistent construction records remain in HoTT A5. |
-| [`cubical-transaction.mjs`](../../web/cubical-transaction.mjs) supplies native checkpoint/rollback/compaction and JS cache cleanup to declaration checking | Reusable declaration transactions are delivered. Extend their cleanup for each new generated declaration or cache; statement rollback is a separate contract. |
-| [`web/translator/`](../../web/translator) is served as it is: the browser, the CLI and the tests load the same modules | A new module needs no build step or list; `web/dist` holds only the WASM kernel. |
+| [`CubicalProgram`](../../../web/cubical-program.mjs) records source references, qualified definitions, level arguments, and assumptions; [`proof-goals.mjs`](../../../web/translator/proof-goals.mjs) supplies shared transitions | The core is delivered; filling, restricted-face contexts and persistent construction records remain in HoTT A5. |
+| [`cubical-transaction.mjs`](../../../web/cubical-transaction.mjs) supplies native checkpoint/rollback/compaction and JS cache cleanup to declaration checking | Reusable declaration transactions are delivered. Extend their cleanup for each new generated declaration or cache; statement rollback is a separate contract. |
+| [`web/translator/`](../../../web/translator) is served as it is: the browser, the CLI and the tests load the same modules | A new module needs no build step or list; `web/dist` holds only the WASM kernel. |
 
 The roadmap's `finite_counting` module no longer exists. Use
-[`finite_dependent_counts`](../../archive/first-library/finite_dependent_counts.cubist),
+[`finite_dependent_counts`](../../../archive/first-library/finite_dependent_counts.cubist),
 particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 
 ## PR-sized work packages
@@ -425,14 +434,14 @@ is predictable source-to-proof construction with fewer redundant parameters.
 
 ## Measurement and release checks
 
-The initial [source/benchmark snapshot](../examples/proof-ergonomics/baseline.json)
+The initial [source/benchmark snapshot](../../examples/proof-ergonomics/baseline.json)
 selects `nat_add_assoc`, `right_unit`, `finite_uniform_fiber_count`,
 `group_conjugate_multiply`, and `field_scalar_laws`. It records source tokens
 using the current tokenizer, native checking steps, rewrite candidate work,
 final-check arena snapshots and one timing observation; it is not a speedup
 claim. The selected import graph checked 497 concrete declarations and 24
 templates with no failed, blocked or timed-out entries at a 1 s limit.
-The separate [rewrite-work snapshot](../examples/proof-ergonomics/rewrite-work.json)
+The separate [rewrite-work snapshot](../../examples/proof-ergonomics/rewrite-work.json)
 checks 19 paired explicit and ergonomic declarations, including conditional
 premise search, with inspector references disabled.
 
@@ -488,5 +497,5 @@ and open-box composition. These motivate the surface designs; Cubist's own
 kernel and existing builders determine their actual semantics.
 Its [Path library](https://github.com/agda/cubical/blob/master/Cubical/Foundations/Path.agda)
 also exposes a dependent-path/transport comparison. Cubist already has its own
-[checked bridge](../cubical/path-over.md), so no external computation rule is
+[checked bridge](../../cubical/path-over.md), so no external computation rule is
 assumed. These are precedents, not a proposal to import another checker.

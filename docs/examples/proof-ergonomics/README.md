@@ -1,6 +1,6 @@
 # Proof ergonomics examples
 
-These accompany the [implementation plan](../../roadmaps/proof-ergonomics-implementation-plan.md).
+These preserve evidence for the [historical implementation plan](../../roadmaps/historical/proof-ergonomics-implementation-plan.md).
 The current files are explicit expansions. The implemented files use new
 arithmetic and cubical syntax and pass native checking. The scoped algebra
 file remains a design fixture, excluded from `.cubist` corpus checks.
