@@ -2445,6 +2445,10 @@
   {
    "path": "library/universe_automorphisms.cubist",
    "summary": "Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`, for the equivalences of [`contractible_maps`](contractible_maps.cubist), with equal types from [`univalence`](univalence.cubist)'s `glue_path`. Both directions without the truncations use no assumption."
+  },
+  {
+   "path": "library/universe_smallness.cubist",
+   "summary": "Russell's paradox via well-founded trees: no family `B : A -> U` with `A : U` represents every type in `U` up to equivalence (`no_small_universe_family`). Consequently `IsUSmall(U, U)` implies `Void` (`universe_not_small`), with equality taken in `next(U)`; `russell` specializes this to `U0`. Works in every universe below `UU0`, without univalence."
   }
  ]
 }
