@@ -31,7 +31,7 @@ The isolation that work plan I1.2a established still holds, and
 not change whether it is accepted, weak-head reduction contracts pair and
 Glue eta only when their sides are the same syntax, and the `Glue` step
 contracts Glue eta when its side conditions agree. The probe that the
-[2026-09-28 audit](../docs/roadmaps/audits/2026-09-28-audit.md) used is one
+[2026-09-28 audit](../docs/roadmaps/historical/audits/2026-09-28-audit.md) used is one
 of these regressions.
 
 ## Reading the mathematics in the code
