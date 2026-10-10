@@ -124,7 +124,7 @@ export class CubicalProgram {
     for (const item of pending) {
       if (!Number.isInteger(item.node.start)) continue;
       let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
-      const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
+      const source = item.aliases?.find(alias => alias.key === item.node.lookupKey && alias.term === item.term);
       const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
       const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
       const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${

@@ -91,11 +91,11 @@ for diagnostics while resolution continues to use its identity. Synthetic
 syntax, including relocated evidence and repeated header expressions, emits
 no source links.
 
-That label separation remains incomplete in source-alias recording:
-[G9](../reports/frontend-generation-gaps.md#g9-source-aliases-conflate-internal-keys-and-public-labels)
-shows a freshened law binder losing definition targets and exposing `c1`
-at its uses. The required contract separates resolution keys, public labels,
-binder origins and occurrence origins through every consumer.
+Source-alias records keep internal lookup keys, public labels and binder
+origins separately. Environment filtering and use-site matching compare the
+key and term identity; display reads the label, and navigation reads the
+binder origin. Each occurrence keeps its written range. FG5's direct,
+imported, CLI and browser observations guard all four G9 sites.
 
 ## Generation boundary
 
@@ -128,10 +128,16 @@ the recursive results. Ordinary source calls still obey lexical shadowing
 and the same structural recursion checks.
 
 Calls to an earlier recursive derived operation are a separate case. They
-are still refused inside a later derived value with a field-type diagnostic
-([G12](../reports/frontend-generation-gaps.md#g12-value-calls-are-subjected-to-a-type-unfolding-restriction)).
-FG2 distinguishes value calls, structural self-calls and type unfolding;
-the private self-recursion mechanism alone does not solve all three.
+are retained as checked projection calls in a later derived value. FG2
+distinguishes these from structural self-calls and unsupported type
+unfolding; G12's ordinary/inherited/initial clients check and compute.
+
+Checked model evidence belongs to the elaboration context. Binding/opening
+a model acquires checked projections; match refinement and dimension
+restriction transform the proof, its type and contributing model together.
+Search can consume those terms but never treats an index hit as a proof.
+Optional wildcard coherence is restricted to recursive positions, preserves
+the primary located mismatch on failure and charges all attempted work.
 
 Homomorphism generation uses separate hole maps for declaration references,
 parameter types, and expressions. Holes cannot collide with source binders.
