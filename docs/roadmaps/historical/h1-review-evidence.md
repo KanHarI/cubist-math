@@ -1,5 +1,9 @@
 # H1 review evidence: the mathematical items of the release checklist
 
+Historical review record: the mathematical release decisions were completed
+on 2026-10-02. The current [H1 specification](../h1-signature-specification.md)
+and its linked model, canonicity and critical-pair arguments remain normative.
+
 Status: gathered on 2026-09-29 at `0b775b1`, for work-plan K2.1's review;
 K1 with tubes and K6 along `ua` traced since (PR #94), and K10 and K11
 (PR #95).
@@ -7,7 +11,7 @@ Updated on 2026-09-30 with the [H2 case analysis and critical-pair
 draft](h1-critical-pairs.md), including representative joins CP01–CP10
 in the kernel. The maintainer approved it on 2026-09-30, after the CP01 and
 CP07 regressions were strengthened (PR #103). The same day, the
-[model construction](h1-model.md) and the [canonicity argument](h1-canonicity.md)
+[model construction](../h1-model.md) and the [canonicity argument](../h1-canonicity.md)
 were written out as review drafts for items 1 and 3. Their first review
 found three substantive issues, and both drafts were revised the same day.
 The second review, on 2026-10-01 at `626138d`, accepted those revisions and
@@ -15,7 +19,7 @@ asked for three more repairs; the drafts were revised again (section 1 and
 section 3 below), with two corrections to the model's spine rank after it.
 The maintainer approved both on 2026-10-02.
 This record serves the first three items of the
-[H1 specification](h1-signature-specification.md)'s release checklist, the
+[H1 specification](../h1-signature-specification.md)'s release checklist, the
 mathematical ones:
 
 1. D1, D4 and D5 written out and reviewed (4.2, 4.3);
@@ -34,9 +38,9 @@ differential fixtures (item 6, retired as a gate on 2026-10-02).
 
 | Item | Argument now | Mechanical evidence | Missing for a decision |
 | --- | --- | --- | --- |
-| D1, D4, D5: the model | [Construction written out](h1-model.md), **approved on 2026-10-02**: raw trees, a weight by constructor index, carrier, Kan structure and eliminator; the weight revised after the first review, with telescope filling (M0, M4a) | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | None: approved on 2026-10-02 |
-| Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](h1-critical-pairs.md), **approved on 2026-09-30** | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | None: approved on 2026-09-30 |
-| Canonicity | [Huber's predicates extended, written out](h1-canonicity.md), **approved on 2026-10-02**; revised after the first review: value clauses separated from expansion, stability, the revised weight, and C1 under computability hypotheses | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | None: approved on 2026-10-02, with the baseline's canonicity an explicit assumption |
+| D1, D4, D5: the model | [Construction written out](../h1-model.md), **approved on 2026-10-02**: raw trees, a weight by constructor index, carrier, Kan structure and eliminator; the weight revised after the first review, with telescope filling (M0, M4a) | Admission, boundaries and cube depth: A1–A17, N1–N6, R3, E3, K7 | None: approved on 2026-10-02 |
+| Lemma H2 and 3.7's critical pairs | [Rule-by-rule case analysis and overlap table](../h1-critical-pairs.md), **approved on 2026-09-30** | CP01–CP10 representative joins; N3, N4, K4–K9 in part or in substance, E5, V11, V16; randomized K10 and K11 | None: approved on 2026-09-30 |
+| Canonicity | [Huber's predicates extended, written out](../h1-canonicity.md), **approved on 2026-10-02**; revised after the first review: value clauses separated from expansion, stability, the revised weight, and C1 under computability hypotheses | Closed computations through declared types: E1, E2, K1, E5, T3, T4 | None: approved on 2026-10-02, with the baseline's canonicity an explicit assumption |
 
 ## 1. The model: D1, D4 and D5
 
@@ -62,7 +66,7 @@ coverage, and they marked D1, D4, D5 and Lemma H2 as open obligations. None
 of them wrote out the construction. D2, D6 and D7 were found valid as
 conditional outlines, and D3's local wall calculation was found valid.
 
-The written-out [model](h1-model.md) had its first review on 2026-09-30.
+The written-out [model](../h1-model.md) had its first review on 2026-09-30.
 It found that M4's bound `‖T x‖ ≤ ‖x‖` fails: filling a path position
 evaluates its endpoint expressions at moved data, and those trees can
 outweigh every original position. The review's `pack`, over a pushout
@@ -109,7 +113,7 @@ Cube positions at depth 8 with arity 64 are admitted within budget: R3.
 Squash constructors, which need cube positions: E3 for `prop`, and K7 for a
 set truncation's squash.
 
-**Decision.** Approved on 2026-10-02: the [model construction](h1-model.md)
+**Decision.** Approved on 2026-10-02: the [model construction](../h1-model.md)
 for the whole schema, with the well-founded definition over cubes at every
 depth (D4) and infinitary arities (D5), and the items its section 9 lists
 for review, premise P1 among them.
@@ -121,7 +125,7 @@ interval formulas for dimensions, and of level expressions for level
 variables. Section 3.7, with 4.5: the generated rules are confluent with the
 existing ones.
 
-**Argument now.** The [critical-pair analysis](h1-critical-pairs.md) writes
+**Argument now.** The [critical-pair analysis](../h1-critical-pairs.md) writes
 out Lemma H2 rule by rule and lists CP01–CP10 with their joins and kernel
 tests, relative to baseline substitution and conversion. The maintainer
 approved it on 2026-09-30. The rest of this section records the argument as
@@ -186,7 +190,7 @@ any H1 declaration normalizes to a numeral.
 2019), as G0's 3.5 argues for level quantification. It covers the new
 formation, constructors, boundary reduction, the eliminator, transport and
 composition, and pushes a data sort's compositions as Huber does for the
-natural numbers. The [written-out argument](h1-canonicity.md) followed on
+natural numbers. The [written-out argument](../h1-canonicity.md) followed on
 2026-09-30.
 
 **Reviews so far.** The written-out argument's first review, on 2026-09-30,
@@ -245,7 +249,7 @@ conversion queries, which the audit found broken; I1.2a corrected it on
 Normalization, and with it decidable conversion, is not claimed; the kernel
 relies on budgets (4.5). A canonicity fixture is not a proof of canonicity.
 
-**Decision.** Approved on 2026-10-02: the [canonicity argument](h1-canonicity.md)
+**Decision.** Approved on 2026-10-02: the [canonicity argument](../h1-canonicity.md)
 for the new cases and the items its section 6 lists for review, with the
 baseline's canonicity and premise P1 as explicit assumptions.
 

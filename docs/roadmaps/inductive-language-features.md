@@ -8,19 +8,29 @@ admits, with explicit `obligations` (L2.2b). Core theories, section 1's
 models, homomorphisms, isomorphisms, notation, sections and `extends`, were
 implemented on 2026-10-05 (work-plan L2.4, [core theories](core-theories.md)),
 and the library's algebraic hierarchy is written in them. Their syntax
-revision, L2.4c, is decided ([core theories](core-theories.md#revision-l24c)):
+revision, L2.4c, was implemented in six slices on 2026-10-06
+([core theories](core-theories.md#revision-l24c)):
 carriers as fields, `M : set U`, the theory's name as its models' type,
-theory families, and relation fields as families of propositions. Initial
-and free models, generated identity, cells, section 3's declared relations
-and bundles, proof-first
-h-levels, per-argument obligations, dependent matching, canonical
-quotients, presentations and derivations remain proposals. The [audit of 2026-09-28](audits/2026-09-28-audit.md) corrected
+theory families, and relation fields as families of propositions.
+Initial/free construction and folds exist only in
+[open PR #188](https://github.com/KanHarI/cubist-math/pull/188), not main;
+the checked capability and universal proofs are still planned. L2.8's
+box notation, squares and square/composite conversions are implemented;
+the raw-`comp` archive migration remains. Generated identity, general cells,
+section 3's declared relations and bundles, proof-first h-levels, per-argument obligations, dependent matching, canonical
+quotients, presentations and derivations remain proposals. The [audit of 2026-09-28](historical/audits/2026-09-28-audit.md) corrected
 three promises here: the universal property of section 1, `Torus2` in
 section 2 and proof-first h-levels in section 4.
 G0 and the shared goal-layer core are delivered as of 2026-09-27. It builds on
 [the higher inductive-inductive type design](higher-inductive-types-design.md)
 (kernel roadmap item H, stages H1–H4) and on
 [G0](cubical-kernel-roadmap.md) (universe-generic checking).
+
+Progress reconciled on 2026-10-10 against main `cb525f07`. This is an
+adopted design with proposed examples, not the syntax reference. Some old
+sketches retain `sort` and `T.Model`; the implemented spellings are
+`M : set U` and `T(U)`. The [core-theory contract](core-theories.md) and
+[language reference](../../web/language.html) describe accepted source.
 
 Examples write `A : U` with `U` unbound. They presuppose the implicit
 universe binders of ergonomics milestone 5; under L1.1 each reads

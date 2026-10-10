@@ -2,8 +2,9 @@
 
 Date: 2026-09-24. This is the implementation handoff for the
 [roadmap](../roadmaps/proof-ergonomics-roadmap.md) and
-[implementation plan](../roadmaps/proof-ergonomics-implementation-plan.md).
-The feature is in progress. All accepted example declarations are checked by
+[implementation plan](../roadmaps/historical/proof-ergonomics-implementation-plan.md).
+This records the initial release; current progress and remaining work are
+in the active roadmap. All accepted example declarations are checked by
 the C/WASM cubical kernel and report no axiom dependencies.
 
 ## Implemented source fragment

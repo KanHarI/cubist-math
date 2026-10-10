@@ -19,17 +19,17 @@ Current source and corpus tests use the current producer; source W requires
 explicit finite universe arguments, or a separate fixed-universe declaration
 for higher universes. The former tier-1 primitive-W and mixed-W source probes
 below no longer describe an available source API. Sum and pushout retain
-their primitive APIs. See the [migration record](h1-program-types.md).
+their primitive APIs. See the [migration record](../h1-program-types.md).
 
 2026-10-01 update: pushouts are source-defined too (see the
-[migration record](h1-program-types.md#source-defined-pushouts)), and sums
+[migration record](../h1-program-types.md#source-defined-pushouts)), and sums
 stay native by decision. The native pushout cases of X1, X3 and X6–X7 use
 the pinned pre-migration kernel, as W's do. X8's source-level pushout call
 no longer exists; its sum call remains. Replaying a native constructor whose
 annotation is not its former now meets the retired-syntax refusal for
 pushouts as for W.
 
-Status: experimental implementation, 2026-09-30. The representation option
+Status: historical; the experimental implementation was recorded on 2026-09-30. The representation option
 and archive replay are implemented. X2, X4 and X5 remain partially traced.
 On 2026-10-02 the maintainer retired the differential fixtures as a release
 gate (specification checklist item 6, and its 7.4): Nat, W and pushouts were

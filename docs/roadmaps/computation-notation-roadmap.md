@@ -3,9 +3,9 @@
 Status: planned on 2026-09-25; reviewed on 2026-09-27. No notation or
 supporting interfaces in this roadmap are implemented. G0, the core
 goal/scope layer, computability checking, argument inference and implicit
-parameters (L4.1a, L4.1b, 2026-10-04) and core theories (L2.4, 2026-10-05)
-are available prerequisites; theories state a monad's laws once L2.4c's
-theory families land (see N1 below).
+parameters (L4.1a, L4.1b, 2026-10-04), core theories (L2.4, 2026-10-05)
+and theory families (L2.4c, 2026-10-06), in which a monad on sets states
+its laws, are available prerequisites (see N1 below).
 Code blocks are proposed syntax or schematic signatures, not checked
 examples. Existing proofs cited below are evidence
 for the work, not implementations of it.
@@ -37,9 +37,11 @@ lifting, an IO runtime, recursive `do`, feedback, and dependent or indexed
 bind are outside that release.
 
 Neither notation needs a new kernel rule. Particular instances can need
-the kernel roadmap: native truncation and the single-sort free algebra
-declarations used here need H1; the proposed partiality construction needs
-H3. Representing partiality
+the kernel roadmap: native truncation comes from H1, released on
+2026-10-02. The single-sort free algebras are L2.6's
+`free W(A : U0) : T(…) on A`, whose first slice is done; their uniqueness
+and `universal` are later slices. The proposed partiality construction
+needs H3. Representing partiality
 does not grant permission for nonterminating kernel evaluation.
 
 ## 1. Mathematical acceptance examples
@@ -73,8 +75,10 @@ notation does not turn `Mere(A)` into a general source of values of `A`.
 **Acceptance:** reproduce the rebuilt span-closure proof, compare its source
 and generated term with the explicit proof, and reject witness escape.
 The archive's truncation uses assumptions; record those when using it as a
-baseline. Assumption-free `computable` acceptance waits for native H1
-truncation, rather than hiding the archive's dependencies.
+baseline. Native H1 truncation is available (`library/h1_truncation.cubist`,
+2026-10-02). Assumption-free `computable` acceptance uses it once the span
+prerequisites are rebuilt (B4.1), rather than hiding the archive's
+dependencies.
 
 ### Substitution in free algebras
 
@@ -352,29 +356,27 @@ features, using small checked fixtures and existing archive examples.
 | ID | Work | Dependencies | Acceptance |
 | --- | --- | --- | --- |
 | N0 | Record explicit mathematical baselines and proposed blocks | Existing archive; design only for new examples | Span closure, free substitution and an arrow example have stated types, assumptions and expected expansions; measure existing proofs without claiming unmeasured savings |
-| N1 | Checked operation/law records and Kleisli construction | N0; G0 (done); L2.4 core theories and records | Full universe-correct signatures and laws; function, identity-monad and Kleisli instances check; no reliance on generating an initial model of a monad theory |
-| N2 | Monadic `do` parser, elaboration, diagnostics, formatting and inspection | N1; L1.2 goal/scope core (done); L4.1a scoped holes/named application arguments; L4.1b implicit binders/level inference | Variable binds, local definitions, final computations and `pure`; representative explicit expansions agree; selected dependencies remain visible |
+| N1 | Checked operation/law records and Kleisli construction | N0; G0 (done); L2.4 core theories and L2.4c theory families (done) | Full universe-correct signatures and laws; function, identity-monad and Kleisli instances check; no reliance on generating an initial model of a monad theory |
+| N2 | Monadic `do` parser, elaboration, diagnostics, formatting and inspection | N1; L1.2 goal/scope core (done); L4.1a scoped holes/named application arguments and L4.1b implicit binders/level inference (done) | Variable binds, local definitions, final computations and `pure`; representative explicit expansions agree; selected dependencies remain visible |
 | N3a | Exhaustive bind patterns | N2; L2.2 checked matching | Product and dependent-pair patterns preserve scope and dependencies; refutable binds and result-type escape fail; small computable examples pass `evaluate` |
-| N3b | Future mathematical monad instances | N2; N3a where patterns are used; H1/K2.5 native truncation, L2.6 free constructions and deferred B4.1 span prerequisites as needed | Rebuilt span closure and one free-algebra substitution example check; witness escape fails; closed computable examples pass `evaluate`; no language release waits for this milestone |
-| N4 | Basic `proc` and arrow environment lowering | N1; L1.2 goal/scope core (done); L4.1a and L4.1b | Function and Kleisli comparisons check; a basic-arrow example works without `ArrowApply`; invalid local arrow selection fails; environments are inspectable |
+| N3b | Future mathematical monad instances | N2; N3a where patterns are used; H1 native truncation (released) and K2.5's archive remedies, L2.6's remaining free-construction slices and deferred B4.1 span prerequisites as needed | Rebuilt span closure and one free-algebra substitution example check; witness escape fails; closed computable examples pass `evaluate`; no language release waits for this milestone |
+| N4 | Basic `proc` and arrow environment lowering | N1; L1.2 goal/scope core (done); L4.1a and L4.1b (done) | Function and Kleisli comparisons check; a basic-arrow example works without `ArrowApply`; invalid local arrow selection fails; environments are inspectable |
 | N5 | Explicit choice and dynamic application extensions | N4; N1's checked extension laws | Branching requests choice only when needed; dynamic application requests `app`; Kleisli examples agree with corresponding `do` blocks |
 
 N1 uses L2.4's core record and theory facilities. Automatic structure
 identity, free models and concrete algebra developments are separate work.
 
-**L2.4 delivered (2026-10-05), with a gap for N1.** A theory's sorts are
-single sets or propositions, and a law must be an equation between
-elements of a sort, `Unit`, `Void`, or `forall`, `->` and `and` over those
-(E818). A monad's carrier is a family, `F(A : U0) : U0`, which a theory
-accepts as an operation, but its laws are equations in `F(B)`, not in a
-sort, and are refused. **Decided** the same day: theory families
-(work-plan L2.4c, [core theories](core-theories.md#theory-families)).
-N1's `Monad` is a monad on sets, `F(A : set U) : set U`: its equations
-are propositions, the identity monad, `F(A) := A`, is a model, and it has
+**L2.4 and L2.4c delivered (2026-10-05, 2026-10-06).** Under L2.4 a law
+had to be an equation between elements of a sort, `Unit`, `Void`, or
+`forall`, `->` and `and` over those (E818), so a monad's laws, equations
+in `F(B)`, were refused. L2.4c's theory families
+([core theories](core-theories.md#theory-families)) admit them. N1's
+`Monad` is a monad on sets, `F(A : set U) : set U`: its equations are
+propositions, the identity monad, `F(A) := A`, is a model, and it has
 generated homomorphisms, `bind`'s continuation `A -> F(B)` mentioning `F`
-covariantly. Indexed by every type, `F(A : U) : set U`, it could not have
-the identity monad as a model, since not every type is a set. N1 follows
-L2.4c.
+covariantly (`cubist-tests/theory_families.cubist`). Indexed by every
+type, `F(A : U) : set U`, it could not have the identity monad as a model,
+since not every type is a set. N1 builds on these families.
 N0 may cite the archived span proof and specify future substitution examples
 without rebuilding their mathematics. N2 and N4 retain a fully explicit
 argument spelling alongside inference; their release tests cover both.
@@ -434,8 +436,10 @@ does not make arrow notation a prerequisite for the library rebuild.
    Decide which level-preserving instances to ship first, and how extensions
    whose hom types become input objects express universe closure.
 3. **Theory integration.** Determine which polymorphic operation records
-   the theory frontend can express. Do not block basic notation on generic
-   free constructions or automatic structure identity for these records.
+   the theory frontend can express. L2.4c answers this for monads on sets;
+   a monad on all of `U` with untruncated values is not a theory. Do not
+   block basic notation on generic free constructions or automatic
+   structure identity for these records.
 4. **Dependent and higher variants.** Require concrete mathematical examples
    before specifying indexed bind, dependent arrow environments, or higher
    coherence beyond the checked law records. Ordinary dependent pairs inside

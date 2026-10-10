@@ -1,10 +1,11 @@
 # Higher inductive-inductive types: kernel and language design
 
 Status: adopted on 2026-09-25 as [kernel roadmap](cubical-kernel-roadmap.md)
-item H, stages H1–H4. As of 2026-09-28, H1 is implemented experimentally,
-behind the `h1` option, as the [H1 specification](h1-signature-specification.md)
-narrows it; its soundness review, differential fixtures and migrations are
-pending, and nothing of H2–H4 is implemented. The
+item H, stages H1–H4. H1 was released on 2026-10-02 after its soundness
+review, on by default with no experimental marker, as the
+[H1 specification](h1-signature-specification.md) narrows it. The rest of
+the archive's truncation remedies is pending, and nothing of H2–H4 is
+implemented. The
 [work plan](work-plan.md) schedules it. It supersedes kernel items G1–G3 and
 the separate native-inductive and generic higher-inductive items. It depends
 on G0 (universe-generic checking). The existing literature informed this
@@ -12,8 +13,8 @@ design without bounding it; the decisions that depart from it are listed in the
 section on departures. The language features built on it are proposed in
 [inductive-language-features.md](inductive-language-features.md), which
 ergonomics milestones 6 and 7 adopt. The
-[H1 specification](h1-signature-specification.md), approved for
-experimental implementation, makes stage H1 precise; its section 0 lists
+[H1 specification](h1-signature-specification.md), approved and released on
+2026-10-02, makes stage H1 precise; its section 0 lists
 where it narrows this design.
 
 ## Goals
@@ -318,12 +319,13 @@ theory.
   stage passes the canonicity fixture and a rejection test per generated
   rule.
 - **Differential oracles.** The hand-coded natural-number, sum, W and pushout
-  instructions are the oracle for stage H1. Declare the same types
-  generically and compare typing, reduction and composition results on the
-  kernel tests and, through the driver, on the archived library. Retire the
-  hand-coded instructions only after they agree; by the specification's 7.4
-  (Q16), H1's first release retires the `Nat` instructions only, and sum, W
-  and pushout stay for tier-1 arguments.
+  instructions were the planned oracle for stage H1: declare the same types
+  generically, compare typing, reduction and composition results on the
+  kernel tests and, through the driver, on the archived library, and retire
+  the hand-coded instructions only after they agree. In the event, Nat and W
+  were retired on 2026-09-30 and pushouts on 2026-10-01, as H1 declarations
+  in source; sums stay native. The differential contract retired as a gate
+  on 2026-10-02.
 - **Negative tests:**
   - positivity violations, such as a sort in an arity or in data;
   - boundaries that disagree on overlapping faces;
