@@ -17,7 +17,7 @@ inductive List(U < UU0, A : U) : U {
 
 inductive P : U0 {
   z;
-  s(x : typed(U0 and U0, (P, Nat)).1);
+  p_step(x : typed(U0 and U0, (P, Nat)).1);
   l : typed(P and P, (z, z)).2 = z;
 }
 

@@ -29,7 +29,8 @@ try {
     if(args.includes("--verbose") || p.completed>=count+100){count=p.completed;process.stdout.write(`${count} declarations · ${p.instructions} steps · ${p.phase ?? "checked"} ${p.current}\n`);}
   });
   const entries=Object.values(program.symbols);
-  const failures=entries.filter(d=>!d.verified);
+  const failures=[...entries.filter(d=>!d.verified),
+    ...program.gaps.filter(g=>g.directive||g.duplicate).map(g=>({binding:`${g.module}__${g.name}`,reason:g.reason}))];
   const report={diagnosticBudget:diagnosticBudget?.toString()??null,modules:program.modules.size-1,checked:entries.filter(d=>d.verified).length,failures:failures.map(d=>({binding:d.binding,reason:d.reason})),imports:program.gaps.filter(g=>!g.name)};
   const counts=new Map();for(const d of failures)counts.set(d.reason,(counts.get(d.reason)??0)+1);
   console.log(JSON.stringify({diagnosticBudget:report.diagnosticBudget,modules:report.modules,checked:report.checked,failed:failures.length,imports:report.imports},null,2));

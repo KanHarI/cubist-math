@@ -345,7 +345,11 @@ export function morphismSource(record, isTheory = () => false) {
   // An isomorphism's homomorphism each way.
   const there = i => sided(project(iso, "to", i), i.from, i.to), back = i => sided(project(iso, "from", i), i.to, i.from);
   const declarations = [];
-  const declare = (name, source, role, extra = {}) => declarations.push({ name, source: `def ${name}${source}`, role, ...extra });
+  let family = "hom";
+  const declare = (name, source, role, extra = {}) => {
+    if (role === "iso") family = "iso";
+    declarations.push({ name, source: `def ${name}${source}`, role, family, ...extra });
+  };
   // The projections of a record type, each typed over the earlier ones.
   const projections = (owner, fields, typeOf) => fields.forEach((field, k) => {
     let value = f;

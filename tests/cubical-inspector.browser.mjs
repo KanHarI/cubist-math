@@ -56,6 +56,18 @@ try {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // The original remains inspectable after a duplicate is refused, and the
+  // separate diagnostic points to the second declaration rather than it.
+  const duplicate = Buffer.from("def kept : Unit := tt;\ndef kept : U0 := Unit;\ndef client : Unit := kept;").toString("base64url");
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${duplicate}`); await page.reload(); await idle();
+  const duplicateError = page.locator("#result .declaration-error");
+  assert.equal(await duplicateError.count(), 1);
+  assert.match(await duplicateError.textContent(), /E872.*Duplicate declaration kept/);
+  assert.match(await page.locator("#result").textContent(), /Verified client/);
+  await duplicateError.getByRole("button", {name:"View source"}).click();
+  assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), "2");
+  await page.locator('#read-source button[data-name="kept"]').first().click(); await inspected("kept");
+  assert.equal(await page.locator("#kernel-type").textContent(), "Unit");
   // An inductive header wrapped over lines keeps its h-level keyword, which
   // the highlighter finds in the whole source, not the line alone (H1).
   const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")

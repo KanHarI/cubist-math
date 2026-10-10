@@ -9,10 +9,10 @@ inductive N {
   succ(n : N);
 }
 
-// Error: E511: Negative occurs in a negative position: mk's argument f takes an argument that
-//   mentions Negative or another argument of mk.
+// Error: E511: Negative occurs in a negative position: negative_mk's argument f takes an argument that
+//   mentions Negative or another argument of negative_mk.
 inductive Negative {
-  mk(f : Negative -> N);
+  negative_mk(f : Negative -> N);
 }
 
 // Error: E343: Untranslated name: b
@@ -24,17 +24,17 @@ inductive Ahead {
 // Error: E515: Inside its declaration, Index is applied to its own parameters, Index(U, A): another
 //   argument would be an index, which H1 does not admit.
 inductive Index(U < UU0, A : U) {
-  mk(x : Index(U, N));
+  index_mk(x : Index(U, N));
 }
 
 inductive Word(prop_ < UU0) {
-  mk;
+  word;
 }
 
-// Error: E509: a is already a constructor of Twice.
+// Error: E509: repeated is already a constructor of Twice.
 inductive Twice {
-  a;
-  a;
+  repeated;
+  repeated;
 }
 
 // Error: E343: Untranslated name: nil
@@ -56,7 +56,7 @@ def needs_arguments : U0 := List;
 // arguments.
 // Error: E568: SameParameter has two parameters named A: give each its own name.
 inductive SameParameter(A : U0, A : U0) {
-  mk(a : A);
+  parameter_mk(a : A);
 }
 
 // Error: E569: pair has two arguments named x: give each its own name.

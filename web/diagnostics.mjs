@@ -559,6 +559,7 @@ export const diagnostics = [
   ["E869", "…'s … binds … in a pattern, under which the expansion names the model …: rename the initial or free model."],
   ["E870", "The generator type of … lives in a universe above its carrier's declared one: a free model cannot lower its generators. Choose a larger carrier universe or a smaller generator type."],
   ["E871", "Inlining … here would capture its field …: rename the enclosing pattern or statement binding."],
+  ["E872", "Duplicate declaration …: a declaration in this module already owns that name."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],
