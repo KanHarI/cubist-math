@@ -97,34 +97,28 @@ def affine_refinement_error_bound(
   let s := maxF(complex_imag(F, slope), negF(complex_imag(F, slope)));
   let realWeight := interval_weight(F, zero, one, addF, mulF, negF, lt, r);
   let imagWeight := interval_weight(F, zero, one, addF, mulF, negF, lt, s);
-  let ordered :=
-    interval_admissible_samples_ordered(
-      F, zero, one, addF, mulF, lt, arithmetic, n, vertices, tags, valid
-    );
-  let variation :=
-    complex_interval_deformation_variation(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope
-    );
+  let ordered := interval_admissible_samples_ordered(
+    F, zero, one, addF, mulF, lt, arithmetic, n, vertices, tags, valid
+  );
+  let variation := complex_interval_deformation_variation(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope
+  );
   obtain (realBounds, imagBounds, unusedGlobalBound) := variation(n, vertices, oldTags, ordered);
-  let increments :=
-    parameter_coordinate_increment_bounds(
-      I, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags, realBounds,
-      imagBounds
-    );
-  let localBound :=
-    complex_parameter_tag_error_variation_bound(
-      I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
-      imagWeight, delta, n, vertices, oldTags, tags, errors, increments
-    );
-  let errorSum :=
-    complex_parameter_tag_error_sum(
-      I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
-    );
-  let totalWeight :=
-    sample_sum(
-      I, F, zero, addF, (fun (a, b, tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag))),
-      n, vertices, oldTags
-    );
+  let increments := parameter_coordinate_increment_bounds(
+    I, F, addF, negF, lt, curve, realWeight, imagWeight, n, vertices, oldTags, realBounds,
+    imagBounds
+  );
+  let localBound := complex_parameter_tag_error_variation_bound(
+    I, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
+    imagWeight, delta, n, vertices, oldTags, tags, errors, increments
+  );
+  let errorSum := complex_parameter_tag_error_sum(
+    I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
+  );
+  let totalWeight := sample_sum(
+    I, F, zero, addF, (fun (a, b, tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag))),
+    n, vertices, oldTags
+  );
   exact along ComplexBoxBound(F, negF, lt, errorSum) by cong(
     mulF(delta),
     affine_sample_variation_sum(
@@ -248,28 +242,24 @@ def affine_refinement_uniform_estimate(
     ) {
     intro n, vertices, coarseTag, tags, valid, coarseWithin, small;
     let oldTags := sample_repeat_tags(I, n, coarseTag);
-    let errorSum :=
-      complex_parameter_tag_error_sum(
-        I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
-      );
+    let errorSum := complex_parameter_tag_error_sum(
+      I, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
+    );
     let errors := tagBounds(n, vertices, coarseTag, tags, valid, coarseWithin, small);
-    let errorBound :=
-      affine_refinement_error_bound(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
-        values, delta, n, vertices, coarseTag, tags, valid, errors
-      );
+    let errorBound := affine_refinement_error_bound(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
+      values, delta, n, vertices, coarseTag, tags, valid, errors
+    );
     let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-    let identity :=
-      parameter_refinement_identity(
-        I, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
-        complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, coarseTag, n,
-        vertices, tags
-      );
-    let mapped :=
-      parameter_contour_sum_is_mapped(
-        I, Complex(F), complex_zero(F, zero), complex_add(F, addF),
-        complex_mul(F, addF, mulF, negF), complex_neg(F, negF), curve, integrand, n, vertices, tags
-      );
+    let identity := parameter_refinement_identity(
+      I, Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
+      complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, curve, values, coarseTag, n,
+      vertices, tags
+    );
+    let mapped := parameter_contour_sum_is_mapped(
+      I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
+      complex_neg(F, negF), curve, integrand, n, vertices, tags
+    );
     exact (errorSum, trans(sym(mapped), identity), errorBound);
   }
   exact (mesh, positiveMesh, estimates);

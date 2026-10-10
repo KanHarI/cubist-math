@@ -83,8 +83,8 @@ def field_ops_preserved_from_laws(
 
 // The dual constructor is useful when the source field has just been built.
 def field_ops_map_from_laws(
-  A : U0, zero, one : A, neg : A -> A, add, mul : A -> A -> A, B : U0, ops : FieldOps(B), f : A -> B,
-  f0 : f(zero) = af_zero(B, ops), f1 : f(one) = af_one(B, ops),
+  A : U0, zero, one : A, neg : A -> A, add, mul : A -> A -> A, B : U0, ops : FieldOps(B), f : A
+  -> B, f0 : f(zero) = af_zero(B, ops), f1 : f(one) = af_one(B, ops),
   fn : (forall x : A. f(neg(x)) = af_neg(B, ops, f(x))),
   fa : (forall x : A. forall y : A. f(add(x, y)) = af_add(B, ops, f(x), f(y))),
   fm : (forall x : A. forall y : A. f(mul(x, y)) = af_mul(B, ops, f(x), f(y)))

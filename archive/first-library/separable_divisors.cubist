@@ -6,8 +6,8 @@ use nat;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
 def polynomial_factor_divisibility_cancel(
-  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p, q, a, b : Polynomial(K),
-  ep : p = polynomial_mul(K, F, a), eq : q = polynomial_mul(K, F, b),
+  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p, q, a,
+  b : Polynomial(K), ep : p = polynomial_mul(K, F, a), eq : q = polynomial_mul(K, F, b),
   divides : PolynomialDivides(K, q, p)
 ) :
   PolynomialDivides(K, b, a) {
@@ -46,11 +46,10 @@ def unit_distinct_splitting(
   DistinctPolynomialSplitting(K, p, polynomial_degree(K, p)) {
   let degree := polynomial_unit_cutoff(K, p, nonzero, unit);
   obtain (roots, a, eq) := polynomial_splitting_zero_degree(K, p, degree);
-  let splitting :=
-    typed(
-      DistinctPolynomialSplitting(K, p, 0),
-      (roots, a, eq, (fun (i, j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
-    );
+  let splitting := typed(
+    DistinctPolynomialSplitting(K, p, 0),
+    (roots, a, eq, (fun (i, j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
+  );
   exact along DistinctPolynomialSplitting(K, p) by sym(cong(natural_predecessor, degree)) from splitting;
 }
 
@@ -101,26 +100,23 @@ def distinct_splitting_divisor_at_root(
   let P := linear_factor_product(K, n, rest);
   let C := polynomial_constant(K, a);
   let tailP := polynomial_mul(K, C, P);
-  let ep :=
+  let ep := trans(
+    equation,
     trans(
-      equation,
-      trans(
-        cong(polynomial_mul(K, C), linear_factor_product_omit(K, n, roots, index)),
-        polynomial_mul_swap(K, C, F, P)
-      )
-    );
+      cong(polynomial_mul(K, C), linear_factor_product_omit(K, n, roots, index)),
+      polynomial_mul_swap(K, C, F, P)
+    )
+  );
   let nzP := factor_quotient_nonzero(K, p, F, tailP, ep, nonzero);
   obtain (tailQ, eq) := polynomial_factor_theorem(K, q, x, rootQ);
   let nzQ := factor_quotient_nonzero(K, q, F, tailQ, eq, nonzeroQ);
-  let divided :=
-    polynomial_factor_divisibility_cancel(
-      K, F, linear_factor_nonzero(K, x), p, q, tailP, tailQ, ep, eq, divides
-    );
-  let splitP :=
-    typed(
-      DistinctPolynomialSplitting(K, tailP, n),
-      (rest, a, refl(tailP), distinct_roots_omit(K, n, roots, distinct, index))
-    );
+  let divided := polynomial_factor_divisibility_cancel(
+    K, F, linear_factor_nonzero(K, x), p, q, tailP, tailQ, ep, eq, divides
+  );
+  let splitP := typed(
+    DistinctPolynomialSplitting(K, tailP, n),
+    (rest, a, refl(tailP), distinct_roots_omit(K, n, roots, distinct, index))
+  );
   let m := polynomial_degree(K, tailQ);
   let Goal := DistinctPolynomialSplitting(K, q, polynomial_degree(K, q));
   let extend : DistinctPolynomialSplitting(K, tailQ, m) -> Goal {
@@ -136,22 +132,19 @@ def distinct_splitting_divisor_at_root(
     obtain (newRoots, scalar, factor) := polynomial_splitting_prepend(
       K, q, tailQ, x, eq, m, typed(PolynomialSplitting(K, tailQ, m), (rs, b, fact))
     );
-    let result :=
-      typed(
-        DistinctPolynomialSplitting(K, q, succ(m)),
-        (newRoots, scalar, factor, distinct_roots_prepend(K, m, x, rs, distinctQ, avoids))
-      );
+    let result := typed(
+      DistinctPolynomialSplitting(K, q, succ(m)),
+      (newRoots, scalar, factor, distinct_roots_prepend(K, m, x, rs, distinctQ, avoids))
+    );
     obtain (d, degree) := polynomial_nonzero_degree(K, tailQ, nzQ);
-    let productDegree :=
-      trans(
-        cong(polynomial_cutoff(K), eq),
-        polynomial_product_degree(K, F, tailQ, 1, d, linear_factor_degree(K, x), degree)
-      );
-    let size :=
-      trans(
-        cong(natural_predecessor, productDegree),
-        sym(cong((fun (k : Nat) => succ(natural_predecessor(k))), degree))
-      );
+    let productDegree := trans(
+      cong(polynomial_cutoff(K), eq),
+      polynomial_product_degree(K, F, tailQ, 1, d, linear_factor_degree(K, x), degree)
+    );
+    let size := trans(
+      cong(natural_predecessor, productDegree),
+      sym(cong((fun (k : Nat) => succ(natural_predecessor(k))), degree))
+    );
     exact along DistinctPolynomialSplitting(K, q) by sym(size) from result;
   }
   exact mere_map(

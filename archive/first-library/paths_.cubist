@@ -20,9 +20,8 @@ def Equiv(U < UU0, A, B : U) := exists f : A -> B. IsEquiv(U, A, B, f);
 // For a set-valued codomain, equality proofs are unique, so the triangle law
 // follows from the supplied inverse homotopies. This is constructive at any U.
 def equiv_from_inverse_into_set(
-  U < UU0, A, B : U,
-  setB : (forall x : B. forall y : B. forall p : x = y. forall q : x = y. p = q), f : A -> B, g : B
-  -> A, eta : (forall x : A. g(f(x)) = x), epsilon : (forall y : B. f(g(y)) = y)
+  U < UU0, A, B : U, setB : (forall x : B. forall y : B. forall p : x = y. forall q : x = y. p = q),
+  f : A -> B, g : B -> A, eta : (forall x : A. g(f(x)) = x), epsilon : (forall y : B. f(g(y)) = y)
 ) :
   Equiv(U, A, B) {
   exact (
@@ -30,56 +29,53 @@ def equiv_from_inverse_into_set(
   );
 }
 
-def transport_constant(A, B : U1, x, y : A, p : x = y, v : B) :=
-  path(
-    fun (i : Interval) => B,
-    fun (i : Interval) => comp(fun (j : Interval) => B, v, face(i, 1, fun (j : Interval) => v))
-  );
+def transport_constant(A, B : U1, x, y : A, p : x = y, v : B) := path(
+  fun (i : Interval) => B,
+  fun (i : Interval) => comp(fun (j : Interval) => B, v, face(i, 1, fun (j : Interval) => v))
+);
 
-def apd_constant(A, B : U1, f : A -> B, x, y : A, p : x = y) :=
-  path(
-    fun (interval_law : Interval) => PathP(
-      fun (interval_path : Interval) => B, comp(fun (interval_compose : Interval) => B, f(x)), f(y)
-    ),
-    fun (interval_law : Interval) => path(
-      fun (interval_path : Interval) => B,
-      fun (interval_path : Interval) => comp(
-        fun (interval_compose : Interval) => B,
-        comp(
+def apd_constant(A, B : U1, f : A -> B, x, y : A, p : x = y) := path(
+  fun (interval_law : Interval) => PathP(
+    fun (interval_path : Interval) => B, comp(fun (interval_compose : Interval) => B, f(x)), f(y)
+  ),
+  fun (interval_law : Interval) => path(
+    fun (interval_path : Interval) => B,
+    fun (interval_path : Interval) => comp(
+      fun (interval_compose : Interval) => B,
+      comp(
+        fun (interval_fill : Interval) => B, f(x),
+        face_when((on(interval_path, 1)), fun (interval_fill : Interval) => f(x)),
+        face_when((on(interval_law, 0)), fun (interval_fill : Interval) => f(x))
+      ),
+      face_when(
+        (on(interval_path, 0)),
+        fun (interval_compose : Interval) => comp(
           fun (interval_fill : Interval) => B, f(x),
-          face_when((on(interval_path, 1)), fun (interval_fill : Interval) => f(x)),
-          face_when((on(interval_law, 0)), fun (interval_fill : Interval) => f(x))
-        ),
-        face_when(
-          (on(interval_path, 0)),
-          fun (interval_compose : Interval) => comp(
-            fun (interval_fill : Interval) => B, f(x),
-            face_when(
-              (on(interval_compose, 0) and on(interval_law, 0)),
-              fun (interval_fill : Interval) => f(x)
-            )
+          face_when(
+            (on(interval_compose, 0) and on(interval_law, 0)),
+            fun (interval_fill : Interval) => f(x)
           )
-        ),
-        face_when(
-          (on(interval_path, 1)),
-          fun (interval_compose : Interval) => apd_path(f, p) @ interval_compose
         )
+      ),
+      face_when(
+        (on(interval_path, 1)),
+        fun (interval_compose : Interval) => apd_path(f, p) @ interval_compose
       )
     )
-  );
+  )
+);
 
 // The path algebra and transport laws used by encode/decode.
-def right_unit(A : U1, x, y : A, p : x = y) :=
-  path(
-    fun (k : Interval) => x = y,
-    fun (k : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
-        face(i, 1, fun (j : Interval) => y), face(k, 1, fun (j : Interval) => p @ i)
-      )
+def right_unit(A : U1, x, y : A, p : x = y) := path(
+  fun (k : Interval) => x = y,
+  fun (k : Interval) => path(
+    fun (i : Interval) => A,
+    fun (i : Interval) => comp(
+      fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
+      face(i, 1, fun (j : Interval) => y), face(k, 1, fun (j : Interval) => p @ i)
     )
-  );
+  )
+);
 
 def inverse_left(A : U1, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
   exact path k => path i => comp(
@@ -96,52 +92,50 @@ def inverse_right(A : U1, x, y : A, p : x = y) : trans(p, sym(p)) = refl(x) {
   );
 }
 
-def path_associative(A : U1, x, y, z, w : A, p : x = y, q : y = z, r : z = w) :=
-  path(
-    fun (s : Interval) => x = w,
-    fun (s : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (k : Interval) => A,
-        comp(
+def path_associative(A : U1, x, y, z, w : A, p : x = y, q : y = z, r : z = w) := path(
+  fun (s : Interval) => x = w,
+  fun (s : Interval) => path(
+    fun (i : Interval) => A,
+    fun (i : Interval) => comp(
+      fun (k : Interval) => A,
+      comp(
+        fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
+        face(i, 1, fun (j : Interval) => q @ j)
+      ), face(i, 0, fun (k : Interval) => x), face(i, 1, fun (k : Interval) => r @ k),
+      face(
+        s, 1,
+        fun (k : Interval) => comp(
           fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
-          face(i, 1, fun (j : Interval) => q @ j)
-        ), face(i, 0, fun (k : Interval) => x), face(i, 1, fun (k : Interval) => r @ k),
-        face(
-          s, 1,
-          fun (k : Interval) => comp(
-            fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
-            face(
-              i, 1,
-              fun (j : Interval) => fill(
-                fun (h : Interval) => A, q @ j, k, face(j, 0, fun (h : Interval) => y),
-                face(j, 1, fun (h : Interval) => r @ h)
-              )
-            ),
-            face(
-              k, 0,
-              fun (j : Interval) => fill(
-                fun (h : Interval) => A, p @ i, j, face(i, 0, fun (h : Interval) => x),
-                face(i, 1, fun (h : Interval) => q @ h)
-              )
+          face(
+            i, 1,
+            fun (j : Interval) => fill(
+              fun (h : Interval) => A, q @ j, k, face(j, 0, fun (h : Interval) => y),
+              face(j, 1, fun (h : Interval) => r @ h)
+            )
+          ),
+          face(
+            k, 0,
+            fun (j : Interval) => fill(
+              fun (h : Interval) => A, p @ i, j, face(i, 0, fun (h : Interval) => x),
+              face(i, 1, fun (h : Interval) => q @ h)
             )
           )
         )
       )
     )
-  );
+  )
+);
 
-def left_unit(A : U1, x, y : A, p : x = y) :=
-  path(
-    fun (k : Interval) => x = y,
-    fun (k : Interval) => path(
-      fun (i : Interval) => A,
-      fun (i : Interval) => comp(
-        fun (j : Interval) => A, x, face(i, 0, fun (j : Interval) => x),
-        face(i, 1, fun (j : Interval) => p @ j), face(k, 1, fun (j : Interval) => p @ meet(i, j))
-      )
+def left_unit(A : U1, x, y : A, p : x = y) := path(
+  fun (k : Interval) => x = y,
+  fun (k : Interval) => path(
+    fun (i : Interval) => A,
+    fun (i : Interval) => comp(
+      fun (j : Interval) => A, x, face(i, 0, fun (j : Interval) => x),
+      face(i, 1, fun (j : Interval) => p @ j), face(k, 1, fun (j : Interval) => p @ meet(i, j))
     )
-  );
+  )
+);
 
 def cancel_left(A : U1, x, y : A, p : x = y) :=
   fun (z : A, q, r : y = z, same : trans(p, q) = trans(p, r)) => trans(
@@ -279,67 +273,63 @@ def transport_concat(A : U1, C : A -> U0, x, y, z : A, p : x = y, q : y = z, v :
     )
   );
 
-def transport_inverse_after(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) :=
-  path(
-    fun (interval_law : Interval) => C(x),
-    fun (interval_law : Interval) => comp(
-      fun (interval_backwards : Interval) => C(p @ flip(interval_backwards)),
-      comp(fun (interval_along : Interval) => C(p @ interval_along), v),
-      face_when(
-        (on(interval_law, 1)),
-        fun (interval_backwards : Interval) => comp(
-          fun (interval_fill : Interval) => C(p @ meet(flip(interval_backwards), interval_fill)), v,
-          face_when((on(interval_backwards, 1)), fun (interval_fill : Interval) => v)
-        )
+def transport_inverse_after(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) := path(
+  fun (interval_law : Interval) => C(x),
+  fun (interval_law : Interval) => comp(
+    fun (interval_backwards : Interval) => C(p @ flip(interval_backwards)),
+    comp(fun (interval_along : Interval) => C(p @ interval_along), v),
+    face_when(
+      (on(interval_law, 1)),
+      fun (interval_backwards : Interval) => comp(
+        fun (interval_fill : Interval) => C(p @ meet(flip(interval_backwards), interval_fill)), v,
+        face_when((on(interval_backwards, 1)), fun (interval_fill : Interval) => v)
       )
     )
-  );
+  )
+);
 
-def transport_after_inverse(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(y)) :=
-  path(
-    fun (interval_law : Interval) => C(y),
-    fun (interval_law : Interval) => comp(
-      fun (interval_backwards : Interval) => C(
+def transport_after_inverse(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(y)) := path(
+  fun (interval_law : Interval) => C(y),
+  fun (interval_law : Interval) => comp(
+    fun (interval_backwards : Interval) => C(
+      path(
+        fun (interval_inverse : Interval) => A,
+        fun (interval_inverse : Interval) => p @ flip(interval_inverse)
+      ) @ flip(interval_backwards)
+    ),
+    comp(
+      fun (interval_along : Interval) => C(
         path(
           fun (interval_inverse : Interval) => A,
           fun (interval_inverse : Interval) => p @ flip(interval_inverse)
-        ) @ flip(interval_backwards)
-      ),
-      comp(
-        fun (interval_along : Interval) => C(
+        ) @ interval_along
+      ), v
+    ),
+    face_when(
+      (on(interval_law, 1)),
+      fun (interval_backwards : Interval) => comp(
+        fun (interval_fill : Interval) => C(
           path(
             fun (interval_inverse : Interval) => A,
             fun (interval_inverse : Interval) => p @ flip(interval_inverse)
-          ) @ interval_along
-        ), v
-      ),
-      face_when(
-        (on(interval_law, 1)),
-        fun (interval_backwards : Interval) => comp(
-          fun (interval_fill : Interval) => C(
-            path(
-              fun (interval_inverse : Interval) => A,
-              fun (interval_inverse : Interval) => p @ flip(interval_inverse)
-            ) @ meet(flip(interval_backwards), interval_fill)
-          ), v, face_when((on(interval_backwards, 1)), fun (interval_fill : Interval) => v)
-        )
+          ) @ meet(flip(interval_backwards), interval_fill)
+        ), v, face_when((on(interval_backwards, 1)), fun (interval_fill : Interval) => v)
       )
     )
-  );
+  )
+);
 
 def transport_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) := refl(along C by p from v);
 
-def append_cancel_inverse(A : U1, x, y, z : A, p : x = y, q : y = z) :=
-  trans(
-    path_associative(A, x, y, z, y, p, q, sym(q)),
-    trans(cong((fun (r : y = y) => trans(p, r)), inverse_right(A, y, z, q)), right_unit(A, x, y, p))
-  );
+def append_cancel_inverse(A : U1, x, y, z : A, p : x = y, q : y = z) := trans(
+  path_associative(A, x, y, z, y, p, q, sym(q)),
+  trans(cong((fun (r : y = y) => trans(p, r)), inverse_right(A, y, z, q)), right_unit(A, x, y, p))
+);
 
-def append_inverse_cancel(A : U1, x, y, z : A, p : x = y, q : z = y) :=
-  trans(
-    path_associative(A, x, y, z, y, p, sym(q), q),
-    trans(cong((fun (r : y = y) => trans(p, r)), inverse_left(A, z, y, q)), right_unit(A, x, y, p))
-  );
+def append_inverse_cancel(A : U1, x, y, z : A, p : x = y, q : z = y) := trans(
+  path_associative(A, x, y, z, y, p, sym(q), q),
+  trans(cong((fun (r : y = y) => trans(p, r)), inverse_left(A, z, y, q)), right_unit(A, x, y, p))
+);
 
 // Transport of a function returning a path from a fixed base point.
 def transport_decoder(
@@ -359,8 +349,8 @@ def transport_decoder(
 // Based path induction, with explicit universes for the carrier and motive.
 // This one principle covers both small and higher identity systems.
 def based_induction_(
-  U, V < UU0, A : U, origin : A, C : (forall x : A. (origin = x) -> V),
-  c : C(origin, refl(origin)), x : A, p : origin = x
+  U, V < UU0, A : U, origin : A, C : (forall x : A. (origin = x) -> V), c : C(origin, refl(origin)),
+  x : A, p : origin = x
 ) :=
   path_induction(
     A, fun (a, b : A, q : a = b) => forall D : (forall point : A. (a = point) -> V). D(a, refl(a))

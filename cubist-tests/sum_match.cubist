@@ -41,7 +41,8 @@ def unwrapped(A : U0, p : A or A) : A {
 }
 
 // The goal mentions the value: each clause proves it at its side.
-def sides(A, B : U0, s : A or B) : (exists a : A. s = typed(A or B, left(a))) or (exists b : B. s = typed(A or B, right(b))) {
+def sides(A, B : U0, s : A or B) :
+  (exists a : A. s = typed(A or B, left(a))) or (exists b : B. s = typed(A or B, right(b))) {
   match s {
     left(a) => {
       exact left((a, refl(typed(A or B, left(a)))));

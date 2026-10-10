@@ -1328,7 +1328,7 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       }
       const end = take("}").end;
       declarations.push({ kind: "theory", name: n, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
-        params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type })), parents, fields, start: t.start, end });
+        params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type, group: p.group })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;
     }
@@ -1349,7 +1349,28 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
         constructors.push({ kind: "constructor", name: c, params: args, type, start: c.start, end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "inductive", name: n, params, result, constructors, start: t.start, end });
+      declarations.push({ kind: "inductive", name: n, params, result, constructors,
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
+      items.push(declarations.at(-1));
+      continue;
+    }
+    // `initial N : T(…);` declares a theory's initial model, and
+    // `free W(A : U0) : T(…) on A;` its free model on A (L2.6): a declared
+    // type with a constructor for each operation and a path constructor for
+    // each law, its model, and fold (web/translator/initial-models.mjs).
+    if (t.text === "initial" || t.text === "free") {
+      const n = name();
+      if (t.text === "initial" && ["(", "{"].includes(peek()))
+        throw Object.assign(new Error("initial takes no parameters; use free for a parameterized model."), {offset: ts[i].start});
+      if (t.text === "free" && peek() === "{")
+        throw Object.assign(new Error("free takes explicit parameters in parentheses, as free W(A : U0) : T(U0) on A; implicit parameters are not supported."), {offset: ts[i].start});
+      const params = t.text === "free" && peek() === "(" ? parameters("(V < UU0, A : V)", true) : [];
+      take(":");
+      const theory = expr();
+      const on = t.text === "free" ? (take("on"), expr()) : null;
+      const end = take(";").end;
+      declarations.push({ kind: t.text, name: n, params, theory, ...(on ? { on } : {}),
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
       items.push(declarations.at(-1));
       continue;
     }
@@ -1359,7 +1380,7 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     if (computable) t = take();
     if (t.text !== "def")
       throw Object.assign(new Error(t.text === "import" ? "Imports must come before declarations."
-        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule or theory."), {
+        : "Expected a declaration or directive: def, computable def, inductive, evaluate, print, simp_rule, simp_set, hlevel_rule, theory, initial or free."), {
         offset: t.start,
       });
     const n = name(),

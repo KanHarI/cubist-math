@@ -21,7 +21,7 @@ def field_magnitude_small_close(
     );
   exact (
     along lt(x) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from less,
-    along((fun (v : F) => lt(v, addF(x, epsilon)))) by ring_add_inverse(
+    along ((fun (v : F) => lt(v, addF(x, epsilon)))) by ring_add_inverse(
       F, zero, one, addF, mulF, negF, ring, x
     ) from shifted
   );
@@ -40,7 +40,7 @@ def field_close_translate(
     intro u, v, less;
     obtain (forward, backward) := translate(u, v, shift);
     let first :=
-      along((fun (a : F) => lt(a, addF(v, shift)))) by ring_add_comm(
+      along ((fun (a : F) => lt(a, addF(v, shift)))) by ring_add_comm(
         F, zero, one, addF, mulF, negF, ring, u, shift
       ) from forward(less);
     exact along lt(addF(shift, u)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, shift) from first;
@@ -63,20 +63,18 @@ def field_magnitude_perturbation_close(
   small : lt(radius, epsilon)
 ) :
   FieldClose(F, addF, lt, y, x, epsilon) {
-  let close :=
-    field_magnitude_small_close(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound,
-      small
-    );
-  let shifted :=
-    field_close_translate(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close
-    );
+  let close := field_magnitude_small_close(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, radius, epsilon, bound,
+    small
+  );
+  let shifted := field_close_translate(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close
+  );
   let unitRemoved :=
-    along((fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon))) by ring_add_zero_right(
+    along ((fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon))) by ring_add_zero_right(
       F, zero, one, addF, mulF, negF, ring, x
     ) from shifted;
-  exact along((fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon))) by sym(computes) from unitRemoved;
+  exact along ((fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon))) by sym(computes) from unitRemoved;
 }
 
 // A bound tending to zero forces the bounded error to tend to zero.

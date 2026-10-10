@@ -42,8 +42,7 @@ def residue_constant_mul(K : AlgebraicField, M : PolynomialModulus(K), a, b : af
   );
 }
 
-def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(K)) :=
-  with unfolding [] {
+def residue_constant_preserves(K : AlgebraicField, M : PolynomialModulus(K)) := with unfolding [] {
     field_ops_preserved_from_laws(
       af_carrier(K), PolynomialResidue(K, M), af_operations(K), residue_zero(K, M),
       residue_one(K, M), residue_neg(K, M), residue_add(K, M), residue_mul(K, M),
@@ -75,12 +74,13 @@ def residue_reduce_horner(K : AlgebraicField, M : PolynomialModulus(K), p : Poly
   let reduce := residue_reduce(K, M);
   let product : reduce(polynomial_shift(K, tail)) = residue_mul(
     K, M, adjoined_root(K, M), reduce(tail)
-  ) := with unfolding [] {
-    trans(
-      cong(reduce, sym(polynomial_variable_mul(K, tail))),
-      residue_reduce_mul(K, M, polynomial_variable(K), tail)
-    )
-  };
+  ) :=
+    with unfolding [] {
+      trans(
+        cong(reduce, sym(polynomial_variable_mul(K, tail))),
+        residue_reduce_mul(K, M, polynomial_variable(K), tail)
+      )
+    };
   exact with unfolding [] {
     trans(
       cong(reduce, polynomial_decompose(K, p)),

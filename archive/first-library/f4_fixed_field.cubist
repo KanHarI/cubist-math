@@ -70,7 +70,7 @@ def f4_base_intermediate : IntermediateField(F2, F4OverF2) {
     intermediate_laws(F2, F4OverF2, galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms));
   exact (
     F2Image,
-    along((fun (P : F4Carrier -> U0) => IntermediateFieldLaws(F2, F4OverF2, P))) by f4_fixed_predicate_is_base from fixedLaws
+    along ((fun (P : F4Carrier -> U0) => IntermediateFieldLaws(F2, F4OverF2, P))) by f4_fixed_predicate_is_base from fixedLaws
   );
 }
 

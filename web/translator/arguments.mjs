@@ -45,14 +45,15 @@ export const determinesArguments = node =>
 export function writtenOut(n, scope, holes = false) {
   const {env, unit} = scope;
   const headName = n.fn.kind === "name" ? n.fn.name : null;
+  const spelling = n.fn.spelling ?? headName;
   const builtin = headName && !env.has(headName);
   if (!builtin && !INDUCTIVE_TAGS.has(env.get(headName)?.tag)) return;
   if (n.implicitArgs)
-    throw unit.locate(Error(`${headName} has no implicit parameters: give its arguments in parentheses, as ${headName}(…).`), n.fn);
+    throw unit.locate(Error(`${spelling} has no implicit parameters: give its arguments in parentheses, as ${spelling}(…).`), n.fn);
   if (!n.args.some(arg => arg.kind === "namedArgument" || !holes && isHole(arg))) return;
   throw unit.locate(Error(builtin
-    ? `${headName} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`
-    : `${headName} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
+    ? `${spelling} takes its arguments explicitly: a hole _ or a named argument is an argument of a definition or a function.`
+    : `${spelling} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
 }
 
 // Placeholders for parameters' values, numbered apart from every name supply.
@@ -82,7 +83,7 @@ function sourceParameters(t, head) {
 // double braces fill the implicit parameters no name gives, in order; those
 // in parentheses fill the explicit parameters no name gives, in order, and
 // then whatever the result takes.
-function assign(n, parameters, unit, called) {
+export function assignArguments(n, parameters, unit, called) {
   const positional = [], named = new Map(), names = parameters?.map(parameter => parameter.name);
   const name = (arg, braced) => {
     const name = arg.name.text;
@@ -137,7 +138,7 @@ function assign(n, parameters, unit, called) {
 export function elaborateCall(t, n, scope, expected) {
   const {env, unit} = scope;
   const headName = n.fn.kind === "name" ? n.fn.name : null;
-  const called = headName ?? "This function";
+  const called = n.fn.spelling ?? headName ?? "This function";
   const bound = headName ? env.get(headName) : undefined;
   writtenOut(n, scope);
   if (bound?.tag === "Recursive") {
@@ -148,7 +149,7 @@ export function elaborateCall(t, n, scope, expected) {
   }
   const head = t.term(n.fn, scope, null);
   const parameters = sourceParameters(t, head);
-  const given = assign(n, parameters, unit, called);
+  const given = assignArguments(n, parameters, unit, called);
   // Each parameter in turn, from the head's type, with the earlier ones
   // replaced by variables that stand for their values: no argument's type is
   // inferred again from the growing application.

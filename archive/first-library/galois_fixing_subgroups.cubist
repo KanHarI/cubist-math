@@ -52,11 +52,9 @@ def galois_fixing_inverse(
   GaloisFixing(K, E, P, galois_inverse(K, E, e)) {
   intro x, member;
   let inverseMap := extension_iso_forward(K, E, E, galois_inverse(K, E, e));
-  let inverseLaw : inverseMap(extension_iso_forward(K, E, E, e, x)) = x :=
-    cong(
-      (fun (d : Galois(K, E)) => extension_iso_forward(K, E, E, d, x)),
-      galois_right_inverse(K, E, e)
-    );
+  let inverseLaw : inverseMap(extension_iso_forward(K, E, E, e, x)) = x := cong(
+    (fun (d : Galois(K, E)) => extension_iso_forward(K, E, E, d, x)), galois_right_inverse(K, E, e)
+  );
   exact trans(sym(cong(inverseMap, fixes(x, member))), inverseLaw);
 }
 
@@ -67,11 +65,10 @@ def galois_fixing_witnessed_inverse(
   inverseLaw : galois_compose(K, E, d, e) = extension_identity_iso(K, E)
 ) :
   GaloisFixing(K, E, P, d) {
-  let same : d = galois_inverse(K, E, e) :=
-    group_inverse_unique(
-      Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E), e,
-      d, galois_inverse(K, E, e), inverseLaw, galois_right_inverse(K, E, e)
-    );
+  let same : d = galois_inverse(K, E, e) := group_inverse_unique(
+    Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E), e, d,
+    galois_inverse(K, E, e), inverseLaw, galois_right_inverse(K, E, e)
+  );
   exact along GaloisFixing(K, E, P) by sym(same) from galois_fixing_inverse(K, E, P, e, fixes);
 }
 

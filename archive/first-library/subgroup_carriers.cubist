@@ -85,11 +85,10 @@ def subgroup_carrier_group_laws(G : Group, S : Subgroup(G)) :
   );
 }
 
-def subgroup_as_group(G : Group, S : Subgroup(G)) :=
-  group_object(
-    SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S),
-    subgroup_carrier_group_laws(G, S)
-  );
+def subgroup_as_group(G : Group, S : Subgroup(G)) := group_object(
+  SubgroupCarrier(G, S), subgroup_carrier_unit(G, S), subgroup_carrier_multiply(G, S),
+  subgroup_carrier_group_laws(G, S)
+);
 
 def subgroup_inclusion(G : Group, S : Subgroup(G)) : GroupHom(subgroup_as_group(G, S), G) {
   exact (

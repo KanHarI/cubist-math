@@ -1995,6 +1995,10 @@
    "summary": "For `tests/inductive-declarations.test.mjs` (as are the inductive_* modules below): constructors build values, computations hold by rfl, and no result carries a marker (T2)."
   },
   {
+   "path": "cubist-tests/initial_models.cubist",
+   "summary": "`initial` and `free` models of a theory: the declared type, its model and `fold`, computing on constructors and generators; theories outside the equational strategy, refused without a claim of nonexistence."
+  },
+  {
    "path": "cubist-tests/inspection_axiom_labels.cubist",
    "summary": "An assumption's label and a derived helper, inspected."
   },
@@ -2232,7 +2236,7 @@
   },
   {
    "path": "cubist-tests/theory_morphisms.cubist",
-   "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, and a theory whose operation takes a non-sort, which has none."
+   "summary": "Homomorphisms and isomorphisms (L2.4): built field by field, their fields' types, identity, composition and a parent's homomorphism computing on closed models, isomorphisms' identity, composition and inverse, an operation's argument that takes the name of a parameter its type reads, and a theory whose operation takes a non-sort, which has none."
   },
   {
    "path": "cubist-tests/theory_sections.cubist",
