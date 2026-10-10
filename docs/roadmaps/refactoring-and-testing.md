@@ -53,43 +53,27 @@ The first review, on 2026-10-10, found these issues in the first draft:
 
 ## Coordination with the FG0 review refactor
 
-[PR #205](https://github.com/KanHarI/cubist-math/pull/205) is being revised
-beyond this roadmap's audited head. Its
+[PR #205](https://github.com/KanHarI/cubist-math/pull/205)'s reviewed contracts
+are now integrated and active on this branch. The
 [recorded design decision](https://github.com/KanHarI/cubist-math/pull/205#issuecomment-6096591882)
-addresses two structural failures: arbitrary assertions could become expected
-failures, and variants sharing one status could not be activated independently.
-This is a correction to FG0's evidence contract from
-[PR #204](https://github.com/KanHarI/cubist-math/pull/204).
+separated fixture failures from known compiler debt; integration retires the
+temporary debt records, TODO/strict-mode classification and lifecycle-only tests.
+Desired assertions, case IDs, the independent requirement map and acceptance
+controls remain. This completes the FG0 integration part of RC0, not its other
+cleanup work.
 
-The revised harness assigns stable case IDs within G finding groups. Setup
-and unaffected behavior use ordinary assertions. A temporary known-defect
-record compares explicit diagnostic/client/publication/source observations;
-an unrelated or changed failure is an error. Desired outcomes remain
-independent of those historical records. The coverage now includes flat and
-nested G4 cases, both G5 binder forms, and direct, inherited and initial-model
-G12 `twice` clients.
+The contracts now cover distinct G4 branch computations, G12 base/recursive
+steps in all three contexts, lexical shadowing, refused-member publication,
+and validated source anchors. Downstream additions remain: G8's exact token
+range and zero coherence-search count, G5's named generated-constructor client,
+explicit-path negatives, both bare/partial helper contexts, and the recursive
+predecessor regression. The original required compiler mutations remain and
+a recursive-shadowing mutation has been added. Source semantic mutants and
+injected observer controls provide separately identified acceptance evidence.
+Commit-specific validation belongs in the PR discussion.
 
-Integrate those cases when updating the FG stack, removing each known-defect
-record only after that individual case passes. Merge the test files with their
-downstream additions: G8's exact token range and zero coherence-search count,
-G5's named generated-constructor client, explicit-path negative checks, both
-bare/partial helper contexts, and FG6's recursive predecessor regression.
-Replacing the files wholesale loses the `fallback-eligibility` and
-`explicit-head` mutation kills.
-
-A compatibility check against this PR's compiler at `f527e81f`, with all 22
-revised cases activated and those downstream checks retained, passed all 36
-contract/control/provenance tests and killed all 13 required mutations. This
-is an integration overlay check, not a claim that #205's revised files are
-already present in this branch. Keep the subsequent commit-specific validation
-on the PR discussion.
-
-RC0 still retires temporary expected-failure machinery once every case is
-active: the known-defect records, TODO/strict-mode classifier branch and its
-lifecycle-only tests. Preserve ordinary assertions of desired behavior, stable
-case IDs, the case coverage matrix and all added behavioral coverage. The
-observation helpers are eligible for RC1/RC2 migration through the existing
-runner; they do not establish a second test language or module loader.
+The observation helpers remain eligible for RC1/RC2 migration through the
+existing runner; they add no test language or module loader.
 
 The FG6 gate selects group prefixes (`G2:`, `G5:`, `G8:`, `G11:`), while an
 individual case is selectable by its bracketed ID. Preserve those prefixes and
@@ -188,7 +172,6 @@ documentation, without changing production semantics.
 
 | Candidate | Action and surviving coverage |
 | --- | --- |
-| At the audited head, `expectedFailures` is empty and `contractTest` retains temporary TODO/strict-mode handling. The revised #205 replaces these with per-case known-defect records and structured observations. | First integrate and activate every revised case against the fixing stack. Then delete the temporary defect records, TODO/strict-mode handling and lifecycle-only harness tests. Keep the desired observations, independent case IDs, group selectors and new coverage; run active contracts as ordinary assertions. Update the manifest. The #205 refactor already removes the unused `baseline` export and documents historical provenance. |
 | “FG0 maps historical fixes and passing controls to existing executable tests” reads other JS files and searches for literal `test("name",` strings. | Delete the source-spelling test and its `historicalCoverage`/`passingCoverage` data. Move the historical mapping into [`frontend-generation.md`](../../tests/fixtures/frontend-generation.md); retain case-ID uniqueness, fixture validation and coverage-matrix completeness checks from the revised #205. The actual historical regressions still execute. T0 can restore an executable mapping by stable case ID. |
 | “migrated native proof scopes format without changing their expanded syntax” in [`unfolding-syntax.test.mjs`](../../tests/unfolding-syntax.test.mjs) repeats archive round trips for eight files. | Delete the repetition, and fix the archive round trip it repeats (below). Retain the prohibition on the old `with_unfolding(` spelling. Keep the focused scoped-syntax edge cases. |
 
@@ -661,7 +644,7 @@ stated boundary. RC0 is the recommended next PR after this document.
 
 | ID | Deliverable | Depends on | Risk and exit evidence |
 | --- | --- | --- | --- |
-| RC0 | Integrate and activate the revised #205 cases, then delete obsolete FG scaffolding and redundant checks listed above; make the archive round trip test meaning preservation. | This roadmap | Low. Net test/helper deletion; surviving cases named; full suite and 13 required mutation kills unchanged; the repaired round trip fails against a meaning-changing formatter edit. |
+| RC0 | Finish deleting the remaining redundant checks listed above; make the archive round trip test meaning preservation. | This roadmap | Low. Net test/helper deletion; surviving cases named; full suite and required mutation kills preserved; the repaired round trip fails against a meaning-changing formatter edit. |
 | RC1 | Parse/format the initial pragmas, implement T0/T1 in the existing runner, and migrate the first initial-model/theory cases, including the `theory_headers` wrapper. | RC0, RC9 | Medium. Unknown/dangling pragmas, pragmas outside test fixtures, missing/duplicate cases, unexpected failures and assumption mismatches demonstrably fail; formatting preserves attachment and spans. The benchmark reads migrated refusals from pragmas; mutation selectors still classify kills. Old wrappers removed in the same PR; no second module loader. |
 | RC2 | T2 source/work observations, then migrate FG source assertions. Add T3 module scenarios as a separate sub-PR when needed. | RC1 | Medium. Every migrated contract detects the same deliberate defect; retain browser and native fault injection. |
 | RC3 | Consolidate publication lifecycle and declaration scheduling, including the elaborator's collections and an explicit module context in place of the per-module prototype checker. | RC0; RC1 useful, not required | High. Rollback, observer failure, import repair and partial-family controls pass; native handles and frontend metadata agree; the error path accounts steps as the success path does. Compare allocation/work counters. |
@@ -684,7 +667,7 @@ their previous paths rather than retain permanent compatibility layers.
   it distinguishes. For a mutation-targeted migration, run the same bad
   implementation against the new case before deleting the JS assertion.
   Update mutation selectors to stable case IDs as the runner gains them.
-- Keep all **13 required FG mutation kills**, with passing unmodified
+- Keep all required FG mutation kills (the original thirteen plus recursive shadowing), with passing unmodified
   baselines. A crash, infrastructure error or timeout is not a semantic
   kill. Preserve the eight deterministic CI source configurations and the
   wider 32-case audit unless an equivalence argument supports a change.
