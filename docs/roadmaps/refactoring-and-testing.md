@@ -180,7 +180,7 @@ and attaches to the next declaration or supported executable directive;
 several pragmas may attach to the same item. Argument payloads are
 restricted data such as names, codes, integers and lists, not executable
 Cubist expressions. Pragma names are contextual after `#`, so `test` or
-`assumptions` need not become globally reserved identifiers.
+`expect_axioms` need not become globally reserved identifiers.
 
 Illustrative syntax below is **proposed, not implemented**. With the
 pragma lines omitted, the Cubist program was checked at the audited head:
@@ -191,7 +191,7 @@ import hlevels;
 theory T(U < UU0) { M : set U; op(A : U1, x : A) : M; }
 
 # test(generation.hom_universe)
-# assumptions([])
+# expect_axioms([])
 def hom_level(S : T(U0)) : U2 := T.Hom(S, S);
 
 # test(generation.hom_universe_too_low)
@@ -205,13 +205,23 @@ the generator. Never derive the expected law from another artifact of the
 same expansion: both can share the same capture bug.
 
 The initial surface should be `test(id)`, `expect_error(code)`,
-`expect_warning(code)` and `assumptions([...])`. Successful checking is
+`expect_warning(code)` and `expect_axioms([...])`. Successful checking is
 the default, so ordinary positive definitions need no extra `succeeds`
 annotation. `test(id)` gives a durable selectable case ID and requires
-its target to exist. `assumptions([...])` specifies the exact resolved
-assumption set; the empty list asserts none. Subset/nonempty options,
+its target to exist. `expect_axioms([...])` specifies the exact resolved
+external axiom set; the empty list asserts none. Subset/nonempty options,
 artifact queries, source observations and work limits follow when their
 migration batch needs them, rather than adding many synonyms up front.
+
+The axiom set includes transitive dependencies through other definitions
+and the declaration's type. Ordinary bound parameters and proof hypotheses
+do not count as external axioms. This pragma checks the existing reported
+dependencies; it neither introduces axioms nor permits an unchecked proof.
+Prefer `computable def` for authored definitions whose contract already
+requires no assumptions. The test observation also covers generated or
+imported declarations and exact nonempty axiom sets; later subset checks
+can express, for example, that a quotient proof uses only specified
+truncation axioms and does not acquire a dependency on choice.
 
 `# throws(E606)` is a possible spelling, but **`expect_error` is preferred**:
 this observes a compiler diagnostic, not a runtime exception. Its short
