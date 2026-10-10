@@ -2,8 +2,9 @@
 
 Status: proposed on 2026-10-10, as a follow-up to
 [PR #211](https://github.com/KanHarI/cubist-math/pull/211)
-(`fg6-preservation-gate`). This is a roadmap, not an implementation or a
-claim that tests have already been removed.
+(`fg6-preservation-gate`), and revised after its first review the same
+day. This is a roadmap, not an implementation or a claim that tests have
+already been removed.
 
 The audit covers the updated stack at
 [`c1780211`](https://github.com/KanHarI/cubist-math/commit/c17802111f9e20cc68c918d8590f8d74743bc375)
@@ -19,6 +20,36 @@ adding a small observation layer to the existing runner. Refactor the
 generation and publication machinery in separate, behavior-preserving
 PRs. None of the proposed testing capabilities needs a new kernel axiom
 or inference rule.
+
+## Revision after review
+
+The first review, on 2026-10-10, found these issues in the first draft:
+
+1. **RC0 deleted an independent positive check.** The `theory_headers`
+   wrapper is the only check, out of `--write`'s reach, that its four
+   declarations verify. Its deletion moves to RC1, replaced by pragmas.
+2. **The cited formatter coverage was vacuous.** Every tracked source is
+   already formatted, so the archive round trip formats fixed points. RC0
+   now makes that round trip meaningful instead of relying on it.
+3. **Pragmas missed the other readers of checked comments.** The
+   benchmark classifies stated refusals as intended, and reference examples
+   parse the same comments with their own reader. Both now migrate with the
+   pragmas, after the two readers merge (RC9).
+4. **The mutation gate selects JavaScript test names.** Migrated cases
+   must remain selectable by `--test-name-pattern` and fail through
+   `assert`, or a required kill becomes unclassified.
+5. **The pragma design was under-specified.** This revision states where
+   pragmas are accepted, that newlines stay insignificant, that pragma
+   names stay out of the reserved-word list, when success is the default,
+   and what `expect_axioms` means on a theory. The example now uses
+   `computable def` where it applies, as the text recommends. A leftover
+   `checked` primitive from an earlier draft is gone.
+6. **The publication section omitted the checker's own state.** Twelve of
+   the fourteen collections rolled back per declaration belong to
+   `cubical-elaborator.mjs`, and each module's checker is a prototype copy.
+7. **Further consolidation and dead code** found by a survey of the whole
+   code base are now listed under [single sources of truth](#single-sources-of-truth)
+   and [small independent fixes](#small-independent-fixes), as RC8–RC11.
 
 ## What grew, and what was already large
 
@@ -54,7 +85,7 @@ Several substantial modules predate FG:
 | [`web/cubical-instruction-driver.mjs`](../../web/cubical-instruction-driver.mjs) | 1,519 | 1,519 | Separate search policy and traces from instruction emission. |
 | [`web/cubist/parser.mjs`](../../web/cubist/parser.mjs) | 1,497 | 1,497 | Keep grammar tests in the host; size alone does not justify a parser rewrite. |
 | [`web/proof.mjs`](../../web/proof.mjs) | 1,093 | 1,107 | Separate worker/session lifecycle from rendering. |
-| [`kernel/src/instructions.c`](../../kernel/src/instructions.c) | 1,010 | 1,010 | Preserve independent admission checks; no blanket shortening. |
+| [`kernel/src/instructions.c`](../../kernel/src/instructions.c) | 1,010 | 1,010 | Broad, not long: no function exceeds 38 lines. Preserve independent admission checks; no blanket shortening. |
 | [`web/diagnostics.mjs`](../../web/diagnostics.mjs) | 857 | 858 | Stop inferring diagnostic identity from English messages. |
 | [`web/cubist/theories.mjs`](../../web/cubist/theories.mjs) | 720 | 752 | Reduce repeated telescope/record/source conversions. |
 | [`tests/initial-models.test.mjs`](../../tests/initial-models.test.mjs) | 687 | 692 | Move ordinary Cubist client programs out of JS wrappers. |
@@ -71,16 +102,29 @@ documentation, without changing production semantics.
 
 | Candidate | Action and surviving coverage |
 | --- | --- |
-| `expectedFailures` in [`tests/fixtures/frontend-generation.mjs`](../../tests/fixtures/frontend-generation.mjs) is empty. `contractTest` in [`frontend-generation.test.mjs`](../../tests/frontend-generation.test.mjs) still implements temporary TODO failures and `CUBIST_GENERATION_STRICT`. | Delete the empty set, environment switch and unreachable expected-failure path. Run the existing contracts directly; preserve G identifiers and capture variants. Update the stale instructions in [`frontend-generation.md`](../../tests/fixtures/frontend-generation.md). |
-| “FG0 maps historical fixes and passing controls to existing executable tests” reads other JS files and searches for literal `test("name",` strings. | Delete the source-spelling test and its `historicalCoverage`/`passingCoverage` data. Keep historical mapping in documentation and retain the small contract/fixture key-completeness check. The actual historical regressions still execute. |
-| “theory constructors keep header parameters apart from generated field binders” in [`theories.test.mjs`](../../tests/theories.test.mjs) rechecks `theory_headers`. | Remove the redundant wrapper. Preserve `named_nat`, `named_hom`, `named_iso`, `named_by_fields` in [`theory_headers.cubist`](../../cubist-tests/theory_headers.cubist), already checked by the inlined suite. Confirm those declarations and the module remain discovered before deletion. |
-| “migrated native proof scopes format without changing their expanded syntax” in [`unfolding-syntax.test.mjs`](../../tests/unfolding-syntax.test.mjs) repeats archive round trips for eight files. | Drop the repeated AST-preservation/idempotence work: [`formatter.test.mjs`](../../tests/formatter.test.mjs) already checks those archive files. Retain the prohibition on the old `with_unfolding(` spelling. Keep the focused scoped-syntax edge cases. |
+| `expectedFailures` in [`tests/fixtures/frontend-generation.mjs`](../../tests/fixtures/frontend-generation.mjs) is empty. `contractTest` in [`frontend-generation.test.mjs`](../../tests/frontend-generation.test.mjs) still implements temporary TODO failures and `CUBIST_GENERATION_STRICT`. | Delete the empty set, environment switch and unreachable expected-failure path. Run the existing contracts directly; preserve G identifiers and capture variants, which the mutation gate selects by name (`G2:`, `G11:`, …). Update the stale instructions in [`frontend-generation.md`](../../tests/fixtures/frontend-generation.md). Delete the unused `baseline` export and the stale header comment in the same file. |
+| “FG0 maps historical fixes and passing controls to existing executable tests” reads other JS files and searches for literal `test("name",` strings. | Delete the source-spelling test and its `historicalCoverage`/`passingCoverage` data. Move the mapping into [`frontend-generation.md`](../../tests/fixtures/frontend-generation.md) and retain the small contract/fixture key-completeness check. The actual historical regressions still execute. T0 can restore an executable mapping by stable case ID. |
+| “migrated native proof scopes format without changing their expanded syntax” in [`unfolding-syntax.test.mjs`](../../tests/unfolding-syntax.test.mjs) repeats archive round trips for eight files. | Delete the repetition, and fix the archive round trip it repeats (below). Retain the prohibition on the old `with_unfolding(` spelling. Keep the focused scoped-syntax edge cases. |
 
-The formatter's archive round-trip test and
-[`formatting.test.mjs`](../../tests/formatting.test.mjs), which enforces
-checked-in formatting across source roots, test different contracts.
-Keep both. The generated artifact/assumption test immediately after the
-`theory_headers` wrapper also adds coverage and must remain.
+Neither that test nor the archive round trip in
+[`formatter.test.mjs`](../../tests/formatter.test.mjs) can fail today.
+[`formatting.test.mjs`](../../tests/formatting.test.mjs) requires every
+tracked `.cubist` source, the archive included, to be formatted already,
+so both format fixed points: their token, comment, syntax-tree and
+idempotence assertions compare a file with itself. Keep
+`formatting.test.mjs`, and make the round trip test meaning preservation:
+format each archive file at a narrower width and compare its tokens,
+comments and syntax tree with the original's.
+
+The wrapper “theory constructors keep header parameters apart from
+generated field binders” in [`theories.test.mjs`](../../tests/theories.test.mjs)
+stays until RC1. It asserts that `named_nat`, `named_hom`, `named_iso` and
+`named_by_fields` in [`theory_headers.cubist`](../../cubist-tests/theory_headers.cubist)
+verify. The inlined suite only compares refusals with `// Error:`
+comments, which `tools/inline-errors.mjs --write` regenerates from current
+behavior, so a regression could be recorded as expected. RC1 replaces the
+wrapper with `test(...)` pragmas. The generated artifact/assumption test
+immediately after it also adds coverage and must remain.
 
 One further candidate needs a replacement before deletion: “both language
 references and keyword styling describe the scoped syntax” checks literal
@@ -91,8 +135,10 @@ token styling.
 
 Acceptance: record the named surviving check for each deletion; run
 `npm test` and `npm run test:generation:mutations` separately; preserve
-all required mutation targets and the selected Cubist declarations. The
-PR should have a net reduction in test/helper code. No new generic test
+all required mutation targets and the selected Cubist declarations.
+Show the repaired archive round trip failing against a deliberately
+meaning-changing formatter edit. The PR should have a net reduction in
+test/helper code. No new generic test
 framework is needed for this slice. Historical FG reports remain evidence
 about their recorded revisions and should not be rewritten as current
 instructions.
@@ -137,6 +183,17 @@ goldens; never let it rewrite the semantic expectations proposed below.
 Retain a small, deliberate set of full-message and CLI/printer snapshots
 where wording is itself the contract.
 
+These comments have three readers, not one. Besides the inlined suite,
+[`benchmark-runner.mjs`](../../web/benchmark-runner.mjs) reads a stated
+`// Error:` as an intended refusal, and
+[`tests/reference-pages.mjs`](../../tests/reference-pages.mjs) parses
+reference examples' comments with its own reader, which also accepts an
+end-of-line form. Merge the two readers before adding pragmas (RC9). When
+a semantic golden becomes a pragma, every reader that consumed it must
+read the pragma instead; otherwise the benchmark reports the intended
+refusal as a failure. Pragmas should replace a mechanism, not become a
+fourth.
+
 ### Add runner primitives, not reflective kernel operations
 
 Put ordinary programs and their expectations together in `.cubist` test
@@ -151,17 +208,29 @@ string evaluation or privileged assertion axiom is needed.
 Reuse [`tests/check-program.mjs`](../../tests/check-program.mjs),
 [`tools/module-sources.mjs`](../../tools/module-sources.mjs) and the
 existing inlined checker. Factor their common execution path instead of
-creating another loader or a second way to check declarations. Reuse a
-WASM instance where safe, but give each independent case fresh program
-and kernel state with deterministic disposal.
+creating another loader or a second way to check declarations; today
+`inline-errors.mjs` and `check-program.mjs` each check a test module
+their own way. Reuse a WASM instance where safe, but give each independent
+case fresh program and kernel state with deterministic disposal. The
+bridge holds at most eight sessions per instance
+([`cubical_bridge.c`](../../wasm/cubical_bridge.c)).
+
+The runner must also keep the mutation gate working.
+[`frontend-generation-mutations.mjs`](../../tools/frontend-generation-mutations.mjs)
+selects tests with `--test-name-pattern` over `tests/NAME.test.mjs` files,
+and counts a kill only when the output contains `ERR_ASSERTION`. Register
+each case as a `node:test` test or subtest whose name contains its stable
+ID, and fail it through `assert`. The example below exercises G2's
+contract, that fixed argument domains contribute to generated universes;
+the required `hom-universe` mutation selects G2's test by name.
 
 | Stage | Primitive and required behavior | First consumers |
 | --- | --- | --- |
-| T0 | **Named cases and checked declarations.** Stable IDs; enumerate cases once; reject duplicate IDs, missing named declarations, zero discovered cases and an empty explicit selection. `checked name` requires presence and verification. Every unanticipated failure fails the case. | Positive initial/free-model clients; historical coverage mapping. |
+| T0 | **Named cases and checked declarations.** Stable IDs; enumerate cases once; reject duplicate IDs, missing named declarations, zero discovered cases and an empty explicit selection. `test(id)` requires its target to be present and, unless an expectation says otherwise, verified. Every unanticipated failure fails the case. | Positive initial/free-model clients; historical coverage mapping. |
 | T1 | **Structured diagnostic expectations.** Match code, severity, phase, module/declaration and multiplicity; optionally a range selected by a unique source anchor. Distinguish parse, type mismatch, unsupported generation, blocked dependency and resource exhaustion. Unexpected errors/warnings fail unless an explicit code policy allows them. | G1/G3/G6/G11, negative parser cases, lint-sensitive theory clients. |
 | T1 | **Assumption sets and public artifacts.** Assert none, exact set or subset, with an explicit nonempty check when needed. Compare resolved binding identities, including imports and generated declarations. Assert artifact presence/absence and supported family status through publication metadata. | Theory interfaces, hlevel proofs, quotient proofs, universe clients. |
 | T2 | **Source observations.** Assert written occurrence range, label, module and definition target; distinguish original and synthetic locations. Anchors must resolve uniquely and fail if missing or ambiguous. | G8–G10 and frontend provenance tests. |
-| T2 | **Deterministic resource observations.** Set work limits, assert failure kind and counters, including exact zero searches at a forbidden fallback. Charge speculative work to the same budget. | G8 and bounded elaboration/search regressions. |
+| T2 | **Deterministic resource observations.** Set work limits, assert failure kind and counters, including exact zero searches at a forbidden fallback. Observe speculative work in the same counters. If it is not charged to the same budget today, changing that is a production change with benchmark evidence, in its own PR. | G8 and bounded elaboration/search regressions. |
 | T3 | **Module fixtures and explicit recheck scenarios.** Supply named source modules through the production loader; sequence edits and checks with declared reset/session behavior. | Imported capture, repaired imports and dependency invalidation. |
 
 Implement T0/T1 with real migrations first. T2/T3 are separate extensions,
@@ -175,24 +244,41 @@ remaining declarations and diagnostics must still be accounted for.
 ### Proposed pragma syntax and semantics
 
 Prefer a small, fixed set of pragmas over user-defined decorators that
-transform declarations. Each `# name(arguments)` occupies its own line
-and attaches to the next declaration or supported executable directive;
-several pragmas may attach to the same item. Argument payloads are
+transform declarations. Each `# name(arguments)` attaches to the next
+declaration or supported executable directive, whatever whitespace
+separates them; several pragmas may attach to the same item. The
+formatter writes each pragma on its own line, but newlines stay
+insignificant to the grammar, as they are today. Argument payloads are
 restricted data such as names, codes, integers and lists, not executable
 Cubist expressions. Pragma names are contextual after `#`, so `test` or
-`expect_axioms` need not become globally reserved identifiers.
+`expect_axioms` need not become globally reserved identifiers. Keep them
+out of `languageKeywords` and `reservedNames` in
+[`parser.mjs`](../../web/cubist/parser.mjs): highlighting shares that
+list, and a word styled as a keyword is reserved everywhere. Highlight a
+pragma as a unit instead.
+
+Accept pragmas only in test fixtures at first: modules under
+`cubist-tests/` and fixtures a test runner supplies, enabled by the
+loader for those sources. Reject them everywhere else, such as in
+`library/`, the archive and reference examples. There, ordinary checking would parse
+`# expect_axioms([...])` and never evaluate it: it would look like a
+checked contract without being one. Widen their use only once ordinary
+checking evaluates them.
 
 Illustrative syntax below is **proposed, not implemented**. With the
 pragma lines omitted, the Cubist program was checked at the audited head:
-`hom_level` verifies without assumptions and `too_low` reports E606.
+the twenty declarations that theory `T` generates and `hom_level` verify
+without assumptions, and `too_low` reports E606.
 
 ```text
 import hlevels;
+
+# test(generation.hom_universe_interface)
+# expect_axioms([])
 theory T(U < UU0) { M : set U; op(A : U1, x : A) : M; }
 
 # test(generation.hom_universe)
-# expect_axioms([])
-def hom_level(S : T(U0)) : U2 := T.Hom(S, S);
+computable def hom_level(S : T(U0)) : U2 := T.Hom(S, S);
 
 # test(generation.hom_universe_too_low)
 # expect_error(E606)
@@ -200,28 +286,38 @@ def too_low(S : T(U0)) : U1 := T.Hom(S, S);
 ```
 
 This tests acceptance at U2 and refusal at U1, not a general exact-type
-query. Expected equations and values must be authored independently of
-the generator. Never derive the expected law from another artifact of the
-same expansion: both can share the same capture bug.
+query. The authored `hom_level` states its assumption contract with
+`computable`; `expect_axioms` covers the generated members, which
+`computable` cannot annotate. Expected equations and values must be
+authored independently of the generator. Never derive the expected law
+from another artifact of the same expansion: both can share the same
+capture bug.
 
 The initial surface should be `test(id)`, `expect_error(code)`,
 `expect_warning(code)` and `expect_axioms([...])`. Successful checking is
-the default, so ordinary positive definitions need no extra `succeeds`
-annotation. `test(id)` gives a durable selectable case ID and requires
-its target to exist. `expect_axioms([...])` specifies the exact resolved
-external axiom set; the empty list asserts none. Subset/nonempty options,
-artifact queries, source observations and work limits follow when their
-migration batch needs them, rather than adding many synonyms up front.
+the default for an item with `test(id)`, so positive cases need no extra
+`succeeds` annotation. Until its module migrates, an unannotated
+declaration keeps its `// Error:`/`// Warning:` contract. Once a module
+migrates, prefer requiring every unannotated declaration in it to
+succeed, so that `--write` cannot record a new refusal there. `test(id)`
+gives a durable selectable case ID and requires its target to exist.
+`expect_axioms([...])` specifies the exact resolved external axiom set;
+the empty list asserts none. Subset/nonempty options, artifact queries,
+source observations and work limits follow when their migration batch
+needs them, rather than adding many synonyms up front.
 
 The axiom set includes transitive dependencies through other definitions
 and the declaration's type. Ordinary bound parameters and proof hypotheses
 do not count as external axioms. This pragma checks the existing reported
 dependencies; it neither introduces axioms nor permits an unchecked proof.
+On a theory, it applies to each owned generated member separately, not to
+their union, so a failure names the member that acquired an assumption.
 Prefer `computable def` for authored definitions whose contract already
-requires no assumptions. The test observation also covers generated or
-imported declarations and exact nonempty axiom sets; later subset checks
-can express, for example, that a quotient proof uses only specified
-truncation axioms and does not acquire a dependency on choice.
+requires no assumptions, and lint `expect_axioms([])` on one, so that
+contract has a single spelling. The test observation also covers
+generated or imported declarations and exact nonempty axiom sets; later
+subset checks can express, for example, that a quotient proof uses only
+specified truncation axioms and does not acquire a dependency on choice.
 
 `# throws(E606)` is a possible spelling, but **`expect_error` is preferred**:
 this observes a compiler diagnostic, not a runtime exception. Its short
@@ -261,14 +357,16 @@ error recovery.
 
 Existing `// Error:` and `// Output:` goldens can coexist during migration.
 Replace a migrated semantic error golden with its pragma in the same
-change; avoid asserting the same diagnostic through two independent
-mechanisms unless its exact wording is intentionally under test. The
-golden-update command must never create or rewrite pragmas automatically.
+change, together with every reader that consumed it. Avoid asserting the
+same diagnostic through two independent mechanisms unless its exact
+wording is intentionally under test. The golden-update command must never
+create or rewrite pragmas automatically.
 
 ### Concrete migration batches
 
 | Suite/cases | Move into Cubist | Keep in the host |
 | --- | --- | --- |
+| “theory constructors keep header parameters apart from generated field binders” in [`theories.test.mjs`](../../tests/theories.test.mjs) | `test(...)` on `named_nat`, `named_hom`, `named_iso` and `named_by_fields` in [`theory_headers.cubist`](../../cubist-tests/theory_headers.cubist); delete the wrapper in the same PR. | The generated artifact/assumption test that follows it, until T1 covers it. |
 | First four tests in [`initial-models.test.mjs`](../../tests/initial-models.test.mjs): parameter capture, function/dependent-pair generators, grouped law binders, named/mixed arguments | Their source programs already contain checked client proofs; replace the `verified(...)` wrappers with discovered cases. | Migration-tool behavior, injected failures and native publication inspection. |
 | Grouped-domain and repeated-name operation tests in [`theories.test.mjs`](../../tests/theories.test.mjs) | Existing client equations and computations, with explicit warning expectations. The old W706 workaround comment is no longer a reason to keep source in JS after FG5's lint changes. | Parser/formatter structure checks; generated artifact enumeration until T1 covers it. |
 | [`frontend-universes.test.mjs`](../../tests/frontend-universes.test.mjs), source cases in [`frontend-evidence.test.mjs`](../../tests/frontend-evidence.test.mjs), G1/G2/G4/G6/G11/G12 | Positive clients, paired negative cases, assumptions and expected refusals. Keep direct, imported, inherited, renamed, fixed-universe and generic cases where they traverse different paths. | Direct construction of scopes/native terms and refinement/dimension restriction probes. |
@@ -278,7 +376,7 @@ golden-update command must never create or rewrite pragmas automatically.
 
 The quotient tests require a nonempty subset of specific truncation
 assumptions. Replacing them with `computable` would change the contract
-to no assumptions. Similarly, `checked` alone cannot replace the theory
+to no assumptions. Similarly, `test(id)` alone cannot replace the theory
 artifact inventory or a test that native state was rolled back.
 
 Keep randomized source generation, shrinking and mutation orchestration
@@ -298,6 +396,21 @@ Publication is coordinated across `Translator.translate` in
 owns queue/group and environment restoration; the program separately
 snapshots views, binding/reference maps, local symbols, links and
 statements; the transaction owns native checkpoints and checker metadata.
+
+Most of that checker state lives in a fifth file. Twelve of the fourteen
+collections that `CubicalDeclarationTransaction` lists by hand for
+rollback are created by `NativeCubicalElaborator` in
+[`cubical-elaborator.mjs`](../../web/cubical-elaborator.mjs); the other two
+are the kernel's. Each module also checks through
+`Object.create(this.checker)` in `cubical-program.mjs`, so writes in
+elaborator methods land on a per-module copy. The program copies `steps`
+back by hand after a module, and the error path skips that copy.
+[`translator/theories.mjs`](../../web/translator/theories.mjs) still
+creates checker maps lazily with `??=`, although the constructor always
+creates them, and the transaction still filters them with `.filter(Boolean)`.
+Replace the prototype copy with an explicit module context (binding names
+and `define`), and make the elaborator's collections part of the declared
+participating stores.
 
 Introduce one explicit publication lifecycle that coordinates those
 existing owners. Declare the participating stores once and pair begin,
@@ -336,11 +449,17 @@ path for that slice in the same PR. Compare the resulting code: a verbose
 AST constructor for every template can increase maintenance cost. Expand
 the builder only if it removes conversions and duplicated scope handling.
 
-Reuse `SCOPES`, `rewritten`, `substituted` and `renamedApart` in
-[`scopes.mjs`](../../web/cubist/scopes.mjs), and the identity graph in
+Reuse `scopesOf`, `rewritten`, `substituted` and `renamedApart` in
+[`scopes.mjs`](../../web/cubist/scopes.mjs) (its scope table, `SCOPES`, is
+private), and the identity graph in
 [`dependencies.mjs`](../../web/cubist/dependencies.mjs). Do not introduce
 another general visitor or merge morphism transport support with
 equational support: they intentionally allow different constructions.
+The header of `scopes.mjs` says every traversal reads its scopes there,
+but `namesIn` in `cubist/theories.mjs` nearly duplicates `allNames`, and
+the binder walker in `legacy-syntax.mjs` restates binding scopes. Fold
+`namesIn` into the pilot; `legacy-syntax.mjs` serves only the migration
+verifier and can stay as it is.
 
 Preserve grouped-domain scoping, complete law binders, captured notation,
 model/caller separation, binding identities, public labels, source origins
@@ -358,6 +477,23 @@ carrying code, parameters, phase, primary/related spans and failure kind;
 render their English at the presentation boundary. Migrate one diagnostic
 family at a time and delete its fallback message-classification path.
 
+Start with two slices that need no catalogue changes:
+
+- **Lint warnings.** [`lint.mjs`](../../web/cubist/lint.mjs) writes each
+  warning in English, then recovers its code with `diagnosticCode` and the
+  W701–W707 patterns. It is the only module in `web/cubist/` that imports
+  from outside the directory. Attach the code where the warning is made,
+  and delete those patterns and the import.
+- **Positions.** `SourceUnit.locate` in
+  [`elaboration.mjs`](../../web/translator/elaboration.mjs) appends
+  ` at L:C` to `error.message` although the error already carries
+  `offset` and `sourceEnd`. `stated-comments.mjs`, `repl-session.mjs`,
+  `cubical-program.mjs` and `describe` in `translate.mjs` then strip it or
+  splice text before it. Keep the position structured, render it at the
+  boundary, and share one line/column helper; `lint.mjs` and
+  `translate.mjs` compute line starts separately today. Update the tests
+  that match ` at \d+:\d+` deliberately.
+
 Reuse the existing registry and
 [`diagnostic-codes.mjs`](../../tools/diagnostic-codes.mjs) reference tooling.
 Preserve code history and selected presentation snapshots. The T1 runner
@@ -371,15 +507,66 @@ definitions of every message.
 | --- | --- | --- |
 | Translator | Move module/declaration scheduling behind the publication lifecycle, leaving term elaboration/tactic dispatch with their existing scope and source-unit interfaces. | No mixin framework or duplicate query/fuel state. |
 | Instruction driver | Extract a coherent search-policy/trace or signature-handling component behind existing `InstructionGraph` calls, if it reduces shared mutable state. | The JS driver is untrusted; keep C admission checks independent. Similar-looking rules across that boundary are deliberate validation. |
-| Workbench | Extract worker/request lifecycle from `proof.mjs`, then renderer functions with explicit inputs; reuse existing navigation modules. | Preserve cancellation, stale-response rejection, source navigation and inspection. Separate from compiler refactors. |
-| Browser scripts | Share the repeated server startup, readiness, Chromium lifetime and teardown used by landing, navigation, cubical and inspector scripts. | Keep scenario assertions. Older scripts are still invoked by [`release-evidence.mjs`](../../tools/release-evidence.mjs), even when absent from the default browser command. |
-| Module inventories | Consolidate repeated discovery lists around [`modules.mjs`](../../web/cubist/modules.mjs) with deterministic validation/generation. | Preserve curated archive order, benchmark membership, titles and browser bundle inputs; automatic alphabetical discovery is not an equivalent replacement. |
+| Workbench | Extract one worker client shared by `proof.mjs`, [`repl-console.mjs`](../../web/repl-console.mjs) and [`reference/examples.mjs`](../../web/reference/examples.mjs), each of which implements its own request/response exchange today; then renderer functions with explicit inputs; reuse existing navigation modules. | Preserve cancellation, stale-response rejection, source navigation and inspection. The REPL and reference clients have no worker `error` handler, so a worker that fails to load leaves their requests pending; a reference page loading both can start two workers. Separate from compiler refactors. |
+| Browser scripts | Share the repeated server startup, readiness, Chromium lifetime and teardown used by landing, navigation, statement, cubical and inspector scripts; `site.browser.mjs` has a variant. | Keep scenario assertions. Older scripts are still invoked by [`release-evidence.mjs`](../../tools/release-evidence.mjs), even when absent from `test:browser`, which runs only the inspector. |
+| Module inventories | Consolidate repeated discovery lists around [`modules.mjs`](../../web/cubist/modules.mjs) with deterministic validation/generation. Several tools find modules with `readdir` instead. | Preserve curated archive order, benchmark membership, titles and browser bundle inputs; automatic alphabetical discovery is not an equivalent replacement. Archive membership is checked only from list to file: also check that every archive file is listed. |
+| Tool corpus checks | Four tools and the benchmark runner build an `import NAME;` program for the whole corpus their own way, and `elaboration-fingerprint.mjs` has its own source reader. Share one corpus check through [`module-sources.mjs`](../../tools/module-sources.mjs). | Compare each tool's fingerprints and reports before and after. |
 
 Defer wholesale parser/kernel rewrites. In particular, the large native
 signature tests exercise admission conditions and malformed inputs that
 well-typed Cubist cannot express. Keep invalid-handle, ABI, isolation and
 allocation-failure tests in C/JS. Do not delete an independent validator
-to reduce line count.
+to reduce line count. Do not table-drive instruction admission either:
+the shared prologue is small, and per-instruction checks are the point.
+The kernel's long functions are in normalization and computation, not in
+`instructions.c`: `weak` in [`term_normalize.c`](../../kernel/src/term_normalize.c)
+(212 lines), `ck_reduce_composition` (119) and `contract` in
+`instruction_equality.c` (114). Split `weak` by term kind only behind
+normal-form differential evidence, such as the evaluation baseline's
+digests.
+
+### Single sources of truth
+
+Each row is a fact the code states more than once, where copies can
+drift without a test noticing. Consolidate one row per PR, with a parity
+test where the copies cross a language or build boundary.
+
+| Fact | Copies today | Proposal |
+| --- | --- | --- |
+| Which commands verify the project | [`ci.yml`](../../.github/workflows/ci.yml), [`pages.yml`](../../.github/workflows/pages.yml), `localChecks` in `release-evidence.mjs` and a hand list in `release-evidence.test.mjs`, which says it matches CI but never reads it. Release evidence omits `test:generation:mutations`; CI omits instruction coverage and four browser scripts. | Derive the lists from `package.json` scripts and state deliberate differences in one place. |
+| Expected-diagnostic comments | `stated-comments.mjs` and `tests/reference-pages.mjs`, with different continuation rules; read by the inlined suite, the benchmark and reference tests. | One reader, before pragmas (see above). |
+| Test-host setup | The fixture-overlay reader `(name, importer) => fixtures[name] ?? library(name, importer)` in nine test files; at least eight “verified with no axioms” helpers; 74 hand-built `new CubicalProgram(await createCubical())` in 21 files. In `tests/translator/`, `close()` repeats in seven files. | `fixtures`, program and acceptance helpers in `check-program.mjs`; kernel helpers in `kernel-check.mjs`. |
+| Source tokens | The parser's tokenizer and the highlighter's `tokenPattern` in [`source-tokens.mjs`](../../web/source-tokens.mjs) disagree on `>=`, `<-`, decimal and fraction literals, and `0b` literals; `proof.mjs` and `lint.mjs` scan source again. | Export one scanner from the parser that keeps whitespace and comments, and build highlighting on it. |
+| Lexical sets | The universe-constant test, `Unit`/`Void`/`tt` and operator lists each recur in three or four files, and two different lists are both exported as `notationOperators`. | Export the predicates and tables from `parser.mjs`; rename the private one. |
+| Term-tag metadata | The binder tags `Pi`, `Lam`, `Sigma`, `LPi`, `LLam` listed in seven places; field tables in `translator/core.mjs` and `dimension-slots.mjs`; two free-dimension functions; ad hoc free-name scans in the notation and source-text printers. | One table of fields and binding positions, one free-names module. Printers need a variant that tolerates display-only terms; the native codec in `cubical-syntax.mjs` stays separate unless a parity test covers it. |
+| Builtins | `builtinTerm` in [`translator/builtins.mjs`](../../web/translator/builtins.mjs) is a 257-line `if` chain, separate from `builtinNames`; nothing checks that every reserved builtin has a handler. | A dispatch table and a parity test, so a reserved name cannot fall through to an ordinary call. |
+| The WASM interface | JS copies `cubical_kernel.h`'s enums by position (`cubicalKinds`, `errorKinds`, instructions, step rules); the 64-bit step budget is split into halves at each call; raw `_cb_*` calls appear in more than a dozen files. | A test that checks the header's enums against the JS arrays, and a `setStepBudget` wrapper. |
+| Site layout | [`build-site.mjs`](../../tools/build-site.mjs) and [`serve.py`](../../tools/serve.py) each list the published roots and rewrite import versions with their own pattern. | Generate one from the other, or test that they agree. |
+
+### Small independent fixes
+
+None needs a design decision; each is a small PR or part of one.
+
+- **Dead code.** [`web/cubist/notation.mjs`](../../web/cubist/notation.mjs)
+  (134 lines) has no importers. `rewriteFirst` in
+  `translator/proof-rewrite.mjs` has no callers, and `translate.mjs`
+  rebuilds its errors inline. `tests/source-edit.mjs` is unreferenced. The
+  exports `binaryLiteralExpansion`, `ththRules` and `cubicalSourceFiles` are
+  never imported, and the retired `W` kind is still handled in `cubical-assembly.mjs`
+  and `cubical-inspection.mjs`.
+- **Dev-server staleness.** The `/cubist-version` hash in `serve.py` omits
+  `web/diagnostics.mjs`, `module-listing.mjs`, `module-resolution.mjs` and
+  `repl-session.mjs`, all in the worker's import closure, so editing them
+  does not refresh the workbench's compiler. Hash the closure instead of
+  globs.
+- **Build prerequisites.** The `web/dist/cubical.mjs` rule in the
+  [`Makefile`](../../Makefile) omits `kernel/src/internal.h`;
+  `kernel/Makefile` lists `TESTS` by hand, so a new `test_*.c` is not
+  built; five C test files define their own `ok()` helper.
+- **Process-wide counters.** `serial` in `translator/lexical.mjs` and
+  `placeholders` in `translator/arguments.mjs` are module-level, against
+  the per-unit determinism contract in `translator/names.mjs`. Move them
+  into the source unit's name supply.
 
 ## Ordered PR roadmap
 
@@ -388,14 +575,18 @@ stated boundary. RC0 is the recommended next PR after this document.
 
 | ID | Deliverable | Depends on | Risk and exit evidence |
 | --- | --- | --- | --- |
-| RC0 | Delete obsolete FG scaffolding and redundant checks listed above. | This roadmap | Low. Net test/helper deletion; surviving cases named; full suite and 13 required mutation kills unchanged. |
-| RC1 | Parse/format the initial pragmas, implement T0/T1 in the existing runner, and migrate the first initial-model/theory cases. | RC0 | Medium. Unknown/dangling pragmas, missing/duplicate cases, unexpected failures and assumption mismatches demonstrably fail; formatting preserves attachment and spans. Old wrappers removed in the same PR; no second module loader. |
+| RC0 | Delete obsolete FG scaffolding and redundant checks listed above; make the archive round trip test meaning preservation. | This roadmap | Low. Net test/helper deletion; surviving cases named; full suite and 13 required mutation kills unchanged; the repaired round trip fails against a meaning-changing formatter edit. |
+| RC1 | Parse/format the initial pragmas, implement T0/T1 in the existing runner, and migrate the first initial-model/theory cases, including the `theory_headers` wrapper. | RC0, RC9 | Medium. Unknown/dangling pragmas, pragmas outside test fixtures, missing/duplicate cases, unexpected failures and assumption mismatches demonstrably fail; formatting preserves attachment and spans. The benchmark reads migrated refusals from pragmas; mutation selectors still classify kills. Old wrappers removed in the same PR; no second module loader. |
 | RC2 | T2 source/work observations, then migrate FG source assertions. Add T3 module scenarios as a separate sub-PR when needed. | RC1 | Medium. Every migrated contract detects the same deliberate defect; retain browser and native fault injection. |
-| RC3 | Consolidate publication lifecycle and declaration scheduling. | RC0; RC1 useful, not required | High. Rollback, observer failure, import repair and partial-family controls pass; native handles and frontend metadata agree. Compare allocation/work counters. |
+| RC3 | Consolidate publication lifecycle and declaration scheduling, including the elaborator's collections and an explicit module context in place of the per-module prototype checker. | RC0; RC1 useful, not required | High. Rollback, observer failure, import repair and partial-family controls pass; native handles and frontend metadata agree; the error path accounts steps as the success path does. Compare allocation/work counters. |
 | RC4 | Pilot telescope/builder consolidation for Hom, then widen by family. | RC1; coordinate with RC3 | High. Intended/captured law pairs, universe matrix, assumptions and source origins preserved; old conversion path deleted for each migrated slice. |
-| RC5 | Structured diagnostic producer migration, one family at a time. | RC1 | Medium. Codes/spans stable; presentation snapshots reviewed; corresponding English classifier branches removed. |
-| RC6 | Share browser fixtures and reconcile module inventories in separate PRs. | Independent | Low/medium. Existing release/browser scenarios and discovery membership preserved; setup/list duplication removed. |
-| RC7 | Extract workbench lifecycle; separately consider driver policy/trace extraction after profiling. | Independent of test migration; keep clear of RC3/RC4 | Medium/high. Stale-worker and UI controls pass; driver changes preserve instruction validity and work budgets. No trusted-kernel rewrite. |
+| RC5 | Structured diagnostics: lint codes and structured positions first, then producer migration one family at a time. | Lint and position slices independent; later families RC1 | Medium. Codes/spans stable; presentation snapshots reviewed; corresponding English classifier branches and position-stripping patterns removed. |
+| RC6 | Share browser fixtures (including the statement and site scripts), reconcile module inventories and share tool corpus checks, in separate PRs. | Independent | Low/medium. Existing release/browser scenarios, discovery membership and tool reports preserved; setup/list duplication removed. |
+| RC7 | Extract one workbench worker client for the proof page, REPL and reference examples, then renderer functions; separately consider driver policy/trace extraction after profiling. | Independent of test migration; keep clear of RC3/RC4 | Medium/high. Stale-worker, worker-load-failure and UI controls pass; driver changes preserve instruction validity and work budgets. No trusted-kernel rewrite. |
+| RC8 | The [small independent fixes](#small-independent-fixes): dead code, dev-server hash, build prerequisites, process-wide counters. | Independent | Low. Deleted code has no importers; editing any module in the worker's import closure refreshes the workbench; full suite unchanged. |
+| RC9 | One reader for expected-diagnostic comments, and shared test-host helpers in `check-program.mjs`. | Independent; before RC1 | Low. Reference-example and inlined-suite results unchanged, including the end-of-line form; copies removed. |
+| RC10 | Derive the verification lists from `package.json` scripts. | Independent | Low. CI, Pages, release evidence and its test name the same checks, or list their differences in one place; release evidence includes the mutation gate. |
+| RC11 | The remaining [single sources of truth](#single-sources-of-truth), one row per PR: tokens and lexical sets, term-tag metadata, builtin dispatch, WASM enums, site layout. | Independent; coordinate term tags with RC4 | Medium. A parity test for each consolidated fact; generated names, goldens and normal-form digests unchanged unless reviewed. |
 
 Do not implement these as one cleanup mega-PR. RC1 should deliver actual
 source migrations, not only add infrastructure; RC3/RC4 should remove
