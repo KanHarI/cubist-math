@@ -84,8 +84,22 @@ planner must not claim to have inferred types or discharged obligations.
 
 ## FG0: establish evidence and semantic comparisons
 
-Depends on #188's scope fixes. Start this before the implementation slices
-and extend it in every slice. Initial change: a small test-only PR.
+Depends on #188's scope fixes. The initial harness is implemented by
+[PR #205](https://github.com/KanHarI/cubist-math/pull/205) and runs in the
+normal `npm test` suite. Extend it in every implementation slice; its TODOs
+record implementation debt, not passing behavior. Each executable variant
+has an independent case ID and activation state. Prerequisites fail normally;
+only explicitly recognized diagnostic/client/source observations may be TODOs.
+A changed symptom must fail and be investigated. The
+[comparison manifest](../../tests/fixtures/frontend-generation.md#coverage-by-executable-case)
+records the cases, including direct, inherited and initial-model G12 clients.
+
+This roadmap is the authority for desired FG behavior; the inventory records
+defects and the manifest maps executable evidence to these requirements.
+Apply the [regression contract checklist](../guides/regression-contracts.md)
+when extending that evidence. The [contract audit](../reports/frontend-generation-contract-audit.md)
+records permitted alternatives and distinguishing controls. A new review finding
+requires checking the same failure mechanism across sibling contracts.
 
 - Turn G1–G6 and G8–G12 into durable fixtures with explicit current failures and
   expected outcomes. Prefer a focused test for a complete behavior over
@@ -322,7 +336,9 @@ valid replacement for a discarded origin.
 Make unused-binder advice aware of theory-field roles and public argument
 labels. Initially suppress arrow-form advice where it changes a generated
 interface. A future broader simplification must prove preservation through
-checked clients: named calls, Hom/Iso operations and initial/free folds.
+checked clients: supported calling conventions, Hom/Iso operations and
+initial/free folds. G5 currently uses positional operation calls; named
+operation calls require separate language support.
 Merely preserving the standalone function type is insufficient.
 
 Exit: G5's suggested edits either preserve those clients or are not
