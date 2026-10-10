@@ -86,7 +86,7 @@ revision the same day:
    **Approved on 2026-10-02:** the [model construction](../h1-model.md);
 2. Lemma H2's full case analysis, and the critical-pair check of 3.7.
    **Approved on 2026-09-30:** the [case analysis and overlap
-   table](h1-critical-pairs.md);
+   table](../h1-critical-pairs.md);
 3. canonicity (4.4) reviewed, relative to the assumed baseline of 4.1.
    **Approved on 2026-10-02:** the [canonicity argument](../h1-canonicity.md);
 4. the acceptance matrix of 10.10 complete, K10 and K11 included. Every

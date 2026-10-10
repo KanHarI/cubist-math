@@ -43,7 +43,7 @@ associativity, units, inverses, setness, and a group isomorphism.
 The development uses two library axioms: univalence and function extensionality.
 Its transport computation rule is [derived from univalence](univalence.md). Source inspection links these uses
 to their original declarations. No circle-specific axiom or theorem is added to C.
-The [kernel extension](../../src/kernel/suspension.c) supplies general suspension
+The [historical kernel extension](https://github.com/KanHarI/cubist-math/blob/7dbb8766582c575bc3501dd1fab5bc4aca3bab7b/src/kernel/suspension.c) supplied general suspension
 formation, points, meridians, dependent elimination, and propositional meridian
 computation. Transport and dependent application reuse the existing equality
 eliminator. Point computation is definitional; path computation is propositional.

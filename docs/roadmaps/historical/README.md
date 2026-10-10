@@ -27,6 +27,6 @@ unfinished migrations; the source-defined Nat/W/pushout record describes the
 current API. Paused mathematical developments are unfinished, not completed
 history.
 
-The frontend roadmap is in an unmerged stack and has evidence/performance
-follow-ups. It is not archived by this main-based change. See
+The integrated frontend roadmap has evidence/performance follow-ups, so it
+remains active. See
 [branch work](../work-plan.md#branch-work).

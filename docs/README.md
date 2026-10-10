@@ -10,7 +10,7 @@ Moving these documents does not change their recorded status or resume paused wo
 
 Progress reconciled on 2026-10-10 against main `cb525f07`. The
 [roadmap overview](roadmaps/README.md#at-a-glance) separates delivered work
-from the [open branch stack](roadmaps/work-plan.md#branch-work).
+from remaining obligations in the [integrated stack](roadmaps/work-plan.md#branch-work).
 
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
   language, its kernel support and the language reference. Broad mathematical
@@ -21,6 +21,8 @@ from the [open branch stack](roadmaps/work-plan.md#branch-work).
   completed and superseded plans, the G0 specification, closed H1 release
   evidence and dated audits. Current specifications and unfinished work
   remain in the active roadmap directory.
+- [Reports and historical evidence](reports/README.md): revision-specific
+  validation and progress snapshots, with their current status owners.
 - [Results of the first library](library-results.md): the frontier and iconic
   theorems of the archived library in mathematical English, with their
   logical assumptions. It is the specification the rebuild starts from.
@@ -68,10 +70,9 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
-- [Frontend generation](roadmaps/frontend-generation.md): design changes
-  motivated by PR #188's review failures, with phased implementation and
-  semantic acceptance criteria. The [current gap inventory](reports/frontend-generation-gaps.md)
-  records reproducible failures separately from planned functionality.
+- [Frontend generation](roadmaps/frontend-generation.md): generation contracts
+  and remaining audit/measurement work. The [gap inventory](reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
+  owns finding status, fixes and distinguishing regressions.
 - [Morphisms, categories and universal constructions](roadmaps/categories.md):
   opt-in morphisms and checked initial/free derivations, which may fail;
   general propositional laws and the proposed categorical library. The
@@ -97,7 +98,7 @@ finishing a language milestone does not automatically resume them.
     evaluation patterns and closed truncation readout, box notation and squares.
   - Remaining: checked initial/free capabilities, structure identity,
     advanced rewriting and declaration interfaces. The construction prototype
-    is in open #188, not main.
+    is integrated from #188.
   - The old [implementation sequence](roadmaps/historical/proof-ergonomics-implementation-plan.md)
     is historical; its [remaining contracts](roadmaps/proof-ergonomics-roadmap.md#remaining-implementation-contracts)
     have active owners. Keep the [checked/proposed examples](examples/proof-ergonomics/README.md).
