@@ -126,6 +126,8 @@ let worker,
   inspectSerial = 0;
 const pending = new Map(),
   history = [];
+let sourceMode = "read", generationSerial = 0;
+const generatedSources = new Map();
 $("editor").value = example;
 for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
@@ -241,8 +243,10 @@ function refreshStatus() {
   for (const id of ["share-syntax", "reuse-checks", "compact-paths"])
     $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
   $("export").disabled = !last || pending.size > 0;
+  $("generated-mode").disabled = !last;
+  $("generated-module").disabled = pending.size > 0;
   $("dirty").textContent = dirty()
-    ? "Edited — changes are not checked. Read shows the last checked version."
+    ? "Edited — changes are not checked. Read and Generated Cubist show the last checked version."
     : "";
   $("status").textContent = pending.size
     ? "Checking…"
@@ -298,10 +302,20 @@ async function check() {
     // (module-resolution.mjs): an archive proof imports only from the archive.
     const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
+    generationSerial++;
+    generatedSources.clear();
+    $("generated-source").value = "";
+    const previousModule = $("generated-module").value;
+    $("generated-module").replaceChildren(...Object.keys(result.sources).map(name => {
+      const option = document.createElement("option");
+      option.value = name; option.textContent = name === proofId ? `${name} (current)` : name;
+      return option;
+    }));
+    $("generated-module").value = Object.hasOwn(result.sources, previousModule) ? previousModule : proofId;
     history.length = 0;
     renderSource();
     renderResult();
-    setMode("read");
+    setMode(sourceMode === "generated" ? "generated" : "read");
     const target = query.get("name");
     const info =
       target &&
@@ -341,15 +355,37 @@ async function check() {
   refreshStatus();
 }
 function setMode(mode) {
+  sourceMode = mode;
   $("editor").hidden = mode !== "edit";
-  $("read-source").hidden = mode === "edit";
+  $("read-source").hidden = mode !== "read";
+  $("source-count").hidden = mode === "generated";
+  $("generated-panel").hidden = mode !== "generated";
   $("read-mode").setAttribute("aria-pressed", String(mode === "read"));
   $("edit-mode").setAttribute("aria-pressed", String(mode === "edit"));
+  $("generated-mode").setAttribute("aria-pressed", String(mode === "generated"));
   $("source-hint").textContent =
     mode === "edit"
       ? "Edit the source, then Check proof. A failed check preserves your last checked proof."
+      : mode === "generated" ? "Read-only frontend expansion from the last check. Each family shows its checking status. Captured names are for inspection; this is not a standalone module."
       : last?.backend === "cubical" ? "Click a name or numeral to inspect its checked type, context, and definition."
       : "Click a name to inspect it. Click a line number to see its goal and assumptions.";
+  if (mode === "generated") showGeneration();
+}
+async function showGeneration() {
+  if (!last) return;
+  const sequence = ++generationSerial, module = $("generated-module").value;
+  $("generated-status").textContent = "Preparing generated source…";
+  $("generated-source").value = "";
+  try {
+    const result = generatedSources.get(module) ?? await request("generation", { module });
+    if (sequence !== generationSerial) return;
+    generatedSources.set(module, result);
+    $("generated-source").value = result.source;
+    $("generated-status").textContent = `${result.count} generated declarations`
+      + (last.gaps.some(gap => gap.module === module) ? " · check incomplete" : "");
+  } catch (error) {
+    if (sequence === generationSerial) $("generated-status").textContent = `Unable to display generation: ${error.message}`;
+  }
 }
 function decorate(info) {
   const imported = last?.imports.find(
@@ -948,6 +984,8 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) $(id).onchan
 };
 $("read-mode").onclick = () => setMode("read");
 $("edit-mode").onclick = () => setMode("edit");
+$("generated-mode").onclick = () => setMode("generated");
+$("generated-module").onchange = showGeneration;
 $("editor").oninput = () => {
   refreshStatus();
   rememberDraft();

@@ -63,6 +63,15 @@ try {
     }
     console.log(`PASS static worker, WASM, checking and folded inspection: ${proof} (${backend})`);
   }
+  // Generated source also works through the static worker's versioned imports.
+  const generated = Buffer.from("import hlevels; theory T(U < UU0) { M : set U; c : M; } initial N : T(U0);").toString("base64url");
+  await page.goto(new URL(`proof.html?example=1#source=${generated}`, base).href);
+  await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
+  await page.locator("#generated-mode").click();
+  await page.waitForFunction(() => document.querySelector("#generated-source")?.value.includes("def N.fold_map"));
+  assert.equal(await page.locator("#generated-source").getAttribute("readonly"), "");
+  assert.doesNotMatch(await page.locator("#generated-source").inputValue(), /display unavailable/);
+  console.log("PASS static worker: read-only generated Cubist with theories and initial models");
   // Reference examples are checked in the browser; a linked name opens the
   // workspace's kernel inspector for it.
   await page.goto(new URL("reference/types.html", base).href);
