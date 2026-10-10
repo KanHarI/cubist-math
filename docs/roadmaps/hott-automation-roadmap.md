@@ -1,12 +1,15 @@
 # HoTT and cubical abstractions and automation in Cubist
 
+Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
+work is recorded separately in the [work plan](work-plan.md#branch-work).
+
 Status reviewed 2026-10-07: A4, A6, A7, A8, A5's goal layer with its four
 elaborator replacements, and D0a are delivered. B4's `show` and `suffices`
 were delivered on 2026-09-27 and replaced by `let` on 2026-09-30. D1 has two
 slices (2026-09-29, 2026-10-06), E2 three (2026-10-06), and D0b started in
 the library on 2026-10-04. The other milestones are open. On 2026-09-28 the
 (H)-marked prerequisites were re-scoped after the
-[work-plan audit](audits/2026-09-28-audit.md): only the single-sort motive
+[work-plan audit](historical/audits/2026-09-28-audit.md): only the single-sort motive
 and clause services gate H1's explicit `match` (see A5 and D0a). The
 [implementation checkpoint](../tactical/hott-automation-handoff.md) records A7's
 baseline. Revised after two design reviews on 2026-09-24 and a
@@ -15,7 +18,7 @@ several targets follow from computation the kernel already performs, before
 any new tactic. The milestones below are proposed work; existing
 implementations are identified as evidence.
 This roadmap follows the checked first slice of the [proof ergonomics roadmap](proof-ergonomics-roadmap.md)
-and its [implementation plan](proof-ergonomics-implementation-plan.md). It
+and its [implementation plan](historical/proof-ergonomics-implementation-plan.md). It
 reorders their remaining dependent, cubical and induction work around paths,
 transport and path induction, which dominate the library, and it owns the
 shared elaboration infrastructure (A4–A6) that the ergonomics roadmap's
@@ -963,7 +966,7 @@ Completion:
     trips are not judgmental.
 
   Write and display cells in the implementation plan's box notation (item 4 of
-  its [cubical language changes](proof-ergonomics-implementation-plan.md#cubical-language-changes-worth-prioritizing)).
+  its [cubical language changes](historical/proof-ergonomics-implementation-plan.md#cubical-language-changes-worth-prioritizing)).
   The corpus has 248 `face_when(` and 131 `comp(` occurrences, mostly in raw
   terms, and A3 and E2 generate more.
   - The box notation, first, on 2026-10-06 (work plan L2.8):

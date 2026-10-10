@@ -18,12 +18,12 @@ and the [model construction](h1-model.md) (D1, D4, D5) and
 assumed baseline of 4.1 and to premise P1 of the model; 4.5 lists what is
 proved, argued and assumed. Normalization and decidable conversion are not
 claimed, and a canonicity fixture is not a proof of them. The
-[release evidence](h1-release-evidence.md) records every check at `8229181`,
+[release evidence](historical/h1-release-evidence.md) records every check at `8229181`,
 the revision merged into `main`, run again on 2026-10-03. The first run, at
 the release's own revision `581e03c`, is that file as commit `cb0b0dd`
-wrote it ([history](h1-history.md#status-and-release-record)).
+wrote it ([history](historical/h1-history.md#status-and-release-record)).
 
-The [history](h1-history.md) keeps what this document said along the way:
+The [history](historical/h1-history.md) keeps what this document said along the way:
 the release checklist and its record, the experimental mode and its
 `kernel extension: H1` marker, the four reviews of the first draft and the
 decisions of 2026-09-27, and K2.4's representation map and differential
@@ -530,7 +530,7 @@ counts index types too (G0 2.12).
   hold. The classification of each instruction into (i) to (v) is a review
   item of this proposal, for each K2.2 family, if it is adopted; an
   instruction added later must be classified before the check admits it.
-  It was not on finite-level H1's release checklist ([history](h1-history.md#status-and-release-record)).
+  It was not on finite-level H1's release checklist ([history](historical/h1-history.md#status-and-release-record)).
 
   *Examples.* `Pair`, `Trunc`, `Quotient` and the K2.4 counterparts pass:
   their derivations use only their parameters, universes at their level
@@ -1362,7 +1362,7 @@ the migration verifier (`tools/proof-migration.mjs`) refuses a migration
 that adds or removes one. It compares generative signatures by their
 admitted schemas, and only an identical schema grants a renaming between
 the two copies. The contract the marker followed before the release is in
-the [history](h1-history.md#64-the-kernel-extension-h1-marker).
+the [history](historical/h1-history.md#64-the-kernel-extension-h1-marker).
 
 ### 6.5 Inspection
 
@@ -1394,7 +1394,7 @@ fixtures X1–X8 agreed with them. Instead Nat and W (2026-09-30) and pushouts
 sums stay native; the fixtures were retired as a release gate on 2026-10-02,
 and their tests removed with the historical kernel they ran against. The
 section as it stood, 7.1–7.4, is in the
-[history](h1-history.md#7-k24-representation-map-and-differential-contract);
+[history](historical/h1-history.md#7-k24-representation-map-and-differential-contract);
 references to it elsewhere in this document are to that text.
 
 ## 8. K2.5: truncation and resizing (G2)
@@ -1890,7 +1890,7 @@ inverse, by `rfl`, and closed `evaluate` directives read the normal forms.
 example. Its results carry no assumption and, since the release, no marker.
 The native comparisons (X1–X8) were K2.4a's. They were retired as a gate on
 2026-10-02 and their tests removed; the
-[differential evidence](h1-differential-evidence.md) keeps what they
+[differential evidence](historical/h1-differential-evidence.md) keeps what they
 showed, X2's criterion issue included.
 `tests/automatic-clauses.test.mjs` checks `Quotient`'s dependent elimination
 into sets and `Gpd`'s into groupoids, using L2.2b's generated clauses.
@@ -1935,12 +1935,12 @@ refuse.
 | Trust T1–T7 | Kernel: T1, T5, T6, T7. Driver: T5, T6. Source: T1 (H1 switched off in the kernel session, and the refusal says so), T2 (no marker since the release: direct, through a definition, through an import), T3, T4. Verifier: kernel extensions compared apart from assumptions (6.4) | — | — |
 | Truncation policy G1–G7 | Source: G1 (`Tr(U1, U0)` is not in `U0`), G2 (small truncation into a proposition in U1), G3 (the archive checks in full with the library modules it imports, 0 gaps; `tests/corpus.test.mjs` pins the count), G5 (rebuilt `CauchySame` and `EventualClose` in U0 without assumptions), G6 (proposition resized through LEM, witness with set evidence refused), G7 (large double-negation elimination, LEM retained). Verifier: G4 (exact ledger change accepted, unlisted or altered pin refused) | — | — |
 | Resources R1–R5 | Kernel: R1 (a sort, constructor and eliminator whose indices are out of range, and a list whose next cell is no list, built as raw syntax: inspected, reduced or refused with an error, and refused by the instructions), R2, R3; a former of the wrong shape and a truncation level above the maximum are refused. Driver: R1 in part (an operand that is not a 32-bit unsigned integer is refused), R5 (the codec round trip); `tests/h1-admission.test.mjs` checks ABI version 3. Source: R4 (a module of ABI version 2 refused by the loader) | — | — |
-| Differential X1–X8 | — | — | All: retired as a gate on 2026-10-02 (checklist item 6). The tests that traced X1, X3 and X6–X8, and X2, X4 and X5 in part, ran against the pinned historical kernel and were removed with it the same day; the [differential record](h1-differential-evidence.md) keeps what they showed |
+| Differential X1–X8 | — | — | All: retired as a gate on 2026-10-02 (checklist item 6). The tests that traced X1, X3 and X6–X8, and X2, X4 and X5 in part, ran against the pinned historical kernel and were removed with it the same day; the [differential record](historical/h1-differential-evidence.md) keeps what they showed |
 
 ## 11. Decided questions
 
 Every question below was decided on 2026-09-27: Q8, Q15, Q16 and Q18 as
-the [history](h1-history.md#decisions) records, and the others as
+the [history](historical/h1-history.md#decisions) records, and the others as
 recommended. Each answer gives the reasoning as it stood then; where the
 implementation changed since, as when Nat, W and pushouts were declared in
 source, the status at the top of this document says so.
