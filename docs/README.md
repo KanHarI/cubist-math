@@ -56,7 +56,7 @@ finishing a language milestone does not automatically resume them.
 | --- | --- | --- |
 | Galois theory | [Finite Galois development](roadmaps/galois-roadmap.md) | [Resumption checkpoint](tactical/galois-handoff.md), [symmetries as loops](tactical/galois.md), [polynomial algebra](tactical/polynomial-algebra.md), [finite dimension](tactical/finite-dimension.md) |
 | Complex analysis | [Algebraic closure, residues, and Picard](roadmaps/complex-analysis-roadmap.md) | [Paused-development checkpoint](tactical/complex_analysis_handoff.md), [complex curves](tactical/complex_curves.md), [limits](tactical/analysis_limits.md) |
-| Real numbers | [Number systems for the rebuild](roadmaps/reals-roadmap.md) | Integers, rationals as a canonical quotient, Cauchy reals at kernel H3; the first library's constructions described as archived. |
+| Real numbers | [Number systems for the rebuild](roadmaps/reals-roadmap.md) | The library's integers and rationals, built on 2026-10-05 as quotients; their order, canonical rationals and the Cauchy reals (kernel H3) are open. The first library's constructions are described as archived. |
 | Analytic number theory | [RH and prime-counting error](roadmaps/rh-prime-counting-roadmap.md) | Planning only: precise conditional statement, analytic dependencies, and potential homotopy interpretations. No proof implementation or tactical checkpoint yet. |
 
 ## Language tooling roadmap
@@ -79,19 +79,21 @@ finishing a language milestone does not automatically resume them.
   binary values and new binary-backed `Z` and `Q`, with staged correctness
   and performance gates.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
-  - Delivered: rewriting, calculations, `simp`/`simpa` and cubical path
-    syntax, dependency tracking, `computable` and exact-value `evaluate`.
-  - Remaining: argument inference, theories, the rest of inductive
-    declarations with pattern matching (one-sort declarations and explicit
-    `match` were released with H1), expected-value patterns and closed
-    truncation readout.
+  - Delivered: rewriting, calculations, `simp`/`simpa`, cubical path
+    syntax, dependency tracking, `computable` and `evaluate` with patterns
+    and truncation readout, argument inference and implicit parameters,
+    explicit `match`, theories and explicit notation.
+  - Remaining: the rest of initial and free models, algebraic
+    normalization and structure identity, and the rest of inductive
+    declarations (`deriving`, proof-first h-levels).
   - See the [implementation plan](roadmaps/proof-ergonomics-implementation-plan.md)
     and [checked/proposed examples](examples/proof-ergonomics/README.md).
 - [HoTT and cubical proof automation](roadmaps/hott-automation-roadmap.md):
   - Delivered: A7 (baseline, regressions and canonicity fixture), the A5
     goal-layer core, A4/A6 deterministic fuel with residual-goal
-    diagnostics, D0a's h-level definitions and the first slice of D1's
-    `hlevel` solver; see the
+    diagnostics, D0a's h-level definitions, D1's `hlevel` solver with
+    registered rules and quantified hints, and E2's box notation and squares
+    library; D0b is started. See the
     [checkpoint](tactical/hott-automation-handoff.md).
   - Planned: remaining goal-layer work, path operations,
     path induction, transport, the rest of the h-level solver, dependent

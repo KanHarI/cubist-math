@@ -22,16 +22,16 @@ Everything here is elaboration: a theory expands to ordinary definitions,
 which the kernel checks like any other. No kernel rule changes.
 
 A revision of the syntax, with theory families and the combination of
-independent theories, was decided on 2026-10-05: [L2.4c](#revision-l24c).
-Its first slice, carriers as fields, the universe in the header and the
-theory's name as the type of its models, is implemented (2026-10-06); the
-rest is not. The sections after it describe the implemented grammar.
+independent theories, was decided on 2026-10-05
+([L2.4c](#revision-l24c)) and implemented in six slices on 2026-10-06.
+The sections after it describe the implemented grammar.
 
 ## Revision (L2.4c)
 
-Decided on 2026-10-05. Each slice migrates in two commits, as the
-retirement of `cases` did: the new forms beside the old, every source
-moved and checked while the old still parse, then the old forms refused.
+Decided on 2026-10-05 and done on 2026-10-06, in six slices. Each slice
+migrated in two commits, as the retirement of `cases` did: the new forms
+beside the old, every source moved and checked while the old still
+parsed, then the old forms refused.
 
 **First slice, done on 2026-10-06:** carriers as fields, `M : set U;`,
 `P : prop U;` and `M : U;`; one universe named in the header,
@@ -114,14 +114,14 @@ its earlier spelling, migrates in two commits (E834 for a `use` of no
 model; E835, E836 for a qualifier that is no model or an operator its
 theory does not bind); `open` is then refused with a message naming
 `use`, and an earlier revision's `open m;` is read as `use m;`. The unary
-form `G.(-) x` waits for arithmetic `-` (L2.10b), and the file-level
-shadowing warning for L2.10a's named notations. Evidence: `cubist-tests/theory_use.cubist` and the reference's
+form `G.(-) x` came with arithmetic `-` (L2.10b); the file-level
+shadowing warning is not implemented yet. Evidence: `cubist-tests/theory_use.cubist` and the reference's
 [selecting a model](../../web/reference/theories.html#open) section.
 L2.4c is then complete; its open questions remain as recorded.
 
 ### Carriers are fields with an h-level
 
-`sort` goes. A carrier is a field whose type is a universe, optionally with
+`sort` is gone (E180, since L2.4c). A carrier is a field whose type is a universe, optionally with
 an h-level, spelled as an inductive declaration's header spells its result
 (`inductive Trunc(U < UU0, A : U) : prop U`):
 
@@ -138,7 +138,7 @@ theory Monoid(U < UU0) {
 
 | Field | What the model holds |
 | --- | --- |
-| `M : set U;` | `M : U` and `M_is_set : IsSet(U, M)`, as `sort M : set;` does today |
+| `M : set U;` | `M : U` and `M_is_set : IsSet(U, M)`, as `sort M : set;` did before L2.4c |
 | `P : prop U;` | `P : U` and `P_is_prop : IsProp(U, P)` |
 | `M : U;` | `M : U` alone: a carrier with no h-level |
 
@@ -228,7 +228,7 @@ theory Preorder(U < UU0) {
   are models too. A monad on all of `U` with untruncated values is not a
   theory: its laws would be data, needing coherence (open question 4).
 - An equation between elements of `F(A)` is a proposition, so the monad
-  laws pass the law check, which refuses them today. Computation
+  laws pass the law check, which refused them before L2.4c's families. Computation
   notation's N1 uses this theory, monads on sets.
 - At a use, `G.F(Nat)`, the index's evidence is an argument; whether the
   author writes it or the h-level solver supplies it is open (question 5).
@@ -242,8 +242,8 @@ theory Preorder(U < UU0) {
 - **A relation is a family of propositions indexed by carriers.** `le(x, y
   : M) : prop U` holds `le` and its evidence; `x <= x` is an element of a
   proposition family, which the law check accepts, as it accepts an element
-  of a proposition carrier. Today a relation cannot be stated: `le(x, y :
-  M) : U0` with the law `x <= x` is refused (E818). A family indexed by a
+  of a proposition carrier. Before L2.4c a relation could not be stated:
+  `le(x, y : M) : U0` with the law `x <= x` was refused (E818). A family indexed by a
   carrier is mapped along that carrier's map: `Preorder.Hom` has
   `map_le(x, y : A.M) : A.le(x, y) -> B.le(map_M(x), map_M(y))`, so its
   homomorphisms are exactly the monotone maps, with nothing to write. The
@@ -320,10 +320,10 @@ theory Both(U < UU0) extends Magma, Action {
 }
 ```
 
-Today `Both` cannot be declared: its parents' carriers clash by name, and
-renaming both to one name is refused too, since carriers merge only when
-they are copies of one ancestor (as `Semiring`'s two monoids are). The
-revision:
+Before L2.4c, `Both` could not be declared: its parents' carriers clashed
+by name, and renaming both to one name was refused too, since carriers
+merged only when they were copies of one ancestor (as `Semiring`'s two
+monoids are). The revision:
 
 - **Carriers merge by name.** A carrier two parents give under one name,
   of one kind (`set` or `prop`) and with the same indices, is one carrier
@@ -348,11 +348,11 @@ revision:
 - Generated names stay unique: a homomorphism's fields for ambiguous
   operations are named by label, `map_magma_mul`.
 
-The present fixture, `SharedOperator` in `cubist-tests/theories.cubist`,
-covers only a clash inside one theory. The revision's acceptance adds the
-cross-parent cases: `Both` above, used through both labels; a child that
-renames one notation; an ancestor reached twice; and carriers of one name
-and different kinds, refused.
+`SharedOperator` in `cubist-tests/theories.cubist` covers a clash inside
+one theory. `cubist-tests/theory_independent.cubist` covers the
+cross-parent cases: `Both` above, used through both labels; children that
+rename a notation; an ancestor reached twice; and carriers of one name and
+different kinds, refused.
 
 ### Qualified operators
 
@@ -375,10 +375,12 @@ replaced `open` (its decision 7).
   reference moved to the new forms and checked while `sort` and
   `T.Model` still parse, then refused.
 - Several carriers: a set acting on a set, with `map_S` and `map_X`, round
-  trips on both, and composition computing. No fixture covers more than one
-  carrier today.
+  trips on both, and composition computing. `Arrow` in
+  `cubist-tests/theory_headers.cubist` has two carriers and its identity
+  homomorphism; no fixture yet checks round trips on both or composition.
 - A parameter: `Module(U0, integers)`, whose homomorphisms have only
-  `map_V`.
+  `map_V`. No fixture covers it yet; `Pointed` in
+  `cubist-tests/theory_headers.cubist` covers parameters.
 - Families: the identity monad as a `Monad` on sets; `Graded`; `Preorder`,
   whose homomorphisms are monotone, with isomorphisms that have no round
   trips on `le`, and the law check accepting `x <= x`; a set family
@@ -415,7 +417,7 @@ L2.4 delivers, in slices:
 2. **`theory`, `T.Model` and `extends`.** Declarations of sorts that are sets
    or propositions, constants, operations with notation, and laws; the record
    type of models, its constructor and its fields; single and multiple
-   extension, with renaming.
+   extension, with renaming. `T.Model` is now `T(U)` (L2.4c).
 3. **`section`.** Shared parameters for a group of declarations, opened for
    their statements and proofs.
 4. **`T.Hom` and `T.Iso`.** Homomorphisms and isomorphisms, with identity and
@@ -426,15 +428,15 @@ T.Iso(M, N)`, and displayed models (L2.4b, through HoTT F1); sorts that are
 not sets or propositions, whose homomorphisms need coherence fields; relation
 fields; `initial T` and `free T on A` (L2.6, whose contract is specified
 [below](#initial-and-free-models-l26)); numerals interpreted in a model; type-directed overloading and
-instance search. Structure scope stays explicit: an operator means one thing
-in a scope, chosen by `use` or `section`, never by the types of its operands.
-The [notation roadmap](notation.md), L2.10, adopts explicit model notation
-views as the next direction: an expression or block selects its model before
-its operators and literals are elaborated. `v.(expression)` and `use v;`
-are its decided spellings; its remaining grammar and elaboration gates are
-draft. Existing `use` and section semantics remain compatible
-during that migration; type-based automation is optional later work, requiring
-evidence that it preserves the explicit semantics.
+instance search. L2.4c later added carriers with no h-level and relation
+fields, and L2.10c numerals in a model. Structure scope stays explicit: an
+operator means one thing in a scope, chosen by `use` or `section`, never by
+the types of its operands. The [notation roadmap](notation.md), L2.10,
+extended explicit selection on 2026-10-06: named notations, `v.(e)` and
+`use v;`, arithmetic operators, literals read by the library, and printing
+in the selected notation (L2.10a–e), with the name-based fallback retired
+(L2.10j). Type-based automation is optional later work, requiring evidence
+that it preserves the explicit semantics.
 
 ## Theories
 
@@ -466,28 +468,31 @@ A theory's body lists, in order:
   are not propositions and whose models have no homomorphisms (until
   L2.4c's slice of 2026-10-06, `sort M : set;`);
 - **constants**, `one : M;`, and **operations**, `mul(x, y : M) : M`, whose
-  argument and result types are sorts of the theory, each with an optional
+  inputs and results may mention the carriers or not (see **Variance**
+  under [theory families](#theory-families)), each with an optional
   `notation`;
 - **laws**, `law name(binders) : statement;`, propositions about the earlier
   fields. A statement must be evidently a proposition: an equation between
   elements of a sort (the sorts are sets or propositions), `Void` or `Unit`,
-  an element of a proposition sort, or `forall`, `->` into one, or `and` of
-  two. Anything else, such as `law point : M;` or an `exists`, is refused,
-  since homomorphisms ignore laws. `Unit` and `Void` are reserved names, so
+  an element of a proposition carrier or relation, a type declared at
+  `prop`, as `Trunc(U, …)` (L2.10k), or `forall`, `->` into one, or `and`
+  of two. Anything else, such as `law point : M;` or a bare `exists`, is
+  refused, since homomorphisms ignore laws. `Unit` and `Void` are reserved names, so
   no declaration can stand in for them here.
 
 Inside the body the theory's own notation, and its parents', is in scope, and
 each field is in scope by its name from its declaration on.
 
-A notation is one of the binary operators the grammar already has, `x + y`
-or `x * y`, or a relation, `x < y` or `x <= y`. Unary minus is refused
-until it becomes arithmetic, and `~` inverts a path, so negation and
-inverses are named operations.
+A notation is a binary operator, `x + y`, `x - y`, `x * y`, `x / y` or
+`x ^ y`, unary `-x`, or a relation, `x < y` or `x <= y` (L2.10b); `>` and
+`>=` are never declared. An operand of another view names it, as
+`x ^ nat.(n)`. A derived operation may read plain numerals, `notation
+numeral` (L2.10c). `~` reverses a path and is never a notation.
 
-This is the implemented L2.4 grammar. L2.10's proposed operators and literals
-are separate work. Reversal moved to `~` first (L2.10i, 2026-10-06),
-keeping the groupings `-p @ i` and `p @ -i & j` had, so that `-` can
-become arithmetic.
+This is the implemented grammar, with L2.10b's operators and L2.10c's
+literals. Reversal moved to `~` first (L2.10i, 2026-10-06), keeping the
+groupings `-p @ i` and `p @ -i & j` had, so that `-` could become
+arithmetic.
 
 ## Models
 
@@ -506,9 +511,12 @@ otherwise a qualified name, as `Trunc.squash` is. Goals and messages show
 `m.f` for a projection.
 
 ```
-import nat, hlevels;
+import nat;
+import hlevels;
+import algebra;
+use nat;
 
-def additive : Monoid(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
+def additive_model : Monoid(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
   mul := add, mul_assoc := nat_add_assoc, one := 0, one_mul := nat_zero_add,
   mul_one := nat_add_zero);
 ```
@@ -537,11 +545,11 @@ and a section or `use` selects its model's view, innermost first: L2.10j
 retired the fallback to `add` and `mul` in scope, and every selection is
 complete.
 
-L2.10 extends this explicit selection to expression views, including theorem
-statements, with operand views determining numeral interpretations and a
-printer that retains the model whenever omitting it would change meaning.
-It does not change the behavior of existing `use` statements or sections
-as an incidental part of introducing that syntax.
+L2.10 extended this selection to expressions and theorem statements on
+2026-10-06 (L2.10a–e), with operand views, literals read in the selected
+notation, and a printer that keeps the model where omitting it would
+change meaning. Only L2.10j changed sections: their selections are
+complete.
 
 ## Sections
 
@@ -595,16 +603,20 @@ theory CommRing extends
 A renaming gives a parent's field a name in the child, and an operation a
 notation in place of its own; renaming a sort to one name in two parents, as
 `M := R` above, makes it one sort of the child. Two fields of one name from
-different parents are refused unless they are one ancestor's field shared
-as above; the error names both and asks for a renaming. A child model has
-each parent's model: `T.p(m) : P(U)` for a parent `P` labelled `p`, and
+unrelated parents are both kept, named by label, as `first_point` and
+`second_point` (`Bipointed` in `cubist-tests/theory_independent.cubist`),
+and the bare name is refused where it is used (E830, E832). Carriers of
+one name, kind and type merge
+([combining independent theories](#combining-independent-theories)). A
+child model has each parent's model: `T.p(m) : P(U)` for a parent `P` labelled `p`, and
 `m.p` writes it. An unlabelled parent's label is its name in snake case,
 `G.monoid` for `Group extends Monoid`.
 
 ## Homomorphisms and isomorphisms
 
-For a theory whose sorts are sets or propositions and whose operations take
-and return sorts:
+For a theory whose carriers are sets or propositions and whose operations'
+inputs and results the maps can follow (see **Variance** under
+[theory families](#theory-families)):
 
 - `T.Hom{{U, V < UU0}}(A : T(U), B : T(V)) : max(U, V)` has a map
   for each sort, `map_M : A.M -> B.M` (`map` when there is one sort), and
@@ -649,9 +661,9 @@ module needs `hlevels` for the sorts' evidence, and the elaborator says so
 when it is missing.
 
 `use` and sections bind names and operators lexically, recorded in the
-inspector with the projection each stands for. The operator elaboration
-reads an operator's binding before its fallback, the `add` or `mul` in
-scope.
+inspector with the projection each stands for. An operator means only what
+the selection binds; with nothing selected it is an error that suggests
+`use nat;` (L2.10j).
 
 ## Initial and free models (L2.6)
 
@@ -666,7 +678,10 @@ The earlier construction prototype (`web/translator/initial-models.mjs`,
 `cubist-tests/initial_models.cubist`) already supplies declared carriers,
 models and computing folds for the equational strategy. That evidence is
 retained; migrating it to this revised capability contract and proving the
-universal properties remain work to do.
+universal properties remain work to do. The prototype also checks initial
+and free commutative monoids, groups and commutative rings, with folds
+computing on units and generators (checked 2026-10-07); unlike monoids,
+those cases have no dedicated fixture.
 
 Retained and generated syntax follows the
 [scope and capture contract](syntax-hygiene.md). This includes deriving
@@ -993,14 +1008,15 @@ than a defect in this contract:
 - **Sorts are single sets or propositions, not families.** A monad's
   carrier `F(A : U0) : U0` is accepted as an operation, but its laws are
   equations in `F(B)` and are refused (E818). Computation notation's N1
-  needs carrier families. Decided: theory families
-  ([L2.4c](#revision-l24c)).
+  needs carrier families. Done: theory families
+  ([L2.4c](#revision-l24c)'s fourth slice, 2026-10-06).
 - **Independent theories cannot be combined on one carrier.** Two parents
   that each declare `M : set U;` clash on `M`, and renaming both to one
   name clashes too: carriers merge only as copies of one ancestor. An
   operator that two unrelated parents bind is refused (E804) unless the
-  child renames one. Decided: carriers merge by name, and other clashes are
-  ambiguous only where used ([L2.4c](#revision-l24c)).
+  child renames one. Done: carriers merge by name, and other clashes are
+  ambiguous only where used ([L2.4c](#revision-l24c)'s fifth slice,
+  2026-10-06).
 - **No fixture records a wrong homomorphism's refusal.** Doubling offered
   as a homomorphism of `Nat`'s multiplicative monoid is refused, by the
   type of its preservation field, but only an ad hoc check shows it.
