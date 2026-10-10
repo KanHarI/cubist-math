@@ -30,11 +30,10 @@ def dyadic_width_close_tail(
   -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon) {
   intro n, later;
   let radius := dyadic_width(F, half, n, width);
-  let nonnegativeRadius :=
-    dyadic_width_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
-      nonnegativeWidth
-    );
+  let nonnegativeRadius := dyadic_width_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, n, width,
+    nonnegativeWidth
+  );
   exact field_magnitude_small_close(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, radius, radius, epsilon,
     field_nonnegative_magnitude(
@@ -64,11 +63,10 @@ def dyadic_width_converges_from_bounds(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
   );
   obtain (bound, large) := bounds(mulF(width, reciprocal));
-  let small :=
-    dyadic_width_small_from_natural_bound(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
-      nonnegativeWidth, epsilon, positiveEpsilon, reciprocal, inverseLaw, bound, large
-    );
+  let small := dyadic_width_small_from_natural_bound(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, width,
+    nonnegativeWidth, epsilon, positiveEpsilon, reciprocal, inverseLaw, bound, large
+  );
   exact (
     bound,
     dyadic_width_close_tail(
@@ -94,11 +92,10 @@ def dyadic_width_mere_close_tail(
     -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
   ) {
   let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), epsilon));
-  let B :=
-    (
-      exists bound : Nat. forall n : Nat. IndexLE(bound, n)
-      -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
-    );
+  let B := (
+    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+    -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
+  );
   let mapping : A -> B {
     intro data;
     obtain (bound, small) := data;

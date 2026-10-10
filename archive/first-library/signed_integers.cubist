@@ -59,11 +59,10 @@ def successor_triangle(z : Z) :=
     };
   };
 
-def successor_equivalence :=
-  typed(
-    Equiv(U0, Z, Z),
-    (successorZ, predecessorZ, predecessor_successor, successor_predecessor, successor_triangle)
-  );
+def successor_equivalence := typed(
+  Equiv(U0, Z, Z),
+  (successorZ, predecessorZ, predecessor_successor, successor_predecessor, successor_triangle)
+);
 
 // Ordinary integer addition: iterate successor or predecessor in the second argument.
 def add_nonnegative(n : Nat, z : Z) := induction n as k return Z {
@@ -129,7 +128,9 @@ def signs_differ(n, m : Nat, p : nonnegative(n) = negative(m)) := along sign_fib
 
 def integer_equal_decidable(x : Z) := match x as a return (forall y : Z. Decidable(U0, a = y)) {
     left n => fun (y : Z) => match y as b return Decidable(U0, nonnegative(n) = b) {
-      left m => match nat_equal_decidable(n, m) return Decidable(U0, nonnegative(n) = nonnegative(m)) {
+      left m => match nat_equal_decidable(n, m) return Decidable(
+        U0, nonnegative(n) = nonnegative(m)
+      ) {
         left p => typed(
           Decidable(U0, nonnegative(n) = nonnegative(m)), left(cong(nonnegative, typed((n = m), p)))
         );

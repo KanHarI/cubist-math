@@ -44,7 +44,7 @@ def sample_tagged_join_step(
       and SampleTagged(C, condition, n + m, joined, joinedTags)
     ),
     (
-      along((fun (b : C) => condition(a, b, tag))) by sym(firstPath) from headValid,
+      along ((fun (b : C) => condition(a, b, tag))) by sym(firstPath) from headValid,
       previous(tail, tailTags, m, rightVertices, rightTags, same, tailValid, rightValid)
     )
   );
@@ -99,16 +99,14 @@ def subdivision_tagged_valid_join(
   let vertices := subdivision_vertices(C, a, b, left_);
   let m := subdivision_count(C, b, c, right_);
   let rightVertices := subdivision_vertices(C, b, c, right_);
-  let lastLeft : sample_last(C, n, vertices) = b :=
-    field_snd(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left_)
-    );
-  let firstRight : sample_first(C, m, rightVertices) = b :=
-    field_fst(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right_)
-    );
+  let lastLeft : sample_last(C, n, vertices) = b := field_snd(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left_)
+  );
+  let firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right_)
+  );
   exact sample_tagged_join(
     C, condition, n, vertices, subdivision_tags(C, a, b, left_), m, rightVertices,
     subdivision_tags(C, b, c, right_), trans(lastLeft, sym(firstRight)), validLeft, validRight

@@ -163,7 +163,7 @@ def field_closure_pad_right(
   member : FieldClosureStage(F, P, n, x)
 ) :
   FieldClosureStage(F, P, n + m, x) {
-  exact along((fun (rank : Nat) => FieldClosureStage(F, P, rank, x))) by nat_add_comm(m, n) from field_closure_pad(
+  exact along ((fun (rank : Nat) => FieldClosureStage(F, P, rank, x))) by nat_add_comm(m, n) from field_closure_pad(
     F, P, m, n, x, member
   );
 }

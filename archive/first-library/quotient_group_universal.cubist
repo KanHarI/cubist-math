@@ -180,17 +180,15 @@ def quotient_descend_unique(
 ) :
   k = quotient_descend_hom(G, H, h, S, normal, kills) {
   let out := group_hom_map_at(U1, QuotientGroup(G, S, normal), H, k);
-  let same :=
-    fun (x : group_carrier(G)) => cong(
-      (fun (m : GroupHomAt(U1, group_lift(G), H)) => group_hom_map_at(U1, group_lift(G), H, m, x)),
-      triangle
-    );
-  let maps :=
-    quotient_rec_unique(
-      group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier_at(U1, H),
-      group_is_set_at(U1, H), group_hom_map_at(U1, group_lift(G), H, h),
-      killing_subgroup_respects_cosets_at(G, H, h, S, kills), out, same
-    );
+  let same := fun (x : group_carrier(G)) => cong(
+    (fun (m : GroupHomAt(U1, group_lift(G), H)) => group_hom_map_at(U1, group_lift(G), H, m, x)),
+    triangle
+  );
+  let maps := quotient_rec_unique(
+    group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), group_carrier_at(U1, H),
+    group_is_set_at(U1, H), group_hom_map_at(U1, group_lift(G), H, h),
+    killing_subgroup_respects_cosets_at(G, H, h, S, kills), out, same
+  );
   exact group_hom_ext_at(
     U1, QuotientGroup(G, S, normal), H, k, quotient_descend_hom(G, H, h, S, normal, kills),
     (
@@ -254,8 +252,8 @@ def quotient_projection_kills(G : Group, S : Subgroup(G), normal : IsNormal(G, S
 // Projection is an epimorphism: equality after precomposition detects
 // equality of maps out of the quotient, including their law fields.
 def quotient_projection_epimorphism(
-  G : Group, H : GroupAt(U1), S : Subgroup(G), normal : IsNormal(G, S),
-  f, g : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
+  G : Group, H : GroupAt(U1), S : Subgroup(G), normal : IsNormal(G, S), f,
+  g : GroupHomAt(U1, QuotientGroup(G, S, normal), H),
   same : group_hom_compose_at(
     U1, group_lift(G), QuotientGroup(G, S, normal), H, quotient_projection(G, S, normal), f
   ) = group_hom_compose_at(
@@ -265,16 +263,14 @@ def quotient_projection_epimorphism(
   f = g {
   let fMap := group_hom_map_at(U1, QuotientGroup(G, S, normal), H, f);
   let gMap := group_hom_map_at(U1, QuotientGroup(G, S, normal), H, g);
-  let onClasses :=
-    fun (x : group_carrier(G)) => cong(
-      (fun (h : GroupHomAt(U1, group_lift(G), H)) => group_hom_map_at(U1, group_lift(G), H, h, x)),
-      same
-    );
-  let maps :=
-    quotient_maps_ext(
-      group_carrier(G), SameLeftCoset(G, S), group_carrier_at(U1, H), group_is_set_at(U1, H), fMap,
-      gMap, onClasses
-    );
+  let onClasses := fun (x : group_carrier(G)) => cong(
+    (fun (h : GroupHomAt(U1, group_lift(G), H)) => group_hom_map_at(U1, group_lift(G), H, h, x)),
+    same
+  );
+  let maps := quotient_maps_ext(
+    group_carrier(G), SameLeftCoset(G, S), group_carrier_at(U1, H), group_is_set_at(U1, H), fMap,
+    gMap, onClasses
+  );
   exact group_hom_ext_at(
     U1, QuotientGroup(G, S, normal), H, f, g,
     (

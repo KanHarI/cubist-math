@@ -70,7 +70,8 @@ def complex_interval_deformation_uniform(
 }
 
 def complex_straight_curve(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a, b : Complex(F)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a,
+  b : Complex(F)
 ) :=
   complex_interval_deformation(
     F, zero, one, addF, mulF, lt, a, complex_add(F, addF, complex_neg(F, negF, a), b)

@@ -28,14 +28,13 @@ def descended_loop_map_laws(
       let useRight : (exists d : C. present(d) = q) -> result {
         intro rightRepresentative;
         obtain (d, pathD) := rightRepresentative;
-        let joined : present(join_(c, d)) = trans(p, q) :=
+        let joined : present(join_(c, d)) = trans(p, q) := trans(
+          joinPath(c, d),
           trans(
-            joinPath(c, d),
-            trans(
-              cong((fun (r : point = point) => trans(r, present(d))), pathC),
-              cong(append_path(X, point, point, point, p), pathD)
-            )
-          );
+            cong((fun (r : point = point) => trans(r, present(d))), pathC),
+            cong(append_path(X, point, point, point, p), pathD)
+          )
+        );
         let valueC : value(c) = period(p) := trans(sym(computes(c)), cong(period, pathC));
         let valueD : value(d) = period(q) := trans(sym(computes(d)), cong(period, pathD));
         exact trans(

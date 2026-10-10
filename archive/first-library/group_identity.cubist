@@ -24,8 +24,8 @@ def group_inverse_unique(
 }
 
 def group_inverse_evidence_prop(
-  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A,
-  p, q : (exists y : A. GroupInverseLaws(A, unit, multiply, x, y))
+  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A, p,
+  q : (exists y : A. GroupInverseLaws(A, unit, multiply, x, y))
 ) :
   p = q {
   let y := sigma_first(A, GroupInverseLaws(A, unit, multiply, x), p);
@@ -53,39 +53,34 @@ def group_inverse_evidence_prop(
 def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p, q : GroupLaws(A, unit, multiply)) :
   p = q {
   let setA := group_set_law(A, unit, multiply, p);
-  let assocProp :=
-    forall_prop(
-      A,
-      (
-        fun (x : A) => forall y : A. forall z : A.
-        multiply(multiply(x, y), z) = multiply(x, multiply(y, z))
-      ),
-      (
-        fun (x : A) => forall_prop(
-          A,
-          (fun (y : A) => forall z : A. multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
-          (
-            fun (y : A) => forall_prop(
-              A, (fun (z : A) => multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
-              (fun (z : A) => setA(multiply(multiply(x, y), z), multiply(x, multiply(y, z))))
-            )
+  let assocProp := forall_prop(
+    A,
+    (
+      fun (x : A) => forall y : A. forall z : A.
+      multiply(multiply(x, y), z) = multiply(x, multiply(y, z))
+    ),
+    (
+      fun (x : A) => forall_prop(
+        A, (fun (y : A) => forall z : A. multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
+        (
+          fun (y : A) => forall_prop(
+            A, (fun (z : A) => multiply(multiply(x, y), z) = multiply(x, multiply(y, z))),
+            (fun (z : A) => setA(multiply(multiply(x, y), z), multiply(x, multiply(y, z))))
           )
         )
       )
-    );
-  let leftProp :=
-    forall_prop(
-      A, (fun (x : A) => multiply(unit, x) = x), (fun (x : A) => setA(multiply(unit, x), x))
-    );
-  let rightProp :=
-    forall_prop(
-      A, (fun (x : A) => multiply(x, unit) = x), (fun (x : A) => setA(multiply(x, unit), x))
-    );
-  let inverseProp :=
-    forall_prop(
-      A, (fun (x : A) => exists y : A. GroupInverseLaws(A, unit, multiply, x, y)),
-      group_inverse_evidence_prop(A, unit, multiply, p)
-    );
+    )
+  );
+  let leftProp := forall_prop(
+    A, (fun (x : A) => multiply(unit, x) = x), (fun (x : A) => setA(multiply(unit, x), x))
+  );
+  let rightProp := forall_prop(
+    A, (fun (x : A) => multiply(x, unit) = x), (fun (x : A) => setA(multiply(x, unit), x))
+  );
+  let inverseProp := forall_prop(
+    A, (fun (x : A) => exists y : A. GroupInverseLaws(A, unit, multiply, x, y)),
+    group_inverse_evidence_prop(A, unit, multiply, p)
+  );
   exact product_prop(
     IsSet(U0, A),
     (
@@ -110,7 +105,7 @@ def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p, q : GroupLaws(A
   )(p, q);
 }
 
-def group_carrier_transport(A, B : U0, p : A = B, x : A) := along((fun (T : U0) => T)) by p from x;
+def group_carrier_transport(A, B : U0, p : A = B, x : A) := along ((fun (T : U0) => T)) by p from x;
 
 // Multiplication-preserving equivalences preserve units; this is derived, not required.
 def group_isomorphism_preserves_unit(

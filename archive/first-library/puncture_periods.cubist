@@ -28,11 +28,12 @@ def weighted_winding_laws(
     PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG,
     weighted_winding_sum(n, G, zero, addG, negG, values)
   ) {
-  let constant : weighted_winding_sum(n, G, zero, addG, negG, values, refl(bouquet_base(Fin(n)))) = zero := finite_sum_zero(
-    G, zero, addG, negG, laws, n,
-    (fun (i : Fin(n)) => integer_multiple(G, zero, addG, negG, values(i), zeroZ)),
-    (fun (i : Fin(n)) => refl(zero))
-  );
+  let constant : weighted_winding_sum(n, G, zero, addG, negG, values, refl(bouquet_base(Fin(n)))) = zero :=
+    finite_sum_zero(
+      G, zero, addG, negG, laws, n,
+      (fun (i : Fin(n)) => integer_multiple(G, zero, addG, negG, values(i), zeroZ)),
+      (fun (i : Fin(n)) => refl(zero))
+    );
   let append :
     forall p : BouquetLoops(Fin(n)). forall q : BouquetLoops(Fin(n)).
     weighted_winding_sum(n, G, zero, addG, negG, values, trans(p, q)) = addG(
@@ -40,18 +41,15 @@ def weighted_winding_laws(
       weighted_winding_sum(n, G, zero, addG, negG, values, q)
     ) {
     intro p, q;
-    let first :=
-      fun (i : Fin(n)) => integer_multiple(
-        G, zero, addG, negG, values(i), puncture_winding(n, i, p)
-      );
-    let second :=
-      fun (i : Fin(n)) => integer_multiple(
-        G, zero, addG, negG, values(i), puncture_winding(n, i, q)
-      );
-    let total :=
-      fun (i : Fin(n)) => integer_multiple(
-        G, zero, addG, negG, values(i), puncture_winding(n, i, trans(p, q))
-      );
+    let first := fun (i : Fin(n)) => integer_multiple(
+      G, zero, addG, negG, values(i), puncture_winding(n, i, p)
+    );
+    let second := fun (i : Fin(n)) => integer_multiple(
+      G, zero, addG, negG, values(i), puncture_winding(n, i, q)
+    );
+    let total := fun (i : Fin(n)) => integer_multiple(
+      G, zero, addG, negG, values(i), puncture_winding(n, i, trans(p, q))
+    );
     exact trans(
       finite_sum_cong(
         G, zero, addG, negG, laws, n, total, (fun (i : Fin(n)) => addG(first(i), second(i))),
@@ -79,10 +77,9 @@ def weighted_winding_generator(
   weighted_winding_sum(n, G, zero, addG, negG, values, puncture_loop(n, selected)) = values(
     selected
   ) {
-  let terms :=
-    fun (i : Fin(n)) => integer_multiple(
-      G, zero, addG, negG, values(i), puncture_winding(n, i, puncture_loop(n, selected))
-    );
+  let terms := fun (i : Fin(n)) => integer_multiple(
+    G, zero, addG, negG, values(i), puncture_winding(n, i, puncture_loop(n, selected))
+  );
   exact finite_sum_single(
     G, zero, addG, negG, laws, n, terms, selected, values(selected),
     trans(
@@ -136,8 +133,8 @@ def puncture_period_formula(
 def puncture_period_same_windings(
   n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
-  periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
-  p, q : BouquetLoops(Fin(n)),
+  periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period), p,
+  q : BouquetLoops(Fin(n)),
   same : (forall i : Fin(n). puncture_winding(n, i, p) = puncture_winding(n, i, q))
 ) :
   period(p) = period(q) {

@@ -27,29 +27,26 @@ def group_carrier(G : Group) := unpack G as (A, structure) return U0 {
     A;
   };
 
-def group_structure(G : Group) :=
-  pair_induction(
-    (fun (H : Group) => GroupStructure(group_carrier(H))),
-    (fun (A : U0, structure : GroupStructure(A)) => structure), G
-  );
+def group_structure(G : Group) := pair_induction(
+  (fun (H : Group) => GroupStructure(group_carrier(H))),
+  (fun (A : U0, structure : GroupStructure(A)) => structure), G
+);
 
-def group_unit(G : Group) :=
-  sigma_first(
-    group_carrier(G),
-    (
-      fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G)
-      -> group_carrier(G). GroupLaws(group_carrier(G), unit, multiply)
-    ), group_structure(G)
-  );
+def group_unit(G : Group) := sigma_first(
+  group_carrier(G),
+  (
+    fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G)
+    -> group_carrier(G). GroupLaws(group_carrier(G), unit, multiply)
+  ), group_structure(G)
+);
 
-def group_multiplication_data(G : Group) :=
-  sigma_second(
-    group_carrier(G),
-    (
-      fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G)
-      -> group_carrier(G). GroupLaws(group_carrier(G), unit, multiply)
-    ), group_structure(G)
-  );
+def group_multiplication_data(G : Group) := sigma_second(
+  group_carrier(G),
+  (
+    fun (unit : group_carrier(G)) => exists multiply : group_carrier(G) -> group_carrier(G)
+    -> group_carrier(G). GroupLaws(group_carrier(G), unit, multiply)
+  ), group_structure(G)
+);
 
 def group_multiply(G : Group) : group_carrier(G) -> group_carrier(G) -> group_carrier(G) {
   exact sigma_first(
@@ -58,11 +55,10 @@ def group_multiply(G : Group) : group_carrier(G) -> group_carrier(G) -> group_ca
   );
 }
 
-def group_laws(G : Group) :=
-  sigma_second(
-    group_carrier(G) -> group_carrier(G) -> group_carrier(G),
-    GroupLaws(group_carrier(G), group_unit(G)), group_multiplication_data(G)
-  );
+def group_laws(G : Group) := sigma_second(
+  group_carrier(G) -> group_carrier(G) -> group_carrier(G),
+  GroupLaws(group_carrier(G), group_unit(G)), group_multiplication_data(G)
+);
 
 def GroupMultiplicative(
   A : U0, multiplyA : A -> A -> A, B : U0, multiplyB : B -> B -> B, f : A -> B

@@ -4,65 +4,55 @@ use nat;
 
 // Ring identities specialized to the checked coefficient representation.
 
-def polynomial_add_zero_right(K : AlgebraicField) :=
-  ring_add_zero_right(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_add_zero_right(K : AlgebraicField) := ring_add_zero_right(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_mul_one_right(K : AlgebraicField) :=
-  ring_mul_one_right(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_mul_one_right(K : AlgebraicField) := ring_mul_one_right(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_add_inverse_right(K : AlgebraicField) :=
-  ring_add_inverse_right(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_add_inverse_right(K : AlgebraicField) := ring_add_inverse_right(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_add_swap(K : AlgebraicField) :=
-  ring_add_swap(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_add_swap(K : AlgebraicField) := ring_add_swap(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_add_shuffle(K : AlgebraicField) :=
-  ring_add_shuffle(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_add_shuffle(K : AlgebraicField) := ring_add_shuffle(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_mul_zero(K : AlgebraicField) :=
-  ring_mul_zero(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_mul_zero(K : AlgebraicField) := ring_mul_zero(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_mul_neg(K : AlgebraicField) :=
-  ring_mul_neg(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_mul_neg(K : AlgebraicField) := ring_mul_neg(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_distribute_left(K : AlgebraicField) :=
-  ring_distribute_left(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_distribute_left(K : AlgebraicField) := ring_distribute_left(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_mul_swap(K : AlgebraicField) :=
-  ring_mul_swap(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_mul_swap(K : AlgebraicField) := ring_mul_swap(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
-def polynomial_add_cancel_prefix(K : AlgebraicField) :=
-  ring_add_cancel_prefix(
-    Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
-    polynomial_neg(K), polynomial_ring(K)
-  );
+def polynomial_add_cancel_prefix(K : AlgebraicField) := ring_add_cancel_prefix(
+  Polynomial(K), polynomial_zero(K), polynomial_one(K), polynomial_add(K), polynomial_mul(K),
+  polynomial_neg(K), polynomial_ring(K)
+);
 
 def polynomial_scale(K : AlgebraicField, a : af_carrier(K), p : Polynomial(K)) :=
   polynomial_mul(K, polynomial_constant(K, a), p);
