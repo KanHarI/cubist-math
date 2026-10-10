@@ -23,8 +23,8 @@ with fixtures and comparison rules in the
 normal `npm test` suite. Open contracts are explicit expected failures:
 their structured observations must match the recorded defect, unexpected
 outcomes or passes are errors, and TODOs do not count as completed
-implementation. Each variant has its own activation state. G12's E845 source range is tracked
-independently from its value-call contract.
+implementation. Each variant has its own activation state. G12's E845 source
+range is tracked independently from its value-call contract.
 
 For the follow-up review, G8–G12 were also independently reproduced at
 `00d4ecce`, main `cb525f07`, and the earlier #188 head `9c93220d` with the

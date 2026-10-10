@@ -14,6 +14,16 @@ only text, extract the distinguishing payload and document what is ignored.
 Avoid snapshotting unrelated formatting or generating expected semantics from
 the same implementation under test.
 
+Use the shared diagnostic decoder and matcher in
+[`frontend-generation-diagnostics.mjs`](../../tests/frontend-generation-diagnostics.mjs).
+An expectation states the declaration, code and relevant `cause`, independently
+of the historical defect record. E343 names its untranslated subject, E340 its
+dependency, E871 its helper and captured field, and E845 its recursive operation
+and context. A range check composes with this meaning; it cannot replace it.
+Code-only E606 equation refusals remain appropriate when independent accepted
+and refused clients establish the semantic distinction. Pin found/expected
+endpoints when those endpoints are themselves the contract, as in G8.
+
 For contracts that classify expected failures, exercise these boundaries:
 
 | Control | Required result |
@@ -23,6 +33,12 @@ For contracts that classify expected failures, exercise these boundaries:
 | Different failure, including one with the same code | Ordinary failure |
 | Well-typed but semantically wrong implementation | Ordinary failure, even if declarations check |
 | Broken fixture or unmet prerequisite | Ordinary failure, never known debt |
+
+Exercise the different-failure boundary twice: against recorded debt, and against
+an otherwise accepted result with `knownDefect` removed. For the latter, change
+one required diagnostic subject or cause while preserving code, valid range and
+client verdicts. Assert that diagnostic matching fails and the other requirements
+still pass. This control must survive activation and retirement of defect records.
 
 Map behavioral obligations independently of the fixture registry. A case-ID
 inventory cannot discover a requirement omitted from both the source fixtures
@@ -39,10 +55,11 @@ Pair intended equations with plausible incorrect equations that must be refused;
 check that a constant or incorrectly resolved implementation cannot satisfy both.
 A supported control that avoids the old compiler defect still needs these
 semantic distinctions.
+
 Keep the observation's guarantee precise. An absent reported output does not
 imply an unavailable name: constructors can be available without being outputs.
 Test name availability with real clients, including accepted clients when the
-binding should survive. Assign refusal codes per client, and compose them with
+binding should survive. Assign diagnostic expectations per client, and compose them with
 declaration diagnostics before comparing the complete expected diagnostic set.
 An observer audit must use results possible at that interface; obtain positive
 controls from real programs before injecting a leak or refusal. A supported

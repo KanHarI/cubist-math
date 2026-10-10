@@ -10,7 +10,7 @@ def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
     originalType: "Unit", symbol: "N", invariantClients: ["independent"], absentOutputs: [],
-    refusedClients: {leaked_c: "E343"},
+    refusedClients: {leaked_c: {code: "E343", cause: {untranslated: "c"}}},
   },
   G2: {
     phase: "FG3", contract: "fixed argument domains contribute to generated universes",
@@ -33,7 +33,7 @@ theory T(U < UU0) { M : set U; c : M; law l : c = c; op(p : l = l) : M; }
 def usable(S : T(U0)) : S.M := S.op(refl(S.l));
 def unsupported(S : T(U0)) := T.Hom.id(S);`,
     clients: ["T", "T.make", "T.op", "usable"],
-    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: "E817"},
+    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: {code: "E817"}},
     refusalWords: ["op", "p", "l"],
   },
   G4: {
@@ -48,7 +48,7 @@ def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) { rfl; }
 def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) { rfl; }
 def empty_computation(S : T(U0)) : S.value(nil) = S.c { rfl; }
 def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
-    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: {wrong: "E606"},
+    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: {wrong: {code: "E606"}},
   },
   G5: {
     phase: "FG5", contract: "grouped-binder advice preserves supported calls and generated interfaces",
@@ -76,7 +76,7 @@ def independent : Unit := tt;`,
     source: `import hlevels;
 inductive T : set U0 { t0; t1; seg : t0 = t1; }
 def h(x : T) : T := match x { t0 => t0; _ => t1; };`,
-    diagnostic: {name: "h", code: "E606", found: "t1 = t1", expected: "t0 = t1",
+    diagnostic: {name: "h", code: "E606", cause: {found: "t1 = t1", expected: "t0 = t1"},
       scope: ":= match x { t0 => t0; _ => t1; };", token: "t1"},
   },
   G9: {
@@ -97,7 +97,7 @@ theory T(U < UU0) { M : set U; c : M;
   def k(n : Nat) : M := c;
   law l(n : Nat) : (match n return M { zero => c; succ(c) => k(c); }) = c;
 }`,
-    diagnostic: {name: "T", code: "E871", conflict: "succ(c) => k(c)", binder: "c", binderOccurrence: 0, call: "k(c)"},
+    diagnostic: {name: "T", code: "E871", cause: {helper: "k", field: "c"}, conflict: "succ(c) => k(c)", binder: "c", binderOccurrence: 0, call: "k(c)"},
   },
   G11: {
     phase: "FG2", contract: "complete declaration telescopes protect helper fields from caller parameters",
@@ -108,7 +108,7 @@ theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M;
 }
 def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));
 def captured(S : T(U0), x : S.M) : S.kk(x) = S.op(x, x) := refl(S.op(x, x));`,
-    clients: ["intended"], refusedClients: {captured: "E606"},
+    clients: ["intended"], refusedClients: {captured: {code: "E606"}},
   },
   G12: {
     phase: "FG2/FG4/FG5", contract: "ordinary calls to earlier recursive values check and compute",
@@ -121,7 +121,7 @@ def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) { rfl; }
 def computation2(S : T(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) { rfl; }
 def base(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }
 def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) { rfl; }`,
-    clients: ["T.iter", "T.twice", "computation", "computation2", "base"], refusedClients: {wrong: "E606"},
+    clients: ["T.iter", "T.twice", "computation", "computation2", "base"], refusedClients: {wrong: {code: "E606"}},
   },
   "G12-range": {
     phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original reference",
@@ -130,13 +130,13 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
   law nope(n : Nat) : iter(n) = c;
 }`,
-    diagnostic: {name: "T", code: "E845", scope: "law nope(n : Nat) : iter(n) = c;", token: "iter"},
+    diagnostic: {name: "T", code: "E845", cause: {recursive: "iter", context: "field type"}, scope: "law nope(n : Nat) : iter(n) = c;", token: "iter"},
   },
 };
 
 const collisionVariants = [
   {
-    id: "G1-initial", refusedClients: {leaked_one: "E343", leaked_mul: "E343"}, absentOutputs: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
+    id: "G1-initial", refusedClients: {leaked_one: {code: "E343", cause: {untranslated: "N.one"}}, leaked_mul: {code: "E343", cause: {untranslated: "N.mul"}}}, absentOutputs: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
     source: `import hlevels; import algebra;
 def N : Unit := tt;
 initial N : Monoid(U0);
@@ -275,7 +275,7 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 }
 def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) { rfl; }
 def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) { rfl; }`,
-  clients: ["intended"], refusedClients: {captured: "E606"},
+  clients: ["intended"], refusedClients: {captured: {code: "E606"}},
 };
 
 const kinds = {

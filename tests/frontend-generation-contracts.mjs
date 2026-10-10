@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {isDeepStrictEqual, inspect} from "node:util";
 import {obligations} from "./fixtures/frontend-generation-requirements.mjs";
 import {lint} from "../web/cubist/lint.mjs";
+import {diagnosticCause, matchesDiagnostic, matchesDiagnostics, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
 
 export const diagnostics = checked => checked.result.gaps.map(g => `${g.name} ${g.code}`).sort();
 export const complete = checked => assert.deepEqual(diagnostics(checked), []);
@@ -24,29 +25,13 @@ const generation = checked => checked.result.gaps.flatMap(g => {
   const match = g.reason.match(/Cannot generate ([^:]+):/);
   return match ? [[g.name, match[1]]] : [];
 });
-// Codes identify categories, not causes. Retain the distinguishing payload of
-// primary failures. Dependency identities are recorded separately below.
-// This is temporary defect evidence, never the desired acceptance predicate.
-const rootCauses = checked => checked.result.gaps.filter(g => g.code !== "E340").map(g => {
-  const reason = g.reason.replace(/ at \d+:\d+$/, "");
-  let match, detail;
-  if (g.code === "E606" && (match = reason.match(/^Type mismatch: found (.*), expected (.*)\.$/)))
-    detail = {found: match[1], expected: match[2]};
-  else if (g.code === "E546" && (match = reason.match(/^Cannot generate ([^:]+): ([^;]+);/)))
-    detail = {obligation: match[1], requirement: match[2]};
-  else if (g.code === "E343" && (match = reason.match(/^Untranslated name: (.+)$/)))
-    detail = {untranslated: match[1]};
-  else if (g.code === "E871" && (match = reason.match(/^Inlining (\w+) here would capture its field (\w+):/)))
-    detail = {helper: match[1], field: match[2]};
-  else if (g.code === "E845" && (match = reason.match(/^(\w+) is recursive, and a field's type cannot unfold it:/)))
-    detail = {recursive: match[1], context: "field type"};
-  else detail = {reason};
-  return [g.name, detail];
-}).sort(([a], [b]) => a.localeCompare(b));
+// Historical records and acceptance share a decoder, never expected values.
+const rootCauses = checked => checked.result.gaps.filter(g => g.code !== "E340")
+  .map(g => [g.name, diagnosticCause(g)]).sort(([a], [b]) => a.localeCompare(b));
 const dependencies = checked => {
   const targets = new Map();
   for (const g of checked.result.gaps.filter(g => g.code === "E340")) {
-    const target = g.reason.match(/^Untranslated dependency: ([^\s(]+)/)?.[1] ?? g.reason;
+    const target = diagnosticCause(g).dependency ?? g.reason;
     if (!targets.has(target)) targets.set(target, []);
     targets.get(target).push(g.name);
   }
@@ -83,9 +68,12 @@ export function validateFixture(fixture) {
     if (fixture[field]) assert.ok(Array.isArray(fixture[field]) && fixture[field].every(name => typeof name === "string" && name.length), `invalid ${field}`);
   if (fixture.refusedClients) {
     assert.ok(typeof fixture.refusedClients === "object" && !Array.isArray(fixture.refusedClients), "invalid refusedClients");
-    for (const [name, code] of Object.entries(fixture.refusedClients))
-      assert.ok(name.length > 0 && /^E\d+$/.test(code), "each refused client needs its diagnostic code");
+    for (const [name, expectation] of Object.entries(fixture.refusedClients)) {
+      assert.ok(expectation && typeof expectation === "object" && !Array.isArray(expectation), "each refused client needs a diagnostic expectation");
+      validateDiagnostic({...expectation, name});
+    }
   }
+  if (diagnostic) validateDiagnostic(diagnostic);
   // Old names confused reported outputs with names available to later source.
   for (const field of ["absentMembers", "absentFamilies", "refusalCode"])
     assert.ok(!(field in fixture), `obsolete expectation ${field}`);
@@ -125,16 +113,16 @@ export function validateObligations(fixtures) {
   // from the fixture cannot silently redefine success in the observer audit.
   for (const name of ["N.model", "N.fold_map", "N.fold"])
     assert.ok(byId.get("G1-initial").absentOutputs?.includes(name), `G1-initial: missing output requirement ${name}`);
-  for (const [id, clients] of [["G1", ["leaked_c"]], ["G1-initial", ["leaked_one", "leaked_mul"]]])
-    for (const name of clients)
-      assert.equal(byId.get(id).refusedClients?.[name], "E343", `${id}: missing name-availability witness ${name}`);
+  for (const [id, clients] of [["G1", {leaked_c: "c"}], ["G1-initial", {leaked_one: "N.one", leaked_mul: "N.mul"}]])
+    for (const [name, untranslated] of Object.entries(clients))
+      assert.deepEqual(byId.get(id).refusedClients?.[name], {code: "E343", cause: {untranslated}}, `${id}: missing name-availability witness ${name}`);
   assert.ok(byId.get("G1-reverse").clients.includes("constructor"), "G1-reverse: missing original constructor witness");
   for (const id of ["G4", "G4-flat", "G12", "G12-inherited", "G12-initial"])
-    assert.equal(byId.get(id).refusedClients?.wrong, "E606", `${id}: missing wrong-equation witness`);
+    assert.equal(byId.get(id).refusedClients?.wrong?.code, "E606", `${id}: missing wrong-equation witness`);
   for (const id of ["G12", "G12-inherited", "G12-initial"])
     for (const name of ["base", "computation", "computation2"])
       assert.ok(byId.get(id).clients.includes(name), `${id}: missing recursive-result witness ${name}`);
-  assert.equal(byId.get("G12-shadowed").refusedClients?.captured, "E606", "G12-shadowed: missing captured-equation witness");
+  assert.equal(byId.get("G12-shadowed").refusedClients?.captured?.code, "E606", "G12-shadowed: missing captured-equation witness");
 }
 export function validateCoverage(manifest, fixtures) {
   validateObligations(fixtures);
@@ -155,7 +143,7 @@ const clientRequirements = (fixture, facts) => ({
   refusedClients: Object.keys(fixture.refusedClients ?? {}).every(name => facts.clients[name] === "refused"),
 });
 const expectedClientDiagnostics = fixture => Object.entries(fixture.refusedClients ?? {})
-  .map(([name, code]) => `${name} ${code}`);
+  .map(([name, expectation]) => ({...expectation, name}));
 // Outputs report declarations; constructors must instead be tested by source clients.
 function observeOutputAbsence(checked, fixture, facts, requirements) {
   if (!fixture.absentOutputs && !fixture.absentOutputFamilies) return;
@@ -189,6 +177,7 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
   const requirements = clientRequirements(fixture, facts);
   observeOutputAbsence(checked, fixture, facts, requirements);
   const expectedDiagnostics = expectedClientDiagnostics(fixture);
+  if (fixture.diagnostic) expectedDiagnostics.push(fixture.diagnostic);
   switch (fixture.kind) {
     case "completion":
       break;
@@ -205,7 +194,8 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       facts.duplicateRefused = !!refusal && /already|duplicate/i.test(refusal.reason);
       requirements.originalType = facts.originalType === fixture.originalType;
       requirements.duplicateRefused = facts.duplicateRefused;
-      expectedDiagnostics.push(`${fixture.symbol} ${refusal?.code}`);
+      // The duplicate contract deliberately permits different refusal codes.
+      expectedDiagnostics.push({name: fixture.symbol, code: refusal?.code});
       break;
     }
     case "unsupported-family": {
@@ -221,23 +211,20 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
     }
     case "dependency": {
       accepted(checked, fixture.clients);
-      assert.equal(gap(checked, fixture.parent)?.code, "E343");
-      assert.ok(hasWord(gap(checked, fixture.parent).reason, fixture.cause), "the parent must report its original cause");
+      const parent = {name: fixture.parent, code: "E343", cause: {untranslated: fixture.cause}};
+      assert.ok(matchesDiagnostic(gap(checked, fixture.parent), parent), "the parent must report its original cause");
       facts.childNamesParent = hasWord(gap(checked, fixture.child)?.reason ?? "", fixture.parent);
       facts.childRepeatsCause = hasWord(gap(checked, fixture.child)?.reason ?? "", fixture.cause);
-      expectedDiagnostics.push(`${fixture.parent} E343`, `${fixture.child} E340`);
-      requirements.dependency = facts.childNamesParent;
+      expectedDiagnostics.push(parent, {name: fixture.child, code: "E340", cause: {dependency: fixture.parent}});
       break;
     }
     case "wildcard": {
       const actual = gap(checked, fixture.diagnostic.name);
       assert.ok(actual, "the wildcard must be refused");
       facts.generation = generation(checked);
-      const mismatch = actual.reason.match(/^Type mismatch: found (.*), expected (.*)\.(?: at \d+:\d+)?$/);
-      facts.endpoints = [mismatch?.[1] === fixture.diagnostic.found, mismatch?.[2] === fixture.diagnostic.expected];
+      const mismatch = diagnosticCause(actual);
+      facts.endpoints = [mismatch.found === fixture.diagnostic.cause.found, mismatch.expected === fixture.diagnostic.cause.expected];
       facts.range = rangeFacts(actual, anchors);
-      expectedDiagnostics.push(`${fixture.diagnostic.name} ${fixture.diagnostic.code}`);
-      requirements.endpoints = facts.endpoints.every(Boolean);
       requirements.range = Object.values(facts.range).every(Boolean);
       break;
     }
@@ -253,8 +240,8 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       break;
     }
     case "capture-range": {
-      const {diagnostic, source} = fixture, actual = gap(checked, diagnostic.name);
-      expectedDiagnostics.push(`${diagnostic.name} ${diagnostic.code}`);
+      const {diagnostic} = fixture, actual = gap(checked, diagnostic.name);
+      assert.ok(actual, "the capture must be refused");
       const {conflict, binder, call} = anchors;
       facts.range = {nonempty: actual.end > actual.start,
         withinConflict: actual.start >= conflict.start && actual.end <= conflict.end,
@@ -266,14 +253,14 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
       break;
     case "refusal-range": {
       const actual = gap(checked, fixture.diagnostic.name);
-      expectedDiagnostics.push(`${fixture.diagnostic.name} ${fixture.diagnostic.code}`);
+      assert.ok(actual, "the recursive unfolding must be refused");
       facts.range = rangeFacts(actual, anchors);
       requirements.range = Object.values(facts.range).every(Boolean);
       break;
     }
     default: throw Error(`Unknown observation kind: ${fixture.kind}`);
   }
-  requirements.diagnostics = isDeepStrictEqual(facts.gaps, expectedDiagnostics.sort());
+  requirements.diagnostics = matchesDiagnostics(checked.result.gaps, expectedDiagnostics);
   return {facts, requirements};
 }
 

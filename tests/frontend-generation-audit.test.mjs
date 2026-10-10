@@ -25,8 +25,22 @@ const passes = (c, observation) => {
   assert.throws(() => classifyCase(c, observation), /unexpectedly passed/);
   assert.equal(classifyCase({...c, knownDefect: undefined}, observation), "pass");
 };
-const refuses = (c, observation) => assert.throws(
-  () => classifyCase({...c, knownDefect: undefined}, observation), {code: "ERR_ASSERTION"});
+const refuses = (c, observation) => {
+  assert.throws(() => classifyCase({...c, knownDefect: undefined}, observation), {code: "ERR_ASSERTION"});
+  assert.throws(() => classifyCase(c, observation, {strict: true}), {code: "ERR_ASSERTION"});
+};
+// Mutate accepted results, independently of historical defect records. Every
+// other requirement must still pass, so the diagnostic meaning is the witness.
+const refusesReasons = async (t, c, corrected, name, reasons) => {
+  for (const reason of reasons) {
+    const wrong = changed(corrected, result => { result.gaps.find(g => g.name === name).reason = reason; });
+    const observation = await observeCase(t, c, async () => wrong);
+    assert.equal(observation.requirements.diagnostics, false, `${c.id}: ${reason}`);
+    for (const [requirement, met] of Object.entries(observation.requirements))
+      if (requirement !== "diagnostics") assert.equal(met, true, `${c.id}: ${requirement}`);
+    refuses(c, observation);
+  }
+};
 
 // Every case must distinguish its recorded debt from a different primary cause
 // with the SAME diagnostic code (or a different target for the link-only case).
@@ -102,12 +116,16 @@ const duplicates = {
 for (const [id, duplicate] of Object.entries(duplicates)) test(`FG0 audit: ${id} accepts preserved bindings and rejects a lost client`, async t => {
   const c = fixture(id);
   const original = await check(t, c.source.replace(duplicate, ""));
-  const clientGaps = Object.entries(c.refusedClients ?? {}).map(([name, code]) => `${name} ${code}`).sort();
+  const clientGaps = Object.entries(c.refusedClients ?? {}).map(([name, {code}]) => `${name} ${code}`).sort();
   assert.deepEqual(original.result.gaps.map(g => `${g.name} ${g.code}`).sort(), clientGaps);
   // The refusal is synthetic; original bindings and every client verdict are
   // real compiler results. Negative clients compose with the duplicate itself.
   const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
   passes(c, await observeCase(t, c, async () => corrected));
+  for (const client of Object.keys(c.refusedClients ?? {})) await refusesReasons(t, c, corrected, client, [
+    "Untranslated name: Unrelated",
+    "An unrelated failure with the same diagnostic code",
+  ]);
   const lost = changed(corrected, result => { result.outputs = result.outputs.filter(o => o.name !== c.clients[0]); });
   refuses(c, await observeCase(t, c, async () => lost));
 });
@@ -152,13 +170,15 @@ for (const [id, declaration, clients, outputs] of [
 test("FG0 audit: collision, name and equation refusals compose with per-client codes", async t => {
   const c = fixture("G1");
   c.source += "\ndef wrong : Unit := Unit;";
-  c.refusedClients.wrong = "E606";
+  c.refusedClients.wrong = {code: "E606"};
   const original = await check(t, c.source.replace(duplicates.G1, ""));
   const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
   passes(c, await observeCase(t, c, async () => corrected));
   for (const modify of [
     result => { for (const gap of result.gaps) if (gap.name !== "N") gap.code = gap.code === "E343" ? "E606" : "E343"; },
     result => result.gaps.push({name: "unrelated", code: "E343", reason: "Untranslated name: absent"}),
+    result => result.gaps.push({...result.gaps.find(g => g.name === "leaked_c")}),
+    result => { result.gaps = result.gaps.filter(g => g.name !== "leaked_c"); },
     result => { result.outputs = result.outputs.filter(output => output.name !== "leaked_c"); },
   ]) refuses(c, await observeCase(t, c, async () => changed(corrected, modify)));
 });
@@ -202,9 +222,17 @@ test("FG0 audit: G6 permits an attached cause but requires the actual parent", a
     "Untranslated dependency: P (P failed: Untranslated name: Undefined at 2:8) at 3:8"]) {
     const corrected = changed(original, result => Object.assign(result.gaps.find(g => g.name === "C"), {code: "E340", reason}));
     passes(c, await observeCase(t, c, async () => corrected));
+    await refusesReasons(t, c, corrected, "C", [
+      "Untranslated dependency: Parent",
+      "Untranslated dependency: Q (Q failed: P at 2:8) at 3:8",
+      "Untranslated name: P at 3:8",
+      "An unrelated failure with the same diagnostic code",
+    ]);
+    const wrongParent = changed(corrected, result => {
+      result.gaps.find(g => g.name === "P").reason = "Untranslated name: Other (mentions Undefined)";
+    });
+    await assert.rejects(observeCase(t, c, async () => wrongParent), /parent must report its original cause/);
   }
-  const wrong = changed(original, result => Object.assign(result.gaps.find(g => g.name === "C"), {code: "E340", reason: "Untranslated dependency: Parent"}));
-  refuses(c, await observeCase(t, c, async () => wrong));
 });
 
 for (const id of ["G8", "G12-range"]) test(`FG0 audit: ${id} accepts token and wider spans and rejects a nearby token`, async t => {
@@ -222,6 +250,17 @@ for (const id of ["G8", "G12-range"]) test(`FG0 audit: ${id} accepts token and w
       : "Type mismatch: found t1 = t1, expected t0 = t1."} : {}),
   }));
   for (const [start, end] of valid) passes(c, await observeCase(t, c, async () => at(start, end)));
+  await refusesReasons(t, c, at(token, token + reference.length), d.name, [
+    "An unrelated failure with the same diagnostic code",
+    ...(id === "G8" ? [
+      "Type mismatch: found t0 = t1, expected t1 = t1.",
+      "Type mismatch: found Bool, expected t0 = t1.",
+      "Type mismatch: found t1 = t1, expected Unit.",
+    ] : [
+      "other is recursive, and a field's type cannot unfold it: forbidden",
+      "iter is recursive, but this is an unrelated context",
+    ]),
+  ]);
   for (const [start, end] of [[token, token], [scope, scope + 1], [0, c.source.length]])
     refuses(c, await observeCase(t, c, async () => at(start, end)));
   if (id === "G8") refuses(c, await observeCase(t, c, async () => at(token, token + reference.length, true)));
@@ -235,6 +274,25 @@ test("FG0 audit: G10 accepts either conflict origin and rejects an unrelated ori
   for (const [start, end] of [[binder, binder + 1], [call, call + d.call.length], [conflict, conflict + d.conflict.length]])
     passes(c, await observeCase(t, c, async () => at(start, end)));
   refuses(c, await observeCase(t, c, async () => at(conflict, conflict + 1)));
+  await refusesReasons(t, c, at(binder, binder + 1), "T", [
+    "An unrelated failure with the same diagnostic code",
+    "Inlining other here would capture its field c: conflict",
+    "Inlining k here would capture its field other: conflict",
+  ]);
+});
+
+for (const [id, mutate] of [
+  ["G10", c => { delete c.diagnostic.cause; }],
+  ["G10", c => { delete c.diagnostic.cause.field; }],
+  ["G12-range", c => { delete c.diagnostic.cause; }],
+  ["G12-range", c => { c.diagnostic.cause = {recursive: "iter", contex: "field type"}; }],
+  ["G1", c => { delete c.refusedClients.leaked_c.cause; }],
+  ["G1-initial", c => { c.refusedClients.leaked_one = "E343"; }],
+]) test(`FG0 audit: ${id} rejects incomplete diagnostic expectations before checking`, async t => {
+  const c = fixture(id); mutate(c);
+  let checks = 0;
+  await assert.rejects(observeCase(t, c, async () => { checks++; }), {code: "ERR_ASSERTION"});
+  assert.equal(checks, 0);
 });
 
 test("FG0 audit: every case has an acceptance control and the manifest preserves group ownership", async () => {

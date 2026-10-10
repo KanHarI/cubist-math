@@ -85,9 +85,18 @@ Source scopes, conflicts and rewrite targets must occur exactly once; repeated
 inner references require an explicit occurrence. Observers use resolved spans.
 
 `clients` lists accepted declarations. `refusedClients` maps each refused client
-to its own diagnostic code, so E343 name-availability probes and E606 equations
-can share a case. Their expected diagnostics compose with the declaration's own
-refusal and are compared as one complete set. `absentOutputs` and
+to `{code, cause?}`, so E343 name-availability probes and E606 equations can share
+a case. For example, `leaked_c` requires
+`{code: "E343", cause: {untranslated: "c"}}`; `wrong` requires `{code: "E606"}`.
+Their expectations compose with declaration diagnostics and are matched as one
+complete multiset by
+[`frontend-generation-diagnostics.mjs`](../frontend-generation-diagnostics.mjs).
+The same decoder supplies historical cause observations and active matching;
+desired expectations never come from the historical record. G6 matches the
+exact dependency target, G10 the helper/field pair, G12-range the recursive
+operation/context, and G8 the ordered found/expected endpoints. Source ranges
+remain independent requirements. Missing mandatory causes are fixture errors.
+`absentOutputs` and
 `absentOutputFamilies` describe only the output list; they make no claim about
 name resolution. Use real clients to observe that boundary.
 
@@ -121,6 +130,9 @@ extends these controls to every case: the known defect is recognized, a differen
 primary cause fails, and a supported source or explicitly injected valid outcome
 satisfies the desired requirements. It checks permitted diagnostic alternatives,
 swapped mismatch endpoints, changed advice and ID-to-finding ownership.
+Separate acceptance controls preserve valid ranges and client verdicts while
+changing diagnostic subjects or causes. They must fail with `knownDefect` removed
+and in strict mode; a mismatch with historical debt alone is insufficient.
 Semantic mutants also replace matches/recursion by constants, ignore a recursive
 result, or capture a local recursive name. Each recursive mutant has independently
 stated client verdicts and E606 failures. Publication controls use real constructor
