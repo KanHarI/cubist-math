@@ -171,24 +171,22 @@ def affine_partition_piece_estimate(
     let lastPath : last = b :=
       field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
     let withinFirst :=
-      along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag))) by sym(firstPath) from within;
+      along ((fun (v : I) => IntervalTagWithin(F, zero, one, lt, v, b, tag))) by sym(firstPath) from within;
     let withinSamples :=
-      along((fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag))) by sym(lastPath) from withinFirst;
+      along ((fun (v : I) => IntervalTagWithin(F, zero, one, lt, first, v, tag))) by sym(lastPath) from withinFirst;
     let widthPath :=
       trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
-    let smallSamples := along((fun (v : F) => lt(v, mesh))) by sym(widthPath) from small;
+    let smallSamples := along ((fun (v : F) => lt(v, mesh))) by sym(widthPath) from small;
     obtain (error, identity, bounded) := localEstimates(
       count, samples, tag, fineTags, fineValid, withinSamples, smallSamples
     );
-    let mapped :=
-      parameter_contour_sum_is_mapped(
-        I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, count, samples, fineTags
-      );
-    let edgePath :=
-      trans(
-        cong((fun (v : I) => edge(v, last, tag)), firstPath),
-        cong((fun (v : I) => edge(a, v, tag)), lastPath)
-      );
+    let mapped := parameter_contour_sum_is_mapped(
+      I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, count, samples, fineTags
+    );
+    let edgePath := trans(
+      cong((fun (v : I) => edge(v, last, tag)), firstPath),
+      cong((fun (v : I) => edge(a, v, tag)), lastPath)
+    );
     let radiusPath := cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
     exact (
       error,
@@ -283,11 +281,10 @@ def affine_partition_from_local_estimates(
   let radius := interval_refinement_radius(F, zero, one, addF, mulF, negF, lt, delta, length);
   let condition := IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh);
   let other := ComplexSubdivisionEstimate(I, F, zero, addF, negF, lt, edge, radius);
-  let mapEstimates :=
-    affine_partition_piece_estimate(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
-      integrand, uniform, delta, positiveDelta, mesh, localEstimates
-    );
+  let mapEstimates := affine_partition_piece_estimate(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, z, slope,
+    integrand, uniform, delta, positiveDelta, mesh, localEstimates
+  );
   let estimates :
     forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
@@ -320,18 +317,15 @@ def affine_partition_from_local_estimates(
     let count := subdivision_count(I, a, b, flat);
     let samples := subdivision_vertices(I, a, b, flat);
     let fineTags := subdivision_tags(I, a, b, flat);
-    let mappedFine :=
-      parameter_contour_sum_is_mapped(
-        I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, count, samples, fineTags
-      );
-    let mappedCoarse :=
-      parameter_contour_sum_is_mapped(
-        I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, n, vertices, tags
-      );
-    let radiusPath :=
-      interval_refinement_radius_sum(
-        F, zero, one, addF, mulF, negF, lt, ring, delta, length, n, vertices, tags
-      );
+    let mappedFine := parameter_contour_sum_is_mapped(
+      I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, count, samples, fineTags
+    );
+    let mappedCoarse := parameter_contour_sum_is_mapped(
+      I, Complex(F), zeroC, addC, mulC, negC, curve, integrand, n, vertices, tags
+    );
+    let radiusPath := interval_refinement_radius_sum(
+      F, zero, one, addF, mulF, negF, lt, ring, delta, length, n, vertices, tags
+    );
     exact (
       flat, trans(sym(mappedFine), computes), error,
       trans(

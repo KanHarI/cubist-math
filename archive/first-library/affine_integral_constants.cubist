@@ -8,8 +8,8 @@ use nat;
 def curve_subdivision_constant(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), coefficient : Complex(F),
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), coefficient : Complex(F), a,
+  b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(
@@ -34,23 +34,19 @@ def curve_subdivision_constant(
   let imageTags := map_sample_tags(I, Complex(F), curve, n, tags);
   let first := sample_first(I, n, vertices);
   let last := sample_last(I, n, vertices);
-  let firstPath : first = a := field_fst(
-    (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
-  );
-  let lastPath : last = b := field_snd(
-    (first = a), (last = b), subdivision_endpoints(I, a, b, piece)
-  );
+  let firstPath : first = a :=
+    field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
+  let lastPath : last = b :=
+    field_snd((first = a), (last = b), subdivision_endpoints(I, a, b, piece));
   let firstImage :=
     trans(map_sample_first(I, Complex(F), curve, n, vertices), cong(curve, firstPath));
   let lastImage := trans(map_sample_last(I, Complex(F), curve, n, vertices), cong(curve, lastPath));
   let difference := coordinate_difference(Complex(F), addC, negC);
-  let endpoints :=
-    trans(
-      cong(
-        (fun (v : Complex(F)) => difference(v, sample_last(Complex(F), n, imageVertices))),
-        firstImage
-      ), cong(difference(curve(a)), lastImage)
-    );
+  let endpoints := trans(
+    cong(
+      (fun (v : Complex(F)) => difference(v, sample_last(Complex(F), n, imageVertices))), firstImage
+    ), cong(difference(curve(a)), lastImage)
+  );
   exact trans(
     contour_sum_constant(
       Complex(F), zeroC, oneC, addC, mulC, negC, ringC, coefficient, n, imageVertices, imageTags
@@ -68,20 +64,19 @@ def complex_constant_curve_uniform(
   ) {
   intro epsilon, positive;
   obtain (positiveOne, rest) := arithmetic;
-  let close :=
-    typed(
-      ComplexClose(F, addF, lt, value, value, epsilon),
-      (
-        field_close_self(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value),
-          epsilon, positive
-        ),
-        field_close_self(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, value),
-          epsilon, positive
-        )
+  let close := typed(
+    ComplexClose(F, addF, lt, value, value, epsilon),
+    (
+      field_close_self(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value),
+        epsilon, positive
+      ),
+      field_close_self(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, value),
+        epsilon, positive
       )
-    );
+    )
+  );
   exact (
     one, positiveOne,
     (
@@ -103,20 +98,19 @@ def complex_constant_sequence_converges(
 ) :
   ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => value), value) {
   intro epsilon, positive;
-  let close :=
-    typed(
-      ComplexClose(F, addF, lt, value, value, epsilon),
-      (
-        field_close_self(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value),
-          epsilon, positive
-        ),
-        field_close_self(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, value),
-          epsilon, positive
-        )
+  let close := typed(
+    ComplexClose(F, addF, lt, value, value, epsilon),
+    (
+      field_close_self(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, value),
+        epsilon, positive
+      ),
+      field_close_self(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, value),
+        epsilon, positive
       )
-    );
+    )
+  );
   exact (0, (fun (n : Nat, later : IndexLE(0, n)) => close));
 }
 
@@ -128,8 +122,8 @@ def affine_dyadic_integral_constant(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), inverses : FieldInverses(F, zero, one, mulF, lt),
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope, coefficient : Complex(F),
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), z, slope, coefficient : Complex(F), a,
+  b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -150,18 +144,16 @@ def affine_dyadic_integral_constant(
     )
   ) {
   let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let value :=
-    complex_mul(
-      F, addF, mulF, negF, coefficient,
-      coordinate_difference(
-        Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(a), curve(b)
-      )
-    );
-  let sequence :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
-      (fun (x : Complex(F)) => coefficient), a, b, ordered
-    );
+  let value := complex_mul(
+    F, addF, mulF, negF, coefficient,
+    coordinate_difference(
+      Complex(F), complex_add(F, addF), complex_neg(F, negF), curve(a), curve(b)
+    )
+  );
+  let sequence := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
+    (fun (x : Complex(F)) => coefficient), a, b, ordered
+  );
   let constant := (fun (n : Nat) => value);
   let computes : forall n : Nat. constant(n) = sequence(n) {
     intro n;
@@ -175,13 +167,12 @@ def affine_dyadic_integral_constant(
       )
     );
   }
-  let converges :=
-    complex_converges_pointwise(
-      F, zero, addF, lt, constant, sequence, computes, value,
-      complex_constant_sequence_converges(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, value
-      )
-    );
+  let converges := complex_converges_pointwise(
+    F, zero, addF, lt, constant, sequence, computes, value,
+    complex_constant_sequence_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, value
+    )
+  );
   exact affine_dyadic_integral_unique(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
     bounds, half, halfSum, z, slope, (fun (x : Complex(F)) => coefficient),

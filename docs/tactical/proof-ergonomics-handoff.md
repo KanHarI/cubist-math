@@ -3,9 +3,19 @@
 Date: 2026-09-24. This is the implementation handoff for the
 [roadmap](../roadmaps/proof-ergonomics-roadmap.md) and
 [implementation plan](../roadmaps/historical/proof-ergonomics-implementation-plan.md).
-This records the initial release; current progress and remaining work are
-in the active roadmap. All accepted example declarations are checked by
-the C/WASM cubical kernel and report no axiom dependencies.
+All accepted example declarations are checked by the C/WASM cubical kernel
+and report no axiom dependencies.
+
+**Status, 2026-10-07.** This checkpoint records the first release,
+delivered on 2026-09-25, and is not updated. The roadmap and the
+[work plan](../roadmaps/work-plan.md) record later work. Since then:
+- `let` replaced `have`, `show` and `suffices` (2026-09-30);
+- named and implicit arguments were delivered (L4.1a, L4.1b, 2026-10-04),
+  and `apply` and `refine` withdrawn (L4.4);
+- theories and named notations replaced scoped records and notation
+  (L2.4, L2.4c, L2.10);
+- deterministic fuel replaced the wall-clock search limits (HoTT A4,
+  2026-09-27).
 
 ## Implemented source fragment
 
@@ -410,9 +420,10 @@ Regression tests in `tests/proof-ergonomics.test.mjs` cover each bug and fail
 on the previous code. The time-limit test advances a fake clock during a later
 statement rather than depending on machine speed.
 
-Remaining design work: tactic search limits are still wall-clock, so a search
-near the one-second limit can pass on a fast machine and fail on a slow one.
-Deterministic work budgets would remove that. Candidate failures are still
+Remaining design work at this checkpoint: tactic search limits were
+wall-clock, so a search near the one-second limit could pass on a fast
+machine and fail on a slow one. Deterministic fuel replaced them on
+2026-09-27 (HoTT A4). Candidate failures are still
 classified by the kernel's "Type mismatch." message, and instantiated rules
 still match by conversion while quantified rules match syntactically.
 The [HoTT roadmap](../roadmaps/hott-automation-roadmap.md) now owns this work:

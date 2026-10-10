@@ -23,9 +23,8 @@ inference and implicit parameters were delivered on 2026-10-04 (L4.1a,
 L4.1b), and its `apply` and `refine` withdrawn. Milestone 6's core
 theories, with their notation and sections, were delivered on 2026-10-05
 (L2.4) and revised on 2026-10-06 (L2.4c); named notations selected by `use`
-replaced their notation (L2.10). The construction-and-fold prototype for initial/free models (L2.6) is in
-[open PR #188](https://github.com/KanHarI/cubist-math/pull/188), not main.
-Checked capabilities, universal proofs, algebraic normalization and structure
+replaced their notation (L2.10). The first slice of initial and free models
+is done (L2.6); their later slices, algebraic normalization and structure
 identity remain open.
 
 The remaining dependent, cubical, induction and shared elaboration work moved
@@ -520,7 +519,7 @@ release through HoTT F1 and its prerequisites; it does not gate core theories.
   Resulting signatures are shown. Delivered with L2.4; the library's
   rationals are one section over a ring.
 - [ ] Initial and free models with `fold`, `fold_unique` and `universal`
-  (L2.6). The construction prototype is implemented in unmerged PR #188:
+  (L2.6). The construction prototype was done on 2026-10-06:
   `initial N : T(…);` and `free W(A : U0) : T(…) on A;` declare the type,
   `N.model` and `N.fold` for single-sort theories. The
   [revised contract](core-theories.md#initial-and-free-models-l26) of

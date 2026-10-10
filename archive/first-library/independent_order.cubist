@@ -4,8 +4,8 @@ import independent_unions;
 // Independence is a property, not extra structure. Pointwise paths between
 // its proofs come from the scalar field being a set.
 def independence_is_prop(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  p, q : LinearlyIndependent(K, V, P)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, p,
+  q : LinearlyIndependent(K, V, P)
 ) :
   p = q {
   exact path t => fun (

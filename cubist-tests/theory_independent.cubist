@@ -24,15 +24,17 @@ theory Both(U < UU0) extends Magma, Action {
 }
 
 // One carrier: Both's fields are M, M_is_set, mul, act, act_idem and mixed.
-def both_nat : Both(U0) := Both.make(M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x,
-  act := fun (x, y : Nat) => x, act_idem := fun (x : Nat) => refl(x), mixed := fun (x : Nat) => refl(x));
+def both_nat : Both(U0) := Both.make(
+  M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x, act := fun (x, y : Nat) => x,
+  act_idem := fun (x : Nat) => refl(x), mixed := fun (x : Nat) => refl(x)
+);
 
 def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);
 
 // Output: 5
 print(evaluate(first_of(both_nat, 5, 6)));
 
-// Under open, * is ambiguous where it is used.
+// Under use, * is ambiguous where it is used.
 // Error: E832: * is ambiguous in Both: it is magma's mul and action's act. Write x G.magma.(*) y or
 //   x G.action.(*) y.
 def square(G : Both(U0), x : G.M) : G.M {
@@ -56,10 +58,11 @@ theory Second(U < UU0) {
 }
 
 // Two points of one name: each its parent's, first_point and second_point.
-theory Bipointed(U < UU0) extends First, Second {
-}
+theory Bipointed(U < UU0) extends First, Second {}
 
-def zero_one : Bipointed(U0) := Bipointed.make(M := Nat, M_is_set := nat_is_set, first_point := 0, second_point := 1);
+def zero_one : Bipointed(U0) := Bipointed.make(
+  M := Nat, M_is_set := nat_is_set, first_point := 0, second_point := 1
+);
 
 def first_is_zero : zero_one.first.point = 0 {
   rfl;
@@ -88,8 +91,7 @@ theory Proposition(U < UU0) {
 // Carriers of one name and different kinds are refused.
 // Error: E828: Kinds gets the carrier M from Magma and Proposition with different kinds or indices:
 //   rename one, as in Proposition(M := …).
-theory Kinds(U < UU0) extends Magma, Proposition {
-}
+theory Kinds(U < UU0) extends Magma, Proposition {}
 
 // A parent's label is a field's name, so a theory named Left, whose label
 // would be left, the reserved injection, is labelled.
@@ -99,11 +101,9 @@ theory Left(U < UU0) {
 }
 
 // Error: E848: Left's label would be left, which is reserved: label it, as in other : Left.
-theory Leftmost(U < UU0) extends Left {
-}
+theory Leftmost(U < UU0) extends Left {}
 
-theory Labelled(U < UU0) extends start : Left {
-}
+theory Labelled(U < UU0) extends start : Left {}
 
 // A renamed operator keeps the notation the renaming gives it, though its
 // name clashes too: + is magma_mul's and * is twin_mul's.
@@ -132,14 +132,11 @@ theory Marked(U < UU0) {
   point : M;
 }
 
-theory Via(U < UU0) extends Base {
-}
+theory Via(U < UU0) extends Base {}
 
-theory Also(U < UU0) extends Base {
-}
+theory Also(U < UU0) extends Base {}
 
-theory Mixed(U < UU0) extends Via, Also, Marked {
-}
+theory Mixed(U < UU0) extends Via, Also, Marked {}
 
 // Output: forall U < UU0. forall M : U. IsSet(U, M) -> M -> M -> Mixed(U)
 print(typeof(Mixed.make));
@@ -158,5 +155,4 @@ theory Point(U < UU0) {
 
 // Error: E859: Unlabelled's parent Point is labelled point, which names a field of Unlabelled too:
 //   label it apart, as in base : Point.
-theory Unlabelled(U < UU0) extends Point {
-}
+theory Unlabelled(U < UU0) extends Point {}
