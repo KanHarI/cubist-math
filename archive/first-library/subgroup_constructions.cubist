@@ -117,9 +117,9 @@ def subgroup_preimage_laws(G, H : Group, h : GroupHom(G, H), S : Subgroup(H)) :
     (fun (x : A) => subgroup_prop(H, P, laws, f(x))),
     along P by sym(group_hom_unit(G, H, h)) from subgroup_unit(H, P, laws),
     (
-      fun (x, y : A, hx : P(f(x)), hy : P(f(y))) => along P by sym(group_hom_multiply(G, H, h, x, y)) from subgroup_multiply(
-        H, P, laws, f(x), f(y), hx, hy
-      )
+      fun (x, y : A, hx : P(f(x)), hy : P(f(y))) => along P by sym(
+        group_hom_multiply(G, H, h, x, y)
+      ) from subgroup_multiply(H, P, laws, f(x), f(y), hx, hy)
     ),
     (
       fun (x, y : A, hx : P(f(x)), same : group_multiply(G, y, x) = group_unit(G)) => subgroup_inverse(

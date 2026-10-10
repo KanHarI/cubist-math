@@ -5,7 +5,7 @@ use nat;
 
 // Actual natural moduli are combined explicitly. No countable choice is used.
 def index_sum_left(n, m : Nat) :=
-  along((fun (k : Nat) => IndexLE(n, k))) by nat_add_comm(m, n) from nat_le_add(m, n);
+  along ((fun (k : Nat) => IndexLE(n, k))) by nat_add_comm(m, n) from nat_le_add(m, n);
 
 def index_sum_right(n, m : Nat) := typed(IndexLE(m, n + m), nat_le_add(n, m));
 
@@ -71,7 +71,7 @@ def field_converges_add(
   exact (
     bound,
     (
-      fun (n : Nat, large : IndexLE(bound, n)) => along(
+      fun (n : Nat, large : IndexLE(bound, n)) => along (
         (fun (radius : F) => FieldClose(F, addF, lt, addF(xs(n), ys(n)), addF(x, y), radius))
       ) by halfSum(epsilon) from field_close_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), x, ys(n), y,
@@ -126,7 +126,7 @@ def field_cauchy_add(
   exact (
     bound,
     (
-      fun (m, n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => along(
+      fun (m, n : Nat, largeM : IndexLE(bound, m), largeN : IndexLE(bound, n)) => along (
         (
           fun (radius : F) => FieldClose(
             F, addF, lt, addF(xs(m), ys(m)), addF(xs(n), ys(n)), radius
@@ -160,7 +160,7 @@ def field_converges_pointwise(
   exact (
     bound,
     (
-      fun (n : Nat, large : IndexLE(bound, n)) => along(
+      fun (n : Nat, large : IndexLE(bound, n)) => along (
         (fun (value : F) => FieldClose(F, addF, lt, value, limit, epsilon))
       ) by same(n) from close(n, large)
     )

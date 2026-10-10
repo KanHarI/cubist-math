@@ -45,7 +45,7 @@ def splitting_root_image(
   let rootBase := trans(sym(polynomial_eval_mapped(K, L, e, p, roots(i))), rootLocal);
   let rootH := polynomial_root_image(K, L, T, e, h, p, roots(i), rootBase);
   let rootJ :=
-    along((fun (d : FieldEmbedding(K, T)) => PolynomialRoot(K, T, d, p, y))) by triangle from rootH;
+    along ((fun (d : FieldEmbedding(K, T)) => PolynomialRoot(K, T, d, p, y))) by triangle from rootH;
   let rootS : PolynomialRoot(T, T, field_embedding_identity(T), s, y) := with unfolding [] {
       trans(
         cong(

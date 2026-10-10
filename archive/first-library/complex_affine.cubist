@@ -3,11 +3,10 @@ import complex_magnitude;
 import complex_convergence;
 import complex_deformation;
 
-def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) :=
-  maxF(
-    maxF(complex_real(F, z), negF(complex_real(F, z))),
-    maxF(complex_imag(F, z), negF(complex_imag(F, z)))
-  );
+def complex_box_radius(F : U1, negF : F -> F, maxF : F -> F -> F, z : Complex(F)) := maxF(
+  maxF(complex_real(F, z), negF(complex_real(F, z))),
+  maxF(complex_imag(F, z), negF(complex_imag(F, z)))
+);
 
 def complex_lattice_box_bound(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
@@ -59,11 +58,10 @@ def complex_linear_deformation_uniform(
   obtain (boundReal, boundImag) := complex_lattice_box_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, error
   );
-  let nonnegativeLength :=
-    field_magnitude_radius_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), length,
-      boundReal
-    );
+  let nonnegativeLength := field_magnitude_radius_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), length,
+    boundReal
+  );
   obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive

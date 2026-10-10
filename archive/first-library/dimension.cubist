@@ -112,7 +112,8 @@ def has_dimension_iso(
 }
 
 def finite_dimensional_iso(
-  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W), finite : FiniteDimensional(K, V)
+  K : AlgebraicField, V, W : VectorSpace(K), e : LinearIso(K, V, W),
+  finite : FiniteDimensional(K, V)
 ) :
   FiniteDimensional(K, W) {
   exact (
@@ -140,7 +141,7 @@ def has_dimension_path(
   finite : HasDimension(K, V, n)
 ) :
   HasDimension(K, W, n) {
-  exact along((fun (X : VectorSpace(K)) => HasDimension(K, X, n))) by p from finite;
+  exact along ((fun (X : VectorSpace(K)) => HasDimension(K, X, n))) by p from finite;
 }
 
 def dimension_path(

@@ -117,4 +117,6 @@ theory HasOne(U < UU0) {
 
 def has_one_identity(S : HasOne(U0)) : HasOne.Hom(S, S) := HasOne.Hom.id(S);
 
-def local_catch_all(A : A) : Unit := match A { _ => tt; };
+def local_catch_all(A : A) : Unit := match A {
+    _ => tt;
+  };

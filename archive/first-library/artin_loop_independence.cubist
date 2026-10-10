@@ -109,8 +109,8 @@ def extension_loop_relation_to_embeddings(
 // Two genuinely different extension loops act as linearly independent field
 // maps on the extension carrier. The action is transport in FieldExt(K).
 def distinct_extension_loops_two_independent(
-  K : AlgebraicField, E : FieldExt(K), p, q : E =[FieldExt(K)] E, different : (p = q) -> Void,
-  a, b : extension_carrier(K, E), relation : forall x : extension_carrier(K, E).
+  K : AlgebraicField, E : FieldExt(K), p, q : E =[FieldExt(K)] E, different : (p = q) -> Void, a,
+  b : extension_carrier(K, E), relation : forall x : extension_carrier(K, E).
   field_add(
     extension_field(K, E),
     field_mul(extension_field(K, E), a, along extension_carrier(K) by p from x),

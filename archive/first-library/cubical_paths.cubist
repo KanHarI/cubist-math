@@ -26,14 +26,13 @@ def transport_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat) :=
   comp(fun (i : Interval) => P @ i, x);
 
 // Composition fills a square with fixed left edge and right edge q.
-def join_paths(A : U0, x, y, z : A, p : x = y, q : y = z) :=
-  path(
-    fun (i : Interval) => A,
-    fun (i : Interval) => comp(
-      fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
-      face(i, 1, fun (j : Interval) => q @ j)
-    )
-  );
+def join_paths(A : U0, x, y, z : A, p : x = y, q : y = z) := path(
+  fun (i : Interval) => A,
+  fun (i : Interval) => comp(
+    fun (j : Interval) => A, p @ i, face(i, 0, fun (j : Interval) => x),
+    face(i, 1, fun (j : Interval) => q @ j)
+  )
+);
 
 def Susp(A : U0) : U0 := Pushout(U0, U0, U0, A, Unit, Unit, fun (a : A) => tt, fun (a : A) => tt);
 

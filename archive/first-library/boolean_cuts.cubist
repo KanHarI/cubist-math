@@ -29,7 +29,8 @@ def decision_truth(P : U0, decision : Decidable(U0, P)) :
   };
 }
 
-def classical_truth(P : U0, prop_ : FieldProp(P)) := truth_of_decision(P, excluded_middle(P, prop_));
+def classical_truth(P : U0, prop_ : FieldProp(P)) :=
+  truth_of_decision(P, excluded_middle(P, prop_));
 
 def classical_truth_correct(P : U0, prop_ : FieldProp(P)) :
   FieldIff(CutTruth(classical_truth(P, prop_)), P) {
@@ -54,14 +55,13 @@ def boolean_cut_lower(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) : Q 
   );
 }
 
-def boolean_cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
-  field_second(
-    Q -> CutBool,
-    (
-      fun (lower : Q -> CutBool) => exists upper : Q -> CutBool.
-      CutLaws(Q, ltQ, decoded_cut_predicate(Q, lower), decoded_cut_predicate(Q, upper))
-    ), cut
-  );
+def boolean_cut_rest(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) := field_second(
+  Q -> CutBool,
+  (
+    fun (lower : Q -> CutBool) => exists upper : Q -> CutBool.
+    CutLaws(Q, ltQ, decoded_cut_predicate(Q, lower), decoded_cut_predicate(Q, upper))
+  ), cut
+);
 
 def boolean_cut_upper(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) : Q -> CutBool {
   exact field_first(
@@ -75,25 +75,23 @@ def boolean_cut_upper(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) : Q 
   );
 }
 
-def boolean_cut_laws(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
-  field_second(
-    Q -> CutBool,
-    (
-      fun (upper : Q -> CutBool) => CutLaws(
-        Q, ltQ, decoded_cut_predicate(Q, boolean_cut_lower(Q, ltQ, cut)),
-        decoded_cut_predicate(Q, upper)
-      )
-    ), boolean_cut_rest(Q, ltQ, cut)
-  );
-
-def boolean_to_dedekind(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) :=
-  typed(
-    DedekindCut(Q, ltQ),
-    (
-      decoded_cut_predicate(Q, boolean_cut_lower(Q, ltQ, cut)),
-      decoded_cut_predicate(Q, boolean_cut_upper(Q, ltQ, cut)), boolean_cut_laws(Q, ltQ, cut)
+def boolean_cut_laws(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) := field_second(
+  Q -> CutBool,
+  (
+    fun (upper : Q -> CutBool) => CutLaws(
+      Q, ltQ, decoded_cut_predicate(Q, boolean_cut_lower(Q, ltQ, cut)),
+      decoded_cut_predicate(Q, upper)
     )
-  );
+  ), boolean_cut_rest(Q, ltQ, cut)
+);
+
+def boolean_to_dedekind(Q : U0, ltQ : Q -> Q -> U0, cut : BooleanCut(Q, ltQ)) := typed(
+  DedekindCut(Q, ltQ),
+  (
+    decoded_cut_predicate(Q, boolean_cut_lower(Q, ltQ, cut)),
+    decoded_cut_predicate(Q, boolean_cut_upper(Q, ltQ, cut)), boolean_cut_laws(Q, ltQ, cut)
+  )
+);
 
 // Transport the existing cut laws along the proved equality of predicates.
 // No cut law or completeness claim is introduced as an axiom.
@@ -121,7 +119,7 @@ def dedekind_to_boolean(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   let lowerPath := classical_cut_predicate_correct(Q, lower, cut_lower_prop(Q, ltQ, cut));
   let upperPath := classical_cut_predicate_correct(Q, upper, cut_upper_prop(Q, ltQ, cut));
   let lowerLaws :=
-    along((fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper))) by sym(lowerPath) from cut_laws(
+    along ((fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper))) by sym(lowerPath) from cut_laws(
       Q, ltQ, cut
     );
   exact (

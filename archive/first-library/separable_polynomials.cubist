@@ -35,7 +35,8 @@ def mapped_root_to_original(
 }
 
 def original_root_to_mapped(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), r : PolynomialRoots(K, L, e, p)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
+  r : PolynomialRoots(K, L, e, p)
 ) :
   PolynomialRoots(L, L, field_embedding_identity(L), polynomial_map(K, L, e, p)) {
   obtain (x, root) := r;
@@ -157,7 +158,7 @@ def adjoined_embeddings_upper_bound(
   let H := AdjoinedEmbeddings(K, M, irreducible, L, e);
   let R := PolynomialRoots(K, L, e, p);
   let roots :=
-    along((fun (A : U0) => DistinctFamily(A, n))) by adjoined_embeddings_are_roots(
+    along ((fun (A : U0) => DistinctFamily(A, n))) by adjoined_embeddings_are_roots(
       K, M, irreducible, L, e
     ) from family;
   let degree :=
