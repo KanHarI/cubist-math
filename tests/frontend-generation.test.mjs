@@ -4,9 +4,11 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import {lint} from "../web/cubist/lint.mjs";
+import {parse} from "../web/cubist/parser.mjs";
+import {cubistTestModules} from "../web/cubist/modules.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
-import {gaps, expectedFailures, historicalCoverage, passingCoverage, captureVariants, captureSource} from "./fixtures/frontend-generation.mjs";
+import {gaps, expectedFailures, historicalCoverage, passingCoverage, collisionVariants, captureVariants, captureSource} from "./fixtures/frontend-generation.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}) => {
@@ -26,11 +28,21 @@ const gap = (checked, name) => {
   assert.ok(found, `missing refusal for ${name}`);
   return found;
 };
+const coversOriginalToken = (actual, {source, diagnostic}) => {
+  const scope = source.indexOf(diagnostic.scope);
+  const token = scope + diagnostic.scope.lastIndexOf(diagnostic.token);
+  assert.ok(scope >= 0 && token >= scope, "the expected source site must exist");
+  assert.ok(actual.end > actual.start, "diagnostic range must be nonempty");
+  assert.ok(actual.start >= scope && actual.end <= scope + diagnostic.scope.length,
+    "diagnostic range must stay within the original body or law");
+  assert.ok(actual.start <= token && actual.end >= token + diagnostic.token.length,
+    `diagnostic range must cover ${diagnostic.token}`);
+};
 
 const contracts = {
-  G1(checked) {
-    accepted(checked, gaps.G1.clients);
-    assert.equal(checked.get("N").type, "Unit");
+  G1(checked, t, fixture) {
+    accepted(checked, fixture.clients);
+    assert.equal(checked.get("N").type, fixture.originalType);
     assert.equal(checked.result.gaps.length, 1);
     assert.match(gap(checked, "N").reason, /already|duplicate/i);
   },
@@ -64,14 +76,13 @@ const contracts = {
     assert.equal(gap(checked, "P").code, "E343");
     assert.equal(gap(checked, "C").code, "E340");
     assert.equal(checked.result.gaps.length, 2);
-    assert.match(gap(checked, "C").reason, /P/);
+    assert.match(gap(checked, "C").reason, /\bP\b/);
   },
   G8(checked) {
     const actual = gap(checked, "h"), expected = gaps.G8.diagnostic;
     assert.equal(actual.code, expected.code);
     assert.ok(actual.reason.includes(expected.found)); assert.ok(actual.reason.includes(expected.expected));
-    const start = gaps.G8.source.lastIndexOf("t1");
-    assert.equal(actual.start, start); assert.equal(actual.end, start + 2);
+    coversOriginalToken(actual, gaps.G8);
   },
   G9(checked) {
     complete(checked); accepted(checked, gaps.G9.clients);
@@ -103,13 +114,19 @@ const contracts = {
     assert.equal(checked.result.gaps.length, 1);
   },
   G12(checked) { complete(checked); accepted(checked, gaps.G12.clients); },
+  "G12-range"(checked) {
+    assert.equal(checked.result.gaps.length, 1);
+    const actual = gap(checked, "T");
+    assert.equal(actual.code, gaps["G12-range"].diagnostic.code);
+    coversOriginalToken(actual, gaps["G12-range"]);
+  },
 };
 
 function contractTest(id, fixture, label = fixture.contract) { test(`${id}: ${label}`, async t => {
   const checked = await check(t, fixture.source);
-  if (!expectedFailures.has(id) || process.env.CUBIST_GENERATION_STRICT === "1") return contracts[id](checked, t);
+  if (!expectedFailures.has(id) || process.env.CUBIST_GENERATION_STRICT === "1") return contracts[id](checked, t, fixture);
   let failure;
-  try { await contracts[id](checked, t); } catch (error) {
+  try { await contracts[id](checked, t, fixture); } catch (error) {
     // Infrastructure errors are never an expected compiler defect.
     if (error.code !== "ERR_ASSERTION") throw error;
     failure = error;
@@ -119,13 +136,21 @@ function contractTest(id, fixture, label = fixture.contract) { test(`${id}: ${la
   throw failure;
 }); }
 for (const [id, fixture] of Object.entries(gaps)) contractTest(id, fixture);
+for (const variant of collisionVariants) contractTest("G1", {...gaps.G1, ...variant});
 for (const variant of captureVariants) contractTest("G11", {...gaps.G11, source: captureSource(variant)}, variant.name);
 
 test("FG0 maps historical fixes and passing controls to existing executable tests", async () => {
   assert.deepEqual(Object.keys(contracts), Object.keys(gaps));
   for (const [file, name] of [...Object.values(historicalCoverage), ...passingCoverage]) {
     const source = await readFile(new URL(file, import.meta.url), "utf8");
-    assert.ok(source.includes(`test(${JSON.stringify(name)},`), `${file}: ${name}`);
+    if (file.endsWith(".cubist")) {
+      assert.ok(cubistTestModules.includes(file.split("/").at(-1).slice(0, -".cubist".length)),
+        `${file} must run in the Cubist regression suite`);
+      const declarations = new Set(parse(source).declarations.map(declaration => declaration.name?.text));
+      for (const declaration of name) assert.ok(declarations.has(declaration), `${file}: ${declaration}`);
+    } else {
+      assert.ok(source.includes(`test(${JSON.stringify(name)},`), `${file}: ${name}`);
+    }
   }
 });
 
@@ -162,17 +187,17 @@ test("FG0 controls: inherited, bare and partial helpers preserve independently s
   const checked = await check(t, `import hlevels;
 theory P(U < UU0) { M : set U; c : M; op(x, y : M) : M;
   def k(x : M) : M := op(x, c);
-  def binary(x, y : M) : M := op(x, y);
+  def kc(x, y : M) : M := op(x, c);
   def apply(f : M -> M, x : M) : M := f(x);
 }
 theory T(U < UU0) extends P {
   law inherited(c : M) : k(c) = op(c, c);
-  law bare(x : M) : apply(k, x) = op(x, c);
-  law partial(c : M) : apply(binary(c), c) = op(c, c);
+  law bare(c : M) : apply(k, c) = op(c, c);
+  law partial(c : M) : apply(kc(c), c) = op(c, c);
 }
 def intended(S : T(U0), x : S.M) : S.op(x, S.c) = S.op(x, x) := S.inherited(x);
-def bare(S : T(U0), x : S.M) : S.op(x, S.c) = S.op(x, S.c) := S.bare(x);
-def partial(S : T(U0), x : S.M) : S.op(x, x) = S.op(x, x) := S.partial(x);
+def bare(S : T(U0), x : S.M) : S.op(x, S.c) = S.op(x, x) := S.bare(x);
+def partial(S : T(U0), x : S.M) : S.op(x, S.c) = S.op(x, x) := S.partial(x);
 `);
   complete(checked); accepted(checked, ["intended", "bare", "partial"]);
 });
@@ -190,6 +215,15 @@ def initial_computation : N.model.iter(zero) = N.c { rfl; }
   complete(checked); accepted(checked, ["inherited", "initial_computation"]);
 });
 
+test("FG0 controls: safe unused-binder advice remains available", async t => {
+  const source = "def g : forall x : Unit. Unit := fun (x : Unit) => tt;";
+  assert.ok(lint(source).some(w => w.code === "W705"), "safe unused-binder advice must remain available");
+  for (const candidate of [source, source.replace("forall x : Unit. Unit", "Unit -> Unit")]) {
+    const checked = await check(t, candidate);
+    complete(checked); accepted(checked, ["g"]);
+  }
+});
+
 test("FG0 controls: explicit path bodies remain checked and recursive type unfolding remains refused", async t => {
   const explicit = await check(t, `import hlevels;
 inductive H : set U0 { first; p(y : H) : y = y; }
@@ -197,10 +231,6 @@ def k(x : H) : Unit := match x { first => tt; p(y) @ i => k(y); };
 def computation : k(first) = tt { rfl; }
 `);
   complete(explicit); accepted(explicit, ["k", "computation"]);
-  const refused = await check(t, `import hlevels; import nat;
-theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
-  def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
-  law nope(n : Nat) : iter(n) = c;
-}`);
+  const refused = await check(t, gaps["G12-range"].source);
   assert.equal(refused.result.gaps[0]?.code, "E845");
 });

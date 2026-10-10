@@ -16,8 +16,14 @@ adds three regressions and two shared defects, recorded as G8–G12 below.
 The standalone Cubist examples below were checked with `CubicalProgram`,
 the matching WASM kernel and the library module reader. G5 also runs the
 source linter before checking its suggested rewrite. Each example is a
-separate program. They are small reproductions, not new regression tests
-already installed in CI. FG0 in the roadmap makes them durable tests.
+separate program. FG0 now installs these reproductions as executable
+contracts in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs),
+with fixtures and comparison rules in the
+[manifest](../../tests/fixtures/frontend-generation.md). They run in the
+normal `npm test` suite. Open contracts are explicit expected failures:
+they must fail assertions, unexpected passes are errors, and TODOs do not
+count as completed implementation. G12's E845 source range is tracked
+independently from its value-call contract.
 
 For the follow-up review, G8–G12 were also independently reproduced at
 `00d4ecce`, main `cb525f07`, and the earlier #188 head `9c93220d` with the
@@ -66,11 +72,11 @@ as explained below, rather than claiming its grouped example worked there.
 
 | ID | Status at the pinned revision | Work package | Completion condition |
 | --- | --- | --- | --- |
-| G1 | Open: mixed declaration kinds silently replace a name | FG1 | Refuse the conflicting declaration before publication and preserve the original binding. |
+| G1 | Open: mixed declaration kinds silently replace a name; same-kind refusals also lose the first binding | FG1 | Refuse the conflicting declaration before publication and preserve the original binding. |
 | G2 | Open: generated Hom universes omit fixed argument domains | FG3 | Infer a sufficient universe from all generated fields and check identity/composition at multiple levels. |
 | G3 | Open: law-dependent arguments enter an unsupported Hom expansion | FG2 | Either construct checked transport or refuse the requested derivation before publishing its artifacts. |
-| G4 | Open: nested generated matches cannot find carrier evidence | FG4 | Carry checked evidence through nested and dependent scopes without adding assumptions. |
-| G5 | Open: unused-binder advice removes generated interfaces | FG5 | Suggested rewrites preserve named-call and derivation behavior, or are suppressed. |
+| G4 | Open: flat and nested generated matches cannot find carrier evidence | FG4 | Carry checked evidence through flat, nested and dependent scopes without adding assumptions. |
+| G5 | Open: unused-binder advice removes generated interfaces | FG5 | Suggested rewrites preserve supported calls and derivations, or are suppressed; safe ordinary advice remains available. |
 | G6 | Open: failed-parent diagnostics are repeated as fresh child failures | FG1 | Report the child's failed dependency once, with the original cause retained. |
 | G7 | Historical symptom; no remaining reproduction in this inventory | FG1, FG6 | Exercise an actual failed parent projection and its dependents; do not reuse a now-passing capture example as a bug. |
 | G8 | Open regression in `00d4ecce`: wildcard path failures report unwanted generation | FG4 | Restrict fallback to recursive positions and retain the original mismatch when fallback cannot supply checked coherence. |
@@ -102,6 +108,14 @@ def N : Unit := tt;
 initial N : Monoid(U0);
 def u : Unit := N;
 ```
+
+The reverse mixed-kind order also replaces the first binding:
+`inductive N : U0 { c; } def N : Unit := tt; def u : U0 := N;`
+refuses `u` with E606 (`found Unit, expected U0`). Same-kind duplicates
+also lose the first binding: `def N : Unit := tt; def N : U0 := Unit;`
+reports E604 ("Definition symbol is already registered") on the second
+definition, but a subsequent `def original : Unit := N;` fails with E340.
+The FG0 G1 variants cover all four cases.
 
 Expected: refuse the second same-module declaration with the duplicate-name
 diagnostic before replacing `N`; recovery can still check `u` against the
@@ -183,6 +197,8 @@ theory T(U < UU0) {
 `T.value` fails with E546: it cannot generate `Bit.squash` because it
 cannot find evidence that `m.M` is a set. That evidence is already a
 checked field of the model. An inherited copy has the same failure.
+Nesting is not required: replacing both `cons` clauses with the flat
+`cons(b, rest) => c` also fails with E546, for `Bits.squash`.
 
 Expected: nested clause elaboration receives the applicable checked model
 evidence, transformed with its context. The required proof is still
@@ -221,7 +237,11 @@ generated interface, even when their names are unused in the result type.
 Advice must preserve supported derivations and public calling conventions,
 or explain the interface change rather than present it as a simplification.
 Start in [lint.mjs](../../web/cubist/lint.mjs); acceptance includes checking
-the suggested replacement through actual clients.
+the suggested replacement through actual clients. The executable G5 uses
+the supported positional call `S.op(a, a)`: named operation calls such as
+`S.op(x := a, y := a)` are independently unsupported (E378) and would mask
+this lint failure. A passing control retains W705 for ordinary safe
+unused binders.
 
 ## G6: an invalid parent is re-expanded as a child's own error
 

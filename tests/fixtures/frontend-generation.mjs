@@ -1,7 +1,7 @@
 // Sources are independent clients, not snapshots of generated syntax. Keep
 // expected failures here until the responsible implementation slice lands.
 export const baseline = "00d4ecce016f7e18d13eedeced07dc098a2277cb";
-export const expectedFailures = new Set(["G1", "G2", "G3", "G4", "G5", "G6", "G8", "G9", "G10", "G11", "G12"]);
+export const expectedFailures = new Set(["G1", "G2", "G3", "G4", "G5", "G6", "G8", "G9", "G10", "G11", "G12", "G12-range"]);
 export const gaps = {
   G1: {
     phase: "FG1", contract: "a duplicate declaration preserves the first binding and its clients",
@@ -10,6 +10,7 @@ inductive N : U0 { c; }
 def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
+    originalType: "Unit",
   },
   G2: {
     phase: "FG3", contract: "fixed argument domains contribute to generated universes",
@@ -18,8 +19,12 @@ theory T(U < UU0) { M : set U; op(A : U0, x : A) : M; }
 def identity(S : T(U0)) : T.Hom(S, S) := T.Hom.id(S);
 def computation(S : T(U0), x : S.M) :
   T.Hom.compose(identity(S), identity(S)).map(x) = x { rfl; }
-def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);`,
-    clients: ["T.Hom", "identity", "computation", "iso"],
+def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);
+def identity_u1(S : T(U1)) : T.Hom(S, S) := T.Hom.id(S);
+def computation_u1(S : T(U1), x : S.M) :
+  T.Hom.compose(identity_u1(S), identity_u1(S)).map(x) = x { rfl; }
+def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);`,
+    clients: ["T.Hom", "identity", "computation", "iso", "identity_u1", "computation_u1", "iso_u1"],
   },
   G3: {
     phase: "FG2", contract: "unsupported law-dependent transport leaves a usable theory and no partial Hom family",
@@ -42,13 +47,13 @@ def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
     clients: ["T.value", "computation"],
   },
   G5: {
-    phase: "FG5", contract: "unused-binder advice preserves named arguments and generated interfaces",
+    phase: "FG5", contract: "unused-binder advice preserves supported calls and generated interfaces",
     source: `import hlevels;
 theory T(U < UU0) { M : set U; op : forall x, y : M. M; }
 def identity(S : T(U0)) := T.Hom.id(S);
-def named(S : T(U0), a : S.M) : S.M := S.op(x := a, y := a);
+def applied(S : T(U0), a : S.M) : S.M := S.op(a, a);
 initial N : T(U0);`,
-    clients: ["identity", "named", "N", "N.model", "N.fold"],
+    clients: ["identity", "applied", "N", "N.model", "N.fold"],
   },
   G6: {
     phase: "FG1", contract: "a child reports the failed parent once without repeating its root error",
@@ -63,7 +68,8 @@ def independent : Unit := tt;`,
     source: `import hlevels;
 inductive T : set U0 { t0; t1; seg : t0 = t1; }
 def h(x : T) : T := match x { t0 => t0; _ => t1; };`,
-    diagnostic: {code: "E606", found: "t1 = t1", expected: "t0 = t1", token: "t1"},
+    diagnostic: {code: "E606", found: "t1 = t1", expected: "t0 = t1",
+      scope: ":= match x { t0 => t0; _ => t1; };", token: "t1"},
   },
   G9: {
     phase: "FG5", contract: "freshened law binders and every use retain written labels and definition targets",
@@ -97,7 +103,7 @@ def captured(S : T(U0), x : S.M) : S.kk(x) = S.op(x, x) := refl(S.op(x, x));`,
     clients: ["intended"], refusedClients: ["captured"],
   },
   G12: {
-    phase: "FG2/FG4", contract: "ordinary calls to earlier recursive values check and compute",
+    phase: "FG2/FG4/FG5", contract: "ordinary calls to earlier recursive values check and compute",
     source: `import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
@@ -106,12 +112,48 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 def computation(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }`,
     clients: ["T.iter", "T.twice", "computation"],
   },
+  "G12-range": {
+    phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original call",
+    source: `import hlevels; import nat;
+theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
+  def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
+  law nope(n : Nat) : iter(n) = c;
+}`,
+    diagnostic: {code: "E845", scope: "law nope(n : Nat) : iter(n) = c;", token: "iter(n)"},
+  },
 };
+
+export const collisionVariants = [
+  {
+    contract: "an initial-model duplicate preserves the first definition",
+    source: `import hlevels; import algebra;
+def N : Unit := tt;
+initial N : Monoid(U0);
+def original : Unit := N;
+def independent : Unit := tt;`,
+  },
+  {
+    contract: "a definition duplicate preserves the first inductive",
+    source: `inductive N : U0 { c; }
+def N : Unit := tt;
+def original : U0 := N;
+def constructor : N := c;
+def independent : Unit := tt;`,
+    originalType: "U0", clients: ["original", "constructor", "independent"],
+  },
+  {
+    contract: "a same-kind duplicate preserves the first definition",
+    source: `def N : Unit := tt;
+def N : U0 := Unit;
+def original : Unit := N;
+def independent : Unit := tt;`,
+  },
+];
 
 // Existing protection is named, not copied; these tests remain in the normal
 // npm test run. G7 is historical and needs controlled failure injection in FG1.
 export const historicalCoverage = {
-  H1: ["references.test.mjs", "declaration identities survive every syntax transformation independently of spelling"],
+  H1: ["../cubist-tests/initial_models.cubist", ["Constant", "K", "idem_at", "Named", "named_fold"]],
   H2: ["theory-resolution.test.mjs", "initial and free models retain imported global types and law constants"],
   H3: ["theory-resolution.test.mjs", "family indices carry captured syntax through generated homomorphisms and isomorphisms"],
   H4: ["theory-hygiene.test.mjs", "theory capture uses opened fields before globals and retains them across imports and selections"],

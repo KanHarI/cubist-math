@@ -632,7 +632,7 @@ packages do not mark implementation complete or resume paused mathematics.
 
 | ID | Package and exit evidence | Depends on | Size |
 | --- | --- | --- | --- |
-| FG0 | Reproductions, public-interface manifests and independent meaning checks; every open gap has an expected outcome | #188's captured-syntax baseline | S |
+| FG0 | Evidence harness implemented in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs), with a [comparison manifest](../../tests/fixtures/frontend-generation.md); every open gap has an expected outcome and explicit TODO, including G12's separately tracked refusal range | #188's captured-syntax baseline | S |
 | FG1 | Shared declaration ownership, dependency state and publication groups; collisions and failures preserve existing checked state | FG0 | L |
 | FG2 | Complete declaration telescopes, dependency/support analysis, value/type call classification and notation-scope consolidation; meaning and supported calls survive expansion | FG0; FG1 for publication | L |
 | FG3 | Universe inference from complete generated telescopes; Hom/Iso clients and genuine lowering refusals | FG1, FG2 | M |
@@ -640,8 +640,8 @@ packages do not mark implementation complete or resume paused mathematics.
 | FG5 | Separate alias keys, labels and exact source origins; binder/use links, refusal ranges and public interfaces survive transformation | FG0, FG2; FG1 for publication metadata | M |
 | FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
 
-Start FG0 and prioritize G11's silent capture alongside FG1's ownership
-fix. G8–G10's focused fixes and regression checks can land on #188 before
+Extend FG0's installed harness and prioritize G11's silent capture alongside
+FG1's ownership fix. G8–G10's focused fixes and regression checks can land on #188 before
 the broader dependency/publication work; update their evidence status when
 fixed. Complete FG2's call classification (G12) and notation-alias audit.
 FG3 and the broader FG4 work follow those contracts; FG5's
