@@ -141,7 +141,7 @@ def has_dimension_path(
   finite : HasDimension(K, V, n)
 ) :
   HasDimension(K, W, n) {
-  exact along((fun (X : VectorSpace(K)) => HasDimension(K, X, n))) by p from finite;
+  exact along ((fun (X : VectorSpace(K)) => HasDimension(K, X, n))) by p from finite;
 }
 
 def dimension_path(

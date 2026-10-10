@@ -10,7 +10,7 @@ inductive N {
 
 inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
   class(a : A);
-  glue(a, b : A, r : R(a, b)) : class(a) = class(b);
+  glue_(a, b : A, r : R(a, b)) : class(a) = class(b);
 }
 
 def related(a, b : N) : U0 := N;
@@ -25,7 +25,7 @@ def large_quotient : U1 := Quotient(U0, U1, N, big_relation);
 def large_lowered : U0 := Quotient(U0, U1, N, big_relation);
 
 inductive Flag : U1 {
-  on;
+  on_;
   off;
 }
 

@@ -3,7 +3,7 @@
 // any formal composition, and states its type. It is no eliminator out of
 // the truncation: it reads a closed value, as evaluate does.
 import h1_truncation;
-import paths;
+import paths_;
 use nat;
 
 // Output: 3 : Nat
@@ -59,7 +59,7 @@ computable def swapped : (Unit and Nat) = (Nat and Unit) {
 // Output: (5, tt) : Nat and Unit
 print(
   witness(
-    along(fun (T : U0) => Trunc(U0, T)) by swapped from typed(
+    along (fun (T : U0) => Trunc(U0, T)) by swapped from typed(
       Trunc(U0, Unit and Nat), point((tt, 5))
     )
   )

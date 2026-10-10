@@ -37,7 +37,7 @@ def nonnegative_half_from_sum(
   sum : addF(half, half) = epsilon, nonnegativeEpsilon : FieldLe(F, lt, zero, epsilon)
 ) :
   FieldLe(F, lt, zero, half) {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   intro belowZero;
   obtain (forward, backward) := translate(half, zero, half);
@@ -46,7 +46,7 @@ def nonnegative_half_from_sum(
       belowZero
     );
   let sumNegative := transitive(addF(half, half), half, zero, belowHalf, belowZero);
-  exact nonnegativeEpsilon(along((fun (v : F) => lt(v, zero))) by sum from sumNegative);
+  exact nonnegativeEpsilon(along ((fun (v : F) => lt(v, zero))) by sum from sumNegative);
 }
 
 // Construct a midpoint in the interval subtype, with proofs that both

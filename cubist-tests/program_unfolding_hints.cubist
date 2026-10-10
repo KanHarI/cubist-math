@@ -6,10 +6,10 @@
 import nat;
 use nat;
 
-def id(n : Nat) := n;
+def id_(n : Nat) := n;
 
-def hinted : id(0) = 0 {
-  exact with unfolding [id] {
+def hinted : id_(0) = 0 {
+  exact with unfolding [id_] {
     refl(0)
   };
 }
@@ -18,9 +18,9 @@ def ordinary : 0 = 0 {
   exact refl(0);
 }
 
-// Error: E606: Type mismatch: found 0 = 0, expected id(0) = 1.
-def false_hint : id(0) = 1 {
-  exact with unfolding [id] {
+// Error: E606: Type mismatch: found 0 = 0, expected id_(0) = 1.
+def false_hint : id_(0) = 1 {
+  exact with unfolding [id_] {
     refl(0)
   };
 }

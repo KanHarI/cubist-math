@@ -57,10 +57,13 @@ function render(document, width) {
     else if (doc.kind === "hug") {
       const last = doc.rest.findLastIndex(d => d?.kind === "group");
       const opening = [doc.head, " ", ...doc.rest.slice(0, last), doc.rest[last]?.body[0]];
+      // A comment after the closing `;` takes no part in the choice.
+      const tail = doc.rest.slice(last + 1), comment = tail.length === 3 && tail[1] === " " && tail[2].startsWith?.("//");
+      const code = comment ? doc.rest.slice(0, -2) : doc.rest;
       // Only a value too long for a line of its own is hugged: a short one
       // reads better on the next line, whole.
-      const hugs = last >= 0 && doc.rest.slice(last + 1).every(d => d === ";") && !fits(doc.broken.body, width - column)
-        && !fits(doc.rest, width - level - 2) && fits(opening, width - column);
+      const hugs = last >= 0 && tail[0] === ";" && (tail.length === 1 || comment) && !fits([doc.head, " ", ...code], width - column)
+        && !fits(code, width - level - 2) && fits(opening, width - column);
       // Hugged, the lines before the brackets are spaces; the brackets' own
       // group breaks as it needs.
       stack.push(hugs ? { doc: [doc.head, " ", ...doc.rest], level, flat: true } : { doc: doc.broken, level, flat });
@@ -112,13 +115,29 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   // A keyword is no name called: a reserved word keeps its space before a
   // parenthesis, as in `forall (x : A)` and `evaluate (a, b) expecting
-  // (a, _);`. The reserved words written as calls, left(a), right(b),
-  // typed(T, e) and print's evaluate(e), are tight.
-  const evaluateStarts = new Set((syntax?.directives ?? []).filter(node => node.kind === "evaluate").map(node => node.start));
-  const keyword = token => reservedNames.has(token.text)
-    && (!["left", "right", "typed", "evaluate"].includes(token.text) || evaluateStarts.has(token.start));
+  // (a, _);`, unless the syntax writes it as a call. Calls, left(a) and
+  // typed(T, e) among them, and constructor patterns are tight whatever
+  // their names, and so are print(witness(t)), a notation's numeral(n : Nat)
+  // and literal(s : Lexeme) rules, and an inductive's trunc(1).
+  const tokenAt = new Map(tokens.map(token => [token.start, token]));
+  const calledNameEnds = new Set();
+  const keyword = token => reservedNames.has(token.text) && !calledNameEnds.has(token.end);
   function visit(node) {
     if (!node || typeof node !== "object") return;
+    if (node.kind === "call") calledNameEnds.add(node.fn.end);
+    if (Object.hasOwn(node, "constructor") && node.constructor) calledNameEnds.add(node.constructor.end);
+    if (node.kind === "print") {
+      const word = tokenAt.get(node.start), show = tokenAfter.get(tokenAfter.get(word.end).end);
+      calledNameEnds.add(word.end).add(show.end);
+    }
+    if (node.kind === "notation")
+      for (const rule of node.rules) if (["numeral", "literal"].includes(rule.kind)) calledNameEnds.add(rule.keyword.end);
+    if (node.kind === "trunc" && Number.isInteger(node.level)) {
+      const word = tokenAt.get(node.start);
+      calledNameEnds.add(word.end);
+      // trunc(-1)'s sign is tight, as a negation's is.
+      if (node.level < 0) prefixOperators.add(tokenAfter.get(tokenAfter.get(word.end).end).start);
+    }
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.kind === "projection" || node.kind === "member") projectionDots.add(node.dot.start);
     // A qualified name's dot is tight too: T.squash.
@@ -139,6 +158,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     const valueStart = node.valueStart ?? (node.kind === "let" ? node.value?.start : undefined);
     if (valueStart !== undefined && tokenBefore.get(valueStart)?.text === ":=")
       assignmentTokens.add(tokenBefore.get(valueStart).start);
+    // An initial or free model's theory breaks after its colon, as a type does.
+    if (["initial", "free"].includes(node.kind) && node.theory) annotationStarts.add(node.theory.start);
     // A declaration's type, or a let's stated type before its proof block.
     if (node.type && (node.kind === "def" || node.kind === "let" && node.body)) {
       annotationStarts.add(node.type.start);

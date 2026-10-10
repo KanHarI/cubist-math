@@ -72,8 +72,8 @@ def polynomial_tail(K : AlgebraicField, p : Polynomial(K)) : Polynomial(K) {
   let f := polynomial_coefficients(K, p);
   let Result := exists k : Nat. SeriesSupport(K, series_tail(K, f), k);
   let convert : (exists n : Nat. SeriesSupport(K, f, n)) -> Result {
-    intro witness;
-    obtain (n, support) := witness;
+    intro witness_;
+    obtain (n, support) := witness_;
     exact (n, (fun (k : Nat, above : le(n, k)) => support(succ(k), nat_le_step(n, k, above))));
   }
   exact (

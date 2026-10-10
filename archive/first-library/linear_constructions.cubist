@@ -27,7 +27,7 @@ def linear_sum(K : AlgebraicField, V, W : VectorSpace(K), f, g : LinearMap(K, V,
   let add := vector_add(K, W);
   let X := vector_carrier(K, V);
   let Y := vector_carrier(K, W);
-  let additive :
+  let additive_ :
     forall x : X. forall y : X.
     add(F(vector_add(K, V, x, y)), G(vector_add(K, V, x, y))) = add(
       add(F(x), G(x)), add(F(y), G(y))
@@ -58,7 +58,7 @@ def linear_sum(K : AlgebraicField, V, W : VectorSpace(K), f, g : LinearMap(K, V,
       )
     );
   }
-  exact ((fun (x : X) => add(F(x), G(x))), additive, scalar);
+  exact ((fun (x : X) => add(F(x), G(x))), additive_, scalar);
 }
 
 def scalar_multiple_linear(K : AlgebraicField, V : VectorSpace(K), a : af_carrier(K)) :

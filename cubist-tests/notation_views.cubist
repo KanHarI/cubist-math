@@ -95,12 +95,12 @@ print(evaluate(nat.(plus(3, 4))));
 
 // Two models on one carrier: * is addition in one and multiplication in
 // the other.
-def additive : Monoid(U0) := nat_additive.monoid;
+def additive_ : Monoid(U0) := nat_additive.monoid;
 
 def multiplicative : Monoid(U0) := nat_multiplicative.monoid;
 
 // Output: nat.(7)
-print(evaluate(nat.(3 additive.(*) 4)));
+print(evaluate(nat.(3 additive_.(*) 4)));
 
 // Output: nat.(12)
 print(evaluate(nat.(3 multiplicative.(*) 4)));
@@ -108,10 +108,10 @@ print(evaluate(nat.(3 multiplicative.(*) 4)));
 // A rule's qualified name is read by its root where the rule is declared:
 // a local additive changes nothing.
 notation summed {
-  x + y := additive.mul(x, y);
+  x + y := additive_.mul(x, y);
 }
 
-def rooted(additive : Monoid(U0), x, y : Nat) : summed.(x + y) = nat.(x + y) {
+def rooted(additive_ : Monoid(U0), x, y : Nat) : summed.(x + y) = nat.(x + y) {
   rfl;
 }
 
@@ -123,9 +123,9 @@ print(evaluate(nat.(nested(3))));
 
 // A selection is complete: + is not the additive monoid's, whose
 // operation is *.
-// Error: E397: + is not in additive's notation, which is selected here: select a notation that
+// Error: E397: + is not in additive_'s notation, which is selected here: select a notation that
 //   binds it, as nat.(x + y), or write the operation.
-def missing(x : Nat) : Nat := additive.(x + x);
+def missing(x : Nat) : Nat := additive_.(x + x);
 
 // Error: E397: < is not in times's notation, which is selected here: select a notation that binds
 //   it, as nat.(x < y), or write the operation.

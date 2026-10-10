@@ -65,7 +65,7 @@ def field_sequence_antitone_step(
       );
     }
     right(same) => {
-      exact along((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))) by sym(same) from order_le_refl(
+      exact along ((fun (k : Nat) => FieldLe(F, lt, sequence(succ(n)), sequence(k)))) by sym(same) from order_le_refl(
         F, lt, order, sequence(succ(n))
       );
     }
@@ -80,7 +80,7 @@ def field_sequence_antitone(
   forall m : Nat. IndexLE(m, n) -> FieldLe(F, lt, sequence(n), sequence(m)) {
   let base : forall m : Nat. IndexLE(m, 0) -> FieldLe(F, lt, sequence(0), sequence(m)) {
     intro m, ordered;
-    exact along((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))) by sym(
+    exact along ((fun (k : Nat) => FieldLe(F, lt, sequence(0), sequence(k)))) by sym(
       nat_le_zero(m, ordered)
     ) from order_le_refl(F, lt, order, sequence(0));
   }

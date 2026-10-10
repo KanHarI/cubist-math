@@ -64,7 +64,7 @@ def field_common_positive_radius(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, r, nonnegativeR
     );
   let belowR :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(total, r)))) by ring_mul_comm(
+    along ((fun (v : F) => FieldLe(F, lt, v, mulF(total, r)))) by ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, s, r
     ) from weakScale(s, total, r, sBelow, nonnegativeR);
   let boundR :=

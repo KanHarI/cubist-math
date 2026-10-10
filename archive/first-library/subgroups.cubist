@@ -32,13 +32,13 @@ def subgroup_prop(
   G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H), x : group_carrier(G)
 ) :
   Proposition(H(x)) {
-  obtain (prop, unit, multiplyLocal, invClosed) := laws;
-  exact prop(x);
+  obtain (prop_, unit, multiplyLocal, invClosed) := laws;
+  exact prop_(x);
 }
 
 def subgroup_unit(G : Group, H : group_carrier(G) -> U0, laws : SubgroupLaws(G, H)) :
   H(group_unit(G)) {
-  obtain (prop, unit, multiplyLocal, invClosed) := laws;
+  obtain (prop_, unit, multiplyLocal, invClosed) := laws;
   exact unit;
 }
 
@@ -47,7 +47,7 @@ def subgroup_multiply(
   hx : H(x), hy : H(y)
 ) :
   H(group_multiply(G, x, y)) {
-  obtain (prop, unit, multiplyLocal, invClosed) := laws;
+  obtain (prop_, unit, multiplyLocal, invClosed) := laws;
   exact multiplyLocal(x, y, hx, hy);
 }
 
@@ -56,7 +56,7 @@ def subgroup_inverse(
   hx : H(x), inverseLaw : group_multiply(G, y, x) = group_unit(G)
 ) :
   H(y) {
-  obtain (prop, unit, multiplyLocal, invClosed) := laws;
+  obtain (prop_, unit, multiplyLocal, invClosed) := laws;
   exact invClosed(x, y, hx, inverseLaw);
 }
 

@@ -21,7 +21,7 @@ def field_close_difference_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, s, t, delta, negF(t), close
   );
   let centered :=
-    along((fun (v : F) => FieldClose(F, addF, lt, addF(negF(t), s), v, delta))) by ring_add_inverse(
+    along ((fun (v : F) => FieldClose(F, addF, lt, addF(negF(t), s), v, delta))) by ring_add_inverse(
       F, zero, one, addF, mulF, negF, ring, t
     ) from shifted;
   exact field_close_zero_magnitude(

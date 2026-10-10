@@ -73,6 +73,12 @@ finishing a language milestone does not automatically resume them.
 - [Computation notation: monadic do and arrows](roadmaps/computation-notation-roadmap.md):
   planned blocks for existence proofs, free-algebra substitution and arrow
   composition, with explicit structures and checked elaboration.
+- [Runtime evaluation and binary numerical foundations](roadmaps/runtime-evaluation-roadmap.md):
+  Euclid failure evidence and a recorded evaluation baseline, evaluator and
+  search improvements, and early `UNat`/`BNat` foundations with checked
+  semiring isomorphism, equality in `U0`, strong induction over smaller
+  binary values and new binary-backed `Z` and `Q`, with staged correctness
+  and performance gates.
 - [Simplification and shorter proofs](roadmaps/proof-ergonomics-roadmap.md):
   - Delivered: rewriting, calculations, `simp`/`simpa`, cubical path
     syntax, dependency tracking, `computable` and `evaluate` with patterns

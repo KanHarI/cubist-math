@@ -58,7 +58,7 @@ def field_affine_increment_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, d, delta, length,
     deltaBound, bounded
   );
-  exact along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, mulF(delta, length)))) by sym(
+  exact along ((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, mulF(delta, length)))) by sym(
     field_affine_difference(F, zero, one, addF, mulF, negF, ring, a, d, s, t)
   ) from productBound;
 }

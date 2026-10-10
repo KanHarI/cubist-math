@@ -10,7 +10,7 @@ def nat_zero_ne_succ(n : Nat, p : (0 = succ(n))) :=
     Nat,
     (
       fun (x : Nat) => (
-        fun (y : Nat) => (fun (path : (x = y)) => ((fun (n2 : Nat) => induction n2 as k return U0 {
+        fun (y : Nat) => (fun (path_ : (x = y)) => ((fun (n2 : Nat) => induction n2 as k return U0 {
                 zero => Unit;
                 succ h => Void;
               })(x) -> (fun (n2 : Nat) => induction n2 as k return U0 {
@@ -207,7 +207,7 @@ def bounded_least_search(P : (Nat -> U0), dec : (forall n : Nat. (P(n) or (P(n) 
                 fun (p : P(j)) => np(
                   path_induction(
                     Nat,
-                    (fun (x : Nat) => (fun (y : Nat) => (fun (path : (x = y)) => (P(x) -> P(y))))),
+                    (fun (x : Nat) => (fun (y : Nat) => (fun (path_ : (x = y)) => (P(x) -> P(y))))),
                     (fun (x : Nat) => (fun (t : P(x)) => t)), j, 0, nat_le_zero(j, bound)
                   )(p)
                 )
@@ -223,7 +223,7 @@ def bounded_least_search(P : (Nat -> U0), dec : (forall n : Nat. (P(n) or (P(n) 
         ((i <= succ(n2)) and (P(i) and (forall j : Nat. ((succ(j) <= i) -> (P(j) -> Void)))))
       ) or (forall j : Nat. ((j <= succ(n2)) -> (P(j) -> Void)))
     ) {
-      left witness => unpack witness as (i, data) return (
+      left witness_ => unpack witness_ as (i, data) return (
         (
           exists i : Nat.
           ((i <= succ(n2)) and (P(i) and (forall j : Nat. ((succ(j) <= i) -> (P(j) -> Void)))))
@@ -346,7 +346,7 @@ def bounded_least_search(P : (Nat -> U0), dec : (forall n : Nat. (P(n) or (P(n) 
                         Nat,
                         (
                           fun (x : Nat) => (
-                            fun (y : Nat) => (fun (path : (x = y)) => (P(x) -> P(y)))
+                            fun (y : Nat) => (fun (path_ : (x = y)) => (P(x) -> P(y)))
                           )
                         ), (fun (x : Nat) => (fun (t : P(x)) => t)), j, succ(n2), same
                       )(p)
@@ -367,7 +367,7 @@ def least_bounded_witness(
   match bounded_least_search(P, dec, n) return (
     exists i : Nat. ((i <= n) and (P(i) and (forall j : Nat. ((succ(j) <= i) -> (P(j) -> Void)))))
   ) {
-    left witness => witness;
+    left witness_ => witness_;
     right empty => typed(
       (
         exists i : Nat.
@@ -385,7 +385,7 @@ def nontrivial_divisibility_decidable(d, n : Nat) :=
     (fun (q : Nat) => ((q * succ(succ(d))) = n)),
     (fun (q : Nat) => nat_eq_decidable((q * succ(succ(d))), n)), n
   ) return (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)) {
-    left witness => unpack witness as (i, data) return (
+    left witness_ => unpack witness_ as (i, data) return (
       Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
     ) {
       unpack data as (bound, rest) return (
@@ -410,7 +410,7 @@ def nontrivial_divisibility_decidable(d, n : Nat) :=
                 Nat,
                 (
                   fun (x : Nat) => (
-                    fun (y : Nat) => (fun (path : (x = y)) => ((q <= x) -> (q <= y)))
+                    fun (y : Nat) => (fun (path_ : (x = y)) => ((q <= x) -> (q <= y)))
                   )
                 ), (fun (x : Nat) => (fun (t : (q <= x)) => t)), (q * succ(succ(d))), n, p
               )(nat_quotient_bound(d, q)), p

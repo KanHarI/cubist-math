@@ -53,9 +53,9 @@ def subgroup_image_multiply(
 ) :
   SubgroupImage(G, H, h, S, group_multiply(H, y, z)) {
   let target := SubgroupImage(G, H, h, S, group_multiply(H, y, z));
-  let prop := subgroup_image_prop(G, H, h, S, group_multiply(H, y, z));
+  let prop_ := subgroup_image_prop(G, H, h, S, group_multiply(H, y, z));
   exact mere_eliminate(
-    SubgroupImageWitness(G, H, h, S, y), target, prop,
+    SubgroupImageWitness(G, H, h, S, y), target, prop_,
     (
       fun (wa : SubgroupImageWitness(G, H, h, S, y)) => mere_map(
         SubgroupImageWitness(G, H, h, S, z),
@@ -135,8 +135,8 @@ def subgroup_image_least(
   SubgroupIncluded(H, subgroup_image(G, H, h, S), T) {
   intro y, member;
   let descend : SubgroupImageWitness(G, H, h, S, y) -> subgroup_members(H, T, y) {
-    intro witness;
-    obtain (x, sx, fx) := witness;
+    intro witness_;
+    obtain (x, sx, fx) := witness_;
     exact along subgroup_members(H, T) by fx from lands(x, sx);
   }
   exact mere_eliminate(
@@ -231,8 +231,8 @@ def group_image_factor_surjective(
   let f := group_hom_map(G, subgroup_as_group(H, image), group_image_factor(G, H, h));
   let lift :
     SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> (exists x : group_carrier(G). f(x) = y) {
-    intro witness;
-    obtain (x, member, same) := witness;
+    intro witness_;
+    obtain (x, member, same) := witness_;
     exact (x, subgroup_value_ext(H, image, f(x), y, same));
   }
   exact mere_map(

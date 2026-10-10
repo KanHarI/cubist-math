@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { numeralAt, numeralExpansion, projectionIndex, tokenStyle, keywordAt } from "../web/source-tokens.mjs";
+import { numeralAt, numeralExpansion, projectionIndex, tokenStyle } from "../web/source-tokens.mjs";
 
 test("numerals from 1 are notation for successors; 0 is the constructor itself", () => {
   assert.equal(numeralExpansion("3"), "succ(succ(succ(0)))");
@@ -27,126 +27,15 @@ test("a projection's index is not a numeral, and the removed have, show and suff
   assert.equal(tokenStyle("let", null), "keyword");
 });
 
-test("a theory's words are keywords where they stand, and Nat, zero and succ are names everywhere", () => {
-  const source = `theory Field(U < UU0) extends CommRing {
-  P : prop U;
-  inv(x : R) : R notation x * y;
-  law zero_ne_one : zero = one -> Void;
-}
-
-theory Ring extends additive : Group(one := zero) {
-}
-
-section (n : Nat) {
-  def f(section : Nat) : Nat {
-    use G;
-    exact zero;
-  }
-}
-
-def g(sort : Nat) := succ(zero);`;
-  // The word's nth occurrence as a whole word.
-  const style = (word, nth = 0) => {
-    const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
-    return tokenStyle(word, null, keywordAt(source, at, word));
-  };
-  for (const word of ["theory", "extends", "prop", "notation", "law", "section"]) assert.equal(style(word), "keyword", word);
-  // Inside a theory, and in a parent's renaming, zero is a field.
-  assert.equal(style("zero"), "");
-  assert.equal(style("zero", 1), "");
-  // Elsewhere, the words are names: a parameter named section or sort. open
-  // is reserved, a keyword everywhere.
-  assert.equal(style("section", 1), "");
-  assert.equal(style("use"), "keyword");
-  assert.equal(style("sort"), "");
-  // Outside a theory too: Nat and its constructors zero and succ are the
-  // library's names (library/nat.cubist), not the language's.
-  assert.equal(style("zero", 2), "");
-  assert.equal(style("succ"), "");
-  assert.equal(style("Nat"), "");
+test("keywords and generated members keep their style at every occurrence", () => {
+  for (const word of ["theory", "extends", "set", "law", "notation", "section", "def", "model", "Hom", "map"])
+    assert.equal(tokenStyle(word, null), "keyword", word);
+  for (const word of ["deriving", "isomorphisms", "morphisms", "free", "initial", "limits", "additive", "abelian",
+    "fold", "gen", "squash", "IsInitial", "IsTerminal"])
+    assert.equal(tokenStyle(word, null), "keyword", word);
 });
 
-test("a theory's words keep their roles past comments and nested braces, and are names where the parser reads names", () => {
-  const source = `import nat;
-import hlevels;
-theory Ring(U < UU0) {
-  // Carrier
-  R : set U;
-  zero : R;
-  // Identity }
-  law identity(x : R) : x = x;
-  law trivial : (match 0 return R { zero => zero; succ(k) => zero; }) = zero;
-  add(x, y : R) : R notation x + y;
-  law sum(notation : R) : notation + zero = notation + zero;
-}
-theory T(U < UU0) { M : set U; law : M; sort : M; notation : M; }
-def f(A : Ring(U0)) : A.R {
-  // Select model
-  use A;
-  exact zero;
-}`;
-  // The word's nth occurrence as a whole word, outside comments.
-  const code = source.replace(/\/\/.*/g, line => " ".repeat(line.length));
-  const style = (word, nth = 0) => {
-    const at = [...code.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
-    return tokenStyle(word, null, keywordAt(source, at, word));
-  };
-  // A comment before a field or a statement, and a brace in one, change nothing.
-  assert.equal(style("set"), "keyword");
-  assert.equal(style("law"), "keyword");
-  assert.equal(style("use"), "keyword");
-  // A match's braces in a law are not the theory's: the fields after it are
-  // still fields, zero among them.
-  assert.equal(style("law", 2), "keyword");
-  for (let nth = 0; nth < 7; nth++) assert.equal(style("zero", nth), "", `zero ${nth}`);
-  assert.equal(style("notation"), "keyword");
-  // A field or a parameter named law, sort or notation is a name.
-  for (let nth = 1; nth < 5; nth++) assert.equal(style("notation", nth), "", `notation ${nth}`);
-  assert.equal(style("law", 3), "");
-  assert.equal(style("sort"), "");
-  assert.equal(style("set", 1), "keyword");
-  // After the theories, zero is a name as well.
-  assert.equal(style("zero", 7), "");
-});
-
-test("a theory's header comes before extends, and a carrier's h-level is a keyword (L2.4c)", () => {
-  const source = `theory Ring(U < UU0) extends additive : Group(one := zero) {
-  R : set U;
-  P : prop U;
-  L : U;
-  set : U;
-  point : set;
-  law l(x : R) : x = x;
-}
-def f(set : Nat, prop : Nat) := set;`;
-  const style = (word, nth = 0) => {
-    const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
-    return tokenStyle(word, null, keywordAt(source, at, word));
-  };
-  assert.equal(style("extends"), "keyword");
-  assert.equal(style("zero"), "");
-  assert.equal(style("set"), "keyword");
-  assert.equal(style("prop"), "keyword");
-  assert.equal(style("law"), "keyword");
-  // A field named set, a type written set, and parameters named set and prop are names.
-  for (let nth = 1; nth < 5; nth++) assert.equal(style("set", nth), "", `set ${nth}`);
-  assert.equal(style("prop", 1), "");
-});
-
-test("notation declares a named notation where an item starts, and use selects one (L2.10a)", () => {
-  const source = `notation nat {
-  x + y := add(x, y);
-}
-def f(notation, use : Nat) : Nat {
-  use nat;
-  exact notation;
-}`;
-  const style = (word, nth = 0) => {
-    const at = [...source.matchAll(new RegExp(`\\b${word}\\b`, "g"))][nth].index;
-    return tokenStyle(word, null, keywordAt(source, at, word));
-  };
-  assert.equal(style("notation"), "keyword");
-  assert.equal(style("notation", 1), "");
-  assert.equal(style("use"), "");
-  assert.equal(style("use", 1), "keyword");
+test("renamed bindings and ordinary library names retain the reference style", () => {
+  for (const word of ["law_", "set_", "model_", "inverse_", "Nat", "zero", "succ"])
+    assert.equal(tokenStyle(word, null), "", word);
 });

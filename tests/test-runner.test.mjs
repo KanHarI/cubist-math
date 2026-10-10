@@ -66,7 +66,7 @@ test("changed-proof selection includes staged, unstaged and untracked files only
     assert.equal(result.status, 0, result.stderr);
   };
   git("init", "-q");
-  await writeFile(join(root, "tracked.cubist"), "def initial := tt;\n");
+  await writeFile(join(root, "tracked.cubist"), "def initial_ := tt;\n");
   git("add", "tracked.cubist");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture");
   await writeFile(join(root, "tracked.cubist"), "def modified := tt;\n");

@@ -59,13 +59,13 @@ def counting :
 print(evaluate(counting.(2 + 5)));
 
 // A notation with neither rule reads no numerals; nat.(…) gives one.
-def additive : Monoid(U0) := nat_additive.monoid;
+def additive_ : Monoid(U0) := nat_additive.monoid;
 
-// Error: E907: additive's notation reads no numeral 2: write nat.(2) for a natural number, or
+// Error: E907: additive_'s notation reads no numeral 2: write nat.(2) for a natural number, or
 //   select a notation that reads it.
-def unread : Nat := additive.(2 * 3);
+def unread : Nat := additive_.(2 * 3);
 
-def read : Nat := additive.(nat.(2) * nat.(3));
+def read : Nat := additive_.(nat.(2) * nat.(3));
 
 // nat reads no literal other than a plain numeral.
 // Error: E908: nat's notation reads no literal 1/2: select a notation whose literal rule reads it,

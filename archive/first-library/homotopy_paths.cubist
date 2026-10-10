@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // Naturality tracks the moving basepoint of a homotopy. No funext or
 // classical principle is needed: the first two laws hold by conversion and
@@ -71,7 +71,7 @@ def contractible_loops_are_null(
 
 // Rebase a loop along a specified path, with its effect on constant loops.
 def rebase_loop(A : U1, x, y : A, connector : x = y, p : x = x) :=
-  along(fun (a : A) => a = a) by connector from p;
+  along (fun (a : A) => a = a) by connector from p;
 
 def rebase_constant_loop(A : U1, x, y : A, connector : x = y) :=
   apd((fun (a : A) => refl(a)), x, y, connector);

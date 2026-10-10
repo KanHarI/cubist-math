@@ -172,7 +172,7 @@ def close_tails_compose(
   obtain (leftBound, leftClose) := first;
   obtain (rightBound, rightClose) := second;
   let boundLeft :=
-    along((fun (n : Nat) => IndexLE(leftBound, n))) by nat_add_comm(rightBound, leftBound) from nat_le_add(
+    along ((fun (n : Nat) => IndexLE(leftBound, n))) by nat_add_comm(rightBound, leftBound) from nat_le_add(
       rightBound, leftBound
     );
   exact (

@@ -1,6 +1,6 @@
 import nat;
 
-import paths;
+import paths_;
 
 // Universe-polymorphic path algebra needed for adjointification. These laws
 // are derived by identity elimination, with no extensionality axiom.

@@ -56,8 +56,7 @@ each, or each by its name when there are several (E820). Evidence:
 [header](../../web/reference/theories.html#header) section.
 
 **Third slice, done on 2026-10-06:** homomorphisms by
-variance (see **Variance** under [theory families](#theory-families)),
-replacing E817's rule that every input and result be
+[variance](../../web/reference/theories.html#morphisms), replacing E817's rule that every input and result be
 a carrier. An input with no carrier, as `n : Nat` or a parameter's
 `g : G.M`, is the same value on both sides; a covariant input, with
 carriers right of every arrow, is pushed forward; a contravariant one is
@@ -109,7 +108,7 @@ and `use`. `use m;` puts a model's fields and notation in scope for the
 rest of a block, or of the file at its top level, a later `use` switching
 it; `m.(e)` does so for one expression; `a m.(*) b` qualifies one
 operator, with its usual precedence, and `m.(*)` alone is the operation.
-A parent's operator is reached through its label, `x R.additive.(*) y` on
+A parent's operator is reached through its label, `x R.additive_.(*) y` on
 a model, `magma.(x * x)` and `x magma.(*) y` inside a theory. `open m;`,
 its earlier spelling, migrates in two commits (E834 for a `use` of no
 model; E835, E836 for a qualifier that is no model or an operator its
@@ -362,7 +361,7 @@ precedence and associativity, so `a G.(+) b G.(+) c` is
 `(a G.(+) b) G.(+) c`. `G.(-) x` is the unary form, and `G.(+)` alone is
 the operation as a function, as an argument to a fold. Parentheses that
 hold a lone operator are this form; anything else in them is `G.(e)`. A
-parent's operator is reached through its label, `x R.additive.(*) y`.
+parent's operator is reached through its label, `x R.additive_.(*) y`.
 Only the operator is qualified: `a` and `b` are read where they stand,
 not in `G`. Whether they should be read in `G`'s notation instead, as in
 `G.(a + b)`, is open. The notation roadmap lists every way to reach another
@@ -517,7 +516,7 @@ import hlevels;
 import algebra;
 use nat;
 
-def additive : Monoid(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
+def additive_model : Monoid(U0) := Monoid.make(M := Nat, M_is_set := nat_is_set,
   mul := add, mul_assoc := nat_add_assoc, one := 0, one_mul := nat_zero_add,
   mul_one := nat_add_zero);
 ```
@@ -593,7 +592,7 @@ theory CommMonoid extends Monoid {
 }
 
 theory CommRing extends
-    additive : AbelianGroup(M := R, mul := add notation x + y, one := zero, inv := neg,
+    additive_ : AbelianGroup(M := R, mul := add notation x + y, one := zero, inv := neg,
       mul_assoc := add_assoc, one_mul := zero_add, mul_one := add_zero, inv_mul := neg_add,
       mul_comm := add_comm),
     multiplicative : CommMonoid(M := R) {
@@ -648,6 +647,11 @@ proofs and can fail; ordinary recursion alone is not an initial capability.
 
 ## Elaboration
 
+The [reserved-name policy](../guides/keywords.md) applies to these generated
+interfaces and to the planned deriving vocabulary: fixed generated names
+cannot be used as user fields or binders. Generated members remain callable,
+and dynamically formed names still require collision checks before publication.
+
 A theory expands, before checking, into the definitions above, in the
 module that declares it, in order: the record and its constructor, the
 projections, each parent's model, then `Hom` and `Iso` with their
@@ -674,7 +678,16 @@ The earlier construction prototype (`web/translator/initial-models.mjs`,
 `cubist-tests/initial_models.cubist`) already supplies declared carriers,
 models and computing folds for the equational strategy. That evidence is
 retained; migrating it to this revised capability contract and proving the
-universal properties remain work to do.
+universal properties remain work to do. The prototype also checks initial
+and free commutative monoids, groups and commutative rings, with folds
+computing on units and generators (checked 2026-10-07); unlike monoids,
+those cases have no dedicated fixture.
+
+Retained and generated syntax follows the
+[scope and capture contract](syntax-hygiene.md). This includes deriving
+requests: fields keep the theory's references and notation, request arguments
+keep the caller's, and generated artifacts carry declaration identities.
+Later derivations must not reconstruct captures by looking up display names.
 
 ### Opt-in and meaning
 
@@ -691,6 +704,31 @@ and a homomorphism to its carrier map. Changing the morphisms or the forgetful
 functor changes the obligation; a construction for another category cannot
 be reused without a proof. Several carriers and other forgetful functors
 need a later explicit interface.
+
+The current `on A` syntax and construction strategy support exactly one
+non-family carrier. They do not encode generator assignments for several
+carriers. This limit does not establish that those theories lack free models.
+
+For independent carriers, a future interface can name one generator type per
+carrier, schematically `on (Objects := O, Labels := L)`. This is a design
+example, not accepted syntax. The result needs named carriers, an inclusion
+per carrier, and a fold accepting an assignment per carrier. A bare name such
+as the prototype's `W` can no longer mean the only carrier implicitly.
+
+Dependent carriers need a generator diagram, rather than unrelated types.
+For objects `O` and arrows `E(x, y)` indexed by `x, y : O`, an assignment into
+`B` consists of `o : O -> B.Ob` and
+`e : forall x, y : O. E(x, y) -> B.Arr(o(x), o(y))`. General signatures can
+require further dependencies and compatibility data. Generator bindings form
+an ordered telescope, following the capture contract above; their universes
+and h-level requirements must be explicit.
+
+The general obligation is an equivalence between `T.Hom(F(G).model, B)` and
+assignments from the generator diagram `G` into the chosen forgetful image
+of `B`. Restriction and fold must satisfy both inverse laws. This needs a
+suitable simultaneous/dependent construction strategy and explicit forgetful
+functor, beyond extending the parser for `on`. The single-carrier equivalence
+below is the first specialization.
 
 - **`deriving (morphisms, free)`** requests a free model for every generator
   type in the declared universe range, its generator map, fold, computation,

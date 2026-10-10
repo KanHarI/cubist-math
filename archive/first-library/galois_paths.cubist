@@ -256,12 +256,12 @@ def galois_group_laws(K : AlgebraicField, E : FieldExt(K)) :
   GroupLaws(Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E)) {
   let S := ExtensionData(K);
   let R := ExtensionPreserved(K);
-  let prop := extension_preserved_prop(K);
+  let prop_ := extension_preserved_prop(K);
   exact (
-    structure_iso_set(S, R, prop, E, E),
+    structure_iso_set(S, R, prop_, E, E),
     (
       fun (e, d, h : Galois(K, E)) => structure_iso_ext(
-        S, R, prop, E, E, galois_compose(K, E, galois_compose(K, E, e, d), h),
+        S, R, prop_, E, E, galois_compose(K, E, galois_compose(K, E, e, d), h),
         galois_compose(K, E, e, galois_compose(K, E, d, h)),
         (
           fun (x : extension_carrier(K, E)) => refl(
@@ -274,13 +274,13 @@ def galois_group_laws(K : AlgebraicField, E : FieldExt(K)) :
     ),
     (
       fun (e : Galois(K, E)) => structure_iso_ext(
-        S, R, prop, E, E, galois_compose(K, E, extension_identity_iso(K, E), e), e,
+        S, R, prop_, E, E, galois_compose(K, E, extension_identity_iso(K, E), e), e,
         (fun (x : extension_carrier(K, E)) => refl(extension_iso_forward(K, E, E, e, x)))
       )
     ),
     (
       fun (e : Galois(K, E)) => structure_iso_ext(
-        S, R, prop, E, E, galois_compose(K, E, e, extension_identity_iso(K, E)), e,
+        S, R, prop_, E, E, galois_compose(K, E, e, extension_identity_iso(K, E)), e,
         (fun (x : extension_carrier(K, E)) => refl(extension_iso_forward(K, E, E, e, x)))
       )
     ),

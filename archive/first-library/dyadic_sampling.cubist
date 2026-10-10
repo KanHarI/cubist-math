@@ -204,7 +204,7 @@ def dyadic_interval_samples_step(
   let leftRadius := dyadic_width(F, half, depth, width(a, midpoint));
   let rightRadius := dyadic_width(F, half, depth, width(midpoint, b));
   let leftBounds :=
-    along(
+    along (
       (
         fun (r : F) => SubdivisionTaggedValid(
           I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), a, midpoint, left_
@@ -212,7 +212,7 @@ def dyadic_interval_samples_step(
       )
     ) by cong(dyadic_width(F, half, depth), leftWidth) from leftValid;
   let rightBounds :=
-    along(
+    along (
       (
         fun (r : F) => SubdivisionTaggedValid(
           I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), midpoint, b, right_

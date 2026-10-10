@@ -84,13 +84,13 @@ def distinct_splitting_to_closed(
   let send :
     EmbeddingsOver(K, R, d, T, j) -> DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n) {
     intro extension;
-    obtain (h, over) := extension;
-    let tower := field_embedding_ext(K, T, field_embedding_compose(K, R, T, d, h), j, over);
+    obtain (h, over_) := extension;
+    let tower := field_embedding_ext(K, T, field_embedding_compose(K, R, T, d, h), j, over_);
     let same := trans(
       polynomial_map_composition(K, R, T, d, h, p),
       cong((fun (i : FieldEmbedding(K, T)) => polynomial_map(K, T, i, p)), tower)
     );
-    exact along((fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n))) by same from distinct_polynomial_splitting_map(
+    exact along ((fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n))) by same from distinct_polynomial_splitting_map(
       R, T, h, q, n, factor
     );
   }
@@ -105,7 +105,7 @@ def separable_polynomial_splits_in_closed(
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :
   SeparableIn(K, T, j, p) {
-  obtain (nonzero, witness) := separable;
+  obtain (nonzero, witness_) := separable;
   let n := polynomial_degree(K, p);
   let Goal := SeparableIn(K, T, j, p);
   let W := (exists L : AlgebraicField. exists e : FieldEmbedding(K, L). SeparableIn(K, L, e, p));
@@ -124,7 +124,7 @@ def separable_polynomial_splits_in_closed(
   }
   exact field_exists_elim(
     W, Goal, mere_is_prop(DistinctPolynomialSplitting(T, polynomial_map(K, T, j, p), n)), send,
-    witness
+    witness_
   );
 }
 
@@ -133,7 +133,7 @@ def separable_polynomial_closed_root_count(
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :
   HasCardinality(PolynomialRoots(K, T, j, p), polynomial_degree(K, p)) {
-  obtain (nonzero, witness) := separable;
+  obtain (nonzero, witness_) := separable;
   exact separable_root_count(
     K, T, j, p, nonzero, separable_polynomial_splits_in_closed(K, p, separable, T, closed, j)
   );

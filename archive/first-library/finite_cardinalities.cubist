@@ -43,7 +43,7 @@ def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCa
 
 // Transport finite counts along a type equality, including one built by ua.
 def cardinality_path(A, B : U0, same : A =[U0] B, n : Nat, count : HasCardinality(A, n)) :=
-  along(fun (X : U0) => HasCardinality(X, n)) by same from count;
+  along (fun (X : U0) => HasCardinality(X, n)) by same from count;
 
 // An indexed family of pairwise different elements, without an exhaustion claim.
 def DistinctFamily(A : U0, n : Nat) := exists f : Fin(n) -> A. Injective(Fin(n), A, f);

@@ -25,7 +25,7 @@ test("axiom and opaque are not declarations, and imports come first", () => {
 });
 
 // `print(evaluate|typeof|inspect(term));` is a top-level directive; `print`,
-// `typeof` and `inspect` are ordinary names elsewhere.
+// `typeof`, `inspect` and `witness` are reserved names.
 test("print directives show evaluate, typeof, inspect or witness of a term", () => {
   const { directives } = parse("print(evaluate(2));\nprint(typeof(id));\nprint(inspect(id(0)));\nprint(witness(t));");
   assert.deepEqual(directives.map(d => [d.kind, d.show]), [["print", "evaluate"], ["print", "typeof"], ["print", "inspect"], ["print", "witness"]]);
@@ -33,7 +33,7 @@ test("print directives show evaluate, typeof, inspect or witness of a term", () 
   assert.throws(() => parse("print(normalize(2));"), /^Error: print shows evaluate\(term\), typeof\(term\), inspect\(term\) or witness\(term\)\.$/);
   assert.throws(() => parse("print(evaluate(2);"), /Expected '\)'/);
   assert.throws(() => parse("print;"), /Expected a declaration or directive: def, computable def, inductive, evaluate, print/);
-  assert.equal(parse("def print(typeof : Nat) := typeof;").declarations[0].name.text, "print");
+  assert.throws(() => parse("def print(n : Nat) := n;"), /print is reserved/);
 });
 
 test("a box lowers to comp or fill, with a face(…) or face_when(…) for each wall", () => {
@@ -45,7 +45,7 @@ test("a box lowers to comp or fill, with a face(…) or face_when(…) for each 
   assert.equal(box.args[0].kind, "lambda");
   const [filled] = parse("def f(A : U0, x : A, p : x = x, t : Interval) : A := fill k in A from p @ t at t { on t = 0 => x; };").declarations;
   assert.equal((filled.value ?? filled.body[0].value).fn.name, "fill");
-  // A face is a formula of equations, and compose is a name elsewhere.
+  // A face is a formula of equations, and compose is reserved.
   assert.throws(() => parse("def j(A : U0, x : A, p : x = x) : x = x := path i => compose k in A from p @ i { on i => x; };"),
     /^Error: A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 => …\.$/);
   // A face's equation is a coordinate's: a carrier, =[T], is refused, not dropped.
@@ -53,7 +53,7 @@ test("a box lowers to comp or fill, with a face(…) or face_when(…) for each 
   assert.throws(() => parse(carried), error => /^A wall's face is a formula of equations/.test(error.message)
     && error.offset === carried.indexOf("unbound_type"));
   assert.throws(() => parse("def j(A : U0, x : A, p : x = x) : x = x := path i => compose k in A from p @ i { on i = 0 => x;"), /Expected '}' to close the box\./);
-  assert.equal(parse("def compose(n : Nat) := compose(n);").declarations[0].name.text, "compose");
+  assert.throws(() => parse("def compose(n : Nat) := n;"), /compose is reserved/);
 });
 
 test("left and right, a sum's injections, are reserved: no binder takes them, while injections and sum patterns stay", () => {

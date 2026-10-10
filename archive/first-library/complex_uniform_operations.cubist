@@ -76,7 +76,7 @@ def complex_uniform_curve_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS, nearby
       )
     );
-    exact along(
+    exact along (
       (
         fun (radius : F) => ComplexClose(
           F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), radius

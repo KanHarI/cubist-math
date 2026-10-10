@@ -93,7 +93,7 @@ def polynomial_small_multiple_zero(
     obtain (m, dq) := polynomial_nonzero_degree(K, q, nonzero);
     let productDegree := polynomial_product_degree(K, q, divisor, m, d, dq, degree);
     let tooSmall :=
-      along((fun (k : Nat) => le(k, d))) by productDegree from polynomial_cutoff_least(
+      along ((fun (k : Nat) => le(k, d))) by productDegree from polynomial_cutoff_least(
         K, polynomial_mul(K, q, divisor), d, support
       );
     exact successor_not_le_self(
@@ -130,7 +130,7 @@ def polynomial_division_unique(
     otherSupport, polynomial_neg_support(K, r, d, support)
   );
   let productSupport :=
-    along((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by sym(
+    along ((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by sym(
       product
     ) from remainderSupport;
   let sameQ := polynomial_subtract_zero_equal(

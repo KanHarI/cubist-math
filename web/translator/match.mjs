@@ -332,7 +332,7 @@ function branch(translator, motive, value, scope, inner, built) {
   let at = transition.next.scope.supersede(renamed.keys());
   // An enclosing recursive match's calls, and the names matches took apart
   // for them.
-  const enclosing = scope.env.get(RECURSIVE), current = enclosing && at.env.get(enclosing.source);
+  const enclosing = scope.env.get(RECURSIVE), current = enclosing && at.env.get(RECURSIVE);
   const destructed = new Map();
   for (const [name, bound] of transition.next.scope.env) {
     if (bound?.tag === "Var") {
@@ -360,7 +360,9 @@ function branch(translator, motive, value, scope, inner, built) {
   if (current?.tag === "Recursive" && current.results) {
     const now = variable => values.get(variable)?.tag === "Var" ? values.get(variable).name : variable;
     const results = new Map([...current.results].map(([position, entry]) => [now(position), { ...entry, result: now(entry.result) }]));
-    at = at.alias(enclosing.source, { ...current, results, destructed: new Map([...(current.destructed ?? []), ...destructed]) });
+    const updated = { ...current, results, destructed: new Map([...(current.destructed ?? []), ...destructed]) };
+    if (at.env.get(enclosing.source)?.tag === "Recursive") at = at.alias(enclosing.source, updated);
+    at = at.alias(RECURSIVE, updated);
   }
   return { transition, goal: transition.next.at(at) };
 }
@@ -399,8 +401,11 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   // The declaration's own name first, so that an argument or a dimension of
   // the same name shadows it; the results are filled in as they are bound.
   // A parameter that already shadows the name keeps it.
-  if (recursion && scope.env.get(recursion.source)?.tag === "Recursive")
-    inner = inner.alias(recursion.source, { ...recursion, results });
+  if (recursion) {
+    const current = { ...recursion, results };
+    inner = inner.alias(RECURSIVE, current);
+    if (scope.env.get(recursion.source)?.tag === "Recursive") inner = inner.alias(recursion.source, current);
+  }
   const bind = (token, stem) => {
     if (type?.tag !== "Pi") throw locate(Error(`The clause type of ${name} has fewer arguments than expected.`));
     const variable = inner.fresh(stem), domain = type.domain;
@@ -428,7 +433,7 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   const lines = [];
   for (const token of source.coordinates) {
     if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
-    const dim = inner.fresh(token.text);
+    const dim = inner.fresh(token.stem ?? token.text);
     inner = inner.bindDimension(dim).alias(token.text, { tag: "Dimension", name: dim });
     const family = substituteDimension(type.family, type.dim, I.variable(dim));
     lines.push({ dim, family });
@@ -449,6 +454,13 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   let term = body(inner, type, built);
   for (const { dim, family } of lines.reverse()) term = T.line(dim, family, term);
   for (const [variable, domain] of binders.reverse()) term = T.lam(variable, domain, term);
+  // A wildcard does not specify a path's coherence. With recursive
+  // positions, its boundaries are recursive results, not fresh evaluations
+  // of the wildcard body. Keep the written body when it fits; otherwise
+  // construct the coherence from checked h-level evidence, as for an
+  // omitted squash. Explicit path clauses never take this route.
+  if (source.implicitPath && !scope.accepts(term, clauseType))
+    return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   return term;
 }
 

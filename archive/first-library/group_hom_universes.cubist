@@ -10,7 +10,7 @@ def GroupHomAt(U < UU0, G, H : GroupAt(U)) :=
   exists f : group_carrier_at(U, G) -> group_carrier_at(U, H). GroupHomLawsAt(U, G, H, f);
 
 def group_hom_map_at(U < UU0, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :=
-  unpack h as (f, law) return (group_carrier_at(U, G) -> group_carrier_at(U, H)) {
+  unpack h as (f, law_) return (group_carrier_at(U, G) -> group_carrier_at(U, H)) {
     f;
   };
 
@@ -19,7 +19,7 @@ def group_hom_multiply_at(U < UU0, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :
   exact pair_induction(
     (fun (k : GroupHomAt(U, G, H)) => GroupHomLawsAt(U, G, H, group_hom_map_at(U, G, H, k))),
     (
-      fun (f : group_carrier_at(U, G) -> group_carrier_at(U, H), law : GroupHomLawsAt(U, G, H, f)) => law
+      fun (f : group_carrier_at(U, G) -> group_carrier_at(U, H), law_ : GroupHomLawsAt(U, G, H, f)) => law_
     ), h
   );
 }
@@ -27,8 +27,8 @@ def group_hom_multiply_at(U < UU0, G, H : GroupAt(U), h : GroupHomAt(U, G, H)) :
 def group_is_set_at(U < UU0, G : GroupAt(U)) :
   forall x : group_carrier_at(U, G). forall y : group_carrier_at(U, G). forall p : x = y.
   forall q : x = y. p = q {
-  obtain (set, associative, left_, right_, inverses) := group_laws_at(U, G);
-  exact set;
+  obtain (set_, associative, left_, right_, inverses) := group_laws_at(U, G);
+  exact set_;
 }
 
 // Multiplication preservation is proposition-valued because group carriers

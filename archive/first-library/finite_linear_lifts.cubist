@@ -138,8 +138,8 @@ def finite_linear_lift_step(
   );
   let Result := FiniteLinearLift(K, V, W, f, succ(m), h);
   let withFirst : Fiber(X, Y, F, first) -> Mere(Result) {
-    intro witness;
-    obtain (x, same) := witness;
+    intro witness_;
+    obtain (x, same) := witness_;
     exact mere_map(
       FiniteLinearLift(K, V, W, f, m, tailMap), Result,
       finite_linear_lift_assemble(K, V, W, f, m, h, x, same), previous(tailMap)
@@ -173,8 +173,8 @@ def coordinate_surjection_bound(
   let C := CoordinateSpace(K, succ(n));
   let F := linear_map(K, N, V, f);
   let noLift : FiniteLinearLift(K, N, V, f, succ(n), h) -> Void {
-    intro witness;
-    obtain (l, square) := witness;
+    intro witness_;
+    obtain (l, square) := witness_;
     let injective : CoordinateInjection(K, succ(n), n, l) {
       intro x, y, same;
       exact independent(x, y, trans(sym(square(x)), trans(cong(F, same), square(y))));

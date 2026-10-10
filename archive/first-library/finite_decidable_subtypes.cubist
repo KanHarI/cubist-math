@@ -81,7 +81,7 @@ def finite_selected_bool_step(
       Selected(Fin(succ(k)), predicate_join(A, first, q))
     ) {
       left u => (
-        along(
+        along (
           (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q))))
         ) by cong((fun (v : Unit) => typed(Bool, left(v))), unit_equal(u)) from typed(
           HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, yes, q))),
@@ -89,7 +89,7 @@ def finite_selected_bool_step(
         )
       );
       right u => (
-        along(
+        along (
           (fun (b : Bool) => HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, b, q))))
         ) by cong((fun (v : Unit) => typed(Bool, right(v))), unit_equal(u)) from typed(
           HasFiniteCardinality(Selected(Fin(succ(k)), predicate_join(A, no, q))),
@@ -124,26 +124,26 @@ def finite_selected_bool(n : Nat) :=
     succ previous => finite_selected_bool_step(k, previous);
   };
 
-def classical_predicate_bool(A : U0, P : A -> U0, prop : forall a : A. Proposition(P(a)), a : A) :
+def classical_predicate_bool(A : U0, P : A -> U0, prop_ : forall a : A. Proposition(P(a)), a : A) :
   Bool {
-  exact match excluded_middle(P(a), prop(a)) return Bool {
-    left witness => yes;
+  exact match excluded_middle(P(a), prop_(a)) return Bool {
+    left witness_ => yes;
     right absent => no;
   };
 }
 
-def classical_predicate_truth(A : U0, P : A -> U0, prop : forall a : A. Proposition(P(a)), a : A) :
-  (P(a) -> Truth(classical_predicate_bool(A, P, prop, a)))
-  and (Truth(classical_predicate_bool(A, P, prop, a)) -> P(a)) {
-  let decision := excluded_middle(P(a), prop(a));
+def classical_predicate_truth(A : U0, P : A -> U0, prop_ : forall a : A. Proposition(P(a)), a : A) :
+  (P(a) -> Truth(classical_predicate_bool(A, P, prop_, a)))
+  and (Truth(classical_predicate_bool(A, P, prop_, a)) -> P(a)) {
+  let decision := excluded_middle(P(a), prop_(a));
   exact match decision as d return ((P(a) -> Truth(match d return Bool {
-          left witness => yes;
+          left witness_ => yes;
           right absent => no;
         })) and (Truth(match d return Bool {
-          left witness => yes;
+          left witness_ => yes;
           right absent => no;
         }) -> P(a))) {
-    left witness => (fun (member : P(a)) => tt, fun (truth : Unit) => witness);
+    left witness_ => (fun (member : P(a)) => tt, fun (truth : Unit) => witness_);
     right absent => (
       fun (member : P(a)) => absurd(absent(member)), fun (truth : Void) => absurd(truth)
     );
@@ -151,7 +151,7 @@ def classical_predicate_truth(A : U0, P : A -> U0, prop : forall a : A. Proposit
 }
 
 def subtype_reindex_bijection(
-  A, B : U0, P : B -> U0, prop : forall b : B. Proposition(P(b)), e : Bijection(A, B)
+  A, B : U0, P : B -> U0, prop_ : forall b : B. Proposition(P(b)), e : Bijection(A, B)
 ) :
   Bijection((exists a : A. P(forward(A, B, e, a))), (exists b : B. P(b))) {
   let Q := fun (a : A) => P(forward(A, B, e, a));
@@ -169,25 +169,25 @@ def subtype_reindex_bijection(
     f, g,
     (
       fun (x : X) => subtype_ext(
-        A, Q, (fun (a : A) => prop(forward(A, B, e, a))), g(f(x)), x,
+        A, Q, (fun (a : A) => prop_(forward(A, B, e, a))), g(f(x)), x,
         left_inverse(A, B, e, sigma_first(A, Q, x))
       )
     ),
     (
       fun (y : Y) => subtype_ext(
-        B, P, prop, f(g(y)), y, right_inverse(A, B, e, sigma_first(B, P, y))
+        B, P, prop_, f(g(y)), y, right_inverse(A, B, e, sigma_first(B, P, y))
       )
     )
   );
 }
 
 def finite_predicate_from_enumeration(
-  A : U0, n : Nat, enumeration : Bijection(Fin(n), A), P : A -> U0, prop : forall a : A.
+  A : U0, n : Nat, enumeration : Bijection(Fin(n), A), P : A -> U0, prop_ : forall a : A.
   Proposition(P(a))
 ) :
   HasFiniteCardinality(exists a : A. P(a)) {
   let Q := fun (i : Fin(n)) => P(forward(Fin(n), A, enumeration, i));
-  let propQ := fun (i : Fin(n)) => prop(forward(Fin(n), A, enumeration, i));
+  let propQ := fun (i : Fin(n)) => prop_(forward(Fin(n), A, enumeration, i));
   let p := classical_predicate_bool(Fin(n), Q, propQ);
   let decide := fun (i : Fin(n)) => classical_predicate_truth(Fin(n), Q, propQ, i);
   let selectedToSubtype := reverse_bijection(
@@ -198,7 +198,7 @@ def finite_predicate_from_enumeration(
       (fun (i : Fin(n)) => snd(Q(i) -> Truth(p(i)), Truth(p(i)) -> Q(i), decide(i)))
     )
   );
-  let reindex := subtype_reindex_bijection(Fin(n), A, P, prop, enumeration);
+  let reindex := subtype_reindex_bijection(Fin(n), A, P, prop_, enumeration);
   exact finite_cardinality_bijection(
     Selected(Fin(n), p), (exists a : A. P(a)),
     compose_bijection(
@@ -209,7 +209,7 @@ def finite_predicate_from_enumeration(
 }
 
 def finite_predicate_of_finite(
-  A : U0, n : Nat, finite : HasCardinality(A, n), P : A -> U0, prop : forall a : A.
+  A : U0, n : Nat, finite : HasCardinality(A, n), P : A -> U0, prop_ : forall a : A.
   Proposition(P(a))
 ) :
   HasFiniteCardinality(exists a : A. P(a)) {
@@ -218,7 +218,7 @@ def finite_predicate_of_finite(
     Bijection(Fin(n), A), HasFiniteCardinality(B), finite_cardinality_prop(B),
     (
       fun (enumeration : Bijection(Fin(n), A)) => finite_predicate_from_enumeration(
-        A, n, enumeration, P, prop
+        A, n, enumeration, P, prop_
       )
     ), finite
   );

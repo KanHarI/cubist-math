@@ -12,7 +12,7 @@ def field_nonnegative_magnitude(
   let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), aboveZero);
   let removeZero :=
-    along((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
+    along ((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
   let negBelowZero :=
@@ -38,7 +38,7 @@ def field_close_zero_magnitude(
   obtain (forward, backward) := translate(zero, addF(x, radius), negF(x));
   let shifted := forward(lower);
   let lhs :=
-    along((fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))) by ring_add_zero(
+    along ((fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, negF(x)
     ) from shifted;
   let cancels : addF(addF(x, radius), negF(x)) = radius := trans(
@@ -73,7 +73,7 @@ def field_positive_product(
   lt(zero, mulF(x, y)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (forward, backward) := scale(zero, x, y, positiveY);
-  exact along((fun (v : F) => lt(v, mulF(x, y)))) by ring_zero_mul(
+  exact along ((fun (v : F) => lt(v, mulF(x, y)))) by ring_zero_mul(
     F, zero, one, addF, mulF, negF, ring, y
   ) from forward(positiveX);
 }
@@ -97,7 +97,7 @@ def field_positive_reciprocal(
     trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, x), inverseLaw);
   let positiveProduct := along lt(zero) by sym(productOne) from positiveOne;
   let zeroProduct :=
-    along((fun (v : F) => lt(v, mulF(reciprocal, x)))) by sym(
+    along ((fun (v : F) => lt(v, mulF(reciprocal, x)))) by sym(
       ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x)
     ) from positiveProduct;
   exact (reciprocal, backward(zeroProduct), inverseLaw);
@@ -150,7 +150,7 @@ def field_small_scaled_radius(
   );
   obtain (shiftForward, shiftBackward) := translate(zero, delta, mulF(delta, length));
   let shifted :=
-    along((fun (v : F) => lt(v, addF(delta, mulF(delta, length))))) by ring_add_zero(
+    along ((fun (v : F) => lt(v, addF(delta, mulF(delta, length))))) by ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, mulF(delta, length)
     ) from shiftForward(positiveDelta);
   exact (delta, positiveDelta, along lt(mulF(delta, length)) by gap from shifted);

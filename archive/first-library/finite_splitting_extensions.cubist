@@ -17,7 +17,7 @@ def finite_splitting_zero(
   let e := field_embedding_identity(K);
   exact (
     K, e, identity_extension_finite(K),
-    along((fun (q : Polynomial(K)) => PolynomialSplitting(K, q, 0))) by sym(
+    along ((fun (q : Polynomial(K)) => PolynomialSplitting(K, q, 0))) by sym(
       polynomial_map_identity(K, p)
     ) from polynomial_splitting_zero_degree(K, p, degree)
   );
@@ -71,8 +71,8 @@ def finite_splitting_step(
     );
   }
   let fromRoot : RootAdjunction(K, p) -> FieldExists(FiniteSplittingExtension(K, p, succ(n))) {
-    intro witness;
-    obtain (L, e, x, finite, root) := witness;
+    intro witness_;
+    obtain (L, e, x, finite, root) := witness_;
     let mapped := polynomial_map(K, L, e, p);
     let mappedDegree := trans(polynomial_map_cutoff(K, L, e, p), degree);
     let mappedNonzero := polynomial_map_nonzero(K, L, e, p, nonzero);
@@ -114,7 +114,7 @@ def finite_splitting_extension_exists(
 ) :
   FieldExists(FiniteSplittingExtension(K, p, polynomial_degree(K, p))) {
   obtain (n, degree) := polynomial_nonzero_degree(K, p, nonzero);
-  exact along((fun (d : Nat) => FieldExists(FiniteSplittingExtension(K, p, d)))) by sym(
+  exact along ((fun (d : Nat) => FieldExists(FiniteSplittingExtension(K, p, d)))) by sym(
     cong(natural_predecessor, degree)
   ) from finite_splitting_by_degree(n, K, p, degree);
 }

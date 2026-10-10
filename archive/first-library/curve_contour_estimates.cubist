@@ -78,6 +78,6 @@ def curve_contour_tag_change_close(
     complex_neg(F, negF), curve, integrand, n, vertices, newTags
   );
   let changeFirst :=
-    along((fun (v : Complex(F)) => ComplexClose(F, addF, lt, v, oldParam, epsilon))) by newSame from close;
-  exact along((fun (v : Complex(F)) => ComplexClose(F, addF, lt, newMapped, v, epsilon))) by oldSame from changeFirst;
+    along ((fun (v : Complex(F)) => ComplexClose(F, addF, lt, v, oldParam, epsilon))) by newSame from close;
+  exact along ((fun (v : Complex(F)) => ComplexClose(F, addF, lt, newMapped, v, epsilon))) by oldSame from changeFirst;
 }

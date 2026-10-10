@@ -49,7 +49,7 @@ section {{U < UU0}}(
           }
         }
         let nonzero : x + neg(y) = zero -> Void := fun (e : x + neg(y) = zero) => different(
-          trans(inv_unique(A.additive.group, neg(y), x, e), inv_inv(A.additive.group, y))
+          trans(inv_unique(A.additive_.group, neg(y), x, e), inv_inv(A.additive_.group, y))
         );
         exact absurd(domain(x + neg(y), z, nonzero, nz, difference));
       }
@@ -599,28 +599,28 @@ computable def rat_decide(x, y : Q) :
 // The rationals' literals (L2.10c): an integer, n/d with d not zero, or a
 // decimal, a.b, read from their characters, so rationals.(1/2 + 0.75) needs
 // no evidence. 1/0 is refused at its denominator.
-computable def rational_fraction(numerator, at : Nat, s : Lexeme) : Parsed(U0, Q) {
+computable def rational_fraction(numerator, at_ : Nat, s : Lexeme) : Parsed(U0, Q) {
   let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
   exact match read.2 return Parsed(U0, Q) {
     nil => match read.1.1 return Parsed(U0, Q) {
-      zero => error(at);
+      zero => error(at_);
       succ(d) => ok(rat(int(numerator, 0), d));
     };
-    cons(g, rest) => error(add(at, read.1.2));
+    cons(g, rest) => error(add(at_, read.1.2));
   };
 }
 
-computable def rational_decimal(whole, at : Nat, s : Lexeme) : Parsed(U0, Q) {
+computable def rational_decimal(whole, at_ : Nat, s : Lexeme) : Parsed(U0, Q) {
   let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
   exact match read.2 return Parsed(U0, Q) {
     nil => match power_of_ten(read.1.2) return Parsed(U0, Q) {
-      zero => error(at);
+      zero => error(at_);
       succ(d) => match read.1.2 return Parsed(U0, Q) {
-        zero => error(at);
+        zero => error(at_);
         succ(k) => ok(rat(int(add(mul(whole, power_of_ten(read.1.2)), read.1.1), 0), d));
       };
     };
-    cons(g, rest) => error(add(at, read.1.2));
+    cons(g, rest) => error(add(at_, read.1.2));
   };
 }
 

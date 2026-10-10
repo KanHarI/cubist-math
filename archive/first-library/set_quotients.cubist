@@ -56,10 +56,10 @@ def quotient_surjective(A : U1, relation : A -> A -> U0, q : SetQuotient(A, rela
     (exists a : A. quotient_class(A, relation, a) = q),
     (
       fun (
-        witness : (
+        witness_ : (
           exists a : A. forall x : A. quotient_predicate(A, relation, q, x) = relation(a, x)
         )
-      ) => unpack witness as (a, same) return (exists a : A. quotient_class(A, relation, a) = q) {
+      ) => unpack witness_ as (a, same) return (exists a : A. quotient_class(A, relation, a) = q) {
         (
           a,
           quotient_ext(
@@ -87,11 +87,11 @@ def related_classes_equal(
   related : relation(x, y)
 ) :
   quotient_class(A, relation, x) = quotient_class(A, relation, y) {
-  obtain (prop, reflexive, symmetric, transitive) := laws;
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
   exact quotient_ext(
     A, relation, quotient_class(A, relation, x), quotient_class(A, relation, y),
     field_predicate_ext(
-      A, relation(x), relation(y), prop(x), prop(y),
+      A, relation(x), relation(y), prop_(x), prop_(y),
       (
         fun (z : A) => typed(
           FieldIff(relation(x, z), relation(y, z)),
@@ -110,8 +110,8 @@ def equal_classes_related(
   same : quotient_class(A, relation, x) = quotient_class(A, relation, y)
 ) :
   relation(x, y) {
-  obtain (prop, reflexive, symmetric, transitive) := laws;
-  exact along((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))) by sym(
+  obtain (prop_, reflexive, symmetric, transitive) := laws;
+  exact along ((fun (q : SetQuotient(A, relation)) => quotient_predicate(A, relation, q, y))) by sym(
     same
   ) from reflexive(y);
 }

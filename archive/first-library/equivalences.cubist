@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 
 // A function equipped with a quasi-inverse and both pointwise inverse laws.
 // For sets this is bijection data. For general types it is not the canonical

@@ -49,7 +49,7 @@ def finite_normal_intermediate_base_change(
   let b := intermediate_base_embedding(K, E, M);
   let i := intermediate_ambient_embedding(K, E, M);
   let e := extension_inclusion_embedding(K, E);
-  obtain (algebraic, law) := normal;
+  obtain (algebraic, law_) := normal;
   let steps :=
     finite_extension_tower_converse(K, R, F, b, i, e, intermediate_tower(K, E, M), finite);
   exact (
@@ -59,7 +59,7 @@ def finite_normal_intermediate_base_change(
         FiniteExtension(K, intermediate_as_extension(K, E, M)),
         FiniteExtension(R, intermediate_overfield(K, E, M)), steps
       )
-    ), normal_embedding_intermediate_base_change(K, E, M, law)
+    ), normal_embedding_intermediate_base_change(K, E, M, law_)
   );
 }
 
@@ -67,7 +67,7 @@ def finite_normal_intermediate_base_change(
 // embedding counts into counts of automorphism loops in the next layer.
 def normal_self_embedding_surjective(
   K, F : AlgebraicField, e : FieldEmbedding(K, F), normal : NormalEmbeddingLaw(K, F, e),
-  h : FieldEmbedding(F, F), over : forall a : af_carrier(K).
+  h : FieldEmbedding(F, F), over_ : forall a : af_carrier(K).
   field_embedding_map(F, F, h, field_embedding_map(K, F, e, a)) = field_embedding_map(K, F, e, a)
 ) :
   Surjective(af_carrier(F), af_carrier(F), field_embedding_map(F, F, h)) {
@@ -78,7 +78,7 @@ def normal_self_embedding_surjective(
     trans(
       field_embedding_right_identity(K, F, e),
       field_embedding_ext(
-        K, F, e, field_embedding_compose(K, F, F, e, h), (fun (a : af_carrier(K)) => sym(over(a)))
+        K, F, e, field_embedding_compose(K, F, F, e, h), (fun (a : af_carrier(K)) => sym(over_(a)))
       )
     );
   intro y;
@@ -91,7 +91,8 @@ def normal_self_embedding_surjective(
 def normal_self_embedding_automorphism(
   K : AlgebraicField, E : FieldExt(K),
   normal : NormalEmbeddingLaw(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
-  h : FieldEmbedding(extension_field(K, E), extension_field(K, E)), over : forall a : af_carrier(K).
+  h : FieldEmbedding(extension_field(K, E), extension_field(K, E)),
+  over_ : forall a : af_carrier(K).
   field_embedding_map(extension_field(K, E), extension_field(K, E), h, extension_inclusion(K, E, a)) = extension_inclusion(
     K, E, a
   )
@@ -100,13 +101,13 @@ def normal_self_embedding_automorphism(
   let F := extension_field(K, E);
   let f := field_embedding_map(F, F, h);
   let onto :=
-    normal_self_embedding_surjective(K, F, extension_inclusion_embedding(K, E), normal, h, over);
+    normal_self_embedding_surjective(K, F, extension_inclusion_embedding(K, E), normal, h, over_);
   exact (
     f,
     (
       field_inverse_map(F, F, h, onto), field_inverse_left(F, F, h, onto),
       field_inverse_right(F, F, h, onto)
-    ), field_embedding_preserves(F, F, h), over
+    ), field_embedding_preserves(F, F, h), over_
   );
 }
 
@@ -121,17 +122,17 @@ def normal_embedding_over_intermediate_automorphism(
   SubgroupCarrier(GaloisGroup(K, E), fixing_galois_subgroup(K, E, M)) {
   let R := intermediate_as_field(K, E, M);
   let F := extension_field(K, E);
-  obtain (h, over) := d;
+  obtain (h, over_) := d;
   let overK :
     forall a : af_carrier(K).
     field_embedding_map(F, F, h, extension_inclusion(K, E, a)) = extension_inclusion(K, E, a) {
     intro a;
-    exact over(intermediate_base_map(K, E, M, a));
+    exact over_(intermediate_base_map(K, E, M, a));
   }
   let g := normal_self_embedding_automorphism(K, E, normal, h, overK);
   let fixes : GaloisFixing(K, E, intermediate_members(K, E, M), g) {
     intro x, member;
-    exact over(typed(af_carrier(R), (x, member)));
+    exact over_(typed(af_carrier(R), (x, member)));
   }
   exact (g, fixes);
 }

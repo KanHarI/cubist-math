@@ -197,15 +197,15 @@ def polynomial_bezout(
   let I := GeneratedPairIdeal(K, p, q);
   let Result := GeneratedPair(K, p, q, polynomial_one(K));
   let fromGenerator : IdealPrincipalGenerator(K, I) -> Result {
-    intro witness;
-    obtain (g, member, nz, divides) := witness;
+    intro witness_;
+    obtain (g, member, nz, divides) := witness_;
     let unit := coprime(
       g, divides(p, generated_pair_left(K, p, q)), divides(q, generated_pair_right(K, p, q))
     );
     let fromInverse :
       (exists u : Polynomial(K). polynomial_mul(K, g, u) = polynomial_one(K)) -> Result {
-      intro inverse;
-      obtain (u, equation) := inverse;
+      intro inverse_;
+      obtain (u, equation) := inverse_;
       let ug := polynomial_mul(K, u, g);
       exact along GeneratedPair(K, p, q) by trans(polynomial_mul_comm(K, u, g), equation) from polynomial_ideal_mul(
         K, I, u, g, member

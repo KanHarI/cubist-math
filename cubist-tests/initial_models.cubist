@@ -1,4 +1,4 @@
-// Initial and free models (L2.6, first slice): initial N : T(…) declares a
+// Initial and free models (L2.6, retained prototype): initial N : T(…) declares a
 // type with a constructor for each of T's operations and a path constructor
 // for each law, its model N.model, and N.fold(M) : T.Hom(N.model, M), whose
 // map computes on constructors. free W(A) : T(…) on A adds the generators.
@@ -82,44 +82,41 @@ def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
   rfl;
 }
 
-// An operation or law named as N's other names, model, fold_map, fold and
-// squash, or a free model's gen, would be two constructors of one name.
-theory Folding(U < UU0) {
-  M : set U;
-  fold : M;
-}
-
-// Error: E861: Folding's field fold would be the constructor Fo.fold, but Fo.fold is Fo's fold: an
-//   initial model's operations and laws are named apart from model, fold_map, fold and squash, and
-//   a free model's from gen too.
-initial Fo : Folding(U0);
-
-theory Generating(U < UU0) {
-  M : set U;
-  gen : M;
-}
-
-// Error: E861: Generating's field gen would be the constructor G.gen, but G.gen is G's generator:
-//   an initial model's operations and laws are named apart from model, fold_map, fold and squash,
-//   and a free model's from gen too.
-free G(A : U0) : Generating(U0) on A;
-
-// A field with no presentation as equations, as a truncated law, has no
-// initial model.
-// Error: E856: The law inverses is no equation: an initial model's laws are equations between its
-//   operations' terms.
+// The equational strategy does not support a truncated inverse law; this
+// refusal does not establish whether an initial model exists.
+// Error: E856: The law inverses is not an equation between operation terms: the equational strategy
+//   does not support this law.
 initial F : Field(U0);
 
-// Nor does a theory whose operation takes the carrier under an arrow.
+// An argument containing the carrier under an arrow is unsupported too.
 theory Iterated(U < UU0) {
   M : set U;
   iterate(g : M -> M, x : M) : M;
 }
 
-// Error: E854: iterate takes g with the carrier M inside its type: an initial model's operations
-//   take the carrier, or types without it.
+// Error: E854: iterate takes g with a type depending on the carrier M: the equational strategy
+//   supports carrier arguments or types independent of the carrier.
 initial I : Iterated(U0);
 
 // Error: E850: initial takes a theory at its universes and parameters, as initial N : Monoid(U0);
 //   Nat is none.
 initial X : Nat;
+
+// Local models still own their dotted fields when a declared initial model
+// has the same name. A catch-all likewise follows the checked scrutinee type.
+initial B : Monoid(U0);
+
+def local_model(B : Monoid(U0)) : B.M := B.one;
+
+initial A : Monoid(U0);
+
+theory HasOne(U < UU0) {
+  M : set U;
+  one : M;
+}
+
+def has_one_identity(S : HasOne(U0)) : HasOne.Hom(S, S) := HasOne.Hom.id(S);
+
+def local_catch_all(A : A) : Unit := match A {
+    _ => tt;
+  };

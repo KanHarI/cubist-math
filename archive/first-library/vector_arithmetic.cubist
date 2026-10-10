@@ -40,14 +40,14 @@ def vector_minus_one_scale(K : AlgebraicField, V : VectorSpace(K), x : vector_ca
 // The field laws supply such an inverse for a nonzero scalar, without choice.
 def vector_scale_undo(
   K : AlgebraicField, V : VectorSpace(K), a, b : af_carrier(K),
-  inverse : af_mul(af_carrier(K), af_operations(K), b, a) = af_one(af_carrier(K), af_operations(K)),
+  inverse_ : af_mul(af_carrier(K), af_operations(K), b, a) = af_one(af_carrier(K), af_operations(K)),
   x : vector_carrier(K, V)
 ) :
   vector_scale(K, V, b, vector_scale(K, V, a, x)) = x {
   exact trans(
     sym(vector_scale_associative(K, V, b, a, x)),
     trans(
-      cong((fun (c : af_carrier(K)) => vector_scale(K, V, c, x)), inverse),
+      cong((fun (c : af_carrier(K)) => vector_scale(K, V, c, x)), inverse_),
       vector_scale_one(K, V, x)
     )
   );
@@ -62,8 +62,8 @@ def vector_scale_injective(
   obtain (ring, nontrivial, inverses) := af_laws(K);
   obtain (addLaws, mulLaws) := ring;
   obtain (assoc, comm, one, distribute) := mulLaws;
-  obtain (b, inverse) := inverses(a, nonzero);
-  let leftInverse := trans(comm(b, a), inverse);
+  obtain (b, inverse_) := inverses(a, nonzero);
+  let leftInverse := trans(comm(b, a), inverse_);
   exact trans(
     sym(vector_scale_undo(K, V, a, b, leftInverse, x)),
     trans(cong(vector_scale(K, V, b), same), vector_scale_undo(K, V, a, b, leftInverse, y))

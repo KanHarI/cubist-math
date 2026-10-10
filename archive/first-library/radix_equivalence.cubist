@@ -48,7 +48,7 @@ def radix_leading_not_append(
   )
 ) :
   Void {
-  obtain (predecessor, next) := radix_nat_positive_decompose(
+  obtain (predecessor, next_) := radix_nat_positive_decompose(
     radix_positive_to_nat(extra, q), radix_decode_positive(extra, q)
   );
   let base := succ(succ(extra));
@@ -58,7 +58,7 @@ def radix_leading_not_append(
     radix_digit_bound(succ(extra), d),
     trans(
       same,
-      trans(cong((fun (v : Nat) => base * v + ev), next), radix_eval_succ(base, predecessor, ev))
+      trans(cong((fun (v : Nat) => base * v + ev), next_), radix_eval_succ(base, predecessor, ev))
     )
   );
 }
@@ -180,7 +180,7 @@ def radix_decode_nonzero(
   extra : Nat, p : RadixPositive(extra), same : radix_positive_to_nat(extra, p) = 0
 ) :
   Void {
-  exact along((fun (n : Nat) => 1 <= n)) by same from radix_decode_positive(extra, p);
+  exact along ((fun (n : Nat) => 1 <= n)) by same from radix_decode_positive(extra, p);
 }
 
 def radix_zero_injective(extra : Nat, b : RadixNat(extra)) :

@@ -52,7 +52,9 @@ const wildcard = { kind: "name", token: { text: "_" } };
 
 // A name no source spells, for an argument the compiled match binds,
 // numbered within the match, so that an elaboration names alike every time.
-const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, start: at.start, end: at.end });
+// Its stem names what it binds in the kernel, where a dimension's name is an
+// identifier (match.mjs).
+const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, stem, start: at.start, end: at.end });
 
 // Compile and elaborate the match `n`: an expression at its expected type,
 // or a statement for its goal. `typeOf(value, scope)` gives the declared
@@ -190,7 +192,8 @@ function compile(t, scope, columns, rows, context) {
     const rest = { kind: statement ? "patternMatchStatement" : "patternMatch", columns: [...argumentColumns, ...others],
       rows: specialized, context: { ...context, top: false }, start: column.node.start, end: column.node.end };
     clauses.push({ kind: "clause", constructor: { text: constructor.name, start: at.start, end: at.end }, args, binders: [], coordinates,
-      body: statement ? [rest] : rest, start: at.start, end: at.end });
+      body: statement ? [rest] : rest,
+      ...(constructor.dims && fitting[0].head.kind === "name" ? {implicitPath: true} : {}), start: at.start, end: at.end });
   }
   // The first value taken apart is matched by the declaration's own match,
   // so recursion follows it (match.mjs, recursionSite).
@@ -216,8 +219,8 @@ function bind(t, scope, token, target) {
     return scope.alias(token.text, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null));
   }
   const {constructor, args, coordinates, instance} = target;
-  let point = args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
-    : { kind: "name", name: constructor.name };
+  let point = scope.declared(args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
+    : { kind: "name", name: constructor.name });
   for (const coordinate of coordinates) point = { kind: "pathApply", left: point, right: { kind: "name", name: coordinate.text } };
   return scope.alias(token.text, t.term(point, scope, instance));
 }

@@ -27,7 +27,7 @@ import { morphismSource } from "./morphisms.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
-import { rewritten, substituted, freeNames } from "./scopes.mjs";
+import { rewritten, substituted, freeNames, relocated, freshName } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -37,8 +37,9 @@ export const universeAt = k => k === 0 ? UNIVERSE : `${UNIVERSE}${k}`;
 // An error at a node of the theory's text.
 const located = (error, node) => Object.assign(error, { offset: node.start });
 
-// Nodes of the source syntax, placed at `at`, the theory text they come from.
-const place = at => ({ start: at.start, end: at.end });
+// Nodes of the source syntax, placed at `at`, the theory text they come from;
+// synthetic where `at` is, as an initial/free expansion's (initial-models.mjs).
+const place = at => ({ start: at.start, end: at.end, ...(at.synthetic ? { synthetic: true } : {}) });
 const token = (text, at) => ({ text, ...place(at) });
 const name = (text, at) => ({ kind: "name", name: text, ...place(at) });
 const call = (fn, args, at) => ({ kind: "call", fn: typeof fn === "string" ? name(fn, at) : fn, args, ...place(at) });
@@ -46,11 +47,8 @@ const quantifier = (kind, binder, domain, body, at) =>
   ({ kind, name: typeof binder === "string" ? token(binder, at) : binder, binderKind: kind, domain, body, ...place(at) });
 const projection = (value, index, at) => ({ kind: "projection", value, index, ...place(at) });
 const pair = (left, right, at) => ({ kind: "pair", left, right, ...place(at) });
+export const nodes = { token, name, call };
 
-// Every position in a tree set to `at`: inherited syntax comes from another
-// theory's text, perhaps another module's.
-const relocated = (node, at) => JSON.parse(JSON.stringify(node), (key, value) =>
-  key === "start" ? at.start : key === "end" ? at.end : value);
 // Free names replaced by others: `names` maps a name to its replacement's name.
 const renamed = (node, names, at) => rewritten(node, (n, bound) => {
   if (n.kind !== "name" || !names.has(n.name) || bound.has(n.name)) return n;
@@ -69,11 +67,23 @@ function namesIn(node, names = new Set()) {
   for (const value of Object.values(node)) if (value && typeof value === "object") namesIn(value, names);
   return names;
 }
-const fresh = (stem, taken) => { let candidate = stem, k = 1; while (taken.has(candidate)) candidate = `${stem}${k++}`; return candidate; };
 // An unlabelled parent's label: its name in snake case, CommMonoid as comm_monoid.
-const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
-const sameSyntax = (a, b) => JSON.stringify(a, (key, value) => ["start", "end"].includes(key) ? undefined : value)
-  === JSON.stringify(b, (key, value) => ["start", "end"].includes(key) ? undefined : value);
+export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+const syntaxValue = (key, value) => ["spelling", "label", "synthetic"].includes(key)
+  || typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
+const sameSyntax = (a, b) => JSON.stringify(a, syntaxValue) === JSON.stringify(b, syntaxValue);
+// Keep each written shared domain outside its binders. Generated evidence
+// may share a group number but has a different, dependent domain.
+function parameterGroups(params) {
+  const groups = [];
+  for (let k = 0; k < params.length;) {
+    const first = params[k++], members = [first];
+    while (first.group !== undefined && k < params.length && params[k].group === first.group && sameSyntax(params[k].type, first.type))
+      members.push(params[k++]);
+    groups.push(members);
+  }
+  return groups;
+}
 
 // Why a law's statement is not evidently a proposition, or null when it is.
 // Laws are propositions: homomorphisms ignore them (L2.4). Accepted are an
@@ -125,6 +135,9 @@ function notAProposition(statement, byName, proposition = () => false, header = 
     if (node.kind === "call" && sortNamed(node, bound) && propositionSort(node.fn.name)) return null;
     // A declared proposition, as a truncation.
     const head = node.kind === "call" ? node.fn : node;
+    // Inlining a retained helper can expose a resolved declaration. Its
+    // spelling may now be bound to something else; ask about its identity.
+    if (head.kind === "reference" && proposition(head.binding)) return null;
     if (head.kind === "name" && !bound.has(head.name) && !byName.has(head.name) && proposition(head.name)) return null;
     return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
       ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
@@ -137,7 +150,7 @@ function notAProposition(statement, byName, proposition = () => false, header = 
 // A theory's fields, in order, with types over the earlier fields' names,
 // its notations and its parents, as the theory records them (`lookup` gives
 // a parent's record by name).
-function theoryFields(theory, lookup, proposition) {
+function theoryFields(theory, lookup, proposition, capture) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
   // Each notation's operand recipes: the notation an operand is read in,
   // other than the current one (L2.10b), as nat for x ^ nat.(n).
@@ -147,15 +160,35 @@ function theoryFields(theory, lookup, proposition) {
   // Derived operations, a theory's own and its parents' (L2.10b): each
   // applied in a later field is its value, its parameters substituted.
   const derived = [], derivedByName = new Map();
-  const inlineDerived = node => rewritten(node, (n, bound) => {
-    const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
-    if (d?.recursive) throw located(Error(`${d.name} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`), n);
-    if (!d || n.args.length !== d.params.length) return n;
-    const args = new Map(d.params.map((p, k) => [p.name, inlineDerived(n.args[k])]));
-    // A binder of the operation that would capture an argument's name is
-    // renamed apart; a pattern's, which may name a constructor, is refused.
-    return substituted(d.value, args, name => located(Error(`${d.name}'s pattern binds ${name}, which an argument here names: rename it in ${d.name}.`), n));
-  });
+  const inlineDerived = node => {
+    // Substitute the helper as a lambda through the entire enclosing tree
+    // before beta reduction. This freshens the caller's binders as well as
+    // the helper's: a law parameter c must not capture the helper's field c.
+    const used = freeNames(node);
+    const helpers = new Map(derived.filter(d => !d.recursive && used.has(d.name)).map(d => {
+      const value = parameterGroups(d.params).reduceRight((body, group) => ({kind: "binderGroup", binderKind: "lambda",
+        names: group.map(p => token(p.name, d.at)), domain: group[0].type, body, ...place(d.at)}), d.value);
+      return [d.name, {...value, inlineName: d.name, inlineArity: d.params.length}];
+    }));
+    const expanded = helpers.size ? substituted(node, helpers, binder => {
+      const helper = [...helpers].find(([, value]) => freeNames(value).has(binder))?.[0];
+      return located(Error(`Inlining ${helper} here would capture its field ${binder}: rename the enclosing pattern or statement binding.`), node);
+    }) : node;
+    return rewritten(expanded, (n, bound) => {
+      if (n.kind === "call" && n.fn.inlineName && n.args.length === n.fn.inlineArity) {
+        const args = new Map();
+        let body = n.fn, index = 0;
+        while (index < n.args.length && body.kind === "binderGroup") {
+          for (const parameter of body.names) args.set(parameter.text, inlineDerived(n.args[index++]));
+          body = body.body;
+        }
+        return substituted(body, args, binder => located(Error(`${n.fn.inlineName}'s pattern binds ${binder}, which an argument here names: rename it in ${n.fn.inlineName}.`), n));
+      }
+      const d = n.kind === "call" && n.fn.kind === "name" && !bound.has(n.fn.name) ? derivedByName.get(n.fn.name) : null;
+      if (d?.recursive) throw located(Error(`${d.name} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`), n);
+      return n;
+    });
+  };
   // The header's universes are the model's, which each expansion names
   // afresh; a theory without a header has one. Its parameters are every
   // model's, as the header writes them (L2.4c).
@@ -163,7 +196,16 @@ function theoryFields(theory, lookup, proposition) {
   const universeCount = Math.max(1, headerUniverses.length);
   const universe = new Map(headerUniverses.map((u, k) => [u, universeAt(k)]));
   const inTheoryUniverse = (node, at) => universe.size ? renamed(node, universe, at) : node;
-  const params = (theory.params ?? []).map(p => ({ name: p.name.text, type: inTheoryUniverse(p.type, p.name), at: p.name }));
+  const parameterScope = new Set(headerUniverses);
+  const params = [];
+  for (const members of parameterGroups(theory.params ?? [])) {
+    const first = members[0];
+    // A group's domain is outside all of its binders, even when one takes
+    // the name of a global mentioned by that domain.
+    const type = capture(inTheoryUniverse(first.type, first.name), parameterScope);
+    for (const p of members) params.push({name: p.name.text, type, at: p.name});
+    for (const p of members) parameterScope.add(p.name.text);
+  }
   const header = [...(theory.universes ?? []), ...(theory.params ?? []).map(p => p.name)];
   header.forEach((binder, k) => {
     if (header.slice(0, k).some(other => other.text === binder.text))
@@ -181,7 +223,8 @@ function theoryFields(theory, lookup, proposition) {
         ? `${T} gets a field named ${field.name} from both ${existing.from} and ${from}: rename one, as in ${from}(${field.name} := …).`
         : `${T} has two fields named ${field.name}: give each its own name.`), at);
     }
-    const entry = { ...field, at, ...(from ? { from } : {}) };
+    const entry = { ...field, type: capture(field.type, new Set([...header.map(b => b.text), ...byName.keys()])),
+      at, ...(from ? { from } : {}) };
     byName.set(field.name, entry);
     fields.push(entry);
   };
@@ -219,8 +262,10 @@ function theoryFields(theory, lookup, proposition) {
     return rewritten(node, rewrite);
   };
   const leveledOf = item => new Map(item.params.filter(p => p.level).map(p => [p.name.text, p.level]));
-  // forall over binders, innermost last.
-  const quantified = (binders, body, at) => binders.reduceRight((inner, p) => quantifier("forall", p.name, p.type, inner, at), body);
+  // A group's shared domain is outside every name the group binds.
+  const quantified = (binders, body, at) => parameterGroups(binders).reduceRight((inner, members) =>
+    members.length === 1 ? quantifier("forall", members[0].name, members[0].type, inner, at)
+      : {kind: "binderGroup", binderKind: "forall", names: members.map(p => p.name), domain: members[0].type, body: inner, ...place(at)}, body);
   // Each parent prepared: its record, label, universes and renamings.
   const prepared = [];
   for (const parent of theory.parents ?? []) {
@@ -233,13 +278,16 @@ function theoryFields(theory, lookup, proposition) {
     if (prepared.some(other => other.label === label))
       throw located(Error(`${T} has two parents labelled ${label}: label one, as in other : ${parent.name.text}.`), parent.label ?? parent.name);
     // The parent's universes are the child's: its one universe the child's
-    // one, or each by its name. Its parameters are the child's of the same
-    // names and types.
+    // one, or each by its name. A parent whose header binds no universe has
+    // one, by the name its expansion gives it. Its parameters are the
+    // child's of the same names and types.
     const universes = new Map(), parentCount = Math.max(1, record.universes.length);
     if (parentCount === 1 && universeCount === 1) universes.set(UNIVERSE, UNIVERSE);
-    else record.universes.forEach((u, k) => {
+    else (record.universeLabels ?? record.universes).forEach((u, k) => {
       const own = headerUniverses.indexOf(u);
-      if (own < 0) throw located(Error(`${T} extends ${record.name}, whose header binds the universe ${u}: bind ${u} in ${T}'s header too.`), parent.name);
+      if (own < 0) throw located(record.generatedUniverse
+        ? Error(`${T} extends ${record.name}, whose header binds no universe: bind ${u}, its public universe parameter, in ${T}'s header, or name that universe in ${record.name}'s header.`)
+        : Error(`${T} extends ${record.name}, whose header binds the universe ${u}: bind ${u} in ${T}'s header too.`), parent.name);
       universes.set(universeAt(k), universeAt(own));
     });
     for (const p of record.params) {
@@ -301,8 +349,7 @@ function theoryFields(theory, lookup, proposition) {
     const byOrigin = new Map();
     for (const e of entries) {
       if (!byOrigin.has(e.field.origin)) {
-        byOrigin.set(e.field.origin, fresh(`${e.p.label}_${n}`, allNames));
-        allNames.add(byOrigin.get(e.field.origin));
+        byOrigin.set(e.field.origin, freshName(`${e.p.label}_${n}`, allNames));
       }
       const own = byOrigin.get(e.field.origin);
       e.p.names.set(e.field.name, own);
@@ -398,12 +445,15 @@ function theoryFields(theory, lookup, proposition) {
     // own: a parameter named as an ambiguous field is that parameter.
     const scope = new Set();
     const within = (node, bound) => resolved(labelled(node, bound), bound);
-    const item = { ...source, params: (source.params ?? []).map(p => {
-      const param = { ...p, type: within(p.type, new Set(scope)) };
-      scope.add(p.name.text);
-      if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
-      return param;
-    }) };
+    const item = { ...source, params: [] };
+    for (const members of parameterGroups(source.params ?? [])) {
+      const type = within(members[0].type, scope);
+      for (const p of members) item.params.push({...p, type});
+      for (const p of members) {
+        scope.add(p.name.text);
+        if (p.level) scope.add(`${p.name.text}_is_${p.level}`);
+      }
+    }
     if (source.type) item.type = within(source.type, scope);
     const origin = `${T}.${item.name.text}`;
     if (item.kind === "sort") {
@@ -485,11 +535,19 @@ function theoryFields(theory, lookup, proposition) {
       if (byName.has(item.name.text) || derivedByName.has(item.name.text))
         throw located(Error(`${T} has two fields named ${item.name.text}: give each its own name.`), item.name);
       const process = node => inlineDerived(operatorsAsCalls(inTheoryUniverse(evidenced(node, leveled), item)));
-      const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type) })),
+      const entry = { name: item.name.text, params: expanded(item).map(p => ({ name: p.name.text, type: process(p.type), group: p.group })),
         type: process(item.type), value: process(item.value), origin, at: item.name };
       // A recursive one, as of_nat, is called, not inlined, in later fields:
       // its value names it free, and no parameter of its takes its name.
       entry.recursive = !entry.params.some(p => p.name === entry.name) && freeNames(entry.value).has(entry.name);
+      const scope = new Set([...header.map(b => b.text), ...byName.keys(), entry.name]);
+      for (const members of parameterGroups(entry.params)) {
+        const type = capture(members[0].type, scope);
+        for (const p of members) p.type = type;
+        for (const p of members) scope.add(p.name);
+      }
+      entry.type = capture(entry.type, scope);
+      entry.value = capture(entry.value, scope);
       derived.push(entry);
       derivedByName.set(entry.name, entry);
       continue;
@@ -518,22 +576,32 @@ function theoryFields(theory, lookup, proposition) {
 
 // The declarations a theory expands to, and its record, which a theory
 // that extends it reads (`lookup` gives the record of a theory by name).
-export function expandTheory(theory, lookup = () => null, proposition = () => false) {
-  const T = theory.name.text, at = theory.name;
-  const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition);
+export function expandTheory(theory, lookup = () => null, proposition = () => false, capture = node => node, reference = node => node) {
+  // What the expansion places at the theory's name is generated, and links
+  // nowhere there (cubical-program.mjs): the name links to its models' type.
+  const T = theory.name.text, at = { ...theory.name, synthetic: true };
+  // Only the expansion's builders introduce declaration references. Reused
+  // source syntax is already resolved and is never searched for matching text.
+  const globalCall = (fn, args, span) => call(reference(name(fn, span), "generated"), args, span);
+  const outerCall = (fn, args, span) => call(reference(name(fn, span), "outer"), args, span);
+  const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition, capture);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
-  const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)])]);
-  // The header's names for the universes, or fresh ones without a header.
-  const universes = headerUniverses.length ? headerUniverses : [fresh("U", taken)], model = fresh("m", taken);
+  const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)]),
+    ...derived.flatMap(operation => [...namesIn(operation)])]);
+  // The header's names for the universes, or fresh ones without a header:
+  // U, or U_1 when U is taken. The public label depends only on the header,
+  // never on an internal binder that makes this generated name fresh.
+  const universes = headerUniverses.length ? headerUniverses : [freshName("U", taken)], model = freshName("m", taken);
+  const universeLabels = headerUniverses.length ? headerUniverses : [freshName("U", new Set(params.map(p => p.name)))];
   const inUniverse = node => renamed(node, new Map(universes.map((u, k) => [universeAt(k), u])), at);
   // The header's binders, the universes in one group and then each
   // parameter; `implicit` says which are implicit.
   const headerParameters = ({ universe = false, parameter = false } = {}) => [
-    ...universes.map(u => ({ name: token(u, at), bound: name("UU0", at), group: 0, ...(universe ? { implicit: true } : {}) })),
+    ...universes.map((u, k) => ({ name: token(u, at), label: universeLabels[k], bound: name("UU0", at), group: 0, ...(universe ? { implicit: true } : {}) })),
     ...params.map((p, k) => ({ name: token(p.name, at), type: inUniverse(p.type), group: k + 1, ...(parameter ? { implicit: true } : {}) })),
   ];
   const nextGroup = params.length + 1;
-  const modelType = span => call(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
+  const modelType = span => globalCall(T, [...universes, ...params.map(p => p.name)].map(text => name(text, span)), span);
   const largest = list => list.length === 1 ? name(list[0], at) : call("max", [name(list[0], at), largest(list.slice(1))], at);
   // Each declaration reads its operators and numerals in the file's
   // selection where the theory stands (L2.10j).
@@ -543,8 +611,10 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
     body: [{ kind: "exact", value, ...place(span) }], typedValue: true, ...place(span),
     generated: { theory: T, ...generated }, ...extra,
   });
+  // Retain both internal universe names and public labels. Inheritance and
+  // named arguments use the labels; fresh internal binders are not an API.
   const record = {
-    name: T, model: T, make: `${T}.make`, universes: headerUniverses, params, ambiguous, ambiguousNotations,
+    name: T, model: T, make: `${T}.make`, universes, universeLabels, ...(headerUniverses.length ? {} : { generatedUniverse: true }), params, ambiguous, ambiguousNotations,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
     notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
     derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),
@@ -568,7 +638,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const projected = new Map();
   fields.forEach((field, k) => {
     const type = rewritten(inUniverse(field.type), (n, bound) => n.kind === "name" && projected.has(n.name) && !bound.has(n.name)
-      ? call(projected.get(n.name), [name(model, n)], n) : n);
+      ? globalCall(projected.get(n.name), [name(model, n)], n) : n);
     let value = name(model, field.at);
     for (let j = 0; j < k; j++) value = projection(value, 2, field.at);
     if (k < fields.length - 1) value = projection(value, 1, field.at);
@@ -580,27 +650,33 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // T.d{{U < UU0, params}}(m : T(U, params), args…) : A := value, for each
   // derived operation, its fields read through m (L2.10b).
   for (const d of derived) {
-    const own = new Set(d.params.map(p => p.name));
+    const own = new Set();
     // Its fields through m; a recursive one's call to itself, T.d(m, …).
     const through = node => rewritten(inUniverse(node), (n, bound) => {
       if (d.recursive && n.kind === "call" && n.fn.kind === "name" && n.fn.name === d.name && !bound.has(d.name))
-        return call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n);
+        return {...call(`${T}.${d.name}`, [name(model, n), ...n.args.map(through)], n), kind: "recursiveCall"};
       return n.kind === "name" && projected.has(n.name) && !bound.has(n.name) && !own.has(n.name)
-        ? call(projected.get(n.name), [name(model, n)], n) : n;
+        ? globalCall(projected.get(n.name), [name(model, n)], n) : n;
     });
+    const parameters = [];
+    for (const members of parameterGroups(d.params)) {
+      const group = nextGroup + 1 + parameters.length, type = through(members[0].type);
+      for (const p of members) parameters.push({name: token(p.name, d.at), type, group});
+      for (const p of members) own.add(p.name);
+    }
     out.push(declaration(`${T}.${d.name}`, [...headerParameters({ universe: true, parameter: true }),
       { name: token(model, d.at), type: modelType(d.at), group: nextGroup },
-      ...d.params.map((p, k) => ({ name: token(p.name, d.at), type: through(p.type), group: nextGroup + 1 + k }))],
+      ...parameters],
     through(d.type), through(d.value), d.at, { role: "derived", field: d.name }));
   }
   // T.p{{U < UU0, params}}(m : T(U, params)) : P(U, params) := P.make(params, T.f(m), …),
   // each of P's fields from the child's field it became.
   for (const [index, parent] of parents.entries()) {
     const span = theory.parents[index];
-    const parentModel = call(parent.theory, [...parent.universes.map(u => inUniverse(name(u, span))), ...parent.params.map(p => name(p, span))], span);
+    const parentModel = outerCall(parent.theory, [...parent.universes.map(u => inUniverse(name(u, span))), ...parent.params.map(p => name(p, span))], span);
     out.push(declaration(parent.projection, [...headerParameters({ universe: true, parameter: true }),
       { name: token(model, span), type: modelType(span), group: nextGroup }], parentModel,
-    call(parent.make, [...parent.params.map(p => name(p, span)), ...parent.fields.map(field => call(`${T}.${field}`, [name(model, span)], span))], span), span,
+    outerCall(parent.make, [...parent.params.map(p => name(p, span)), ...parent.fields.map(field => globalCall(`${T}.${field}`, [name(model, span)], span))], span), span,
     { role: "projection", field: parent.label }));
   }
   // Homomorphisms and isomorphisms, unless an operation's argument mixes a
@@ -621,14 +697,21 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
       ...[...morphisms.typeMarkers].map(([marker, { type, model, universes }]) => [marker,
         renamed(type, new Map([...fields.map(field => [field.name, `${model}.${field.name}`]), ...inUniverses(universes)]), at)]),
     ]);
+    // Resolve only the template's declaration references, before inserting
+    // source fragments. A splice is an AST, never source to parse or resolve.
     const parsed = parse(morphisms.declarations.map((d, k) => d.source.replace(/^def \S+?(?=[{(:])/, `def generated_${k}`)).join("\n")).declarations
-      .map(d => parameterType.size ? JSON.parse(JSON.stringify(d), (key, value) =>
-        value?.kind === "name" && parameterType.has(value.name) ? parameterType.get(value.name) : value) : d);
+      .map(d => rewritten(d, n => {
+        if (n.kind !== "name") return n;
+        if (parameterType.has(n.name)) return parameterType.get(n.name);
+        const global = morphisms.references.get(n.name);
+        return global ? reference({...n, name: global.name}, global.scope) : n;
+      }));
     parsed.forEach((d, k) => {
       const { name: declName, role, field, record: morphismRecord, labels = {} } = morphisms.declarations[k];
       // A parameter whose binder is named apart from its field is called
       // by the field's name.
       for (const p of d.params ?? []) if (Object.hasOwn(labels, p.name.text)) p.label = labels[p.name.text];
+      // Generated from text, all of it stands at the theory's name.
       out.push({ ...relocated(d, at), name: token(declName, at), ...(theory.uses ? { uses: theory.uses } : {}),
         generated: { theory: T, role, ...(field ? { field } : {}) }, ...(morphismRecord ? { theory: morphismRecord } : {}) });
     });

@@ -23,13 +23,13 @@ def empty_binomial(n : Nat) := bin_pair(
 );
 
 def empty_cardinality_excludes(
-  A : U0, p : A -> Bool, h : Mere(Bijection(Void, Selected(A, p))), a : A, witness : Truth(p(a))
+  A : U0, p : A -> Bool, h : Mere(Bijection(Void, Selected(A, p))), a : A, witness_ : Truth(p(a))
 ) :=
   mere_eliminate(
     Bijection(Void, Selected(A, p)), Void, void_prop,
     (
       fun (e : Bijection(Void, Selected(A, p))) => backward(
-        Void, Selected(A, p), e, typed(Selected(A, p), (a, witness))
+        Void, Selected(A, p), e, typed(Selected(A, p), (a, witness_))
       )
     ), h
   );

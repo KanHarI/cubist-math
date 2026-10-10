@@ -39,7 +39,8 @@
 
 // The names a type mentions free, a qualified name R.R by its root, by
 // every binding form (scopes.mjs).
-import { freeNames } from "./scopes.mjs";
+import { freeNames, allNames, renamedFree, freshName } from "./scopes.mjs";
+import { reservedNames } from "./parser.mjs";
 
 
 // How a type is mapped: "fixed" when it mentions no carrier; a carrier, or
@@ -73,15 +74,32 @@ function occurrences(shape, positive = true, out = new Set()) {
   return out;
 }
 // A field's binders, from its type's foralls, and the type under them.
-function binders(type) {
-  const list = [];
-  while (type.kind === "forall") { list.push({ name: type.name.text, type: type.domain }); type = type.body; }
+function binders(type, parameters) {
+  const list = [], bound = new Set([...freeNames(type), ...parameters]), taken = new Set([...allNames(type), ...parameters]);
+  const fresh = stem => freshName(stem, taken);
+  while (type.kind === "forall" || type.kind === "binderGroup" && type.binderKind === "forall") {
+    const names = type.kind === "forall" ? [type.name] : type.names;
+    // Each grouped domain is read before any of the names binds. Splitting
+    // it into generated foralls must not let a binder capture that domain,
+    // or a theory parameter passed by generated calls, even when this field
+    // does not mention it. A name the group repeats, as in forall x, x : M,
+    // is still an argument; its last occurrence is the one the body reads.
+    const renaming = new Map();
+    for (const [k, n] of names.entries()) {
+      const shadowed = names.slice(k + 1).some(later => later.text === n.text);
+      const name = bound.has(n.text) || shadowed ? fresh(n.text) : n.text;
+      list.push({ name, label: n.label ?? n.text, type: type.domain }); bound.add(name);
+      if (!shadowed) renaming.set(n.text, name);
+    }
+    type = [...renaming].some(([before, after]) => before !== after)
+      ? renamedFree(type.body, name => renaming.get(name)) : type.body;
+  }
   return { list, body: type };
 }
 // An operation's inputs and result, each with its shape and way, "fixed",
 // "push" or "pull"; or, as `why`, why its homomorphisms are not generated.
 function operationShape(field, context) {
-  const { list: inputs, body: type } = binders(field.type);
+  const { list: inputs, body: type } = binders(field.type, context.parameters);
   const way = (shape, place) => {
     const where = occurrences(shape);
     if (where.has("other")) return { why: `its ${field.name}'s ${place} has a type that the maps do not follow` };
@@ -91,7 +109,7 @@ function operationShape(field, context) {
   };
   for (const input of inputs) {
     input.shape = shapeOf(input.type, context);
-    const { why, way: inputWay } = way(input.shape, `argument ${input.name}`);
+    const { why, way: inputWay } = way(input.shape, `argument ${input.label}`);
     if (why) return { why };
     input.way = inputWay;
   }
@@ -121,14 +139,10 @@ function operationShape(field, context) {
     const later = [...inputs.slice(k + 1).map(other => other.type), type];
     if (input.way === "pull" && (later.some(t => freeNames(t).has(input.name))
       || inputs.slice(0, k).some(earlier => freeNames(input.type).has(earlier.name))))
-      return { why: `its ${field.name}'s argument ${input.name} is pulled back and depends on, or is named by, another argument` };
+      return { why: `its ${field.name}'s argument ${input.label} is pulled back and depends on, or is named by, another argument` };
   }
   return { inputs, result };
 }
-
-// A parameter's type stands in a homomorphism's source as a marker, which
-// the expansion replaces by the type (theories.mjs).
-const parameterMarker = k => `__theory_parameter_${k}`;
 
 // The declarations of T's homomorphisms and isomorphisms, each {name,
 // source, role}, or, as `missing`, why T's models have none. `isTheory`
@@ -144,20 +158,32 @@ export function morphismSource(record, isTheory = () => false) {
   // a homomorphism keeps them fixed (L2.4c). Otherwise each model has its
   // own universes, as many as the theory's header binds.
   const params = record.params ?? [], count = Math.max(1, record.universes?.length ?? 0);
+  const parameters = params.map(p => p.name);
   // Every binder the source introduces is fresh: none captures a parameter
   // or a name that a field's type mentions free, which the source writes as
   // it is (apart from the carriers, which it writes as A.M); and none is a
   // universe constant, so a taken U is followed by U_1, not U1.
   const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
-  const taken = new Set([...params.map(p => p.name), ...record.fields.flatMap(field => binders(field.type).list.map(b => b.name)),
+  const taken = new Set([...reservedNames, ...parameters, ...record.fields.flatMap(field => binders(field.type, parameters).list.map(b => b.name)),
+    ...record.fields.flatMap(field => [...allNames(field.type)]),
     ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
-  const numbered = (stem, k) => /^U+$/.test(stem) || /[0-9]$/.test(stem) ? `${stem}_${k}` : `${stem}${k}`;
-  const own = stem => {
-    let name = stem;
-    for (let k = 1; name === T || isTheory(name) || taken.has(name); k++) name = numbered(stem, k);
-    taken.add(name);
-    return name;
+  const avoided = { has: name => name === T || isTheory(name) || taken.has(name), add: name => taken.add(name) };
+  const own = stem => freshName(stem, avoided);
+  // Template holes have fresh names and typed payloads. Declaration references
+  // and source expressions are inserted only after parsing the template; no
+  // source spelling is searched for and reinterpreted as a declaration.
+  const references = new Map(), referenceMarkers = new Map();
+  const global = (name, scope = "generated") => {
+    const key = `${scope}:${name}`;
+    if (!referenceMarkers.has(key)) {
+      const marker = own("__theory_reference");
+      referenceMarkers.set(key, marker);
+      references.set(marker, {name, scope});
+    }
+    return referenceMarkers.get(key);
   };
+  const parameterMarkers = params.map((_, k) => own(`__theory_parameter_${k}`));
+  const parameterMarker = k => parameterMarkers[k];
   const A = own("A"), B = own("B"), C = own("C"), f = own("f"), g = own("g"), X = own("x"), Y = own("y");
   const carrierFields = record.fields.filter(field => field.kind === "sort"), sorts = carrierFields.map(field => field.name);
   if (!sorts.length) return { missing: `${T} has no sorts` };
@@ -171,7 +197,7 @@ export function morphismSource(record, isTheory = () => false) {
   // carrier, pushed forward.
   const families = new Map();
   for (const field of carrierFields.filter(field => field.family)) {
-    const indices = binders(field.type).list;
+    const indices = binders(field.type, parameters).list;
     for (const index of indices) {
       index.shape = shapeOf(index.type, { carriers, families, fields });
       if (!["fixed", "carrier"].includes(index.shape.kind) || index.shape.args)
@@ -179,7 +205,7 @@ export function morphismSource(record, isTheory = () => false) {
     }
     families.set(field.name, indices);
   }
-  const context = { carriers, families, fields }, operations = new Map();
+  const context = { carriers, families, fields, parameters }, operations = new Map();
   for (const field of record.fields.filter(field => field.kind === "operation")) {
     const shape = operationShape(field, context);
     if (shape.why) return { missing: shape.why };
@@ -208,7 +234,7 @@ export function morphismSource(record, isTheory = () => false) {
   // the type, its fields that model's and its universes the model's.
   const typeMarkers = new Map();
   const typeIn = (type, model) => {
-    const marker = `__theory_type_${typeMarkers.size}`;
+    const marker = own(`__theory_type_${typeMarkers.size}`);
     typeMarkers.set(marker, { type, model, universes: model === A ? uA : model === B ? uB : uC });
     return marker;
   };
@@ -221,8 +247,9 @@ export function morphismSource(record, isTheory = () => false) {
   // another index is the same term on every side.
   const indexAt = (F, k, arg, at) => {
     const index = families.get(F)[k];
-    if (typeof arg !== "string" && arg.kind !== "name") return typeIn(arg, at.model);
-    const name = typeof arg === "string" ? arg : arg.name;
+    // Every source expression is spliced as syntax, even a single name.
+    // Only the template's own bound variables are represented by strings.
+    const name = typeof arg === "string" ? arg : typeIn(arg, at.model);
     return index.shape.kind === "carrier" ? at.maps.reduce((term, mapOf) => `${mapOf(index.shape.sort)}(${term})`, name) : name;
   };
   // A shape's type at a side.
@@ -291,7 +318,7 @@ export function morphismSource(record, isTheory = () => false) {
     const universes = [...new Set(lists.flat())];
     return [`${universes.join(", ")} < UU0`, ...params.map((p, k) => `${p.name} : ${parameterMarker(k)}`)].join(", ");
   };
-  const modelOf = universes => `${T}(${[...universes, ...params.map(p => p.name)].join(", ")})`;
+  const modelOf = universes => `${global(T)}(${[...universes, ...params.map(p => p.name)].join(", ")})`;
   const largest = list => list.length === 1 ? list[0] : `max(${list[0]}, ${largest(list.slice(1))})`;
   const homUniverse = universal ? `next(${largest(uA)})` : largest([...new Set([...uA, ...uB])]);
   const models = more => `{{${headerBinders(uA, uB)}}}(${[`${A} : ${modelOf(uA)}`, `${B} : ${modelOf(uB)}`, ...more].join(", ")})`;
@@ -309,10 +336,10 @@ export function morphismSource(record, isTheory = () => false) {
   // A homomorphism or an isomorphism, `text`, from one model to another.
   const sided = (text, from, to) => ({ text, from, to });
   // T.Hom(X, Y) and T.Iso(X, Y).
-  const homType = (X, Y) => `${hom}${implicitArgs([X, Y], false)}(${X}, ${Y})`;
-  const isoType = (X, Y) => `${iso}${implicitArgs([X, Y], false)}(${X}, ${Y})`;
+  const homType = (X, Y) => `${global(hom)}${implicitArgs([X, Y], false)}(${X}, ${Y})`;
+  const isoType = (X, Y) => `${global(iso)}${implicitArgs([X, Y], false)}(${X}, ${Y})`;
   // A field of a sided homomorphism or isomorphism: T.Hom.map{{…, X, Y}}(h).
-  const project = (owner, field, h) => `${owner}.${field}${implicitArgs([h.from, h.to])}(${h.text})`;
+  const project = (owner, field, h) => `${global(`${owner}.${field}`)}${implicitArgs([h.from, h.to])}(${h.text})`;
   // A homomorphism's map of a carrier, as a function.
   const mapping = (h, sort) => project(hom, map(sort), h);
   // An isomorphism's homomorphism each way.
@@ -324,7 +351,7 @@ export function morphismSource(record, isTheory = () => false) {
     let value = f;
     for (let j = 0; j < k; j++) value += ".2";
     if (k < fields.length - 1) value += ".1";
-    declare(`${owner}.${field.name}`, `${implicitModels}(${f} : ${owner}${implicitArgs([A, B], false)}(${A}, ${B})) : ${typeOf(field)} := ${value};`, "projection",
+    declare(`${owner}.${field.name}`, `${implicitModels}(${f} : ${global(owner)}${implicitArgs([A, B], false)}(${A}, ${B})) : ${typeOf(field)} := ${value};`, "projection",
       { field: field.name });
   });
   const record_ = (name, fields, parents = []) => ({ name, model: name, make: `${name}.make`,
@@ -346,7 +373,7 @@ export function morphismSource(record, isTheory = () => false) {
     tuple(homFields.map(bound))};`, "make", { labels: labels(homFields) });
   projections(hom, homFields, field => fieldType(field, sort => mapping(sided(f, A, B), sort)));
   // The identity: each map the identity, preserving by reflexivity.
-  declare(`${hom}.id`, `${oneModel} : ${homType(A, A)} := ${hom}.make${implicitArgs([A, A], false)}(${A}, ${A}, ${homFields.map(field => {
+  declare(`${hom}.id`, `${oneModel} : ${homType(A, A)} := ${global(`${hom}.make`)}${implicitArgs([A, A], false)}(${A}, ${A}, ${homFields.map(field => {
     if (field.sort) return `fun (${memberBinders(field.sort, side(A), X).join(", ")}) => ${X}`;
     const { name, inputs } = field.operation, value = `refl(${applied(`${A}.${name}`, inputs.map(input => input.name))})`;
     const step = along(side(A), side(A), () => "");
@@ -356,7 +383,7 @@ export function morphismSource(record, isTheory = () => false) {
   // g's map, then g's.
   const gHom = sided(g, B, C), fHom = sided(f, A, B);
   declare(`${hom}.compose`, `${threeModels}(${g} : ${homType(B, C)}, ${f} : ${homType(A, B)}) : ${homType(A, C)} := ${
-    hom}.make${implicitArgs([A, C], false)}(${A}, ${C}, ${homFields.map(field => {
+    global(`${hom}.make`)}${implicitArgs([A, C], false)}(${A}, ${C}, ${homFields.map(field => {
     const viaF = sort => mapping(fHom, sort), viaG = sort => mapping(gHom, sort);
     const first = along(side(A), side(B), viaF), second = along(first.to, side(C), viaG), whole = along(side(A), side(C), viaF);
     if (field.sort)
@@ -379,8 +406,8 @@ export function morphismSource(record, isTheory = () => false) {
   for (const parent of record.parents) {
     const fields = parent.fields.flatMap((child, k) => parent.kinds[k] === "sort" ? [map(child)]
       : parent.kinds[k] === "operation" ? [`map_${child}`] : []);
-    declare(`${hom}.${parent.label}`, `${implicitModels}(${f} : ${homType(A, B)}) : ${parent.theory}.Hom(${A}.${parent.label}, ${B}.${parent.label}) := ${
-      parent.theory}.Hom.make(${A}.${parent.label}, ${B}.${parent.label}${fields.map(field => `, ${project(hom, field, sided(f, A, B))}`).join("")});`, "projection",
+    declare(`${hom}.${parent.label}`, `${implicitModels}(${f} : ${homType(A, B)}) : ${global(`${parent.theory}.Hom`, "outer")}(${A}.${parent.label}, ${B}.${parent.label}) := ${
+      global(`${parent.theory}.Hom.make`, "outer")}(${A}.${parent.label}, ${B}.${parent.label}${fields.map(field => `, ${project(hom, field, sided(f, A, B))}`).join("")});`, "projection",
     { field: parent.label });
   }
 
@@ -392,7 +419,7 @@ export function morphismSource(record, isTheory = () => false) {
   const indexedSet = carrierFields.find(field => families.has(field.name) && levelOf(field.name) === "IsSet"
     && families.get(field.name).some(index => index.shape.kind === "carrier"));
   if (indexedSet)
-    return { declarations, universes: uA, parameterMarker, typeMarkers,
+    return { declarations, universes: uA, parameterMarker, typeMarkers, references,
       missingIso: `its family of sets ${indexedSet.name} is indexed by a carrier, and its round trips would need a transport that is not generated` };
   const tripped = sorts.filter(sort => !(families.has(sort) && levelOf(sort) === "IsProp"));
   const single = sorts.length === 1;
@@ -415,8 +442,8 @@ export function morphismSource(record, isTheory = () => false) {
   declare(`${iso}.make`, `${models(isoFields.map(field => `${bound(field)} : ${isoFieldType(field, toHom, fromHom)}`))} : ${isoType(A, B)} := ${
     tuple(isoFields.map(bound))};`, "make", { labels: labels(isoFields) });
   projections(iso, isoFields, field => isoFieldType(field, there(fIso), back(fIso)));
-  const identity = `${hom}.id${implicitArgs([A], false)}(${A})`;
-  declare(`${iso}.id`, `${oneModel} : ${isoType(A, A)} := ${iso}.make${implicitArgs([A, A], false)}(${A}, ${A}, ${identity}, ${identity}${
+  const identity = `${global(`${hom}.id`)}${implicitArgs([A], false)}(${A})`;
+  declare(`${iso}.id`, `${oneModel} : ${isoType(A, A)} := ${global(`${iso}.make`)}${implicitArgs([A, A], false)}(${A}, ${A}, ${identity}, ${identity}${
     isoFields.slice(2).map(field => `, fun (${memberBinders(field.sort, side(A), X).join(", ")}) => refl(${X})`).join("")});`, "id");
   // Composition: each way, the composite of the two homomorphisms; their
   // round trips, the inner one carried along the outer map, then the outer.
@@ -431,12 +458,12 @@ export function morphismSource(record, isTheory = () => false) {
     return `, fun (${memberBinders(field.sort, start, x).join(", ")}) => trans(cong(fun (${image} : ${member}) => ${
       mapped(mapping(home, field.sort), field.sort, start, image)}, ${trip(inner, inside)}), ${trip(outer, x)})`;
   };
-  declare(`${iso}.compose`, `${threeModels}(${g} : ${isoType(B, C)}, ${f} : ${isoType(A, B)}) : ${isoType(A, C)} := ${iso}.make${implicitArgs([A, C], false)}(${A}, ${C}, ${
-    hom}.compose${implicitArgs([A, B, C])}(${there(gIso).text}, ${there(fIso).text}), ${hom}.compose${implicitArgs([C, B, A])}(${back(fIso).text}, ${back(gIso).text})${
+  declare(`${iso}.compose`, `${threeModels}(${g} : ${isoType(B, C)}, ${f} : ${isoType(A, B)}) : ${isoType(A, C)} := ${global(`${iso}.make`)}${implicitArgs([A, C], false)}(${A}, ${C}, ${
+    global(`${hom}.compose`)}${implicitArgs([A, B, C])}(${there(gIso).text}, ${there(fIso).text}), ${global(`${hom}.compose`)}${implicitArgs([C, B, A])}(${back(fIso).text}, ${back(gIso).text})${
     isoFields.slice(2).map(roundTrip).join("")});`,
   "compose");
   // The inverse: the two homomorphisms and the two round trips swapped.
-  declare(`${iso}.inverse`, `${implicitModels}(${f} : ${isoType(A, B)}) : ${isoType(B, A)} := ${iso}.make${implicitArgs([B, A], false)}(${B}, ${A}, ${
+  declare(`${iso}.inverse`, `${implicitModels}(${f} : ${isoType(A, B)}) : ${isoType(B, A)} := ${global(`${iso}.make`)}${implicitArgs([B, A], false)}(${B}, ${A}, ${
     back(fIso).text}, ${there(fIso).text}${isoFields.slice(2).map(field => `, ${project(iso, other(field), fIso)}`).join("")});`, "inverse");
-  return { declarations, universes: uA, parameterMarker, typeMarkers };
+  return { declarations, universes: uA, parameterMarker, typeMarkers, references };
 }

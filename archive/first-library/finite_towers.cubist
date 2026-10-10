@@ -53,7 +53,7 @@ def finite_extension_tower_converse(
   and FiniteExtension(L, embedding_as_extension(L, M, d)) {
   let composite := field_embedding_compose(K, L, M, e, d);
   let finite :=
-    along((fun (f : FieldEmbedding(K, M)) => FiniteExtension(K, embedding_as_extension(K, M, f)))) by sym(
+    along ((fun (f : FieldEmbedding(K, M)) => FiniteExtension(K, embedding_as_extension(K, M, f)))) by sym(
       triangle
     ) from whole;
   exact (finite_tower_lower(K, L, M, e, d, finite), finite_tower_upper(K, L, M, e, d, finite));

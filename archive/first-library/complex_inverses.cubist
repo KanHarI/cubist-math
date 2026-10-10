@@ -135,10 +135,10 @@ def complex_inverse_apart(
   );
   let nonnegativeNorm :=
     complex_norm_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, z);
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact field_exists_elim(
     (lt(squaredNorm, zero) or lt(zero, squaredNorm)), lt(zero, squaredNorm),
-    prop(zero, squaredNorm),
+    prop_(zero, squaredNorm),
     (
       fun (side : lt(squaredNorm, zero) or lt(zero, squaredNorm)) => match side return lt(
         zero, squaredNorm
@@ -171,7 +171,7 @@ def ordered_not_apart_zero(
   notApart : FieldApart(F, lt, x, zero) -> Void
 ) :
   x = zero {
-  obtain (prop, irreflexive, transitive, cotransitive, antisymmetric) := order;
+  obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   exact antisymmetric(
     x, zero,
     (

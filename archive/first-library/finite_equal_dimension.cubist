@@ -36,8 +36,8 @@ def equal_basis_dimension_injective_surjective(
   let lift :
     Fiber(vector_carrier(K, C), vector_carrier(K, C), linear_map(K, C, C, square), c)
     -> Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y) {
-    intro witness;
-    obtain (x, same) := witness;
+    intro witness_;
+    obtain (x, same) := witness_;
     exact (
       linear_map(K, C, V, u, x),
       linear_iso_injective(

@@ -64,7 +64,7 @@ def radix_decode_shift_one(extra : Nat) :
 
 def RadixLeadingIncrement(extra : Nat, result : RadixDigit(succ(extra)) or Unit) :=
   match result return RadixPositive(extra) {
-    left next => radix_leading(extra, next);
+    left next_ => radix_leading(extra, next_);
     right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
   };
 
@@ -85,9 +85,9 @@ def radix_decode_leading_increment(
       )
     )
   ) {
-    left next => fun (
-      same : radix_digit_value(succ(extra), next) = succ(radix_digit_value(succ(extra), d))
-    ) => trans(radix_decode_leading(extra, next), cong(succ, same));
+    left next_ => fun (
+      same : radix_digit_value(succ(extra), next_) = succ(radix_digit_value(succ(extra), d))
+    ) => trans(radix_decode_leading(extra, next_), cong(succ, same));
     right carry => fun (same : succ(radix_digit_value(succ(extra), d)) = succ(extra)) => trans(
       radix_decode_shift_one(extra), sym(cong(succ, same))
     );
@@ -98,7 +98,7 @@ def RadixAppendIncrement(
   extra : Nat, p : RadixPositive(extra), result : RadixDigit(succ(succ(extra))) or Unit
 ) :=
   match result return RadixPositive(extra) {
-    left next => radix_append(extra, next, p);
+    left next_ => radix_append(extra, next_, p);
     right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_positive_succ(extra, p));
   };
 
@@ -125,8 +125,8 @@ def radix_decode_append_increment(
       )
     )
   ) {
-    left next => fun (same : radix_digit_value(base, next) = succ(digit)) => trans(
-      radix_decode_append(extra, next, p),
+    left next_ => fun (same : radix_digit_value(base, next_) = succ(digit)) => trans(
+      radix_decode_append(extra, next_, p),
       trans(cong(add(base * value), same), nat_add_succ(base * value, digit))
     );
     right carry => fun (same : succ(digit) = base) => trans(

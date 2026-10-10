@@ -12,9 +12,11 @@ revision, L2.4c, was done on 2026-10-06
 ([core theories](core-theories.md#revision-l24c)): carriers as fields,
 `M : set U`, the theory's name as its models' type, theory families,
 relation fields as families of propositions with notation, and `use`.
-Initial and free models have their contract and first slice (L2.6,
-2026-10-06): `initial N : T(…);`, `free W(A : U0) : T(…) on A;`, `N.model`
-and `N.fold`. Squares have the box notation and `library/squares.cubist`
+Initial and free models have a construction prototype (L2.6, 2026-10-06):
+`initial N : T(…);`, `free W(A : U0) : T(…) on A;`, `N.model` and `N.fold`.
+The revised contract of 2026-10-07 requires explicit derivation opt-ins
+and checked universal properties; that capability interface is not yet
+implemented. Squares have the box notation and `library/squares.cubist`
 (L2.8, 2026-10-06). Uniqueness and `universal`, generated identity, the
 `cell` face syntax for constructors, relations on declared types and
 bundles, proof-first h-levels, per-argument obligations, dependent
@@ -103,12 +105,20 @@ requires a proof in the candidate model. Unsupported construction or failed
 proof search reports the outstanding obligation, not mathematical
 nonexistence. `Field` can have morphisms while initial/free derivation fails.
 
-This block is in the implemented syntax (L2.4, L2.4c and L2.6's first
-slice). It checks after importing `nat`, `hlevels` and `integers` and
+Generated types, terms, and functions follow the
+[scope and capture contract](syntax-hygiene.md), including artifacts reused
+by later derivations. The first free-model interface forgets to one carrier;
+several carriers need a generator assignment or dependent diagram, as
+specified in [L2.6](core-theories.md#initial-and-free-models-l26). The current
+`on A` prototype does not implement that generalization.
+
+This block uses the implemented syntax and construction prototype
+(L2.4, L2.4c and L2.6), before the proposed opt-in migration. It checks
+after importing `nat`, `hlevels` and `integers` and
 `use nat;`, with `IntAdd : Group(U0)` the integers under addition:
 
 ```
-theory Monoid(U < UU0) deriving (morphisms, free) {
+theory Monoid(U < UU0) {
   M : set U;
   unit : M;
   mul(x, y : M) : M notation x * y;
@@ -117,7 +127,7 @@ theory Monoid(U < UU0) deriving (morphisms, free) {
   law assoc(x, y, z : M) : (x * y) * z = x * (y * z);
 }
 
-theory Group(U < UU0) extends Monoid deriving (morphisms, free) {
+theory Group(U < UU0) extends Monoid {
   inv(x : M) : M;
   law inv_left(x : M) : inv(x) * x = unit;
 }
@@ -146,22 +156,25 @@ computable def exponent_sum(A : U0) : Group.Hom(FreeGroup.model(A), IntAdd) :=
   `Group` has an underlying model of `Monoid`, `G.monoid`, with the
   forgetful map generated.
 
-The surrounding constructions compose in the same way. The `Loop` and
-`CwF` theories below check as written. Their `initial` declarations and
-`CwF.Hom` are proposed: `initial` refuses `Loop`'s untruncated carrier
-today (E853; L2.6 now defers categorical initiality until morphism coherences are specified), `CwF`'s models have no homomorphisms yet
-(E817), and several carriers need H3.
+The surrounding constructions compose in the same way. The `Loop` theory
+and ordinary `Circle` declaration below use implemented syntax. The
+prototype refuses `initial Circle : Loop(U0)` (E853); the revised contract
+also requires checked morphisms and their coherences before categorical
+initiality. `CwF`'s derivation and `CwF.Hom` remain proposed: its models
+have no homomorphisms yet (E817), and several carriers need H3.
 
 ```
-theory Loop(U < UU0) { M : U; base : M; loop : base = base; }
-// Ordinary recursion is available; categorical initiality needs coherences.
+theory Loop(U < UU0) { S : U; base : S; loop : base = base; }
+// Available through an ordinary inductive declaration and its recursor.
+// Categorical initiality for Loop waits for checked morphism coherences.
 inductive Circle { base; loop : base = base; }
-```
-
-`CauchyStructure` is the 2026-09-25 proposal, with section 3's relations
-and bundles; core theories has the implemented syntax.
 
 ```
+
+`CauchyStructure` remains schematic, including section 3's proposed
+relations and bundles and the revised derivation opt-in.
+
+```text
 theory CauchyStructure deriving (morphisms, initial) { // later strategy
   sort R : set;
   relation Close(ε : Pos) on R : prop     notation u ≈[ε] v;
@@ -178,7 +191,7 @@ inductive Real = initial CauchyStructure;                  // stage H3
 ```
 
 ```
-theory CwF(U < UU0) deriving (morphisms, initial) {                                      // the syntax of type theory
+theory CwF(U < UU0) deriving (morphisms, initial) { // later H3 strategy
   Con : set U;  Ty(g : Con) : set U;  Sub(d, g : Con) : set U;
   Tm(g : Con, a : Ty(g)) : set U;
   empty : Con;  extend(g : Con, a : Ty(g)) : Con;
@@ -516,7 +529,8 @@ is required; particular instances depend on H1 or H3.
 | 3 | Theory morphisms; reflecting signatures as data; arrow blocks and their capability extensions | Later, once the generic constructions exist; broader structured composition |
 
 Done since: models, homomorphisms and sections over models (L2.4, L2.4c),
-and the first slice of initial and free models (L2.6).
+and the initial/free construction prototype (L2.6). Its revised
+checked-capability interface remains proposed.
 
 ## Effect on the other roadmaps
 

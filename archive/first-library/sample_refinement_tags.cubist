@@ -46,7 +46,7 @@ def sample_adjacent_endpoints(
   };
 }
 
-def sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
+def sample_adjacent_constant(C : U1, P : U0, witness_ : P, n : Nat) :
   forall vertices : SampleVertices(C, n). SampleAdjacent(C, (fun (a, b : C) => P), n, vertices) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k). SampleAdjacent(C, (fun (a, b : C) => P), k, vertices)
@@ -58,7 +58,7 @@ def sample_adjacent_constant(C : U1, P : U0, witness : P, n : Nat) :
         and SampleAdjacent(
           C, (fun (a, b : C) => P), k, field_snd(C, SampleVertices(C, k), vertices)
         )
-      ), (witness, previous(field_snd(C, SampleVertices(C, k), vertices)))
+      ), (witness_, previous(field_snd(C, SampleVertices(C, k), vertices)))
     );
   };
 }

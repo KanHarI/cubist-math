@@ -114,7 +114,7 @@ def finite_normal_separable_fixed_fixing_intermediate(
   let nonempty := subgroup_carrier_unit(G, H);
   obtain (k, positive) := inhabited_cardinality_positive(SubgroupCarrier(G, H), d, countH, nonempty);
   let productPositive :=
-    along((fun (q : Nat) => multiply_count(q, m) = q)) by positive from product;
+    along ((fun (q : Nat) => multiply_count(q, m) = q)) by positive from product;
   let degreeOne := positive_product_unit(k, m, productPositive);
   let onto := degree_one_embedding_surjective(R, Q, i, lower, degreeOne);
   exact sym(intermediate_inclusion_surjective_equal(K, E, M, N, included, onto));

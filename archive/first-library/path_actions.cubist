@@ -1,4 +1,4 @@
-import paths;
+import paths_;
 import equivalences;
 import equivalence_from_inverse;
 
@@ -75,7 +75,7 @@ def inverse_twice(A : U0, x, y : A, p : x = y) := refl(p);
 // Pi composition precomposes the predicate with inverse transport. Its
 // universe-valued output then needs the explicit constant-transport path.
 def transport_predicate(A : U0, C : A -> U0, x, y : A, p : x = y, P : C(x) -> U0, v : C(y)) :
-  (along((fun (point : A) => C(point) -> U0)) by p from P)(v) = P(along C by sym(p) from v) {
+  (along ((fun (point : A) => C(point) -> U0)) by p from P)(v) = P(along C by sym(p) from v) {
   exact transport_constant(A, U0, x, y, p, P(along C by sym(p) from v));
 }
 

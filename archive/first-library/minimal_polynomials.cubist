@@ -102,7 +102,7 @@ def normalize_annihilator_generator(
   obtain (d, degree) := polynomial_nonzero_degree(K, g, nonzero);
   let leading := polynomial_coefficients(K, g, d);
   obtain (ring, nontrivial, inverses) := af_laws(K);
-  obtain (a, inverse) := inverses(leading, polynomial_leading_nonzero(K, g, d, degree));
+  obtain (a, inverse_) := inverses(leading, polynomial_leading_nonzero(K, g, d, degree));
   let p := polynomial_scale(K, a, g);
   let rootP : PolynomialRoot(K, L, e, p, x) := with unfolding [] {
       trans(
@@ -117,12 +117,12 @@ def normalize_annihilator_generator(
     forall q : Polynomial(K). PolynomialRoot(K, L, e, q, x) -> PolynomialDivides(K, p, q) {
     intro q, rq;
     exact polynomial_divides_trans(
-      K, p, g, q, polynomial_scale_divides(K, a, leading, inverse, g), generates(q, rq)
+      K, p, g, q, polynomial_scale_divides(K, a, leading, inverse_, g), generates(q, rq)
     );
   }
   exact (
-    p, polynomial_normalize_nonzero(K, g, d, degree, a, inverse),
-    polynomial_normalize_monic(K, g, d, degree, a, inverse), rootP, generatesP
+    p, polynomial_normalize_nonzero(K, g, d, degree, a, inverse_),
+    polynomial_normalize_monic(K, g, d, degree, a, inverse_), rootP, generatesP
   );
 }
 

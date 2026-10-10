@@ -28,7 +28,7 @@ test("a module resolves its imports by where it lives", async () => {
   assert.throws(() => searchOrder("elsewhere"), /Unknown module place/);
   assert.equal(placeOfPath("archive/first-library/euclid.cubist"), "archive");
   assert.equal(placeOfPath("library/lists.cubist"), "library");
-  assert.equal(placeOfPath("cubist-tests/glue.cubist"), "tests");
+  assert.equal(placeOfPath("cubist-tests/glue_.cubist"), "tests");
   assert.equal(placeOfPath("scratch/mine.cubist"), "local");
   assert.equal(placeOfFile(join(projectRoot, "archive/first-library/euclid.cubist")), "archive");
 

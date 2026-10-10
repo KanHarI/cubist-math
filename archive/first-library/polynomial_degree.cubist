@@ -83,7 +83,7 @@ def polynomial_leading_nonzero(
     );
   let lowered := support_predecessor(K, polynomial_coefficients(K, p), n, support, zero);
   exact successor_not_le_self(
-    n, along((fun (k : Nat) => le(k, n))) by degree from polynomial_cutoff_least(K, p, n, lowered)
+    n, along ((fun (k : Nat) => le(k, n))) by degree from polynomial_cutoff_least(K, p, n, lowered)
   );
 }
 

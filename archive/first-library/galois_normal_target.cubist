@@ -28,8 +28,8 @@ def normal_target_factor(
       (embedding_image_inverse(F, T, j, y), embedding_image_right_inverse(F, T, j, y))
     );
   }
-  let inverse := field_embedding_inverse(F, I, jFactor, onto);
-  let g := field_embedding_compose(F, I, F, hFactor, inverse);
+  let inverse_ := field_embedding_inverse(F, I, jFactor, onto);
+  let g := field_embedding_compose(F, I, F, hFactor, inverse_);
   let triangle :
     forall x : af_carrier(F).
     field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(F, T, h, x) {

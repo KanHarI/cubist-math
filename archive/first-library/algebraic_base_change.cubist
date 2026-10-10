@@ -58,8 +58,8 @@ def algebraic_element_enlarge_base(
   AlgebraicElement(R, L, h, x) {
   let W := (exists p : Polynomial(K). PolynomialNonzero(K, p) and PolynomialRoot(K, L, e, p, x));
   let send : W -> AlgebraicElement(R, L, h, x) {
-    intro witness;
-    obtain (p, nonzero, root) := witness;
+    intro witness_;
+    obtain (p, nonzero, root) := witness_;
     let q := polynomial_map(K, R, i, p);
     let same := trans(
       polynomial_eval_base_change(K, R, L, i, h, p, x),
@@ -109,8 +109,8 @@ def algebraically_closed_extension_root(
   let q := polynomial_map(K, T, e, p);
   let W := (exists x : af_carrier(T). PolynomialRoot(T, T, field_embedding_identity(T), q, x));
   let send : W -> (exists x : af_carrier(T). PolynomialRoot(K, T, e, p, x)) {
-    intro witness;
-    obtain (x, root) := witness;
+    intro witness_;
+    obtain (x, root) := witness_;
     exact (x, trans(sym(polynomial_eval_mapped(K, T, e, p, x)), root));
   }
   exact mere_map(

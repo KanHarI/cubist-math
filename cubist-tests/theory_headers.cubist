@@ -56,9 +56,9 @@ print(typeof(Pointed.point));
 // Homomorphisms keep the parameter: both models are pointed over G.
 def pointed_id : Pointed.Hom(pointed_nat, pointed_nat) := Pointed.Hom.id(pointed_nat);
 
-// A parameter may have a name that the generated declarations use, as U,
-// map and to are here: their own binders are then named apart from it.
-theory Named(V < UU0, U : Nat, map : Nat, to : Nat) {
+// A parameter may have a name that the generated declarations use, as U
+// and map_point do here: their own binders are then named apart from it.
+theory Named(V < UU0, U : Nat, map_ : Nat, map_point : Nat) {
   M : set V;
   point : M;
 }
@@ -66,15 +66,16 @@ theory Named(V < UU0, U : Nat, map : Nat, to : Nat) {
 def named_iso(m : Named(U0, zero, zero, zero)) :
   Named.Iso(m, m) := Named.Iso.compose(Named.Iso.id(m), Named.Iso.inverse(Named.Iso.id(m)));
 
-// Their constructors take each field by its name, and a parameter of the
-// same name in double braces.
+// Their constructors take each field by its name. Header parameters go in
+// double braces, including map_point, which also names a generated field.
 def named_nat : Named(U0, zero, zero, zero) := Named.make(
   zero, zero, zero, M := Nat, M_is_set := nat_is_set, point := zero
 );
 
-def named_hom : Named.Hom(named_nat, named_nat) := Named.Hom.make{{map := zero}}(
-  named_nat, named_nat, map := fun (x : Nat) => x, map_point := refl(zero)
-);
+def named_hom :
+  Named.Hom(named_nat, named_nat) := Named.Hom.make{{map_ := zero, map_point := zero}}(
+    named_nat, named_nat, map := fun (x : Nat) => x, map_point := refl(zero)
+  );
 
 def named_by_fields : Named.Iso(named_nat, named_nat) := Named.Iso.make(
   named_nat, named_nat, to := named_hom, from := named_hom, from_to := fun (x : Nat) => refl(x),
@@ -88,8 +89,38 @@ theory Fixed(U < UU0, G : Magma(U)) extends Pointed {
 
 def forget_fixed(F : Fixed(U0, nat_magma)) : Pointed(U0, nat_magma) := F.pointed;
 
+// A theory whose header binds no universe has one with public label U.
+// A child with several universes binds it by that label.
+theory Based(U < UU0) {
+  M : set U;
+  c : M;
+}
+
+theory Unheaded extends Based {}
+
+theory Widened(V, U < UU0) extends Unheaded {
+  N : set V;
+  d : N;
+}
+
+def widened_carrier(W : Widened(U0, U1)) : U1 := W.M;
+
+// An internal binder named U freshens the generated universe's local name,
+// but cannot change its public label U or the child's header.
+theory Numbered extends Based {
+  op(U : M) : M;
+}
+
+theory Renumbered(V, U < UU0) extends Numbered {}
+
+def renumbered_carrier(R : Renumbered(U0, U1)) : U1 := R.M;
+
 // Error: E820: Lost extends Arrow, whose header binds the universe U: bind U in Lost's header too.
 theory Lost(V < UU0) extends Arrow {}
+
+// Error: E868: Unnamed extends Unheaded, whose header binds no universe: bind U, its public universe
+//   parameter, in Unnamed's header, or name that universe in Unheaded's header.
+theory Unnamed(A, B < UU0) extends Unheaded {}
 
 // Error: E821: Retyped extends Pointed, whose header has the parameter G: give Retyped the
 //   parameter G with the same type.
