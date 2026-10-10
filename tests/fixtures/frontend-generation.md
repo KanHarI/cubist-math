@@ -16,15 +16,23 @@ explains which controls use real source and which inject observer results.
 [frontend-generation.test.mjs](../frontend-generation.test.mjs) checks every
 case, including accepted and refused client equations without assumptions.
 [frontend-generation-contracts.mjs](../frontend-generation-contracts.mjs)
-combines client verdicts, publication, diagnostics and source observations.
+combines client verdicts, output absence, diagnostics and source observations.
 Refusal must not publish a constructor or generated model/fold member from the
 refused group, or replace the earlier binding. Unsupported Hom/Iso generation
 must preserve the usable base theory. Source scopes, conflicts and rewrite
 targets resolve once; repeated inner tokens require an explicit occurrence.
 
+`clients` lists accepted declarations; `refusedClients` maps each refused client
+to its diagnostic code. Client diagnostics compose with the declaration refusal
+as one complete expected set. `absentOutputs` and `absentOutputFamilies` describe
+only reported outputs. Constructor availability is tested through real clients
+(`c`, `N.one`, `N.mul`) that must receive E343. The reverse-order case retains
+its original constructor; `N.model`, `N.fold_map` and `N.fold` have output checks.
+
 G4 has distinct nil/off/yes results (nil/cons for the flat case). G12 checks
-base and successor computations directly, through inheritance and through an
-initial model. Both also refuse a plausible incorrect equation. G12-shadowed
+zero, one and two recursive steps directly, through inheritance and through an
+initial model. The second step distinguishes using the recursive result from
+substituting the base value in every successor. Both also refuse a plausible incorrect equation. G12-shadowed
 accepts the local-parameter equation and refuses the captured-field equation;
 a passing field-type control ensures that local iter receives no E845.
 G11 retains intended/captured equations in all four contexts. G2 checks
@@ -73,9 +81,9 @@ mutation selectors. The bracketed case ID selects an individual variant with
 | `G11-grouped-dependent` | G11 | Helper chain with grouped/dependent parameters |
 | `G11-inherited` | G11 | Inherited helper chain |
 | `G11-initial` | G11 | Initial-model helper client |
-| `G12` | G12 | Direct `twice` base/step computations and refused base-only result |
-| `G12-inherited` | G12 | Inherited `twice` base/step computations and refused base-only result |
-| `G12-initial` | G12 | Initial-model `twice` base/step computations and refused base-only result |
+| `G12` | G12 | Direct `twice` zero/one/two-step computations and refused base-only result |
+| `G12-inherited` | G12 | Inherited `twice` zero/one/two-step computations and refused base-only result |
+| `G12-initial` | G12 | Initial-model `twice` zero/one/two-step computations and refused base-only result |
 | `G12-shadowed` | G12 | Local recursive-name shadowing; intended/captured equations |
 | `G12-range` | G12 | Legitimate type-unfolding refusal over the original reference |
 

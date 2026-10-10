@@ -52,7 +52,7 @@ function renameParameter(c) {
   c.source = c.source.replace(/def kk\([^;]+;/, declaration => declaration.replace(/\bc\b/g, "z"));
 }
 function nonrecursive(c) {
-  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => op(c); }");
+  c.source = c.source.replace("match n { zero => c; succ(k) => op(iter(k)); }", "match n { zero => c; succ(k) => match k { zero => op(c); succ(j) => op(op(c)); }; }");
 }
 for (const [id, transform] of Object.entries(supported)) test(`FG0 audit: ${id} accepts a supported source control`, async t => {
   const c = fixture(id); transform(c);
@@ -68,18 +68,65 @@ const duplicates = {
 for (const [id, duplicate] of Object.entries(duplicates)) test(`FG0 audit: ${id} accepts preserved bindings and rejects a lost client`, async t => {
   const c = fixture(id);
   const original = await check(t, c.source.replace(duplicate, ""));
-  assert.deepEqual(original.result.gaps, []);
-  // Real original declarations and clients, with the intended duplicate
-  // refusal injected at the observer boundary. No generated term is fabricated.
+  const clientGaps = Object.entries(c.refusedClients ?? {}).map(([name, code]) => `${name} ${code}`).sort();
+  assert.deepEqual(original.result.gaps.map(g => `${g.name} ${g.code}`).sort(), clientGaps);
+  // The refusal is synthetic; original bindings and every client verdict are
+  // real compiler results. Negative clients compose with the duplicate itself.
   const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
   passes(c, await observeCase(t, c, async () => corrected));
   const lost = changed(corrected, result => { result.outputs = result.outputs.filter(o => o.name !== c.clients[0]); });
   refuses(c, await observeCase(t, c, async () => lost));
-  const forbidden = {G1: ["c"], "G1-initial": ["N.model", "N.fold_map", "N.fold"]}[id] ?? [];
-  for (const name of forbidden) {
-    const leaked = changed(corrected, result => result.outputs.push({...original.get("independent"), name}));
-    refuses(c, await observeCase(t, c, async () => leaked));
+});
+
+// These programs establish the observable API independently of absentOutputs.
+// A constructor is usable through a client but never a top-level output.
+for (const [id, declaration, clients, outputs] of [
+  ["G1", "inductive N : U0 { c; }", {leaked_c: "c"}, []],
+  ["G1-initial", "import hlevels; import algebra; initial N : Monoid(U0);",
+    {leaked_one: "N.one", leaked_mul: "N.mul"}, ["N.model", "N.fold_map", "N.fold"]],
+]) test(`FG0 audit: ${id} detects available constructors through real clients`, async t => {
+  const positive = await check(t, declaration + Object.entries(clients).map(([client, name]) => `\ndef ${client} := ${name};`).join(""));
+  assert.deepEqual(positive.result.gaps, []);
+  for (const [client, name] of Object.entries(clients)) {
+    assert.equal(positive.get(client).verified, true);
+    assert.deepEqual(positive.get(client).axioms, []);
+    assert.ok(!positive.result.outputs.some(output => output.name === name), `${name} is not an output`);
   }
+  const c = fixture(id), original = await check(t, c.source.replace(duplicates[id], ""));
+  const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
+  passes(c, await observeCase(t, c, async () => corrected));
+  // Replay each real client verdict into the observer control. This represents
+  // a leaked binding without inventing an output for the constructor itself.
+  for (const client of Object.keys(clients)) {
+    const leaked = changed(corrected, result => {
+      result.outputs = result.outputs.map(output => output.name === client ? positive.get(client) : output);
+      result.gaps = result.gaps.filter(gap => gap.name !== client);
+    });
+    const observation = await observeCase(t, c, async () => leaked);
+    assert.equal(observation.facts.clients[client], "checked");
+    assert.equal(observation.requirements.outputsAbsent, true, "name availability has its own observer");
+    refuses(c, observation);
+  }
+  for (const name of outputs) {
+    const leaked = changed(corrected, result => result.outputs.push(positive.get(name)));
+    const observation = await observeCase(t, c, async () => leaked);
+    assert.equal(observation.requirements.refusedClients, true, "output absence has its own observer");
+    refuses(c, observation);
+  }
+});
+
+test("FG0 audit: collision, name and equation refusals compose with per-client codes", async t => {
+  const c = fixture("G1");
+  c.source += "\ndef wrong : Unit := Unit;";
+  c.refusedClients.wrong = "E606";
+  const original = await check(t, c.source.replace(duplicates.G1, ""));
+  const corrected = changed(original, result => result.gaps.push({name: "N", code: "E604", reason: "Duplicate declaration: N"}));
+  passes(c, await observeCase(t, c, async () => corrected));
+  for (const modify of [
+    result => { for (const gap of result.gaps) if (gap.name !== "N") gap.code = gap.code === "E343" ? "E606" : "E343"; },
+    result => result.gaps.push({name: "unrelated", code: "E343", reason: "Untranslated name: absent"}),
+    result => { result.outputs = result.outputs.filter(output => output.name !== "leaked_c"); },
+  ]) refuses(c, await observeCase(t, c, async () => changed(corrected, modify)));
 });
 
 test("FG0 audit: G3 accepts focused refusals and rejects a leaked family", async t => {
@@ -170,16 +217,37 @@ test("FG0 audit: every case has an acceptance control and the manifest preserves
 // These are semantic mutants of supported source controls. They keep the
 // program well formed, but make a plausible wrong equation true. This is a
 // different boundary from changing a diagnostic on an already-failing case.
-for (const id of ["G4", "G4-flat", "G12", "G12-inherited", "G12-initial", "G12-shadowed"])
+for (const id of ["G4", "G4-flat", "G12-shadowed"])
   test(`FG0 audit: ${id} rejects a well-typed wrong computation`, async t => {
     const c = fixture(id); supported[id](c);
     passes(c, await observeCase(t, c, check));
     if (id.startsWith("G4")) c.source = c.source.replace(/match n \{[^}]+\}/, "zero");
     else if (id === "G12-shadowed") c.source = c.source.replace("op(local(n))", "op(c)");
-    else c.source = c.source.replace("match n { zero => c; succ(k) => op(c); }", "c");
     const observation = await observeCase(t, c, check);
     assert.equal(observation.facts.clients[id === "G12-shadowed" ? "captured" : "wrong"], "checked");
     assert.deepEqual(observation.facts.gaps, id === "G4" ? ["computation E606", "off_computation E606"] : [`${id === "G12-shadowed" ? "intended" : "computation"} E606`]);
+    refuses(c, observation);
+  });
+
+// Each wrong source states the behavior to distinguish and the clients whose
+// verdicts separate it. A branch executing is insufficient: its result must
+// depend on the recursive result. Expectations do not come from fixture data.
+for (const id of ["G12", "G12-inherited", "G12-initial"])
+  for (const {name, body, gaps, clients} of [
+    {name: "constant result", body: "c", gaps: ["computation E606", "computation2 E606"],
+      clients: {base: "checked", computation: "refused", computation2: "refused", wrong: "checked"}},
+    {name: "ignored recursive result", body: "match n { zero => c; succ(k) => op(c); }",
+      gaps: ["computation2 E606", "wrong E606"],
+      clients: {base: "checked", computation: "checked", computation2: "refused", wrong: "refused"}},
+  ]) test(`FG0 audit: ${id} rejects ${name}`, async t => {
+    const c = fixture(id), recursive = "match n { zero => c; succ(k) => op(iter(k)); }";
+    sourceAnchor(c.source, recursive, "recursive body");
+    const control = structuredClone(c); nonrecursive(control);
+    passes(control, await observeCase(t, control, check));
+    c.source = c.source.replace(recursive, body);
+    const observation = await observeCase(t, c, check);
+    assert.deepEqual(observation.facts.gaps, gaps);
+    for (const [client, state] of Object.entries(clients)) assert.equal(observation.facts.clients[client], state, client);
     refuses(c, observation);
   });
 
@@ -209,8 +277,13 @@ test("FG0 audit: requirements survive deletion of both a case and its manifest r
   const removed = cases.filter(c => c.id !== "G12-shadowed");
   const matchingManifest = manifest.replace(/^\| `G12-shadowed`[^\n]*\n/m, "");
   assert.throws(() => validateCoverage(matchingManifest, removed), /lexical-shadowing: missing witness G12-shadowed/);
-  for (const [id, field, error] of [["G1", "absentMembers", /publication requirement/], ["G12", "refusedClients", /wrong-equation witness/]]) {
+  for (const [id, field, error] of [["G1-initial", "absentOutputs", /output requirement/], ["G1", "refusedClients", /name-availability witness/], ["G12", "refusedClients", /wrong-equation witness/]]) {
     const weakened = structuredClone(cases); delete weakened.find(c => c.id === id)[field];
     assert.throws(() => validateObligations(weakened), error);
+  }
+  for (const id of ["G12", "G12-inherited", "G12-initial"]) {
+    const weakened = structuredClone(cases), c = weakened.find(c => c.id === id);
+    c.clients = c.clients.filter(name => name !== "computation2");
+    assert.throws(() => validateObligations(weakened), /recursive-result witness computation2/);
   }
 });
