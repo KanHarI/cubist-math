@@ -2,7 +2,8 @@
 
 Scope: the executable cases from PR #205, restored in PR #217, including the
 diagnostic acceptance review of `89c97e99`, the requirement review of
-`687f554c` and the activation review of `2e27565b`. The [frontend generation roadmap](../roadmaps/frontend-generation.md)
+`687f554c`, the activation review of `2e27565b` and the condition review of
+`f48bc1f7`. The [frontend generation roadmap](../roadmaps/frontend-generation.md)
 supplies the behavioral requirements. The [inventory](frontend-generation-gaps.md)
 describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
 maps cases to evidence. This audit checks those mappings and acceptance
@@ -54,15 +55,15 @@ on another declaration.
 | G2 | [FG3](../roadmaps/frontend-generation.md#fg3-infer-universes-from-the-generated-telescope) | Source: the domain moves into the model's universe (`op(A : U, x : A)`). Hom/Iso, computation, `map_op` preservation and level clients check at U0/U1; that variant's U1 level pin is U2. Stating a U0 model's Hom in U0 is refused with `found U1, expected U0`. | A missing preservation field or level client; an accepted lowering or one with other endpoints; a different same-code Hom mismatch. |
 | G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and supply the fixing compiler's E817 naming op, p and l. Two other focused wordings are accepted. | A leaked family root or member; a refusal without op, p, l or its dependency, including the real E817 for arrow-typed operations; another code. |
 | G4, G4-flat | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: Nat motives, with distinct branch results and independently stated accepted/refused equations. | Constant match result; wrong clause result; same E546 with a different primary cause. |
-| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target authorizes the associated rewrite. | Advice with another message or declaration, outside its target, empty, partial or extended; a changed refusal cause after the original rewrite. |
+| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target authorizes the associated rewrite. | Advice with another message or declaration, outside or past its target, empty, partial or extended; a changed refusal cause after the original rewrite. |
 | G6 | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: child E340 has dependency target P, with or without an attached root cause. Parent E343 has untranslated subject Undefined and independent clients check. | Another dependency, including Q whose attached cause mentions P; an untranslated-name message with E340; another parent subject. |
-| G8 | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Observer: E606 with the specified found/expected endpoints; token or wider body span accepted. | Swapped or changed endpoints; empty, off-token, out-of-body or unlocated spans; a different generation cause. |
-| G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the colliding law binder, preserving independently stated meaning and all navigation sites. Identical repeated links are equivalent. | At any written site: a freshened label, another or missing definition target, or no link. |
-| G10 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E871 identifies helper k and captured field c; the binder, helper call, or enclosing conflicting clause supplies a nonempty origin. | Empty, unrelated, unlocated or out-of-clause spans; a different helper, field or unrecognized cause. |
+| G8 | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Observer: E606 with the specified found/expected endpoints; token or wider body span accepted. | Swapped or changed endpoints; empty, off-token or unlocated spans; spans crossing either end of the body or starting inside the token; a different generation cause. |
+| G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the colliding law binder, preserving independently stated meaning and all navigation sites. Identical repeated links are equivalent. | At any written site: a freshened label, another or missing definition target, a stale freshened link beside the correct one, or no link. |
+| G10 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E871 identifies helper k and captured field c; the binder, helper call, or enclosing conflicting clause supplies a nonempty origin. | Empty, unrelated or unlocated spans; spans crossing either end of the clause or starting inside the helper call; a different helper, field or unrecognized cause. |
 | G11, G11-grouped-dependent, G11-inherited, G11-initial | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Source: rename the derived parameter through its telescope/body, preserving all independent intended/captured equations in each context. | A refused intended equation or a checked captured equation, in any context. The captured refusal's E606 payload is deliberately free: the opposite verdicts carry the distinction. |
 | G12, G12-inherited, G12-initial | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: two-step nonrecursive unrolling, retaining zero/one/two-step and wrong-result clients in all three contexts. This establishes the finite witnesses only. | Constant iter makes the wrong equation check; ignoring the recursive result preserves the first step but fails the second with E606. |
 | G12-shadowed | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Source: rename only the local iter parameter; intended/local and captured/field equations retain opposite verdicts. A separate field-type control checks today. | Replacing the local call by the earlier field result makes the captured equation check. |
-| G12-range | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E845 identifies recursive iter in a field type; range over iter, iter(n), or a wider span within the written law. | Empty, off-reference, out-of-law or unlocated spans; a different operation, context or unrecognized cause. |
+| G12-range | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E845 identifies recursive iter in a field type; range over iter, iter(n), or a wider span within the written law. | Empty, off-reference or unlocated spans; spans crossing either end of the law or starting inside the reference; a different operation, context or unrecognized cause. |
 
 ## Findings and dispositions
 
@@ -166,6 +167,17 @@ on another declaration.
 - The G11 row listed a different same-code mismatch among the counterexamples
   that must be refused, which holds only for the historical record. It now
   states the opposite equation verdicts that carry the distinction.
+- Range, link and advice requirements combine conditions, but their
+  counterexamples violated only some of them. The only out-of-region span
+  crossed both ends of its region, and none started inside its site; link
+  counterexamples changed every link at a site together; misplaced advice
+  crossed only the start of its target. Weakening either region bound, the
+  site's start bound, every-link-at-a-site to some link, or advice's end bound
+  passed every test; G10's clause start was guarded only by its defect record.
+  Each condition now has a counterexample that violates it alone, and G8 gained
+  a later declaration so that its body range ends inside the source. G5's
+  unapplied-advice control runs every advice counterexample instead of a
+  hand-written copy of that list.
 
 ## Validation and lifecycle
 

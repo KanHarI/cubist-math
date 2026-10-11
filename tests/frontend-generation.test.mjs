@@ -128,7 +128,6 @@ def computation : k(first) = tt { rfl; }
     "unfolding iter in a law's type must remain refused");
 });
 
-
 test("FG0 controls: a local recursive name remains local in a field type", async t => {
   const checked = await check(t, `import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M; op(x : M) : M;

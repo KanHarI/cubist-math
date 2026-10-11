@@ -86,7 +86,9 @@ def independent : Unit := tt;`,
     phase: "FG4", contract: "a wildcard mismatch retains its endpoints and written body range",
     source: `import hlevels;
 inductive T : set U0 { t0; t1; seg : t0 = t1; }
-def h(x : T) : T := match x { t0 => t0; _ => t1; };`,
+def h(x : T) : T := match x { t0 => t0; _ => t1; };
+def later : Unit := tt;`,
+    // The later declaration gives the body range an end inside the source.
     diagnostic: {name: "h", code: "E606", cause: {found: "t1 = t1", expected: "t0 = t1"},
       scope: ":= match x { t0 => t0; _ => t1; };", token: "t1"},
   },
@@ -244,7 +246,6 @@ theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M;
   return source + setup + `def intended(${binders}) : ${model}.kk(${variant.args}) = ${op}(x, ${c}) := refl(${op}(x, ${c}));
 def captured(${binders}) : ${model}.kk(${variant.args}) = ${op}(x, x) := refl(${op}(x, x));`;
 }
-
 
 const recursiveVariants = [
   {

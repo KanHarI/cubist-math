@@ -200,7 +200,7 @@ for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} judges identified a
   const collect = async warnings => {
     let checks = 0;
     const evidence = await collectEvidence(t, c, async (t, source) => { checks++; return results.get(source); }, () => structuredClone(warnings));
-    return {checks, observation: observeEvidence(c, evidence)};
+    return {checks, evidence, observation: observeEvidence(c, evidence)};
   };
   const quiet = await collect([]);
   assert.equal(quiet.checks, 1);
@@ -213,17 +213,14 @@ for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} judges identified a
   assert.equal(advised.observation.requirements.advice, true);
   assert.deepEqual(advised.observation.facts.gaps, diagnostics(rewritten));
   violates(advised.observation, "clients");
-  for (const change of [
-    w => { w[0].message = "x is unused in the body: rename it _x."; },
-    w => { w[0].declaration = "unrelated"; },
-    w => Object.assign(w[0], {start: 0, end: 1}),
-    w => { w.push({...w[0], code: "W705", message: "z is unused in the body: write M -> … instead of forall z : M. …."}); },
-    ...identified.length > 1 ? [w => { w.pop(); }] : [],
-  ]) {
-    const warnings = structuredClone(identified);
-    change(warnings);
-    const {checks, observation} = await collect(warnings);
-    assert.equal(checks, 1, "unrecognized advice must not apply the assumed rewrite");
+  // Every advice counterexample, issued by the linter, must leave the source
+  // unrewritten; the requirement's own list drives this check.
+  const [, breaks] = counterexamples(c, quiet.evidence).find(([requirement]) => requirement === "advice");
+  for (const {name, apply} of breaks) {
+    const changed = {};
+    apply(changed);
+    const {checks, observation} = await collect(changed.warnings);
+    assert.equal(checks, 1, `${name}: unrecognized advice must not apply the assumed rewrite`);
     violates(observation, "advice");
   }
 });

@@ -51,7 +51,10 @@ rather than a per-case review step. Give each requirement the plausible wrong
 results that must violate it, and apply every one to an accepted observation of
 each case. A requirement without a counterexample, or a counterexample that
 leaves its requirement met, fails the audit, so a deleted or weakened check
-cannot pass silently.
+cannot pass silently. When a requirement combines conditions, such as a span's
+start and end bounds or every link at a site, give each condition a
+counterexample that violates it alone: a span that crosses both ends of its
+region leaves either bound unguarded.
 
 Map behavioral obligations independently of the fixture registry. A case-ID
 inventory cannot discover a requirement omitted from both the source fixtures

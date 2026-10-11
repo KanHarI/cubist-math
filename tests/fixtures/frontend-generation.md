@@ -150,8 +150,10 @@ Each contract requirement states its accepted behavior together with the
 plausible wrong results that must violate it: refused, missing or
 assumption-dependent clients; accepted refusals; leaked outputs; missing,
 duplicated, recoded or recaused diagnostics; changed, partial or misplaced
-advice; empty, off-site or out-of-region spans; relabelled, retargeted or
-missing links. Diagnostic counterexamples come from the matcher's field table:
+advice; empty or off-site spans, spans crossing either end of their region,
+and spans starting inside their site; relabelled, retargeted or missing links,
+and a stale link beside a correct one. Each condition of a combined requirement
+has a counterexample that violates it alone. Diagnostic counterexamples come from the matcher's field table:
 each accepted diagnostic is also reported on another declaration, and a stated
 field without counterexamples fails. The [audit](../frontend-generation-audit.test.mjs)
 gives every case an accepted observation and applies each counterexample to it;

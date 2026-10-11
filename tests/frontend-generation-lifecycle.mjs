@@ -11,7 +11,7 @@ import {unmet} from "./frontend-generation-contracts.mjs";
 export function classifyCase(observation, {id, record, strict = false}) {
   const missing = unmet(observation);
   if (!missing.length) {
-    if (record && !strict) throw Error(`${id} unexpectedly passed: remove its knownDefect to activate this case`);
+    if (record && !strict) throw Error(`${id} unexpectedly passed: remove its knownDefects entry in fixtures/frontend-generation-defects.mjs to activate this case`);
     return "pass";
   }
   const detail = `${id}: unmet ${missing.join(", ")}\n${inspect(observation.facts, {depth: null})}`;

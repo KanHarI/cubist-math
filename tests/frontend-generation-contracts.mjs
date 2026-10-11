@@ -311,6 +311,7 @@ const requirementChecks = {
         advised("advice has another message", w => { w[0].message = "x is unused in the body: rename it _x."; }),
         advised("advice names another declaration", w => { w[0].declaration = "unrelated"; }),
         advised("advice lies outside its rewrite", w => Object.assign(w[0], {start: 0, end: 1})),
+        advised("advice extends past its rewrite", w => { w[0].end = anchors.rewrite.end + 1; }),
         advised("advice has an empty span", w => { w[0].end = w[0].start; }),
         advised("advice includes another warning", w => { w.push({...w[0], code: "W705", message: "z is unused in the body: write M -> … instead of forall z : M. …."}); }),
         ...recognized.length > 1 ? [advised("advice is partial", w => { w.pop(); })] : [],
@@ -331,19 +332,24 @@ const requirementChecks = {
       ];
     }),
   },
+  // Each bound has a counterexample that violates it alone: a span crossing
+  // both ends of its region would leave either end unguarded.
   range: {
     applies: fixture => ["wildcard", "capture-range", "refusal-range"].includes(fixture.kind),
     met: ({facts}) => Object.values(facts.range).every(Boolean),
     breaks: ({fixture, anchors}) => {
       const region = anchors.scope ?? anchors.conflict, sites = anchors.token ? [anchors.token] : [anchors.binder, anchors.call];
-      const inside = [region.start, region.start + 1];
+      const inside = [region.start, region.start + 1], last = sites.reduce((a, b) => b.start > a.start ? b : a);
       assert.ok(!sites.some(site => inside[0] <= site.start && inside[1] >= site.end), "the region must not start with its site");
-      assert.ok(region.start > 0 || region.end < fixture.source.length, "the region must be narrower than the source");
+      assert.ok(region.start > 0 && region.end < fixture.source.length, "the region must lie strictly inside the source");
+      assert.ok(last.start + 1 < region.end, "the region must continue past its last site's start");
       const located = (name, start, end) => ({name, result: r => { Object.assign(gap(r, fixture.diagnostic.name), {start, end}); }});
       return [
         located("an empty span at the site", sites[0].start, sites[0].start),
         located("a span inside the region that misses the site", ...inside),
-        located("a span covering the site beyond the region", 0, fixture.source.length),
+        located("a span covering the site that starts before the region", region.start - 1, region.end),
+        located("a span covering the site that ends after the region", region.start, region.end + 1),
+        located("a span starting inside the site", last.start + 1, region.end),
         {name: "an unlocated refusal", result: r => { const g = gap(r, fixture.diagnostic.name); delete g.start; delete g.end; }},
       ];
     },
@@ -359,6 +365,10 @@ const requirementChecks = {
         edit("shows a freshened label", link => { link.name = `${label}1`; }),
         edit("targets another definition", link => { link.definitionStart = positions[0] + 1; }),
         edit("has no target", link => { delete link.definitionStart; }),
+        // The correct link remains, so every link at a site must be correct.
+        {name: `site ${site} keeps its link beside a stale freshened one`, result: r => {
+          r.links.push(...r.links.filter(here).map(({definitionStart, ...link}) => ({...link, name: `${label}1`})));
+        }},
         {name: `site ${site} has no link`, result: r => { r.links = r.links.filter(link => !here(link)); }},
       ];
     }),
