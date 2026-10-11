@@ -305,19 +305,18 @@ def sample_weighted_sum_bound(
         weight, n, vertices, tags
       )
     );
-  let factored :=
-    along FieldMagnitudeBound(
-      F, negF, lt, sample_sum(C, F, zero, addF, products, n, vertices, tags)
-    ) by factors from total;
+  let factored := transport total along factors in FieldMagnitudeBound(
+    F, negF, lt, sample_sum(C, F, zero, addF, products, n, vertices, tags)
+  );
   let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
   let leftScaled :=
-    along ((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
+    transport rightScaled along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
-    ) from rightScaled;
+    ) in ((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))));
   let grows :=
-    along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
-      F, zero, one, addF, mulF, negF, ring, length, delta
-    ) from leftScaled;
+    transport leftScaled along ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta) in FieldLe(
+      F, lt, mulF(delta, totalWeight)
+    );
   exact field_magnitude_enlarge(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     sample_sum(C, F, zero, addF, products, n, vertices, tags), mulF(delta, totalWeight),

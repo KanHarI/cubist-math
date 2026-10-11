@@ -173,6 +173,9 @@ test("an empty block is {} on its declaration's line", () => {
   // A comment is no empty body.
   assert.equal(formatCubist("theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n"),
     "theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n");
+  // A trailing comment closes its block with no empty line.
+  assert.equal(formatCubist("def f(x : Nat) : Nat {\n  exact x; // finish\n}\n"),
+    "def f(x : Nat) : Nat {\n  exact x; // finish\n}\n");
 });
 
 test("a long value ending in brackets breaks inside them, its definition on one line", () => {
