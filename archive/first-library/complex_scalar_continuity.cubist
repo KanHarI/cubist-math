@@ -104,11 +104,11 @@ def complex_scalar_uniform_radius(
   );
   let length := addF(r, s);
   let nonnegativeLength :=
-    along ((fun (v : F) => FieldLe(F, lt, v, length))) by ring_add_zero(
-      F, zero, one, addF, mulF, negF, ring, zero
-    ) from order_le_add(
+    transport order_le_add(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
       nonnegativeS
+    ) along ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero) in (
+      (fun (v : F) => FieldLe(F, lt, v, length))
     );
   obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,

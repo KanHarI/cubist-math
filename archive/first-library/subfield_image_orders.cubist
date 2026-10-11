@@ -19,7 +19,7 @@ def subfield_image_inclusion_from_preimage(
   SubfieldIncluded(L, subfield_image(K, L, e, S), T) {
   intro y, member;
   obtain (x, px, same) := typed(SubfieldImage(K, L, e, S, y), member);
-  exact along subfield_members(L, T) by same from included(x, px);
+  exact transport included(x, px) along same in subfield_members(L, T);
 }
 
 def subfield_image_preimage_adjunction(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :
@@ -63,7 +63,7 @@ def subfield_preimage_image(K, L : AlgebraicField, e : FieldEmbedding(K, L), S :
   let back : SubfieldIncluded(K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S) {
     intro x, member;
     obtain (y, py, same) := typed(SubfieldImage(K, L, e, S, f(x)), member);
-    exact along P by field_embedding_injective(K, L, e, y, x, same) from py;
+    exact transport py along field_embedding_injective(K, L, e, y, x, same) in P;
   }
   exact subfield_inclusion_antisymmetric(
     K, subfield_preimage(K, L, e, subfield_image(K, L, e, S)), S, back,

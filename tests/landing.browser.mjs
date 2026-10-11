@@ -36,11 +36,11 @@ try {
   assert.equal(response.status(), 200);
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.locator("h1").count(), 1);
-  // The language reference comes first, then the proof library.
+  // The language reference comes first, then the proof library and file browser.
   assert.deepEqual(await page.locator(".introduction .browse-link").evaluateAll(links => links.map(link => link.getAttribute("href"))),
-    ["language.html", "proof.html"]);
+    ["language.html", "proof.html", "files.html"]);
   const links = await page.locator(".proof-card[href], .proof-card-main").evaluateAll(cards => cards.map(card => card.href));
-  assert.equal(links.length, 9);
+  assert.equal(links.length, 10);
   // Every card points to a registered source, in the library or the archive,
   // and to a real theorem in that source.
   for (const link of links) {
@@ -58,14 +58,15 @@ try {
   }
   await page.screenshot({ path: "/private/tmp/thth-highlights-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.locator(".proof-card-main").hover();
-  assert.equal(await page.locator(".proof-card-main").evaluate(el => getComputedStyle(el).textDecorationLine), "none");
-  assert.equal(await page.locator(".related-proof").evaluate(el => getComputedStyle(el).textDecorationLine), "none");
-  await page.locator(".related-proof").hover();
-  assert.equal(await page.locator(".related-proof").evaluate(el => getComputedStyle(el).textDecorationLine), "underline");
+  const f4Card = page.locator("article.proof-card").filter({ has: page.locator('[href*="proof=f4_galois_group&"]') });
+  await f4Card.locator(".proof-card-main").hover();
+  assert.equal(await f4Card.locator(".proof-card-main").evaluate(el => getComputedStyle(el).textDecorationLine), "none");
+  assert.equal(await f4Card.locator(".related-proof").evaluate(el => getComputedStyle(el).textDecorationLine), "none");
+  await f4Card.locator(".related-proof").hover();
+  assert.equal(await f4Card.locator(".related-proof").evaluate(el => getComputedStyle(el).textDecorationLine), "underline");
   await page.mouse.move(0, 0);
   await page.screenshot({ path: "/private/tmp/thth-highlights-desktop.png", fullPage: true });
-  await page.locator('.related-proof').click();
+  await f4Card.locator('.related-proof').click();
   await idle();
   assert.equal(new URL(page.url()).searchParams.get("name"), "f4_extension_loops_equal_cyclic_two");
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
@@ -73,7 +74,7 @@ try {
   // Check representative destinations, including the named final result.
   for (const proof of groupOnly ? ["group_univalence"] : ["euclid", "circle_group_identity", "group_univalence", "f4_galois_group"]) {
     if (proof === "f4_galois_group")
-      await page.locator("article.proof-card").click({ position: { x: 8, y: 8 } });
+      await f4Card.click({ position: { x: 8, y: 8 } });
     else await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
     await idle();
     assert.equal(await page.locator("#proof-picker").inputValue(), proof);
@@ -109,6 +110,22 @@ try {
     assert.match(await page.title(), /Proof highlights/);
   }
   if (!groupOnly) {
+    // Both universe-size results open at their checked theorem.
+    for (const name of ["russell", "no_small_universe_family"]) {
+      await page.goto(base);
+      await page.locator(`.proof-card a[href="proof.html?proof=universe_smallness&name=${name}"]`).first().click();
+      await idle();
+      assert.equal(await page.locator("#proof-title").textContent(), "Library: universe_smallness");
+      assert.equal(await page.locator("#inspect-name").textContent(), name);
+      assert.equal(await page.locator("#diagnostic").isVisible(), false);
+      if (name === "russell") {
+        assert.match(await page.locator("#inspect-type").textContent(), /IsUSmall\(U0, U0\).*Void/);
+      } else {
+        assert.equal(await page.locator("#inspect-type").textContent(), "Void");
+        assert.match(await page.locator("#inspect-parameters-list").textContent(), /covers.*ContrEquiv/s);
+      }
+    }
+    await page.goto(base);
     // The library card opens its module at the named theorem.
     await page.locator('.proof-card[href*="proof=universe_automorphisms&"]').click();
     await idle();
@@ -150,7 +167,7 @@ try {
     await popup.close();
   }
   assert.deepEqual(errors, []);
-  console.log(`PASS proof landing: root, nine highlights, destinations, ${groupOnly ? "group identity" : "workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
+  console.log(`PASS proof landing: root, ten highlights, destinations, ${groupOnly ? "group identity" : "universe size and workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
 } finally {
   await browser?.close();
   server.kill();
