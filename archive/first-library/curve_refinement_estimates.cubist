@@ -60,7 +60,7 @@ def curve_refinement_partition_estimate(
     subdivision_vertices(I, a, b, fine), subdivision_tags(I, a, b, fine)
   );
   let identifies := trans(flatComputes, trans(sym(computes), mappedFine));
-  exact along (
+  exact transport bounded along identifies in (
     (
       fun (sum : Complex(F)) => ComplexPerturbation(
         F, addF, negF, lt,
@@ -69,7 +69,7 @@ def curve_refinement_partition_estimate(
         ), sum, radius
       )
     )
-  ) by identifies from bounded;
+  );
 }
 
 // The error estimate now applies to a specified actual fine sample, rather
@@ -190,7 +190,7 @@ def affine_refinement_sum_estimate(
     let widthPath :=
       trans(cong((fun (v : I) => width(v, last)), firstPath), cong(width(a), lastPath));
     let radiusPath := cong((fun (v : F) => mulF(delta, mulF(v, length))), widthPath);
-    exact along (
+    exact transport bounded along radiusPath in (
       (
         fun (radius : F) => ComplexPerturbation(
           F, addF, negF, lt,
@@ -202,7 +202,7 @@ def affine_refinement_sum_estimate(
           ), radius
         )
       )
-    ) by radiusPath from bounded;
+    );
   }
   exact (mesh, positiveMesh, actual);
 }

@@ -161,12 +161,12 @@ def fixed_subgroup_loop_embedding_action(
       intermediate_ambient_embedding(K, E, fixed_intermediate_field(K, E, H)),
       fixed_subgroup_loop_embedding(K, E, H, p, member)
     ), x
-  ) = (along extension_carrier(K) by p from x) {
+  ) = (transport x along p in extension_carrier(K)) {
   let e := extension_path_iso(K, E, E, p);
   exact trans(
     sym(galois_loop_action(K, E, e, x)),
     cong(
-      (fun (q : E =[FieldExt(K)] E) => along extension_carrier(K) by q from x),
+      (fun (q : E =[FieldExt(K)] E) => transport x along q in extension_carrier(K)),
       extension_path_roundtrip(K, E, E, p)
     )
   );

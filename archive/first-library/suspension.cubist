@@ -21,7 +21,8 @@ def unit_unique(u : Unit) := unit_induction(fun (x : Unit) => x = tt, refl(tt), 
 
 def constant_family(x : S1) := Unit;
 
-def constant_meridians(a : S0) := unit_unique(along constant_family by meridian(S0, a) from tt);
+def constant_meridians(a : S0) :=
+  unit_unique(transport tt along meridian(S0, a) in constant_family);
 
 def collapse(x : S1) := suspension_induction(S0, constant_family, tt, tt, constant_meridians, x);
 
@@ -50,7 +51,7 @@ def suspension_rec_beta(A : U0, B : U1, n, s : B, h : A -> (n = s), a : A) :
   let f := fun (point : Suspension(A)) => suspension_rec(A, B, n, s, h, point);
   let p := meridian(A, a);
   let C := fun (point : Suspension(A)) => B;
-  let moved := along C by p from n;
+  let moved := transport n along p in C;
   let t := transport_constant(Suspension(A), B, north(A), south(A), p, n);
   let action := cong(f, p);
   let lifted := fun (label : A) => lift_meridian(A, B, n, s, h, label);

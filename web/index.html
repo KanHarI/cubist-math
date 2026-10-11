@@ -34,7 +34,7 @@
       <section id="highlights" aria-labelledby="highlights-title">
         <div class="section-heading">
           <h2 id="highlights-title">Start with a highlight</h2>
-          <p>Nine entry points into the library.</p>
+          <p>Ten entry points into the library.</p>
         </div>
         <div class="proof-grid">
           <a class="proof-card featured" href="proof.html?proof=euclid&amp;name=euclid">
@@ -82,6 +82,18 @@
             <span class="assumptions">Assumes only propositional truncation, not excluded middle.</span>
             <span class="open-proof">Follow both directions <span aria-hidden="true">→</span></span>
           </a>
+          <article class="proof-card featured wide">
+            <a class="proof-card-main" href="proof.html?proof=universe_smallness&amp;name=russell">
+              <span class="eyebrow">LOGIC &amp; UNIVERSES</span>
+              <div class="formula group-formula" aria-label="The universe U zero is not U zero small">¬ IsUSmall(𝒰₀, 𝒰₀)</div>
+              <h3>Russell’s paradox and universe size</h3>
+            </a>
+            <p>A universe cannot be equal to one of its own types. More generally, no family of small types indexed by a small type can represent every small type up to equivalence: it would produce a well-founded tree containing itself as a child.
+              <a class="related-proof" href="proof.html?proof=universe_smallness&amp;name=no_small_universe_family">Explore the stronger result for indexed families <span aria-hidden="true">→</span></a>
+            </p>
+            <span class="assumptions">No axioms required. The proof does not need univalence.</span>
+            <a class="open-proof" href="proof.html?proof=universe_smallness&amp;name=russell">See why a universe cannot be small <span aria-hidden="true">→</span></a>
+          </article>
           <a class="proof-card" href="proof.html?proof=schroeder_bernstein&amp;name=cantor_schroeder_bernstein">
             <span class="eyebrow">SETS &amp; MAPS</span>
             <h3>Cantor–Schröder–Bernstein</h3>

@@ -42,7 +42,7 @@ computable def holds_then_image_empty(
 ) :
   F(P) -> Void {
   intro x;
-  exact empty(along ((fun (T : U0) => T)) by cong(F, inhabited_is_unit(P, prop_, p)) from x);
+  exact empty(transport x along cong(F, inhabited_is_unit(P, prop_, p)) in ((fun (T : U0) => T)));
 }
 
 // If F(P) is empty then F(P) = F(Unit); the inverse G gives P = Unit.
@@ -53,7 +53,7 @@ computable def image_empty_then_holds(
   P {
   let same : P = Unit :=
     trans(sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty)), eta(Unit)));
-  exact along ((fun (T : U0) => T)) by sym(same) from tt;
+  exact transport tt along sym(same) in ((fun (T : U0) => T));
 }
 
 // So P is equivalent to the negation F(P) -> Void, and is stable under

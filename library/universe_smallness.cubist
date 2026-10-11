@@ -1,0 +1,58 @@
+// Russell's paradox via well-founded trees: no small indexed family covers
+// every small type up to equivalence, and a universe is not small in itself.
+// The argument works in every universe below UU0, with no axioms or
+// univalence. Compare Rijke, Introduction to Homotopy Type Theory, B.5.
+import contractible_maps;
+
+// A universe cannot be equal to one of its own types.
+// The equality is in next(U), so IsUSmall(U, U) is well-formed.
+def IsUSmall(U < UU0, T : next(U)) := exists A : U. T =[next(U)] A;
+
+inductive Tree(U < UU0, A : U, B : A -> U) : U {
+  node(a : A, children : B(a) -> Tree(U, A, B));
+}
+
+// Membership means being one of the immediate children.
+computable def member(U < UU0, A : U, B : A -> U, x, y : Tree(U, A, B)) : U := match y return U {
+    node(a, children) => exists b : B(a). x = children(b);
+  };
+
+// Well-founded induction forbids a tree from being its own child.
+computable def no_self_member(U < UU0, A : U, B : A -> U, t : Tree(U, A, B)) :
+  member(U, A, B, t, t) -> Void := induction t as z return (member(U, A, B, z, z) -> Void) {
+    node(a, children, ih) => fun (
+      m : member(U, A, B, typed(Tree(U, A, B), node(a, children)), node(a, children))
+    ) => ih(m.1)(transport m along m.2 in (fun (w : Tree(U, A, B)) => member(U, A, B, w, w)));
+  };
+
+// No small family of small types contains a representative of every small
+// type, even if the representatives only need to be equivalent.
+computable def no_small_universe_family(
+  U < UU0, A : U, B : A -> U, covers : forall X : U. exists a : A. ContrEquiv(U, B(a), X)
+) :
+  Void {
+  let W := Tree(U, A, B);
+  obtain (a, e) := covers(W);
+  let all_trees : W := node(a, e.1);
+  // The center of this fiber says all_trees = e.1(b).
+  exact no_self_member(U, A, B, all_trees)(e.2(all_trees).1);
+}
+
+// Allow the index type to be large here so the identity family over U
+// is an example. The previous theorem rules out every small index type.
+def UniverseFamily(U < UU0, A : next(U)) :=
+  exists B : A -> U. forall X : U. exists a : A. ContrEquiv(U, B(a), X);
+
+computable def identity_universe_family(U < UU0) :
+  UniverseFamily(U, U) := (fun (X : U) => X, fun (X : U) => (X, id_contr_equiv(U, X)));
+
+computable def universe_not_small(U < UU0) : IsUSmall(U, U) -> Void {
+  intro small;
+  obtain (A, p) := small;
+  let family : UniverseFamily(U, A) :=
+    transport identity_universe_family(U) along p in UniverseFamily(U);
+  exact no_small_universe_family(U, A, family.1, family.2);
+}
+
+// The contradiction specialized to the first universe.
+computable def russell : IsUSmall(U0, U0) -> Void := universe_not_small(U0);
