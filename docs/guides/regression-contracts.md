@@ -35,6 +35,12 @@ Unknown wording remains an unrecognized reason. Finding the words somewhere
 in a message does not establish the declaration, roles or dependency direction.
 Keep valid alternative spellings explicit and test them against the same cause.
 
+Generate permitted variations within the matched expectation's constraints:
+alternate wording may remain valid when a diagnostic code is pinned, but a
+different code does not. Exercise stronger fixtures through the whole audit,
+not just validation. Do not filter generated controls through the acceptance
+matcher; that would hide the matcher rejecting a valid alternative.
+
 For contracts that classify expected failures, exercise these boundaries:
 
 | Control | Required result |

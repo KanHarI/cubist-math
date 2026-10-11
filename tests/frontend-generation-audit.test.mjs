@@ -147,6 +147,35 @@ for (const {id} of cases) test(`FG0 audit: ${id} accepts its observation and per
   assert.ok(contracts.counterexamples(c, evidence).length, `${id} needs counterexamples`);
   assert.deepEqual(audit(contracts, c, evidence).failures, []);
 });
+test("FG0 audit: duplicate diagnostic variations preserve optional code constraints", async () => {
+  for (const id of Object.keys(duplicates)) for (const code of [undefined, "E604", "E872", "E999"]) {
+    const {c, evidence} = structuredClone(await acceptedCase(id));
+    // Pair by the complete matching, not by the fixture's diagnostic order.
+    evidence.result.gaps.reverse();
+    if (code !== undefined) {
+      c.diagnostic.code = code;
+      evidence.result.gaps.find(gap => gap.name === "N").code = code;
+    }
+    validateFixture(c);
+    meets(observeEvidence(c, evidence));
+    const variations = contracts.permitted(c, evidence).filter(({requirement}) => requirement === "diagnostics")
+      .map(({apply}) => {
+        const changed = structuredClone(evidence);
+        apply(changed);
+        return changed.result.gaps.find(gap => gap.name === "N");
+      });
+    assert.deepEqual([...new Set(variations.map(gap => gap.code))].sort(), code === undefined ? ["E604", "E872"] : [code]);
+    // Both wordings remain exercised even when the code is fixed. Filtering
+    // away a rejected variation would hide a matcher bug from the audit.
+    for (const reason of ["Instruction kernel: Definition symbol is already registered.",
+      "Duplicate declaration N: a declaration in this module already owns that name."])
+      assert.ok(variations.some(gap => gap.reason === reason), `${id}: missing permitted wording ${reason}`);
+    assert.deepEqual(audit(contracts, c, evidence).failures, []);
+    if (code !== undefined) violates(observe(c, evidence, result => {
+      result.gaps.find(gap => gap.name === "N").code = code === "E604" ? "E872" : "E604";
+    }), "diagnostics");
+  }
+});
 // A counterexample that violates two conditions leaves either unguarded, so
 // each condition needs one that violates it alone, in some case.
 test("FG0 audit: some counterexample violates each condition alone", async () => {
@@ -423,8 +452,6 @@ test("FG0 audit: encoded causes decode to the same cause", () => {
 test("FG0 audit: diagnostic causes recognize roles and subjects independently of fixtures", () => {
   const duplicate = {name: "Fresh", cause: {duplicate: "Fresh"}};
   validateDiagnostic(duplicate);
-  const pinned = fixture("G1"); pinned.diagnostic.code = "E872";
-  validateFixture(pinned); // A witness permits a stronger, code-pinned fixture.
   for (const [code, reason] of [
     ["E604", "Duplicate declaration: Fresh"],
     ["E872", "Duplicate declaration Fresh: a declaration in this module already owns that name."],

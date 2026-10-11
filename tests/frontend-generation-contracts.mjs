@@ -183,6 +183,15 @@ function expectedDiagnostics(fixture) {
     {name: fixture.child, code: "E340", cause: {dependency: fixture.parent}});
   return expected;
 }
+// Both kinds of audit controls need the expectation paired with each actual
+// diagnostic, independently of their order. Pair the accepted observation
+// once; never use the matcher to discard a generated control.
+function diagnosticContexts(fixture, result) {
+  const expected = expectedDiagnostics(fixture), owners = matchDiagnostics(result.gaps, expected);
+  assert.ok(owners, `${fixture.id}: diagnostic controls need an accepted diagnostic set`);
+  return result.gaps.map((actual, at) => ({actual, expected: expected[owners.indexOf(at)],
+    causeRequired: causeRequired(fixture.id, actual.name)}));
+}
 const adviceCodes = ["W705", "W706"];
 // Issued advice, located relative to its rewrite target.
 const adviceFacts = (warnings, target) => warnings.map(({code, declaration, message, start, end}) =>
@@ -474,21 +483,20 @@ const requirementChecks = {
   // constrained.
   diagnostics: {
     applies: () => true,
-    permits: ({result}) => result.gaps.flatMap((actual, at) => diagnosticVariations(actual).map(variation => ({
-      name: `${actual.name} permits ${variation.code}: ${variation.reason}`,
-      result: r => { r.gaps[at] = structuredClone(variation); },
-    }))),
+    permits: ({fixture, result}) => diagnosticContexts(fixture, result).flatMap(({actual, expected}, at) =>
+      diagnosticVariations(actual, expected).map(variation => ({
+        name: `${actual.name} permits ${variation.code}: ${variation.reason}`,
+        result: r => { r.gaps[at] = structuredClone(variation); },
+      }))),
     conditions: {
       matched: {
         holds: ({fixture, result}) => matchDiagnostics(result.gaps, expectedDiagnostics(fixture)) !== null,
         breaks: ({fixture, result}) => {
-          const expected = expectedDiagnostics(fixture), owners = matchDiagnostics(result.gaps, expected);
-          assert.ok(owners, `${fixture.id}: diagnostic counterexamples need an accepted diagnostic set`);
           return [
             {name: "an unrelated diagnostic", result: r => { r.gaps.push({name: "unrelated", code: "E606", reason: "Type mismatch: found Bool, expected Unit."}); }},
-            ...result.gaps.flatMap((actual, at) => {
+            ...diagnosticContexts(fixture, result).flatMap((context, at) => {
+              const {actual} = context;
               const label = `${actual.name} ${actual.code}`;
-              const context = {actual, expected: expected[owners.indexOf(at)], causeRequired: causeRequired(fixture.id, actual.name)};
               return [
                 {name: `${label} is missing`, result: r => { r.gaps.splice(at, 1); }},
                 {name: `${label} is duplicated`, result: r => { r.gaps.push({...r.gaps[at]}); }},

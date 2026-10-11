@@ -69,14 +69,15 @@ export const causeFields = {
 const fieldsFor = (code, cause) => Object.hasOwn(cause, "duplicate") ? ["duplicate"] : causeFields[code] ?? [];
 export const needsCause = new Set(["E343", "E340", "E871", "E845"]);
 
-// Permitted diagnostic spellings share the decoder and the same semantic
-// expectation. These are variations of an accepted observation, never the
-// source of the fixture's expected cause.
-export function diagnosticVariations(actual) {
+// Permitted spellings vary an accepted observation within its matched
+// expectation. Wording may change when a code is pinned; alternate codes may
+// appear only when the expectation leaves that field free. Construct these
+// controls without filtering through the matcher they are meant to test.
+export function diagnosticVariations(actual, expected) {
   const cause = diagnosticCause(actual);
   if (Object.hasOwn(cause, "duplicate")) return [
-    {...actual, code: "E604", reason: "Instruction kernel: Definition symbol is already registered."},
-    {...actual, code: "E872", reason: `Duplicate declaration ${cause.duplicate}: a declaration in this module already owns that name.`},
+    {...actual, code: expected.code ?? "E604", reason: "Instruction kernel: Definition symbol is already registered."},
+    {...actual, code: expected.code ?? "E872", reason: `Duplicate declaration ${cause.duplicate}: a declaration in this module already owns that name.`},
   ];
   if (actual.code === "E817" && cause.operation) return [
     {...actual, reason: `Cannot derive ${cause.operation}: ${cause.argument} depends on ${cause.law}`},

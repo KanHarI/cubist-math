@@ -4,7 +4,8 @@ Scope: the executable cases from PR #205, restored in PR #217, including the
 diagnostic acceptance review of `89c97e99`, the requirement review of
 `687f554c`, the activation review of `2e27565b`, the condition review of
 `f48bc1f7`, the guard review of `2a246504` and the design review of
-`637734ab` and the diagnostic-cause review of `f3b68c5f`. The
+`637734ab`, the diagnostic-cause review of `f3b68c5f` and the optional-code
+review of `fbe53b4e`. The
 [frontend generation roadmap](../roadmaps/frontend-generation.md) supplies the
 behavioral requirements. The [inventory](frontend-generation-gaps.md)
 describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
@@ -228,6 +229,15 @@ contract tables list; the last column states only what distinguishes the case.
   Redundant duplicate/refusal facts and conditions were removed. The records
   lose those redundant projections, and the kernel duplicate's root cause
   now records its decoded subject; they still observe the same compiler debt.
+- Permitted diagnostic variations ignored a fixture's optional code pin, so
+  a stronger duplicate expectation passed validation but failed its audit.
+  Variation generation now receives the matched expectation, as counterexample
+  generation already did. Wording still varies while a pinned code stays fixed;
+  an unpinned duplicate still exercises both frontend and kernel codes. The
+  audit exercises all collision cases with unpinned and pinned codes, including
+  a code outside those two defaults, reordered diagnostics and a refused
+  alternative code. Controls are constructed within the stated constraints,
+  never filtered by the matcher whose acceptance they test.
 
 ## Validation and lifecycle
 
