@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle, tokenPattern } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -126,7 +126,7 @@ let worker,
   inspectSerial = 0;
 const pending = new Map(),
   history = [];
-let sourceMode = "read", generationSerial = 0;
+let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
 const generatedSources = new Map();
 $("editor").value = example;
 for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
@@ -304,8 +304,8 @@ async function check() {
     last = result;
     generationSerial++;
     generatedSources.clear();
-    $("generated-source").value = "";
-    const previousModule = $("generated-module").value;
+    $("generated-source").replaceChildren();
+    const previousModule = restoring?.generatedModule ?? $("generated-module").value;
     $("generated-module").replaceChildren(...Object.keys(result.sources).map(name => {
       const option = document.createElement("option");
       option.value = name; option.textContent = name === proofId ? `${name} (current)` : name;
@@ -315,7 +315,7 @@ async function check() {
     history.length = 0;
     renderSource();
     renderResult();
-    setMode(sourceMode === "generated" ? "generated" : "read");
+    await setMode(sourceMode === "generated" ? "generated" : "read");
     const target = query.get("name");
     const info =
       target &&
@@ -328,6 +328,7 @@ async function check() {
       history.push(...saved.history);
       await inspect(saved.selected ?? decorate(result.outputs.at(-1)), false);
       $("read-source").scrollTop = saved.sourceScroll ?? 0;
+      $("generated-source").scrollTop = saved.generatedScroll ?? 0;
       window.scrollTo(0, saved.scroll ?? 0);
     } else {
       const fallback = result.outputs.at(-1);
@@ -366,21 +367,21 @@ function setMode(mode) {
   $("source-hint").textContent =
     mode === "edit"
       ? "Edit the source, then Check proof. A failed check preserves your last checked proof."
-      : mode === "generated" ? "Read-only frontend expansion from the last check. Each family shows its checking status. Captured names are for inspection; this is not a standalone module."
+      : mode === "generated" ? "Frontend expansion from the last check. Click a declaration or linked name to inspect it. Each family shows its checking status."
       : last?.backend === "cubical" ? "Click a name or numeral to inspect its checked type, context, and definition."
       : "Click a name to inspect it. Click a line number to see its goal and assumptions.";
-  if (mode === "generated") showGeneration();
+  if (mode === "generated") return showGeneration();
 }
 async function showGeneration() {
   if (!last) return;
   const sequence = ++generationSerial, module = $("generated-module").value;
   $("generated-status").textContent = "Preparing generated source…";
-  $("generated-source").value = "";
+  $("generated-source").replaceChildren();
   try {
     const result = generatedSources.get(module) ?? await request("generation", { module });
     if (sequence !== generationSerial) return;
     generatedSources.set(module, result);
-    $("generated-source").value = result.source;
+    renderSource($("generated-source"), result);
     $("generated-status").textContent = `${result.count} generated declarations`
       + (last.gaps.some(gap => gap.module === module) ? " · check incomplete" : "");
   } catch (error) {
@@ -542,32 +543,34 @@ function renderResult() {
   detail.textContent = `${last.instructionCount.toLocaleString()} checked instructions. ${last.axiomCount ? last.axiomCount + " explicit axioms in this module." : "No axioms."}`;
   $("result").append(detail);
 }
-function renderSource() {
-  $("read-source").replaceChildren();
-  if (!last) return;
+function renderSource(target = $("read-source"), snapshot = last) {
+  target.replaceChildren();
+  if (!snapshot) return;
+  const generated = target.id === "generated-source";
   const linkMap = new Map();
-  for (const link of last.links) {
+  for (const link of snapshot.links) {
     const old = linkMap.get(link.start);
     if (!old || link.end - link.start < old.end - old.start)
       linkMap.set(link.start, link);
   }
   const importStarts = new Map(
-    [...last.source.matchAll(/\bimport\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/g)].map(
+    [...snapshot.source.matchAll(/\bimport\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/g)].map(
       (match) => [match.index + match[0].indexOf(match[1]), match[1]],
     ),
   );
-  $("source-count").textContent = `${last.source.split("\n").length} lines · click a name or numeral`;
+  if (!generated) $("source-count").textContent = `${snapshot.source.split("\n").length} lines · click a name or numeral`;
   let offset = 0;
-  for (const [index, line] of last.source.split("\n").entries()) {
+  for (const [index, line] of snapshot.source.split("\n").entries()) {
     const row = document.createElement("div");
     row.className = "source-line";
     row.dataset.line = index + 1;
-    const number = document.createElement("button");
+    const number = document.createElement(generated ? "span" : "button");
     number.className = "line-number";
     number.textContent = index + 1;
-    number.setAttribute("aria-label", `Inspect goal at line ${index + 1}`);
+    if (!generated) number.setAttribute("aria-label", `Inspect goal at line ${index + 1}`);
+    else number.setAttribute("aria-hidden", "true");
     const lineOffset = offset;
-    number.onclick = () => {
+    if (!generated) number.onclick = () => {
       const step = last.steps
         .filter(
           (s) => s.start <= lineOffset + line.length && s.end > lineOffset,
@@ -584,14 +587,13 @@ function renderSource() {
     const code = document.createElement("span");
     code.className = "line-code";
     let cursor = 0;
-    for (const token of line.matchAll(
-      /\/\/.*|(?:<=|->|=>)|0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>]|\s+|./g,
-    )) {
+    for (const token of line.matchAll(tokenPattern)) {
+      if (token.index < cursor) continue;
       if (token.index > cursor)
         code.append(document.createTextNode(line.slice(cursor, token.index)));
-      const text = token[0],
-        start = offset + token.index,
-        end = start + text.length;
+      const start = offset + token.index, info = linkMap.get(start);
+      // A generated qualified name is one reference, including every dot.
+      const text = generated && info?.generated ? snapshot.source.slice(start, info.end) : token[0];
       if (text.startsWith("//")) {
         const span = document.createElement("span");
         span.className = "comment";
@@ -611,7 +613,6 @@ function renderSource() {
         };
         code.append(link);
       } else {
-        const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
         // The whole source: a header's colon and its inductive may be on earlier lines.
         const style = tokenStyle(text, expansion);
@@ -625,7 +626,8 @@ function renderSource() {
           } else button.title = `Inspect ${text}`;
           button.dataset.name = text;
           button.onclick = () =>
-            inspect({ ...decorate(info), line: index + 1 });
+            inspect({ ...decorate(info), line: index + 1, sourceView: target.id,
+              ...(generated ? { generatedModule: snapshot.module } : {}) });
           code.append(button);
         } else if (style) {
           const span = document.createElement("span");
@@ -638,7 +640,7 @@ function renderSource() {
       cursor = token.index + text.length;
     }
     row.append(number, code);
-    $("read-source").append(row);
+    target.append(row);
     offset += line.length + 1;
   }
 }
@@ -674,6 +676,12 @@ async function inspect(info, remember = true) {
   }
   selected = info;
   const sequence = ++inspectSerial;
+  if (info.sourceView === "generated-source" &&
+      (sourceMode !== "generated" || $("generated-module").value !== info.generatedModule)) {
+    $("generated-module").value = info.generatedModule;
+    await setMode("generated");
+    if (sequence !== inspectSerial) return;
+  } else if (info.sourceView === "read-source") setMode("read");
   $("back").hidden = !history.length && !proofReturnURL(crossFileBack);
   $("inspect-name").textContent = info.name;
   $("inspect-kind").textContent =
@@ -715,7 +723,7 @@ async function inspect(info, remember = true) {
   for (const line of document.querySelectorAll(".source-line.active"))
     line.classList.remove("active");
   if (info.line)
-    document
+    $(info.sourceView ?? "read-source")
       .querySelector(`.source-line[data-line="${info.line}"]`)
       ?.classList.add("active");
   if (info.kind === "goal") {
@@ -999,7 +1007,8 @@ $("editor").onkeydown = (e) => {
 function rememberInspection() {
   return saveProofNavigation({ proof: proofId, file: documentationExample ? filePath : undefined, backend, source: last.source,
     selected, history, back: crossFileBack, scroll: window.scrollY,
-    sourceScroll: $("read-source").scrollTop });
+    sourceScroll: $("read-source").scrollTop, sourceMode,
+    generatedModule: $("generated-module").value, generatedScroll: $("generated-source").scrollTop });
 }
 $("back").onclick = () => {
   const previous = history.pop();

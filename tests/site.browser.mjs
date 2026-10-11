@@ -68,9 +68,15 @@ try {
   await page.goto(new URL(`proof.html?example=1#source=${generated}`, base).href);
   await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
   await page.locator("#generated-mode").click();
-  await page.waitForFunction(() => document.querySelector("#generated-source")?.value.includes("def N.fold_map"));
-  assert.equal(await page.locator("#generated-source").getAttribute("readonly"), "");
-  assert.doesNotMatch(await page.locator("#generated-source").inputValue(), /display unavailable/);
+  await page.waitForFunction(() => document.querySelector("#generated-source")?.textContent.includes("def N.fold_map"));
+  const generatedSource = page.locator("#generated-source");
+  assert.equal(await generatedSource.evaluate(element => element.tagName), "DIV");
+  assert.equal(await generatedSource.locator("textarea, [contenteditable]").count(), 0);
+  assert.doesNotMatch(await generatedSource.textContent(), /display unavailable/);
+  await generatedSource.locator('button[data-name="T.Hom.id"]').first().click();
+  await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "T.Hom.id"
+    && document.querySelector("#kernel-type")?.textContent.length > 0
+    && document.querySelector("#kernel-view")?.disabled === false);
   console.log("PASS static worker: read-only generated Cubist with theories and initial models");
   // Reference examples are checked in the browser; a linked name opens the
   // workspace's kernel inspector for it.

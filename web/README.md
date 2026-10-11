@@ -14,7 +14,13 @@ checked for definitional equality. **Un-highlight** clears visual selection.
 In `proof.html`, **Generated Cubist** beside Read and Edit shows a read-only
 frontend expansion from the last check. Select the current file or an imported
 module to see its generated theory, initial and free-model declarations in
-Cubist syntax. Each family is labeled checked, failed or blocked. Editing keeps
+Cubist syntax, with the same highlighting and line layout as Read. Click a
+generated declaration or linked reference to open its checked term, type or
+signature in the inspector; failed declarations show their diagnostic.
+Original comments and unchanged declarations remain in source order. Replaced
+theories and initial/free declarations appear commented out, with their
+generated declarations immediately below them.
+Each family is labeled checked, failed or blocked. Editing keeps
 the previous expansion until **Check proof** runs again; a parse failure keeps
 the previous snapshot. Modules without expansions say so explicitly.
 

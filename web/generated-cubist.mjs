@@ -1,6 +1,10 @@
 import { formatCubist } from "./cubist/formatter.mjs";
+import { tokenize } from "./cubist/parser.mjs";
+import { rewritten } from "./cubist/scopes.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
 import { substituteTerm, T } from "./translator/core.mjs";
+import { lexicalBinding } from "./translator/lexical.mjs";
+import { diagnosticCode } from "./diagnostics.mjs";
 
 // A display of the retained frontend syntax, before reference lowering and
 // kernel elaboration. This is not an export: captured bindings, public labels
@@ -9,35 +13,124 @@ import { substituteTerm, T } from "./translator/core.mjs";
 export function generatedCubist(program, module = program.main) {
   const groups = program.generation.get(module) ?? [];
   const publications = program.publications.get(module) ?? [];
-  const lines = ["// Frontend generation · " + module,
-    "// Read-only expansion from the last check. Captured references use display names.",
-    "// This view is not a standalone module or a checked-proof export."];
-  const imports = program.sourceAsts.get(module)?.imports ?? [];
-  if (imports.length) lines.push("", ...imports.map(name => `import ${name};`));
-  let count = 0;
+  const symbols = { ...program.symbols }, unavailable = new Map(), env = program.modules?.get(module);
+  // A blocked family may never have reached the checker. Its retained
+  // declarations still open the inspector's diagnostic, without asking the
+  // kernel for definitions that were not published.
   for (const group of groups) {
     const publication = publications.find(item => item.id === group.id);
-    lines.push("", `// ${group.id} · ${publication.state}`);
-    if (publication.cause) lines.push(comment(publication.cause.reason));
+    if (publication.state === "checked") continue;
+    for (const declaration of group.declarations) {
+      const name = declaration.name.text, binding = `${module}__${name}`;
+      if (symbols[binding]) continue;
+      const reason = publication.cause?.reason ?? `Generated family ${group.id} is ${publication.state}.`;
+      const info = { name, binding, role: declaration.kind, verified: false,
+        status: publication.state, reason, code: diagnosticCode(reason), definitionStart: declaration.start,
+        ...(module === program.main ? {} : { sourceModule: module, sourceName: name }) };
+      symbols[binding] = info;
+      unavailable.set(binding, info);
+    }
+  }
+  const identities = new Map(Object.keys(symbols).map(binding => [lexicalBinding(binding), binding]));
+  const links = [];
+  let source = ["// Frontend generation · " + module,
+    "// Read-only expansion from the last check. Captured references use display names.",
+    "// This view is not a standalone module or a checked-proof export.", "", ""].join("\n");
+  const original = program.sources?.[module] ?? "", ast = program.sourceAsts.get(module);
+  const originalLinks = module === program.main ? program.links ?? [] : importedSourceLinks(program, module, original, ast);
+  function copy(start, end) {
+    const offset = source.length - start;
+    links.push(...originalLinks.filter(link => link.start >= start && link.end <= end)
+      .map(link => ({ ...link, start: offset + link.start, end: offset + link.end })));
+    source += original.slice(start, end);
+  }
+  let count = 0;
+  const shown = new Set();
+  function expansion(group) {
+    shown.add(group);
+    const publication = publications.find(item => item.id === group.id);
+    source += `\n// ${group.id} · ${publication.state}\n`;
+    if (publication.cause) source += comment(publication.cause.reason) + "\n";
     for (const declaration of group.declarations) {
       count++;
       try {
-        const source = generatedDeclaration(declaration);
-        lines.push(source.trimEnd());
+        // Resolve retained identities, never a captured reference's spelling.
+        // Plain generated names can also refer to declarations, but a local
+        // binder with that spelling must stay local.
+        const bindings = new WeakMap();
+        const { kind, params, type, value, body, result, constructors } = declaration;
+        if (env) rewritten({ kind, params, type, value, body, result, constructors }, (node, bound) => {
+          let binding;
+          if (node.kind === "reference") binding = identities.get(node.binding);
+          else if (node.kind === "name" && !bound.has(node.name.split(".")[0])) {
+            const entry = env?.get(node.name);
+            binding = entry?.tag === "DefRef" ? entry.name : entry?.binding;
+          }
+          if (symbols[binding]) bindings.set(node, binding);
+          return node;
+        });
+        const localLinks = [];
+        const text = generatedDeclaration(declaration, {
+          resolve: node => node.kind === "declaration"
+            ? symbols[`${module}__${node.name}`]?.binding : bindings.get(node),
+          links: localLinks,
+        });
+        const offset = source.length;
+        links.push(...localLinks.map(link => ({ ...unavailable.get(link.binding), ...link, generated: true,
+          start: offset + link.start, end: offset + link.end })));
+        source += text;
       } catch (error) {
         // A display limitation must neither hide a declaration nor change its
         // publication verdict, and must never make proof checking fail.
-        lines.push(comment(`${declaration.name.text}: display unavailable (${error.message})`));
+        source += comment(`${declaration.name.text}: display unavailable (${error.message})`) + "\n";
       }
     }
   }
-  if (!groups.length) lines.push("", "// No frontend-generated declarations in this module.");
-  return { module, count, source: lines.join("\n") + "\n" };
+  let cursor = 0;
+  for (const declaration of ast?.declarations ?? []) {
+    const replacements = groups.filter(group => !shown.has(group)
+      && publications.find(item => item.id === group.id)?.owner === declaration.name.text
+      && group.declarations[0]?.name.start === declaration.name.start);
+    if (!replacements.length) continue;
+    copy(cursor, declaration.start);
+    // Keep the replaced source visible as comments. Existing comments inside
+    // it keep their spelling; only its code lines need a comment prefix.
+    const trailingComment = original.slice(declaration.end).match(/^[ \t]*\/\/[^\r\n]*/)?.[0] ?? "";
+    const end = declaration.end + trailingComment.length;
+    source += original.slice(declaration.start, end).split(/\r?\n/)
+      .map(line => /^\s*\/\//.test(line) ? line : `// ${line}`).join("\n") + "\n";
+    for (const group of replacements) expansion(group);
+    cursor = end;
+  }
+  copy(cursor, original.length);
+  // Retention can also be inspected without a source AST (for example, a
+  // diagnostic fixture). Never silently drop an unmatched generated family.
+  for (const group of groups) if (!shown.has(group)) expansion(group);
+  if (!groups.length) source += "\n// No frontend-generated declarations in this module.\n";
+  return { module, count, source, links };
 }
 
 const comment = text => String(text).split(/\r?\n/).map(line => `// ${line}`).join("\n");
 
-export function generatedDeclaration(declaration) {
+// Imported modules retain elaboration references too, although the Read tab
+// only receives links for the main source. Reuse those retained bindings for
+// unchanged imported code, without elaborating or resolving names again.
+function importedSourceLinks(program, module, source, ast) {
+  const tokens = new Map(tokenize(source).map(token => [token.start, token]));
+  const links = [];
+  for (const declaration of ast?.declarations ?? []) {
+    const binding = `${module}__${declaration.name.text}`, info = program.symbols?.[binding];
+    if (info) links.push({ ...info, start: declaration.name.start, end: declaration.name.end });
+    for (const reference of program.declarationReferences?.get(binding) ?? []) {
+      const token = tokens.get(reference.start);
+      const symbol = program.symbols?.[reference.binding] ?? program.localSymbols?.[reference.binding];
+      if (token && symbol) links.push({ ...symbol, name: token.text, start: token.start, end: token.end });
+    }
+  }
+  return links;
+}
+
+export function generatedDeclaration(declaration, { resolve = () => null, links = [] } = {}) {
   // Internal pattern binders contain primes, which Cubist does not accept.
   // Choose a consistent display name apart from every existing source name.
   const taken = new Set(), seen = new WeakSet();
@@ -61,6 +154,14 @@ export function generatedDeclaration(declaration) {
       taken.add(candidate); names.set(text, candidate);
     }
     return names.get(text);
+  }
+  const displays = new Map();
+  function display(text, binding, declaration = false) {
+    if (!binding && !declaration) return text;
+    let temporary = `generated_display_${displays.size}`;
+    while (taken.has(temporary)) temporary += "_";
+    taken.add(temporary); displays.set(temporary, { text, binding, declaration });
+    return temporary;
   }
   let budget = 50000;
   const atom = node => ["name", "reference", "number", "literal", "binaryNumber", "call", "member", "projection"].includes(node.kind)
@@ -91,8 +192,8 @@ export function generatedDeclaration(declaration) {
     if (--budget < 0) throw new RangeError("generated syntax exceeds the display budget");
     if (!node) throw new TypeError("missing syntax");
     switch (node.kind) {
-      case "name": return name(node.spelling ?? node.name);
-      case "reference": return name(node.spelling);
+      case "name": return display(name(node.spelling ?? node.name), resolve(node));
+      case "reference": return display(name(node.spelling), resolve(node));
       case "number": return node.text ?? String(node.value);
       case "binaryNumber": return node.spelling ?? `0b${node.digits}`;
       case "literal": return node.text;
@@ -153,12 +254,8 @@ export function generatedDeclaration(declaration) {
   // Ordinary source cannot declare dotted generated names. As the generator
   // does for its templates, format with temporary declaration names, then
   // restore the names actually owned by the frontend.
-  const declarations = new Map();
   function declarationName(token) {
-    let temporary = `generated_display_${declarations.size}`;
-    while (taken.has(temporary)) temporary += "_";
-    taken.add(temporary); declarations.set(temporary, name(token));
-    return temporary;
+    return display(name(token), resolve({ kind: "declaration", name: token.text }), true);
   }
   const head = `${d.kind} ${declarationName(d.name)}${parameters(d.params)}`;
   let source;
@@ -171,7 +268,33 @@ export function generatedDeclaration(declaration) {
     if (!value) throw new TypeError("unsupported generated proof block");
     source = `${head}${d.type ? ` : ${expr(d.type)}` : ""} := ${expr(value)};\n`;
   } else throw new TypeError(`unsupported ${d.kind} declaration`);
-  let formatted = formatCubist(source, { linearizeTuples: false });
-  formatted = formatted.replace(/\b[A-Za-z_][A-Za-z_0-9]*\b/g, token => declarations.get(token) ?? token);
-  return formatted;
+  // Formatting changes whitespace only. Track links by token index through
+  // it, restoring references before formatting so their real widths count.
+  // Declaration placeholders remain until afterward because dotted names
+  // are not legal declaration syntax in an ordinary source module.
+  const starts = new Map(), ends = new Map();
+  let index = 0;
+  for (const token of tokenize(source).slice(0, -1)) {
+    const shown = displays.get(token.text);
+    const length = shown && !shown.declaration ? tokenize(shown.text).length - 1 : 1;
+    if (shown?.binding) {
+      const link = { name: shown.text, binding: shown.binding };
+      starts.set(index, link); ends.set(index + length - 1, link);
+    }
+    index += length;
+  }
+  source = source.replace(/\b[A-Za-z_][A-Za-z_0-9]*\b/g, token => {
+    const shown = displays.get(token);
+    return shown && !shown.declaration ? shown.text : token;
+  });
+  const formatted = formatCubist(source, { linearizeTuples: false });
+  let output = "", cursor = 0;
+  for (const [index, token] of tokenize(formatted).slice(0, -1).entries()) {
+    output += formatted.slice(cursor, token.start);
+    if (starts.has(index)) starts.get(index).start = output.length;
+    output += displays.get(token.text)?.text ?? token.text;
+    if (ends.has(index)) links.push({ ...ends.get(index), end: output.length });
+    cursor = token.end;
+  }
+  return output + formatted.slice(cursor);
 }
