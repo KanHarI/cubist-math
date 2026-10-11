@@ -561,9 +561,9 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const end = take("}").end;
     return { kind: "withUnfolding", hints, body, start: t.start, end };
   }
-  // `induction v [as z] [return T] { c(xs, hs) @ i => body; … }`: a clause
+  // `induction v [as z] [return T] { c(xs) @ i with hs => body; … }`: a clause
   // per constructor, as in match, whose names are the constructor's
-  // arguments and then, optionally, an induction hypothesis for each
+  // fields and then, optionally after with, an induction hypothesis for each
   // recursive argument. Natural numbers keep their own form,
   // `induction n [as k] return C { zero => …; succ h => …; }`, where as names
   // the value in the motive and the predecessor in the successor clause, and
@@ -578,15 +578,15 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const clauses = [];
     while (peek() !== "}") {
       if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the induction."), { offset: ts[i].start });
-      const head = clauseHead();
+      const head = clauseHead(true);
       const body = expr();
       const end = take(";").end;
       clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end });
     }
     const end = take("}").end;
     const [zero, succ] = clauses;
-    if (type && clauses.length === 2 && zero.constructor.text === "zero" && !zero.args && !zero.binders.length && !zero.coordinates.length
-        && succ.constructor.text === "succ" && !succ.args && succ.binders.length === 1 && !succ.coordinates.length) {
+    if (type && clauses.length === 2 && zero.constructor.text === "zero" && !zero.args && !zero.binders.length && !zero.coordinates.length && !zero.hypotheses
+        && succ.constructor.text === "succ" && !succ.args && succ.binders.length === 1 && !succ.coordinates.length && !succ.hypotheses) {
       const a = { kind: "induction", value, index: motiveName, type, base: zero.body, hypothesis: succ.binders[0], step: succ.body, start: t.start, end };
       Object.defineProperty(a, "clauses", { value: clauses, enumerable: false });
       return a;
@@ -736,11 +736,21 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   // each a name or a pattern itself, and a path constructor's coordinates
   // after @; a bare name is a constructor without arguments, a variable or
   // _, which the elaborator tells apart by the matched type.
-  function clauseHead() {
+  function clauseHead(induction = false) {
     const first = clausePattern(false), more = [];
+    if (induction && peek() === ",")
+      throw Object.assign(Error("An induction clause takes one constructor pattern."), { offset: ts[i].start });
     while (peek() === ",") { take(","); more.push(clausePattern(false)); }
+    let hypotheses, withToken;
+    if (peek() === "with") {
+      withToken = take("with");
+      if (!induction)
+        throw Object.assign(Error("Induction hypotheses after with are only available in induction clauses."), { offset: withToken.start });
+      hypotheses = [name()];
+      while (peek() === ",") { take(","); hypotheses.push(name()); }
+    }
     take("=>");
-    return { ...first, ...(more.length ? { more } : {}) };
+    return { ...first, ...(more.length ? { more } : {}), ...(hypotheses ? { hypotheses, withToken } : {}) };
   }
   function clausePattern(nested) {
     // A sum's patterns are its injections, left and right, which no other
@@ -774,13 +784,13 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     // constructor's coordinates follow @, as in the point the clause covers:
     // loop @ i =>.
     const binders = [], coordinates = [];
-    if (!nested) while (peek() !== "=>" && peek() !== "@" && peek() !== ",") binders.push(name());
+    if (!nested) while (!["=>", "@", ",", "with"].includes(peek())) binders.push(name());
     while (peek() === "@") { take("@"); coordinates.push(name()); }
     return { ...(nested ? { kind: "pattern", start: constructor.start, end: ts[i - 1].end } : {}),
       constructor, args, binders, coordinates, ...(qualifiedDot ? { qualifiedDot } : {}) };
   }
 
-  function matchObligations(expression) {
+  function matchObligations(expression, induction = false) {
     if (peek() !== "obligations") return {};
     const obligationsToken = take("obligations");
     if (peek() === "by") {
@@ -808,7 +818,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const obligations = [];
     while (peek() !== "}") {
       if (peek() === "EOF") throw Object.assign(Error("Expected '}' to close obligations."), {offset:ts[i].start});
-      const head = clauseHead();
+      const head = clauseHead(induction);
       const body = expression ? expr() : block();
       if (expression) take(";");
       obligations.push({kind:"clause",...head,body,obligation:true,start:head.constructor.start,end:ts[i - 1].end});
@@ -1039,7 +1049,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   // L2.2a): a clause per constructor, each a proof block of the goal at
   // that constructor. Its motive comes from the goal. The induction
   // statement is the same, and its clauses may also name the induction
-  // hypotheses: `induction v { c(xs, hs) => { … } … }`.
+  // hypotheses: `induction v { c(xs) with hs => { … } … }`.
   function matchStatement(t, induction = false) {
     const keyword = induction ? "induction" : "match";
     const value = expr(), values = [value];
@@ -1054,14 +1064,14 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const clauses = [];
     while (peek() !== "}") {
       if (peek() === "EOF") throw Object.assign(new Error(`Expected '}' to close the ${keyword}.`), { offset: ts[i].start });
-      const head = clauseHead();
+      const head = clauseHead(induction);
       if (peek() !== "{")
         throw Object.assign(new Error(`A clause of the ${keyword} statement is a proof block: c(xs) => { … }.`), { offset: ts[i].start });
       const body = block();
       clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end: ts[i - 1].end });
     }
     const e = take("}");
-    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, ...(values.length > 1 ? { values } : {}), clauses, start: t.start, end: e.end, ...matchObligations(false) };
+    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, ...(values.length > 1 ? { values } : {}), clauses, start: t.start, end: e.end, ...matchObligations(false, induction) };
   }
   if (typeOnly) {
     const result = expr();

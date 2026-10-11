@@ -226,7 +226,7 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   // A clause's variables: its arguments, its legacy binders, its
   // coordinates, and a bare name, which is a variable or a constructor
   // without arguments.
-  const variables = head => [...(head.binders ?? []), ...(head.coordinates ?? []),
+  const variables = head => [...(head.binders ?? []), ...(head.coordinates ?? []), ...(head.hypotheses ?? []),
     ...(head.args ?? []).flatMap(arg => arg.kind === "pattern" ? variables(arg) : [arg]),
     ...(!head.args && !head.binders?.length && !head.coordinates?.length ? [head.constructor] : []),
     ...(head.more ?? []).flatMap(variables)];

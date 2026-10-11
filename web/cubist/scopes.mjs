@@ -43,7 +43,7 @@ const SCOPES = {
     { binders: present([n.right]), keys: ["rightBody"], renamable: true }],
   // A clause's own names, a sum's side and a path constructor's
   // coordinates, are variables; its patterns' arguments may be constructors.
-  clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? [])]), keys: ["body", "obligation"], renamable: true },
+  clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? []), ...(n.hypotheses ?? [])]), keys: ["body", "obligation"], renamable: true },
     { binders: patternArguments(n), keys: ["body", "obligation"], renamable: false }],
   unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"], renamable: true }],
   // Declarations and a theory's items: their parameters.
