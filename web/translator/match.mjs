@@ -379,16 +379,18 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
     ? named.slice(constructor.arity) : [];
   const hypotheses = source.hypotheses ?? legacyHypotheses;
   const args = named.slice(0, named.length - legacyHypotheses.length);
+  const s = constructor.arity === 1 ? "" : "s", p = shape.positions;
+  if (source.hypotheses && !p)
+    throw locate(Error(`${name} has no recursive fields, so it has no induction hypotheses: remove with.`), source.withToken);
   if (source.hypotheses && args.length > constructor.arity)
-    throw locate(Error(`Keep only the ${constructor.arity} constructor fields of ${name} in parentheses; name induction hypotheses after with.`), source.withToken);
-  if (args.length !== constructor.arity) {
-    const s = constructor.arity === 1 ? "" : "s";
-    throw locate(Error(induction && shape.positions
-      ? `${name} takes ${constructor.arity} constructor field${s} in parentheses; name its ${shape.positions} induction ${shape.positions === 1 ? "hypothesis" : "hypotheses"} after with, or omit with.`
-      : `${name} takes ${constructor.arity} argument${s} here: ${name}(…) with ${constructor.arity} names.`));
-  }
-  if (source.hypotheses && hypotheses.length !== shape.positions)
-    throw locate(Error(`${name} supplies ${shape.positions} induction hypotheses; with must name all of them, or be omitted.`), source.withToken);
+    throw locate(Error(`Keep only the ${constructor.arity} constructor field${s} of ${name} in parentheses; name induction hypotheses after with.`), source.withToken);
+  if (args.length !== constructor.arity)
+    throw locate(Error(induction && p
+      ? `${name} takes ${constructor.arity} constructor field${s} in parentheses; name its ${p} induction ${p === 1 ? "hypothesis" : "hypotheses"} after with, or omit with.`
+      : `${name} takes ${constructor.arity} argument${s} here, so its clause ${constructor.arity
+        ? `names ${constructor.arity === 1 ? "it" : `all ${constructor.arity}`} in parentheses: ${name}(…)` : `writes ${name} without parentheses`}.`));
+  if (source.hypotheses && hypotheses.length !== p)
+    throw locate(Error(`${name} has ${p} recursive field${p === 1 ? "" : "s"}, so with names ${p} induction ${p === 1 ? "hypothesis" : "hypotheses"}, not ${hypotheses.length}; or omit with.`), source.withToken);
   // A path clause is written as the point it covers, the constructor at its
   // coordinates: loop @ i =>.
   const spelled = `${name}${constructor.arity ? "(…)" : ""}${["i", "j", "k", "l"].slice(0, constructor.dims).map(d => ` @ ${d}`).join("")} => …`;

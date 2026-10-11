@@ -1,8 +1,8 @@
 # Separate induction hypotheses from constructor fields
 
-Decision adopted on 2026-10-11. Status: implemented in this change, pending
-merge. The [work plan](work-plan.md) owns scheduling; this document records
-the surface-language contract and its implementation evidence.
+Decision adopted and implemented on 2026-10-11 (the [work plan](work-plan.md)'s
+L2.2a row). This document records the surface-language contract and its
+implementation evidence.
 
 ## Decision
 
@@ -168,5 +168,8 @@ node tools/migrate-induction-hypotheses.mjs --write FILE.cubist
 The first command reports changes. The second checks the source, identifies
 hypotheses from elaboration records, preserves nested clauses and comments,
 and verifies identical checked terms, types and assumptions before writing.
-It refuses sources with checking gaps. The formatter preserves either
-accepted spelling; generated proofs emit `with`.
+It refuses sources with checking gaps. Only declarations are migrated: the
+program records no bindings for a directive (`evaluate`, `print`) of its
+own, and the verifier compares declarations, so the tool leaves the
+induction clauses of directives as written and reports their lines. The
+formatter preserves either accepted spelling; generated proofs emit `with`.

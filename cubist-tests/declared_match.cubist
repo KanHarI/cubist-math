@@ -176,7 +176,7 @@ def partial(n : N) : N := match n {
   };
 
 // Refused: succ's clause names no argument.
-// Error: E538: succ takes 1 argument here: succ(…) with 1 names.
+// Error: E538: succ takes 1 argument here, so its clause names it in parentheses: succ(…).
 def arity(n : N) : N := match n {
     zero => zero;
     succ => zero;
@@ -394,7 +394,7 @@ def kept : keep(squash_) = squash_ {
 }
 
 // Refused: squash here is the user's constructor, which takes no arguments.
-// Error: E538: squash_ takes 0 arguments here: squash_(…) with 0 names.
+// Error: E538: squash_ takes 0 arguments here, so its clause writes squash_ without parentheses.
 def ambiguous(s : Q) : Q := match s {
     squash_ => squash_;
     squash_(x, y) @ i => Q.squash(x, y) @ i;

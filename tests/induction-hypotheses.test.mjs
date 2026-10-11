@@ -38,10 +38,19 @@ computable def loop_obligations(t : Loopy) : Unit { induction t {
 computable def copy(t : Tree) : Tree := induction t return Tree {
   leaf => leaf; node(l, datum, r) with ih_l, ih_r => node(ih_l, datum, ih_r);
 };
+computable def left_depth(t : Tree) : Nat := induction t return Nat {
+  leaf => 0; node(l, datum, r) with ih_l, ih_r => succ(ih_l);
+};
+computable def right_depth(t : Tree) : Nat { induction t {
+  leaf => { exact 0; } node(l, datum, r) with ih_l, ih_r => { exact succ(ih_r); }
+} }
 computable def doubled(n : Nat) : Nat := induction n return Nat { zero => 0; succ(k) with h => succ(succ(h)); };
 computable def specialized(n : Nat) : Nat := induction n return Nat { zero => 0; succ h => succ(succ(h)); };
 def agrees : doubled = specialized { rfl; }
 evaluate(size(node(node(leaf, 2, leaf), 3, node(leaf, 4, leaf)))) expecting 9;
+evaluate(left_depth(node(node(leaf, 0, leaf), 0, leaf))) expecting 2;
+evaluate(right_depth(node(node(leaf, 0, leaf), 0, leaf))) expecting 1;
+evaluate(left_depth(copy(node(node(leaf, 0, leaf), 0, leaf)))) expecting 2;
 evaluate(depth(grow(fun (n : Nat) => empty))) expecting 1;
 evaluate(doubled(3)) expecting 6;
 `;
@@ -83,21 +92,24 @@ test("hypotheses bind only in their clause body and substitutions avoid capture"
 });
 
 test("with needs a nonempty list, follows coordinates, and is forbidden on match", () => {
-  for (const text of [
-    "induction t { node(l, d, r) with => 0; }",
-    "induction t { node(l, d, r) with h, => 0; }",
-    "induction t { loop(x) with h @ i => h; }",
-    "induction t { node(l, d, r), extra with h, j => 0; }",
-    "match t { node(l, d, r) with h, j => 0; }",
-  ]) assert.throws(() => parse(text, true));
+  for (const [text, message] of [
+    ["induction t { node(l, d, r) with => 0; }", /Expected a name\./],
+    ["induction t { node(l, d, r) with h, => 0; }", /Expected a name\./],
+    ["induction t { loop(x) with h @ i => h; }", /Expected '=>', found '@'\./],
+    ["induction t { node(l, d, r), extra with h, j => 0; }", /An induction clause takes one constructor pattern\./],
+    ["match t { node(l, d, r) with h, j => 0; }", /Induction hypotheses after with are only available in induction clauses\./],
+  ]) assert.throws(() => parse(text, true), message);
   assert.throws(() => parse("def bad(t : Tree) : Unit { match t { node(l, d, r) with h, j => { exact tt; } } }"), /only available in induction/);
 });
 
 test("wrong counts and mixed spellings fail, while body unfolding and shadowing work", async t => {
-  const { get } = await checkProgram(t, declarations + `
+  const { get, result } = await checkProgram(t, declarations + `
 def few(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with h => 0; };
 def many(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with h, j, k => 0; };
+def single(t : Forest) : Nat := induction t return Nat { empty => 0; grow(children) with a, b => 0; };
 def no_recursive(t : Tree) : Nat := induction t return Nat { leaf with h => 0; node(l, d, r) => 0; };
+def arity(t : Tree) : Nat := match t { leaf => 0; node(l, d) => d; };
+def nullary(t : Tree) : Nat := match t { leaf(x) => 0; node(l, d, r) => d; };
 def mixed(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r, h, j) with k, m => 0; };
 def fields(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, r) with h, j => 0; };
 def escapes(t : Tree) : Nat := induction t return Nat { leaf => ih; node(l, d, r) with ih, other => ih; };
@@ -106,9 +118,19 @@ def identity(n : Nat) : Nat := n;
 def unfolded(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with h, j => with unfolding [identity] { identity(h) }; };
 def shadow(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with t, j => t; };
 `);
-  for (const name of ["few", "many", "no_recursive"]) assert.match(get(name).reason, /supplies .* induction hypotheses/);
-  assert.match(get("mixed").reason, /Keep only.*constructor fields/);
-  assert.match(get("fields").reason, /constructor fields in parentheses/);
+  for (const [name, code, message] of [
+    ["few", "E578", /^node has 2 recursive fields, so with names 2 induction hypotheses, not 1; or omit with\./],
+    ["many", "E578", /^node has 2 recursive fields, so with names 2 induction hypotheses, not 3; or omit with\./],
+    ["single", "E578", /^grow has 1 recursive field, so with names 1 induction hypothesis, not 2; or omit with\./],
+    ["no_recursive", "E579", /^leaf has no recursive fields, so it has no induction hypotheses: remove with\./],
+    ["mixed", "E577", /^Keep only the 3 constructor fields of node in parentheses; name induction hypotheses after with\./],
+    ["fields", "E557", /^node takes 3 constructor fields in parentheses; name its 2 induction hypotheses after with, or omit with\./],
+    ["arity", "E538", /^node takes 3 arguments here, so its clause names all 3 in parentheses: node\(…\)\./],
+    ["nullary", "E538", /^leaf takes 0 arguments here, so its clause writes leaf without parentheses\./],
+  ]) {
+    assert.match(get(name).reason, message);
+    assert.equal(result.gaps.find(gap => gap.name === name)?.code, code, name);
+  }
   for (const name of ["escapes", "construction"]) assert.equal(get(name).verified, false, name);
   for (const name of ["unfolded", "shadow"]) assert.equal(get(name).verified, true, get(name).reason);
 });
@@ -129,11 +151,18 @@ def along_loop(t : Loopy) : Unit := induction t return Unit { base => tt; loop(x
   ih) // coordinate
   @ i => ih; };
 def blocks(t : Tree) : Unit { induction t { leaf => { exact tt; } node(l, d, r, h, j) => { exact j; } } }
+// A directive's references are recorded with the declaration after it, and a
+// last directive's not at all: neither is migrated, and both are reported.
+evaluate(induction 2 return Nat { zero => 0; succ(k, h) => succ(h); }) expecting 2;
+def after_directive : Nat := 0;
+print(evaluate(induction 1 return Nat { zero => 0; succ(k, h) => h; }));
 `;
   const { program, result } = await checkProgram(t, original, { name: "fixture" });
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   const migrated = migrateInductionHypotheses(original, checkedHypothesisStarts(program, "fixture"));
   assert.equal(migrated.clauses, 4);
+  assert.deepEqual(migrated.unchecked, ["succ(k, h) => succ(h)", "succ(k, h) => h"].map(text => original.indexOf(text)));
+  for (const text of ["succ(k, h) => succ(h)", "succ(k, h) => h"]) assert.ok(migrated.source.includes(text), text);
   assert.deepEqual(migrated.source.match(/\/\/[^\n]*/g)?.sort(), original.match(/\/\/[^\n]*/g)?.sort());
   assert.match(migrated.source, /@ i with/);
   const edited = formatCubist(migrated.source);

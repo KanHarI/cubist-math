@@ -1,6 +1,7 @@
 // node tools/migrate-induction-hypotheses.mjs [--write] FILE.cubist ...
 // Check first, migrate checked binders, and prove identical terms, types and
 // assumptions before writing. With no --write, report the proposed changes.
+// Induction clauses in directives are not migrated: their lines are reported.
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import createCubical from "../web/dist/cubical.mjs";
@@ -31,5 +32,9 @@ for (const file of paths) {
     if (report.failures.length) throw Error(`${file}: ${JSON.stringify(report.failures)}`);
     if (write) await writeFile(path, migration.source);
   }
-  console.log(`${file}: ${migration.clauses} clauses ${write ? "migrated" : "to migrate"}`);
+  const plural = n => n === 1 ? "" : "s", { clauses, unchecked } = migration;
+  const lines = unchecked.map(start => source.slice(0, start).split("\n").length);
+  console.log(`${file}: ${clauses} clause${plural(clauses)} ${write ? "migrated" : "to migrate"}`
+    + (lines.length ? `; ${lines.length} induction clause${plural(lines.length)} in directives left as written, at line${plural(lines.length)} `
+      + `${lines.join(", ")}: move any appended hypotheses after with by hand` : ""));
 }
