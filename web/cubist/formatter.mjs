@@ -264,10 +264,12 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         previous = { text: "}", end: all[position - 1].end };
       } else if (["(", "[", "{"].includes(text)) {
         const end = { "(": ")", "[": "]", "{": "}" }[text];
-        const body = sequence(end, sectionBodies.has(token.start));
+        const body = sequence(end, sectionBodies.has(token.start)), block = text === "{" && !implicitOpens.has(token.start);
+        // A block breaks its own line before }, after a trailing comment too.
+        while (block && body.at(-1) === hard) body.pop();
         // An empty block, as a theory's that only extends others, is {} on
         // its declaration's line.
-        statement.push(text === "{" && !implicitOpens.has(token.start) ? (body.length ? ["{", indent([hard, body]), hard, "}"] : "{}")
+        statement.push(block ? (body.length ? ["{", indent([hard, body]), hard, "}"] : "{}")
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
         if (items && (declarationEnds.has(previous.end) || sectionBodies.has(token.start))) {
