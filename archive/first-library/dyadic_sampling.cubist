@@ -203,22 +203,20 @@ def dyadic_interval_samples_step(
   let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let leftRadius := dyadic_width(F, half, depth, width(a, midpoint));
   let rightRadius := dyadic_width(F, half, depth, width(midpoint, b));
-  let leftBounds :=
-    along (
-      (
-        fun (r : F) => SubdivisionTaggedValid(
-          I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), a, midpoint, left_
-        )
+  let leftBounds := transport leftValid along cong(dyadic_width(F, half, depth), leftWidth) in (
+    (
+      fun (r : F) => SubdivisionTaggedValid(
+        I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), a, midpoint, left_
       )
-    ) by cong(dyadic_width(F, half, depth), leftWidth) from leftValid;
-  let rightBounds :=
-    along (
-      (
-        fun (r : F) => SubdivisionTaggedValid(
-          I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), midpoint, b, right_
-        )
+    )
+  );
+  let rightBounds := transport rightValid along cong(dyadic_width(F, half, depth), rightWidth) in (
+    (
+      fun (r : F) => SubdivisionTaggedValid(
+        I, IntervalTaggedWidth(F, zero, one, addF, negF, lt, r), midpoint, b, right_
       )
-    ) by cong(dyadic_width(F, half, depth), rightWidth) from rightValid;
+    )
+  );
   let valid := subdivision_tagged_valid_join(
     I, condition, a, midpoint, b, left_, right_, leftBounds, rightBounds
   );

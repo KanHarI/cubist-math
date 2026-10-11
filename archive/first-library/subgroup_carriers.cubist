@@ -126,12 +126,12 @@ def subgroup_factor(
   lands : (forall x : group_carrier(K). subgroup_members(G, S, group_hom_map(K, G, h, x)))
 ) :
   GroupHom(K, subgroup_as_group(G, S)) {
-  let lift := subgroup_factor_map(K, G, h, S, lands);
+  let lift_ := subgroup_factor_map(K, G, h, S, lands);
   exact (
-    lift,
+    lift_,
     (
       fun (x, y : group_carrier(K)) => subgroup_value_ext(
-        G, S, lift(group_multiply(K, x, y)), subgroup_carrier_multiply(G, S, lift(x), lift(y)),
+        G, S, lift_(group_multiply(K, x, y)), subgroup_carrier_multiply(G, S, lift_(x), lift_(y)),
         group_hom_multiply(K, G, h, x, y)
       )
     )

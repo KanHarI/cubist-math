@@ -50,7 +50,7 @@ test("canonical hashes ignore bound names but not binding structure", () => {
 });
 
 test("syntax that elaborates to the same terms verifies as identical", async () => {
-  const report = await verify(original.replace("exact transport(C, 0 + 0, 0, p, v);", "exact along C by p from v;")
+  const report = await verify(original.replace("exact transport(C, 0 + 0, 0, p, v);", "exact transport v along p in C;")
     .replace("at(p, 0)", "p @ 0").replace("at(p, flip(i))", "p @ flip(i)"), "identical");
   assert.deepEqual(report.failures, []);
   // mirror is universe-generic: one definition, compared like the others.
@@ -95,10 +95,10 @@ def pointwise(A : U0, f : A -> A) : f = f {
 }
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
-  assert.deepEqual(identical.applied, { params: 1, intro: 1, let: 1, along: 1, "path-apply": 1, fun: 1 });
+  assert.deepEqual(identical.applied, { params: 1, intro: 1, let: 1, transport: 1, "path-apply": 1, fun: 1 });
   assert.match(identical.source, /\(C : Nat -> U0, p, q : 0 = 0, v : C\(0\)\)/);
   assert.match(identical.source, /intro a, b; \/\/ kept apart by this comment\n  intro c;/);
-  assert.match(identical.source, /let h : C\(0\) := along C by p from v;/);
+  assert.match(identical.source, /let h : C\(0\) := transport v along p in C;/);
   assert.match(identical.source, /\(fun \(a, b : A\) => a\)\(p @ 0, y\)/);
   const typed = rewriteModule(source, { rewrites: typePreservingRewrites });
   assert.deepEqual(typed.applied, { wrappers: 2, "path-lambda": 2, ext: 1, rfl: 1 });
@@ -123,10 +123,10 @@ def moved(x, y : Nat, e : x = y, v : Nat and Unit) : Nat := transport(fun (n : N
 def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)))(1, 2).2;
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
-  assert.deepEqual(identical.applied, { "path-apply": 1, along: 1, fun: 1 });
+  assert.deepEqual(identical.applied, { "path-apply": 1, transport: 1, fun: 1 });
   // e @ 0.1 would read as e @ (0.1), which is no interval coordinate.
   assert.match(identical.source, /:= \(e @ 0\)\.1;/);
-  assert.match(identical.source, /:= \(along \(fun \(n : Nat\) => Nat and Unit\) by e from v\)\.1;/);
+  assert.match(identical.source, /:= \(transport v along e in \(fun \(n : Nat\) => Nat and Unit\)\)\.1;/);
   assert.match(identical.source, /:= \(fun \(x, y : Nat\) => typed\(Nat and Nat, \(x, y\)\)\)\(1, 2\)\.2;/);
   const [report] = await verifyMigration({ modules: ["projection_fixture"], level: "identical",
     readOriginal: name => name === "projection_fixture" ? source : library(name),
