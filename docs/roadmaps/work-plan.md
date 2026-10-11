@@ -767,9 +767,9 @@ Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
 The revised FG0 harness in #217 records 23 independent known-defect cases at
 its baseline. Its validation record gives the activation check against the
 fixing compiler, with every record removed. That is integration evidence, not
-a claim that its files have already been incorporated through every branch. The frontend roadmap remains active
-until the evidence follow-ups are disposed of. Historical test reports are
-not fresh validation of a later PR head.
+a claim that its files have already been incorporated through every branch.
+The frontend roadmap remains active until the evidence follow-ups are disposed
+of. Historical test reports are not fresh validation of a later PR head.
 
 ## Open decisions
 

@@ -17,8 +17,10 @@ const observe = (c, evidence, edit) => {
 };
 
 // Fixture mistakes and unmet prerequisites are ordinary failures, never debt.
-// Metadata and prerequisites are assertions before observation.
+// Metadata, client names and prerequisites are assertions before observation:
+// the requirement map names every client, so a misspelling loses one.
 for (const [id, mutate, error] of [
+  ["G1", c => { c.clients[0] = "orignal"; }, /ownership: G1 must keep client original/],
   ["G5", c => { c.source += "\ndef unrelated : Unit := Unit;"; }, /original interface must check before its rewrite/],
   ["G8", c => { c.diagnostic.scope += " "; }, /diagnostic scope/],
   ["G9", c => { c.observations.sites++; }, /observation sites/],
@@ -28,21 +30,18 @@ for (const [id, mutate, error] of [
   await assert.rejects(observeCase(t, c, check), error);
 });
 
-// A source or client mistake, a changed symptom or changed navigation must
-// leave the contract unmet and differ from the case's own observation, so it
-// can match neither the contract nor a record of that observation; the
-// lifecycle tests show that only an exact record is debt. These hold whether
-// or not the case is still recorded, and need no lifecycle.
+// A source mistake, a changed symptom or changed navigation must leave the
+// contract unmet and differ from the case's own observation, so it can match
+// neither the contract nor a record of that observation; the lifecycle tests
+// show that only an exact record is debt. These hold whether or not the case
+// is still recorded, and need no lifecycle.
 const notDebt = (base, changed) => {
   assert.ok(unmet(changed).length, "a mistake must leave the contract unmet");
   assert.notDeepStrictEqual(changed.facts, base.facts, "a mistake must change the observation");
 };
-for (const [id, mutate] of [
-  ["G2", c => { c.source = c.source.replace("import hlevels;", ""); }],
-  ["G1", c => { c.clients[0] = "orignal"; }],
-]) test(`FG0 harness: ${id} source and client mistakes cannot become TODOs`, async t => {
-  const c = fixture(id), base = await observeCase(t, c, check);
-  mutate(c);
+test("FG0 harness: G2 source mistakes cannot become TODOs", async t => {
+  const c = fixture("G2"), base = await observeCase(t, c, check);
+  c.source = c.source.replace("import hlevels;", "");
   notDebt(base, await observeCase(t, c, check));
 });
 test("FG0 harness: changed symptoms and additional failures cannot become TODOs", async t => {

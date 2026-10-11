@@ -3,7 +3,7 @@
 // Nothing here reads defect records; the expected-failure lifecycle in
 // frontend-generation-lifecycle.mjs consumes these observations.
 import assert from "node:assert/strict";
-import {isDeepStrictEqual} from "node:util";
+import {inspect, isDeepStrictEqual} from "node:util";
 import {obligations, requirementConditions} from "./fixtures/frontend-generation-requirements.mjs";
 import {lint} from "../web/cubist/lint.mjs";
 import {diagnosticCause, diagnosticFields, diagnosticVariations, matchDiagnostics, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
@@ -75,6 +75,22 @@ export function validateWitness(fixture) {
     assert.ok(Object.hasOwn(witnessChecks, field), `${id}: unknown witness field ${field}`);
     const missing = witnessChecks[field](fixture, minimum);
     assert.ok(!missing.length, `${id}: ${fixture.id} must keep ${missing.join(", ")}`);
+  }
+}
+// The names a witness field states, and those its case states. A name that no
+// witness states has no minimum, so deleting it from its case would pass.
+const witnessNames = {
+  clients: {label: "client", witness: names => names, fixture: fixture => fixture.clients ?? []},
+  refusedClients: {label: "refused client", witness: Object.keys, fixture: fixture => Object.keys(fixture.refusedClients ?? {})},
+  absentOutputs: {label: "absent output", witness: names => names, fixture: fixture => fixture.absentOutputs ?? []},
+  absentOutputFamilies: {label: "absent output family", witness: names => names, fixture: fixture => fixture.absentOutputFamilies ?? []},
+  diagnostic: {label: "diagnostic", witness: ({name}) => [name], fixture: fixture => fixture.diagnostic ? [fixture.diagnostic.name] : []},
+};
+function validateWitnessed(fixture) {
+  const witnesses = obligations.map(({witnesses: {[fixture.id]: witness}}) => witness).filter(Boolean);
+  for (const [field, {label, witness, fixture: stated}] of Object.entries(witnessNames)) {
+    const named = new Set(witnesses.flatMap(minimums => field in minimums ? witness(minimums[field]) : []));
+    for (const name of stated(fixture)) assert.ok(named.has(name), `${fixture.id}: ${label} ${name} is named by no obligation`);
   }
 }
 // A cause is required by its code or by an obligation, never by the
@@ -155,8 +171,12 @@ export function validateObligations(fixtures) {
     for (const name of obligation.checks) assert.ok(names.includes(name), `${obligation.id}: ${id} must check ${name}`);
   }
   // Independently stated minimums: deleting part of a fixture's expectation
-  // cannot silently redefine success in the audit.
-  for (const fixture of fixtures) validateWitness(fixture);
+  // cannot silently redefine success in the audit. Every name a registered
+  // case states has one, so none can be deleted unnoticed.
+  for (const fixture of fixtures) {
+    validateWitness(fixture);
+    validateWitnessed(fixture);
+  }
   validateConditions();
 }
 // A condition deleted together with its counterexamples leaves no
@@ -193,8 +213,10 @@ function diagnosticContexts(fixture, result) {
     causeRequired: causeRequired(fixture.id, actual.name)}));
 }
 const adviceCodes = ["W705", "W706"];
-// Issued advice, located relative to its rewrite target.
-const adviceFacts = (warnings, target) => warnings.map(({code, declaration, message, start, end}) =>
+// Advice is a set: issued and identified advice are compared in one order.
+const byMessage = advice => [...advice].sort((a, b) => a.message.localeCompare(b.message));
+// Issued advice, located relative to its rewrite target, in that order.
+const adviceFacts = (warnings, target) => byMessage(warnings).map(({code, declaration, message, start, end}) =>
   ({code, declaration, message, start: start - target.start, end: end - target.start}));
 // Only identified advice at the rewrite target authorizes the replacement. The
 // advice requirement's conditions decide, so recognition and acceptance agree.
@@ -267,7 +289,7 @@ const identified = ({fixture, anchors}) => fixture.rewrite.advice.map(advice => 
 const advised = (context, name, edit) => ({name, evidence: e => { e.warnings = structuredClone(identified(context)); edit(e.warnings); }});
 // Each issued warning states its identified counterpart's field.
 const adviceField = (field, what, other) => ({
-  holds: ({fixture, facts: {advice}}) => fixture.rewrite.advice.every((expected, at) => !advice[at] || advice[at][field] === expected[field]),
+  holds: ({fixture, facts: {advice}}) => byMessage(fixture.rewrite.advice).every((expected, at) => !advice[at] || advice[at][field] === expected[field]),
   breaks: context => [advised(context, `advice ${what}`, w => { w[0][field] = other(w[0][field]); })],
 });
 // Range changes place the declaration's refusal at a span within the source.
@@ -375,10 +397,11 @@ const requirementChecks = {
         breaks: context => [advised(context, "advice has an empty span", w => { w[0].end = w[0].start; })],
       },
     },
-    permits: context => [{name: "the identified advice, with a rewrite that preserves the result", evidence: e => {
-      e.warnings = structuredClone(identified(context));
-      e.rewritten = structuredClone(e.result);
-    }}],
+    permits: context => [["the identified advice", warnings => warnings], ["the identified advice in reverse order", warnings => warnings.reverse()]]
+      .map(([name, order]) => ({name: `${name}, with a rewrite that preserves the result`, evidence: e => {
+        e.warnings = order(structuredClone(identified(context)));
+        e.rewritten = structuredClone(e.result);
+      }})),
   },
   // A refusal is located within its region and covers one of its sites. A
   // span that covers a nonempty site is nonempty, so emptiness needs no
@@ -513,6 +536,13 @@ const requirementChecks = {
 const requirementsFor = fixture => Object.entries(requirementChecks).filter(([, check]) => check.applies(fixture));
 export const requirementNames = fixture => requirementsFor(fixture).map(([name]) => name);
 export const unmet = observation => Object.entries(observation.requirements).filter(([, met]) => !met).map(([name]) => name);
+// An active case asserts every requirement; a semantic mismatch is an
+// ordinary failure, as the FG6 mutation gate requires. The lifecycle asserts
+// this for unrecorded cases, and once RC0 retires it the runner calls it.
+export function assertCase(fixture, observation) {
+  const missing = unmet(observation);
+  assert.equal(missing.length, 0, `${fixture.id}: unmet ${missing.join(", ")}\n${inspect(observation.facts, {depth: null})}`);
+}
 // The judging code, for the audit's mutation sweep: the projections that
 // conditions read and the conditions themselves. Facts that only the
 // lifecycle reads are left out; its records, not the audit, depend on them.

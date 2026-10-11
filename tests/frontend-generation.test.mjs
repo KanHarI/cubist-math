@@ -20,7 +20,8 @@ const check = (t, source, fixtures = {}) => {
   return checkProgram(t, source, {module, reader: (name, importer) => fixtures[name] ?? library(name, importer)});
 };
 // Keep group prefixes selectable by the downstream FG6 mutation gate. This is
-// the only per-case consumer of defect records.
+// the only per-case consumer of defect records; when RC0 deletes them with the
+// lifecycle, this call becomes assertCase(fixture, observation).
 for (const fixture of cases) test(`${fixture.group}: [${fixture.id}] ${fixture.contract}`, async t => {
   const observation = await observeCase(t, fixture, check);
   recordCase(t, fixture, observation, {record: knownDefects[fixture.id], strict: process.env.CUBIST_GENERATION_STRICT === "1"});

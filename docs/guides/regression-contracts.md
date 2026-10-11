@@ -57,9 +57,10 @@ reads them. Collect compiler results once, as plain data, and judge them with
 pure functions. Index each test by what it depends on: a test that needs a
 record is keyed by that record and disappears with it, a test of the classifier
 uses synthetic observations and records, and lifecycle tests live in their own
-file. Activating a case is then only the removal of its record, and retiring
-the lifecycle only deletes files. Check this by running the whole suite against
-the fixing compiler with every record removed.
+file. Activating a case is then only the removal of its record. Retiring the
+lifecycle deletes its files and points the runner's one lifecycle call at the
+assertion that the lifecycle already makes for unrecorded cases. Check this by
+running the whole suite against the fixing compiler with every record removed.
 
 Exercise the different-failure boundary twice: against each recorded debt, and
 against accepted observations with no record at all. Make the second structural
@@ -99,10 +100,13 @@ and their manifest. Name the contexts, the incorrect alternative each witness
 distinguishes and the requirements it must keep. State each witness's minimum
 expectations as data, and derive what the audit perturbs from those minimums,
 never from the expectation under test; otherwise weakening an expectation also
-removes the counterexample that would expose it. Keep client verdicts,
-publication and source expectations composable across diagnostic kinds. Resolve
-source anchors before observation; ambiguous occurrences are fixture errors
-unless explicitly selected.
+removes the counterexample that would expose it. Every client, refused client,
+absent output and declaration diagnostic that a case states needs a witness
+that names it: a name without a minimum can be deleted unnoticed, and the
+audit cannot see that deletion. Keep client verdicts, publication and source
+expectations composable across diagnostic kinds. Resolve source anchors before
+observation; ambiguous occurrences are fixture errors unless explicitly
+selected.
 
 Use real programs and independently stated clients for semantic evidence.
 Exercise distinct branch results and inputs that distinguish dependence on a
@@ -149,7 +153,7 @@ Before submitting a new contract or changing one, answer:
 - What deliberately broken behavior proves each requirement is sensitive?
 
 Remove a case's record with its fix; nothing else changes. Once all cases are
-active, retire the records, the classifier and its tests together while
-preserving semantic assertions, case selectors and distinguishing controls. A
-review fix must not weaken the expected behavior merely to match a new
-observation.
+active, retire the records, the classifier and its tests together, and have
+the runner assert each case directly, while preserving semantic assertions,
+case selectors and distinguishing controls. A review fix must not weaken the
+expected behavior merely to match a new observation.

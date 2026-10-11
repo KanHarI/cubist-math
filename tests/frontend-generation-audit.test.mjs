@@ -287,8 +287,10 @@ test("FG0 audit: G12-range accepts a span over the whole call", async t => {
   const call = reference(c.source, c.diagnostic.scope, "iter(n)");
   meets(observe(c, evidence, result => Object.assign(result.gaps[0], call)));
 });
+// A case outside the registry: the requirement map names G9's own client, so
+// a renamed client belongs to another case ID.
 test("FG0 audit: supplied client names, labels and scope drive navigation checks", async t => {
-  const c = fixture("G9"), scope = "law l(z : M) : k(z) = op(z, z);";
+  const c = {...fixture("G9"), id: "G9-renamed"}, scope = "law l(z : M) : k(z) = op(z, z);";
   c.source = c.source.replace(c.observations.scope, scope).replace("def meaning(", "def renamed(");
   c.observations = {...c.observations, scope, label: "z"};
   c.clients = ["renamed"];
@@ -382,6 +384,14 @@ for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} judges identified a
     assert.equal(checks, 1, `${name}: unrecognized advice must not apply the assumed rewrite`);
     violates(observation, "advice");
   }
+});
+
+// Advice is a set on both sides: a case may state its identified advice in any
+// order, as the linter may issue it in any order.
+test("FG0 audit: G5 may state its identified advice in any order", async () => {
+  const {c, evidence} = structuredClone(await acceptedCase("G5"));
+  c.rewrite.advice.reverse();
+  assert.deepEqual(audit(contracts, c, evidence).failures, []);
 });
 
 // Weakened expectations fail validation before any program is checked: causes
@@ -565,6 +575,10 @@ test("FG0 audit: requirements survive deletion of a case, its manifest row or it
   weakens("G2", c => { c.refusedClients.lowered = {code: "E606"}; }, /universe-contribution: G2 must keep refused client lowered/);
   weakens("G2", c => { c.clients = c.clients.filter(name => name !== "preserves"); }, /universe-contribution: G2 must keep client preserves/);
   weakens("G1", c => { delete c.diagnostic; }, /ownership: G1 must keep diagnostic N/);
+  weakens("G1", c => { c.clients = c.clients.filter(name => name !== "original"); }, /ownership: G1 must keep client original/);
+  weakens("G1-reverse", c => { c.clients = c.clients.filter(name => name !== "original"); }, /ownership: G1-reverse must keep client original/);
+  weakens("G3", c => { c.clients = c.clients.filter(name => name !== "usable"); }, /unsupported-transport: G3 must keep client usable/);
+  weakens("G6", c => { c.clients = []; }, /failed-dependency: G6 must keep client independent/);
   weakens("G3", c => { delete c.refusedClients.unsupported.cause; }, /unsupported-transport: G3 must keep refused client unsupported/);
   weakens("G3", c => { delete c.refusedClients.unsupported_iso.cause; }, /unsupported-transport: G3 must keep refused client unsupported_iso/);
   weakens("G4", c => { c.clients = c.clients.filter(name => name !== "off_computation"); }, /match-computation: G4 must keep client off_computation/);
@@ -574,4 +588,13 @@ test("FG0 audit: requirements survive deletion of a case, its manifest row or it
   weakens("G12", c => { c.refusedClients.wrong.code = "E604"; }, /recursive-step: G12 must keep refused client wrong/);
   for (const id of ["G12", "G12-inherited", "G12-initial"])
     weakens(id, c => { c.clients = c.clients.filter(name => name !== "computation2"); }, new RegExp(`recursive-step: ${id} must keep client computation2`));
+  // A name that no witness states has no minimum, so it could be deleted
+  // unnoticed; every name a registered case states must have one.
+  for (const [id, edit, error] of [
+    ["G2", c => { c.clients.push("unnamed"); }, /G2: client unnamed is named by no obligation/],
+    ["G4", c => { c.refusedClients.unnamed = {code: "E606"}; }, /G4: refused client unnamed is named by no obligation/],
+    ["G1", c => { c.absentOutputs = ["N.unnamed"]; }, /G1: absent output N.unnamed is named by no obligation/],
+    ["G3", c => { c.absentOutputFamilies.push("T.Unnamed"); }, /G3: absent output family T.Unnamed is named by no obligation/],
+    ["G4", c => { c.diagnostic = {name: "T.value", code: "E546"}; }, /G4: diagnostic T.value is named by no obligation/],
+  ]) weakens(id, edit, error);
 });

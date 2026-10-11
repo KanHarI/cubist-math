@@ -4,8 +4,8 @@ Scope: the executable cases from PR #205, restored in PR #217, including the
 diagnostic acceptance review of `89c97e99`, the requirement review of
 `687f554c`, the activation review of `2e27565b`, the condition review of
 `f48bc1f7`, the guard review of `2a246504` and the design review of
-`637734ab`, the diagnostic-cause review of `f3b68c5f` and the optional-code
-review of `fbe53b4e`. The
+`637734ab`, the diagnostic-cause review of `f3b68c5f`, the optional-code
+review of `fbe53b4e` and the witness review of `1628df46`. The
 [frontend generation roadmap](../roadmaps/frontend-generation.md) supplies the
 behavioral requirements. The [inventory](frontend-generation-gaps.md)
 describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
@@ -66,7 +66,7 @@ contract tables list; the last column states only what distinguishes the case.
 | G2 | [FG3](../roadmaps/frontend-generation.md#fg3-infer-universes-from-the-generated-telescope) | Source: the domain moves into the model's universe (`op(A : U, x : A)`). Hom/Iso, computation, `map_op` preservation and level clients check at U0/U1; that variant's U1 level pin is U2. Stating a U0 model's Hom in U0 is refused with `found U1, expected U0`. | A missing preservation field or level client; an accepted lowering or one with other endpoints; a different same-code Hom mismatch. |
 | G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and require E817 with operation op, argument p and law l for both clients. Recognized focused wordings decode to that same cause. | A leaked family root or member; swapped semantic roles, a reversed or denied dependency, a carrier instead of a law, an arrow-operation refusal, or another code. |
 | G4, G4-flat | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: Nat motives, with distinct branch results and independently stated accepted/refused equations. | Constant match result; wrong clause result; same E546 with a different primary cause. |
-| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target authorizes the associated rewrite. | Any issued advice other than exactly the identified advice within its target; an authorized rewrite that loses a client. |
+| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target, in any order, authorizes the associated rewrite. | Any issued advice other than exactly the identified advice within its target; an authorized rewrite that loses a client. |
 | G6 | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: child E340 has dependency target P, with or without an attached root cause. Parent E343 has untranslated subject Undefined and independent clients check. | Another dependency, including Q whose attached cause mentions P; an untranslated-name message with E340; another parent subject. |
 | G8 | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Observer: E606 with the specified found/expected endpoints; token or wider body span accepted. | Swapped or changed endpoints; a span that does not cover the token within the body; a different generation cause. |
 | G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the colliding law binder, preserving independently stated meaning and all navigation sites. Identical repeated links are equivalent, and links that only touch a site belong to their own text. | At any written site, any link that is not the written label targeting its binder over exactly that label, including one beside the correct link; a site without a link. |
@@ -238,6 +238,23 @@ contract tables list; the last column states only what distinguishes the case.
   a code outside those two defaults, reordered diagnostics and a refused
   alternative code. Controls are constructed within the stated constraints,
   never filtered by the matcher whose acceptance they test.
+- Witnesses stated minimums, but nothing required a case's names to have one.
+  G1's `original` client, which the ownership obligation's "lost original
+  client" names, G3's `usable` base client and G6's `independent` recovery
+  client could each be deleted while every audit and harness test passed;
+  only the temporary records noticed. Every client, refused client, absent
+  output and declaration diagnostic a registered case states must now be named
+  by one of its witnesses, so the map names all of them, and the audit
+  rejects deleting those three and adding an unnamed name of each kind. A
+  misspelled client now fails before checking.
+- The guide and lifecycle said that retiring the lifecycle only deletes files,
+  but the runner imports the records and `recordCase`. The contracts now
+  export `assertCase`, which the lifecycle uses for unrecorded and strict
+  cases; RC0 deletes the lifecycle's files and has the runner call it instead.
+- Advice conditions compared issued and identified advice by position, so the
+  identified advice in another order was refused. Both are now compared in
+  one order: the reversed identified advice is a permitted variation, and a
+  case may state its identified advice in either order.
 
 ## Validation and lifecycle
 
@@ -269,9 +286,9 @@ cannot erase an obligation.
 Keep the roadmap as the behavioral authority when integrating downstream fixes.
 Activate each fixed original case by removing its record, and preserve
 downstream search-eligibility, explicit-path, provenance, named-constructor and
-recursive-predecessor controls. Once all original cases pass, delete the records
-module, the lifecycle module and its test file. Retain the
-requirements, their counterexamples and the distinguishing controls that still
-protect active behavior. Integration,
-mutation and full-suite results belong in the PR's validation record at the
-tested revision.
+recursive-predecessor controls. Once all original cases pass, delete the
+records module, the lifecycle module and its test file, and have the runner
+call `assertCase` in place of `recordCase`. Retain the requirements, their
+counterexamples and the distinguishing controls that still protect active
+behavior. Integration, mutation and full-suite results belong in the PR's
+validation record at the tested revision.

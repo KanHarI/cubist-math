@@ -27,8 +27,9 @@ distinct results, every written branch, and a refused constant-result equation.
 G5 uses positional operation calls, identity and a generated model/fold to
 test the lint rewrite for both single and grouped operation binders. The case
 records each warning's code, declaration and message and verifies its location
-within the rewrite target before applying the associated replacement. Changed
-or partial advice is an unrecognized observation until its edit is reviewed.
+within the rewrite target before applying the associated replacement. Advice
+is a set, so its order is free. Changed or partial advice is an unrecognized
+observation until its edit is reviewed.
 Named operation calls are not currently supported. Passing controls require
 W705 and W706 for ordinary safe unused binders and check their arrow-form
 rewrites. G11 requires opposite outcomes for intended and captured equations,
@@ -91,13 +92,15 @@ manifest row together still fails if an obligation loses its witness. Each
 obligation's `checks` names the contract requirements its witnesses must keep,
 so a requirement cannot stop applying unnoticed. Each witness also states, as
 data, the minimum its case must keep: clients, refused-client and declaration
-diagnostics, absent outputs and observation sites. These include
-constructor availability, output absence, G2's public types and lowering
-endpoints, G4's distinct branch results, G8's endpoints and every
-second recursive step. A weaker fixture is rejected before any program is
-checked. A diagnostic cause that its code does not always carry must be
-required by a witness, and the audit's cause counterexamples come from there
-rather than from the expectation under test.
+diagnostics, absent outputs and observation sites. These include constructor
+availability, output absence, G2's public types and lowering endpoints, G4's
+distinct branch results, G8's endpoints and every second recursive step. Every
+client, refused client, absent output and declaration diagnostic a case states
+must be named by one of its witnesses, so none can be deleted unnoticed. A
+weaker fixture is rejected before any program is checked. A diagnostic cause
+that its code does not always carry must be required by a witness, and the
+audit's cause counterexamples come from there rather than from the expectation
+under test.
 Source scopes, conflicts and rewrite targets must occur exactly once; repeated
 inner references require an explicit occurrence. Observers use resolved spans.
 
@@ -126,14 +129,15 @@ matcher compares; declaration diagnostics also carry their source anchors.
 `absentOutputFamilies` describe only the output list; they make no claim about
 name resolution. Use real clients to observe that boundary.
 
-Prerequisites are ordinary assertions: metadata must be valid, and G5's
-original interface must check before any rewrite. Everything else is an
-observation. Missing clients are represented explicitly, so a misspelled client
-cannot match a recorded defect. The whole diagnostic name/code set is compared,
-including dependent failures; primary failure payloads distinguish different
-causes with the same code. Every link overlapping a written occurrence is
-retained with its label, target and span. Repeated identical links at one
-occurrence are equivalent.
+Prerequisites are ordinary assertions: metadata must be valid, witnessed
+clients must be kept, and G5's original interface must check before any
+rewrite. Everything else is an observation. A misspelled client therefore fails
+before checking, and a client missing from the result is represented
+explicitly, so it cannot match a recorded defect. The whole diagnostic
+name/code set is compared, including dependent failures; primary failure
+payloads distinguish different causes with the same code. Every link
+overlapping a written occurrence is retained with its label, target and span.
+Repeated identical links at one occurrence are equivalent.
 
 Only an exact match for the case's record is reported as TODO.
 No exception or assertion message is classified as a defect. A different
@@ -146,11 +150,12 @@ Sibling cases retain their own status.
 assertions, allowing defect-free controls to pass before activation. TODOs
 remain implementation debt and never count as completion.
 
-The [harness](../frontend-generation-harness.test.mjs) checks that missing
-imports, misspelled clients, unrelated type errors, invalid metadata,
-changed/extra diagnostics and missing or wrong navigation fail normally. Each
-mistake must leave the contract unmet and change the case's own observation,
-so these checks hold whether or not the case is recorded. It also checks the
+The [harness](../frontend-generation-harness.test.mjs) checks that misspelled
+clients and invalid metadata fail before checking, and that missing imports,
+unrelated type errors, changed/extra diagnostics and missing or wrong
+navigation fail normally. Each of those mistakes must leave the contract unmet
+and change the case's own observation, so these checks hold whether or not
+the case is recorded. It also checks the
 accepted-client helper. The
 [lifecycle tests](../frontend-generation-lifecycle.test.mjs) check the
 classifier with synthetic observations (TODO only for an exact record, strict
@@ -232,8 +237,9 @@ contracts. This harness is evidence at FG0, not an implementation of those fixes
 The FG1–FG6 implementation stack inherited by
 [#224](https://github.com/KanHarI/cubist-math/pull/224) activates fixed cases.
 Once all cases are active, its RC0 cleanup deletes the records module, the
-lifecycle module and its test file together; the runner then asserts each
-observation's requirements.
+lifecycle module and its test file together, and the runner calls
+`assertCase` in place of `recordCase`. The lifecycle already makes that
+assertion for unrecorded and strict cases.
 Keep the desired observations, stable case IDs and group selectors. Active
 semantic mismatches must still produce assertions for the mutation gate.
 RC1/RC2 can migrate the clients and observations to Cubist's existing runner;
