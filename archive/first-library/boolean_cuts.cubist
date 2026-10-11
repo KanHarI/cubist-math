@@ -118,13 +118,12 @@ def dedekind_to_boolean(Q : U0, ltQ : Q -> Q -> U0, cut : DedekindCut(Q, ltQ)) :
   let upperBool := classical_cut_predicate(Q, upper, cut_upper_prop(Q, ltQ, cut));
   let lowerPath := classical_cut_predicate_correct(Q, lower, cut_lower_prop(Q, ltQ, cut));
   let upperPath := classical_cut_predicate_correct(Q, upper, cut_upper_prop(Q, ltQ, cut));
-  let lowerLaws :=
-    along ((fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper))) by sym(lowerPath) from cut_laws(
-      Q, ltQ, cut
-    );
+  let lowerLaws := transport cut_laws(Q, ltQ, cut) along sym(lowerPath) in (
+    (fun (predicate : Q -> U0) => CutLaws(Q, ltQ, predicate, upper))
+  );
   exact (
     lowerBool, upperBool,
-    along CutLaws(Q, ltQ, decoded_cut_predicate(Q, lowerBool)) by sym(upperPath) from lowerLaws
+    transport lowerLaws along sym(upperPath) in CutLaws(Q, ltQ, decoded_cut_predicate(Q, lowerBool))
   );
 }
 

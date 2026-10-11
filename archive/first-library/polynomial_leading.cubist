@@ -158,8 +158,8 @@ def polynomial_product_degree(
   polynomial_cutoff(K, polynomial_mul(K, p, q)) = succ(add_count(m, n)) {
   let f := polynomial_coefficients(K, p);
   let g := polynomial_coefficients(K, q);
-  let sf := along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
-  let sg := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
+  let sf := transport polynomial_cutoff_support(K, p) along dp in SeriesSupport(K, f);
+  let sg := transport polynomial_cutoff_support(K, q) along dq in SeriesSupport(K, g);
   let nonzero : FieldNonzero(af_carrier(K), af_operations(K), convolution(K, add_count(m, n), f, g)) {
     intro zero;
     exact scalar_product_nonzero(

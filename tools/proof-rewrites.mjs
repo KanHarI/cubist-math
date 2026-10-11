@@ -5,12 +5,12 @@
 import { parse, tokenize } from "../web/cubist/parser.mjs";
 
 // Rewrites whose output elaborates to the same checked terms.
-export const identicalRewrites = ["path-apply", "along", "intro", "let", "params", "fun"];
+export const identicalRewrites = ["path-apply", "transport", "intro", "let", "params", "fun"];
 // Rewrites that keep public types but may change proof terms.
 export const typePreservingRewrites = ["wrappers", "rfl", "path-lambda", "ext"];
 
 const statementKinds = new Set(["intro", "let", "obtain", "cases", "matchStatement", "exact", "rfl",
-  "calc", "rw", "simpOnly", "simpaOnly", "hlevel", "ext", "over"]);
+  "calc", "rw", "simpOnly", "simpaOnly", "hlevel", "ext"]);
 const spanned = value => value && typeof value === "object" && Number.isInteger(value.start) && Number.isInteger(value.end);
 const identifiers = text => new Set(text.match(/[A-Za-z_][A-Za-z_0-9]*/g) ?? []);
 const squash = text => text.replace(/\s+/g, " ").trim();
@@ -58,7 +58,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
     // A projection's operand binds as tightly as a callee: (e @ 0).1. So does
     // a prefix ~'s: ~(e @ 0), never ~e @ 0, which is (~e) @ 0.
     if (node.kind === "projection" || node.kind === "unary") return "callee";
-    if (["pair", "exact", "let", "obtain", "over", "along", "rw", "simpOnly",
+    if (["pair", "exact", "let", "obtain", "lift", "transport", "rw", "simpOnly",
       "simpaOnly", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
       return "delimited";
     if (node.kind === undefined && key === "value") return "delimited";
@@ -141,11 +141,14 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
         const text = `${left} @ ${render(args[1], "operand")}`;
         return context === "callee" ? `(${text})` : text;
       }
-      if (name === "transport" && args.length === 5 && enabled.has("along") && !gaps()
+      if (name === "transport" && args.length === 5 && enabled.has("transport") && !gaps()
         && !comment(args[1].start, args[2].end)) {
-        count("along");
+        count("transport");
         const family = ["name", "call"].includes(args[0].kind) ? render(args[0], "operand") : `(${render(args[0], "delimited")})`;
-        const text = `along ${family} by ${render(args[3], "delimited")} from ${render(args[4], "delimited")}`;
+        const value = ["name", "number", "binaryNumber"].includes(args[4].kind)
+          || (args[4].kind === "call" && args[4].fn.kind === "name" && args[4].fn.name !== "transport")
+          ? render(args[4], "delimited") : `(${render(args[4], "delimited")})`;
+        const text = `transport ${value} along ${render(args[3], "delimited")} in ${family}`;
         return ["delimited", "statement"].includes(context) ? text : `(${text})`;
       }
     }

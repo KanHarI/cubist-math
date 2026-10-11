@@ -23,24 +23,24 @@ def field_embedding_lift_preserves(
   let B := SubfieldCarrier(L, S);
   let opsA := af_operations(K);
   let opsB := subfield_carrier_ops(L, S);
-  let lift := field_embedding_lift(K, L, e, S, lands);
+  let lift_ := field_embedding_lift(K, L, e, S, lands);
   obtain (p0, p1, pn, pa, pm) := field_embedding_preserves(K, L, e);
   exact (
-    subfield_value_ext(L, S, lift(af_zero(A, opsA)), af_zero(B, opsB), p0),
-    subfield_value_ext(L, S, lift(af_one(A, opsA)), af_one(B, opsB), p1),
+    subfield_value_ext(L, S, lift_(af_zero(A, opsA)), af_zero(B, opsB), p0),
+    subfield_value_ext(L, S, lift_(af_one(A, opsA)), af_one(B, opsB), p1),
     (
       fun (x : A) => subfield_value_ext(
-        L, S, lift(af_neg(A, opsA, x)), af_neg(B, opsB, lift(x)), pn(x)
+        L, S, lift_(af_neg(A, opsA, x)), af_neg(B, opsB, lift_(x)), pn(x)
       )
     ),
     (
       fun (x, y : A) => subfield_value_ext(
-        L, S, lift(af_add(A, opsA, x, y)), af_add(B, opsB, lift(x), lift(y)), pa(x, y)
+        L, S, lift_(af_add(A, opsA, x, y)), af_add(B, opsB, lift_(x), lift_(y)), pa(x, y)
       )
     ),
     (
       fun (x, y : A) => subfield_value_ext(
-        L, S, lift(af_mul(A, opsA, x, y)), af_mul(B, opsB, lift(x), lift(y)), pm(x, y)
+        L, S, lift_(af_mul(A, opsA, x, y)), af_mul(B, opsB, lift_(x), lift_(y)), pm(x, y)
       )
     )
   );
