@@ -101,9 +101,9 @@ def span_least(
   let descend : SpanWitness(K, V, P, x) -> subspace_members(K, V, S, x) {
     intro witness_;
     obtain (n, vectors, coefficients, members, sum) := witness_;
-    exact along subspace_members(K, V, S) by sum from combination_in_subspace(
+    exact transport combination_in_subspace(
       K, V, S, n, vectors, coefficients, (fun (i : Fin(n)) => included(vectors(i), members(i)))
-    );
+    ) along sum in subspace_members(K, V, S);
   }
   exact TruncateElim(
     U0, SpanWitness(K, V, P, x), subspace_members(K, V, S, x), subspace_prop(K, V, S, x), descend,

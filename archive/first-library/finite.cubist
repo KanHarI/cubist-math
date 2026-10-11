@@ -143,7 +143,7 @@ def sum_tag(A : U0, x : Unit or A) := match x return U0 {
 def sum_disjoint(
   A : U0, u : Unit, a : A, p : typed(Unit or A, left(u)) = typed(Unit or A, right(a))
 ) :=
-  along sum_tag(A) by p from tt;
+  transport tt along p in sum_tag(A);
 
 def tail_or(A : U0, fallback : A, x : Unit or A) := match x return A {
     left u => fallback;

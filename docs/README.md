@@ -72,6 +72,9 @@ finishing a language milestone does not automatically resume them.
   motivated by PR #188's review failures, with phased implementation and
   semantic acceptance criteria. The [current gap inventory](reports/frontend-generation-gaps.md)
   records reproducible failures separately from planned functionality.
+- [Induction hypothesis syntax](roadmaps/induction-hypothesis-syntax.md):
+  adopted separation of constructor fields and induction hypotheses;
+  specified, not implemented.
 - [Morphisms, categories and universal constructions](roadmaps/categories.md):
   opt-in morphisms and checked initial/free derivations, which may fail;
   general propositional laws and the proposed categorical library. The

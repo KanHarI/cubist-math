@@ -1,12 +1,11 @@
 // Proof-block statements: exact, rfl, calc, rw, simp only, simpa, intro,
-// hlevel, ext, over, let, open, obtain and match. tacticProof elaborates a
+// hlevel, ext, let, open, obtain and match. tacticProof elaborates a
 // block's first statement into a proof of the goal, with the rest of the
 // block after it, or returns undefined when it is no statement here.
 import {calcStepSite} from "../cubist/link-sites.mjs";
 import {T} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
-import {transportToDependentPath} from "./path-over.mjs";
 import {Goal,Transition,steps,reflexivity,composePaths} from "./proof-goals.mjs";
 import {elaborateMatchStatement,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
@@ -221,25 +220,6 @@ const tactics = {
     const output=T.app(T.lam(pi.name,pi.domain,pi.body),variable);
     const next=new Goal(T.path(scope.fresh("i"),output,T.app(path.left,variable),T.app(path.right,variable)),inner);
     return new Transition(goal,next,[steps.congruence(name,pi.domain,path.family)]).rebuild(t.block(rest,next));
-  },
-  over(t,first,rest,goal) {
-    const {scope}=goal;
-    if(rest.length)throw Error("Statements after over are unreachable.");
-    const target=scope.nf(goal.target);
-    if(target.tag!=="Path")throw Error("over requires an expected PathP goal.");
-    const C=t.term(first.family,scope,null),p=t.term(first.path,scope,null);
-    const base=scope.nf(scope.infer(p).type);
-    if(base.tag!=="Path"||freeDimensions(base.family).has(base.dim))
-      throw Error("over requires a homogeneous base path.");
-    const dim=scope.fresh("i"),family=T.app(C,T.at(p,I.variable(dim)));
-    const transported=T.comp(dim,family,[],target.left);
-    const fiber=T.app(C,base.right);
-    const next=goal.with(T.path(scope.fresh("j"),fiber,transported,target.right));
-    const transition=new Transition(goal,next,
-      [steps.lemma(transportToDependentPath(dim,family,target.left,target.right),next.target)]);
-    const result=transition.rebuild(t.block(first.body,next));
-    scope.check(result,goal.target);
-    return result;
   },
   let(t,first,rest,goal) {
     const {scope}=goal,{unit}=scope;

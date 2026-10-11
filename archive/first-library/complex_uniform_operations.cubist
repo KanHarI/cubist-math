@@ -76,15 +76,15 @@ def complex_uniform_curve_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS, nearby
       )
     );
-    exact along (
+    exact transport complex_close_add(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller,
+      smaller, first, second
+    ) along halfSum(epsilon) in (
       (
         fun (radius : F) => ComplexClose(
           F, addF, lt, complex_add(F, addF, f(a), g(a)), complex_add(F, addF, f(b), g(b)), radius
         )
       )
-    ) by halfSum(epsilon) from complex_close_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller,
-      smaller, first, second
     );
   }
   exact (delta, positiveDelta, close);

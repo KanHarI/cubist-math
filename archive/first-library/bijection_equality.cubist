@@ -3,7 +3,7 @@ import finite;
 // Equality of dependent pairs is built from equality of the first components
 // and a path between the transported second components.
 def dependent_pair_path(
-  A : U0, P : A -> U0, x, y : A, p : x = y, u : P(x), v : P(y), q : (along P by p from u) = v
+  A : U0, P : A -> U0, x, y : A, p : x = y, u : P(x), v : P(y), q : (transport u along p in P) = v
 ) :=
   path(
     fun (i : Interval) => exists z : A. P(z),
@@ -25,7 +25,7 @@ def subtype_pair_path(
   A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k), x, y : A,
   p : x = y, u : P(x), v : P(y)
 ) :=
-  dependent_pair_path(A, P, x, y, p, u, v, prop_(y, along P by p from u, v));
+  dependent_pair_path(A, P, x, y, p, u, v, prop_(y, transport u along p in P, v));
 
 def subtype_ext(
   A : U0, P : A -> U0, prop_ : (forall x : A. forall h : P(x). forall k : P(x). h = k), u,
