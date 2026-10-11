@@ -9,8 +9,8 @@ def FiniteLinearLift(
   K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
   h : LinearMap(K, CoordinateSpace(K, m), W)
 ) :=
-  exists lift : LinearMap(K, CoordinateSpace(K, m), V). forall v : Fin(m) -> af_carrier(K).
-  linear_map(K, V, W, f, linear_map(K, CoordinateSpace(K, m), V, lift, v)) = linear_map(
+  exists lift_ : LinearMap(K, CoordinateSpace(K, m), V). forall v : Fin(m) -> af_carrier(K).
+  linear_map(K, V, W, f, linear_map(K, CoordinateSpace(K, m), V, lift_, v)) = linear_map(
     K, CoordinateSpace(K, m), W, h, v
   );
 

@@ -352,7 +352,7 @@ on 2026-10-05 (L4.4).
     `Transition`: a goal, the goal that remains, a plan and the search trace.
     Plan steps are composition, transport, congruence, abstraction and lemma
     application; conversion closes a goal with a checked constant path.
-    `rw`, `simp`, `simpa`, `ext`, `intro` and `over` rebuild through the
+    `rw`, `simp`, `simpa`, `ext` and `intro` rebuild through the
     plan's one interface, and `calc` shares its path composition. Tactics
     share inspector records.
     [motives.mjs](../../web/translator/motives.mjs) abstracts a goal over
@@ -1018,7 +1018,7 @@ Completion:
 - [ ] **E4. Paths as named results.** `normalize [rules] (e)` is a term: the
   checked simplification path from `e` to its simplified form, usable wherever
   a path is data, for example as a transport argument. A lint flags `simp`
-  without `only` when its path later reaches `transport`, `over` or a
+  without `only` when its path later reaches `transport`, `lift` or a
   PathP family, since a change to the rule set would change that path.
   `only` fixes rule selection, not future elaboration strategies. Persistent
   freezing follows invariant 7 and retains the checked construction or its

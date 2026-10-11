@@ -34,13 +34,10 @@ def field_subtype_ext(
   p : field_first(A, P, u) = field_first(A, P, v)
 ) :
   u = v {
-  let square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) {
-    over P along p by {
-      exact prop_(
-        field_first(A, P, v), transport field_second(A, P, u) along p in P, field_second(A, P, v)
-      );
-    }
-  }
+  let square : PathP(fun (i : Interval) => P(p @ i), field_second(A, P, u), field_second(A, P, v)) :=
+    lift prop_(
+      field_first(A, P, v), transport field_second(A, P, u) along p in P, field_second(A, P, v)
+    ) along p in P;
   exact path i => (p @ i, square @ i);
 }
 

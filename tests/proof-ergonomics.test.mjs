@@ -300,7 +300,7 @@ test("path reconstruction preserves compact shared terms within the proof deadli
 test("path abstraction and dependent-path transport keep shared inputs compact",()=>{
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
-  for(const mode of ["path","over"]) {
+  for(const mode of ["path","lift"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
       let source;
@@ -311,7 +311,7 @@ test("path abstraction and dependent-path transport keep shared inputs compact",
       } else {
         source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
         for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+",t"+(i-1)+");";
-        source+="let h : (transport t${sharedDepth} along refl(0) in (fun (n : Nat) => Nat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }";
+        source+="let h : (transport t${sharedDepth} along refl(0) in (fun (n : Nat) => Nat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; exact lift q along refl(0) in (fun (n : Nat) => Nat); } rfl; }";
       }
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
@@ -368,7 +368,7 @@ test("shared path and transport proofs remain inspectable without expanding raw 
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
   const json=new URL("../web/cubical-json.mjs",import.meta.url).href;
-  for(const mode of ["path","over"]) {
+  for(const mode of ["path","lift"]) {
     let source;
     if(mode==="path") {
       source="import nat; use nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
@@ -377,7 +377,7 @@ test("shared path and transport proofs remain inspectable without expanding raw 
     } else {
       source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
       for(let i=1;i<=sharedDepth;i++)source+=`let t${i} := f(t${i-1},t${i-1});`;
-      source+=`let h : (transport t${sharedDepth} along refl(0) in (fun (n : Nat) => Nat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; over (fun (n : Nat) => Nat) along refl(0) by { exact q; } } rfl; }`;
+      source+=`let h : (transport t${sharedDepth} along refl(0) in (fun (n : Nat) => Nat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; exact lift q along refl(0) in (fun (n : Nat) => Nat); } rfl; }`;
     }
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};

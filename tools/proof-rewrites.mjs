@@ -10,7 +10,7 @@ export const identicalRewrites = ["path-apply", "transport", "intro", "let", "pa
 export const typePreservingRewrites = ["wrappers", "rfl", "path-lambda", "ext"];
 
 const statementKinds = new Set(["intro", "let", "obtain", "cases", "matchStatement", "exact", "rfl",
-  "calc", "rw", "simpOnly", "simpaOnly", "hlevel", "ext", "over"]);
+  "calc", "rw", "simpOnly", "simpaOnly", "hlevel", "ext"]);
 const spanned = value => value && typeof value === "object" && Number.isInteger(value.start) && Number.isInteger(value.end);
 const identifiers = text => new Set(text.match(/[A-Za-z_][A-Za-z_0-9]*/g) ?? []);
 const squash = text => text.replace(/\s+/g, " ").trim();
@@ -58,7 +58,7 @@ export function rewriteModule(source, { rewrites = identicalRewrites, skip = new
     // A projection's operand binds as tightly as a callee: (e @ 0).1. So does
     // a prefix ~'s: ~(e @ 0), never ~e @ 0, which is (~e) @ 0.
     if (node.kind === "projection" || node.kind === "unary") return "callee";
-    if (["pair", "exact", "let", "obtain", "over", "transport", "rw", "simpOnly",
+    if (["pair", "exact", "let", "obtain", "lift", "transport", "rw", "simpOnly",
       "simpaOnly", "lambda", "binderGroup", "forall", "exists", "pathLambda", "withUnfolding"].includes(node.kind))
       return "delimited";
     if (node.kind === undefined && key === "value") return "delimited";

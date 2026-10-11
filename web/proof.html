@@ -847,7 +847,7 @@ def at_the_start(A : U0, x, y : A, p : x = y) : p @ 0 = x {
         </div>
         <div class="quick-entry" id="quick-dependent-paths">
           <h4>Dependent paths: <code>PathP</code> and <code>apd_path</code></h4>
-          <p><code>PathP(family, a, b)</code> is a path over a family of types. <code>apd_path(f, p)</code> is the dependent path of a dependent function over <code>p</code>, and <code>over C along p by { … }</code> proves one from an equality after transport.
+          <p><code>PathP(family, a, b)</code> is a path over a family of types. <code>apd_path(f, p)</code> is the dependent path of a dependent function over <code>p</code>, and <code>lift q along p in C</code> constructs one from an equality <code>q</code> after transport, using the expected path type for its endpoints.
             <a href="reference/cubical.html#dependent-paths">Cubical paths →</a></p>
           <pre><code data-check="accept">def section_path(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)), x, y : A, p : x = y) :
   PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {

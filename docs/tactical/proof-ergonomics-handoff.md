@@ -59,7 +59,7 @@ the C/WASM cubical kernel and report no axiom dependencies.
   `simp only` list. Arbitrary proposition-premise solving remains open.
 - Expected-type `path i => body`, path application `p @ i`, `ext x;` for equality
   of functions with a fixed Pi carrier, `transport v along p in C`, `apd_path(f,p)`,
-  and `over C along p by { ... }`. The last form requires an explicitly given
+  and `lift q along p in C`. The last form requires an explicitly given
   family and checks its transport-equality proof before applying the existing
   PathP bridge. Existing `apd` keeps its transported-equality result.
 - A shared declaration transaction now checkpoints native checking for normal
@@ -114,7 +114,7 @@ compact, deeply shared equality witnesses no longer expand into exponential
 trees during `rw`, `calc`, `simp`, or `simpa` reconstruction.
 Core free-variable scans and term/interval substitution now visit each shared
 syntax node once per operation. This also keeps expected-type `path` and the
-`over` transport bridge compact while retaining capture avoidance under
+`lift` transport bridge compact while retaining capture avoidance under
 different binders.
 The inspector's path-notation dependency scan also memoizes shared syntax and
 has a display-work limit. Raw syntax views stop before JSON expansion exceeds
@@ -140,7 +140,7 @@ The frontend still allocates interval slots for lexical nesting in
 `Translator.dimensionBody`; deeper liveness support needs its own regression.
 The current native query adapter has no public caller-supplied face restriction,
 so automation remains at the unrestricted face. No unrestricted higher-order
-unification or arbitrary `C` inference is claimed by `over`.
+unification or arbitrary `C` inference is claimed by `lift`.
 
 An experimental application-spine change reused a syntactically substituted
 Pi codomain after every argument. One selected import-graph run rose from
@@ -229,7 +229,7 @@ under 100 emitted lines.
 Another regression checks that thousands of distinct native references receive
 distinct temporary names and recover their original reference identities.
 The latest cubical regressions check `path` over a 24-level shared carrier and
-`over` over a 24-level shared endpoint under the same 128 MB heap and 100 ms
+`lift` over a 24-level shared endpoint under the same 128 MB heap and 100 ms
 deadline. A core substitution test checks that sharing under two different
 binders does not capture a free name.
 The imported-template regression checks that a bad rule in a different source
@@ -311,7 +311,7 @@ Run `node tools/audit-proof-ergonomics-usage.mjs` to count AST occurrences in
 the canonical corpus, excluding comments and design fixtures. Current counts
 are 7 `rfl`, 5 `rw`, 7 `ext`, 6 `path` abstractions, 12 `@` applications, 3
 grouped introductions, 2 grouped binder uses, 4 `transport`, 2 `calc`, and two
-uses each of `simp only`, `simpa only`, `over`, and `apd_path`.
+uses each of `simp only`, `simpa only`, `lift`, and `apd_path`.
 Rule registrations, untyped expected lambdas, and value-style `have` remain
 exercised in checked examples and regressions but have no corpus use yet.
 Their absence is an adoption gap, not
@@ -338,7 +338,7 @@ are canonical library proofs, not new demonstration declarations:
 | --- | --- | --- |
 | `simp only` | `ring_distribute_left`, `ring_add_cancel_prefix` in [ring_laws](../../archive/first-library/ring_laws.cubist) | Replace explicit congruence/composition chains with selected ring laws. Commutativity is instantiated at the required arguments rather than used as a looping general rule. |
 | `simpa only` | `field_add_cancel`, `field_inverse_unique` in [ordered_fields](../../archive/first-library/ordered_fields.cubist) | Normalize the supplied equality after applying the inverse operation; remove the `undoY`/`undoZ` intermediates and explicit chains. |
-| `over` | `field_subtype_ext` in [field_extensionality](../../archive/first-library/field_extensionality.cubist), `group_hom_ext_at` in [group_hom_universes](../../archive/first-library/group_hom_universes.cubist) | Construct the genuinely dependent second-component path from transported law evidence, then assemble the pair path directly. |
+| `lift` | `field_subtype_ext` in [field_extensionality](../../archive/first-library/field_extensionality.cubist), `group_hom_ext_at` in [group_hom_universes](../../archive/first-library/group_hom_universes.cubist) | Construct the genuinely dependent second-component path from transported law evidence, then assemble the pair path directly. |
 | `apd_path` | `apd_constant` in [paths](../../archive/first-library/paths_.cubist), `ap_interchange` in [equivalence_from_inverse](../../archive/first-library/equivalence_from_inverse.cubist) | Replace explicit interval families and pointwise function applications in existing homotopy laws. These use the constant-family specialization of dependent path action. |
 
 The pair proofs rely on judgmental Sigma eta, making

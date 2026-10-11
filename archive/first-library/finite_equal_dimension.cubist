@@ -33,7 +33,7 @@ def equal_basis_dimension_injective_surjective(
   let squareOnto := coordinate_square_injective_surjective(K, n, square, squareInjective);
   intro y;
   let c := linear_map(K, W, C, v, y);
-  let lift :
+  let lift_ :
     Fiber(vector_carrier(K, C), vector_carrier(K, C), linear_map(K, C, C, square), c)
     -> Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y) {
     intro witness_;
@@ -47,7 +47,7 @@ def equal_basis_dimension_injective_surjective(
   }
   exact mere_map(
     Fiber(vector_carrier(K, C), vector_carrier(K, C), linear_map(K, C, C, square), c),
-    Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y), lift,
+    Fiber(vector_carrier(K, V), vector_carrier(K, W), linear_map(K, V, W, f), y), lift_,
     squareOnto(c)
   );
 }

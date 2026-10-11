@@ -232,7 +232,7 @@ def group_image_factor_surjective(
   let image := group_image(G, H, h);
   let value := subgroup_value(H, image, y);
   let f := group_hom_map(G, subgroup_as_group(H, image), group_image_factor(G, H, h));
-  let lift :
+  let lift_ :
     SubgroupImageWitness(G, H, h, subgroup_top(G), value) -> (exists x : group_carrier(G). f(x) = y) {
     intro witness_;
     obtain (x, member, same) := witness_;
@@ -240,6 +240,6 @@ def group_image_factor_surjective(
   }
   exact mere_map(
     SubgroupImageWitness(G, H, h, subgroup_top(G), value), (exists x : group_carrier(G). f(x) = y),
-    lift, subgroup_evidence(H, image, y)
+    lift_, subgroup_evidence(H, image, y)
   );
 }

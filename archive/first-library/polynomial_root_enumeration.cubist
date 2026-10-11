@@ -25,12 +25,12 @@ def linear_factor_product_root_step(
   let unequal : ((x = h) -> Void) -> Mere(Result) {
     intro different;
     let rq := root_descends_to_factor_quotient(K, P, h, q, refl(P), x, different, root);
-    let lift : (exists i : Fin(n). tail(i) = x) -> Result {
+    let lift_ : (exists i : Fin(n). tail(i) = x) -> Result {
       intro witness_;
       obtain (i, same) := witness_;
       exact (typed(Fin(succ(n)), right(i)), same);
     }
-    exact mere_map((exists i : Fin(n). tail(i) = x), Result, lift, previous(tail, x, rq));
+    exact mere_map((exists i : Fin(n). tail(i) = x), Result, lift_, previous(tail, x, rq));
   }
   exact match excluded_middle((x = h), af_set(K, x, h)) as which return Mere(Result) {
     left same => merely(Result, typed(Result, (typed(Fin(succ(n)), left(tt)), sym(same))));

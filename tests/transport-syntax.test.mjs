@@ -27,7 +27,7 @@ const forms = [
 ];
 const fixture = column => forms.map(row => `def ${row[0]}(${parameters}) := ${row[column]};`).join("\n");
 
-test("along is an ordinary name and a contextual separator in transport and over", async t => {
+test("along is an ordinary name and a contextual separator in transport and lift", async t => {
   assert.equal(languageKeywords.has("along"), false);
   assert.equal(reservedNames.has("along"), false);
   const source = `
@@ -39,7 +39,7 @@ def family_named_along(A : U0, along : A -> U0, x, y : A, p : x = y, v : along(x
   transport v along p in along;
 def bridge(A : U0, C : A -> U0, x, y : A, along : x = y, a : C(x), b : C(y),
   q : (transport a along along in C) = b) : PathP(fun (i : Interval) => C(along @ i), a, b) {
-  over C along along by { exact q; }
+  exact lift q along along in C;
 }
 `;
   assert.equal(currentTransportSyntax(source), source);

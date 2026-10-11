@@ -7,8 +7,8 @@ export function currentTransportSyntax(source) {
   const tokens = tokenize(source), indices = new Map(tokens.map((token, index) => [token.start, index]));
   if (!["along", "by", "from"].every(word => tokens.some(token => token.text === word))) return source;
   // Already-current source can bind `along` as an ordinary name.
-  try { parse(source, false, { bindable: languageKeywords }); return source; } catch { /* Try the retired spelling. */ }
-  const syntax = parse(source, false, { bindable: languageKeywords, historicalTransport: true });
+  try { parse(source, false, { bindable: languageKeywords, historicalOver: true }); return source; } catch { /* Try the retired spelling. */ }
+  const syntax = parse(source, false, { bindable: languageKeywords, historicalTransport: true, historicalOver: true });
   const groupEnds = new Map(), opens = [];
   for (const token of tokens) {
     if (token.text === "(") opens.push(token.start);

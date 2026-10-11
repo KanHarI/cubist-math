@@ -12,8 +12,11 @@ The parser and source reader share the registry in
 reserved name. Universe constants such as `U0` are also unavailable as names.
 
 `along` is an ordinary name. It acts as a separator only in
-`transport value along path in family` and `over family along path by { … }`.
-The retired standalone transport prefix is not part of the current language.
+`transport value along path in family` and `lift equality along path in family`.
+Both forms take expressions, with no proof-block operands. `lift` is reserved;
+existing bindings of that name were renamed to `lift_`. The retired `over`
+statement and standalone transport prefix are not part of the current language;
+`over` is now an ordinary name.
 
 The deriving vocabulary from #187 and #198 is reserved now: `deriving`,
 `isomorphisms`, `morphisms`, `free`, `initial`, `limits`, `preadditive`,

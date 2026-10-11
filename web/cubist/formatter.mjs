@@ -96,13 +96,13 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
     if (!node || typeof node !== "object") return;
-    // The keyword form keeps `transport (value)` apart; the explicit
-    // built-in call remains `transport(C, x, y, p, value)`.
-    if (node.kind === "transport") {
+    // The keyword forms keep `transport (value)` and `lift (proof)` apart;
+    // the explicit built-in call remains `transport(C, x, y, p, value)`.
+    if (["transport", "lift"].includes(node.kind)) {
       const beforeValue = tokenBefore.get(node.value.start);
-      if (beforeValue?.text === "transport") transportKeywords.add(beforeValue.start);
+      if (beforeValue?.text === node.kind) transportKeywords.add(beforeValue.start);
     }
-    if (["transport", "over"].includes(node.kind)) {
+    if (["transport", "lift"].includes(node.kind)) {
       const separator = tokenBefore.get(node.path.start);
       if (separator?.text === "along") transportKeywords.add(separator.start);
     }
@@ -167,7 +167,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       const token = all[position];
       if (token.text === close) {
         position++; flush();
-        while (docs.at(-1) === hard) docs.pop();
+        // A trailing line comment needs its newline before the delimiter.
+        while (docs.at(-1) === hard && !all[position - 2]?.comment) docs.pop();
         return docs;
       }
       const preceding = all[position - 1];

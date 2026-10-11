@@ -9,9 +9,13 @@ the native kernel: grouped binders and introductions, both `have` forms
 `rfl`, `calc`, `rw`, `simp` and `simpa` with explicit, registered and named rule
 sets, `simp at h as h2`, bounded conditional equality rules, checked type-path
 transport, and the "Replace with simp only" action. Milestone 4's cubical
-shorthand (`path i =>`, `p @ i`, `ext`, `transport`, `apd_path`, `over`) shipped
+shorthand (`path i =>`, `p @ i`, `ext`, transport and dependent-path helpers) shipped
 early. A review on 2026-09-25 fixed four elaborator bugs and an older
 name-capture bug; see the [implementation checkpoint](../tactical/proof-ergonomics-handoff.md).
+
+On 2026-10-11 the transport and dependent-path helpers adopted expression-only
+syntax: `transport v along p in C` and `lift q along p in C`. The latter replaces
+the `over` proof block; its endpoints come from the expected path type.
 
 The shared goal layer's core and motive abstraction are delivered (HoTT A5),
 as are G0's checked universe binders and all of milestone 8, whose last
@@ -297,7 +301,7 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 ### 1. Explicit rewriting and calculation chains
 
 - [x] Moved to HoTT A5: introduce the goal/reconstruction representation.
-  Done in PR #15: `rw`, `simp`, `simpa`, `ext`, `intro`, `over` and premise
+  Done in PR #15: `rw`, `simp`, `simpa`, `ext`, `intro` and premise
   search build their proofs through one plan interface in
   `web/translator/proof-goals.mjs`.
 - [x] Add `rw [p];` and `rw [<- p];`, with rules applied in listed order.
@@ -444,7 +448,7 @@ library laws. Its requirements and completion criteria still apply there.
 | Cubical constructors | E2 squares and bounded boundary-filling experiments |
 
 Delivered here ahead of that work: `path i =>`, `p @ i`, `ext x;`,
-`transport v along p in C`, `apd_path(f, p)`, `over C along p by { … }`, and
+`transport v along p in C`, `apd_path(f, p)`, `lift q along p in C`, and
 `simp`/`simpa` transport along checked paths of types.
 
 ### 5. Inferred arguments and goal-directed proof construction

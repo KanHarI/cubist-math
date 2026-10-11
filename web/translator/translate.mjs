@@ -11,6 +11,7 @@ import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-r
 import {SearchFuel,SearchFuelExhausted,SEARCH_FUEL,recordSearch,emptySearchRecord} from "./fuel.mjs";
 import {copySimpRegistry,orderedDefaultRules,orderedHLevelRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
 import {builtinTerm} from "./builtins.mjs";
+import {transportToDependentPath} from "./path-over.mjs";
 import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
 import {Goal,Transition,steps,byConversion,composePaths} from "./proof-goals.mjs";
@@ -884,6 +885,22 @@ export class Translator {
           throw Error("transport requires a homogeneous base path.");
         const dim=scope.fresh("i");
         return T.comp(dim,T.app(family,T.at(path,I.variable(dim))),[],value);
+      }
+      case "lift": {
+        if(!expected)throw Error("lift needs an expected Path or PathP type; annotate the result type.");
+        const target=scope.nf(expected);
+        if(target.tag!=="Path")throw Error("lift needs an expected Path or PathP type; annotate the result type.");
+        const C=tr(n.family,null),p=tr(n.path,null),base=scope.nf(inferred(p).type);
+        if(base.tag!=="Path"||freeDimensions(base.family).has(base.dim))
+          throw Error("lift requires a homogeneous base path.");
+        const dim=scope.fresh("i"),family=T.app(C,T.at(p,I.variable(dim)));
+        const transported=T.comp(dim,family,[],target.left);
+        const equality=T.path(scope.fresh("j"),T.app(C,base.right),transported,target.right);
+        const proof=tr(n.value,equality);
+        scope.check(proof,equality);
+        const result=T.app(transportToDependentPath(dim,family,target.left,target.right),proof);
+        scope.check(result,expected);
+        return result;
       }
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.
