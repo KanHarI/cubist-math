@@ -10,6 +10,7 @@ def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
     originalType: "Unit", symbol: "N", absentOutputs: [],
+    diagnostic: {name: "N", cause: {duplicate: "N"}},
     refusedClients: {leaked_c: {code: "E343", cause: {untranslated: "c"}}},
   },
   G2: {
@@ -45,8 +46,11 @@ def usable(S : T(U0)) : S.M := S.op(refl(S.l));
 def unsupported(S : T(U0)) := T.Hom.id(S);
 def unsupported_iso(S : T(U0)) := T.Iso.id(S);`,
     clients: ["T", "T.make", "T.op", "usable"],
-    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: {code: "E817"}, unsupported_iso: {code: "E817"}},
-    refusalWords: ["op", "p", "l"],
+    absentOutputFamilies: ["T.Hom", "T.Iso"],
+    refusedClients: {
+      unsupported: {code: "E817", cause: {operation: "op", argument: "p", law: "l"}},
+      unsupported_iso: {code: "E817", cause: {operation: "op", argument: "p", law: "l"}},
+    },
   },
   G4: {
     phase: "FG4", contract: "derived matches retain checked carrier evidence (nested clauses)",
@@ -292,7 +296,7 @@ def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) { rfl; }`
 };
 
 const kinds = {
-  G1: "collision", G2: "completion", G3: "unsupported-family", G4: "evidence",
+  G1: "collision", G2: "completion", G3: "completion", G4: "evidence",
   G5: "lint", G6: "dependency", G8: "wildcard", G9: "links", G10: "capture-range",
   G11: "capture", G12: "completion", "G12-range": "refusal-range",
 };

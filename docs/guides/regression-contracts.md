@@ -27,6 +27,14 @@ Code-only E606 equation refusals remain appropriate when independent accepted
 and refused clients establish the semantic distinction. Pin found/expected
 endpoints when those endpoints are themselves the contract, as in G8.
 
+Decode a recognized diagnostic form into its semantic roles before comparing
+it with the independently stated cause. G1 requires `{duplicate: "N"}`;
+its frontend and kernel codes may differ, so only this cause may omit `code`.
+G3 requires `{operation: "op", argument: "p", law: "l"}` for each client.
+Unknown wording remains an unrecognized reason. Finding the words somewhere
+in a message does not establish the declaration, roles or dependency direction.
+Keep valid alternative spellings explicit and test them against the same cause.
+
 For contracts that classify expected failures, exercise these boundaries:
 
 | Control | Required result |
@@ -72,6 +80,12 @@ other side by mutation: change each comparison in turn and require the audit
 to notice. A surviving mutant is a check that nothing exercises; add the
 counterexample, permitted variation or witness that distinguishes it, such as
 a second refused client when a condition quantifies over refused clients.
+
+Mutation coverage exercises the implemented predicate; its meaning also needs
+independently authored counterexamples. Preserve vocabulary while changing
+meaning: reverse a dependency, swap an argument and a law, or report an
+internal binding error that also says "already". Those cases must fail even
+when every comparison in the original predicate has been exercised.
 
 Map behavioral obligations independently of the fixture registry. A case-ID
 inventory cannot discover a requirement omitted from both the source fixtures

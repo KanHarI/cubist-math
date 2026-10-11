@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import {isDeepStrictEqual} from "node:util";
 import {obligations, requirementConditions} from "./fixtures/frontend-generation-requirements.mjs";
 import {lint} from "../web/cubist/lint.mjs";
-import {diagnosticCause, diagnosticFields, matchDiagnostics, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
+import {diagnosticCause, diagnosticFields, diagnosticVariations, matchDiagnostics, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
 
 const gapNames = result => result.gaps.map(g => `${g.name} ${g.code}`).sort();
 export const diagnostics = checked => gapNames(checked.result);
@@ -57,7 +57,7 @@ const relativeAnchor = (source, scope, fragment, label, occurrence, wholeWord = 
 
 // A witness states the minimum its case must keep; a fixture may say more.
 // Unknown witness fields fail, so a stated minimum is never silently ignored.
-const atLeast = (actual, minimum) => !!actual && actual.code === minimum.code
+const atLeast = (actual, minimum) => !!actual && (minimum.code === undefined || actual.code === minimum.code)
   && (minimum.cause === undefined || isDeepStrictEqual(actual.cause, minimum.cause));
 const lacking = (actual = [], minimum, label) => minimum.filter(item => !actual.includes(item)).map(item => `${label} ${item}`);
 const witnessChecks = {
@@ -66,7 +66,6 @@ const witnessChecks = {
     .filter(([name, minimum]) => !atLeast(fixture.refusedClients?.[name], minimum)).map(([name]) => `refused client ${name}`),
   absentOutputs: (fixture, names) => lacking(fixture.absentOutputs, names, "absent output"),
   absentOutputFamilies: (fixture, names) => lacking(fixture.absentOutputFamilies, names, "absent output family"),
-  refusalWords: (fixture, words) => lacking(fixture.refusalWords, words, "refusal word"),
   diagnostic: (fixture, minimum) => fixture.diagnostic?.name === minimum.name && atLeast(fixture.diagnostic, minimum)
     ? [] : [`diagnostic ${minimum.name}`],
   sites: (fixture, count) => fixture.observations?.sites >= count ? [] : [`${count} observation sites`],
@@ -115,11 +114,8 @@ export function validateFixture(fixture) {
   // Old names confused reported outputs with names available to later source;
   // invariant clients duplicated the client requirement. A defect record on a
   // case would let contracts depend on the lifecycle.
-  for (const field of ["absentMembers", "absentFamilies", "refusalCode", "invariantClients", "knownDefect"])
+  for (const field of ["absentMembers", "absentFamilies", "refusalCode", "refusalWords", "invariantClients", "knownDefect"])
     assert.ok(!(field in fixture), `obsolete expectation ${field}`);
-  if (fixture.kind === "unsupported-family")
-    assert.ok(Array.isArray(fixture.refusalWords) && fixture.refusalWords.length
-      && fixture.refusalWords.every(word => /^\w+$/.test(word)), "an unsupported family needs its refusal words");
   if (diagnostic && ("scope" in diagnostic || "token" in diagnostic)) {
     anchors.scope = sourceAnchor(source, diagnostic.scope, "diagnostic scope");
     anchors.token = relativeAnchor(source, anchors.scope, diagnostic.token, "diagnostic token", diagnostic.tokenOccurrence);
@@ -182,8 +178,6 @@ export function validateCoverage(manifest, fixtures) {
 function expectedDiagnostics(fixture) {
   const expected = Object.entries(fixture.refusedClients ?? {}).map(([name, expectation]) => ({...expectation, name}));
   if (fixture.diagnostic) expected.push(fixture.diagnostic);
-  // The duplicate contract deliberately permits different refusal codes.
-  if (fixture.kind === "collision") expected.push({name: fixture.symbol, permitsCode: true});
   if (fixture.kind === "dependency") expected.push(
     {name: fixture.parent, code: "E343", cause: {untranslated: fixture.cause}},
     {name: fixture.child, code: "E340", cause: {dependency: fixture.parent}});
@@ -229,10 +223,8 @@ const kindFacts = {
   lint: ({evidence, anchors}) => ({advice: adviceFacts(evidence.warnings, anchors.rewrite)}),
   collision: ({fixture, result}) => {
     const output = find(result, fixture.symbol);
-    return {originalType: output?.verified ? output.type : null, duplicate: gap(result, fixture.symbol)?.reason ?? null};
+    return {originalType: output?.verified ? output.type : null};
   },
-  "unsupported-family": ({fixture, result}) => ({refusals: Object.keys(fixture.refusedClients).map(name =>
-    ({name, code: gap(result, name)?.code ?? null, reason: gap(result, name)?.reason ?? null}))}),
   // Every distinct link overlapping each written label, with its span relative
   // to that label and its target relative to the binder.
   links: ({fixture: {observations: {label}}, result, anchors: {positions}}) => ({links: positions.map(position => {
@@ -261,8 +253,6 @@ const withoutDeclaration = (result, name) => {
   result.gaps = result.gaps.filter(g => g.name !== name);
 };
 const published = name => ({name: `publishes ${name}`, result: r => { r.outputs.push({name, verified: true, axioms: []}); }});
-// The real refusal for an arrow-typed operation shares E817 with G3's cause.
-const arrowRefusal = "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.";
 // Advice changes start from the case's identified advice at its whole target.
 const identified = ({fixture, anchors}) => fixture.rewrite.advice.map(advice => ({...advice, ...anchors.rewrite}));
 const advised = (context, name, edit) => ({name, evidence: e => { e.warnings = structuredClone(identified(context)); edit(e.warnings); }});
@@ -345,23 +335,6 @@ const requirementChecks = {
       },
     },
   },
-  duplicateRefused: {
-    applies: fixture => fixture.kind === "collision",
-    conditions: {
-      refused: {
-        holds: ({facts}) => facts.duplicate !== null,
-        breaks: ({fixture: {symbol}}) => [{name: "the duplicate is accepted", result: r => { r.gaps = r.gaps.filter(g => g.name !== symbol); }}],
-      },
-      reason: {
-        holds: ({facts}) => facts.duplicate === null || /already|duplicate/i.test(facts.duplicate),
-        breaks: ({fixture: {symbol}}) => [{name: "the duplicate is refused for another reason",
-          result: r => { gap(r, symbol).reason = "Type mismatch: found Bool, expected Unit."; }}],
-      },
-    },
-    // The kernel's own refusal of a same-kind duplicate.
-    permits: ({fixture: {symbol}}) => [{name: "the duplicate is refused as already registered",
-      result: r => { gap(r, symbol).reason = "Instruction kernel: Definition symbol is already registered."; }}],
-  },
   // Advice may be withheld. Issued advice must be exactly the case's identified
   // advice within its rewrite target, so each condition holds vacuously
   // without advice.
@@ -397,37 +370,6 @@ const requirementChecks = {
       e.warnings = structuredClone(identified(context));
       e.rewritten = structuredClone(e.result);
     }}],
-  },
-  refusals: {
-    applies: fixture => fixture.kind === "unsupported-family",
-    conditions: {
-      code: {
-        holds: ({facts}) => facts.refusals.every(r => r.code === "E817"),
-        breaks: ({fixture}) => Object.keys(fixture.refusedClients).map(name =>
-          ({name: `${name} has another code`, result: r => { gap(r, name).code = "E606"; }})),
-      },
-      words: {
-        holds: ({fixture, facts}) => facts.refusals.every(r => fixture.refusalWords.every(word => hasWord(r.reason ?? "", word))),
-        breaks: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).flatMap(name => {
-          const focused = `Cannot derive ${words[0]}: ${words.slice(1).join(" depends on ")}`;
-          return [
-            ...words.map(word => ({name: `${name} omits ${word}`,
-              result: r => { gap(r, name).reason = focused.replace(new RegExp(`\\b${word}\\b`), "other"); }})),
-            {name: `${name} describes an arrow-typed operation`, result: r => { gap(r, name).reason = arrowRefusal; }},
-          ];
-        }),
-      },
-      dependency: {
-        holds: ({facts}) => facts.refusals.every(r => /depend|transport|unsupported/i.test(r.reason ?? "")),
-        breaks: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).map(name =>
-          ({name: `${name} omits the dependency`, result: r => { gap(r, name).reason = words.join(", "); }})),
-      },
-    },
-    // Focused wordings other than the fixing compiler's.
-    permits: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).flatMap(name => [
-      `Cannot derive ${words[0]}: ${words.slice(1).join(" depends on ")}`,
-      `${words[0]} parameter ${words.slice(1).join(" has unsupported transport through law ")}`,
-    ].map(reason => ({name: `${name} is refused as "${reason}"`, result: r => { gap(r, name).reason = reason; }}))),
   },
   // A refusal is located within its region and covers one of its sites. A
   // span that covers a nonempty site is nonempty, so emptiness needs no
@@ -532,6 +474,10 @@ const requirementChecks = {
   // constrained.
   diagnostics: {
     applies: () => true,
+    permits: ({result}) => result.gaps.flatMap((actual, at) => diagnosticVariations(actual).map(variation => ({
+      name: `${actual.name} permits ${variation.code}: ${variation.reason}`,
+      result: r => { r.gaps[at] = structuredClone(variation); },
+    }))),
     conditions: {
       matched: {
         holds: ({fixture, result}) => matchDiagnostics(result.gaps, expectedDiagnostics(fixture)) !== null,

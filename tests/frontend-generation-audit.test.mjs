@@ -66,8 +66,8 @@ const acceptedEvidence = {
   G3: async (t, c) => {
     const {result} = await check(t, c.source);
     result.outputs = result.outputs.filter(o => !/^T\.(Hom|Iso)(\.|$)/.test(o.name));
-    // The fixing compiler's wording for Hom and Iso clients; the refusals
-    // table permits other focused wordings.
+    // The fixing compiler's wording for Hom and Iso clients; the diagnostic
+    // decoder also recognizes the permitted focused wordings.
     result.gaps = ["unsupported", "unsupported_iso"].map(name => ({name, code: "E817",
       reason: "T's models have no homomorphisms: its op's argument p depends on law l, whose transport and composition are not generated."}));
     return {result};
@@ -219,6 +219,31 @@ test("FG0 audit: every comparison in the judging code is exercised", async t => 
 });
 
 // Reported counterexamples and permitted alternatives beyond the tables.
+// These examples preserve the old matchers' vocabulary while changing its
+// meaning. State them independently of the decoder and generated mutations.
+for (const id of Object.keys(duplicates)) test(`FG0 audit: ${id} rejects unrelated uses of duplicate-refusal vocabulary`, async () => {
+  const {c, evidence} = await acceptedCase(id);
+  for (const reason of [
+    "Internal elaboration error: c is already bound.",
+    "The last tube does not overlap that tube, or already agrees with it.",
+    "Duplicate declaration: Other",
+    "Duplicate declaration Other: a declaration in this module already owns that name.",
+    "N is not a duplicate declaration.",
+  ]) violates(observe(c, evidence, result => { result.gaps.find(g => g.name === "N").reason = reason; }), "diagnostics");
+});
+test("FG0 audit: both G3 clients require the operation, argument and law in their stated roles", async () => {
+  const {c, evidence} = await acceptedCase("G3");
+  for (const name of ["unsupported", "unsupported_iso"]) for (const reason of [
+    "T's models have no homomorphisms: its op's argument l depends on law p, whose transport and composition are not generated.",
+    "Cannot derive p: op depends on l",
+    "Cannot derive l: p depends on op",
+    "Cannot derive op: l depends on p",
+    "op parameter p is independent of law l",
+    "op parameter p does not depend on law l",
+    "op's argument p depends on carrier l",
+    "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.",
+  ]) violates(observe(c, evidence, result => { result.gaps.find(g => g.name === name).reason = reason; }), "diagnostics");
+});
 test("FG0 audit: G6 permits an attached cause but requires the actual parent", async t => {
   const c = fixture("G6"), evidence = await acceptedEvidence.G6(t, c);
   const child = reason => result => { result.gaps.find(g => g.name === "C").reason = reason; };
@@ -341,9 +366,13 @@ for (const [id, mutation, mutate] of [
   ["G8", "without its endpoints", c => { delete c.diagnostic.cause; }],
   ["G2", "without its lowering endpoints", c => { delete c.refusedClients.lowered.cause; }],
   ["G1", "without its constructor's cause", c => { delete c.refusedClients.leaked_c.cause; }],
+  ["G1", "without its duplicate cause", c => { delete c.diagnostic.cause; }],
+  ["G1-reverse", "with another duplicate subject", c => { c.diagnostic.cause.duplicate = "Other"; }],
   ["G1-initial", "with a bare refusal code", c => { c.refusedClients.leaked_one = "E343"; }],
-  ["G3", "without its refusal words", c => { delete c.refusalWords; }],
-  ["G3", "without the dependent law", c => { c.refusalWords = ["op", "p"]; }],
+  ["G3", "without its Hom refusal cause", c => { delete c.refusedClients.unsupported.cause; }],
+  ["G3", "without its Iso refusal cause", c => { delete c.refusedClients.unsupported_iso.cause; }],
+  ["G3", "without the dependent law", c => { delete c.refusedClients.unsupported.cause.law; }],
+  ["G3", "with swapped argument and law", c => { c.refusedClients.unsupported.cause = {operation: "op", argument: "l", law: "p"}; }],
   ["G4", "with a cause no obligation requires", c => { c.refusedClients.wrong.cause = {found: "A", expected: "B"}; }],
   ["G11", "with an uncompared diagnostic field", c => { c.refusedClients.captured.reason = "Type mismatch"; }],
 ]) test(`FG0 audit: ${id} ${mutation} is rejected before checking`, async t => {
@@ -390,6 +419,37 @@ test("FG0 audit: encoded causes decode to the same cause", () => {
   }
   const other = {recursive: "iter", context: "a law's body"};
   assert.deepEqual(diagnosticCause({code: "E845", reason: encodeCause("E845", other)}), other);
+});
+test("FG0 audit: diagnostic causes recognize roles and subjects independently of fixtures", () => {
+  const duplicate = {name: "Fresh", cause: {duplicate: "Fresh"}};
+  validateDiagnostic(duplicate);
+  const pinned = fixture("G1"); pinned.diagnostic.code = "E872";
+  validateFixture(pinned); // A witness permits a stronger, code-pinned fixture.
+  for (const [code, reason] of [
+    ["E604", "Duplicate declaration: Fresh"],
+    ["E872", "Duplicate declaration Fresh: a declaration in this module already owns that name."],
+    ["E604", "Instruction kernel: Definition symbol is already registered."],
+    ["E999", "Duplicate declaration: Fresh at 2:3"],
+  ]) {
+    const actual = {name: "Fresh", code, reason};
+    assert.deepEqual(diagnosticCause(actual), {duplicate: "Fresh"});
+    assert.ok(matchesDiagnostic(actual, duplicate));
+  }
+  const cause = {operation: "combine", argument: "value", law: "identity"};
+  for (const reason of [
+    "Algebra's models have no homomorphisms: its combine's argument value depends on law identity, whose transport and composition are not generated.",
+    "Cannot derive combine: value depends on identity",
+    "combine parameter value has unsupported transport through law identity",
+    "combine's argument value depends on law identity at 2:3",
+  ]) assert.deepEqual(diagnosticCause({code: "E817", reason}), cause);
+  for (const [code, reason] of [
+    ["E604", "Internal elaboration error: Fresh is already bound."],
+    ["E817", "combine parameter value is independent of law identity"],
+    ["E817", "combine's argument value depends on carrier identity"],
+    ["E817", "Cannot derive combine: value depends on identity, but transport is supported"],
+  ]) assert.deepEqual(diagnosticCause({name: "Fresh", code, reason}), {reason});
+  assert.throws(() => validateDiagnostic({name: "x", cause}), /only a duplicate declaration may omit its code/);
+  assert.throws(() => validateDiagnostic({name: "x", cause: {duplicate: "Fresh", extra: "ignored"}}), /cause fields/);
 });
 
 // These are semantic mutants of supported source controls. They keep the
@@ -470,14 +530,16 @@ test("FG0 audit: requirements survive deletion of a case, its manifest row or it
   weakens("G1-initial", c => { delete c.absentOutputs; }, /atomic-publication: G1-initial must check outputsAbsent/);
   weakens("G1", c => { delete c.refusedClients; }, /name-availability: G1 must check refusedClients/);
   weakens("G12", c => { delete c.refusedClients; }, /recursive-step: G12 must check refusedClients/);
-  for (const [id, error] of [["G9", /G9 must check links/], ["G8", /G8 must check range/], ["G3", /G3 must check refusals/], ["G5", /G5 must check advice/]])
+  for (const [id, error] of [["G9", /G9 must check links/], ["G8", /G8 must check range/], ["G5", /G5 must check advice/]])
     weakens(id, c => { c.kind = "completion"; }, error);
   // Independently stated witnesses survive a weakened but applicable requirement.
   weakens("G1-initial", c => { c.absentOutputs = ["N.model", "N.fold_map"]; }, /atomic-publication: G1-initial must keep absent output N.fold/);
   weakens("G1-initial", c => { delete c.refusedClients.leaked_mul; }, /name-availability: G1-initial must keep refused client leaked_mul/);
   weakens("G2", c => { c.refusedClients.lowered = {code: "E606"}; }, /universe-contribution: G2 must keep refused client lowered/);
   weakens("G2", c => { c.clients = c.clients.filter(name => name !== "preserves"); }, /universe-contribution: G2 must keep client preserves/);
-  weakens("G3", c => { c.refusalWords = ["op", "p"]; }, /unsupported-transport: G3 must keep refusal word l/);
+  weakens("G1", c => { delete c.diagnostic; }, /ownership: G1 must keep diagnostic N/);
+  weakens("G3", c => { delete c.refusedClients.unsupported.cause; }, /unsupported-transport: G3 must keep refused client unsupported/);
+  weakens("G3", c => { delete c.refusedClients.unsupported_iso.cause; }, /unsupported-transport: G3 must keep refused client unsupported_iso/);
   weakens("G4", c => { c.clients = c.clients.filter(name => name !== "off_computation"); }, /match-computation: G4 must keep client off_computation/);
   weakens("G5-single", c => { c.clients = c.clients.filter(name => name !== "N.fold"); }, /lint-interface: G5-single must keep client N.fold/);
   weakens("G8", c => { delete c.diagnostic.cause; }, /wildcard-diagnostic: G8 must keep diagnostic h/);

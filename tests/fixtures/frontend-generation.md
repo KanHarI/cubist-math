@@ -91,7 +91,7 @@ manifest row together still fails if an obligation loses its witness. Each
 obligation's `checks` names the contract requirements its witnesses must keep,
 so a requirement cannot stop applying unnoticed. Each witness also states, as
 data, the minimum its case must keep: clients, refused-client and declaration
-diagnostics, absent outputs, refusal words and observation sites. These include
+diagnostics, absent outputs and observation sites. These include
 constructor availability, output absence, G2's public types and lowering
 endpoints, G4's distinct branch results, G8's endpoints and every
 second recursive step. A weaker fixture is rejected before any program is
@@ -109,7 +109,14 @@ Their expectations compose with declaration diagnostics and are matched as one
 complete multiset, independently of expectation order, by
 [`frontend-generation-diagnostics.mjs`](../frontend-generation-diagnostics.mjs).
 The same decoder supplies historical cause observations and active matching;
-desired expectations never come from the historical record. G6 matches the
+desired expectations never come from the historical record. G1 requires
+`{duplicate: "N"}` and permits recognized frontend and kernel refusal forms;
+this is the only cause that may omit `code`. G3's Hom and Iso clients each
+require E817 with `{operation: "op", argument: "p", law: "l"}`. These are
+semantic roles: swapped roles, reversed or denied dependencies, and unrelated
+messages using the same vocabulary fail. Unrecognized wording does not match
+a cause. Both cases use the shared diagnostic requirement, without separate
+keyword checks. G6 matches the
 exact dependency target, G10 the helper/field pair, G12-range the recursive
 operation/context, and G8 the ordered found/expected endpoints. Source ranges
 remain independent requirements. Missing mandatory causes are fixture errors.
@@ -169,6 +176,11 @@ from [supported sources](frontend-generation-supported.mjs), which avoid the
 original defect, or from observer results layered over real checked outputs.
 The G12 supported source unrolls two steps; it demonstrates these finite
 observations, not arbitrary recursive correctness.
+
+The diagnostic audit also states misleading messages independently of the
+decoder and mutation generators. Exercising comparisons cannot establish that
+their predicate expresses the intended meaning; G1's unrelated "already"
+messages and G3's swapped or denied dependencies guard that boundary.
 
 The lifecycle tests recognize each recorded debt and reject it after any one
 primary cause or dependency target changes. The audit checks further permitted

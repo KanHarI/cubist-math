@@ -4,7 +4,7 @@ Scope: the executable cases from PR #205, restored in PR #217, including the
 diagnostic acceptance review of `89c97e99`, the requirement review of
 `687f554c`, the activation review of `2e27565b`, the condition review of
 `f48bc1f7`, the guard review of `2a246504` and the design review of
-`637734ab`. The
+`637734ab` and the diagnostic-cause review of `f3b68c5f`. The
 [frontend generation roadmap](../roadmaps/frontend-generation.md) supplies the
 behavioral requirements. The [inventory](frontend-generation-gaps.md)
 describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
@@ -63,7 +63,7 @@ contract tables list; the last column states only what distinguishes the case.
 | --- | --- | --- | --- |
 | G1, G1-initial, G1-reverse, G1-same-kind | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: check the original declaration and clients without the duplicate, then inject its refusal. Duplicate wording/code may vary within the documented refusal contract, including the kernel's own same-kind refusal. | Another type for the original binding; a duplicate accepted or refused for another reason; a real constructor client that checks or names another missing name; a real model/fold output. |
 | G2 | [FG3](../roadmaps/frontend-generation.md#fg3-infer-universes-from-the-generated-telescope) | Source: the domain moves into the model's universe (`op(A : U, x : A)`). Hom/Iso, computation, `map_op` preservation and level clients check at U0/U1; that variant's U1 level pin is U2. Stating a U0 model's Hom in U0 is refused with `found U1, expected U0`. | A missing preservation field or level client; an accepted lowering or one with other endpoints; a different same-code Hom mismatch. |
-| G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and supply the fixing compiler's E817 naming op, p and l for both the Hom and the Iso client. Two other focused wordings are accepted. | A leaked family root or member; a Hom or Iso refusal without op, p, l or its dependency, including the real E817 for arrow-typed operations; another code. |
+| G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and require E817 with operation op, argument p and law l for both clients. Recognized focused wordings decode to that same cause. | A leaked family root or member; swapped semantic roles, a reversed or denied dependency, a carrier instead of a law, an arrow-operation refusal, or another code. |
 | G4, G4-flat | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: Nat motives, with distinct branch results and independently stated accepted/refused equations. | Constant match result; wrong clause result; same E546 with a different primary cause. |
 | G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target authorizes the associated rewrite. | Any issued advice other than exactly the identified advice within its target; an authorized rewrite that loses a client. |
 | G6 | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: child E340 has dependency target P, with or without an attached root cause. Parent E343 has untranslated subject Undefined and independent clients check. | Another dependency, including Q whose attached cause mentions P; an untranslated-name message with E340; another parent subject. |
@@ -215,6 +215,19 @@ contract tables list; the last column states only what distinguishes the case.
   results compute some fields from the kernel when first read, so evidence is
   now copied as plain data when collected. Lifecycle tests moved to their own
   file, so retiring them no longer edits contract tests.
+- G1 and G3 still judged causes by vocabulary: an internal "already bound"
+  error counted as a duplicate declaration, and G3 accepted swapped argument
+  and law roles or even a message saying they were independent. Moving those
+  checks into conditions and exercising their comparisons did not correct
+  their meaning. Both now use the shared diagnostic decoder and matcher.
+  G1 states the duplicate subject, with its code left free; G3 states the
+  operation, argument and law for both Hom and Iso clients. The requirement
+  map independently requires those causes. Recognized alternative forms are
+  accepted, unrecognized wording fails, and the audit independently states
+  the misleading messages alongside the field table's role counterexamples.
+  Redundant duplicate/refusal facts and conditions were removed. The records
+  lose those redundant projections, and the kernel duplicate's root cause
+  now records its decoded subject; they still observe the same compiler debt.
 
 ## Validation and lifecycle
 

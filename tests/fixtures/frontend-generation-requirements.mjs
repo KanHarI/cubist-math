@@ -6,7 +6,7 @@
 // these labels name executable distinctions rather than establish them.
 //
 // Each witness states the minimum its case must keep, as data: clients,
-// refused-client and declaration diagnostics, absent outputs, refusal words
+// refused-client and declaration diagnostics, absent outputs
 // and observation sites. A fixture may state more. A diagnostic cause outside
 // the codes that always carry one must be required here, so that weakening a
 // fixture's expectation fails validation and its cause counterexamples come
@@ -15,10 +15,12 @@ const wrongEquation = {refusedClients: {wrong: {code: "E606"}}};
 const recursiveResults = {clients: ["base", "computation", "computation2"], ...wrongEquation};
 const opposedEquations = {clients: ["intended"], refusedClients: {captured: {code: "E606"}}};
 const generatedInterface = {clients: ["identity", "applied", "N.fold"]};
+const duplicate = {diagnostic: {name: "N", cause: {duplicate: "N"}}};
+const lawDependency = {code: "E817", cause: {operation: "op", argument: "p", law: "l"}};
 
 export const obligations = [
-  {id: "ownership", phase: "FG1", checks: ["clients", "originalType", "duplicateRefused", "diagnostics"],
-    witnesses: {G1: {}, "G1-initial": {}, "G1-reverse": {clients: ["constructor"]}, "G1-same-kind": {}},
+  {id: "ownership", phase: "FG1", checks: ["clients", "originalType", "diagnostics"],
+    witnesses: {G1: duplicate, "G1-initial": duplicate, "G1-reverse": {...duplicate, clients: ["constructor"]}, "G1-same-kind": duplicate},
     counterexample: "replaced original binding, lost original client or a duplicate refused for another reason"},
   {id: "name-availability", phase: "FG1", checks: ["refusedClients", "diagnostics"],
     witnesses: {
@@ -34,8 +36,8 @@ export const obligations = [
     witnesses: {G2: {clients: ["preserves", "level", "preserves_u1", "level_u1"],
       refusedClients: {lowered: {code: "E606", cause: {found: "U1", expected: "U0"}}}}},
     counterexample: "generated Hom omits a fixed domain's universe contribution or preservation field, or lowers its universe"},
-  {id: "unsupported-transport", phase: "FG2", checks: ["clients", "refusals", "outputsAbsent"],
-    witnesses: {G3: {refusalWords: ["op", "p", "l"], refusedClients: {unsupported: {code: "E817"}, unsupported_iso: {code: "E817"}}}},
+  {id: "unsupported-transport", phase: "FG2", checks: ["clients", "diagnostics", "outputsAbsent"],
+    witnesses: {G3: {refusedClients: {unsupported: lawDependency, unsupported_iso: lawDependency}}},
     counterexample: "usable base erased, unsupported Hom/Iso family leaked or a Hom or Iso refusal without the dependent law"},
   {id: "match-computation", phase: "FG4", checks: ["clients", "refusedClients"],
     witnesses: {G4: {clients: ["computation", "off_computation", "empty_computation"], ...wrongEquation},
@@ -76,9 +78,7 @@ export const requirementConditions = {
   refusedClients: ["refused"],
   outputsAbsent: ["absent"],
   originalType: ["verified", "type"],
-  duplicateRefused: ["refused", "reason"],
   advice: ["count", "codes", "declarations", "messages", "startsInTarget", "endsInTarget", "nonempty"],
-  refusals: ["code", "words", "dependency"],
   range: ["located", "startsInRegion", "endsInRegion", "coversSite"],
   links: ["present", "label", "target", "start", "end"],
   diagnostics: ["matched"],

@@ -10,7 +10,6 @@ export const knownDefects = {
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked", "leaked_c": "checked"},
     "originalType": "U0",
-    "duplicate": null,
     "forbiddenOutputs": []
   },
   "G2": {
@@ -100,10 +99,6 @@ export const knownDefects = {
       "T.Iso.make",
       "T.Iso.to",
       "T.Iso.to_from"
-    ],
-    "refusals": [
-      {"name": "unsupported", "code": "E340", "reason": "Untranslated dependency: T.Hom.id"},
-      {"name": "unsupported_iso", "code": "E340", "reason": "Untranslated dependency: T.Iso.id"}
     ]
   },
   "G4": {
@@ -176,7 +171,6 @@ export const knownDefects = {
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked", "leaked_one": "checked", "leaked_mul": "checked"},
     "originalType": "U0",
-    "duplicate": null,
     "forbiddenOutputs": ["N.fold", "N.fold_map", "N.model"]
   },
   "G1-reverse": {
@@ -185,16 +179,14 @@ export const knownDefects = {
     "gaps": ["constructor E604", "original E606"],
     "clients": {"original": "refused", "constructor": "refused", "independent": "checked"},
     "originalType": "Unit",
-    "duplicate": null,
     "forbiddenOutputs": []
   },
   "G1-same-kind": {
     "dependencies": [["N", ["original"]]],
-    "rootCauses": [["N", {"reason": "Instruction kernel: Definition symbol is already registered."}]],
+    "rootCauses": [["N", {"duplicate": "N"}]],
     "gaps": ["N E604", "original E340"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": null,
-    "duplicate": "Instruction kernel: Definition symbol is already registered.",
     "forbiddenOutputs": []
   },
   "G4-flat": {
