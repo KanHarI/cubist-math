@@ -10,7 +10,7 @@ export const knownDefects = {
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked", "leaked_c": "checked"},
     "originalType": "U0",
-    "duplicateRefused": false,
+    "duplicate": null,
     "forbiddenOutputs": []
   },
   "G2": {
@@ -60,7 +60,7 @@ export const knownDefects = {
     }
   },
   "G3": {
-    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_c", "T.Hom.map_op", "T.Iso", "T.Iso.make"]], ["T.Hom.id", ["unsupported"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from"]]],
+    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_c", "T.Hom.map_op", "T.Iso", "T.Iso.make"]], ["T.Hom.id", ["unsupported"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from"]], ["T.Iso.id", ["unsupported_iso"]]],
     "rootCauses": [["T.Hom", {"found": "A.l = A.l", "expected": "B.l = B.l"}]],
     "gaps": [
       "T.Hom E606",
@@ -79,9 +79,10 @@ export const knownDefects = {
       "T.Iso.make E340",
       "T.Iso.to E340",
       "T.Iso.to_from E340",
-      "unsupported E340"
+      "unsupported E340",
+      "unsupported_iso E340"
     ],
-    "clients": {"T": "checked", "T.make": "checked", "T.op": "checked", "usable": "checked", "unsupported": "refused"},
+    "clients": {"T": "checked", "T.make": "checked", "T.op": "checked", "usable": "checked", "unsupported": "refused", "unsupported_iso": "refused"},
     "forbiddenOutputs": [
       "T.Hom",
       "T.Hom.compose",
@@ -100,19 +101,21 @@ export const knownDefects = {
       "T.Iso.to",
       "T.Iso.to_from"
     ],
-    "refusals": [{"name": "unsupported", "code": "E340", "words": [false, false, false], "unsupported": true}]
+    "refusals": [
+      {"name": "unsupported", "code": "E340", "reason": "Untranslated dependency: T.Hom.id"},
+      {"name": "unsupported_iso", "code": "E340", "reason": "Untranslated dependency: T.Iso.id"}
+    ]
   },
   "G4": {
     "dependencies": [["T.value", ["computation", "empty_computation", "off_computation", "wrong"]]],
     "rootCauses": [["T.value", {"obligation": "Bit.squash", "requirement": "m.M must be of h-level 1"}]],
     "gaps": ["T.value E546", "computation E340", "empty_computation E340", "off_computation E340", "wrong E340"],
-    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused", "off_computation": "refused"},
-    "generation": [["T.value", "Bit.squash"]]
+    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused", "off_computation": "refused"}
   },
   "G5": {
     "dependencies": [],
     "rootCauses": [["identity", {"reason": "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose."}], ["N", {"reason": "op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."}]],
-    "advice": [{"code": "W706", "declaration": "T", "message": "x is unused in the body: take it out of the group and write M -> … for it."}, {"code": "W706", "declaration": "T", "message": "y is unused in the body: take it out of the group and write M -> … for it."}],
+    "advice": [{"code": "W706", "declaration": "T", "message": "x is unused in the body: take it out of the group and write M -> … for it.", "start": 7, "end": 8}, {"code": "W706", "declaration": "T", "message": "y is unused in the body: take it out of the group and write M -> … for it.", "start": 10, "end": 11}],
     "gaps": ["N E864", "identity E817"],
     "clients": {"identity": "refused", "applied": "checked", "N": "refused", "N.model": "missing", "N.fold": "missing"}
   },
@@ -120,32 +123,33 @@ export const knownDefects = {
     "dependencies": [],
     "rootCauses": [["C", {"untranslated": "Undefined"}], ["P", {"untranslated": "Undefined"}]],
     "gaps": ["C E343", "P E343"],
-    "clients": {"independent": "checked"},
-    "childNamesParent": false,
-    "childRepeatsCause": true
+    "clients": {"independent": "checked"}
   },
   "G8": {
     "dependencies": [],
     "rootCauses": [["h", {"obligation": "seg", "requirement": "T must be a proposition"}]],
     "gaps": ["h E546"],
     "clients": {},
-    "generation": [["h", "seg"]],
-    "endpoints": [false, false],
-    "range": {"nonempty": true, "withinScope": true, "coversToken": false}
+    "range": {"start": 9, "end": 10}
   },
   "G9": {
     "dependencies": [],
     "rootCauses": [],
     "gaps": [],
     "clients": {"meaning": "checked"},
-    "links": [[["c", null]], [["c1", null]], [["c1", null]], [["c1", null]]]
+    "links": [
+      [{"name": "c", "target": null, "start": 0, "end": 0}],
+      [{"name": "c1", "target": null, "start": 0, "end": 0}],
+      [{"name": "c1", "target": null, "start": 0, "end": 0}],
+      [{"name": "c1", "target": null, "start": 0, "end": 0}]
+    ]
   },
   "G10": {
     "dependencies": [],
     "rootCauses": [["T", {"helper": "k", "field": "c"}]],
     "gaps": ["T E871"],
     "clients": {},
-    "range": {"nonempty": false, "withinConflict": false, "coversConflict": false}
+    "range": {"start": -48, "end": -48}
   },
   "G11": {
     "dependencies": [],
@@ -164,7 +168,7 @@ export const knownDefects = {
     "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
     "gaps": ["T E845"],
     "clients": {},
-    "range": {"nonempty": false, "withinScope": true, "coversToken": false}
+    "range": {"start": 20, "end": 20}
   },
   "G1-initial": {
     "dependencies": [],
@@ -172,7 +176,7 @@ export const knownDefects = {
     "gaps": ["original E606"],
     "clients": {"original": "refused", "independent": "checked", "leaked_one": "checked", "leaked_mul": "checked"},
     "originalType": "U0",
-    "duplicateRefused": false,
+    "duplicate": null,
     "forbiddenOutputs": ["N.fold", "N.fold_map", "N.model"]
   },
   "G1-reverse": {
@@ -181,7 +185,7 @@ export const knownDefects = {
     "gaps": ["constructor E604", "original E606"],
     "clients": {"original": "refused", "constructor": "refused", "independent": "checked"},
     "originalType": "Unit",
-    "duplicateRefused": false,
+    "duplicate": null,
     "forbiddenOutputs": []
   },
   "G1-same-kind": {
@@ -190,20 +194,19 @@ export const knownDefects = {
     "gaps": ["N E604", "original E340"],
     "clients": {"original": "refused", "independent": "checked"},
     "originalType": null,
-    "duplicateRefused": true,
+    "duplicate": "Instruction kernel: Definition symbol is already registered.",
     "forbiddenOutputs": []
   },
   "G4-flat": {
     "dependencies": [["T.value", ["computation", "empty_computation", "wrong"]]],
     "rootCauses": [["T.value", {"obligation": "Bits.squash", "requirement": "m.M must be of h-level 1"}]],
     "gaps": ["T.value E546", "computation E340", "empty_computation E340", "wrong E340"],
-    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused"},
-    "generation": [["T.value", "Bits.squash"]]
+    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused"}
   },
   "G5-single": {
     "dependencies": [],
     "rootCauses": [["identity", {"reason": "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose."}], ["N", {"reason": "op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."}]],
-    "advice": [{"code": "W705", "declaration": "T", "message": "x is unused in the body: write M -> … instead of forall x : M. …."}],
+    "advice": [{"code": "W705", "declaration": "T", "message": "x is unused in the body: write M -> … instead of forall x : M. ….", "start": 7, "end": 8}],
     "gaps": ["N E864", "identity E817"],
     "clients": {"identity": "refused", "applied": "checked", "N": "refused", "N.model": "missing", "N.fold": "missing"}
   },

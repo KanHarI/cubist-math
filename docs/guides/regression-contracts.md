@@ -19,9 +19,10 @@ Use the shared diagnostic decoder and matcher in
 An expectation states the declaration, code and relevant `cause`, independently
 of the historical defect record. It may state only fields from the matcher's
 field table, and each field there carries its own counterexamples, so a stated
-field is always compared and perturbed. E343 names its untranslated subject, E340 its
-dependency, E871 its helper and captured field, and E845 its recursive operation
-and context. A range check composes with this meaning; it cannot replace it.
+field is always compared and perturbed. E343 names its untranslated subject,
+E340 its dependency, E871 its helper and captured field, and E845 its recursive
+operation and context. A range check composes with this meaning; it cannot
+replace it.
 Code-only E606 equation refusals remain appropriate when independent accepted
 and refused clients establish the semantic distinction. Pin found/expected
 endpoints when those endpoints are themselves the contract, as in G8.
@@ -38,26 +39,39 @@ For contracts that classify expected failures, exercise these boundaries:
 
 Keep the contract and the expected-failure lifecycle apart. A case holds only
 its contract; defect records live in their own module, and only the lifecycle
-reads them. Collect compiler results once as evidence and judge them with pure
-functions. Index each test by what it depends on: a test that needs a record is
-keyed by that record and disappears with it, and a test of the classifier uses
-synthetic observations and records. Activating a case is then only the removal
-of its record. Check this by running the whole suite against the fixing
-compiler with every record removed.
+reads them. Collect compiler results once, as plain data, and judge them with
+pure functions. Index each test by what it depends on: a test that needs a
+record is keyed by that record and disappears with it, a test of the classifier
+uses synthetic observations and records, and lifecycle tests live in their own
+file. Activating a case is then only the removal of its record, and retiring
+the lifecycle only deletes files. Check this by running the whole suite against
+the fixing compiler with every record removed.
 
 Exercise the different-failure boundary twice: against each recorded debt, and
 against accepted observations with no record at all. Make the second structural
-rather than a per-case review step. Give each requirement the plausible wrong
-results that must violate it, and apply every one to an accepted observation of
-each case. A requirement without a counterexample, or a counterexample that
-leaves its requirement met, fails the audit, so a deleted or weakened check
-cannot pass silently. When a requirement combines conditions, such as a span's
-start and end bounds or every link at a site, give each condition a
-counterexample that violates it alone: a span that crosses both ends of its
-region leaves either bound unguarded. A condition that another implies, such
-as a nonempty span that covers a nonempty site, can be recorded but should not
-be judged; no counterexample can violate it alone, so only defect records would
-notice its removal.
+rather than a per-case review step:
+
+- Write each requirement as a table of named conditions. Each condition carries
+  the plausible wrong results that must violate it, and each requirement lists
+  the valid variations it permits.
+- Apply every one to an accepted observation of each case. The observation and
+  its permitted variations must meet every requirement, and each
+  counterexample must violate its condition.
+- Require some counterexample to violate each condition alone. A span that
+  crosses both ends of its region leaves either bound unguarded. A condition
+  that another implies, such as the nonemptiness of a span that covers a
+  nonempty site, cannot be violated alone; leave it out.
+- State the conditions independently as well: deleting a condition deletes its
+  counterexamples with it.
+
+Facts only project evidence. They may locate it by declaration, site or region,
+but must not compare it with an expectation or drop evidence that a condition
+judges. Selecting only the links that span a label exactly is such a hidden
+condition: no counterexample can violate it. Check the judging code from the
+other side by mutation: change each comparison in turn and require the audit
+to notice. A surviving mutant is a check that nothing exercises; add the
+counterexample, permitted variation or witness that distinguishes it, such as
+a second refused client when a condition quantifies over refused clients.
 
 Map behavioral obligations independently of the fixture registry. A case-ID
 inventory cannot discover a requirement omitted from both the source fixtures
@@ -116,5 +130,6 @@ Before submitting a new contract or changing one, answer:
 
 Remove a case's record with its fix; nothing else changes. Once all cases are
 active, retire the records, the classifier and its tests together while
-preserving semantic assertions, case selectors and distinguishing controls. A review fix
-must not weaken the expected behavior merely to match a new observation.
+preserving semantic assertions, case selectors and distinguishing controls. A
+review fix must not weaken the expected behavior merely to match a new
+observation.

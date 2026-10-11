@@ -21,7 +21,8 @@ G2's clients fix the public Hom/Iso types, composition computation and the
 fixed-domain operation's preservation field at U0 and U1. A U0 model's Hom
 must live in U1, and stating it in U0 must be refused as universe lowering.
 G3 preserves the base theory while withholding both unsupported artifact
-families. G4 covers flat and nested matches with
+families, and its Hom and Iso clients must each be refused with a focused
+E817. G4 covers flat and nested matches with
 distinct results, every written branch, and a refused constant-result equation.
 G5 uses positional operation calls, identity and a generated model/fold to
 test the lint rewrite for both single and grouped operation binders. The case
@@ -65,11 +66,12 @@ law binders, initial-model recursion and explicit path bodies.
 The [design decision on #205](https://github.com/KanHarI/cubist-math/pull/205#issuecomment-6096591882)
 replaces the catch-any-assertion handler. `frontend-generation-contracts.mjs`
 is the contract layer and never reads records; `frontend-generation-lifecycle.mjs`
-classifies its observations against them. The contract layer
-collects compiler and lint results once as evidence. Facts and requirements
-are pure functions of that evidence: diagnostic name/code pairs, primary cause
-payloads, client verdicts, lint advice, output absence and source observations,
-judged by independently stated requirements. Type mismatch evidence retains
+classifies its observations against them. The contract layer collects compiler
+and lint results once, as plain data. Facts project that evidence without
+judging it: diagnostic name/code pairs, primary cause payloads, client
+verdicts, lint advice and its span, output absence, refusal reasons, and the
+links and refusal spans at their written sites. Requirements judge the facts
+as tables of named conditions. Type mismatch evidence retains
 found/expected types; generation evidence retains the obligation and required
 evidence; capture and recursion evidence retain the responsible references.
 Terminal line/column text and remediation prose are omitted from those
@@ -122,9 +124,9 @@ original interface must check before any rewrite. Everything else is an
 observation. Missing clients are represented explicitly, so a misspelled client
 cannot match a recorded defect. The whole diagnostic name/code set is compared,
 including dependent failures; primary failure payloads distinguish different
-causes with the same code. Labels and missing/wrong targets are retained at
-every written occurrence. Repeated identical links at one occurrence are
-equivalent.
+causes with the same code. Every link overlapping a written occurrence is
+retained with its label, target and span. Repeated identical links at one
+occurrence are equivalent.
 
 Only an exact match for the case's record is reported as TODO.
 No exception or assertion message is classified as a defect. A different
@@ -140,38 +142,37 @@ remain implementation debt and never count as completion.
 The [harness](../frontend-generation-harness.test.mjs) checks that missing
 imports, misspelled clients, unrelated type errors, invalid metadata,
 changed/extra diagnostics and missing or wrong navigation fail normally. Each
-mistake is compared with a synthetic record of the case's own observation, so
-these checks hold whether or not the case is recorded. Its lifecycle tests check
-the classifier with synthetic observations (TODO only for an exact record,
-strict mode, unexpected passes) and recognize each record's debt in a test that
-disappears with its record. It also checks the accepted-client helper.
+mistake must leave the contract unmet and change the case's own observation,
+so these checks hold whether or not the case is recorded. It also checks the
+accepted-client helper. The
+[lifecycle tests](../frontend-generation-lifecycle.test.mjs) check the
+classifier with synthetic observations (TODO only for an exact record, strict
+mode, unexpected passes) and recognize each record's debt in a test that
+disappears with its record.
 
-Each contract requirement states its accepted behavior together with the
-plausible wrong results that must violate it: refused, missing or
-assumption-dependent clients; accepted refusals; leaked outputs; missing,
-duplicated, recoded or recaused diagnostics; changed, partial or misplaced
-advice; empty or off-site spans, spans crossing either end of their region,
-and spans starting inside their site; relabelled, retargeted or missing links,
-and a stale link beside a correct one. Each condition of a combined requirement
-has a counterexample that violates it alone. A span that covers a nonempty
-site is nonempty, so nonemptiness is recorded but not judged on its own.
-Diagnostic counterexamples come from the matcher's field table: each accepted
-diagnostic is also reported on another declaration, and a fixture that states
+Each contract requirement in
+[frontend-generation-contracts.mjs](../frontend-generation-contracts.mjs) is a
+table of named conditions. Each condition carries the plausible wrong results
+that must violate it, and each requirement lists the valid variations it
+permits; the tables, not this manifest, are the list. Diagnostic
+counterexamples come from the matcher's field table, and a fixture that states
 a field without counterexamples fails validation. The
-[audit](../frontend-generation-audit.test.mjs)
-gives every case an accepted observation and applies each counterexample to it;
-each must violate its requirement. The audit never reads records or classifies
-cases, so activation leaves it unchanged. With every record removed and no
-other edit, the contracts, harness and audit pass against the fixing compiler
-`d4a5ecf3`. Accepted observations come from
-[supported sources](frontend-generation-supported.mjs), which avoid the original
-defect, or from observer results layered over real checked outputs. The G12
-supported source unrolls two steps; it demonstrates these finite observations,
-not arbitrary recursive correctness.
+[audit](../frontend-generation-audit.test.mjs) gives every case an accepted
+observation. That observation and each permitted variation must meet every
+requirement, each counterexample must violate its condition, and some
+counterexample must violate each condition alone. The requirement map states
+the conditions independently. A mutation sweep changes each comparison in the
+facts that conditions read, the conditions and the diagnostic field matchers,
+and each change must alter some verdict. The audit never reads records or
+classifies cases, so activation leaves it unchanged. Accepted observations come
+from [supported sources](frontend-generation-supported.mjs), which avoid the
+original defect, or from observer results layered over real checked outputs.
+The G12 supported source unrolls two steps; it demonstrates these finite
+observations, not arbitrary recursive correctness.
 
-The harness recognizes each recorded debt and rejects it after any one
-primary cause or dependency target changes. The audit checks permitted alternatives
-(attached causes, wider spans, other refusal wordings) and ID-to-finding
+The lifecycle tests recognize each recorded debt and reject it after any one
+primary cause or dependency target changes. The audit checks further permitted
+alternatives (attached causes, a span over the whole call) and ID-to-finding
 ownership. Semantic mutants replace matches/recursion by constants, ignore a
 recursive result, or capture a local recursive name; each has independently
 stated client verdicts and E606 failures. Publication controls replay real
@@ -219,8 +220,8 @@ contracts. This harness is evidence at FG0, not an implementation of those fixes
 The FG1–FG6 implementation stack inherited by
 [#224](https://github.com/KanHarI/cubist-math/pull/224) activates fixed cases.
 Once all cases are active, its RC0 cleanup deletes the records module, the
-lifecycle module and the harness's lifecycle tests together; the runner then
-asserts each observation's requirements.
+lifecycle module and its test file together; the runner then asserts each
+observation's requirements.
 Keep the desired observations, stable case IDs and group selectors. Active
 semantic mismatches must still produce assertions for the mutation gate.
 RC1/RC2 can migrate the clients and observations to Cubist's existing runner;

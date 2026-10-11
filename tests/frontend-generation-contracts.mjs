@@ -1,10 +1,10 @@
-// The contract layer: case observations are data, and facts and requirements
-// are pure functions of collected evidence. Nothing here reads defect records;
-// the expected-failure lifecycle in frontend-generation-lifecycle.mjs consumes
-// these observations.
+// The contract layer: case observations are data. Facts project collected
+// evidence, and each requirement judges them as a table of named conditions.
+// Nothing here reads defect records; the expected-failure lifecycle in
+// frontend-generation-lifecycle.mjs consumes these observations.
 import assert from "node:assert/strict";
 import {isDeepStrictEqual} from "node:util";
-import {obligations} from "./fixtures/frontend-generation-requirements.mjs";
+import {obligations, requirementConditions} from "./fixtures/frontend-generation-requirements.mjs";
 import {lint} from "../web/cubist/lint.mjs";
 import {diagnosticCause, diagnosticFields, matchDiagnostics, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
 
@@ -22,10 +22,6 @@ export function accepted(checked, names) {
 }
 const find = (result, name) => result.outputs.find(o => o.name === name);
 const gap = (result, name) => result.gaps.find(g => g.name === name);
-const generation = result => result.gaps.flatMap(g => {
-  const match = g.reason.match(/Cannot generate ([^:]+):/);
-  return match ? [[g.name, match[1]]] : [];
-});
 // Historical records and acceptance share a decoder, never expected values.
 const rootCauses = result => result.gaps.filter(g => g.code !== "E340")
   .map(g => [g.name, diagnosticCause(g)]).sort(([a], [b]) => a.localeCompare(b));
@@ -165,6 +161,14 @@ export function validateObligations(fixtures) {
   // Independently stated minimums: deleting part of a fixture's expectation
   // cannot silently redefine success in the audit.
   for (const fixture of fixtures) validateWitness(fixture);
+  validateConditions();
+}
+// A condition deleted together with its counterexamples leaves no
+// counterexample to fail, so the conditions are also stated independently.
+export function validateConditions(stated = requirementConditions) {
+  const judged = Object.fromEntries(Object.entries(requirementChecks).map(([name, {conditions}]) => [name, Object.keys(conditions).sort()]));
+  assert.deepEqual(judged, Object.fromEntries(Object.entries(stated).map(([name, conditions]) => [name, [...conditions].sort()])),
+    "every requirement must judge exactly its stated conditions");
 }
 export function validateCoverage(manifest, fixtures) {
   validateObligations(fixtures);
@@ -186,13 +190,15 @@ function expectedDiagnostics(fixture) {
   return expected;
 }
 const adviceCodes = ["W705", "W706"];
-const adviceOf = warnings => warnings.map(({code, declaration, message}) => ({code, declaration, message}));
-// Only identified advice at the rewrite target authorizes the replacement.
+// Issued advice, located relative to its rewrite target.
+const adviceFacts = (warnings, target) => warnings.map(({code, declaration, message, start, end}) =>
+  ({code, declaration, message, start: start - target.start, end: end - target.start}));
+// Only identified advice at the rewrite target authorizes the replacement. The
+// advice requirement's conditions decide, so recognition and acceptance agree.
 function recognizedAdvice(fixture, anchors, warnings) {
-  if (fixture.kind !== "lint") return false;
-  const {start, end} = anchors.rewrite;
-  return isDeepStrictEqual(adviceOf(warnings), fixture.rewrite.advice)
-    && warnings.every(w => w.start >= start && w.end > w.start && w.end <= end);
+  if (fixture.kind !== "lint" || !warnings.length) return false;
+  const context = {fixture, anchors, facts: {advice: adviceFacts(warnings, anchors.rewrite)}};
+  return Object.values(requirementChecks.advice.conditions).every(({holds}) => holds(context));
 }
 function observed(fixture, evidence, anchors = validateFixture(fixture)) {
   const recognized = recognizedAdvice(fixture, anchors, evidence.warnings);
@@ -200,57 +206,55 @@ function observed(fixture, evidence, anchors = validateFixture(fixture)) {
   assert.ok(result, "recognized advice needs its rewritten result");
   return {anchors, recognized, result};
 }
-const rangeFacts = (actual = {}, {scope, token}) => ({
-  nonempty: actual.end > actual.start,
-  withinScope: actual.start >= scope.start && actual.end <= scope.end,
-  coversToken: actual.start <= token.start && actual.end >= token.end,
-});
-// Kind-specific facts. Facts are the recorded defect observation; requirements
-// below judge them, and neither depends on historical records.
+
+// Facts project evidence without judging it. They locate evidence by
+// declaration, site or region, and never compare it with an expectation or
+// drop evidence that a condition judges: such a comparison would be a
+// condition without counterexamples. Facts are also the lifecycle's records.
+const regionOf = anchors => anchors.scope ?? anchors.conflict;
+const sitesOf = anchors => anchors.token ? [anchors.token] : [anchors.binder, anchors.call];
+const spanIn = (actual, region) => Number.isInteger(actual?.start) && Number.isInteger(actual?.end)
+  ? {start: actual.start - region.start, end: actual.end - region.start} : null;
+const clientFacts = (fixture, result) => Object.fromEntries([...fixture.clients ?? [], ...Object.keys(fixture.refusedClients ?? {})]
+  .map(name => [name, clientState(find(result, name))]));
+const forbiddenOutputs = (fixture, result) => result.outputs.filter(({name}) => fixture.absentOutputs?.includes(name)
+  || fixture.absentOutputFamilies?.some(prefix => name === prefix || name.startsWith(prefix + "."))).map(o => o.name).sort();
+const rangeFacts = ({fixture, result, anchors}) => ({range: spanIn(gap(result, fixture.diagnostic.name), regionOf(anchors))});
+const noFacts = () => ({});
 const kindFacts = {
-  completion: () => ({}),
-  capture: () => ({}),
-  lint: ({evidence}) => ({advice: adviceOf(evidence.warnings)}),
-  evidence: ({result}) => ({generation: generation(result)}),
+  completion: noFacts,
+  capture: noFacts,
+  evidence: noFacts,
+  dependency: noFacts,
+  lint: ({evidence, anchors}) => ({advice: adviceFacts(evidence.warnings, anchors.rewrite)}),
   collision: ({fixture, result}) => {
-    const output = find(result, fixture.symbol), refusal = gap(result, fixture.symbol);
-    return {originalType: output?.verified ? output.type : null,
-      duplicateRefused: !!refusal && /already|duplicate/i.test(refusal.reason)};
+    const output = find(result, fixture.symbol);
+    return {originalType: output?.verified ? output.type : null, duplicate: gap(result, fixture.symbol)?.reason ?? null};
   },
-  "unsupported-family": ({fixture, result}) => ({refusals: Object.keys(fixture.refusedClients).map(name => {
-    const reason = gap(result, name)?.reason ?? "";
-    return {name, code: gap(result, name)?.code ?? null, words: fixture.refusalWords.map(word => hasWord(reason, word)),
-      unsupported: /depend|transport|unsupported/i.test(reason)};
-  })}),
-  dependency: ({fixture, result}) => {
-    const reason = gap(result, fixture.child)?.reason ?? "";
-    return {childNamesParent: hasWord(reason, fixture.parent), childRepeatsCause: hasWord(reason, fixture.cause)};
-  },
-  wildcard: ({fixture: {diagnostic}, result, anchors}) => {
-    const actual = gap(result, diagnostic.name), mismatch = actual ? diagnosticCause(actual) : {};
-    return {generation: generation(result), range: rangeFacts(actual, anchors),
-      endpoints: [mismatch.found === diagnostic.cause.found, mismatch.expected === diagnostic.cause.expected]};
-  },
+  "unsupported-family": ({fixture, result}) => ({refusals: Object.keys(fixture.refusedClients).map(name =>
+    ({name, code: gap(result, name)?.code ?? null, reason: gap(result, name)?.reason ?? null}))}),
+  // Every distinct link overlapping each written label, with its span relative
+  // to that label and its target relative to the binder.
   links: ({fixture: {observations: {label}}, result, anchors: {positions}}) => ({links: positions.map(position => {
-    const links = result.links.filter(link => link.start === position && link.end === position + label.length);
-    // Retain every distinct label/target at every written occurrence.
-    return [...new Set(links.map(link => JSON.stringify([link.name,
-      Number.isInteger(link.definitionStart) ? link.definitionStart - positions[0] : null])))].map(text => JSON.parse(text));
+    const end = position + label.length;
+    const links = result.links.filter(link => link.start < end && link.end > position).map(link => JSON.stringify({
+      name: link.name, target: Number.isInteger(link.definitionStart) ? link.definitionStart - positions[0] : null,
+      start: link.start - position, end: link.end - end}));
+    return [...new Set(links)].map(text => JSON.parse(text));
   })}),
-  "capture-range": ({fixture, result, anchors: {conflict, binder, call}}) => {
-    const actual = gap(result, fixture.diagnostic.name) ?? {};
-    return {range: {nonempty: actual.end > actual.start,
-      withinConflict: actual.start >= conflict.start && actual.end <= conflict.end,
-      coversConflict: [binder, call].some(site => actual.start <= site.start && actual.end >= site.end)}};
-  },
-  "refusal-range": ({fixture, result, anchors}) => ({range: rangeFacts(gap(result, fixture.diagnostic.name), anchors)}),
+  wildcard: rangeFacts,
+  "capture-range": rangeFacts,
+  "refusal-range": rangeFacts,
 };
 
-// Each requirement states the accepted behavior and the plausible wrong
-// results that must violate it. The audit applies every counterexample to an
-// accepted observation, so deleting or weakening a check fails after the
-// defect records are gone. A counterexample edits the observed compiler result
-// (`result`) or the collected lint evidence (`evidence`).
+// A requirement is met when each of its named conditions holds. A condition
+// carries the plausible wrong results that must violate it, and the audit
+// applies every one to an accepted observation: each must violate its own
+// condition, and each condition must be violated alone by one of them, so a
+// check that combines two conditions cannot leave either unguarded. `permits`
+// lists valid variations, which must meet every requirement. Both edit the
+// observed compiler result (`result`) or the collected lint evidence
+// (`evidence`).
 const editOutputs = (result, name, edit) => result.outputs.filter(o => o.name === name).forEach(edit);
 const withoutDeclaration = (result, name) => {
   result.outputs = result.outputs.filter(o => o.name !== name);
@@ -259,126 +263,266 @@ const withoutDeclaration = (result, name) => {
 const published = name => ({name: `publishes ${name}`, result: r => { r.outputs.push({name, verified: true, axioms: []}); }});
 // The real refusal for an arrow-typed operation shares E817 with G3's cause.
 const arrowRefusal = "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.";
+// Advice changes start from the case's identified advice at its whole target.
+const identified = ({fixture, anchors}) => fixture.rewrite.advice.map(advice => ({...advice, ...anchors.rewrite}));
+const advised = (context, name, edit) => ({name, evidence: e => { e.warnings = structuredClone(identified(context)); edit(e.warnings); }});
+// Each issued warning states its identified counterpart's field.
+const adviceField = (field, what, other) => ({
+  holds: ({fixture, facts: {advice}}) => fixture.rewrite.advice.every((expected, at) => !advice[at] || advice[at][field] === expected[field]),
+  breaks: context => [advised(context, `advice ${what}`, w => { w[0][field] = other(w[0][field]); })],
+});
+// Range changes place the declaration's refusal at a span within the source.
+function placements({fixture, anchors}) {
+  const region = regionOf(anchors), sites = sitesOf(anchors);
+  assert.ok(sites.every(site => site.end > site.start), "a covered site must be nonempty");
+  const inside = [region.start, region.start + 1], last = sites.reduce((a, b) => b.start > a.start ? b : a);
+  assert.ok(!sites.some(site => inside[0] <= site.start && inside[1] >= site.end), "the region must not start with its site");
+  assert.ok(region.start > 0 && region.end < fixture.source.length, "the region must lie strictly inside the source");
+  assert.ok(last.start + 1 < region.end, "the region must continue past its last site's start");
+  const at = (name, start, end) => ({name, result: r => { Object.assign(gap(r, fixture.diagnostic.name), {start, end}); }});
+  return {region, sites, inside, last, at};
+}
+// Link changes at each written label; `here` selects the real links that span it.
+const atLabels = changes => ({fixture: {observations: {label}}, anchors: {positions}}) => positions.flatMap((position, site) => {
+  const here = link => link.start === position && link.end === position + label.length;
+  const edit = change => r => r.links.filter(here).forEach(change);
+  const beside = change => r => { r.links.push(...r.links.filter(here).map(link => change({...link}))); };
+  return changes({label, position, positions, here, edit, beside}).map(([what, result]) => ({name: `site ${site} ${what}`, result}));
+});
 const requirementChecks = {
   clients: {
     applies: fixture => !!fixture.clients?.length,
-    met: ({fixture, facts}) => fixture.clients.every(name => facts.clients[name] === "checked"),
-    breaks: ({fixture}) => fixture.clients.flatMap(name => [
-      {name: `${name} is refused`, result: r => editOutputs(r, name, o => { o.verified = false; })},
-      {name: `${name} assumes an axiom`, result: r => editOutputs(r, name, o => { o.axioms = ["unproved"]; })},
-      {name: `${name} is missing`, result: r => withoutDeclaration(r, name)},
-    ]),
+    conditions: {
+      // One counterexample for each way a client can fail to be checked.
+      checked: {
+        holds: ({fixture, facts}) => fixture.clients.every(name => facts.clients[name] === "checked"),
+        breaks: ({fixture}) => fixture.clients.flatMap(name => [
+          {name: `${name} is refused`, result: r => editOutputs(r, name, o => { o.verified = false; })},
+          {name: `${name} assumes an axiom`, result: r => editOutputs(r, name, o => { o.axioms = ["unproved"]; })},
+          {name: `${name} is missing`, result: r => withoutDeclaration(r, name)},
+        ]),
+      },
+    },
   },
   refusedClients: {
     applies: fixture => Object.keys(fixture.refusedClients ?? {}).length > 0,
-    met: ({fixture, facts}) => Object.keys(fixture.refusedClients).every(name => facts.clients[name] === "refused"),
-    breaks: ({fixture}) => Object.keys(fixture.refusedClients).flatMap(name => [
-      {name: `${name} checks`, result: r => {
-        editOutputs(r, name, o => Object.assign(o, {verified: true, axioms: []}));
-        r.gaps = r.gaps.filter(g => g.name !== name);
-      }},
-      {name: `${name} is missing`, result: r => withoutDeclaration(r, name)},
-    ]),
+    conditions: {
+      refused: {
+        holds: ({fixture, facts}) => Object.keys(fixture.refusedClients).every(name => facts.clients[name] === "refused"),
+        breaks: ({fixture}) => Object.keys(fixture.refusedClients).flatMap(name => [
+          {name: `${name} checks`, result: r => {
+            editOutputs(r, name, o => Object.assign(o, {verified: true, axioms: []}));
+            r.gaps = r.gaps.filter(g => g.name !== name);
+          }},
+          {name: `${name} is missing`, result: r => withoutDeclaration(r, name)},
+        ]),
+      },
+    },
   },
   // Outputs report declarations; constructors must instead be tested by clients.
   outputsAbsent: {
     applies: fixture => !!(fixture.absentOutputs?.length || fixture.absentOutputFamilies?.length),
-    met: ({facts}) => facts.forbiddenOutputs.length === 0,
-    breaks: ({fixture}) => [
-      ...(fixture.absentOutputs ?? []).map(published),
-      ...(fixture.absentOutputFamilies ?? []).flatMap(prefix => [published(prefix), published(`${prefix}.id`)]),
-    ],
+    conditions: {
+      absent: {
+        holds: ({facts}) => facts.forbiddenOutputs.length === 0,
+        breaks: ({fixture}) => [
+          ...(fixture.absentOutputs ?? []).map(published),
+          ...(fixture.absentOutputFamilies ?? []).flatMap(prefix => [published(prefix), published(`${prefix}.id`)]),
+        ],
+      },
+    },
   },
   originalType: {
     applies: fixture => fixture.kind === "collision",
-    met: ({fixture, facts}) => facts.originalType === fixture.originalType,
-    breaks: ({fixture: {symbol}}) => [
-      {name: `${symbol} has another type`, result: r => editOutputs(r, symbol, o => { o.type = "Bool"; })},
-      {name: `${symbol} is refused`, result: r => editOutputs(r, symbol, o => { o.verified = false; })},
-    ],
+    conditions: {
+      verified: {
+        holds: ({facts}) => facts.originalType !== null,
+        breaks: ({fixture: {symbol}}) => [{name: `${symbol} is refused`, result: r => editOutputs(r, symbol, o => { o.verified = false; })}],
+      },
+      type: {
+        holds: ({fixture, facts}) => facts.originalType === null || facts.originalType === fixture.originalType,
+        breaks: ({fixture: {symbol}}) => [{name: `${symbol} has another type`, result: r => editOutputs(r, symbol, o => { o.type = "Bool"; })}],
+      },
+    },
   },
   duplicateRefused: {
     applies: fixture => fixture.kind === "collision",
-    met: ({facts}) => facts.duplicateRefused,
-    breaks: ({fixture: {symbol}}) => [
-      {name: "the duplicate is refused for another reason", result: r => { gap(r, symbol).reason = "Type mismatch: found Bool, expected Unit."; }},
-      {name: "the duplicate is accepted", result: r => { r.gaps = r.gaps.filter(g => g.name !== symbol); }},
-    ],
+    conditions: {
+      refused: {
+        holds: ({facts}) => facts.duplicate !== null,
+        breaks: ({fixture: {symbol}}) => [{name: "the duplicate is accepted", result: r => { r.gaps = r.gaps.filter(g => g.name !== symbol); }}],
+      },
+      reason: {
+        holds: ({facts}) => facts.duplicate === null || /already|duplicate/i.test(facts.duplicate),
+        breaks: ({fixture: {symbol}}) => [{name: "the duplicate is refused for another reason",
+          result: r => { gap(r, symbol).reason = "Type mismatch: found Bool, expected Unit."; }}],
+      },
+    },
+    // The kernel's own refusal of a same-kind duplicate.
+    permits: ({fixture: {symbol}}) => [{name: "the duplicate is refused as already registered",
+      result: r => { gap(r, symbol).reason = "Instruction kernel: Definition symbol is already registered."; }}],
   },
+  // Advice may be withheld. Issued advice must be exactly the case's identified
+  // advice within its rewrite target, so each condition holds vacuously
+  // without advice.
   advice: {
     applies: fixture => fixture.kind === "lint",
-    met: ({evidence, recognized}) => evidence.warnings.length === 0 || recognized,
-    breaks: ({fixture, anchors}) => {
-      const recognized = fixture.rewrite.advice.map(advice => ({...advice, ...anchors.rewrite}));
-      const advised = (name, edit) => ({name, evidence: e => { e.warnings = structuredClone(recognized); edit(e.warnings); }});
-      return [
-        advised("advice has another message", w => { w[0].message = "x is unused in the body: rename it _x."; }),
-        advised("advice names another declaration", w => { w[0].declaration = "unrelated"; }),
-        advised("advice lies outside its rewrite", w => Object.assign(w[0], {start: 0, end: 1})),
-        advised("advice extends past its rewrite", w => { w[0].end = anchors.rewrite.end + 1; }),
-        advised("advice has an empty span", w => { w[0].end = w[0].start; }),
-        advised("advice includes another warning", w => { w.push({...w[0], code: "W705", message: "z is unused in the body: write M -> … instead of forall z : M. …."}); }),
-        ...recognized.length > 1 ? [advised("advice is partial", w => { w.pop(); })] : [],
-      ];
+    conditions: {
+      count: {
+        holds: ({fixture, facts: {advice}}) => !advice.length || advice.length === fixture.rewrite.advice.length,
+        breaks: context => [
+          advised(context, "advice includes another warning", w => {
+            w.push({...w[0], code: "W705", message: "z is unused in the body: write M -> … instead of forall z : M. …."});
+          }),
+          ...context.fixture.rewrite.advice.length > 1 ? [advised(context, "advice is partial", w => { w.pop(); })] : [],
+        ],
+      },
+      codes: adviceField("code", "has another code", code => code === "W705" ? "W706" : "W705"),
+      declarations: adviceField("declaration", "names another declaration", () => "unrelated"),
+      messages: adviceField("message", "has another message", () => "x is unused in the body: rename it _x."),
+      startsInTarget: {
+        holds: ({facts: {advice}}) => advice.every(w => w.start >= 0),
+        breaks: context => [advised(context, "advice lies outside its rewrite", w => Object.assign(w[0], {start: 0, end: 1}))],
+      },
+      endsInTarget: {
+        holds: ({anchors: {rewrite}, facts: {advice}}) => advice.every(w => w.end <= rewrite.end - rewrite.start),
+        breaks: context => [advised(context, "advice extends past its rewrite", w => { w[0].end = context.anchors.rewrite.end + 1; })],
+      },
+      nonempty: {
+        holds: ({facts: {advice}}) => advice.every(w => w.end > w.start),
+        breaks: context => [advised(context, "advice has an empty span", w => { w[0].end = w[0].start; })],
+      },
     },
+    permits: context => [{name: "the identified advice, with a rewrite that preserves the result", evidence: e => {
+      e.warnings = structuredClone(identified(context));
+      e.rewritten = structuredClone(e.result);
+    }}],
   },
   refusals: {
     applies: fixture => fixture.kind === "unsupported-family",
-    met: ({facts}) => facts.refusals.every(r => r.code === "E817" && r.words.every(Boolean) && r.unsupported),
-    breaks: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).flatMap(name => {
-      const focused = `Cannot derive ${words[0]}: ${words.slice(1).join(" depends on ")}`;
-      const reason = (what, text) => ({name: `${name} ${what}`, result: r => { gap(r, name).reason = text; }});
-      return [
-        reason("omits the dependency", words.join(", ")),
-        ...words.map(word => reason(`omits ${word}`, focused.replace(new RegExp(`\\b${word}\\b`), "other"))),
-        reason("describes an arrow-typed operation", arrowRefusal),
-        {name: `${name} has another code`, result: r => { gap(r, name).code = "E606"; }},
-      ];
-    }),
+    conditions: {
+      code: {
+        holds: ({facts}) => facts.refusals.every(r => r.code === "E817"),
+        breaks: ({fixture}) => Object.keys(fixture.refusedClients).map(name =>
+          ({name: `${name} has another code`, result: r => { gap(r, name).code = "E606"; }})),
+      },
+      words: {
+        holds: ({fixture, facts}) => facts.refusals.every(r => fixture.refusalWords.every(word => hasWord(r.reason ?? "", word))),
+        breaks: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).flatMap(name => {
+          const focused = `Cannot derive ${words[0]}: ${words.slice(1).join(" depends on ")}`;
+          return [
+            ...words.map(word => ({name: `${name} omits ${word}`,
+              result: r => { gap(r, name).reason = focused.replace(new RegExp(`\\b${word}\\b`), "other"); }})),
+            {name: `${name} describes an arrow-typed operation`, result: r => { gap(r, name).reason = arrowRefusal; }},
+          ];
+        }),
+      },
+      dependency: {
+        holds: ({facts}) => facts.refusals.every(r => /depend|transport|unsupported/i.test(r.reason ?? "")),
+        breaks: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).map(name =>
+          ({name: `${name} omits the dependency`, result: r => { gap(r, name).reason = words.join(", "); }})),
+      },
+    },
+    // Focused wordings other than the fixing compiler's.
+    permits: ({fixture: {refusedClients, refusalWords: words}}) => Object.keys(refusedClients).flatMap(name => [
+      `Cannot derive ${words[0]}: ${words.slice(1).join(" depends on ")}`,
+      `${words[0]} parameter ${words.slice(1).join(" has unsupported transport through law ")}`,
+    ].map(reason => ({name: `${name} is refused as "${reason}"`, result: r => { gap(r, name).reason = reason; }}))),
   },
-  // Each bound has a counterexample that violates it alone: a span crossing
-  // both ends of its region would leave either end unguarded. A span that
-  // covers a nonempty site is nonempty, so no span violates `nonempty` alone;
-  // it is recorded to tell an empty origin from a misplaced one, not judged.
+  // A refusal is located within its region and covers one of its sites. A
+  // span that covers a nonempty site is nonempty, so emptiness needs no
+  // condition. The bounds hold vacuously for an unlocated refusal, which only
+  // `located` rejects.
   range: {
     applies: fixture => ["wildcard", "capture-range", "refusal-range"].includes(fixture.kind),
-    met: ({facts}) => Object.entries(facts.range).every(([condition, holds]) => condition === "nonempty" || holds),
-    breaks: ({fixture, anchors}) => {
-      const region = anchors.scope ?? anchors.conflict, sites = anchors.token ? [anchors.token] : [anchors.binder, anchors.call];
-      assert.ok(sites.every(site => site.end > site.start), "a covered site must be nonempty");
-      const inside = [region.start, region.start + 1], last = sites.reduce((a, b) => b.start > a.start ? b : a);
-      assert.ok(!sites.some(site => inside[0] <= site.start && inside[1] >= site.end), "the region must not start with its site");
-      assert.ok(region.start > 0 && region.end < fixture.source.length, "the region must lie strictly inside the source");
-      assert.ok(last.start + 1 < region.end, "the region must continue past its last site's start");
-      const located = (name, start, end) => ({name, result: r => { Object.assign(gap(r, fixture.diagnostic.name), {start, end}); }});
-      return [
-        located("an empty span at the site", sites[0].start, sites[0].start),
-        located("a span inside the region that misses the site", ...inside),
-        located("a span covering the site that starts before the region", region.start - 1, region.end),
-        located("a span covering the site that ends after the region", region.start, region.end + 1),
-        located("a span starting inside the site", last.start + 1, region.end),
-        {name: "an unlocated refusal", result: r => { const g = gap(r, fixture.diagnostic.name); delete g.start; delete g.end; }},
-      ];
+    conditions: {
+      located: {
+        holds: ({facts}) => facts.range !== null,
+        breaks: ({fixture: {diagnostic: {name}}}) => [
+          {name: "an unlocated refusal", result: r => { delete gap(r, name).start; delete gap(r, name).end; }},
+          {name: "a refusal located only by its start", result: r => { delete gap(r, name).end; }},
+        ],
+      },
+      startsInRegion: {
+        holds: ({facts: {range}}) => !range || range.start >= 0,
+        breaks: context => {
+          const {region, at} = placements(context);
+          return [at("a span covering the site that starts before the region", region.start - 1, region.end)];
+        },
+      },
+      endsInRegion: {
+        holds: ({facts: {range}, anchors}) => !range || range.end <= regionOf(anchors).end - regionOf(anchors).start,
+        breaks: context => {
+          const {region, at} = placements(context);
+          return [at("a span covering the site that ends after the region", region.start, region.end + 1)];
+        },
+      },
+      coversSite: {
+        holds: ({facts: {range}, anchors}) => !range || sitesOf(anchors).some(site =>
+          range.start <= site.start - regionOf(anchors).start && range.end >= site.end - regionOf(anchors).start),
+        breaks: context => {
+          const {region, sites, inside, last, at} = placements(context);
+          return [
+            at("an empty span at the site", sites[0].start, sites[0].start),
+            at("a span inside the region that misses the site", ...inside),
+            at("a span starting inside the site", last.start + 1, region.end),
+          ];
+        },
+      },
+    },
+    permits: context => {
+      const {region, sites, at} = placements(context);
+      return [...sites.map(site => at("a span over exactly the site", site.start, site.end)), at("a span over the whole region", region.start, region.end)];
     },
   },
+  // Every link at every written label shows that label, targets the binder and
+  // spans exactly the label, and every label has a link. The conditions over
+  // a label's links hold vacuously without links, which only `present` rejects.
   links: {
     applies: fixture => fixture.kind === "links",
-    met: ({fixture, facts}) => facts.links.every(links => links.length > 0
-      && links.every(([name, target]) => name === fixture.observations.label && target === 0)),
-    breaks: ({fixture: {observations: {label}}, anchors: {positions}}) => positions.flatMap((position, site) => {
-      const here = link => link.start === position && link.end === position + label.length;
-      const edit = (what, change) => ({name: `site ${site} ${what}`, result: r => r.links.filter(here).forEach(change)});
-      return [
-        edit("shows a freshened label", link => { link.name = `${label}1`; }),
-        edit("targets another definition", link => { link.definitionStart = positions[0] + 1; }),
-        edit("has no target", link => { delete link.definitionStart; }),
-        // The correct link remains, so every link at a site must be correct.
-        {name: `site ${site} keeps its link beside a stale freshened one`, result: r => {
-          r.links.push(...r.links.filter(here).map(({definitionStart, ...link}) => ({...link, name: `${label}1`})));
-        }},
-        {name: `site ${site} has no link`, result: r => { r.links = r.links.filter(link => !here(link)); }},
-      ];
-    }),
+    conditions: {
+      present: {
+        holds: ({facts}) => facts.links.every(links => links.length > 0),
+        breaks: atLabels(({here}) => [["has no link", r => { r.links = r.links.filter(link => !here(link)); }]]),
+      },
+      label: {
+        holds: ({fixture, facts}) => facts.links.every(links => links.every(link => link.name === fixture.observations.label)),
+        breaks: atLabels(({label, edit, beside}) => [
+          ["shows a freshened label", edit(link => { link.name = `${label}1`; })],
+          // The correct link remains, so every link at a label must be correct.
+          ["keeps its link beside a stale freshened one", beside(link => ({...link, name: `${label}1`}))],
+        ]),
+      },
+      target: {
+        holds: ({facts}) => facts.links.every(links => links.every(link => link.target === 0)),
+        breaks: atLabels(({positions, edit, beside}) => [
+          ["targets another definition", edit(link => { link.definitionStart = positions[0] + 1; })],
+          ["has no target", edit(link => { delete link.definitionStart; })],
+          ["keeps its link beside one to another definition", beside(link => ({...link, definitionStart: positions[0] + 1}))],
+        ]),
+      },
+      start: {
+        holds: ({facts}) => facts.links.every(links => links.every(link => link.start === 0)),
+        breaks: atLabels(({edit, beside}) => [
+          ["starts before its label", edit(link => { link.start -= 1; })],
+          ["keeps its link beside one that starts before its label", beside(link => ({...link, start: link.start - 1}))],
+        ]),
+      },
+      end: {
+        holds: ({facts}) => facts.links.every(links => links.every(link => link.end === 0)),
+        breaks: atLabels(({edit, beside}) => [
+          ["covers more than its label", edit(link => { link.end += 1; })],
+          ["keeps its link beside one that covers more than its label", beside(link => ({...link, end: link.end + 1}))],
+        ]),
+      },
+    },
+    // Repeated identical links are equivalent; links that only touch a label
+    // belong to their own text.
+    permits: atLabels(({label, position, beside}) => [
+      ["repeats its link", beside(link => link)],
+      ["has adjacent links", r => { r.links.push({name: "before", start: position - 1, end: position},
+        {name: "after", start: position + label.length, end: position + label.length + 1}); }],
+    ]),
   },
   // Every accepted diagnostic receives one counterexample per field the matcher
   // compares and its expectation constrains, from the matcher's own field table.
@@ -388,32 +532,54 @@ const requirementChecks = {
   // constrained.
   diagnostics: {
     applies: () => true,
-    met: ({fixture, result}) => matchDiagnostics(result.gaps, expectedDiagnostics(fixture)) !== null,
-    breaks: ({fixture, result}) => {
-      const expected = expectedDiagnostics(fixture), owners = matchDiagnostics(result.gaps, expected);
-      assert.ok(owners, `${fixture.id}: diagnostic counterexamples need an accepted diagnostic set`);
-      return [
-        {name: "an unrelated diagnostic", result: r => { r.gaps.push({name: "unrelated", code: "E606", reason: "Type mismatch: found Bool, expected Unit."}); }},
-        ...result.gaps.flatMap((actual, at) => {
-          const label = `${actual.name} ${actual.code}`;
-          const context = {actual, expected: expected[owners.indexOf(at)], causeRequired: causeRequired(fixture.id, actual.name)};
+    conditions: {
+      matched: {
+        holds: ({fixture, result}) => matchDiagnostics(result.gaps, expectedDiagnostics(fixture)) !== null,
+        breaks: ({fixture, result}) => {
+          const expected = expectedDiagnostics(fixture), owners = matchDiagnostics(result.gaps, expected);
+          assert.ok(owners, `${fixture.id}: diagnostic counterexamples need an accepted diagnostic set`);
           return [
-            {name: `${label} is missing`, result: r => { r.gaps.splice(at, 1); }},
-            {name: `${label} is duplicated`, result: r => { r.gaps.push({...r.gaps[at]}); }},
-            ...Object.values(diagnosticFields).filter(field => field.constrains(context))
-              .flatMap(field => field.perturb(actual).map(({what, change}) => ({name: `${label} ${what}`, result: r => change(r.gaps[at])}))),
+            {name: "an unrelated diagnostic", result: r => { r.gaps.push({name: "unrelated", code: "E606", reason: "Type mismatch: found Bool, expected Unit."}); }},
+            ...result.gaps.flatMap((actual, at) => {
+              const label = `${actual.name} ${actual.code}`;
+              const context = {actual, expected: expected[owners.indexOf(at)], causeRequired: causeRequired(fixture.id, actual.name)};
+              return [
+                {name: `${label} is missing`, result: r => { r.gaps.splice(at, 1); }},
+                {name: `${label} is duplicated`, result: r => { r.gaps.push({...r.gaps[at]}); }},
+                ...Object.values(diagnosticFields).filter(field => field.constrains(context))
+                  .flatMap(field => field.perturb(actual).map(({what, change}) => ({name: `${label} ${what}`, result: r => change(r.gaps[at])}))),
+              ];
+            }),
           ];
-        }),
-      ];
+        },
+      },
     },
   },
 };
 const requirementsFor = fixture => Object.entries(requirementChecks).filter(([, check]) => check.applies(fixture));
 export const requirementNames = fixture => requirementsFor(fixture).map(([name]) => name);
 export const unmet = observation => Object.entries(observation.requirements).filter(([, met]) => !met).map(([name]) => name);
+// The judging code, for the audit's mutation sweep: the projections that
+// conditions read and the conditions themselves. Facts that only the
+// lifecycle reads are left out; its records, not the audit, depend on them.
+export const judgments = () => [...new Set([hasWord, clientState, expectedDiagnostics, adviceFacts, recognizedAdvice,
+  regionOf, sitesOf, spanIn, clientFacts, forbiddenOutputs, ...Object.values(kindFacts),
+  ...Object.values(requirementChecks).flatMap(({conditions}) => Object.values(conditions).map(({holds}) => holds))])];
 
-// Compiler and lint results are collected once. Every judgment below is a pure
-// function of this evidence, so audits can substitute plausible wrong results.
+// Compiler and lint results are collected once, as the plain data that
+// judgments read: a program computes some result fields from its kernel when
+// they are first read, so a result outlives its program only as a copy. Every
+// judgment below is a pure function of this evidence, so audits can substitute
+// plausible wrong results.
+const copied = (keys, object) => Object.fromEntries(keys.filter(key => object[key] !== undefined)
+  .map(key => [key, structuredClone(object[key])]));
+const resultData = ({outputs, gaps, links}) => ({
+  outputs: outputs.map(output => copied(["name", "verified", "axioms", "type", "reason"], output)),
+  gaps: gaps.map(diagnostic => copied(["name", "code", "reason", "start", "end"], diagnostic)),
+  links: links.map(link => copied(["name", "start", "end", "definitionStart"], link)),
+});
+export const evidenceData = ({result, rewritten, ...evidence}) =>
+  ({...evidence, result: resultData(result), ...rewritten && {rewritten: resultData(rewritten)}});
 export async function collectEvidence(t, fixture, check, lintSource = lint) {
   const anchors = validateFixture(fixture), evidence = {result: (await check(t, fixture.source)).result};
   if (fixture.kind === "lint") {
@@ -429,19 +595,18 @@ export async function collectEvidence(t, fixture, check, lintSource = lint) {
     if (recognizedAdvice(fixture, anchors, evidence.warnings))
       evidence.rewritten = (await check(t, fixture.source.replace(fixture.rewrite.from, fixture.rewrite.to))).result;
   }
-  return evidence;
+  return evidenceData(evidence);
 }
 export function observeEvidence(fixture, evidence) {
   const {anchors, recognized, result} = observed(fixture, evidence);
-  const names = [...fixture.clients ?? [], ...Object.keys(fixture.refusedClients ?? {})];
-  const facts = {gaps: gapNames(result), clients: Object.fromEntries(names.map(name => [name, clientState(find(result, name))])),
-    rootCauses: rootCauses(result), dependencies: dependencies(result)};
-  if (fixture.absentOutputs || fixture.absentOutputFamilies)
-    facts.forbiddenOutputs = result.outputs.filter(({name}) => fixture.absentOutputs?.includes(name)
-      || fixture.absentOutputFamilies?.some(prefix => name === prefix || name.startsWith(prefix + "."))).map(o => o.name).sort();
+  const facts = {gaps: gapNames(result), clients: clientFacts(fixture, result), rootCauses: rootCauses(result), dependencies: dependencies(result)};
+  if (fixture.absentOutputs || fixture.absentOutputFamilies) facts.forbiddenOutputs = forbiddenOutputs(fixture, result);
   const context = {fixture, evidence, anchors, recognized, result, facts};
   Object.assign(facts, kindFacts[fixture.kind]?.(context) ?? assert.fail(`Unknown observation kind: ${fixture.kind}`));
-  return {facts, requirements: Object.fromEntries(requirementsFor(fixture).map(([name, check]) => [name, check.met(context)]))};
+  const conditions = Object.fromEntries(requirementsFor(fixture).map(([name, check]) => [name,
+    Object.fromEntries(Object.entries(check.conditions).map(([condition, {holds}]) => [condition, !!holds(context)]))]));
+  const requirements = Object.fromEntries(Object.entries(conditions).map(([name, held]) => [name, Object.values(held).every(Boolean)]));
+  return {facts, conditions, requirements};
 }
 // `check` uses the existing program/module reader and test-owned disposal.
 // The optional lint function is used by the harness's adversarial controls.
@@ -449,11 +614,14 @@ export async function observeCase(t, fixture, check, lintSource = lint) {
   const evidence = await collectEvidence(t, fixture, check, lintSource);
   return {...observeEvidence(fixture, evidence), evidence};
 }
-// Plausible wrong results for each requirement of an accepted observation.
-export function counterexamples(fixture, evidence) {
+// Each condition's plausible wrong results, and each requirement's permitted
+// variations, of an accepted observation; `apply` edits a copy of its evidence.
+function changes(fixture, evidence, list) {
   const context = {fixture, evidence, ...observed(fixture, evidence)};
-  return requirementsFor(fixture).map(([name, check]) => [name, check.breaks(context).map(counterexample => ({
-    name: counterexample.name,
-    apply: target => counterexample.result ? counterexample.result(observed(fixture, target).result) : counterexample.evidence(target),
-  }))]);
+  return requirementsFor(fixture).flatMap(([requirement, check]) => list(check, context).map(change => ({requirement,
+    condition: change.condition, name: change.name,
+    apply: target => change.result ? change.result(observed(fixture, target).result) : change.evidence(target)})));
 }
+export const counterexamples = (fixture, evidence) => changes(fixture, evidence, ({conditions}, context) =>
+  Object.entries(conditions).flatMap(([condition, {breaks}]) => breaks(context).map(change => ({...change, condition}))));
+export const permitted = (fixture, evidence) => changes(fixture, evidence, ({permits}, context) => permits?.(context) ?? []);

@@ -102,8 +102,9 @@ Apply the [regression contract checklist](../guides/regression-contracts.md)
 when extending that evidence. The [contract audit](../reports/frontend-generation-contract-audit.md)
 records permitted alternatives and distinguishing controls. A new review finding
 requires checking the same failure mechanism across sibling contracts. Each
-contract requirement carries counterexamples that the audit applies to an
-accepted observation, which makes that check executable.
+contract requirement is a table of conditions whose counterexamples the audit
+applies to an accepted observation, and a mutation sweep requires every
+comparison in the judging code to matter. This makes that check executable.
 
 - Turn G1–G6 and G8–G12 into durable fixtures with explicit current failures and
   expected outcomes. Prefer a focused test for a complete behavior over

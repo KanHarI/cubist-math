@@ -1,14 +1,19 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
+import {mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
+import {pathToFileURL} from "node:url";
 import {inspect} from "node:util";
 import createCubical from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases} from "./fixtures/frontend-generation.mjs";
+import {requirementConditions} from "./fixtures/frontend-generation-requirements.mjs";
 import {supportedSources} from "./fixtures/frontend-generation-supported.mjs";
-import {collectEvidence, counterexamples, observeCase, observeEvidence, sourceAnchor, unmet,
-  validateCoverage, validateFixture, validateObligations} from "./frontend-generation-contracts.mjs";
+import * as contracts from "./frontend-generation-contracts.mjs";
+import {collectEvidence, counterexamples, evidenceData, judgments, observeCase, observeEvidence, sourceAnchor, unmet,
+  validateConditions, validateCoverage, validateFixture, validateObligations} from "./frontend-generation-contracts.mjs";
 import {causeFields, diagnosticCause, diagnosticFields, encodeCause, matchesDiagnostic, matchesDiagnostics,
   validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
 
@@ -61,9 +66,10 @@ const acceptedEvidence = {
   G3: async (t, c) => {
     const {result} = await check(t, c.source);
     result.outputs = result.outputs.filter(o => !/^T\.(Hom|Iso)(\.|$)/.test(o.name));
-    // The fixing compiler's wording; other focused wordings are tested below.
-    result.gaps = [{name: "unsupported", code: "E817",
-      reason: "T's models have no homomorphisms: its op's argument p depends on law l, whose transport and composition are not generated."}];
+    // The fixing compiler's wording for Hom and Iso clients; the refusals
+    // table permits other focused wordings.
+    result.gaps = ["unsupported", "unsupported_iso"].map(name => ({name, code: "E817",
+      reason: "T's models have no homomorphisms: its op's argument p depends on law l, whose transport and composition are not generated."}));
     return {result};
   },
   G5: (t, c) => collectEvidence(t, c, check, () => []),
@@ -93,27 +99,126 @@ const acceptedEvidence = {
 test("FG0 audit: every case has an accepted observation", () => {
   assert.deepEqual(Object.keys(acceptedEvidence).sort(), cases.map(c => c.id).sort());
 });
-// Every requirement carries its own plausible wrong results. Each must violate
-// that requirement, so a deleted or weakened check fails here.
-for (const original of cases) test(`FG0 audit: ${original.id} accepts its supported observation and rejects each requirement's counterexamples`, async t => {
-  const c = structuredClone(original), evidence = await acceptedEvidence[c.id](t, c);
-  meets(observeEvidence(c, evidence));
-  for (const [requirement, breaks] of counterexamples(c, evidence)) {
-    assert.ok(breaks.length, `${c.id}: ${requirement} needs a counterexample`);
-    for (const {name, apply} of breaks) {
-      const broken = structuredClone(evidence);
-      apply(broken);
-      assert.equal(observeEvidence(c, broken).requirements[requirement], false, `${c.id}: ${name} must violate ${requirement}`);
+// Collected once per case, as data: the judgments below are pure functions of
+// this evidence, so each program is disposed of once its evidence is copied.
+const acceptedCases = new Map();
+const acceptedCase = id => {
+  if (!acceptedCases.has(id)) acceptedCases.set(id, (async () => {
+    const c = fixture(id), programs = [];
+    try {
+      return {c, evidence: evidenceData(await acceptedEvidence[id]({after: dispose => programs.push(dispose)}, c))};
+    } finally {
+      for (const dispose of programs) dispose();
     }
+  })());
+  return acceptedCases.get(id);
+};
+
+// The audit of an accepted observation by a contract module: the observation
+// and each permitted variation meet every requirement, and each counterexample
+// violates its own condition. Returns the failures and the conditions that
+// some counterexample violates alone; with `stop`, the first failure throws.
+function audit(contract, c, evidence, stop = false) {
+  const failures = [], alone = new Set();
+  const fail = message => { if (stop) throw Error(message); failures.push(`${c.id}: ${message}`); };
+  const judge = apply => {
+    const changed = structuredClone(evidence);
+    apply?.(changed);
+    return contract.observeEvidence(c, changed);
+  };
+  const missing = contract.unmet(judge());
+  if (missing.length) fail(`the accepted observation must meet every requirement; unmet: ${missing.join(", ")}`);
+  for (const {name, apply} of contract.permitted(c, evidence)) {
+    const missing = contract.unmet(judge(apply));
+    if (missing.length) fail(`${name} must meet every requirement; unmet: ${missing.join(", ")}`);
   }
+  for (const {requirement, condition, name, apply} of contract.counterexamples(c, evidence)) {
+    const held = judge(apply).conditions[requirement];
+    if (held[condition]) fail(`${name} must violate ${requirement}.${condition}`);
+    else if (Object.values(held).filter(holds => !holds).length === 1) alone.add(`${requirement}.${condition}`);
+  }
+  return {failures, alone};
+}
+// Every condition carries its own plausible wrong results and every
+// requirement its permitted variations, so a deleted or weakened check fails
+// here, as does one that rejects a valid result.
+for (const {id} of cases) test(`FG0 audit: ${id} accepts its observation and permitted variations and rejects each condition's counterexamples`, async () => {
+  const {c, evidence} = await acceptedCase(id);
+  assert.ok(contracts.counterexamples(c, evidence).length, `${id} needs counterexamples`);
+  assert.deepEqual(audit(contracts, c, evidence).failures, []);
+});
+// A counterexample that violates two conditions leaves either unguarded, so
+// each condition needs one that violates it alone, in some case.
+test("FG0 audit: some counterexample violates each condition alone", async () => {
+  const alone = new Set();
+  for (const {id} of cases) {
+    const {c, evidence} = await acceptedCase(id);
+    for (const key of audit(contracts, c, evidence).alone) alone.add(key);
+  }
+  const stated = Object.entries(requirementConditions).flatMap(([requirement, conditions]) => conditions.map(condition => `${requirement}.${condition}`));
+  assert.deepEqual(stated.filter(key => !alone.has(key)), []);
 });
 
-// Permitted alternatives and reported counterexamples beyond the generic ones.
-test("FG0 audit: G3 accepts other focused refusal wordings", async t => {
-  const c = fixture("G3"), evidence = await acceptedEvidence.G3(t, c);
-  for (const reason of ["op parameter p has unsupported transport through law l", "Cannot derive op: p depends on l"])
-    meets(observe(c, evidence, result => { result.gaps[0].reason = reason; }));
+// Every comparison in the judging code must matter. A mutant changes one
+// operator in a fact projection that conditions read, in a condition, or in
+// the diagnostic field matchers. Judged over every case's accepted
+// observation, permitted variations and counterexamples, some verdict must
+// change; a surviving mutant is a check that no counterexample or permitted
+// variation exercises. The cause decoder and the complete matching's search
+// have their own tests below.
+const mutations = [[/===/g, "!=="], [/!==/g, "==="], [/&&/g, "||"], [/\|\|/g, "&&"], [/>=/g, ">"], [/<=/g, "<"],
+  [/(?<![=>])>(?![=>])/g, ">="], [/<(?![=<])/g, "<="], [/\.every\(/g, ".some("], [/\.some\(/g, ".every("], [/!(?![=!])/g, ""]];
+function mutants(source, functions) {
+  return functions.flatMap(code => {
+    const text = code.toString(), at = source.indexOf(text);
+    assert.ok(at !== -1 && source.indexOf(text, at + 1) === -1, `judging code must occur once: ${text.slice(0, 80)}`);
+    return mutations.flatMap(([pattern, replacement]) => [...text.matchAll(pattern)].map(({index, 0: operator}) => {
+      const start = at + index, line = source.slice(0, start).split("\n").length;
+      return {site: `${line}: ${operator} → ${replacement || "(removed)"} in ${source.split("\n")[line - 1].trim()}`,
+        source: source.slice(0, start) + replacement + source.slice(start + operator.length)};
+    }));
+  });
+}
+const survives = (contract, accepted) => {
+  try {
+    for (const {c, evidence} of accepted) audit(contract, c, evidence, true);
+    return true;
+  } catch {
+    return false;
+  }
+};
+test("FG0 audit: every comparison in the judging code is exercised", async t => {
+  const accepted = [];
+  for (const {id} of cases) accepted.push(await acceptedCase(id));
+  const contractsURL = new URL("./frontend-generation-contracts.mjs", import.meta.url);
+  const diagnosticsURL = new URL("./frontend-generation-diagnostics.mjs", import.meta.url);
+  const contractsSource = await readFile(contractsURL, "utf8"), diagnosticsSource = await readFile(diagnosticsURL, "utf8");
+  // Mutants live outside the tree, so their relative imports become absolute.
+  const absolute = source => source.replace(/(from ")(\.\.?\/[^"]+)"/g, (_, from, path) => `${from}${new URL(path, contractsURL).href}"`);
+  const directory = await mkdtemp(join(tmpdir(), "fg0-mutants-"));
+  t.after(() => rm(directory, {recursive: true, force: true}));
+  let index = 0;
+  const load = async (source, diagnostics) => {
+    const path = join(directory, `mutant-${index++}.mjs`);
+    source = absolute(source);
+    if (diagnostics) {
+      await writeFile(`${path}.diagnostics.mjs`, diagnostics);
+      assert.ok(source.includes(diagnosticsURL.href), "the contracts must import the diagnostics module");
+      source = source.replace(diagnosticsURL.href, pathToFileURL(`${path}.diagnostics.mjs`).href);
+    }
+    await writeFile(path, source);
+    return import(pathToFileURL(path).href);
+  };
+  const survivors = [];
+  for (const {site, source} of mutants(contractsSource, judgments()))
+    if (survives(await load(source), accepted)) survivors.push(`contracts ${site}`);
+  const matching = [matchesDiagnostic, ...Object.values(diagnosticFields).map(({matches}) => matches)];
+  for (const {site, source} of mutants(diagnosticsSource, matching))
+    if (survives(await load(contractsSource, source), accepted)) survivors.push(`diagnostics ${site}`);
+  assert.deepEqual(survivors, []);
 });
+
+// Reported counterexamples and permitted alternatives beyond the tables.
 test("FG0 audit: G6 permits an attached cause but requires the actual parent", async t => {
   const c = fixture("G6"), evidence = await acceptedEvidence.G6(t, c);
   const child = reason => result => { result.gaps.find(g => g.name === "C").reason = reason; };
@@ -122,18 +227,11 @@ test("FG0 audit: G6 permits an attached cause but requires the actual parent", a
     violates(observe(c, evidence, child(reason)), "diagnostics");
   violates(observe(c, evidence, result => { result.gaps.find(g => g.name === "P").reason = "Untranslated name: Other (mentions Undefined)"; }), "diagnostics");
 });
-for (const id of ["G8", "G12-range"]) test(`FG0 audit: ${id} accepts the reference and wider spans within its scope`, async t => {
-  const c = fixture(id), evidence = await acceptedEvidence[id](t, c), {scope} = c.diagnostic;
-  const text = id === "G8" ? "t1" : "iter", token = reference(c.source, scope, text), start = c.source.indexOf(scope);
-  const valid = [[token.start, token.end], [start, start + scope.length]];
-  if (id === "G12-range") valid.push([token.start, token.start + "iter(n)".length]);
-  for (const [start, end] of valid) meets(observe(c, evidence, result => Object.assign(result.gaps[0], {start, end})));
-});
-test("FG0 audit: G10 accepts the binder, the helper call or the whole conflicting clause", async t => {
-  const c = fixture("G10"), evidence = await acceptedEvidence.G10(t, c), {conflict} = c.diagnostic;
-  const at = c.source.indexOf(conflict), binder = at + "succ(".length, call = at + conflict.indexOf("k(c)");
-  for (const [start, end] of [[binder, binder + 1], [call, call + "k(c)".length], [at, at + conflict.length]])
-    meets(observe(c, evidence, result => Object.assign(result.gaps[0], {start, end})));
+// Range tables permit the site and the whole region; a call is in between.
+test("FG0 audit: G12-range accepts a span over the whole call", async t => {
+  const c = fixture("G12-range"), evidence = await acceptedEvidence["G12-range"](t, c);
+  const call = reference(c.source, c.diagnostic.scope, "iter(n)");
+  meets(observe(c, evidence, result => Object.assign(result.gaps[0], call)));
 });
 test("FG0 audit: supplied client names, labels and scope drive navigation checks", async t => {
   const c = fixture("G9"), scope = "law l(z : M) : k(z) = op(z, z);";
@@ -223,8 +321,7 @@ for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} judges identified a
   violates(losing.observation, "clients");
   // Every advice counterexample, issued by the linter, must leave the source
   // unrewritten; the requirement's own list drives this check.
-  const [, breaks] = counterexamples(c, quiet.evidence).find(([requirement]) => requirement === "advice");
-  for (const {name, apply} of breaks) {
+  for (const {name, apply} of counterexamples(c, quiet.evidence).filter(({requirement}) => requirement === "advice")) {
     const changed = {};
     apply(changed);
     const {checks, observation} = await collect(changed.warnings, lost);
@@ -366,6 +463,9 @@ test("FG0 audit: requirements survive deletion of a case, its manifest row or it
     edit(weakened.find(c => c.id === id));
     assert.throws(() => validateObligations(weakened), error);
   };
+  // A condition deleted from a requirement's table, with its counterexamples.
+  const {links, ...others} = requirementConditions;
+  assert.throws(() => validateConditions({...others, links: links.filter(condition => condition !== "start")}), /stated conditions/);
   // A witness whose requirement no longer applies fails the mapping check.
   weakens("G1-initial", c => { delete c.absentOutputs; }, /atomic-publication: G1-initial must check outputsAbsent/);
   weakens("G1", c => { delete c.refusedClients; }, /name-availability: G1 must check refusedClients/);

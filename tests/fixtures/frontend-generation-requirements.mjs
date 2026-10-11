@@ -35,8 +35,8 @@ export const obligations = [
       refusedClients: {lowered: {code: "E606", cause: {found: "U1", expected: "U0"}}}}},
     counterexample: "generated Hom omits a fixed domain's universe contribution or preservation field, or lowers its universe"},
   {id: "unsupported-transport", phase: "FG2", checks: ["clients", "refusals", "outputsAbsent"],
-    witnesses: {G3: {refusalWords: ["op", "p", "l"]}},
-    counterexample: "usable base erased, unsupported Hom/Iso family leaked or a refusal without the dependent law"},
+    witnesses: {G3: {refusalWords: ["op", "p", "l"], refusedClients: {unsupported: {code: "E817"}, unsupported_iso: {code: "E817"}}}},
+    counterexample: "usable base erased, unsupported Hom/Iso family leaked or a Hom or Iso refusal without the dependent law"},
   {id: "match-computation", phase: "FG4", checks: ["clients", "refusedClients"],
     witnesses: {G4: {clients: ["computation", "off_computation", "empty_computation"], ...wrongEquation},
       "G4-flat": {clients: ["computation", "empty_computation"], ...wrongEquation}},
@@ -66,3 +66,20 @@ export const obligations = [
     witnesses: {"G12-range": {diagnostic: {name: "T", code: "E845", cause: {recursive: "iter", context: "field type"}}}},
     counterexample: "unfolding accepted or its refusal loses the responsible reference"},
 ];
+
+// The conditions each contract requirement judges, stated independently of
+// the contract's tables. The audit requires a counterexample that violates
+// each condition alone, but deleting a condition would delete its
+// counterexamples with it; this list makes that deletion fail.
+export const requirementConditions = {
+  clients: ["checked"],
+  refusedClients: ["refused"],
+  outputsAbsent: ["absent"],
+  originalType: ["verified", "type"],
+  duplicateRefused: ["refused", "reason"],
+  advice: ["count", "codes", "declarations", "messages", "startsInTarget", "endsInTarget", "nonempty"],
+  refusals: ["code", "words", "dependency"],
+  range: ["located", "startsInRegion", "endsInRegion", "coversSite"],
+  links: ["present", "label", "target", "start", "end"],
+  diagnostics: ["matched"],
+};

@@ -637,9 +637,9 @@ packages do not mark implementation complete or resume paused mathematics.
 | FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
 
 Extend FG0's installed harness and prioritize G11's silent capture alongside
-FG1's ownership fix. G8–G10's focused fixes and regression checks can land on #215 before
-the broader dependency/publication work; update their evidence status when
-fixed. Complete FG2's call classification (G12) and notation-alias audit.
+FG1's ownership fix. G8–G10's focused fixes and regression checks can land on
+#215 before the broader dependency/publication work; update their evidence
+status when fixed. Complete FG2's call classification (G12) and notation-alias audit.
 FG3 and the broader FG4 work follow those contracts; FG5's
 focused lint fix can land earlier with its checked-client regression.
 FG6 accumulates alongside every slice. The complete gate precedes
@@ -765,10 +765,9 @@ Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
 | [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
 
 The revised FG0 harness in #217 records 23 independent known-defect cases at
-its baseline. With those records removed and no other edit, its contract,
-harness and audit tests pass against the fixing compiler `d4a5ecf3`. That is
-integration evidence, not a claim that its files have already been
-incorporated through every branch. The frontend roadmap remains active
+its baseline. Its validation record gives the activation check against the
+fixing compiler, with every record removed. That is integration evidence, not
+a claim that its files have already been incorporated through every branch. The frontend roadmap remains active
 until the evidence follow-ups are disposed of. Historical test reports are
 not fresh validation of a later PR head.
 

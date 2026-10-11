@@ -42,9 +42,10 @@ def level_u1(S : T(U1)) : U1 := T.Hom(S, S);`,
     source: `import hlevels;
 theory T(U < UU0) { M : set U; c : M; law l : c = c; op(p : l = l) : M; }
 def usable(S : T(U0)) : S.M := S.op(refl(S.l));
-def unsupported(S : T(U0)) := T.Hom.id(S);`,
+def unsupported(S : T(U0)) := T.Hom.id(S);
+def unsupported_iso(S : T(U0)) := T.Iso.id(S);`,
     clients: ["T", "T.make", "T.op", "usable"],
-    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: {code: "E817"}},
+    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: {code: "E817"}, unsupported_iso: {code: "E817"}},
     refusalWords: ["op", "p", "l"],
   },
   G4: {

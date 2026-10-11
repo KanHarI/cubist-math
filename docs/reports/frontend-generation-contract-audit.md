@@ -3,7 +3,8 @@
 Scope: the executable cases from PR #205, restored in PR #217, including the
 diagnostic acceptance review of `89c97e99`, the requirement review of
 `687f554c`, the activation review of `2e27565b`, the condition review of
-`f48bc1f7` and the guard review of `2a246504`. The
+`f48bc1f7`, the guard review of `2a246504` and the design review of
+`637734ab`. The
 [frontend generation roadmap](../roadmaps/frontend-generation.md) supplies the
 behavioral requirements. The [inventory](frontend-generation-gaps.md)
 describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
@@ -13,31 +14,40 @@ boundaries without declaring the compiler defects fixed.
 The procedure is the
 [regression contract checklist](../guides/regression-contracts.md).
 [frontend-generation-audit.test.mjs](../../tests/frontend-generation-audit.test.mjs)
-judges every case by its requirements alone, with two controls:
+judges every case by its requirements alone. Each requirement in
+[frontend-generation-contracts.mjs](../../tests/frontend-generation-contracts.mjs)
+is a table of named conditions over facts that only project evidence. Each
+condition carries its counterexamples, and each requirement lists its permitted
+variations. The audit's controls:
 
-- Acceptance: an accepted observation of the case meets every requirement.
-- Counterexamples: every counterexample of every applicable requirement is
-  applied to that accepted observation, and each must violate its requirement.
+- Acceptance: an accepted observation of the case, and each permitted
+  variation of it, meets every requirement.
+- Counterexamples: every counterexample of every applicable condition is
+  applied to that accepted observation, and each must violate its condition.
+- Isolation: some counterexample violates each condition alone, so a check
+  that combines two conditions cannot leave either unguarded.
+- Mutation: changing any comparison in the facts that conditions read, in the
+  conditions or in the diagnostic field matchers must change some verdict of
+  the controls above.
 
 The audit never reads defect records or classifies cases, so activating a case
-or retiring every record leaves it unchanged. Requirements and their
-counterexamples are defined together in
-[frontend-generation-contracts.mjs](../../tests/frontend-generation-contracts.mjs),
-so these controls cover each case without per-case audit code. A requirement
-without a counterexample fails the audit. The
+or retiring every record leaves it unchanged. These controls cover each case
+without per-case audit code. The
 [requirement map](../../tests/fixtures/frontend-generation-requirements.mjs)
-names the requirements each witness must keep and its minimum expectations.
+names the requirements each witness must keep, its minimum expectations and,
+independently of the tables, the conditions each requirement judges.
 
 The expected-failure lifecycle is separate: records live in
 [frontend-generation-defects.mjs](../../tests/fixtures/frontend-generation-defects.mjs)
 and only [frontend-generation-lifecycle.mjs](../../tests/frontend-generation-lifecycle.mjs)
-classifies observations against them. The
-[harness](../../tests/frontend-generation-harness.test.mjs) recognizes each
-recorded debt and rejects it after any one primary cause or dependency target
-changes (navigation for G9); that test belongs to its record. It tests the
-classifier once with synthetic observations, and its prerequisite and fixture
-checks hold whether or not a case is recorded. W705 and W706 safe-advice
-controls remain active.
+classifies observations against them. Its
+[tests](../../tests/frontend-generation-lifecycle.test.mjs) recognize each
+recorded debt and reject it after any one primary cause or dependency target
+changes (navigation for G9); that test belongs to its record. They test the
+classifier once with synthetic observations. The
+[harness](../../tests/frontend-generation-harness.test.mjs)'s prerequisite and
+fixture checks need no lifecycle and hold whether or not a case is recorded.
+W705 and W706 safe-advice controls remain active.
 
 ## Requirements and controls
 
@@ -46,25 +56,24 @@ controls remain active.
 over real checked outputs. Observer controls exercise the predicate's boundary;
 they do not establish a compiler fix. Supported variants avoid the original bug
 and likewise do not establish that its original source is fixed. Every row also
-rejects refused, missing or assumption-dependent clients, accepted refusals, and
-missing, duplicated, recoded or unrelated diagnostics, or diagnostics reported
-on another declaration.
+rejects the counterexamples of its requirements' conditions, which the
+contract tables list; the last column states only what distinguishes the case.
 
-| Cases | Authority | Accepted observation and allowed variation | Counterexamples that must be refused |
+| Cases | Authority | Accepted observation and allowed variation | Distinctions that must be refused |
 | --- | --- | --- | --- |
-| G1, G1-initial, G1-reverse, G1-same-kind | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: check the original declaration and clients without the duplicate, then inject its refusal. Duplicate wording/code may vary within the documented refusal contract. | Another type for the original binding; a duplicate accepted or refused for another reason; a real constructor client that checks or names another missing name; a real model/fold output. |
+| G1, G1-initial, G1-reverse, G1-same-kind | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: check the original declaration and clients without the duplicate, then inject its refusal. Duplicate wording/code may vary within the documented refusal contract, including the kernel's own same-kind refusal. | Another type for the original binding; a duplicate accepted or refused for another reason; a real constructor client that checks or names another missing name; a real model/fold output. |
 | G2 | [FG3](../roadmaps/frontend-generation.md#fg3-infer-universes-from-the-generated-telescope) | Source: the domain moves into the model's universe (`op(A : U, x : A)`). Hom/Iso, computation, `map_op` preservation and level clients check at U0/U1; that variant's U1 level pin is U2. Stating a U0 model's Hom in U0 is refused with `found U1, expected U0`. | A missing preservation field or level client; an accepted lowering or one with other endpoints; a different same-code Hom mismatch. |
-| G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and supply the fixing compiler's E817 naming op, p and l. Two other focused wordings are accepted. | A leaked family root or member; a refusal without op, p, l or its dependency, including the real E817 for arrow-typed operations; another code. |
+| G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and supply the fixing compiler's E817 naming op, p and l for both the Hom and the Iso client. Two other focused wordings are accepted. | A leaked family root or member; a Hom or Iso refusal without op, p, l or its dependency, including the real E817 for arrow-typed operations; another code. |
 | G4, G4-flat | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: Nat motives, with distinct branch results and independently stated accepted/refused equations. | Constant match result; wrong clause result; same E546 with a different primary cause. |
-| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target authorizes the associated rewrite. | Advice with another message or declaration, outside or past its target, empty, partial or extended; an authorized rewrite that loses a client. |
+| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target authorizes the associated rewrite. | Any issued advice other than exactly the identified advice within its target; an authorized rewrite that loses a client. |
 | G6 | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: child E340 has dependency target P, with or without an attached root cause. Parent E343 has untranslated subject Undefined and independent clients check. | Another dependency, including Q whose attached cause mentions P; an untranslated-name message with E340; another parent subject. |
-| G8 | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Observer: E606 with the specified found/expected endpoints; token or wider body span accepted. | Swapped or changed endpoints; empty, off-token or unlocated spans; spans crossing either end of the body or starting inside the token; a different generation cause. |
-| G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the colliding law binder, preserving independently stated meaning and all navigation sites. Identical repeated links are equivalent. | At any written site: a freshened label, another or missing definition target, a stale freshened link beside the correct one, or no link. |
-| G10 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E871 identifies helper k and captured field c; the binder, helper call, or enclosing conflicting clause supplies a nonempty origin. | Empty, unrelated or unlocated spans; spans crossing either end of the clause or starting inside the helper call; a different helper, field or unrecognized cause. |
+| G8 | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Observer: E606 with the specified found/expected endpoints; token or wider body span accepted. | Swapped or changed endpoints; a span that does not cover the token within the body; a different generation cause. |
+| G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the colliding law binder, preserving independently stated meaning and all navigation sites. Identical repeated links are equivalent, and links that only touch a site belong to their own text. | At any written site, any link that is not the written label targeting its binder over exactly that label, including one beside the correct link; a site without a link. |
+| G10 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E871 identifies helper k and captured field c; the binder, helper call, or enclosing conflicting clause supplies a nonempty origin. | A span that covers neither the binder nor the helper call within the clause; a different helper, field or unrecognized cause. |
 | G11, G11-grouped-dependent, G11-inherited, G11-initial | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Source: rename the derived parameter through its telescope/body, preserving all independent intended/captured equations in each context. | A refused intended equation or a checked captured equation, in any context. The captured refusal's E606 payload is deliberately free: the opposite verdicts carry the distinction. |
 | G12, G12-inherited, G12-initial | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: two-step nonrecursive unrolling, retaining zero/one/two-step and wrong-result clients in all three contexts. This establishes the finite witnesses only. | Constant iter makes the wrong equation check; ignoring the recursive result preserves the first step but fails the second with E606. |
 | G12-shadowed | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Source: rename only the local iter parameter; intended/local and captured/field equations retain opposite verdicts. A separate field-type control checks today. | Replacing the local call by the earlier field result makes the captured equation check. |
-| G12-range | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E845 identifies recursive iter in a field type; range over iter, iter(n), or a wider span within the written law. | Empty, off-reference or unlocated spans; spans crossing either end of the law or starting inside the reference; a different operation, context or unrecognized cause. |
+| G12-range | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E845 identifies recursive iter in a field type; range over iter, iter(n), or a wider span within the written law. | A span that does not cover the reference within the law; a different operation, context or unrecognized cause. |
 
 ## Findings and dispositions
 
@@ -189,23 +198,42 @@ on another declaration.
   G5's advice audit required the current compiler to refuse the arrow form,
   which a later preserving simplification would change; it now judges
   observer rewrite results that preserve or lose a client.
+- The link requirement selected links by their exact span before judging
+  them, so no counterexample moved a link: checking either bound alone passed
+  every test. The cause was structural. Facts also judged refusal words,
+  endpoints, duplicate reasons and child messages against expectations, and
+  each requirement's checks and counterexamples were written separately, so
+  completeness depended on a reviewer. Facts now only project evidence. Each
+  requirement is a table of named conditions with their counterexamples and
+  permitted variations, stated independently in the requirement map. Some
+  counterexample must violate each condition alone, and a mutation sweep
+  changes every comparison in the judging code. The sweep found three more
+  unexercised checks: removing only one bound of a refusal's span, a
+  misplaced link beside a correct one, and G3's single refused client, which
+  could not tell every refusal from some. G3 now also requires its Iso client
+  to be refused; the fixing compiler gives it the same focused E817. Compiler
+  results compute some fields from the kernel when first read, so evidence is
+  now copied as plain data when collected. Lifecycle tests moved to their own
+  file, so retiring them no longer edits contract tests.
 
 ## Validation and lifecycle
 
-Run the contracts, harness and audit together:
+Run the contracts, harness, lifecycle and audit together:
 
 ```sh
-npm test -- tests/frontend-generation.test.mjs tests/frontend-generation-harness.test.mjs tests/frontend-generation-audit.test.mjs
+npm test -- tests/frontend-generation.test.mjs tests/frontend-generation-harness.test.mjs tests/frontend-generation-lifecycle.test.mjs tests/frontend-generation-audit.test.mjs
 ```
 
-The audit requires an accepted observation for every executable case and a
-counterexample for every applicable requirement. These checks establish
-coverage of the stated controls; the contents of counterexamples and supported
-sources still require semantic review. Use the contributor checklist on new
-cases, and add a counterexample with each new requirement.
+The audit requires an accepted observation for every executable case, a
+counterexample that violates each condition alone, and no surviving mutant.
+These checks establish coverage of the stated controls; the contents of
+counterexamples, permitted variations and supported sources still require
+semantic review. Use the contributor checklist on new cases. Add a condition
+with its counterexamples, and name it in the requirement map. When the sweep
+reports a survivor, add what distinguishes it rather than an exception.
 
 To check activation, copy these files over the fixing compiler, replace the
-records module with an empty `knownDefects`, and run the same three files.
+records module with an empty `knownDefects`, and run the same four files.
 
 An incorrect implementation that still checks clients is a separate audit
 boundary from an unrelated diagnostic: semantic mutants cover constant
@@ -219,7 +247,7 @@ Keep the roadmap as the behavioral authority when integrating downstream fixes.
 Activate each fixed original case by removing its record, and preserve
 downstream search-eligibility, explicit-path, provenance, named-constructor and
 recursive-predecessor controls. Once all original cases pass, delete the records
-module, the lifecycle module and the harness's lifecycle tests. Retain the
+module, the lifecycle module and its test file. Retain the
 requirements, their counterexamples and the distinguishing controls that still
 protect active behavior. Integration,
 mutation and full-suite results belong in the PR's validation record at the
