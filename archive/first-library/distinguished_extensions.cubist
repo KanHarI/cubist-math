@@ -18,7 +18,7 @@ def extension_class_iso(
   member : C(K, E)
 ) :
   C(K, F) {
-  exact along C(K) by extension_iso_path(K, E, F, e) from member;
+  exact transport member along extension_iso_path(K, E, F, e) in C(K);
 }
 
 def extension_class_iso_iff(
@@ -27,8 +27,8 @@ def extension_class_iso_iff(
   FieldIff(C(K, E), C(K, F)) {
   let path_ := extension_iso_path(K, E, F, e);
   exact (
-    (fun (member : C(K, E)) => along C(K) by path_ from member),
-    (fun (member : C(K, F)) => along C(K) by sym(path_) from member)
+    (fun (member : C(K, E)) => transport member along path_ in C(K)),
+    (fun (member : C(K, F)) => transport member along sym(path_) in C(K))
   );
 }
 

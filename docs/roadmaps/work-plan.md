@@ -9,10 +9,11 @@ revision notes and superseded first-action list; the
 [2026-09-28 audit](historical/audits/2026-09-28-audit.md) retains its dated findings.
 
 The initial/free construction prototype in
-[PR #188](https://github.com/KanHarI/cubist-math/pull/188) and frontend
-fixes in [#204–#211](https://github.com/KanHarI/cubist-math/pull/211) are
-on an unmerged stack. [#212](https://github.com/KanHarI/cubist-math/pull/212)
-adds a refactoring plan and reconciles that stack's evidence. They are
+[PR #215](https://github.com/KanHarI/cubist-math/pull/215) and frontend
+fixes in [#216–#223](https://github.com/KanHarI/cubist-math/pull/223) are
+on an unmerged stack. [#224](https://github.com/KanHarI/cubist-math/pull/224)
+adds a refactoring plan and reconciles that stack's evidence. They replace
+#188 and #204–#212, whose mistaken merges were undone on 2026-10-10. They are
 reported under [branch work](#branch-work), not counted as delivered here.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
@@ -633,7 +634,7 @@ deriving capability is implied by those frontend changes.
 
 | ID | Package and exit evidence | Depends on | Size |
 | --- | --- | --- | --- |
-| FG0 | Evidence harness implemented in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs), with a [comparison manifest](../../tests/fixtures/frontend-generation.md); every open gap has an expected outcome and explicit TODO, including G12's separately tracked refusal range | #188's captured-syntax baseline | S |
+| FG0 | Evidence harness implemented in [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs), with a [comparison manifest](../../tests/fixtures/frontend-generation.md); every open gap has an expected outcome and explicit TODO, including G12's separately tracked refusal range | #215's captured-syntax baseline | S |
 | FG1 | Shared declaration ownership, dependency state and publication groups; collisions and failures preserve existing checked state | FG0 | L |
 | FG2 | Complete declaration telescopes, dependency/support analysis, value/type call classification and notation-scope consolidation; meaning and supported calls survive expansion | FG0; FG1 for publication | L |
 | FG3 | Universe inference from complete generated telescopes; Hom/Iso clients and genuine lowering refusals | FG1, FG2 | M |
@@ -642,9 +643,9 @@ deriving capability is implied by those frontend changes.
 | FG6 | Deterministic cross-transformation tests, distinguishing mutations and measured resource costs | Starts with FG0; complete gate needs FG1–FG5 | L |
 
 Extend FG0's installed harness and prioritize G11's silent capture alongside
-FG1's ownership fix. G8–G10's focused fixes and regression checks can land on #188 before
-the broader dependency/publication work; update their evidence status when
-fixed. Complete FG2's call classification (G12) and notation-alias audit.
+FG1's ownership fix. G8–G10's focused fixes and regression checks can land on
+#215 before the broader dependency/publication work; update their evidence
+status when fixed. Complete FG2's call classification (G12) and notation-alias audit.
 FG3 and the broader FG4 work follow those contracts; FG5's
 focused lint fix can land earlier with its checked-client regression.
 FG6 accumulates alongside every slice. The complete gate precedes
@@ -764,16 +765,15 @@ Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
-| [L2.6 prototype, #188](https://github.com/KanHarI/cubist-math/pull/188) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
-| [Frontend generation, #204–#211](https://github.com/KanHarI/cubist-math/pull/211) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #205 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
-| [Refactoring/testing, #212](https://github.com/KanHarI/cubist-math/pull/212) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
+| [L2.6 prototype, #215](https://github.com/KanHarI/cubist-math/pull/215) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
+| [Frontend generation, #216–#223](https://github.com/KanHarI/cubist-math/pull/223) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #217 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
+| [Refactoring/testing, #224](https://github.com/KanHarI/cubist-math/pull/224) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
 | [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
 
-The revised #205 records 22 independent known-defect cases at its baseline.
-Its isolated integration check against the fixing compiler passed 36
-contract/control/provenance tests and all 13 required mutation checks.
-That is integration evidence, not a claim that its files have already
-been incorporated through every branch. The frontend roadmap remains active
+The revised FG0 harness in #217 records 23 independent known-defect cases at
+its baseline. Its validation record gives the activation check against the
+fixing compiler, with every record removed. That is integration evidence, not
+a claim that its files have already been incorporated through every branch. The frontend roadmap remains active
 until the evidence follow-ups are disposed of. Historical test reports are
 not fresh validation of a later PR head.
 

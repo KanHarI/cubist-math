@@ -103,9 +103,9 @@ def complex_interval_deformation_variation(
   let combined : FieldLe(
     F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)
   ) :=
-    along ((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by sym(
+    transport sumBelow along sym(
       sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags)
-    ) from sumBelow;
+    ) in ((fun (v : F) => FieldLe(F, lt, v, addF(r, s))));
   exact (
     interval_affine_increment_bounds(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z),
