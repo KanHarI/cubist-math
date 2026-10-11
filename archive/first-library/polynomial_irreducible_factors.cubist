@@ -9,7 +9,7 @@ def polynomial_degree_zero_unit(
   PolynomialUnit(K, p) {
   let f := polynomial_coefficients(K, p);
   let a := f(0);
-  let support := along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
+  let support := transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(K, f);
   let constant :=
     polynomial_ext(K, p, polynomial_constant(K, a), series_support_one(K, f, support));
   obtain (ring, nontrivial, inverses) := af_laws(K);
@@ -100,9 +100,9 @@ def least_nonunit_divisor_irreducible(
         );
       let bound := least(a, typed(NonunitDivisor(K, p, a), (na, nonunitA, ap)));
       let numerical :=
-        along((fun (j : Nat) => le(succ(add_count(m, n)), j))) by da from along(
-          (fun (j : Nat) => le(j, polynomial_cutoff(K, a)))
-        ) by dg from bound;
+        transport (transport bound along dg in ((fun (j : Nat) => le(j, polynomial_cutoff(K, a))))) along da in (
+          (fun (j : Nat) => le(succ(add_count(m, n)), j))
+        );
       let zero := natural_sum_le_left_zero(m, n, numerical);
       exact merely(
         Result,
@@ -148,7 +148,7 @@ def polynomial_irreducible_factor(
       let ca := polynomial_cutoff(K, a);
       let wa :=
         merely(NonunitDivisorAt(K, p, ca), typed(NonunitDivisorAt(K, p, ca), (a, da, refl(ca))));
-      exact along((fun (j : Nat) => le(j, ca))) by sym(degree) from least(ca, wa);
+      exact transport least(ca, wa) along sym(degree) in ((fun (j : Nat) => le(j, ca)));
     }
     obtain (nz, nu, divides) := divisor;
     exact (g, least_nonunit_divisor_irreducible(K, p, g, divisor, minimum), divides);
@@ -186,9 +186,11 @@ def polynomial_unit_cutoff(
     );
   obtain (d, degree) := polynomial_nonzero_degree(K, p, nonzero);
   let numerical :=
-    along((fun (j : Nat) => le(succ(d), j))) by polynomial_one_cutoff(K) from along(
-      (fun (j : Nat) => le(j, polynomial_cutoff(K, polynomial_one(K))))
-    ) by degree from bound;
+    transport (
+      transport bound along degree in (
+        (fun (j : Nat) => le(j, polynomial_cutoff(K, polynomial_one(K))))
+      )
+    ) along polynomial_one_cutoff(K) in ((fun (j : Nat) => le(succ(d), j)));
   let zero := dimension_order_antisymmetric(d, 0, numerical, tt);
   exact trans(degree, cong((fun (j : Nat) => succ(j)), zero));
 }

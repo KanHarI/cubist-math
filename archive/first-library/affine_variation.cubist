@@ -12,17 +12,19 @@ def field_affine_difference(
   ) {
   let x := addF(a, mulF(s, d));
   let error := mulF(addF(negF(s), t), d);
-  let cancel : addF(addF(x, error), negF(x)) = error := trans(
-    ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, error), negF(x)),
+  let cancel : addF(addF(x, error), negF(x)) = error :=
     trans(
-      sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, error)),
+      ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, error), negF(x)),
       trans(
-        cong(
-          (fun (v : F) => addF(v, error)), ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
-        ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, error)
+        sym(ring_add_assoc(F, zero, one, addF, mulF, negF, ring, negF(x), x, error)),
+        trans(
+          cong(
+            (fun (v : F) => addF(v, error)),
+            ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x)
+          ), ring_add_zero(F, zero, one, addF, mulF, negF, ring, error)
+        )
       )
-    )
-  );
+    );
   exact trans(
     cong(
       (fun (v : F) => addF(v, negF(x))),
@@ -61,9 +63,9 @@ def field_affine_increment_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, delta, d, delta, length,
       deltaBound, bounded
     );
-  exact along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, mulF(delta, length)))) by sym(
+  exact transport productBound along sym(
     field_affine_difference(F, zero, one, addF, mulF, negF, ring, a, d, s, t)
-  ) from productBound;
+  ) in ((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, mulF(delta, length))));
 }
 
 def IntervalOrderedSamples(F : U1, zero, one : F, lt : F -> F -> U0, n : Nat) :=
@@ -78,8 +80,8 @@ def IntervalOrderedSamples(F : U1, zero, one : F, lt : F -> F -> U0, n : Nat) :=
   );
 
 def interval_affine_increment(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a, d : F,
-  s, t, tag : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, a, d : F, s, t,
+  tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   coordinate_difference(
     F, addF, negF, addF(a, mulF(field_interval_coordinate(F, zero, one, lt, s), d)),

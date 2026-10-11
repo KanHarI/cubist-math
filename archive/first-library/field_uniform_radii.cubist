@@ -68,19 +68,21 @@ def field_common_positive_radius(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, r, s, nonnegativeS
     );
   let sBelow :=
-    along FieldLe(F, lt, s) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, s, r) from order_le_add_nonnegative(
+    transport order_le_add_nonnegative(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, s, r, nonnegativeR
-    );
+    ) along ring_add_comm(F, zero, one, addF, mulF, negF, ring, s, r) in FieldLe(F, lt, s);
   let belowR :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(total, r)))) by ring_mul_comm(
+    transport weakScale(s, total, r, sBelow, nonnegativeR) along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, s, r
-    ) from weakScale(s, total, r, sBelow, nonnegativeR);
+    ) in ((fun (v : F) => FieldLe(F, lt, v, mulF(total, r))));
   let boundR :=
-    along FieldLe(F, lt, product) by ring_mul_comm(F, zero, one, addF, mulF, negF, ring, total, r) from belowR;
-  let boundS :=
-    along FieldLe(F, lt, product) by ring_mul_comm(F, zero, one, addF, mulF, negF, ring, total, s) from weakScale(
-      r, total, s, rBelow, nonnegativeS
+    transport belowR along ring_mul_comm(F, zero, one, addF, mulF, negF, ring, total, r) in FieldLe(
+      F, lt, product
     );
+  let boundS :=
+    transport weakScale(r, total, s, rBelow, nonnegativeS) along ring_mul_comm(
+      F, zero, one, addF, mulF, negF, ring, total, s
+    ) in FieldLe(F, lt, product);
   obtain (scaleR, cancelR) := scale(delta, r, total, positiveTotal);
   obtain (scaleS, cancelS) := scale(delta, s, total, positiveTotal);
   exact (

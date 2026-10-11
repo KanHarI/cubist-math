@@ -12,11 +12,13 @@ def field_nonnegative_magnitude(
   let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, x, negF(x), aboveZero);
   let removeZero :=
-    along((fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))) by ring_add_zero(
-      F, zero, one, addF, mulF, negF, ring, negF(x)
-    ) from shifted;
+    transport shifted along ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)) in (
+      (fun (v : F) => FieldLe(F, lt, v, addF(x, negF(x))))
+    );
   let negBelowZero :=
-    along FieldLe(F, lt, negF(x)) by ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x) from removeZero;
+    transport removeZero along ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, x) in FieldLe(
+      F, lt, negF(x)
+    );
   exact (
     order_le_refl(F, lt, order, x),
     order_le_trans(
@@ -34,13 +36,14 @@ def field_close_zero_magnitude(
   FieldMagnitudeBound(F, negF, lt, x, radius) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (upper, lower) := close;
-  let less := along lt(x) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius) from upper;
+  let less :=
+    transport upper along ring_add_zero(F, zero, one, addF, mulF, negF, ring, radius) in lt(x);
   obtain (forward, backward) := translate(zero, addF(x, radius), negF(x));
   let shifted := forward(lower);
   let lhs :=
-    along((fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))) by ring_add_zero(
-      F, zero, one, addF, mulF, negF, ring, negF(x)
-    ) from shifted;
+    transport shifted along ring_add_zero(F, zero, one, addF, mulF, negF, ring, negF(x)) in (
+      (fun (v : F) => lt(v, addF(addF(x, radius), negF(x))))
+    );
   let cancels : addF(addF(x, radius), negF(x)) = radius :=
     trans(
       ring_add_comm(F, zero, one, addF, mulF, negF, ring, addF(x, radius), negF(x)),
@@ -54,7 +57,7 @@ def field_close_zero_magnitude(
         )
       )
     );
-  let negLess := along lt(negF(x)) by cancels from lhs;
+  let negLess := transport lhs along cancels in lt(negF(x));
   exact (
     ordered_lt_implies_le(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, radius, less
@@ -74,9 +77,9 @@ def field_positive_product(
   lt(zero, mulF(x, y)) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   obtain (forward, backward) := scale(zero, x, y, positiveY);
-  exact along((fun (v : F) => lt(v, mulF(x, y)))) by ring_zero_mul(
-    F, zero, one, addF, mulF, negF, ring, y
-  ) from forward(positiveX);
+  exact transport forward(positiveX) along ring_zero_mul(F, zero, one, addF, mulF, negF, ring, y) in (
+    (fun (v : F) => lt(v, mulF(x, y)))
+  );
 }
 
 def field_positive_reciprocal(
@@ -97,11 +100,11 @@ def field_positive_reciprocal(
   obtain (forward, backward) := scale(zero, reciprocal, x, positive);
   let productOne :=
     trans(ring_mul_comm(F, zero, one, addF, mulF, negF, ring, reciprocal, x), inverseLaw);
-  let positiveProduct := along lt(zero) by sym(productOne) from positiveOne;
+  let positiveProduct := transport positiveOne along sym(productOne) in lt(zero);
   let zeroProduct :=
-    along((fun (v : F) => lt(v, mulF(reciprocal, x)))) by sym(
-      ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x)
-    ) from positiveProduct;
+    transport positiveProduct along sym(ring_zero_mul(F, zero, one, addF, mulF, negF, ring, x)) in (
+      (fun (v : F) => lt(v, mulF(reciprocal, x)))
+    );
   exact (reciprocal, backward(zeroProduct), inverseLaw);
 }
 
@@ -156,10 +159,10 @@ def field_small_scaled_radius(
     );
   obtain (shiftForward, shiftBackward) := translate(zero, delta, mulF(delta, length));
   let shifted :=
-    along((fun (v : F) => lt(v, addF(delta, mulF(delta, length))))) by ring_add_zero(
+    transport shiftForward(positiveDelta) along ring_add_zero(
       F, zero, one, addF, mulF, negF, ring, mulF(delta, length)
-    ) from shiftForward(positiveDelta);
-  exact (delta, positiveDelta, along lt(mulF(delta, length)) by gap from shifted);
+    ) in ((fun (v : F) => lt(v, addF(delta, mulF(delta, length)))));
+  exact (delta, positiveDelta, transport shifted along gap in lt(mulF(delta, length)));
 }
 
 def field_bounded_scale_zero_converges(

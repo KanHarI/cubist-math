@@ -200,5 +200,5 @@ def group_identity_iso(G : Group) : GroupIso(G, G) {
 // The canonical map from equality to isomorphism. It computes at reflexivity
 // and uses only transport; univalence is needed for its inverse, not this map.
 def group_idtoiso(G, H : Group, p : G =[Group] H) : GroupIso(G, H) {
-  exact along GroupIso(G) by p from group_identity_iso(G);
+  exact transport group_identity_iso(G) along p in GroupIso(G);
 }

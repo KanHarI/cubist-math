@@ -32,9 +32,9 @@ def ordered_unit_interval_square(
   FieldLe(F, lt, mulF(t, t), one) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let step :=
-    along((fun (v : F) => FieldLe(F, lt, mulF(t, t), v))) by ring_mul_one(
+    transport weakScale(t, one, t, upper, lower) along ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, t
-    ) from weakScale(t, one, t, upper, lower);
+    ) in ((fun (v : F) => FieldLe(F, lt, mulF(t, t), v)));
   exact ordered_le_transitive(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, mulF(t, t), t, one, step, upper
   );
@@ -139,12 +139,12 @@ def complex_scale_norm_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, lower, upper
     );
   let step :=
-    along((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v))) by ring_mul_one(
+    transport weakScale(mulF(t, t), one, n, upperSquare, nonnegativeNorm) along ring_mul_one(
       F, zero, one, addF, mulF, negF, ring, n
-    ) from weakScale(mulF(t, t), one, n, upperSquare, nonnegativeNorm);
-  exact along((fun (v : F) => FieldLe(F, lt, v, n))) by sym(
+    ) in ((fun (v : F) => FieldLe(F, lt, mulF(mulF(t, t), n), v)));
+  exact transport step along sym(
     complex_scaled_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, z)
-  ) from step;
+  ) in ((fun (v : F) => FieldLe(F, lt, v, n)));
 }
 
 def complex_linear_deformation_nonzero(
@@ -175,7 +175,8 @@ def complex_linear_deformation_nonzero(
       cong(complex_norm_squared(F, addF, mulF), opposite),
       complex_negative_norm(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, scaled)
     );
-  let impossible := along lt(complex_norm_squared(F, addF, mulF, error)) by sameNorm from dominates;
+  let impossible :=
+    transport dominates along sameNorm in lt(complex_norm_squared(F, addF, mulF, error));
   exact complex_scale_norm_bound(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, t, error, lower, upper, impossible
   );

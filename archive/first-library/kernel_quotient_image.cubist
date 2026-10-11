@@ -156,10 +156,12 @@ def kernel_quotient_image_member_inverse(
     intro witness_;
     obtain (b, same) := witness_;
     let pb :=
-      along((fun (T : U0) => T)) by sym(same(b)) from same_coset_refl(G, group_kernel(G, H, h), b);
+      transport same_coset_refl(G, group_kernel(G, H, h), b) along sym(same(b)) in (
+        (fun (T : U0) => T)
+      );
     let imagesEqual := trans(sym(kernel_quotient_image_member(G, H, h, q, b, pb)), member);
-    exact along((fun (T : U0) => T)) by sym(same(a)) from kernel_coset_of_equal_images(
-      G, H, h, b, a, imagesEqual
+    exact transport kernel_coset_of_equal_images(G, H, h, b, a, imagesEqual) along sym(same(a)) in (
+      (fun (T : U0) => T)
     );
   }
   exact field_exists_elim(
@@ -271,7 +273,7 @@ def kernel_quotient_image_equality(G, H : Group, h : GroupHom(G, H)) :
 }
 
 def kernel_quotient_is_set(G, H : Group, h : GroupHom(G, H)) : FieldSet(KernelQuotient(G, H, h)) {
-  exact along((fun (A : U1) => FieldSet(A))) by sym(kernel_quotient_image_equality(G, H, h)) from subgroup_carrier_is_set(
-    H, group_image(G, H, h)
-  );
+  exact transport subgroup_carrier_is_set(H, group_image(G, H, h)) along sym(
+    kernel_quotient_image_equality(G, H, h)
+  ) in ((fun (A : U1) => FieldSet(A)));
 }

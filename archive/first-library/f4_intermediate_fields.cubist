@@ -45,7 +45,7 @@ def f4_intermediate_contains_image(
   P(x) {
   obtain (closure, base) := laws;
   obtain (k, same) := member;
-  exact along P by same from base(k);
+  exact transport base(k) along same in P;
 }
 
 // Exactly the decision used by this classification is an explicit parameter.

@@ -6,8 +6,8 @@ use nat;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
 def polynomial_factor_divisibility_cancel(
-  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p, q, a, b : Polynomial(K),
-  ep : p = polynomial_mul(K, F, a), eq : q = polynomial_mul(K, F, b),
+  K : AlgebraicField, F : Polynomial(K), nonzero : PolynomialNonzero(K, F), p, q, a,
+  b : Polynomial(K), ep : p = polynomial_mul(K, F, a), eq : q = polynomial_mul(K, F, b),
   divides : PolynomialDivides(K, q, p)
 ) :
   PolynomialDivides(K, b, a) {
@@ -51,7 +51,9 @@ def unit_distinct_splitting(
       DistinctPolynomialSplitting(K, p, 0),
       (roots, a, eq, (fun (i, j : Fin(0), same : roots(i) = roots(j)) => typed((i = j), absurd(i))))
     );
-  exact along DistinctPolynomialSplitting(K, p) by sym(cong(natural_predecessor, degree)) from splitting;
+  exact transport splitting along sym(cong(natural_predecessor, degree)) in DistinctPolynomialSplitting(
+    K, p
+  );
 }
 
 def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) :=
@@ -152,7 +154,7 @@ def distinct_splitting_divisor_at_root(
         cong(natural_predecessor, productDegree),
         sym(cong((fun (k : Nat) => succ(natural_predecessor(k))), degree))
       );
-    exact along DistinctPolynomialSplitting(K, q) by sym(size) from result;
+    exact transport result along sym(size) in DistinctPolynomialSplitting(K, q);
   }
   exact mere_map(
     DistinctPolynomialSplitting(K, tailQ, m), Goal, extend,
@@ -217,7 +219,7 @@ def distinct_splitting_divisor_step(
         obtain (i, same) := witness_;
         exact distinct_splitting_divisor_at_root(
           K, n, previous, p, nonzero, roots, a, equation, distinct, q, nonzeroQ, divides, i,
-          along PolynomialRoot(K, K, field_embedding_identity(K), q) by sym(same) from root
+          transport root along sym(same) in PolynomialRoot(K, K, field_embedding_identity(K), q)
         );
       }
       exact mere_eliminate(

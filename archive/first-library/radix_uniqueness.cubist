@@ -13,7 +13,9 @@ def radix_nat_no_smaller_self(n : Nat) : (succ(n) <= n) -> Void {
 
 def radix_nat_small_not_large(r, d, e : Nat, small : succ(d) <= r, same : d = r + e) : Void {
   let large :=
-    along((fun (v : Nat) => r <= v)) by trans(nat_add_comm(e, r), sym(same)) from nat_le_add(e, r);
+    transport nat_le_add(e, r) along trans(nat_add_comm(e, r), sym(same)) in (
+      (fun (v : Nat) => r <= v)
+    );
   exact radix_nat_no_smaller_self(d, nat_le_trans(succ(d), r, d, small, large));
 }
 
@@ -112,8 +114,8 @@ def radix_digit_top_unique(n : Nat, u : Unit, e : RadixDigit(succ(n))) :
       absurd(
         radix_nat_no_smaller_self(
           radix_digit_value(n, lower),
-          along((fun (bound : Nat) => succ(radix_digit_value(n, lower)) <= bound)) by same from radix_digit_bound(
-            n, lower
+          transport radix_digit_bound(n, lower) along same in (
+            (fun (bound : Nat) => succ(radix_digit_value(n, lower)) <= bound)
           )
         )
       )

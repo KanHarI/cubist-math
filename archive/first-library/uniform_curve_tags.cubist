@@ -19,15 +19,15 @@ def complex_close_difference_bound(
   let wr := complex_real(F, w);
   let wi := complex_imag(F, w);
   exact (
-    along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))) by ring_add_comm(
-      F, zero, one, addF, mulF, negF, ring, negF(zr), wr
-    ) from field_close_difference_bound(
+    transport field_close_difference_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wr, zr, radius, realClose
+    ) along ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(zr), wr) in (
+      (fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))
     ),
-    along((fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))) by ring_add_comm(
-      F, zero, one, addF, mulF, negF, ring, negF(zi), wi
-    ) from field_close_difference_bound(
+    transport field_close_difference_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, wi, zi, radius, imagClose
+    ) along ring_add_comm(F, zero, one, addF, mulF, negF, ring, negF(zi), wi) in (
+      (fun (v : F) => FieldMagnitudeBound(F, negF, lt, v, radius))
     )
   );
 }

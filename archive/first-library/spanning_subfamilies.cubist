@@ -120,7 +120,7 @@ def spanning_subfamily_step(
       fin_prepend_injective(
         Fin(n), m, i, indices, distinct, outside_generator_fresh(K, V, n, v, m, indices, i, outside)
       ), adjoin_linear_injective(K, V, m, f, independent, v(i), outside),
-      along NoIndependent(K, V) by sym(nat_add_succ(fuel, m)) from bound
+      transport bound along sym(nat_add_succ(fuel, m)) in NoIndependent(K, V)
     );
   }
   exact match excluded_middle(LinearSurjective(K, C, V, f), linear_surjective_prop(K, C, V, f)) return Mere(
@@ -179,6 +179,7 @@ def finite_spanning_subfamily_basis(
   exact spanning_subfamily_search(
     K, V, n, v, spanning, succ(n), 0, empty,
     (fun (i, j : Fin(0), same : empty(i) = empty(j)) => typed((i = j), absurd(i))),
-    linear_empty_injective(K, V), along NoIndependent(K, V) by sym(nat_add_zero(succ(n))) from bound
+    linear_empty_injective(K, V),
+    transport bound along sym(nat_add_zero(succ(n))) in NoIndependent(K, V)
   );
 }

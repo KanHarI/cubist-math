@@ -72,7 +72,7 @@ def galois_fixing_witnessed_inverse(
       Galois(K, E), extension_identity_iso(K, E), galois_compose(K, E), galois_group_laws(K, E), e,
       d, galois_inverse(K, E, e), inverseLaw, galois_right_inverse(K, E, e)
     );
-  exact along GaloisFixing(K, E, P) by sym(same) from galois_fixing_inverse(K, E, P, e, fixes);
+  exact transport galois_fixing_inverse(K, E, P, e, fixes) along sym(same) in GaloisFixing(K, E, P);
 }
 
 // No closure property of P is required to obtain a subgroup of symmetries.

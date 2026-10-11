@@ -54,10 +54,10 @@ def contour_tag_error_variation_bound(
       mulF(delta, sample_sum(F, F, zero, addF, weight, k, vertices, oldTags))
     )
   ) {
-    zero => fun (vertices : F, oldTags, newTags, errors, increments : Unit) => along FieldMagnitudeBound(
-      F, negF, lt, zero
-    ) by sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) from field_magnitude_zero(
+    zero => fun (vertices : F, oldTags, newTags, errors, increments : Unit) => transport field_magnitude_zero(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic
+    ) along sym(ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta)) in FieldMagnitudeBound(
+      F, negF, lt, zero
     );
     succ previous => fun (
       vertices : SampleVertices(F, succ(k)), oldTags, newTags : SampleTags(F, succ(k)),
@@ -66,23 +66,7 @@ def contour_tag_error_variation_bound(
         F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
         succ(k), vertices, oldTags
       )
-    ) => along FieldMagnitudeBound(
-      F, negF, lt,
-      contour_tag_error_sum(F, zero, addF, mulF, negF, f, succ(k), vertices, oldTags, newTags)
-    ) by sym(
-      ring_distribute(
-        F, zero, one, addF, mulF, negF, ring, delta,
-        weight(
-          field_fst(F, SampleVertices(F, k), vertices),
-          sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
-          field_fst(F, SampleTags(F, k), oldTags)
-        ),
-        sample_sum(
-          F, F, zero, addF, weight, k, field_snd(F, SampleVertices(F, k), vertices),
-          field_snd(F, SampleTags(F, k), oldTags)
-        )
-      )
-    ) from field_magnitude_add(
+    ) => transport field_magnitude_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
       contour_tag_error(
         F, addF, mulF, negF, f, field_fst(F, SampleVertices(F, k), vertices),
@@ -150,8 +134,9 @@ def contour_tag_error_variation_bound(
             )
           ),
           SampleMagnitudeBounds(
-            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
-            k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags)
+            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)),
+            weight, k, field_snd(F, SampleVertices(F, k), vertices),
+            field_snd(F, SampleTags(F, k), oldTags)
           ), increments
         )
       ),
@@ -185,11 +170,28 @@ def contour_tag_error_variation_bound(
             )
           ),
           SampleMagnitudeBounds(
-            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)), weight,
-            k, field_snd(F, SampleVertices(F, k), vertices), field_snd(F, SampleTags(F, k), oldTags)
+            F, F, negF, lt, (fun (a, b, t : F) => coordinate_difference(F, addF, negF, a, b)),
+            weight, k, field_snd(F, SampleVertices(F, k), vertices),
+            field_snd(F, SampleTags(F, k), oldTags)
           ), increments
         )
       )
+    ) along sym(
+      ring_distribute(
+        F, zero, one, addF, mulF, negF, ring, delta,
+        weight(
+          field_fst(F, SampleVertices(F, k), vertices),
+          sample_first(F, k, field_snd(F, SampleVertices(F, k), vertices)),
+          field_fst(F, SampleTags(F, k), oldTags)
+        ),
+        sample_sum(
+          F, F, zero, addF, weight, k, field_snd(F, SampleVertices(F, k), vertices),
+          field_snd(F, SampleTags(F, k), oldTags)
+        )
+      )
+    ) in FieldMagnitudeBound(
+      F, negF, lt,
+      contour_tag_error_sum(F, zero, addF, mulF, negF, f, succ(k), vertices, oldTags, newTags)
     );
   };
 }
@@ -219,13 +221,13 @@ def contour_tag_error_length_bound(
     );
   let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
   let leftScaled :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
+    transport rightScaled along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
-    ) from rightScaled;
+    ) in ((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))));
   let grows :=
-    along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
-      F, zero, one, addF, mulF, negF, ring, length, delta
-    ) from leftScaled;
+    transport leftScaled along ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta) in FieldLe(
+      F, lt, mulF(delta, totalWeight)
+    );
   exact field_magnitude_enlarge(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags),

@@ -249,7 +249,7 @@
               <tbody>
                 <tr id="E341"><td class="code"><code>E341</code></td><td data-message="Interval coordinates can only be used in interval arguments.">“Interval coordinates can only be used in interval arguments.”</td><td>A coordinate is not a term. Use it only in <code>@</code>, <code>flip</code>, <code>meet</code>, <code>join</code> and faces.</td><td><a href="cubical.html#cubical">the interval</a></td></tr>
                 <tr id="E338"><td class="code"><code>E338</code></td><td data-message="path i => ... needs an expected Path or PathP type.">“path i => ... needs an expected Path or PathP type.”</td><td>Use the shorthand where a path type is expected, or write <code>path(family, body)</code>.</td><td><a href="cubical.html#cubical-shorthand">shorthand</a></td></tr>
-                <tr id="E463"><td class="code"><code>E463</code></td><td data-message="over requires an expected PathP goal.">“over requires an expected PathP goal.”</td><td><code>over</code> proves dependent paths only.</td><td><a href="cubical.html#dependent-paths">dependent paths</a></td></tr>
+                <tr id="E463"><td class="code"><code>E463</code></td><td data-message="lift needs an expected Path or PathP type; annotate the result type.">“lift needs an expected Path or PathP type; annotate the result type.”</td><td><code>lift</code> needs a declared path type to determine its endpoints.</td><td><a href="cubical.html#dependent-paths">dependent paths</a></td></tr>
                 <tr id="E461"><td class="code"><code>E461</code></td><td data-message="ext requires equality of functions.">“ext requires equality of functions.”</td><td>The goal is not an equality of functions.</td><td><a href="cubical.html#ext">ext</a></td></tr>
                 <tr><td class="code"><code>E604</code></td><td data-message="Composition tube disagrees with its base.">“Composition tube disagrees with its base.”</td><td>A wall does not start on the base. Check each wall at the base coordinate.</td><td><a href="cubical.html#composition">composition</a></td></tr>
                 <tr id="E470"><td class="code"><code>E470</code></td><td data-message="glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).">“glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).”</td><td>A <code>glue</code> term is checked at a Glue type: give it one with <code>typed</code>, or use it where one is expected.</td><td><a href="cubical.html#glue">Glue types</a></td></tr>
@@ -413,6 +413,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E192"><td><code>E192</code></td><td>hlevel_rule priority must be an integer from 0 to 1000.</td></tr>
                 <tr id="E193"><td><code>E193</code></td><td>A wall's face is a formula of equations i = 0 and i = 1, with and and or, as on i = 0 or j = 1 =&gt; ….</td></tr>
                 <tr id="E194"><td><code>E194</code></td><td>Expected '}' to close the box.</td></tr>
+                <tr id="E195"><td><code>E195</code></td><td>Cannot locate historical transport operands.</td></tr>
+                <tr id="E196"><td><code>E196</code></td><td>Historical over migration requires a single exact expression.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -507,7 +509,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E336"><td><code>E336</code></td><td>Missing source expression.</td></tr>
                 <tr><td><a href="#E337"><code>E337</code></a></td><td>No checked definition to unfold: …</td></tr>
                 <tr><td><a href="#E338"><code>E338</code></a></td><td>path i =&gt; ... needs an expected Path or PathP type.</td></tr>
-                <tr id="E339"><td><code>E339</code></td><td>along requires a homogeneous base path.</td></tr>
+                <tr id="E339"><td><code>E339</code></td><td>transport requires a homogeneous base path.</td></tr>
                 <tr><td><a href="#E340"><code>E340</code></a></td><td>Untranslated dependency: …</td></tr>
                 <tr><td><a href="#E341"><code>E341</code></a></td><td>Interval coordinates can only be used in interval arguments.</td></tr>
                 <tr><td><a href="#E342"><code>E342</code></a></td><td>Universe was removed: bind a universe variable as U &lt; UU0.</td></tr>
@@ -634,9 +636,9 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E459"><td><code>E459</code></td><td>Statements after hlevel are unreachable.</td></tr>
                 <tr id="E460"><td><code>E460</code></td><td>ext requires equality of functions with a fixed type.</td></tr>
                 <tr><td><a href="#E461"><code>E461</code></a></td><td>ext requires equality of functions.</td></tr>
-                <tr id="E462"><td><code>E462</code></td><td>Statements after over are unreachable.</td></tr>
-                <tr><td><a href="#E463"><code>E463</code></a></td><td>over requires an expected PathP goal.</td></tr>
-                <tr id="E464"><td><code>E464</code></td><td>over requires a homogeneous base path.</td></tr>
+                <tr id="E462"><td><code>E462</code></td><td>Statements after over are unreachable. (retired)</td></tr>
+                <tr><td><a href="#E463"><code>E463</code></a></td><td>lift needs an expected Path or PathP type; annotate the result type.</td></tr>
+                <tr id="E464"><td><code>E464</code></td><td>lift requires a homogeneous base path.</td></tr>
                 <tr id="E465"><td><code>E465</code></td><td>let states a type after the colon; found a value of type ….</td></tr>
                 <tr><td><a href="#E466"><code>E466</code></a></td><td>obtain requires a dependent pair matching its pattern.</td></tr>
                 <tr id="E467"><td><code>E467</code></td><td>Statements after … are unreachable: each clause's block closes the goal.</td></tr>

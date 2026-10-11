@@ -20,7 +20,7 @@ def separable_extension_in_closed(
   let same := cong(minimal_polynomial(K, L, e, x), mere_is_prop(W, evidence, algebraic));
   let p := minimal_polynomial(K, L, e, x, algebraic);
   exact separable_polynomial_splits_in_closed(
-    K, p, along SeparablePolynomial(K) by same from sep, T, closed, j
+    K, p, transport sep along same in SeparablePolynomial(K), T, closed, j
   );
 }
 
@@ -78,8 +78,8 @@ def separable_elements_enlarge_base(
   let n := polynomial_degree(K, p);
   let same := polynomial_map_composition(K, R, T, i, j, p);
   let splitP :=
-    along((fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))) by sym(same) from separable(
-      c, x, alg
+    transport separable(c, x, alg) along sym(same) in (
+      (fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))
     );
   let nonzeroP := polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
   let nonzeroQ := polynomial_map_nonzero(R, T, j, q, nzQ);
@@ -87,9 +87,9 @@ def separable_elements_enlarge_base(
     intro splitting;
     let result :=
       distinct_splitting_divisor(T, closed, n, P, nonzeroP, splitting, Q, nonzeroQ, divides);
-    exact along((fun (m : Nat) => Mere(DistinctPolynomialSplitting(T, Q, m)))) by cong(
-      natural_predecessor, polynomial_map_cutoff(R, T, j, q)
-    ) from result;
+    exact transport result along cong(natural_predecessor, polynomial_map_cutoff(R, T, j, q)) in (
+      (fun (m : Nat) => Mere(DistinctPolynomialSplitting(T, Q, m)))
+    );
   }
   exact mere_eliminate(
     DistinctPolynomialSplitting(T, P, n), SeparableIn(R, T, j, q),

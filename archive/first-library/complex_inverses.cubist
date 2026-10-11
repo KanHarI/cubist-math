@@ -86,10 +86,10 @@ def complex_apart_from_imag(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)
       )
     );
-  exact along lt(zero) by ring_add_comm(
+  exact transport positive along ring_add_comm(
     F, zero, one, addF, mulF, negF, ring, mulF(complex_imag(F, z), complex_imag(F, z)),
     mulF(complex_real(F, z), complex_real(F, z))
-  ) from positive;
+  ) in lt(zero);
 }
 
 def complex_apart_inverse(
@@ -122,13 +122,14 @@ def complex_inverse_apart(
   ComplexApartZero(F, zero, addF, mulF, lt, z) {
   obtain (w, productLaw) := inverseWitness;
   let squaredNorm := complex_norm_squared(F, addF, mulF, z);
-  let normLaw : mulF(squaredNorm, complex_norm_squared(F, addF, mulF, w)) = one := trans(
-    sym(complex_norm_multiplicative(F, zero, one, addF, mulF, negF, ring, z, w)),
+  let normLaw : mulF(squaredNorm, complex_norm_squared(F, addF, mulF, w)) = one :=
     trans(
-      cong(complex_norm_squared(F, addF, mulF), productLaw),
-      complex_norm_one(F, zero, one, addF, mulF, negF, ring)
-    )
-  );
+      sym(complex_norm_multiplicative(F, zero, one, addF, mulF, negF, ring, z, w)),
+      trans(
+        cong(complex_norm_squared(F, addF, mulF), productLaw),
+        complex_norm_one(F, zero, one, addF, mulF, negF, ring)
+      )
+    );
   obtain (forward, backward) := inverses(squaredNorm);
   let apartNorm :=
     backward(
@@ -230,8 +231,8 @@ def complex_apart_tight(
 // Directly usable with each future real-field construction. Neither
 // completeness nor classical logic is required by this algebraic result.
 def complex_ordered_field_inverses(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F -> F
-  -> U0, field : OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), z : Complex(F)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F
+  -> F -> U0, field : OrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt), z : Complex(F)
 ) :
   FieldIff(
     ComplexApartZero(F, zero, addF, mulF, lt, z), ComplexUnit(F, zero, one, addF, mulF, negF, z)

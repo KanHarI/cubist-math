@@ -33,7 +33,8 @@ def SequenceSame(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y 
   forall epsilon : Q. ltQ(zero, epsilon) -> EventualClose(Q, addQ, ltQ, x, y, epsilon);
 
 def CauchySame(
-  Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : CauchySequence(Q, zero, addQ, ltQ)
+  Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x,
+  y : CauchySequence(Q, zero, addQ, ltQ)
 ) :=
   SequenceSame(
     Q, zero, addQ, ltQ, cauchy_sequence(Q, zero, addQ, ltQ, x),
@@ -169,8 +170,8 @@ def close_tails_compose(
   obtain (leftBound, leftClose) := first;
   obtain (rightBound, rightClose) := second;
   let boundLeft :=
-    along((fun (n : Nat) => IndexLE(leftBound, n))) by nat_add_comm(rightBound, leftBound) from nat_le_add(
-      rightBound, leftBound
+    transport nat_le_add(rightBound, leftBound) along nat_add_comm(rightBound, leftBound) in (
+      (fun (n : Nat) => IndexLE(leftBound, n))
     );
   exact (
     leftBound + rightBound,

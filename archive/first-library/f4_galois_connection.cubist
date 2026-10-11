@@ -7,9 +7,9 @@ def f4_automorphism_induction(
   frobeniusCase : C(f4_frobenius_automorphism), e : F4Automorphism
 ) :
   C(e) {
-  exact along C by f4_symmetry_classify(e) from f2_induction(
+  exact transport f2_induction(
     (fun (b : F2Carrier) => C(f4_symmetry(b))), identityCase, frobeniusCase, f4_symmetry_bit(e)
-  );
+  ) along f4_symmetry_classify(e) in C;
 }
 
 // A family with no Frobenius fixes alpha: every remaining symmetry is identity.
@@ -101,7 +101,9 @@ def f4_fixed_fixing_recovers_members(
 // These are equalities of complete subobjects, with the two decisions explicit.
 def f4_fixing_fixed_subgroup(
   H : GaloisSubgroup(F2, F4OverF2),
-  decideFrobenius : Decidable(U0, galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism))
+  decideFrobenius : Decidable(
+    U0, galois_subgroup_members(F2, F4OverF2, H, f4_frobenius_automorphism)
+  )
 ) :
   fixing_galois_subgroup(F2, F4OverF2, fixed_intermediate_field(F2, F4OverF2, H)) =[
     GaloisSubgroup(F2, F4OverF2)

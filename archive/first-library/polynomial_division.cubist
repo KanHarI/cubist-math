@@ -192,8 +192,8 @@ def divide_by_degree(
     polynomial_coefficients(K, divisor, d), polynomial_leading_nonzero(K, divisor, d, degree)
   );
   let sd :=
-    along SeriesSupport(K, polynomial_coefficients(K, divisor)) by degree from polynomial_cutoff_support(
-      K, divisor
+    transport polynomial_cutoff_support(K, divisor) along degree in SeriesSupport(
+      K, polynomial_coefficients(K, divisor)
     );
   exact divide_with_bound(
     K, divisor, d, b, inverse_, sd, polynomial_cutoff(K, p), p, polynomial_cutoff_support(K, p)
@@ -225,9 +225,11 @@ def polynomial_division(
         PolynomialDivision(K, p, divisor),
         absurd(nonzero(polynomial_cutoff_zero(K, divisor, degree)))
       );
-      succ ignored => fun (degree : polynomial_cutoff(K, divisor) = succ(k)) => along(
+      succ ignored => fun (degree : polynomial_cutoff(K, divisor) = succ(k)) => transport divide_by_degree(
+        K, p, divisor, k, degree
+      ) along sym(cong(natural_predecessor, degree)) in (
         (fun (n : Nat) => DivisionResult(K, p, divisor, n))
-      ) by sym(cong(natural_predecessor, degree)) from divide_by_degree(K, p, divisor, k, degree);
+      );
     }
   )(refl(polynomial_cutoff(K, divisor)));
 }

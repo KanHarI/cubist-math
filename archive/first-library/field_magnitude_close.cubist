@@ -16,14 +16,14 @@ def field_magnitude_small_close(
   let negLess := leLt(negF(x), radius, epsilon, lower, small);
   obtain (shiftForward, shiftBackward) := translate(negF(x), epsilon, x);
   let shifted :=
-    along lt(addF(negF(x), x)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, epsilon, x) from shiftForward(
-      negLess
-    );
+    transport shiftForward(negLess) along ring_add_comm(
+      F, zero, one, addF, mulF, negF, ring, epsilon, x
+    ) in lt(addF(negF(x), x));
   exact (
-    along lt(x) by sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) from less,
-    along((fun (v : F) => lt(v, addF(x, epsilon)))) by ring_add_inverse(
-      F, zero, one, addF, mulF, negF, ring, x
-    ) from shifted
+    transport less along sym(ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon)) in lt(x),
+    transport shifted along ring_add_inverse(F, zero, one, addF, mulF, negF, ring, x) in (
+      (fun (v : F) => lt(v, addF(x, epsilon)))
+    )
   );
 }
 
@@ -40,18 +40,20 @@ def field_close_translate(
     intro u, v, less;
     obtain (forward, backward) := translate(u, v, shift);
     let first :=
-      along((fun (a : F) => lt(a, addF(v, shift)))) by ring_add_comm(
-        F, zero, one, addF, mulF, negF, ring, u, shift
-      ) from forward(less);
-    exact along lt(addF(shift, u)) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, shift) from first;
+      transport forward(less) along ring_add_comm(F, zero, one, addF, mulF, negF, ring, u, shift) in (
+        (fun (a : F) => lt(a, addF(v, shift)))
+      );
+    exact transport first along ring_add_comm(F, zero, one, addF, mulF, negF, ring, v, shift) in lt(
+      addF(shift, u)
+    );
   }
   exact (
-    along lt(addF(shift, x)) by sym(
+    transport shiftLess(x, addF(y, epsilon), upper) along sym(
       ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, y, epsilon)
-    ) from shiftLess(x, addF(y, epsilon), upper),
-    along lt(addF(shift, y)) by sym(
+    ) in lt(addF(shift, x)),
+    transport shiftLess(y, addF(x, epsilon), lower) along sym(
       ring_add_assoc(F, zero, one, addF, mulF, negF, ring, shift, x, epsilon)
-    ) from shiftLess(y, addF(x, epsilon), lower)
+    ) in lt(addF(shift, y))
   );
 }
 
@@ -73,10 +75,12 @@ def field_magnitude_perturbation_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, error, zero, epsilon, x, close
     );
   let unitRemoved :=
-    along((fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon))) by ring_add_zero_right(
-      F, zero, one, addF, mulF, negF, ring, x
-    ) from shifted;
-  exact along((fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon))) by sym(computes) from unitRemoved;
+    transport shifted along ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x) in (
+      (fun (v : F) => FieldClose(F, addF, lt, addF(x, error), v, epsilon))
+    );
+  exact transport unitRemoved along sym(computes) in (
+    (fun (v : F) => FieldClose(F, addF, lt, v, x, epsilon))
+  );
 }
 
 // A bound tending to zero forces the bounded error to tend to zero.
@@ -94,7 +98,9 @@ def field_magnitude_squeeze(
     intro n, large;
     obtain (upper, lower) := close(n, large);
     let small :=
-      along lt(radii(n)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon) from upper;
+      transport upper along ring_add_zero(F, zero, one, addF, mulF, negF, ring, epsilon) in lt(
+        radii(n)
+      );
     exact field_magnitude_small_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, errors(n), radii(n), epsilon,
       bounds(n), small

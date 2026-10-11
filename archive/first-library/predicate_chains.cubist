@@ -88,8 +88,8 @@ def finite_cover_step(
           intro index;
           exact match index as z return P(k, v(z)) {
             left u => (
-              along((fun (w : Unit) => P(k, v(typed(Fin(succ(n)), left(w)))))) by unit_equal(u) from ik(
-                h, headInI
+              transport ik(h, headInI) along unit_equal(u) in (
+                (fun (w : Unit) => P(k, v(typed(Fin(succ(n)), left(w)))))
               )
             );
             right l => jk(v(typed(Fin(succ(n)), right(l))), tailInJ(l));

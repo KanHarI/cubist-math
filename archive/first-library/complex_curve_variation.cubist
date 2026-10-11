@@ -4,15 +4,15 @@ import affine_variation;
 
 def curve_real_increment(
   F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  s, t, tag : FieldUnitInterval(F, zero, one, lt)
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), s, t,
+  tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   coordinate_difference(F, addF, negF, complex_real(F, curve(s)), complex_real(F, curve(t)));
 
 def curve_imag_increment(
   F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  s, t, tag : FieldUnitInterval(F, zero, one, lt)
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), s, t,
+  tag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   coordinate_difference(F, addF, negF, complex_imag(F, curve(s)), complex_imag(F, curve(t)));
 
@@ -21,8 +21,8 @@ def curve_imag_increment(
 // is bounded independently of the number of samples.
 def ComplexCurveVariation(
   F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F),
-  realWeight, imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), realWeight,
+  imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> F, length : F
 ) :=
   forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
@@ -107,9 +107,10 @@ def complex_interval_deformation_variation(
   let sumWeight := (fun (a, b, tag : I) => addF(realWeight(a, b, tag), imagWeight(a, b, tag)));
   let combined : FieldLe(
     F, lt, sample_sum(I, F, zero, addF, sumWeight, n, vertices, tags), addF(r, s)
-  ) := along((fun (v : F) => FieldLe(F, lt, v, addF(r, s)))) by sym(
-    sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags)
-  ) from sumBelow;
+  ) :=
+    transport sumBelow along sym(
+      sample_sum_add(I, F, zero, addF, negF, addLaws, realWeight, imagWeight, n, vertices, tags)
+    ) in ((fun (v : F) => FieldLe(F, lt, v, addF(r, s))));
   exact (
     interval_affine_increment_bounds(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z),

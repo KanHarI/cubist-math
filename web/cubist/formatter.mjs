@@ -85,7 +85,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const assignmentTokens = new Set(), annotationStarts = new Set(), proofBodyStarts = new Set();
   // A projection's dot is tight on both sides: p.1, never p. 1. A prefix ~
   // is tight before its operand: ~p, never ~ p.
-  const projectionDots = new Set(), prefixOperators = new Set();
+  const projectionDots = new Set(), prefixOperators = new Set(), transportKeywords = new Set();
   // A declaration's implicit parameters, `{{A : U}}`, are a list like its
   // parameters, not a block, and so are a call's implicit arguments.
   const implicitOpens = new Set(), implicitCloses = new Set();
@@ -96,6 +96,16 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const tokenAfter = new Map(tokens.map((token, index) => [token.end, tokens[index + 1]]));
   function visit(node) {
     if (!node || typeof node !== "object") return;
+    // The keyword forms keep `transport (value)` and `lift (proof)` apart;
+    // the explicit built-in call remains `transport(C, x, y, p, value)`.
+    if (["transport", "lift"].includes(node.kind)) {
+      const beforeValue = tokenBefore.get(node.value.start);
+      if (beforeValue?.text === node.kind) transportKeywords.add(beforeValue.start);
+    }
+    if (["transport", "lift"].includes(node.kind)) {
+      const separator = tokenBefore.get(node.path.start);
+      if (separator?.text === "along") transportKeywords.add(separator.start);
+    }
     if (node.kind === "withUnfolding") expressionBlockEnds.add(node.end);
     if (node.kind === "projection" || node.kind === "member") projectionDots.add(node.dot.start);
     // A qualified name's dot is tight too: T.squash.
@@ -157,7 +167,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       const token = all[position];
       if (token.text === close) {
         position++; flush();
-        while (docs.at(-1) === hard) docs.pop();
+        // A trailing line comment needs its newline before the delimiter.
+        while (docs.at(-1) === hard && !all[position - 2]?.comment) docs.pop();
         return docs;
       }
       const preceding = all[position - 1];
@@ -187,7 +198,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       }
       const space = previous && sectionStarts.has(previous.start) || previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !prefixOperators.has(previous.start)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or"].includes(previous.text) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
+        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !["fun", "exact", "return", "obtain", "as", "and", "or", "in"].includes(previous.text) && !transportKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");
       if (space && ![",", "."].includes(previous.text)) {

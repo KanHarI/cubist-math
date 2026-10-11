@@ -57,9 +57,9 @@ def polynomial_ideal_neg(
 ) :
   polynomial_ideal_members(K, I, polynomial_neg(K, p)) {
   let minusOne := polynomial_neg(K, polynomial_one(K));
-  exact along polynomial_ideal_members(K, I) by trans(
+  exact transport polynomial_ideal_mul(K, I, minusOne, p, member) along trans(
     polynomial_neg_mul(K, polynomial_one(K), p), cong(polynomial_neg(K), polynomial_mul_one(K, p))
-  ) from polynomial_ideal_mul(K, I, minusOne, p, member);
+  ) in polynomial_ideal_members(K, I);
 }
 
 def polynomial_ideal_remainder(
@@ -79,10 +79,10 @@ def polynomial_ideal_remainder(
     group_cancel_left(
       PolynomialAdditiveGroup(K), product, difference, r, trans(recombine, equation)
     );
-  exact along polynomial_ideal_members(K, I) by same from polynomial_ideal_add(
+  exact transport polynomial_ideal_add(
     K, I, p, polynomial_neg(K, product), memberP,
     polynomial_ideal_neg(K, I, product, polynomial_ideal_mul(K, I, q, divisor, memberD))
-  );
+  ) along same in polynomial_ideal_members(K, I);
 }
 
 def ideal_minimal_divides(
@@ -105,7 +105,7 @@ def ideal_minimal_divides(
           polynomial_cutoff(K, g), polynomial_cutoff(K, r), d, minimal(r, memberR, nr),
           polynomial_cutoff_least(K, r, d, support)
         );
-      exact successor_not_le_self(d, along((fun (n : Nat) => le(n, d))) by degree from below);
+      exact successor_not_le_self(d, transport below along degree in ((fun (n : Nat) => le(n, d))));
     }
     exact double_negation(
       r = polynomial_zero(K), polynomial_set(K, r, polynomial_zero(K)), impossible
@@ -186,7 +186,7 @@ def polynomial_ideal_principal(
         merely(
           IdealCutoffWitness(K, I, cr), typed(IdealCutoffWitness(K, I, cr), (r, mr, nr, refl(cr)))
         );
-      exact along((fun (k : Nat) => le(k, cr))) by sym(same) from least(cr, candidateR);
+      exact transport least(cr, candidateR) along sym(same) in ((fun (k : Nat) => le(k, cr)));
     }
     exact (g, member, nonzero, ideal_minimal_divides(K, I, g, member, nonzero, minimal));
   }

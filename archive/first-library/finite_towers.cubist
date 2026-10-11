@@ -3,7 +3,9 @@ import scalar_extension_finiteness;
 
 // The middle field includes linearly in the top field when both are viewed
 // over K through the composite embedding.
-def tower_middle_linear(K, L, M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M)) :
+def tower_middle_linear(
+  K, L, M : AlgebraicField, e : FieldEmbedding(K, L), d : FieldEmbedding(L, M)
+) :
   LinearMap(
     K, field_vector_space(K, L, e), field_vector_space(K, M, field_embedding_compose(K, L, M, e, d))
   ) {
@@ -51,9 +53,9 @@ def finite_extension_tower_converse(
   and FiniteExtension(L, embedding_as_extension(L, M, d)) {
   let composite := field_embedding_compose(K, L, M, e, d);
   let finite :=
-    along((fun (f : FieldEmbedding(K, M)) => FiniteExtension(K, embedding_as_extension(K, M, f)))) by sym(
-      triangle
-    ) from whole;
+    transport whole along sym(triangle) in (
+      (fun (f : FieldEmbedding(K, M)) => FiniteExtension(K, embedding_as_extension(K, M, f)))
+    );
   exact (finite_tower_lower(K, L, M, e, d, finite), finite_tower_upper(K, L, M, e, d, finite));
 }
 

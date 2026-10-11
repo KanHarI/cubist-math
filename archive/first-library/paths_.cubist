@@ -20,9 +20,8 @@ def Equiv(U < UU0, A, B : U) := exists f : A -> B. IsEquiv(U, A, B, f);
 // For a set-valued codomain, equality proofs are unique, so the triangle law
 // follows from the supplied inverse homotopies. This is constructive at any U.
 def equiv_from_inverse_into_set(
-  U < UU0, A, B : U,
-  setB : (forall x : B. forall y : B. forall p : x = y. forall q : x = y. p = q), f : A -> B, g : B
-  -> A, eta : (forall x : A. g(f(x)) = x), epsilon : (forall y : B. f(g(y)) = y)
+  U < UU0, A, B : U, setB : (forall x : B. forall y : B. forall p : x = y. forall q : x = y. p = q),
+  f : A -> B, g : B -> A, eta : (forall x : A. g(f(x)) = x), epsilon : (forall y : B. f(g(y)) = y)
 ) :
   Equiv(U, A, B) {
   exact (
@@ -327,7 +326,8 @@ def transport_after_inverse(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(y)) 
     )
   );
 
-def transport_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) := refl(along C by p from v);
+def transport_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) :=
+  refl(transport v along p in C);
 
 def append_cancel_inverse(A : U1, x, y, z : A, p : x = y, q : y = z) :=
   trans(
@@ -359,8 +359,8 @@ def transport_decoder(
 // Based path induction, with explicit universes for the carrier and motive.
 // This one principle covers both small and higher identity systems.
 def based_induction_(
-  U, V < UU0, A : U, origin : A, C : (forall x : A. (origin = x) -> V),
-  c : C(origin, refl(origin)), x : A, p : origin = x
+  U, V < UU0, A : U, origin : A, C : (forall x : A. (origin = x) -> V), c : C(origin, refl(origin)),
+  x : A, p : origin = x
 ) :=
   path_induction(
     A, fun (a, b : A, q : a = b) => forall D : (forall point : A. (a = point) -> V). D(a, refl(a))

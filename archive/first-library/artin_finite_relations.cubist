@@ -277,7 +277,9 @@ def hom_family_twisted_relation(
   );
 }
 
-def PairwiseDistinctEmbeddings(K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)) :=
+def PairwiseDistinctEmbeddings(
+  K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+) :=
   forall i : Fin(n). forall j : Fin(n). maps(i) = maps(j) -> i = j;
 
 def HomFamilyIndependent(n : Nat) :=
@@ -453,14 +455,15 @@ def hom_family_head_coefficient_zero(
   let c := finite_head(af_carrier(L), n, coefficients);
   let tail := finite_tail(af_carrier(L), n, coefficients);
   let tailSum := field_sum(L, n, tail);
-  let tailZero : tailSum = field_zero(L) := field_sum_zero(
-    L, n, tail,
-    (
-      fun (i : Fin(n)) => hom_family_tail_coefficient_zero(
-        n, previous, K, L, maps, distinct, coefficients, relation, i
+  let tailZero : tailSum = field_zero(L) :=
+    field_sum_zero(
+      L, n, tail,
+      (
+        fun (i : Fin(n)) => hom_family_tail_coefficient_zero(
+          n, previous, K, L, maps, distinct, coefficients, relation, i
+        )
       )
-    )
-  );
+    );
   exact trans(
     sym(scalar_add_zero_right(L, c)),
     trans(
@@ -475,10 +478,10 @@ def hom_family_independent_step(n : Nat, previous : HomFamilyIndependent(n)) :
   intro K, L, maps, distinct, coefficients, relation, index;
   exact match index as i return coefficients(i) = field_zero(L) {
     left u => (
-      along((fun (j : Fin(succ(n))) => coefficients(j) = field_zero(L))) by cong(
-        (fun (v : Unit) => typed(Fin(succ(n)), left(v))), unit_equal(u)
-      ) from hom_family_head_coefficient_zero(
+      transport hom_family_head_coefficient_zero(
         n, previous, K, L, maps, distinct, coefficients, relation
+      ) along cong((fun (v : Unit) => typed(Fin(succ(n)), left(v))), unit_equal(u)) in (
+        (fun (j : Fin(succ(n))) => coefficients(j) = field_zero(L))
       )
     );
     right j => hom_family_tail_coefficient_zero(

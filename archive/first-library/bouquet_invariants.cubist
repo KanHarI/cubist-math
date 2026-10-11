@@ -54,7 +54,7 @@ def bouquet_maps_determined_by_letters(
           eval_word(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), word) = p
         )
       ) => unpack represented as (word, equality_) return (h(p) = k(p)) {
-        (along((fun (q : BouquetLoops(A)) => h(q) = k(q))) by equality_ from wordEqual(word));
+        (transport wordEqual(word) along equality_ in ((fun (q : BouquetLoops(A)) => h(q) = k(q))));
       }
     ), every_bouquet_loop_generated(A, p)
   );

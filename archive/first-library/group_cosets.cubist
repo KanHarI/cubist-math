@@ -24,9 +24,9 @@ def same_coset_from_factor(
   factor : group_multiply(G, x, n) = y
 ) :
   SameLeftCoset(G, S, x, y) {
-  exact along subgroup_members(G, S) by trans(
+  exact transport member along trans(
     sym(group_cancel_left_value(G, x, n)), cong(group_multiply(G, group_inverse(G, x)), factor)
-  ) from member;
+  ) in subgroup_members(G, S);
 }
 
 def same_coset_refl(G : Group, S : Subgroup(G), x : group_carrier(G)) : SameLeftCoset(G, S, x, x) {
@@ -152,9 +152,9 @@ def same_coset_unit_member(
 ) :
   subgroup_members(G, S, x) {
   let n := group_multiply(G, group_inverse(G, group_unit(G)), x);
-  exact along subgroup_members(G, S) by trans(
-    sym(group_unit_left(G, n)), coset_factor(G, group_unit(G), x)
-  ) from same;
+  exact transport same along trans(sym(group_unit_left(G, n)), coset_factor(G, group_unit(G), x)) in subgroup_members(
+    G, S
+  );
 }
 
 // Normality is necessary too: right translation takes gS = gnS to S = gng⁻¹S.
@@ -173,9 +173,9 @@ def right_coset_compatibility_implies_normal(
   let shifted := compatible(g, m(g, n), group_inverse(G, g), related);
   exact same_coset_unit_member(
     G, S, group_conjugate(G, g, n),
-    along((fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, group_conjugate(G, g, n)))) by group_inverse_right(
-      G, g
-    ) from shifted
+    transport shifted along group_inverse_right(G, g) in (
+      (fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, group_conjugate(G, g, n)))
+    )
   );
 }
 
@@ -192,13 +192,13 @@ def normal_coset_inverse(
       G, S, ix, m(x, iy), m(y, iy), same_coset_multiply_right(G, S, normal, x, y, iy, same)
     );
   let first :=
-    along((fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, m(ix, m(y, iy))))) by group_cancel_left_value(
-      G, x, iy
-    ) from shifted;
+    transport shifted along group_cancel_left_value(G, x, iy) in (
+      (fun (a : group_carrier(G)) => SameLeftCoset(G, S, a, m(ix, m(y, iy))))
+    );
   let second :=
-    along SameLeftCoset(G, S, iy) by trans(
-      cong(m(ix), group_inverse_right(G, y)), group_unit_right(G, ix)
-    ) from first;
+    transport first along trans(cong(m(ix), group_inverse_right(G, y)), group_unit_right(G, ix)) in SameLeftCoset(
+      G, S, iy
+    );
   exact same_coset_sym(G, S, iy, ix, second);
 }
 

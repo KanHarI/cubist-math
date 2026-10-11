@@ -98,7 +98,7 @@ def loop_evaluations_separate(
     extension_field(K, E), n,
     (
       fun (i : Fin(n)) => field_mul(
-        extension_field(K, E), coefficients(i), along extension_carrier(K) by loops(i) from x
+        extension_field(K, E), coefficients(i), transport x along loops(i) in extension_carrier(K)
       )
     )
   ) = field_zero(extension_field(K, E))
@@ -120,7 +120,8 @@ def loop_evaluations_detect_nonzero(
         extension_field(K, E), n,
         (
           fun (j : Fin(n)) => field_mul(
-            extension_field(K, E), coefficients(j), along extension_carrier(K) by loops(j) from x
+            extension_field(K, E), coefficients(j),
+            transport x along loops(j) in extension_carrier(K)
           )
         )
       ) = field_zero(extension_field(K, E))
@@ -132,7 +133,7 @@ def loop_evaluations_detect_nonzero(
       F, n,
       (
         fun (j : Fin(n)) => field_mul(
-          F, coefficients(j), along extension_carrier(K) by loops(j) from x
+          F, coefficients(j), transport x along loops(j) in extension_carrier(K)
         )
       )
     );

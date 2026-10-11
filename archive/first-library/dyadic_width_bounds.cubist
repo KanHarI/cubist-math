@@ -30,11 +30,11 @@ def field_natural_successor_ge_one(
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat
 ) :
   FieldLe(F, lt, one, field_natural(F, zero, one, addF)(succ(n))) {
-  exact along((fun (v : F) => FieldLe(F, lt, v, field_natural(F, zero, one, addF)(succ(n))))) by ring_add_zero(
-    F, zero, one, addF, mulF, negF, ring, one
-  ) from order_le_translate(
+  exact transport order_le_translate(
     F, zero, one, addF, mulF, lt, arithmetic, zero, field_natural(F, zero, one, addF)(n), one,
     field_natural_nonnegative(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, n)
+  ) along ring_add_zero(F, zero, one, addF, mulF, negF, ring, one) in (
+    (fun (v : F) => FieldLe(F, lt, v, field_natural(F, zero, one, addF)(succ(n))))
   );
 }
 
@@ -98,13 +98,13 @@ def dyadic_width_growth_step(
     );
   let oldBound := previous(h, nonnegativeHalf);
   let unitBound :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(factor, next_)))) by ring_mul_one(
-      F, zero, one, addF, mulF, negF, ring, next_
-    ) from weakScale(
+    transport weakScale(
       one, factor, next_,
       field_natural_successor_ge_one(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, depth
       ), nonnegativeNext
+    ) along ring_mul_one(F, zero, one, addF, mulF, negF, ring, next_) in (
+      (fun (v : F) => FieldLe(F, lt, v, mulF(factor, next_)))
     );
   let nextBound :=
     order_le_trans(
@@ -121,8 +121,10 @@ def dyadic_width_growth_step(
       cong(addF(mulF(factor, next_)), ring_mul_one(F, zero, one, addF, mulF, negF, ring, next_))
     );
   let productBound :=
-    along((fun (v : F) => FieldLe(F, lt, v, addF(h, h)))) by sym(distribute) from doubledBound;
-  exact along FieldLe(F, lt, mulF(addF(factor, one), next_)) by halfSum(width) from productBound;
+    transport doubledBound along sym(distribute) in ((fun (v : F) => FieldLe(F, lt, v, addF(h, h))));
+  exact transport productBound along halfSum(width) in FieldLe(
+    F, lt, mulF(addF(factor, one), next_)
+  );
 }
 
 // (depth + 1) * width_after_depth_halvings <= original_width.
@@ -151,8 +153,8 @@ def dyadic_width_growth_bound(
           (fun (v : F) => mulF(v, width)), ring_add_zero(F, zero, one, addF, mulF, negF, ring, one)
         ), ring_mul_one(F, zero, one, addF, mulF, negF, ring, width)
       );
-    exact along((fun (v : F) => FieldLe(F, lt, v, width))) by sym(identity) from order_le_refl(
-      F, lt, order, width
+    exact transport order_le_refl(F, lt, order, width) along sym(identity) in (
+      (fun (v : F) => FieldLe(F, lt, v, width))
     );
   }
   exact induction depth as k return (

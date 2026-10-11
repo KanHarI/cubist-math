@@ -146,7 +146,7 @@ def sum_tag(A : U0, x : Unit or A) := match x return U0 {
 def sum_disjoint(
   A : U0, u : Unit, a : A, p : typed(Unit or A, left(u)) = typed(Unit or A, right(a))
 ) :=
-  along sum_tag(A) by p from tt;
+  transport tt along p in sum_tag(A);
 
 def tail_or(A : U0, fallback : A, x : Unit or A) := match x return A {
     left u => fallback;
@@ -159,11 +159,11 @@ def tail_injective(A : U0, a, b : A, p : typed(Unit or A, right(a)) = typed(Unit
 def fin_decidable(n : Nat) :=
   induction n as k return (forall a : Fin(k). forall b : Fin(k). Decidable(U0, a = b)) {
     zero => fun (a, b : Fin(0)) => typed(Decidable(U0, a = b), absurd(a));
-    succ previous => fun (a, b : Fin(succ(k))) => match typed(Unit or Fin(k), a) as x return Decidable(U0, 
-      x = b
+    succ previous => fun (a, b : Fin(succ(k))) => match typed(Unit or Fin(k), a) as x return Decidable(
+      U0, x = b
     ) {
-      left u => match typed(Unit or Fin(k), b) as y return Decidable(U0, 
-        typed(Unit or Fin(k), left(u)) = y
+      left u => match typed(Unit or Fin(k), b) as y return Decidable(
+        U0, typed(Unit or Fin(k), left(u)) = y
       ) {
         left v => typed(
           Decidable(U0, typed(Unit or Fin(k), left(u)) = typed(Unit or Fin(k), left(v))),
@@ -183,8 +183,8 @@ def fin_decidable(n : Nat) :=
           )
         );
       };
-      right i => match typed(Unit or Fin(k), b) as y return Decidable(U0, 
-        typed(Unit or Fin(k), right(i)) = y
+      right i => match typed(Unit or Fin(k), b) as y return Decidable(
+        U0, typed(Unit or Fin(k), right(i)) = y
       ) {
         left v => typed(
           Decidable(U0, typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), left(v))),
@@ -194,8 +194,8 @@ def fin_decidable(n : Nat) :=
             )
           )
         );
-        right j => match previous(i, j) return Decidable(U0, 
-          typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))
+        right j => match previous(i, j) return Decidable(
+          U0, typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))
         ) {
           left p => typed(
             Decidable(U0, typed(Unit or Fin(k), right(i)) = typed(Unit or Fin(k), right(j))),

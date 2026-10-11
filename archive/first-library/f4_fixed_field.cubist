@@ -33,7 +33,7 @@ def f4_fixed_in_base(x : F4Carrier, fixed : F4Fixed(x)) : F2Image(x) {
 
 def f4_base_is_fixed(x : F4Carrier, member : F2Image(x)) : F4Fixed(x) {
   obtain (k, same) := member;
-  exact along F4Fixed by same from galois_fixed_contains_base(F2, F4OverF2, F4AllAutomorphisms, k);
+  exact transport galois_fixed_contains_base(F2, F4OverF2, F4AllAutomorphisms, k) along same in F4Fixed;
 }
 
 // The fixed elements of Gal(F4/F2) are exactly the embedded base field.
@@ -70,7 +70,9 @@ def f4_base_intermediate : IntermediateField(F2, F4OverF2) {
     intermediate_laws(F2, F4OverF2, galois_fixed_field(F2, F4OverF2, F4AllAutomorphisms));
   exact (
     F2Image,
-    along((fun (P : F4Carrier -> U0) => IntermediateFieldLaws(F2, F4OverF2, P))) by f4_fixed_predicate_is_base from fixedLaws
+    transport fixedLaws along f4_fixed_predicate_is_base in (
+      (fun (P : F4Carrier -> U0) => IntermediateFieldLaws(F2, F4OverF2, P))
+    )
   );
 }
 

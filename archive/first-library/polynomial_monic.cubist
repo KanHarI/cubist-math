@@ -51,7 +51,7 @@ def polynomial_normalize_degree(
   polynomial_cutoff(K, polynomial_scale(K, a, p)) = succ(d) {
   let q := polynomial_scale(K, a, p);
   let f := polynomial_coefficients(K, p);
-  let support := along SeriesSupport(K, f) by degree from polynomial_cutoff_support(K, p);
+  let support := transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(K, f);
   let leading :=
     trans(polynomial_scale_coefficient(K, a, p, d), trans(scalar_mul_comm(K, a, f(d)), inverse_));
   let nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, q, d)) {
@@ -113,9 +113,9 @@ def polynomial_divides_cutoff_le(
     obtain (n, dr) := polynomial_nonzero_degree(K, r, nonzeroR);
     let dq :=
       trans(cong(polynomial_cutoff(K), equation), polynomial_product_degree(K, p, r, m, n, dp, dr));
-    exact along((fun (i : Nat) => le(i, polynomial_cutoff(K, q)))) by sym(dp) from along(
-      (fun (j : Nat) => le(succ(m), j))
-    ) by sym(dq) from natural_le_add_left(m, n);
+    exact transport (
+      transport natural_le_add_left(m, n) along sym(dq) in ((fun (j : Nat) => le(succ(m), j)))
+    ) along sym(dp) in ((fun (i : Nat) => le(i, polynomial_cutoff(K, q))));
   }
   exact mere_eliminate(
     (exists r : Polynomial(K). q = polynomial_mul(K, p, r)),
@@ -132,8 +132,8 @@ def monic_difference_support(
   SeriesSupport(K, polynomial_coefficients(K, polynomial_subtract(K, p, q)), d) {
   let f := polynomial_coefficients(K, p);
   let g := polynomial_coefficients(K, q);
-  let sp := along SeriesSupport(K, f) by dp from polynomial_cutoff_support(K, p);
-  let sq := along SeriesSupport(K, g) by dq from polynomial_cutoff_support(K, q);
+  let sp := transport polynomial_cutoff_support(K, p) along dp in SeriesSupport(K, f);
+  let sq := transport polynomial_cutoff_support(K, q) along dq in SeriesSupport(K, g);
   let p1 := trans(cong(f, sym(cong(natural_predecessor, dp))), monicP);
   let q1 := trans(cong(g, sym(cong(natural_predecessor, dq))), monicQ);
   let topZero : field_add(K, f(d), field_neg(K, g(d))) = field_zero(K) :=

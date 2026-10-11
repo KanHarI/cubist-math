@@ -177,7 +177,7 @@ def singletons_contractible(A : U0, x : A) :
 // the center and transport along the contraction.
 def based_path_induction(A : U0, x : A, C : Singleton(A, x) -&gt; U0,
     base : C((x, refl(x))), w : Singleton(A, x)) : C(w) {
-  exact along C by singletons_contractible(A, x).2(w) from base;
+  exact transport base along singletons_contractible(A, x).2(w) in C;
 }</code></pre>
             <figure class="diagram" id="singleton-figure">
               <svg viewBox="0 0 560 186" role="img" aria-label="Three stages of the singleton's contraction: at j = 0 the point x with no path; at j = 1/2 the point halfway along p with the first half of p; at j = 1 the point y with all of p.">
@@ -239,30 +239,22 @@ def section_by_hand(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)), x, y : A, 
 
 def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)),
     x, y : A, p : x = y) :
-  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) {
-  over C along p by {
-    exact apd(f, x, y, p);   // goal: transport(C, x, y, p, f(x)) = f(y)
-  }
-}</code></pre>
+  PathP(fun (i : Interval) =&gt; C(p @ i), f(x), f(y)) :=
+  lift apd(f, x, y, p) along p in C;</code></pre>
             <ul>
               <li><code>apd_path(f, p)</code> is the built-in form.</li>
               <li><code>path i =&gt; f(p @ i)</code> is the same path written out: at each <code>i</code>, <code>f</code> at the point <code>p @ i</code> lies in <code>C(p @ i)</code>, as the family requires, and the ends are <code>f(x)</code> and <code>f(y)</code>.</li>
-              <li><code>over C along p by { … }</code> proves it from the other standard statement, below.</li>
+              <li><code>lift q along p in C</code> constructs it from an equality after transport, below.</li>
             </ul>
-            <p>The other statement compares in one type. Transporting <code>a</code> along <code>p</code> gives an element of <code>C(y)</code>, <code>transport(C, x, y, p, a)</code>, and comparing it with <code>b</code> there is an ordinary equality, <code>transport(C, x, y, p, a) = b</code>, in <code>C(y)</code>. The two statements are equivalent. For a dependent function, <code>apd(f, x, y, p)</code> proves the second; <code>over C along p by { … }</code> turns a proof of the second into the first, its block having the transported equality as its goal. So an element and its own transport are joined by a dependent path:</p>
+            <p>The other statement compares in one type. Transporting <code>a</code> along <code>p</code> gives an element of <code>C(y)</code>, <code>transport a along p in C</code>, and comparing it with <code>b</code> there is an ordinary equality, <code>(transport a along p in C) = b</code>, in <code>C(y)</code>. The two statements are equivalent. Given a proof <code>q</code> of that equality, <code>lift q along p in C</code> constructs the dependent path. For a dependent function, <code>apd(f, x, y, p)</code> supplies <code>q</code>. An element and its own transport are joined by a dependent path:</p>
             <pre><code data-check="accept">def to_its_transport(A : U0, C : A -&gt; U0, x, y : A, p : x = y, a : C(x)) :
-  PathP(fun (i : Interval) =&gt; C(p @ i), a, transport(C, x, y, p, a)) {
-  over C along p by {
-    rfl;   // goal: transport(C, x, y, p, a) = transport(C, x, y, p, a)
-  }
-}</code></pre>
-            <p>The family <code>C</code> is never inferred: the elaborator does not search for a family that fits, so <code>over</code> and <code>transport</code> name it, and <code>over</code> needs a <code>PathP</code> goal to read the path from:</p>
+  PathP(fun (i : Interval) =&gt; C(p @ i), a, transport a along p in C) :=
+  lift refl(transport a along p in C) along p in C;</code></pre>
+            <p>All three operands of <code>lift</code> and <code>transport</code> are expressions. Give a longer equality proof a name first with <code>let q : (transport a along p in C) = b { … }</code>, then use <code>lift q along p in C</code>. Parenthesize nested keyword expressions. The family <code>C</code> and base path <code>p</code> are explicit; <code>lift</code>, like <code>path i =&gt; …</code>, reads its endpoints from an expected path type. Give a result type on a definition or local binding, or use <code>typed(PathP(…), lift q along p in C)</code>. A non-path result type is refused:</p>
             <pre><code data-check="reject">import nat;
 
 def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : Nat {
-  over C along p by {  // Error: over requires an expected PathP goal.
-    exact 0;
-  }
+  exact lift 0 along p in C;  // Error: lift needs an expected Path or PathP type; annotate the result type.
 }</code></pre>
             <p>Squares are dependent paths too. The type of <code>to_start</code> in <a href="#meets-and-joins">meets and joins</a>, <code>PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p)</code>, is a dependent path over the family of path types <code>x = p @ j</code>, whose ends change with <code>j</code>.</p>
           </section>

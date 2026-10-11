@@ -27,12 +27,12 @@ def finite_basis_generates_field(
     let fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
-      exact along Q by same from base(a);
+      exact transport base(a) along same in Q;
     }
     let fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
       intro w;
       obtain (i, same) := w;
-      exact along Q by same from members(i);
+      exact transport members(i) along same in Q;
     }
     exact match witness_ return Q(x) {
       left w => fromBase(w);
@@ -75,14 +75,16 @@ def field_generated_adjoin_tail(
   let P := subfield_members(L, S);
   let oldBase : forall a : af_carrier(K). P(field_embedding_map(K, L, e, a)) {
     intro a;
-    exact along P by triangle(a) from base(field_embedding_map(K, R, i, a));
+    exact transport base(field_embedding_map(K, R, i, a)) along triangle(a) in P;
   }
-  let head := along P by first from base(r);
+  let head := transport base(r) along first in P;
   let all : forall j : Fin(succ(n)). P(generators(j)) {
     intro j;
     exact match j as v return P(generators(v)) {
       left u => (
-        along((fun (w : Unit) => P(generators(typed(Fin(succ(n)), left(w)))))) by unit_equal(u) from head
+        transport head along unit_equal(u) in (
+          (fun (w : Unit) => P(generators(typed(Fin(succ(n)), left(w)))))
+        )
       );
       right k => members(k);
     };
@@ -105,12 +107,12 @@ def generated_field_generators(
     let fromBase : (exists a : af_carrier(K). field_embedding_map(K, L, e, a) = x) -> Q(x) {
       intro w;
       obtain (a, same) := w;
-      exact along Q by same from base(a);
+      exact transport base(a) along same in Q;
     }
     let fromList : (exists i : Fin(n). roots(i) = x) -> Q(x) {
       intro w;
       obtain (i, same) := w;
-      exact along Q by same from members(i);
+      exact transport members(i) along same in Q;
     }
     exact match witness_ return Q(x) {
       left w => fromBase(w);

@@ -92,7 +92,7 @@ def zero_fiber(n : Nat) := induction n as k return U0 {
     succ previous => Void;
   };
 
-def zero_not_successor(n : Nat, p : 0 = succ(n)) := along zero_fiber by p from tt;
+def zero_not_successor(n : Nat, p : 0 = succ(n)) := transport tt along p in zero_fiber;
 
 def nat_equal_decidable(n : Nat) := induction n as k return (forall m : Nat. Decidable(U0, k = m)) {
     zero => fun (m : Nat) => induction m as j return Decidable(U0, 0 = j) {
@@ -125,11 +125,14 @@ def sign_fiber(z : Z) := match z return U0 {
     right n => Void;
   };
 
-def signs_differ(n, m : Nat, p : nonnegative(n) = negative(m)) := along sign_fiber by p from tt;
+def signs_differ(n, m : Nat, p : nonnegative(n) = negative(m)) :=
+  transport tt along p in sign_fiber;
 
 def integer_equal_decidable(x : Z) := match x as a return (forall y : Z. Decidable(U0, a = y)) {
     left n => fun (y : Z) => match y as b return Decidable(U0, nonnegative(n) = b) {
-      left m => match nat_equal_decidable(n, m) return Decidable(U0, nonnegative(n) = nonnegative(m)) {
+      left m => match nat_equal_decidable(n, m) return Decidable(
+        U0, nonnegative(n) = nonnegative(m)
+      ) {
         left p => typed(
           Decidable(U0, nonnegative(n) = nonnegative(m)), left(cong(nonnegative, typed((n = m), p)))
         );

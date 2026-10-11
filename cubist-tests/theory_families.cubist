@@ -100,7 +100,7 @@ def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(A, 
 
 theory Lifted(U < UU0) {
   F(to_ : Nat) : set U;
-  lift(to_ : Nat, x : F(to_)) : F(to_);
+  lift_(to_ : Nat, x : F(to_)) : F(to_);
 }
 
 def lifted_compose := Lifted.Hom.compose;

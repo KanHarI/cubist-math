@@ -280,7 +280,8 @@ def sample_weighted_sum_bound(
   FieldMagnitudeBound(
     F, negF, lt,
     sample_sum(
-      C, F, zero, addF, (fun (a, b, t : C) => mulF(edge(a, b, t), other(a, b, t))), n, vertices, tags
+      C, F, zero, addF, (fun (a, b, t : C) => mulF(edge(a, b, t), other(a, b, t))), n, vertices,
+      tags
     ), mulF(delta, length)
   ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
@@ -297,27 +298,28 @@ def sample_weighted_sum_bound(
       C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, products, radii, n, vertices,
       tags, bounds
     );
-  let factors : sample_sum(C, F, zero, addF, radii, n, vertices, tags) = mulF(delta, totalWeight) := sym(
-    sample_sum_map(
-      C, F, zero, addF, F, zero, addF, mulF(delta),
-      ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta),
-      (fun (x, y : F) => ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, x, y)), weight,
-      n, vertices, tags
-    )
-  );
+  let factors : sample_sum(C, F, zero, addF, radii, n, vertices, tags) = mulF(delta, totalWeight) :=
+    sym(
+      sample_sum_map(
+        C, F, zero, addF, F, zero, addF, mulF(delta),
+        ring_mul_zero(F, zero, one, addF, mulF, negF, ring, delta),
+        (fun (x, y : F) => ring_distribute(F, zero, one, addF, mulF, negF, ring, delta, x, y)),
+        weight, n, vertices, tags
+      )
+    );
   let factored :=
-    along FieldMagnitudeBound(
+    transport total along factors in FieldMagnitudeBound(
       F, negF, lt, sample_sum(C, F, zero, addF, products, n, vertices, tags)
-    ) by factors from total;
+    );
   let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
   let leftScaled :=
-    along((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta)))) by ring_mul_comm(
+    transport rightScaled along ring_mul_comm(
       F, zero, one, addF, mulF, negF, ring, totalWeight, delta
-    ) from rightScaled;
+    ) in ((fun (v : F) => FieldLe(F, lt, v, mulF(length, delta))));
   let grows :=
-    along FieldLe(F, lt, mulF(delta, totalWeight)) by ring_mul_comm(
-      F, zero, one, addF, mulF, negF, ring, length, delta
-    ) from leftScaled;
+    transport leftScaled along ring_mul_comm(F, zero, one, addF, mulF, negF, ring, length, delta) in FieldLe(
+      F, lt, mulF(delta, totalWeight)
+    );
   exact field_magnitude_enlarge(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     sample_sum(C, F, zero, addF, products, n, vertices, tags), mulF(delta, totalWeight),

@@ -8,8 +8,8 @@ def QuotientComparison(A : U1, relation : A -> A -> U0, q, r : SetQuotient(A, re
   FieldIff(quotient_predicate(A, relation, q, a), quotient_predicate(A, relation, r, a));
 
 def quotient_comparison_prop(
-  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
-  q, r : SetQuotient(A, relation)
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), q,
+  r : SetQuotient(A, relation)
 ) :
   FieldProp(QuotientComparison(A, relation, q, r)) {
   let P := quotient_predicate(A, relation, q);
@@ -39,14 +39,14 @@ def quotient_path_comparison(
   intro a;
   let family := fun (s : SetQuotient(A, relation)) => quotient_predicate(A, relation, s, a);
   exact (
-    (fun (x : family(q)) => along family by p from x),
-    (fun (y : family(r)) => along family by sym(p) from y)
+    (fun (x : family(q)) => transport x along p in family),
+    (fun (y : family(r)) => transport y along sym(p) in family)
   );
 }
 
 def quotient_comparison_path(
-  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation),
-  q, r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
+  A : U1, relation : A -> A -> U0, laws : EquivalenceRelation(A, relation), q,
+  r : SetQuotient(A, relation), same : QuotientComparison(A, relation, q, r)
 ) :
   q = r {
   exact quotient_ext(

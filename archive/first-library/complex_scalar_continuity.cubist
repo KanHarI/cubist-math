@@ -7,8 +7,8 @@ def complex_scaled_close(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), coefficient : Complex(F), r, s : F,
-  bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x, y : Complex(F),
-  delta, epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
+  bounded : ComplexRectangleBound(F, negF, lt, coefficient, r, s), x, y : Complex(F), delta,
+  epsilon : F, close : ComplexClose(F, addF, lt, x, y, delta),
   small : lt(mulF(delta, addF(r, s)), epsilon)
 ) :
   ComplexClose(
@@ -41,21 +41,23 @@ def complex_scaled_close(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, difference, coefficient, delta, r,
     s, differenceBound, bounded
   );
-  let recover : addC(y, difference) = x := trans(
-    sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, negC(y), x)),
+  let recover : addC(y, difference) = x :=
     trans(
-      cong(
-        (fun (v : Complex(F)) => addC(v, x)),
-        ring_add_inverse_right(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y)
-      ), ring_add_zero(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, x)
-    )
-  );
-  let computes : mulC(x, coefficient) = addC(mulC(y, coefficient), mulC(difference, coefficient)) := trans(
-    cong((fun (v : Complex(F)) => mulC(v, coefficient)), sym(recover)),
-    ring_distribute_left(
-      Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, difference, coefficient
-    )
-  );
+      sym(ring_add_assoc(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, negC(y), x)),
+      trans(
+        cong(
+          (fun (v : Complex(F)) => addC(v, x)),
+          ring_add_inverse_right(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y)
+        ), ring_add_zero(Complex(F), zeroC, oneC, addC, mulC, negC, ringC, x)
+      )
+    );
+  let computes : mulC(x, coefficient) = addC(mulC(y, coefficient), mulC(difference, coefficient)) :=
+    trans(
+      cong((fun (v : Complex(F)) => mulC(v, coefficient)), sym(recover)),
+      ring_distribute_left(
+        Complex(F), zeroC, oneC, addC, mulC, negC, ringC, y, difference, coefficient
+      )
+    );
   let radius := mulF(delta, addF(r, s));
   exact (
     field_magnitude_perturbation_close(
@@ -106,11 +108,11 @@ def complex_scalar_uniform_radius(
     );
   let length := addF(r, s);
   let nonnegativeLength :=
-    along((fun (v : F) => FieldLe(F, lt, v, length))) by ring_add_zero(
-      F, zero, one, addF, mulF, negF, ring, zero
-    ) from order_le_add(
+    transport order_le_add(
       F, zero, one, addF, mulF, negF, lt, ring, arithmetic, zero, r, zero, s, nonnegativeR,
       nonnegativeS
+    ) along ring_add_zero(F, zero, one, addF, mulF, negF, ring, zero) in (
+      (fun (v : F) => FieldLe(F, lt, v, length))
     );
   obtain (delta, positiveDelta, small) := field_small_scaled_radius(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,

@@ -93,8 +93,8 @@ def distinct_splitting_to_closed(
         polynomial_map_composition(K, R, T, d, h, p),
         cong((fun (i : FieldEmbedding(K, T)) => polynomial_map(K, T, i, p)), tower)
       );
-    exact along((fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n))) by same from distinct_polynomial_splitting_map(
-      R, T, h, q, n, factor
+    exact transport distinct_polynomial_splitting_map(R, T, h, q, n, factor) along same in (
+      (fun (s : Polynomial(T)) => DistinctPolynomialSplitting(T, s, n))
     );
   }
   exact mere_map(

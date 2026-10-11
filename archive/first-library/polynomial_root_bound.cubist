@@ -7,7 +7,9 @@ def RootFamily(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
   exists roots : Fin(n) -> af_carrier(K). Injective(Fin(n), af_carrier(K), roots)
   and (forall i : Fin(n). PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)));
 
-def linear_factor_eval_nonzero(K : AlgebraicField, r, x : af_carrier(K), different : (x = r) -> Void) :
+def linear_factor_eval_nonzero(
+  K : AlgebraicField, r, x : af_carrier(K), different : (x = r) -> Void
+) :
   FieldNonzero(
     af_carrier(K), af_operations(K),
     polynomial_eval(K, K, field_embedding_identity(K), polynomial_linear_factor(K, r), x)
@@ -31,11 +33,11 @@ def root_descends_to_factor_quotient(
   let E := fun (s : Polynomial(K)) => polynomial_eval(K, K, e, s, x);
   let a := E(polynomial_linear_factor(K, r));
   let productZero : field_mul(K, a, E(q)) = field_zero(K) := with unfolding [] {
-    trans(
-      sym(polynomial_eval_mul(K, K, e, polynomial_linear_factor(K, r), q, x)),
-      trans(sym(cong(E, factor)), root)
-    )
-  };
+      trans(
+        sym(polynomial_eval_mul(K, K, e, polynomial_linear_factor(K, r), q, x)),
+        trans(sym(cong(E, factor)), root)
+      )
+    };
   exact vector_scale_injective(
     K, ScalarSpace(K), a, linear_factor_eval_nonzero(K, r, x, different), E(q), field_zero(K),
     trans(productZero, sym(scalar_mul_zero(K, a)))
@@ -79,8 +81,8 @@ def polynomial_constant_no_root_family(
   obtain (roots, distinct, allRoots) := family;
   let r := roots(typed(Fin(1), left(tt)));
   let support :=
-    along SeriesSupport(K, polynomial_coefficients(K, p)) by degree from polynomial_cutoff_support(
-      K, p
+    transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(
+      K, polynomial_coefficients(K, p)
     );
   exact polynomial_leading_nonzero(
     K, p, 0, degree,
@@ -152,5 +154,7 @@ def polynomial_root_bound(
   obtain (d, degree) := polynomial_nonzero_degree(K, p, nonzero);
   let number := cong((fun (n : Nat) => succ(natural_predecessor(n))), degree);
   intro family;
-  exact polynomial_root_bound_degree(K, d, p, degree, along RootFamily(K, p) by number from family);
+  exact polynomial_root_bound_degree(
+    K, d, p, degree, transport family along number in RootFamily(K, p)
+  );
 }

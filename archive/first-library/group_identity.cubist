@@ -24,8 +24,8 @@ def group_inverse_unique(
 }
 
 def group_inverse_evidence_prop(
-  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A,
-  p, q : (exists y : A. GroupInverseLaws(A, unit, multiply, x, y))
+  A : U0, unit : A, multiply : A -> A -> A, laws : GroupLaws(A, unit, multiply), x : A, p,
+  q : (exists y : A. GroupInverseLaws(A, unit, multiply, x, y))
 ) :
   p = q {
   let y := sigma_first(A, GroupInverseLaws(A, unit, multiply, x), p);
@@ -110,7 +110,8 @@ def group_laws_prop(A : U0, unit : A, multiply : A -> A -> A, p, q : GroupLaws(A
   )(p, q);
 }
 
-def group_carrier_transport(A, B : U0, p : A = B, x : A) := along((fun (T : U0) => T)) by p from x;
+def group_carrier_transport(A, B : U0, p : A = B, x : A) :=
+  transport x along p in ((fun (T : U0) => T));
 
 // Multiplication-preserving equivalences preserve units; this is derived, not required.
 def group_isomorphism_preserves_unit(
