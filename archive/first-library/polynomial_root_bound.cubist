@@ -79,10 +79,9 @@ def polynomial_constant_no_root_family(
   Void {
   obtain (roots, distinct, allRoots) := family;
   let r := roots(typed(Fin(1), left(tt)));
-  let support :=
-    along SeriesSupport(K, polynomial_coefficients(K, p)) by degree from polynomial_cutoff_support(
-      K, p
-    );
+  let support := transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(
+    K, polynomial_coefficients(K, p)
+  );
   exact polynomial_leading_nonzero(
     K, p, 0, degree,
     trans(sym(support_one_eval(K, p, support, r)), allRoots(typed(Fin(1), left(tt))))
@@ -152,5 +151,7 @@ def polynomial_root_bound(
   obtain (d, degree) := polynomial_nonzero_degree(K, p, nonzero);
   let number := cong((fun (n : Nat) => succ(natural_predecessor(n))), degree);
   intro family;
-  exact polynomial_root_bound_degree(K, d, p, degree, along RootFamily(K, p) by number from family);
+  exact polynomial_root_bound_degree(
+    K, d, p, degree, transport family along number in RootFamily(K, p)
+  );
 }

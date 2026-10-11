@@ -23,8 +23,8 @@ with fixtures and comparison rules in the
 normal `npm test` suite. Open contracts are explicit expected failures:
 their structured observations must match the recorded defect, unexpected
 outcomes or passes are errors, and TODOs do not count as completed
-implementation. Each variant has its own activation state. G12's E845 source range is tracked
-independently from its value-call contract.
+implementation. Each variant has its own activation state. G12's E845 source
+range is tracked independently from its value-call contract.
 
 For the follow-up review, G8–G12 were also independently reproduced at
 `00d4ecce`, main `cb525f07`, and the earlier #188 head `9c93220d` with the
@@ -173,6 +173,8 @@ domains, dependent indices and preservation fields. Generate and check
 Hom, identity, composition and supported Iso declarations at the resulting
 universe. The issue is in the frontend's universe calculation; raising all
 generated declarations to an arbitrary large universe is not the remedy.
+The executable G2 pins both: clients use `op`'s preservation field, a U0
+model's Hom must live in U1, and stating it in U0 must be refused.
 Start in [morphisms.mjs](../../web/cubist/morphisms.mjs).
 
 ## G3: dependence on laws is mistaken for a fixed argument
@@ -222,8 +224,8 @@ theory T(U < UU0) {
 cannot find evidence that `m.M` is a set. That evidence is already a
 checked field of the model. An inherited copy has the same failure.
 Nesting is not required: replacing both `cons` clauses with the flat
-`cons(b, rest) => c` also fails with E546, for `Bits.squash`. Both forms
-are pinned as separate G4 expected failures.
+`cons(b, rest) => op(op(c))` also fails with E546, for `Bits.squash`. Both
+forms are pinned as separate G4 expected failures.
 
 Expected: flat and nested clause elaboration receives the applicable checked
 model evidence, transformed with its context. The required proof is still

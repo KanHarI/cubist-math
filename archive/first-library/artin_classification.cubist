@@ -22,7 +22,7 @@ def outside_subgroup_extra_embedding_distinct(
     intro j, same;
     let h := f(j);
     let equal := galois_field_embedding_injective(K, E, g, subgroup_value(G, H, h), same);
-    exact outside(along subgroup_members(G, H) by sym(equal) from subgroup_evidence(G, H, h));
+    exact outside(transport subgroup_evidence(G, H, h) along sym(equal) in subgroup_members(G, H));
   }
   exact fin_prepend_injective(
     FieldEmbedding(F, F), n, galois_field_embedding(K, E, g), tail,
