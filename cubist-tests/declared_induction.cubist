@@ -1,6 +1,6 @@
 // `induction` on any declared type: a clause per constructor, as in match,
-// whose names are the constructor's arguments and then, optionally, an
-// induction hypothesis for each recursive argument. Natural numbers keep
+// whose names are the constructor's fields and then, optionally after with,
+// an induction hypothesis for each recursive field. Natural numbers keep
 // their own form, zero => …; succ h => …;, as well. From
 // tests/induction.test.mjs. The lists are the library's, whose length,
 // concatenation and laws are proved by induction too.
@@ -8,11 +8,11 @@ import nat;
 import lists;
 use nat;
 
-// An induction expression names its hypotheses after the arguments: the sum
+// An induction expression names its hypotheses after with: the sum
 // of a list of numbers.
 def sum(xs : List(U0, Nat)) : Nat := induction xs return Nat {
     nil => 0;
-    cons(head, tail, rest) => head + rest;
+    cons(head, tail) with rest => head + rest;
   };
 
 // The motive may depend on the value, so the hypothesis is the statement for
@@ -22,7 +22,7 @@ def sum_append(xs, ys : List(U0, Nat)) :
     append(v, ys)
   ) = sum(v) + sum(ys) {
     nil => refl(sum(ys));
-    cons(head, tail, ih) => trans(
+    cons(head, tail) with ih => trans(
       cong(fun (m : Nat) => head + m, ih), sym(nat_add_assoc(head, sum(tail), sum(ys)))
     );
   };
@@ -49,7 +49,7 @@ def length_append_nil(xs : List(U0, Nat)) :
     nil => {
       rfl;
     }
-    cons(head, tail, ih) => {
+    cons(head, tail) with ih => {
       exact cong(succ, ih);
     }
   }
@@ -58,7 +58,7 @@ def length_append_nil(xs : List(U0, Nat)) :
 // Natural numbers take the general form and their own, which agree.
 def general(n : Nat) : Nat := induction n return Nat {
     zero => 0;
-    succ(k, h) => succ(succ(h));
+    succ(k) with h => succ(succ(h));
   };
 
 def own(n : Nat) : Nat := induction n return Nat {
@@ -93,12 +93,12 @@ inductive Tree : U0 {
 // The hypothesis for children is a function: the result for each child.
 def leftmost_depth(t : Tree) : Nat := induction t return Nat {
     leaf => 0;
-    node(children, below) => succ(below(0));
+    node(children) with below => succ(below(0));
   };
 
 // Refusals and the warning, each with its code.
-// Error: E557: cons takes 2 arguments here, then its induction hypothesis if you name them: cons(…)
-//   with 2 or 3 names.
+// Error: E557: cons takes 2 constructor fields in parentheses; name its 1 induction hypothesis
+//   after with, or omit with.
 def too_few(xs : List(U0, Nat)) : Nat := induction xs return Nat {
     nil => 0;
     cons(head) => 1;
@@ -115,7 +115,7 @@ def after(n : Nat) : Nat {
     zero => {
       exact 0;
     }
-    succ(k, h) => {
+    succ(k) with h => {
       exact h;
     }
   }
@@ -126,5 +126,5 @@ def after(n : Nat) : Nat {
 //   ….
 def unused(xs : List(U0, Nat)) : Nat := induction xs as v return Nat {
     nil => 0;
-    cons(head, tail, ih) => ih;
+    cons(head, tail) with ih => ih;
   };

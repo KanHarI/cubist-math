@@ -122,6 +122,8 @@ export const diagnostics = [
   ["E194", "Expected '}' to close the box."],
   ["E195", "Cannot locate historical transport operands."],
   ["E196", "Historical over migration requires a single exact expression."],
+  ["E197", "Induction hypotheses after with are only available in induction clauses."],
+  ["E198", "An induction clause takes one constructor pattern."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -404,7 +406,7 @@ export const diagnostics = [
   ["E554", "… is a …-dimensional path of the matched type, not an element: call … on it at its dimensions, as …(……)."],
   ["E555", "… is an element of the matched type, not a path: call …(…) without @."],
   ["E556", "Internal elaboration error: the recursive result of … takes fewer hypotheses."],
-  ["E557", "… takes … argument… here, then … if you name them: …(…) with … or … names."],
+  ["E557", "… takes … constructor field… in parentheses; name its … induction … after with, or omit with."],
   ["E558", "This clause has … pattern…; the match takes apart … value…."],
   ["E559", "This clause is never reached: the clauses before it take every case it would."],
   ["E560", "… is not of a declared type: its patterns are variables or _."],
@@ -420,6 +422,8 @@ export const diagnostics = [
   ["E570", "… is bound twice in this clause: name each variable once."],
   ["E575", "… is no h-level rule: …."],
   ["E576", "… is already an h-level rule in this module."],
+  ["E577", "Keep only the … constructor fields of … in parentheses; name induction hypotheses after with."],
+  ["E578", "… supplies … induction hypotheses; with must name all of them, or be omitted."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
   ["E602", "Only LEM and Choice have rebuilt truncation signatures."],

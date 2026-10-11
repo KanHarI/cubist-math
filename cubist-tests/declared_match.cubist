@@ -598,9 +598,9 @@ def seven_by_statement :
 }
 
 // Refused: the recursive call passes r unchanged, but at m it must have type Rep(m).
-// Error: E606: Type mismatch: found N and (induction m return U0 { zero => Unit; succ(m1, m_rec) =>
-//   N and m_rec; }), expected induction m return U0 { zero => Unit; succ(m1, m_rec) => N and m_rec;
-//   }.
+// Error: E606: Type mismatch: found N and (induction m return U0 { zero => Unit; succ(m1) with
+//   m_rec => N and m_rec; }), expected induction m return U0 { zero => Unit; succ(m1) with m_rec =>
+//   N and m_rec; }.
 def unchanged(n : N, r : Rep(n)) : N {
   match n {
     zero => {

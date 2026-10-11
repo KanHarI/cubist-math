@@ -54,6 +54,15 @@ Every applicable release extends the canonicity fixture; results with no
 non-computing dependencies use `computable` and closed `evaluate` examples.
 A new syntax form must elaborate completely through the instruction driver.
 
+## Pending syntax change
+
+[Separate induction hypothesis binders](induction-hypothesis-syntax.md) is
+implemented in this change, pending merge: `c(fields) with hypotheses` in
+expressions and proof blocks, compatible reading of appended hypotheses,
+checked migration, updated printing and maintained library sources. Its
+acceptance evidence is `tests/induction-hypotheses.test.mjs` and the induction
+and reference regressions; no kernel rules change.
+
 ## Current status
 
 The cells name packages; each package's row below holds its details and

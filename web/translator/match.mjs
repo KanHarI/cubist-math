@@ -199,7 +199,7 @@ function constructorClauses(n, { inductive, info }, locate) {
     const shape = info.constructors[k];
     const constructor = k < inductive.constructors.length ? inductive.constructors[k]
       : { order: Array.from({ length: shape.data + shape.positions }, (_, i) => i), arity: shape.data + shape.positions, dims: shape.dimensions };
-    return { source: byIndex.get(k), name, index: k, constructor, shape,
+    return { source: byIndex.get(k), name, index: k, constructor, shape, induction: keyword(n) === "induction",
       // A trailing proof supplies declared path clauses. The generated
       // squash remains automatic; hlevel hints can help generate it too.
       obligationProof: k !== generated || n.obligationProof?.body?.[0]?.kind === "hlevel" ? n.obligationProof : null,
@@ -367,24 +367,28 @@ function branch(translator, motive, value, scope, inner, built) {
 
 // A clause λ (data, positions, recursive results). ⟨dims⟩ body, at its
 // clause type: the source names its arguments in their declared order, and
-// its dimensions after them. In an induction, the names after the arguments
+// its dimensions after them. In an induction, the names after with
 // are the recursive results, one for each recursive argument in order: the
 // induction hypotheses. `body` elaborates the clause's body at its scope and
 // type, given the constructor there.
-function clause(translator, scope, { source, name, index, constructor, shape, obligationProof, node }, instance, clauseType, recursion, body) {
+function clause(translator, scope, { source, name, index, constructor, shape, obligationProof, node, induction }, instance, clauseType, recursion, body) {
   if (!source) return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   const locate = (error, node = source.constructor) => scope.unit.locate(error, node);
-  const induction = node?.kind === "induction" || node?.induction === true;
   const named = source.args ?? [];
-  const hypotheses = induction && shape.positions && named.length === constructor.arity + shape.positions
+  const legacyHypotheses = induction && !source.hypotheses && shape.positions && named.length === constructor.arity + shape.positions
     ? named.slice(constructor.arity) : [];
-  const args = named.slice(0, named.length - hypotheses.length);
+  const hypotheses = source.hypotheses ?? legacyHypotheses;
+  const args = named.slice(0, named.length - legacyHypotheses.length);
+  if (source.hypotheses && args.length > constructor.arity)
+    throw locate(Error(`Keep only the ${constructor.arity} constructor fields of ${name} in parentheses; name induction hypotheses after with.`), source.withToken);
   if (args.length !== constructor.arity) {
     const s = constructor.arity === 1 ? "" : "s";
     throw locate(Error(induction && shape.positions
-      ? `${name} takes ${constructor.arity} argument${s} here, then ${shape.positions === 1 ? "its induction hypothesis" : `its ${shape.positions} induction hypotheses`} if you name them: ${name}(…) with ${constructor.arity} or ${constructor.arity + shape.positions} names.`
+      ? `${name} takes ${constructor.arity} constructor field${s} in parentheses; name its ${shape.positions} induction ${shape.positions === 1 ? "hypothesis" : "hypotheses"} after with, or omit with.`
       : `${name} takes ${constructor.arity} argument${s} here: ${name}(…) with ${constructor.arity} names.`));
   }
+  if (source.hypotheses && hypotheses.length !== shape.positions)
+    throw locate(Error(`${name} supplies ${shape.positions} induction hypotheses; with must name all of them, or be omitted.`), source.withToken);
   // A path clause is written as the point it covers, the constructor at its
   // coordinates: loop @ i =>.
   const spelled = `${name}${constructor.arity ? "(…)" : ""}${["i", "j", "k", "l"].slice(0, constructor.dims).map(d => ` @ ${d}`).join("")} => …`;
@@ -423,7 +427,8 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   // Each position's recursive result, named by its induction hypothesis
   // when the clause gives one.
   for (const [k, { variable, token, arity, depth }] of positions.entries())
-    results.set(variable, { result: bind(hypotheses[k] ?? null, hypotheses[k]?.text ?? `${token.text}_rec`), arity, depth });
+    results.set(variable, { result: bind(hypotheses[k] ? { ...hypotheses[k], role: "induction hypothesis" } : null,
+      hypotheses[k]?.text ?? `${token.text}_rec`), arity, depth });
   // The dimensions, each a path of the result.
   const lines = [];
   for (const token of source.coordinates) {
@@ -443,7 +448,7 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   // first value must not be captured. A clause name of its own shadows it.
   if (recursion) {
     const parameter = recursion.params[recursion.index];
-    if (![...args, ...source.coordinates].some(token => token.text === parameter))
+    if (![...args, ...hypotheses, ...source.coordinates].some(token => token.text === parameter))
       inner = inner.alias(parameter, rebind(translator, scope.env.get(parameter), built));
   }
   let term = body(inner, type, built);
