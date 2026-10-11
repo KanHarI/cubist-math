@@ -42,11 +42,11 @@ def nonnegative_half_from_sum(
   intro belowZero;
   obtain (forward, backward) := translate(half, zero, half);
   let belowHalf :=
-    along lt(addF(half, half)) by ring_add_zero(F, zero, one, addF, mulF, negF, ring, half) from forward(
-      belowZero
+    transport forward(belowZero) along ring_add_zero(F, zero, one, addF, mulF, negF, ring, half) in lt(
+      addF(half, half)
     );
   let sumNegative := transitive(addF(half, half), half, zero, belowHalf, belowZero);
-  exact nonnegativeEpsilon(along ((fun (v : F) => lt(v, zero))) by sum from sumNegative);
+  exact nonnegativeEpsilon(transport sumNegative along sum in ((fun (v : F) => lt(v, zero))));
 }
 
 // Construct a midpoint in the interval subtype, with proofs that both
@@ -95,9 +95,10 @@ def interval_midpoint(
       cong(addF(x), halfSum(width)), difference_add_back(F, zero, one, addF, mulF, negF, ring, x, y)
     )
   );
-  let rightBound := along FieldLe(F, lt, m) by completes from order_le_add_nonnegative(
-    F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
-  );
+  let rightBound :=
+    transport order_le_add_nonnegative(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, m, h, nonnegativeHalf
+    ) along completes in FieldLe(F, lt, m);
   obtain (lowerA, upperA) := field_interval_bounds(F, zero, one, lt, a);
   obtain (lowerB, upperB) := field_interval_bounds(F, zero, one, lt, b);
   let midpoint : FieldUnitInterval(F, zero, one, lt) := (

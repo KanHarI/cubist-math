@@ -97,5 +97,5 @@ def field_zero_not_one(
   (zero = one) -> Void {
   obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro same;
-  exact irreflexive(zero, along ((fun (x : F) => lt(zero, x))) by sym(same) from positive);
+  exact irreflexive(zero, transport positive along sym(same) in ((fun (x : F) => lt(zero, x))));
 }
