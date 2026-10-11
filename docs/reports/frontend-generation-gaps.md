@@ -135,6 +135,8 @@ domains, dependent indices and preservation fields. Generate and check
 Hom, identity, composition and supported Iso declarations at the resulting
 universe. The issue is in the frontend's universe calculation; raising all
 generated declarations to an arbitrary large universe is not the remedy.
+The executable G2 pins both: clients use `op`'s preservation field, a U0
+model's Hom must live in U1, and stating it in U0 must be refused.
 Start in [morphisms.mjs](../../web/cubist/morphisms.mjs).
 
 ## G3: dependence on laws is mistaken for a fixed argument

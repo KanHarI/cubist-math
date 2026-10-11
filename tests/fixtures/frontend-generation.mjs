@@ -9,8 +9,9 @@ def leaked_c := c;
 def original : Unit := N;
 def independent : Unit := tt;`,
     clients: ["original", "independent"],
-    originalType: "Unit", symbol: "N", invariantClients: ["independent"], absentOutputs: [],
-    refusedClients: {leaked_c: "E343"},
+    originalType: "Unit", symbol: "N", absentOutputs: [],
+    diagnostic: {name: "N", cause: {duplicate: "N"}},
+    refusedClients: {leaked_c: {code: "E343", cause: {untranslated: "c"}}},
   },
   G2: {
     phase: "FG3", contract: "fixed argument domains contribute to generated universes",
@@ -20,21 +21,36 @@ def identity(S : T(U0)) : T.Hom(S, S) := T.Hom.id(S);
 def computation(S : T(U0), x : S.M) :
   T.Hom.compose(identity(S), identity(S)).map(x) = x { rfl; }
 def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);
+def preserves(S, R : T(U0), f : T.Hom(S, R), A : U0, x : A) :
+  f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
+def level(S : T(U0)) : U1 := T.Hom(S, S);
+def lowered(S : T(U0)) : U0 := T.Hom(S, S);
 def identity_u1(S : T(U1)) : T.Hom(S, S) := T.Hom.id(S);
 def computation_u1(S : T(U1), x : S.M) :
   T.Hom.compose(identity_u1(S), identity_u1(S)).map(x) = x { rfl; }
-def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);`,
-    clients: ["T.Hom", "identity", "computation", "iso", "identity_u1", "computation_u1", "iso_u1"],
+def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);
+def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :
+  f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
+def level_u1(S : T(U1)) : U1 := T.Hom(S, S);`,
+    // The fixed domain's operation keeps its preservation field, and the
+    // public Hom type lives in U1: a blanket larger universe or lowering fails.
+    clients: ["T.Hom", "identity", "computation", "iso", "preserves", "level",
+      "identity_u1", "computation_u1", "iso_u1", "preserves_u1", "level_u1"],
+    refusedClients: {lowered: {code: "E606", cause: {found: "U1", expected: "U0"}}},
   },
   G3: {
     phase: "FG2", contract: "unsupported law-dependent transport leaves a usable theory and no partial Hom family",
     source: `import hlevels;
 theory T(U < UU0) { M : set U; c : M; law l : c = c; op(p : l = l) : M; }
 def usable(S : T(U0)) : S.M := S.op(refl(S.l));
-def unsupported(S : T(U0)) := T.Hom.id(S);`,
+def unsupported(S : T(U0)) := T.Hom.id(S);
+def unsupported_iso(S : T(U0)) := T.Iso.id(S);`,
     clients: ["T", "T.make", "T.op", "usable"],
-    absentOutputFamilies: ["T.Hom", "T.Iso"], refusedClients: {unsupported: "E817"},
-    refusalWords: ["op", "p", "l"],
+    absentOutputFamilies: ["T.Hom", "T.Iso"],
+    refusedClients: {
+      unsupported: {code: "E817", cause: {operation: "op", argument: "p", law: "l"}},
+      unsupported_iso: {code: "E817", cause: {operation: "op", argument: "p", law: "l"}},
+    },
   },
   G4: {
     phase: "FG4", contract: "derived matches retain checked carrier evidence (nested clauses)",
@@ -48,7 +64,7 @@ def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) { rfl; }
 def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) { rfl; }
 def empty_computation(S : T(U0)) : S.value(nil) = S.c { rfl; }
 def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c { rfl; }`,
-    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: {wrong: "E606"},
+    clients: ["T.value", "computation", "empty_computation", "off_computation"], refusedClients: {wrong: {code: "E606"}},
   },
   G5: {
     phase: "FG5", contract: "grouped-binder advice preserves supported calls and generated interfaces",
@@ -78,8 +94,10 @@ def independent : Unit := tt;`,
     phase: "FG4", contract: "a wildcard mismatch retains its endpoints and written body range",
     source: `import hlevels;
 inductive T : set U0 { t0; t1; seg : t0 = t1; }
-def h(x : T) : T := match x { t0 => t0; _ => t1; };`,
-    diagnostic: {name: "h", code: "E606", found: "t1 = t1", expected: "t0 = t1",
+def h(x : T) : T := match x { t0 => t0; _ => t1; };
+def later : Unit := tt;`,
+    // The later declaration gives the body range an end inside the source.
+    diagnostic: {name: "h", code: "E606", cause: {found: "t1 = t1", expected: "t0 = t1"},
       scope: ":= match x { t0 => t0; _ => t1; };", token: "t1"},
   },
   G9: {
@@ -100,7 +118,7 @@ theory T(U < UU0) { M : set U; c : M;
   def k(n : Nat) : M := c;
   law l(n : Nat) : (match n return M { zero => c; succ(c) => k(c); }) = c;
 }`,
-    diagnostic: {name: "T", code: "E871", conflict: "succ(c) => k(c)", binder: "c", binderOccurrence: 0, call: "k(c)"},
+    diagnostic: {name: "T", code: "E871", cause: {helper: "k", field: "c"}, conflict: "succ(c) => k(c)", binder: "c", binderOccurrence: 0, call: "k(c)"},
   },
   G11: {
     phase: "FG2", contract: "complete declaration telescopes protect helper fields from caller parameters",
@@ -111,7 +129,7 @@ theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M;
 }
 def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));
 def captured(S : T(U0), x : S.M) : S.kk(x) = S.op(x, x) := refl(S.op(x, x));`,
-    clients: ["intended"], refusedClients: {captured: "E606"},
+    clients: ["intended"], refusedClients: {captured: {code: "E606"}},
   },
   G12: {
     phase: "FG2/FG4/FG5", contract: "ordinary calls to earlier recursive values check and compute",
@@ -124,7 +142,7 @@ def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) { rfl; }
 def computation2(S : T(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) { rfl; }
 def base(S : T(U0)) : S.twice(zero) = S.op(S.c) { rfl; }
 def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) { rfl; }`,
-    clients: ["T.iter", "T.twice", "computation", "computation2", "base"], refusedClients: {wrong: "E606"},
+    clients: ["T.iter", "T.twice", "computation", "computation2", "base"], refusedClients: {wrong: {code: "E606"}},
   },
   "G12-range": {
     phase: "FG5", contract: "recursive type-unfolding refusals cover the responsible original reference",
@@ -133,13 +151,13 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
   def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };
   law nope(n : Nat) : iter(n) = c;
 }`,
-    diagnostic: {name: "T", code: "E845", scope: "law nope(n : Nat) : iter(n) = c;", token: "iter"},
+    diagnostic: {name: "T", code: "E845", cause: {recursive: "iter", context: "field type"}, scope: "law nope(n : Nat) : iter(n) = c;", token: "iter"},
   },
 };
 
 const collisionVariants = [
   {
-    id: "G1-initial", refusedClients: {leaked_one: "E343", leaked_mul: "E343"}, absentOutputs: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
+    id: "G1-initial", refusedClients: {leaked_one: {code: "E343", cause: {untranslated: "N.one"}}, leaked_mul: {code: "E343", cause: {untranslated: "N.mul"}}}, absentOutputs: ["N.model", "N.fold_map", "N.fold"], contract: "an initial-model duplicate preserves the first definition",
     source: `import hlevels; import algebra;
 def N : Unit := tt;
 initial N : Monoid(U0);
@@ -240,7 +258,6 @@ theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M;
 def captured(${binders}) : ${model}.kk(${variant.args}) = ${op}(x, x) := refl(${op}(x, x));`;
 }
 
-
 const recursiveVariants = [
   {
     id: "G12-inherited", contract: "inherited calls to earlier recursive values check and compute",
@@ -281,20 +298,19 @@ theory T(U < UU0) { M : set U; c : M; op(x : M) : M;
 }
 def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) { rfl; }
 def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) { rfl; }`,
-  clients: ["intended"], refusedClients: {captured: "E606"},
+  clients: ["intended"], refusedClients: {captured: {code: "E606"}},
 };
 
 const kinds = {
-  G1: "collision", G2: "completion", G3: "unsupported-family", G4: "evidence",
+  G1: "collision", G2: "completion", G3: "completion", G4: "evidence",
   G5: "lint", G6: "dependency", G8: "wildcard", G9: "links", G10: "capture-range",
   G11: "capture", G12: "completion", "G12-range": "refusal-range",
 };
 
-const caseOf = (group, variant = {}) => {
-  const id = variant.id ?? group;
-  return {id, group: group === "G12-range" ? "G12" : group, kind: kinds[group],
-    ...definitions[group], ...variant};
-};
+// Variants never share nested expectations with their group or each other.
+// A case is its contract only.
+const caseOf = (group, variant = {}) => structuredClone({id: variant.id ?? group,
+  group: group === "G12-range" ? "G12" : group, kind: kinds[group], ...definitions[group], ...variant});
 export const cases = [
   ...Object.keys(definitions).map(group => caseOf(group)),
   ...collisionVariants.map(variant => caseOf("G1", variant)),

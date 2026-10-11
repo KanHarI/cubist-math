@@ -19,15 +19,15 @@ def finite_spanning_basis_size_bound(
   let X := FiniteLinearLift(K, C, V, f, m, h);
   let bound : X -> le(m, n) {
     intro witness_;
-    obtain (lift, commute) := witness_;
-    let injective : CoordinateInjection(K, m, n, lift) {
+    obtain (lift_, commute) := witness_;
+    let injective : CoordinateInjection(K, m, n, lift_) {
       intro x, y, same;
       exact linear_iso_injective(
         K, D, V, basis, x, y,
         trans(sym(commute(x)), trans(cong(linear_map(K, C, V, f), same), commute(y)))
       );
     }
-    exact coordinate_injection_bound(K, n, m, lift, injective);
+    exact coordinate_injection_bound(K, n, m, lift_, injective);
   }
   exact mere_eliminate(
     X, le(m, n), natural_order_prop(m, n), bound,

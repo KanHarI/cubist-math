@@ -9,7 +9,8 @@ import {cubistTestModules} from "../web/cubist/modules.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases, historicalCoverage, passingCoverage} from "./fixtures/frontend-generation.mjs";
-import {accepted, complete, observeCase, assertCase, validateFixture, validateCoverage} from "./frontend-generation-contracts.mjs";
+import {accepted, assertCase, complete, observeCase, validateFixture, validateCoverage} from "./frontend-generation-contracts.mjs";
+import {matchesDiagnostics} from "./frontend-generation-diagnostics.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}) => {
@@ -131,9 +132,9 @@ def bad(x : H, b : Bit) : Unit := match x, b { first, _ => tt; p(y) @ i, _ => tt
   assert.equal(multiPath.result.gaps[0]?.code, "E606");
   assert.ok(!multiPath.program.steps("main").some(step => step.declaration === "bad" && step.kind === "obligation"));
   const refused = await check(t, cases.find(fixture => fixture.id === "G12-range").source);
-  assert.equal(refused.result.gaps[0]?.code, "E845");
+  assert.ok(matchesDiagnostics(refused.result.gaps, [{name: "T", code: "E845", cause: {recursive: "iter", context: "field type"}}]),
+    "unfolding iter in a law's type must remain refused");
 });
-
 
 test("FG0 controls: a local recursive name remains local in a field type", async t => {
   const checked = await check(t, `import hlevels; import nat;

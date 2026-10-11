@@ -994,10 +994,10 @@ def relabel(A : U0, t : Tree(U0, A)) : N := match t {
   };
 
 // Refused: a recursive call keeps the universe parameter U.
-// Error: E551: A recursive call of lift passes the universe parameter U unchanged.
-def lift(U < UU0, n : N) : N := match n {
+// Error: E551: A recursive call of lift_ passes the universe parameter U unchanged.
+def lift_(U < UU0, n : N) : N := match n {
     zero => zero;
-    succ(m) => lift(U0, m);
+    succ(m) => lift_(U0, m);
   };
 
 def pick(n, a : N) : N := match n {

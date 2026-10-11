@@ -9,7 +9,7 @@ inductive Pointed(U < UU0) : next(U) {
   pt(X : U, x : X);
 }
 
-def lift(p : Pointed(U0)) : Pointed(U1) := match p {
+def lift_(p : Pointed(U0)) : Pointed(U1) := match p {
     pt(X, x) => pt(X, x);
   };
 

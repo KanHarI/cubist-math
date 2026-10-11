@@ -60,7 +60,11 @@ when no source reproduction is known. An expected failure cannot count as
 completion or silently become an accepted snapshot.
 
 The [inventory](../reports/frontend-generation-gaps.md) maps baseline
-reproductions to their distinguishing regressions.
+reproductions to their distinguishing regressions. Each contract requirement
+is a table of conditions whose counterexamples the
+[contract audit](../reports/frontend-generation-contract-audit.md) applies to
+an accepted observation, and a mutation sweep requires every comparison in the
+judging code to matter.
 
 ## FG1: unify declaration ownership and publication
 

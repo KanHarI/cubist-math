@@ -73,6 +73,9 @@ finishing a language milestone does not automatically resume them.
 - [Frontend generation](roadmaps/frontend-generation.md): generation contracts
   and remaining audit/measurement work. The [gap inventory](reports/frontend-generation-gaps.md#current-status-and-fixing-evidence)
   owns finding status, fixes and distinguishing regressions.
+- [Induction hypothesis syntax](roadmaps/induction-hypothesis-syntax.md):
+  adopted separation of constructor fields and induction hypotheses;
+  specified, not implemented.
 - [Morphisms, categories and universal constructions](roadmaps/categories.md):
   opt-in morphisms and checked initial/free derivations, which may fail;
   general propositional laws and the proposed categorical library. The
