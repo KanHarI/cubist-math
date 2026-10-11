@@ -85,10 +85,10 @@ def complex_apart_from_imag(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, z)
     )
   );
-  exact along lt(zero) by ring_add_comm(
+  exact transport positive along ring_add_comm(
     F, zero, one, addF, mulF, negF, ring, mulF(complex_imag(F, z), complex_imag(F, z)),
     mulF(complex_real(F, z), complex_real(F, z))
-  ) from positive;
+  ) in lt(zero);
 }
 
 def complex_apart_inverse(

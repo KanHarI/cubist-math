@@ -278,9 +278,9 @@ def structure_total_same_carrier(
   let id_ := fun (x : A) => x;
   let sameFunction := FunExt(U0, A, (fun (x : A) => A), id_, f, same);
   let preserves :=
-    along ((fun (f : A -> A) => R(A, A, f, a, b))) by sym(sameFunction) from structure_iso_preserves(
+    transport structure_iso_preserves(
       S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e
-    );
+    ) along sym(sameFunction) in ((fun (f : A -> A) => R(A, A, f, a, b)));
   exact structure_total_data_path(
     S, R, prop_, identity, A, a, b, reflects(A, setA, a, b, preserves), setA, setB, e, same
   );
@@ -498,7 +498,9 @@ def structure_equality_iso(
   p : X = Y
 ) :
   StructureIso(S, R, X, Y) {
-  exact along structure_identity_family(S, R, X) by p from structure_identity_iso(S, R, identity, X);
+  exact transport structure_identity_iso(S, R, identity, X) along p in structure_identity_family(
+    S, R, X
+  );
 }
 
 def structure_iso_equality(

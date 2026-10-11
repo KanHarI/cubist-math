@@ -319,7 +319,8 @@ def transport_after_inverse(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(y)) 
   )
 );
 
-def transport_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) := refl(along C by p from v);
+def transport_ap(A : U1, C : A -> U0, x, y : A, p : x = y, v : C(x)) :=
+  refl(transport v along p in C);
 
 def append_cancel_inverse(A : U1, x, y, z : A, p : x = y, q : y = z) := trans(
   path_associative(A, x, y, z, y, p, q, sym(q)),

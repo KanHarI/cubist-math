@@ -39,8 +39,8 @@ def quotient_path_comparison(
   intro a;
   let family := fun (s : SetQuotient(A, relation)) => quotient_predicate(A, relation, s, a);
   exact (
-    (fun (x : family(q)) => along family by p from x),
-    (fun (y : family(r)) => along family by sym(p) from y)
+    (fun (x : family(q)) => transport x along p in family),
+    (fun (y : family(r)) => transport y along sym(p) in family)
   );
 }
 

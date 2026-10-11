@@ -78,8 +78,9 @@ def polynomial_small_divisible_zero(
     intro witness_;
     obtain (q, equation) := witness_;
     let product := trans(equation, polynomial_mul_comm(K, divisor, q));
-    let productSupport :=
-      along ((fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))) by product from support;
+    let productSupport := transport support along product in (
+      (fun (s : Polynomial(K)) => SeriesSupport(K, polynomial_coefficients(K, s), d))
+    );
     let zero := polynomial_small_multiple_zero(K, q, divisor, d, degree, productSupport);
     exact trans(
       product,
