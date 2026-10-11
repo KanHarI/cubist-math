@@ -7,7 +7,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases} from "./fixtures/frontend-generation.mjs";
 import {supportedSources} from "./fixtures/frontend-generation-supported.mjs";
-import {collectEvidence, counterexamples, diagnostics, observeCase, observeEvidence, sourceAnchor, unmet,
+import {collectEvidence, counterexamples, observeCase, observeEvidence, sourceAnchor, unmet,
   validateCoverage, validateFixture, validateObligations} from "./frontend-generation-contracts.mjs";
 import {causeFields, diagnosticCause, diagnosticFields, encodeCause, matchesDiagnostic, matchesDiagnostics,
   validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
@@ -192,34 +192,42 @@ test("FG0 audit: collision, name and equation refusals compose with per-client c
 });
 
 // Advice comes from each case's identified edit, never from the current
-// linter, so these hold whether or not the linter still issues it.
+// linter, and the rewrite's results are observer results over the real
+// original. These hold whatever the linter or the compiler does with the
+// arrow form, including a later simplification that preserves its clients.
 for (const id of ["G5", "G5-single"]) test(`FG0 audit: ${id} judges identified advice by its rewrite and applies no other advice`, async t => {
   const c = fixture(id), identified = c.rewrite.advice.map(advice => ({...advice, ...validateFixture(c).rewrite}));
-  const edited = c.source.replace(c.rewrite.from, c.rewrite.to), rewritten = await check(t, edited);
-  const results = new Map([[c.source, await check(t, c.source)], [edited, rewritten]]);
-  const collect = async warnings => {
+  const edited = c.source.replace(c.rewrite.from, c.rewrite.to), {result: original} = await check(t, c.source);
+  const lost = structuredClone(original), [client] = c.clients;
+  lost.outputs.find(o => o.name === client).verified = false;
+  lost.gaps.push({name: client, code: "E817", reason: "T's models have no homomorphisms."});
+  const collect = async (warnings, rewritten) => {
     let checks = 0;
-    const evidence = await collectEvidence(t, c, async (t, source) => { checks++; return results.get(source); }, () => structuredClone(warnings));
+    const results = new Map([[c.source, original], [edited, rewritten]]);
+    const evidence = await collectEvidence(t, c, async (t, source) => { checks++; return {result: results.get(source)}; }, () => structuredClone(warnings));
     return {checks, evidence, observation: observeEvidence(c, evidence)};
   };
   const quiet = await collect([]);
   assert.equal(quiet.checks, 1);
   meets(quiet.observation);
-  // Identified advice authorizes exactly its rewrite, judged by the same
-  // clients. The arrow form changes the generated interface (G5's premise),
-  // so advice that remains, as when only grouped advice is suppressed, fails.
-  const advised = await collect(identified);
-  assert.equal(advised.checks, 2);
-  assert.equal(advised.observation.requirements.advice, true);
-  assert.deepEqual(advised.observation.facts.gaps, diagnostics(rewritten));
-  violates(advised.observation, "clients");
+  // Identified advice authorizes exactly its rewrite, and the rewritten
+  // program's clients decide: a rewrite that preserves them meets the
+  // contract, and one that loses a client does not.
+  const preserving = await collect(identified, structuredClone(original));
+  assert.equal(preserving.checks, 2);
+  meets(preserving.observation);
+  const losing = await collect(identified, lost);
+  assert.equal(losing.checks, 2);
+  assert.equal(losing.observation.requirements.advice, true);
+  assert.deepEqual(losing.observation.facts.gaps, [`${client} E817`]);
+  violates(losing.observation, "clients");
   // Every advice counterexample, issued by the linter, must leave the source
   // unrewritten; the requirement's own list drives this check.
   const [, breaks] = counterexamples(c, quiet.evidence).find(([requirement]) => requirement === "advice");
   for (const {name, apply} of breaks) {
     const changed = {};
     apply(changed);
-    const {checks, observation} = await collect(changed.warnings);
+    const {checks, observation} = await collect(changed.warnings, lost);
     assert.equal(checks, 1, `${name}: unrecognized advice must not apply the assumed rewrite`);
     violates(observation, "advice");
   }

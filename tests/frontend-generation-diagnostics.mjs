@@ -54,7 +54,8 @@ export const needsCause = new Set(["E343", "E340", "E871", "E845"]);
 // cannot lack a counterexample. `states` says whether an expectation states the
 // field; `constrains` whether its counterexamples apply. A cause is constrained
 // by its code or an independent obligation, never by the expectation under
-// test, and every stated field must also be constrained.
+// test, and every stated field must also be constrained; fixture validation
+// enforces this.
 export const diagnosticFields = {
   name: {
     matches: (actual, expected) => actual.name === expected.name,

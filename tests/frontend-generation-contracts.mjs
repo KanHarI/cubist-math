@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import {isDeepStrictEqual} from "node:util";
 import {obligations} from "./fixtures/frontend-generation-requirements.mjs";
 import {lint} from "../web/cubist/lint.mjs";
-import {diagnosticCause, diagnosticFields, matchDiagnostics, needsCause, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
+import {diagnosticCause, diagnosticFields, matchDiagnostics, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
 
 const gapNames = result => result.gaps.map(g => `${g.name} ${g.code}`).sort();
 export const diagnostics = checked => gapNames(checked.result);
@@ -106,10 +106,14 @@ export function validateFixture(fixture) {
     }
   }
   if (diagnostic) stated.push(diagnostic);
-  for (const expectation of stated) {
-    validateDiagnostic(expectation, expectation === diagnostic ? diagnosticLocations : []);
-    if (expectation.cause && !needsCause.has(expectation.code))
-      assert.ok(causeRequired(fixture.id, expectation.name), `${fixture.id}: ${expectation.name}'s cause needs an obligation that requires it`);
+  for (const expectation of stated) validateDiagnostic(expectation, expectation === diagnostic ? diagnosticLocations : []);
+  // Every stated field must receive counterexamples. A matching diagnostic has
+  // its expectation's name and code, so the field table decides here.
+  for (const expected of expectedDiagnostics(fixture)) {
+    const context = {actual: expected, expected, causeRequired: causeRequired(fixture.id, expected.name)};
+    for (const [field, {states, constrains}] of Object.entries(diagnosticFields))
+      assert.ok(!states(expected) || constrains(context), `${fixture.id}: ${expected.name}'s stated ${field} would receive no counterexamples`
+        + (field === "cause" ? "; a cause its code does not always carry needs an obligation that requires it" : ""));
   }
   validateWitness(fixture);
   // Old names confused reported outputs with names available to later source;
@@ -333,12 +337,15 @@ const requirementChecks = {
     }),
   },
   // Each bound has a counterexample that violates it alone: a span crossing
-  // both ends of its region would leave either end unguarded.
+  // both ends of its region would leave either end unguarded. A span that
+  // covers a nonempty site is nonempty, so no span violates `nonempty` alone;
+  // it is recorded to tell an empty origin from a misplaced one, not judged.
   range: {
     applies: fixture => ["wildcard", "capture-range", "refusal-range"].includes(fixture.kind),
-    met: ({facts}) => Object.values(facts.range).every(Boolean),
+    met: ({facts}) => Object.entries(facts.range).every(([condition, holds]) => condition === "nonempty" || holds),
     breaks: ({fixture, anchors}) => {
       const region = anchors.scope ?? anchors.conflict, sites = anchors.token ? [anchors.token] : [anchors.binder, anchors.call];
+      assert.ok(sites.every(site => site.end > site.start), "a covered site must be nonempty");
       const inside = [region.start, region.start + 1], last = sites.reduce((a, b) => b.start > a.start ? b : a);
       assert.ok(!sites.some(site => inside[0] <= site.start && inside[1] >= site.end), "the region must not start with its site");
       assert.ok(region.start > 0 && region.end < fixture.source.length, "the region must lie strictly inside the source");
@@ -377,7 +384,8 @@ const requirementChecks = {
   // compares and its expectation constrains, from the matcher's own field table.
   // A cause is constrained by its code or an independent obligation, so an
   // expectation that loses its cause still meets the counterexample that
-  // changes that cause.
+  // changes that cause. Fixture validation requires every stated field to be
+  // constrained.
   diagnostics: {
     applies: () => true,
     met: ({fixture, result}) => matchDiagnostics(result.gaps, expectedDiagnostics(fixture)) !== null,
@@ -389,8 +397,6 @@ const requirementChecks = {
         ...result.gaps.flatMap((actual, at) => {
           const label = `${actual.name} ${actual.code}`;
           const context = {actual, expected: expected[owners.indexOf(at)], causeRequired: causeRequired(fixture.id, actual.name)};
-          for (const [field, {states, constrains}] of Object.entries(diagnosticFields))
-            assert.ok(!states(context.expected) || constrains(context), `${label}: its stated ${field} needs counterexamples`);
           return [
             {name: `${label} is missing`, result: r => { r.gaps.splice(at, 1); }},
             {name: `${label} is duplicated`, result: r => { r.gaps.push({...r.gaps[at]}); }},

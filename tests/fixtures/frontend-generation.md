@@ -153,9 +153,12 @@ duplicated, recoded or recaused diagnostics; changed, partial or misplaced
 advice; empty or off-site spans, spans crossing either end of their region,
 and spans starting inside their site; relabelled, retargeted or missing links,
 and a stale link beside a correct one. Each condition of a combined requirement
-has a counterexample that violates it alone. Diagnostic counterexamples come from the matcher's field table:
-each accepted diagnostic is also reported on another declaration, and a stated
-field without counterexamples fails. The [audit](../frontend-generation-audit.test.mjs)
+has a counterexample that violates it alone. A span that covers a nonempty
+site is nonempty, so nonemptiness is recorded but not judged on its own.
+Diagnostic counterexamples come from the matcher's field table: each accepted
+diagnostic is also reported on another declaration, and a fixture that states
+a field without counterexamples fails validation. The
+[audit](../frontend-generation-audit.test.mjs)
 gives every case an accepted observation and applies each counterexample to it;
 each must violate its requirement. The audit never reads records or classifies
 cases, so activation leaves it unchanged. With every record removed and no

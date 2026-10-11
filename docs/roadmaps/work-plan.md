@@ -765,7 +765,7 @@ Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
 | [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
 
 The revised FG0 harness in #217 records 23 independent known-defect cases at
-its baseline. With those records removed and no other edit, its 110 contract,
+its baseline. With those records removed and no other edit, its contract,
 harness and audit tests pass against the fixing compiler `d4a5ecf3`. That is
 integration evidence, not a claim that its files have already been
 incorporated through every branch. The frontend roadmap remains active

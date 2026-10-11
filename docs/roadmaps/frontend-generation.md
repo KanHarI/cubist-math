@@ -84,7 +84,8 @@ planner must not claim to have inferred types or discharged obligations.
 
 ## FG0: establish evidence and semantic comparisons
 
-Depends on the scope fixes of #215, which replaces #188. The initial harness is implemented by
+Depends on the scope fixes of #215, which replaces #188. The initial
+harness is implemented by
 [PR #217](https://github.com/KanHarI/cubist-math/pull/217) and runs in the
 normal `npm test` suite. Extend it in every implementation slice; its TODOs
 record implementation debt, not passing behavior. Each executable variant

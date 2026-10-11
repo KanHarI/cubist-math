@@ -54,7 +54,10 @@ leaves its requirement met, fails the audit, so a deleted or weakened check
 cannot pass silently. When a requirement combines conditions, such as a span's
 start and end bounds or every link at a site, give each condition a
 counterexample that violates it alone: a span that crosses both ends of its
-region leaves either bound unguarded.
+region leaves either bound unguarded. A condition that another implies, such
+as a nonempty span that covers a nonempty site, can be recorded but should not
+be judged; no counterexample can violate it alone, so only defect records would
+notice its removal.
 
 Map behavioral obligations independently of the fixture registry. A case-ID
 inventory cannot discover a requirement omitted from both the source fixtures
