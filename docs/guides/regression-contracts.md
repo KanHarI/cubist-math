@@ -17,7 +17,9 @@ the same implementation under test.
 Use the shared diagnostic decoder and matcher in
 [`frontend-generation-diagnostics.mjs`](../../tests/frontend-generation-diagnostics.mjs).
 An expectation states the declaration, code and relevant `cause`, independently
-of the historical defect record. E343 names its untranslated subject, E340 its
+of the historical defect record. It may state only fields from the matcher's
+field table, and each field there carries its own counterexamples, so a stated
+field is always compared and perturbed. E343 names its untranslated subject, E340 its
 dependency, E871 its helper and captured field, and E845 its recursive operation
 and context. A range check composes with this meaning; it cannot replace it.
 Code-only E606 equation refusals remain appropriate when independent accepted
@@ -34,20 +36,30 @@ For contracts that classify expected failures, exercise these boundaries:
 | Well-typed but semantically wrong implementation | Ordinary failure, even if declarations check |
 | Broken fixture or unmet prerequisite | Ordinary failure, never known debt |
 
-Exercise the different-failure boundary twice: against recorded debt, and against
-an otherwise accepted result with `knownDefect` removed. Make the second
-structural rather than a per-case review step. Collect compiler results once as
-evidence and judge them with pure functions. Give each requirement the plausible
-wrong results that must violate it, and apply every one to an accepted
-observation of each case. A requirement without a counterexample, or a
-counterexample that leaves its requirement met, fails the audit, so a deleted or
-weakened check cannot pass silently. These controls must survive activation and
-retirement of defect records.
+Keep the contract and the expected-failure lifecycle apart. A case holds only
+its contract; defect records live in their own module, and only the lifecycle
+reads them. Collect compiler results once as evidence and judge them with pure
+functions. Index each test by what it depends on: a test that needs a record is
+keyed by that record and disappears with it, and a test of the classifier uses
+synthetic observations and records. Activating a case is then only the removal
+of its record. Check this by running the whole suite against the fixing
+compiler with every record removed.
+
+Exercise the different-failure boundary twice: against each recorded debt, and
+against accepted observations with no record at all. Make the second structural
+rather than a per-case review step. Give each requirement the plausible wrong
+results that must violate it, and apply every one to an accepted observation of
+each case. A requirement without a counterexample, or a counterexample that
+leaves its requirement met, fails the audit, so a deleted or weakened check
+cannot pass silently.
 
 Map behavioral obligations independently of the fixture registry. A case-ID
 inventory cannot discover a requirement omitted from both the source fixtures
 and their manifest. Name the contexts, the incorrect alternative each witness
-distinguishes and the requirements it must keep. Keep client verdicts,
+distinguishes and the requirements it must keep. State each witness's minimum
+expectations as data, and derive what the audit perturbs from those minimums,
+never from the expectation under test; otherwise weakening an expectation also
+removes the counterexample that would expose it. Keep client verdicts,
 publication and source expectations composable across diagnostic kinds. Resolve
 source anchors before observation; ambiguous occurrences are fixture errors
 unless explicitly selected.
@@ -85,7 +97,8 @@ variants. Add a distinguishing control for the mechanism, record the audit's
 scope, and check required neighboring behavior. For example, suppressing unsafe
 lint advice must preserve safe advice for both single and grouped binders.
 Prefer fixing the mechanism, such as a shared requirement and its
-counterexamples, to adding one more per-case control.
+counterexamples, or one table that drives both a check and its counterexamples,
+to adding one more per-case control.
 
 Before submitting a new contract or changing one, answer:
 
@@ -95,7 +108,7 @@ Before submitting a new contract or changing one, answer:
   discarded?
 - What deliberately broken behavior proves each requirement is sensitive?
 
-Remove a case's expected-failure status with its fix. Once all cases are active,
-retire temporary defect records and classification machinery while preserving
-semantic assertions, case selectors and distinguishing controls. A review fix
+Remove a case's record with its fix; nothing else changes. Once all cases are
+active, retire the records, the classifier and its tests together while
+preserving semantic assertions, case selectors and distinguishing controls. A review fix
 must not weaken the expected behavior merely to match a new observation.

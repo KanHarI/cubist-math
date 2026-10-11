@@ -88,7 +88,8 @@ Depends on #188's scope fixes. The initial harness is implemented by
 [PR #217](https://github.com/KanHarI/cubist-math/pull/217) and runs in the
 normal `npm test` suite. Extend it in every implementation slice; its TODOs
 record implementation debt, not passing behavior. Each executable variant
-has an independent case ID and activation state. Prerequisites fail normally;
+has an independent case ID and activation state; activating a fixed case
+removes only its record. Prerequisites fail normally;
 only explicitly recognized diagnostic/client/source observations may be TODOs.
 A changed symptom must fail and be investigated. The
 [comparison manifest](../../tests/fixtures/frontend-generation.md#coverage-by-executable-case)

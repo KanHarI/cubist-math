@@ -9,7 +9,9 @@ import {cubistTestModules} from "../web/cubist/modules.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {cases, historicalCoverage, passingCoverage} from "./fixtures/frontend-generation.mjs";
-import {accepted, complete, observeCase, recordCase, validateFixture, validateCoverage} from "./frontend-generation-contracts.mjs";
+import {knownDefects} from "./fixtures/frontend-generation-defects.mjs";
+import {accepted, complete, observeCase, validateFixture, validateCoverage} from "./frontend-generation-contracts.mjs";
+import {recordCase} from "./frontend-generation-lifecycle.mjs";
 import {matchesDiagnostics} from "./frontend-generation-diagnostics.mjs";
 
 const module = await createCubical();
@@ -17,10 +19,11 @@ const check = (t, source, fixtures = {}) => {
   const library = sourceReader();
   return checkProgram(t, source, {module, reader: (name, importer) => fixtures[name] ?? library(name, importer)});
 };
-// Keep group prefixes selectable by the downstream FG6 mutation gate.
+// Keep group prefixes selectable by the downstream FG6 mutation gate. This is
+// the only per-case consumer of defect records.
 for (const fixture of cases) test(`${fixture.group}: [${fixture.id}] ${fixture.contract}`, async t => {
   const observation = await observeCase(t, fixture, check);
-  recordCase(t, fixture, observation, {strict: process.env.CUBIST_GENERATION_STRICT === "1"});
+  recordCase(t, fixture, observation, {record: knownDefects[fixture.id], strict: process.env.CUBIST_GENERATION_STRICT === "1"});
 });
 
 test("FG0 maps historical fixes and passing controls to existing executable tests", async () => {

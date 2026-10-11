@@ -1,10 +1,12 @@
-// Case observations are data. Assertions and exceptions are never classified
-// as known defects; only an explicit observation can take the TODO path.
+// The contract layer: case observations are data, and facts and requirements
+// are pure functions of collected evidence. Nothing here reads defect records;
+// the expected-failure lifecycle in frontend-generation-lifecycle.mjs consumes
+// these observations.
 import assert from "node:assert/strict";
-import {isDeepStrictEqual, inspect} from "node:util";
+import {isDeepStrictEqual} from "node:util";
 import {obligations} from "./fixtures/frontend-generation-requirements.mjs";
 import {lint} from "../web/cubist/lint.mjs";
-import {causeFields, diagnosticCause, encodeCause, matchDiagnostics, needsCause, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
+import {diagnosticCause, diagnosticFields, matchDiagnostics, needsCause, validateDiagnostic} from "./frontend-generation-diagnostics.mjs";
 
 const gapNames = result => result.gaps.map(g => `${g.name} ${g.code}`).sort();
 export const diagnostics = checked => gapNames(checked.result);
@@ -56,6 +58,36 @@ const relativeAnchor = (source, scope, fragment, label, occurrence, wholeWord = 
   const span = sourceAnchor(source.slice(scope.start, scope.end), fragment, label, occurrence, wholeWord);
   return {start: scope.start + span.start, end: scope.start + span.end};
 };
+
+// A witness states the minimum its case must keep; a fixture may say more.
+// Unknown witness fields fail, so a stated minimum is never silently ignored.
+const atLeast = (actual, minimum) => !!actual && actual.code === minimum.code
+  && (minimum.cause === undefined || isDeepStrictEqual(actual.cause, minimum.cause));
+const lacking = (actual = [], minimum, label) => minimum.filter(item => !actual.includes(item)).map(item => `${label} ${item}`);
+const witnessChecks = {
+  clients: (fixture, names) => lacking(fixture.clients, names, "client"),
+  refusedClients: (fixture, expected) => Object.entries(expected)
+    .filter(([name, minimum]) => !atLeast(fixture.refusedClients?.[name], minimum)).map(([name]) => `refused client ${name}`),
+  absentOutputs: (fixture, names) => lacking(fixture.absentOutputs, names, "absent output"),
+  absentOutputFamilies: (fixture, names) => lacking(fixture.absentOutputFamilies, names, "absent output family"),
+  refusalWords: (fixture, words) => lacking(fixture.refusalWords, words, "refusal word"),
+  diagnostic: (fixture, minimum) => fixture.diagnostic?.name === minimum.name && atLeast(fixture.diagnostic, minimum)
+    ? [] : [`diagnostic ${minimum.name}`],
+  sites: (fixture, count) => fixture.observations?.sites >= count ? [] : [`${count} observation sites`],
+};
+export function validateWitness(fixture) {
+  for (const {id, witnesses} of obligations) for (const [field, minimum] of Object.entries(witnesses[fixture.id] ?? {})) {
+    assert.ok(Object.hasOwn(witnessChecks, field), `${id}: unknown witness field ${field}`);
+    const missing = witnessChecks[field](fixture, minimum);
+    assert.ok(!missing.length, `${id}: ${fixture.id} must keep ${missing.join(", ")}`);
+  }
+}
+// A cause is required by its code or by an obligation, never by the
+// expectation under test.
+const causeRequired = (id, name) => obligations.some(({witnesses: {[id]: witness}}) => !!witness
+  && !!(witness.refusedClients?.[name]?.cause || witness.diagnostic?.name === name && witness.diagnostic.cause));
+const diagnosticLocations = ["scope", "token", "tokenOccurrence", "conflict", "binder", "binderOccurrence", "call"];
+
 export function validateFixture(fixture) {
   const {source, diagnostic, observations, rewrite} = fixture;
   const anchors = {};
@@ -65,17 +97,25 @@ export function validateFixture(fixture) {
   assert.equal(new Set(names).size, names.length, "client names must be distinct");
   for (const field of ["clients", "absentOutputs", "absentOutputFamilies"])
     if (fixture[field]) assert.ok(Array.isArray(fixture[field]) && fixture[field].every(name => typeof name === "string" && name.length), `invalid ${field}`);
+  const stated = [];
   if (fixture.refusedClients) {
     assert.ok(typeof fixture.refusedClients === "object" && !Array.isArray(fixture.refusedClients), "invalid refusedClients");
     for (const [name, expectation] of Object.entries(fixture.refusedClients)) {
       assert.ok(expectation && typeof expectation === "object" && !Array.isArray(expectation), "each refused client needs a diagnostic expectation");
-      validateDiagnostic({...expectation, name});
+      stated.push({...expectation, name});
     }
   }
-  if (diagnostic) validateDiagnostic(diagnostic);
+  if (diagnostic) stated.push(diagnostic);
+  for (const expectation of stated) {
+    validateDiagnostic(expectation, expectation === diagnostic ? diagnosticLocations : []);
+    if (expectation.cause && !needsCause.has(expectation.code))
+      assert.ok(causeRequired(fixture.id, expectation.name), `${fixture.id}: ${expectation.name}'s cause needs an obligation that requires it`);
+  }
+  validateWitness(fixture);
   // Old names confused reported outputs with names available to later source;
-  // invariant clients duplicated the client requirement.
-  for (const field of ["absentMembers", "absentFamilies", "refusalCode", "invariantClients"])
+  // invariant clients duplicated the client requirement. A defect record on a
+  // case would let contracts depend on the lifecycle.
+  for (const field of ["absentMembers", "absentFamilies", "refusalCode", "invariantClients", "knownDefect"])
     assert.ok(!(field in fixture), `obsolete expectation ${field}`);
   if (fixture.kind === "unsupported-family")
     assert.ok(Array.isArray(fixture.refusalWords) && fixture.refusalWords.length
@@ -108,33 +148,19 @@ export function validateFixture(fixture) {
 }
 export function validateObligations(fixtures) {
   const byId = new Map(fixtures.map(fixture => [fixture.id, fixture]));
-  for (const obligation of obligations) for (const id of obligation.cases)
+  for (const obligation of obligations) for (const id of Object.keys(obligation.witnesses))
     assert.ok(byId.has(id), `${obligation.id}: missing witness ${id}`);
-  const witnessed = new Set(obligations.flatMap(obligation => obligation.cases));
+  const witnessed = new Set(obligations.flatMap(obligation => Object.keys(obligation.witnesses)));
   for (const fixture of fixtures) assert.ok(witnessed.has(fixture.id), `${fixture.id}: no requirement mapping`);
   // A witness must keep the requirements that distinguish its counterexample,
   // so removing a requirement or its applicability cannot pass silently.
-  for (const obligation of obligations) for (const id of obligation.cases) {
+  for (const obligation of obligations) for (const id of Object.keys(obligation.witnesses)) {
     const names = requirementNames(byId.get(id));
     for (const name of obligation.checks) assert.ok(names.includes(name), `${obligation.id}: ${id} must check ${name}`);
   }
-  // These are independently stated minimum obligations, so deleting a check
-  // from the fixture cannot silently redefine success in the observer audit.
-  for (const name of ["N.model", "N.fold_map", "N.fold"])
-    assert.ok(byId.get("G1-initial").absentOutputs?.includes(name), `G1-initial: missing output requirement ${name}`);
-  for (const [id, clients] of [["G1", {leaked_c: "c"}], ["G1-initial", {leaked_one: "N.one", leaked_mul: "N.mul"}]])
-    for (const [name, untranslated] of Object.entries(clients))
-      assert.deepEqual(byId.get(id).refusedClients?.[name], {code: "E343", cause: {untranslated}}, `${id}: missing name-availability witness ${name}`);
-  assert.ok(byId.get("G1-reverse").clients.includes("constructor"), "G1-reverse: missing original constructor witness");
-  for (const name of ["preserves", "level", "preserves_u1", "level_u1"])
-    assert.ok(byId.get("G2").clients.includes(name), `G2: missing public-type witness ${name}`);
-  assert.deepEqual(byId.get("G2").refusedClients?.lowered, {code: "E606", cause: {found: "U1", expected: "U0"}}, "G2: missing universe-lowering witness");
-  for (const id of ["G4", "G4-flat", "G12", "G12-inherited", "G12-initial"])
-    assert.equal(byId.get(id).refusedClients?.wrong?.code, "E606", `${id}: missing wrong-equation witness`);
-  for (const id of ["G12", "G12-inherited", "G12-initial"])
-    for (const name of ["base", "computation", "computation2"])
-      assert.ok(byId.get(id).clients.includes(name), `${id}: missing recursive-result witness ${name}`);
-  assert.equal(byId.get("G12-shadowed").refusedClients?.captured?.code, "E606", "G12-shadowed: missing captured-equation witness");
+  // Independently stated minimums: deleting part of a fixture's expectation
+  // cannot silently redefine success in the audit.
+  for (const fixture of fixtures) validateWitness(fixture);
 }
 export function validateCoverage(manifest, fixtures) {
   validateObligations(fixtures);
@@ -337,32 +363,29 @@ const requirementChecks = {
       ];
     }),
   },
-  // Counterexamples come from the accepted diagnostics and the fixture's data,
-  // never from the expectations under test: an expectation that loses its cause
-  // must still meet the counterexample that changes that cause.
+  // Every accepted diagnostic receives one counterexample per field the matcher
+  // compares and its expectation constrains, from the matcher's own field table.
+  // A cause is constrained by its code or an independent obligation, so an
+  // expectation that loses its cause still meets the counterexample that
+  // changes that cause.
   diagnostics: {
     applies: () => true,
     met: ({fixture, result}) => matchDiagnostics(result.gaps, expectedDiagnostics(fixture)) !== null,
     breaks: ({fixture, result}) => {
-      const declared = name => fixture.refusedClients?.[name] ?? (fixture.diagnostic?.name === name ? fixture.diagnostic : undefined);
+      const expected = expectedDiagnostics(fixture), owners = matchDiagnostics(result.gaps, expected);
+      assert.ok(owners, `${fixture.id}: diagnostic counterexamples need an accepted diagnostic set`);
       return [
         {name: "an unrelated diagnostic", result: r => { r.gaps.push({name: "unrelated", code: "E606", reason: "Type mismatch: found Bool, expected Unit."}); }},
-        ...result.gaps.flatMap(({name, code, ...gap}, at) => {
-          const label = `${name} ${code}`, cause = diagnosticCause({code, ...gap});
-          const edit = (what, change) => ({name: `${label} ${what}`, result: r => change(r.gaps[at])});
-          const pinned = needsCause.has(code) || declared(name)?.cause;
-          if (pinned) assert.deepEqual(Object.keys(cause).sort(), [...causeFields[code]].sort(), `${label} must decode to its cause`);
+        ...result.gaps.flatMap((actual, at) => {
+          const label = `${actual.name} ${actual.code}`;
+          const context = {actual, expected: expected[owners.indexOf(at)], causeRequired: causeRequired(fixture.id, actual.name)};
+          for (const [field, {states, constrains}] of Object.entries(diagnosticFields))
+            assert.ok(!states(context.expected) || constrains(context), `${label}: its stated ${field} needs counterexamples`);
           return [
             {name: `${label} is missing`, result: r => { r.gaps.splice(at, 1); }},
             {name: `${label} is duplicated`, result: r => { r.gaps.push({...r.gaps[at]}); }},
-            // A duplicate refusal may use any code.
-            ...fixture.kind === "collision" && name === fixture.symbol ? []
-              : [edit("has another code", g => { g.code = code === "E606" ? "E343" : "E606"; })],
-            ...pinned ? [
-              edit("has an unrecognized cause", g => { g.reason = "An unrelated failure with the same diagnostic code"; }),
-              ...Object.keys(cause).map(field => edit(`names another ${field}`, g => { g.reason = encodeCause(code, {...cause, [field]: "Other"}); })),
-              ..."found" in cause ? [edit("swaps found and expected", g => { g.reason = encodeCause(code, {found: cause.expected, expected: cause.found}); })] : [],
-            ] : [],
+            ...Object.values(diagnosticFields).filter(field => field.constrains(context))
+              .flatMap(field => field.perturb(actual).map(({what, change}) => ({name: `${label} ${what}`, result: r => change(r.gaps[at])}))),
           ];
         }),
       ];
@@ -371,6 +394,7 @@ const requirementChecks = {
 };
 const requirementsFor = fixture => Object.entries(requirementChecks).filter(([, check]) => check.applies(fixture));
 export const requirementNames = fixture => requirementsFor(fixture).map(([name]) => name);
+export const unmet = observation => Object.entries(observation.requirements).filter(([, met]) => !met).map(([name]) => name);
 
 // Compiler and lint results are collected once. Every judgment below is a pure
 // function of this evidence, so audits can substitute plausible wrong results.
@@ -416,25 +440,4 @@ export function counterexamples(fixture, evidence) {
     name: counterexample.name,
     apply: target => counterexample.result ? counterexample.result(observed(fixture, target).result) : counterexample.evidence(target),
   }))]);
-}
-
-export function classifyCase(fixture, observation, {strict = false} = {}) {
-  const {facts, requirements} = observation;
-  const unmet = Object.entries(requirements).filter(([, met]) => !met).map(([name]) => name);
-  if (!unmet.length) {
-    if (fixture.knownDefect && !strict) throw Error(`${fixture.id} unexpectedly passed: remove its knownDefect to activate this case`);
-    return "pass";
-  }
-  const detail = `${fixture.id}: unmet ${unmet.join(", ")}\n${inspect(facts, {depth: null})}`;
-  // Active semantic regressions remain assertions for the FG6 mutation gate.
-  if (strict || !fixture.knownDefect) assert.fail(detail);
-  if (!isDeepStrictEqual(facts, fixture.knownDefect))
-    throw Error(`Unrecognized defect observation; update evidence only after investigation.\n${detail}\nRecorded: ${inspect(fixture.knownDefect, {depth: null})}`);
-  return "known-defect";
-}
-export function recordCase(t, fixture, observation, options) {
-  if (classifyCase(fixture, observation, options) === "known-defect") {
-    t.todo(`${fixture.phase}: documented ${fixture.id} defect; never counts as completion`);
-    assert.fail(`${fixture.id}: ${inspect(observation.facts, {depth: null})}`);
-  }
 }
