@@ -15,9 +15,15 @@ its subject, expected/actual types, dependency or proposed edit.
 Write the case as a Cubist module, with the outcome stated as the Cubist tests
 state theirs ([`cubist-tests/README.md`](../../cubist-tests/README.md)): an
 `// Error:` comment, with the exact message, above each declaration that must
-be refused, and nothing above one that must check. Observe in JavaScript only
-what a comment cannot state, such as a source range, a link, lint advice or a
-published name, and put its desired value beside the observation.
+be refused, and nothing above one that must check.
+
+That comparison sees what the checker reports: each error and warning, at
+the line of its declaration. It does not see a declaration with no output,
+which reports nothing, or where in its line a refusal lies. Require each
+declaration without a comment to have an output of its own, and observe in
+JavaScript only what the comparison cannot see, such as a range within its
+line, a link or a published name, with its desired value beside the
+observation. Lint advice is a warning, which a comment states.
 
 Take a desired outcome from the specification, or from the fixing
 implementation once it exists, and review it against the specification. Never
@@ -46,7 +52,8 @@ take it from an implementation that still has the defect: `inline-errors
 While a fix is pending, record what the case shows today, separately from
 the case. The case is a TODO only while it shows exactly that record. Any
 other result fails and must be investigated, and a TODO never counts as
-completion. The fixing PR removes the record, and nothing else changes.
+completion. The fixing PR removes the record; the case and its desired values
+stay as they are.
 
 When a review exposes a mistake, inspect its class across sibling cases, and
 fix it where it occurs. Before submitting a case, answer:
@@ -54,3 +61,6 @@ fix it where it occurs. Before submitting a case, answer:
 - Can it reject a valid implementation?
 - Can a different bug produce the same observation?
 - Which wrong implementation does each client distinguish?
+- Would a partial fix pass, one that resolves the right name but publishes
+  the wrong declaration, or refuses on the right line over the wrong token?
+  Reverting the fix shows only that the case sees the defect.

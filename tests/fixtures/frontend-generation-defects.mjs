@@ -9,39 +9,47 @@ export const knownDefects = {
     diagnostics: [
       {"at":"def original : Unit := N;","label":"Error","text":"E606: Type mismatch: found U0, expected Unit."},
     ],
+    missing: [
+      "def N : Unit := tt;",
+    ],
     assumes: [],
   },
   "G10": {
     diagnostics: [
       {"at":"theory T(U < UU0) {","label":"Error","text":"E871: Inlining k here would capture its field c: rename the enclosing pattern or statement binding."},
     ],
+    missing: [],
     assumes: [],
     range: [
-      {"line":"law l(n : Nat) : (match n return M {","covers":""},
+      {"line":"law l(n : Nat) : (match n return M {","before":"","covers":""},
     ],
   },
   "G11": {
     diagnostics: [
       {"at":"def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));","label":"Error","text":"E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x) = S.op(x, S.c)."},
     ],
+    missing: [],
     assumes: [],
   },
   "G11-grouped-dependent": {
     diagnostics: [
       {"at":"def intended(S : T(U0), x : S.M) : S.kk(x, x, refl(x)) = S.op(x, S.c) := refl(S.op(x, S.c));","label":"Error","text":"E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x, x, refl(x)) = S.op(x, S.c)."},
     ],
+    missing: [],
     assumes: [],
   },
   "G11-inherited": {
     diagnostics: [
       {"at":"def intended(S : Child(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));","label":"Error","text":"E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected Child.kk{{U0}}(S, x) = S.op(x, S.c)."},
     ],
+    missing: [],
     assumes: [],
   },
   "G11-initial": {
     diagnostics: [
       {"at":"def intended(x : N) : N.model.kk(x) = N.op(x, N.c) := refl(N.op(x, N.c));","label":"Error","text":"E606: Type mismatch: found N.op(x, N.c) = N.op(x, N.c), expected T.kk{{U0}}(N.model, x) = N.op(x, N.c)."},
     ],
+    missing: [],
     assumes: [],
   },
   "G12": {
@@ -52,6 +60,7 @@ export const knownDefects = {
       {"at":"def base(S : T(U0)) : S.twice(zero) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T"},
       {"at":"def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T"},
     ],
+    missing: [],
     assumes: [],
   },
   "G12-inherited": {
@@ -63,6 +72,7 @@ export const knownDefects = {
       {"at":"def base(S : Child(U0)) : S.twice(zero) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: Child"},
       {"at":"def wrong(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: Child"},
     ],
+    missing: [],
     assumes: [],
   },
   "G12-initial": {
@@ -74,15 +84,17 @@ export const knownDefects = {
       {"at":"def base : N.model.twice(zero) = N.op(N.c) {","label":"Error","text":"E340: Untranslated dependency: N"},
       {"at":"def wrong : N.model.twice(succ(zero)) = N.op(N.c) {","label":"Error","text":"E340: Untranslated dependency: N"},
     ],
+    missing: [],
     assumes: [],
   },
   "G12-range": {
     diagnostics: [
       {"at":"theory T(U < UU0) {","label":"Error","text":"E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."},
     ],
+    missing: [],
     assumes: [],
     range: [
-      {"line":"law nope(n : Nat) : iter(n) = c;","covers":""},
+      {"line":"law nope(n : Nat) : iter(n) = c;","before":"law nope(n : Nat) : ","covers":""},
     ],
   },
   "G12-shadowed": {
@@ -91,11 +103,15 @@ export const knownDefects = {
       {"at":"def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) {","label":"Error","text":"E340: Untranslated dependency: T"},
       {"at":"def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T"},
     ],
+    missing: [],
     assumes: [],
   },
   "G1-initial": {
     diagnostics: [
       {"at":"def original : Unit := N;","label":"Error","text":"E606: Type mismatch: found U0, expected Unit."},
+    ],
+    missing: [
+      "def N : Unit := tt;",
     ],
     assumes: [],
     published: [
@@ -109,12 +125,18 @@ export const knownDefects = {
       {"at":"def original : U0 := N;","label":"Error","text":"E606: Type mismatch: found Unit, expected U0."},
       {"at":"def constructor : N := c;","label":"Error","text":"E604: Instruction kernel: Expected U, found Unit."},
     ],
+    missing: [
+      "inductive N : U0 {",
+    ],
     assumes: [],
   },
   "G1-same-kind": {
     diagnostics: [
       {"at":"def N : U0 := Unit;","label":"Error","text":"E604: Instruction kernel: Definition symbol is already registered."},
       {"at":"def original : Unit := N;","label":"Error","text":"E340: Untranslated dependency: N"},
+    ],
+    missing: [
+      "def N : Unit := tt;",
     ],
     assumes: [],
   },
@@ -147,6 +169,7 @@ export const knownDefects = {
       {"at":"def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
       {"at":"def level_u1(S : T(U1)) : U1 := T.Hom(S, S);","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
     ],
+    missing: [],
     assumes: [],
   },
   "G3": {
@@ -170,6 +193,7 @@ export const knownDefects = {
       {"at":"def unsupported(S : T(U0)) := T.Hom.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Hom.id"},
       {"at":"def unsupported_iso(S : T(U0)) := T.Iso.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Iso.id"},
     ],
+    missing: [],
     assumes: [],
     published: [
       "T.Hom",
@@ -198,6 +222,7 @@ export const knownDefects = {
       {"at":"def empty_computation(S : T(U0)) : S.value(nil) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
       {"at":"def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
     ],
+    missing: [],
     assumes: [],
   },
   "G4-flat": {
@@ -207,6 +232,7 @@ export const knownDefects = {
       {"at":"def empty_computation(S : T(U0)) : S.value(nil) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
       {"at":"def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
     ],
+    missing: [],
     assumes: [],
   },
   "G5": {
@@ -214,39 +240,37 @@ export const knownDefects = {
       {"at":"op : forall x, y : M. M;","label":"Warning","text":"W706: x is unused in the body: take it out of the group and write M -> … for it."},
       {"at":"op : forall x, y : M. M;","label":"Warning","text":"W706: y is unused in the body: take it out of the group and write M -> … for it."},
     ],
+    missing: [],
     assumes: [],
-    advice: [
-      {"code":"W706","declaration":"T","message":"x is unused in the body: take it out of the group and write M -> … for it.","covers":"x"},
-      {"code":"W706","declaration":"T","message":"y is unused in the body: take it out of the group and write M -> … for it.","covers":"y"},
-    ],
   },
   "G5-single": {
     diagnostics: [
       {"at":"op : forall x : M. M;","label":"Warning","text":"W705: x is unused in the body: write M -> … instead of forall x : M. …."},
     ],
+    missing: [],
     assumes: [],
-    advice: [
-      {"code":"W705","declaration":"T","message":"x is unused in the body: write M -> … instead of forall x : M. ….","covers":"x"},
-    ],
   },
   "G6": {
     diagnostics: [
       {"at":"theory P(U < UU0) {","label":"Error","text":"E343: Untranslated name: Undefined"},
       {"at":"theory C(U < UU0) extends P {","label":"Error","text":"E343: Untranslated name: Undefined"},
     ],
+    missing: [],
     assumes: [],
   },
   "G8": {
     diagnostics: [
       {"at":"def h(x : T) : T := match x {","label":"Error","text":"E546: Cannot generate seg: T must be a proposition; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."},
     ],
+    missing: [],
     assumes: [],
     range: [
-      {"line":"def h(x : T) : T := match x {","covers":"x"},
+      {"line":"def h(x : T) : T := match x {","before":"def h(x : T) : T := match ","covers":"x"},
     ],
   },
   "G9": {
     diagnostics: [],
+    missing: [],
     assumes: [],
     links: [
       [{"name":"c","target":null,"start":0,"end":0}],

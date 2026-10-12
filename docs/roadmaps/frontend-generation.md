@@ -88,8 +88,9 @@ Depends on the scope fixes of #215, which replaces #188. The initial
 harness is implemented by
 [PR #217](https://github.com/KanHarI/cubist-math/pull/217) and runs in the
 normal `npm test` suite. Each case is a Cubist module that states its
-desired check as `// Error:` comments, with the few observations a comment
-cannot state (source ranges, links, lint advice, published names) beside
+desired check as `// Error:` comments. Every declaration without a comment
+must have an output of its own, and the few observations the comments cannot
+state (a refusal's range in its line, links, published names) stand beside
 their desired values. Extend it in every implementation slice; its TODOs
 record implementation debt, not passing behavior. Each case has its own ID
 and activation state: a case is a TODO only while it shows exactly its
