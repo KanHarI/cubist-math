@@ -17,8 +17,14 @@ state theirs ([`cubist-tests/README.md`](../../cubist-tests/README.md)): an
 `// Error:` comment, with the exact message, above each declaration that must
 be refused, and nothing above one that must check.
 
-That comparison sees what the checker reports: each error and warning, at
-the line of its declaration. It does not see a declaration with no output,
+Before comparing comments or recognizing a known defect, account for every
+checker failure. These cases require all imports to check, including unused
+and transitive imports. Every local failure must have a matching reported
+error; consume each error once and reject any failures left over.
+This preserves intentional local refusals without hiding imported failures.
+
+The comment comparison sees local errors and warnings, at the line of their
+declaration. It does not see a declaration with no output,
 which reports nothing, or where in its line a refusal lies. Require each
 declaration without a comment to have an output of its own, and observe in
 JavaScript only what the comparison cannot see, such as a range within its

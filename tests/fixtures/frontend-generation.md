@@ -18,8 +18,17 @@ A module states its desired check as
 exact message, and nothing above a declaration that must check. Every
 client must also check without assumptions.
 
-That comparison sees each error and warning the checker reports, with its
-exact text, at the line of its declaration. It does not see a declaration
+Before comparison, the runner requires every local checker failure to have
+a matching reported error, consuming each error once. Imports, including
+unused and transitive imports, must check. An unaccounted failure is an
+assertion failure before any known-defect record is considered.
+[frontend-generation-observer.test.mjs](../frontend-generation-observer.test.mjs)
+checks missing modules, missing transitive modules and refused declarations
+and directives in unused imports, for a passing case and G5/G9. It also
+checks that a repeated local failure cannot reuse one reported error.
+
+The comment comparison sees local errors and warnings, with their exact
+text, at the line of their declaration. It does not see a declaration
 with no output, which reports nothing, or where in its line a refusal lies.
 So every case also requires each declaration without a comment to have an
 output of its own, and

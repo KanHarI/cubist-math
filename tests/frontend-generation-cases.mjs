@@ -2,10 +2,11 @@
 // each headed `// ID (phase): contract.` and stating its desired check as
 // tools/inline-errors.mjs writes it: an `// Error:` or `// Warning:` comment
 // above each declaration the checker must refuse or warn about, and nothing
-// above one that must check. That comparison sees each error and warning the
-// checker reports, at the line of its declaration. It does not see a
-// declaration with no output, which reports nothing, or where in its line a
-// refusal lies. So every case also observes the declarations without a
+// above one that must check. Before comparing comments, require imports to
+// check and account for every local failure in the reported errors. The
+// comparison sees local errors and warnings, at the line of their declaration.
+// It does not see a declaration with no output, which reports nothing, or
+// where in its line a refusal lies. So every case observes declarations without a
 // comment that have no output of their own, and a case that needs them
 // observes a refusal's range, the links at each use of a name, or the names
 // it must not publish, each beside its desired value.
@@ -14,6 +15,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parse } from "../web/cubist/parser.mjs";
+import { normal } from "../web/cubist/stated-comments.mjs";
 import { reported, stated } from "../tools/inline-errors.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
@@ -86,8 +88,20 @@ const placed = (source, items) => {
 // check without assumptions.
 export async function observe(t, c, module) {
   const { result } = await checkProgram(t, c.source, { module, reader: sourceReader({ path: c.path }), name: c.name });
+  const diagnostics = reported(c.source, result, c.name);
+  // Imports must check. Every local gap needs an error in the presentation;
+  // consume each once, so one reported error cannot hide multiple failures.
+  const errors = diagnostics.filter(item => item.label === "Error").map(item => item.text);
+  const unreported = result.gaps.filter(gap => {
+    if (gap.module !== c.name) return true;
+    const at = errors.indexOf(normal(gap.code ? `${gap.code}: ${gap.reason}` : gap.reason));
+    if (at < 0) return true;
+    errors.splice(at, 1);
+    return false;
+  });
+  assert.deepEqual(unreported, [], `${c.id}: checker failures outside the local checked comments`);
   const observed = {
-    diagnostics: placed(c.source, reported(c.source, result, c.name)),
+    diagnostics: placed(c.source, diagnostics),
     missing: missing(c.source, result),
     assumes: result.outputs.filter(output => output.verified && output.axioms?.length).map(output => output.name),
   };
