@@ -290,6 +290,28 @@ def identity(S : T(U0)) := T.Hom.id(S);`, {}, injected("T.helper"));
   absentNative(program,"main__T.helper");
 });
 
+test("FG1: an operator or numeral whose derived operation failed reports that operation's failure", async t => {
+  const source = `import hlevels; import nat;
+theory T(U < UU0) {
+  M : set U; c : M; op(x, y : M) : M notation x + y;
+  def sub(x, y : M) : M := op(x, y) notation x - y;
+  def opposite(x : M) : M := x notation - x;
+  def of_nat(n : Nat) : M := c notation numeral;
+}
+def plus(S : T(U0)) : S.M { use S; exact c + c; }
+def minus(S : T(U0)) : S.M { use S; exact c - c; }
+def negative(S : T(U0)) : S.M { use S; exact -c; }
+def three(S : T(U0)) : S.M { use S; exact 3; }`;
+  for (const [member, client] of [["T.sub", "minus"], ["T.opposite", "negative"], ["T.of_nat", "three"]]) {
+    const {result, get} = await check(t, source, {}, injected(member));
+    assert.deepEqual(result.gaps.map(g => [g.name, g.code]), [[member, "E343"], [client, "E340"]], member);
+    assert.equal(get("plus").verified, true);
+    assert.match(get(client).reason, new RegExp(`^Untranslated dependency: ${member.replace(".", "\\.")} at `));
+    assert.equal(get(client).blockedBy, `main__${member}`);
+    assert.match(get(client).cause, /injected_failure/);
+  }
+});
+
 test("FG1: observer exceptions roll back the active generated group and permit a fresh check", async t => {
   const {CubicalProgram} = await import("../web/cubical-program.mjs");
   let reject = true;
