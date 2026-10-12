@@ -134,11 +134,15 @@ export function opened(t,scope,node,{complete=true}={}) {
     added.push([operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
       list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`}]);
   // A theory's numeral rule, its derived operation marked notation numeral,
-  // whose natural number is built from that operation's own Nat.
+  // whose natural number is built from that operation's own Nat. A refused
+  // operation keeps the rule, which reads the operation alone: a numeral
+  // reports that failed dependency.
   const operation=record.notations.numeral?values.get(record.notations.numeral):null;
-  const numeral=operation&&operation.tag!=="Untranslated"?{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
-    aliases:new Map([[NUMERAL_NAT,scope.nf(scope.infer(operation).type).domain]]),
-    value:{kind:"call",fn:{kind:"name",name:operatorBinding("numeral"),...at},args:[{kind:"name",name:"n",...at}],...at}}:null;
+  const reads={kind:"name",name:operatorBinding("numeral"),...at};
+  const numeral=!operation?null:operation.tag==="Untranslated"?{left:"n",right:null,recipe:{},aliases:new Map(),value:reads}
+    :{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
+      aliases:new Map([[NUMERAL_NAT,scope.nf(scope.infer(operation).type).domain]]),
+      value:{kind:"call",fn:reads,args:[{kind:"name",name:"n",...at}],...at}};
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).

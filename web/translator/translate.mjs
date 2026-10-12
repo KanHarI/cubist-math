@@ -1024,8 +1024,10 @@ export class Translator {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
             // A notation rule's name is read under its key: the message
-            // names it as the rule does.
-            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name)}`);
+            // names it as the rule does. A model's operator or numeral is
+            // read under a key too: the message names its operation.
+            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" ")
+              :n.name.startsWith("\u0000")?value.name:n.name)}`);
             error.blockedBy=value.blockedBy??value.binding??value.name;
             error.cause=value.cause??value.reason;
             throw error;
