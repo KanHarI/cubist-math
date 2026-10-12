@@ -120,8 +120,8 @@ print(typeof(negate));
 print(evaluate(reverse));
 // Output: Circle -> Circle
 print(typeof(reverse));
-// Output: fun (x : List(__U, Nat)) => induction x return Nat { nil => 0; cons(head, tail, ih) =>
-//   succ(ih); }
+// Output: fun (x : List(__U, Nat)) => induction x return Nat { nil => 0; cons(head, tail) with ih
+//   => succ(ih); }
 print(evaluate(length));
 // Output: List(__U, Nat) -> Nat
 print(typeof(length));
