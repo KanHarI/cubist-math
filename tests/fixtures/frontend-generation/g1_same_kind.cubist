@@ -1,0 +1,10 @@
+// G1-same-kind (FG1): a same-kind duplicate preserves the first definition.
+
+def N : Unit := tt;
+
+// Error: E872: Duplicate declaration N: a declaration in this module already owns that name.
+def N : U0 := Unit;
+
+def original : Unit := N;
+
+def independent : Unit := tt;

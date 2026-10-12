@@ -1,0 +1,43 @@
+// G2 (FG3): fixed argument domains contribute to generated universes.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  op(A : U0, x : A) : M;
+}
+
+def identity(S : T(U0)) : T.Hom(S, S) := T.Hom.id(S);
+
+def computation(S : T(U0), x : S.M) : T.Hom.compose(identity(S), identity(S)).map(x) = x {
+  rfl;
+}
+
+def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);
+
+def preserves(S, R : T(U0), f : T.Hom(S, R), A : U0, x : A) :
+  f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
+
+def level(S : T(U0)) : U1 := T.Hom(S, S);
+
+// Error: E606: Type mismatch: found U1, expected U0.
+def lowered(S : T(U0)) : U0 := T.Hom(S, S);
+
+def identity_u1(S : T(U1)) : T.Hom(S, S) := T.Hom.id(S);
+
+def computation_u1(S : T(U1), x : S.M) : T.Hom.compose(identity_u1(S), identity_u1(S)).map(x) = x {
+  rfl;
+}
+
+def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);
+
+def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :
+  f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
+
+def level_u1(S : T(U1)) : U1 := T.Hom(S, S);
+
+theory Plain(U < UU0) {
+  M : set U;
+  op(x : M) : M;
+}
+
+def plain_level(S : Plain(U0)) : U0 := Plain.Hom(S, S);

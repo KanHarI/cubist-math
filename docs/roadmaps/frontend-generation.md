@@ -8,6 +8,12 @@ failures. This document proposes implementation work; it does not mark
 those defects fixed. The [work plan](work-plan.md#frontend-generation-track)
 records its scheduling dependencies.
 
+FG0's evidence harness is implemented in
+[frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs)
+with its [comparison manifest](../../tests/fixtures/frontend-generation.md).
+G1–G6 and G8–G12 remain explicit expected failures; FG1–FG6 implementation
+is still planned. G12's refusal range is tracked separately as `G12-range`.
+
 The goal is to preserve the meaning and interface of a declaration through
 capture, inheritance, substitution, generation and elaboration. The
 generator must also refuse unsupported constructions before publishing
@@ -78,8 +84,26 @@ planner must not claim to have inferred types or discharged obligations.
 
 ## FG0: establish evidence and semantic comparisons
 
-Depends on #188's scope fixes. Start this before the implementation slices
-and extend it in every slice. Initial change: a small test-only PR.
+Depends on the scope fixes of #215, which replaces #188. The initial
+harness is implemented by
+[PR #217](https://github.com/KanHarI/cubist-math/pull/217) and runs in the
+normal `npm test` suite. Each case is a Cubist module that states its
+desired check as `// Error:` comments. Every declaration without a comment
+must have an output of its own, and the few observations the comments cannot
+state (a refusal's range in its line, links, published names) stand beside
+their desired values. Extend it in every implementation slice; its TODOs
+record implementation debt, not passing behavior. Each case has its own ID
+and activation state: a case is a TODO only while it shows exactly its
+recorded defect, and activating a fixed case removes only its record. A
+changed symptom must fail and be investigated. The
+[comparison manifest](../../tests/fixtures/frontend-generation.md#coverage-by-executable-case)
+records the cases, including direct, inherited and initial-model G12 clients.
+
+This roadmap is the authority for desired FG behavior; the inventory records
+defects and the manifest maps executable evidence to these requirements.
+Apply the [regression contract checklist](../guides/regression-contracts.md)
+when extending that evidence. A new review finding requires checking the same
+failure mechanism across sibling cases.
 
 - Turn G1–G6 and G8–G12 into durable fixtures with explicit current failures and
   expected outcomes. Prefer a focused test for a complete behavior over
@@ -316,7 +340,9 @@ valid replacement for a discarded origin.
 Make unused-binder advice aware of theory-field roles and public argument
 labels. Initially suppress arrow-form advice where it changes a generated
 interface. A future broader simplification must prove preservation through
-checked clients: named calls, Hom/Iso operations and initial/free folds.
+checked clients: supported calling conventions, Hom/Iso operations and
+initial/free folds. G5 currently uses positional operation calls; named
+operation calls require separate language support.
 Merely preserving the standalone function type is insufficient.
 
 Exit: G5's suggested edits either preserve those clients or are not

@@ -1,0 +1,15 @@
+// G1 (FG1): a duplicate declaration preserves the first binding and its clients.
+
+def N : Unit := tt;
+
+// Error: E872: Duplicate declaration N: a declaration in this module already owns that name.
+inductive N : U0 {
+  c;
+}
+
+// Error: E343: Untranslated name: c
+def leaked_c := c;
+
+def original : Unit := N;
+
+def independent : Unit := tt;
