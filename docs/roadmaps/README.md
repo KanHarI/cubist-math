@@ -79,8 +79,9 @@ EVAL1 and NUM0/NUM1 can advance independently. See
   follow-up to FG6, covering both the FG stack and earlier code. Identifies
   obsolete and duplicate tests, runner primitives for moving behavioral
   tests into Cubist, and staged generation, publication and tooling cleanup.
-- [Induction hypothesis syntax](induction-hypothesis-syntax.md): adopted
-  `constructor(fields) with hypotheses` clause design; not implemented.
+- [Induction hypothesis syntax](induction-hypothesis-syntax.md):
+  `constructor(fields) with hypotheses` clauses, implemented on 2026-10-11
+  with the old spelling still read and a checked migration tool.
 - [Proof ergonomics](proof-ergonomics-roadmap.md): shipped proof tools and
   remaining theory/declaration/automation work. Its
   [remaining implementation contracts](proof-ergonomics-roadmap.md#remaining-implementation-contracts)
