@@ -20,7 +20,7 @@ computable def member(U < UU0, A : U, B : A -> U, x, y : Tree(U, A, B)) : U := m
 // Well-founded induction forbids a tree from being its own child.
 computable def no_self_member(U < UU0, A : U, B : A -> U, t : Tree(U, A, B)) :
   member(U, A, B, t, t) -> Void := induction t as z return (member(U, A, B, z, z) -> Void) {
-    node(a, children, ih) => fun (
+    node(a, children) with ih => fun (
       m : member(U, A, B, typed(Tree(U, A, B), node(a, children)), node(a, children))
     ) => ih(m.1)(transport m along m.2 in (fun (w : Tree(U, A, B)) => member(U, A, B, w, w)));
   };

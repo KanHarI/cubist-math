@@ -1,8 +1,8 @@
 # Separate induction hypotheses from constructor fields
 
-Decision adopted on 2026-10-11. Status: specified, not implemented or
-scheduled. The [work plan](work-plan.md) owns scheduling; this document
-specifies a surface-language change to the existing induction mechanism.
+Decision adopted and implemented on 2026-10-11 (the [work plan](work-plan.md)'s
+L2.2a row). This document records the surface-language contract and its
+implementation evidence.
 
 ## Decision
 
@@ -14,10 +14,9 @@ node(a, children) with ih => ...
 branch(left, right) with ih_left, ih_right => ...
 ```
 
-These are proposed clause headers, not syntax the current parser accepts.
-The current spelling of the first header is `node(a, children, ih) => ...`.
-It mixes stored constructor fields with results supplied by induction,
-making a two-field constructor appear to have three fields.
+The parser accepts these headers in expressions and proof blocks. The old
+spelling, `node(a, children, ih) => ...`, remains accepted for compatibility.
+A clause cannot combine the old spelling with a `with` list.
 
 With the adopted spelling, `node(a, children)` has the same fields in
 `match` and `induction`. The `with` clause names the additional induction
@@ -26,7 +25,7 @@ not a keyword.
 
 ## Syntax and binding contract
 
-The planned clause header is:
+The clause header is:
 
 ```text
 constructor(fields) [@ coordinate ...] [with hypothesis, ...] => body
@@ -85,7 +84,7 @@ goal     : P(node(a, children))
 
 For `no_self_member`, take
 `P(t) := member(U, A, B, t, t) -> Void`. Then `ih(b)` says that child
-`children(b)` cannot be its own immediate child. The planned header in
+`children(b)` cannot be its own immediate child. The header in
 that proof is `node(a, children) with ih => ...`; its motive and proof
 body retain the same mathematical meaning.
 
@@ -145,5 +144,32 @@ equality between the two presentations.
   the syntax change must preserve proof terms and axiom dependencies.
 - Check the Russell proof and existing induction/reference regressions.
 
-The document records the decision only. None of these implementation
-steps is claimed complete by adding this roadmap.
+## Implementation evidence
+
+`tests/induction-hypotheses.test.mjs` checks the binding contract, expression
+and proof-block elaboration, interleaved fields, function-valued and empty
+recursive fields, path constructors, scope and inspection links, formatter
+round trips, diagnostics, and identical checked terms and assumptions for
+old and new syntax. `tests/induction.test.mjs` and the checked reference
+examples cover printed output and documentation.
+
+The maintained `lists` and `universe_smallness` modules use `with`. Their
+migration verifies identical terms, types and axiom dependencies. Historical
+snapshots retain their original spelling. The specialized natural-number
+form is unchanged.
+
+To migrate other checked sources:
+
+```sh
+node tools/migrate-induction-hypotheses.mjs FILE.cubist
+node tools/migrate-induction-hypotheses.mjs --write FILE.cubist
+```
+
+The first command reports changes. The second checks the source, identifies
+hypotheses from elaboration records, preserves nested clauses and comments,
+and verifies identical checked terms, types and assumptions before writing.
+It refuses sources with checking gaps. Only declarations are migrated: the
+program records no bindings for a directive (`evaluate`, `print`) of its
+own, and the verifier compares declarations, so the tool leaves the
+induction clauses of directives as written and reports their lines. The
+formatter preserves either accepted spelling; generated proofs emit `with`.
