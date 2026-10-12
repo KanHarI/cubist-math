@@ -69,8 +69,9 @@ finishing a language milestone does not automatically resume them.
 ## Language tooling roadmap
 
 - [Induction hypothesis syntax](roadmaps/induction-hypothesis-syntax.md):
-  adopted separation of constructor fields and induction hypotheses;
-  specified, not implemented.
+  constructor fields and induction hypotheses separated by `with`,
+  implemented on 2026-10-11 with the old spelling still read and a checked
+  migration tool.
 - [Morphisms, categories and universal constructions](roadmaps/categories.md):
   opt-in morphisms and checked initial/free derivations, which may fail;
   general propositional laws and the proposed categorical library. The

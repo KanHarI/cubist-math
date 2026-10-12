@@ -49,7 +49,7 @@ test("accepted cubical probes from the roadmap evidence keep checking",async t=>
 
 test("closed assumption-free results compute to canonical values (invariant 10)",async t=>{
   const {source,result}=await checkExample(t,"canonicity.cubist","hott_canonicity");
-  assertCheckedFixture(result,["closed_arithmetic","closed_path_induction","closed_transport",
+  assertCheckedFixture(result,["closed_arithmetic","closed_induction_double","closed_path_induction","closed_transport",
     "closed_dependent_transport","winding_one","winding_two","winding_minus_one",
     "winding_integer_loop","unit_center","unit_path_computes","unit_square_computes",
     "retract_path_computes","nat_decision_computes","nat_square_computes","unit_paths_contract",
@@ -60,7 +60,7 @@ test("closed assumption-free results compute to canonical values (invariant 10)"
     assert.deepEqual(declaration.body.map(statement=>statement.kind),["rfl"],declaration.name.text);
     assert.equal(declaration.computable,true,`${declaration.name.text} is marked computable`);
   }
-  assert.equal(result.evaluations.length,2,"the evaluate directives check");
+  assert.equal(result.evaluations.length,3,"the evaluate directives check");
 });
 
 // Expected outcome of each probe in rejected-probes.cubist.rejected. `until`

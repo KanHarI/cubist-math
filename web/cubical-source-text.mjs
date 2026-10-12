@@ -176,13 +176,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // clause takes the constructor's data and positions, then a recursive
   // result for each position, then its dimensions. Where a clause uses a
   // recursive result, the eliminator is an induction, and that clause names
-  // its hypotheses after its arguments: `cons(head, tail, ih) => …`.
+  // its hypotheses after with: `cons(head, tail) with ih => …`.
   const declaredMatch = (elim, value) => {
     const constructors = symbols[elim.signature]?.constructors, motive = elim.motive;
     if (!constructors || constructors.length !== elim.clauses?.length || motive?.tag !== "Lam") return null;
     const clauses = [];
     for (const [c, clause] of elim.clauses.entries()) {
-      const { name, data, positions, dimensions } = constructors[c];
+      const { name, data, positions, dimensions, order } = constructors[c];
       const args = [], results = [], dims = [];
       let body = clause;
       // A clause that evaluation eta-reduced, as `succ` for fun (ih) =>
@@ -196,14 +196,16 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       for (let i = 0; i < data + positions; i++) take(args, "x");
       for (let i = 0; i < positions; i++) take(results, "ih");
       for (let i = 0; i < dimensions; i++) { if (body?.tag !== "PLam") return null; dims.push(body.dim); body = body.body; }
-      clauses.push({ name, args, results, dims, body });
+      const fields = order ? order.map((_, sourceIndex) => args[order.indexOf(sourceIndex)]) : args;
+      clauses.push({ name, args: fields, results, dims, body });
     }
     // `as z` is written only where the return type uses z, as the linter asks.
     const named = mentions(motive.body, motive.name);
     const hypotheses = clause => clause.results.some(result => mentions(clause.body, result));
     const shown = clauses.map(clause => {
-      const { name, args, results, dims, body } = clause, names = hypotheses(clause) ? [...args, ...results] : args;
-      return `${name}${names.length ? `(${names.join(", ")})` : ""}${dims.map(dim => ` @ ${dim}`).join("")} => `
+      const { name, args, results, dims, body } = clause;
+      return `${name}${args.length ? `(${args.join(", ")})` : ""}${dims.map(dim => ` @ ${dim}`).join("")}`
+        + `${hypotheses(clause) ? ` with ${results.join(", ")}` : ""} => `
         + `${under([...args, ...results], () => show(body))};`;
     });
     return `${clauses.some(hypotheses) ? "induction" : "match"} ${show(value)}${named ? ` as ${motive.name}` : ""} `
@@ -372,7 +374,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           if (braced.length)
             return atom(`${sub(head, LEVEL.atom)}{{${braced.map(show).join(", ")}}}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
         }
-        return atom(`${sub(head, LEVEL.atom)}(${args.map(show).join(", ")})`);
+        const order = head.tag === "Con" ? symbols[head.sort?.signature]?.constructors?.[head.index]?.order : null;
+        const sourceArgs = order && args.length >= order.length
+          ? [...order.map((_, sourceIndex) => args[order.indexOf(sourceIndex)]), ...args.slice(order.length)] : args;
+        return atom(`${sub(head, LEVEL.atom)}(${sourceArgs.map(show).join(", ")})`);
       }
       case "Pair": {
         const items = [show(t.first)];
