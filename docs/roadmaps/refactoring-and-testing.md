@@ -58,11 +58,13 @@ The first review, on 2026-10-10, found these issues in the first draft:
 cases in Cubist, and they are active on this branch. Each case is a module in
 [`tests/fixtures/frontend-generation/`](../../tests/fixtures/frontend-generation/)
 that states its desired check as exact `// Error:` messages: a declaration
-without a comment must check. A small table in
+without a comment must check and have an output of its own, which the comment
+comparison alone cannot see. A small table in
 [`frontend-generation-cases.mjs`](../../tests/frontend-generation-cases.mjs)
-observes what a comment cannot state: refusal ranges, G9's links, lint advice,
-published names, G8's coherence searches and the obligations of wrong explicit
-path bodies. The desired outputs are this branch's, reviewed against the
+observes what the comments cannot state: refusal ranges within their line,
+G9's links, published names, G8's coherence searches and the obligations of
+wrong explicit path bodies. Lint advice is a warning, which the comments
+state. The desired outputs are this branch's, reviewed against the
 [frontend generation roadmap](frontend-generation.md). Integration retires the
 known-defect records and their TODO/strict-mode classification, completing the
 FG0 part of RC0, not its other cleanup work.
@@ -74,11 +76,15 @@ This branch's additions are cases of their own: G5's named generated-constructor
 client, G8's zero coherence-search count, both wrong explicit-path cases,
 ordinary bare/partial helper clients, and the recursive-predecessor regression
 for two predecessor names. The required compiler mutations, including recursive
-shadowing, are unchanged.
+shadowing, are unchanged, and one partial fix joins them: `duplicate-output`
+refuses a duplicate but lets it replace the first declaration's output, and
+must fail G1.
 
 The exact messages are the interim form of RC1's semantic expectations. The
 modules lie outside `cubist-tests/`, so `inline-errors.mjs --write` never
-rewrites them. RC1/RC2 move them into `cubist-tests/` with pragmas.
+rewrites them. RC1/RC2 move them into `cubist-tests/` with pragmas. The Cubist
+tests' comparison does not yet require an output for each declaration without
+a comment, as these cases do; that check moves with them.
 
 The FG6 gate selects group prefixes (`G2:`, `G5:`, `G8:`, `G11:`), while an
 individual case is selectable by its bracketed ID. Preserve those prefixes and
@@ -673,7 +679,8 @@ their previous paths rather than retain permanent compatibility layers.
   it distinguishes. For a mutation-targeted migration, run the same bad
   implementation against the new case before deleting the JS assertion.
   Update mutation selectors to stable case IDs as the runner gains them.
-- Keep all required FG mutation kills (the original thirteen plus recursive shadowing), with passing unmodified
+- Keep all required FG mutation kills (the original thirteen plus recursive
+  shadowing and the duplicate-output partial fix), with passing unmodified
   baselines. A crash, infrastructure error or timeout is not a semantic
   kill. Preserve the eight deterministic CI source configurations and the
   wider 32-case audit unless an equivalence argument supports a change.

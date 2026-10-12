@@ -19,11 +19,20 @@ A module states its desired check as
 [`tools/inline-errors.mjs`](../../tools/inline-errors.mjs) writes it: an
 `// Error:` comment above each declaration that must be refused, giving the
 exact message, and nothing above a declaration that must check. Every
-client must also check without assumptions. A comment cannot state a
-source range, a link, lint advice, a published name or a work counter, so
-[frontend-generation-cases.mjs](../frontend-generation-cases.mjs) observes
-those for the cases that need them, beside their desired values. Its `gaps`
-lookup gives the provenance and browser tests a case's source by ID.
+client must also check without assumptions.
+
+That comparison sees each error and warning the checker reports, with its
+exact text, at the line of its declaration. It does not see a declaration
+with no output, which reports nothing, where in its line a refusal lies, or
+the work a check did. So every case also requires each declaration without a
+comment to have an output of its own, and
+[frontend-generation-cases.mjs](../frontend-generation-cases.mjs) observes a
+refusal's range in its line, the links at each use of a name, the names a
+case must not publish and work counters, for the cases that need them,
+beside their desired values. Lint advice needs no observation of its own: it
+is a warning, and a module without a `// Warning:` comment admits none. The
+cases module's `gaps` lookup gives the provenance and browser tests a case's
+source by ID.
 
 The clients and their statements are written by hand, independently of the
 generator. The desired messages, ranges and links are those of this
@@ -37,10 +46,11 @@ changes the case's comment, and the new wording needs the same review.
 
 - **G1** covers both orders of definition/inductive collisions, a
   definition/initial-model collision and a same-kind duplicate. The second
-  declaration is refused as a duplicate, and the first binding and its
-  clients survive. Clients of the refused constructors (`c`, `N.one`,
-  `N.mul`) are refused with E343, while G1-reverse keeps its original
-  constructor. G1-initial publishes no `N.model`, `N.fold_map` or `N.fold`.
+  declaration is refused as a duplicate. The first keeps its own output,
+  which the refused one must not replace, and its clients check. Clients of
+  the refused constructors (`c`, `N.one`, `N.mul`) are refused with E343,
+  while G1-reverse keeps its original constructor. G1-initial publishes no
+  `N.model`, `N.fold_map` or `N.fold`.
 - **G2** checks Hom/Iso, composition, the fixed-domain operation's
   preservation field (`map_op`) and the Hom's level at U0 and U1. A U0
   model's Hom lives in U1; stating it in U0 is refused with
@@ -55,7 +65,8 @@ changes the case's comment, and the new wording needs the same review.
   `map_op :=`) and an initial model; named operation calls are separately
   unsupported (E378).
   The linter must not advise the arrow form on an operation's binders,
-  since the rewrite would remove generated interfaces. Passing controls in
+  since the rewrite would remove generated interfaces; neither module has a
+  `// Warning:` comment, so any advice fails it. Passing controls in
   the runner keep W705 and W706 for ordinary unused binders and check their
   rewrites.
 - **G6** keeps the parent's cause (E343 for `Undefined`), and the child
@@ -68,7 +79,7 @@ changes the case's comment, and the new wording needs the same review.
   the binder and spans exactly the label, and `meaning` fixes the law's
   meaning.
 - **G10** refuses a capture with E871 naming helper `k` and field `c`, over the
-  conflicting binder.
+  conflicting binder: the `c` of `succ(c)`, not its use in `k(c)`.
 - **G11** requires the intended `op(x, S.c)` equation to check and the
   captured `op(x, x)` equation to be refused, directly, through a helper
   chain with grouped/dependent parameters, through inheritance and through an

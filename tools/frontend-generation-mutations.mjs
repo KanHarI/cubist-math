@@ -53,6 +53,11 @@ export const mutations=[
   mutation("lint-interface","web/cubist/lint.mjs",
     "&& !publicTelescopes.has(node)", "",
     "frontend-generation","G5:"),
+  // A partial fix, not a revert: the duplicate is still refused and its
+  // clients resolve, but the refused declaration replaces the first's output.
+  mutation("duplicate-output","web/cubical-program.mjs",
+    "if (d.duplicate) {", "if (false && d.duplicate) {",
+    "frontend-generation","G1:"),
   // Named historical survivors are probes, excluded from the required-kill
   // CI set only with their reachability analysis in the accompanying report.
   mutation("fresh-label","web/translator/translate.mjs",
