@@ -19,16 +19,20 @@ export class DeclarationOwnership {
   reserve(declarations, owner) {
     const proposed = declarations.flatMap(declaration => declaredNames(declaration).map(entry => ({...entry, declaration})));
     const seen = new Map();
-    // First inspect the entire request: a late collision must not reserve a
-    // prefix of a refused expansion, or alter an earlier reservation.
+    // Inspect the entire request, then claim every still-free name, even
+    // on refusal. Those names belong to the failed local declaration, not
+    // to an import. A collision never changes an earlier owner.
+    let conflict = null;
     for (const entry of proposed) {
       const previous = this.entries.get(entry.name);
-      if (previous && previous.owner !== owner || seen.has(entry.name) && seen.get(entry.name) !== entry.declaration) return entry;
+      if (previous && previous.owner !== owner || seen.has(entry.name) && seen.get(entry.name) !== entry.declaration)
+        conflict ??= entry;
       seen.set(entry.name, entry.declaration);
     }
     for (const entry of proposed) if (!this.entries.has(entry.name)) this.entries.set(entry.name, {...entry, owner});
-    return null;
+    return conflict;
   }
+  owns(name, owner) { return this.entries.get(name)?.owner === owner; }
 }
 
 export const duplicateDeclaration = name => Error(`Duplicate declaration ${name}: a declaration in this module already owns that name.`);
@@ -43,6 +47,19 @@ export const failureRoot = (failure, binding) =>
 // reports the same root, however many failed declarations lie between.
 export const untranslated = (name, binding, reason, root) =>
   ({tag: "Untranslated", name, binding, reason, blockedBy: root.binding, cause: root.reason});
+
+// A refused generator owns its qualified namespace even when it could not
+// expand far enough to enumerate its members. This is an unavailable value
+// in the environment, not a second lifecycle table. Exact local members
+// still win; refusal replaces imported aliases but never captured identities.
+export const unavailableNamespace = name => "\u0000unavailable namespace " + name;
+export function lookupDeclaration(env, name) {
+  if (env.has(name)) return env.get(name);
+  if (name.startsWith("\u0000")) return undefined;
+  const dot = name.indexOf(".");
+  const refusal = dot > 0 && env.get(unavailableNamespace(name.slice(0, dot)));
+  return refusal ? {...refusal, name, binding: refusal.binding + name.slice(dot)} : undefined;
+}
 
 // Generator-assigned family roles, never dotted-name heuristics, determine
 // the publication boundary. A base theory (including parent projections)

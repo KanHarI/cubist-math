@@ -4,6 +4,7 @@
 import {rewritten} from "../cubist/scopes.mjs";
 import {reference, members} from "../cubist/references.mjs";
 import {alphaKey, isTerm} from "./core.mjs";
+import {lookupDeclaration} from "./declarations.mjs";
 
 const identities = new WeakMap();
 const contexts = new WeakMap();
@@ -26,7 +27,7 @@ export function lexicalNotation(checker, aliases) {
 }
 
 export function capturedName(node, env, namespaces = [], retained = env) {
-  const value = env.get(node.name);
+  const value = lookupDeclaration(env, node.name);
   const companions = namespaces.map(key => [key, env.get(key(node.name))]).filter(([, entry]) => entry);
   if (!value && !companions.length) return node;
   const name = lexicalBinding(identity(value ?? companions[0][1]));
@@ -43,7 +44,7 @@ export function capturedNames(node, env, bound = new Set(), namespaces = [], ret
     const [root, ...fields] = n.name.split(".");
     const receiver = {...n, name: root, end: n.start + root.length};
     if (inner.has(root)) return fields.length ? members(n, receiver, fields) : n;
-    if (env.has(n.name) || namespaces.some(key => env.has(key(n.name)))) return capturedName(n, env, namespaces, retained);
+    if (lookupDeclaration(env, n.name) !== undefined || namespaces.some(key => env.has(key(n.name)))) return capturedName(n, env, namespaces, retained);
     if (!env.has(root) && !namespaces.some(key => env.has(key(root)))) return n;
     return members(n, capturedName(receiver, env, namespaces, retained), fields);
   }, bound);

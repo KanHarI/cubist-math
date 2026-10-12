@@ -6,6 +6,7 @@
 import {NameSupply} from "./names.mjs";
 import {freeNames,onFace} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
+import {unavailableNamespace} from "./declarations.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -55,6 +56,8 @@ const SUPERSEDED="\u0000superseded";
 const HIDDEN="\u0000hidden",identifier=/^[A-Za-z_][A-Za-z0-9_]*$/;
 function hide(env,name) {
   if(!identifier.test(name))return;
+  // A local model or parameter also shadows a refused global namespace.
+  env.delete(unavailableNamespace(name));
   const prefix=`${name}.`;
   let hidden=null;
   for(const [key,entry] of env)if(key.startsWith(prefix)) {

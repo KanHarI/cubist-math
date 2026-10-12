@@ -15,8 +15,23 @@ source token, independently of aliases in the environment.
 E872 refuses a conflicting local declaration without replacing the earlier
 binding, native definition, source location or inspection symbol. A refused
 duplicate makes the check incomplete even when every retained symbol is
-checked. Import shadowing and local binders remain legal. Model notation
-extensions still use their separate policy: a model's declaring module
+checked. Reservation records all still-free names of the attempted
+declaration, even on collision. Refusal binds those names to unavailable
+values with the E872 cause, so a rejected inductive's type and other
+constructors cannot silently resolve to imports. An already-owned name
+keeps its original value and cause.
+
+A refused theory, initial model or free model also leaves an unavailable
+qualified namespace in the environment. Imported source aliases under that
+namespace are refused; existing local members remain intact. Lookup and
+lexical capture use the same unavailable value for members that could not
+be enumerated because expansion never ran. Earlier references captured by
+identity still denote their imports, and a local parameter or opened model
+shadows the namespace normally. Calls, notation rules and generator
+requests distinguish unavailable names from absent ones before classifying
+their arguments or capturing their references. Import shadowing and local
+binders remain legal. Model notation extensions still use their separate
+policy: a model's declaring module
 may add numeral/literal rules. Refusing an extension records a directive
 error and preserves the model's existing symbol and notation.
 
@@ -125,11 +140,11 @@ arena bytes rose about 59% for algebra/fold and 48% for inheritance. These
 are costs to track in subsequent slices; the timings do not establish a
 performance improvement or a regression budget.
 
-Validation: `npm test -- --test-concurrency=4` reports 798 tests, 786 passed,
-12 expected TODOs assigned to later phases, and no failures. The inspector
-browser suite, built-site browser suite, diagnostic catalogue audit and
-`git diff --check` pass. The standalone dependency-cause and interrupted
-load tests also pass after their final strengthened assertions.
+Validation at `3ae4db05`: `npm test -- --test-concurrency=4` reports 822
+tests, 810 passed, 12 expected TODOs assigned to later phases, and no
+failures. The inspector browser suite also passed at that revision; the
+built-site browser checks were last run at `8416c6de`. These are historical
+results for the named revisions, not measurements of later edits.
 
 This phase does not implement FG2's complete dependency/support analysis,
 FG3's universe inference, FG4's contextual evidence, or FG5's source-label

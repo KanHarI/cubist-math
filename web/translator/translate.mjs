@@ -21,13 +21,13 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated} from "./declarations.mjs";
+import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,unavailableNamespace,lookupDeclaration} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,failedExpansion,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -404,11 +404,27 @@ export class Translator {
         if(skipped)this.onQueued?.(-skipped);
       }
     };
-    const rejectDuplicate=(d,conflict)=>{
+    const rejectDuplicate=(d,conflict,members=[d])=>{
       const error=module.locate(duplicateDeclaration(conflict.name),conflict.at);
       this.onDeclarationStart?.(d);
-      const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:true,
+      const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
         reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd};
+      const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
+      const bind=(name,cause=root)=>{
+        const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,cause);
+        env.set(name,value);env.set(lexicalBinding(value.binding),value);
+      };
+      for(const member of members)for(const {name} of declaredNames(member))
+        if(ownership.owns(name,d))bind(name);
+      if(["theory","initial","free"].includes(d.kind)) {
+        const key=unavailableNamespace(d.name.text),previous=env.get(key);
+        // Keep an earlier local refusal's root too, just as checked local
+        // members survive. Imported namespace failures are shadowed here.
+        const refusal=previous?.binding===binding?previous:untranslated(d.name.text,binding,error.message,root);
+        env.set(key,refusal);
+        for(const name of [...env.keys()])if(name.startsWith(d.name.text+".")&&!ownership.entries.has(name))
+          bind(name,failureRoot(refusal,binding));
+      }
       declarations.push(result);
       this.onDeclaration?.(d,result);
     };
@@ -447,10 +463,7 @@ export class Translator {
         const conflict=ownership.reserve(generated,d);
         if(conflict) {
           env.clear(); for(const [key,value] of before)env.set(key,value);
-          // The written owner was reserved above, but none of this expansion
-          // was published. Refuse that owner while preserving the binding
-          // that the expansion would have overwritten.
-          failedExpansion(this,d,env,declarations,module.locate(duplicateDeclaration(conflict.name),conflict.at));
+          rejectDuplicate(d,conflict,generated);
           continue;
         }
         if(generated.length)this.onQueued?.(generated.length-1);
@@ -1011,8 +1024,8 @@ export class Translator {
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.
         if(isHole(n))throw Error("A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.");
-        if(env.has(n.name)) {
-          const value=env.get(n.name);
+        const value=lookupDeclaration(env,n.name);
+        if(value!==undefined) {
           if(value.tag==="Untranslated") {
             // A notation rule's name is read under its key: the message
             // names it as the rule does. A model's operator or numeral is
@@ -1278,11 +1291,10 @@ export class Translator {
       case "call": {
         // Holes and named arguments: arguments the call determines (L4.1a).
         if(determinesArguments(n))return elaborateCall(this,n,scope,expected);
-        if(n.fn.kind==="name"&&INDUCTIVE_TAGS.has(env.get(n.fn.name)?.tag))
-          return resolveInductive(this,n.fn,env.get(n.fn.name),n.args,scope,expected);
-        if(n.fn.kind==="name"&&env.get(n.fn.name)?.tag==="Recursive")
-          return resolveRecursive(this,n.fn,env.get(n.fn.name),n.args,scope);
-        const builtin=n.fn.kind==="name"&&!env.has(n.fn.name)?n.fn.name:null;
+        const bound=n.fn.kind==="name"?lookupDeclaration(env,n.fn.name):undefined;
+        if(INDUCTIVE_TAGS.has(bound?.tag))return resolveInductive(this,n.fn,bound,n.args,scope,expected);
+        if(bound?.tag==="Recursive")return resolveRecursive(this,n.fn,bound,n.args,scope);
+        const builtin=n.fn.kind==="name"&&bound===undefined?n.fn.name:null;
         if(builtin){const value=builtinTerm(this,builtin,n,scope,expected);if(value)return value;}
         // Each argument at its parameter's type, read from the function's
         // type once (arguments.mjs); a universe argument instantiates it.
