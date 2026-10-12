@@ -59,7 +59,7 @@ export class CubicalProgram {
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
-    this.publications = new Map(); this.declarationOwnership = new Map();
+    this.publications = new Map();
     this.generation = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
@@ -157,7 +157,6 @@ export class CubicalProgram {
     this.simpRegistries.set(name,result.simpRegistry);
     this.publications.set(name,result.publications??[]);
     if (result.generation) this.generation.set(name, result.generation);
-    this.declarationOwnership.set(name,result.ownership??new Map());
     for(const directive of result.directives??[]) {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
