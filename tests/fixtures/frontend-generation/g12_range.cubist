@@ -1,0 +1,16 @@
+// G12-range (FG5): recursive type-unfolding refusals cover the responsible original reference.
+
+import hlevels;
+import nat;
+// Error: E845: iter is recursive, and a field's type cannot unfold it: state the law over a model,
+//   outside the theory.
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def iter(n : Nat) : M := match n {
+    zero => c;
+    succ(k) => op(iter(k));
+  };
+  law nope(n : Nat) : iter(n) = c;
+}

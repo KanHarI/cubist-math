@@ -1,0 +1,16 @@
+// control-paths (control): explicit path bodies remain checked.
+
+import hlevels;
+inductive H : set U0 {
+  first;
+  p(y : H) : y = y;
+}
+
+def k(x : H) : Unit := match x {
+    first => tt;
+    p(y) @ i => k(y);
+  };
+
+def computation : k(first) = tt {
+  rfl;
+}

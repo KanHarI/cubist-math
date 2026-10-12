@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
-import { gaps } from "./fixtures/frontend-generation.mjs";
+import { gaps } from "./frontend-generation-cases.mjs";
 // The page loads the WASM kernel from web/dist.
 assertFreshBuild();
 const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
@@ -73,16 +73,17 @@ try {
   // to the binder, even when the uses occupy different source lines.
   const lawSource = gaps.G9.source.replace("law l(c : M) : k(c) = op(c, c);",
     "law l(c : M) :\n    k(c) =\n    op(c, c);");
+  const lawLine = lawSource.slice(0, lawSource.indexOf("law l(c : M)")).split("\n").length;
   await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(lawSource).toString("base64url")}`);
   await page.reload(); await idle(); await page.locator("#read-mode").click();
-  const lawOccurrences = page.locator('#read-source .source-line:is([data-line="4"], [data-line="5"], [data-line="6"]) button[data-name="c"]');
+  const lawOccurrences = page.locator(`#read-source .source-line:is(${[0, 1, 2].map(k => `[data-line="${lawLine + k}"]`).join(", ")}) button[data-name="c"]`);
   assert.equal(await lawOccurrences.count(), 4);
   for (let index = 0; index < 4; index++) {
     await lawOccurrences.nth(index).click(); await inspected("c");
     assert.equal(await page.locator("#kernel-expression").textContent(), "c");
     assert.doesNotMatch(await page.locator("#kernel-context").textContent(), /\bc1\b/);
     await page.locator("#view-source").click();
-    assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), "4");
+    assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), String(lawLine));
   }
   // An inductive header wrapped over lines keeps its h-level keyword, which
   // the highlighter finds in the whole source, not the line alone (H1).

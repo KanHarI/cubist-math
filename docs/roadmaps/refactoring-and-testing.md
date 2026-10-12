@@ -53,34 +53,40 @@ The first review, on 2026-10-10, found these issues in the first draft:
 
 ## Coordination with the FG0 review refactor
 
-[PR #205](https://github.com/KanHarI/cubist-math/pull/205)'s reviewed contracts
-are now integrated and active on this branch. The
-[recorded design decision](https://github.com/KanHarI/cubist-math/pull/205#issuecomment-6096591882)
-separated fixture failures from known compiler debt; integration retires the
-temporary debt records, TODO/strict-mode classification and lifecycle-only tests.
-Desired assertions, case IDs, the independent requirement map and acceptance
-controls remain. This completes the FG0 integration part of RC0, not its other
-cleanup work.
+[PR #217](https://github.com/KanHarI/cubist-math/pull/217), the replacement for
+[#205](https://github.com/KanHarI/cubist-math/pull/205), now states the FG0
+cases in Cubist, and they are active on this branch. Each case is a module in
+[`tests/fixtures/frontend-generation/`](../../tests/fixtures/frontend-generation/)
+that states its desired check as exact `// Error:` messages: a declaration
+without a comment must check. A small table in
+[`frontend-generation-cases.mjs`](../../tests/frontend-generation-cases.mjs)
+observes what a comment cannot state: refusal ranges, G9's links, lint advice,
+published names, G8's coherence searches and the obligations of wrong explicit
+path bodies. The desired outputs are this branch's, reviewed against the
+[frontend generation roadmap](frontend-generation.md). Integration retires the
+known-defect records and their TODO/strict-mode classification, completing the
+FG0 part of RC0, not its other cleanup work.
 
-The contracts now cover distinct G4 branch computations, G12 base/recursive
-steps in all three contexts, lexical shadowing, refused-member publication,
-and validated source anchors. Downstream additions remain: G8's exact token
-range and zero coherence-search count, G5's named generated-constructor client,
-explicit-path negatives, both bare/partial helper contexts, and the recursive
-predecessor regression. The original required compiler mutations remain and
-a recursive-shadowing mutation has been added. Source semantic mutants and
-injected observer controls provide separately identified acceptance evidence.
-Commit-specific validation belongs in the PR discussion.
+The earlier contract layer, with its condition tables, independent requirement
+map, acceptance audit, semantic mutants and observer controls, is gone: it
+guarded the fixtures against weakening edits, which review of the diff covers.
+This branch's additions are cases of their own: G5's named generated-constructor
+client, G8's zero coherence-search count, both wrong explicit-path cases,
+ordinary bare/partial helper clients, and the recursive-predecessor regression
+for two predecessor names. The required compiler mutations, including recursive
+shadowing, are unchanged.
 
-The observation helpers remain eligible for RC1/RC2 migration through the
-existing runner; they add no test language or module loader.
+The exact messages are the interim form of RC1's semantic expectations. The
+modules lie outside `cubist-tests/`, so `inline-errors.mjs --write` never
+rewrites them. RC1/RC2 move them into `cubist-tests/` with pragmas.
 
 The FG6 gate selects group prefixes (`G2:`, `G5:`, `G8:`, `G11:`), while an
 individual case is selectable by its bracketed ID. Preserve those prefixes and
 assertion failures until the selectors migrate together with the tests. The
 existing FG5 provenance and browser tests also read fixture sources through
 `gaps`; the refactor provides that ID lookup as a view of the same case records.
-Update those consumers in the same change if that lookup is later removed.
+`frontend-generation-cases.mjs` exports that lookup; update those consumers in
+the same change if it is later removed.
 RC5 remains responsible for changing production diagnostic representations;
 compact observations in this test harness do not implement RC5.
 
@@ -172,7 +178,7 @@ documentation, without changing production semantics.
 
 | Candidate | Action and surviving coverage |
 | --- | --- |
-| “FG0 maps historical fixes and passing controls to existing executable tests” reads other JS files and searches for literal `test("name",` strings. | Delete the source-spelling test and its `historicalCoverage`/`passingCoverage` data. Move the historical mapping into [`frontend-generation.md`](../../tests/fixtures/frontend-generation.md); retain case-ID uniqueness, fixture validation and coverage-matrix completeness checks from the revised #205. The actual historical regressions still execute. T0 can restore an executable mapping by stable case ID. |
+| “FG0 maps historical fixes and passing controls to existing executable tests” reads other JS files and searches for literal `test("name",` strings. | Done in #217: the source-spelling test and its `historicalCoverage`/`passingCoverage` data are deleted, and the historical mapping is a table in [`frontend-generation.md`](../../tests/fixtures/frontend-generation.md). Case-ID uniqueness and coverage-matrix completeness remain checked. The actual historical regressions still execute. T0 can restore an executable mapping by stable case ID. |
 | “migrated native proof scopes format without changing their expanded syntax” in [`unfolding-syntax.test.mjs`](../../tests/unfolding-syntax.test.mjs) repeats archive round trips for eight files. | Delete the repetition, and fix the archive round trip it repeats (below). Retain the prohibition on the old `with_unfolding(` spelling. Keep the focused scoped-syntax edge cases. |
 
 Neither that test nor the archive round trip in

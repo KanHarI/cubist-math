@@ -1,0 +1,19 @@
+// control-paths-wrong-multi (control): wrong explicit path bodies beside another scrutinee are refused without a coherence obligation.
+
+import hlevels;
+inductive H : set U0 {
+  first;
+  p(y : H) : y = y;
+}
+
+inductive Bit : set U0 {
+  off;
+  yes;
+}
+
+// Error: E606: Type mismatch: found H -> Unit -> tt = tt, expected H -> (forall x1 : Unit. x1 =
+//   x1).
+def bad(x : H, b : Bit) : Unit := match x, b {
+    first, _ => tt;
+    p(y) @ i, _ => tt;
+  };

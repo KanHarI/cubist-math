@@ -10,7 +10,7 @@ import create from "../web/dist/cubical.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {lint} from "../web/cubist/lint.mjs";
-import {gaps} from "./fixtures/frontend-generation.mjs";
+import {gaps} from "./frontend-generation-cases.mjs";
 
 const module=await create();
 const check=(t,source,fixtures={})=>{

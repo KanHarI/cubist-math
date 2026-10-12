@@ -1,0 +1,16 @@
+// G6 (FG1): a child reports its failed dependency while the parent's cause remains inspectable.
+
+import hlevels;
+// Error: E343: Untranslated name: Undefined
+theory P(U < UU0) {
+  M : set U;
+  e : M;
+  law bad : e = Undefined;
+}
+
+// Error: E340: Untranslated dependency: P
+theory C(U < UU0) extends P {
+  law again : e = e;
+}
+
+def independent : Unit := tt;
