@@ -149,7 +149,8 @@ function compile(t, scope, columns, rows, context) {
     }
     for (const {head} of fitting) if (head.kind === "constructor") {
       if (head.args.length !== constructor.arity)
-        throw locate(Error(`${constructor.name} takes ${constructor.arity} argument${constructor.arity === 1 ? "" : "s"} here: ${constructor.name}(…) with ${constructor.arity} names.`), head.token);
+        throw locate(Error(`${constructor.name} takes ${constructor.arity} argument${constructor.arity === 1 ? "" : "s"} here, so its clause ${constructor.arity
+          ? `names ${constructor.arity === 1 ? "it" : `all ${constructor.arity}`} in parentheses: ${constructor.name}(…)` : `writes ${constructor.name} without parentheses`}.`), head.token);
       if (head.coordinates.length !== constructor.dims)
         throw locate(Error(constructor.dims ? `${constructor.name} is a path constructor: name its ${constructor.dims} dimension${constructor.dims === 1 ? "" : "s"} after its arguments.`
           : `${constructor.name} has no dimensions to name.`), head.token);
