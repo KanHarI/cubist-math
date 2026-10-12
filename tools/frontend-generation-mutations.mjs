@@ -58,6 +58,19 @@ export const mutations=[
   mutation("duplicate-output","web/cubical-program.mjs",
     "if (d.duplicate) {", "if (false && d.duplicate) {",
     "frontend-generation","G1:"),
+  // A hard-coded universe, right for G2's fixed domain but raising every Hom.
+  mutation("hom-universe-blanket","web/cubist/morphisms.mjs",
+    'declare(hom, `${models([])} :=',
+    'declare(hom, `${models([])} : ${[...new Set([...uA, ...uB]), "U1"].reduce((a, b) => `max(${a}, ${b})`)} :=',
+    "frontend-generation","G2:"),
+  // Generated interfaces that disappear: no written declaration reports them,
+  // so only the cases' written clients see them go.
+  mutation("missing-make","web/cubist/theories.mjs",
+    "out.push(declaration(`${T}.make`", "if (false) out.push(declaration(`${T}.make`",
+    "frontend-generation","G3:"),
+  mutation("initial-carrier","web/translator/initial-models.mjs",
+    "return [inductive, model, foldMap, fold];", "return [inductive];",
+    "frontend-generation","G5:"),
   // Named historical survivors are probes, excluded from the required-kill
   // CI set only with their reachability analysis in the accompanying report.
   mutation("fresh-label","web/translator/translate.mjs",

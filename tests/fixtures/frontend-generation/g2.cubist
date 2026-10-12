@@ -34,3 +34,10 @@ def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :
   f.map(S.op(A, x)) = R.op(A, x) := f.map_op(A, x);
 
 def level_u1(S : T(U1)) : U1 := T.Hom(S, S);
+
+theory Plain(U < UU0) {
+  M : set U;
+  op(x : M) : M;
+}
+
+def plain_level(S : Plain(U0)) : U0 := Plain.Hom(S, S);

@@ -62,10 +62,11 @@ completion or silently become an accepted snapshot.
 The [inventory](../reports/frontend-generation-gaps.md) maps baseline
 reproductions to their distinguishing regressions. Each case is a Cubist module
 in the [comparison manifest](../../tests/fixtures/frontend-generation.md) that
-states its desired check as `// Error:` comments. Every declaration without a
-comment must have an output of its own, and refusal ranges within their line,
-links, published names and work counters are observed beside their desired
-values.
+states its desired check as `// Error:` comments. Every checker failure,
+imported or local, must be accounted for, and every declaration without a
+comment must have an output of its own. Generated interfaces a case needs
+have written clients. Refusal ranges within their line, links, published
+names and work counters are observed beside their desired values.
 
 ## FG1: unify declaration ownership and publication
 

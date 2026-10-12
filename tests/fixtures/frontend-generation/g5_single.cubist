@@ -16,3 +16,7 @@ def named(S : T(U0), a : S.M) :
   );
 
 initial N : T(U0);
+
+def initial_model : T(U0) := N.model;
+
+def folded(S : T(U0)) : T.Hom(N.model, S) := N.fold(S);

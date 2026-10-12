@@ -76,19 +76,25 @@ This branch's additions are cases of their own: G5's named generated-constructor
 client, G8's zero coherence-search count, both wrong explicit-path cases,
 ordinary bare/partial helper clients, and the recursive-predecessor regression
 for two predecessor names. The required compiler mutations, including recursive
-shadowing, are unchanged, and one partial fix joins them: `duplicate-output`
+shadowing, are unchanged, and four partial fixes join them. `duplicate-output`
 refuses a duplicate but lets it replace the first declaration's output, and
-must fail G1.
+must fail G1. `hom-universe-blanket` hard-codes U1 into every Hom's universe,
+right for G2's fixed domain, and must fail G2's ordinary theory.
+`missing-make` and `initial-carrier` drop a theory's constructor and an
+initial model's `model` and `fold`, which no written declaration reports, and
+must fail G3 and G5 through their written clients.
 
 The exact messages are the interim form of RC1's semantic expectations. The
 modules lie outside `cubist-tests/`, so `inline-errors.mjs --write` never
 rewrites them. RC1/RC2 move them into `cubist-tests/` with pragmas. The Cubist
 tests' comparison does not yet require an output for each declaration without
-a comment, as these cases do; that check moves with them.
+a comment, or account for every checker failure, imported or local, as these
+cases do; both checks move with them.
 
-The FG6 gate selects group prefixes (`G2:`, `G5:`, `G8:`, `G11:`), while an
-individual case is selectable by its bracketed ID. Preserve those prefixes and
-assertion failures until the selectors migrate together with the tests. The
+The FG6 gate selects group prefixes (`G1:`, `G2:`, `G3:`, `G5:`, `G8:`,
+`G11:`), while an individual case is selectable by its bracketed ID. Preserve
+those prefixes and assertion failures until the selectors migrate together
+with the tests. The
 existing FG5 provenance and browser tests also read fixture sources through
 `gaps`; the refactor provides that ID lookup as a view of the same case records.
 `frontend-generation-cases.mjs` exports that lookup; update those consumers in
@@ -680,7 +686,7 @@ their previous paths rather than retain permanent compatibility layers.
   implementation against the new case before deleting the JS assertion.
   Update mutation selectors to stable case IDs as the runner gains them.
 - Keep all required FG mutation kills (the original thirteen plus recursive
-  shadowing and the duplicate-output partial fix), with passing unmodified
+  shadowing and the four partial fixes), with passing unmodified
   baselines. A crash, infrastructure error or timeout is not a semantic
   kill. Preserve the eight deterministic CI source configurations and the
   wider 32-case audit unless an equivalence argument supports a change.

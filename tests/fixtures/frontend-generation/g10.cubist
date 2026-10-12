@@ -1,4 +1,4 @@
-// G10 (FG2/FG5): a capture refusal points to the conflicting binder or helper call.
+// G10 (FG2/FG5): a capture refusal points to the conflicting binder.
 
 import hlevels;
 import nat;
