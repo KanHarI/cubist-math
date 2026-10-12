@@ -253,7 +253,7 @@ def add_zero(n : Nat) : n + 0 = n :=
           </section>
           <section id="induction">
             <h2>Induction</h2>
-            <p>A recursive definition reaches the result for a smaller value by calling itself. <code>induction</code> gives that result a name instead, so it needs no named function: each clause names the constructor’s arguments, then, after them, an <strong>induction hypothesis</strong> for each recursive argument, the result for that argument. It works on every declared type:</p>
+            <p>A recursive definition reaches the result for a smaller value by calling itself. <code>induction</code> gives that result a name instead, so it needs no named function: each clause names the constructor’s fields in parentheses, then uses <code>with</code> to name an <strong>induction hypothesis</strong> for each recursive field, the result for that field. It works on every declared type:</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
@@ -264,16 +264,17 @@ inductive List(U &lt; UU0, A : U) : U {
 
 def length(xs : List(U0, Nat)) : Nat := induction xs return Nat {
   nil =&gt; 0;
-  cons(head, tail, ih) =&gt; succ(ih);
+  cons(head, tail) with ih =&gt; succ(ih);
 };
 
 def append(xs, ys : List(U0, Nat)) : List(U0, Nat) := induction xs return List(U0, Nat) {
   nil =&gt; ys;
-  cons(head, tail, rest) =&gt; cons(head, rest);
+  cons(head, tail) with rest =&gt; cons(head, rest);
 };
 
 def length_two : length(cons(4, cons(5, nil))) = 2 { rfl; }</code></pre>
-            <p><code>cons</code> has two arguments, and one of them, <code>tail</code>, is recursive, so its clause may name three things: <code>head</code>, <code>tail</code> and the hypothesis, here <code>ih : Nat</code>, the length of <code>tail</code>. In <code>append</code> the hypothesis <code>rest</code> is <code>tail</code> appended to <code>ys</code>. The hypotheses come in the order of the recursive arguments, and a clause that does not use them can leave them out, as a <code>match</code> clause does. A recursive argument that is a function, as in <code>node(children : Nat -&gt; Tree)</code>, has a function as its hypothesis: the result for each child. A path constructor’s clause is written as the point it covers, <code>loop @ i =&gt; …</code>, as in a <code>match</code>.</p>
+            <p><code>cons</code> has two arguments, and one of them, <code>tail</code>, is recursive, so its clause writes <code>cons(head, tail) with ih</code>: two constructor fields and a separate hypothesis, here <code>ih : Nat</code>, the length of <code>tail</code>. In <code>append</code> the hypothesis <code>rest</code> is <code>tail</code> appended to <code>ys</code>. The hypotheses come in the order of the recursive fields. Omit <code>with</code> to leave all hypotheses unnamed; if present, it must name exactly one per recursive field. A plain <code>match</code> clause does not accept <code>with</code>. A recursive argument that is a function, as in <code>node(children : Nat -&gt; Tree)</code>, has a function as its hypothesis: the result for each child. A path constructor’s clause is written as the point it covers, <code>loop @ i =&gt; …</code>, as in a <code>match</code>. When it has hypotheses, the coordinates precede them: <code>c(fields) @ i with ih =&gt; …</code>.</p>
+            <p>The earlier spelling, such as <code>cons(head, tail, ih)</code>, remains accepted. Do not combine appended hypotheses with <code>with</code>. Printed proofs use the separate list.</p>
             <p>When the result type depends on the value, name the value with <code>as</code>, as for <code>match</code>: in <code>induction xs as v return C(v)</code>, the <code>nil</code> clause proves <code>C(nil)</code>, and the <code>cons</code> clause proves <code>C(cons(head, tail))</code> with the hypothesis <code>ih : C(tail)</code>. This is a proof by induction:</p>
             <pre><code data-check="accept">import nat;
 
@@ -284,12 +285,12 @@ inductive List(U &lt; UU0, A : U) : U {
 
 def append(xs, ys : List(U0, Nat)) : List(U0, Nat) := induction xs return List(U0, Nat) {
   nil =&gt; ys;
-  cons(head, tail, rest) =&gt; cons(head, rest);
+  cons(head, tail) with rest =&gt; cons(head, rest);
 };
 
 def append_nil(xs : List(U0, Nat)) : append(xs, nil) = xs := induction xs as v return append(v, nil) = v {
   nil =&gt; refl(typed(List(U0, Nat), nil));
-  cons(head, tail, ih) =&gt; cong(fun (rest : List(U0, Nat)) =&gt; typed(List(U0, Nat), cons(head, rest)), ih);
+  cons(head, tail) with ih =&gt; cong(fun (rest : List(U0, Nat)) =&gt; typed(List(U0, Nat), cons(head, rest)), ih);
 };</code></pre>
             <p>The <code>cons</code> clause needs <code>append(cons(head, tail), nil) = cons(head, tail)</code>, which computes to <code>cons(head, append(tail, nil)) = cons(head, tail)</code>; <code>ih : append(tail, nil) = tail</code> gives it, under <code>cons(head, …)</code>. A clause with the wrong number of names is refused, with the numbers it accepts:</p>
             <pre><code data-check="reject">import nat;
@@ -302,7 +303,7 @@ inductive List(U &lt; UU0, A : U) : U {
 
 def first(xs : List(U0, Nat)) : Nat := induction xs return Nat {
   nil =&gt; 0;
-  cons(head) =&gt; head;  // Error: cons takes 2 arguments here, then its induction hypothesis if you name them: cons(…) with 2 or 3 names.
+  cons(head) =&gt; head;  // Error: cons takes 2 constructor fields in parentheses; name its 1 induction hypothesis after with, or omit with.
 };</code></pre>
             <h3 id="induction-statement">In a proof</h3>
             <p>In a proof block, <code>induction</code> is a closing statement, as <a href="#dependent-match"><code>match</code></a> is: it takes its motive from the goal, and each clause is a proof block of the goal at its constructor, with the hypotheses for the recursive arguments in its context.</p>
@@ -315,21 +316,21 @@ inductive List(U &lt; UU0, A : U) : U {
 
 def append(xs, ys : List(U0, Nat)) : List(U0, Nat) := induction xs return List(U0, Nat) {
   nil =&gt; ys;
-  cons(head, tail, rest) =&gt; cons(head, rest);
+  cons(head, tail) with rest =&gt; cons(head, rest);
 };
 
 def append_assoc(xs, ys, zs : List(U0, Nat)) :
   append(append(xs, ys), zs) = append(xs, append(ys, zs)) {
   induction xs {
     nil =&gt; { rfl; }
-    cons(head, tail, ih) =&gt; {
+    cons(head, tail) with ih =&gt; {
       // ih : append(append(tail, ys), zs) = append(tail, append(ys, zs))
       exact cong(fun (rest : List(U0, Nat)) =&gt; typed(List(U0, Nat), cons(head, rest)), ih);
     }
   }
 }</code></pre>
             <h3 id="nat-induction">Natural numbers</h3>
-            <p>On natural numbers the general form reads <code>zero =&gt; …; succ(k, h) =&gt; …;</code>, with <code>k</code> the predecessor and <code>h</code> the hypothesis. Natural numbers also have a form of their own, which the first library uses throughout: the successor clause binds only the hypothesis, <code>succ h</code>, and <code>as</code> names the predecessor as well as the value in the motive:</p>
+            <p>On natural numbers the general form reads <code>zero =&gt; …; succ(k) with h =&gt; …;</code>, with <code>k</code> the predecessor and <code>h</code> the hypothesis. Natural numbers also have a form of their own, which the first library uses throughout: the successor clause binds only the hypothesis, <code>succ h</code>, and <code>as</code> names the predecessor as well as the value in the motive:</p>
             <pre><code data-check="accept">import nat;
 use nat;
 
