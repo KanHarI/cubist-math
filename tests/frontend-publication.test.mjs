@@ -124,6 +124,33 @@ theory P(U < UU0) { M : set U; e : M; law bad : e = Undefined; }`});
   }
 });
 
+test("FG1 dependency state: a group or inductive refused for a failed dependency passes that dependency's root on", async t => {
+  const {result, get} = await check(t, `import hlevels;
+def Bad : U0 := Undefined;
+inductive X : U0 { mk(b : Bad); }
+theory P(U < UU0) { M : set U; c : M; op(x : Bad) : M; }
+theory C(U < UU0) extends P {}
+theory D(U < UU0) extends C {}
+def client(S : P(U0)) : Unit := tt;
+def built := mk;
+initial N : P(U0);
+def independent : Unit := tt;`);
+  assert.deepEqual(result.gaps.map(g => [g.name, g.code]),
+    [["Bad", "E343"], ["X", "E340"], ["P", "E340"], ["C", "E340"], ["D", "E340"], ["client", "E340"], ["built", "E340"], ["N", "E340"]]);
+  assert.equal(get("independent").verified, true);
+  // Each client's message names what it refers to; its root is Bad's failure.
+  assert.match(get("C").reason, /dependency: P/);
+  assert.match(get("built").reason, /dependency: mk/);
+  for(const name of ["X","P","C","D","client","built","N"]) {
+    assert.equal(get(name).blockedBy, "main__Bad", name);
+    assert.match(get(name).cause, /Untranslated name: Undefined/, name);
+  }
+  const groups = result.publications.main, base = groups.find(g => g.id === "P:base");
+  assert.equal(base.failedMember, "P");
+  assert.equal(base.cause.binding, "main__Bad");
+  for(const id of ["P:hom", "P:iso"]) assert.deepEqual(groups.find(g => g.id === id).cause, base.cause, id);
+});
+
 const injected = (member, observe = () => {}) => ({
   onDeclaration(moduleName, declaration, result, checker) {
     if (moduleName === "main" && declaration.name.text === member) {
@@ -177,8 +204,9 @@ def independent : Unit := tt;`, {}, injected("T.Hom.compose", checker => {
   assert.match(get("refused").cause,/injected_failure/);
   absentNative(program, "main__T.Hom"); absentNative(program, "main__T.Iso");
   const failed = result.publications.main.find(g => g.id === "T:hom");
-  assert.equal(failed.cause.name, "T.Hom.compose");
-  assert.equal(failed.cause.binding, "main__T.Hom.compose");
+  assert.equal(failed.failedMember, "T.Hom.compose");
+  // The injected failure is a root of its own.
+  assert.deepEqual(failed.cause, {binding: "main__T.Hom.compose", reason: "Untranslated name: injected_failure"});
   assert.equal(result.publications.main.find(g => g.id === "T:base").state, "checked");
 });
 
