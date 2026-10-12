@@ -1,241 +1,258 @@
-// Explicit observations of the documented baseline defects, not desired output.
-// Only the expected-failure lifecycle reads these records: cases, contracts and
-// their audit never do, so removing a fixed case's entry activates it without
-// any other edit. A changed diagnostic, client verdict or link must be
-// investigated, not rerecorded. RC0 deletes this module with the lifecycle.
+// What each case with a documented defect shows today
+// (frontend-generation-cases.mjs observes it): never desired output, which
+// each case module states. Only the runner reads these, and a case is a
+// TODO only while it shows exactly its record. Investigate any other
+// result before changing a record. Remove a fixed case's record with its
+// fix; once every case shows its desired outcome, delete this module.
 export const knownDefects = {
   "G1": {
-    "dependencies": [],
-    "rootCauses": [["original", {"found": "U0", "expected": "Unit"}]],
-    "gaps": ["original E606"],
-    "clients": {"original": "refused", "independent": "checked", "leaked_c": "checked"},
-    "originalType": "U0",
-    "forbiddenOutputs": []
+    diagnostics: [
+      {"at":"def original : Unit := N;","label":"Error","text":"E606: Type mismatch: found U0, expected Unit."},
+    ],
+    assumes: [],
+  },
+  "G10": {
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E871: Inlining k here would capture its field c: rename the enclosing pattern or statement binding."},
+    ],
+    assumes: [],
+    range: [
+      {"line":"law l(n : Nat) : (match n return M {","covers":""},
+    ],
+  },
+  "G11": {
+    diagnostics: [
+      {"at":"def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));","label":"Error","text":"E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x) = S.op(x, S.c)."},
+    ],
+    assumes: [],
+  },
+  "G11-grouped-dependent": {
+    diagnostics: [
+      {"at":"def intended(S : T(U0), x : S.M) : S.kk(x, x, refl(x)) = S.op(x, S.c) := refl(S.op(x, S.c));","label":"Error","text":"E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x, x, refl(x)) = S.op(x, S.c)."},
+    ],
+    assumes: [],
+  },
+  "G11-inherited": {
+    diagnostics: [
+      {"at":"def intended(S : Child(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));","label":"Error","text":"E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected Child.kk{{U0}}(S, x) = S.op(x, S.c)."},
+    ],
+    assumes: [],
+  },
+  "G11-initial": {
+    diagnostics: [
+      {"at":"def intended(x : N) : N.model.kk(x) = N.op(x, N.c) := refl(N.op(x, N.c));","label":"Error","text":"E606: Type mismatch: found N.op(x, N.c) = N.op(x, N.c), expected T.kk{{U0}}(N.model, x) = N.op(x, N.c)."},
+    ],
+    assumes: [],
+  },
+  "G12": {
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."},
+      {"at":"def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) {","label":"Error","text":"E340: Untranslated dependency: T"},
+      {"at":"def computation2(S : T(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) {","label":"Error","text":"E340: Untranslated dependency: T"},
+      {"at":"def base(S : T(U0)) : S.twice(zero) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T"},
+      {"at":"def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T"},
+    ],
+    assumes: [],
+  },
+  "G12-inherited": {
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."},
+      {"at":"theory Child(U < UU0) extends T {}","label":"Error","text":"E805: T is not a theory here: Child extends theories in scope."},
+      {"at":"def computation(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) {","label":"Error","text":"E340: Untranslated dependency: Child"},
+      {"at":"def computation2(S : Child(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) {","label":"Error","text":"E340: Untranslated dependency: Child"},
+      {"at":"def base(S : Child(U0)) : S.twice(zero) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: Child"},
+      {"at":"def wrong(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: Child"},
+    ],
+    assumes: [],
+  },
+  "G12-initial": {
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."},
+      {"at":"initial N : T(U0);","label":"Error","text":"E340: Untranslated dependency: T"},
+      {"at":"def computation : N.model.twice(succ(zero)) = N.op(N.op(N.c)) {","label":"Error","text":"E340: Untranslated dependency: N"},
+      {"at":"def computation2 : N.model.twice(succ(succ(zero))) = N.op(N.op(N.op(N.c))) {","label":"Error","text":"E340: Untranslated dependency: N"},
+      {"at":"def base : N.model.twice(zero) = N.op(N.c) {","label":"Error","text":"E340: Untranslated dependency: N"},
+      {"at":"def wrong : N.model.twice(succ(zero)) = N.op(N.c) {","label":"Error","text":"E340: Untranslated dependency: N"},
+    ],
+    assumes: [],
+  },
+  "G12-range": {
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."},
+    ],
+    assumes: [],
+    range: [
+      {"line":"law nope(n : Nat) : iter(n) = c;","covers":""},
+    ],
+  },
+  "G12-shadowed": {
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."},
+      {"at":"def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) {","label":"Error","text":"E340: Untranslated dependency: T"},
+      {"at":"def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T"},
+    ],
+    assumes: [],
+  },
+  "G1-initial": {
+    diagnostics: [
+      {"at":"def original : Unit := N;","label":"Error","text":"E606: Type mismatch: found U0, expected Unit."},
+    ],
+    assumes: [],
+    published: [
+      "N.model",
+      "N.fold_map",
+      "N.fold",
+    ],
+  },
+  "G1-reverse": {
+    diagnostics: [
+      {"at":"def original : U0 := N;","label":"Error","text":"E606: Type mismatch: found Unit, expected U0."},
+      {"at":"def constructor : N := c;","label":"Error","text":"E604: Instruction kernel: Expected U, found Unit."},
+    ],
+    assumes: [],
+  },
+  "G1-same-kind": {
+    diagnostics: [
+      {"at":"def N : U0 := Unit;","label":"Error","text":"E604: Instruction kernel: Definition symbol is already registered."},
+      {"at":"def original : Unit := N;","label":"Error","text":"E340: Untranslated dependency: N"},
+    ],
+    assumes: [],
   },
   "G2": {
-    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_op", "T.Iso", "T.Iso.make", "identity", "identity_u1", "level", "level_u1", "lowered", "preserves", "preserves_u1"]], ["T.Hom.compose", ["computation", "computation_u1"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from", "iso", "iso_u1"]]],
-    "rootCauses": [["T.Hom", {"found": "max(U, max(V, U1))", "expected": "max(U, V)"}]],
-    "gaps": [
-      "T.Hom E606",
-      "T.Hom.compose E340",
-      "T.Hom.id E340",
-      "T.Hom.make E340",
-      "T.Hom.map E340",
-      "T.Hom.map_op E340",
-      "T.Iso E340",
-      "T.Iso.compose E340",
-      "T.Iso.from E340",
-      "T.Iso.from_to E340",
-      "T.Iso.id E340",
-      "T.Iso.inverse E340",
-      "T.Iso.make E340",
-      "T.Iso.to E340",
-      "T.Iso.to_from E340",
-      "computation E340",
-      "computation_u1 E340",
-      "identity E340",
-      "identity_u1 E340",
-      "iso E340",
-      "iso_u1 E340",
-      "level E340",
-      "level_u1 E340",
-      "lowered E340",
-      "preserves E340",
-      "preserves_u1 E340"
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E606: Type mismatch: found max(U, max(V, U1)), expected max(U, V)."},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"def identity(S : T(U0)) : T.Hom(S, S) := T.Hom.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"def computation(S : T(U0), x : S.M) : T.Hom.compose(identity(S), identity(S)).map(x) = x {","label":"Error","text":"E340: Untranslated dependency: T.Hom.compose"},
+      {"at":"def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"def preserves(S, R : T(U0), f : T.Hom(S, R), A : U0, x : A) :","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"def level(S : T(U0)) : U1 := T.Hom(S, S);","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"def lowered(S : T(U0)) : U0 := T.Hom(S, S);","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"def identity_u1(S : T(U1)) : T.Hom(S, S) := T.Hom.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"def computation_u1(S : T(U1), x : S.M) : T.Hom.compose(identity_u1(S), identity_u1(S)).map(x) = x {","label":"Error","text":"E340: Untranslated dependency: T.Hom.compose"},
+      {"at":"def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"def level_u1(S : T(U1)) : U1 := T.Hom(S, S);","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
     ],
-    "clients": {
-      "T.Hom": "refused",
-      "identity": "refused",
-      "computation": "refused",
-      "iso": "refused",
-      "preserves": "refused",
-      "level": "refused",
-      "identity_u1": "refused",
-      "computation_u1": "refused",
-      "iso_u1": "refused",
-      "preserves_u1": "refused",
-      "level_u1": "refused",
-      "lowered": "refused"
-    }
+    assumes: [],
   },
   "G3": {
-    "dependencies": [["T.Hom", ["T.Hom.compose", "T.Hom.id", "T.Hom.make", "T.Hom.map", "T.Hom.map_c", "T.Hom.map_op", "T.Iso", "T.Iso.make"]], ["T.Hom.id", ["unsupported"]], ["T.Iso", ["T.Iso.compose", "T.Iso.from", "T.Iso.from_to", "T.Iso.id", "T.Iso.inverse", "T.Iso.to", "T.Iso.to_from"]], ["T.Iso.id", ["unsupported_iso"]]],
-    "rootCauses": [["T.Hom", {"found": "A.l = A.l", "expected": "B.l = B.l"}]],
-    "gaps": [
-      "T.Hom E606",
-      "T.Hom.compose E340",
-      "T.Hom.id E340",
-      "T.Hom.make E340",
-      "T.Hom.map E340",
-      "T.Hom.map_c E340",
-      "T.Hom.map_op E340",
-      "T.Iso E340",
-      "T.Iso.compose E340",
-      "T.Iso.from E340",
-      "T.Iso.from_to E340",
-      "T.Iso.id E340",
-      "T.Iso.inverse E340",
-      "T.Iso.make E340",
-      "T.Iso.to E340",
-      "T.Iso.to_from E340",
-      "unsupported E340",
-      "unsupported_iso E340"
+    diagnostics: [
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E606: Type mismatch: found A.l = A.l, expected B.l = B.l."},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Hom"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"theory T(U < UU0) {","label":"Error","text":"E340: Untranslated dependency: T.Iso"},
+      {"at":"def unsupported(S : T(U0)) := T.Hom.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Hom.id"},
+      {"at":"def unsupported_iso(S : T(U0)) := T.Iso.id(S);","label":"Error","text":"E340: Untranslated dependency: T.Iso.id"},
     ],
-    "clients": {"T": "checked", "T.make": "checked", "T.op": "checked", "usable": "checked", "unsupported": "refused", "unsupported_iso": "refused"},
-    "forbiddenOutputs": [
+    assumes: [],
+    published: [
       "T.Hom",
-      "T.Hom.compose",
-      "T.Hom.id",
       "T.Hom.make",
       "T.Hom.map",
       "T.Hom.map_c",
       "T.Hom.map_op",
+      "T.Hom.id",
+      "T.Hom.compose",
       "T.Iso",
-      "T.Iso.compose",
-      "T.Iso.from",
-      "T.Iso.from_to",
-      "T.Iso.id",
-      "T.Iso.inverse",
       "T.Iso.make",
       "T.Iso.to",
-      "T.Iso.to_from"
-    ]
+      "T.Iso.from",
+      "T.Iso.from_to",
+      "T.Iso.to_from",
+      "T.Iso.id",
+      "T.Iso.compose",
+      "T.Iso.inverse",
+    ],
   },
   "G4": {
-    "dependencies": [["T.value", ["computation", "empty_computation", "off_computation", "wrong"]]],
-    "rootCauses": [["T.value", {"obligation": "Bit.squash", "requirement": "m.M must be of h-level 1"}]],
-    "gaps": ["T.value E546", "computation E340", "empty_computation E340", "off_computation E340", "wrong E340"],
-    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused", "off_computation": "refused"}
-  },
-  "G5": {
-    "dependencies": [],
-    "rootCauses": [["identity", {"reason": "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose."}], ["N", {"reason": "op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."}]],
-    "advice": [{"code": "W706", "declaration": "T", "message": "x is unused in the body: take it out of the group and write M -> … for it.", "start": 7, "end": 8}, {"code": "W706", "declaration": "T", "message": "y is unused in the body: take it out of the group and write M -> … for it.", "start": 10, "end": 11}],
-    "gaps": ["N E864", "identity E817"],
-    "clients": {"identity": "refused", "applied": "checked", "N": "refused", "N.model": "missing", "N.fold": "missing"}
-  },
-  "G6": {
-    "dependencies": [],
-    "rootCauses": [["C", {"untranslated": "Undefined"}], ["P", {"untranslated": "Undefined"}]],
-    "gaps": ["C E343", "P E343"],
-    "clients": {"independent": "checked"}
-  },
-  "G8": {
-    "dependencies": [],
-    "rootCauses": [["h", {"obligation": "seg", "requirement": "T must be a proposition"}]],
-    "gaps": ["h E546"],
-    "clients": {},
-    "range": {"start": 9, "end": 10}
-  },
-  "G9": {
-    "dependencies": [],
-    "rootCauses": [],
-    "gaps": [],
-    "clients": {"meaning": "checked"},
-    "links": [
-      [{"name": "c", "target": null, "start": 0, "end": 0}],
-      [{"name": "c1", "target": null, "start": 0, "end": 0}],
-      [{"name": "c1", "target": null, "start": 0, "end": 0}],
-      [{"name": "c1", "target": null, "start": 0, "end": 0}]
-    ]
-  },
-  "G10": {
-    "dependencies": [],
-    "rootCauses": [["T", {"helper": "k", "field": "c"}]],
-    "gaps": ["T E871"],
-    "clients": {},
-    "range": {"start": -48, "end": -48}
-  },
-  "G11": {
-    "dependencies": [],
-    "rootCauses": [["intended", {"found": "S.op(x, S.c) = S.op(x, S.c)", "expected": "T.kk{{U0}}(S, x) = S.op(x, S.c)"}]],
-    "gaps": ["intended E606"],
-    "clients": {"intended": "refused", "captured": "checked"}
-  },
-  "G12": {
-    "dependencies": [["T", ["base", "computation", "computation2", "wrong"]]],
-    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["T E845", "base E340", "computation E340", "computation2 E340", "wrong E340"],
-    "clients": {"T.iter": "missing", "T.twice": "missing", "computation": "refused", "computation2": "refused", "wrong": "refused", "base": "refused"}
-  },
-  "G12-range": {
-    "dependencies": [],
-    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["T E845"],
-    "clients": {},
-    "range": {"start": 20, "end": 20}
-  },
-  "G1-initial": {
-    "dependencies": [],
-    "rootCauses": [["original", {"found": "U0", "expected": "Unit"}]],
-    "gaps": ["original E606"],
-    "clients": {"original": "refused", "independent": "checked", "leaked_one": "checked", "leaked_mul": "checked"},
-    "originalType": "U0",
-    "forbiddenOutputs": ["N.fold", "N.fold_map", "N.model"]
-  },
-  "G1-reverse": {
-    "dependencies": [],
-    "rootCauses": [["constructor", {"reason": "Instruction kernel: Expected U, found Unit."}], ["original", {"found": "Unit", "expected": "U0"}]],
-    "gaps": ["constructor E604", "original E606"],
-    "clients": {"original": "refused", "constructor": "refused", "independent": "checked"},
-    "originalType": "Unit",
-    "forbiddenOutputs": []
-  },
-  "G1-same-kind": {
-    "dependencies": [["N", ["original"]]],
-    "rootCauses": [["N", {"duplicate": "N"}]],
-    "gaps": ["N E604", "original E340"],
-    "clients": {"original": "refused", "independent": "checked"},
-    "originalType": null,
-    "forbiddenOutputs": []
+    diagnostics: [
+      {"at":"def value(n : Bits) : M := match n {","label":"Error","text":"E546: Cannot generate Bit.squash: m.M must be of h-level 1; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."},
+      {"at":"def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+      {"at":"def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+      {"at":"def empty_computation(S : T(U0)) : S.value(nil) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+      {"at":"def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+    ],
+    assumes: [],
   },
   "G4-flat": {
-    "dependencies": [["T.value", ["computation", "empty_computation", "wrong"]]],
-    "rootCauses": [["T.value", {"obligation": "Bits.squash", "requirement": "m.M must be of h-level 1"}]],
-    "gaps": ["T.value E546", "computation E340", "empty_computation E340", "wrong E340"],
-    "clients": {"T.value": "refused", "computation": "refused", "wrong": "refused", "empty_computation": "refused"}
+    diagnostics: [
+      {"at":"def value(n : Bits) : M := match n {","label":"Error","text":"E546: Cannot generate Bits.squash: m.M must be of h-level 1; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."},
+      {"at":"def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+      {"at":"def empty_computation(S : T(U0)) : S.value(nil) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+      {"at":"def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {","label":"Error","text":"E340: Untranslated dependency: T.value"},
+    ],
+    assumes: [],
+  },
+  "G5": {
+    diagnostics: [
+      {"at":"op : forall x, y : M. M;","label":"Warning","text":"W706: x is unused in the body: take it out of the group and write M -> … for it."},
+      {"at":"op : forall x, y : M. M;","label":"Warning","text":"W706: y is unused in the body: take it out of the group and write M -> … for it."},
+    ],
+    assumes: [],
+    advice: [
+      {"code":"W706","declaration":"T","message":"x is unused in the body: take it out of the group and write M -> … for it.","covers":"x"},
+      {"code":"W706","declaration":"T","message":"y is unused in the body: take it out of the group and write M -> … for it.","covers":"y"},
+    ],
   },
   "G5-single": {
-    "dependencies": [],
-    "rootCauses": [["identity", {"reason": "T's models have no homomorphisms: its op's result mentions a carrier on both sides of an arrow, and such homomorphisms need not compose."}], ["N", {"reason": "op uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M."}]],
-    "advice": [{"code": "W705", "declaration": "T", "message": "x is unused in the body: write M -> … instead of forall x : M. ….", "start": 7, "end": 8}],
-    "gaps": ["N E864", "identity E817"],
-    "clients": {"identity": "refused", "applied": "checked", "N": "refused", "N.model": "missing", "N.fold": "missing"}
+    diagnostics: [
+      {"at":"op : forall x : M. M;","label":"Warning","text":"W705: x is unused in the body: write M -> … instead of forall x : M. …."},
+    ],
+    assumes: [],
+    advice: [
+      {"code":"W705","declaration":"T","message":"x is unused in the body: write M -> … instead of forall x : M. ….","covers":"x"},
+    ],
   },
-  "G11-grouped-dependent": {
-    "dependencies": [],
-    "rootCauses": [["intended", {"found": "S.op(x, S.c) = S.op(x, S.c)", "expected": "T.kk{{U0}}(S, x, x, refl(x)) = S.op(x, S.c)"}]],
-    "gaps": ["intended E606"],
-    "clients": {"intended": "refused", "captured": "checked"}
+  "G6": {
+    diagnostics: [
+      {"at":"theory P(U < UU0) {","label":"Error","text":"E343: Untranslated name: Undefined"},
+      {"at":"theory C(U < UU0) extends P {","label":"Error","text":"E343: Untranslated name: Undefined"},
+    ],
+    assumes: [],
   },
-  "G11-inherited": {
-    "dependencies": [],
-    "rootCauses": [["intended", {"found": "S.op(x, S.c) = S.op(x, S.c)", "expected": "Child.kk{{U0}}(S, x) = S.op(x, S.c)"}]],
-    "gaps": ["intended E606"],
-    "clients": {"intended": "refused", "captured": "checked"}
+  "G8": {
+    diagnostics: [
+      {"at":"def h(x : T) : T := match x {","label":"Error","text":"E546: Cannot generate seg: T must be a proposition; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."},
+    ],
+    assumes: [],
+    range: [
+      {"line":"def h(x : T) : T := match x {","covers":"x"},
+    ],
   },
-  "G11-initial": {
-    "dependencies": [],
-    "rootCauses": [["intended", {"found": "N.op(x, N.c) = N.op(x, N.c)", "expected": "T.kk{{U0}}(N.model, x) = N.op(x, N.c)"}]],
-    "gaps": ["intended E606"],
-    "clients": {"intended": "refused", "captured": "checked"}
+  "G9": {
+    diagnostics: [],
+    assumes: [],
+    links: [
+      [{"name":"c","target":null,"start":0,"end":0}],
+      [{"name":"c1","target":null,"start":0,"end":0}],
+      [{"name":"c1","target":null,"start":0,"end":0}],
+      [{"name":"c1","target":null,"start":0,"end":0}],
+    ],
   },
-  "G12-inherited": {
-    "dependencies": [["Child", ["base", "computation", "computation2", "wrong"]]],
-    "rootCauses": [["Child", {"reason": "T is not a theory here: Child extends theories in scope."}], ["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["Child E805", "T E845", "base E340", "computation E340", "computation2 E340", "wrong E340"],
-    "clients": {"Child.iter": "missing", "Child.twice": "missing", "computation": "refused", "computation2": "refused", "wrong": "refused", "base": "refused"}
-  },
-  "G12-initial": {
-    "dependencies": [["N", ["base", "computation", "computation2", "wrong"]], ["T", ["N"]]],
-    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["N E340", "T E845", "base E340", "computation E340", "computation2 E340", "wrong E340"],
-    "clients": {"N": "refused", "N.model": "missing", "computation": "refused", "computation2": "refused", "wrong": "refused", "base": "refused"}
-  },
-  "G12-shadowed": {
-    "dependencies": [["T", ["captured", "intended"]]],
-    "rootCauses": [["T", {"recursive": "iter", "context": "field type"}]],
-    "gaps": ["T E845", "captured E340", "intended E340"],
-    "clients": {"intended": "refused", "captured": "refused"}
-  }
 };

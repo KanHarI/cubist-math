@@ -1,221 +1,137 @@
-# Frontend generation comparison manifest
+# Frontend generation cases
 
-`00d4ecce` is the historical revision where the inventory's defects were
-observed, not a runtime pin or a compatibility promise for future compiler
-revisions. The suite always checks this checkout with its fresh WASM build.
-Each exported case in `frontend-generation.mjs` has its own ID, finding group,
-source, responsible phase and intended contract. Its known-defect record, if
-any, lives separately in [`frontend-generation-defects.mjs`](frontend-generation-defects.mjs).
-[frontend-generation.test.mjs](../frontend-generation.test.mjs) implements
-the comparison, including independent equations rather than generated-output
-snapshots. Run it with `npm test -- tests/frontend-generation.test.mjs`.
+Each case is a Cubist module in [`frontend-generation/`](frontend-generation/),
+headed `// ID (phase): contract.`, with its own ID, finding group and
+responsible phase. [frontend-generation.test.mjs](../frontend-generation.test.mjs)
+checks every module with this checkout's fresh WASM build in the normal
+`npm test` suite. Run the cases alone with
+`npm test -- tests/frontend-generation.test.mjs`, and one of them with
+`--test-name-pattern`, for example `\[G12-inherited\]`. `00d4ecce` is the
+historical revision where the inventory's defects were observed, not a
+runtime pin.
 
-All accepted clients must be verified without assumptions. G1 covers both
-orders of definition/inductive collisions, definition/initial-model
-collisions, and same-kind duplicates, preserving the first binding and its
-clients. Collision cases require E343 from clients of each refused constructor
-(`c`, `N.one`, `N.mul`), while the reverse-order case preserves its original
-constructor. Separate output checks forbid `N.model`, `N.fold_map` and `N.fold`.
-Constructors never appear in the output list, even when available to clients.
-G2's clients fix the public Hom/Iso types, composition computation and the
-fixed-domain operation's preservation field at U0 and U1. A U0 model's Hom
-must live in U1, and stating it in U0 must be refused as universe lowering.
-G3 preserves the base theory while withholding both unsupported artifact
-families, and its Hom and Iso clients must each be refused with a focused
-E817. G4 covers flat and nested matches with
-distinct results, every written branch, and a refused constant-result equation.
-G5 uses positional operation calls, identity and a generated model/fold to
-test the lint rewrite for both single and grouped operation binders. The case
-records each warning's code, declaration and message and verifies its location
-within the rewrite target before applying the associated replacement. Advice
-is a set, so its order is free. Every lint warning on the source is evidence,
-whatever its code: advice issued under a new code is judged, never taken as
-withheld. Changed or partial advice is an unrecognized observation until its
-edit is reviewed.
-Named operation calls are not currently supported. Passing controls require
-W705 and W706 for ordinary safe unused binders and check their arrow-form
-rewrites. G11 requires opposite outcomes for intended and captured equations,
-including helper chains, grouped/dependent binders, inheritance and generated
-clients. G12 checks `twice` computation directly, through
-inheritance, and through an initial model, with zero, one and two recursive
-steps and a refused base-only result. The second step distinguishes using the
-recursive result from substituting the base value in every successor.
-G12-shadowed pairs intended/local and captured/field equations; a passing
-field-type control keeps a local recursive name free of E845. G12 also keeps a
-passing control that refuses unfolding `iter` in a law's type with E845, for
-that operation and context. `G12-range` tracks
-that refusal's nonempty range over the original `iter` reference as a
-separate FG5 expected failure, so it can be activated independently of the
-FG2/FG4 value-call fix. The range may cover the reference, the call or a wider
-part of the written law. G6 requires the child's E340 to identify its failed
-parent. The parent retains the original cause; the child's message may also
-attach it for inspection.
+## Desired outcomes
 
-G8–G10 additionally compare diagnostic codes, endpoints, original source
-ranges, every written binder/use label and definition target. These
-observations do not normalize internal names or missing links away.
-G8 permits a range within the written definition body that covers the
-wildcard's body token; it does not require the range to narrow to that token.
-B1 checks file-level selection before later globals, changed selections,
-imports and generated constructor domains. `historicalCoverage` and
-`passingCoverage` map fixed examples to existing tests. H1 names the
-`Constant`/`K`/`idem_at` and `Named`/`named_fold` cases in
-[`initial_models.cubist`](../../cubist-tests/initial_models.cubist), checked
-by the normal Cubist regression suite. The mapping verifies their parsed
-declarations and the module's inclusion in that suite. Further controls
-exercise inherited, bare/partial helpers with free fields under colliding
-law binders, initial-model recursion and explicit path bodies.
+A module states its desired check as
+[`tools/inline-errors.mjs`](../../tools/inline-errors.mjs) writes it: an
+`// Error:` comment above each declaration that must be refused, giving the
+exact message, and nothing above a declaration that must check. Every
+client must also check without assumptions. A comment cannot state a
+source range, a link, lint advice or a published name, so
+[frontend-generation-cases.mjs](../frontend-generation-cases.mjs) observes
+those for the cases that need them, beside their desired values.
 
-The [design decision on #205](https://github.com/KanHarI/cubist-math/pull/205#issuecomment-6096591882)
-replaces the catch-any-assertion handler. `frontend-generation-contracts.mjs`
-is the contract layer and never reads records; `frontend-generation-lifecycle.mjs`
-classifies its observations against them. The contract layer collects compiler
-and lint results once, as plain data. Facts project that evidence without
-judging it: diagnostic name/code pairs, primary cause payloads, client
-verdicts, lint advice and its span, output absence, refusal reasons, and the
-links and refusal spans at their written sites. Requirements judge the facts
-as tables of named conditions. Type mismatch evidence retains
-found/expected types; generation evidence retains the obligation and required
-evidence; capture and recursion evidence retain the responsible references.
-Terminal line/column text and remediation prose are omitted from those
-extracted payloads. Other primary failures retain their reason without the
-terminal location. E340 cascades retain their declaration/code entries and
-dependency targets; attached cause wording does not replace the independently
-retained primary cause.
-Every contract consumes its supplied case; group labels never select another
-fixture's data. The derived `gaps` lookup shares those same case objects by ID
-for the downstream FG5 provenance/browser consumers; cases share no nested
-state. Accepted clients must be assumption-free: a verified client with axioms
-is observed as `assumes`, never `checked`.
+The clients and their statements are written by hand, independently of the
+generator. The desired messages, ranges and links are those of the fixing
+compiler at #224 (`1b64229b`), where every case shows its desired outcome
+with no records; each was reviewed against the
+[roadmap](../../docs/roadmaps/frontend-generation.md), the authority for
+desired behavior. Never take a desired output from a compiler that still has
+the defect: that would record wrong behavior as accepted. A reworded message
+changes the case's comment, and the new wording needs the same review.
 
-The independent [requirement map](frontend-generation-requirements.mjs) names
-behavioral obligations and the cases that witness them. Removing a case and its
-manifest row together still fails if an obligation loses its witness. Each
-obligation's `checks` names the contract requirements its witnesses must keep,
-so a requirement cannot stop applying unnoticed. Each witness also states, as
-data, what its case must keep: clients, refused-client and declaration
-diagnostics, absent outputs, source anchors, lint rewrites, the collision's
-binding and the failed dependency's identity. These include constructor
-availability, output absence, G2's public types and lowering endpoints, G4's
-distinct branch results, G8's endpoints and every second recursive step. Every
-expectation a case states must be kept by one of its witnesses, so none can be
-deleted or changed unnoticed. Names are kept as minimums; anchors, rewrites
-and the other single-valued expectations are kept exactly, because range and
-advice counterexamples are placed from them. A case field that is neither an
-input nor an expectation a witness can keep fails, so a misspelled field is
-not ignored. A weaker fixture is rejected before any program is checked. A
-diagnostic cause that its code does not always carry must be required by a
-witness, and the audit's cause counterexamples come from there rather than
-from the expectation under test.
-Source scopes, conflicts and rewrite targets must occur exactly once; repeated
-inner references require an explicit occurrence. Observers use resolved spans.
+## What each case distinguishes
 
-`clients` lists accepted declarations. `refusedClients` maps each refused client
-to `{code, cause?}`, so E343 name-availability probes and E606 equations can share
-a case. For example, `leaked_c` requires
-`{code: "E343", cause: {untranslated: "c"}}`; `wrong` requires `{code: "E606"}`.
-Their expectations compose with declaration diagnostics and are matched as one
-complete multiset, independently of expectation order, by
-[`frontend-generation-diagnostics.mjs`](../frontend-generation-diagnostics.mjs).
-The same decoder supplies historical cause observations and active matching;
-desired expectations never come from the historical record. G1 requires
-`{duplicate: "N"}` and permits recognized frontend and kernel refusal forms;
-this is the only cause that may omit `code`. G3's Hom and Iso clients each
-require E817 with `{operation: "op", argument: "p", law: "l"}`. These are
-semantic roles: swapped roles, reversed or denied dependencies, and unrelated
-messages using the same vocabulary fail. Unrecognized wording does not match
-a cause. Both cases use the shared diagnostic requirement, without separate
-keyword checks. G6 matches the
-exact dependency target, G10 the helper/field pair, G12-range the recursive
-operation/context, and G8 the ordered found/expected endpoints. Source ranges
-remain independent requirements. Missing mandatory causes are fixture errors.
-An expectation may state only `name`, `code` and `cause`, the fields the
-matcher compares; declaration diagnostics also carry their source anchors.
-`absentOutputs` and
-`absentOutputFamilies` describe only the output list; they make no claim about
-name resolution. Use real clients to observe that boundary.
+- **G1** covers both orders of definition/inductive collisions, a
+  definition/initial-model collision and a same-kind duplicate. The second
+  declaration is refused as a duplicate, and the first binding and its
+  clients survive. Clients of the refused constructors (`c`, `N.one`,
+  `N.mul`) are refused with E343, while G1-reverse keeps its original
+  constructor. G1-initial publishes no `N.model`, `N.fold_map` or `N.fold`.
+- **G2** checks Hom/Iso, composition, the fixed-domain operation's
+  preservation field (`map_op`) and the Hom's level at U0 and U1. A U0
+  model's Hom lives in U1; stating it in U0 is refused with
+  `found U1, expected U0`.
+- **G3** keeps the base theory usable, refuses both its Hom and its Iso client
+  with E817 naming operation `op`, argument `p` and law `l`, and publishes
+  nothing under `T.Hom` or `T.Iso`.
+- **G4** and **G4-flat** compute nested and flat matches with distinct branch
+  results, and refuse a constant-result equation.
+- **G5** and **G5-single** use positional operation calls, a Hom identity and
+  an initial model; named operation calls are separately unsupported (E378).
+  The linter must not advise the arrow form on an operation's binders,
+  since the rewrite would remove generated interfaces. Passing controls in
+  the runner keep W705 and W706 for ordinary unused binders and check their
+  rewrites.
+- **G6** keeps the parent's cause (E343 for `Undefined`), and the child
+  reports its failed dependency once (E340 naming `P`); an unrelated client
+  checks.
+- **G8** refuses the wildcard with ordered endpoints
+  (`found t1 = t1, expected t0 = t1`) over the wildcard's body `t1`.
+- **G9** freshens a law binder; every written `c` keeps its label, links to
+  the binder and spans exactly the label, and `meaning` fixes the law's
+  meaning.
+- **G10** refuses a capture with E871 naming helper `k` and field `c`, over the
+  conflicting binder.
+- **G11** requires the intended `op(x, S.c)` equation to check and the
+  captured `op(x, x)` equation to be refused, directly, through a helper
+  chain with grouped/dependent parameters, through inheritance and through an
+  initial model.
+- **G12** computes `twice` at zero, one and two recursive steps, directly,
+  through inheritance and through an initial model, and refuses a base-only
+  result. The second step distinguishes using the recursive result from
+  substituting the base value. **G12-shadowed** keeps a local parameter apart
+  from the earlier recursive field. **G12-range** refuses unfolding `iter` in a
+  field type with E845, over the written call, and is tracked separately from
+  the value-call fix.
+- The **controls** must check today: B1's file-level `use` precedence over
+  later globals, in one file, across an import and with changed selections;
+  inherited, bare and partial helpers under colliding law binders; inherited
+  and initial-model recursion; explicit path clauses; and a local recursive
+  name in a field type.
 
-Prerequisites are ordinary assertions: metadata must be valid, witnessed
-clients must be kept, and G5's original interface must check before any
-rewrite. Everything else is an observation. A misspelled client therefore fails
-before checking, and a client missing from the result is represented
-explicitly, so it cannot match a recorded defect. The whole diagnostic
-name/code set is compared, including dependent failures; primary failure
-payloads distinguish different causes with the same code. Every link
-overlapping a written occurrence is retained with its label, target and span.
-Repeated identical links at one occurrence are equivalent.
+## Known defects
 
-Only an exact match for the case's record is reported as TODO.
-No exception or assertion message is classified as a defect. A different
-observation fails normally and requires investigation; never regenerate these
-records just to accept a new failure. A desired outcome with an outstanding
-record is an unexpected pass. Remove only that case's entry from `knownDefects`
-in the fixing PR to activate it; no contract, audit or harness edit is needed.
-Sibling cases retain their own status.
-`CUBIST_GENERATION_STRICT=1` checks all desired requirements as ordinary
-assertions, allowing defect-free controls to pass before activation. TODOs
-remain implementation debt and never count as completion.
+[frontend-generation-defects.mjs](frontend-generation-defects.mjs) records
+what each open case shows today. A case is a TODO only while it shows
+exactly its record, and a TODO never counts as completion. Any other result
+fails and must be investigated; never re-record a case just to accept a new
+failure. A case that shows its desired outcome while its record remains also
+fails, until the fixing PR removes the record. `CUBIST_GENERATION_STRICT=1`
+ignores the records.
 
-The [harness](../frontend-generation-harness.test.mjs) checks that misspelled
-clients and invalid metadata fail before checking, and that missing imports,
-unrelated type errors, changed/extra diagnostics and missing or wrong
-navigation fail normally. Each of those mistakes must leave the contract unmet
-and change the case's own observation, so these checks hold whether or not
-the case is recorded. It also checks the
-accepted-client helper. The
-[lifecycle tests](../frontend-generation-lifecycle.test.mjs) check the
-classifier with synthetic observations (TODO only for an exact record, strict
-mode, unexpected passes) and recognize each record's debt in a test that
-disappears with its record.
+Once every case shows its desired outcome, delete the records module and the
+runner's record branch; the comparison itself stays.
 
-Each contract requirement in
-[frontend-generation-contracts.mjs](../frontend-generation-contracts.mjs) is a
-table of named conditions. Each condition carries the plausible wrong results
-that must violate it, and each requirement lists the valid variations it
-permits; the tables, not this manifest, are the list. Diagnostic
-counterexamples come from the matcher's field table, and a fixture that states
-a field without counterexamples fails validation. The
-[audit](../frontend-generation-audit.test.mjs) gives every case an accepted
-observation. That observation and each permitted variation must meet every
-requirement, each counterexample must violate its condition, and some
-counterexample must violate each condition alone. The requirement map states
-the conditions independently. A mutation sweep changes each comparison in the
-facts that conditions read, the conditions and the diagnostic field matchers,
-and each change must alter some verdict. The audit never reads records or
-classifies cases, so activation leaves it unchanged. Accepted observations come
-from [supported sources](frontend-generation-supported.mjs), which avoid the
-original defect, or from observer results layered over real checked outputs.
-The G12 supported source unrolls two steps; it demonstrates these finite
-observations, not arbitrary recursive correctness. The G9 supported source
-renames the field that its law binder collides with, so it keeps the case's
-own written observations.
+Until the declaration pragmas proposed for RC1 in
+[#224](https://github.com/KanHarI/cubist-math/pull/224) exist, these exact
+messages are the cases' semantic expectations. The modules stay outside
+`cubist-tests/`, so `tools/inline-errors.mjs --write` never rewrites them,
+and a declaration without a comment must check.
 
-The diagnostic audit also states misleading messages independently of the
-decoder and mutation generators. Exercising comparisons cannot establish that
-their predicate expresses the intended meaning; G1's unrelated "already"
-messages and G3's swapped or denied dependencies guard that boundary.
+## Historical and passing coverage
 
-The lifecycle tests recognize each recorded debt and reject it after any one
-primary cause or dependency target changes. The audit checks further permitted
-alternatives (attached causes, a span over the whole call) and ID-to-finding
-ownership. Semantic mutants replace matches/recursion by constants, ignore a
-recursive result, or capture a local recursive name; each has independently
-stated client verdicts and E606 failures. Publication controls replay real
-constructor clients and real model/fold outputs alongside a duplicate refusal;
-no constructor output is fabricated. Ambiguous anchors fail. See the
-[audit](../../docs/reports/frontend-generation-contract-audit.md) for each case's
-scope and the distinction between observer controls and compiler integration.
+Fixed examples are protected by existing tests, which this runner does not
+duplicate:
+
+| ID | Existing test |
+| --- | --- |
+| H1 | `Constant`, `K`, `idem_at`, `Named` and `named_fold` in [`initial_models.cubist`](../../cubist-tests/initial_models.cubist) |
+| H2 | “initial and free models retain imported global types and law constants” in [theory-resolution.test.mjs](../theory-resolution.test.mjs) |
+| H3 | “family indices carry captured syntax through generated homomorphisms and isomorphisms” in [theory-resolution.test.mjs](../theory-resolution.test.mjs) |
+| H4 | “theory capture uses opened fields before globals and retains them across imports and selections” in [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) |
+| H5 | “inlining preserves a helper's free fields under a caller's binders” in [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) |
+
+Passing controls in [theory-hygiene.test.mjs](../theory-hygiene.test.mjs):
+“generated evidence links nowhere and written compound headers link once”,
+“freshened parameters and operation arguments keep their public names in
+diagnostics and inspection”, “substitution considers enclosing binders
+before refusing a fixed pattern capture”, “generated recursive calls retain
+their declaration under same-named parameters and patterns” and “catch-all
+path clauses respect recursive boundaries and require coherence”.
+
+G7 is a historical symptom, not a currently reproduced defect. FG1 must
+inject a genuine failed parent projection and verify its dependents,
+publication rollback and progress. It must not repurpose a now-passing
+capture example as evidence of an open bug. The later phases extend these
+cases with their full exit cases; FG0 does not claim those gates exist.
 
 ## Coverage by executable case
-
-Group prefixes such as `G2:` and `G11:` remain in test names for the FG6
-mutation selectors. The bracketed case ID selects an individual variant with
-`--test-name-pattern`, for example `\[G12-inherited\]`.
 
 | Case ID | Finding | Behavior and context |
 | --- | --- | --- |
 | `G1` | G1 | Definition followed by inductive; preserve the first binding |
-| `G1-initial` | G1 | Definition followed by initial model |
+| `G1-initial` | G1 | Definition followed by initial model; no model/fold published |
 | `G1-reverse` | G1 | Inductive followed by definition, including the original constructor |
 | `G1-same-kind` | G1 | Definition followed by definition |
 | `G2` | G2 | Fixed argument domains; Hom/Iso, preservation, level and computation at U0/U1 |
@@ -227,7 +143,7 @@ mutation selectors. The bracketed case ID selects an individual variant with
 | `G6` | G6 | Parent cause, child dependency and unrelated recovery |
 | `G8` | G8 | Wildcard diagnostic endpoints and original body range |
 | `G9` | G9 | Freshened binder and every use: public labels and navigation |
-| `G10` | G10 | Capture refusal over the written binder or helper call |
+| `G10` | G10 | Capture refusal over the written binder |
 | `G11` | G11 | Direct intended and captured equations |
 | `G11-grouped-dependent` | G11 | Helper chain with grouped/dependent parameters |
 | `G11-inherited` | G11 | Inherited helper chain |
@@ -237,25 +153,11 @@ mutation selectors. The bracketed case ID selects an individual variant with
 | `G12-initial` | G12 | Initial-model `twice` zero/one/two-step computations and refused base-only result |
 | `G12-shadowed` | G12 | Local recursive-name shadowing; intended/captured equations |
 | `G12-range` | G12 | Legitimate type-unfolding refusal over the original reference |
-
-## Downstream lifecycle
-
-[#216](https://github.com/KanHarI/cubist-math/pull/216) supplies the FG0–FG6
-contracts. This harness is evidence at FG0, not an implementation of those fixes.
-The FG1–FG6 implementation stack inherited by
-[#224](https://github.com/KanHarI/cubist-math/pull/224) activates fixed cases.
-Once all cases are active, its RC0 cleanup deletes the records module, the
-lifecycle module and its test file together, and the runner calls
-`assertCase` in place of `recordCase`. The lifecycle already makes that
-assertion for unrecorded and strict cases.
-Keep the desired observations, stable case IDs and group selectors. Active
-semantic mismatches must still produce assertions for the mutation gate.
-RC1/RC2 can migrate the clients and observations to Cubist's existing runner;
-this helper introduces no pragma syntax, module loader or production diagnostic
-representation. Historical provenance remains documentation.
-
-G7 is a historical symptom, not a currently reproduced defect. FG1 must
-inject a genuine failed parent projection and verify its dependents,
-publication rollback, and progress. It must not repurpose a now-passing
-capture example as evidence of an open bug. The later phases extend this
-manifest with their full exit cases; FG0 does not claim those gates exist.
+| `B1` | control | File-level `use` precedence over later globals in one file |
+| `B1-definitions` | control | The definitions `B1-imported` imports |
+| `B1-imported` | control | The same precedence across an import |
+| `B1-changed` | control | A later selection changes only later declarations |
+| `control-helpers` | control | Inherited, bare and partial helpers under colliding law binders |
+| `control-local-recursion` | control | A local recursive name remains local in a field type |
+| `control-paths` | control | Explicit path bodies remain checked |
+| `control-recursion` | control | Inherited recursion and initial-model clients compute |

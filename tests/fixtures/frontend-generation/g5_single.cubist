@@ -1,0 +1,13 @@
+// G5-single (FG5): single-binder advice preserves supported calls and generated interfaces.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  op : forall x : M. M;
+}
+
+def identity(S : T(U0)) := T.Hom.id(S);
+
+def applied(S : T(U0), a : S.M) : S.M := S.op(a);
+
+initial N : T(U0);

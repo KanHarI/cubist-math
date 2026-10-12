@@ -3,165 +3,54 @@
 A regression must distinguish the intended behavior from the failure it guards.
 Use the relevant language specification or roadmap as the authority for behavior;
 an observed compiler result is evidence, not a specification. Link that authority
-from the fixture manifest or test explanation.
+from the case's manifest or test explanation.
 
-Before writing assertions, identify the required outcome, permitted variation,
-prerequisites and the evidence that distinguishes the defect. In particular,
-diagnostic codes identify categories: two different type errors can share a code.
-Retain the relevant subject, expected/actual types, dependency, source origin or
-proposed edit. Prefer existing structured fields. Where the public API supplies
-only text, extract the distinguishing payload and document what is ignored.
-Avoid snapshotting unrelated formatting or generating expected semantics from
-the same implementation under test.
+Before writing a case, identify the required outcome, its prerequisites and the
+evidence that distinguishes the defect. Diagnostic codes identify categories:
+two different type errors can share a code, so state the whole message, with
+its subject, expected/actual types, dependency or proposed edit.
 
-Use the shared diagnostic decoder and matcher in
-[`frontend-generation-diagnostics.mjs`](../../tests/frontend-generation-diagnostics.mjs).
-An expectation states the declaration, code and relevant `cause`, independently
-of the historical defect record. It may state only fields from the matcher's
-field table, and each field there carries its own counterexamples, so a stated
-field is always compared and perturbed. E343 names its untranslated subject,
-E340 its dependency, E871 its helper and captured field, and E845 its recursive
-operation and context. A range check composes with this meaning; it cannot
-replace it.
-Code-only E606 equation refusals remain appropriate when independent accepted
-and refused clients establish the semantic distinction. Pin found/expected
-endpoints when those endpoints are themselves the contract, as in G8.
+## State the case in Cubist
 
-Decode a recognized diagnostic form into its semantic roles before comparing
-it with the independently stated cause. G1 requires `{duplicate: "N"}`;
-its frontend and kernel codes may differ, so only this cause may omit `code`.
-G3 requires `{operation: "op", argument: "p", law: "l"}` for each client.
-Unknown wording remains an unrecognized reason. Finding the words somewhere
-in a message does not establish the declaration, roles or dependency direction.
-Keep valid alternative spellings explicit and test them against the same cause.
+Write the case as a Cubist module, with the outcome stated as the Cubist tests
+state theirs ([`cubist-tests/README.md`](../../cubist-tests/README.md)): an
+`// Error:` comment, with the exact message, above each declaration that must
+be refused, and nothing above one that must check. Observe in JavaScript only
+what a comment cannot state, such as a source range, a link, lint advice or a
+published name, and put its desired value beside the observation.
 
-Generate permitted variations within the matched expectation's constraints:
-alternate wording may remain valid when a diagnostic code is pinned, but a
-different code does not. Exercise stronger fixtures through the whole audit,
-not just validation. Do not filter generated controls through the acceptance
-matcher; that would hide the matcher rejecting a valid alternative.
+Take a desired outcome from the specification, or from the fixing
+implementation once it exists, and review it against the specification. Never
+take it from an implementation that still has the defect: `inline-errors
+--write` run on that compiler records the wrong behavior as accepted.
 
-For contracts that classify expected failures, exercise these boundaries:
+## Make the clients distinguish the defect
 
-| Control | Required result |
-| --- | --- |
-| Recorded defect | Recognized debt, never successful implementation |
-| Valid corrected behavior, including permitted alternatives | Desired requirements pass; a stale defect record demands activation |
-| Different failure, including one with the same code | Ordinary failure |
-| Well-typed but semantically wrong implementation | Ordinary failure, even if declarations check |
-| Broken fixture or unmet prerequisite | Ordinary failure, never known debt |
+- Use real programs and independently stated clients, never expected results
+  derived from the generator under test.
+- Pair an intended equation with a plausible incorrect one that must be
+  refused, so that a constant or wrongly resolved implementation cannot
+  satisfy both.
+- Exercise distinct branch results, and inputs that depend on a recursive
+  result: a first successor can coincide with a step that substitutes the
+  base value, so add a second.
+- Test name availability with clients, not with the output list:
+  constructors can be available without being outputs.
+- Cover each context a defect can appear in (direct, inherited, initial
+  model, grouped binders) with its own case.
+- Keep safe neighboring behavior checked. Suppressing unsafe lint advice, for
+  example, must keep safe advice for both single and grouped binders.
 
-Keep the contract and the expected-failure lifecycle apart. A case holds only
-its contract; defect records live in their own module, and only the lifecycle
-reads them. Collect compiler results once, as plain data, and judge them with
-pure functions. Index each test by what it depends on: a test that needs a
-record is keyed by that record and disappears with it, a test of the classifier
-uses synthetic observations and records, and lifecycle tests live in their own
-file. Activating a case is then only the removal of its record. Retiring the
-lifecycle deletes its files and points the runner's one lifecycle call at the
-assertion that the lifecycle already makes for unrecorded cases. Check this by
-running the whole suite against the fixing compiler with every record removed.
+## Track open defects explicitly
 
-Exercise the different-failure boundary twice: against each recorded debt, and
-against accepted observations with no record at all. Make the second structural
-rather than a per-case review step:
+While a fix is pending, record what the case shows today, separately from
+the case. The case is a TODO only while it shows exactly that record. Any
+other result fails and must be investigated, and a TODO never counts as
+completion. The fixing PR removes the record, and nothing else changes.
 
-- Write each requirement as a table of named conditions. Each condition carries
-  the plausible wrong results that must violate it, and each requirement lists
-  the valid variations it permits.
-- Apply every one to an accepted observation of each case. The observation and
-  its permitted variations must meet every requirement, and each
-  counterexample must violate its condition.
-- Require some counterexample to violate each condition alone. A span that
-  crosses both ends of its region leaves either bound unguarded. A condition
-  that another implies, such as the nonemptiness of a span that covers a
-  nonempty site, cannot be violated alone; leave it out.
-- State the conditions independently as well: deleting a condition deletes its
-  counterexamples with it.
+When a review exposes a mistake, inspect its class across sibling cases, and
+fix it where it occurs. Before submitting a case, answer:
 
-Facts only project evidence. They may locate it by declaration, site or region,
-but must not compare it with an expectation or drop evidence that a condition
-judges. Selecting only the links that span a label exactly is such a hidden
-condition: no counterexample can violate it. So is collecting only the lint
-codes a contract expects: advice issued under a new code would then pass as
-withheld. The mutation sweep below does not reach collection, so keep it free
-of such filters. Check the judging code from the other side by mutation: change
-each comparison in turn and require the audit to notice. A surviving mutant is
-a check that nothing exercises; add the counterexample, permitted variation or
-witness that distinguishes it, such as a second refused client when a condition
-quantifies over refused clients.
-
-Mutation coverage exercises the implemented predicate; its meaning also needs
-independently authored counterexamples. Preserve vocabulary while changing
-meaning: reverse a dependency, swap an argument and a law, or report an
-internal binding error that also says "already". Those cases must fail even
-when every comparison in the original predicate has been exercised.
-
-Map behavioral obligations independently of the fixture registry. A case-ID
-inventory cannot discover a requirement omitted from both the source fixtures
-and their manifest. Name the contexts, the incorrect alternative each witness
-distinguishes and the requirements it must keep. State each witness's minimum
-expectations as data, and derive what the audit perturbs from those minimums,
-never from the expectation under test; otherwise weakening an expectation also
-removes the counterexample that would expose it. Every expectation that a case
-states needs a witness that keeps it: one without a minimum can be deleted or
-changed unnoticed, and the audit cannot see that change. Keep names (clients,
-refused clients, absent outputs and declaration diagnostics) as minimums: a
-fixture may say more about them. Keep everything else exactly: source anchors
-and rewrites place the audit's counterexamples, so narrowing a site, widening a
-region or replacing a rewrite moves those counterexamples with it. Treat a
-case's fields other than its inputs and metadata as expectations, so that a
-misspelled field fails instead of being ignored. Keep client verdicts,
-publication and source expectations composable across diagnostic kinds. Resolve
-source anchors before observation; ambiguous occurrences are fixture errors
-unless explicitly selected.
-
-Use real programs and independently stated clients for semantic evidence.
-Exercise distinct branch results and inputs that distinguish dependence on a
-recursive result. A first successor can coincide with a step that substitutes
-the base value; add a second successor and explicitly reject that wrong source.
-Pair intended equations with plausible incorrect equations that must be refused;
-check that a constant or incorrectly resolved implementation cannot satisfy both.
-A supported control that avoids the old compiler defect still needs these
-semantic distinctions.
-
-Keep the observation's guarantee precise. An absent reported output does not
-imply an unavailable name: constructors can be available without being outputs.
-Test name availability with real clients, including accepted clients when the
-binding should survive. Assign diagnostic expectations per client, and compose
-them with declaration diagnostics before comparing the complete expected
-diagnostic set.
-An observer audit must use results possible at that interface; obtain positive
-controls from real programs before injecting a leak or refusal. A supported
-finite unrolling proves only the selected computation witnesses.
-
-Small injected diagnostic/link observations can test a contract's acceptance
-boundary before a compiler fix exists; label them as such. They do not prove
-that the compiler produces the desired result. Keep actual integration checks
-when a fixed implementation becomes available. A supported simpler source can
-prove that the predicate is reachable without establishing the original fix.
-Every edit that derives such a source must assert that it applied: a partly
-edited source can refuse a client for an unrelated reason, such as a type error.
-
-When a review exposes a mistake, inspect its class across sibling contracts:
-range checks, error projections, rewrite observers, activation state or context
-variants. Add a distinguishing control for the mechanism, record the audit's
-scope, and check required neighboring behavior. For example, suppressing unsafe
-lint advice must preserve safe advice for both single and grouped binders.
-Prefer fixing the mechanism, such as a shared requirement and its
-counterexamples, or one table that drives both a check and its counterexamples,
-to adding one more per-case control.
-
-Before submitting a new contract or changing one, answer:
-
-- Can this test reject a valid implementation? Which allowed alternatives were
-  checked?
-- Can a different bug produce the same observation? Which information is
-  discarded?
-- What deliberately broken behavior proves each requirement is sensitive?
-
-Remove a case's record with its fix; nothing else changes. Once all cases are
-active, retire the records, the classifier and its tests together, and have
-the runner assert each case directly, while preserving semantic assertions,
-case selectors and distinguishing controls. A review fix must not weaken the
-expected behavior merely to match a new observation.
+- Can it reject a valid implementation?
+- Can a different bug produce the same observation?
+- Which wrong implementation does each client distinguish?

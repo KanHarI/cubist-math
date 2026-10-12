@@ -1,0 +1,27 @@
+// B1-definitions (control): the selection and later globals that B1-imported imports.
+
+import hlevels;
+theory Point(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+def unit_set : IsSet(U0, Unit) {
+  hlevel;
+}
+
+def selected : Point(U0) := Point.make(Unit, unit_set, tt);
+
+use selected;
+inductive M : U0 {
+  unrelated;
+}
+
+inductive Box : U0 {
+  box(x : M);
+}
+
+theory T(U < UU0) {
+  A : set U;
+  op(x : M) : A;
+}

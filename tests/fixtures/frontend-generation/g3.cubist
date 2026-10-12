@@ -1,0 +1,19 @@
+// G3 (FG2): unsupported law-dependent transport leaves a usable theory and no partial Hom family.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  law l : c = c;
+  op(p : l = l) : M;
+}
+
+def usable(S : T(U0)) : S.M := S.op(refl(S.l));
+
+// Error: E817: T's models have no homomorphisms: its op's argument p depends on law l, whose
+//   transport and composition are not generated.
+def unsupported(S : T(U0)) := T.Hom.id(S);
+
+// Error: E817: T's models have no homomorphisms: its op's argument p depends on law l, whose
+//   transport and composition are not generated.
+def unsupported_iso(S : T(U0)) := T.Iso.id(S);
