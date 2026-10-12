@@ -16,12 +16,17 @@ computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
 }
 
 // General induction names recursive results separately from stored fields.
-computable def closed_induction_double :
-  (induction 3 return Nat { zero => 0; succ(k) with ih => succ(succ(ih)); }) = 6 {
+computable def closed_induction_double : (induction 3 return Nat {
+      zero => 0;
+      succ(k) with ih => succ(succ(ih));
+    }) = 6 {
   rfl;
 }
 
-evaluate (induction 3 return Nat { zero => 0; succ(k) with ih => succ(succ(ih)); }) expecting 6;
+evaluate (induction 3 return Nat {
+    zero => 0;
+    succ(k) with ih => succ(succ(ih));
+  }) expecting 6;
 
 // Derived path induction along a closed path that is not refl.
 computable def closed_path_induction :
