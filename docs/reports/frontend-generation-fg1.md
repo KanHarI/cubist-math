@@ -10,8 +10,8 @@ G7 now has controlled failure injection in `tests/frontend-publication.test.mjs`
 
 A module-local ownership table reserves ordinary declarations, inductive
 constructors and all names of a generated expansion before checking them.
-Each entry retains the module, declaration kind, source token, binding
-identity and lifecycle state independently of aliases in the environment.
+Each entry records only the owning declaration, the name's kind and its
+source token, independently of aliases in the environment.
 E872 refuses a conflicting local declaration without replacing the earlier
 binding, native definition, source location or inspection symbol. A refused
 duplicate makes the check incomplete even when every retained symbol is
@@ -20,6 +20,12 @@ extensions still use their separate policy: a model's declaring module
 may add numeral/literal rules. Refusing an extension records a directive
 error and preserves the model's existing symbol and notation.
 
+A name whose owner failed, or whose group was not published, stands for
+an unavailable value that records its failure's root: the declaration
+that failed on its own and that failure's reason. A declaration that
+fails on a failed dependency passes the dependency's root on, so every
+client reports the first error however many failures lie between. This
+value is the dependency state; the ownership table holds no second copy.
 An invalid theory retains its original failure. A child reports E340 at
 its parent reference, with the dependency identity and original cause,
 instead of expanding the parent's invalid syntax as new source. A failed
@@ -65,9 +71,9 @@ the ordinary checker.
 
 | Boundary | Producer and consumers |
 | --- | --- |
-| Reservations and lifecycle | `translator/declarations.mjs`; `Translator.translate` reserves definitions, inductives and expansion plans together. Constructor checks retain their more specific within-signature diagnostics. |
+| Reservations | `translator/declarations.mjs`; `Translator.translate` reserves definitions, inductives and expansion plans together. Constructor checks retain their more specific within-signature diagnostics. |
 | Group roles | `cubist/theories.mjs` and `cubist/morphisms.mjs` assign roles; initial/free members carry their existing construction identity. The queue and program hooks consume the explicit groups. The former name-based skip helper is removed. |
-| Dependency failure | Inheritance lookup and initial/free requests check availability before retained syntax; `Untranslated` carries the original binding/cause through imported aliases. Name availability during freshening is a separate, non-failing query. |
+| Dependency failure | Inheritance lookup and initial/free requests check availability before retained syntax. Every failed or unpublished name is built by `untranslated` from its failure's root (`failureRoot` in `translator/declarations.mjs`), for definitions, inductives, refused expansions and rolled-back groups alike, so the original binding/cause passes through imported aliases and intermediate failures. A rolled-back group records its `failedMember` apart from that root `cause`. Name availability during freshening is a separate, non-failing query. |
 | Native state | `CubicalDeclarationTransaction` and `CubicalProgram` stage native definitions/signatures and the associated metadata; benchmark checking uses these same boundaries. |
 | Separate diagnostics | Program results retain the earlier symbol and a duplicate gap. Inline-error reports, REPL, audit CLI, elaboration panels and the proof page consume that gap. E872 is in both diagnostic catalogues and the checked reference example. |
 | Rechecking and export | Ordinary checks rediscover imports, including repaired reads, parse failures and interrupted loads. REPL entries reuse their immutable snapshot. Exported source is replayed and checked, including failures. |
