@@ -541,8 +541,13 @@ test("FG0 audit: repeated inner tokens require an explicit occurrence", () => {
   assert.throws(() => sourceAnchor("x x", "x", "token"), /must occur once/);
   assert.deepEqual(sourceAnchor("x x", "x", "token", 1), {start: 2, end: 3});
   assert.throws(() => sourceAnchor("x x", "x", "token", 2), /existing site/);
-  const c = fixture("G8"); c.diagnostic.token = "t0";
+  // Outside the registry, no witness fixes this case's anchors or requires
+  // its cause.
+  const c = {...fixture("G8"), id: "G8-repeated"};
+  delete c.diagnostic.cause; c.diagnostic.token = "t0";
   assert.throws(() => validateFixture(c), /diagnostic token must occur once/);
+  c.diagnostic.tokenOccurrence = 1;
+  validateFixture(c);
 });
 
 test("FG0 audit: the manifest preserves group ownership", async () => {
@@ -584,17 +589,46 @@ test("FG0 audit: requirements survive deletion of a case, its manifest row or it
   weakens("G4", c => { c.clients = c.clients.filter(name => name !== "off_computation"); }, /match-computation: G4 must keep client off_computation/);
   weakens("G5-single", c => { c.clients = c.clients.filter(name => name !== "N.fold"); }, /lint-interface: G5-single must keep client N.fold/);
   weakens("G8", c => { delete c.diagnostic.cause; }, /wildcard-diagnostic: G8 must keep diagnostic h/);
-  weakens("G9", c => { c.observations.sites = 3; }, /written-navigation: G9 must keep 4 observation sites/);
+  weakens("G9", c => { c.observations.sites = 3; }, /written-navigation: G9 must keep observation sites/);
   weakens("G12", c => { c.refusedClients.wrong.code = "E604"; }, /recursive-step: G12 must keep refused client wrong/);
   for (const id of ["G12", "G12-inherited", "G12-initial"])
     weakens(id, c => { c.clients = c.clients.filter(name => name !== "computation2"); }, new RegExp(`recursive-step: ${id} must keep client computation2`));
-  // A name that no witness states has no minimum, so it could be deleted
-  // unnoticed; every name a registered case states must have one.
+  // Anchors, rewrites and other single-valued expectations are kept exactly.
+  // Range and advice counterexamples are placed from them, so narrowing a
+  // site, widening a region or replacing the rewrite would otherwise move the
+  // counterexamples with it; several such edits also left the records unchanged.
   for (const [id, edit, error] of [
-    ["G2", c => { c.clients.push("unnamed"); }, /G2: client unnamed is named by no obligation/],
-    ["G4", c => { c.refusedClients.unnamed = {code: "E606"}; }, /G4: refused client unnamed is named by no obligation/],
-    ["G1", c => { c.absentOutputs = ["N.unnamed"]; }, /G1: absent output N.unnamed is named by no obligation/],
-    ["G3", c => { c.absentOutputFamilies.push("T.Unnamed"); }, /G3: absent output family T.Unnamed is named by no obligation/],
-    ["G4", c => { c.diagnostic = {name: "T.value", code: "E546"}; }, /G4: diagnostic T.value is named by no obligation/],
+    ["G8", c => { c.diagnostic.token = "1"; }, /wildcard-diagnostic: G8 must keep diagnostic h's token/],
+    ["G8", c => { c.diagnostic.scope = "def h(x : T) : T := match x { t0 => t0; _ => t1; };"; }, /G8 must keep diagnostic h's scope/],
+    ["G10", c => { c.diagnostic.call = "k"; }, /capture-origin: G10 must keep diagnostic T's call/],
+    ["G10", c => { Object.assign(c.diagnostic, {conflict: "(match n return M { zero => c; succ(c) => k(c); })", binderOccurrence: 1}); },
+      /G10 must keep diagnostic T's conflict, diagnostic T's binderOccurrence/],
+    ["G12-range", c => { c.diagnostic.token = "i"; }, /type-unfolding-origin: G12-range must keep diagnostic T's token/],
+    ["G12-range", c => { Object.assign(c.diagnostic, {scope: "def iter(n : Nat) : M := match n { zero => c; succ(k) => op(iter(k)); };\n  law nope(n : Nat) : iter(n) = c;", tokenOccurrence: 2}); },
+      /G12-range must keep diagnostic T's scope, diagnostic T's tokenOccurrence/],
+    ["G9", c => { c.observations.scope = "law l(c : M) : k(c) = op(c, c);\n}"; }, /written-navigation: G9 must keep observation scope/],
+    ["G5", c => { c.rewrite.to = "forall x, y : M. M "; }, /lint-interface: G5 must keep rewrite replacement/],
+    ["G5-single", c => { c.rewrite.from = "op : forall x : M. M"; c.rewrite.to = "op : M -> M"; }, /G5-single must keep rewrite target, rewrite replacement/],
+    ["G5", c => { c.rewrite.advice.pop(); }, /G5 must keep rewrite advice/],
+    ["G1", c => { c.symbol = "independent"; }, /ownership: G1 must keep collision symbol/],
+    ["G1-reverse", c => { c.originalType = "Unit"; }, /ownership: G1-reverse must keep original type/],
+    ["G6", c => { c.parent = "C"; c.child = "P"; }, /failed-dependency: G6 must keep failed parent/],
+    ["G6", c => { c.cause = "Other"; }, /G6 must keep parent cause/],
+    // An anchor its witness does not state is kept by no witness.
+    ["G1", c => { c.diagnostic.scope = "def N : Unit := tt;"; }, /ownership: G1 must keep diagnostic N's scope/],
+  ]) weakens(id, edit, error);
+  // An expectation that no witness keeps could be deleted or changed
+  // unnoticed; every expectation a registered case states must have one, and
+  // a misspelled expectation field is not silently ignored.
+  for (const [id, edit, error] of [
+    ["G2", c => { c.clients.push("unnamed"); }, /G2: no obligation's witness keeps its client unnamed/],
+    ["G4", c => { c.refusedClients.unnamed = {code: "E606"}; }, /G4: no obligation's witness keeps its refused client unnamed/],
+    ["G1", c => { c.absentOutputs = ["N.unnamed"]; }, /G1: no obligation's witness keeps its absent output N.unnamed/],
+    ["G3", c => { c.absentOutputFamilies.push("T.Unnamed"); }, /G3: no obligation's witness keeps its absent output family T.Unnamed/],
+    ["G4", c => { c.diagnostic = {name: "T.value", code: "E546"}; }, /G4: no obligation's witness keeps its diagnostic T.value/],
+    ["G11", c => { c.observations = {scope: "def kk(c : M) : M := k(c);", label: "c", sites: 2}; }, /G11: no obligation's witness keeps its observations/],
+    ["G4-flat", c => { c.rewrite = {from: "op(op(c))", to: "op(c)", advice: []}; }, /G4-flat: no obligation's witness keeps its rewrite/],
+    ["G12", c => { c.symbol = "T"; c.originalType = "Unit"; }, /G12: no obligation's witness keeps its collision symbol/],
+    ["G2", c => { c.client = ["T.Hom"]; }, /G2: client is not an expectation a witness can keep/],
   ]) weakens(id, edit, error);
 });

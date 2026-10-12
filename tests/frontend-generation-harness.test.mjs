@@ -17,14 +17,15 @@ const observe = (c, evidence, edit) => {
 };
 
 // Fixture mistakes and unmet prerequisites are ordinary failures, never debt.
-// Metadata, client names and prerequisites are assertions before observation:
-// the requirement map names every client, so a misspelling loses one.
+// Metadata, client names, anchors and prerequisites are assertions before
+// observation: the requirement map keeps every client and anchor, so a
+// misspelling loses one, and a source edit must keep its anchors.
 for (const [id, mutate, error] of [
   ["G1", c => { c.clients[0] = "orignal"; }, /ownership: G1 must keep client original/],
   ["G5", c => { c.source += "\ndef unrelated : Unit := Unit;"; }, /original interface must check before its rewrite/],
-  ["G8", c => { c.diagnostic.scope += " "; }, /diagnostic scope/],
-  ["G9", c => { c.observations.sites++; }, /observation sites/],
-  ["G10", c => { c.diagnostic.conflict += " missing"; }, /diagnostic conflict/],
+  ["G8", c => { c.source = c.source.replace("_ => t1;", "_ => t1 ;"); }, /diagnostic scope must exist in its source/],
+  ["G9", c => { c.observations.sites++; }, /written-navigation: G9 must keep observation sites/],
+  ["G10", c => { c.source = c.source.replace("succ(c) => k(c)", "succ(c) =>  k(c)"); }, /diagnostic conflict must exist in its source/],
 ]) test(`FG0 harness: ${id} fixture mistakes fail before observation`, async t => {
   const c = fixture(id); mutate(c);
   await assert.rejects(observeCase(t, c, check), error);

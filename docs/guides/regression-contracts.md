@@ -82,11 +82,14 @@ rather than a per-case review step:
 Facts only project evidence. They may locate it by declaration, site or region,
 but must not compare it with an expectation or drop evidence that a condition
 judges. Selecting only the links that span a label exactly is such a hidden
-condition: no counterexample can violate it. Check the judging code from the
-other side by mutation: change each comparison in turn and require the audit
-to notice. A surviving mutant is a check that nothing exercises; add the
-counterexample, permitted variation or witness that distinguishes it, such as
-a second refused client when a condition quantifies over refused clients.
+condition: no counterexample can violate it. So is collecting only the lint
+codes a contract expects: advice issued under a new code would then pass as
+withheld. The mutation sweep below does not reach collection, so keep it free
+of such filters. Check the judging code from the other side by mutation: change
+each comparison in turn and require the audit to notice. A surviving mutant is
+a check that nothing exercises; add the counterexample, permitted variation or
+witness that distinguishes it, such as a second refused client when a condition
+quantifies over refused clients.
 
 Mutation coverage exercises the implemented predicate; its meaning also needs
 independently authored counterexamples. Preserve vocabulary while changing
@@ -100,13 +103,18 @@ and their manifest. Name the contexts, the incorrect alternative each witness
 distinguishes and the requirements it must keep. State each witness's minimum
 expectations as data, and derive what the audit perturbs from those minimums,
 never from the expectation under test; otherwise weakening an expectation also
-removes the counterexample that would expose it. Every client, refused client,
-absent output and declaration diagnostic that a case states needs a witness
-that names it: a name without a minimum can be deleted unnoticed, and the
-audit cannot see that deletion. Keep client verdicts, publication and source
-expectations composable across diagnostic kinds. Resolve source anchors before
-observation; ambiguous occurrences are fixture errors unless explicitly
-selected.
+removes the counterexample that would expose it. Every expectation that a case
+states needs a witness that keeps it: one without a minimum can be deleted or
+changed unnoticed, and the audit cannot see that change. Keep names (clients,
+refused clients, absent outputs and declaration diagnostics) as minimums: a
+fixture may say more about them. Keep everything else exactly: source anchors
+and rewrites place the audit's counterexamples, so narrowing a site, widening a
+region or replacing a rewrite moves those counterexamples with it. Treat a
+case's fields other than its inputs and metadata as expectations, so that a
+misspelled field fails instead of being ignored. Keep client verdicts,
+publication and source expectations composable across diagnostic kinds. Resolve
+source anchors before observation; ambiguous occurrences are fixture errors
+unless explicitly selected.
 
 Use real programs and independently stated clients for semantic evidence.
 Exercise distinct branch results and inputs that distinguish dependence on a

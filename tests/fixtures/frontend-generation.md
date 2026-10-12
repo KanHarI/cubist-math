@@ -28,8 +28,10 @@ G5 uses positional operation calls, identity and a generated model/fold to
 test the lint rewrite for both single and grouped operation binders. The case
 records each warning's code, declaration and message and verifies its location
 within the rewrite target before applying the associated replacement. Advice
-is a set, so its order is free. Changed or partial advice is an unrecognized
-observation until its edit is reviewed.
+is a set, so its order is free. Every lint warning on the source is evidence,
+whatever its code: advice issued under a new code is judged, never taken as
+withheld. Changed or partial advice is an unrecognized observation until its
+edit is reviewed.
 Named operation calls are not currently supported. Passing controls require
 W705 and W706 for ordinary safe unused binders and check their arrow-form
 rewrites. G11 requires opposite outcomes for intended and captured equations,
@@ -91,16 +93,20 @@ behavioral obligations and the cases that witness them. Removing a case and its
 manifest row together still fails if an obligation loses its witness. Each
 obligation's `checks` names the contract requirements its witnesses must keep,
 so a requirement cannot stop applying unnoticed. Each witness also states, as
-data, the minimum its case must keep: clients, refused-client and declaration
-diagnostics, absent outputs and observation sites. These include constructor
+data, what its case must keep: clients, refused-client and declaration
+diagnostics, absent outputs, source anchors, lint rewrites, the collision's
+binding and the failed dependency's identity. These include constructor
 availability, output absence, G2's public types and lowering endpoints, G4's
 distinct branch results, G8's endpoints and every second recursive step. Every
-client, refused client, absent output and declaration diagnostic a case states
-must be named by one of its witnesses, so none can be deleted unnoticed. A
-weaker fixture is rejected before any program is checked. A diagnostic cause
-that its code does not always carry must be required by a witness, and the
-audit's cause counterexamples come from there rather than from the expectation
-under test.
+expectation a case states must be kept by one of its witnesses, so none can be
+deleted or changed unnoticed. Names are kept as minimums; anchors, rewrites
+and the other single-valued expectations are kept exactly, because range and
+advice counterexamples are placed from them. A case field that is neither an
+input nor an expectation a witness can keep fails, so a misspelled field is
+not ignored. A weaker fixture is rejected before any program is checked. A
+diagnostic cause that its code does not always carry must be required by a
+witness, and the audit's cause counterexamples come from there rather than
+from the expectation under test.
 Source scopes, conflicts and rewrite targets must occur exactly once; repeated
 inner references require an explicit occurrence. Observers use resolved spans.
 
@@ -180,7 +186,9 @@ classifies cases, so activation leaves it unchanged. Accepted observations come
 from [supported sources](frontend-generation-supported.mjs), which avoid the
 original defect, or from observer results layered over real checked outputs.
 The G12 supported source unrolls two steps; it demonstrates these finite
-observations, not arbitrary recursive correctness.
+observations, not arbitrary recursive correctness. The G9 supported source
+renames the field that its law binder collides with, so it keeps the case's
+own written observations.
 
 The diagnostic audit also states misleading messages independently of the
 decoder and mutation generators. Exercising comparisons cannot establish that

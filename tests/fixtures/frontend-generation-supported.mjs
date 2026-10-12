@@ -40,10 +40,11 @@ export const supportedSources = {
   },
   G4: natMotive,
   "G4-flat": natMotive,
+  // The field the law binder collides with is renamed, so the written law,
+  // its labels and sites stay the case's own.
   G9: c => {
-    const scope = "law l(z : M) : k(z) = op(z, z);";
-    c.source = replaced(c.source, c.observations.scope, scope);
-    c.observations = {...c.observations, scope, label: "z"};
+    c.source = replaced(replaced(replaced(c.source, "c : M; op(x, y : M) : M;", "d : M; op(x, y : M) : M;"),
+      "op(x, c);", "op(x, d);"), "S.op(x, S.c)", "S.op(x, S.d)");
   },
   G11: renameParameter,
   "G11-grouped-dependent": renameParameter,

@@ -55,49 +55,81 @@ const relativeAnchor = (source, scope, fragment, label, occurrence, wholeWord = 
   return {start: scope.start + span.start, end: scope.start + span.end};
 };
 
-// A witness states the minimum its case must keep; a fixture may say more.
-// Unknown witness fields fail, so a stated minimum is never silently ignored.
+// The source anchors a declaration diagnostic may carry.
+const diagnosticLocations = ["scope", "token", "tokenOccurrence", "conflict", "binder", "binderOccurrence", "call"];
+// A witness states what its case must keep, and every expectation a case
+// states must be kept by one of its witnesses. Each field lists what a case
+// lacks (`keeps`), the expectations a witness keeps (`covers`) and those its
+// case states (`states`). Names are kept as minimums: a fixture may say more
+// about a diagnostic. Everything else is kept exactly; range and advice
+// counterexamples are placed from source anchors and rewrites, so moving one
+// would move its counterexamples too. Unknown witness fields fail, so a
+// stated minimum is never silently ignored.
 const atLeast = (actual, minimum) => !!actual && (minimum.code === undefined || actual.code === minimum.code)
   && (minimum.cause === undefined || isDeepStrictEqual(actual.cause, minimum.cause));
 const lacking = (actual = [], minimum, label) => minimum.filter(item => !actual.includes(item)).map(item => `${label} ${item}`);
-const witnessChecks = {
-  clients: (fixture, names) => lacking(fixture.clients, names, "client"),
-  refusedClients: (fixture, expected) => Object.entries(expected)
-    .filter(([name, minimum]) => !atLeast(fixture.refusedClients?.[name], minimum)).map(([name]) => `refused client ${name}`),
-  absentOutputs: (fixture, names) => lacking(fixture.absentOutputs, names, "absent output"),
-  absentOutputFamilies: (fixture, names) => lacking(fixture.absentOutputFamilies, names, "absent output family"),
-  diagnostic: (fixture, minimum) => fixture.diagnostic?.name === minimum.name && atLeast(fixture.diagnostic, minimum)
-    ? [] : [`diagnostic ${minimum.name}`],
-  sites: (fixture, count) => fixture.observations?.sites >= count ? [] : [`${count} observation sites`],
+// The parts of an exact expectation that differ from its witness's, by label.
+const differing = (actual, minimum, labels, same = {}) => Object.entries(labels)
+  .filter(([part]) => !(same[part] ?? Object.is)(actual?.[part], minimum[part])).map(([, label]) => label);
+const listed = (field, label) => ({
+  keeps: (fixture, names) => lacking(fixture[field], names, label),
+  covers: names => names.map(name => `${label} ${name}`),
+  states: fixture => (fixture[field] ?? []).map(name => `${label} ${name}`),
+});
+const exactly = (field, label, keeps = (fixture, minimum) => fixture[field] === minimum ? [] : [label]) =>
+  ({keeps, covers: () => [label], states: fixture => fixture[field] === undefined ? [] : [label]});
+const witnessFields = {
+  clients: listed("clients", "client"),
+  refusedClients: {
+    keeps: (fixture, expected) => Object.entries(expected)
+      .filter(([name, minimum]) => !atLeast(fixture.refusedClients?.[name], minimum)).map(([name]) => `refused client ${name}`),
+    covers: expected => Object.keys(expected).map(name => `refused client ${name}`),
+    states: fixture => Object.keys(fixture.refusedClients ?? {}).map(name => `refused client ${name}`),
+  },
+  absentOutputs: listed("absentOutputs", "absent output"),
+  absentOutputFamilies: listed("absentOutputFamilies", "absent output family"),
+  diagnostic: {
+    keeps: ({diagnostic: actual}, minimum) => actual?.name !== minimum.name || !atLeast(actual, minimum) ? [`diagnostic ${minimum.name}`]
+      : differing(actual, minimum, Object.fromEntries(diagnosticLocations.map(key => [key, `diagnostic ${minimum.name}'s ${key}`]))),
+    covers: ({name}) => [`diagnostic ${name}`],
+    states: ({diagnostic}) => diagnostic ? [`diagnostic ${diagnostic.name}`] : [],
+  },
+  observations: exactly("observations", "observations", ({observations}, minimum) =>
+    differing(observations, minimum, {scope: "observation scope", label: "observation label", sites: "observation sites"})),
+  // Advice is a set, so a case may state it in any order.
+  rewrite: exactly("rewrite", "rewrite", ({rewrite}, minimum) =>
+    differing(rewrite, minimum, {from: "rewrite target", to: "rewrite replacement", advice: "rewrite advice"},
+      {advice: (actual, expected) => Array.isArray(actual) && isDeepStrictEqual(byMessage(actual), byMessage(expected))})),
+  symbol: exactly("symbol", "collision symbol"),
+  originalType: exactly("originalType", "original type"),
+  parent: exactly("parent", "failed parent"),
+  child: exactly("child", "dependent child"),
+  cause: exactly("cause", "parent cause"),
 };
 export function validateWitness(fixture) {
   for (const {id, witnesses} of obligations) for (const [field, minimum] of Object.entries(witnesses[fixture.id] ?? {})) {
-    assert.ok(Object.hasOwn(witnessChecks, field), `${id}: unknown witness field ${field}`);
-    const missing = witnessChecks[field](fixture, minimum);
+    assert.ok(Object.hasOwn(witnessFields, field), `${id}: unknown witness field ${field}`);
+    const missing = witnessFields[field].keeps(fixture, minimum);
     assert.ok(!missing.length, `${id}: ${fixture.id} must keep ${missing.join(", ")}`);
   }
 }
-// The names a witness field states, and those its case states. A name that no
-// witness states has no minimum, so deleting it from its case would pass.
-const witnessNames = {
-  clients: {label: "client", witness: names => names, fixture: fixture => fixture.clients ?? []},
-  refusedClients: {label: "refused client", witness: Object.keys, fixture: fixture => Object.keys(fixture.refusedClients ?? {})},
-  absentOutputs: {label: "absent output", witness: names => names, fixture: fixture => fixture.absentOutputs ?? []},
-  absentOutputFamilies: {label: "absent output family", witness: names => names, fixture: fixture => fixture.absentOutputFamilies ?? []},
-  diagnostic: {label: "diagnostic", witness: ({name}) => [name], fixture: fixture => fixture.diagnostic ? [fixture.diagnostic.name] : []},
-};
+// A case's inputs and metadata; every other field is an expectation. One that
+// no witness keeps could be deleted or changed unnoticed, and a misspelled
+// expectation field would be silently ignored.
+const caseInputs = ["id", "group", "kind", "phase", "contract", "source"];
 function validateWitnessed(fixture) {
   const witnesses = obligations.map(({witnesses: {[fixture.id]: witness}}) => witness).filter(Boolean);
-  for (const [field, {label, witness, fixture: stated}] of Object.entries(witnessNames)) {
-    const named = new Set(witnesses.flatMap(minimums => field in minimums ? witness(minimums[field]) : []));
-    for (const name of stated(fixture)) assert.ok(named.has(name), `${fixture.id}: ${label} ${name} is named by no obligation`);
+  for (const field of Object.keys(fixture).filter(key => !caseInputs.includes(key))) {
+    assert.ok(Object.hasOwn(witnessFields, field), `${fixture.id}: ${field} is not an expectation a witness can keep`);
+    const {covers, states} = witnessFields[field];
+    const kept = new Set(witnesses.flatMap(minimums => field in minimums ? covers(minimums[field]) : []));
+    for (const label of states(fixture)) assert.ok(kept.has(label), `${fixture.id}: no obligation's witness keeps its ${label}`);
   }
 }
 // A cause is required by its code or by an obligation, never by the
 // expectation under test.
 const causeRequired = (id, name) => obligations.some(({witnesses: {[id]: witness}}) => !!witness
   && !!(witness.refusedClients?.[name]?.cause || witness.diagnostic?.name === name && witness.diagnostic.cause));
-const diagnosticLocations = ["scope", "token", "tokenOccurrence", "conflict", "binder", "binderOccurrence", "call"];
 
 export function validateFixture(fixture) {
   const {source, diagnostic, observations, rewrite} = fixture;
@@ -212,7 +244,6 @@ function diagnosticContexts(fixture, result) {
   return result.gaps.map((actual, at) => ({actual, expected: expected[owners.indexOf(at)],
     causeRequired: causeRequired(fixture.id, actual.name)}));
 }
-const adviceCodes = ["W705", "W706"];
 // Advice is a set: issued and identified advice are compared in one order.
 const byMessage = advice => [...advice].sort((a, b) => a.message.localeCompare(b.message));
 // Issued advice, located relative to its rewrite target, in that order.
@@ -287,10 +318,11 @@ const published = name => ({name: `publishes ${name}`, result: r => { r.outputs.
 // Advice changes start from the case's identified advice at its whole target.
 const identified = ({fixture, anchors}) => fixture.rewrite.advice.map(advice => ({...advice, ...anchors.rewrite}));
 const advised = (context, name, edit) => ({name, evidence: e => { e.warnings = structuredClone(identified(context)); edit(e.warnings); }});
-// Each issued warning states its identified counterpart's field.
-const adviceField = (field, what, other) => ({
+// Each issued warning states its identified counterpart's field. Each change
+// describes and edits the identified warnings.
+const adviceField = (field, ...changes) => ({
   holds: ({fixture, facts: {advice}}) => byMessage(fixture.rewrite.advice).every((expected, at) => !advice[at] || advice[at][field] === expected[field]),
-  breaks: context => [advised(context, `advice ${what}`, w => { w[0][field] = other(w[0][field]); })],
+  breaks: context => changes.map(([what, edit]) => advised(context, `advice ${what}`, edit)),
 });
 // Range changes place the declaration's refusal at a span within the source.
 function placements({fixture, anchors}) {
@@ -381,9 +413,11 @@ const requirementChecks = {
           ...context.fixture.rewrite.advice.length > 1 ? [advised(context, "advice is partial", w => { w.pop(); })] : [],
         ],
       },
-      codes: adviceField("code", "has another code", code => code === "W705" ? "W706" : "W705"),
-      declarations: adviceField("declaration", "names another declaration", () => "unrelated"),
-      messages: adviceField("message", "has another message", () => "x is unused in the body: rename it _x."),
+      // The same advice under a new code is still issued advice, never withheld.
+      codes: adviceField("code", ["has another code", w => { w[0].code = w[0].code === "W705" ? "W706" : "W705"; }],
+        ["is issued under a new code", w => w.forEach(warning => { warning.code = "W799"; })]),
+      declarations: adviceField("declaration", ["names another declaration", w => { w[0].declaration = "unrelated"; }]),
+      messages: adviceField("message", ["has another message", w => { w[0].message = "x is unused in the body: rename it _x."; }]),
       startsInTarget: {
         holds: ({facts: {advice}}) => advice.every(w => w.start >= 0),
         breaks: context => [advised(context, "advice lies outside its rewrite", w => Object.assign(w[0], {start: 0, end: 1}))],
@@ -572,7 +606,9 @@ export async function collectEvidence(t, fixture, check, lintSource = lint) {
     assert.deepEqual(gapNames(evidence.result), [], prerequisite);
     for (const name of fixture.clients)
       assert.equal(clientState(find(evidence.result, name)), "checked", `${prerequisite}: ${name}`);
-    evidence.warnings = lintSource(fixture.source).filter(w => adviceCodes.includes(w.code))
+    // Every warning is evidence, whatever its code: the advice requirement
+    // judges codes, so advice under another code is never taken as withheld.
+    evidence.warnings = lintSource(fixture.source)
       .map(({code, declaration, message, start, end}) => ({code, declaration, message, start, end}));
     // A warning code alone cannot authorize this particular edit. Changed
     // advice must be investigated before assigning it a replacement source.

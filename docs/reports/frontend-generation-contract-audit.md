@@ -5,7 +5,8 @@ diagnostic acceptance review of `89c97e99`, the requirement review of
 `687f554c`, the activation review of `2e27565b`, the condition review of
 `f48bc1f7`, the guard review of `2a246504` and the design review of
 `637734ab`, the diagnostic-cause review of `f3b68c5f`, the optional-code
-review of `fbe53b4e` and the witness review of `1628df46`. The
+review of `fbe53b4e`, the witness review of `1628df46` and the anchor review
+of `e9e85e18`. The
 [frontend generation roadmap](../roadmaps/frontend-generation.md) supplies the
 behavioral requirements. The [inventory](frontend-generation-gaps.md)
 describes defects; the [manifest](../../tests/fixtures/frontend-generation.md)
@@ -35,8 +36,8 @@ The audit never reads defect records or classifies cases, so activating a case
 or retiring every record leaves it unchanged. These controls cover each case
 without per-case audit code. The
 [requirement map](../../tests/fixtures/frontend-generation-requirements.mjs)
-names the requirements each witness must keep, its minimum expectations and,
-independently of the tables, the conditions each requirement judges.
+names the requirements each witness must keep, the expectations its case must
+keep and, independently of the tables, the conditions each requirement judges.
 
 The expected-failure lifecycle is separate: records live in
 [frontend-generation-defects.mjs](../../tests/fixtures/frontend-generation-defects.mjs)
@@ -66,10 +67,10 @@ contract tables list; the last column states only what distinguishes the case.
 | G2 | [FG3](../roadmaps/frontend-generation.md#fg3-infer-universes-from-the-generated-telescope) | Source: the domain moves into the model's universe (`op(A : U, x : A)`). Hom/Iso, computation, `map_op` preservation and level clients check at U0/U1; that variant's U1 level pin is U2. Stating a U0 model's Hom in U0 is refused with `found U1, expected U0`. | A missing preservation field or level client; an accepted lowering or one with other endpoints; a different same-code Hom mismatch. |
 | G3 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Observer: retain checked base clients, withhold Hom/Iso, and require E817 with operation op, argument p and law l for both clients. Recognized focused wordings decode to that same cause. | A leaked family root or member; swapped semantic roles, a reversed or denied dependency, a carrier instead of a law, an arrow-operation refusal, or another code. |
 | G4, G4-flat | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: Nat motives, with distinct branch results and independently stated accepted/refused equations. | Constant match result; wrong clause result; same E546 with a different primary cause. |
-| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target, in any order, authorizes the associated rewrite. | Any issued advice other than exactly the identified advice within its target; an authorized rewrite that loses a client. |
+| G5, G5-single | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Real original clients with unsafe advice suppressed; existing controls preserve ordinary safe W705/W706. Only identified advice at the source target, in any order, authorizes the associated rewrite. | Any issued warning, whatever its code, other than exactly the identified advice within its target; an authorized rewrite that loses a client. |
 | G6 | [FG1](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication) | Observer: child E340 has dependency target P, with or without an attached root cause. Parent E343 has untranslated subject Undefined and independent clients check. | Another dependency, including Q whose attached cause mentions P; an untranslated-name message with E340; another parent subject. |
 | G8 | [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Observer: E606 with the specified found/expected endpoints; token or wider body span accepted. | Swapped or changed endpoints; a span that does not cover the token within the body; a different generation cause. |
-| G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the colliding law binder, preserving independently stated meaning and all navigation sites. Identical repeated links are equivalent, and links that only touch a site belong to their own text. | At any written site, any link that is not the written label targeting its binder over exactly that label, including one beside the correct link; a site without a link. |
+| G9 | [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Source: rename the field that the law binder collides with, keeping the written law, its labels and sites, and independently stated meaning. Identical repeated links are equivalent, and links that only touch a site belong to their own text. | At any written site, any link that is not the written label targeting its binder over exactly that label, including one beside the correct link; a site without a link. |
 | G10 | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG5](../roadmaps/frontend-generation.md#fg5-preserve-public-interfaces-and-source-provenance) | Observer: E871 identifies helper k and captured field c; the binder, helper call, or enclosing conflicting clause supplies a nonempty origin. | A span that covers neither the binder nor the helper call within the clause; a different helper, field or unrecognized cause. |
 | G11, G11-grouped-dependent, G11-inherited, G11-initial | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly) | Source: rename the derived parameter through its telescope/body, preserving all independent intended/captured equations in each context. | A refused intended equation or a checked captured equation, in any context. The captured refusal's E606 payload is deliberately free: the opposite verdicts carry the distinction. |
 | G12, G12-inherited, G12-initial | [FG2](../roadmaps/frontend-generation.md#fg2-describe-dependencies-and-supported-generation-explicitly), [FG4](../roadmaps/frontend-generation.md#fg4-carry-evidence-and-compiler-state-with-the-context) | Source: two-step nonrecursive unrolling, retaining zero/one/two-step and wrong-result clients in all three contexts. This establishes the finite witnesses only. | Constant iter makes the wrong equation check; ignoring the recursive result preserves the first step but fails the second with E606. |
@@ -255,6 +256,25 @@ contract tables list; the last column states only what distinguishes the case.
   identified advice in another order was refused. Both are now compared in
   one order: the reversed identified advice is a permitted variation, and a
   case may state its identified advice in either order.
+- Witnesses kept names but not source anchors or rewrites, from which the
+  range and advice counterexamples are placed, so weakening an anchor moved
+  its counterexamples with it. Narrowing G8's token to `1`, G12-range's to `i`
+  or G10's call to `k` passed every test, records included, and then accepted
+  a refusal over that character or name alone. Widening G8's scope, G10's
+  conflict or G12-range's scope, or replacing G5's rewrite with one that keeps
+  every client, passed every audit and harness test. Witnesses now keep every
+  expectation a case states: names as minimums, and anchors, rewrites, the
+  collision's binding and the failed dependency's identity exactly. A case
+  field that no witness can keep fails, so a misspelled expectation is not
+  ignored. The G9 supported source now renames the field instead of the law
+  binder, so it keeps the case's own observations. The audit rejects each of
+  those edits.
+- Lint evidence kept only W705 and W706, so the advice conditions never saw
+  a warning under another code: today's unsafe advice under a new code was
+  taken as withheld, its rewrite was never checked, and G5 and G5-single
+  passed. Collection sat outside the mutation sweep. Every warning is now
+  evidence, and a counterexample issues the identified advice under a new code;
+  restoring the filter fails both cases' advice audits.
 
 ## Validation and lifecycle
 
