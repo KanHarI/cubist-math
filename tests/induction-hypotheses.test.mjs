@@ -136,9 +136,11 @@ def shadow(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) 
 });
 
 test("checked migration preserves nested clauses, coordinates and comments", async t => {
-  const original = declarations + `
-// A constructor of another type has the same spelling and another arity.
-inductive Other { stop; node(datum : Nat); }
+  // A constructor of another type has the same spelling and another arity. A
+  // module declares each name once (E872), so that type is imported.
+  const library = sourceReader(), other = "import nat; use nat;\ninductive Other { stop; node(datum : Nat); }\n";
+  const reader = (name, importer) => name === "other_node" ? other : library(name, importer);
+  const original = "import other_node;\n" + declarations + `
 def plain(t : Tree) : Nat := match t { leaf => 0; node(l, d, r) => d; };
 def nested(t : Tree) : Nat := induction t return Nat {
   leaf => 0;
@@ -157,7 +159,7 @@ evaluate(induction 2 return Nat { zero => 0; succ(k, h) => succ(h); }) expecting
 def after_directive : Nat := 0;
 print(evaluate(induction 1 return Nat { zero => 0; succ(k, h) => h; }));
 `;
-  const { program, result } = await checkProgram(t, original, { name: "fixture" });
+  const { program, result } = await checkProgram(t, original, { name: "fixture", reader });
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   const migrated = migrateInductionHypotheses(original, checkedHypothesisStarts(program, "fixture"));
   assert.equal(migrated.clauses, 4);
@@ -166,7 +168,6 @@ print(evaluate(induction 1 return Nat { zero => 0; succ(k, h) => h; }));
   assert.deepEqual(migrated.source.match(/\/\/[^\n]*/g)?.sort(), original.match(/\/\/[^\n]*/g)?.sort());
   assert.match(migrated.source, /@ i with/);
   const edited = formatCubist(migrated.source);
-  const reader = sourceReader();
   const [report] = await verifyMigration({ modules: ["fixture"], level: "identical",
     readOriginal: name => name === "fixture" ? original : reader(name),
     readEdited: name => name === "fixture" ? edited : reader(name) });
