@@ -37,7 +37,7 @@ try {
   assert.equal((await page.goto(base)).status(), 200);
   assert.match(await page.title(), /Proof highlights/);
   assert.equal(await page.getByRole("link", { name: "GitHub repository", exact: true }).getAttribute("href"), "https://github.com/KanHarI/cubist-math");
-  assert.equal(await page.locator(".proof-card").count(), 9);
+  assert.equal(await page.locator(".proof-card").count(), 10);
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);

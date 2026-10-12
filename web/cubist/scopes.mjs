@@ -51,7 +51,7 @@ const SCOPES = {
     { binders: present([n.right]), keys: ["rightBody"], renamable: true }],
   // A clause's own names, a sum's side and a path constructor's
   // coordinates, are variables; its patterns' arguments may be constructors.
-  clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? [])]), keys: ["body", "obligation"], renamable: true },
+  clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? []), ...(n.hypotheses ?? [])]), keys: ["body", "obligation"], renamable: true },
     { binders: patternArguments(n), keys: ["body", "obligation"], renamable: false }],
   unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"], renamable: true }],
   // Declarations and a theory's items: their parameters.
@@ -78,7 +78,7 @@ const targetNames = target => !target ? [] : target.kind === "name" ? [target]
   : target.kind === "pair" ? [...targetNames(target.left), ...targetNames(target.right)] : [];
 // Every other kind binds nothing.
 export const UNBINDING = new Set([
-  "along", "binary", "binaryNumber", "block", "calc", "call", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
+  "transport", "lift", "binary", "binaryNumber", "block", "calc", "call", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
   "initial", "matchStatement", "member", "name", "namedArgument", "negation", "notation", "number", "operatorOf", "over",
   "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",

@@ -31,9 +31,9 @@ def field_between_close(
     difference_add_back(F, zero, one, addF, mulF, negF, ring, a, b)
   );
   let shifted :=
-    along ((fun (v : F) => lt(v, addF(radius, a)))) by leftIdentity from forward(small);
+    transport forward(small) along leftIdentity in ((fun (v : F) => lt(v, addF(radius, a))));
   let gap :=
-    along lt(b) by ring_add_comm(F, zero, one, addF, mulF, negF, ring, radius, a) from shifted;
+    transport shifted along ring_add_comm(F, zero, one, addF, mulF, negF, ring, radius, a) in lt(b);
   let xBelow := leLt(x, b, addF(a, radius), upperX, gap);
   let yBelow := leLt(y, b, addF(a, radius), upperY, gap);
   exact (

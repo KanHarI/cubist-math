@@ -84,22 +84,26 @@ planner must not claim to have inferred types or discharged obligations.
 
 ## FG0: establish evidence and semantic comparisons
 
-Depends on #188's scope fixes. The initial harness is implemented by
-[PR #205](https://github.com/KanHarI/cubist-math/pull/205) and runs in the
-normal `npm test` suite. Extend it in every implementation slice; its TODOs
-record implementation debt, not passing behavior. Each executable variant
-has an independent case ID and activation state. Prerequisites fail normally;
-only explicitly recognized diagnostic/client/source observations may be TODOs.
-A changed symptom must fail and be investigated. The
+Depends on the scope fixes of #215, which replaces #188. The initial
+harness is implemented by
+[PR #217](https://github.com/KanHarI/cubist-math/pull/217) and runs in the
+normal `npm test` suite. Each case is a Cubist module that states its
+desired check as `// Error:` comments. Every declaration without a comment
+must have an output of its own, and the few observations the comments cannot
+state (a refusal's range in its line, links, published names) stand beside
+their desired values. Extend it in every implementation slice; its TODOs
+record implementation debt, not passing behavior. Each case has its own ID
+and activation state: a case is a TODO only while it shows exactly its
+recorded defect, and activating a fixed case removes only its record. A
+changed symptom must fail and be investigated. The
 [comparison manifest](../../tests/fixtures/frontend-generation.md#coverage-by-executable-case)
 records the cases, including direct, inherited and initial-model G12 clients.
 
 This roadmap is the authority for desired FG behavior; the inventory records
 defects and the manifest maps executable evidence to these requirements.
 Apply the [regression contract checklist](../guides/regression-contracts.md)
-when extending that evidence. The [contract audit](../reports/frontend-generation-contract-audit.md)
-records permitted alternatives and distinguishing controls. A new review finding
-requires checking the same failure mechanism across sibling contracts.
+when extending that evidence. A new review finding requires checking the same
+failure mechanism across sibling cases.
 
 - Turn G1–G6 and G8–G12 into durable fixtures with explicit current failures and
   expected outcomes. Prefer a focused test for a complete behavior over

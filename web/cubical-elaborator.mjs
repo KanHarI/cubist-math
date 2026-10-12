@@ -463,6 +463,7 @@ export class NativeCubicalElaborator {
         : inductive.levels[slot.level].recorded ? "recorded" : "erased") } : {}),
       constructors: record.constructors.map((constructor, c) => ({
       name: shapes[c].generated ? `${localName(name)}.${constructor}` : constructor,
+      order: inductive?.constructors[c]?.order,
       data: shapes[c].data, positions: shapes[c].positions, dimensions: shapes[c].dimensions })) };
   }
   // Without a notation, a term prints in the one selected where the message

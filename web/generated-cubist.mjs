@@ -216,7 +216,8 @@ export function generatedDeclaration(declaration, { resolve = () => null, links 
           : `${kind} ${binders}${domain}. ${expr(node.body)}`;
       }
       case "pathLambda": return `<${name(node.dimension)}> ${expr(node.body)}`;
-      case "along": return `along ${expr(node.family)} by ${expr(node.path)} from ${expr(node.value)}`;
+      // In parentheses: the family would otherwise run on into an operator.
+      case "transport": case "lift": return `(${node.kind} ${atom(node.value)} along ${atom(node.path)} in ${atom(node.family)})`;
       case "withUnfolding": return `with unfolding [${node.hints.map(name).join(", ")}] { ${expr(node.body)} }`;
       case "unpack": return `unpack ${expr(node.value)} as (${name(node.left)}, ${name(node.right)}) return ${expr(node.type)} { ${expr(node.body)}; }`;
       case "match": case "induction": {

@@ -3,70 +3,75 @@
 A regression must distinguish the intended behavior from the failure it guards.
 Use the relevant language specification or roadmap as the authority for behavior;
 an observed compiler result is evidence, not a specification. Link that authority
-from the fixture manifest or test explanation.
+from the case's manifest or test explanation.
 
-Before writing assertions, identify the required outcome, permitted variation,
-prerequisites and the evidence that distinguishes the defect. In particular,
-diagnostic codes identify categories: two different type errors can share a code.
-Retain the relevant subject, expected/actual types, dependency, source origin or
-proposed edit. Prefer existing structured fields. Where the public API supplies
-only text, extract the distinguishing payload and document what is ignored.
-Avoid snapshotting unrelated formatting or generating expected semantics from
-the same implementation under test.
+Before writing a case, identify the required outcome, its prerequisites and the
+evidence that distinguishes the defect. Diagnostic codes identify categories:
+two different type errors can share a code, so state the whole message, with
+its subject, expected/actual types, dependency or proposed edit.
 
-For contracts that classify expected failures, exercise these boundaries:
+## State the case in Cubist
 
-| Control | Required result |
-| --- | --- |
-| Recorded defect | Recognized debt, never successful implementation |
-| Valid corrected behavior, including permitted alternatives | Desired requirements pass; a stale defect record demands activation |
-| Different failure, including one with the same code | Ordinary failure |
-| Well-typed but semantically wrong implementation | Ordinary failure, even if declarations check |
-| Broken fixture or unmet prerequisite | Ordinary failure, never known debt |
+Write the case as a Cubist module, with the outcome stated as the Cubist tests
+state theirs ([`cubist-tests/README.md`](../../cubist-tests/README.md)): an
+`// Error:` comment, with the exact message, above each declaration that must
+be refused, and nothing above one that must check.
 
-Map behavioral obligations independently of the fixture registry. A case-ID
-inventory cannot discover a requirement omitted from both the source fixtures
-and their manifest. Name the contexts and the incorrect alternative each
-witness distinguishes. Keep client verdicts, publication and source expectations
-composable across diagnostic kinds. Resolve source anchors before observation;
-ambiguous occurrences are fixture errors unless explicitly selected.
+Before comparing comments or recognizing a known defect, account for every
+checker failure. These cases require all imports to check, including unused
+and transitive imports. Every local failure must have a matching reported
+error; consume each error once and reject any failures left over.
+This preserves intentional local refusals without hiding imported failures.
 
-Use real programs and independently stated clients for semantic evidence.
-Exercise distinct branch results and inputs that distinguish dependence on a
-recursive result. A first successor can coincide with a step that substitutes
-the base value; add a second successor and explicitly reject that wrong source.
-Pair intended equations with plausible incorrect equations that must be refused;
-check that a constant or incorrectly resolved implementation cannot satisfy both.
-A supported control that avoids the old compiler defect still needs these
-semantic distinctions.
-Keep the observation's guarantee precise. An absent reported output does not
-imply an unavailable name: constructors can be available without being outputs.
-Test name availability with real clients, including accepted clients when the
-binding should survive. Assign refusal codes per client, and compose them with
-declaration diagnostics before comparing the complete expected diagnostic set.
-An observer audit must use results possible at that interface; obtain positive
-controls from real programs before injecting a leak or refusal. A supported
-finite unrolling proves only the selected computation witnesses.
+The comment comparison sees local errors and warnings, at the line of their
+declaration. It does not see a declaration with no output,
+which reports nothing, or where in its line a refusal lies. Require each
+declaration without a comment to have an output of its own, and observe in
+JavaScript only what the comparison cannot see, such as a range within its
+line, a link or a published name, with its desired value beside the
+observation. Lint advice is a warning, which a comment states.
 
-Small injected diagnostic/link observations can test a contract's acceptance
-boundary before a compiler fix exists; label them as such. They do not prove
-that the compiler produces the desired result. Keep actual integration checks
-when a fixed implementation becomes available. A supported simpler source can
-prove that the predicate is reachable without establishing the original fix.
+Take a desired outcome from the specification, or from the fixing
+implementation once it exists, and review it against the specification. Never
+take it from an implementation that still has the defect: `inline-errors
+--write` run on that compiler records the wrong behavior as accepted.
 
-When a review exposes a mistake, inspect its class across sibling contracts:
-range checks, error projections, rewrite observers, activation state or context
-variants. Add a distinguishing control for the mechanism, record the audit's
-scope, and check required neighboring behavior. For example, suppressing unsafe
-lint advice must preserve safe advice for both single and grouped binders.
+## Make the clients distinguish the defect
 
-Before submitting a new contract or changing one, answer:
+- Use real programs and independently stated clients, never expected results
+  derived from the generator under test.
+- Pair an intended equation with a plausible incorrect one that must be
+  refused, so that a constant or wrongly resolved implementation cannot
+  satisfy both.
+- Exercise distinct branch results, and inputs that depend on a recursive
+  result: a first successor can coincide with a step that substitutes the
+  base value, so add a second.
+- Include an input where the fix's result differs from a blanket one: a
+  universe that needs U1 for one theory must stay U0 for an ordinary one.
+- Test name availability with clients, not with the output list:
+  constructors can be available without being outputs. A generated
+  interface the contract needs, such as a constructor or an initial model's
+  `model` and `fold`, needs a written client: a generated output that
+  disappears reports nothing.
+- Cover each context a defect can appear in (direct, inherited, initial
+  model, grouped binders) with its own case.
+- Keep safe neighboring behavior checked. Suppressing unsafe lint advice, for
+  example, must keep safe advice for both single and grouped binders.
 
-- Can this test reject a valid implementation? Which allowed alternatives were checked?
-- Can a different bug produce the same observation? Which information is discarded?
-- What deliberately broken behavior proves the test is sensitive?
+## Track open defects explicitly
 
-Remove a case's expected-failure status with its fix. Once all cases are active,
-retire temporary defect records and classification machinery while preserving
-semantic assertions, case selectors and distinguishing controls. A review fix
-must not weaken the expected behavior merely to match a new observation.
+While a fix is pending, record what the case shows today, separately from
+the case. The case is a TODO only while it shows exactly that record. Any
+other result fails and must be investigated, and a TODO never counts as
+completion. The fixing PR removes the record; the case and its desired values
+stay as they are.
+
+When a review exposes a mistake, inspect its class across sibling cases, and
+fix it where it occurs. Before submitting a case, answer:
+
+- Can it reject a valid implementation?
+- Can a different bug produce the same observation?
+- Which wrong implementation does each client distinguish?
+- Would a partial fix pass, one that resolves the right name but publishes
+  the wrong declaration, or refuses on the right line over the wrong token?
+  Reverting the fix shows only that the case sees the defect.

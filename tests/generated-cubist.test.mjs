@@ -154,6 +154,16 @@ test("unsupported display syntax is explicit and leaves other declarations visib
   assert.equal(generatedDeclaration(declaration), "def ok := tt;\n");
 });
 
+test("transport and lift display in their current syntax", () => {
+  const name = text => ({kind:"name",name:text});
+  const moved = kind => ({kind,family:name("C"),path:name("p"),value:name("v")});
+  assert.equal(generatedDeclaration({kind:"def",name:{text:"moved"},params:[],
+    value:{kind:"binary",operator:"=",left:moved("transport"),right:name("w")}}),
+    "def moved := ((transport v along p in C) = w);\n");
+  assert.equal(generatedDeclaration({kind:"def",name:{text:"lifted"},params:[],value:moved("lift")}),
+    "def lifted := (lift v along p in C);\n");
+});
+
 test("generated recursive helpers retain their calls and patterns in Cubist", async t => {
   const {program} = await checkProgram(t, gaps.G12.source, {module, options});
   const view = generatedCubist(program);

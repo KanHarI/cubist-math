@@ -137,7 +137,7 @@ def adjoin_dependence_at_new(
     );
   }
   let outsideHere :=
-    fun (member : Span(K, V, P, v(i))) => outside(along Span(K, V, P) by same from member);
+    fun (member : Span(K, V, P, v(i))) => outside(transport member along same in Span(K, V, P));
   exact independent_zero_omission(
     K, V, P, independent, n, v, distinct, a, i,
     outside_span_coefficient_zero(K, V, P, succ(n), v, a, i, outsideHere, others, vanishes), others,

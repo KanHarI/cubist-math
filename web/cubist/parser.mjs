@@ -32,6 +32,7 @@ export function tokenize(source) {
 // Every language keyword is reserved at every naming site, including words
 // whose grammar role is confined to a header, directive or proof statement.
 // The source reader uses this same list for highlighting.
+// `along` is a contextual separator in transport/lift, not a reserved name.
 export const builtinNames = new Set([
   "Interval", "PathP", "comp", "face", "face_when", "flip", "meet", "join", "Glue", "glue", "unglue",
   "next", "max", "refl", "absurd", "sym", "trans", "cong", "transport", "apd", "apd_path",
@@ -53,7 +54,7 @@ export const languageKeywords = new Set([
   "sort", "law", "notation", "extends", "type", "set", "prop", "trunc", "numeral", "literal",
   "let", "obtain", "exact", "calc", "open", "use", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
   "fun", "forall", "exists", "and", "or", "as", "return",
-  "with", "unfolding", "at", "by", "from", "over", "along", "only", "without", "using", "occurrence", "obligations",
+  "with", "unfolding", "at", "by", "from", "lift", "only", "without", "using", "occurrence", "obligations",
   "path", "compose", "fill", "in", "on", "unpack",
   "left", "right", "typed",
   ...generatedNames,
@@ -65,7 +66,7 @@ export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]
 
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
-export function parse(source, typeOnly = false, { bindable = [] } = {}) {
+export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false, historicalOver = false } = {}) {
   const ts = tokenize(source), bindableNames = new Set(bindable);
   let i = 0,
     depth = 0;
@@ -411,6 +412,28 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     depth--;
     return a;
   }
+  // `transport (value) along p in C` starts with the same tokens as a
+  // built-in call. Look beyond the whole group (and its calls/projections)
+  // for `along`, without speculatively parsing nested transport calls.
+  function groupedTransportValue() {
+    let at = i;
+    const group = () => {
+      const closes = { "(": ")", "[": "]", "{": "}" }, stack = [];
+      do {
+        const word = ts[at++]?.text;
+        if (!word || word === "EOF") return false;
+        if (Object.hasOwn(closes, word)) stack.push(closes[word]);
+        else if ([")", "]", "}"].includes(word) && stack.pop() !== word) return false;
+      } while (stack.length);
+      return true;
+    };
+    if (!group()) return false;
+    while (true) {
+      if (ts[at]?.text === "(") { if (!group()) return false; }
+      else if (ts[at]?.text === "." && /^(?:[A-Za-z_][A-Za-z_0-9]*|[12])$/.test(ts[at + 1]?.text ?? "")) at += 2;
+      else return ts[at]?.text === "along";
+    }
+  }
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
@@ -467,13 +490,30 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       return { kind: "call", fn: { kind: "name", name: t.text === "compose" ? "comp" : "fill", start: t.start, end: t.end },
         args: [along(family), base, ...(level ? [level] : []), ...walls], box: true, start: t.start, end: close.end };
     }
-    if (t.text === "along") {
+    // Historical readers can still bind lift. Its old references are names
+    // or calls; the new prefix has an operand before its along separator.
+    const liftOperand = t.text === "lift" && bindableNames.has("lift") && (peek() === "(" ? groupedTransportValue()
+      : /^(?:[A-Za-z_0-9]|~)/.test(peek()) && !["EOF", "in", "by", "and", "or"].includes(peek())
+        && (peek() !== "along" || ["along", "(", ".", "@"].includes(ts[i + 1]?.text)));
+    if (t.text === "lift" && (!bindableNames.has("lift") || liftOperand)
+        || t.text === "transport" && (peek() !== "(" || groupedTransportValue())) {
+      const value = expr();
+      take("along");
+      const path = expr();
+      take("in");
+      const family = expr();
+      return { kind: t.text, family, path, value, start: t.start, end: family.end };
+    }
+    // Only the historical-source migration reader accepts this retired
+    // prefix. In current source, `along` is an ordinary name except for
+    // its delimiter position in transport and lift expressions.
+    if (historicalTransport && t.text === "along") {
       const family = expr();
       take("by");
       const path = expr();
       take("from");
       const value = expr();
-      return { kind:"along", family, path, value, start:t.start, end:value.end };
+      return { kind:"transport", family, path, value, start:t.start, end:value.end };
     }
     if (t.text === "fun") return lambdaExpr(t);
     if (t.text === "forall" || t.text === "exists") return quantifierExpr(t);
@@ -521,9 +561,9 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     const end = take("}").end;
     return { kind: "withUnfolding", hints, body, start: t.start, end };
   }
-  // `induction v [as z] [return T] { c(xs, hs) @ i => body; … }`: a clause
+  // `induction v [as z] [return T] { c(xs) @ i with hs => body; … }`: a clause
   // per constructor, as in match, whose names are the constructor's
-  // arguments and then, optionally, an induction hypothesis for each
+  // fields and then, optionally after with, an induction hypothesis for each
   // recursive argument. Natural numbers keep their own form,
   // `induction n [as k] return C { zero => …; succ h => …; }`, where as names
   // the value in the motive and the predecessor in the successor clause, and
@@ -538,15 +578,15 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     const clauses = [];
     while (peek() !== "}") {
       if (peek() === "EOF") throw Object.assign(new Error("Expected '}' to close the induction."), { offset: ts[i].start });
-      const head = clauseHead();
+      const head = clauseHead(true);
       const body = expr();
       const end = take(";").end;
       clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end });
     }
     const end = take("}").end;
     const [zero, succ] = clauses;
-    if (type && clauses.length === 2 && zero.constructor.text === "zero" && !zero.args && !zero.binders.length && !zero.coordinates.length
-        && succ.constructor.text === "succ" && !succ.args && succ.binders.length === 1 && !succ.coordinates.length) {
+    if (type && clauses.length === 2 && zero.constructor.text === "zero" && !zero.args && !zero.binders.length && !zero.coordinates.length && !zero.hypotheses
+        && succ.constructor.text === "succ" && !succ.args && succ.binders.length === 1 && !succ.coordinates.length && !succ.hypotheses) {
       const a = { kind: "induction", value, index: motiveName, type, base: zero.body, hypothesis: succ.binders[0], step: succ.body, start: t.start, end };
       Object.defineProperty(a, "clauses", { value: clauses, enumerable: false });
       return a;
@@ -696,11 +736,21 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
   // each a name or a pattern itself, and a path constructor's coordinates
   // after @; a bare name is a constructor without arguments, a variable or
   // _, which the elaborator tells apart by the matched type.
-  function clauseHead() {
+  function clauseHead(induction = false) {
     const first = clausePattern(false), more = [];
+    if (induction && peek() === ",")
+      throw Object.assign(Error("An induction clause takes one constructor pattern."), { offset: ts[i].start });
     while (peek() === ",") { take(","); more.push(clausePattern(false)); }
+    let hypotheses, withToken;
+    if (peek() === "with") {
+      withToken = take("with");
+      if (!induction)
+        throw Object.assign(Error("Induction hypotheses after with are only available in induction clauses."), { offset: withToken.start });
+      hypotheses = [name()];
+      while (peek() === ",") { take(","); hypotheses.push(name()); }
+    }
     take("=>");
-    return { ...first, ...(more.length ? { more } : {}) };
+    return { ...first, ...(more.length ? { more } : {}), ...(hypotheses ? { hypotheses, withToken } : {}) };
   }
   function clausePattern(nested) {
     // A sum's patterns are its injections, left and right, which no other
@@ -734,13 +784,13 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     // constructor's coordinates follow @, as in the point the clause covers:
     // loop @ i =>.
     const binders = [], coordinates = [];
-    if (!nested) while (peek() !== "=>" && peek() !== "@" && peek() !== ",") binders.push(name());
+    if (!nested) while (!["=>", "@", ",", "with"].includes(peek())) binders.push(name());
     while (peek() === "@") { take("@"); coordinates.push(name()); }
     return { ...(nested ? { kind: "pattern", start: constructor.start, end: ts[i - 1].end } : {}),
       constructor, args, binders, coordinates, ...(qualifiedDot ? { qualifiedDot } : {}) };
   }
 
-  function matchObligations(expression) {
+  function matchObligations(expression, induction = false) {
     if (peek() !== "obligations") return {};
     const obligationsToken = take("obligations");
     if (peek() === "by") {
@@ -768,7 +818,7 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     const obligations = [];
     while (peek() !== "}") {
       if (peek() === "EOF") throw Object.assign(Error("Expected '}' to close obligations."), {offset:ts[i].start});
-      const head = clauseHead();
+      const head = clauseHead(induction);
       const body = expression ? expr() : block();
       if (expression) take(";");
       obligations.push({kind:"clause",...head,body,obligation:true,start:head.constructor.start,end:ts[i - 1].end});
@@ -857,7 +907,7 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
       const variable = name(), end = take(";");
       return { kind: "ext", variable, start: t.start, end: end.end };
     }
-    if (t.text === "over") {
+    if (historicalOver && t.text === "over") {
       const family=expr();
       take("along");
       const path=expr();
@@ -999,7 +1049,7 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
   // L2.2a): a clause per constructor, each a proof block of the goal at
   // that constructor. Its motive comes from the goal. The induction
   // statement is the same, and its clauses may also name the induction
-  // hypotheses: `induction v { c(xs, hs) => { … } … }`.
+  // hypotheses: `induction v { c(xs) with hs => { … } … }`.
   function matchStatement(t, induction = false) {
     const keyword = induction ? "induction" : "match";
     const value = expr(), values = [value];
@@ -1014,14 +1064,14 @@ export function parse(source, typeOnly = false, { bindable = [] } = {}) {
     const clauses = [];
     while (peek() !== "}") {
       if (peek() === "EOF") throw Object.assign(new Error(`Expected '}' to close the ${keyword}.`), { offset: ts[i].start });
-      const head = clauseHead();
+      const head = clauseHead(induction);
       if (peek() !== "{")
         throw Object.assign(new Error(`A clause of the ${keyword} statement is a proof block: c(xs) => { … }.`), { offset: ts[i].start });
       const body = block();
       clauses.push({ kind: "clause", ...head, body, start: head.constructor.start, end: ts[i - 1].end });
     }
     const e = take("}");
-    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, ...(values.length > 1 ? { values } : {}), clauses, start: t.start, end: e.end, ...matchObligations(false) };
+    return { kind: "matchStatement", ...(induction ? { induction: true } : {}), value, ...(values.length > 1 ? { values } : {}), clauses, start: t.start, end: e.end, ...matchObligations(false, induction) };
   }
   if (typeOnly) {
     const result = expr();

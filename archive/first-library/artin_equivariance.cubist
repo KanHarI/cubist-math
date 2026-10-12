@@ -272,7 +272,7 @@ def subgroup_indexed_relation(
   let G := GaloisGroup(K, E);
   let A := SubgroupCarrier(G, H);
   let i := backward(Fin(n), A, enumeration, h);
-  exact along (
+  exact transport indexed(i) along right_inverse(Fin(n), A, enumeration, h) in (
     (
       fun (t : A) => field_sum(
         extension_field(K, E), n,
@@ -284,7 +284,7 @@ def subgroup_indexed_relation(
         )
       ) = extension_iso_forward(K, E, E, subgroup_value(G, H, t), y)
     )
-  ) by right_inverse(Fin(n), A, enumeration, h) from indexed(i);
+  );
 }
 
 def subgroup_relation_transform(
