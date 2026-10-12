@@ -21,7 +21,7 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
-import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap} from "./declarations.mjs";
+import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
@@ -368,16 +368,15 @@ export class Translator {
     const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
     // The models of the file-level uses refused where they stand.
     const refusedUses=new Set();
-    const ownership=new DeclarationOwnership(this.moduleName);
+    const ownership=new DeclarationOwnership();
     const publications=[];
     let active=null;
-    const unavailable=(group,cause)=>{
+    // A group that is not published leaves each of its names standing for
+    // the group's root cause; `via` is what the group itself waited on.
+    const unavailable=(group,via)=>{
       for(const declaration of group.members)for(const {name} of declaredNames(declaration)) {
-        const value={tag:"Untranslated",name,binding:this.checker.bindingName?.(name)??name,
-          blockedBy:cause.binding,reason:`Untranslated dependency: ${cause.name}`,cause:cause.reason};
+        const value=untranslated(name,this.checker.bindingName?.(name)??name,`Untranslated dependency: ${via}`,group.cause);
         env.set(name,value); env.set(lexicalBinding(value.binding),value);
-        const entry=ownership.entries.get(name);
-        if(entry)Object.assign(entry,{state:"failed",cause});
       }
     };
     const finishPublication=(accept,failed=null)=>{
@@ -385,18 +384,20 @@ export class Translator {
       this.onPublicationEnd?.(group,accept);
       if(accept)group.state="checked";
       else {
-        const cause={name:failed.name,binding:this.checker.bindingName?.(failed.name)??failed.name,reason:failed.reason};
-        group.state="failed";group.cause=cause;
+        // Which member failed explains the rollback; the root explains
+        // every client, so a member that failed on a failed dependency
+        // passes that dependency's root on.
+        group.state="failed";group.failedMember=failed.name;
+        group.cause=failureRoot(failed,this.checker.bindingName?.(failed.name)??failed.name);
         restoreMap(env,before);
-        unavailable(group,cause);
+        unavailable(group,failed.name);
         declarations.splice(start,declarations.length-start,{...failed,name:group.head.name.text,
           syntax:group.head,failedMember:failed.name});
       }
       active=null;
     };
-    const settle=(d,queue)=>{
+    const settle=queue=>{
       const result=declarations.at(-1);
-      ownership.finish(d,result);
       if(active&&result.status==="not-translated") {
         finishPublication(false,result);
         let skipped=0;
@@ -424,7 +425,7 @@ export class Translator {
         const {group}=queued,dependency=group.dependencies.find(dependency=>dependency.state!=="checked");
         if(dependency) {
           group.state="blocked";group.cause=dependency.cause;
-          unavailable(group,dependency.cause);
+          unavailable(group,dependency.head.name.text);
           queue.splice(0,group.members.length+1);
           this.onQueued?.(-group.members.length);
         } else {
@@ -455,11 +456,9 @@ export class Translator {
           // was published. Refuse that owner while preserving the binding
           // that the expansion would have overwritten.
           failedExpansion(this,d,env,declarations,module.locate(duplicateDeclaration(conflict.name),conflict.at));
-          ownership.finish(d,declarations.at(-1));
           continue;
         }
         if(generated.length)this.onQueued?.(generated.length-1);
-        else ownership.finish(d,declarations.at(-1));
         const groups=publicationGroups(d,generated);
         publications.push(...groups);
         queue.unshift(...groups.flatMap(group=>[{kind:"publicationStart",group},...group.members,{kind:"publicationEnd",group}]));
@@ -582,7 +581,7 @@ export class Translator {
       }
       if(d.kind==="inductive") {
         this.inductiveDeclaration(d,module,env,declarations);
-        settle(d,queue);
+        settle(queue);
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
@@ -650,7 +649,8 @@ export class Translator {
       } catch(error) {
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
-        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message,blockedBy:error.blockedBy,cause:error.cause??error.message});
+        const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+        env.set(d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
@@ -664,14 +664,16 @@ export class Translator {
       this.onDeclaration?.(d,declarations.at(-1));
       // Diagnostic observers may reject a late result after cleanup. Such a
       // result must not remain available to subsequent declarations.
-      if (declarations.at(-1).status === "not-translated")
-        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason,
-          blockedBy:declarations.at(-1).blockedBy,cause:declarations.at(-1).cause??declarations.at(-1).reason});
+      if (declarations.at(-1).status === "not-translated") {
+        const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+        env.set(d.name.text,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
+      }
       if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
-      settle(d,queue);
+      settle(queue);
     }
     return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
-      members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,cause:group.cause})),ownership:ownership.entries,simpRegistry:this.simpRegistry,
+      members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,
+      ...(group.failedMember?{failedMember:group.failedMember}:{}),cause:group.cause})),simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
   }
   // A binder of the declaration's own parameter, known by its token: the
@@ -687,8 +689,10 @@ export class Translator {
     const unit=module.declaration(this.declarationFuel);
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
-    const untranslated=reason=>{for(const name of names)env.set(name,{tag:"Untranslated",name,
-      binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason});};
+    const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+    const unavailable=failure=>{
+      for(const name of names)env.set(name,untranslated(name,binding,failure.reason??failure.message,failureRoot(failure,binding)));
+    };
     try {
       const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
       const lowered=lowerInductive(this,d,scope);
@@ -702,7 +706,7 @@ export class Translator {
       // An expansion's constructor failure belongs to its written theory
       // or generator type (initial-models.mjs).
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
-      untranslated(error.message);
+      unavailable(error);
       declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
         errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
         syntax:d});
@@ -711,7 +715,7 @@ export class Translator {
     unit.fuel.close();
     declarations.at(-1).searchFuel=this.fuelRecord(unit);
     this.onDeclaration?.(d,declarations.at(-1));
-    if(declarations.at(-1).status==="not-translated")untranslated(declarations.at(-1).reason);
+    if(declarations.at(-1).status==="not-translated")unavailable(declarations.at(-1));
   }
   // A registration names an already checked rule; it records no reference.
   registeredSimpRule(token,module,env,priority=0) {

@@ -136,11 +136,11 @@ def shadow(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) 
 });
 
 test("checked migration preserves nested clauses, coordinates and comments", async t => {
-  // A constructor of another type has the same spelling and another arity. A
-  // module declares each name once (E872), so that type is imported.
-  const library = sourceReader(), other = "import nat; use nat;\ninductive Other { stop; node(datum : Nat); }\n";
-  const reader = (name, importer) => name === "other_node" ? other : library(name, importer);
-  const original = "import other_node;\n" + declarations + `
+  // The node in scope is another type's, of another arity. A module declares
+  // each name once (E872), so the clauses' types are imported.
+  const library = sourceReader();
+  const reader = (name, importer) => name === "tree_types" ? declarations : library(name, importer);
+  const original = "import tree_types; import nat; use nat;\ninductive Other { stop; node(datum : Nat); }\n" + `
 def plain(t : Tree) : Nat := match t { leaf => 0; node(l, d, r) => d; };
 def nested(t : Tree) : Nat := induction t return Nat {
   leaf => 0;
