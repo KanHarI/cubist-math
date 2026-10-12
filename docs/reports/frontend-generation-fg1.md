@@ -30,7 +30,8 @@ An invalid theory retains its original failure. A child reports E340 at
 its parent reference, with the dependency identity and original cause,
 instead of expanding the parent's invalid syntax as new source. A failed
 optional operation remains an unavailable alias when a model is opened;
-it does not stop checked fields being used.
+it does not stop checked fields being used. An operator or numeral rule
+bound to it stays bound and reports that operation's failure where used.
 
 ## Publication groups
 
