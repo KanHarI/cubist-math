@@ -9,8 +9,9 @@
 // where in its line a refusal lies. So every case observes declarations without a
 // comment that have no output of their own, and a case that needs them
 // observes a refusal's range, the links at each use of a name, or the names
-// it must not publish, each beside its desired value.
-// frontend-generation.md says where the desired outputs come from.
+// it must not publish, each beside its desired value. A generated output has
+// no line of its own: a written client uses each generated interface a case
+// needs. frontend-generation.md says where the desired outputs come from.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";

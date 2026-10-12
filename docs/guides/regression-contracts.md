@@ -46,8 +46,13 @@ take it from an implementation that still has the defect: `inline-errors
 - Exercise distinct branch results, and inputs that depend on a recursive
   result: a first successor can coincide with a step that substitutes the
   base value, so add a second.
+- Include an input where the fix's result differs from a blanket one: a
+  universe that needs U1 for one theory must stay U0 for an ordinary one.
 - Test name availability with clients, not with the output list:
-  constructors can be available without being outputs.
+  constructors can be available without being outputs. A generated
+  interface the contract needs, such as a constructor or an initial model's
+  `model` and `fold`, needs a written client: a generated output that
+  disappears reports nothing.
 - Cover each context a defect can appear in (direct, inherited, initial
   model, grouped binders) with its own case.
 - Keep safe neighboring behavior checked. Suppressing unsafe lint advice, for

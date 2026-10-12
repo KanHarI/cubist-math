@@ -36,10 +36,14 @@ output of its own, and
 refusal's range in its line, the links at each use of a name and the names
 a case must not publish, for the cases that need them, beside their desired
 values. Lint advice needs no observation of its own: it is a warning, and a
-module without a `// Warning:` comment admits none.
+module without a `// Warning:` comment admits none. A generated declaration
+is not written, so its output can disappear unseen: a case names each
+generated interface its contract needs in a written client.
 
 The clients and their statements are written by hand, independently of the
-generator. The desired messages, ranges and links are those of the fixing
+generator. A client must also tell the fix from a blanket one: G2's
+fixed-domain theory needs U1 either way, so an ordinary theory's Hom must
+stay in U0. The desired messages, ranges and links are those of the fixing
 compiler at #224 (`1b64229b`), where every case shows its desired outcome
 with no records; each was reviewed against the
 [roadmap](../../docs/roadmaps/frontend-generation.md), the authority for
@@ -59,14 +63,17 @@ changes the case's comment, and the new wording needs the same review.
 - **G2** checks Hom/Iso, composition, the fixed-domain operation's
   preservation field (`map_op`) and the Hom's level at U0 and U1. A U0
   model's Hom lives in U1; stating it in U0 is refused with
-  `found U1, expected U0`.
-- **G3** keeps the base theory usable, refuses both its Hom and its Iso client
-  with E817 naming operation `op`, argument `p` and law `l`, and publishes
-  nothing under `T.Hom` or `T.Iso`.
+  `found U1, expected U0`. An ordinary theory's Hom still lives in U0, so a
+  hard-coded `max(U, V, U1)` fails.
+- **G3** keeps the base theory usable, through its operation and its
+  constructor `T.make`, refuses both its Hom and its Iso client with E817
+  naming operation `op`, argument `p` and law `l`, and publishes nothing under
+  `T.Hom` or `T.Iso`.
 - **G4** and **G4-flat** compute nested and flat matches with distinct branch
   results, and refuse a constant-result equation.
 - **G5** and **G5-single** use positional operation calls, a Hom identity and
-  an initial model; named operation calls are separately unsupported (E378).
+  an initial model with its `N.model` and `N.fold`; named operation calls are
+  separately unsupported (E378).
   The linter must not advise the arrow form on an operation's binders,
   since the rewrite would remove generated interfaces; neither module has a
   `// Warning:` comment, so any advice fails it. Passing controls in
@@ -81,7 +88,8 @@ changes the case's comment, and the new wording needs the same review.
   the binder and spans exactly the label, and `meaning` fixes the law's
   meaning.
 - **G10** refuses a capture with E871 naming helper `k` and field `c`, over the
-  conflicting binder: the `c` of `succ(c)`, not its use in `k(c)`.
+  conflicting binder: the `c` of `succ(c)`, not its use in `k(c)`. The
+  roadmap also allows the helper call; the fixing compiler reports the binder.
 - **G11** requires the intended `op(x, S.c)` equation to check and the
   captured `op(x, x)` equation to be refused, directly, through a helper
   chain with grouped/dependent parameters, through inheritance and through an
@@ -153,11 +161,11 @@ cases with their full exit cases; FG0 does not claim those gates exist.
 | `G1-initial` | G1 | Definition followed by initial model; no model/fold published |
 | `G1-reverse` | G1 | Inductive followed by definition, including the original constructor |
 | `G1-same-kind` | G1 | Definition followed by definition |
-| `G2` | G2 | Fixed argument domains; Hom/Iso, preservation, level and computation at U0/U1 |
-| `G3` | G3 | Law-dependent transport; usable base and no partial families |
+| `G2` | G2 | Fixed argument domains; Hom/Iso, preservation, level and computation at U0/U1; an ordinary Hom stays in U0 |
+| `G3` | G3 | Law-dependent transport; usable base with its constructor and no partial families |
 | `G4` | G4 | Nested derived match; distinct nil/off/yes results and refused constant result |
 | `G4-flat` | G4 | Flat derived match; distinct nil/cons results and refused constant result |
-| `G5` | G5 | Grouped operation binder; supported call, Hom and initial-model clients |
+| `G5` | G5 | Grouped operation binder; supported call, Hom and initial-model (`model`, `fold`) clients |
 | `G5-single` | G5 | Single operation binder with the same interface checks |
 | `G6` | G6 | Parent cause, child dependency and unrelated recovery |
 | `G8` | G8 | Wildcard diagnostic endpoints and original body range |

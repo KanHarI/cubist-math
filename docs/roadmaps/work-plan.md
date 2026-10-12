@@ -639,9 +639,9 @@ packages do not mark implementation complete or resume paused mathematics.
 Extend FG0's installed harness and prioritize G11's silent capture alongside
 FG1's ownership fix. G8–G10's focused fixes and regression checks can land on
 #215 before the broader dependency/publication work; update their evidence
-status when fixed. Complete FG2's call classification (G12) and notation-alias audit.
-FG3 and the broader FG4 work follow those contracts; FG5's
-focused lint fix can land earlier with its checked-client regression.
+status when fixed. Complete FG2's call classification (G12) and
+notation-alias audit. FG3 and the broader FG4 work follow those contracts;
+FG5's focused lint fix can land earlier with its checked-client regression.
 FG6 accumulates alongside every slice. The complete gate precedes
 publication of new deriving capabilities under L2.4d/L2.6 and extensions
 of generated interfaces. It supplements their proof obligations; it does
