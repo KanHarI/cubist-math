@@ -1,7 +1,8 @@
 // Module-local ownership is independent of the lookup environment: imports
 // may be shadowed, but a second local declaration cannot replace the first.
 // A generated family reserves its complete set of names before checking any
-// member. Checking and publication state belong to these identities too.
+// member. A reservation is only a name's owner: whether that owner checked is
+// the value the name stands for in the environment (`untranslated` below).
 export function declaredNames(declaration) {
   const names = [{name: declaration.name.text, at: declaration.name, kind: declaration.kind}];
   if (declaration.kind === "inductive") {
@@ -14,32 +15,34 @@ export function declaredNames(declaration) {
 }
 
 export class DeclarationOwnership {
-  constructor(module) { this.module = module; this.entries = new Map(); }
+  constructor() { this.entries = new Map(); }
   reserve(declarations, owner) {
     const proposed = declarations.flatMap(declaration => declaredNames(declaration).map(entry => ({...entry, declaration})));
     const seen = new Map();
     // First inspect the entire request: a late collision must not reserve a
-    // prefix of a refused expansion, or alter an earlier declaration's state.
+    // prefix of a refused expansion, or alter an earlier reservation.
     for (const entry of proposed) {
       const previous = this.entries.get(entry.name);
       if (previous && previous.owner !== owner || seen.has(entry.name) && seen.get(entry.name) !== entry.declaration) return entry;
       seen.set(entry.name, entry.declaration);
     }
-    for (const entry of proposed) if (!this.entries.has(entry.name))
-      this.entries.set(entry.name, {...entry, module: this.module, owner,
-        identity: `${this.module}__${entry.name}`, state: "reserved"});
+    for (const entry of proposed) if (!this.entries.has(entry.name)) this.entries.set(entry.name, {...entry, owner});
     return null;
-  }
-  finish(declaration, result) {
-    for (const {name} of declaredNames(declaration)) {
-      const entry = this.entries.get(name);
-      if (entry) Object.assign(entry, {state: result.status === "not-translated" ? "failed" : "checked",
-        cause: result.status === "not-translated" ? result.reason : null});
-    }
   }
 }
 
 export const duplicateDeclaration = name => Error(`Duplicate declaration ${name}: a declaration in this module already owns that name.`);
+
+// A failure's root: the declaration that failed on its own, and its reason.
+// A failure caused by a failed dependency carries that dependency's root
+// (blockedBy, cause), which passes on unchanged; otherwise `binding` is it.
+export const failureRoot = (failure, binding) =>
+  ({binding: failure.blockedBy ?? binding, reason: failure.cause ?? failure.reason ?? failure.message});
+
+// The value a failed or unpublished name stands for. Every client of it
+// reports the same root, however many failed declarations lie between.
+export const untranslated = (name, binding, reason, root) =>
+  ({tag: "Untranslated", name, binding, reason, blockedBy: root.binding, cause: root.reason});
 
 // Generator-assigned family roles, never dotted-name heuristics, determine
 // the publication boundary. A base theory (including parent projections)

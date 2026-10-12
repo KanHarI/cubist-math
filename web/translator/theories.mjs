@@ -8,6 +8,7 @@ import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/
 import {Scope} from "./elaboration.mjs";
 import {rewritten} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
+import {failureRoot,untranslated} from "./declarations.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -403,8 +404,8 @@ export function failedExpansion(t,d,env,declarations,error) {
   declarations.push({name:d.name.text,syntax:d,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd,
     ...(error.support?{support:error.support}:{}),
     ...(error.blockedBy?{blockedBy:error.blockedBy}:{}),...(error.cause?{cause:error.cause}:{})});
-  env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:t.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message,
-    blockedBy:error.blockedBy,cause:error.cause??error.message});
+  const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
+  env.set(d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
   t.onDeclaration?.(d,declarations.at(-1));
   return [];
 }
