@@ -103,7 +103,7 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
       for(const member of group.members) {
         const row=byName.get(`${module}__${member}`);
         if(row?.category==="checked")Object.assign(row,{category:"blocked",blockedBy:group.cause.binding,
-          reason:`Untranslated dependency: ${group.cause.name}`});
+          reason:`Untranslated dependency: ${group.failedMember}`});
       }
     for (const row of declarations) {
       const seen = new Set(); let next = row;
