@@ -21,7 +21,7 @@ CubicalProgram.prototype.check = async function (...args) {
   if (process.env.CUBIST_OBSERVATION_FAULT === "dependency")
     result.gaps.push({module:"broken_fixture",name:"dependency",code:"E340",reason:"injected dependency failure"});
   if (process.env.CUBIST_OBSERVATION_FAULT === "output") {
-    const target = ["identity","intended","initial_computation","checked"].find(name => result.outputs.some(output => output.name === name));
+    const target = ["identity","intended","initial_computation","checked","P"].find(name => result.outputs.some(output => output.name === name));
     if (!target) throw Error("fault needs a local output");
     result.outputs = result.outputs.filter(output => output.name !== target);
   }
@@ -33,6 +33,7 @@ CubicalProgram.prototype.check = async function (...args) {
     "control: [control-recursion] inherited recursive operations and initial-model clients compute",
     "CB0 migration control: helper-pattern-argument, intended reading",
     "CB0 migration control: helper-pattern-argument, captured reading",
+    "CB0 migration control: imported-pattern-rename, captured reading",
     "CB0: simp_rule ignores opened labels (local registration)",
     "CB0: simp_rule ignores opened labels (imported registration)",
   ];

@@ -55,9 +55,12 @@ observations may require them. Former active refusal tests now retain their
 alpha-safe controls. A shared witness schema requires an intended source
 control for every migration witness. Where a well-typed captured reading
 exists, a second control expresses it explicitly and reverses the positive
-and negative client verdicts; otherwise the schema records why it is
-ill-typed and omits a vacuous negative client. The ten source controls cover
-all seven migration witnesses. The initial-model pattern witness expects
+and negative client verdicts; otherwise a captured source control must fail
+with an ordinary, non-capture diagnostic. The schema records the explanation
+and omits a vacuous negative client. Fourteen source controls cover all seven
+migration witnesses. Refused clients must be distinguishing negatives or
+explicitly listed genuine refusals; source-fixture verdicts come directly
+from their comments. The initial-model pattern witness expects
 the genuine unsupported-equation refusal after capture repair, while its
 theory client checks; it does not request a new deriving capability. G10's
 intended and captured laws are both well-typed and use this same contract.
@@ -97,8 +100,8 @@ include source digests, exact edits, structured test events, passing control
 names and active failing test names. TODO assertions do not count as kills;
 a process failure or non-assertion failure makes the run invalid. A fixture
 precondition failure has a separate outcome and cannot count as a contract
-kill. All three semantic harnesses, their controls and registration checks
-use one module observation boundary: import failures are preconditions;
+kill. All three semantic harnesses, their controls, registration checks and the
+historical runner use one module observation boundary: import failures are preconditions;
 missing local outputs are observed values. A subprocess test injects both
 faults through all harnesses and verifies their structured mutation outcomes.
 The file-level-selection mutation uses a non-imported witness and
@@ -124,7 +127,7 @@ patch with a distinguishing semantic witness before claiming retirement.
 
 ## Validation and costs
 
-On 2026-10-13, the full suite passes: 961 tests, 906 pass, 55 TODOs and
+On 2026-10-13, the full suite passes: 966 tests, 911 pass, 55 TODOs and
 zero failures, including all 3,857 canonical corpus declarations and Cubist
 formatting. Native tests passed on the unchanged runtime baseline. TODOs
 are 18 inherited cases, fifteen binding cases, nine composed preservation

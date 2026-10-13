@@ -11,6 +11,7 @@ import create from "../web/dist/cubical.mjs";
 import { buildStamp, assertFreshBuild } from "./build-stamp.mjs";
 import { hashEntries, digestFormats } from "./frontend-generation-evidence.mjs";
 import { bindingCases } from "../tests/fixtures/capture-bindings.mjs";
+import { observeModule } from "../tests/module-observation.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const destination = process.argv[2], revision = "d3d8f21eb3a2e8e64fbf5ec89ce2fb4b192aaa13";
@@ -43,13 +44,8 @@ try {
     const program = new CubicalProgram(wasm, (name, importer) => c.fixtures?.[name] ?? library(name, importer));
     try {
       const result = await program.check(c.source, "main");
-      assert.deepEqual(result.gaps.filter(gap => gap.module !== "main"), [], `${id}: imported source must check`);
-      const clients = Object.fromEntries(c.clients.map(name => {
-        const output = result.outputs.find(output => output.name === name);
-        assert.ok(output, `${id}: missing client ${name}`);
-        assert.deepEqual(output.axioms ?? [], [], `${id}: no additional assumptions`);
-        return [name, output.verified];
-      }));
+      const {clients,assumes} = observeModule(result,{clients:c.clients});
+      assert.deepEqual(assumes,[],`${id}: no additional assumptions`);
       observations.push({id, sourceDigest:hashEntries(Object.entries(program.sources)), clients,
         gaps:result.gaps.map(({module,name,code,start,end}) => ({module,name,code,start,end,
           rangeInPrimarySource:start == null || start >= 0 && start <= program.sources[module].length &&

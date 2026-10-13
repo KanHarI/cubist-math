@@ -12,45 +12,59 @@ export const captureRefusals = [
 // removes the name collision without changing the client's meaning. A
 // `captured` edit explicitly expresses the other binding structure: the
 // positive and negative clients must exchange verdicts. If that structure
-// is ill-typed, document why and do not pretend to have a negative client.
+// is ill-typed, check its ordinary refusal instead of inventing a negative.
 // Edits name the main source or an imported fixture and apply exactly once.
 export const captureControls = {
   "imported-pattern-rename": {
-    positive:"meaning", noCaptured:"The captured local b has type Nat, but the field b has arbitrary type M; that reading is ill-typed.",
+    positive:"meaning",
     intended:[{module:"parent",anchor:"succ(b) =>",replacement:"succ(other) =>"}],
+    captured:{kind:"refused",module:"parent",name:"P",code:"E606",
+      reason:"The captured local b has type Nat, but the field b has arbitrary type M.",
+      edits:[{module:"parent",anchor:"succ(b) => a;",replacement:"succ(b) => b;"}]},
   },
   "helper-pattern-argument": {
-    positive:"intended", negative:"captured",
+    positive:"intended",
     intended:[{module:"main",anchor:"box(k) =>",replacement:"box(other) =>"}],
-    captured:[{module:"main",anchor:"box(k) => x;",replacement:"box(k) => k;"}],
+    captured:{kind:"clients",negative:"captured",edits:[{module:"main",anchor:"box(k) => x;",replacement:"box(k) => k;"}]},
   },
   "model-shadows-theory": {
-    positive:"intended", noCaptured:"The new T is a carrier, not a universe-polymorphic theory; the captured T(U0) cannot denote a theory.",
+    positive:"intended",
     intended:[{module:"main",anchor:"T(U0)",replacement:"Previous(U0)"},
       {module:"prior",anchor:"theory T(",replacement:"theory Previous("}],
+    captured:{kind:"refused",module:"main",name:"T",code:"E850",
+      reason:"The new T is a carrier, not a universe-polymorphic theory. Explicitly apply a carrier as a theory.",
+      edits:[{module:"main",anchor:"initial T : T(U0);",
+        replacement:"inductive Carrier : set U0 { point; }\ninitial T : Carrier(U0);"}]},
   },
   "model-shadows-header-global": {
-    positive:"intended", negative:"captured",
+    positive:"intended",
     intended:[{module:"main",anchor:"T(U0, N)",replacement:"T(U0, Previous)"},
       {module:"prior",anchor:"def N :",replacement:"def Previous :"}],
     // Explicitly make c recursive: its argument is the new carrier N,
     // which is precisely the wrong reading of the imported header argument.
-    captured:[{module:"main",anchor:"initial N : T(U0, N);",
-      replacement:"theory Recursive(U < UU0) { M : set U; c(x : M) : M; }\ninitial N : Recursive(U0);"}],
+    captured:{kind:"clients",negative:"captured",edits:[{module:"main",anchor:"initial N : T(U0, N);",
+      replacement:"theory Recursive(U < UU0) { M : set U; c(x : M) : M; }\ninitial N : Recursive(U0);"}]},
   },
   "model-shadows-parameter-global": {
-    positive:"intended", noCaptured:"The new W is an indexed type constructor; bare W cannot be the parameter's domain in place of the imported Unit type.",
+    positive:"intended",
     intended:[{module:"main",anchor:"A : W",replacement:"A : Previous"},
       {module:"prior",anchor:"def W :",replacement:"def Previous :"}],
+    captured:{kind:"refused",module:"main",name:"W",code:"E604",
+      reason:"The new W is indexed; a bare indexed type constructor cannot be the parameter's domain. State that type constructor explicitly.",
+      edits:[{module:"main",anchor:"free W(A : W) : T(U0) on Unit;",
+        replacement:"inductive Indexed(A : Unit) : set U0 { point; }\nfree W(A : Indexed) : T(U0) on Unit;"}]},
   },
   "initial-pattern-model": {
-    positive:"intended", noCaptured:"The captured k is a Nat pattern variable, not the model used to qualify c; that reading is ill-typed. The equation strategy also independently refuses match laws.",
+    positive:"intended",ordinaryRefusals:{k:"E856"},
     intended:[{module:"main",anchor:"succ(k) =>",replacement:"succ(other) =>"}],
+    captured:{kind:"refused",module:"main",name:"P",code:"E343",
+      reason:"The captured k is a Nat pattern variable, not the model used to qualify c. The equation strategy also independently refuses match laws.",
+      edits:[{module:"main",anchor:"succ(k) => c;",replacement:"succ(k) => k.c;"}]},
   },
   G10: {
-    positive:"intended", negative:"captured",
+    positive:"intended",
     intended:[{module:"main",anchor:"box(c) => k(zero);",replacement:"box(local_) => k(zero);"}],
-    captured:[{module:"main",anchor:"box(c) => k(zero);",replacement:"box(c) => c;"}],
+    captured:{kind:"clients",negative:"captured",edits:[{module:"main",anchor:"box(c) => k(zero);",replacement:"box(c) => c;"}]},
   },
 };
 // Executable occurrences are confined to the registry and the configured
