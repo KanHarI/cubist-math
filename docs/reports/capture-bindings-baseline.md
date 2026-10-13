@@ -64,6 +64,9 @@ All four adopted mutations apply exactly once, have a passing unmodified
 control, and are killed by assertions in isolated copies with unchanged
 checker limits. Syntax errors, missing modules, timeouts and patches that
 do not apply are invalid runs, not killed mutants.
+The [recorded mutation results](../../tests/fixtures/capture-bindings-mutations.json)
+include source digests, exact edits and failing test names at clean commit
+`83b78074`.
 
 | Mutation | Distinguishing check |
 | --- | --- |
@@ -89,7 +92,8 @@ of the new Cubist fixtures. Native tests passed on the unchanged runtime
 baseline. TODOs are 18 inherited cases, eight binding cases, eight composed
 capture cases and 13 contextual-execution requirements.
 
-The cost report records three repeats of algebra, inheritance and fold
+The [cost and inventory snapshot](../../tests/fixtures/capture-bindings-costs.json)
+records three repeats of algebra, inheritance and fold
 workloads, each with reference collection off/on in a fresh process, WASM
 module and kernel session. It records the build stamp, frontend/source
 digests, defaults, deterministic declaration fuel, observed kernel work,
@@ -104,6 +108,21 @@ generated-name inventory and empty assumption set. Algebra has 323 checked
 declarations and 224 generated names; inheritance has 145 and 73; fold has
 328 and 227. Six kernel budget retries in the algebra/fold workloads succeed
 under the existing growing-budget policy; there are no deadline failures.
+
+The canonical corpus inventory separately records 3,857 checked declarations
+across 372 modules, with its six existing archive assumptions (`Choice`,
+`LEM`, `Truncate`, `TruncateElim`, `TruncateIntro`, `TruncateProp`). The snapshot
+pins their type digests and the digest of every declaration's assumption
+dependencies. The three current-language cost workloads introduce none.
+
+At clean commit `83b78074` on Node 24.13.0 / Apple M3 Pro, median check time
+and maximum process RSS across three samples were:
+
+| Workload | References off: ms / MiB | References on: ms / MiB |
+| --- | --- | --- |
+| Algebra | 1212.1 / 311.1 | 1415.2 / 335.0 |
+| Inheritance | 409.0 / 186.4 | 468.8 / 209.0 |
+| Fold | 1243.9 / 318.2 | 1497.6 / 336.0 |
 
 Timing and memory are measurements rather than release thresholds. RSS
 includes process startup; heap samples follow explicit GC, and arena samples

@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "adoptedFrom": "49499aa1c56c1b345eb0021468123cec377fb4b8",
+  "dirty": false,
+  "revision": "83b780743db1af0cda5d85bb0cdcb0851af160aa",
+  "limits": {
+    "processMs": 60000,
+    "testMs": 45000,
+    "maxBufferBytes": 8388608,
+    "checker": "unchanged defaults",
+    "cases": 8
+  },
+  "mutations": [
+    {
+      "id": "reference-spelling",
+      "file": "web/cubist/references.mjs",
+      "from": "? {...n, kind: \"name\", name: n.binding}",
+      "to": "? {...n, kind: \"name\", name: n.spelling}",
+      "test": "references",
+      "pattern": "lowering references",
+      "expected": "killed",
+      "sourceDigest": "75577b9aa4774c26c76229224b0daab0e674990c9d4f38f3a26945d92d7e1481",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "lowering references for elaboration leaves the retained theory closure resolved"
+      ]
+    },
+    {
+      "id": "lexical-use",
+      "file": "web/translator/theories.mjs",
+      "from": "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};",
+      "to": "if(true)return {env,notation:[[SELECTION,null]]};",
+      "test": "frontend-invariants",
+      "pattern": "active control, seed 3$",
+      "expected": "killed",
+      "sourceDigest": "65a3c458d481fb6d90f862ab1b8904761b5afcf6bd3f62488dee25cafc4bb84f",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "CB0 preservation: active control, seed 3"
+      ]
+    },
+    {
+      "id": "reservation",
+      "file": "web/translator/declarations.mjs",
+      "from": "conflict ??= entry;",
+      "to": "conflict ??= null;",
+      "test": "frontend-publication",
+      "pattern": "definition then inductive",
+      "expected": "killed",
+      "sourceDigest": "71ac7a9ae15e7f5c2fc3817c7629ad06c579fcf7f4d3012f2fa2884b9423f3b0",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "FG1 ownership: definition then inductive keeps the original binding and source"
+      ]
+    },
+    {
+      "id": "failed-publication",
+      "file": "web/cubical-program.mjs",
+      "from": "transaction?.finish(accept); transaction=null;",
+      "to": "transaction?.finish(true); transaction=null;",
+      "test": "frontend-publication",
+      "pattern": "G7:",
+      "expected": "killed",
+      "sourceDigest": "02470b3389625ab19f73d562407522113811a55316241aad1748b12f70467406",
+      "outcome": "killed",
+      "status": 1,
+      "failedTests": [
+        "G7: an injected parent projection failure rolls back its base group and blocks descendants once"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1506 @@
+{
+  "version": 2,
+  "revision": "83b780743db1af0cda5d85bb0cdcb0851af160aa",
+  "dirty": false,
+  "frontendDigest": "90f3d3565682383d45d98feb7f3ebcc81c2a2c7832cbaf793e8839e5d4337bb7",
+  "runtime": "v24.13.0",
+  "cpu": "Apple M3 Pro",
+  "platform": "darwin 25.5.0",
+  "build": {
+    "runtime": {
+      "sources": "247d7ff10f0a92a2846a2d4a37dbed8a7a325a6e52aac19c84fc17208493dfa8",
+      "outputs": "2ea69eeb5f665465efb9fa1bd38486b67bb1fed10460f2fb804b057b6284c254"
+    },
+    "kernel": {
+      "sources": "56d99ac4e3806287a564f1586ed36c2f41cafd13e9616d5db59d5baed0381d29",
+      "configuration": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)\n.tools/emsdk/upstream/emscripten/emcc -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Ikernel/include -Ikernel/src --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=[\"_cb_abi_version\",\"_cb_new\",\"_cb_optimizations\",\"_cb_step_budget\",\"_cb_work\",\"_cb_deadline_ms\",\"_cb_checkpoint\",\"_cb_rollback\",\"_cb_commit_checkpoint\",\"_cb_relocated\",\"_cb_free\",\"_cb_error\",\"_cb_error_kind\",\"_cb_mismatch\",\"_cb_term\",\"_cb_formula_begin\",\"_cb_formula_clause\",\"_cb_formula_end\",\"_cb_normalize\",\"_cb_node\",\"_cb_formula_view\",\"_cb_definition\",\"_cb_head\",\"_cb_position_clear\",\"_cb_position_push\",\"_cb_position_set\",\"_cb_subterm\",\"_cb_clear_error\",\"_cb_instr\",\"_cb_judgement_count\",\"_cb_judgement\",\"_cb_judgement_context\",\"_cb_entry_count\",\"_cb_entry\",\"_cb_rename\",\"_cb_equiv_type\",\"_cb_fresh_symbol\",\"_cb_endpoint_term\",\"_cb_arena\",\"_cb_extensions\",\"_cb_signature\",\"_cb_signature_constructor\"] -sEXPORTED_RUNTIME_METHODS=[\"UTF8ToString\"]",
+      "outputs": "e59eea474843a1f7217ae93554155d935b0389e506fb70ae1f7c717efe84aa65"
+    }
+  },
+  "limits": "default declaration/search fuel and kernel budgets",
+  "cacheConditions": "new process, WASM module and kernel session for every workload/mode/repeat",
+  "peakScope": "arena sampled after declarations; OS process maximum RSS includes startup; retained/released process memory after explicit GC; release drops the program reference",
+  "workloads": {
+    "algebra": {
+      "declarations": 323,
+      "verified": 323,
+      "generatedNames": [
+        "algebra__AbelianGroup.Hom",
+        "algebra__AbelianGroup.Hom.comm_monoid",
+        "algebra__AbelianGroup.Hom.compose",
+        "algebra__AbelianGroup.Hom.group",
+        "algebra__AbelianGroup.Hom.id",
+        "algebra__AbelianGroup.Hom.make",
+        "algebra__AbelianGroup.Hom.map",
+        "algebra__AbelianGroup.Hom.map_inv",
+        "algebra__AbelianGroup.Hom.map_mul",
+        "algebra__AbelianGroup.Hom.map_one",
+        "algebra__AbelianGroup.Iso",
+        "algebra__AbelianGroup.Iso.compose",
+        "algebra__AbelianGroup.Iso.from",
+        "algebra__AbelianGroup.Iso.from_to",
+        "algebra__AbelianGroup.Iso.id",
+        "algebra__AbelianGroup.Iso.inverse",
+        "algebra__AbelianGroup.Iso.make",
+        "algebra__AbelianGroup.Iso.to",
+        "algebra__AbelianGroup.Iso.to_from",
+        "algebra__AbelianGroup.M",
+        "algebra__AbelianGroup.M_is_set",
+        "algebra__AbelianGroup.comm_monoid",
+        "algebra__AbelianGroup.group",
+        "algebra__AbelianGroup.inv",
+        "algebra__AbelianGroup.inv_mul",
+        "algebra__AbelianGroup.make",
+        "algebra__AbelianGroup.mul",
+        "algebra__AbelianGroup.mul_assoc",
+        "algebra__AbelianGroup.mul_comm",
+        "algebra__AbelianGroup.mul_inv",
+        "algebra__AbelianGroup.mul_one",
+        "algebra__AbelianGroup.one",
+        "algebra__AbelianGroup.one_mul",
+        "algebra__CommMonoid.Hom",
+        "algebra__CommMonoid.Hom.compose",
+        "algebra__CommMonoid.Hom.id",
+        "algebra__CommMonoid.Hom.make",
+        "algebra__CommMonoid.Hom.map",
+        "algebra__CommMonoid.Hom.map_mul",
+        "algebra__CommMonoid.Hom.map_one",
+        "algebra__CommMonoid.Hom.monoid",
+        "algebra__CommMonoid.Iso",
+        "algebra__CommMonoid.Iso.compose",
+        "algebra__CommMonoid.Iso.from",
+        "algebra__CommMonoid.Iso.from_to",
+        "algebra__CommMonoid.Iso.id",
+        "algebra__CommMonoid.Iso.inverse",
+        "algebra__CommMonoid.Iso.make",
+        "algebra__CommMonoid.Iso.to",
+        "algebra__CommMonoid.Iso.to_from",
+        "algebra__CommMonoid.M",
+        "algebra__CommMonoid.M_is_set",
+        "algebra__CommMonoid.make",
+        "algebra__CommMonoid.monoid",
+        "algebra__CommMonoid.mul",
+        "algebra__CommMonoid.mul_assoc",
+        "algebra__CommMonoid.mul_comm",
+        "algebra__CommMonoid.mul_one",
+        "algebra__CommMonoid.one",
+        "algebra__CommMonoid.one_mul",
+        "algebra__CommRing.Hom",
+        "algebra__CommRing.Hom.additive_",
+        "algebra__CommRing.Hom.compose",
+        "algebra__CommRing.Hom.id",
+        "algebra__CommRing.Hom.make",
+        "algebra__CommRing.Hom.map",
+        "algebra__CommRing.Hom.map_add",
+        "algebra__CommRing.Hom.map_mul",
+        "algebra__CommRing.Hom.map_neg",
+        "algebra__CommRing.Hom.map_one",
+        "algebra__CommRing.Hom.map_zero",
+        "algebra__CommRing.Hom.multiplicative",
+        "algebra__CommRing.Iso",
+        "algebra__CommRing.Iso.compose",
+        "algebra__CommRing.Iso.from",
+        "algebra__CommRing.Iso.from_to",
+        "algebra__CommRing.Iso.id",
+        "algebra__CommRing.Iso.inverse",
+        "algebra__CommRing.Iso.make",
+        "algebra__CommRing.Iso.to",
+        "algebra__CommRing.Iso.to_from",
+        "algebra__CommRing.R",
+        "algebra__CommRing.R_is_set",
+        "algebra__CommRing.add",
+        "algebra__CommRing.add_assoc",
+        "algebra__CommRing.add_comm",
+        "algebra__CommRing.add_neg",
+        "algebra__CommRing.add_zero",
+        "algebra__CommRing.additive_",
+        "algebra__CommRing.make",
+        "algebra__CommRing.mul",
+        "algebra__CommRing.mul_add",
+        "algebra__CommRing.mul_assoc",
+        "algebra__CommRing.mul_comm",
+        "algebra__CommRing.mul_one",
+        "algebra__CommRing.multiplicative",
+        "algebra__CommRing.neg",
+        "algebra__CommRing.neg_add",
+        "algebra__CommRing.of_nat",
+        "algebra__CommRing.one",
+        "algebra__CommRing.one_mul",
+        "algebra__CommRing.sub",
+        "algebra__CommRing.zero",
+        "algebra__CommRing.zero_add",
+        "algebra__Field.Hom",
+        "algebra__Field.Hom.comm_ring",
+        "algebra__Field.Hom.compose",
+        "algebra__Field.Hom.id",
+        "algebra__Field.Hom.make",
+        "algebra__Field.Hom.map",
+        "algebra__Field.Hom.map_add",
+        "algebra__Field.Hom.map_mul",
+        "algebra__Field.Hom.map_neg",
+        "algebra__Field.Hom.map_one",
+        "algebra__Field.Hom.map_zero",
+        "algebra__Field.Iso",
+        "algebra__Field.Iso.compose",
+        "algebra__Field.Iso.from",
+        "algebra__Field.Iso.from_to",
+        "algebra__Field.Iso.id",
+        "algebra__Field.Iso.inverse",
+        "algebra__Field.Iso.make",
+        "algebra__Field.Iso.to",
+        "algebra__Field.Iso.to_from",
+        "algebra__Field.R",
+        "algebra__Field.R_is_set",
+        "algebra__Field.add",
+        "algebra__Field.add_assoc",
+        "algebra__Field.add_comm",
+        "algebra__Field.add_neg",
+        "algebra__Field.add_zero",
+        "algebra__Field.comm_ring",
+        "algebra__Field.inverses",
+        "algebra__Field.make",
+        "algebra__Field.mul",
+        "algebra__Field.mul_add",
+        "algebra__Field.mul_assoc",
+        "algebra__Field.mul_comm",
+        "algebra__Field.mul_one",
+        "algebra__Field.neg",
+        "algebra__Field.neg_add",
+        "algebra__Field.of_nat",
+        "algebra__Field.one",
+        "algebra__Field.one_mul",
+        "algebra__Field.sub",
+        "algebra__Field.zero",
+        "algebra__Field.zero_add",
+        "algebra__Field.zero_ne_one",
+        "algebra__Group.Hom",
+        "algebra__Group.Hom.compose",
+        "algebra__Group.Hom.id",
+        "algebra__Group.Hom.make",
+        "algebra__Group.Hom.map",
+        "algebra__Group.Hom.map_inv",
+        "algebra__Group.Hom.map_mul",
+        "algebra__Group.Hom.map_one",
+        "algebra__Group.Hom.monoid",
+        "algebra__Group.Iso",
+        "algebra__Group.Iso.compose",
+        "algebra__Group.Iso.from",
+        "algebra__Group.Iso.from_to",
+        "algebra__Group.Iso.id",
+        "algebra__Group.Iso.inverse",
+        "algebra__Group.Iso.make",
+        "algebra__Group.Iso.to",
+        "algebra__Group.Iso.to_from",
+        "algebra__Group.M",
+        "algebra__Group.M_is_set",
+        "algebra__Group.inv",
+        "algebra__Group.inv_mul",
+        "algebra__Group.make",
+        "algebra__Group.monoid",
+        "algebra__Group.mul",
+        "algebra__Group.mul_assoc",
+        "algebra__Group.mul_inv",
+        "algebra__Group.mul_one",
+        "algebra__Group.one",
+        "algebra__Group.one_mul",
+        "algebra__Monoid.Hom",
+        "algebra__Monoid.Hom.compose",
+        "algebra__Monoid.Hom.id",
+        "algebra__Monoid.Hom.make",
+        "algebra__Monoid.Hom.map",
+        "algebra__Monoid.Hom.map_mul",
+        "algebra__Monoid.Hom.map_one",
+        "algebra__Monoid.Hom.semigroup",
+        "algebra__Monoid.Iso",
+        "algebra__Monoid.Iso.compose",
+        "algebra__Monoid.Iso.from",
+        "algebra__Monoid.Iso.from_to",
+        "algebra__Monoid.Iso.id",
+        "algebra__Monoid.Iso.inverse",
+        "algebra__Monoid.Iso.make",
+        "algebra__Monoid.Iso.to",
+        "algebra__Monoid.Iso.to_from",
+        "algebra__Monoid.M",
+        "algebra__Monoid.M_is_set",
+        "algebra__Monoid.make",
+        "algebra__Monoid.mul",
+        "algebra__Monoid.mul_assoc",
+        "algebra__Monoid.mul_one",
+        "algebra__Monoid.one",
+        "algebra__Monoid.one_mul",
+        "algebra__Monoid.semigroup",
+        "algebra__Semigroup.Hom",
+        "algebra__Semigroup.Hom.compose",
+        "algebra__Semigroup.Hom.id",
+        "algebra__Semigroup.Hom.make",
+        "algebra__Semigroup.Hom.map",
+        "algebra__Semigroup.Hom.map_mul",
+        "algebra__Semigroup.Iso",
+        "algebra__Semigroup.Iso.compose",
+        "algebra__Semigroup.Iso.from",
+        "algebra__Semigroup.Iso.from_to",
+        "algebra__Semigroup.Iso.id",
+        "algebra__Semigroup.Iso.inverse",
+        "algebra__Semigroup.Iso.make",
+        "algebra__Semigroup.Iso.to",
+        "algebra__Semigroup.Iso.to_from",
+        "algebra__Semigroup.M",
+        "algebra__Semigroup.M_is_set",
+        "algebra__Semigroup.make",
+        "algebra__Semigroup.mul",
+        "algebra__Semigroup.mul_assoc"
+      ],
+      "interfacesDigest": "7ce78179919487112cdb6a867a714a940f52b1501afd2f69f428bc3f7d60fc4a",
+      "assumptions": [],
+      "sourceDigest": "7bb8cf71ff9deb3b07874c28d2acf3e2fb9fa88951db853ff64e81379c5a80a2",
+      "declarationFuelDigest": "3338c07813f12e2515b76e79297a1d716e0fe987e67c096f01c5baef8a900f6a",
+      "source": "import hlevels; import algebra;"
+    },
+    "inheritance": {
+      "declarations": 145,
+      "verified": 145,
+      "generatedNames": [
+        "main__P.Hom",
+        "main__P.Hom.compose",
+        "main__P.Hom.id",
+        "main__P.Hom.make",
+        "main__P.Hom.map",
+        "main__P.Hom.map_c",
+        "main__P.Hom.map_op",
+        "main__P.Iso",
+        "main__P.Iso.compose",
+        "main__P.Iso.from",
+        "main__P.Iso.from_to",
+        "main__P.Iso.id",
+        "main__P.Iso.inverse",
+        "main__P.Iso.make",
+        "main__P.Iso.to",
+        "main__P.Iso.to_from",
+        "main__P.M",
+        "main__P.M_is_set",
+        "main__P.c",
+        "main__P.helper",
+        "main__P.l",
+        "main__P.make",
+        "main__P.op",
+        "main__Q.Hom",
+        "main__Q.Hom.compose",
+        "main__Q.Hom.id",
+        "main__Q.Hom.make",
+        "main__Q.Hom.map",
+        "main__Q.Hom.map_c",
+        "main__Q.Hom.map_op",
+        "main__Q.Hom.p",
+        "main__Q.Iso",
+        "main__Q.Iso.compose",
+        "main__Q.Iso.from",
+        "main__Q.Iso.from_to",
+        "main__Q.Iso.id",
+        "main__Q.Iso.inverse",
+        "main__Q.Iso.make",
+        "main__Q.Iso.to",
+        "main__Q.Iso.to_from",
+        "main__Q.M",
+        "main__Q.M_is_set",
+        "main__Q.c",
+        "main__Q.helper",
+        "main__Q.l",
+        "main__Q.make",
+        "main__Q.op",
+        "main__Q.p",
+        "main__R.Hom",
+        "main__R.Hom.compose",
+        "main__R.Hom.id",
+        "main__R.Hom.make",
+        "main__R.Hom.map",
+        "main__R.Hom.map_c",
+        "main__R.Hom.map_op",
+        "main__R.Hom.q",
+        "main__R.Iso",
+        "main__R.Iso.compose",
+        "main__R.Iso.from",
+        "main__R.Iso.from_to",
+        "main__R.Iso.id",
+        "main__R.Iso.inverse",
+        "main__R.Iso.make",
+        "main__R.Iso.to",
+        "main__R.Iso.to_from",
+        "main__R.M",
+        "main__R.M_is_set",
+        "main__R.c",
+        "main__R.helper",
+        "main__R.l",
+        "main__R.make",
+        "main__R.op",
+        "main__R.q"
+      ],
+      "interfacesDigest": "dcbecfb16ec0636d3d7964be0a4194c25a58318562c8e2d38eb31fd0c0a95188",
+      "assumptions": [],
+      "sourceDigest": "0b4d4eee1117314dd1ccf8411af148e0f04138e94aa559ca6303fabaeb578cb7",
+      "declarationFuelDigest": "e3d4657403ea42716363f34c83044e2192dd41ab375a00d1fc61948ea2e93efc",
+      "source": "import hlevels; import nat;\ndef outside : Nat := zero;\ntheory P(U < UU0) { M : set U; c : M; op(x : Nat, y : M) : M; def helper(y : M) : M := op(outside, y); law l(y : M) : helper(y) = y; }\ntheory Q(U < UU0) extends P {}\ntheory R(U < UU0) extends Q {}\ndef meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);"
+    },
+    "fold": {
+      "declarations": 328,
+      "verified": 328,
+      "generatedNames": [
+        "algebra__AbelianGroup.Hom",
+        "algebra__AbelianGroup.Hom.comm_monoid",
+        "algebra__AbelianGroup.Hom.compose",
+        "algebra__AbelianGroup.Hom.group",
+        "algebra__AbelianGroup.Hom.id",
+        "algebra__AbelianGroup.Hom.make",
+        "algebra__AbelianGroup.Hom.map",
+        "algebra__AbelianGroup.Hom.map_inv",
+        "algebra__AbelianGroup.Hom.map_mul",
+        "algebra__AbelianGroup.Hom.map_one",
+        "algebra__AbelianGroup.Iso",
+        "algebra__AbelianGroup.Iso.compose",
+        "algebra__AbelianGroup.Iso.from",
+        "algebra__AbelianGroup.Iso.from_to",
+        "algebra__AbelianGroup.Iso.id",
+        "algebra__AbelianGroup.Iso.inverse",
+        "algebra__AbelianGroup.Iso.make",
+        "algebra__AbelianGroup.Iso.to",
+        "algebra__AbelianGroup.Iso.to_from",
+        "algebra__AbelianGroup.M",
+        "algebra__AbelianGroup.M_is_set",
+        "algebra__AbelianGroup.comm_monoid",
+        "algebra__AbelianGroup.group",
+        "algebra__AbelianGroup.inv",
+        "algebra__AbelianGroup.inv_mul",
+        "algebra__AbelianGroup.make",
+        "algebra__AbelianGroup.mul",
+        "algebra__AbelianGroup.mul_assoc",
+        "algebra__AbelianGroup.mul_comm",
+        "algebra__AbelianGroup.mul_inv",
+        "algebra__AbelianGroup.mul_one",
+        "algebra__AbelianGroup.one",
+        "algebra__AbelianGroup.one_mul",
+        "algebra__CommMonoid.Hom",
+        "algebra__CommMonoid.Hom.compose",
+        "algebra__CommMonoid.Hom.id",
+        "algebra__CommMonoid.Hom.make",
+        "algebra__CommMonoid.Hom.map",
+        "algebra__CommMonoid.Hom.map_mul",
+        "algebra__CommMonoid.Hom.map_one",
+        "algebra__CommMonoid.Hom.monoid",
+        "algebra__CommMonoid.Iso",
+        "algebra__CommMonoid.Iso.compose",
+        "algebra__CommMonoid.Iso.from",
+        "algebra__CommMonoid.Iso.from_to",
+        "algebra__CommMonoid.Iso.id",
+        "algebra__CommMonoid.Iso.inverse",
+        "algebra__CommMonoid.Iso.make",
+        "algebra__CommMonoid.Iso.to",
+        "algebra__CommMonoid.Iso.to_from",
+        "algebra__CommMonoid.M",
+        "algebra__CommMonoid.M_is_set",
+        "algebra__CommMonoid.make",
+        "algebra__CommMonoid.monoid",
+        "algebra__CommMonoid.mul",
+        "algebra__CommMonoid.mul_assoc",
+        "algebra__CommMonoid.mul_comm",
+        "algebra__CommMonoid.mul_one",
+        "algebra__CommMonoid.one",
+        "algebra__CommMonoid.one_mul",
+        "algebra__CommRing.Hom",
+        "algebra__CommRing.Hom.additive_",
+        "algebra__CommRing.Hom.compose",
+        "algebra__CommRing.Hom.id",
+        "algebra__CommRing.Hom.make",
+        "algebra__CommRing.Hom.map",
+        "algebra__CommRing.Hom.map_add",
+        "algebra__CommRing.Hom.map_mul",
+        "algebra__CommRing.Hom.map_neg",
+        "algebra__CommRing.Hom.map_one",
+        "algebra__CommRing.Hom.map_zero",
+        "algebra__CommRing.Hom.multiplicative",
+        "algebra__CommRing.Iso",
+        "algebra__CommRing.Iso.compose",
+        "algebra__CommRing.Iso.from",
+        "algebra__CommRing.Iso.from_to",
+        "algebra__CommRing.Iso.id",
+        "algebra__CommRing.Iso.inverse",
+        "algebra__CommRing.Iso.make",
+        "algebra__CommRing.Iso.to",
+        "algebra__CommRing.Iso.to_from",
+        "algebra__CommRing.R",
+        "algebra__CommRing.R_is_set",
+        "algebra__CommRing.add",
+        "algebra__CommRing.add_assoc",
+        "algebra__CommRing.add_comm",
+        "algebra__CommRing.add_neg",
+        "algebra__CommRing.add_zero",
+        "algebra__CommRing.additive_",
+        "algebra__CommRing.make",
+        "algebra__CommRing.mul",
+        "algebra__CommRing.mul_add",
+        "algebra__CommRing.mul_assoc",
+        "algebra__CommRing.mul_comm",
+        "algebra__CommRing.mul_one",
+        "algebra__CommRing.multiplicative",
+        "algebra__CommRing.neg",
+        "algebra__CommRing.neg_add",
+        "algebra__CommRing.of_nat",
+        "algebra__CommRing.one",
+        "algebra__CommRing.one_mul",
+        "algebra__CommRing.sub",
+        "algebra__CommRing.zero",
+        "algebra__CommRing.zero_add",
+        "algebra__Field.Hom",
+        "algebra__Field.Hom.comm_ring",
+        "algebra__Field.Hom.compose",
+        "algebra__Field.Hom.id",
+        "algebra__Field.Hom.make",
+        "algebra__Field.Hom.map",
+        "algebra__Field.Hom.map_add",
+        "algebra__Field.Hom.map_mul",
+        "algebra__Field.Hom.map_neg",
+        "algebra__Field.Hom.map_one",
+        "algebra__Field.Hom.map_zero",
+        "algebra__Field.Iso",
+        "algebra__Field.Iso.compose",
+        "algebra__Field.Iso.from",
+        "algebra__Field.Iso.from_to",
+        "algebra__Field.Iso.id",
+        "algebra__Field.Iso.inverse",
+        "algebra__Field.Iso.make",
+        "algebra__Field.Iso.to",
+        "algebra__Field.Iso.to_from",
+        "algebra__Field.R",
+        "algebra__Field.R_is_set",
+        "algebra__Field.add",
+        "algebra__Field.add_assoc",
+        "algebra__Field.add_comm",
+        "algebra__Field.add_neg",
+        "algebra__Field.add_zero",
+        "algebra__Field.comm_ring",
+        "algebra__Field.inverses",
+        "algebra__Field.make",
+        "algebra__Field.mul",
+        "algebra__Field.mul_add",
+        "algebra__Field.mul_assoc",
+        "algebra__Field.mul_comm",
+        "algebra__Field.mul_one",
+        "algebra__Field.neg",
+        "algebra__Field.neg_add",
+        "algebra__Field.of_nat",
+        "algebra__Field.one",
+        "algebra__Field.one_mul",
+        "algebra__Field.sub",
+        "algebra__Field.zero",
+        "algebra__Field.zero_add",
+        "algebra__Field.zero_ne_one",
+        "algebra__Group.Hom",
+        "algebra__Group.Hom.compose",
+        "algebra__Group.Hom.id",
+        "algebra__Group.Hom.make",
+        "algebra__Group.Hom.map",
+        "algebra__Group.Hom.map_inv",
+        "algebra__Group.Hom.map_mul",
+        "algebra__Group.Hom.map_one",
+        "algebra__Group.Hom.monoid",
+        "algebra__Group.Iso",
+        "algebra__Group.Iso.compose",
+        "algebra__Group.Iso.from",
+        "algebra__Group.Iso.from_to",
+        "algebra__Group.Iso.id",
+        "algebra__Group.Iso.inverse",
+        "algebra__Group.Iso.make",
+        "algebra__Group.Iso.to",
+        "algebra__Group.Iso.to_from",
+        "algebra__Group.M",
+        "algebra__Group.M_is_set",
+        "algebra__Group.inv",
+        "algebra__Group.inv_mul",
+        "algebra__Group.make",
+        "algebra__Group.monoid",
+        "algebra__Group.mul",
+        "algebra__Group.mul_assoc",
+        "algebra__Group.mul_inv",
+        "algebra__Group.mul_one",
+        "algebra__Group.one",
+        "algebra__Group.one_mul",
+        "algebra__Monoid.Hom",
+        "algebra__Monoid.Hom.compose",
+        "algebra__Monoid.Hom.id",
+        "algebra__Monoid.Hom.make",
+        "algebra__Monoid.Hom.map",
+        "algebra__Monoid.Hom.map_mul",
+        "algebra__Monoid.Hom.map_one",
+        "algebra__Monoid.Hom.semigroup",
+        "algebra__Monoid.Iso",
+        "algebra__Monoid.Iso.compose",
+        "algebra__Monoid.Iso.from",
+        "algebra__Monoid.Iso.from_to",
+        "algebra__Monoid.Iso.id",
+        "algebra__Monoid.Iso.inverse",
+        "algebra__Monoid.Iso.make",
+        "algebra__Monoid.Iso.to",
+        "algebra__Monoid.Iso.to_from",
+        "algebra__Monoid.M",
+        "algebra__Monoid.M_is_set",
+        "algebra__Monoid.make",
+        "algebra__Monoid.mul",
+        "algebra__Monoid.mul_assoc",
+        "algebra__Monoid.mul_one",
+        "algebra__Monoid.one",
+        "algebra__Monoid.one_mul",
+        "algebra__Monoid.semigroup",
+        "algebra__Semigroup.Hom",
+        "algebra__Semigroup.Hom.compose",
+        "algebra__Semigroup.Hom.id",
+        "algebra__Semigroup.Hom.make",
+        "algebra__Semigroup.Hom.map",
+        "algebra__Semigroup.Hom.map_mul",
+        "algebra__Semigroup.Iso",
+        "algebra__Semigroup.Iso.compose",
+        "algebra__Semigroup.Iso.from",
+        "algebra__Semigroup.Iso.from_to",
+        "algebra__Semigroup.Iso.id",
+        "algebra__Semigroup.Iso.inverse",
+        "algebra__Semigroup.Iso.make",
+        "algebra__Semigroup.Iso.to",
+        "algebra__Semigroup.Iso.to_from",
+        "algebra__Semigroup.M",
+        "algebra__Semigroup.M_is_set",
+        "algebra__Semigroup.make",
+        "algebra__Semigroup.mul",
+        "algebra__Semigroup.mul_assoc",
+        "main__W.fold",
+        "main__W.fold_map",
+        "main__W.model"
+      ],
+      "interfacesDigest": "cfbcaa6119e25faa9c20fe550e235d78eb4834bead5a3b4dc9ee834f2cd0bf0d",
+      "assumptions": [],
+      "sourceDigest": "2295fa4fec596cd0ce2c9ef8f6a6e270f8e1b09152ef1d0ac62e7eb9102dd062",
+      "declarationFuelDigest": "4106a2826e80e1148be9b9e8bf898e617099db97c6bf2cacb29e9b59df8690cd",
+      "source": "import hlevels; import algebra; import nat;\nfree W(A : U0) : Monoid(U0) on A;\ndef computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }"
+    }
+  },
+  "samples": [
+    {
+      "name": "algebra",
+      "repeat": 0,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1207.473917,
+      "work": {
+        "instructions": 118850,
+        "rejected": 1636,
+        "instructionSteps": 372542,
+        "queries": 14495,
+        "failedQueries": 6,
+        "querySteps": 536717,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64684032,
+          "heapTotal": 17678336,
+          "heapUsed": 7777168,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 306675712,
+          "heapTotal": 197230592,
+          "heapUsed": 41935512,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 314458112,
+        "disposed": {
+          "rss": 309592064,
+          "heapTotal": 185729024,
+          "heapUsed": 44527648,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "algebra",
+      "repeat": 1,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1225.795208,
+      "work": {
+        "instructions": 118850,
+        "rejected": 1636,
+        "instructionSteps": 372542,
+        "queries": 14495,
+        "failedQueries": 6,
+        "querySteps": 536717,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64978944,
+          "heapTotal": 17154048,
+          "heapUsed": 7776296,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 312918016,
+          "heapTotal": 213483520,
+          "heapUsed": 41936632,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 326172672,
+        "disposed": {
+          "rss": 316407808,
+          "heapTotal": 187301888,
+          "heapUsed": 44512896,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "algebra",
+      "repeat": 2,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1212.14775,
+      "work": {
+        "instructions": 118850,
+        "rejected": 1636,
+        "instructionSteps": 372542,
+        "queries": 14495,
+        "failedQueries": 6,
+        "querySteps": 536717,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 65028096,
+          "heapTotal": 17678336,
+          "heapUsed": 7776296,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 312033280,
+          "heapTotal": 214794240,
+          "heapUsed": 42970976,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 325697536,
+        "disposed": {
+          "rss": 315768832,
+          "heapTotal": 189399040,
+          "heapUsed": 45559408,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "algebra",
+      "repeat": 0,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1415.734917,
+      "work": {
+        "instructions": 118850,
+        "rejected": 1636,
+        "instructionSteps": 372542,
+        "queries": 14495,
+        "failedQueries": 6,
+        "querySteps": 536717,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 3346,
+      "memory": {
+        "before": {
+          "rss": 64782336,
+          "heapTotal": 17678336,
+          "heapUsed": 7776824,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 331448320,
+          "heapTotal": 234405888,
+          "heapUsed": 51807568,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 348274688,
+        "disposed": {
+          "rss": 334200832,
+          "heapTotal": 204292096,
+          "heapUsed": 54399136,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "algebra",
+      "repeat": 1,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1415.1800830000002,
+      "work": {
+        "instructions": 118850,
+        "rejected": 1636,
+        "instructionSteps": 372542,
+        "queries": 14495,
+        "failedQueries": 6,
+        "querySteps": 536717,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 3346,
+      "memory": {
+        "before": {
+          "rss": 64962560,
+          "heapTotal": 17678336,
+          "heapUsed": 7776464,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 335462400,
+          "heapTotal": 236503040,
+          "heapUsed": 51824040,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 350273536,
+        "disposed": {
+          "rss": 338149376,
+          "heapTotal": 204029952,
+          "heapUsed": 54397288,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "algebra",
+      "repeat": 2,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1388.4080829999998,
+      "work": {
+        "instructions": 118850,
+        "rejected": 1636,
+        "instructionSteps": 372542,
+        "queries": 14495,
+        "failedQueries": 6,
+        "querySteps": 536717,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 3346,
+      "memory": {
+        "before": {
+          "rss": 64913408,
+          "heapTotal": 17416192,
+          "heapUsed": 7777248,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 336969728,
+          "heapTotal": 238338048,
+          "heapUsed": 51819856,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 351256576,
+        "disposed": {
+          "rss": 340246528,
+          "heapTotal": 204292096,
+          "heapUsed": 54394960,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "inheritance",
+      "repeat": 0,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 401.131708,
+      "work": {
+        "instructions": 51732,
+        "rejected": 248,
+        "instructionSteps": 143319,
+        "queries": 3883,
+        "failedQueries": 0,
+        "querySteps": 126594,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64815104,
+          "heapTotal": 17416192,
+          "heapUsed": 7777168,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 193691648,
+          "heapTotal": 106741760,
+          "heapUsed": 22811784,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 195117056,
+        "disposed": {
+          "rss": 196608000,
+          "heapTotal": 93929472,
+          "heapUsed": 23334976,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 17954,
+        "bytes": 2624512
+      }
+    },
+    {
+      "name": "inheritance",
+      "repeat": 1,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 428.108625,
+      "work": {
+        "instructions": 51732,
+        "rejected": 248,
+        "instructionSteps": 143319,
+        "queries": 3883,
+        "failedQueries": 0,
+        "querySteps": 126594,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64782336,
+          "heapTotal": 17416192,
+          "heapUsed": 7776720,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 194068480,
+          "heapTotal": 106479616,
+          "heapUsed": 22781680,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 195477504,
+        "disposed": {
+          "rss": 196411392,
+          "heapTotal": 93929472,
+          "heapUsed": 23334936,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 17954,
+        "bytes": 2624512
+      }
+    },
+    {
+      "name": "inheritance",
+      "repeat": 2,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 409.015375,
+      "work": {
+        "instructions": 51732,
+        "rejected": 248,
+        "instructionSteps": 143319,
+        "queries": 3883,
+        "failedQueries": 0,
+        "querySteps": 126594,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64962560,
+          "heapTotal": 17678336,
+          "heapUsed": 7777320,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 193904640,
+          "heapTotal": 107003904,
+          "heapUsed": 22792336,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 195477504,
+        "disposed": {
+          "rss": 196575232,
+          "heapTotal": 93405184,
+          "heapUsed": 23337976,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 17954,
+        "bytes": 2624512
+      }
+    },
+    {
+      "name": "inheritance",
+      "repeat": 0,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 468.766792,
+      "work": {
+        "instructions": 51732,
+        "rejected": 248,
+        "instructionSteps": 143319,
+        "queries": 3883,
+        "failedQueries": 0,
+        "querySteps": 126594,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 2493,
+      "memory": {
+        "before": {
+          "rss": 64733184,
+          "heapTotal": 17416192,
+          "heapUsed": 7777168,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 210288640,
+          "heapTotal": 171753472,
+          "heapUsed": 27652392,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 212025344,
+        "disposed": {
+          "rss": 211533824,
+          "heapTotal": 167854080,
+          "heapUsed": 28329712,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 17954,
+        "bytes": 2624512
+      }
+    },
+    {
+      "name": "inheritance",
+      "repeat": 1,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 466.194167,
+      "work": {
+        "instructions": 51732,
+        "rejected": 248,
+        "instructionSteps": 143319,
+        "queries": 3883,
+        "failedQueries": 0,
+        "querySteps": 126594,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 2493,
+      "memory": {
+        "before": {
+          "rss": 64733184,
+          "heapTotal": 17416192,
+          "heapUsed": 7777168,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 212271104,
+          "heapTotal": 170442752,
+          "heapUsed": 27388840,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 213663744,
+        "disposed": {
+          "rss": 213663744,
+          "heapTotal": 167854080,
+          "heapUsed": 28074992,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 17954,
+        "bytes": 2624512
+      }
+    },
+    {
+      "name": "inheritance",
+      "repeat": 2,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 472.801917,
+      "work": {
+        "instructions": 51732,
+        "rejected": 248,
+        "instructionSteps": 143319,
+        "queries": 3883,
+        "failedQueries": 0,
+        "querySteps": 126594,
+        "exhausted": 0,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 2493,
+      "memory": {
+        "before": {
+          "rss": 64831488,
+          "heapTotal": 17678336,
+          "heapUsed": 7777120,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 217595904,
+          "heapTotal": 169656320,
+          "heapUsed": 27939040,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 219168768,
+        "disposed": {
+          "rss": 218497024,
+          "heapTotal": 168640512,
+          "heapUsed": 28588000,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 17954,
+        "bytes": 2624512
+      }
+    },
+    {
+      "name": "fold",
+      "repeat": 0,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1243.924917,
+      "work": {
+        "instructions": 125859,
+        "rejected": 1691,
+        "instructionSteps": 392351,
+        "queries": 14990,
+        "failedQueries": 6,
+        "querySteps": 551900,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64815104,
+          "heapTotal": 17678336,
+          "heapUsed": 7777320,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 316899328,
+          "heapTotal": 216367104,
+          "heapUsed": 42730568,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 331513856,
+        "disposed": {
+          "rss": 320503808,
+          "heapTotal": 190185472,
+          "heapUsed": 45286608,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "fold",
+      "repeat": 1,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1210.926458,
+      "work": {
+        "instructions": 125859,
+        "rejected": 1691,
+        "instructionSteps": 392351,
+        "queries": 14990,
+        "failedQueries": 6,
+        "querySteps": 551900,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64995328,
+          "heapTotal": 17678336,
+          "heapUsed": 7776352,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 314867712,
+          "heapTotal": 215318528,
+          "heapUsed": 42496632,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 327335936,
+        "disposed": {
+          "rss": 318029824,
+          "heapTotal": 188874752,
+          "heapUsed": 45288792,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "fold",
+      "repeat": 2,
+      "collections": {
+        "references": false,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1265.402875,
+      "work": {
+        "instructions": 125859,
+        "rejected": 1691,
+        "instructionSteps": 392351,
+        "queries": 14990,
+        "failedQueries": 6,
+        "querySteps": 551900,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 0,
+      "memory": {
+        "before": {
+          "rss": 64733184,
+          "heapTotal": 17678336,
+          "heapUsed": 7776824,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 320045056,
+          "heapTotal": 219250688,
+          "heapUsed": 42547472,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 333692928,
+        "disposed": {
+          "rss": 323092480,
+          "heapTotal": 188874752,
+          "heapUsed": 45279152,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "fold",
+      "repeat": 0,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1492.327417,
+      "work": {
+        "instructions": 125859,
+        "rejected": 1691,
+        "instructionSteps": 392351,
+        "queries": 14990,
+        "failedQueries": 6,
+        "querySteps": 551900,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 3364,
+      "memory": {
+        "before": {
+          "rss": 64749568,
+          "heapTotal": 17416192,
+          "heapUsed": 7777040,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 332693504,
+          "heapTotal": 233357312,
+          "heapUsed": 52079984,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 347209728,
+        "disposed": {
+          "rss": 335560704,
+          "heapTotal": 202981376,
+          "heapUsed": 54613496,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "fold",
+      "repeat": 1,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1497.647167,
+      "work": {
+        "instructions": 125859,
+        "rejected": 1691,
+        "instructionSteps": 392351,
+        "queries": 14990,
+        "failedQueries": 6,
+        "querySteps": 551900,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 3364,
+      "memory": {
+        "before": {
+          "rss": 64815104,
+          "heapTotal": 17416192,
+          "heapUsed": 7776240,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 333758464,
+          "heapTotal": 234930176,
+          "heapUsed": 52087768,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 350388224,
+        "disposed": {
+          "rss": 337051648,
+          "heapTotal": 204292096,
+          "heapUsed": 54615280,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    },
+    {
+      "name": "fold",
+      "repeat": 2,
+      "collections": {
+        "references": true,
+        "scopePoints": "not implemented",
+        "artifacts": "not implemented"
+      },
+      "elapsedMs": 1499.2789579999999,
+      "work": {
+        "instructions": 125859,
+        "rejected": 1691,
+        "instructionSteps": 392351,
+        "queries": 14990,
+        "failedQueries": 6,
+        "querySteps": 551900,
+        "exhausted": 6,
+        "deadlines": 0
+      },
+      "retainedReferenceRecords": 3364,
+      "memory": {
+        "before": {
+          "rss": 65093632,
+          "heapTotal": 17678336,
+          "heapUsed": 7776880,
+          "external": 2713562,
+          "arrayBuffers": 24815
+        },
+        "retained": {
+          "rss": 335724544,
+          "heapTotal": 234930176,
+          "heapUsed": 52050008,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        },
+        "processMaxRSSBytes": 352354304,
+        "disposed": {
+          "rss": 338509824,
+          "heapTotal": 204816384,
+          "heapUsed": 54616552,
+          "external": 18988492,
+          "arrayBuffers": 24819
+        }
+      },
+      "peakDeclarationArena": {
+        "nodes": 37166,
+        "bytes": 4593664
+      }
+    }
+  ],
+  "corpus": {
+    "revision": "83b780743db1af0cda5d85bb0cdcb0851af160aa",
+    "declarations": 3857,
+    "modules": 372,
+    "verified": 3857,
+    "assumptions": [
+      {
+        "binding": "__assumption_Choice",
+        "label": "Choice",
+        "typeDigest": "244c082812344a2e4473da31a22dbb1982681ecc"
+      },
+      {
+        "binding": "__assumption_LEM",
+        "label": "LEM",
+        "typeDigest": "e58d1865ffa198bf529c20b76a9b51e05f9b3279"
+      },
+      {
+        "binding": "__assumption_Truncate",
+        "label": "Truncate",
+        "typeDigest": "cd0d05c0e4aa5134765958bb96492e6a53c0a73f"
+      },
+      {
+        "binding": "__assumption_TruncateElim",
+        "label": "TruncateElim",
+        "typeDigest": "4f8ccbed6d4e00e14652a48cc409cb6dd4c507f8"
+      },
+      {
+        "binding": "__assumption_TruncateIntro",
+        "label": "TruncateIntro",
+        "typeDigest": "2fce70c027f465db9c0c21be8ea5271bf0f9e871"
+      },
+      {
+        "binding": "__assumption_TruncateProp",
+        "label": "TruncateProp",
+        "typeDigest": "eee539b0143bf26d9c1438e261457b12cfde4050"
+      }
+    ],
+    "assumptionDependenciesDigest": "37b14783b97c2a08ba80b5e79765443b8207e9edb879f9eb369990e19644d5d5",
+    "gaps": []
+  }
+}
