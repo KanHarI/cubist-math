@@ -178,5 +178,38 @@ criteria include the corresponding pilots and regression controls.
 Validation covers all seven Markdown files in the proposal: 183 local
 links/anchors and six pinned source links pass, as does `git diff --check`.
 The existing attribution and wording edits are included in this follow-up.
-Runtime tests were not rerun; these remain design requirements, with no CB
-implementation or performance results claimed.
+The unchanged implementation baseline at `d70c07ae` passes the native suite
+and 820 of 832 frontend tests, with 12 documented TODOs and no failures.
+These are baseline results, not evidence that the proposed CB contracts are
+implemented. No CB package is complete in this documentation PR.
+
+The first implementation-cycle review by Claude Code (`claude-opus-5-5`,
+`xhigh`) identified two additional contracts: deferred model-opening effects
+and selection among multiple elaboration instances of one source occurrence.
+Both are now explicit in CB3/CB6 and their acceptance cases. Scope collection
+excludes abandoned attempts while retaining usable prefixes of a selected
+attempt whose declaration later fails.
+
+The second review refined those abstractions: opening activations distinguish
+authored origins from per-item file-level source scope, explicit operand
+notation recipes capture their declaration receiver, and elaboration attempts
+own all observational effects rather than relying on existing inspector
+buffering. The roadmap preserves current file-level precedence and receiver
+re-resolution while prohibiting destination rebinding of retained activations.
+The third review separates notation selection from label opening in the
+activation contract, so synthesized operand recipes preserve caller names.
+It also preserves each speculative site's existing fuel accounting separately
+from observational rollback; recursive retries charge only the selected
+attempt, while quiet inference and wildcard fallback keep their direct
+charges. The fourth review makes file-level activation consumer-specific:
+the shared scope schema requests both effects for declarations/expression
+directives and neither for simp/hlevel rule registrations, preserving current
+rule lookup and avoiding checks of unused opening receivers. The fifth
+review identified a swallowed activation failure in current theory capture.
+The shared activation contract now has a checked outcome: failed required
+activations refuse the consumer and every dependent generated group, without
+unopened-environment fallback. This last correction was checked against the
+current capture/publication paths; it has not had a sixth external review.
+Implementation packages allow up to five review
+rounds when there are substantive findings; design findings change the shared
+abstraction and its acceptance controls before implementation continues.

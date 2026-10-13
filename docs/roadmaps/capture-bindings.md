@@ -67,10 +67,12 @@ the common traversal schema.
 | Binding | Opaque ID, role, owner, public label and definition origin. Roles distinguish declarations, locals, universe/dimension binders, parameters, fields and helpers. |
 | Reference occurrence | Binding ID, written spelling and occurrence origin. Role is obtained from the binding table, never inferred from spelling. |
 | Declaration interface | Ordered parameter groups with explicit shared domains, result/body, open interface IDs, notation context and owned identities. |
-| Lexical context | Immutable source-scope resolution and notation selections; explicit links to open binders; known missing lookups remain missing. |
+| Lexical context | Immutable source-scope resolution, deferred model-opening frames and notation selections; explicit links to open binders; known missing lookups remain missing outside those explicit deferred effects. |
+| Selection activation | Authored recipe origin, activation occurrence and lexical context; resolved receiver or deferred receiver slots, interface and enclosing resolution; pending/ready/failed outcome with source-qualified failure. Explicit consumer policy requests notation selection, label opening, both or neither. Separate source activation from copying an already activated selection. |
 | Deferred interpretation | Original syntax/operation, lexical-context ID, candidate binding slots and the type/goal information required to finish resolving it. |
 | Origin | Source/module revision ID and offsets; expansion frames identify call, inheritance and generation sites without overwriting authored positions. |
 | Artifact | Declaration/owner/group IDs, family/role, complete syntax, origins, dependencies and publication state. |
+| Elaboration attempt | Parent/owner path, pending/selected/discarded outcome and owned observational effects: references, proof steps and scope points. Selection composes through all enclosing attempts; work accounting is independent. |
 | Scope point | Revision, occurrence, before/after phase and expansion/attempt path; lexical context, ordered checked local context, local values, refinements, dimensions/faces, evidence, recursion state and optional goal. |
 
 IDs must distinguish same-spelled binders and survive serialization/replay
@@ -131,7 +133,8 @@ Resolution interleaves with elaboration when types or proof goals decide
 roles. Signatures may be checked in their ordered abstract telescope, in a
 temporary context, without publishing assumptions or adding kernel axioms.
 Reuse checked results when their context is unchanged; do not repeat whole
-elaboration for each generator. Charge all attempts to existing budgets.
+elaboration for each generator. Preserve existing limits and each speculative
+site's accounting policy, separately from whether its observations are kept.
 
 Distinguish two environments: lexical scope maps source occurrences to IDs;
 elaboration maps IDs to current terms, types, dimensions and refinements.
@@ -180,16 +183,94 @@ When a proof goal determines the effect of `intro`, `obtain`, `ext` or a
 related statement, retain the remaining block with explicit slots and its
 original lexical context until that effect is determined.
 
+Opening a model is another deferred lexical effect. Block/file `use`, section
+parameters and `m.(expression)` can introduce bare field and derived labels
+only after the receiver's type is known (`opened` in `translator/theories.mjs`).
+An activation retains the receiver occurrence and its activation
+context, separately from the authored recipe's origin. Block/section openings
+and explicit selections activate at their lexical source point. File-level
+`use` is an ordered source recipe: each subsequent source item activates it
+according to that item's consumer policy in its current ordered module scope,
+before declaration parameters where applicable. Each activation has its own occurrence/ID and
+resolves its receiver once there; the authored origin still points to the
+written `use`. This preserves the existing re-resolution of file-level
+receivers, including E343 when a later declaration shadows a receiver root.
+It does not rebind an existing reference ID. Retained or compiler-generated
+copies inherit the resolved activation, never activate a source recipe again
+in the transformation's destination.
+
+Subsequent bare occurrences keep candidate opened-label slots and their saved
+enclosing resolution, including a missing lookup. Once checked, the receiver's
+record maps those slots to its projection IDs applied to that receiver;
+unprovided labels retain the saved resolution. Ambiguous labels fail at use.
+File-level openings outrank module globals, including globals declared after
+the written `use`; declaration parameters and later local binders can shadow
+opened labels. Block openings shadow preceding local bindings, and later
+local binders shadow them. Opened labels hide conflicting `label.*`
+declarations under the existing rules.
+Resolve chained openings in order, including a model obtained by a call or
+from an earlier opened field. A same-spelled global must not be resolved
+eagerly past a pending opening. Scope points retain these effects too.
+
+Selections have two separate effects: notation selection (operators, literal
+rules and operand recipes), and label opening (bare model fields/derived
+names). Written `use` and `m.(...)` request both effects under the existing
+shadowing rules. Compiler-synthesized operand selections request only the
+notation effect; they cannot bind names over the operand's caller locals or
+globals. Carry the requested effects explicitly in the activation record.
+
+Register consumer policies in the shared scope schema, rather than assuming
+every item carrying `uses` consumes them. Preserve the current policies:
+
+| Consumer | File-level selection effects |
+| --- | --- |
+| Definitions, inductives, theories, initial/free generation requests and their retained source contexts | Notation selection and label opening, before local parameters |
+| `evaluate`, `print`, `notation` and subsequent `use` directives | Notation selection and label opening, in item order |
+| `simp_rule`, `simp_set` and `hlevel_rule` registrations | Neither; rule names resolve in the ordered module environment |
+
+These policies govern activation, not just filtering an already opened
+environment: a registration must not resolve/check an unused opening's
+receiver. Unknown new item kinds need an explicit schema policy. Nested
+written selections and synthesized operand recipes retain their explicit
+effect requests independently of this file-level policy. A retained copy
+preserves its consumer's resolved context rather than adopting the policy
+or scope of a destination item.
+
+Activation is a checked prerequisite, not a best-effort context enrichment.
+A required activation that fails refuses its consuming item with the original
+receiver diagnostic (for example E343) and source-qualified origin. Pending
+activation cannot be treated as a ready, unopened environment. For theories,
+remove `capturedScope`'s catch-and-return-null fallback: check the activation
+before retaining the interface, and propagate a failed outcome to every
+generated group depending on it. None of that theory's family may publish
+by capturing in the unopened module environment. This replaces the current
+accidental reliance on generated declarations re-reading `uses` to rediscover
+the failure. It does not roll back independent earlier items or change FG1's
+publication boundaries for groups whose required contexts succeeded.
+
 Notation records retain selected rule identities, original rule scope and
 the separate contexts of operands. Selection may need a checked model;
-retain that deferred receiver explicitly. A structural member keeps its
+retain that deferred receiver explicitly. An explicit operand-selection recipe
+such as `x ^ additive_.(n)` captures the model/notation receiver in the rule's
+declaration context, using the same activation representation and open
+interface. Do not retain `leftView`/`rightView` as bare names and construct
+client-resolved `select` nodes later. Apply inheritance/interface substitutions
+to the captured receiver IDs. Each operand keeps its caller's name resolution
+with only the captured notation effect applied to it; an absent explicit
+operand recipe preserves the existing ambient notation behavior. Thus a
+caller's parameter `one` remains that parameter in `P.(x ^ one)` even when
+the rule's operand model also has a field `one`. An otherwise unbound operand
+name cannot acquire a binding from the synthesized recipe. This intentionally
+corrects the current implementation's accidental label opening, consistent
+with notation's operand-hygiene contract. A structural member keeps its
 resolved receiver and public field label until the receiver's type selects
 the projection ID. Neither is treated as a dotted global string.
 
 Allow late label lookup only in explicit namespaces: reserved builtins and
 universe syntax under their existing shadowing rules; constructor labels in
 the matched type's table or the saved source candidate inventory; named
-arguments and member labels in the resolved interface; and notation rules
+arguments, member labels and deferred opened labels in the resolved interface;
+and notation rules
 selected through their saved scope/receiver. Each lookup produces an ID or
 an explicit failure. None may search the destination's ambient declarations
 to recover a retained reference or a missing source lookup.
@@ -316,10 +397,40 @@ session, but is not required to understand/check expressions under locals.
 Index semantic entry points rather than every character: expression entry,
 parameter-group domain/body, statement before/after, clause entry and proof
 goal transitions. Keep parent links and source-qualified ranges so a click
-selects the innermost relevant point. Never select a nearby sibling or a
+finds the innermost relevant source occurrence. Never select a nearby sibling or a
 later scope merely because its source range is close. Let initializers
 cannot see their own binding; later statements can. An arbitrary nesting
 depth does not imply a valid context exists after a parse or scope error.
+
+An occurrence maps to a set of selected elaboration instances. An overlapping
+multi-value match can elaborate one clause body under several constructor
+refinements; a law can appear in several generated artifacts. Retain each
+instance's branch/expansion path, refined context and goal. The UI lists them
+with those labels and requires an explicit instance selection before querying;
+it never silently takes the first or last. Proof-experiment success is scoped
+to that instance, and is no claim that the fragment works for the whole clause.
+Only checking every instance could establish that stronger claim.
+
+Give elaboration attempts ownership of all observational effects, including
+reference records, proof steps and scope points. Buffer effects until the
+attempt is selected; discarding an attempt discards its nested observations
+even if a nested attempt succeeded. Every elaborate-then-fallback site must
+participate: quiet argument inference, recursive/generalization retries and
+the written implicit-path wildcard body versus `automaticClause` fallback.
+Audit other speculative/recovery sites under this same contract; existing
+inspector buffering is not a complete inventory. Observation ownership does
+not decide accounting: recursive/generalization attempts preserve their
+current isolated fuel, work and search records and charge only the selected
+attempt to the declaration. Quiet argument inference and implicit-path
+fallback retain their direct declaration charges, even when their observations
+are discarded. Kernel work counters and the declaration deadline remain
+cumulative across attempts. Replaying a prefix reproduces these policies
+without resetting a deadline between attempts or changing fuel limits.
+A selected attempt may contribute a
+successfully elaborated prefix even when its enclosing declaration later
+fails; this does not publish that declaration. Abandoned attempts contribute
+no clickable contexts. Replaying a selected path must reproduce its recorded
+context before the query callback runs; otherwise report it unavailable.
 
 Scope points retain binding IDs, ordered types, let values, branch/face
 refinements, interval dimensions, evidence, selected notation, recursive-call
@@ -434,12 +545,12 @@ boundaries, not repeated approval checkpoints.
 | Package | Work and dependencies | Exit evidence and deletion |
 | --- | --- | --- |
 | CB0: baseline and witnesses | Pin adopted commits; adapt #224's useful fixture/observer improvements and #223's preservation machinery to current-stage expectations; add all review reproductions and contextual-session scenarios. | Record corpus, assumptions, artifacts and costs. Separate old TODOs from regressions; do not claim harness adoption fixes its TODOs. |
-| CB1: identities, origins and scope points | Shared contracts and adapter with resolution-time slot lowering; pilot complete ordinary telescopes, term/universe/dimension binders and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Demonstrate the callback replay/query sequence specified above in a nested function scope and record prefix/history/query costs. |
+| CB1: identities, origins and scope points | Shared contracts and adapter with resolution-time slot lowering; pilot complete ordinary telescopes, term/universe/dimension binders, attempt-owned observations and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Demonstrate the callback replay/query sequence specified above in a nested function scope and record prefix/history/query costs. |
 | CB2: retained interfaces | On CB1, migrate headers, fields, derived telescopes, family domains, inheritance, helper expansion/validation and dependency analysis; replace inheritance `sameSyntax` checks with binding correspondence. | Prevent both #219 semantic regressions; fix bare recursive references and family helper resolution. Diamond and independent-parent sharing/conflict controls pass. Do not adopt #219's `byName` dependency resolution; remove migrated record/syntax/record conversions. |
-| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, notation and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives and nested refinements preserve meaning. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get positive intended/negative captured clients; delete corresponding fixed-binder callbacks. |
+| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, selection activations with explicit effects, notation/operand recipes and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives, nested refinements and all model-opening forms preserve meaning, including per-item file-level activation and declaration-scoped operand receivers without implicit label opening. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get positive intended/negative captured clients; delete corresponding fixed-binder callbacks. |
 | CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. |
 | CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. |
-| CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work; sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
+| CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work. Multiple selected instances are labelled separately; discarded attempts cannot be opened. Sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
 | CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; remove retained nominal-syntax fallbacks. | Remove capture-only E801/E860/E869/E871 implementations and E866 workaround; retire catalogue entries without reusing codes. Record the isolated historical adapter and complete release evidence. |
 
 CB3's ambiguous pattern slot is the risk to prototype during CB1, before
@@ -470,6 +581,29 @@ Include unknown-type pattern probes with an unrelated same-named destination
 constructor; diamonds with fresh clone IDs and renamed dependent telescopes;
 and same-origin fields instantiated at different arguments, plus independent
 carriers with matching and conflicting kinds/types.
+Model-opening controls cover local and call-produced models, chained `use`,
+section parameters, `m.(...)`, absent and same-spelled globals, ambiguous
+labels, hidden qualified declarations and a later local shadowing the opening.
+Preserve file-level receiver re-resolution after a shadowing module declaration
+(the existing `nat_multiplicative.monoid` E343 fixture), and opened-label
+precedence over a later same-named module global. Explicit operand-notation
+receivers keep their declaration binding under same-spelled client locals
+and globals, including imported and inherited rules; absent operand recipes
+retain ambient selection.
+Client and law parameters named like the recipe model's fields remain local;
+an unbound operand name stays unbound. Explicit written model selection keeps
+its label-opening behavior, while synthesized operand selection changes only
+notation.
+Under file-level model selection, registration controls for `simp_rule`,
+`simp_set` and `hlevel_rule` retain a same-named module rule over an opened
+label, and still refuse an opened-only name. Check the resulting simp/hlevel
+behavior through clients, including imports, rather than only registration
+acceptance.
+When a file-level receiver is shadowed before a theory, refuse the theory
+and all of its generated groups with the receiver diagnostic, even if an
+unopened same-named global would make its fields/laws check. Assert no
+publication and preserve unrelated declarations. Consumers requesting no
+activation continue to ignore that unusable receiver.
 
 For generated displays, put a helper's free field under a same-named local,
 and same-named imported declarations in one scope. Check printed binding
@@ -491,7 +625,16 @@ queries, independent sessions, imported/generated scope selection, source
 edits, replay fuel/kernel-budget/deadline exhaustion and unavailable contexts
 after failure. Include cold/warm sessions, complete ordered prefixes, retry
 cap enforcement, scratch-history replay failure and callback termination
-inside speculative elaboration. Compare query results with an independently
+inside speculative elaboration. Add overlapping multi-value clause bodies,
+a recursive match whose first attempt is discarded, throwaway argument
+inference, an implicit-path wildcard body replaced by automatic coherence,
+and a law with several generated instances; verify the selectable set and
+each instance's refined query results. In the `S1` fallback case, a written
+body elaborated only for the rejected loop branch has no selectable context.
+Test nested attempt rejection for every observation kind, selected-only
+recursive fuel/work/search records, direct quiet-inference/fallback charges,
+cumulative kernel work and deadlines, including a recursive retry near the
+declaration fuel limit. Compare query results with an independently
 written expression in the same source context. Include worker queue/disposal
 and stale-context browser tests.
 
