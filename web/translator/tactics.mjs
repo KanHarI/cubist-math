@@ -2,6 +2,7 @@
 // hlevel, ext, let, open, obtain and match. tacticProof elaborates a
 // block's first statement into a proof of the goal, with the rest of the
 // block after it, or returns undefined when it is no statement here.
+import {propagateElaborationStop} from "./control.mjs";
 import {calcStepSite} from "../cubist/link-sites.mjs";
 import {T} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -78,7 +79,7 @@ const tactics = {
     const rewrites=[];
     for(const item of first.rules) {
       try {transition=t.rewriteGoal(transition,first,item,rewrites);}
-      catch(error) {throw unit.locate(t.stopped(error,transition.next,rewrites),item);}
+      catch(error) {propagateElaborationStop(error);throw unit.locate(t.stopped(error,transition.next,rewrites),item);}
     }
     const proof=t.remaining(rest,transition.next,
       ()=>Error(`rw left an unresolved equality goal; add a following proof statement.${
@@ -161,15 +162,16 @@ const tactics = {
     let supplied,target;
     try {
       try {supplied=simplify(goal.with(suppliedType),rules,fuel,false);}
-      catch(error) {throw t.simpaStopped(error,"Simplifying the supplied type",null);}
+      catch(error) {propagateElaborationStop(error);throw t.simpaStopped(error,"Simplifying the supplied type",null);}
       try {target=simplify(goal,rules,fuel,false);}
-      catch(error) {throw t.simpaStopped(error,"Simplifying the goal",supplied);}
+      catch(error) {propagateElaborationStop(error);throw t.simpaStopped(error,"Simplifying the goal",supplied);}
     } finally {fuel.close();}
     let checked;
     try {
       checked=t.checkSimplified(supplied.transition.forward(value),target.transition.next.target,
         scope,supplied.dependent||target.dependent);
     } catch(error) {
+      propagateElaborationStop(error);
       if(typeof error?.message==="string")error.message+=` Simplifying the supplied type: ${
         t.rewriteSummary(supplied.transition.trace)} Simplifying the goal: ${t.rewriteSummary(target.transition.trace)}`;
       throw error;

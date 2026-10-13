@@ -3,6 +3,7 @@
 // a lexical position in it. Both are immutable: binding returns a new scope,
 // and a freeze replay elaborates in a derived unit. Neither grants
 // authority: every term they help build is checked.
+import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
 import {freeNames,onFace} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
@@ -38,6 +39,7 @@ export class SourceUnit {
   recordStep(record) {this.observations.recordTo("step",this.steps,record);}
   // Report an error at a source node of this unit, unless it has a position.
   locate(error,node) {
+    propagateElaborationStop(error);
     if(Number.isInteger(error.offset)||!Number.isInteger(node?.start))return error;
     error.offset=node.start;
     error.sourceEnd=node.end;

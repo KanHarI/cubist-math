@@ -28,11 +28,11 @@ export class ObservationFrame {
   }
 
   #live() {
-    if (this.outcome === "discarded") throw Error("Cannot observe a discarded elaboration attempt.");
+    if (this.outcome === "discarded") throw new TypeError("Cannot observe a discarded elaboration attempt.");
   }
 
   enabled(kind, sink = this.#sinks[kind]) {
-    if (!kinds.has(kind)) throw Error(`Unknown elaboration observation: ${kind}.`);
+    if (!kinds.has(kind)) throw new TypeError(`Unknown elaboration observation: ${kind}.`);
     return this.#visible && (this.#parent ? this.#parent.enabled(kind,sink) : typeof sink === "function");
   }
 
@@ -59,7 +59,7 @@ export class ObservationFrame {
 
   select() {
     this.#live();
-    if (this.#state !== "pending") throw Error("An elaboration attempt can be selected only once.");
+    if (this.#state !== "pending") throw new TypeError("An elaboration attempt can be selected only once.");
     this.#state = "selected";
     const events = this.#events;
     this.#events = [];
@@ -67,7 +67,7 @@ export class ObservationFrame {
   }
 
   discard() {
-    if (this.#state !== "pending") throw Error("Only a pending elaboration attempt can be discarded.");
+    if (this.#state !== "pending") throw new TypeError("Only a pending elaboration attempt can be discarded.");
     this.#state = "discarded";
     this.#events = [];
   }
@@ -75,7 +75,7 @@ export class ObservationFrame {
   // A declaration has its own attempt numbering but shares the module's
   // observation consumers. The declaration owner qualifies these paths.
   declaration() {
-    if (this.#parent) throw Error("A declaration must start at the module observation root.");
+    if (this.#parent) throw new TypeError("A declaration must start at the module observation root.");
     return new ObservationFrame(this.#sinks);
   }
 }

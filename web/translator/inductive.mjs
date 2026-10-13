@@ -3,6 +3,7 @@
 // normal form, admitted through the checker, and then used by name. This is
 // untrusted elaboration: the kernel checks the normal form, positivity and
 // universes, and derives every constructor type again.
+import {propagateElaborationStop} from "./control.mjs";
 import {T,finiteLevel,freeNames,substituteTerm,substituteDimension,betaReduce} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {repeatedName} from "./names.mjs";
@@ -34,7 +35,7 @@ export function lowerInductive(translator, d, scope) {
   // reduction may drop a redex's argument, so the type is checked first.
   const reduced = (node, at) => {
     const type = tr(node, at, null);
-    try { at.infer(type); } catch (error) { throw locate(error, node); }
+    try { at.infer(type); } catch (error) {propagateElaborationStop(error); throw locate(error, node); }
     return betaReduce(type);
   };
   // A signature is closed (the H1 specification's 5.2): its types mention
@@ -179,6 +180,7 @@ export function lowerInductive(translator, d, scope) {
   let record;
   try { record = checker.admitSignature(spec); }
   catch (error) {
+    propagateElaborationStop(error);
     // A declared universe below a data type's is lowering: name the argument.
     if (declared !== null && (error.kind === "mismatch" || /universe|cumulative|not included/i.test(error.message))) {
       const lowered = sizes.find(size => !checker.levelWithin?.(size.level, declared));
@@ -308,7 +310,7 @@ export function resolveInductive(translator, node, value, args, scope, expected)
         try {
           const type = scope.nf(scope.infer(translator.term(arg, quiet, null)).type);
           if (type.tag === "Sort" && type.signature === inductive.binding) { instance = type; break; }
-        } catch { /* Not inferable alone: the next argument may be. */ }
+        } catch (control) {propagateElaborationStop(control); /* Not inferable alone: the next argument may be. */ }
         finally { observations.discard(); }
       }
     }

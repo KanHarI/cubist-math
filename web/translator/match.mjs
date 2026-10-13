@@ -11,11 +11,13 @@
 // comes from its goal, through motive abstraction (motives.mjs), and each of
 // its clauses is a proof block.
 // Untrusted: the kernel checks every clause at its clause type.
+import {propagateElaborationStop} from "./control.mjs";
 import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {abstractMotive} from "./motives.mjs";
 import {Goal} from "./proof-goals.mjs";
 import {SearchFuel} from "./fuel.mjs";
+import {bindingStem} from "./names.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
 
@@ -116,7 +118,7 @@ function attempt(translator, scope, recursion, generalizing, elaborate) {
   const searches = { searches: unit.searches.searches, most: { ...unit.searches.most } }, work = { ...unit.work };
   const apart = scope.withUnit(unit.with({ fuel, searches, work, observations }));
   let result, failure;
-  try { result = elaborate(apart, { ...recursion, state }, generalizing); } catch (error) { failure = error; }
+  try { result = elaborate(apart, { ...recursion, state }, generalizing); } catch (error) {propagateElaborationStop(error); failure = error; }
   return { state, failure, discard() { observations.discard(); }, keep() {
     if (fuel) for (const [kind, used] of Object.entries(fuel.used))
       if (used > unit.fuel.used[kind]) unit.fuel.spend(kind, used - unit.fuel.used[kind]);
@@ -216,7 +218,7 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
   // recursive match the motive is over the matched parameter itself, so that
   // a recursive result has the type of the call it stands for.
   let body;
-  const z = scope.fresh(n.motiveName?.label ?? n.motiveName?.text ?? "z");
+  const z = scope.fresh(bindingStem(n.motiveName) ?? "z");
   if (n.type) {
     const inner = n.motiveName ? translator.sourceBinding(n.motiveName, T.variable(z), scope.bind(z, instance)) : scope.bind(z, instance);
     body = translator.term(n.type, inner, null);
@@ -309,7 +311,7 @@ function sumStatement(translator, n, goal, scope, value, type, sum) {
   const motive = abstractMotive(goal.at(scope), [value], { contracted: true });
   const clause = side => {
     const { clause, token } = sides.get(side);
-    const name = scope.fresh(token.label ?? token.text), domain = sum[side];
+    const name = scope.fresh(bindingStem(token)), domain = sum[side];
     const inner = translator.sourceBinding(token, T.variable(name), scope.bind(name, domain));
     const injected = (side === "left" ? T.inl : T.inr)(type, T.variable(name));
     const { transition, goal: at } = branch(translator, motive, value, scope, inner, injected);
@@ -385,6 +387,7 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
     term = written(scope.withUnit(scope.unit.with({observations})));
     fits = scope.accepts(term,clauseType);
   } catch (error) {
+    propagateElaborationStop(error);
     // Without a fallback, a successfully elaborated prefix remains selected
     // even when the rest of this written clause fails.
     observations.select();
@@ -462,7 +465,7 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   const lines = [];
   for (const token of source.coordinates) {
     if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
-    const dim = inner.fresh(token.stem ?? token.label ?? token.text);
+    const dim = inner.fresh(token.stem ?? bindingStem(token));
     inner = inner.bindDimension(dim).alias(token.text, { tag: "Dimension", name: dim });
     const family = substituteDimension(type.family, type.dim, I.variable(dim));
     lines.push({ dim, family });
@@ -538,6 +541,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
       {instantiate:true, rules:orderedHLevelRules(translator.simpRegistry)});
     try { return pathEvidence(search, path, at); }
     catch (error) {
+      propagateElaborationStop(error);
       if (!(error instanceof HLevelUnproved)) throw error;
       throw scope.unit.locate(Error(`Cannot generate ${name}: ${translator.shown(error.chain.at(-1).type)} must be ${error.chain.at(-1).level === 0 ? "a proposition" : `of h-level ${error.chain.at(-1).level}`}; ${error.reason}. Give checked h-level evidence, or an explicit obligation.`), node);
     }

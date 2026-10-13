@@ -24,6 +24,7 @@
 // against its parameter's type, as in a call without holes, so an unsolved
 // hole never reaches the kernel. Nothing is searched for: a hole is never
 // filled because some inhabitant of its type exists.
+import {propagateElaborationStop} from "./control.mjs";
 import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames} from "./core.mjs";
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -342,7 +343,7 @@ class ArgumentSolver {
           // otherwise the call's own check compares the two, at no extra
           // kernel work.
           try { this.solution.set(slot.variable, this.determined ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
-          catch (error) { throw this.scope.unit.locate(error, slot.node); }
+          catch (error) {propagateElaborationStop(error); throw this.scope.unit.locate(error, slot.node); }
           progress = true;
         } else if (!slot.tried) {
           // Its type, to solve the holes its parameter's type mentions; the
@@ -422,6 +423,7 @@ class ArgumentSolver {
     const quiet = scope.withUnit(scope.unit.with({references:null,steps:null,observations}));
     try { return quiet.infer(t.term(node, quiet, null)).type; }
     catch (error) {
+      propagateElaborationStop(error);
       if (isLimit(error)) throw error;
       return null;
     }
@@ -476,6 +478,7 @@ class ArgumentSolver {
     let leftHead, rightHead;
     try { leftHead = at.nf(left); rightHead = at.nf(right); }
     catch (error) {
+      propagateElaborationStop(error);
       if (isLimit(error)) throw error;
       return "stuck";
     }

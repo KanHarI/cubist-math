@@ -2,6 +2,7 @@
 // declaration's expansion (web/cubist/theories.mjs) and the records it
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
+import {propagateElaborationStop} from "./control.mjs";
 import {expandTheory} from "../cubist/theories.mjs";
 import {capturedName, capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
 import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/references.mjs";
@@ -359,6 +360,7 @@ export function theoryDeclarations(t,module,d,env,declarations) {
       notation});
     return generated;
   } catch(failure) {
+    propagateElaborationStop(failure);
     // The message says where, as an elaboration error does.
     return failedExpansion(t,d,env,declarations,module.locate(failure,{start:failure.offset,end:failure.sourceEnd??failure.offset}));
   }
@@ -399,7 +401,7 @@ function capturedScope(t,module,d,env) {
   if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};
   let scope;
   try { scope=usesScope(t,new Scope(module.with({references:null}),new Map(),env),d.uses); }
-  catch { return null; }
+  catch (control) {propagateElaborationStop(control); return null; }
   return {env:scope.env,notation:[[SELECTION,scope.env.get(SELECTION)??null],
     ...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))]};
 }

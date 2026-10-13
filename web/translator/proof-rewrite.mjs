@@ -2,6 +2,7 @@
 // Every candidate context and resulting witness is checked by the C kernel.
 // Each function works at an elaboration scope (elaboration.mjs): its checker
 // queries, generated names and work counters are the scope's.
+import {propagateElaborationStop} from "./control.mjs";
 import {T,finiteLevel,levelNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions} from "./dimension-slots.mjs";
@@ -258,6 +259,7 @@ export function findRewrite(scope, root, carrier, rule, occurrence = 1, order = 
         work.successfulRewrites++;
         return;
       } catch(error) {
+        propagateElaborationStop(error);
         error.rewriteRule??=candidate;
         throw error;
       }

@@ -26,6 +26,11 @@ export class NameSupply {
   }
 }
 
+// Binding-aware tokens carry an opaque environment key in text. Only their
+// public label can seed a core name. Nominal syntax retains its existing
+// elaboration stem until that family migrates to identity-bearing tokens.
+export const bindingStem = token => token?.bindingId ? token.label ?? token.text : token?.text;
+
 // How the display shows a kernel name (web/cubical-elaborator.mjs,
 // web/cubical-source-text.mjs). These rules are defined here once: the
 // printer applies them, and code that must predict what it prints, such as
