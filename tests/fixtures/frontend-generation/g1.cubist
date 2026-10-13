@@ -7,7 +7,7 @@ inductive N : U0 {
   c;
 }
 
-// Error: E343: Untranslated name: c
+// Error: E340: Untranslated dependency: c
 def leaked_c := c;
 
 def original : Unit := N;
