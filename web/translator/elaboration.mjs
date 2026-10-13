@@ -7,6 +7,7 @@ import {NameSupply} from "./names.mjs";
 import {freeNames,onFace} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
+import {SlotOutcomes} from "../cubist/bindings.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -22,9 +23,9 @@ export const emptyRewriteWork = () => ({
 export class SourceUnit {
   constructor({checker,source="",moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
-    names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null}) {
+    names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null,bindingAdapter=null}) {
     observations ??= new ObservationFrame({reference:references,step:steps});
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring});
+    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
@@ -75,13 +76,14 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map()) {
-    Object.assign(this,{unit,context,env,dimensions});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes()) {
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
-  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions);}
-  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions);}
+  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions,this.slotOutcomes);}
+  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes);}
+  withSlotOutcomes(slotOutcomes) {return new Scope(this.unit,this.context,this.env,this.dimensions,slotOutcomes);}
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
   // source as in the types of the context. On a face of more than one
@@ -91,7 +93,7 @@ export class Scope {
     const ends=new Map(face[0].map(literal=>[literal.slice(0,literal.lastIndexOf(":")),literal.endsWith(":1")?1:0]));
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
-    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions);
+    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions,this.slotOutcomes);
   }
   alias(name,value) {
     const env=new Map(this.env);
@@ -122,14 +124,14 @@ export class Scope {
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
-    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions);
+    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions,this.slotOutcomes);
   }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
     if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
-    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index));
+    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index),this.slotOutcomes);
   }
   // A name from the unit's supply that nothing here binds: a scope built
   // apart from elaboration may bind names another supply gave.

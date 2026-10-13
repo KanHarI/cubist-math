@@ -34,7 +34,8 @@ export function needsCompiling(t, n, constructorNames, scope) {
   if (heads.some(head => head.binders?.length)) return false;
   const seen = new Set();
   for (const head of heads) {
-    if (head.args?.some(arg => arg.kind === "pattern" || arg.text === "_" || mayBeConstructor(t, scope, arg.text))) return true;
+    if (head.constructor?.bindingRole === "pattern") return true;
+    if (head.args?.some(arg => arg.kind === "pattern" || arg.bindingRole === "pattern" || arg.text === "_" || mayBeConstructor(t, scope, arg))) return true;
     if (bare(head) && !constructorNames.has(head.constructor.text)) return true;
     if (seen.has(head.constructor.text)) return true;
     seen.add(head.constructor.text);
@@ -70,7 +71,7 @@ export function compileMatch(t, n, scope, {statement, expected, goal, typeOf}) {
     const patterns = [origin.clause, ...origin.clause.more ?? []].map(pattern);
     if (patterns.length !== values.length)
       throw locate(Error(`This clause has ${patterns.length} pattern${patterns.length === 1 ? "" : "s"}; the match takes apart ${values.length} value${values.length === 1 ? "" : "s"}.`), origin.clause.constructor);
-    return { patterns, bindings: [], bound: new Set(), origin };
+    return { patterns, bindings: [], bound: new Set(), outcomes: scope.slotOutcomes, origin };
   });
   // Each value is elaborated where the match is written, once, and named
   // apart, so that no name a clause binds captures it: in match x, y with a
@@ -101,7 +102,7 @@ function compile(t, scope, columns, rows, context) {
   if (!columns.length) {
     const [row] = rows;
     row.origin.used = true;
-    let inner = scope;
+    let inner = scope.withSlotOutcomes(row.outcomes);
     for (const [token, target] of row.bindings) inner = bind(t, inner, token, target);
     if (statement) return t.block(row.origin.clause.body, context.goal.at(inner));
     if (context.top && context.annotated) {
@@ -118,12 +119,14 @@ function compile(t, scope, columns, rows, context) {
   const resolved = rows.map(row => {
     const [first, ...rest] = row.patterns;
     const nullary = first.kind === "name" && byName.get(first.token.text);
-    const head = nullary && !nullary.arity && !nullary.dims || !type && first.kind === "name" && constructorWithout(scope, first.token.text)
+    const head = nullary && !nullary.arity && !nullary.dims || !type && first.kind === "name" && constructorWithout(scope, first.token, row.outcomes)
       ? { kind: "constructor", token: first.token, args: [], coordinates: [] } : first;
     if (head.kind === "constructor" && !type)
       throw locate(Error(`${column.describe} is not of a declared type: its patterns are variables or _.`), head.token);
     if (head.kind === "constructor" && !byName.has(head.token.text))
       throw locate(Error(`${type.source} has no constructor ${head.token.text}: its constructors are ${type.constructors.map(c => c.name).join(", ")}.`), head.token);
+    if (first.kind === "name" && first.token.bindingRole === "pattern") row = {...row,
+      outcomes: row.outcomes.decide(first.token.bindingId, head.kind === "name" ? "variable" : "constructor")};
     return { row, head, rest };
   });
   // A clause names each variable once. A name is a variable only once its
@@ -161,7 +164,10 @@ function compile(t, scope, columns, rows, context) {
     // that may be a constructor without arguments is a pattern, which the
     // argument's own type decides: in scope or not, since a variable can
     // shadow it.
-    const variable = arg => arg.kind === "name" && arg.token.text !== "_" && !mayBeConstructor(t, scope, arg.token.text);
+    // Identity slots are always decided at their column's actual type. The
+    // old direct-name optimization cannot bind a candidate before that point.
+    const variable = arg => arg.kind === "name" && arg.token.bindingRole !== "pattern"
+      && arg.token.text !== "_" && !mayBeConstructor(t, scope, arg.token);
     const direct = Array.from({ length: constructor.arity }, (_, k) => {
       const names = new Set(fitting.map(({head}) => head.kind === "constructor" && variable(head.args[k]) ? head.args[k].token.text : null));
       const [only] = names;
@@ -212,28 +218,36 @@ const obligationsOf = node => Object.fromEntries(["obligations", "obligationProo
 // Bind a clause's name to what it stands for: a value, a dimension, or a
 // constructor at the clause's arguments and coordinates.
 function bind(t, scope, token, target) {
-  if (target.dimension) return scope.alias(token.text, scope.env.get(target.dimension.text));
+  const key = token.bindingId ? scope.unit.bindingAdapter.key(token.bindingId) : token.text;
+  if (target.dimension) return scope.alias(key, scope.env.get(target.dimension.text));
   if (target.node) {
     // A value that is a name keeps its binding, so that recursion sees the
     // parameter it is.
     const {node} = target;
-    return scope.alias(token.text, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null));
+    return scope.alias(key, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null));
   }
   const {constructor, args, coordinates, instance} = target;
   let point = scope.declared(args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
     : { kind: "name", name: constructor.name });
   for (const coordinate of coordinates) point = { kind: "pathApply", left: point, right: { kind: "name", name: coordinate.text } };
-  return scope.alias(token.text, t.term(point, scope, instance));
+  return scope.alias(key, t.term(point, scope, instance));
 }
 
 // Whether a name may be a constructor without arguments: one in scope, or
 // one of a declared type a variable in scope shadows.
-const mayBeConstructor = (t, scope, name) => constructorWithout(scope, name)
-  || [...t.checker.inductives?.values() ?? []].some(inductive => inductive.constructors?.some(c => c.source === name && !c.arity && !c.dims));
+const mayBeConstructor = (t, scope, token) => token.bindingRole === "pattern"
+  ? token.constructorInventory.some(c => c.label === token.text && c.nullary)
+  : constructorWithout(scope, token)
+    || [...t.checker.inductives?.values() ?? []].some(inductive => inductive.constructors?.some(c => c.source === token.text && !c.arity && !c.dims));
 
 // Whether a name is, in scope, a constructor without arguments.
-const constructorWithout = (scope, name) => {
-  const bound = scope.env.get(name);
+const constructorWithout = (scope, token, outcomes = scope.slotOutcomes) => {
+  if (token.bindingRole === "pattern") {
+    const enclosing = scope.unit.bindingAdapter.resolve(token.patternEnclosing, outcomes);
+    if (enclosing.tag === "slot") throw new TypeError("A pattern probe reached an undecided enclosing slot.");
+    return enclosing.tag === "binding" && token.constructorInventory.some(c => c.id === enclosing.id && c.nullary);
+  }
+  const bound = scope.env.get(token.text);
   return bound?.tag === "InductiveConstructor" && !bound.arity && !bound.dims;
 };
 

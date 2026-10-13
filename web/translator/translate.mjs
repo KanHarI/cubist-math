@@ -2,6 +2,8 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {parse} from "../cubist/parser.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
+import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
+import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -74,18 +76,6 @@ const universeConstant = name => {
 // supply; nothing is swapped in translator fields for replays.
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
-function lambdas(params,body) {
-  for(let j=params.length-1;j>=0;) {
-    const group=params[j].group??j,members=[];
-    while(j>=0&&(params[j].group??j)===group)members.unshift(params[j--]);
-    const binder=members[0].bound?{bound:members[0].bound}:{domain:members[0].type};
-    body=members.length===1
-      ? {kind:"lambda",name:members[0].name,...binder,body}
-      : {kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),...binder,body};
-  }
-  return body;
-}
-
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
@@ -118,7 +108,7 @@ export class Translator {
     this.references=onReference ? (node,term,scope,env)=>onReference(node,term,new Map(scope.context),
       new Map(scope.dimensions),[...(env??[])].flatMap(([name,value])=>{
         const source=this.localSources.get(value);
-        return source?.name===name ? [{...source,term:value}] : [];
+        return (source?.key??source?.name)===name ? [{...source,term:value}] : [];
       })) : null;
     this.onPublicationStart=onPublicationStart;
     this.onPublicationEnd=onPublicationEnd;
@@ -165,7 +155,8 @@ export class Translator {
     // A source alias gets its own syntax object, even for `let y = x`.
     // This keeps lexical labels from overwriting x or leaking into siblings.
     term={...term};scope=scope.alias(name,term);
-    this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end});
+    this.localSources.set(term,{name:node.label??name,key:name,start:node.start,end:node.end,
+      ...(node.bindingId?{bindingId:node.bindingId}: {})});
     this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
     return scope;
   }
@@ -642,7 +633,7 @@ export class Translator {
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
         const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
-          own.length?own.map(p=>({name:p.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
+          own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         env.set(d.name.text,definition);
         // A theory's type of models, by which m.f reads its fields, and its
@@ -928,6 +919,15 @@ export class Translator {
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
   }
   term(n,scope,expected=null) {
+    const resolve=node=>{
+      if(node.kind!=="bindingReference")return node;
+      if(!scope.unit.bindingAdapter)throw new TypeError("Binding-aware syntax needs its identity adapter.");
+      const lowered=lowerBindingReference(node,scope.unit.bindingAdapter,scope.slotOutcomes);
+      if(lowered.kind==="bindingReference")throw new TypeError("An undecided binding slot reached term elaboration.");
+      return lowered;
+    };
+    n=resolve(n);
+    if(n.kind==="call")n={...n,fn:resolve(n.fn)};
     if(n.kind==="reference")n=elaborationSyntax(n);
     else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
     if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
@@ -988,7 +988,7 @@ export class Translator {
         if(!expected)throw Error("path i => ... needs an expected Path or PathP type.");
         const goal=scope.nf(expected);
         if(goal.tag!=="Path")throw Error("path i => ... needs an expected Path or PathP type.");
-        const dim=scope.fresh(n.dimension.text),inner=scope.bindDimension(dim);
+        const dim=scope.fresh(n.dimension.label??n.dimension.text),inner=scope.bindDimension(dim);
         const family=substituteDimension(goal.family,goal.dim,I.variable(dim));
         const body=this.term(n.body,inner.alias(n.dimension.text,{tag:"Dimension",name:dim}),family);
         return T.line(dim,family,body);
@@ -1308,7 +1308,7 @@ export class Translator {
         }
         // Binders keep their source names, so the checked term reads as written.
         const natural=this.naturalConstructors(scope),type=natural.type;
-        const value=tr(n.value,type),k=scope.fresh(n.index?.text),ih=scope.fresh(n.hypothesis?.text);
+        const value=tr(n.value,type),k=scope.fresh(n.index?.label??n.index?.text),ih=scope.fresh(n.hypothesis?.label??n.hypothesis?.text);
         // Without `as`, the motive is constant and the predecessor unnamed.
         const stepScope=n.index?this.sourceBinding(n.index,T.variable(k),scope.bind(k,type)):scope.bind(k,type);
         const motiveBody=this.term(n.type,stepScope,null),motive=T.lam(k,type,motiveBody);
@@ -1333,11 +1333,11 @@ export class Translator {
           ?"match requires a value of a declared type, or of a sum.":"match requires a sum type.");
         if(!n.leftBody||!n.type)throw Error("A match on a sum has a return type and the clauses left x => …; right y => ….");
         // Binders keep their source names, as induction's do.
-        const name=scope.fresh(n.motiveName?.text),inner=scope.bind(name,type);
+        const name=scope.fresh(n.motiveName?.label??n.motiveName?.text),inner=scope.bind(name,type);
         const motive=T.lam(name,type,this.term(n.type,
           n.motiveName?inner.alias(n.motiveName.text,T.variable(name)):inner,null));
         const branch=side=>{
-          const local=scope.fresh(n[side].text),domain=sum[side],variable=T.variable(local);
+          const local=scope.fresh(n[side].label??n[side].text),domain=sum[side],variable=T.variable(local);
           const injection=(side==="left"?T.inl:T.inr)(type,variable);
           return T.lam(local,domain,this.term(n[side+"Body"],
             scope.bind(local,domain).alias(n[side].text,variable),T.app(motive,injection)));

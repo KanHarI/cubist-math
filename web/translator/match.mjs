@@ -216,7 +216,7 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
   // recursive match the motive is over the matched parameter itself, so that
   // a recursive result has the type of the call it stands for.
   let body;
-  const z = scope.fresh(n.motiveName?.text ?? "z");
+  const z = scope.fresh(n.motiveName?.label ?? n.motiveName?.text ?? "z");
   if (n.type) {
     const inner = n.motiveName ? translator.sourceBinding(n.motiveName, T.variable(z), scope.bind(z, instance)) : scope.bind(z, instance);
     body = translator.term(n.type, inner, null);
@@ -309,7 +309,7 @@ function sumStatement(translator, n, goal, scope, value, type, sum) {
   const motive = abstractMotive(goal.at(scope), [value], { contracted: true });
   const clause = side => {
     const { clause, token } = sides.get(side);
-    const name = scope.fresh(token.text), domain = sum[side];
+    const name = scope.fresh(token.label ?? token.text), domain = sum[side];
     const inner = translator.sourceBinding(token, T.variable(name), scope.bind(name, domain));
     const injected = (side === "left" ? T.inl : T.inr)(type, T.variable(name));
     const { transition, goal: at } = branch(translator, motive, value, scope, inner, injected);
@@ -462,7 +462,7 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   const lines = [];
   for (const token of source.coordinates) {
     if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
-    const dim = inner.fresh(token.stem ?? token.text);
+    const dim = inner.fresh(token.stem ?? token.label ?? token.text);
     inner = inner.bindDimension(dim).alias(token.text, { tag: "Dimension", name: dim });
     const family = substituteDimension(type.family, type.dim, I.variable(dim));
     lines.push({ dim, family });
