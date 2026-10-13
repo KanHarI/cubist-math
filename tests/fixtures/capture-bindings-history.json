@@ -1,7 +1,7 @@
 {
   "version": 1,
   "revision": "d3d8f21eb3a2e8e64fbf5ec89ce2fb4b192aaa13",
-  "witnessesRevision": "7f9b4d28cb94556500c7e4acab076a1b11496df9",
+  "witnessesRevision": "862d86456a546b472cd87dbe41ec64fa9628acb1",
   "dirty": false,
   "digestFormats": {
     "entries": "SHA-256 of sorted UTF-8 name NUL bytes NUL entries; UTF-16 code-unit name order",
@@ -14,7 +14,7 @@
     "assumptionDependenciesDigest": "json of [binding,sorted axioms] pairs sorted by binding",
     "typeDigest": "canonicalHasher SHA-1 (tools/canonical-hash.mjs), alpha-invariant for bound terms and dimensions"
   },
-  "witnessDigest": "56f3ff3fe0b30ad6bdfc95949abcad16e6cecd2f0725b25a72f8b7401779019d",
+  "witnessDigest": "84e7c43e2c54c99c596dc9482b4d8a29e4b7eb110d93354fb6b8963649e6eb83",
   "build": {
     "runtime": {
       "sources": "247d7ff10f0a92a2846a2d4a37dbed8a7a325a6e52aac19c84fc17208493dfa8",

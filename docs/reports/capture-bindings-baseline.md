@@ -97,7 +97,7 @@ precondition failure has a separate outcome and cannot count as a contract
 kill. The file-level-selection mutation uses a non-imported witness and
 reaches semantic classification. The runner writes the artifact format
 directly. Cost measurements remain from clean commit `7f9b4d28`; mutation
-and historical records are refreshed after review fixes.
+and historical records were generated from clean commit `862d8645`.
 
 | Mutation | Distinguishing check |
 | --- | --- |
