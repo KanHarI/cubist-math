@@ -80,7 +80,8 @@ const universeConstant = name => {
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null}={}) {
+    this.scopePoints=scopePoints;
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
@@ -125,7 +126,7 @@ export class Translator {
   // A source unit of this translator. translate() makes one per module.
   unit(options={}) {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
-      references:this.references,steps:this.onStep,freezeSuggestions:this.freezeSuggestions,...options});
+      references:this.references,steps:this.onStep,scopePoints:this.scopePoints,freezeSuggestions:this.freezeSuggestions,...options});
   }
   reference(scope,node,term,env=scope.env) {scope.unit.recordReference(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
   // Run a tactic search at a scope whose unit carries the search's own fuel,
@@ -155,7 +156,9 @@ export class Translator {
     const name=node.text??node.name;
     // A source alias gets its own syntax object, even for `let y = x`.
     // This keeps lexical labels from overwriting x or leaking into siblings.
-    term={...term};scope=scope.alias(name,term);
+    term={...term};
+    const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
+    scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null);
     this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end,
       ...(node.bindingId?{key:name,bindingId:node.bindingId}: {})});
     this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
@@ -211,7 +214,11 @@ export class Translator {
   dimensionBody(n,dim,scope,expected=null) {
     if(n.kind!=="lambda"||n.domain.kind!=="name"||n.domain.name!=="Interval")
       throw Error("Expected fun (i : Interval) => ... in a cubical binder.");
-    return this.term(n.body,scope.bindDimension(dim).alias(n.name.text,{tag:"Dimension",name:dim}),expected);
+    return this.term(n.body,this.sourceDimension(n.name,dim,scope),expected);
+  }
+  sourceDimension(token,dim,scope) {
+    return scope.bindDimension(dim).sourceBinding(token.text,{tag:"Dimension",name:dim},
+      scope.unit.scopePoints?.bind(token,scope,"dimension")??null);
   }
   // A result computes only if it uses no assumption: every assumption is a
   // postulate without computation rules. Name one path of definitions from
@@ -930,6 +937,10 @@ export class Translator {
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
   }
   term(n,scope,expected=null) {
+    const run=()=>this.termAt(n,scope,expected);
+    return scope.unit.scopePoints?scope.unit.scopePoints.around(this,n,scope,{expected},run):run();
+  }
+  termAt(n,scope,expected=null) {
     const resolve=node=>{
       if(node.kind!=="bindingReference")return node;
       if(!scope.unit.bindingAdapter)throw new TypeError("Binding-aware syntax needs its identity adapter.");
@@ -999,9 +1010,9 @@ export class Translator {
         if(!expected)throw Error("path i => ... needs an expected Path or PathP type.");
         const goal=scope.nf(expected);
         if(goal.tag!=="Path")throw Error("path i => ... needs an expected Path or PathP type.");
-        const dim=scope.fresh(bindingStem(n.dimension)),inner=scope.bindDimension(dim);
+        const dim=scope.fresh(bindingStem(n.dimension)),inner=this.sourceDimension(n.dimension,dim,scope);
         const family=substituteDimension(goal.family,goal.dim,I.variable(dim));
-        const body=this.term(n.body,inner.alias(n.dimension.text,{tag:"Dimension",name:dim}),family);
+        const body=this.term(n.body,inner,family);
         return T.line(dim,family,body);
       }
       case "transport": {
@@ -1374,6 +1385,10 @@ export class Translator {
     }
   }
   block(statements,goal) {
+    const run=()=>this.blockAt(statements,goal);
+    return goal.scope.unit.scopePoints?goal.scope.unit.scopePoints.around(this,statements[0],goal.scope,{phase:"before",goal:goal.target},run):run();
+  }
+  blockAt(statements,goal) {
     try {
       const proof=this.blockBody(statements,goal);
       // The proof of the following statements is part of this one's proof.
@@ -1384,6 +1399,16 @@ export class Translator {
       propagateElaborationStop(error);
       throw goal.scope.unit.locate(error,statements[0]);
     }
+  }
+  // A continuation runs in the checked context produced by this statement.
+  // Keeping that transition explicit distinguishes the initializer's scope
+  // from the scope after a let, even when their source ranges overlap.
+  afterStatement(statement,goal,continuation) {
+    const points=goal.scope.unit.scopePoints;
+    return points?points.around(this,statement,goal.scope,{phase:"after",goal:goal.target},continuation):continuation();
+  }
+  continueBlock(statement,rest,goal) {
+    return this.afterStatement(statement,goal,()=>this.block(rest,goal));
   }
   // A statement makes a transition from the goal (proof-goals.mjs), and the
   // statements after it prove the goal that remains.
@@ -1434,11 +1459,13 @@ export class Translator {
   }
   // The statements after a tactic prove the goal it leaves. At the end of a
   // block that goal must hold by conversion; `unresolved` makes the error.
-  remaining(rest,next,unresolved) {
-    if(rest.length)return this.block(rest,next);
-    const proof=byConversion(next);
-    if(!proof)throw unresolved();
-    return proof;
+  remaining(statement,rest,next,unresolved) {
+    return this.afterStatement(statement,next,()=>{
+      if(rest.length)return this.block(rest,next);
+      const proof=byConversion(next);
+      if(!proof)throw unresolved();
+      return proof;
+    });
   }
   // hlevel; closes a goal that states an h-level, IsContr, IsProp, IsSet or
   // HasLevel, or an equality in a proposition, from the lemmas

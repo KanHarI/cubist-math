@@ -466,7 +466,7 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   for (const token of source.coordinates) {
     if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
     const dim = inner.fresh(token.stem ?? bindingStem(token));
-    inner = inner.bindDimension(dim).alias(token.text, { tag: "Dimension", name: dim });
+    inner = translator.sourceDimension(token,dim,inner);
     const family = substituteDimension(type.family, type.dim, I.variable(dim));
     lines.push({ dim, family });
     type = family;

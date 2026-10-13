@@ -14,6 +14,7 @@ import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
+import { ScopePoints } from "./translator/scope-points.mjs";
 import naturalSource from "./translator/nat-source.mjs";
 
 // A property computed when first read, and then kept as a plain value.
@@ -30,7 +31,7 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
-    const {onDeclarationStart,onDeclaration,collectReferences=true,optimizations={},manageTransactions=true,
+    const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,optimizations={},manageTransactions=true,
       searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
     this.options={...options};
     // The representation map τ to declared counterparts was the differential
@@ -55,6 +56,10 @@ export class CubicalProgram {
     this.bundledNat=bundledNat;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
+    this.collectScopes = collectScopes;
+    this.scopePoints = new Map();
+    this.scopeRevision = null;
+    this.scopeRecorder = null;
     this.manageTransactions = manageTransactions;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
@@ -216,13 +221,17 @@ export class CubicalProgram {
     // source; it does not run the mathematical library or count repeated
     // imports twice.
     this.readSource.beginCheck?.();
+    // Scope instances describe a complete ordered source check. The module
+    // REPL's cached, in-memory extensions keep that source snapshot intact;
+    // their own entries do not publish source scope points.
+    const collectScopes=this.collectScopes&&!reuseModules;
     const discovery = { prepared: new Map(), total: this.completed, reuseModules };
     await this.discover(discovery, main, source, null, onProgress);
     const { prepared } = discovery;
     // Rechecking an edited module invalidates every dependent artifact and
     // native handle. The discovered source graph, rather than aliases or a
     // cached successful module, determines whether the session is reusable.
-    const invalidated=[...prepared].some(([name,entry])=>{
+    const invalidated=(collectScopes&&this.modules.size>0)||[...prepared].some(([name,entry])=>{
       if(this.modules.has(name))return entry.error||entry.text!==this.sources[name];
       // A failed read must be retried through its importers. An interrupted
       // load may also have committed declarations before the active group.
@@ -234,6 +243,14 @@ export class CubicalProgram {
       discovery.total=[...prepared.values()].reduce((sum,entry)=>sum+(entry.ast?.declarations.length??0),0);
       onProgress({completed:0,total:discovery.total,current:main,phase:"loading",unit:"declarations",instructions:0});
     }
+    if(collectScopes) {
+      this.scopeRevision=this.options.scopeRevision??globalThis.crypto.randomUUID();
+      this.scopePoints=new Map();
+      this.scopeSources=Object.freeze(Object.fromEntries([...prepared].filter(([,entry])=>typeof entry.text==="string")
+        .map(([name,entry])=>[name,entry.text])));
+      this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),probe:this.options.scopeProbe??null});
+    }
+    const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
     // Imports that failed in this check, used or not: any makes it incomplete.
     const failedHere = new Set();
@@ -294,6 +311,7 @@ export class CubicalProgram {
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
+        scopePoints:scopeRecorder,
         nameBased: this.readSource.nameBased?.(name) ?? false,
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
@@ -316,6 +334,7 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
+          scopeRecorder?.declaration(name,declaration,checker.bindingName(declaration.name.text));
           if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);
