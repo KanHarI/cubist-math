@@ -5,6 +5,9 @@ import create from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {contextualScenarios} from "./fixtures/contextual-sessions.mjs";
 import {ElaborationStop} from "../web/translator/control.mjs";
+import {ScopePoints} from "../web/translator/scope-points.mjs";
+import {Scope,SourceUnit} from "../web/translator/elaboration.mjs";
+import {T} from "../web/translator/core.mjs";
 
 const module=await create();
 const scenario=id=>contextualScenarios.find(entry=>entry.id===id);
@@ -32,7 +35,11 @@ test("nested function scope descriptions preserve identity, visibility, origins 
   assert.equal(program.scopeRecorder.table.get(binding(point,"Nat")).origin.module,"nat");
   for(const entry of points(program))if(entry.parent)assert.ok(program.scopePoints.has(entry.parent),entry.id);
   assert.deepEqual(JSON.parse(JSON.stringify(point)),point);
-  assert.ok(Object.isFrozen(point.state.nodes));
+  assert.ok(Object.isFrozen(point.state.context.nodes));
+  const callee=points(program).find(entry=>entry.origin.start===point.origin.start&&entry.origin.end===point.origin.start+3
+    &&entry.phase==="expression");
+  assert.equal(callee.state.bindings,point.state.bindings,"same lexical frame shares inert binding data");
+  assert.equal(callee.state.context,point.state.context,"same telescope shares inert type data");
   const serialized=JSON.stringify(point);
   program.dispose();
   assert.equal(JSON.stringify(point),serialized,"no native handle is needed to read a stored description");
@@ -50,6 +57,24 @@ test("a shadowing let has separate initializer and after-statement contexts",asy
   assert.equal(binding(initializer,"next_"),binding(before,"next_"));
   const [conclusion]=at(program,fixture.source,"exact next_","before");
   assert.equal(binding(conclusion,"next_"),binding(after,"next_"));
+});
+
+test("shared lexical descriptions retain each point's mutable recursion permissions",()=>{
+  const descriptions=[],recorder=new ScopePoints("permissions",{onPoint:point=>descriptions.push(point)});
+  recorder.declaration("main",{name:{text:"f",start:4,end:5}},"main__f");
+  const unit=new SourceUnit({checker:{},moduleName:"main",declaring:"f",scopePoints:recorder}).declaration();
+  const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
+  const scope=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
+  const node={kind:"name",name:"f",start:20,end:21};
+  recorder.around(null,node,scope,{},()=>{});
+  const saved=JSON.stringify(descriptions[0]);
+  recursive.state="selected";
+  recursive.bindings.set("n",T.unit);
+  recorder.around(null,node,scope,{},()=>{});
+  assert.ok(descriptions.every(point=>point.available));
+  assert.equal(descriptions[0].state.bindings,descriptions[1].state.bindings);
+  assert.notDeepEqual(descriptions[0].state.recursion,descriptions[1].state.recursion);
+  assert.equal(JSON.stringify(descriptions[0]),saved);
 });
 
 test("a declaration's later failure keeps selected prefix descriptions after native rollback",async t=>{
@@ -126,11 +151,12 @@ test("private replay interception occurs before buffered observation publication
   const [selected]=at(initial.program,source,"f(k, m)");
   assert.ok(selected?.attempt.length,selected?.id);
   const stop=new ElaborationStop({kind:"value",text:"detached result"});
-  let visits=0;
+  let visits=0,probes=0;
   // Use the real callback in a fresh program; no patch to Translator.term.
   const {CubicalProgram}=await import("../web/cubical-program.mjs");
-  const replay=new CubicalProgram(module,initial.program.readSource,{collectScopes:true,scopeRevision:"attempt-replay",
+  const replay=new CubicalProgram(module,initial.program.readSource,{collectScopes:true,scopeRevision:"attempt-replay",scopeTarget:selected.id,
     scopeProbe(point,live) {
+      probes++;
       if(point.id!==selected.id)return;
       visits++;
       assert.deepEqual(point,selected);
@@ -141,5 +167,7 @@ test("private replay interception occurs before buffered observation publication
   t.after(()=>replay.dispose());
   await assert.rejects(replay.check(source,"main"),value=>value===stop);
   assert.equal(visits,1);
+  assert.equal(probes,1,"full prefix replay materializes only the requested scope");
+  assert.equal(replay.scopePoints.size,0,"the stop precedes publication of the requested point");
   assert.equal(replay.kernel.definitions.has("main__f"),false);
 });

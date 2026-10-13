@@ -254,7 +254,8 @@ export class CubicalProgram {
       this.scopePoints=new Map();
       this.scopeSources=Object.freeze(Object.fromEntries([...prepared].filter(([,entry])=>typeof entry.text==="string")
         .map(([name,entry])=>[name,entry.text])));
-      this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),probe:this.options.scopeProbe??null});
+      this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
+        probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
         fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
     }

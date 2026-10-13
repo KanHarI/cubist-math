@@ -29,7 +29,9 @@ function describedValue(value) {
   if(value?.tag==="Inductive")return {tag:value.tag,binding:value.binding};
   if(value?.tag==="InductiveConstructor")return {tag:value.tag,binding:value.inductive.binding,index:value.index};
   if(value?.tag==="Untranslated")return {tag:value.tag,binding:value.binding,reason:value.reason??value.message??null};
-  if(value?.tag==="Recursive")return {tag:value.tag,...recursiveDescription(value)};
+  // Permissions are mutable while the declaration is elaborated. Capture
+  // them separately at each point; this part describes only the binding.
+  if(value?.tag==="Recursive")return {tag:value.tag,source:value.source};
   throw new TypeError(`Scope value has no persistent description: ${value?.tag??typeof value}`);
 }
 const declaredIdentity=value=>value?.tag==="DefRef"?value.name
@@ -41,10 +43,14 @@ export class ScopePoints {
   #origins=new Map();
   #available=new Map();
   #parents=[];
-  constructor(revision,{onPoint=()=>{},probe=null}={}) {
+  #environments=new WeakMap();
+  #contexts=new WeakMap();
+  #dimensions=new WeakMap();
+  constructor(revision,{onPoint=()=>{},probe=null,target=null}={}) {
     this.revision=revision;
     this.table=new BindingTable(revision);
     this.onPoint=onPoint;this.probe=probe;
+    this.target=target;
   }
   owner(module) {
     const index=this.#owners.get(module)??0;
@@ -56,9 +62,14 @@ export class ScopePoints {
     // whose value remains in the environment, even before its first use.
     if(this.#origins.has(binding))return;
     const origin=at=>sourceOrigin({revision:this.revision,module,start:at.start,end:at.end});
-    this.#origins.set(binding,{origin:origin(declaration.name),generated:!!declaration.generated});
-    for(const [index,constructor] of (declaration.constructors??[]).entries())
-      this.#origins.set(`${binding}:constructor:${index}`,{origin:origin(constructor.name),generated:!!declaration.generated});
+    const register=(key,token)=>{
+      if(!this.#origins.has(key))this.#origins.set(key,{label:token.text,origin:origin(token),generated:!!declaration.generated});
+    };
+    register(binding,declaration.name);
+    for(const [index,constructor] of (declaration.constructors??[]).entries()) {
+      register(`${binding}:constructor:${index}`,constructor.name);
+      register(`${module}__${constructor.name.text}`,constructor.name); // A refused constructor's source identity.
+    }
   }
   bind(node,scope,role="local") {
     if(node.bindingId)return this.table.get(node.bindingId);
@@ -76,7 +87,7 @@ export class ScopePoints {
     if(this.#available.has(key))return this.#available.get(key);
     const declared=this.#origins.get(key);
     if(!declared)throw new TypeError(`Scope entry has no source origin: ${label}`);
-    const record=this.table.allocate(["available",key],{role:"declaration",label,origin:declared.origin});
+    const record=this.table.allocate(["available",key],{role:"declaration",label:declared.label,origin:declared.origin});
     this.#available.set(key,record);
     return record;
   }
@@ -85,7 +96,7 @@ export class ScopePoints {
   // synchronous query callback and cannot leave its isolated session.
   bindings(scope) {
     let lexical=new LexicalContext();
-    const values=new Map(),records=[];
+    const values=new Map(),records=[],recursive=[];
     for(const [key,value] of scope.env) {
       const local=scope.sourceBindings.get(key);
       if(!local&&!publicName.test(key))continue;
@@ -93,8 +104,30 @@ export class ScopePoints {
       lexical=lexical.bind(label,bindingResolution(record.id));
       values.set(record.id,value);
       records.push({label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
+      if(value?.tag==="Recursive")recursive.push([key,record.id]);
     }
-    return {lexical,values,records};
+    return {lexical,values,records,recursive};
+  }
+  #environment(scope) {
+    // Scope operations copy their maps. The module's top-level environment
+    // changes between declarations, so its owner is part of this copy cache.
+    // The cache contains only inert descriptions; no live values or Scope.
+    let owners=this.#environments.get(scope.env);
+    if(!owners)this.#environments.set(scope.env,owners=new WeakMap());
+    const owner=scope.unit.contextOwner;
+    if(!owners.has(owner)) {
+      const live=this.bindings(scope);
+      owners.set(owner,freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),recursive:live.recursive}));
+    }
+    return owners.get(owner);
+  }
+  #mapDescription(cache,map) {
+    if(!cache.has(map))cache.set(map,snapshotSyntax([...map]));
+    return cache.get(map);
+  }
+  #inside(id,body) {
+    this.#parents.push(id);
+    try {return body();}finally {this.#parents.pop();}
   }
   around(translator,node,scope,{phase="expression",goal=null,expected=null}={},body) {
     const {unit}=scope;
@@ -106,6 +139,10 @@ export class ScopePoints {
     const counter=JSON.stringify([owner,path]),occurrence=this.#occurrences.get(counter)??0;
     this.#occurrences.set(counter,occurrence+1);
     const id=JSON.stringify([this.revision,owner,path,occurrence,phase]);
+    // Replay still performs every declaration, attempt and scope transition.
+    // Only the requested description needs materialization. Identity owners
+    // and declaration labels are independent of observing earlier points.
+    if(this.target&&id!==this.target)return this.#inside(id,body);
     const origin=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
     const basic={id,revision:this.revision,owner,attempt:path,occurrence,phase,origin,parent:this.#parents.at(-1)??null,
       declaration:unit.declaring};
@@ -113,24 +150,27 @@ export class ScopePoints {
     try {
       const declaration=this.#origins.get(`${unit.moduleName}__${unit.declaring}`);
       if(declaration?.generated||scope.env.get(SELECTION))throw new TypeError("This generated or selected scope awaits its binding-family migration.");
-      live=this.bindings(scope);
-      description=freeze({...basic,available:true,lexical:live.lexical.snapshot(),
-        state:snapshotSyntax({bindings:live.records,context:[...scope.context],dimensions:[...scope.dimensions],
-          slots:scope.slotOutcomes.snapshot(),recursion:recursiveDescription(scope.env.get(RECURSIVE)),goal,expected,
-          rules:Object.fromEntries(Object.entries(unit.simpRegistry??{}).map(([kind,entries])=>[kind,[...entries]]))})});
+      const environment=this.#environment(scope);
+      description=freeze({...basic,available:true,lexical:environment.lexical,
+        state:{format:"cubist-scope-state-1",bindings:environment.bindings,
+          context:this.#mapDescription(this.#contexts,scope.context),dimensions:this.#mapDescription(this.#dimensions,scope.dimensions),
+          slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
+            bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}),
+          goal:snapshotSyntax(goal),expected:snapshotSyntax(expected),
+          rules:snapshotSyntax(Object.fromEntries(Object.entries(unit.simpRegistry??{}).map(([kind,entries])=>[kind,[...entries]])))}});
+      if(this.probe)live=this.bindings(scope);
     } catch(error) {
       // A description failure never changes which source declarations check.
       // It marks this exact entry unavailable, without choosing another one.
       description=freeze({...basic,available:false,reason:error.message});
     }
-    this.#parents.push(id);
-    try {
+    return this.#inside(id,()=>{
       // Probe before the body, while this exact native context is live. A
       // probe is private to replay and validates against the selected registry.
       this.probe?.(description,{translator,scope,goal,expected,...(live??{})});
       unit.observations.recordTo("scope",this.onPoint,description);
       return body();
-    } finally {this.#parents.pop();}
+    });
   }
   adapter(reserved=[]) {return new BindingAdapter(this.table,{reserved});}
 }
