@@ -1,0 +1,16 @@
+// G11 (FG2): complete declaration telescopes protect helper fields from caller parameters.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x, y : M) : M;
+  def k(x : M) : M := op(x, c);
+  def kk(c : M) : M := k(c);
+}
+
+def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));
+
+// Error: E606: Type mismatch: found S.op(x, x) = S.op(x, x), expected T.kk{{U0}}(S, x) = S.op(x,
+//   x).
+def captured(S : T(U0), x : S.M) : S.kk(x) = S.op(x, x) := refl(S.op(x, x));

@@ -1,0 +1,14 @@
+// control-paths-wrong (control): wrong explicit path bodies are refused without a coherence obligation.
+
+import hlevels;
+inductive H : set U0 {
+  first;
+  p(y : H) : y = y;
+}
+
+// Error: E606: Type mismatch: found H -> Unit -> tt = tt, expected H -> (forall x1 : Unit. x1 =
+//   x1).
+def bad(x : H) : Unit := match x {
+    first => tt;
+    p(y) @ i => tt;
+  };

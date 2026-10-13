@@ -1,0 +1,491 @@
+{
+  "observedAt": "d70c07ae01b729804d7422c4b01d0cba0d3a479c",
+  "compilerBase": "f0417ee0ee5f824f030069be0e6d1666696de0d1",
+  "adoptedFixtures": "1fdc68a5e7da198f2b538dfbaa95e4bad40c97ca",
+  "cases": {
+    "G10": {
+      "phase": "FG2/FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E871: Inlining k here would capture its field c: rename the enclosing pattern or statement binding."
+          }
+        ],
+        "missing": [],
+        "assumes": [],
+        "range": [
+          null
+        ]
+      }
+    },
+    "G11": {
+      "phase": "FG2",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def intended(S : T(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));",
+            "label": "Error",
+            "text": "E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x) = S.op(x, S.c)."
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G11-grouped-dependent": {
+      "phase": "FG2",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def intended(S : T(U0), x : S.M) : S.kk(x, x, refl(x)) = S.op(x, S.c) := refl(S.op(x, S.c));",
+            "label": "Error",
+            "text": "E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected T.kk{{U0}}(S, x, x, refl(x)) = S.op(x, S.c)."
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G11-inherited": {
+      "phase": "FG2",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def intended(S : Child(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));",
+            "label": "Error",
+            "text": "E606: Type mismatch: found S.op(x, S.c) = S.op(x, S.c), expected Child.kk{{U0}}(S, x) = S.op(x, S.c)."
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G11-initial": {
+      "phase": "FG2",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def intended(x : N) : N.model.kk(x) = N.op(x, N.c) := refl(N.op(x, N.c));",
+            "label": "Error",
+            "text": "E606: Type mismatch: found N.op(x, N.c) = N.op(x, N.c), expected T.kk{{U0}}(N.model, x) = N.op(x, N.c)."
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G12": {
+      "phase": "FG2/FG4/FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."
+          },
+          {
+            "at": "def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def computation2(S : T(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def base(S : T(U0)) : S.twice(zero) = S.op(S.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G12-inherited": {
+      "phase": "FG2/FG4/FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."
+          },
+          {
+            "at": "theory Child(U < UU0) extends T {}",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def computation(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: Child"
+          },
+          {
+            "at": "def computation2(S : Child(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: Child"
+          },
+          {
+            "at": "def base(S : Child(U0)) : S.twice(zero) = S.op(S.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: Child"
+          },
+          {
+            "at": "def wrong(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: Child"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G12-initial": {
+      "phase": "FG2/FG4/FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."
+          },
+          {
+            "at": "initial N : T(U0);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def computation : N.model.twice(succ(zero)) = N.op(N.op(N.c)) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: N"
+          },
+          {
+            "at": "def computation2 : N.model.twice(succ(succ(zero))) = N.op(N.op(N.op(N.c))) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: N"
+          },
+          {
+            "at": "def base : N.model.twice(zero) = N.op(N.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: N"
+          },
+          {
+            "at": "def wrong : N.model.twice(succ(zero)) = N.op(N.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: N"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G12-range": {
+      "phase": "FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."
+          }
+        ],
+        "missing": [],
+        "assumes": [],
+        "range": [
+          null
+        ]
+      }
+    },
+    "G12-shadowed": {
+      "phase": "FG2/FG4/FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E845: iter is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."
+          },
+          {
+            "at": "def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G2": {
+      "phase": "FG3",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E606: Type mismatch: found max(U, max(V, U1)), expected max(U, V)."
+          },
+          {
+            "at": "def identity(S : T(U0)) : T.Hom(S, S) := T.Hom.id(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          },
+          {
+            "at": "def computation(S : T(U0), x : S.M) : T.Hom.compose(identity(S), identity(S)).map(x) = x {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom.compose"
+          },
+          {
+            "at": "def iso(S : T(U0)) : T.Iso(S, S) := T.Iso.id(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Iso"
+          },
+          {
+            "at": "def preserves(S, R : T(U0), f : T.Hom(S, R), A : U0, x : A) :",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          },
+          {
+            "at": "def level(S : T(U0)) : U1 := T.Hom(S, S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          },
+          {
+            "at": "def lowered(S : T(U0)) : U0 := T.Hom(S, S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          },
+          {
+            "at": "def identity_u1(S : T(U1)) : T.Hom(S, S) := T.Hom.id(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          },
+          {
+            "at": "def computation_u1(S : T(U1), x : S.M) : T.Hom.compose(identity_u1(S), identity_u1(S)).map(x) = x {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom.compose"
+          },
+          {
+            "at": "def iso_u1(S : T(U1)) : T.Iso(S, S) := T.Iso.id(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Iso"
+          },
+          {
+            "at": "def preserves_u1(S, R : T(U1), f : T.Hom(S, R), A : U0, x : A) :",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          },
+          {
+            "at": "def level_u1(S : T(U1)) : U1 := T.Hom(S, S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G3": {
+      "phase": "FG2",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "theory T(U < UU0) {",
+            "label": "Error",
+            "text": "E606: Type mismatch: found A.l = A.l, expected B.l = B.l."
+          },
+          {
+            "at": "def unsupported(S : T(U0)) := T.Hom.id(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Hom.id"
+          },
+          {
+            "at": "def unsupported_iso(S : T(U0)) := T.Iso.id(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.Iso.id"
+          }
+        ],
+        "missing": [],
+        "assumes": [],
+        "published": [
+          "T.Hom"
+        ]
+      }
+    },
+    "G4": {
+      "phase": "FG4",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def value(n : Bits) : M := match n {",
+            "label": "Error",
+            "text": "E546: Cannot generate Bit.squash: m.M must be of h-level 1; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."
+          },
+          {
+            "at": "def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          },
+          {
+            "at": "def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          },
+          {
+            "at": "def empty_computation(S : T(U0)) : S.value(nil) = S.c {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          },
+          {
+            "at": "def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G4-flat": {
+      "phase": "FG4",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def value(n : Bits) : M := match n {",
+            "label": "Error",
+            "text": "E546: Cannot generate Bits.squash: m.M must be of h-level 1; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."
+          },
+          {
+            "at": "def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          },
+          {
+            "at": "def empty_computation(S : T(U0)) : S.value(nil) = S.c {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          },
+          {
+            "at": "def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T.value"
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G5": {
+      "phase": "FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "op : forall x, y : M. M;",
+            "label": "Warning",
+            "text": "W706: x is unused in the body: take it out of the group and write M -> \u2026 for it."
+          },
+          {
+            "at": "op : forall x, y : M. M;",
+            "label": "Warning",
+            "text": "W706: y is unused in the body: take it out of the group and write M -> \u2026 for it."
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G5-single": {
+      "phase": "FG5",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "op : forall x : M. M;",
+            "label": "Warning",
+            "text": "W705: x is unused in the body: write M -> \u2026 instead of forall x : M. \u2026."
+          }
+        ],
+        "missing": [],
+        "assumes": []
+      }
+    },
+    "G8": {
+      "phase": "FG4",
+      "observed": {
+        "diagnostics": [
+          {
+            "at": "def h(x : T) : T := match x {",
+            "label": "Error",
+            "text": "E546: Cannot generate seg: T must be a proposition; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."
+          }
+        ],
+        "missing": [],
+        "assumes": [],
+        "range": [
+          {
+            "line": "def h(x : T) : T := match x {",
+            "before": "def h(x : T) : T := match ",
+            "covers": "x"
+          }
+        ],
+        "searches": [
+          1
+        ]
+      }
+    },
+    "G9": {
+      "phase": "FG5",
+      "observed": {
+        "diagnostics": [],
+        "missing": [],
+        "assumes": [],
+        "links": [
+          [
+            {
+              "name": "c",
+              "target": null,
+              "start": 0,
+              "end": 0
+            }
+          ],
+          [
+            {
+              "name": "c1",
+              "target": null,
+              "start": 0,
+              "end": 0
+            }
+          ],
+          [
+            {
+              "name": "c1",
+              "target": null,
+              "start": 0,
+              "end": 0
+            }
+          ],
+          [
+            {
+              "name": "c1",
+              "target": null,
+              "start": 0,
+              "end": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

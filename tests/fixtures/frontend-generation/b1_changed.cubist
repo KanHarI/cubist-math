@@ -1,0 +1,39 @@
+// B1-changed (control): a later selection and later globals change only later declarations.
+
+import hlevels;
+import nat;
+theory Point(U < UU0) {
+  M : set U;
+  point : M;
+}
+
+def unit_set : IsSet(U0, Unit) {
+  hlevel;
+}
+
+def selected : Point(U0) := Point.make(Unit, unit_set, tt);
+
+use selected;
+inductive M : U0 {
+  unrelated;
+}
+
+inductive Box : U0 {
+  box(x : M);
+}
+
+theory T(U < UU0) {
+  A : set U;
+  op(x : M) : A;
+}
+
+def other : Point(U0) := Point.make(Nat, nat_is_set, zero);
+
+use other;
+inductive Later : U0 {
+  later(x : M);
+}
+
+def still_unit : Box := box(tt);
+
+def now_nat : Later := later(zero);

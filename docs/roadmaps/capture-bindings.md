@@ -1,7 +1,9 @@
 # Correct capture and bindings
 
-Status: architecture and migration proposal, 2026-10-13. No CB package is
-implemented. The baseline is `docs/frontend-generation-roadmap` at
+Status: CB0 baseline and witnesses implemented, 2026-10-13; CB1–CB7 pending.
+The [baseline report](../reports/capture-bindings-baseline.md) records exact
+known defects, active controls and contextual-execution TODOs.
+The production baseline is `docs/frontend-generation-roadmap` at
 `f0417ee0`; the motivating review is #219 at `d3d8f21e`. The
 [open-PR comparison](../reports/capture-bindings-pr-comparison.md) records
 what to adopt, replace and leave independent in the other current PRs.
@@ -381,8 +383,8 @@ context. Share command parsing and rendering, not a second checker.
 - Inside an induction case, access its predecessor/constructor arguments,
   induction hypotheses, refined dependent types and local evidence.
 
-For example, after a branch-local `let next := succ(k)`, `typeof next`
-reports `Nat` and `evaluate next` can report `succ(k)`. No concrete value of
+For example, after a branch-local `let next_ := succ(k)`, `typeof next_`
+reports `Nat` and `evaluate next_` can report `succ(k)`. No concrete value of
 `k` is invented. `/locals` and `/goal` are proposed console commands, not
 new Cubist keywords. A function body has an expected result type where
 known; it need not have a tactic goal. Evaluation of open terms may remain

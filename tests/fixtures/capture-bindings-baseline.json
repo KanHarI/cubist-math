@@ -1,0 +1,148 @@
+{
+  "observedAt": "c8714c7c",
+  "compilerBase": "f0417ee0ee5f824f030069be0e6d1666696de0d1",
+  "cases": {
+    "recursive-bare-absent": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "T",
+            "E343"
+          ],
+          [
+            "main",
+            "captured",
+            "E340"
+          ]
+        ],
+        "clients": {
+          "captured": false,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "recursive-bare-same-module": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [],
+        "clients": {
+          "captured": true,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "recursive-bare-imported": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [],
+        "clients": {
+          "captured": true,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "family-domain-helper": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "T",
+            "E343"
+          ],
+          [
+            "main",
+            "member",
+            "E340"
+          ]
+        ],
+        "clients": {
+          "member": false,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "imported-pattern-rename": {
+      "phase": "CB2/CB3/CB5",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "C",
+            "E801"
+          ],
+          [
+            "main",
+            "meaning",
+            "E340"
+          ]
+        ],
+        "clients": {
+          "meaning": false,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "operand-receiver-local": {
+      "phase": "CB3",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ]
+        ],
+        "clients": {
+          "client": true,
+          "intended": false,
+          "captured": true
+        },
+        "assumes": []
+      }
+    },
+    "operand-receiver-global": {
+      "phase": "CB3",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ]
+        ],
+        "clients": {
+          "client": true,
+          "intended": false,
+          "captured": true
+        },
+        "assumes": []
+      }
+    },
+    "operand-local": {
+      "phase": "CB3",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ]
+        ],
+        "clients": {
+          "client": true,
+          "intended": false,
+          "captured": true
+        },
+        "assumes": []
+      }
+    }
+  }
+}

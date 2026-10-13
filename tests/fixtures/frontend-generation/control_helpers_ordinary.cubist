@@ -1,0 +1,23 @@
+// control-helpers-ordinary (control): ordinary inherited, bare and partial helper clients remain supported.
+
+import hlevels;
+theory P(U < UU0) {
+  M : set U;
+  c : M;
+  op(x, y : M) : M;
+  def k(x : M) : M := op(x, c);
+  def binary(x, y : M) : M := op(x, y);
+  def apply(f : M -> M, x : M) : M := f(x);
+}
+
+theory T(U < UU0) extends P {
+  law inherited(c : M) : k(c) = op(c, c);
+  law bare(x : M) : apply(k, x) = op(x, c);
+  law partial(c : M) : apply(binary(c), c) = op(c, c);
+}
+
+def intended(S : T(U0), x : S.M) : S.op(x, S.c) = S.op(x, x) := S.inherited(x);
+
+def bare(S : T(U0), x : S.M) : S.op(x, S.c) = S.op(x, S.c) := S.bare(x);
+
+def partial(S : T(U0), x : S.M) : S.op(x, x) = S.op(x, x) := S.partial(x);

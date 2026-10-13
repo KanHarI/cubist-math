@@ -1,0 +1,19 @@
+// G11-inherited (FG2): inherited helper chain.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x, y : M) : M;
+  def k(x : M) : M := op(x, c);
+  def chain(x : M) : M := k(x);
+  def kk(c : M) : M := chain(c);
+}
+
+theory Child(U < UU0) extends T {}
+
+def intended(S : Child(U0), x : S.M) : S.kk(x) = S.op(x, S.c) := refl(S.op(x, S.c));
+
+// Error: E606: Type mismatch: found S.op(x, x) = S.op(x, x), expected Child.kk{{U0}}(S, x) =
+//   S.op(x, x).
+def captured(S : Child(U0), x : S.M) : S.kk(x) = S.op(x, x) := refl(S.op(x, x));

@@ -1,0 +1,426 @@
+{
+  "observedAt": "c8714c7c",
+  "compilerBase": "f0417ee0ee5f824f030069be0e6d1666696de0d1",
+  "cases": {
+    "0": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            true
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "1": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            true
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "2": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            true
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ],
+          [
+            "child_selection",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "3": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            true
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ],
+          [
+            "child_selection",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "4": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            true
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "5": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            true
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "6": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "named",
+            "E606"
+          ],
+          [
+            "main",
+            "captured",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            false
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ],
+          [
+            "child_selection",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    },
+    "7": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "intended",
+            "E606"
+          ],
+          [
+            "main",
+            "named",
+            "E606"
+          ],
+          [
+            "main",
+            "captured",
+            "E606"
+          ],
+          [
+            "main",
+            "generated",
+            "E606"
+          ]
+        ],
+        "accepted": [
+          [
+            "intended",
+            false
+          ],
+          [
+            "named",
+            false
+          ],
+          [
+            "law_meaning",
+            true
+          ],
+          [
+            "identity",
+            true
+          ],
+          [
+            "generated",
+            false
+          ],
+          [
+            "forgotten",
+            true
+          ],
+          [
+            "fold_computes",
+            true
+          ],
+          [
+            "child_selection",
+            true
+          ]
+        ],
+        "assumes": []
+      }
+    }
+  }
+}
