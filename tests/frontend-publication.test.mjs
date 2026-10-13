@@ -61,6 +61,140 @@ def client : Unit := local(N);`, {fixture: "inductive N : U0 { c; }"});
   assert.deepEqual(result.gaps, []);
 });
 
+test("FG1 refusal: a constructor collision blocks the local type and other constructors, with or without imports", async t => {
+  for(const imported of [false,true]) {
+    const source = `${imported ? "import fixture;" : ""}
+def c : Unit := tt;
+inductive N : U0 { c; c2; }
+def original : Unit := c;
+def client : N := c2;
+def constructor := c2;
+def downstream := client;
+def N : Unit := tt;
+def after := c2;`;
+    const {program,result,get} = await check(t,source,{fixture:"inductive N : U0 { c2; }"});
+    assert.equal(get("original").verified,true);
+    assert.equal(get("N").verified,false);
+    assert.equal(program.kernel.signatures.has("main__N"),false);
+    assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340","E340","E340","E872","E340"]);
+    for(const name of ["client","constructor","downstream","after"]) {
+      assert.equal(get(name).verified,false);
+      assert.equal(get(name).blockedBy,"main__N");
+      assert.equal(get(name).cause,result.gaps[0].reason);
+      assert.equal(program.kernel.definitions.has(`main__${name}`),false);
+    }
+    const payload=program.export(), replay=await check(t,payload.source,payload.sources);
+    assert.deepEqual(replay.result.gaps,result.gaps);
+    assert.equal(replay.get("client").blockedBy,"main__N");
+  }
+});
+
+test("FG1 refusal: a refused local Nat cannot verify clients against imported Nat", async t => {
+  const {result,get} = await check(t,`import nat;
+def zero : Unit := tt;
+inductive Nat : U0 { zero; succ(n : Nat); }
+def two : Nat := succ(succ(nat.(0)));
+def check_two : two = nat.(2) := refl(two);
+def original : Unit := zero;`);
+  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["Nat","E872"],["two","E340"],["check_two","E340"]]);
+  for(const name of ["two","check_two"]) {
+    assert.equal(get(name).verified,false);
+    assert.equal(get(name).blockedBy,"main__Nat");
+    assert.equal(get(name).cause,result.gaps[0].reason);
+  }
+  assert.equal(get("original").verified,true);
+});
+
+test("FG1 refusal: a duplicate type preserves its owner but refuses its new constructors", async t => {
+  const {result,get} = await check(t,`import fixture;
+def N : Unit := tt;
+inductive N : U0 { c2; }
+def original : Unit := N;
+def client := c2;`,{fixture:"inductive Imported : U0 { c2; }"});
+  assert.equal(get("N").verified,true);
+  assert.equal(get("original").verified,true);
+  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340"]);
+  assert.equal(get("client").blockedBy,"main__N");
+  assert.equal(get("client").cause,result.gaps[0].reason);
+});
+
+test("FG1 refusal: a duplicate theory blocks imported members while captured references and local models survive", async t => {
+  const {result,get,program} = await check(t,`import fixture;
+theory Kept(U < UU0) extends T {}
+def saved(S : T(U0)) : S.M := S.c;
+def T : Unit := tt;
+theory T(U < UU0) { M : set U; new_field : M; }
+def original : Unit := T;
+def projection := T.c;
+def identity := T.Hom.id;
+def new_member := T.new_field;
+def nested := T.Hom.unknown;
+theory CapturedFailure(U < UU0) { M : set U; op(x : T.new_field) : M; }
+theory Later(U < UU0) extends Kept {}
+def inherited(S : Later(U0)) : S.M := S.c;
+def captured(S : Kept(U0)) : S.M := saved(S.t);
+def local(T : Kept(U0)) : T.M := T.c;`,
+  {fixture:"import hlevels; theory T(U < UU0) { M : set U; c : M; }"});
+  // The refused theory never expanded: its own member names stay unknown.
+  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["T","E872"],["projection","E340"],["identity","E340"],
+    ["new_member","E343"],["nested","E340"],["CapturedFailure","E343"]]);
+  for(const name of ["projection","identity","nested"]) {
+    assert.equal(get(name).blockedBy,"main__T",name);
+    assert.equal(get(name).cause,result.gaps[0].reason,name);
+  }
+  for(const name of ["original","inherited","captured","local"])assert.equal(get(name).verified,true,name);
+  assert.ok(program.declarationReferences.get("main__saved").some(r=>r.binding==="fixture__T.c"));
+  const payload=program.export(),replay=await check(t,payload.source,payload.sources);
+  assert.deepEqual(replay.result.gaps,result.gaps);
+  assert.equal(replay.get("captured").verified,true);
+});
+
+for(const kind of ["initial","free"]) test(`FG1 refusal: a duplicate ${kind} blocks its imported model and folds`, async t => {
+  const declaration=`${kind} N : T(U0)${kind==="free"?" on Unit":""};`;
+  const {result,get} = await check(t,`import fixture;
+def saved := N.fold;
+def N : Unit := tt;
+${declaration}
+def original : Unit := N;
+def model_client := N.model;
+def fold_client := N.fold;
+def point := N.c;
+def missing := N.unknown;
+def captured := saved;`, {fixture:`import hlevels; theory T(U < UU0) { M : set U; c : M; } ${declaration}`});
+  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340","E340","E340","E343"]);
+  for(const name of ["model_client","fold_client","point"]) {
+    assert.equal(get(name).blockedBy,"main__N");
+    assert.equal(get(name).cause,result.gaps[0].reason);
+  }
+  for(const name of ["original","saved","captured"])assert.equal(get(name).verified,true,name);
+});
+
+for(const duplicate of ["theory T(U < UU0) { M : U; c : M; }","initial T : P(U0);","free T : P(U0) on Unit;"]) test(
+  `FG1 refusal: a duplicate ${duplicate.split(" ")[0]} keeps the fields of an earlier model of its name`, async t => {
+  const {result,get} = await check(t,`theory P(U < UU0) { M : U; c : M; g(x : M, y : M) : M; }
+def T := P.make(Unit, tt, fun (x : Unit) => fun (y : Unit) => x);
+${duplicate}
+def client : T.M := T.c;
+def applied := T.g(T.c, T.c);
+notation via { x + y := T.g(x, y); }
+def noted := via.(T.c + T.c);
+theory Q(U < UU0) { M : U; op(x : T.M) : M; }`);
+  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["T","E872"]]);
+  for(const name of ["T","client","applied","noted","Q"])assert.equal(get(name).verified,true,name);
+});
+
+test("FG1 refusal: an existing local generated family survives a second theory's refusal", async t => {
+  const {result,get} = await check(t,`import hlevels;
+theory T(U < UU0) { M : set U; c : M; }
+theory T(U < UU0) { M : set U; other : M; }
+def projection := T.c;
+def identity := T.Hom.id;
+def client(S : T(U0)) : S.M := S.c;
+def refused := T.other;`);
+  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E343"]);
+  for(const name of ["T","projection","identity","client"])assert.equal(get(name).verified,true,name);
+});
+
 test("FG1: a duplicate is reported once by inline diagnostics and the REPL while the original still works", async t => {
   const {reported} = await import("../tools/inline-errors.mjs");
   const {ReplSession} = await import("../web/repl-session.mjs");
