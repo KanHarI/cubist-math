@@ -168,6 +168,9 @@ export class BindingAdapter {
     Object.freeze(this);
   }
   key(id) {this.#table.get(id); return `\u0000id ${id}`;}
+  // Inverse of the adapter's private key, for consumers recording the live
+  // context. Public spellings are never interpreted as binding identities.
+  bindingForKey(key) {return key.startsWith("\u0000id ")?this.#table.get(key.slice(4)):null;}
   resolve(value, outcomes = new SlotOutcomes()) {
     value = resolution(value);
     for (let at = value; at; at = at.tag === "slot" ? at.enclosing : null) {

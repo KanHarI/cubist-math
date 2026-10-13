@@ -20,6 +20,7 @@ import {SearchFuel} from "./fuel.mjs";
 import {bindingStem} from "./names.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
+import {lowerBindingReferences} from "../cubist/binding-syntax.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
@@ -435,7 +436,8 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   if (recursion) {
     const current = { ...recursion, results };
     inner = inner.alias(RECURSIVE, current);
-    if (scope.env.get(recursion.source)?.tag === "Recursive") inner = inner.alias(recursion.source, current);
+    const key=recursion.key??recursion.source;
+    if (scope.env.get(key)?.tag === "Recursive") inner = inner.alias(key, current);
   }
   const bind = (token, stem) => {
     if (type?.tag !== "Pi") throw locate(Error(`The clause type of ${name} has fewer arguments than expected.`));
@@ -557,6 +559,8 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
 export const selfReference = name => `${name} is being defined: it can call itself only on an argument of a constructor that `
   + `its match takes apart, as ${name}(m) in succ(m) => …, when that match on one of its parameters is its whole body.`;
 export function resolveRecursive(translator, node, value, args, scope) {
+  if(args&&scope.unit.bindingAdapter)args=lowerBindingReferences(args,scope.unit.bindingAdapter,scope.slotOutcomes);
+  const parameter=index=>value.labels?.[index]??value.params[index];
   const locate = (error, at = node) => scope.unit.locate(error, at);
   // A name that a match statement took apart names its constructor there,
   // but a recursive call means the variable it named.
@@ -588,7 +592,7 @@ export function resolveRecursive(translator, node, value, args, scope) {
     if (arg.kind === "passedParameter") {
       if (value.generalizable[index] && value.dependent[index]) {
         value.state.varied = true;
-        throw locate(Error(`A recursive call of ${value.source} changes ${value.params[index]}: the match needs its motive over its other parameters.`), arg);
+        throw locate(Error(`A recursive call of ${value.source} changes ${parameter(index)}: the match needs its motive over its other parameters.`), arg);
       }
       return;
     }
@@ -599,12 +603,12 @@ export function resolveRecursive(translator, node, value, args, scope) {
     // matched parameter, sends the match to its motive over the others.
     if (value.generalizable[index] && (!unchanged || value.dependent[index])) {
       value.state.varied = true;
-      throw locate(Error(`A recursive call of ${value.source} changes ${value.params[index]}: the match needs its motive over its other parameters.`), arg);
+      throw locate(Error(`A recursive call of ${value.source} changes ${parameter(index)}: the match needs its motive over its other parameters.`), arg);
     }
     if (!unchanged)
       throw locate(Error(value.fixed[index]?.tag === "Var"
-        ? `A recursive call of ${value.source} passes ${value.params[index]} unchanged: the type of the matched ${value.params[value.index]} depends on it.`
-        : `A recursive call of ${value.source} passes the universe parameter ${value.params[index]} unchanged.`), arg);
+        ? `A recursive call of ${value.source} passes ${parameter(index)} unchanged: the type of the matched ${parameter(value.index)} depends on it.`
+        : `A recursive call of ${value.source} passes the universe parameter ${parameter(index)} unchanged.`), arg);
   });
   // The argument: a position, applied to its arity's arguments, and a path
   // position at each of its dimensions, f(q(y) @ i): that is an element.

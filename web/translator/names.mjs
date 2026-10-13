@@ -62,5 +62,8 @@ export const printsAsItself = name => stem(name) === name && localName(name) ===
 // names none.
 export const repeatedName = params => {
   const seen = new Set();
-  return params.find(p => p.name.text !== "_" && seen.size === seen.add(p.name.text).size) ?? null;
+  return params.find(p => {
+    const label=p.name.label??p.name.text;
+    return label!=="_"&&seen.size===seen.add(label).size;
+  })??null;
 };

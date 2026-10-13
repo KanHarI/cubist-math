@@ -358,8 +358,19 @@ export class Translator {
   // terms share no variable, and are shown alone.
   shownTogether(terms) {return this.checker.displayTexts?.(terms,1000)??terms.map(term=>sourceText(term));}
   translate(source, imported=new Map()) {
-    const module=this.unit({source});
-    const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
+    return this.translateSyntax(parse(source),source,imported);
+  }
+  // Prepared syntax enters the same declaration checking/admission path as
+  // parsed source. Binding-aware producers supply the one identity adapter;
+  // no printing or second source-resolution pass occurs at this boundary.
+  translateSyntax(ast,source,imported=new Map(),{bindingAdapter=null}={}) {
+    const module=this.unit({source,bindingAdapter});
+    const env=new Map(imported),declarations=[],directives=[];
+    const declarationKey=d=>d.name.bindingId?bindingAdapter.key(d.name.bindingId):null;
+    const publish=(d,value)=>{
+      env.set(d.name.text,value);
+      const key=declarationKey(d);if(key)env.set(key,value);
+    };
     // The models of the file-level uses refused where they stand.
     const refusedUses=new Set();
     const ownership=new DeclarationOwnership();
@@ -600,7 +611,7 @@ export class Translator {
         const missing=missingEvidence(d,env);
         if(missing)throw unit.locate(missing,d.name);
         const repeated=repeatedName([...(d.section?.params??[]),...(d.params.length?d.params:d.valueParameters??[])]);
-        if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`),repeated.name);
+        if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.label??repeated.name.text}: give each its own name.`),repeated.name);
         // A section's definition takes the section's implicit parameters, which
         // come first, and none of its own (L2.4).
         const ownImplicit=d.section&&(d.params.length?d.params:d.valueParameters??[]).find(p=>p.implicit);
@@ -623,10 +634,11 @@ export class Translator {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
           const sectional=d.section?.params.length??0;
-          const recursive={tag:"Recursive",source:d.name.text,params:own.map(p=>p.name.text),implicit:own.map(p=>!!p.implicit),
+          const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,
+            params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
-          bodyEnv=new Map(env).set(d.name.text,recursive).set(RECURSIVE,recursive);
+          bodyEnv=new Map(env).set(recursive.key,recursive).set(RECURSIVE,recursive);
         }
         const term=this.term(expression,new Scope(unit,new Map(),bodyEnv));
         // Normal forms are optional inspection output, not a prerequisite for
@@ -648,7 +660,7 @@ export class Translator {
         const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
           own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
-        env.set(d.name.text,definition);
+        publish(d,definition);
         // A theory's type of models, by which m.f reads its fields, and its
         // projections, which print as m.f (L2.4).
         if(d.generated)registerTheoryDeclaration(this,d);
@@ -659,7 +671,7 @@ export class Translator {
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
         const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
-        env.set(d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
+        publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
@@ -675,7 +687,7 @@ export class Translator {
       // result must not remain available to subsequent declarations.
       if (declarations.at(-1).status === "not-translated") {
         const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
-        env.set(d.name.text,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
+        publish(d,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
       }
       if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
       settle(queue);

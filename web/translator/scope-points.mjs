@@ -19,7 +19,7 @@ function recursiveDescription(value) {
   if(!value)return null;
   // Source syntax and checked core values are inert. Omit the site object
   // and parameter tokens; their occurrence is represented by owner/path.
-  return Object.fromEntries(["source","params","implicit","section","index","matched","generalizable","generalized","dependent",
+  return Object.fromEntries(["source","key","params","labels","implicit","section","index","matched","generalizable","generalized","dependent",
     "fixed","state","bindings","results","destructed"].filter(key=>value[key]!==undefined)
     .map(key=>[key,value[key] instanceof Map?[...value[key]]:value[key]]));
 }
@@ -66,6 +66,7 @@ export class ScopePoints {
       if(!this.#origins.has(key))this.#origins.set(key,{label:token.text,origin:origin(token),generated:!!declaration.generated});
     };
     register(binding,declaration.name);
+    if(declaration.name.bindingId)this.#available.set(binding,this.table.get(declaration.name.bindingId));
     for(const [index,constructor] of (declaration.constructors??[]).entries()) {
       register(`${binding}:constructor:${index}`,constructor.name);
       register(`${module}__${constructor.name.text}`,constructor.name); // A refused constructor's source identity.
@@ -98,9 +99,9 @@ export class ScopePoints {
     let lexical=new LexicalContext();
     const values=new Map(),records=[],recursive=[];
     for(const [key,value] of scope.env) {
-      const local=scope.sourceBindings.get(key);
-      if(!local&&!publicName.test(key))continue;
-      const record=local??this.#global(key,value,scope),label=local?.label??key;
+      const local=scope.sourceBindings.get(key),identified=scope.unit.bindingAdapter?.bindingForKey(key);
+      if(!local&&!identified&&!publicName.test(key))continue;
+      const record=local??identified??this.#global(key,value,scope),label=local?.label??identified?.label??key;
       lexical=lexical.bind(label,bindingResolution(record.id));
       values.set(record.id,value);
       records.push({label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});

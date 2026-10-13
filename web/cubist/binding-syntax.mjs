@@ -130,6 +130,18 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
   return syntax.inferred ? {...tree, value: parameterLambdas(tree.params, tree.value), valueParameters: tree.params, params: []} : tree;
 }
 
+// Structural consumers (for example recursion's fixed-argument checks)
+// inspect source nodes before calling term elaboration. Resolve the slots
+// decided by this branch there too, through the same adapter. Binders and
+// still-pending nested slots are unchanged.
+export function lowerBindingReferences(tree,adapter,outcomes=new SlotOutcomes()) {
+  return scopeMapped(tree,{
+    deferred:true,
+    enter:node=>node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferMissing:true}):node,
+    extend:at=>at,
+  },null);
+}
+
 export function lowerBindingReference(node, adapter, outcomes = new SlotOutcomes(), options = {}) {
   const resolved = adapter.resolve(node.resolution, outcomes);
   if (resolved.tag === "binding") {
