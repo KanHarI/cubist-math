@@ -25,7 +25,7 @@ inductive G : trunc(1) {
 }
 
 inductive Tr(U < UU0, A : U) : set {
-  point(a : A);
+  tr_point(a : A);
 }
 
 // A binder named as the type is shown apart from it.

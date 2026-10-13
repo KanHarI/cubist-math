@@ -18,6 +18,10 @@ export class CubicalDeclarationTransaction {
       [checker.assumptionOrigins,checker.assumptionOrigins.size],
       [checker.libraryAssumptions,checker.libraryAssumptions.size],
     ]);
+    // These maps contain frontend metadata as well as identities. Snapshot
+    // values too: removing only new keys cannot undo an updated record.
+    this.metadata = new Map([checker.theories,checker.theoryProjections,checker.notationPrinting]
+      .filter(Boolean).map(collection => [collection,new Map(collection)]));
     kernel.module._cb_checkpoint(kernel.handle);
     this.active = true;
   }
@@ -37,6 +41,9 @@ export class CubicalDeclarationTransaction {
       }
     } else {
       kernel.module._cb_rollback(kernel.handle);
+      for (const [collection,snapshot] of this.metadata) {
+        collection.clear(); for (const [key,value] of snapshot) collection.set(key,value);
+      }
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
     }
