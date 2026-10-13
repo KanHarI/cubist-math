@@ -4,6 +4,12 @@ Expansion must preserve binding, not spelling. Moving an expression,
 renaming a surrounding binder, or importing it into a different module must
 not change which declarations and local variables it refers to.
 
+The 2026-10-13 [capture and bindings proposal](capture-bindings.md) replaces
+nominal capture repair for retained frontend syntax with binding identities,
+complete interfaces and explicit deferred scopes. It also requires contextual
+REPLs inside functions and induction cases. That migration is not implemented;
+the mechanisms below describe the existing approach and its limitations.
+
 The [frontend generation roadmap](frontend-generation.md) turns this
 contract and PR #188's failures into implementation slices for declaration
 ownership, dependency analysis, universes, evidence, provenance and semantic

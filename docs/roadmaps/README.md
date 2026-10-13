@@ -72,6 +72,11 @@ EVAL1 and NUM0/NUM1 can advance independently. See
 
 ## Language tooling
 
+- [Correct capture and bindings](capture-bindings.md): proposed replacement
+  for capture repair, with binding identities, shared generation interfaces
+  and contextual REPLs at arbitrary nesting depth. The
+  [PR comparison](../reports/capture-bindings-pr-comparison.md) records which
+  current solutions to adopt or replace; no migration package is implemented.
 - [Frontend generation](frontend-generation.md): planned design work after
   PR #188, with its failures as evidence. Unifies declaration ownership,
   supported dependency analysis, universe calculation, contextual evidence

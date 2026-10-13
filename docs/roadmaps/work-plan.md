@@ -618,6 +618,14 @@ presentation work remains deferred.
 
 ## Frontend generation track
 
+**2026-10-13 design update:** [CB0–CB7](capture-bindings.md#ordered-implementation-packages)
+propose a replacement for FG2's binding implementation and the binding-related
+RC4 work in #224. Preserve FG1 publication semantics; adopt later universe,
+evidence, provenance, testing and inspection solutions according to the
+[PR comparison](../reports/capture-bindings-pr-comparison.md). Contextual REPLs
+inside functions, lets and induction cases are required deliverables. No CB
+package is implemented; the dated FG schedule below records the earlier plan.
+
 **2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
 [frontend generation roadmap](frontend-generation.md) uses that PR's
 failures as evidence for shared contracts. The

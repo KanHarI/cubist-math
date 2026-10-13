@@ -68,6 +68,10 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
+- [Correct capture and bindings](roadmaps/capture-bindings.md): proposed
+  binding identities, complete interfaces, frontend generation and REPLs
+  inside local scopes, with an [open-PR comparison](reports/capture-bindings-pr-comparison.md)
+  and migration sequence. Not implemented.
 - [Frontend generation](roadmaps/frontend-generation.md): design changes
   motivated by PR #188's review failures, with phased implementation and
   semantic acceptance criteria. The [current gap inventory](reports/frontend-generation-gaps.md)

@@ -8,6 +8,13 @@ failures. This document proposes implementation work; it does not mark
 those defects fixed. The [work plan](work-plan.md#frontend-generation-track)
 records its scheduling dependencies.
 
+**2026-10-13 design update:** the [capture and bindings proposal](capture-bindings.md)
+replaces FG2's nominal binding approach with the proposed CB0–CB7 migration,
+including contextual REPLs inside nested local scopes. It preserves these
+generation goals and FG1 publication boundaries, and selectively adopts later
+work as recorded in the [open-PR comparison](../reports/capture-bindings-pr-comparison.md).
+No CB package is implemented; the dated FG plan below remains its background.
+
 FG0's evidence harness is implemented in
 [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs)
 with its [comparison manifest](../../tests/fixtures/frontend-generation.md).
@@ -96,7 +103,7 @@ record implementation debt, not passing behavior. Each case has its own ID
 and activation state: a case is a TODO only while it shows exactly its
 recorded defect, and activating a fixed case removes only its record. A
 changed symptom must fail and be investigated. The
-[comparison manifest](../../tests/fixtures/frontend-generation.md#coverage-by-executable-case)
+[comparison manifest](../../tests/fixtures/frontend-generation.md)
 records the cases, including direct, inherited and initial-model G12 clients.
 
 This roadmap is the authority for desired FG behavior; the inventory records
