@@ -15,6 +15,7 @@ import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notati
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { ScopePoints } from "./translator/scope-points.mjs";
+import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
 import naturalSource from "./translator/nat-source.mjs";
 
 // A property computed when first read, and then kept as a plain value.
@@ -60,6 +61,7 @@ export class CubicalProgram {
     this.scopePoints = new Map();
     this.scopeRevision = null;
     this.scopeRecorder = null;
+    this.scopeReady = false;
     this.manageTransactions = manageTransactions;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
@@ -74,7 +76,7 @@ export class CubicalProgram {
     this.moduleSteps = new Map();
     this.failedImports = new Map();
   }
-  dispose() { this.kernel.dispose(); }
+  dispose() { this.scopeReady=false; this.kernel.dispose(); }
   assumptionSymbols() {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
@@ -164,7 +166,8 @@ export class CubicalProgram {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start});
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start,
+          ...(directive.failure?{failure:directive.failure}:{})});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
       else if(directive.kind==="print")
@@ -220,11 +223,12 @@ export class CubicalProgram {
     // Discover the source graph before checking. This only reads and parses
     // source; it does not run the mathematical library or count repeated
     // imports twice.
-    this.readSource.beginCheck?.();
     // Scope instances describe a complete ordered source check. The module
     // REPL's cached, in-memory extensions keep that source snapshot intact;
     // their own entries do not publish source scope points.
     const collectScopes=this.collectScopes&&!reuseModules;
+    if(collectScopes)this.scopeReady=false;
+    this.readSource.beginCheck?.();
     const discovery = { prepared: new Map(), total: this.completed, reuseModules };
     await this.discover(discovery, main, source, null, onProgress);
     const { prepared } = discovery;
@@ -238,8 +242,10 @@ export class CubicalProgram {
       return !reuseModules&&(this.failedImports.has(name)||this.sources[name]!==undefined);
     });
     if(invalidated) {
+      const policy=kernelReplayPolicy(this.kernel);
       const replacement=new CubicalProgram(this.kernel.module,this.readSource,this.options);
       this.dispose(); Object.assign(this,replacement);
+      applyKernelReplayPolicy(this.kernel,policy);
       discovery.total=[...prepared.values()].reduce((sum,entry)=>sum+(entry.ast?.declarations.length??0),0);
       onProgress({completed:0,total:discovery.total,current:main,phase:"loading",unit:"declarations",instructions:0});
     }
@@ -249,6 +255,8 @@ export class CubicalProgram {
       this.scopeSources=Object.freeze(Object.fromEntries([...prepared].filter(([,entry])=>typeof entry.text==="string")
         .map(([name,entry])=>[name,entry.text])));
       this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),probe:this.options.scopeProbe??null});
+      this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
+        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
     }
     const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
@@ -312,7 +320,7 @@ export class CubicalProgram {
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         scopePoints:scopeRecorder,
-        nameBased: this.readSource.nameBased?.(name) ?? false,
+        nameBased: collectScopes?this.scopeReplay.modules[name].nameBased:this.readSource.nameBased?.(name)??false,
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
@@ -340,6 +348,7 @@ export class CubicalProgram {
             this.onDeclarationStart?.(name, declaration, checker);
             onProgress({ completed: this.completed, total,
               current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
+            if(collectScopes)this.scopeReplay.record("start",name,declaration,this.kernel);
           } catch(error) {
             if(publication)finishPublication(false);
             else {transaction?.finish(false);transaction=null;}
@@ -363,6 +372,7 @@ export class CubicalProgram {
           pending = [];
           onProgress({ completed: this.completed, total,
             current: `${name}.${result.name}`, phase: "checked", unit: "declarations", instructions: checker.steps });
+          if(collectScopes)this.scopeReplay.record("end",name,declaration,this.kernel,result);
         },
       });
       let result;
@@ -379,6 +389,7 @@ export class CubicalProgram {
       return result.env;
     };
     await load(main, source);
+    if(collectScopes)this.scopeReady=true;
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     this.main = main;
     // Goals are shown on demand; posting the result to the page reads them.

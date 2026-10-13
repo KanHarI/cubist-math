@@ -224,22 +224,8 @@ const tactics = {
     return new Transition(goal,next,[steps.congruence(name,pi.domain,path.family)]).rebuild(t.continueBlock(first,rest,next));
   },
   let(t,first,rest,goal) {
-    const {scope}=goal,{unit}=scope;
     if(first.target.kind!=="name")return undefined;
-    // let name : T { … } proves a local lemma, and let name : T := term
-    // checks a term against T. Either keeps T as the name's signature, as a
-    // top-level proof does; the value stays visible to conversion.
-    if(first.type) {
-      const type=t.term(first.type,scope,null),sort=scope.infer(type).type;
-      if(scope.nf(sort).tag!=="U")
-        throw unit.locate(Error(`let states a type after the colon; found a value of type ${t.shown(sort)}.`),first.type);
-      const checked=first.body?scope.check(t.block(first.body,new Goal(type,scope)),type)
-        :scope.check(t.term(first.value,scope,type),type);
-      return t.continueBlock(first,rest,goal.at(t.sourceBinding(first.target,scope.ascribe(checked,type),scope)));
-    }
-    const value=t.term(first.value,scope,null);
-    scope.infer(value);
-    return t.continueBlock(first,rest,goal.at(t.sourceBinding(first.target,value,scope)));
+    return t.continueBlock(first,rest,goal.at(t.bindLet(first,goal.scope)));
   },
   // use m; puts the model m's fields and notation in scope for the rest of
   // the block (theories.mjs).

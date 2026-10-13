@@ -1410,6 +1410,24 @@ export class Translator {
   continueBlock(statement,rest,goal) {
     return this.afterStatement(statement,goal,()=>this.block(rest,goal));
   }
+  // The same local-binding operation serves proof statements and contextual
+  // scratch entries. In either case the initializer sees the old scope,
+  // and a checked annotation remains the binding's signature.
+  bindLet(statement,scope) {
+    const {unit}=scope;
+    if(statement.target.kind!=="name")throw new TypeError("A local let needs a name.");
+    if(statement.type) {
+      const type=this.term(statement.type,scope,null),sort=scope.infer(type).type;
+      if(scope.nf(sort).tag!=="U")
+        throw unit.locate(Error(`let states a type after the colon; found a value of type ${this.shown(sort)}.`),statement.type);
+      const checked=statement.body?scope.check(this.block(statement.body,new Goal(type,scope)),type)
+        :scope.check(this.term(statement.value,scope,type),type);
+      return this.sourceBinding(statement.target,scope.ascribe(checked,type),scope);
+    }
+    const value=this.term(statement.value,scope,null);
+    scope.infer(value);
+    return this.sourceBinding(statement.target,value,scope);
+  }
   // A statement makes a transition from the goal (proof-goals.mjs), and the
   // statements after it prove the goal that remains.
   blockBody(statements,goal) {

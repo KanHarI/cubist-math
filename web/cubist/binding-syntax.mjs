@@ -34,7 +34,7 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
       if (unmigrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
-      if (node.kind !== "name") return node;
+      if (node.kind !== "name" || node.name === "_") return node;
       const {value, fields} = at.qualified(node.name);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));

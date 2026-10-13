@@ -64,6 +64,14 @@ export const languageKeywords = new Set([
 // Universe constants are refused separately by name().
 export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]);
 
+// The explicit late-lookup allowlist for resolved source expressions. Other
+// keywords and generated member labels are not expression-level builtins.
+// Universe spellings are still validated by the translator when consumed.
+export function reservedReferences(source) {
+  return [...new Set([...builtinNames,"Unit","Void","tt","typed","left","right","path","fill","at","on",
+    ...tokenize(source).map(token=>token.text).filter(name=>/^U+[0-9]+$/.test(name))])];
+}
+
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
 export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false, historicalOver = false } = {}) {

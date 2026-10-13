@@ -116,7 +116,8 @@ export class ScopePoints {
       live=this.bindings(scope);
       description=freeze({...basic,available:true,lexical:live.lexical.snapshot(),
         state:snapshotSyntax({bindings:live.records,context:[...scope.context],dimensions:[...scope.dimensions],
-          slots:scope.slotOutcomes.snapshot(),recursion:recursiveDescription(scope.env.get(RECURSIVE)),goal,expected})});
+          slots:scope.slotOutcomes.snapshot(),recursion:recursiveDescription(scope.env.get(RECURSIVE)),goal,expected,
+          rules:Object.fromEntries(Object.entries(unit.simpRegistry??{}).map(([kind,entries])=>[kind,[...entries]]))})});
     } catch(error) {
       // A description failure never changes which source declarations check.
       // It marks this exact entry unavailable, without choosing another one.
