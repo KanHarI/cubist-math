@@ -19,16 +19,20 @@ export class DeclarationOwnership {
   reserve(declarations, owner) {
     const proposed = declarations.flatMap(declaration => declaredNames(declaration).map(entry => ({...entry, declaration})));
     const seen = new Map();
-    // First inspect the entire request: a late collision must not reserve a
-    // prefix of a refused expansion, or alter an earlier reservation.
+    // Inspect the entire request, then claim every still-free name, even
+    // on refusal. Those names belong to the failed local declaration, not
+    // to an import. A collision never changes an earlier owner.
+    let conflict = null;
     for (const entry of proposed) {
       const previous = this.entries.get(entry.name);
-      if (previous && previous.owner !== owner || seen.has(entry.name) && seen.get(entry.name) !== entry.declaration) return entry;
+      if (previous && previous.owner !== owner || seen.has(entry.name) && seen.get(entry.name) !== entry.declaration)
+        conflict ??= entry;
       seen.set(entry.name, entry.declaration);
     }
     for (const entry of proposed) if (!this.entries.has(entry.name)) this.entries.set(entry.name, {...entry, owner});
-    return null;
+    return conflict;
   }
+  owns(name, owner) { return this.entries.get(name)?.owner === owner; }
 }
 
 export const duplicateDeclaration = name => Error(`Duplicate declaration ${name}: a declaration in this module already owns that name.`);
