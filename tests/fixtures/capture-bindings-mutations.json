@@ -2,7 +2,7 @@
   "version": 2,
   "adoptedFrom": "49499aa1c56c1b345eb0021468123cec377fb4b8",
   "dirty": false,
-  "revision": "a9eb8c143194e1ac376face773a07b339581d0a4",
+  "revision": "729b25b1ad89b281b2d0269f31ff4acf4b4bebde",
   "limits": {
     "processMs": 60000,
     "testMs": 45000,

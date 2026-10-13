@@ -107,7 +107,7 @@ faults through all harnesses and verifies their structured mutation outcomes.
 The file-level-selection mutation uses a non-imported witness and
 reaches semantic classification. The runner writes the artifact format
 directly. Cost measurements remain from clean commit `7f9b4d28`; mutation
-and historical records were generated from clean commit `a9eb8c14`.
+and historical records were generated from clean commit `729b25b1`.
 
 | Mutation | Distinguishing check |
 | --- | --- |
