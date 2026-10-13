@@ -37,7 +37,10 @@ function parsedEntry(entry) {
     // that binder in scope in its own initializer.
     const ending=replStatements(source).rest?";":"";
     const text=`def contextual_entry : Unit { ${source}${ending} exact tt; }`;
-    const statements=parse(text).declarations[0].body;
+    const ast=parse(text);
+    if(ast.imports.length||ast.declarations.length!==1||(ast.items??ast.declarations).length!==1)
+      throw new TypeError("Expected one scratch let.");
+    const statements=ast.declarations[0].body;
     if(statements.length!==2||statements[0].kind!=="let")throw new TypeError("Expected one scratch let.");
     return {kind:"let",text,tree:[statements[0]]};
   }
@@ -136,7 +139,7 @@ export class ContextualSession {
             if(scope.nf(scope.infer(target).type).tag!=="U")throw new TypeError("The scope's target is not a checked type.");
         } catch(error) {
           throw new ElaborationStop(failure("unavailable",error,{stage:"validation"}));
-        } finally {costs.validation=spent(replay.kernel,validation);}
+        } finally {scope?.unit.fuel?.close();costs.validation=spent(replay.kernel,validation);}
 
         const execute=(source,index)=>{
           applyKernelReplayPolicy(replay.kernel,selectedPolicy);
@@ -162,20 +165,22 @@ export class ContextualSession {
             if(record.role!=="declaration"&&value)translator.localSources.set(value,{name:label,key,bindingId:record.id,
               start:record.origin.start,end:record.origin.end});
           }
-          if(parsed.kind==="let") {
-            current=translator.bindLet(tree[0],current);
-            const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
-            const type=current.infer(value).type;
-            result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`};
-            extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
-            lexical=lexical.bind(record.label,bindingResolution(id));
-            scope=current;
-          } else {
-            const term=translator.term(tree,current),checked=current.infer(term);
-            const value=current.nf(parsed.kind==="typeof"?checked.type:checked.term);
-            result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current)};
-          }
-          return {result:{...result,conditional:true,scope:this.#point.id,fuel:translator.fuelRecord(unit)},extension};
+          try {
+            if(parsed.kind==="let") {
+              current=translator.bindLet(tree[0],current);
+              const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
+              const type=current.infer(value).type;
+              result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`};
+              extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
+              lexical=lexical.bind(record.label,bindingResolution(id));
+              scope=current;
+            } else {
+              const term=translator.term(tree,current),checked=current.infer(term);
+              const value=current.nf(parsed.kind==="typeof"?checked.type:checked.term);
+              result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current)};
+            }
+            return {result:{...result,conditional:true,scope:this.#point.id,fuel:translator.fuelRecord(unit)},extension};
+          } finally {unit.fuel.close();}
         };
         const history=measure(replay.kernel);
         try {

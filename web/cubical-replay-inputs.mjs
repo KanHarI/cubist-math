@@ -31,7 +31,7 @@ export class ReplayInputs {
     Object.freeze(this);
   }
   record(stage,module,declaration,kernel,result=null) {
-    this.#events.push(Object.freeze({stage,module,name:declaration.name.text,policy:kernelReplayPolicy(kernel),
+    this.#events.push(Object.freeze({stage,module,name:replayItemName(declaration),policy:kernelReplayPolicy(kernel),
       outcome:result?Object.freeze({status:result.status,failure:result.failure??null}):null}));
   }
   snapshot() {
@@ -39,6 +39,8 @@ export class ReplayInputs {
       initialPolicy:this.initialPolicy,collectReferences:this.collectReferences,events:Object.freeze([...this.#events])});
   }
 }
+
+const replayItemName=item=>item.name?.text??`${item.kind}@${item.start}`;
 
 export function replayReader(snapshot) {
   const get=name=>{
@@ -62,15 +64,18 @@ export function replayPolicyCallbacks(snapshot,kernel,{onChangedResult=()=>{}}={
   applyKernelReplayPolicy(kernel,snapshot.initialPolicy);
   const apply=(stage,module,declaration)=>{
     const event=snapshot.events[next++];
-    if(!event||event.stage!==stage||event.module!==module||event.name!==declaration.name.text)
+    if(!event||event.stage!==stage||event.module!==module||event.name!==replayItemName(declaration))
       throw new TypeError("The ordered declaration prefix changed during replay.");
     applyKernelReplayPolicy(kernel,event.policy,{resetDeadline:generation!==event.policy.deadlineGeneration});
     generation=event.policy.deadlineGeneration;
     return event;
   };
-  return {onDeclarationStart:(module,declaration)=>apply("start",module,declaration),
-    onDeclaration:(module,declaration,result)=>{
-      const event=apply("end",module,declaration);
+  const finish=(stage,module,declaration,result)=>{
+      const event=apply(stage,module,declaration);
       if(result&&(result.status!==event.outcome.status||(result.failure??null)!==event.outcome.failure))onChangedResult(result,event);
-    }};
+  };
+  return {onDeclarationStart:(module,declaration)=>apply("start",module,declaration),
+    onDeclaration:(module,declaration,result)=>finish("end",module,declaration,result),
+    onDirectiveStart:(module,directive)=>apply("directive-start",module,directive),
+    onDirective:(module,directive,result)=>finish("directive-end",module,directive,result)};
 }

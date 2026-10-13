@@ -44,7 +44,9 @@ export class CubicalProgram {
     if (experimental !== undefined)
       throw Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
     // Fuel limits (web/translator/fuel.mjs), for a measurement or a test; the defaults otherwise.
-    this.fuelLimits = { searchFuel, declarationFuel };
+    this.fuelLimits = Object.freeze(Object.fromEntries(Object.entries({searchFuel,declarationFuel}).map(([kind,limits])=>
+      [kind,limits?Object.freeze({...limits}):undefined])));
+    Object.assign(this.options,this.fuelLimits);
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
@@ -321,6 +323,14 @@ export class CubicalProgram {
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         scopePoints:scopeRecorder,
+        onDirectiveStart:collectScopes?directive=>{
+          this.onDirectiveStart?.(name,directive);
+          this.scopeReplay.record("directive-start",name,directive,this.kernel);
+        }:null,
+        onDirective:collectScopes?(directive,result)=>{
+          this.onDirective?.(name,directive,result);
+          this.scopeReplay.record("directive-end",name,directive,this.kernel,result);
+        }:null,
         nameBased: collectScopes?this.scopeReplay.modules[name].nameBased:this.readSource.nameBased?.(name)??false,
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),

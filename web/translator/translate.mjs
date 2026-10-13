@@ -68,6 +68,7 @@ const universeConstant = name => {
   const tier = match[1].length - 1, value = Number(match[2]);
   return tier ? {tag:"LConst",tier,value} : value;
 };
+const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","simp_set","hlevel_rule"]);
 // A level below ω: every variable ranges over the natural numbers, and only a
 // constant of tier 1 or above is not finite.
 
@@ -80,7 +81,7 @@ const universeConstant = name => {
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,onDirectiveStart=null,onDirective=null}={}) {
     this.scopePoints=scopePoints;
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
@@ -116,6 +117,7 @@ export class Translator {
     this.onPublicationEnd=onPublicationEnd;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
+    this.onDirectiveStart=onDirectiveStart;this.onDirective=onDirective;
     // The declarations to check changed by a number: a theory's expansion
     // adds the ones beyond itself, and a failed type of models takes the
     // rest of its theory off.
@@ -454,6 +456,9 @@ export class Translator {
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
       const d=queued.generated?elaborationSyntax(queued):queued;
+      const directiveStart=directives.length;
+      const finishDirective=()=>this.onDirective?.(d,directives.length>directiveStart?directives.at(-1):{status:"checked"});
+      if(directiveKinds.has(d.kind))this.onDirectiveStart?.(d);
       if(!d.generated&&["def","inductive","theory","initial","free"].includes(d.kind)) {
         const conflict=ownership.reserve([d],d);
         if(conflict) { rejectDuplicate(d,conflict); continue; }
@@ -503,12 +508,14 @@ export class Translator {
           directives.at(-1).searchFuel=this.fuelRecord(unit);
         }
         unit.fuel.close();
+        finishDirective();
         continue;
       }
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
-        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start}); }
+        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind}); }
+        finishDirective();
         continue;
       }
       if(d.kind==="evaluate") {
@@ -526,6 +533,7 @@ export class Translator {
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       if(d.kind==="print") {
@@ -543,6 +551,7 @@ export class Translator {
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       if(d.kind==="simp_rule"||d.kind==="simp_set") {
@@ -571,6 +580,7 @@ export class Translator {
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       // hlevel_rule lemma; registers a checked lemma whose type states an
@@ -596,6 +606,7 @@ export class Translator {
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       if(d.kind==="inductive") {

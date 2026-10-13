@@ -237,3 +237,33 @@ test("resource replay preserves deadline epochs and the original kernel retry ca
   const session=at(program,source,"tt");
   await query(session,"tt","value","tt");
 });
+
+test("replay observes failed prefix directives before entering a later scope",async t=>{
+  const source="evaluate tt expecting tt; def selected(x : Unit) : Unit := x;";
+  const {program,result}=await setup(t,source);
+  assert.deepEqual(result.gaps,[]);
+  const target=at(program,source,"x;");
+  const events=program.scopeReplay.snapshot().events;
+  assert.deepEqual(events.slice(0,2).map(event=>event.stage),["directive-start","directive-end"]);
+  const evaluate=Translator.prototype.evaluate;
+  for(const kind of ["fuel","budget","deadline"]) {
+    Translator.prototype.evaluate=function(){throw Object.assign(Error(`prefix directive ${kind}`),{kind});};
+    let answer;
+    try {answer=await query(target,"x","unavailable");}
+    finally {Translator.prototype.evaluate=evaluate;}
+    assert.equal(answer.failure,kind);
+    assert.equal(answer.stage,"prefix");
+    assert.equal(answer.costs.query,null);
+  }
+  await query(target,"x","value","x");
+});
+
+test("recorded fuel limits cannot be changed by mutating the caller's options",async t=>{
+  const source="def selected(x : Unit) : Unit := x;",declarationFuel={queries:50000};
+  const {program,result}=await setup(t,source,{options:{declarationFuel}});
+  assert.deepEqual(result.gaps,[]);
+  declarationFuel.queries=0;
+  await program.check(source,"main");
+  assert.equal(program.scopeReplay.snapshot().fuelLimits.declarationFuel.queries,50000);
+  await query(at(program,source,"x;"),"x","value","x");
+});
