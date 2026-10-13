@@ -27,7 +27,7 @@ import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,failedExpansion,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -409,11 +409,23 @@ export class Translator {
         if(skipped)this.onQueued?.(-skipped);
       }
     };
-    const rejectDuplicate=(d,conflict)=>{
+    const rejectDuplicate=(d,conflict,members=[d])=>{
       const error=module.locate(duplicateDeclaration(conflict.name),conflict.at);
       this.onDeclarationStart?.(d);
-      const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:true,
+      const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
         reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd};
+      const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
+      const bind=name=>{
+        const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
+        env.set(name,value);env.set(lexicalBinding(value.binding),value);
+      };
+      for(const member of members)for(const {name} of declaredNames(member))
+        if(ownership.owns(name,d))bind(name);
+      // An imported T.f is refused with a refused generator T. A local
+      // member keeps its value, and a name no environment entry spells, as
+      // the field T.f of an earlier model T, keeps its meaning.
+      if(["theory","initial","free"].includes(d.kind))
+        for(const name of [...env.keys()])if(name.startsWith(d.name.text+".")&&!ownership.entries.has(name))bind(name);
       declarations.push(result);
       this.onDeclaration?.(d,result);
     };
@@ -452,10 +464,7 @@ export class Translator {
         const conflict=ownership.reserve(generated,d);
         if(conflict) {
           env.clear(); for(const [key,value] of before)env.set(key,value);
-          // The written owner was reserved above, but none of this expansion
-          // was published. Refuse that owner while preserving the binding
-          // that the expansion would have overwritten.
-          failedExpansion(this,d,env,declarations,module.locate(duplicateDeclaration(conflict.name),conflict.at));
+          rejectDuplicate(d,conflict,generated);
           continue;
         }
         if(generated.length)this.onQueued?.(generated.length-1);
