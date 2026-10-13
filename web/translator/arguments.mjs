@@ -418,15 +418,14 @@ class ArgumentSolver {
   // An argument's type with no expected type, or null when it needs one. The
   // attempt records no inspector references and no proof steps.
   infer(node) {
-    const {t, scope} = this, quiet = scope.withUnit(scope.unit.with({references: null}));
-    const onStep = t.onStep;
-    t.onStep = null;
+    const {t, scope} = this, observations = scope.unit.observations.fork("argument-inference",{visible:false});
+    const quiet = scope.withUnit(scope.unit.with({references:null,steps:null,observations}));
     try { return quiet.infer(t.term(node, quiet, null)).type; }
     catch (error) {
       if (isLimit(error)) throw error;
       return null;
     }
-    finally { t.onStep = onStep; }
+    finally { observations.discard(); }
   }
   // One constraint between two terms: "done", "stuck" (for now) or "clash",
   // when they cannot agree. `polarity` is "covariant" where a larger

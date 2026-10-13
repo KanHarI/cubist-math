@@ -98,7 +98,9 @@ function recursively(translator, scope, recursion, elaborate) {
   if (!first.state.varied && !first.failure) return first.keep();
   const second = attempt(translator, scope, recursion,
     recursion.fixed.filter((_, i) => recursion.generalizable[i]).map(binding => binding.name), elaborate);
-  return (first.state.varied || first.failure && !second.failure ? second : first).keep();
+  const selected = first.state.varied || first.failure && !second.failure ? second : first;
+  (selected === first ? second : first).discard();
+  return selected.keep();
 }
 
 // One elaboration of a recursive match, apart: its fuel starts where the
@@ -108,23 +110,20 @@ function recursively(translator, scope, recursion, elaborate) {
 // declaration's; keep() returns its term or throws its error.
 function attempt(translator, scope, recursion, generalizing, elaborate) {
   const unit = scope.unit, state = { varied: false, called: false };
-  const references = [], steps = [], sink = unit.references, onStep = translator.onStep;
+  const observations = unit.observations.fork(generalizing.length ? "recursive-generalized" : "recursive-fixed");
   const fuel = unit.fuel && new SearchFuel(unit.fuel.search, unit.fuel.limits, { declaration: unit.fuel.declaration });
   if (fuel) fuel.used = { ...unit.fuel.used };
   const searches = { searches: unit.searches.searches, most: { ...unit.searches.most } }, work = { ...unit.work };
-  const apart = scope.withUnit(unit.with({ fuel, searches, work, references: sink && ((...record) => references.push(record)) }));
+  const apart = scope.withUnit(unit.with({ fuel, searches, work, observations }));
   let result, failure;
-  translator.onStep = onStep && (record => steps.push(record));
   try { result = elaborate(apart, { ...recursion, state }, generalizing); } catch (error) { failure = error; }
-  finally { translator.onStep = onStep; }
-  return { state, failure, keep() {
+  return { state, failure, discard() { observations.discard(); }, keep() {
     if (fuel) for (const [kind, used] of Object.entries(fuel.used))
       if (used > unit.fuel.used[kind]) unit.fuel.spend(kind, used - unit.fuel.used[kind]);
     Object.assign(unit.work, work);
     unit.searches.searches = searches.searches;
     Object.assign(unit.searches.most, searches.most);
-    for (const record of references) sink(...record);
-    for (const record of steps) onStep(record);
+    observations.select();
     if (failure) throw failure;
     return result;
   } };
@@ -374,6 +373,29 @@ function branch(translator, motive, value, scope, inner, built) {
 // induction hypotheses. `body` elaborates the clause's body at its scope and
 // type, given the constructor there.
 function clause(translator, scope, { source, name, index, constructor, shape, obligationProof, node, induction }, instance, clauseType, recursion, body) {
+  const description = {source,name,index,constructor,shape,obligationProof,node,induction};
+  const written = at => writtenClause(translator,at,description,instance,clauseType,recursion,body);
+  if (!source?.implicitPath) return written(scope);
+  // Trying the written wildcard spends the declaration's ordinary fuel and
+  // work, even if automatic coherence replaces it. Only its observations are
+  // speculative; no native checkpoint or resource counter is reset here.
+  const observations = scope.unit.observations.fork("implicit-path-body");
+  let term, fits;
+  try {
+    term = written(scope.withUnit(scope.unit.with({observations})));
+    fits = scope.accepts(term,clauseType);
+  } catch (error) {
+    // Without a fallback, a successfully elaborated prefix remains selected
+    // even when the rest of this written clause fails.
+    observations.select();
+    throw error;
+  }
+  if (fits) { observations.select(); return term; }
+  observations.discard();
+  return automaticClause(translator,scope,clauseType,name,node,obligationProof,index);
+}
+
+function writtenClause(translator, scope, { source, name, index, constructor, shape, obligationProof, node, induction }, instance, clauseType, recursion, body) {
   if (!source) return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   const locate = (error, node = source.constructor) => scope.unit.locate(error, node);
   const named = source.args ?? [];
@@ -461,13 +483,6 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   let term = body(inner, type, built);
   for (const { dim, family } of lines.reverse()) term = T.line(dim, family, term);
   for (const [variable, domain] of binders.reverse()) term = T.lam(variable, domain, term);
-  // A wildcard does not specify a path's coherence. With recursive
-  // positions, its boundaries are recursive results, not fresh evaluations
-  // of the wildcard body. Keep the written body when it fits; otherwise
-  // construct the coherence from checked h-level evidence, as for an
-  // omitted squash. Explicit path clauses never take this route.
-  if (source.implicitPath && !scope.accepts(term, clauseType))
-    return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   return term;
 }
 
@@ -479,7 +494,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
   const finish = term => {
     scope.check(term, type);
     const statement = {kind:"obligation",name,start:node.start,end:node.end,keyword:node};
-    translator.onStep?.({statement,next:null,goal:new Goal(type,scope),proof:term});
+    scope.unit.recordStep({statement,next:null,goal:new Goal(type,scope),proof:term});
     translator.reference(scope,{name,start:node.start,end:node.end,role:"coherence obligation",expansionIndex:index+1,
       description:`Checked clause for ${name}${proof ? " from the explicit obligation" : " from h-level evidence"}.`},term);
     return term;

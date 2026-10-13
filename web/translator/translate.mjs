@@ -134,9 +134,9 @@ export class Translator {
   // A source unit of this translator. translate() makes one per module.
   unit(options={}) {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
-      references:this.references,freezeSuggestions:this.freezeSuggestions,...options});
+      references:this.references,steps:this.onStep,freezeSuggestions:this.freezeSuggestions,...options});
   }
-  reference(scope,node,term,env=scope.env) {scope.unit.references?.(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
+  reference(scope,node,term,env=scope.env) {scope.unit.recordReference(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
   // in a message. A search already running at the scope is joined instead.
@@ -1366,7 +1366,7 @@ export class Translator {
     try {
       const proof=this.blockBody(statements,goal);
       // The proof of the following statements is part of this one's proof.
-      this.onStep?.({statement:statements[0],next:statements[1]??null,goal,proof});
+      goal.scope.unit.recordStep({statement:statements[0],next:statements[1]??null,goal,proof});
       return proof;
     }
     catch(error) {

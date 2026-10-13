@@ -302,12 +302,14 @@ export function resolveInductive(translator, node, value, args, scope, expected)
     // Without an expected type, an argument of this type names the instance:
     // only a position can have it, and positions are at the instance.
     if (!instance && !expected && args) {
-      const quiet = scope.withUnit(scope.unit.with({ references: null }));
       for (const arg of args) {
+        const observations = scope.unit.observations.fork("constructor-inference",{visible:false});
+        const quiet = scope.withUnit(scope.unit.with({references:null,steps:null,observations}));
         try {
           const type = scope.nf(scope.infer(translator.term(arg, quiet, null)).type);
           if (type.tag === "Sort" && type.signature === inductive.binding) { instance = type; break; }
         } catch { /* Not inferable alone: the next argument may be. */ }
+        finally { observations.discard(); }
       }
     }
     if (!instance) {

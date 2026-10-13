@@ -6,6 +6,7 @@
 import {NameSupply} from "./names.mjs";
 import {freeNames,onFace} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
+import {ObservationFrame} from "./observations.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -19,18 +20,21 @@ export const emptyRewriteWork = () => ({
 // `searches` records what the declaration's searches spent. `declaring` names
 // the declaration being elaborated, for a message about its own name.
 export class SourceUnit {
-  constructor({checker,source="",moduleName="source",simpRegistry,references=null,
+  constructor({checker,source="",moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
     names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null}) {
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,freezeSuggestions,work,fuel,searches,names,declaring});
+    observations ??= new ObservationFrame({reference:references,step:steps});
+    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
   declaration(limits=DECLARATION_FUEL) {
-    return this.with({work:emptyRewriteWork(),searches:emptySearchRecord(),
+    return this.with({work:emptyRewriteWork(),searches:emptySearchRecord(),observations:this.observations.declaration(),
       fuel:new SearchFuel("The declaration's elaboration",limits,{declaration:true})});
   }
   with(changes) {return new SourceUnit({...this,...changes});}
+  recordReference(...record) {this.observations.recordTo("reference",this.references,...record);}
+  recordStep(record) {this.observations.recordTo("step",this.steps,record);}
   // Report an error at a source node of this unit, unless it has a position.
   locate(error,node) {
     if(Number.isInteger(error.offset)||!Number.isInteger(node?.start))return error;
