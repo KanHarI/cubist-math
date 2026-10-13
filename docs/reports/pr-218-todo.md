@@ -14,3 +14,13 @@ main at `3c9090a9`. They are not fixed by that PR.
   (`x : M; bad_eq : x = tt;`, E606). PR #218 leaves these cases as they are
   on main; only a theory, initial or free model that it refuses as a
   duplicate (E872) refuses the imported `T.*` names.
+- [ ] A notation rule that names a missing member of a name in scope
+  reports the rule's internal key. With `def T : Unit := tt;` and
+  `notation broken { x + y := T.c(x, y); }`, the client
+  `def c := broken.(tt + tt);` reports E343
+  `Untranslated name: \0notation broken T.c`, with a NUL byte for `\0`.
+  The rule reads `T` under its key (`\0notation broken T`) and keeps `.c`
+  after it; E343's message in `web/translator/translate.mjs` prints that
+  key as it is, whereas E340's names a rule's name as the rule writes it.
+  A name that is not in scope at all (`Nope(x, y)`) reports
+  `Untranslated name: Nope`.
