@@ -245,17 +245,11 @@
             "main",
             "intended",
             "E340"
-          ],
-          [
-            "main",
-            "captured",
-            "E606"
           ]
         ],
         "clients": {
           "T": false,
           "intended": false,
-          "captured": false,
           "independent": true
         },
         "assumes": []
@@ -303,17 +297,11 @@
             "main",
             "intended",
             "E340"
-          ],
-          [
-            "main",
-            "captured",
-            "E340"
           ]
         ],
         "clients": {
           "W": false,
           "intended": false,
-          "captured": false,
           "independent": true
         },
         "assumes": []

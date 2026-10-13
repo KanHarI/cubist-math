@@ -22,6 +22,7 @@ import { reported, stated } from "../tools/inline-errors.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { precondition } from "./known-defect.mjs";
+import { observeModule, outputStatus } from "./module-observation.mjs";
 
 const directory = new URL("./fixtures/frontend-generation/", import.meta.url);
 export const cases = readdirSync(directory).filter(file => file.endsWith(".cubist")).sort().map(file => {
@@ -43,7 +44,7 @@ const missing = (source, result) => {
   const lines = source.split("\n"), commented = new Set(stated(source).map(item => item.line));
   return parse(source).declarations.map(d => ({ name: d.name.text, line: lineOf(source, d.start) }))
     .filter(({ name, line }) => !commented.has(line)
-      && !result.outputs.some(output => output.name === name && lineOf(source, output.start) === line))
+      && outputStatus(result, name, output => lineOf(source, output.start) === line) === null)
     .map(({ line }) => lines[line].trim());
 };
 // A declaration's refusals, each as the line where it starts, that line's
@@ -58,7 +59,7 @@ const range = name => (source, result) => result.gaps.filter(gap => gap.name ===
 // span relative to the occurrence and the target relative to the first
 // occurrence, its binder.
 const links = (line, label) => (source, result) => {
-  assert.equal(source.split(line).length, 2, `${line} must occur once`);
+  precondition(() => assert.equal(source.split(line).length, 2, `${line} must occur once`));
   const at = source.indexOf(line);
   const positions = [...line.matchAll(new RegExp(`\\b${label}\\b`, "g"))].map(match => at + match.index);
   return positions.map(position => [...new Set(result.links
@@ -104,12 +105,12 @@ const placed = (source, items, codesOnly = false) => {
 // check without assumptions.
 export async function observe(t, c, module) {
   const { program, result } = await checkProgram(t, c.source, { module, reader: sourceReader({ path: c.path }), name: c.name });
+  const local = observeModule(result, {name:c.name});
   const diagnostics = reported(c.source, result, c.name);
   // Imports must check. Every local gap needs an error in the presentation;
   // consume each once, so one reported error cannot hide multiple failures.
   const errors = diagnostics.filter(item => item.label === "Error").map(item => item.text);
   const unreported = result.gaps.filter(gap => {
-    if (gap.module !== c.name) return true;
     const at = errors.indexOf(normal(gap.code ? `${gap.code}: ${gap.reason}` : gap.reason));
     if (at < 0) return true;
     errors.splice(at, 1);
@@ -119,7 +120,7 @@ export async function observe(t, c, module) {
   const observed = {
     diagnostics: placed(c.source, diagnostics, codeDiagnostics.has(c.id)),
     missing: missing(c.source, result),
-    assumes: result.outputs.filter(output => output.verified && output.axioms?.length).map(output => output.name),
+    assumes: local.assumes,
   };
   const desired = { diagnostics: placed(c.source, stated(c.source), codeDiagnostics.has(c.id)), missing: [], assumes: [] };
   for (const [key, [view, value]] of Object.entries(extras[c.id] ?? {})) {

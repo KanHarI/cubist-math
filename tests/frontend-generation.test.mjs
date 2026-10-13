@@ -7,6 +7,7 @@ import { lint } from "../web/cubist/lint.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { cases, extras, observe } from "./frontend-generation-cases.mjs";
 import { assertStage } from "./known-defect.mjs";
+import { observeModule } from "./module-observation.mjs";
 
 const baseline = JSON.parse(await readFile(new URL("./fixtures/frontend-generation-baseline.json", import.meta.url), "utf8"));
 
@@ -18,18 +19,6 @@ const module = await createCubical();
 for (const c of cases) test(`${c.group}: [${c.id}] ${c.contract}`, async t => {
   const { observed, desired } = await observe(t, c, module);
   assertStage(t, { observed, desired, known: baseline.cases[c.id], id: c.id });
-});
-
-for (const captured of [false,true]) test(`G10 semantic control: ${captured ? "captured" : "intended"} law`, async t => {
-  const c = cases.find(c => c.id === "G10"), anchor = "box(c) => k(zero);";
-  assert.equal(c.source.split(anchor).length, 2);
-  const source = c.source.replace(anchor, captured ? "box(c) => c;" : "box(local_) => k(zero);");
-  const {result,get} = await checkProgram(t, source, {module});
-  assert.deepEqual(result.gaps.map(g => [g.module,g.name,g.code]), [["main",captured ? "intended" : "captured","E606"]]);
-  assert.ok(get("T").verified, "both meanings are well-typed theories");
-  assert.equal(get("intended").verified, !captured);
-  assert.equal(get("captured").verified, captured);
-  assert.ok(result.outputs.every(output => !output.axioms?.length));
 });
 
 test("case IDs are unique, extras name cases, and the manifest lists every case", async () => {
@@ -61,7 +50,7 @@ for (const { source, code, from, to } of [
   assert.ok(lint(source).some(warning => warning.code === code), `${code} safe unused-binder advice must remain available`);
   for (const candidate of [source, source.replace(from, to)]) {
     const { result } = await checkProgram(t, candidate, { module });
-    assert.deepEqual(result.gaps, []);
+    assert.deepEqual(observeModule(result).gaps, []);
     assert.ok(result.outputs.every(output => output.verified && !output.axioms?.length));
   }
 });

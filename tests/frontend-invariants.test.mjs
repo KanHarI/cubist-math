@@ -6,7 +6,8 @@ import create from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { lint } from "../web/cubist/lint.mjs";
-import { assertStage, classifyStage, precondition } from "./known-defect.mjs";
+import { assertStage, classifyStage } from "./known-defect.mjs";
+import { observeModule } from "./module-observation.mjs";
 import { ciSeeds, caseLimit, configuration, generate, minimize } from "./fixtures/frontend-invariants.mjs";
 import { knownPreservation } from "./fixtures/frontend-invariants-baseline.mjs";
 
@@ -19,17 +20,8 @@ async function verify(config) {
   const program = new CubicalProgram(module, (name, importer) => spec.fixtures[name] ?? library(name, importer));
   try {
     const result = await program.check(spec.source, "main");
-    precondition(() => assert.deepEqual(result.gaps.filter(gap => gap.module !== "main"), [], "generated imports must check"));
-    const output = name => {
-      const found = result.outputs.find(item => item.name === name);
-      precondition(() => assert.ok(found, `${name} must have an output`));
-      return found;
-    };
-    const observed = {
-      gaps: result.gaps.map(gap => [gap.module, gap.name, gap.code]),
-      accepted: Object.fromEntries(spec.accepted.map(name => [name, output(name).verified])),
-      assumes: result.outputs.filter(item => item.verified && item.axioms?.length).map(item => item.name),
-    };
+    const {clients, ...local} = observeModule(result, {clients:spec.accepted});
+    const observed = {...local, accepted:clients};
     const desired = { gaps: spec.expectedGaps.map(name => ["main", name, "E606"]),
       accepted: Object.fromEntries(spec.accepted.map(name => [name, true])), assumes: [] };
     const record = [...program.checker.theories.values()].find(item => item.name === spec.model);
@@ -43,7 +35,7 @@ async function verify(config) {
     assert.equal(advice.length, 1);
     assert.equal(advice[0].declaration, "ordinary");
     const rewritten = await program.check(spec.source.replace("forall unused : Unit. Unit", "Unit -> Unit"), "main");
-    assert.deepEqual(rewritten.gaps.map(gap => [gap.module, gap.name, gap.code]), observed.gaps);
+    assert.deepEqual(observeModule(rewritten).gaps, observed.gaps);
     const interfaces = result => result.outputs.filter(item => item.verified).map(item => [item.name, item.type, item.axioms]);
     assert.deepEqual(interfaces(rewritten), interfaces(result), "safe lint rewrite preserves checked interfaces and assumptions");
     const work = program.kernel.work();

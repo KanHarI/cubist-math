@@ -549,7 +549,7 @@ boundaries, not repeated approval checkpoints.
 | CB0: baseline and witnesses | Pin adopted commits; adapt #224's useful fixture/observer improvements and #223's preservation machinery to current-stage expectations; add all review reproductions and contextual-session scenarios. | Record corpus, assumptions, artifacts and costs. Separate old TODOs from regressions; do not claim harness adoption fixes its TODOs. |
 | CB1: identities, origins and scope points | Shared contracts and adapter with resolution-time slot lowering; pilot complete ordinary telescopes, term/universe/dimension binders, attempt-owned observations and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Demonstrate the callback replay/query sequence specified above in a nested function scope and record prefix/history/query costs. |
 | CB2: retained interfaces | On CB1, migrate headers, fields, derived telescopes, family domains, inheritance, helper expansion/validation and dependency analysis; replace inheritance `sameSyntax` checks with binding correspondence. | Prevent both #219 semantic regressions; fix bare recursive references and family helper resolution. Diamond and independent-parent sharing/conflict controls pass. Do not adopt #219's `byName` dependency resolution; remove migrated record/syntax/record conversions. |
-| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, selection activations with explicit effects, notation/operand recipes and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives, nested refinements and all model-opening forms preserve meaning, including per-item file-level activation and declaration-scoped operand receivers without implicit label opening. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get positive intended/negative captured clients; delete corresponding fixed-binder callbacks. |
+| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, selection activations with explicit effects, notation/operand recipes and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives, nested refinements and all model-opening forms preserve meaning, including per-item file-level activation and declaration-scoped operand receivers without implicit label opening. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get intended clients and checked distinguishing controls under the witness contract below; delete corresponding fixed-binder callbacks. |
 | CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. |
 | CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. |
 | CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work. Multiple selected instances are labelled separately; discarded attempts cannot be opened. Sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
@@ -568,9 +568,19 @@ on failure.
 
 ## Verification and completion
 
-Each removed capture refusal needs a checked intended equation/computation
-and a distinguishable incorrect one that fails. Mere kernel acceptance of
-whatever type generation produced is not evidence of source preservation.
+Each removed capture refusal needs a checked intended equation/computation.
+When the captured reading is well-typed, require a negative client and two
+explicit source controls: the intended reading accepts the positive client
+and refuses the negative; the captured reading reverses those verdicts.
+Where capture makes the source ill-typed, document that reason and omit a
+vacuous negative client. The migration witness schema enforces this contract
+for every retired refusal. Mere kernel acceptance of whatever type generation
+produced is not evidence of source preservation.
+
+Observation classification uses the module under test as its boundary across
+all harnesses and controls. Failed dependencies or observer bookkeeping are
+fixture preconditions; missing or refused outputs of the module itself are
+semantic observations. Mutation evidence must distinguish these outcomes.
 
 Required examples include all three #219 findings, imported/same-module/no
 global recursive wrappers, bare recursive names, helpers in family domains,

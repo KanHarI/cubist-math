@@ -19,7 +19,6 @@ def intended(S : T(U0), x : S.M) : x = x := S.l(x);
 def captured(S : T(U0), x : S.M) : S.c = x := S.l(x);
 ${recovery}`,
   clients:["intended","captured","independent"],
-  control:{source:{anchor:"box(k) =>",replacement:"box(other) =>"}},
   desired:{gaps:[["main","captured","E606"]],clients:{intended:true,captured:false,independent:true},assumes:[]},
 }, {
   id:"initial-pattern-model", phase:"CB4", contract:"capture repair exposes the real strategy refusal and preserves the usable theory",
@@ -31,28 +30,22 @@ initial k : P(U0);
 def intended(S : P(U0), n : Nat) : S.c = (match n return S.M { zero => S.c; succ(j) => S.c; }) := S.l(n);
 ${recovery}`,
   clients:["k","intended","independent"],
-  control:{source:{anchor:"succ(k) =>",replacement:"succ(other) =>"}},
   desired:{gaps:[["main","k","E856"]],clients:{k:false,intended:true,independent:true},assumes:[]},
 });
 for (const [id, fixture, source, model] of [
   ["model-shadows-theory", "theory T(U < UU0) { M : set U; c : M; }", `initial T : T(U0);
-def intended : T := T.c;
-def captured : Unit := T.c;`, "T"],
+def intended : T := T.c;`, "T"],
   ["model-shadows-header-global", "def N : U0 := Unit; theory T(U < UU0, A : U) { M : set U; c(x : A) : M; }", `initial N : T(U0, N);
 def intended : N := N.c(tt);
-def captured : N := N.c(N.c(tt));`, "N"],
+def captured(x : N) : N := N.c(x);`, "N"],
   ["model-shadows-parameter-global", "def W : U0 := Unit; theory T(U < UU0) { M : set U; }", `free W(A : W) : T(U0) on Unit;
-def intended : W(tt) := W.gen(tt);
-def captured : W(tt) := W.gen(zero);`, "W"],
+def intended : W(tt) := W.gen(tt);`, "W"],
 ]) bindingCases.push({
   id, phase:"CB4", contract:"a new model identity does not replace a captured imported dependency",
   fixtures:{prior:`${imports}\n${fixture}`}, source:`import prior;\n${source}\n${recovery}`,
-  clients:[model,"intended","captured","independent"],
-  control:{source:{anchor:id === "model-shadows-theory" ? "T(U0)" : id === "model-shadows-header-global" ? "T(U0, N)" : "A : W",
-    replacement:id === "model-shadows-theory" ? "Previous(U0)" : id === "model-shadows-header-global" ? "T(U0, Previous)" : "A : Previous"},
-    fixture:{name:"prior",anchor:id === "model-shadows-theory" ? "theory T(" : `def ${model} :`,
-      replacement:id === "model-shadows-theory" ? "theory Previous(" : "def Previous :"}},
-  desired:{gaps:[["main","captured","E606"]],clients:{[model]:true,intended:true,captured:false,independent:true},assumes:[]},
+  clients:[model,"intended",...(model === "N" ? ["captured"] : []),"independent"],
+  desired:{gaps:model === "N" ? [["main","captured","E606"]] : [],
+    clients:{[model]:true,intended:true,...(model === "N" ? {captured:false} : {}),independent:true},assumes:[]},
 });
 export const resolutionLocations = ["absent", "same-module", "imported"];
 export function resolutionContext(location, declaration) {

@@ -52,12 +52,15 @@ The [capture-refusal registry](../../tests/fixtures/capture-refusals.mjs) names
 CB2/CB3/CB4 ownership and replacing semantic witnesses for every capture-only
 refusal. A test rejects these codes in active test expectations; only known
 observations may require them. Former active refusal tests now retain their
-alpha-safe controls. Five more checked controls validate the new binding
-witnesses without name collisions. The initial-model pattern witness expects
+alpha-safe controls. A shared witness schema requires an intended source
+control for every migration witness. Where a well-typed captured reading
+exists, a second control expresses it explicitly and reverses the positive
+and negative client verdicts; otherwise the schema records why it is
+ill-typed and omits a vacuous negative client. The ten source controls cover
+all seven migration witnesses. The initial-model pattern witness expects
 the genuine unsupported-equation refusal after capture repair, while its
 theory client checks; it does not request a new deriving capability. G10's
-intended and captured laws are both well-typed and produce opposite client
-verdicts in two active source controls.
+intended and captured laws are both well-typed and use this same contract.
 
 The committed historical runner executes these same witnesses at #219's
 pinned head and [records](../../tests/fixtures/capture-bindings-history.json) the wrapper's accidental
@@ -87,14 +90,18 @@ replace those TODOs with execution through the real scope-point backend.
 
 All four adopted mutations apply exactly once, have a passing unmodified
 control, and are killed by assertions in isolated copies with unchanged
-checker limits. Syntax errors, missing modules, timeouts and patches that
-do not apply are invalid runs, not killed mutants.
+checker limits. Syntax errors, timeouts and patches that do not apply are
+invalid runs, not killed mutants. Dependency failures are fixture preconditions.
 The [recorded mutation results](../../tests/fixtures/capture-bindings-mutations.json)
 include source digests, exact edits, structured test events, passing control
 names and active failing test names. TODO assertions do not count as kills;
 a process failure or non-assertion failure makes the run invalid. A fixture
 precondition failure has a separate outcome and cannot count as a contract
-kill. The file-level-selection mutation uses a non-imported witness and
+kill. All three semantic harnesses, their controls and registration checks
+use one module observation boundary: import failures are preconditions;
+missing local outputs are observed values. A subprocess test injects both
+faults through all harnesses and verifies their structured mutation outcomes.
+The file-level-selection mutation uses a non-imported witness and
 reaches semantic classification. The runner writes the artifact format
 directly. Cost measurements remain from clean commit `7f9b4d28`; mutation
 and historical records were generated from clean commit `862d8645`.
@@ -117,7 +124,7 @@ patch with a distinguishing semantic witness before claiming retirement.
 
 ## Validation and costs
 
-On 2026-10-13, the full suite passes: 957 tests, 902 pass, 55 TODOs and
+On 2026-10-13, the full suite passes: 961 tests, 906 pass, 55 TODOs and
 zero failures, including all 3,857 canonical corpus declarations and Cubist
 formatting. Native tests passed on the unchanged runtime baseline. TODOs
 are 18 inherited cases, fifteen binding cases, nine composed preservation
