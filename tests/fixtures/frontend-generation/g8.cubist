@@ -1,4 +1,4 @@
-// G8 (FG4): a wildcard mismatch retains its endpoints and written body range.
+// G8 (CB3): a wildcard mismatch retains its endpoints and written body range.
 
 import hlevels;
 inductive T : set U0 {

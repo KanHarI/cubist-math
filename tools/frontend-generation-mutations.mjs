@@ -6,6 +6,7 @@ import {join,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync,execFileSync} from "node:child_process";
 import {createHash} from "node:crypto";
+import {testResults,mutationOutcome} from "./frontend-test-results.mjs";
 
 const root=fileURLToPath(new URL("../",import.meta.url));
 const args=process.argv.slice(2),destination=args.shift(),audit=args.includes("--audit");
@@ -21,7 +22,7 @@ export const mutations=[
     "references","lowering references"),
   mutation("lexical-use","web/translator/theories.mjs",
     "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};","if(true)return {env,notation:[[SELECTION,null]]};",
-    "frontend-invariants","active control, seed 3$"),
+    "frontend-invariants","uncolliding parameter, seed 3$"),
   mutation("reservation","web/translator/declarations.mjs",
     "conflict ??= entry;","conflict ??= null;","frontend-publication","definition then inductive"),
   mutation("failed-publication","web/cubical-program.mjs",
@@ -31,15 +32,15 @@ export const mutations=[
 for(const id of selected)if(!mutations.some(m=>m.id===id))throw Error(`Unknown mutation ${id}`);
 const chosen=mutations.filter(m=>(audit||m.expected==="killed")&&(!selected.length||selected.includes(m.id)));
 const directory=await mkdtemp(join(tmpdir(),"cubist-generation-mutations-"));
-const report={version:1,adoptedFrom:"49499aa1c56c1b345eb0021468123cec377fb4b8",dirty:!!execFileSync("git",["status","--porcelain"],{cwd:root,encoding:"utf8"}).trim(),revision:execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim(),
+const report={version:2,adoptedFrom:"49499aa1c56c1b345eb0021468123cec377fb4b8",dirty:!!execFileSync("git",["status","--porcelain"],{cwd:root,encoding:"utf8"}).trim(),revision:execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim(),
   limits:{processMs:60000,testMs:45000,maxBufferBytes:8*1024*1024,checker:"unchanged defaults",cases:8},mutations:[]};
 const hash=source=>createHash("sha256").update(source).digest("hex");
 const run=m=>{
   const env={...process.env,CUBIST_GENERATION_CASES:"8"};delete env.NODE_TEST_CONTEXT;
-  const result=spawnSync(process.execPath,["--test","--test-reporter=tap","--test-timeout=45000",`--test-name-pattern=${m.pattern}`,
+  const result=spawnSync(process.execPath,["--test","--test-reporter=./tools/frontend-test-reporter.mjs","--test-timeout=45000",`--test-name-pattern=${m.pattern}`,
     ...[m.test].flat().map(name=>`tests/${name}.test.mjs`)],
     {cwd:directory,env,encoding:"utf8",timeout:60000,maxBuffer:8*1024*1024});
-  return {status:result.status,error:result.error?.message,signal:result.signal,log:(result.stdout??"")+(result.stderr??"")};
+  return {status:result.status,error:result.error?.message,signal:result.signal,log:result.stdout??"",stderr:result.stderr??""};
 };
 try {
   for(const name of ["web","tests","tools","library","cubist-tests","archive","kernel","wasm","Makefile","cli","package.json"])
@@ -49,19 +50,19 @@ try {
     const occurrences=original.split(m.from).length-1;
     if(occurrences!==1)throw Error(`${m.id}: expected one mutation site, found ${occurrences}`);
     const baseline=run(m);
-    if(baseline.status!==0||!/# pass [1-9]/.test(baseline.log))
+    const originalTests=testResults(baseline);
+    if(baseline.status!==0||originalTests.invalid||!originalTests.passed.length)
       throw Error(`${m.id}: baseline failed or no tests ran (status ${baseline.status}, signal ${baseline.signal}, error ${baseline.error??"none"})\n${baseline.log}`);
     let result;
     try {await writeFile(path,original.replace(m.from,m.to));result=run(m);}
     finally {await writeFile(path,original);}
-    const invalid=result.error||result.signal||/SyntaxError:|ERR_MODULE_NOT_FOUND|ENOENT|testTimeoutFailure/.test(result.log);
-    const outcome=invalid?"invalid":result.status===0?"survived":result.log.includes("ERR_ASSERTION")?"killed":"unclassified";
+    const classification=mutationOutcome(result,originalTests.passed),{outcome}=classification;
     const failures=join(directory,"build/frontend-generation-failures");
     const reducedCases=await Promise.all((await readdir(failures).catch(error=>{
       if(error.code==="ENOENT")return [];throw error;
     })).map(async name=>JSON.parse(await readFile(join(failures,name),"utf8"))));
-    const entry={...m,sourceDigest:hash(original),outcome,status:result.status,error:result.error,
-      failedTests:[...result.log.matchAll(/not ok \d+ - (.+)/g)].map(match=>match[1]),reducedCases,log:result.log};
+    const entry={...m,sourceDigest:hash(original),...classification,status:result.status,error:result.error,
+      distinguishingTests:originalTests.passed,reducedCases,events:testResults(result).events??[],stderr:result.stderr};
     report.mutations.push(entry);
     await rm(failures,{recursive:true,force:true});
     console.log(`${m.id}: ${outcome} (expected ${m.expected})`);

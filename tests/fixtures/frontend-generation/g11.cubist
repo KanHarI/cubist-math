@@ -1,4 +1,4 @@
-// G11 (FG2): complete declaration telescopes protect helper fields from caller parameters.
+// G11 (CB2): complete declaration telescopes protect helper fields from caller parameters.
 
 import hlevels;
 theory T(U < UU0) {

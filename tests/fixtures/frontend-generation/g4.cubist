@@ -1,4 +1,4 @@
-// G4 (FG4): derived matches retain checked carrier evidence (nested clauses).
+// G4 (CB3): derived matches retain checked carrier evidence (nested clauses).
 
 import hlevels;
 inductive Bit : set U0 {

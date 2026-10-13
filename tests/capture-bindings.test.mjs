@@ -50,11 +50,20 @@ def selected : Rules(U0) := Rules.make(Nat, nat_is_set, zero);`;
 for (const kind of ["simp_rule", "simp_set", "hlevel_rule"]) for (const imported of [false, true]) {
   test(`CB0: ${kind} ignores opened labels (${imported ? "imported" : "local"} registration)`, async t => {
     const hlevel = kind === "hlevel_rule";
-    const definition = hlevel ? "def rule : IsSet(U0, Nat) := nat_is_set;"
+    const definition = hlevel ? `inductive Box(A : U0) : U0 { box(a : A); }
+def unbox(A : U0, b : Box(A)) : A := match b { box(a) => a; };
+def box_unbox(A : U0, b : Box(A)) : typed(Box(A), box(unbox(A, b))) = b := match b {
+  box(a) => refl(typed(Box(A), box(a)));
+};
+def rule(A : U0, setA : IsSet(U0, A)) : IsSet(U0, Box(A)) := retract_has_level(U0, succ(zero))(
+  A, Box(A), fun (b : Box(A)) => unbox(A, b), fun (a : A) => box(a),
+  fun (b : Box(A)) => box_unbox(A, b), setA
+);`
       : "def rule(n : Nat) : add(n, zero) = n := nat_add_zero(n);";
     const directive = kind === "simp_set" ? "simp_set named_rules := [rule];" : `${kind} rule;`;
-    const source = `${ruleModel}\n${definition}\nuse selected;\n${directive}`;
-    const client = hlevel ? "def checked : IsSet(U0, Nat) { hlevel; }"
+    const beforeRegistration = `${ruleModel}\n${definition}\nuse selected;`;
+    const source = `${beforeRegistration}\n${directive}`;
+    const client = hlevel ? "def checked : IsSet(U0, Box(Nat)) { hlevel; }"
       : `def checked(n : Nat) : add(n, zero) = n { ${kind === "simp_set" ? "simp only [named_rules]" : "simp"}; }`;
     const { program, result, get } = await checkProgram(t, `${imported ? "import registered;" : source}\n${client}`, {
       module, reader: (name, importer) => name === "registered" ? source : library(name, importer),
@@ -67,6 +76,13 @@ for (const kind of ["simp_rule", "simp_set", "hlevel_rule"]) for (const imported
     assert.equal(rules.length, 1);
     const identity = `${imported ? "registered" : "main"}__rule`;
     assert.equal(rules[0].identity, hlevel ? identity : JSON.stringify({ tag: "DefRef", name: identity }));
+
+    const unregistered = await checkProgram(t, `${imported ? "import registered;" : beforeRegistration}\n${client}`, {
+      module, reader: (name, importer) => name === "registered" ? beforeRegistration : library(name, importer),
+    });
+    assert.deepEqual(unregistered.result.gaps.map(gap => [gap.module, gap.name]), [["main", "checked"]]);
+    assert.equal(unregistered.get("checked").verified, false, "the same client needs the registration");
+    if (hlevel) assert.equal(unregistered.result.gaps[0].code, "E366", "structural search cannot prove the Box carrier's level");
 
     const missing = await checkProgram(t, `${ruleModel}\nuse selected;\n${directive}`, { module });
     assert.deepEqual(missing.result.gaps.map(gap => gap.code), ["E343"], "an opened-only rule stays missing");

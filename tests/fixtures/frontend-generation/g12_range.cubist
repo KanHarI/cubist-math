@@ -1,4 +1,4 @@
-// G12-range (FG5): recursive type-unfolding refusals cover the responsible original reference.
+// G12-range (CB5): recursive type-unfolding refusals cover the responsible original reference.
 
 import hlevels;
 import nat;

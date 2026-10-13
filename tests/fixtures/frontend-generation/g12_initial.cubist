@@ -1,4 +1,4 @@
-// G12-initial (FG2/FG4/FG5): initial-model calls to earlier recursive values check and compute.
+// G12-initial (CB2/CB3): initial-model calls to earlier recursive values check and compute.
 
 import hlevels;
 import nat;

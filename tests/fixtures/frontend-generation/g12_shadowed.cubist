@@ -1,4 +1,4 @@
-// G12-shadowed (FG2/FG4/FG5): a local parameter shadows an earlier recursive operation.
+// G12-shadowed (CB2/CB3): a local parameter shadows an earlier recursive operation.
 
 import hlevels;
 import nat;

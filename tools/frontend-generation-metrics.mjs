@@ -2,7 +2,6 @@
 // node tools/frontend-generation-metrics.mjs REPORT.json [REPEATS]
 // Search fuel is deterministic. Kernel work depends on cache state; timings
 // and memory are observations, not acceptance thresholds.
-import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {readFile, readdir, writeFile} from "node:fs/promises";
 import {cpus, platform, release} from "node:os";
@@ -10,14 +9,17 @@ import {fileURLToPath} from "node:url";
 import {join, relative, resolve} from "node:path";
 import create from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
-import {sourceReader} from "./module-sources.mjs";
+import {sourceReader, archiveReader} from "./module-sources.mjs";
+import {archiveModules} from "../web/cubist/modules.mjs";
 import {assertFreshBuild} from "./build-stamp.mjs";
 import {parse} from "../web/cubist/parser.mjs";
 import {canonicalHasher} from "./canonical-hash.mjs";
+import {hashEntries, byName, jsonDigest, digestFormats, compactSamples} from "./frontend-generation-evidence.mjs";
 
 assertFreshBuild();
 const root = fileURLToPath(new URL("../", import.meta.url));
 const sampling = process.argv[2] === "--sample";
+const inventoryOnly = process.argv[2] === "--corpus";
 const destination = process.argv[2], repeats = sampling ? 1 : Number(process.argv[3] ?? 3);
 if (!destination || !Number.isSafeInteger(repeats) || repeats < 1)
   throw Error("Usage: node tools/frontend-generation-metrics.mjs REPORT.json [positive repeat count]");
@@ -32,12 +34,6 @@ def meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);`,
   fold: `import hlevels; import algebra; import nat;
 free W(A : U0) : Monoid(U0) on A;
 def computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }`,
-};
-const hashEntries = entries => {
-  const hash = createHash("sha256");
-  for (const [name, bytes] of entries.sort(([a],[b]) => a.localeCompare(b)))
-    hash.update(name).update("\0").update(bytes).update("\0");
-  return hash.digest("hex");
 };
 async function sample(name, collectReferences) {
   const source = sources[name];
@@ -65,7 +61,7 @@ async function sample(name, collectReferences) {
     const interfaces = all.filter(output => output.verified).map(output => {
       const type = checkedTypes.get(output.binding);
       if (!type) throw Error(`Missing checked interface ${output.binding}`);
-      return [output.binding, canonical(type), output.axioms];
+      return [output.binding, canonical(type), [...output.axioms].sort()];
     });
     observation = {name,source,elapsedMs,collections:{references:collectReferences,scopePoints:"not implemented",artifacts:"not implemented"},
       work:program.kernel.work(),sourceDigest:hashEntries(Object.entries(program.sources)),
@@ -81,6 +77,27 @@ async function sample(name, collectReferences) {
   global.gc();
   observation.memory.disposed = process.memoryUsage();
   return observation;
+}
+
+async function corpusInventory() {
+  const program = new CubicalProgram(await create(), archiveReader("benchmark"), {collectReferences:false});
+  try {
+    const result = await program.check(archiveModules.map(name => `import ${name};`).join("\n"), "benchmark");
+    const symbols = Object.values(program.symbols), canonical = canonicalHasher();
+    const assumptions = [...program.checker.assumptions].sort(byName).map(([binding,type]) =>
+      ({binding, label:program.checker.assumptionLabels.get(binding) ?? binding, typeDigest:canonical(type)}));
+    if (result.gaps.length || symbols.some(output => !output.verified)) throw Error("Corpus did not check completely");
+    return {declarations:result.declarationCount, entryModules:archiveModules.length,
+      loadedModules:Object.keys(program.sources).filter(name => name !== "benchmark").sort(),
+      verified:symbols.filter(output => output.verified).length, sourceDigest:hashEntries(Object.entries(program.sources)),
+      assumptions, assumptionDependenciesDigest:jsonDigest(symbols.map(output =>
+        [output.binding, [...output.axioms].sort()]).sort(byName)), gaps:result.gaps};
+  } finally { program.dispose(); }
+}
+
+if (inventoryOnly) {
+  process.stdout.write(JSON.stringify(await corpusInventory()));
+  process.exit(0);
 }
 
 if (sampling) {
@@ -99,12 +116,13 @@ async function frontendDigest() {
     }
   }
   await visit(join(root, "web"));
-  paths.push(fileURLToPath(import.meta.url));
+  paths.push(...["frontend-generation-metrics.mjs", "frontend-generation-evidence.mjs", "canonical-hash.mjs", "module-sources.mjs"]
+    .map(name => fileURLToPath(new URL(name, import.meta.url))));
   return hashEntries(await Promise.all(paths.map(async path => [relative(root,path), await readFile(path)])));
 }
 const revision = execFileSync("git", ["rev-parse","HEAD"], {cwd:root, encoding:"utf8"}).trim();
 const report = {
-  version:2, revision, dirty:!!execFileSync("git", ["status","--porcelain"], {cwd:root, encoding:"utf8"}).trim(),
+  version:3, digestFormats, revision, dirty:!!execFileSync("git", ["status","--porcelain"], {cwd:root, encoding:"utf8"}).trim(),
   frontendDigest:await frontendDigest(), runtime:process.version, cpu:cpus()[0].model,
   platform:`${platform()} ${release()}`, build:JSON.parse(await readFile(join(root,"web/dist/build-stamp.json"),"utf8")),
   limits:"default declaration/search fuel and kernel budgets",
@@ -117,6 +135,9 @@ for (const name of Object.keys(sources)) for (const collectReferences of [false,
     {cwd:root,encoding:"utf8",timeout:120000,maxBuffer:16*1024*1024});
   report.samples.push({...JSON.parse(bytes),repeat});
 }
+Object.assign(report, compactSamples(report.samples));
+report.corpus = JSON.parse(execFileSync(process.execPath,[fileURLToPath(import.meta.url),"--corpus"],
+  {cwd:root,encoding:"utf8",timeout:300000,maxBuffer:16*1024*1024}));
 if (await frontendDigest() !== report.frontendDigest) throw Error("Frontend sources changed during measurement.");
 await writeFile(resolve(destination),JSON.stringify(report,null,2)+"\n");
 console.log(JSON.stringify(report.samples.map(({name,elapsedMs,gaps})=>({name,elapsedMs,gaps})),null,2));

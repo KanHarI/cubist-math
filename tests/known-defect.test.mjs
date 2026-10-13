@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { assertStage } from "./known-defect.mjs";
+import { assertStage, classifyStage } from "./known-defect.mjs";
+import { configuration, generate, minimize } from "./fixtures/frontend-invariants.mjs";
+import { knownPreservation } from "./fixtures/frontend-invariants-baseline.mjs";
 
 test("known defects cannot hide a new failure, missing observation or unexpected fix", () => {
   const known = { phase: "CB2", observed: { accepted: ["captured"], errors: ["intended"] } };
@@ -30,4 +32,33 @@ test("active contracts and retired records must satisfy the desired observation"
   assert.throws(() => assertStage({ todo }, {
     observed: [], desired: [], known: { phase: "CB2", observed: [] }, id: "retired", strict: false,
   }), { code: "ERR_ASSERTION" });
+});
+
+test("strict mode accepts repaired behavior while normal mode requests record retirement", () => {
+  const stage = { observed: [], desired: [], known: { phase: "CB2", observed: ["wrong"] }, id: "fixed" };
+  assert.equal(classifyStage({ ...stage, strict: false }).kind, "fixed");
+  assert.equal(classifyStage({ ...stage, strict: true }).kind, "pass");
+  assertStage({ todo: () => assert.fail("strict mode has no TODO") }, { ...stage, strict: true });
+  assert.throws(() => assertStage({ todo: assert.fail }, { ...stage, strict: false }), /fixed; retire/);
+});
+
+test("shrinking compares candidates with their own contract and preserves an inheritance-only regression", async () => {
+  const config = { ...configuration(3), recursive: false, paths: false, capture: true };
+  const classify = candidate => {
+    const spec = generate(candidate);
+    const desired = { gaps: [["main", "captured", "E606"]], assumes: [],
+      accepted: Object.fromEntries(spec.accepted.map(name => [name, true])) };
+    const known = knownPreservation(candidate, desired), observed = structuredClone(known.observed);
+    if (candidate.inherited) observed.accepted.child_selection = false;
+    return classifyStage({ desired, observed, known, strict: false });
+  };
+  const original = classify(config);
+  assert.equal(original.kind, "regression");
+  assert.equal(classify({ ...config, inherited: false }).kind, "known-defect");
+  const reduced = await minimize(config, async candidate => {
+    const result = classify(candidate);
+    return result.kind === "regression" && result.signature === original.signature;
+  });
+  assert.equal(reduced.config.inherited, true, "dropping child_selection cannot masquerade as the same regression");
+  assert.ok(reduced.attempts <= 12);
 });

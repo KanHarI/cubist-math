@@ -1,4 +1,4 @@
-// G11-initial (FG2): initial-model client.
+// G11-initial (CB2): initial-model client.
 
 import hlevels;
 theory T(U < UU0) {

@@ -1,4 +1,4 @@
-// G3 (FG2): unsupported law-dependent transport leaves a usable theory and no partial Hom family.
+// G3 (CB2): unsupported law-dependent transport leaves a usable theory and no partial Hom family.
 
 import hlevels;
 theory T(U < UU0) {

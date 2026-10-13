@@ -4,24 +4,36 @@
   "adoptedFixtures": "1fdc68a5e7da198f2b538dfbaa95e4bad40c97ca",
   "cases": {
     "G10": {
-      "phase": "FG2/FG5",
+      "phase": "CB3",
       "observed": {
         "diagnostics": [
           {
             "at": "theory T(U < UU0) {",
             "label": "Error",
             "text": "E871: Inlining k here would capture its field c: rename the enclosing pattern or statement binding."
+          },
+          {
+            "at": "def intended(S : T(U0), n : Nat) : (match n return S.M {",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def at_step(S : T(U0)) : S.c = S.c := S.l(succ(zero));",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
+          },
+          {
+            "at": "def captured(S : T(U0), x : S.M) : x = S.c := at_step(S);",
+            "label": "Error",
+            "text": "E340: Untranslated dependency: T"
           }
         ],
         "missing": [],
-        "assumes": [],
-        "range": [
-          null
-        ]
+        "assumes": []
       }
     },
     "G11": {
-      "phase": "FG2",
+      "phase": "CB2",
       "observed": {
         "diagnostics": [
           {
@@ -35,7 +47,7 @@
       }
     },
     "G11-grouped-dependent": {
-      "phase": "FG2",
+      "phase": "CB2",
       "observed": {
         "diagnostics": [
           {
@@ -49,7 +61,7 @@
       }
     },
     "G11-inherited": {
-      "phase": "FG2",
+      "phase": "CB2",
       "observed": {
         "diagnostics": [
           {
@@ -63,7 +75,7 @@
       }
     },
     "G11-initial": {
-      "phase": "FG2",
+      "phase": "CB2",
       "observed": {
         "diagnostics": [
           {
@@ -77,7 +89,7 @@
       }
     },
     "G12": {
-      "phase": "FG2/FG4/FG5",
+      "phase": "CB2/CB3",
       "observed": {
         "diagnostics": [
           {
@@ -111,7 +123,7 @@
       }
     },
     "G12-inherited": {
-      "phase": "FG2/FG4/FG5",
+      "phase": "CB2/CB3",
       "observed": {
         "diagnostics": [
           {
@@ -150,7 +162,7 @@
       }
     },
     "G12-initial": {
-      "phase": "FG2/FG4/FG5",
+      "phase": "CB2/CB3",
       "observed": {
         "diagnostics": [
           {
@@ -189,7 +201,7 @@
       }
     },
     "G12-range": {
-      "phase": "FG5",
+      "phase": "CB5",
       "observed": {
         "diagnostics": [
           {
@@ -206,7 +218,7 @@
       }
     },
     "G12-shadowed": {
-      "phase": "FG2/FG4/FG5",
+      "phase": "CB2/CB3",
       "observed": {
         "diagnostics": [
           {
@@ -230,7 +242,7 @@
       }
     },
     "G2": {
-      "phase": "FG3",
+      "phase": "CB4",
       "observed": {
         "diagnostics": [
           {
@@ -299,7 +311,7 @@
       }
     },
     "G3": {
-      "phase": "FG2",
+      "phase": "CB2",
       "observed": {
         "diagnostics": [
           {
@@ -326,7 +338,7 @@
       }
     },
     "G4": {
-      "phase": "FG4",
+      "phase": "CB3",
       "observed": {
         "diagnostics": [
           {
@@ -360,7 +372,7 @@
       }
     },
     "G4-flat": {
-      "phase": "FG4",
+      "phase": "CB3",
       "observed": {
         "diagnostics": [
           {
@@ -389,18 +401,18 @@
       }
     },
     "G5": {
-      "phase": "FG5",
+      "phase": "CB5",
       "observed": {
         "diagnostics": [
           {
             "at": "op : forall x, y : M. M;",
             "label": "Warning",
-            "text": "W706: x is unused in the body: take it out of the group and write M -> \u2026 for it."
+            "text": "W706: x is unused in the body: take it out of the group and write M -> … for it."
           },
           {
             "at": "op : forall x, y : M. M;",
             "label": "Warning",
-            "text": "W706: y is unused in the body: take it out of the group and write M -> \u2026 for it."
+            "text": "W706: y is unused in the body: take it out of the group and write M -> … for it."
           }
         ],
         "missing": [],
@@ -408,13 +420,13 @@
       }
     },
     "G5-single": {
-      "phase": "FG5",
+      "phase": "CB5",
       "observed": {
         "diagnostics": [
           {
             "at": "op : forall x : M. M;",
             "label": "Warning",
-            "text": "W705: x is unused in the body: write M -> \u2026 instead of forall x : M. \u2026."
+            "text": "W705: x is unused in the body: write M -> … instead of forall x : M. …."
           }
         ],
         "missing": [],
@@ -422,7 +434,7 @@
       }
     },
     "G8": {
-      "phase": "FG4",
+      "phase": "CB3",
       "observed": {
         "diagnostics": [
           {
@@ -446,7 +458,7 @@
       }
     },
     "G9": {
-      "phase": "FG5",
+      "phase": "CB5",
       "observed": {
         "diagnostics": [],
         "missing": [],

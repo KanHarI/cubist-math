@@ -1,4 +1,4 @@
-// G12-inherited (FG2/FG4/FG5): inherited calls to earlier recursive values check and compute.
+// G12-inherited (CB2/CB3): inherited calls to earlier recursive values check and compute.
 
 import hlevels;
 import nat;

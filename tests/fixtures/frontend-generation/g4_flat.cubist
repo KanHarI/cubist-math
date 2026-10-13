@@ -1,4 +1,4 @@
-// G4-flat (FG4): derived matches retain checked carrier evidence (flat clauses).
+// G4-flat (CB3): derived matches retain checked carrier evidence (flat clauses).
 
 import hlevels;
 inductive Bit : set U0 {

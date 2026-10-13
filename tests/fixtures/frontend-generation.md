@@ -105,9 +105,10 @@ changes the case's comment, and the new wording needs the same review.
 - **G9** freshens a law binder; every written `c` keeps its label, links to
   the binder and spans exactly the label, and `meaning` fixes the law's
   meaning.
-- **G10** refuses a capture with E871 naming helper `k` and field `c`, over the
-  conflicting binder: the `c` of `succ(c)`, not its use in `k(c)`. The
-  roadmap also allows the helper call; the fixing compiler reports the binder.
+- **G10** requires the law to check despite the colliding `succ(c)` binder.
+  Independent clients state the intended field reference at arbitrary input
+  and at a successor. A client claiming an arbitrary value equals the field
+  is refused. The current E871 refusal is a known defect, not desired behavior.
 - **G11** requires the intended `op(x, S.c)` equation to check and the
   captured `op(x, x)` equation to be refused, directly, through a helper
   chain with grouped/dependent parameters, through inheritance and through an
@@ -137,24 +138,23 @@ pragmas, keeping their IDs and the group prefixes the FG6 mutation gate selects.
 
 ## Historical and passing coverage
 
-Fixed examples are protected by existing tests, which this runner does not
-duplicate:
+The runner verifies this table against executable test names, so a removed or
+renamed historical/control test requires an explicit coverage update. The
+canonical corpus also checks `Constant`, `K`, `idem_at`, `Named` and
+`named_fold` in [initial_models.cubist](../../cubist-tests/initial_models.cubist).
 
-| ID | Existing test |
-| --- | --- |
-| H1 | `Constant`, `K`, `idem_at`, `Named` and `named_fold` in [`initial_models.cubist`](../../cubist-tests/initial_models.cubist) |
-| H2 | “initial and free models retain imported global types and law constants” in [theory-resolution.test.mjs](../theory-resolution.test.mjs) |
-| H3 | “family indices carry captured syntax through generated homomorphisms and isomorphisms” in [theory-resolution.test.mjs](../theory-resolution.test.mjs) |
-| H4 | “theory capture uses opened fields before globals and retains them across imports and selections” in [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) |
-| H5 | “inlining preserves a helper's free fields under a caller's binders” in [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) |
-
-Passing controls in [theory-hygiene.test.mjs](../theory-hygiene.test.mjs):
-“generated evidence links nowhere and written compound headers link once”,
-“freshened parameters and operation arguments keep their public names in
-diagnostics and inspection”, “substitution considers enclosing binders
-before refusing a fixed pattern capture”, “generated recursive calls retain
-their declaration under same-named parameters and patterns” and “catch-all
-path clauses respect recursive boundaries and require coherence”.
+| Coverage ID | Test file | Executable test name |
+| --- | --- | --- |
+| H1 | [references.test.mjs](../references.test.mjs) | `declaration identities survive every syntax transformation independently of spelling` |
+| H2 | [theory-resolution.test.mjs](../theory-resolution.test.mjs) | `initial and free models retain imported global types and law constants` |
+| H3 | [theory-resolution.test.mjs](../theory-resolution.test.mjs) | `family indices carry captured syntax through generated homomorphisms and isomorphisms` |
+| H4 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `theory capture uses opened fields before globals and retains them across imports and selections` |
+| H5 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `inlining preserves a helper's free fields under a caller's binders` |
+| P1 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `generated evidence links nowhere and written compound headers link once` |
+| P2 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `freshened parameters and operation arguments keep their public names in diagnostics and inspection` |
+| P3 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `substitution considers enclosing binders before refusing a fixed pattern capture` |
+| P4 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `generated recursive calls retain their declaration under same-named parameters and patterns` |
+| P5 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `catch-all path clauses respect recursive boundaries and require coherence` |
 
 G7 is a historical symptom, not a currently reproduced defect. FG1 must
 inject a genuine failed parent projection and verify its dependents,
@@ -179,7 +179,7 @@ capture example as evidence of an open bug.
 | `G6` | G6 | Parent cause, child dependency and unrelated recovery |
 | `G8` | G8 | Wildcard diagnostic endpoints, exact body range and no coherence search |
 | `G9` | G9 | Freshened binder and every use: public labels and navigation |
-| `G10` | G10 | Capture refusal over the written binder |
+| `G10` | G10 | Pattern/helper collision: intended law and rejected captured equation |
 | `G11` | G11 | Direct intended and captured equations |
 | `G11-grouped-dependent` | G11 | Helper chain with grouped/dependent parameters |
 | `G11-inherited` | G11 | Inherited helper chain |

@@ -1,4 +1,4 @@
-// G5 (FG5): grouped-binder advice preserves supported calls and generated interfaces.
+// G5 (CB5): grouped-binder advice preserves supported calls and generated interfaces.
 
 import hlevels;
 theory T(U < UU0) {

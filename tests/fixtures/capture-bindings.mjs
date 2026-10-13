@@ -7,19 +7,24 @@ const recovery = "def independent : Unit := tt;";
 const refusedTheory = [["main", "T", "E845"], ["main", "captured", "E340"]];
 
 export const bindingCases = [];
-for (const location of ["absent", "same-module", "imported"]) {
-  const setup = `${imports}\n${location === "same-module" ? global : location === "imported" ? "import prior;" : ""}`;
+export const resolutionLocations = ["absent", "same-module", "imported"];
+export function resolutionContext(location, declaration) {
+  return { prefix: `${imports}\n${location === "same-module" ? declaration : location === "imported" ? "import prior;" : ""}`,
+    fixtures: location === "imported" ? { prior: `${imports}\n${declaration}` } : {} };
+}
+for (const location of resolutionLocations) {
+  const context = resolutionContext(location, global);
   for (const bare of [false, true]) bindingCases.push({
     id: `recursive-${bare ? "bare" : "wrapper"}-${location}`, phase: "CB2",
     contract: "recursive field dependencies cannot become a same-spelled global",
-    source: `${setup}
+    source: `${context.prefix}
 theory T(U < UU0) { M : set U; ${recursive}
   ${bare ? "" : "def wrap(n : Nat) : Nat := iter(n);"}
   op(p : ${bare ? "iter = (fun (n : Nat) => succ(zero))" : "wrap(zero) = succ(zero)"}) : M;
 }
 def captured(S : T(U0)) : S.M := S.op(${bare ? "refl(fun (n : Nat) => succ(zero))" : "refl(succ(zero))"});
 ${recovery}`,
-    fixtures: location === "imported" ? { prior: `${imports}\n${global}` } : {},
+    fixtures: context.fixtures,
     clients: ["captured", "independent"],
     desired: { gaps: refusedTheory, clients: { captured: false, independent: true }, assumes: [] },
   });
@@ -30,18 +35,14 @@ bindingCases.push({
   source: `${imports}
 theory T(U < UU0, n : Nat) { M : set U; op(p : n = n) : M; def n : Nat := zero; }
 def identity(n : Nat, S : T(U0, n)) : T.Hom(S, S) := T.Hom.id(S);
-initial N : T(U0, zero);
-def generated : N := N.op(refl(zero));`,
-  clients: ["identity", "N", "generated"],
-  desired: { gaps: [], clients: { identity: true, N: true, generated: true }, assumes: [] },
-}, {
-  id: "family-domain-helper", phase: "CB2", contract: "a family domain sees its preceding helper",
-  source: `${imports}
-theory T(U < UU0) { M : set U; def Index : U0 := Nat; F(n : Index) : set U; }
-def member(S : T(U0)) : U0 := S.F(zero);
-${recovery}`,
-  clients: ["member", "independent"],
-  desired: { gaps: [], clients: { member: true, independent: true }, assumes: [] },
+def param(m : Nat, S : T(U0, m), p : m = m) : S.M := S.op(p);
+def captured_param(m : Nat, S : T(U0, m)) : S.M := S.op(refl(zero));
+initial N : T(U0, succ(zero));
+def generated : N := N.op(refl(succ(zero)));
+def captured : N := N.op(refl(zero));`,
+  clients: ["identity", "param", "captured_param", "N", "generated", "captured"],
+  desired: { gaps: [["main", "captured_param", "E606"], ["main", "captured", "E606"]],
+    clients: { identity: true, param: true, captured_param: false, N: true, generated: true, captured: false }, assumes: [] },
 }, {
   id: "imported-pattern-rename", phase: "CB2/CB3/CB5",
   contract: "inheritance renames field identities without capturing imported pattern binders",
@@ -57,6 +58,21 @@ ${recovery}`,
   clients: ["meaning", "independent"],
   desired: { gaps: [], clients: { meaning: true, independent: true }, assumes: [] },
 });
+
+for (const location of resolutionLocations) {
+  const context = resolutionContext(location, "def Index : U0 := Unit;");
+  bindingCases.push({
+    id: `family-domain-helper-${location}`, phase: "CB2", contract: "family domains retain the helper instead of an ambient Index",
+    fixtures: context.fixtures,
+    source: `${context.prefix}
+theory T(U < UU0) { M : set U; def Index : U0 := Nat; F(n : Index) : set U; }
+def member(S : T(U0)) : U0 := S.F(zero);
+def captured(S : T(U0)) : U0 := S.F(tt);
+${recovery}`,
+    clients: ["member", "captured", "independent"],
+    desired: { gaps: [["main", "captured", "E606"]], clients: { member: true, captured: false, independent: true }, assumes: [] },
+  });
+}
 
 const models = `${imports}
 theory Point(U < UU0) { M : set U; one : M; }

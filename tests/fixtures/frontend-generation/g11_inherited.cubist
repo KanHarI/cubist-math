@@ -1,4 +1,4 @@
-// G11-inherited (FG2): inherited helper chain.
+// G11-inherited (CB2): inherited helper chain.
 
 import hlevels;
 theory T(U < UU0) {

@@ -83,7 +83,6 @@ export const extras = {
   G3: { published: [published("T.Hom", "T.Iso"), []] },
   G8: { range: [range("h"), [{ line: "_ => t1;", before: "_ => ", covers: "t1" }]], searches: [searches("h"), [0]] },
   G9: { links: [links("law l(c : M) : k(c) = op(c, c);", "c"), Array(4).fill([{ name: "c", target: 0, start: 0, end: 0 }])] },
-  G10: { range: [range("T"), [{ line: "succ(c) => k(c);", before: "succ(", covers: "c" }]] },
   "G12-range": { range: [range("T"), [{ line: "law nope(n : Nat) : iter(n) = c;", before: "law nope(n : Nat) : ",
     covers: "iter(n)" }]] },
   "control-paths-wrong": { obligations: [obligations("bad"), 0] },

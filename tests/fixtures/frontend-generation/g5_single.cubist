@@ -1,4 +1,4 @@
-// G5-single (FG5): single-binder advice preserves supported calls and generated interfaces.
+// G5-single (CB5): single-binder advice preserves supported calls and generated interfaces.
 
 import hlevels;
 theory T(U < UU0) {

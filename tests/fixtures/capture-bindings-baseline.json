@@ -46,28 +46,6 @@
         "assumes": []
       }
     },
-    "family-domain-helper": {
-      "phase": "CB2",
-      "observed": {
-        "gaps": [
-          [
-            "main",
-            "T",
-            "E343"
-          ],
-          [
-            "main",
-            "member",
-            "E340"
-          ]
-        ],
-        "clients": {
-          "member": false,
-          "independent": true
-        },
-        "assumes": []
-      }
-    },
     "imported-pattern-rename": {
       "phase": "CB2/CB3/CB5",
       "observed": {
@@ -140,6 +118,70 @@
           "client": true,
           "intended": false,
           "captured": true
+        },
+        "assumes": []
+      }
+    },
+    "family-domain-helper-absent": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "T",
+            "E343"
+          ],
+          [
+            "main",
+            "member",
+            "E340"
+          ],
+          [
+            "main",
+            "captured",
+            "E340"
+          ]
+        ],
+        "clients": {
+          "member": false,
+          "captured": false,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "family-domain-helper-same-module": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "member",
+            "E606"
+          ]
+        ],
+        "clients": {
+          "member": false,
+          "captured": true,
+          "independent": true
+        },
+        "assumes": []
+      }
+    },
+    "family-domain-helper-imported": {
+      "phase": "CB2",
+      "observed": {
+        "gaps": [
+          [
+            "main",
+            "member",
+            "E606"
+          ]
+        ],
+        "clients": {
+          "member": false,
+          "captured": true,
+          "independent": true
         },
         "assumes": []
       }

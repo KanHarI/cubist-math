@@ -24,12 +24,15 @@ TODOs. There is no automatic expectation-update command.
 
 The [case manifest](../../tests/fixtures/frontend-generation.md) explains the
 36 inherited fixtures: 18 pass and 18 remain known defects. The old suite
-represented them with 12 coarse TODOs. Eight new known-defect witnesses cover
+represented them with 12 coarse TODOs. Ten new known-defect witnesses cover
 bare recursive references, family domains, inherited pattern capture and
-operand-selection capture. Eight composed preservation cases retain exact
-known observations; their eight noncolliding controls actively check imports,
-inheritance, renaming, helper depth, grouped/dependent parameters, caller
-notation, initial/free clients and safe lint rewrites. Recursive/path
+operand-selection capture. The composed preservation suite derives known
+observations from each configuration, including inherited rename refusals;
+its default 16 cases have seven passing controls and nine known defects.
+All 64 supported seeds exercise imports, inheritance, renaming, helper depth,
+grouped/dependent parameters, caller notation, initial/free clients and safe
+lint rewrites. A shared classifier governs strict mode, fix detection and
+shrinking; the shrinker preserves a structured regression signature. Recursive/path
 composition is deferred to CB2/CB3; its individual G4/G8/G12 witnesses remain.
 
 The [binding cases](../../tests/fixtures/capture-bindings.mjs) include all
@@ -39,9 +42,12 @@ They also cover local/call-produced opening effects, file-level precedence
 and receiver reactivation, consumer-specific rule registration and required
 activation failure. Imported ranges are checked against their source module
 before any TODO classification. Rule-registration clients run locally and
-across imports, and check the registered declaration identity.
+across imports, check the registered declaration identity, and fail without
+the registration. The hlevel client uses a carrier the structural search
+cannot prove on its own.
 
-At #219's pinned head, separate probes reproduce the wrapper's accidental
+The committed historical runner executes these same witnesses at #219's
+pinned head and reproduces the wrapper's accidental
 global acceptance, later-helper replacement of a header parameter, and an
 inherited error range outside its caller source. The bare recursive-reference
 and family-domain failures also occur on the replacement base. The valid
@@ -53,7 +59,12 @@ carrier fails earlier with E818 and does not test activation.
 Seven [source scenarios](../../tests/fixtures/contextual-sessions.mjs) check
 nested functions and inductions, before/after let shadowing, a usable prefix
 of a failing declaration, multiple branch instances, discarded wildcard
-coherence and proof goals. Their independent source clients run now. Their
+coherence and proof goals. Their independent source clients and 16 query/scope controls run now.
+The let controls compare the saved parameter with its successor; nested
+induction queries need both levels of hypotheses; overlapping match instances
+refine the same variable differently. Discarded-coherence controls distinguish
+the written path body from the retained point value; session availability
+itself remains a backend requirement. Their
 query scripts and six lifetime/resource requirements are 13 explicit TODOs,
 not mocked sessions or successful module-import substitutes. CB1/CB6 must
 replace those TODOs with execution through the real scope-point backend.
@@ -65,8 +76,10 @@ control, and are killed by assertions in isolated copies with unchanged
 checker limits. Syntax errors, missing modules, timeouts and patches that
 do not apply are invalid runs, not killed mutants.
 The [recorded mutation results](../../tests/fixtures/capture-bindings-mutations.json)
-include source digests, exact edits and failing test names at clean commit
-`83b78074`.
+include source digests, exact edits, structured test events, passing control
+names and active failing test names. TODO assertions do not count as kills;
+a process failure or non-assertion failure makes the run invalid. The runner
+writes the committed artifact format directly.
 
 | Mutation | Distinguishing check |
 | --- | --- |
@@ -86,11 +99,12 @@ patch with a distinguishing semantic witness before claiming retirement.
 
 ## Validation and costs
 
-On 2026-10-13, the full suite passes: 919 tests, 872 pass, 47 TODOs, zero
-failures. This includes all 3,857 canonical corpus declarations and formatting
+On 2026-10-13, the full suite passes: 941 tests, 891 pass, 50 TODOs, zero
+failures. After adding a further hypothesis-identity control, the contextual
+file also passes separately: 36 tests, 23 pass, 13 TODOs. The full run includes all 3,857 canonical corpus declarations and formatting
 of the new Cubist fixtures. Native tests passed on the unchanged runtime
-baseline. TODOs are 18 inherited cases, eight binding cases, eight composed
-capture cases and 13 contextual-execution requirements.
+baseline. TODOs are 18 inherited cases, ten binding cases, nine composed
+preservation cases and 13 contextual-execution requirements.
 
 The [cost and inventory snapshot](../../tests/fixtures/capture-bindings-costs.json)
 records three repeats of algebra, inheritance and fold
@@ -110,8 +124,8 @@ declarations and 224 generated names; inheritance has 145 and 73; fold has
 under the existing growing-budget policy; there are no deadline failures.
 
 The canonical corpus inventory separately records 3,857 checked declarations
-across 372 modules, with its six existing archive assumptions (`Choice`,
-`LEM`, `Truncate`, `TruncateElim`, `TruncateIntro`, `TruncateProp`). The snapshot
+from 368 archive entry modules and their loaded imports, with its six existing archive assumptions (`Choice`,
+`LEM`, `Truncate`, `TruncateElim`, `TruncateIntro`, `TruncateProp`). The snapshot lists the loaded modules and
 pins their type digests and the digest of every declaration's assumption
 dependencies. The three current-language cost workloads introduce none.
 
@@ -131,10 +145,16 @@ these fresh-session repetitions agree. CB1/CB6 will add retained scope size
 and separate prefix/history/query latency. The release budget must be justified
 from comparable evidence after migration.
 
-Run the evidence with:
+The metrics command writes the full committed format, including the corpus
+inventory and per-sample semantic/fuel digests, and refuses cross-mode
+differences. Digest formats are specified in
+[`frontend-generation-evidence.mjs`](../../tools/frontend-generation-evidence.mjs).
+Historical replay verifies the archived native inputs against the current
+WASM build stamp before running the pinned frontend. Run the evidence with:
 
 ```sh
 npm test
 node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations.json
 node tools/frontend-generation-metrics.mjs build/frontend-generation-metrics.json 3
+node tools/capture-bindings-history.mjs build/capture-bindings-history.json
 ```

@@ -16,6 +16,14 @@ for (const c of contextualScenarios) {
       assert.deepEqual(get(name).axioms, [], name);
     }
   });
+  for (const probe of c.probes ?? []) test(`CB0 contextual query control: ${c.id}, ${probe.id}`, async t => {
+    const { result, get } = await checkProgram(t, probe.source, { module });
+    assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]), probe.gaps);
+    if (!probe.gaps.length) for (const name of c.clients) {
+      assert.ok(get(name).verified, name);
+      assert.deepEqual(get(name).axioms, [], name);
+    }
+  });
   // Intentionally no fake session or module-import substitute. Replace each
   // TODO with the real scope-point API and execute its script in CB1/CB6.
   test.todo(`${c.phase} contextual session: ${c.id}`);

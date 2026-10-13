@@ -1,4 +1,4 @@
-// G2 (FG3): fixed argument domains contribute to generated universes.
+// G2 (CB4): fixed argument domains contribute to generated universes.
 
 import hlevels;
 theory T(U < UU0) {

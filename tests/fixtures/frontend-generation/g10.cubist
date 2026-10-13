@@ -1,9 +1,7 @@
-// G10 (FG2/FG5): a capture refusal points to the conflicting binder.
+// G10 (CB3): a pattern binder cannot capture a helper's free field.
 
 import hlevels;
 import nat;
-// Error: E871: Inlining k here would capture its field c: rename the enclosing pattern or statement
-//   binding.
 theory T(U < UU0) {
   M : set U;
   c : M;
@@ -13,3 +11,13 @@ theory T(U < UU0) {
       succ(c) => k(c);
     }) = c;
 }
+
+def intended(S : T(U0), n : Nat) : (match n return S.M {
+      zero => S.c;
+      succ(k_) => S.c;
+    }) = S.c := S.l(n);
+
+def at_step(S : T(U0)) : S.c = S.c := S.l(succ(zero));
+
+// Error: E606: Type mismatch: found S.c = S.c, expected x = S.c.
+def captured(S : T(U0), x : S.M) : x = S.c := at_step(S);

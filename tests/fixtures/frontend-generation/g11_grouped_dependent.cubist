@@ -1,4 +1,4 @@
-// G11-grouped-dependent (FG2): helper chain with grouped/dependent parameters.
+// G11-grouped-dependent (CB2): helper chain with grouped/dependent parameters.
 
 import hlevels;
 theory T(U < UU0) {
