@@ -43,13 +43,13 @@ rule, axiom, deriving capability or universal-property proof.
 
 ## What must change
 
-| Current mechanism | Demonstrated weakness | Replacement |
+| Reviewed mechanism | Demonstrated weakness | Replacement |
 | --- | --- | --- |
 | Globals use `reference`, open/local uses often remain `name` | A recursive call exposed by inlining can become a same-named global | Identity-bearing local/interface references; no destination spelling fallback |
-| Dependency lookup combines interface and all eventual fields | A later helper replaces an earlier header parameter | Resolve in the ordered declaration scope; analyze occurrence IDs |
+| #219: dependency lookup combines interface and all eventual fields | A later helper replaces an earlier header parameter | Resolve in the ordered declaration scope; analyze occurrence IDs |
 | Inlining combines reduction and selective refusal | Replacement children escape validation | Separate expansion from complete result/dependency validation |
 | Pattern/statement binders are non-renamable | Capture prevention becomes a user-facing rename request | Explicit binder IDs and deferred pattern/goal-dependent roles |
-| Offsets lack source ownership | An imported binder's range is interpreted in the caller | Source-qualified origins and separate expansion sites |
+| #219: inherited binder offsets lack source ownership | An imported binder's range is interpreted in the caller | Source-qualified origins and separate expansion sites |
 | REPL entries import the final module | Function locals, induction hypotheses and intermediate scopes are unavailable | A contextual session rooted in an elaboration scope point |
 
 Retain the shared scope schema, structured members, global references,
@@ -71,7 +71,7 @@ the common traversal schema.
 | Deferred interpretation | Original syntax/operation, lexical-context ID, candidate binding slots and the type/goal information required to finish resolving it. |
 | Origin | Source/module revision ID and offsets; expansion frames identify call, inheritance and generation sites without overwriting authored positions. |
 | Artifact | Declaration/owner/group IDs, family/role, complete syntax, origins, dependencies and publication state. |
-| Scope point | Revision, occurrence and before/after phase; lexical context, ordered checked local context, local values, refinements, dimensions/faces, evidence, recursion state and optional goal. |
+| Scope point | Revision, occurrence, before/after phase and expansion/attempt path; lexical context, ordered checked local context, local values, refinements, dimensions/faces, evidence, recursion state and optional goal. |
 
 IDs must distinguish same-spelled binders and survive serialization/replay
 with an explicit correspondence. Do not derive them solely from labels,
@@ -91,7 +91,7 @@ The invariants are:
 3. Cloning a declaration for a new instance freshens its bound IDs and all
    corresponding uses. External references remain shared. Merely revisiting
    immutable syntax does not allocate new identities.
-4. Type-dependent choices retain their source context. They cannot silently
+4. Type-dependent decisions retain their source context. They cannot silently
    count as fixed, dependency-free or supported before resolution.
 5. Public labels, origins and availability are separate from identity.
    Named argument labels remain stable when internal IDs are freshened.
@@ -101,8 +101,9 @@ The invariants are:
 For example, a helper's reference to field `c` carries the field's ID. A
 law parameter also spelled `c` has a different ID. Inserting the helper's
 body under that parameter changes neither reference. Pretty-printing may
-choose clearer labels, but semantic correctness does not depend on choosing
-an unused spelling.
+select clearer labels. Binding preservation during transformation does not
+depend on finding an unused spelling; the generated view separately requires
+binding-faithful printing, as specified below.
 
 ## Resolution and scoping
 
@@ -145,6 +146,14 @@ of a local without changing which lexical binding it is.
 constructor or a variable using its expected type. Giving every such token
 an ordinary binder ID at parse time would change the language.
 
+The current `mayBeConstructor` also scans the checker's inductives by
+spelling, and `constructorWithout` consults the current environment when
+the matched type is unknown. CB3 must replace these ambient probes for
+retained syntax. Record source-visible constructor identities and any
+candidate inventory needed by the pattern compiler in the deferred record;
+an unrelated inductive added at the destination cannot affect it. A probe
+used only to select a compilation path must not become semantic resolution.
+
 Use a deferred slot for each ambiguous position. An affected body occurrence
 retains the candidate local slot and its enclosing lexical resolution,
 including a missing lookup. When the type decides the role, a variable
@@ -152,6 +161,13 @@ introduces a binder ID; a constructor introduces no variable and the body
 uses its saved enclosing resolution. Constructor selection itself follows
 the matched type's constructor table. Preserve nested patterns, coordinates,
 induction hypotheses and existing shadowing behavior.
+
+Deferred slots remain explicit into elaboration. Once the role is known,
+the shared adapter installs the selected binder/constructor mapping and
+lowers the affected references before their consumer runs. An entry-time
+walk cannot lower a still-undecided slot to an ordinary source name. CB1's
+pattern pilot must exercise this resolution-time lowering; CB3 removes the
+corresponding spelling probes.
 
 Substitution under unresolved slots changes resolved references or records
 an explicit substitution environment. An inserted argument keeps its own
@@ -170,11 +186,20 @@ retain that deferred receiver explicitly. A structural member keeps its
 resolved receiver and public field label until the receiver's type selects
 the projection ID. Neither is treated as a dotted global string.
 
+Allow late label lookup only in explicit namespaces: reserved builtins and
+universe syntax under their existing shadowing rules; constructor labels in
+the matched type's table or the saved source candidate inventory; named
+arguments and member labels in the resolved interface; and notation rules
+selected through their saved scope/receiver. Each lookup produces an ID or
+an explicit failure. None may search the destination's ambient declarations
+to recover a retained reference or a missing source lookup.
+
 Dependency analysis conservatively exposes dependencies/pending obligations
-of deferred choices. A final support decision must resolve any choice that
-can change admissibility in its original checked context. Do not classify
-it as fixed or refuse every deferred pattern indiscriminately: the early
-pilot must demonstrate both constructor and variable interpretations.
+of deferred interpretations. A final support decision must resolve any
+interpretation that can change admissibility in its original checked
+context. Do not classify it as fixed or refuse every deferred pattern
+indiscriminately: the early pilot must demonstrate both constructor and
+variable interpretations.
 
 ## Capture, substitution and inheritance
 
@@ -194,6 +219,17 @@ their own IDs and retain origin IDs. Diamond sharing and independent-parent
 conflicts still obey the language rules. A field rename changes its public
 label and correspondence, not arbitrary strings inside expressions.
 
+Replace the `sameSyntax` comparisons in `theories.mjs`'s carrier preparation
+and field insertion with structural equivalence up to binding correspondence.
+First apply each parent's actual arguments and parent-to-child interface
+map; compare bound IDs up to alpha-renaming and external IDs exactly. This
+does not introduce general definitional equality. A shared origin identifies
+a diamond candidate, but its instantiated kind and type must still agree:
+the same ancestor at different arguments need not share. Independent-parent
+carriers/evidence may share only under the existing kind/type rules. Allocate
+one child ID for a shared field and map every accepted parent occurrence to
+it. Fresh clone IDs must neither prevent valid sharing nor hide conflicts.
+
 Expansion of nonrecursive helpers is separate from validation of the full
 expanded signature and its helper dependencies, with cycle detection.
 Replacement subtrees cannot bypass validation because a generic visitor
@@ -209,9 +245,10 @@ helper definition as a related origin when useful.
 
 ## Frontend generation and checking
 
-Dependency graphs consume occurrence IDs. Remove `DependencyAnalysis.byName`
-as a semantic resolver; label indexes are for display only. Keep Hom/Iso and
-equational support as distinct predicates and preserve their mapping plans.
+Dependency graphs consume occurrence IDs. Do not adopt #219's
+`DependencyAnalysis.byName` as a semantic resolver; label indexes are for
+display only. Keep Hom/Iso and equational support as distinct predicates
+and preserve their mapping plans.
 
 A narrow builder constructs generated declarations using the same telescope
 and reference representation. It allocates artifact and local IDs and
@@ -226,10 +263,12 @@ universe calculator. Adopt #221's checked evidence and refinement/face/
 generalization handling, carrying witness, type, model and dimensions
 together. Evidence and generated references must respect failure/rollback.
 
-A temporary adapter can lower IDs to private environment keys at elaboration
-entry, as global references do today. It must install the exact mappings,
-reject missing IDs and have no spelling fallback. Keep one such adapter;
-retained records must never receive its private keys back as source names.
+A temporary adapter lowers resolved IDs to private environment keys at
+elaboration entry and when deferred slots resolve inside elaboration. Its
+entry traversal preserves deferred records, their contexts and pending
+substitutions. It installs exact mappings before each resolved consumer,
+rejects missing IDs and has no spelling fallback. Keep one adapter shared by
+both entry points; retained records never receive private keys as source names.
 
 Preserve FG1's independent base, derived, Hom, Iso and initial/free publication
 groups. Replacing capture does not justify a new all-or-nothing theory
@@ -277,7 +316,7 @@ session, but is not required to understand/check expressions under locals.
 Index semantic entry points rather than every character: expression entry,
 parameter-group domain/body, statement before/after, clause entry and proof
 goal transitions. Keep parent links and source-qualified ranges so a click
-selects the innermost relevant point. Never choose a nearby sibling or a
+selects the innermost relevant point. Never select a nearby sibling or a
 later scope merely because its source range is close. Let initializers
 cannot see their own binding; later statements can. An arbitrary nesting
 depth does not imply a valid context exists after a parse or scope error.
@@ -290,27 +329,62 @@ environment. The current definition's full checked body is not injected
 retroactively into its own context; self-calls obey the same structural
 rules as source elaboration, and induction hypotheses remain local.
 
-Keep compact immutable context descriptions and source/expansion paths;
+Keep compact immutable context descriptions and source/expansion/attempt paths;
 materialize execution state on demand. For the first implementation, use a
-separate checker/kernel session: replay the pinned dependency/declaration
-prefix and elaboration to the selected point, then execute queries in that
-isolated context. This also handles a usable prefix inside a declaration
-that later fails. Do not retain native pointers into a rolled-back parent
-transaction or turn its unfinished declaration into a global assumption.
+separate checker/kernel session to replay the full ordered declaration prefix
+of the containing module to the selected point, with its original import-loading
+order and imported declaration checks, generated publication groups and earlier
+attempts. A dependency-only slice can change checker state and cache warmth.
+This also handles a usable prefix inside a declaration that later fails.
+Do not retain native pointers into a rolled-back parent transaction or turn
+its unfinished declaration into a global assumption.
 Preserve only contexts whose prefix was successfully elaborated; otherwise
 show why the requested context is unavailable.
 
-Replay is revision-pinned and must reach the same scope/expansion point;
-it may use explicitly exported checked artifacts when their dependencies
-and identity correspondence are validated. Start with source replay for a
-clear ownership boundary, then optimize from measurements. Retaining a live
-scope object or cloning an environment map alone is insufficient.
+The initial query mechanism is a synchronous callback at the selected scope
+point, before the enclosing transaction unwinds. Each request creates a fresh
+isolated session, replays to the exact scope point including its attempt path,
+rechecks the session's accepted scratch lets in order, and executes one new
+entry through the callback. Give scratch entries their own source units,
+budgets and copies of mutable proof/recursion state, with fresh names kept
+apart from the selected context and preceding scratch lets. Serialize
+the result before ending replay and disposing the isolated session; no live
+scope or native handle crosses that boundary. Stop replay after the callback
+without publishing the unfinished declaration. The stop must propagate
+through speculative attempts as control flow, not trigger proof recovery.
+An async coordinator can load imports and dispatch worker requests around
+this synchronous translator; no suspended translator stack is required.
+
+This deliberately pays for the full prefix and accepted scratch history on
+every request. CB1 must demonstrate two successive queries, a scratch let
+used by the second query, and a failed query followed by a successful one,
+including a point in a declaration that later fails. Measure prefix replay,
+scratch-history replay and query time separately. A persistent execution
+context is a later optimization requiring its own ownership/rollback proof;
+a worker alone does not make synchronous elaboration resumable.
+
+Replay is revision-pinned and preserves the original deterministic search
+and declaration fuel limits, kernel step-budget policy (including
+`withGrowingBudget`'s initial budget and retry cap), and deadline durations
+with fresh clocks. Kernel steps are cache-sensitive and are outside the
+fuel determinism guarantee; even full-prefix replay cannot promise the
+original session's cache warmth. If `fuel`, `budget` or `deadline` prevents
+reaching the selected point, report that context unavailable with the exact
+stopping reason. Never select another point or silently raise a limit.
+Future replay acceleration may use explicitly exported checked artifacts
+only after validating dependencies, identity correspondence and resource
+behavior. Retaining a live scope object or cloning an environment map alone
+is insufficient.
 
 Each query checks under the local context, with its own ordinary budget.
-Failed queries roll back scratch changes. Successful scratch definitions
-cannot publish into the original program or another contextual session.
-Results remain conditional on their local context; any later export must
-abstract/check the full telescope, not advertise an open result as a closed
+Persist accepted scratch lets as revision-pinned source plus binding
+correspondence, appending only after the new entry succeeds. If an accepted
+entry cannot be replayed, report that failure; do not silently drop it.
+Failed queries discard their isolated session and leave the accepted history
+unchanged. Successful scratch definitions cannot publish into the original
+program or another contextual session. Results remain conditional on their
+local context; any later export must abstract/check the full telescope,
+not advertise an open result as a closed
 theorem. Full local declaration/import commands can be added through the
 same explicit interface; the initial contextual surface requires expressions,
 types, scratch lets and proof experiments.
@@ -333,9 +407,20 @@ whichever `SourceUnit` catches it.
 Adopt #222's public-label and lint guarantees and #225/#227's generated view.
 Render retained artifacts with publication state, original source context
 and binding-ID links. Remove `env.get(node.name)` from generated-reference
-inspection. Display offsets differ from original origins; display failure
-cannot alter checking. A generated expression can expose a contextual REPL
-only if it has a replayable elaboration scope point, with its generated role
+inspection. Print with a scope-aware ID-to-display-name map: freshen or
+qualify names consistently so distinct referenced IDs cannot appear captured
+by one label. Keep public named-argument labels intact; any display alias
+must be visibly distinguished from the public API label. For source-expressible
+fragments, parsing and resolving under the displayed context must recover
+the artifact's binding structure up to correspondence. Where ordinary Cubist
+cannot express a reference or collision, render an explicit qualification or
+collision marker and identify the fragment as annotated display syntax.
+Definition links alone do not make ambiguous source text faithful. This is
+a display/test contract; generated text remains outside semantic compilation.
+
+Display offsets differ from original origins; display failure cannot alter
+checking. A generated expression can expose a contextual REPL only if it
+has a replayable elaboration scope point, with its generated role
 and original source visible. A refused/unelaborated artifact has no invented
 checked context.
 
@@ -349,11 +434,11 @@ boundaries, not repeated approval checkpoints.
 | Package | Work and dependencies | Exit evidence and deletion |
 | --- | --- | --- |
 | CB0: baseline and witnesses | Pin adopted commits; adapt #224's useful fixture/observer improvements and #223's preservation machinery to current-stage expectations; add all review reproductions and contextual-session scenarios. | Record corpus, assumptions, artifacts and costs. Separate old TODOs from regressions; do not claim harness adoption fixes its TODOs. |
-| CB1: identities, origins and scope points | Shared contracts and elaboration adapter; pilot complete ordinary telescopes, term/universe/dimension binders and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Pilot replay into a nested function scope. |
-| CB2: retained interfaces | On CB1, migrate headers, fields, derived telescopes, family domains, inheritance, helper expansion/validation and dependency analysis. | Fix both #219 semantic defects, bare recursive references and family helper resolution. Remove `byName` dependency resolution and migrated record/syntax/record conversions. |
-| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, notation and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives and nested refinements preserve meaning. Former capture-only refusals get positive intended/negative captured clients; delete corresponding fixed-binder callbacks. |
+| CB1: identities, origins and scope points | Shared contracts and adapter with resolution-time slot lowering; pilot complete ordinary telescopes, term/universe/dimension binders and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Demonstrate the callback replay/query sequence specified above in a nested function scope and record prefix/history/query costs. |
+| CB2: retained interfaces | On CB1, migrate headers, fields, derived telescopes, family domains, inheritance, helper expansion/validation and dependency analysis; replace inheritance `sameSyntax` checks with binding correspondence. | Prevent both #219 semantic regressions; fix bare recursive references and family helper resolution. Diamond and independent-parent sharing/conflict controls pass. Do not adopt #219's `byName` dependency resolution; remove migrated record/syntax/record conversions. |
+| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, notation and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives and nested refinements preserve meaning. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get positive intended/negative captured clients; delete corresponding fixed-binder callbacks. |
 | CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. |
-| CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Remove ambient lookup from inspection and migrated message classifiers. |
+| CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. |
 | CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work; sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
 | CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; remove retained nominal-syntax fallbacks. | Remove capture-only E801/E860/E869/E871 implementations and E866 workaround; retire catalogue entries without reusing codes. Record the isolated historical adapter and complete release evidence. |
 
@@ -365,7 +450,8 @@ Small fixes to current PRs can still land while this replacement develops.
 
 Each package names the code it removes. Transitional adapters are explicit
 by phase/family and reject accidental mixed input. Production retention must
-eventually use one reference model, not choose an old resolver on failure.
+eventually use one reference model, without falling back to an old resolver
+on failure.
 
 ## Verification and completion
 
@@ -380,6 +466,15 @@ dimension binders, pattern constructors and variables, proof statements,
 induction hypotheses, notation changes, parent/caller scope differences,
 diamond inheritance and failed dependencies. Adding a same-spelled global
 at the destination must not change an earlier reference or refusal.
+Include unknown-type pattern probes with an unrelated same-named destination
+constructor; diamonds with fresh clone IDs and renamed dependent telescopes;
+and same-origin fields instantiated at different arguments, plus independent
+carriers with matching and conflicting kinds/types.
+
+For generated displays, put a helper's free field under a same-named local,
+and same-named imported declarations in one scope. Check printed binding
+correspondence, stable named-call labels, definition links and explicit
+markers where source syntax cannot represent the identities.
 
 Check free-ID preservation under substitution, coherent cloning, interface
 closure and substitution composition up to binding correspondence. Extend
@@ -393,18 +488,23 @@ For contextual REPLs verify exact before/after let visibility, nested branch
 locals and hypotheses, refined goals and evidence, local notation, symbolic
 evaluation, private recursion restrictions, successful and failed scratch
 queries, independent sessions, imported/generated scope selection, source
-edits and unavailable contexts after failure. Compare query results with an
-independently written expression in the same source context. Include worker
-queue/disposal and stale-context browser tests.
+edits, replay fuel/kernel-budget/deadline exhaustion and unavailable contexts
+after failure. Include cold/warm sessions, complete ordered prefixes, retry
+cap enforcement, scratch-history replay failure and callback termination
+inside speculative elaboration. Compare query results with an independently
+written expression in the same source context. Include worker queue/disposal
+and stale-context browser tests.
 
 At release run native/frontend and corpus checks, inspector and static-site
 browser tests, catalogue checks, mutation gates and publication fault
-injection. Preserve fuel/deadline limits. Compare assumptions, inferred
-interfaces and deterministic kernel work; additionally measure frontend
-time, retained context/graph size, process memory and REPL replay latency,
-with scope/artifact collection enabled and disabled. Existing arena reports
-do not measure closure retention. Establish a justified budget from the
-baseline before release instead of inventing an unmeasured percentage.
+injection. Preserve fuel, kernel-budget and deadline limits. Compare
+assumptions, inferred interfaces, deterministic fuel accounting and observed
+kernel work with cache conditions recorded; additionally measure frontend
+time, retained context/graph size, process memory and REPL latency for the
+prefix, history and query, with scope/artifact collection enabled and disabled.
+Existing arena reports do not measure closure retention. Establish a justified
+budget from the baseline before release instead of inventing an unmeasured
+percentage.
 
 Completion requires the migrated consumers to preserve bindings, deletion
 of capture-only workarounds with stronger semantic coverage, working

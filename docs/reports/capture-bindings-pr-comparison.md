@@ -115,12 +115,16 @@ their browser tests. In the
 resolved references can already use identities, but plain names can fall
 back to the final module environment. Rendering must instead consume the
 artifact's own binding links and origins; inspection must not resolve names
-again.
+again. Printed labels must preserve the visible binding structure, with
+explicit markers where ordinary source cannot express distinct identities.
 
 Neither generated-view PR provides function-local contextual REPL sessions.
 Their source and generated views supply useful entry points. The new backend
 must replay a pinned scope in an isolated checker; the existing module REPL
-is useful for command parsing, presentation and regression coverage.
+is useful for command parsing, presentation and regression coverage. The
+initial backend runs a synchronous query callback during a fresh ordered-prefix
+replay per request, including accepted scratch lets; CB1 measures that cost
+and verifies disposal before any persistent-context optimization.
 
 ### Preservation machinery and refactoring: #223 and #224
 
@@ -162,3 +166,17 @@ PR descriptions should identify their actual stack base and date any test
 counts. #219's reported `fg1-publication` base and `808 / 803` validation
 line are stale; the external review reports `842 / 837` with five TODOs.
 Those reported counts are not new validation of this proposal.
+
+## Proposal review follow-up — 2026-10-13
+
+The roadmap now distinguishes deterministic fuel from kernel budgets and
+deadlines, specifies full-prefix callback replay, preserves deferred slots
+until resolution-time lowering, compares inherited types by binding
+correspondence, and requires faithful generated displays. The CB package
+criteria include the corresponding pilots and regression controls.
+
+Validation covers all seven Markdown files in the proposal: 183 local
+links/anchors and six pinned source links pass, as does `git diff --check`.
+The existing attribution and wording edits are included in this follow-up.
+Runtime tests were not rerun; these remain design requirements, with no CB
+implementation or performance results claimed.
