@@ -138,14 +138,15 @@ arena bytes rose about 59% for algebra/fold and 48% for inheritance. These
 are costs to track in subsequent slices; the timings do not establish a
 performance improvement or a regression budget.
 
-Validation at `237d8ab4`: `npm test -- --test-concurrency=4` reports 831
-tests, 819 passed, 12 expected TODOs assigned to later phases, and no
-failures. This includes nine new refusal regressions covering imported and
-absent names, ordinary and generated ownership, dependency causes, export
-replay, captured references, local shadowing, notation and argument lookup.
-The inspector browser suite, diagnostic catalogue audit and
-`git diff --check` also pass at that revision. The built-site browser checks
-were last run at `8416c6de`; they were not rerun for this translator change.
+Validation at `31a5c233`: `npm test -- --test-concurrency=4` reports 832
+tests, 820 passed, 12 expected TODOs assigned to later phases, and no
+failures. This includes the refusal regressions covering imported names,
+ordinary and generated ownership, dependency causes, export replay,
+captured references, local shadowing, and an earlier model's fields under
+a refused theory, initial or free model. The inspector browser suite, the
+built-site browser checks (after `node tools/build-site.mjs`), the
+diagnostic catalogue audit and `git diff --check` also pass at that
+revision.
 
 This phase does not implement FG2's complete dependency/support analysis,
 FG3's universe inference, FG4's contextual evidence, or FG5's source-label
