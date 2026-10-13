@@ -48,19 +48,6 @@ export const failureRoot = (failure, binding) =>
 export const untranslated = (name, binding, reason, root) =>
   ({tag: "Untranslated", name, binding, reason, blockedBy: root.binding, cause: root.reason});
 
-// A refused generator owns its qualified namespace even when it could not
-// expand far enough to enumerate its members. This is an unavailable value
-// in the environment, not a second lifecycle table. Exact local members
-// still win; refusal replaces imported aliases but never captured identities.
-export const unavailableNamespace = name => "\u0000unavailable namespace " + name;
-export function lookupDeclaration(env, name) {
-  if (env.has(name)) return env.get(name);
-  if (name.startsWith("\u0000")) return undefined;
-  const dot = name.indexOf(".");
-  const refusal = dot > 0 && env.get(unavailableNamespace(name.slice(0, dot)));
-  return refusal ? {...refusal, name, binding: refusal.binding + name.slice(dot)} : undefined;
-}
-
 // Generator-assigned family roles, never dotted-name heuristics, determine
 // the publication boundary. A base theory (including parent projections)
 // remains usable if an optional derived operation or morphism family fails.

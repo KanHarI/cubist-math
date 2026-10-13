@@ -21,19 +21,17 @@ values with the E872 cause, so a rejected inductive's type and other
 constructors cannot silently resolve to imports. An already-owned name
 keeps its original value and cause.
 
-A refused theory, initial model or free model also leaves an unavailable
-qualified namespace in the environment. Imported source aliases under that
-namespace are refused; existing local members remain intact. Lookup and
-lexical capture use the same unavailable value for members that could not
-be enumerated because expansion never ran. Earlier references captured by
-identity still denote their imports, and a local parameter or opened model
-shadows the namespace normally. Calls, notation rules and generator
-requests distinguish unavailable names from absent ones before classifying
-their arguments or capturing their references. Import shadowing and local
-binders remain legal. Model notation extensions still use their separate
-policy: a model's declaring module
-may add numeral/literal rules. Refusing an extension records a directive
-error and preserves the model's existing symbol and notation.
+A refused theory, initial model or free model also refuses the imported
+names under its own, such as an imported theory's `T.c`, with the same
+cause. Existing local members remain intact, and earlier references
+captured by identity still denote their imports. Nothing else under the
+name changes meaning: the name's owner keeps its namespace, so a field
+`T.c` of an earlier model `T` still projects from that model, and a member
+that the refused generator never expanded is an unknown name (E343).
+Import shadowing and local binders remain legal. Model notation extensions
+still use their separate policy: a model's declaring module may add
+numeral/literal rules. Refusing an extension records a directive error and
+preserves the model's existing symbol and notation.
 
 A name whose owner failed, or whose group was not published, stands for
 an unavailable value that records its failure's root: the declaration

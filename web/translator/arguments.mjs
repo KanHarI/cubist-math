@@ -31,7 +31,6 @@ import {freeDimensions} from "./dimension-slots.mjs";
 import {statement as hlevelStatement} from "./hlevel.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
 import {stem} from "./names.mjs";
-import {lookupDeclaration} from "./declarations.mjs";
 
 export const isHole = node => node?.kind === "name" && node.name === "_";
 // Whether a call needs this elaboration: it has a hole, a named argument or
@@ -47,9 +46,8 @@ export function writtenOut(n, scope, holes = false) {
   const {env, unit} = scope;
   const headName = n.fn.kind === "name" ? n.fn.name : null;
   const spelling = n.fn.spelling ?? headName;
-  const bound = headName ? lookupDeclaration(env, headName) : undefined;
-  const builtin = headName && bound === undefined;
-  if (!builtin && !INDUCTIVE_TAGS.has(bound?.tag)) return;
+  const builtin = headName && !env.has(headName);
+  if (!builtin && !INDUCTIVE_TAGS.has(env.get(headName)?.tag)) return;
   if (n.implicitArgs)
     throw unit.locate(Error(`${spelling} has no implicit parameters: give its arguments in parentheses, as ${spelling}(…).`), n.fn);
   if (!n.args.some(arg => arg.kind === "namedArgument" || !holes && isHole(arg))) return;
@@ -141,7 +139,7 @@ export function elaborateCall(t, n, scope, expected) {
   const {env, unit} = scope;
   const headName = n.fn.kind === "name" ? n.fn.name : null;
   const called = n.fn.spelling ?? headName ?? "This function";
-  const bound = headName ? lookupDeclaration(env, headName) : undefined;
+  const bound = headName ? env.get(headName) : undefined;
   writtenOut(n, scope);
   if (bound?.tag === "Recursive") {
     if (n.implicitArgs)

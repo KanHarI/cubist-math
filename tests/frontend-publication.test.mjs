@@ -118,7 +118,7 @@ def client := c2;`,{fixture:"inductive Imported : U0 { c2; }"});
   assert.equal(get("client").cause,result.gaps[0].reason);
 });
 
-test("FG1 refusal: a duplicate theory blocks imported and unknown members while captured references and local models survive", async t => {
+test("FG1 refusal: a duplicate theory blocks imported members while captured references and local models survive", async t => {
   const {result,get,program} = await check(t,`import fixture;
 theory Kept(U < UU0) extends T {}
 def saved(S : T(U0)) : S.M := S.c;
@@ -135,9 +135,10 @@ def inherited(S : Later(U0)) : S.M := S.c;
 def captured(S : Kept(U0)) : S.M := saved(S.t);
 def local(T : Kept(U0)) : T.M := T.c;`,
   {fixture:"import hlevels; theory T(U < UU0) { M : set U; c : M; }"});
-  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["T","E872"],
-    ...["projection","identity","new_member","nested","CapturedFailure"].map(name=>[name,"E340"])]);
-  for(const name of ["projection","identity","new_member","nested","CapturedFailure"]) {
+  // The refused theory never expanded: its own member names stay unknown.
+  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["T","E872"],["projection","E340"],["identity","E340"],
+    ["new_member","E343"],["nested","E340"],["CapturedFailure","E343"]]);
+  for(const name of ["projection","identity","nested"]) {
     assert.equal(get(name).blockedBy,"main__T",name);
     assert.equal(get(name).cause,result.gaps[0].reason,name);
   }
@@ -160,46 +161,26 @@ def fold_client := N.fold;
 def point := N.c;
 def missing := N.unknown;
 def captured := saved;`, {fixture:`import hlevels; theory T(U < UU0) { M : set U; c : M; } ${declaration}`});
-  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340","E340","E340","E340"]);
-  for(const name of ["model_client","fold_client","point","missing"]) {
+  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340","E340","E340","E343"]);
+  for(const name of ["model_client","fold_client","point"]) {
     assert.equal(get(name).blockedBy,"main__N");
     assert.equal(get(name).cause,result.gaps[0].reason);
   }
   for(const name of ["original","saved","captured"])assert.equal(get(name).verified,true,name);
 });
 
-test("FG1 refusal: calls, notation capture and generator requests retain an unexpanded namespace's cause", async t => {
-  const {result,get} = await check(t,`def T : Unit := tt;
-theory T(U < UU0) { M : set U; c : M; }
-def plain := T.c;
-def named := T.c(x := tt);
-def implicit := T.c{{U0}}(tt);
-def hole := T.c(_);
-notation broken { x + y := T.c(x, y); }
-def notation_client := broken.(tt + tt);
-initial N : T.Hom(U0);`);
-  const clients=["plain","named","implicit","hole","notation_client","N"];
-  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["T","E872"],...clients.map(name=>[name,"E340"])]);
-  for(const name of clients) {
-    assert.equal(get(name).blockedBy,"main__T",name);
-    assert.equal(get(name).cause,result.gaps[0].reason,name);
-  }
-});
-
-test("FG1 refusal: importing an unavailable namespace preserves its originating refusal", async t => {
-  const {result,get} = await check(t,`import fixture;
-def plain := T.c;
-def named := T.c(x := tt);
-notation broken { x + y := T.c(x, y); }
-def notation_client := broken.(tt + tt);
-def local(T : Unit) : Unit := T;`,
-  {fixture:"def T : Unit := tt; theory T(U < UU0) { M : set U; c : M; }"});
-  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340","E340","E340"]);
-  for(const name of ["plain","named","notation_client"]) {
-    assert.equal(get(name).blockedBy,"fixture__T",name);
-    assert.equal(get(name).cause,result.gaps[0].reason,name);
-  }
-  assert.equal(get("local").verified,true);
+for(const duplicate of ["theory T(U < UU0) { M : U; c : M; }","initial T : P(U0);","free T : P(U0) on Unit;"]) test(
+  `FG1 refusal: a duplicate ${duplicate.split(" ")[0]} keeps the fields of an earlier model of its name`, async t => {
+  const {result,get} = await check(t,`theory P(U < UU0) { M : U; c : M; g(x : M, y : M) : M; }
+def T := P.make(Unit, tt, fun (x : Unit) => fun (y : Unit) => x);
+${duplicate}
+def client : T.M := T.c;
+def applied := T.g(T.c, T.c);
+notation via { x + y := T.g(x, y); }
+def noted := via.(T.c + T.c);
+theory Q(U < UU0) { M : U; op(x : T.M) : M; }`);
+  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["T","E872"]]);
+  for(const name of ["T","client","applied","noted","Q"])assert.equal(get(name).verified,true,name);
 });
 
 test("FG1 refusal: an existing local generated family survives a second theory's refusal", async t => {
@@ -210,10 +191,8 @@ def projection := T.c;
 def identity := T.Hom.id;
 def client(S : T(U0)) : S.M := S.c;
 def refused := T.other;`);
-  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E340"]);
+  assert.deepEqual(result.gaps.map(g=>g.code),["E872","E343"]);
   for(const name of ["T","projection","identity","client"])assert.equal(get(name).verified,true,name);
-  assert.equal(get("refused").blockedBy,"main__T");
-  assert.equal(get("refused").cause,result.gaps[0].reason);
 });
 
 test("FG1: a duplicate is reported once by inline diagnostics and the REPL while the original still works", async t => {

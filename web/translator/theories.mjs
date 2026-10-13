@@ -8,7 +8,7 @@ import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/
 import {Scope} from "./elaboration.mjs";
 import {rewritten} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
-import {failureRoot,untranslated,lookupDeclaration} from "./declarations.mjs";
+import {failureRoot,untranslated} from "./declarations.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -182,14 +182,14 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
     const aliases=new Map(),pattern=new Set([rule.left?.text,rule.right?.text,rule.param?.text].filter(Boolean));
     const alias=name=>{
       const key=`\u0000notation ${d.name.text} ${name}`;
-      aliases.set(key,lookupDeclaration(at,name));
+      aliases.set(key,at.get(name));
       return key;
     };
     // Its numerals too are natural numbers of the Nat read here.
     const natural=at.has("Nat")?alias("Nat"):null;
     const value=rewritten(renameFree(rule.value,name=>{
       if(pattern.has(name))return null;
-      if(lookupDeclaration(at,name)!==undefined)return alias(name);
+      if(at.has(name))return alias(name);
       const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
       return root&&at.has(root)?`${alias(root)}${name.slice(dot)}`:null;
     }),n=>n.kind==="number"&&natural?{...n,natural}:n);

@@ -9,7 +9,6 @@ import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
 import {T as Term} from "./core.mjs";
 import {reference} from "../cubist/references.mjs";
-import {lookupDeclaration} from "./declarations.mjs";
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.
@@ -34,7 +33,7 @@ function expand(t, module, d, env) {
   // A theory that failed its own check is a dependency here, as at its
   // other uses, whether or not it expanded: one whose use was refused has
   // no notation to read its fields in (theories.mjs, capturedNotation).
-  const binding = head.kind === "name" ? lookupDeclaration(env, head.name) : null;
+  const binding = head.kind === "name" ? env.get(head.name) : null;
   if (binding?.tag === "Untranslated" || entry?.tag === "Theory" && !entry.notation)
     throw module.locate(Object.assign(Error(`Untranslated dependency: ${head.name}`),
       {blockedBy: binding?.blockedBy ?? binding?.binding ?? head.name, cause:binding?.cause ?? binding?.reason}), head);
