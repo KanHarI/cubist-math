@@ -55,8 +55,9 @@ observations may require them. Former active refusal tests now retain their
 alpha-safe controls. A shared witness schema requires an intended source
 control for every migration witness. Where a well-typed captured reading
 exists, a second control expresses it explicitly and reverses the positive
-and negative client verdicts; otherwise a captured source control must fail
-with an ordinary, non-capture diagnostic. The schema records the explanation
+and negative client verdicts; otherwise the same declaration in the same
+module must check in the intended reading and fail with an ordinary,
+non-capture diagnostic in the captured reading. The schema records the explanation
 and omits a vacuous negative client. Fourteen source controls cover all seven
 migration witnesses. Refused clients must be distinguishing negatives or
 explicitly listed genuine refusals; source-fixture verdicts come directly
@@ -84,8 +85,9 @@ induction queries need both levels of hypotheses; overlapping match instances
 refine the same variable differently. Discarded-coherence controls distinguish
 the written path body from the retained point value; session availability
 itself remains a backend requirement. Every edited probe declares an anchor
-and replacement; a shared fixture editor requires exactly one occurrence. Their
-query scripts and six lifetime/resource requirements are 13 explicit TODOs,
+and replacement; a shared fixture editor requires exactly one occurrence.
+The editor rejects edits that leave the anchor unchanged. Their query scripts
+and six lifetime/resource requirements are 13 explicit TODOs,
 not mocked sessions or successful module-import substitutes. CB1/CB6 must
 replace those TODOs with execution through the real scope-point backend.
 
@@ -127,7 +129,7 @@ patch with a distinguishing semantic witness before claiming retirement.
 
 ## Validation and costs
 
-On 2026-10-13, the full suite passes: 966 tests, 911 pass, 55 TODOs and
+On 2026-10-13, the full suite passes: 967 tests, 912 pass, 55 TODOs and
 zero failures, including all 3,857 canonical corpus declarations and Cubist
 formatting. Native tests passed on the unchanged runtime baseline. TODOs
 are 18 inherited cases, fifteen binding cases, nine composed preservation

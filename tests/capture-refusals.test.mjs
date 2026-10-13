@@ -10,13 +10,21 @@ import { cases } from "./frontend-generation-cases.mjs";
 import { editedFixture } from "./fixture-edits.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { observeModule } from "./module-observation.mjs";
-import { fixtureClientContract, validateMigrationWitness } from "./migration-witnesses.mjs";
+import { fixtureClientContract, validateMigrationWitness, assertCapturedRefusal } from "./migration-witnesses.mjs";
 
 const module = await create(), library = sourceReader();
 // G10's ordinary fixture observer checks comment placement. Its migration
 // controls use the same semantic client view as the binding witnesses.
 const fixtureWitnesses = cases.filter(c => captureControls[c.id]);
 const witnessCases = [...bindingCases, ...fixtureWitnesses.map(c => ({...c,...fixtureClientContract(c.source)}))];
+const captureCodes = new Set(captureRefusals.map(item => item.code));
+function checkedReading(t,c,edits,name = "main") {
+  const sources = {...c.fixtures,main:c.source};
+  for (const {module:owner,...edit} of edits)
+    sources[owner] = editedFixture(sources[owner],edit,`${c.id}/${owner}`);
+  return checkProgram(t,sources[name],{module,name,
+    reader:(name,importer) => sources[name] ?? library(name,importer)});
+}
 
 test("capture-only refusals belong to known observations and have migration witnesses", async () => {
   const root = new URL("../", import.meta.url);
@@ -49,22 +57,15 @@ test("capture-only refusals belong to known observations and have migration witn
 
 for (const [id, control] of Object.entries(captureControls)) for (const reading of ["intended","captured"]) {
   test(`CB0 migration control: ${id}, ${reading} reading`, async t => {
-    const c = witnessCases.find(c => c.id === id), sources = {...c.fixtures,main:c.source};
+    const c = witnessCases.find(c => c.id === id);
     const captured = control.captured, edits = reading === "intended" ? control.intended : captured.edits;
-    for (const {module:name,...edit} of edits) {
-      sources[name] = editedFixture(sources[name],edit,`${id}/${name}`);
-    }
     const refusal = reading === "captured" && captured.kind === "refused";
     const name = refusal ? captured.module : "main";
-    const {result} = await checkProgram(t,sources[name],{module,name,
-      reader:(name,importer) => sources[name] ?? library(name,importer)});
+    const {result} = await checkedReading(t,c,edits,name);
     if (refusal) {
-      const observed = observeModule(result,{name,clients:[captured.name]});
-      assert.equal(observed.clients[captured.name],false,`${id}: the explicit captured declaration must be refused`);
-      assert.deepEqual(observed.gaps.filter(gap => gap[1] === captured.name),[[name,captured.name,captured.code]]);
-      assert.deepEqual(observed.assumes,[]);
-      assert.ok(observed.gaps.every(gap => !captureRefusals.some(item => item.code === gap[2])),
-        `${id}: ill-typedness must be independent of capture workarounds`);
+      const intended = await checkedReading(t,c,control.intended,name);
+      const view = result => observeModule(result,{name,clients:[captured.name]});
+      assertCapturedRefusal(view(intended.result),view(result),captured,captureCodes);
       return;
     }
     const desired = structuredClone(c.desired);
@@ -89,4 +90,12 @@ test("migration contracts reject reversed source comments and undeclared negativ
   withNegative.desired.gaps.push(["main","wrong","E606"]);
   assert.throws(() => validateMigrationWitness(withNegative,captureControls[ordinary.id],codes),
     /every refused client/);
+});
+
+test("an independently unsupported declaration cannot prove an ill-typed captured reading", async t => {
+  const c = bindingCases.find(c => c.id === "initial-pattern-model");
+  const {result} = await checkedReading(t,c,captureControls[c.id].intended);
+  const observed = observeModule(result,{clients:["k"]});
+  assert.throws(() => assertCapturedRefusal(observed,observed,{module:"main",name:"k",code:"E856"},captureCodes),
+    /intended reading must accept/);
 });

@@ -51,3 +51,18 @@ export function validateMigrationWitness(witness, control, captureCodes) {
     assert.equal(typeof captured.name,"string",`${id}: refused declaration`);
   }
 }
+
+// An ordinary refusal proves a binding distinction only when this SAME
+// declaration in this SAME module checks under the intended source reading.
+// In particular, an independently unsupported declaration is not evidence.
+export function assertCapturedRefusal(intended, captured, refusal, captureCodes) {
+  const {module,name,code} = refusal;
+  assert.equal(intended.clients[name],true,`${module}/${name}: intended reading must accept the declaration`);
+  assert.deepEqual(intended.gaps.filter(gap => gap[1] === name),[],`${module}/${name}: intended reading has no refusal`);
+  assert.equal(captured.clients[name],false,`${module}/${name}: captured reading must refuse the declaration`);
+  assert.deepEqual(captured.gaps.filter(gap => gap[1] === name),[[module,name,code]]);
+  assert.deepEqual(intended.assumes,[]);
+  assert.deepEqual(captured.assumes,[]);
+  assert.ok(captured.gaps.every(gap => !captureCodes.has(gap[2])),
+    `${module}/${name}: ill-typedness must be independent of capture workarounds`);
+}

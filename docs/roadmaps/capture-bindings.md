@@ -572,12 +572,14 @@ Each removed capture refusal needs a checked intended equation/computation.
 When the captured reading is well-typed, require a negative client and two
 explicit source controls: the intended reading accepts the positive client
 and refuses the negative; the captured reading reverses those verdicts.
-Where capture makes the source ill-typed, an explicit captured source control
-must fail with an ordinary, non-capture diagnostic; document that reason and
-omit a vacuous negative client. Check an edited imported declaration in its
-own module, so an expected local refusal is not mistaken for a failed fixture
-dependency. Every refused client must be the distinguishing negative or an
-explicitly listed genuine refusal. Derive client verdicts from the witness's
+Where capture makes the source ill-typed, check the same declaration in the
+same module under both readings: it must succeed under the intended reading
+and fail with an ordinary, non-capture diagnostic under the explicit captured
+reading. Document that reason and omit a vacuous negative client. Check an
+edited imported declaration in its own module under both readings, so an
+expected local refusal is not mistaken for a failed fixture dependency. Source
+edits must change their unique anchor. Every refused client must be the
+distinguishing negative or an explicitly listed genuine refusal. Derive client verdicts from the witness's
 own contract, including its source comments, without a second manual copy.
 The migration witness schema enforces this contract for every retired
 refusal. Mere kernel acceptance of whatever type generation produced is not

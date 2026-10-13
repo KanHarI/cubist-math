@@ -30,9 +30,11 @@ for (const c of contextualScenarios) {
 }
 for (const contract of sessionLifecycle) test.todo(`CB6 contextual lifetime: ${contract}`);
 
-test("contextual probe edits reject missing and duplicated anchors", () => {
+test("contextual probe edits reject missing, duplicated and unchanged anchors", () => {
   const probe = {id:"edited", edit:{anchor:"needle", replacement:"query"}};
   for (const source of ["no occurrence", "needle needle"])
     assert.throws(() => probeSource({id:"control",source},probe), /exactly once/);
+  assert.throws(() => probeSource({id:"control",source:"needle"},
+    {id:"unchanged",edit:{anchor:"needle",replacement:"needle"}}), /must change the source/);
   assert.equal(probeSource({id:"control",source:"before needle after"},probe), "before query after");
 });
