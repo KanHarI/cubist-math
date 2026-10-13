@@ -63,7 +63,10 @@ export const printsAsItself = name => stem(name) === name && localName(name) ===
 export const repeatedName = params => {
   const seen = new Set();
   return params.find(p => {
-    const label=p.name.label??p.name.text;
+    // Identity lowering replaces a written name with a private key. Nominal
+    // generated tokens still use text for their argument interface; their
+    // optional display label is not that interface's identity (until CB2).
+    const label=p.name.bindingId?p.name.label??p.name.text:p.name.text;
     return label!=="_"&&seen.size===seen.add(label).size;
   })??null;
 };
