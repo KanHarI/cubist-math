@@ -126,15 +126,13 @@ theory Shadow(U < UU0) {
 def nat_shadow :
   Shadow(U0) := Shadow.make(M := Nat, M_is_set := nat_is_set, kept := fun (z : Nat) => refl(z));
 
-// A pattern's argument may name a constructor, so it is not renamed apart:
-// one an argument names is refused.
-// Error: E860: pick's pattern binds k, which an argument here names: rename it in pick.
+// The colliding pattern is a CB3 known defect in capture-bindings.mjs.
 theory Picked(U < UU0) {
   M : set U;
   c : M;
   def pick(x : M, n : Nat) : M := match n return M {
     zero => c;
-    succ(k) => x;
+    succ(pred) => x;
   };
   law picked(k : M) : pick(k, zero) = c;
 }

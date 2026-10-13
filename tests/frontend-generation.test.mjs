@@ -20,6 +20,18 @@ for (const c of cases) test(`${c.group}: [${c.id}] ${c.contract}`, async t => {
   assertStage(t, { observed, desired, known: baseline.cases[c.id], id: c.id });
 });
 
+for (const captured of [false,true]) test(`G10 semantic control: ${captured ? "captured" : "intended"} law`, async t => {
+  const c = cases.find(c => c.id === "G10"), anchor = "box(c) => k(zero);";
+  assert.equal(c.source.split(anchor).length, 2);
+  const source = c.source.replace(anchor, captured ? "box(c) => c;" : "box(local_) => k(zero);");
+  const {result,get} = await checkProgram(t, source, {module});
+  assert.deepEqual(result.gaps.map(g => [g.module,g.name,g.code]), [["main",captured ? "intended" : "captured","E606"]]);
+  assert.ok(get("T").verified, "both meanings are well-typed theories");
+  assert.equal(get("intended").verified, !captured);
+  assert.equal(get("captured").verified, captured);
+  assert.ok(result.outputs.every(output => !output.axioms?.length));
+});
+
 test("case IDs are unique, extras name cases, and the manifest lists every case", async () => {
   const ids = cases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length);

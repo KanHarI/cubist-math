@@ -2,6 +2,7 @@
 // describe desired sessions; the current module REPL does not implement them.
 // Each marker is a unique substring. Scopes are selected by occurrence and
 // instance, never by whichever binding happens to have the same spelling.
+import { editedFixture } from "../fixture-edits.mjs";
 export const contextualScenarios = [
   {
     id: "nested-induction", phase: "CB6", marker: "succ(inner_ih)",
@@ -98,55 +99,61 @@ def checked_value : zero = zero := proof(zero);`,
 // unused argument is the query preserves the original result of the body.
 const scenario = id => contextualScenarios.find(c => c.id === id);
 const query = (type, term, body) => `(fun (_ : ${type}) => ${body})(${term})`;
+const edit = (anchor, replacement) => ({anchor, replacement});
 const nested = scenario("nested-induction");
 nested.probes = [
-  { id:"inner successor", source:nested.source.replace("succ(inner_ih)", query("Nat", "add(ih, inner_ih)", "succ(inner_ih)")), gaps:[] },
-  { id:"hypotheses have distinct identities", source:nested.source.replace("succ(inner_ih)", query("ih = inner_ih", "refl(ih)", "succ(inner_ih)")),
+  { id:"inner successor", edit:edit("succ(inner_ih)", query("Nat", "add(ih, inner_ih)", "succ(inner_ih)")), gaps:[] },
+  { id:"hypotheses have distinct identities", edit:edit("succ(inner_ih)", query("ih = inner_ih", "refl(ih)", "succ(inner_ih)")),
     gaps:[["nested", "E606"], ["checked_value", "E340"]] },
-  { id:"outer successor before inner induction", source:nested.source.replace("induction m return Nat", "induction add(ih, inner_ih) return Nat"),
+  { id:"outer successor before inner induction", edit:edit("induction m return Nat", "induction add(ih, inner_ih) return Nat"),
     gaps:[["nested", "E343"], ["checked_value", "E340"]] },
 ];
 const shadow = scenario("let-before-after");
 shadow.probes = [
-  { id:"initializer sees saved parameter", source:shadow.source.replace("succ(next_)", query("next_ = saved", "refl(next_)", "succ(next_)")), gaps:[] },
-  { id:"body cannot see saved parameter as next_", source:shadow.source.replace("exact next_;", `exact ${query("next_ = saved", "refl(next_)", "next_")};`),
+  { id:"initializer sees saved parameter", edit:edit("succ(next_)", query("next_ = saved", "refl(next_)", "succ(next_)")), gaps:[] },
+  { id:"body cannot see saved parameter as next_", edit:edit("exact next_;", `exact ${query("next_ = saved", "refl(next_)", "next_")};`),
     gaps:[["f", "E606"], ["checked_value", "E340"]] },
-  { id:"body sees successor", source:shadow.source.replace("exact next_;", `exact ${query("next_ = succ(saved)", "refl(next_)", "next_")};`), gaps:[] },
+  { id:"body sees successor", edit:edit("exact next_;", `exact ${query("next_ = succ(saved)", "refl(next_)", "next_")};`), gaps:[] },
 ];
 const branch = scenario("branch-instance-set");
 // Split the overlapping written wildcard into its two semantic instances.
 // Checking the query in the unsplit wildcard would test *both* instances.
 branch.probes = [
-  { id:"zero, succ", source:branch.source.replace(branch.marker,
+  { id:"zero, succ", edit:edit(branch.marker,
     `zero, succ(k) => ${query("a = zero", "refl(a)", "zero")}; succ(k), _ => zero;`), gaps:[] },
-  { id:"succ, any", source:branch.source.replace(branch.marker,
+  { id:"succ, any", edit:edit(branch.marker,
     `zero, succ(k) => zero; succ(k), _ => ${query("a = zero", "refl(a)", "zero")};`),
     gaps:[["both", "E606"], ["at_zero", "E340"], ["at_left", "E340"], ["at_right", "E340"]] },
 ];
 const fn = scenario("nested-function");
 fn.probes = [
-  { id:"after let", source:fn.source.replace(fn.marker, query("next_ = succ(k)", "refl(next_)", fn.marker)), gaps:[] },
-  { id:"initializer before let binding", source:fn.source.replace("succ(k);", `${query("next_ = succ(k)", "refl(next_)", "succ(k)")};`),
+  { id:"after let", edit:edit(fn.marker, query("next_ = succ(k)", "refl(next_)", fn.marker)), gaps:[] },
+  { id:"initializer before let binding", edit:edit("succ(k);", `${query("next_ = succ(k)", "refl(next_)", "succ(k)")};`),
     gaps:[["outer", "E343"], ["checked_value", "E340"]] },
 ];
 const failing = scenario("selected-failing-prefix");
 failing.probes = [
-  { id:"selected prefix query checks", source:failing.source.replace("typed(Unit, next_)", query("next_ = succ(k)", "refl(next_)", "next_")), gaps:[] },
-  { id:"before prefix binding query fails", source:failing.source.replace("succ(k);", `${query("next_ = succ(k)", "refl(next_)", "succ(k)")};`),
+  { id:"selected prefix query checks", edit:edit("typed(Unit, next_)", query("next_ = succ(k)", "refl(next_)", "next_")), gaps:[] },
+  { id:"before prefix binding query fails", edit:edit("succ(k);", `${query("next_ = succ(k)", "refl(next_)", "succ(k)")};`),
     gaps:[["broken", "E343"]] },
 ];
 const proof = scenario("proof-goal");
 proof.probes = [
-  { id:"reflexive goal", source:proof.source, gaps:[] },
-  { id:"successor goal", source:proof.source.replace("k = k {", "k = succ(k) {"),
+  { id:"reflexive goal", edit:null, gaps:[] },
+  { id:"successor goal", edit:edit("k = k {", "k = succ(k) {"),
     gaps:[["proof", "E606"], ["checked_value", "E340"]] },
 ];
 const discarded = scenario("discarded-path-body");
 discarded.probes = [
-  { id:"discarded body does not determine point value", source:discarded.source, gaps:discarded.gaps },
-  { id:"retained point branch determines value", source:discarded.source.replace("base => left_; ", ""),
+  { id:"discarded body does not determine point value", edit:null, gaps:discarded.gaps },
+  { id:"retained point branch determines value", edit:edit("base => left_; ", ""),
     gaps:[["checked_value", "E606"]] },
 ];
+
+export function probeSource(scenario, probe) {
+  if (probe.edit === null) return scenario.source;
+  return editedFixture(scenario.source, probe.edit, `${scenario.id}/${probe.id}`);
+}
 
 export const sessionLifecycle = [
   "two sessions at one scope keep scratch bindings isolated",

@@ -54,15 +54,18 @@ def mismatch(x : Boundary) : Boundary := match x { left_ => left_; _ => right_; 
 }
 
 // Greedy, dependency-aware reduction: each candidate is another well-formed
-// configuration. Keep only candidates reproducing the same assertion code.
+// configuration. The predicate identifies the original regression. A
+// candidate's infrastructure error is recorded, never substituted for it.
 // The fixed order and bounded attempts make a failure replayable.
 export async function minimize(config,fails,maxAttempts=12) {
   let current={...config},attempts=0;
+  const errors=[];
   for(const key of ["noise","paths","recursive","renamed","imported","inherited","depth","binder"]) {
     const value=key==="depth"?1:key==="binder"?"x":false;
     if(current[key]===value||attempts>=maxAttempts)continue;
     const next={...current,[key]:value};attempts++;
-    if(await fails(next))current=next;
+    try { if(await fails(next))current=next; }
+    catch(error) { errors.push({config:next,error:{name:error.name,code:error.code,message:error.message}}); }
   }
-  return {config:current,attempts};
+  return {config:current,attempts,errors};
 }

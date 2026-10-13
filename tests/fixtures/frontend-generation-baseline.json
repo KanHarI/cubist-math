@@ -10,22 +10,17 @@
           {
             "at": "theory T(U < UU0) {",
             "label": "Error",
-            "text": "E871: Inlining k here would capture its field c: rename the enclosing pattern or statement binding."
+            "text": "E871"
           },
           {
-            "at": "def intended(S : T(U0), n : Nat) : (match n return S.M {",
+            "at": "def intended(S : T(U0), x : S.M) : S.c = S.c := S.l(x);",
             "label": "Error",
-            "text": "E340: Untranslated dependency: T"
+            "text": "E340"
           },
           {
-            "at": "def at_step(S : T(U0)) : S.c = S.c := S.l(succ(zero));",
+            "at": "def captured(S : T(U0), x : S.M) : x = S.c := S.l(x);",
             "label": "Error",
-            "text": "E340: Untranslated dependency: T"
-          },
-          {
-            "at": "def captured(S : T(U0), x : S.M) : x = S.c := at_step(S);",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T"
+            "text": "E340"
           }
         ],
         "missing": [],
@@ -407,12 +402,12 @@
           {
             "at": "op : forall x, y : M. M;",
             "label": "Warning",
-            "text": "W706: x is unused in the body: take it out of the group and write M -> … for it."
+            "text": "W706: x is unused in the body: take it out of the group and write M -> \u2026 for it."
           },
           {
             "at": "op : forall x, y : M. M;",
             "label": "Warning",
-            "text": "W706: y is unused in the body: take it out of the group and write M -> … for it."
+            "text": "W706: y is unused in the body: take it out of the group and write M -> \u2026 for it."
           }
         ],
         "missing": [],
@@ -426,7 +421,7 @@
           {
             "at": "op : forall x : M. M;",
             "label": "Warning",
-            "text": "W705: x is unused in the body: write M -> … instead of forall x : M. …."
+            "text": "W705: x is unused in the body: write M -> \u2026 instead of forall x : M. \u2026."
           }
         ],
         "missing": [],

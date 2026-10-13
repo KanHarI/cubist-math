@@ -5,8 +5,9 @@ import { readFile } from "node:fs/promises";
 import create from "../web/dist/cubical.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { assertStage } from "./known-defect.mjs";
+import { assertStage, precondition } from "./known-defect.mjs";
 import { bindingCases } from "./fixtures/capture-bindings.mjs";
+import { editedFixture } from "./fixture-edits.mjs";
 
 const module = await create(), library = sourceReader();
 const baseline = JSON.parse(await readFile(new URL("./fixtures/capture-bindings-baseline.json", import.meta.url), "utf8"));
@@ -18,7 +19,7 @@ for (const c of bindingCases) test(`CB0: [${c.id}] ${c.contract}`, async t => {
   // Imports and source ownership are active invariants even for a known
   // semantic defect. In particular, an imported binder's offset must never
   // be interpreted against the caller source, as happened in #219.
-  assert.deepEqual(result.gaps.filter(gap => gap.module !== "main"), [], "all imported fixtures must check");
+  precondition(() => assert.deepEqual(result.gaps.filter(gap => gap.module !== "main"), [], "all imported fixtures must check"));
   for (const gap of result.gaps) {
     const source = program.sources[gap.module];
     assert.equal(typeof source, "string");
@@ -42,6 +43,20 @@ test("capture witness IDs are unique and known-defect records still name executa
   const ids = bindingCases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length);
   for (const id of Object.keys(baseline.cases)) assert.ok(ids.includes(id), id);
+});
+
+for (const c of bindingCases.filter(c => c.control)) test(`CB0 alpha-safe control: ${c.id}`, async t => {
+  const source = editedFixture(c.source,c.control.source,c.id), fixtures = {...c.fixtures};
+  if (c.control.fixture) {
+    const {name,...edit} = c.control.fixture;
+    assert.equal(typeof fixtures[name], "string");
+    fixtures[name] = editedFixture(fixtures[name],edit,`${c.id}/${name}`);
+  }
+  const {result,get} = await checkProgram(t,source,{module,
+    reader:(name,importer) => fixtures[name] ?? library(name,importer)});
+  assert.deepEqual(result.gaps.map(gap => [gap.module,gap.name,gap.code]),c.desired.gaps);
+  assert.deepEqual(Object.fromEntries(c.clients.map(name => [name,get(name).verified])),c.desired.clients);
+  assert.ok(result.outputs.every(output => !output.axioms?.length));
 });
 
 const ruleModel = `import hlevels; import nat;

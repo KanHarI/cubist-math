@@ -24,15 +24,17 @@ TODOs. There is no automatic expectation-update command.
 
 The [case manifest](../../tests/fixtures/frontend-generation.md) explains the
 36 inherited fixtures: 18 pass and 18 remain known defects. The old suite
-represented them with 12 coarse TODOs. Ten new known-defect witnesses cover
+represented them with 12 coarse TODOs. Fifteen binding known-defect witnesses cover
 bare recursive references, family domains, inherited pattern capture and
-operand-selection capture. The composed preservation suite derives known
+operand-selection capture, helper pattern arguments and generated-model
+shadowing. The composed preservation suite derives known
 observations from each configuration, including inherited rename refusals;
 its default 16 cases have seven passing controls and nine known defects.
 All 64 supported seeds exercise imports, inheritance, renaming, helper depth,
 grouped/dependent parameters, caller notation, initial/free clients and safe
 lint rewrites. A shared classifier governs strict mode, fix detection and
-shrinking; the shrinker preserves a structured regression signature. Recursive/path
+shrinking; the shrinker preserves a structured regression signature and
+records candidate errors without losing the original failure. Recursive/path
 composition is deferred to CB2/CB3; its individual G4/G8/G12 witnesses remain.
 
 The [binding cases](../../tests/fixtures/capture-bindings.mjs) include all
@@ -45,6 +47,17 @@ before any TODO classification. Rule-registration clients run locally and
 across imports, check the registered declaration identity, and fail without
 the registration. The hlevel client uses a carrier the structural search
 cannot prove on its own.
+
+The [capture-refusal registry](../../tests/fixtures/capture-refusals.mjs) names
+CB2/CB3/CB4 ownership and replacing semantic witnesses for every capture-only
+refusal. A test rejects these codes in active test expectations; only known
+observations may require them. Former active refusal tests now retain their
+alpha-safe controls. Five more checked controls validate the new binding
+witnesses without name collisions. The initial-model pattern witness expects
+the genuine unsupported-equation refusal after capture repair, while its
+theory client checks; it does not request a new deriving capability. G10's
+intended and captured laws are both well-typed and produce opposite client
+verdicts in two active source controls.
 
 The committed historical runner executes these same witnesses at #219's
 pinned head and [records](../../tests/fixtures/capture-bindings-history.json) the wrapper's accidental
@@ -64,7 +77,8 @@ The let controls compare the saved parameter with its successor; nested
 induction queries need both levels of hypotheses; overlapping match instances
 refine the same variable differently. Discarded-coherence controls distinguish
 the written path body from the retained point value; session availability
-itself remains a backend requirement. Their
+itself remains a backend requirement. Every edited probe declares an anchor
+and replacement; a shared fixture editor requires exactly one occurrence. Their
 query scripts and six lifetime/resource requirements are 13 explicit TODOs,
 not mocked sessions or successful module-import substitutes. CB1/CB6 must
 replace those TODOs with execution through the real scope-point backend.
@@ -78,14 +92,17 @@ do not apply are invalid runs, not killed mutants.
 The [recorded mutation results](../../tests/fixtures/capture-bindings-mutations.json)
 include source digests, exact edits, structured test events, passing control
 names and active failing test names. TODO assertions do not count as kills;
-a process failure or non-assertion failure makes the run invalid. The runner
-writes the committed artifact format directly; these records and the cost
-measurements were generated from clean commit `7f9b4d28`.
+a process failure or non-assertion failure makes the run invalid. A fixture
+precondition failure has a separate outcome and cannot count as a contract
+kill. The file-level-selection mutation uses a non-imported witness and
+reaches semantic classification. The runner writes the artifact format
+directly. Cost measurements remain from clean commit `7f9b4d28`; mutation
+and historical records are refreshed after review fixes.
 
 | Mutation | Distinguishing check |
 | --- | --- |
 | Reference lowered by spelling | Retained-reference lowering in `references.test.mjs` |
-| Captured file-level selection removed | Composed preservation control, seed 3 |
+| Captured file-level selection removed | Non-imported preservation control, seed 2 |
 | Reservation conflict ignored | Original definition survives a later inductive collision |
 | Failed publication committed | Injected parent projection failure and descendant rollback |
 
@@ -100,12 +117,11 @@ patch with a distinguishing semantic witness before claiming retirement.
 
 ## Validation and costs
 
-On 2026-10-13, the full suite passes: 941 tests, 891 pass, 50 TODOs, zero
-failures. After adding a further hypothesis-identity control, the contextual
-file also passes separately: 36 tests, 23 pass, 13 TODOs. The full run includes all 3,857 canonical corpus declarations and formatting
-of the new Cubist fixtures. Native tests passed on the unchanged runtime
-baseline. TODOs are 18 inherited cases, ten binding cases, nine composed
-preservation cases and 13 contextual-execution requirements.
+On 2026-10-13, the full suite passes: 957 tests, 902 pass, 55 TODOs and
+zero failures, including all 3,857 canonical corpus declarations and Cubist
+formatting. Native tests passed on the unchanged runtime baseline. TODOs
+are 18 inherited cases, fifteen binding cases, nine composed preservation
+cases and 13 contextual-execution requirements.
 
 The [cost and inventory snapshot](../../tests/fixtures/capture-bindings-costs.json)
 records three repeats of algebra, inheritance and fold

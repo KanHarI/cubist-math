@@ -105,10 +105,13 @@ changes the case's comment, and the new wording needs the same review.
 - **G9** freshens a law binder; every written `c` keeps its label, links to
   the binder and spans exactly the label, and `meaning` fixes the law's
   meaning.
-- **G10** requires the law to check despite the colliding `succ(c)` binder.
-  Independent clients state the intended field reference at arbitrary input
-  and at a successor. A client claiming an arbitrary value equals the field
-  is refused. The current E871 refusal is a known defect, not desired behavior.
+- **G10** requires the law to check despite a colliding `box(c)` binder
+  of type `M`. The intended and captured laws are both well-typed and have
+  opposite client verdicts, checked by independent source controls. The
+  intended client requires `S.c = S.c` directly from `S.l(x)`; the rejected
+  client asks for `x = S.c` directly from that law. This semantic fixture
+  compares diagnostic codes, since the mismatch may print an alpha-renamed
+  binder. The current E871 refusal is a known observation only.
 - **G11** requires the intended `op(x, S.c)` equation to check and the
   captured `op(x, x)` equation to be refused, directly, through a helper
   chain with grouped/dependent parameters, through inheritance and through an

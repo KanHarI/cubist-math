@@ -22,7 +22,7 @@ export const mutations=[
     "references","lowering references"),
   mutation("lexical-use","web/translator/theories.mjs",
     "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};","if(true)return {env,notation:[[SELECTION,null]]};",
-    "frontend-invariants","uncolliding parameter, seed 3$"),
+    "frontend-invariants","uncolliding parameter, seed 2$"),
   mutation("reservation","web/translator/declarations.mjs",
     "conflict ??= entry;","conflict ??= null;","frontend-publication","definition then inductive"),
   mutation("failed-publication","web/cubical-program.mjs",

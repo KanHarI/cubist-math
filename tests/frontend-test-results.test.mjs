@@ -17,6 +17,7 @@ test("mutation evidence distinguishes active assertions from TODOs and process f
   const pass = 'test("contract", () => assert.equal(1,1));';
   const fail = 'test("contract", () => assert.equal(1,2));';
   const crash = 'test("crash", () => { throw new TypeError("broken"); });';
+  const blocked = 'test("contract", () => { throw Object.assign(new Error("fixture failed", {cause:new assert.AssertionError({message:"precondition"})}), {code:"ERR_TEST_PRECONDITION"}); });';
   async function run(source) {
     await writeFile(file, `import test from "node:test"; import assert from "node:assert/strict"; ${source}`);
     const child = spawnSync(process.execPath, ["--test", `--test-reporter=${reporter}`, file],
@@ -30,6 +31,7 @@ test("mutation evidence distinguishes active assertions from TODOs and process f
     [todo + pass, "survived"], [todo + fail, "killed"],
     [todo + crash, "invalid"], [todo + fail + crash, "invalid"],
     [todo, "invalid"], ['test("unrelated", () => assert.equal(1,2));', "invalid"],
+    [todo + blocked, "precondition"], [blocked + crash, "invalid"],
   ]) {
     const observed = mutationOutcome(await run(source), baseline.passed);
     assert.equal(observed.outcome, outcome, source);

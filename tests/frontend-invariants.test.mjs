@@ -6,7 +6,7 @@ import create from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { lint } from "../web/cubist/lint.mjs";
-import { assertStage, classifyStage } from "./known-defect.mjs";
+import { assertStage, classifyStage, precondition } from "./known-defect.mjs";
 import { ciSeeds, caseLimit, configuration, generate, minimize } from "./fixtures/frontend-invariants.mjs";
 import { knownPreservation } from "./fixtures/frontend-invariants-baseline.mjs";
 
@@ -19,10 +19,10 @@ async function verify(config) {
   const program = new CubicalProgram(module, (name, importer) => spec.fixtures[name] ?? library(name, importer));
   try {
     const result = await program.check(spec.source, "main");
-    assert.deepEqual(result.gaps.filter(gap => gap.module !== "main"), [], "generated imports must check");
+    precondition(() => assert.deepEqual(result.gaps.filter(gap => gap.module !== "main"), [], "generated imports must check"));
     const output = name => {
       const found = result.outputs.find(item => item.name === name);
-      assert.ok(found, `${name} must have an output`);
+      precondition(() => assert.ok(found, `${name} must have an output`));
       return found;
     };
     const observed = {
@@ -64,7 +64,8 @@ for (let seed = 0; seed < count; seed++) for (const capture of [false, true]) {
     if (classification.kind === "regression") {
       const reduced = await minimize(config, async candidate => {
         // Rebuild both desired and known observations for the candidate.
-        // Infrastructure errors are failures of the run, not shrink witnesses.
+        // The shrinker records infrastructure errors as non-reproductions;
+        // the original classification remains the reported failure.
         const next = classifyStage(await verify(candidate));
         return next.kind === "regression" && next.signature === classification.signature;
       });

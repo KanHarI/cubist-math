@@ -62,3 +62,16 @@ test("shrinking compares candidates with their own contract and preserves an inh
   assert.equal(reduced.config.inherited, true, "dropping child_selection cannot masquerade as the same regression");
   assert.ok(reduced.attempts <= 12);
 });
+
+test("shrinking records a candidate error without replacing the original witness", async () => {
+  const config = {...configuration(3), recursive:false, paths:false, capture:false};
+  const reduced = await minimize(config, async candidate => {
+    if (!candidate.noise) throw new TypeError("candidate import failed");
+    return candidate.inherited;
+  });
+  assert.equal(reduced.config.noise, true);
+  assert.equal(reduced.config.inherited, true);
+  assert.equal(reduced.errors.length, 1);
+  assert.equal(reduced.errors[0].config.noise, false);
+  assert.deepEqual(reduced.errors[0].error, {name:"TypeError",code:undefined,message:"candidate import failed"});
+});

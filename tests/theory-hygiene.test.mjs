@@ -163,15 +163,15 @@ def initial_boundary(x : N) : N.op(x, N.c) = N.op(x, x) := N.l(x);
 `);
 });
 
-test("inlining refuses capture by an enclosing fixed pattern with a focused diagnostic", async t => {
-  const {result} = await check(t, `import hlevels; import nat;
+// The colliding version is G10's known-defect witness, owned by CB3.
+test("inlining preserves free fields under a distinct pattern binder", async t => {
+  await verified(t, `import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M;
   def k(n : Nat) : M := c;
-  law l(n : Nat) : (match n return M { zero => k(zero); succ(c) => k(c); }) = c;
+  law l(n : Nat) : (match n return M { zero => k(zero); succ(pred) => k(pred); }) = c;
 }
+def client(S : T(U0), n : Nat) : (match n return S.M { zero => S.c; succ(j) => S.c; }) = S.c := S.l(n);
 `);
-  assert.deepEqual(result.gaps.map(g => g.code), ["E871"]);
-  assert.match(result.gaps[0].reason, /Inlining k here would capture its field c/);
 });
 
 test("generated recursive calls retain their declaration under same-named parameters and patterns", async t => {

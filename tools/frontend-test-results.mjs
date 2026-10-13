@@ -1,4 +1,5 @@
 const assertion = error => !!error && (error.code === "ERR_ASSERTION" || assertion(error.cause));
+const precondition = error => !!error && (error.code === "ERR_TEST_PRECONDITION" || precondition(error.cause));
 
 export function testResults(run) {
   let events;
@@ -13,7 +14,8 @@ export function testResults(run) {
     || (run.status === 0) !== summary.success && "process status disagrees with test summary"
     || !selected.length && "no active tests" || failed.some(event => !assertion(event.error)) && "non-assertion failure"
     || run.status !== 0 && !failed.length && "process failure without an assertion test";
-  return { invalid, passed, failed: failed.map(event => ({ name: event.name, assertion: assertion(event.error) })), events };
+  return { invalid, passed, failed: failed.map(event => ({ name: event.name, assertion: assertion(event.error),
+    precondition:precondition(event.error) })), events };
 }
 
 export function mutationOutcome(run, distinguishingTests) {
@@ -23,5 +25,7 @@ export function mutationOutcome(run, distinguishingTests) {
   const failedTests = result.failed.map(event => event.name);
   if (failedTests.some(name => !distinguishingTests.includes(name)))
     return { outcome: "invalid", failedTests, reason: "failure outside the passing distinguishing tests" };
+  if (result.failed.some(test => test.precondition)) return {outcome:"precondition", failedTests,
+    reason:"a fixture precondition failed before its semantic clients could be checked"};
   return { outcome: "killed", failedTests };
 }

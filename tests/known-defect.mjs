@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
 
+// A failed fixture precondition blocks its semantic clients. Mutation
+// evidence must distinguish that from a client disproving the contract.
+export function precondition(check) {
+  try { return check(); }
+  catch (cause) {
+    if (cause.code !== "ERR_ASSERTION") throw cause;
+    throw Object.assign(new Error(cause.message, {cause}), {code:"ERR_TEST_PRECONDITION"});
+  }
+}
+
 // Differences, rather than a fixed assertion message, identify a regression
 // during shrinking. Matching them may conservatively reject a smaller case;
 // it must never accept a different failure merely because both assertions fail.

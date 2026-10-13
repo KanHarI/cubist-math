@@ -27,8 +27,8 @@ for (const { kind, source, failedModule } of [
     const candidate = { ...c, path: join(directory, `${c.name}.cubist`),
       source: c.source.replace("\n", "\nimport fg0_dependency;\n") };
     await assert.rejects(() => observe(t, candidate, module), error => {
-      assert.equal(error.code, "ERR_ASSERTION");
-      assert.ok(error.actual.some(gap => gap.module === failedModule), "retain the failed module and its diagnostic");
+      assert.equal(error.code, "ERR_TEST_PRECONDITION");
+      assert.ok(error.cause.actual.some(gap => gap.module === failedModule), "retain the failed module and its diagnostic");
       return true;
     }, id);
   }
@@ -42,9 +42,9 @@ test("one reported local error cannot account for two checker failures", async t
     return result;
   });
   await assert.rejects(() => observe(t, c, module), error => {
-    assert.equal(error.code, "ERR_ASSERTION");
-    assert.equal(error.actual.length, 1);
-    assert.equal(error.actual[0].module, c.name);
+    assert.equal(error.code, "ERR_TEST_PRECONDITION");
+    assert.equal(error.cause.actual.length, 1);
+    assert.equal(error.cause.actual[0].module, c.name);
     return true;
   });
 });
