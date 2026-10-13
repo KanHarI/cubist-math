@@ -1,8 +1,8 @@
 {
-  "version": 1,
+  "version": 2,
   "adoptedFrom": "49499aa1c56c1b345eb0021468123cec377fb4b8",
   "dirty": false,
-  "revision": "83b780743db1af0cda5d85bb0cdcb0851af160aa",
+  "revision": "7f9b4d28cb94556500c7e4acab076a1b11496df9",
   "limits": {
     "processMs": 60000,
     "testMs": 45000,
@@ -21,10 +21,64 @@
       "expected": "killed",
       "sourceDigest": "75577b9aa4774c26c76229224b0daab0e674990c9d4f38f3a26945d92d7e1481",
       "outcome": "killed",
-      "status": 1,
       "failedTests": [
         "lowering references for elaboration leaves the retained theory closure resolved"
-      ]
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "lowering references for elaboration leaves the retained theory closure resolved"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "lowering references for elaboration leaves the retained theory closure resolved",
+          "file": "tests/references.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "Expected values to be strictly equal:",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "Expected values to be strictly equal:",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/references.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
     },
     {
       "id": "lexical-use",
@@ -32,14 +86,68 @@
       "from": "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};",
       "to": "if(true)return {env,notation:[[SELECTION,null]]};",
       "test": "frontend-invariants",
-      "pattern": "active control, seed 3$",
+      "pattern": "uncolliding parameter, seed 3$",
       "expected": "killed",
       "sourceDigest": "65a3c458d481fb6d90f862ab1b8904761b5afcf6bd3f62488dee25cafc4bb84f",
       "outcome": "killed",
-      "status": 1,
       "failedTests": [
-        "CB0 preservation: active control, seed 3"
-      ]
+        "CB0 preservation: uncolliding parameter, seed 3"
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "CB0 preservation: uncolliding parameter, seed 3"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "CB0 preservation: uncolliding parameter, seed 3",
+          "file": "tests/frontend-invariants.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "generated imports must check",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "generated imports must check",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/frontend-invariants.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
     },
     {
       "id": "reservation",
@@ -51,10 +159,64 @@
       "expected": "killed",
       "sourceDigest": "71ac7a9ae15e7f5c2fc3817c7629ad06c579fcf7f4d3012f2fa2884b9423f3b0",
       "outcome": "killed",
-      "status": 1,
       "failedTests": [
         "FG1 ownership: definition then inductive keeps the original binding and source"
-      ]
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "FG1 ownership: definition then inductive keeps the original binding and source"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "FG1 ownership: definition then inductive keeps the original binding and source",
+          "file": "tests/frontend-publication.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "[{\"module\":\"main\",\"name\":\"client\",\"reason\":\"Type mismatch: found U0, expected Unit.\",\"code\":\"E606\"}]",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "[{\"module\":\"main\",\"name\":\"client\",\"reason\":\"Type mismatch: found U0, expected Unit.\",\"code\":\"E606\"}]",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/frontend-publication.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
     },
     {
       "id": "failed-publication",
@@ -66,10 +228,64 @@
       "expected": "killed",
       "sourceDigest": "02470b3389625ab19f73d562407522113811a55316241aad1748b12f70467406",
       "outcome": "killed",
-      "status": 1,
       "failedTests": [
         "G7: an injected parent projection failure rolls back its base group and blocks descendants once"
-      ]
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "G7: an injected parent projection failure rolls back its base group and blocks descendants once"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "G7: an injected parent projection failure rolls back its base group and blocks descendants once",
+          "file": "tests/frontend-publication.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "main__Q",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "main__Q",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/frontend-publication.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
     }
   ]
 }

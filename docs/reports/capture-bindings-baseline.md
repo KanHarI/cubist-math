@@ -47,7 +47,7 @@ the registration. The hlevel client uses a carrier the structural search
 cannot prove on its own.
 
 The committed historical runner executes these same witnesses at #219's
-pinned head and reproduces the wrapper's accidental
+pinned head and [records](../../tests/fixtures/capture-bindings-history.json) the wrapper's accidental
 global acceptance, later-helper replacement of a header parameter, and an
 inherited error range outside its caller source. The bare recursive-reference
 and family-domain failures also occur on the replacement base. The valid
@@ -79,7 +79,8 @@ The [recorded mutation results](../../tests/fixtures/capture-bindings-mutations.
 include source digests, exact edits, structured test events, passing control
 names and active failing test names. TODO assertions do not count as kills;
 a process failure or non-assertion failure makes the run invalid. The runner
-writes the committed artifact format directly.
+writes the committed artifact format directly; these records and the cost
+measurements were generated from clean commit `7f9b4d28`.
 
 | Mutation | Distinguishing check |
 | --- | --- |
@@ -124,19 +125,19 @@ declarations and 224 generated names; inheritance has 145 and 73; fold has
 under the existing growing-budget policy; there are no deadline failures.
 
 The canonical corpus inventory separately records 3,857 checked declarations
-from 368 archive entry modules and their loaded imports, with its six existing archive assumptions (`Choice`,
+across 372 loaded modules (368 archive entry modules and their imports), with its six existing archive assumptions (`Choice`,
 `LEM`, `Truncate`, `TruncateElim`, `TruncateIntro`, `TruncateProp`). The snapshot lists the loaded modules and
 pins their type digests and the digest of every declaration's assumption
 dependencies. The three current-language cost workloads introduce none.
 
-At clean commit `83b78074` on Node 24.13.0 / Apple M3 Pro, median check time
+At clean commit `7f9b4d28` on Node 24.13.0 / Apple M3 Pro, median check time
 and maximum process RSS across three samples were:
 
 | Workload | References off: ms / MiB | References on: ms / MiB |
 | --- | --- | --- |
-| Algebra | 1212.1 / 311.1 | 1415.2 / 335.0 |
-| Inheritance | 409.0 / 186.4 | 468.8 / 209.0 |
-| Fold | 1243.9 / 318.2 | 1497.6 / 336.0 |
+| Algebra | 1182.3 / 319.4 | 1396.7 / 337.4 |
+| Inheritance | 403.3 / 187.0 | 460.6 / 211.8 |
+| Fold | 1225.3 / 318.3 | 1458.0 / 340.1 |
 
 Timing and memory are measurements rather than release thresholds. RSS
 includes process startup; heap samples follow explicit GC, and arena samples
