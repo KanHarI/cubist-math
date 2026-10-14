@@ -11,6 +11,29 @@ export function parameterGroups(params) {
   return groups;
 }
 
+// set/prop parameters have an explicit dependent evidence group. The source
+// group's common domain remains outside *all* its own binders. Evidence
+// types are filled from the resolved parameter, never by rereading its
+// universe or carrier's spelling in the extended context.
+export function evidenceTelescope(tree) {
+  const evidence=new Map();
+  if(!tree.params?.some(p=>p.level))return {tree,evidence};
+  const params=[];
+  for(const {parameters} of parameterGroups(tree.params)) {
+    const group=params.length;
+    params.push(...parameters.map(p=>({...p,group})));
+    for(const [index,p] of parameters.entries())if(p.level) {
+      if(!["set","prop"].includes(p.level)||p.bound||p.name.text==="_")
+        throw new TypeError("A leveled parameter needs a named type and set or prop evidence.");
+      const type={kind:"call"}; // private marker, consumed before traversal
+      evidence.set(type,{parameter:params[group+index],builtin:p.level==="set"?"IsSet":"IsProp"});
+      params.push({name:{...p.name,text:`${p.name.text}_is_${p.level}`,synthetic:true},
+        type,group:params.length});
+    }
+  }
+  return {tree:{...tree,params},evidence};
+}
+
 export function parameterLambdas(params, body) {
   for (const group of parameterGroups(params).reverse()) {
     const {parameters, bound, domain} = group;

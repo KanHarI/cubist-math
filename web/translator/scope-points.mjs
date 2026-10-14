@@ -5,7 +5,8 @@
 import {BindingAdapter,LexicalContext,bindingResolution,sourceOrigin} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
-import {snapshotSyntax,visitSyntax,mapSyntax} from "./syntax-graph.mjs";
+import {snapshotSyntax} from "./syntax-graph.mjs";
+import {expandedSource} from "../cubist/source-syntax.mjs";
 
 const publicName=/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
 const RECURSIVE="\u0000recursive",SELECTION="\u0000selection";
@@ -57,12 +58,7 @@ export class ScopePoints {
   }
   expansion(tree,kind,node,unit) {
     const at=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
-    const site=sourceOrigin({...at,expansion:[]}),copy=mapSyntax(tree,()=>undefined);
-    visitSyntax(copy,node=>{
-      if(node?.origin&&(node.kind||typeof node.text==="string"))
-        node.origin=sourceOrigin({...node.origin,expansion:[...node.origin.expansion,{kind,site}]});
-    });
-    return copy;
+    return expandedSource(tree,{kind,site:at});
   }
   declaration(module,declaration,binding) {
     return this.compilation.declare(module,declaration,binding);

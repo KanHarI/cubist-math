@@ -5,8 +5,8 @@
 import {scopeMapped, binderName, bindingRole} from "./scopes.mjs";
 import {members} from "./references.mjs";
 import {sourceOrigin, bindingResolution, SlotOutcomes} from "./bindings.mjs";
-import {declarationTelescope, parameterLambdas} from "./telescopes.mjs";
-import {syntaxValue} from "./source-syntax.mjs";
+import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
+import {syntaxValue,expandedSource} from "./source-syntax.mjs";
 
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
@@ -23,14 +23,16 @@ const freeze = value => {
 const occurrence = (at, value, spelling, origin) => ({kind: "bindingReference", resolution: value, spelling, origin,
   start: at.start, end: at.end});
 
-export function resolveBindingSyntax(tree, {table, owner, context, source, constructors = [], self = null}) {
+export function resolveBindingSyntax(tree, {table, owner, context, source, constructors = [], self = null,
+  evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)]))}) {
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
     if (typeof label !== "string" || typeof nullary !== "boolean") throw new TypeError("Invalid source constructor inventory.");
     return Object.freeze({id, label, nullary});
   }));
   const canonical = tree.kind === "def" ? declarationTelescope(tree) : {tree, inferred: false};
-  tree = canonical.tree;
+  const telescope=evidenceTelescope(canonical.tree),resolvedParameters=new Map();
+  tree = telescope.tree;
   const declaration=tree;
   if(self) {
     self=table.get(self.id);
@@ -43,7 +45,16 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
     deferred: true,
     region: (at,node,key) => self&&node===declaration&&["body","value"].includes(key)
       ?at.bind(self.label,bindingResolution(self.id)):at,
+    parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
     enter(node, at) {
+      if(telescope.evidence.has(node)) {
+        const {parameter,builtin}=telescope.evidence.get(node),mapped=resolvedParameters.get(parameter);
+        if(!mapped?.name.bindingId)throw new TypeError("Parameter evidence precedes its retained parameter.");
+        const token=mapped.name,at=origin(token);
+        if(!evidenceTypes.has(builtin))throw new TypeError(`A leveled parameter needs a source resolution for ${builtin}.`);
+        return {kind:"call",fn:occurrence(token,evidenceTypes.get(builtin),builtin,at),
+          args:[mapped.type,occurrence(token,bindingResolution(token.bindingId),token.text,at)],origin:at};
+      }
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
       if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
@@ -103,23 +114,33 @@ export function bindingSyntaxView(syntax,tree,{inferred=false}={}) {
 // decisions. A missing occurrence stays missing; a pending slot is never
 // mistaken for an independent term. This is a separate pass over the final
 // tree, including retained substitution arguments, not an inliner's callback.
-export function bindingUses(syntax,{outcomes=new SlotOutcomes()}={}) {
+export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=false}={}) {
   requireSyntax(syntax);
   const owned=new Set(syntax.owned),uses=[];
-  const visit=tree=>scopeMapped(tree,{
+  const visit=(tree,conditions=[])=>scopeMapped(tree,{
     deferred:true,
     enter(node) {
       if(node.kind!=="bindingReference")return node;
       const selected=outcomes.resolve(node.resolution);
       if(selected.tag==="binding") {
         const replacement=node.substitutions?.find(([id])=>id===selected.id)?.[1];
-        if(replacement)visit(replacement);
-        else if(!owned.has(selected.id))uses.push({kind:"binding",id:selected.id,spelling:node.spelling,origin:node.origin});
+        if(replacement)visit(replacement,conditions);
+        else if(!owned.has(selected.id))uses.push({kind:"binding",id:selected.id,spelling:node.spelling,origin:node.origin,
+          ...(conditions.length?{conditions}:{})});
       } else if(selected.tag==="slot") {
         uses.push({kind:"deferred",slot:selected.id,resolution:selected,spelling:node.spelling,origin:node.origin});
         // The arguments remain conditional, rather than unconditional
         // dependencies of whichever alternative a later type will select.
         if(node.substitutions?.length)uses.at(-1).substitutions=node.substitutions;
+        if(conditional) {
+          let alternative=selected;
+          const required=[...conditions];
+          while(alternative.tag==="slot") {
+            required.push({slot:alternative.id,outcome:"constructor"});
+            alternative=outcomes.resolve(alternative.enclosing);
+          }
+          visit({...node,resolution:alternative},required);
+        }
       } else uses.push({kind:selected.tag,label:selected.label,origin:node.origin});
       return node;
     },
@@ -162,8 +183,12 @@ export function sameBindingSyntax(left,right,correspondence=new Map()) {
       :value.tag==="slot"?{tag:"slot",id:identity(value.id),enclosing:resolution(value.enclosing)}:value;
     const map=tree=>scopeMapped(tree,{
       deferred:true,
-      enter:node=>node.kind==="bindingReference"?{...node,resolution:resolution(node.resolution),
-        ...(node.substitutions?{substitutions:node.substitutions.map(([id,value])=>[identity(id),map(value)])}:{})}:node,
+      enter(node) {
+        if(node.kind!=="bindingReference")return node;
+        const {spelling,...reference}=node;
+        return {...reference,resolution:resolution(node.resolution),
+          ...(node.substitutions?{substitutions:node.substitutions.map(([id,value])=>[identity(id),map(value)])}:{})};
+      },
       bind(token) {
         if(!token.bindingId)return token;
         const {text,name,label,...rest}=token;
@@ -175,7 +200,7 @@ export function sameBindingSyntax(left,right,correspondence=new Map()) {
       extend:at=>at,
     },null);
     return syntaxValue(map(syntax.tree),(key,value)=>{
-      if(["label","spelling","synthetic"].includes(key)
+      if(key==="synthetic"
         ||typeof value==="number"&&/^(start|end|group)$|Start$|End$/.test(key))return undefined;
       // Serialization order of object properties carries no syntax meaning.
       return value&&typeof value==="object"&&!Array.isArray(value)
@@ -188,11 +213,19 @@ const mappedResolution = (value, ids) => value.tag === "binding" ? {...value, id
   : value.tag === "slot" ? {...value, id: ids.get(value.id) ?? value.id, enclosing: mappedResolution(value.enclosing, ids)} : value;
 
 // Apply an explicit interface correspondence without any source lookup.
-// Open parent fields may share a child identity; owned local binders may not
-// be merged. Cloning uses this same operation after allocating fresh locals.
+// Open parent fields may share a child identity. This public operation may
+// never change or target a local binder. Only cloning can rename locals,
+// using fresh identities allocated by the table itself.
 export function remapBindingSyntax(syntax,table,correspondence) {
   requireSyntax(syntax);
-  for(const [before,after] of correspondence){table.get(before);table.get(after);}
+  const locals=new Set(syntax.owned);
+  for(const [before,after] of correspondence) {
+    table.get(before);table.get(after);
+    if(locals.has(before)||locals.has(after))throw new TypeError("An open interface correspondence cannot change or capture local binders.");
+  }
+  return mappedBindingSyntax(syntax,correspondence);
+}
+function mappedBindingSyntax(syntax,correspondence) {
   const owned=syntax.owned.map(id=>correspondence.get(id)??id);
   if(new Set(owned).size!==owned.length)throw new TypeError("An interface correspondence cannot merge local binders.");
   const map = tree => scopeMapped(tree, {
@@ -208,17 +241,18 @@ export function remapBindingSyntax(syntax,table,correspondence) {
   return freeze({...syntax,tree,owned});
 }
 
-export function cloneBindingSyntax(syntax, table, owner) {
+export function cloneBindingSyntax(syntax, table, owner, {expansion}={}) {
   requireSyntax(syntax);
-  const correspondence = table.freshen(syntax.owned, owner);
-  return {syntax:remapBindingSyntax(syntax,table,correspondence),correspondence};
+  const correspondence = table.freshen(syntax.owned, owner,{expansion});
+  const copy=mappedBindingSyntax(syntax,correspondence);
+  return {syntax:expansion?freeze({...copy,tree:expandedSource(copy.tree,expansion)}):copy,correspondence};
 }
 
 // Simultaneous substitution for an explicit open interface. An inserted
 // argument keeps its own references; it never passes through source name
 // resolution again. Under a pending slot its enclosing alternative may need
 // substitution, so retain that argument until the slot's role is known.
-export function substituteBindingSyntax(syntax, replacements, table, owner) {
+export function substituteBindingSyntax(syntax, replacements, table, owner, {kind="substitution"}={}) {
   requireSyntax(syntax);
   const owned = [...syntax.owned];
   for (const [id, replacement] of replacements) {
@@ -226,8 +260,9 @@ export function substituteBindingSyntax(syntax, replacements, table, owner) {
     if (owned.includes(id)) throw new TypeError("Substitution requires an open binding, not an owned binder.");
   }
   let insertion = 0;
-  const insert = replacement => {
-    const {syntax: copy} = cloneBindingSyntax(replacement, table, [...owner, "argument", String(insertion++)]);
+  const insert = (replacement,node,id) => {
+    const {syntax: copy} = cloneBindingSyntax(replacement, table, [...owner, "argument", String(insertion++)],
+      {expansion:{kind,site:node.origin,binding:id}});
     owned.push(...copy.owned);
     return copy.tree;
   };
@@ -235,11 +270,12 @@ export function substituteBindingSyntax(syntax, replacements, table, owner) {
     deferred: true,
     enter(node) {
       if (node.kind !== "bindingReference") return node;
-      if (node.resolution.tag === "binding" && replacements.has(node.resolution.id)) return insert(replacements.get(node.resolution.id));
+      if (node.resolution.tag === "binding" && replacements.has(node.resolution.id))
+        return insert(replacements.get(node.resolution.id),node,node.resolution.id);
       const pending = new Map((node.substitutions ?? []).map(([id, value]) => [id, map(value)]));
       for (let value = node.resolution; value; value = value.tag === "slot" ? value.enclosing : null) {
         if (value.tag === "binding" && !pending.has(value.id) && replacements.has(value.id))
-          pending.set(value.id, insert(replacements.get(value.id)));
+          pending.set(value.id, insert(replacements.get(value.id),node,value.id));
       }
       return pending.size ? {...node, substitutions: [...pending]} : node;
     },

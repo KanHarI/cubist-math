@@ -745,7 +745,9 @@ export class Translator {
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
     const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
     const unavailable=failure=>{
-      for(const name of names)env.set(name,untranslated(name,binding,failure.reason??failure.message,failureRoot(failure,binding)));
+      const root=failureRoot(failure,binding);
+      for(const name of names)env.set(name,untranslated(name,this.checker.bindingName?.(name)??name,
+        failure.reason??failure.message,root));
     };
     try {
       const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);

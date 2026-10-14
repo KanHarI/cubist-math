@@ -31,7 +31,11 @@ export class CompilationBindings {
       return binding;
     };
     const binding=register(key,declaration.name);
-    for(const [index,constructor] of (declaration.constructors??[]).entries()) {
+    const constructors=[...(declaration.constructors??[])];
+    if(declaration.kind==="inductive"&&declaration.result?.modifier&&declaration.result.modifier.kind!=="type")
+      constructors.push({name:{text:`${declaration.name.text}.squash`,label:`${declaration.name.label??declaration.name.text}.squash`,
+        start:declaration.name.start,end:declaration.name.end,origin:declaration.name.origin}});
+    for(const [index,constructor] of constructors.entries()) {
       const identity=`${key}:constructor:${index}`;
       register(identity,constructor.name,["constructor",String(index)]);
       // A refused constructor can still be described by its declared key.

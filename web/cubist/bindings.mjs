@@ -18,11 +18,20 @@ export function sourceOrigin({revision, module, start, end, expansion = []}) {
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start)
     throw new TypeError("Invalid source origin span.");
   return Object.freeze({revision, module, start, end, expansion: Object.freeze(expansion.map(frame => {
-    const {kind, site} = frame;
+    const {kind, site, binding} = frame;
     string(kind, "an expansion kind");
     if (site?.expansion?.length) throw new TypeError("An expansion site cannot contain an origin graph.");
-    return Object.freeze({kind, site: sourceOrigin(site)});
+    return Object.freeze({kind, site: sourceOrigin(site),
+      ...(binding===undefined?{}:{binding:string(binding,"an expansion binding identity")})});
   }))});
+}
+
+// Expansion frames are ordered from the authored definition out to the
+// written request. Keep an already-expanded site's path as the outer path,
+// without embedding a recursive origin graph in a frame.
+export function expandedOrigin(origin,{kind,site,binding}) {
+  return sourceOrigin({...origin,expansion:[...origin.expansion,
+    {kind,site:sourceOrigin({...site,expansion:[]}),...(binding===undefined?{}:{binding})},...site.expansion]});
 }
 
 export class BindingTable {
@@ -51,13 +60,14 @@ export class BindingTable {
   }
   // A clone's correspondence is explicit. External identities are omitted
   // from `owned` and remain shared. Merely walking a tree never allocates.
-  freshen(owned, owner) {
+  freshen(owned, owner, {expansion}={}) {
     owned = [...owned]; owner = path(owner);
     const records = owned.map(id => this.get(id));
     if (new Set(owned).size !== records.length) throw new TypeError("A binding is owned twice.");
     const correspondence = new Map();
     for (const record of records) correspondence.set(record.id,
-      this.allocate(owner, {...record, original: record.original ?? record.id}).id);
+      this.allocate(owner, {...record, original: record.original ?? record.id,
+        ...(expansion?{origin:expandedOrigin(record.origin,expansion)}:{})}).id);
     return correspondence;
   }
   snapshot() {

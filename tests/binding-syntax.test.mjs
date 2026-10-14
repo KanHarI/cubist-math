@@ -9,7 +9,7 @@ import {parse} from "../web/cubist/parser.mjs";
 import {rewritten,relocated} from "../web/cubist/scopes.mjs";
 import {qualifySource,syntaxValue} from "../web/cubist/source-syntax.mjs";
 import {BindingTable, BindingAdapter, LexicalContext, SlotOutcomes, sourceOrigin, bindingResolution, reservedResolution} from "../web/cubist/bindings.mjs";
-import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax,sameBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax,sameBindingSyntax,remapBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const reserved = ["U0", "UU0", "Unit", "tt", "typed", "Interval"];
 const prepare = () => {
@@ -39,6 +39,33 @@ test("binding comparison uses local alpha-equivalence and explicit external corr
   assert.equal(sameBindingSyntax(field(a),field(b)),false,"same labels cannot merge different fields");
   assert.equal(sameBindingSyntax(field(a),field(b),new Map([[a.id,b.id]])),true);
   assert.equal(sameBindingSyntax(left,JSON.parse(JSON.stringify(right))),true);
+});
+
+test("binding comparison retains reserved, missing and pending-constructor identities",()=>{
+  const setup=prepare();
+  const context=new LexicalContext(["Unit","Void","tt","refl","U0","U1"].map(label=>[label,reservedResolution(label)]));
+  let serial=0;
+  const resolve=text=>resolveBindingSyntax(expression(text),{...setup,context,owner:[String(serial++)]});
+  for(const [a,b] of [["Unit","Void"],["U0","U1"],["tt = tt","refl = refl"],
+    ["fun (x : Unit) => x","fun (y : U0) => y"],["missing_a","missing_b"]])
+    assert.equal(sameBindingSyntax(resolve(a),resolve(b)),false,`${a} versus ${b}`);
+  const a=resolve("match tt { x => x; }");
+  const b=resolveBindingSyntax(expression("match tt { x => x; }"),{...setup,
+    context:context.bind("x",reservedResolution("Unit")),owner:["other"]});
+  assert.equal(sameBindingSyntax(a,b),false,"a pending slot's enclosing resolution is semantic");
+});
+
+test("open ID remapping cannot capture a local in either direction",()=>{
+  const setup=prepare(),origin=sourceOrigin({...setup.source,start:0,end:1});
+  const c=setup.table.allocate(["field"],{role:"field",label:"c",origin});
+  const syntax=resolveBindingSyntax(expression("fun (x : Unit) => c"),{...setup,
+    context:setup.context.bind("c",bindingResolution(c.id))});
+  const local=syntax.tree.name.bindingId;
+  for(const pair of [[c.id,local],[local,c.id]])
+    assert.throws(()=>remapBindingSyntax(syntax,setup.table,new Map([pair])),/local binders/);
+  const clone=cloneBindingSyntax(syntax,setup.table,["fresh"]).syntax;
+  assert.notEqual(clone.tree.name.bindingId,local);
+  assert.equal(clone.tree.body.resolution.id,c.id);
 });
 
 test("grouped domains precede every own binder and subsequent groups use the complete telescope", () => {

@@ -6,6 +6,12 @@ import {bindingUses} from "./binding-syntax.mjs";
 const category=entry=>entry.kind==="sort"?"carrier"
   :entry.kind==="derived"?entry.recursive?"recursive-helper":"helper":entry.kind;
 
+const requestOrigin=use=>{
+  const frames=use.origin?.expansion??[];
+  return frames.length?{...use,origin:frames.at(-1).site,definitionOrigin:use.origin,
+    via:frames.filter(frame=>frame.kind==="helper").map(frame=>frame.binding).reverse()}:use;
+};
+
 export class DependencyAnalysis {
   constructor(entries) {
     this.byIdentity=new Map();
@@ -16,11 +22,11 @@ export class DependencyAnalysis {
     }
   }
   references(syntax,options) {
-    return bindingUses(syntax,options).map(use=>use.kind!=="binding"?{...use,category:use.kind}
-      :{...use,category:category(this.byIdentity.get(use.id)??{kind:"external"})});
+    return bindingUses(syntax,options).map(use=>requestOrigin(use.kind!=="binding"?{...use,category:use.kind}
+      :{...use,category:category(this.byIdentity.get(use.id)??{kind:"external"})}));
   }
   dependencies(syntax,options) {
-    const queue=this.references(syntax,options).map(use=>({...use,via:[]})),found=[],seen=new Set();
+    const queue=this.references(syntax,options).map(use=>({via:[],...use})),found=[],seen=new Set();
     for(let index=0;index<queue.length;index++) {
       const use=queue[index];
       if(use.kind!=="binding") {found.push(use);continue;}
@@ -29,7 +35,8 @@ export class DependencyAnalysis {
       const entry=this.byIdentity.get(use.id);
       if(!entry?.syntax)continue;
       for(const dependency of this.references(entry.syntax,options))
-        queue.push({...dependency,origin:use.origin,definitionOrigin:dependency.origin,via:[...use.via,use.id]});
+        queue.push({...dependency,origin:use.origin,definitionOrigin:dependency.definitionOrigin??dependency.origin,
+          via:[...use.via,use.id,...(dependency.via??[])]});
     }
     return found;
   }
@@ -47,7 +54,7 @@ export class DependencyAnalysis {
         throw new TypeError(`Cycle among nonrecursive helpers: ${cycle.map(id=>this.byIdentity.get(id).label??id).join(" -> ")}`);
       }
       visiting.add(entry.id);path.push(entry.id);
-      for(const use of this.references(entry.syntax))
+      for(const use of this.references(entry.syntax,{conditional:true}))
         if(use.kind==="binding") {
           const dependency=this.byIdentity.get(use.id);
           if(dependency)visit(dependency);

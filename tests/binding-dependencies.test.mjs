@@ -47,6 +47,8 @@ test("helper cycle validation distinguishes structural recursion from inlining c
     {id:b.id,kind:"derived",label:"b",syntax:resolve("a")}];
   assert.throws(()=>new DependencyAnalysis(entries).validateHelpers(),/Cycle among nonrecursive helpers: a -> b -> a/);
   assert.deepEqual(new DependencyAnalysis([{...entries[0],recursive:true},entries[1]]).validateHelpers(),{pending:[]});
+  const conditional=[{...entries[0],syntax:resolve("match tt { b => b; }")},entries[1]];
+  assert.throws(()=>new DependencyAnalysis(conditional).validateHelpers(),/Cycle among nonrecursive helpers/);
 });
 
 test("pending alternatives and inserted arguments remain explicit until the slot decision",()=>{
@@ -58,12 +60,16 @@ test("pending alternatives and inserted arguments remain explicit until the slot
   const pending=analysis.references(copied);
   assert.ok(pending.some(use=>use.kind==="deferred"&&use.substitutions.length===1));
   assert.equal(analysis.first(copied,["helper"]),null,"an unselected fallback is conditional");
+  const conditional=analysis.references(copied,{conditional:true}).find(use=>use.id===helper.id);
+  assert.deepEqual(conditional.conditions,[{slot,outcome:"constructor"}]);
   const constructor={outcomes:new SlotOutcomes().decide(slot,"constructor")};
   const variable={outcomes:new SlotOutcomes().decide(slot,"variable")};
   assert.equal(analysis.first(copied,["helper"],constructor).id,helper.id);
   assert.equal(analysis.first(copied,["helper"],variable),null);
   assert.equal(sameBindingSyntax(copied,cloneBindingSyntax(copied,table,["clone"]).syntax),true);
   assert.equal(sameBindingSyntax(syntax,resolve("match tt { y => y; }")),false,"pending constructor spelling is semantic");
-  const deferredHelper=new DependencyAnalysis([{id:helper.id,kind:"derived",label:"helper",syntax:copied}]);
+  const holder=allocate("holder");
+  const deferredHelper=new DependencyAnalysis([{id:holder.id,kind:"derived",label:"holder",syntax:copied},
+    {id:helper.id,kind:"derived",label:"helper",syntax:resolve("tt")}]);
   assert.ok(deferredHelper.validateHelpers().pending.length>0,"unresolved roles cannot certify expansion readiness");
 });

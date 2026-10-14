@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {parse} from "../web/cubist/parser.mjs";
-import {BindingTable,LexicalContext,reservedResolution} from "../web/cubist/bindings.mjs";
+import {BindingTable,LexicalContext,reservedResolution,bindingResolution,sourceOrigin} from "../web/cubist/bindings.mjs";
 import {RetainedInterfaces,interfaceSignature} from "../web/cubist/retained-interfaces.mjs";
 import {bindingUses,sameBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 import {DependencyAnalysis} from "../web/cubist/dependencies.mjs";
@@ -51,9 +51,10 @@ test("inherited complete interfaces freshen locals and map only explicit open id
   const c=child.parameters(cHeader.name,cHeader.params);
   const correspondence=new Map([[p.tree.params[0].name.bindingId,c.tree.params[0].name.bindingId]]);
   const inheritedCarrier=child.inherit(carrier,correspondence,{label:"Carrier"});
-  correspondence.set(carrier.id,inheritedCarrier.id);
+  assert.equal(correspondence.get(carrier.id),inheritedCarrier.id);
   child.retain(declaration("def x : Carrier := tt;"),{kind:"operation"});
-  const inheritedHelper=child.inherit(helper,correspondence);
+  const site={revision:"source",module:"child",start:100,end:110};
+  const inheritedHelper=child.inherit(helper,correspondence,{site});
   const original=helper.syntax.tree.params[0].name.bindingId;
   const replacement=inheritedHelper.syntax.tree.params[0].name.bindingId;
   assert.notEqual(original,replacement);
@@ -61,6 +62,8 @@ test("inherited complete interfaces freshen locals and map only explicit open id
   assert.equal(inheritedHelper.syntax.tree.params[0].type.resolution.id,inheritedCarrier.id);
   assert.equal(inheritedHelper.syntax.tree.params[0].type,inheritedHelper.syntax.tree.params[1].type);
   assert.equal(options.table.get(replacement).origin.module,"parent");
+  assert.equal(options.table.get(replacement).origin.expansion.at(-1).site.start,100);
+  assert.equal(inheritedHelper.syntax.tree.body[0].value.origin.expansion.at(-1).site.module,"child");
   assert.deepEqual(bindingUses(interfaceSignature(inheritedHelper)).filter(use=>use.kind==="binding").map(use=>use.id),
     [inheritedCarrier.id,inheritedCarrier.id]);
   const count=options.table.snapshot().bindings.length;
@@ -130,9 +133,65 @@ test("a common helper origin cannot hide different instantiated values behind an
     return {entry:branch.inherit(helper,new Map([[field.id,own.id]])),field:own};
   });
   const child=new RetainedInterfaces({...options,owner:["child"]});
-  assert.throws(()=>child.inheritShared(branches.map(({entry})=>({entry,correspondence:new Map()}))),
+  assert.throws(()=>child.inheritShared(branches.map(({entry,field})=>({entry,correspondence:new Map([[field.id,field.id]])}))),
     /different origins, kinds or instantiated types/);
   const unified=child.inherit(field,new Map());
   const shared=child.inheritShared(branches.map(({entry,field})=>({entry,correspondence:new Map([[field.id,unified.id]])})));
   assert.equal(shared.syntax.tree.body[0].value.resolution.id,unified.id);
+});
+
+test("inheritance refuses incomplete parent interfaces before allocating or admitting a field",()=>{
+  const options=setup(),parent=new RetainedInterfaces(options),child=new RetainedInterfaces({...options,owner:["child"]});
+  const h=declaration("def T(U < UU0) : Unit := tt;"),header=parent.parameters(h.name,h.params);
+  const carrier=parent.retain(declaration("def M : U := Unit;"),{kind:"sort"});
+  const operation=parent.retain(declaration("def op(x : M) : M := x;"),{kind:"operation"});
+  const before=options.table.snapshot().bindings.length;
+  for(const map of [new Map(),new Map([[header.tree.params[0].name.bindingId,header.tree.params[0].name.bindingId]])])
+    assert.throws(()=>child.inherit(operation,map),/missing a correspondence/);
+  assert.equal(options.table.snapshot().bindings.length,before);
+  assert.equal(child.entries.length,0);
+  assert.ok(carrier.id);
+});
+
+test("real carrier universes and builtin index types participate in sharing",()=>{
+  const options=setup();
+  options.context=options.context.bind("Void",reservedResolution("Void"));
+  const h=declaration("def H(U < UU0, V < UU0) : Unit := tt;");
+  const child=new RetainedInterfaces({...options,owner:["child"]}),header=child.parameters(h.name,h.params);
+  let serial=0;
+  const candidate=(universe,domain="Unit")=>{
+    const parent=new RetainedInterfaces({...options,owner:[String(serial++)]}),p=parent.parameters(h.name,h.params);
+    const field=declaration(`theory T(U < UU0, V < UU0) { F(x : ${domain}) : set ${universe}; }`).fields[0];
+    return {entry:parent.retain(field),correspondence:new Map(p.tree.params.map((p,k)=>[p.name.bindingId,header.tree.params[k].name.bindingId]))};
+  };
+  for(const parents of [[candidate("U"),candidate("V")],[candidate("U"),candidate("U","Void")]])
+    assert.throws(()=>child.inheritShared(parents),/different origins, kinds or instantiated types/);
+  const shared=child.inheritShared([candidate("U"),candidate("U")]);
+  assert.equal(shared.syntax.tree.type.resolution.id,header.tree.params[0].name.bindingId);
+});
+
+test("leveled parameters retain their own evidence in dependent groups without recapturing the universe",()=>{
+  const options=setup();
+  const evidenceTypes=["IsSet","IsProp"].map(label=>options.table.allocate(["library"],{role:"declaration",label,
+    origin:sourceOrigin({...options.source,start:0,end:1})}));
+  for(const binding of evidenceTypes)options.context=options.context.bind(binding.label,bindingResolution(binding.id));
+  const interfaces=new RetainedInterfaces(options);
+  const h=declaration("def H(U < UU0) : Unit := tt;"),header=interfaces.parameters(h.name,h.params);
+  interfaces.retain(declaration("def IsSet : Unit := tt;"),{kind:"operation"});
+  const outer=interfaces.retain(declaration("def A_is_set : Unit := tt;"),{kind:"evidence"});
+  const field=declaration("theory T(U < UU0) { law l(U, A : set U, P : prop U) : A_is_set = A_is_set; }").fields[0];
+  const retained=interfaces.retain(field),params=retained.syntax.tree.params;
+  assert.deepEqual(params.map(p=>p.name.text),["U","A","U_is_set","A_is_set","P","P_is_prop"]);
+  assert.equal(params[0].type,params[1].type);
+  for(const index of [2,3]) {
+    assert.notEqual(params[index].group,params[0].group);
+    assert.equal(params[index].type.args[0].resolution.id,header.tree.params[0].name.bindingId);
+    assert.equal(params[index].type.args[1].resolution.id,params[index-2].name.bindingId);
+    assert.equal(params[index].type.fn.resolution.id,evidenceTypes[0].id);
+  }
+  assert.equal(params[5].type.fn.resolution.id,evidenceTypes[1].id);
+  assert.equal(params[5].type.args[0].resolution.id,params[0].name.bindingId);
+  assert.equal(retained.syntax.tree.type.left.resolution.id,params[3].name.bindingId);
+  assert.ok(bindingUses(retained.syntax).every(use=>use.id!==outer.id));
+  assert.throws(()=>interfaces.retain({...field,unsupportedDependency:field.type}),/Unmodelled retained interface property/);
 });

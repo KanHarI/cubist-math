@@ -35,16 +35,15 @@ export class HelperExpansion {
     const value=entry=>{
       if(this.#values.has(entry.id))return this.#values.get(entry.id);
       const replacements=new Map();
-      for(const use of this.analysis.references(entry.syntax)) {
+      for(const use of this.analysis.references(entry.syntax,{conditional:true})) {
         const dependency=use.kind==="binding"?this.analysis.byIdentity.get(use.id):null;
         if(dependency?.kind==="derived"&&!dependency.recursive)replacements.set(use.id,value(dependency));
       }
-      // Conditional references under slots are not unconditional graph
-      // edges. Include every earlier expanded helper as an explicit pending
-      // substitution; resolving a variable discards its enclosing alternative.
-      for(const [id,syntax] of this.#values)replacements.set(id,syntax);
+      // Conditional graph edges need the same expansion order as ordinary
+      // references. Substitution retains them under the slot; a variable
+      // outcome later discards the enclosing alternative.
       const expanded=substituteBindingSyntax(this.#calls(helperValue(entry)),replacements,table,
-        [...owner,"definition",String(this.#serial++)]);
+        [...owner,"definition",String(this.#serial++)],{kind:"helper"});
       this.#values.set(entry.id,expanded);
       return expanded;
     };
@@ -85,7 +84,7 @@ export class HelperExpansion {
     return bindingSyntaxView(syntax,map(syntax.tree),{inferred:syntax.inferred});
   }
   expand(syntax) {
-    return substituteBindingSyntax(this.#calls(syntax),this.#values,this.table,[...this.owner,"use",String(this.#serial++)]);
+    return substituteBindingSyntax(this.#calls(syntax),this.#values,this.table,[...this.owner,"use",String(this.#serial++)],{kind:"helper"});
   }
   signature(entry) {
     const syntax=this.expand(interfaceSignature(entry));

@@ -292,12 +292,23 @@ Retain complete parameter groups directly instead of reconstructing them
 from equal-looking domain syntax. Generated evidence parameters are explicit
 dependent groups. Derived operations share the declaration interface, adding
 a body and call classification to their signature.
+Retain each carrier's universe as its result type. Evidence for a grouped
+set/prop parameter uses that group's already resolved domain and its own
+parameter ID; it cannot recapture a same-named universe or an outer evidence
+field. Evidence predicates retain their declaration IDs from source entry.
+Reject unmodelled interface properties rather than silently dropping them.
 
 `instantiate(expression, interfaceId -> expression)` substitutes by ID.
 It preserves the free identities of replacements; cloning freshens bound
 IDs and their uses consistently. Changing a label does not change identity.
 Named calls assign public labels to parameter IDs before substitution.
 There is no comparison between free spellings and forbidden local names.
+Open-interface remapping cannot change or target owned local binders; local
+renaming belongs to cloning with freshly allocated IDs. Inheritance validates
+the complete parent interface map and extends it with each admitted child.
+Inserted and inherited syntax, including its binder records, keeps authored
+origins and adds ordered call/extends frames. Dependency refusals report the
+written request, the helper path and the related definition origin.
 
 Inheritance uses an explicit parent-to-child field map. Child fields have
 their own IDs and retain origin IDs. Diamond sharing and independent-parent
@@ -308,6 +319,8 @@ Replace the `sameSyntax` comparisons in `theories.mjs`'s carrier preparation
 and field insertion with structural equivalence up to binding correspondence.
 First apply each parent's actual arguments and parent-to-child interface
 map; compare bound IDs up to alpha-renaming and external IDs exactly. This
+also compares reserved and missing resolutions by their semantic labels;
+those labels are not disposable reference spellings. This
 does not introduce general definitional equality. A shared origin identifies
 a diamond candidate, but its instantiated kind and type must still agree:
 the same ancestor at different arguments need not share. Independent-parent
@@ -317,6 +330,9 @@ it. Fresh clone IDs must neither prevent valid sharing nor hide conflicts.
 
 Expansion of nonrecursive helpers is separate from validation of the full
 expanded signature and its helper dependencies, with cycle detection.
+Conditional slot alternatives supply explicit dependency edges for expansion
+ordering and cycle checks, while remaining pending for support decisions.
+Helper enumeration order cannot decide whether an alternative is expanded.
 Replacement subtrees cannot bypass validation because a generic visitor
 stops at replacement nodes.
 

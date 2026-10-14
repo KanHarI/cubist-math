@@ -7,7 +7,7 @@ import {CubicalProgram} from "../web/cubical-program.mjs";
 const module=await create();
 
 test("declaration identities and source ownership do not depend on scope collection",async t=>{
-  const dep="inductive Two { left_; right_; } def saved : Two := left_;";
+  const dep="inductive Two : set U0 { left_; right_; } def saved : Two := left_;";
   const source="import dep; def saved : Two := right_; def kept : Two := saved; def saved : Two := left_;";
   const declarations=[];
   for(const collectScopes of [false,true]) {
@@ -23,6 +23,10 @@ test("declaration identities and source ownership do not depend on scope collect
     assert.equal(registry.ofValue(program.modules.get("main").get("saved")).id,local.id);
     const constructor=registry.ofValue(program.modules.get("dep").get("right_"));
     assert.equal(constructor.origin.module,"dep");assert.equal(constructor.label,"right_");
+    const squash=registry.ofValue(program.modules.get("dep").get("Two.squash"));
+    assert.equal(squash.label,"Two.squash");
+    assert.equal(squash,registry.declaration("dep__Two:constructor:2").binding);
+    assert.notEqual(squash.id,registry.declaration("dep__Two").binding.id);
     declarations.push(registry.table.snapshot().bindings.filter(binding=>binding.role==="declaration"));
     if(collectScopes)assert.equal(program.scopeRecorder.table,registry.table);
   }
@@ -38,6 +42,25 @@ test("a declaration reservation never supplies the value of a refused declaratio
   assert.equal(program.kernel.definitions.has("main__bad"),false);
   assert.equal(program.kernel.definitions.has("main__client"),false);
   assert.equal(program.kernel.definitions.has("main__good"),true);
+});
+
+test("failed constructors keep distinct declared identities and the common failure root",async t=>{
+  for(const collectScopes of [false,true]) {
+    const program=new CubicalProgram(module,async()=>"",{collectScopes});t.after(()=>program.dispose());
+    const result=await program.check("inductive T : set U0 { c; d(x : Missing); } def client : Unit := c;","main");
+    assert.deepEqual(result.gaps.map(gap=>gap.name),["T","client"]);
+    const registry=program.compilationBindings,env=program.modules.get("main");
+    const identities=["T","c","d","T.squash"].map(name=>{
+      const value=env.get(name),binding=registry.ofValue(value);
+      assert.equal(value.tag,"Untranslated");
+      assert.equal(binding.label,name);
+      assert.equal(binding,registry.declaration(`main__${name}`).binding);
+      assert.equal(value.blockedBy,"main__T");
+      return binding.id;
+    });
+    assert.equal(new Set(identities).size,4);
+    assert.equal(env.get("client").blockedBy,"main__T");
+  }
 });
 
 test("edited source replaces its compilation identities while cached REPL extensions preserve them",async t=>{

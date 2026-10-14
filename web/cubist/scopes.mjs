@@ -169,7 +169,7 @@ export function rewritten(node, rewrite, bound = new Set()) {
 // `bind` returns a binder token; `extend` adds a group's mapped binders to
 // an immutable context. A replacement returned by `enter` is not entered.
 export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n => n,
-  region = at => at, extend, deferred = false}, context) {
+  region = at => at, parameter = n => n, extend, deferred = false}, context) {
   const walk = (node, outer, replacements) => {
     if (!node || typeof node !== "object") return node;
     if (replacements.has(node)) return replacements.get(node);
@@ -228,7 +228,7 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
           const domain=walk(first,at,tokens);
           return parameters.map(param=>{
             const rest={...param};delete rest[field];
-            return {...walk(rest,at,tokens),[field]:domain};
+            return parameter({...walk(rest,at,tokens),[field]:domain},param,node,at);
           });
         });
         continue;
