@@ -51,7 +51,7 @@ export class RetainedInterfaces {
     this.entries=[];this.header=null;
   }
   #resolve(tree,owner,{context=this.context,self=null,fixedReferences=new Map()}={}) {
-    const universeReferences=new Map((this.header?.tree.params??[]).filter(p=>p.bound)
+    const universeReferences=new Map((this.header?.tree.params??[]).filter(p=>p.bound&&p.name.text!=="_")
       .map(p=>[p.name.text,bindingResolution(p.name.bindingId)]));
     // `set U` and `prop U` are universe positions fixed by the grammar.
     // Their meaning does not change under a term parameter or helper U.

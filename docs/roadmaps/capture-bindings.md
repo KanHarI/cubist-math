@@ -99,8 +99,13 @@ The invariants are:
    forwarding and evidence use the position's ID. Parser and artifact builders
    construct each group from one shared domain node; retention preserves
    written groups instead of reconstructing them from flattened labels.
-   Anonymous parent header parameters correspond to anonymous child positions;
-   named header parameters retain the existing correspondence by public label.
+   Anonymous parent header parameters correspond to anonymous child positions
+   within the same ordered class (universes or terms). Neither lexical nor
+   fixed universe namespaces admit `_`: `set _` and `prop _` are refused,
+   including in parameter domains. Anonymous universe positions may still be
+   passed and cloned by ID. Named header parameters retain the existing
+   correspondence by public label; singleton universe renaming applies only
+   when both universe positions are named.
    Transitional templates give anonymous positions referable internal labels
    and retain their public `_` labels separately.
 3. Cloning a declaration for a new instance freshens its bound IDs and all

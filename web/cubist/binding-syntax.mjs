@@ -68,7 +68,11 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
     enter(node, at) {
       if(fixedReferences.has(node)) {
-        const fixed=fixedReferences.get(node),value=fixed.tag==="universe"?universes.get(fixed.label):fixed;
+        const fixed=fixedReferences.get(node);
+        if(fixed.tag==="universe"&&fixed.label==="_")
+          throw Object.assign(Error("An anonymous universe has no name: name the header universe to refer to it here."),
+            {offset:node.start,sourceEnd:node.end});
+        const value=fixed.tag==="universe"?universes.get(fixed.label):fixed;
         if(!value)throw new TypeError(`A fixed universe position has no header universe: ${fixed.label}`);
         return occurrence(node,value,node.name,origin(node));
       }
@@ -107,7 +111,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       // Anonymous positions still need identities for forwarding, evidence,
       // cloning and generated applications. They introduce no lexical name.
       const record = table.allocate(owner, {role: bindingRole(node, scope, token), label: binderName(token), origin: origin(token)});
-      if(record.role==="universe"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
+      if(record.role==="universe"&&record.label!=="_"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
       owned.push(record.id);
       return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
         ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lookup(binderName(token))} : {})};

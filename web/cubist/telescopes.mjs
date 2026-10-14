@@ -16,6 +16,23 @@ export function parameterGroups(params) {
 // before introducing any member of the group.
 export const parameterGroup=(names,domain,group)=>names.map(name=>({name,...domain,group}));
 
+// Header correspondence has two ordered classes: universes and terms. An
+// anonymous position has no public name in either class. Preserve the
+// language's singleton universe renaming only between named positions.
+export function correspondingHeaderParameters(parent,child) {
+  const label=p=>p.label??p.name.label??p.name.text;
+  const classes=params=>[params.filter(p=>p.bound),params.filter(p=>!p.bound)];
+  const own=classes(child);
+  return classes(parent).flatMap((parameters,kind)=>parameters.map((parameter,index)=>{
+    const candidates=own[kind],name=label(parameter);
+    let matched;
+    if(name==="_")matched=candidates[index]&&label(candidates[index])==="_"?candidates[index]:null;
+    else if(kind===0&&parameters.length===1&&candidates.length===1&&label(candidates[0])!=="_")matched=candidates[0];
+    else matched=candidates.find(p=>label(p)===name);
+    return [parameter,matched??null];
+  }));
+}
+
 // The public argument convention interleaves each leveled parameter and
 // its evidence. Both telescope construction and implicit call completion
 // consume this layout, rather than deriving separate argument orders.

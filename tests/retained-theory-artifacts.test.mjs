@@ -477,3 +477,50 @@ test("anonymous parent header positions retain distinct child correspondences",a
   assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
   for(const name of ["value","mapped"])assert.equal(equal(name,"fun (h : IsSet(U0, Two)) => right_"),true);
 });
+
+test("anonymous universe positions introduce no name in fixed universe syntax",async t=>{
+  const {retain}=await setup(t);
+  for(const source of [
+    "theory T(_ < UU0) { M : set _; c : M; }",
+    "theory T(_, _ < UU0) { M : set _; c : M; }",
+    "theory T(_ < UU0) { P : prop _; }",
+    "theory T(_ < UU0) { def f(A : set _) : Two := left_; }",
+    "theory T(_, _ < UU0) { op(A : set _) : Two; }",
+  ]) {
+    const position=source.indexOf("_",source.includes("set _")?source.indexOf("set _"):source.indexOf("prop _"));
+    assert.throws(()=>retain(source),error=>{
+      assert.match(error.message,/anonymous universe has no name/,source);
+      assert.equal(error.offset,position);assert.equal(error.sourceEnd,position+1);
+      return true;
+    },source);
+  }
+});
+
+test("universe and term header correspondence preserve anonymous positions independently",async t=>{
+  const {buildSource,retain,check}=await setup(t);
+  const parent=buildSource("theory P(_, _, U < UU0, _, _ : Two) { M : set U; c : M; }");
+  const child=buildSource("theory C(_, _, V, U < UU0, _, _ : Two) extends p : P {}");
+  const header=child.record.bindingSyntax.tree.params;
+  const universes=header.filter(p=>p.bound),parameters=header.filter(p=>!p.bound);
+  assert.deepEqual(child.record.parents[0].universeIds,[0,1,3].map(i=>universes[i].name.bindingId));
+  assert.deepEqual(child.record.parents[0].parameterIds,parameters.map(p=>p.name.bindingId));
+  assert.equal(new Set(child.record.parents[0].universeIds).size,3);
+  const one=buildSource("theory One(_ < UU0) { k : Two; }");
+  const more=buildSource("theory More(_, _ < UU0) extends base_ : One {}");
+  assert.deepEqual(more.record.parents[0].universeIds,[more.record.bindingSyntax.tree.params[0].name.bindingId]);
+  assert.throws(()=>retain("theory Named(U < UU0) extends base_ : One {}"),/header binds the universe _/);
+  assert.throws(()=>retain("theory Shifted(U, _, _ < UU0, _, _ : Two) extends p : P {}"),/header binds the universe _/);
+  buildSource("theory NamedParent(U < UU0) { M : U; }");
+  assert.throws(()=>retain("theory AnonymousChild(_ < UU0) extends base_ : NamedParent {}"),/header binds the universe U/);
+  const {result,equal}=check({declarations:[...parent.declarations,...child.declarations,...one.declarations,...more.declarations]},`
+    def instance_(h : IsSet(U0, Two)) : C(U0, U1, U1, U0, left_, right_) :=
+      C.make(left_, right_, Two, h, right_);
+    def parent_(h : IsSet(U0, Two)) : P(U0, U1, U0, left_, right_) := instance_(h).p;
+    def value(h : IsSet(U0, Two)) : Two := parent_(h).c;
+    def small : More(U0, U1) := More.make(left_);
+    def first_ : One(U0) := small.base_;
+  `);
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  assert.equal(equal("value","fun (h : IsSet(U0, Two)) => right_"),true);
+  assert.equal(equal("value","fun (h : IsSet(U0, Two)) => left_"),false);
+});
