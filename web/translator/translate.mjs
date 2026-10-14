@@ -140,6 +140,15 @@ export class Translator {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
       references:this.references,steps:this.onStep,scopePoints:this.scopePoints,freezeSuggestions:this.freezeSuggestions,...options});
   }
+  // A subordinate elaborator in an existing scope shares that compilation's
+  // identity registry as well as its checker. Fresh observation/fuel state
+  // must not create a second meaning for IDs in the checker's model records.
+  forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
+    if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
+    return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,
+      moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
+      normalize,searchFuel,declarationFuel});
+  }
   reference(scope,node,term,env=scope.env) {
     // A display label need not be the environment key (freshened generated
     // binders and identity lowering both separate them). Carry the lexical

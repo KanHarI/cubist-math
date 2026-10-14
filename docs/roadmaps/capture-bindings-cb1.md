@@ -96,6 +96,11 @@ only the requested description, compares that description, validates the local
 context natively, rechecks accepted scratch lets and executes the new query in
 a synchronous callback. `ElaborationStop` unwinds without proof recovery or
 publishing the unfinished declaration. The isolated session is always disposed.
+The query elaborator is forked from the replay translator and shares its
+compilation identity registry and checker. Its work and observation state are
+fresh; model records and projection IDs keep the same owner as the replayed
+environment. Creating an unrelated registry for a query would invalidate
+those exact IDs even though the native definitions are present.
 
 The pinned input includes read failures, source texts, the legacy reader flag,
 fuel limits, kernel retry policy and deadline epochs. Changed prefix outcomes

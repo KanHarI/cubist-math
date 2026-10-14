@@ -88,6 +88,27 @@ test("universe parameters and interval coordinates remain available by identity"
   await query(dimension,"p @ j","error");
 });
 
+test("contextual model queries share the replay compilation's exact projection identities",async t=>{
+  const source=`import hlevels;
+    inductive Two : set U0 { left_; right_; }
+    theory Leaf(U < UU0) { M : set U; x : M; }
+    def chosen : Leaf(U0) := Leaf.make(Two, _, left_);
+    def f(m : Leaf(U0), y : Two) : Two := y;`;
+  const {program,result}=await setup(t,source);
+  assert.deepEqual(result.gaps,[]);
+  const session=at(program,source,"y;");
+  await query(session,"typeof m.x","type");
+  await query(session,"typeof Leaf.x(m)","type");
+  await query(session,"chosen.x","value","left_");
+  await query(session,"chosen.(x)","value","left_");
+  await query(session,"let saved := chosen.x","defined");
+  await query(session,"saved","value","left_");
+  await query(session,"let chosen := tt","defined");
+  await query(session,"chosen.x","error");
+  await query(session,"saved","value","left_");
+  await query(session,"typeof m.x","type");
+});
+
 test("CB1 contextual session: let-before-after",async t=>{
   const fixture=scenario("let-before-after"),{program}=await setup(t,fixture.source);
   const initializer=at(program,fixture.source,"succ(next_)"),after=at(program,fixture.source,fixture.marker,"after");

@@ -7,11 +7,9 @@ import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs} from "./translator/binding-module.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax} from "./cubist/binding-syntax.mjs";
-import {Translator} from "./translator/translate.mjs";
 import {Scope} from "./translator/elaboration.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxNames} from "./translator/syntax-graph.mjs";
-import {copySimpRegistry} from "./translator/simp-registry.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
 import {T} from "./translator/core.mjs";
@@ -130,8 +128,7 @@ export class ContextualSession {
         if(JSON.stringify(point)!==JSON.stringify(this.#point))
           throw new ElaborationStop(unavailable("The selected scope did not reproduce its recorded context."));
         const table=replay.scopeRecorder.table,adapter=new BindingAdapter(table);
-        const translator=new Translator({checker:live.scope.checker,normalize:false,
-          simpRegistry:copySimpRegistry(live.scope.unit.simpRegistry),nameBased:live.translator.nameBased,...inputs.fuelLimits});
+        const translator=live.translator.forkScope(live.scope,{normalize:false,...inputs.fuelLimits});
         const selectedPolicy=kernelReplayPolicy(replay.kernel);
         let scope,lexical=live.lexical;
         const validation=measure(replay.kernel);
