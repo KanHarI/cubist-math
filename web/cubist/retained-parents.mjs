@@ -118,10 +118,13 @@ export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
     admit(entry);admitted.add(entry.id);remaining.delete(group);
   }
   const headerLabels=new Set(header.tree.params.map(p=>p.name.text));
-  for(const parent of prepared)if(!headerLabels.has(parent.label))for(const entry of parent.entries)
-    interfaces.context=interfaces.context.bind(`${parent.label}.${entry.label}`,bindingResolution(parent.correspondence.get(entry.id)));
+  for(const parent of prepared)if(!headerLabels.has(parent.label))
+    interfaces.context=interfaces.context.namespace(parent.label,parent.entries.map(entry=>
+      [entry.label,bindingResolution(parent.correspondence.get(entry.id))]),parent.record.name);
   const parents=prepared.map(parent=>({label:parent.label,theory:parent.record.name,modelId:parent.record.modelId,makeId:parent.record.makeId,
     ...(parent.record.homId?{homId:parent.record.homId,homMakeId:parent.record.homMakeId}:{}),
+    homSupport:parent.record.homSupport??(parent.record.noMorphisms?{status:"unsupported",reason:parent.record.noMorphisms}
+      :{status:"pending",obligations:[{kind:"parent-Hom",theory:parent.record.name}]}),
     universeIds:parent.universes.map(p=>parent.correspondence.get(p.name.bindingId)),
     parameterIds:parent.parameters.map(p=>parent.correspondence.get(p.name.bindingId)),
     fieldIds:parent.record.fields.map(field=>parent.correspondence.get(field.id)),

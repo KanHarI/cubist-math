@@ -97,3 +97,18 @@ test("lowering rejects absent identities and limits explicit late lookup to its 
   assert.throws(() => adapter.lower(new LexicalContext().defer("x", "absent").lookup("x")), /Unknown binding identity/);
   assert.throws(() => adapter.lower(new LexicalContext().defer("x", x.id).lookup("x")), /candidate pattern/);
 });
+
+test("interface namespaces survive snapshots and close members while later locals shadow them",()=>{
+  const table=new BindingTable("compilation"),global=allocate(table,"p","declaration"),
+    unrelated=allocate(table,"p.missing","declaration"),field=allocate(table,"field","field"),local=allocate(table,"p");
+  const context=new LexicalContext([["p",bindingResolution(global.id)],["p.missing",bindingResolution(unrelated.id)]])
+    .namespace("p",[["field",bindingResolution(field.id)]],"Parent");
+  for(const restored of [context,new LexicalContext(roundtrip(context.snapshot()))]) {
+    assert.equal(restored.lookup("p").id,global.id);
+    assert.equal(restored.qualified("p.field").value.id,field.id);
+    assert.deepEqual(restored.qualified("p.field.next"),{value:bindingResolution(field.id),fields:["next"]});
+    assert.throws(()=>restored.qualified("p.missing"),error=>error.namespace==="p"&&error.member==="missing");
+    assert.deepEqual(restored.bind("p",bindingResolution(local.id)).qualified("p.missing"),
+      {value:bindingResolution(local.id),fields:["missing"]});
+  }
+});

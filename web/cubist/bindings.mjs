@@ -92,12 +92,25 @@ export const bindingResolution = id => Object.freeze({tag: "binding", id: string
 export const missingResolution = label => Object.freeze({tag: "missing", label: string(label, "a missing label")});
 export const reservedResolution = label => Object.freeze({tag: "reserved", label: string(label, "a reserved label")});
 export const slotResolution = (id, enclosing) => Object.freeze({tag: "slot", id: string(id, "a slot identity"), enclosing: resolution(enclosing)});
+// A qualified namespace closes its member table. Its bare label can keep
+// an enclosing value, but an absent member never searches that value's
+// ambient namespace. Ordinary later bindings still shadow the whole entry.
+export const namespaceResolution=(members,fallback,description)=>Object.freeze({tag:"namespace",
+  members:Object.freeze([...members].map(([label,value])=>Object.freeze([string(label,"an interface member"),resolution(value)]))),
+  fallback:resolution(fallback),description:string(description,"an interface description")});
+export class UnknownNamespaceMember extends TypeError {
+  constructor(namespace,member,description) {
+    super("Unknown member of a resolved interface namespace.");
+    Object.assign(this,{namespace,member,description});
+  }
+}
 export function resolution(value) {
   switch (value?.tag) {
     case "binding": return bindingResolution(value.id);
     case "missing": return missingResolution(value.label);
     case "reserved": return reservedResolution(value.label);
     case "slot": return slotResolution(value.id, value.enclosing);
+    case "namespace": return namespaceResolution(value.members,value.fallback,value.description);
     default: throw new TypeError("Invalid lexical resolution.");
   }
 }
@@ -113,14 +126,20 @@ export class LexicalContext {
   }
   lookup(label) {
     for (let entry = this.#head; entry; entry = entry.parent)
-      if (entry.label === label) return entry.value;
+      if (entry.label === label) return entry.value.tag==="namespace"?entry.value.fallback:entry.value;
     return missingResolution(label);
   }
   qualified(name) {
     // Ordered shadowing applies to a receiver too: a later local T hides
     // an earlier declaration T.f. Member labels are resolved on that receiver.
     for (let entry = this.#head; entry; entry = entry.parent) {
-      if (entry.label === name) return {value: entry.value, fields: []};
+      if (entry.label === name) return {value:entry.value.tag==="namespace"?entry.value.fallback:entry.value,fields:[]};
+      if(name.startsWith(entry.label+".")&&entry.value.tag==="namespace") {
+        const [member,...fields]=name.slice(entry.label.length+1).split(".");
+        const found=entry.value.members.find(([label])=>label===member);
+        if(!found)throw new UnknownNamespaceMember(entry.label,member,entry.value.description);
+        return {value:found[1],fields};
+      }
       if (name.startsWith(entry.label + "."))
         return {value: entry.value, fields: name.slice(entry.label.length + 1).split(".")};
     }
@@ -132,6 +151,7 @@ export class LexicalContext {
     return context;
   }
   defer(label, id) {return this.bind(label, slotResolution(id, this.lookup(label)));}
+  namespace(label,members,description) {return this.bind(label,namespaceResolution(members,this.lookup(label),description));}
   snapshot() {
     const entries = [];
     for (let entry = this.#head; entry; entry = entry.parent) entries.push(Object.freeze([entry.label, entry.value]));

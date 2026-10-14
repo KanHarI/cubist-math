@@ -11,27 +11,36 @@ export function parameterGroups(params) {
   return groups;
 }
 
-// set/prop parameters have an explicit dependent evidence group. The source
-// group's common domain remains outside *all* its own binders. Evidence
-// types are filled from the resolved parameter, never by rereading its
-// universe or carrier's spelling in the extended context.
+// The public argument convention interleaves each leveled parameter and
+// its evidence. Both telescope construction and implicit call completion
+// consume this layout, rather than deriving separate argument orders.
+export const evidenceLayout=params=>params.flatMap((p,index)=>[
+  {index,kind:"argument"},...(p.level?[{index,kind:"evidence",level:p.level}]:[])]);
+
+// Resolve a written group's shared domain before any of its binders. Only
+// after resolution, reorder its explicit evidence into the public layout;
+// the shared domain then carries IDs and cannot be captured by that order.
 export function evidenceTelescope(tree) {
   const evidence=new Map();
   if(!tree.params?.some(p=>p.level))return {tree,evidence};
-  const params=[];
+  const params=[],order=[];
   for(const {parameters} of parameterGroups(tree.params)) {
     const group=params.length;
-    params.push(...parameters.map(p=>({...p,group})));
-    for(const [index,p] of parameters.entries())if(p.level) {
+    const originals=parameters.map(p=>({...p,group})),witnesses=new Map();
+    params.push(...originals);
+    for(const [index,p] of originals.entries())if(p.level) {
       if(!["set","prop"].includes(p.level)||p.bound||p.name.text==="_")
         throw new TypeError("A leveled parameter needs a named type and set or prop evidence.");
       const type={kind:"call"}; // private marker, consumed before traversal
-      evidence.set(type,{parameter:params[group+index],builtin:p.level==="set"?"IsSet":"IsProp"});
-      params.push({name:{...p.name,text:`${p.name.text}_is_${p.level}`,synthetic:true},
-        type,group:params.length});
+      evidence.set(type,{parameter:p,builtin:p.level==="set"?"IsSet":"IsProp"});
+      const witness={name:{...p.name,text:`${p.name.text}_is_${p.level}`,synthetic:true},type,group:params.length};
+      witnesses.set(index,witness);params.push(witness);
     }
+    const first=order.length;
+    for(const {index,kind} of evidenceLayout(originals))order.push({parameter:kind==="argument"?originals[index]:witnesses.get(index),
+      group:witnesses.size?order.length:first});
   }
-  return {tree:{...tree,params},evidence};
+  return {tree:{...tree,params},evidence,order};
 }
 
 function parameterBinders(kind,params,body) {

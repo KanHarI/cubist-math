@@ -2,7 +2,7 @@
 // member parameter domains, result and body are resolved together, once.
 // Subsequent consumers transform the retained syntax through ID maps; they
 // never rebuild its lexical scope from the eventual list of field labels.
-import {bindingResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
+import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
 import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,bindingSyntaxView,sameBindingSyntax} from "./binding-syntax.mjs";
 import {parameterForalls} from "./telescopes.mjs";
 
@@ -50,14 +50,22 @@ export class RetainedInterfaces {
     Object.assign(this,{table,owner,context,source,constructors,evidenceTypes});
     this.entries=[];this.header=null;
   }
-  #resolve(tree,owner,{context=this.context,self=null}={}) {
+  #resolve(tree,owner,{context=this.context,self=null,fixedReferences=new Map()}={}) {
+    const universeReferences=new Map((this.header?.tree.params??[]).filter(p=>p.bound)
+      .map(p=>[p.name.text,bindingResolution(p.name.bindingId)]));
+    // `set U` and `prop U` are universe positions fixed by the grammar.
+    // Their meaning does not change under a term parameter or helper U.
+    for(const parameter of tree.params??[])if(parameter.level&&parameter.type?.kind==="name") {
+      const label=parameter.type.name;
+      fixedReferences.set(parameter.type,/^U+[0-9]+$/.test(label)?reservedResolution(label):{tag:"universe",label});
+    }
     return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors,
-      evidenceTypes:this.evidenceTypes,self});
+      evidenceTypes:this.evidenceTypes,self,fixedReferences,universeReferences});
   }
-  parameters(name,params) {
+  parameters(name,params,{fixedReferences=new Map()}={}) {
     if(this.header||this.entries.length)throw new TypeError("A retained header precedes its members and is resolved once.");
     name={...name,origin:name.origin??sourceOrigin({...this.source,start:name.start,end:name.end})};
-    const syntax=this.#resolve({kind:"def",name,params,type:null,value:null},[...this.owner,"header"]);
+    const syntax=this.#resolve({kind:"def",name,params,type:null,value:null},[...this.owner,"header"],{fixedReferences});
     for(const parameter of syntax.tree.params)if(parameter.name.bindingId)
       this.context=this.context.bind(parameter.name.text,bindingResolution(parameter.name.bindingId));
     this.header=syntax;
@@ -65,11 +73,13 @@ export class RetainedInterfaces {
   }
   retain(item,{kind=item.kind,self=false,transform=syntax=>syntax}={}) {
     const tree=interfaceTree(item);
+    const fixedReferences=new Map();
+    if(item.universe)fixedReferences.set(tree.type,{tag:"universe",label:item.universe.text});
     const owner=[...this.owner,"member",String(this.#next++)];
     const binding=this.table.allocate(owner,{role:kind==="derived"?"helper":"field",label:item.name.text,
       origin:item.name.origin??sourceOrigin({...this.source,start:item.name.start,end:item.name.end})});
     const context=this.context;
-    const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null}));
+    const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null,fixedReferences}));
     const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive:self,lexical:context.snapshot(),
       interface:Object.freeze(this.#interface()),
       ...(kind==="sort"?{level:item.level??null}:{})});
@@ -128,7 +138,8 @@ export class RetainedInterfaces {
     const cloned=cloneBindingSyntax(entry.syntax,this.table,[...owner,"telescope"],{expansion});
     const syntax=remapBindingSyntax(cloned.syntax,this.table,map);
     const resolution=value=>value.tag==="binding"?{...value,id:map.get(value.id)??value.id}
-      :value.tag==="slot"?{...value,id:map.get(value.id)??value.id,enclosing:resolution(value.enclosing)}:value;
+      :value.tag==="slot"?{...value,id:map.get(value.id)??value.id,enclosing:resolution(value.enclosing)}
+      :value.tag==="namespace"?{...value,fallback:resolution(value.fallback),members:value.members.map(([label,value])=>[label,resolution(value)])}:value;
     // Only the canonical interface and its structural metadata inherit.
     // Analysis/checking views and generated projection IDs belong to the
     // parent's artifacts and must be rebuilt for the child correspondence.

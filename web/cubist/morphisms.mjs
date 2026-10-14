@@ -213,6 +213,17 @@ function planMorphisms(record,isTheory) {
   const symbols=record.bindingSyntax?retainedSymbols(record.bindingSyntax):nominalSymbols,locals=new Map();
   const dependencies=record.bindingSyntax?new DependencyAnalysis([...record.fields,...record.derived??[]]):null;
   if(record.bindingSyntax) {
+    // A parent projection is part of this Hom family. Its support is a
+    // prerequisite of planning, not an exception while filling templates.
+    // An existing conditional identity will be checked by publication;
+    // an absent identity remains pending until that family is available.
+    for(const parent of record.parents??[]) {
+      const support=parent.homSupport;
+      if(support?.status==="unsupported")return {missing:`its parent ${parent.theory} has no homomorphisms: ${support.reason}`,
+        refusal:{parent:parent.theory,at:support.at,cause:support}};
+      if(support?.status==="pending"||!parent.homId||!parent.homMakeId)
+        return {pending:[{kind:"parent-Hom",theory:parent.theory,obligations:support?.obligations??[]}]};
+    }
     const pending=record.fields.flatMap(field=>bindingUses(bindingSyntaxView(record.bindingSyntax,field.type))
       .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
     if(pending.length)return {pending};

@@ -5,7 +5,8 @@
 import {RetainedInterfaces} from "./retained-interfaces.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
 import {bindingSyntaxView} from "./binding-syntax.mjs";
-import {bindingResolution,sourceOrigin} from "./bindings.mjs";
+import {bindingResolution,reservedResolution,sourceOrigin,UnknownNamespaceMember} from "./bindings.mjs";
+import {evidenceLayout} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped,rewritten} from "./scopes.mjs";
 import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
@@ -30,13 +31,12 @@ function familyEvidence(syntax,families) {
     if(node.kind!=="call"||node.fn.kind!=="bindingReference"||node.fn.resolution.tag!=="binding")return node;
     const family=families.get(node.fn.resolution.id);
     if(!family?.visible.some(Boolean)||node.args.length!==family.visible.length)return node;
-    const args=[];
-    node.args.forEach((source,index)=>{
-      const arg=map(source),level=family.visible[index];args.push(arg);
-      if(!level)return;
+    const supplied=node.args.map(map),args=evidenceLayout(family.visible.map(level=>({level}))).map(({kind,index,level})=>{
+      const source=node.args[index],arg=supplied[index];
+      if(kind==="argument")return arg;
       const witness=arg.kind==="bindingReference"&&arg.resolution.tag==="binding"?evidence.get(arg.resolution.id):null;
       if(witness?.level!==level)throw located(Error(`${family.label}'s argument ${index+1} is a ${level==="set"?"set":"proposition"} with its evidence: give an index bound as one, (A : ${level} U), or write its evidence after it, ${family.label}(…, A, A_is_${level}, …).`),source);
-      args.push(reference(witness.token));
+      return reference(witness.token);
     });
     return {...node,args};
   }},null);
@@ -59,7 +59,8 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     if(headerNames.has(parameter.name.text))throw located(Error(`${T}'s header binds ${parameter.name.text} twice: give each its own name.`),parameter.name);
     headerNames.add(parameter.name.text);
   }
-  const header=interfaces.parameters(theory.name,params),families=new Map(),fields=[],derived=[];
+  const header=interfaces.parameters(theory.name,params,{fixedReferences:new Map(params.filter(p=>p.bound)
+    .map(p=>[p.bound,reservedResolution("UU0")]))}),families=new Map(),fields=[],derived=[];
   const byName=new Map(),byIdentity=new Map();
   const admit=(entry,metadata={})=>{
     if(byName.has(entry.label))throw located(Error(`${T} has two fields named ${entry.label}: give each its own name.`),entry.binding.origin);
@@ -87,7 +88,13 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
       return node;
     });
     const self=item.kind==="derived"&&freeNames(item.value,new Set(item.params.map(p=>p.name.text))).has(item.name.text);
-    const entry=interfaces.retain(item,{self,transform:syntax=>familyEvidence(syntax,families)});
+    let entry;
+    try {entry=interfaces.retain(item,{self,transform:syntax=>familyEvidence(syntax,families)});}
+    catch(error) {
+      if(error instanceof UnknownNamespaceMember)
+        throw located(Error(`${error.description}, ${T}'s parent ${error.namespace}, has no field ${error.member}.`),error.at??item);
+      throw error;
+    }
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);

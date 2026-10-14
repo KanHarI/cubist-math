@@ -435,10 +435,14 @@ export function missingEvidence(d,env) {
 // have no homomorphisms: the error that says why, or null.
 export function missingMorphisms(scope,name,spelling=name) {
   const [,theory,kind]=/^(.+?)\.(Hom|Iso)(?:\.|$)/.exec(name)??[],entry=theory&&scope.env.get(theoryBinding(theory));
+  // Retained artifacts publish their record with the exact checked model
+  // declaration. They do not require a second nominal generator registry.
+  const value=theory&&scope.env.get(theory),record=entry?.record
+    ??(value?.tag==="DefRef"?scope.checker.theories?.get(value.name):null);
   const written=spelling.split(/\.(?:Hom|Iso)(?:\.|$)/)[0];
-  if(entry?.record.noMorphisms)return Error(`${written}'s models have no homomorphisms: ${entry.record.noMorphisms}.`);
-  return kind==="Iso"&&entry?.record.noIsomorphisms
-    ?Error(`${written}'s models have homomorphisms but no isomorphisms: ${entry.record.noIsomorphisms}.`):null;
+  if(record?.noMorphisms)return Error(`${written}'s models have no homomorphisms: ${record.noMorphisms}.`);
+  return kind==="Iso"&&record?.noIsomorphisms
+    ?Error(`${written}'s models have homomorphisms but no isomorphisms: ${record.noIsomorphisms}.`):null;
 }
 
 // A section's scope, inside its parameters (L2.4): each earlier definition of

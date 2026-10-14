@@ -181,16 +181,16 @@ test("leveled parameters retain their own evidence in dependent groups without r
   const outer=interfaces.retain(declaration("def A_is_set : Unit := tt;"),{kind:"evidence"});
   const field=declaration("theory T(U < UU0) { law l(U, A : set U, P : prop U) : A_is_set = A_is_set; }").fields[0];
   const retained=interfaces.retain(field),params=retained.syntax.tree.params;
-  assert.deepEqual(params.map(p=>p.name.text),["U","A","U_is_set","A_is_set","P","P_is_prop"]);
-  assert.equal(params[0].type,params[1].type);
-  for(const index of [2,3]) {
+  assert.deepEqual(params.map(p=>p.name.text),["U","U_is_set","A","A_is_set","P","P_is_prop"]);
+  assert.equal(params[0].type,params[2].type);
+  for(const index of [1,3]) {
     assert.notEqual(params[index].group,params[0].group);
     assert.equal(params[index].type.args[0].resolution.id,header.tree.params[0].name.bindingId);
-    assert.equal(params[index].type.args[1].resolution.id,params[index-2].name.bindingId);
+    assert.equal(params[index].type.args[1].resolution.id,params[index-1].name.bindingId);
     assert.equal(params[index].type.fn.resolution.id,evidenceTypes[0].id);
   }
   assert.equal(params[5].type.fn.resolution.id,evidenceTypes[1].id);
-  assert.equal(params[5].type.args[0].resolution.id,params[0].name.bindingId);
+  assert.equal(params[5].type.args[0].resolution.id,header.tree.params[0].name.bindingId);
   assert.equal(retained.syntax.tree.type.left.resolution.id,params[3].name.bindingId);
   assert.ok(bindingUses(retained.syntax).every(use=>use.id!==outer.id));
   assert.throws(()=>interfaces.retain({...field,unsupportedDependency:field.type}),/Unmodelled retained interface property/);

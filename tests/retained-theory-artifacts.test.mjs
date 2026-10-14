@@ -1,6 +1,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
 import create from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
@@ -12,6 +13,7 @@ import {retainedTheoryArtifacts,retainedMorphismArtifacts} from "../web/cubist/r
 import {retainTheorySource} from "../web/cubist/retained-theories.mjs";
 import {bindingUses} from "../web/cubist/binding-syntax.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
+import {LexicalContext,bindingResolution} from "../web/cubist/bindings.mjs";
 
 const module=await create();
 async function setup(t,header="def T(U < UU0) : Unit := tt;") {
@@ -41,8 +43,8 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;") {
     fields:retained.entries.filter(e=>e.kind!=="derived").map(e=>({...e,...metadata.get(e.id)})),
     derived:retained.entries.filter(e=>e.kind==="derived"),parents:[]},options);
   const records=new Map();
-  const retain=text=>retainTheorySource(parse(text).declarations[0],{table,source,owner:["source","T"],
-    context:inputs.context,constructors:inputs.constructors},{lookup:name=>records.get(name)});
+  const retain=(text,{context=inputs.context}={})=>retainTheorySource(parse(text).declarations[0],{table,source,owner:["source","T"],
+    context,constructors:inputs.constructors},{lookup:name=>records.get(name)});
   const buildSource=(text,options)=>{
     const built=construct(retain(text),options);records.set(built.record.name,built.record);return built;
   };
@@ -56,7 +58,7 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;") {
     const equal=(label,expected)=>scope.equal(result.env.get(label),translator.term(parse(expected,true),scope));
     return {result,equal};
   };
-  return {program,table,retained,add,build,check,metadata,inputs,source,retain,buildSource};
+  return {program,table,retained,add,build,check,metadata,inputs,source,retain,buildSource,construct};
 }
 const failures=result=>result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]);
 
@@ -332,4 +334,89 @@ test("independent parent field orders merge according to dependencies",async t=>
   assert.deepEqual(failures(result),[]);
   assert.equal(equal("first_","fun (h : IsSet(U0, Two)) => left_"),true);
   assert.equal(equal("second_","fun (h : IsSet(U0, Two)) => right_"),true);
+});
+
+test("grouped evidence uses the corpus Monad's interleaved public interface through Hom and Iso",async t=>{
+  const {buildSource,check}=await setup(t);
+  const source=await readFile(new URL("../cubist-tests/theory_families.cubist",import.meta.url),"utf8");
+  const declarations=parse(source).declarations;
+  const part=name=>{const d=declarations.find(d=>d.name?.text===name);return source.slice(d.start,d.end);};
+  const built=buildSource(part("Monad"),{morphisms:true});
+  const {result,equal}=check(built,`${part("identity")}
+    def value(h : IsSet(U0, Two)) : Two := identity.bind(Two, h, Two, h, left_, fun (x : Two) => x);
+    def twice(h : IsSet(U0, Two)) : Two := Monad.Hom.compose(Monad.Hom.id(identity), Monad.Hom.id(identity)).map(Two, h, left_);
+    def iso : Monad.Iso(identity, identity) := Monad.Iso.compose(Monad.Iso.id(identity), Monad.Iso.id(identity));
+    def wrong(h : IsSet(U0, Two)) : value(h) = right_ := refl(right_);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  for(const name of ["value","twice"]) {
+    assert.equal(equal(name,"fun (h : IsSet(U0, Two)) => left_"),true);
+    assert.equal(equal(name,"fun (h : IsSet(U0, Two)) => right_"),false);
+  }
+});
+
+test("fixed universe positions survive family parameters, helpers and absent generated source lexemes",async t=>{
+  const {buildSource,retain,construct,inputs,check}=await setup(t);
+  const family=buildSource("theory TG(U < UU0) { F(U : U0) : U; }");
+  const helpers=buildSource("theory TH(U < UU0) { def U : U0 := Two; M : set U; c : M; }");
+  const context=new LexicalContext(inputs.context.snapshot().filter(([label])=>label!=="UU0"));
+  const headerless=construct(retain("theory Bare { k : Two; }",{context}));
+  const {result,equal}=check({declarations:[...family.declarations,...helpers.declarations,...headerless.declarations]},`
+    def family_instance : TG(U0) := TG.make(fun (A : U0) => A);
+    def wrong_element : TG(U0) := TG.make(fun (A : U0) => tt);
+    def helper_instance(h : IsSet(U0, Two)) : TH(U0) := TH.make(M := Two, M_is_set := h, c := left_);
+    def bare : Bare(U0) := Bare.make(left_);
+    def value : Two := Bare.k(bare);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong_element"],JSON.stringify(failures(result)));
+  assert.equal(equal("value","left_"),true);assert.equal(equal("value","right_"),false);
+});
+
+test("resolved parent namespaces close unknown members before unrelated module lookup",async t=>{
+  const {buildSource,retain,inputs}=await setup(t);
+  buildSource("theory P(U < UU0) { M : U; }");
+  const global=buildSource("theory p(U < UU0) { x : Two; }");
+  const context=inputs.context.bind("p",bindingResolution(global.record.modelId))
+    .bind("p.x",bindingResolution(global.record.fields[0].projectionId));
+  assert.throws(()=>retain("theory C(U < UU0) extends p : P { op(q : p(U), e : p.x(q) = left_) : M; }",{context}),
+    /P, C's parent p, has no field x/);
+  const local=retain("theory Local(U < UU0, p : U0) extends p : P { op(q : p) : M; }",{context});
+  assert.equal(local.fields.find(f=>f.name==="op").syntax.tree.params[0].type.resolution.id,
+    local.bindingSyntax.tree.params.find(p=>p.name.text==="p").name.bindingId);
+});
+
+test("parent Hom support is a planning dependency and leaves the child's base usable",async t=>{
+  const {buildSource,retain,construct,check}=await setup(t);
+  const parent=buildSource("theory P(U < UU0) { k : Two; }",{morphisms:true});
+  const child=buildSource("theory C(U < UU0) extends p : P { M : set U; c : M; }",{morphisms:true});
+  assert.equal(child.record.homSupport.status,"unsupported");
+  assert.equal(child.record.homSupport.cause,parent.record.homSupport);
+  const {result,equal}=check({declarations:[...parent.declarations,...child.declarations]},`
+    def instance_(h : IsSet(U0, Two)) : C(U0) := C.make(k := left_, M := Two, M_is_set := h, c := right_);
+    def value(h : IsSet(U0, Two)) : Two := C.k(instance_(h));
+    def unavailable(a : C(U0)) : U0 := C.Hom(a, a);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["unavailable"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/parent P has no homomorphisms/);
+  assert.equal(equal("value","fun (h : IsSet(U0, Two)) => left_"),true);
+  const source=retain("theory Pending(U < UU0) extends p : P { M : set U; c : M; }");
+  const pending=construct({...source,parents:source.parents.map(p=>({...p,homSupport:{status:"pending",obligations:[{kind:"interface-check"}]}}))},
+    {morphisms:true});
+  assert.equal(pending.record.homSupport.status,"pending");
+  assert.ok(pending.artifacts.every(a=>!a.binding.label.includes(".Hom")));
+});
+
+test("anonymous helper arguments normalize for support while their complete checking obligations remain",async t=>{
+  const {buildSource,check}=await setup(t);
+  const good=buildSource("theory T(U < UU0) { M : set U; def K(_ : Two) : U := M; op(x : K(left_)) : M; }",{morphisms:true});
+  assert.equal(good.record.homSupport.status,"conditional");
+  const {result,equal}=check(good,`
+    def instance_(h : IsSet(U0, Two)) : T(U0) := T.make(M := Two, M_is_set := h, op := fun (x : Two) => x);
+    def value(h : IsSet(U0, Two)) : Two := T.Hom.id(instance_(h)).map(left_);
+  `);
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  assert.equal(equal("value","fun (h : IsSet(U0, Two)) => left_"),true);
+  assert.equal(equal("value","fun (h : IsSet(U0, Two)) => right_"),false);
+  const bad=buildSource("theory Bad(U < UU0) { M : set U; def K(_ : Two) : U := M; op(x : K(tt)) : M; }",{morphisms:true});
+  assert.ok(failures(check(bad).result).some(([name,reason])=>name==="Bad"&&/Type mismatch/.test(reason)));
 });

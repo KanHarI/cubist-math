@@ -36,7 +36,9 @@ export function resolveBindingTemplate(tree,options,splices) {
 }
 
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
-  evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)]))},splices=null) {
+  evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
+  fixedReferences=new Map(),universeReferences=new Map()},splices=null) {
+  const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
     if (typeof label !== "string" || typeof nullary !== "boolean") throw new TypeError("Invalid source constructor inventory.");
@@ -60,6 +62,11 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       ?at.bind(self.label,bindingResolution(self.id)):at,
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
     enter(node, at) {
+      if(fixedReferences.has(node)) {
+        const fixed=fixedReferences.get(node),value=fixed.tag==="universe"?universes.get(fixed.label):fixed;
+        if(!value)throw new TypeError(`A fixed universe position has no header universe: ${fixed.label}`);
+        return occurrence(node,value,node.name,origin(node));
+      }
       if(telescope.evidence.has(node)) {
         const {parameter,builtin}=telescope.evidence.get(node),mapped=resolvedParameters.get(parameter);
         if(!mapped?.name.bindingId)throw new TypeError("Parameter evidence precedes its retained parameter.");
@@ -82,7 +89,10 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         throw new TypeError("Binding syntax family has not migrated: notation operator");
       if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
       if (node.kind !== "name") return node;
-      const {value, fields} = at.qualified(node.name);
+      let qualified;
+      try {qualified=at.qualified(node.name);}
+      catch(error){error.at??=node;throw error;}
+      const {value, fields} = qualified;
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));
       return fields.length ? members(node, {...ref, end: node.start + spelling.length}, fields) : ref;
@@ -91,6 +101,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if (token.bindingId) throw new TypeError("Source resolution cannot allocate an existing binder twice.");
       if (binderName(token) === "_") return token;
       const record = table.allocate(owner, {role: bindingRole(node, scope, token), label: binderName(token), origin: origin(token)});
+      if(record.role==="universe"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
       owned.push(record.id);
       return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
         ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lookup(binderName(token))} : {})};
@@ -104,6 +115,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       return at;
     },
   }, context);
+  if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
   return freeze({format, tree, owned, inferred: canonical.inferred});
 }
 
