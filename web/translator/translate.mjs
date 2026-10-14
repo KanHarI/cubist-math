@@ -8,6 +8,7 @@ import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot,BindingAdapter} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
+import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -484,7 +485,8 @@ export class Translator {
         continue;
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
-      const d=queued.generated?elaborationSyntax(queued):queued;
+      const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
+      const d=retained?.declaration??(queued.generated?elaborationSyntax(queued):queued);
       const directiveStart=directives.length;
       const finishDirective=()=>this.onDirective?.(d,directives.length>directiveStart?directives.at(-1):{status:"checked"});
       if(directiveKinds.has(d.kind))this.onDirectiveStart?.(d);
@@ -648,7 +650,8 @@ export class Translator {
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
-      const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
+      const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text,
+        bindingAdapter:retained?.adapter??bindingAdapter});
       this.onDeclarationStart?.(d);
       try {
         // A theory's sorts need their evidence's definitions (L2.4).

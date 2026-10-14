@@ -6,10 +6,11 @@ import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
-import {resolveBindingModule,lowerBindingModule} from "../web/translator/binding-module.mjs";
+import {resolveBindingModule,lowerBindingModule,bindingDeclaration,lowerBindingDeclaration} from "../web/translator/binding-module.mjs";
 import {parse} from "../web/cubist/parser.mjs";
 import {sourceOrigin} from "../web/cubist/bindings.mjs";
 import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
 const module=await create();
 const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); } def recurse_ : U0 := Unit;";
@@ -41,6 +42,44 @@ async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const result=translator.translateSyntax(lowerBindingModule(prepared),source,env,{bindingAdapter:adapter});
   return {program,translator,result,points,table,artifacts,adapter};
 }
+
+test("retained generated declarations enter a mixed source queue with exact references and shared refusals",async t=>{
+  const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
+  assert.deepEqual((await program.check(base+" notation digits { numeral(n : Nat) := n; }","base")).gaps,[]);
+  const registry=program.compilationBindings,table=registry.table,imports=new Map();
+  const env=program.modules.get("base");
+  for(const [label,value] of env)if(/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) {
+    const binding=registry.ofValue(value);if(binding)imports.set(binding.id,value);
+  }
+  const source="def saved(x : Two) : Two := left_; def broken : Unit := Two; def downstream : Unit := broken;";
+  const resolved=resolveBindingModule(parse(source),source,{table,imports,source:{revision:"generated",module:"pilot"}});
+  const declarations=resolved.declarations.map(({binding,syntax})=>bindingDeclaration(binding,syntax,
+    {generated:{theory:"T",family:"base",role:"make"}}));
+  assert.doesNotThrow(()=>snapshotSyntax(declarations),"the queue contains inert syntax, not adapters or handles");
+  const serialized=JSON.parse(JSON.stringify(declarations));
+  const before=parse("def left_ : Two := right_;").declarations;
+  const after=parse("def native : Nat := digits.(2);").declarations;
+  const checker=Object.create(program.checker);
+  checker.bindingName=label=>`pilot__${label}`;
+  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
+  const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+  const result=translator.translateSyntax({declarations:[...before,...serialized,...after]},source,env);
+  assert.deepEqual(result.declarations.filter(d=>d.status==="not-translated").map(d=>d.name),["broken","downstream"]);
+  assert.equal(result.env.get("downstream").blockedBy,"pilot__broken");
+  assert.equal(result.env.get(resolved.adapter.key(resolved.declarations[1].binding.id)),result.env.get("broken"));
+  const scope=new Scope(translator.unit(),new Map(),result.env);
+  const actual=translator.term(parse("saved(right_)",true),scope);
+  const originalScope=new Scope(translator.unit(),new Map(),env);
+  const intended=translator.term(parse("left_",true),originalScope);
+  const wrong=translator.term(parse("right_",true),originalScope);
+  assert.equal(scope.equal(actual,intended),true);
+  assert.equal(scope.equal(actual,wrong),false);
+  assert.equal(scope.equal(result.env.get("native"),translator.term(parse("succ(succ(zero))",true),originalScope)),true);
+  assert.equal(declarations[0].body[0].value.kind,"bindingReference","entry lowering does not mutate the retained artifact");
+  const invalid=structuredClone(declarations[0]);
+  invalid.body[0].value.resolution={tag:"reserved",label:"ambient_lookup"};
+  assert.throws(()=>lowerBindingDeclaration(invalid,table),/late lookup is not allowed/);
+});
 
 test("recursive bodies do not replace an earlier same-named declaration in their signature",async t=>{
   const source=`def recurse_(n : Nat, x : recurse_) : recurse_ := match n {

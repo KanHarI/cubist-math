@@ -3,7 +3,7 @@
 // may reconstruct a retained declaration's references from destination names.
 import {reservedReferences} from "../cubist/parser.mjs";
 import {BindingAdapter,LexicalContext,bindingResolution,reservedResolution,sourceOrigin} from "../cubist/bindings.mjs";
-import {resolveBindingSyntax,lowerBindingSyntax} from "../cubist/binding-syntax.mjs";
+import {resolveBindingSyntax,lowerBindingSyntax,bindingUses,bindingSyntaxView} from "../cubist/binding-syntax.mjs";
 import {recursionSite} from "./match.mjs";
 import {DeclarationOwnership} from "./declarations.mjs";
 
@@ -45,4 +45,32 @@ export function lowerBindingModule(prepared) {
     return {...tree,name:{...tree.name,bindingId:binding.id}};
   });
   return {...prepared.ast,items:declarations,declarations};
+}
+
+// A retained declaration is inert syntax plus ownership metadata. It may
+// share a queue with ordinary source declarations; no adapter or live value
+// is serialized with it. Generators keep their canonical interfaces and
+// hand this final declaration to the normal admission/publication path.
+export function bindingDeclaration(binding,syntax,annotations={}) {
+  if(binding.role!=="declaration"||syntax.tree.kind!=="def")
+    throw new TypeError("A retained declaration needs a declaration identity and a complete definition.");
+  const {tree,...bindings}=bindingSyntaxView(syntax,syntax.tree,{inferred:syntax.inferred});
+  return {...annotations,...tree,name:{...tree.name,text:binding.label,bindingId:binding.id},bindings};
+}
+
+// Only the declaration now entering elaboration is lowered. The surrounding
+// source keeps its own migration boundary. Reserved references are validated
+// against the language namespace, including universes carried from imports.
+export function lowerBindingDeclaration(declaration,table) {
+  const {bindings,theory,generated,...tree}=declaration;
+  if(tree.kind!=="def"||!tree.name.bindingId)
+    throw new TypeError("Invalid retained declaration entry.");
+  table.get(tree.name.bindingId);
+  const syntax={...bindings,tree};
+  const reserved=bindingUses(syntax,{conditional:true}).filter(use=>use.kind==="reserved").map(use=>use.label);
+  const allowed=new Set(reservedReferences(reserved.join(" ")));
+  for(const label of reserved)if(!allowed.has(label))throw new TypeError(`A late lookup is not allowed: ${label}`);
+  const adapter=new BindingAdapter(table,{reserved});
+  return {adapter,declaration:{...lowerBindingSyntax(syntax,adapter),
+    ...(theory?{theory}:{}),...(generated?{generated}:{})}};
 }
