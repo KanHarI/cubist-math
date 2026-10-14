@@ -357,7 +357,7 @@ export function qualifiedOperator(t,scope,n) {
   if(!field) {
     const list=record.ambiguousNotations?.[n.operator];
     throw scope.unit.locate(Error(list
-      ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(spelling,n.operator,e)).join(" or ")}.`
+      ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(spelling,n.operator,e,{applied:false})).join(" or ")}.`
       :`${record.name} binds no operation to ${n.operator}.`),at);
   }
   return scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[n.model],start:n.start,end:n.end});
