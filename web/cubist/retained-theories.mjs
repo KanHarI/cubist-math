@@ -67,7 +67,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   }
   const header=interfaces.parameters(theory.name,params,{fixedReferences:new Map(params.filter(p=>p.bound)
     .map(p=>[p.bound,reservedResolution("UU0")]))}),families=new Map(),fields=[],derived=[];
-  const byName=new Map(),byIdentity=new Map(),notationBindings={};
+  const byName=new Map(),byIdentity=new Map();
   const admit=(entry,metadata={})=>{
     if(byName.has(entry.label))throw located(Error(`${T} has two fields named ${entry.label}: give each its own name.`),entry.binding.origin);
     if(entry.kind!=="derived"&&headerNames.has(entry.label))
@@ -77,7 +77,8 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     (entry.kind==="derived"?derived:fields).push(full);
     return full;
   };
-  const {parents,ambiguous}=retainParents(theory,interfaces,{...options,lookup},admit);
+  const {parents,ambiguous,notationBindings,ambiguousNotationBindings,ambiguousNotations}
+    =retainParents(theory,interfaces,{...options,lookup},admit);
   if(parents.length) {
     const helpers=new HelperExpansion(interfaces.entries,{table:options.table,owner:[...options.owner,"inherited-views"]});
     for(const entry of fields) {
@@ -92,8 +93,20 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);
-    const retainedNotation=retainFieldNotation(item,entry,fields,{...options,theory:T});
+    const helpers=item.kind!=="derived"||notation?new HelperExpansion(interfaces.entries,
+      {table:options.table,owner:[...options.owner,"validate",String(interfaces.entries.length)]}):null;
+    if(item.kind!=="derived") {
+      const signature=helpers.signature(entry);
+      if(signature.recursive) {
+        const use=signature.recursive,label=byIdentity.get(use.id)?.label??use.spelling;
+        throw located(Error(`${label} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`),use.origin??item);
+      }
+    }
+    const views=helpers?.type(entry);
+    const retainedNotation=retainFieldNotation(item,entry,fields,{...options,theory:T,domains:views?.parameters});
     if(retainedNotation) {
+      const conflicts=ambiguousNotations[retainedNotation.key];
+      if(conflicts)throw located(Error(`${retainedNotation.key} would stand for ${entry.label} in ${T}, and its parents bind it to ${conflicts.map(e=>e.field).join(" and ")}: a notation means one operation; rename one's notation.`),notation);
       const previous=notationBindings[retainedNotation.key];
       if(previous&&previous.field!==entry.id)
         throw located(Error(`${retainedNotation.key} would stand for both ${options.table.get(previous.field).label} and ${entry.label} in ${T}: a notation means one operation; rename one's notation.`),notation);
@@ -101,13 +114,6 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     }
     if(item.kind==="derived")continue;
     if(full.visible)families.set(entry.id,full);
-    const helpers=new HelperExpansion(interfaces.entries,{table:options.table,owner:[...options.owner,"validate",String(fields.length)]});
-    const signature=helpers.signature(entry);
-    if(signature.recursive) {
-      const use=signature.recursive,label=byIdentity.get(use.id)?.label??use.spelling;
-      throw located(Error(`${label} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`),use.origin??item);
-    }
-    const views=helpers.type(entry);
     // Shape facts are conditional on the complete checking view, which the
     // artifact builder puts in the base publication group's declarations.
     byIdentity.set(entry.id,{...full,type:views.analysis.tree});
@@ -126,6 +132,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   return {name:T,origin,bindingSyntax:header,entries:interfaces.entries.map(entry=>byName.get(entry.label)),fields,derived,parents,
     notationBindings:Object.freeze(notationBindings),
     notations:Object.fromEntries(Object.entries(notationBindings).map(([key,value])=>[key,options.table.get(value.field).label])),
+    ambiguousNotationBindings,ambiguousNotations,
     ambiguous:Object.fromEntries(ambiguous),
     ...(generatedUniverse?{generatedUniverse:true}:{})};
 }

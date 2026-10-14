@@ -2,25 +2,24 @@
 // Sharing uses explicit origin and binding correspondences; display labels
 // choose the public child interface but never decide syntax equality.
 import {bindingSyntaxView,remapBindingSyntax,sameBindingSyntax,bindingUses} from "./binding-syntax.mjs";
-import {bindingResolution,sourceOrigin,expandedOrigin,failedResolution} from "./bindings.mjs";
+import {bindingResolution,reservedResolution,applicationResolution,sourceOrigin,expandedOrigin,failedResolution} from "./bindings.mjs";
 import {freshName} from "./scopes.mjs";
 import {reservedNames} from "./parser.mjs";
 import {InheritedInterfaceConflict} from "./retained-interfaces.mjs";
 import {correspondingHeaderParameters} from "./telescopes.mjs";
+import {inheritNotations} from "./retained-notation.mjs";
 
 const label=parameter=>parameter.label??parameter.name.label??parameter.name.text;
 const original=entry=>entry.binding.original??entry.id;
 const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
 const snake=text=>text.replace(/([a-z0-9])([A-Z])/g,"$1_$2").toLowerCase();
 
-export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
+export function retainParents(theory,interfaces,{lookup,source,owner,constructors=[]},admit) {
   const {table,header}=interfaces,T=theory.name.text,prepared=[];
   for(const parent of theory.parents) {
     const record=lookup(parent.name.text);
     if(!record)throw located(Error(`${parent.name.text} is not a theory here: ${T} extends theories in scope.`),parent.name);
     if(!record.bindingSyntax)throw new TypeError("A retained parent requires its canonical source interface.");
-    if(Object.keys(record.notations??{}).length||Object.keys(record.ambiguousNotations??{}).length||parent.renaming.some(r=>r.notation))
-      throw new TypeError("Retained parent notation activation has not migrated.");
     const parentLabel=parent.label?.text??snake(record.name);
     if(!parent.label&&reservedNames.has(parentLabel))
       throw located(Error(`${parent.name.text}'s label would be ${parentLabel}, which is reserved: label it, as in other : ${parent.name.text}.`),parent.name);
@@ -41,16 +40,23 @@ export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
         throw located(Error(`${T} extends ${record.name}, whose header has the parameter ${label(parameter)}: give ${T} the parameter ${label(parameter)} with the same type.`),parent.name);
     }
     const entries=(record.entries??[...record.fields,...record.derived??[]]).toSorted((a,b)=>a.interface.length-b.interface.length);
-    const names=new Map();
+    const names=new Map(),renotated=new Map();
     for(const rename of parent.renaming) {
       const field=record.fields.find(field=>field.name===rename.from.text);
       if(!field)throw located(Error(`${record.name} has no field ${rename.from.text}; its fields are ${record.fields.map(f=>f.name).join(", ")}.`),rename.from);
       if(names.has(field.id))throw located(Error(`${rename.from.text} is renamed twice.`),rename.from);
       names.set(field.id,rename.to.text);
+      if(rename.notation) {
+        const arity=field.visible?.length??field.syntax.tree.params.length;
+        if(field.kind!=="operation"||arity!==(rename.notation.unary?1:2))
+          throw located(Error(rename.notation.unary?`-x names an operation's one argument; ${rename.from.text} is not an operation of one.`
+            :`A notation names an operation's two arguments; ${rename.from.text} is not an operation of two.`),rename.notation);
+        renotated.set(field.id,rename);
+      }
     }
     for(const entry of entries)if(entry.of&&names.has(entry.of)&&!names.has(entry.id))
       names.set(entry.id,`${names.get(entry.of)}_is_${entry.evidence==="IsSet"?"set":"prop"}`);
-    prepared.push({parent,record,label:parentLabel,universes,parameters,entries,correspondence,names,
+    prepared.push({parent,record,label:parentLabel,universes,parameters,entries,correspondence,names,renotated,
       site:sourceOrigin({...source,start:parent.start,end:parent.end})});
   }
   const groups=new Map();
@@ -119,9 +125,16 @@ export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
   for(const [name,candidates] of ambiguous)if(!headerLabels.has(name))
     interfaces.context=interfaces.context.bind(name,failedResolution({message:
       `${name} is ambiguous in ${T}: ${candidates.map(e=>`${e.label}'s`).join(" and ")}. Write ${candidates.map(e=>`${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`}));
-  for(const parent of prepared)if(!headerLabels.has(parent.label))
+  for(const parent of prepared)if(!headerLabels.has(parent.label)) {
+    const argumentsOf=entries=>entries.map(entry=>bindingResolution(parent.correspondence.get(entry)));
+    const type=applicationResolution(bindingResolution(parent.record.modelId),argumentsOf(
+      [...parent.universes,...parent.parameters].map(p=>p.name.bindingId)));
+    const value=applicationResolution(bindingResolution(parent.record.makeId),argumentsOf(
+      [...parent.parameters.map(p=>p.name.bindingId),...parent.record.fields.map(field=>field.id)]));
+    const receiver=applicationResolution(reservedResolution("typed"),[type,value]);
     interfaces.context=interfaces.context.namespace(parent.label,parent.entries.map(entry=>
-      [entry.label,bindingResolution(parent.correspondence.get(entry.id))]),parent.record.name);
+      [entry.label,bindingResolution(parent.correspondence.get(entry.id))]),parent.record.name,{receiver});
+  }
   const parents=prepared.map(parent=>({label:parent.label,theory:parent.record.name,modelId:parent.record.modelId,makeId:parent.record.makeId,
     ...(parent.record.homId?{homId:parent.record.homId,homMakeId:parent.record.homMakeId}:{}),
     homSupport:parent.record.homSupport??(parent.record.noMorphisms?{status:"unsupported",reason:parent.record.noMorphisms}
@@ -131,5 +144,5 @@ export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
     fieldIds:parent.record.fields.map(field=>parent.correspondence.get(field.id)),
     fields:parent.record.fields.map(field=>table.get(parent.correspondence.get(field.id)).label),
     kinds:parent.record.fields.map(field=>field.kind)}));
-  return {parents,ambiguous};
+  return {parents,ambiguous,...inheritNotations(prepared,{table,owner,source,constructors,context:interfaces.context,theory:T})};
 }

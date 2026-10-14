@@ -322,6 +322,21 @@ with notation's operand-hygiene contract. A structural member keeps its
 resolved receiver and public field label until the receiver's type selects
 the projection ID. Neither is treated as a dotted global string.
 
+Inheritance carries the operation ID and both operand recipes through the
+same parent-to-child correspondence. Sharing a notation requires all three
+to agree; one shared operation with different receiver recipes remains
+ambiguous. Preserve candidate identities and unambiguous parent paths across
+further inheritance instead of selecting a recipe by parent order. An
+explicit replacement notation in `extends` belongs to the resulting inherited
+child interface, after field renaming and before the child's own fields.
+Its receiver is captured there, independently of the parent's recipe.
+
+A parent label used as an operand receiver selects that parent's explicit
+model interface. Retain its typed constructor application over header and
+field IDs; do not use the label's ordinary bare-value fallback. Carrier
+classification may use the helper analysis view, while the complete checking
+view retains every helper domain, argument and result obligation.
+
 Allow late label lookup only in explicit namespaces: reserved builtins and
 universe syntax under their existing shadowing rules; constructor labels in
 the matched type's table or the saved source candidate inventory; named

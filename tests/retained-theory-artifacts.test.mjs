@@ -661,3 +661,147 @@ test("deferred namespace failures keep the same source diagnostic as immediate l
     assert.equal(error.errorEnd,offset+"left_.unknown".length);
   }
 });
+
+test("inherited notation substitutes receiver fields through renaming and shared diamonds",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const parent=buildSource(`theory Power(U < UU0) {
+    recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+  }`),snapshot=JSON.stringify(parent.record);
+  const built=[parent,...[
+    "theory L(U < UU0) extends p : Power(recipe := reader, M := Carrier, pow := power) {}",
+    "theory R(U < UU0) extends p : Power(recipe := reader, M := Carrier, pow := power) {}",
+    "theory D(U < UU0) extends l : L, r : R {}",
+  ].map(text=>buildSource(text))];
+  const record=built.at(-1).record;
+  assert.equal(record.notationBindings["^"].field,record.fields.find(field=>field.label==="power").id);
+  assert.equal(record.notationBindings["^"].recipe.right.tree.resolution.id,record.fields.find(field=>field.label==="reader").id);
+  assert.deepEqual(record.ambiguousNotations,{});
+  assert.equal(JSON.stringify(parent.record),snapshot);
+  assert.doesNotThrow(()=>snapshotSyntax(record));
+  const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def plain : D(U0) := D.make(reader := original, Carrier := Nat, power := fun (x, n : Nat) => n);
+    def raised : D(U0) := D.make(reader := shifted, Carrier := Nat, power := fun (x, n : Nat) => n);
+    def value : Nat := plain.(zero ^ 0);
+    def intended : value = zero := refl(zero);
+    def raised_intended : raised.(zero ^ 0) = succ(zero) := refl(succ(zero));
+    def parent_intended : raised.l.p.(zero ^ 0) = succ(zero) := refl(succ(zero));
+    def wrong : value = succ(zero) := refl(succ(zero));
+  `,"def recipe : Numerals(U0) := shifted;");
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+});
+
+test("one shared operation with different inherited operand receivers stays ambiguous",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const built=[
+    "theory Power(U < UU0) { recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }",
+    "theory L(U < UU0) extends p : Power(recipe := a) {}",
+    "theory R(U < UU0) extends p : Power(recipe := b) {}",
+    "theory Both(U < UU0) extends l : L, r : R {}",
+    "theory Further(U < UU0) extends both : Both {}",
+  ].map(text=>buildSource(text));
+  const record=built.at(-1).record;
+  assert.equal(record.fields.filter(field=>field.label==="pow").length,1);
+  assert.equal(record.notationBindings["^"],undefined);
+  assert.equal(record.ambiguousNotationBindings["^"].length,2);
+  assert.deepEqual(record.ambiguousNotations["^"].map(rule=>rule.label),["both.l","both.r"]);
+  assert.throws(()=>buildSource(`theory Collision(U < UU0) extends base : Both {
+    other(x : M, n : Nat) : M notation x ^ recipe.(n);
+  }`),/parents bind it to/);
+  const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def chosen : Further(U0) := Further.make(a := original, b := shifted, M := Nat, pow := fun (x, n : Nat) => n);
+    def ambiguous : Nat := chosen.(zero ^ 0);
+    def left_value : Nat := chosen.both.l.(zero ^ 0);
+    def right_value : Nat := chosen.both.r.(zero ^ 0);
+    def left_intended : left_value = zero := refl(zero);
+    def right_intended : right_value = succ(zero) := refl(succ(zero));
+    def wrong : right_value = zero := refl(zero);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["ambiguous","wrong"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/\^ is ambiguous/);
+});
+
+test("operand receivers select parent namespaces instead of ambient same-named models",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels+"def num : Numerals(U0) := shifted;");
+  const parent=buildSource(`theory Num(U, V < UU0) {
+    M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral;
+  }`);
+  const child=buildSource(`theory Power(U, V < UU0) extends num : Num {
+    pow(num : M, n : Nat) : M notation num ^ num.(n);
+  }`);
+  const renamed=buildSource("theory Renamed(U, V < UU0) extends p : Power(M := Carrier, read := convert) {}");
+  const snapshot=JSON.stringify(child.record.notationBindings);
+  assert.ok(bindingUses(child.record.notationBindings["^"].recipe.right).some(use=>use.id===parent.record.makeId));
+  const {result}=check({declarations:[...parent.declarations,...child.declarations,...renamed.declarations]},`
+    def chosen : Renamed(U0, U1) := Renamed.make(Carrier := Nat, convert := fun (n : Nat) => n, pow := fun (x, n : Nat) => n);
+    def value(num : Numerals(U0)) : Nat := chosen.(zero ^ 0);
+    def intended : value(shifted) = zero := refl(zero);
+    def wrong : value(shifted) = succ(zero) := refl(succ(zero));
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.equal(JSON.stringify(child.record.notationBindings),snapshot);
+});
+
+test("extends notation replacements capture the renamed child interface and leave parent recipes intact",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const built=[
+    "theory Power(U < UU0) { decoder : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }",
+    "theory Child(U < UU0) extends p : Power(decoder := recipe, pow := sum notation x + recipe.(n)) {}",
+    "theory Further(U < UU0) extends c : Child(recipe := reader) {}",
+  ].map(text=>buildSource(text));
+  const record=built.at(-1).record;
+  assert.equal(record.notationBindings["^"],undefined);
+  assert.equal(record.notationBindings["+"].recipe.right.tree.resolution.id,record.fields.find(field=>field.label==="reader").id);
+  const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def chosen : Further(U0) := Further.make(reader := shifted, M := Nat, sum := fun (x, n : Nat) => n);
+    def value(recipe : Numerals(U0)) : Nat := chosen.(zero + 0);
+    def intended : value(original) = succ(zero) := refl(succ(zero));
+    def parent_intended : chosen.c.p.(zero ^ 0) = zero := refl(zero);
+    def removed : Nat := chosen.(zero ^ 0);
+    def wrong : value(original) = zero := refl(zero);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["removed","wrong"],JSON.stringify(failures(result)));
+});
+
+test("renoting one ambiguous inherited field removes only that field's previous notation",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const built=[
+    "theory Power(U < UU0) { M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }",
+    "theory Both(U < UU0) extends l : Power(pow := left_power notation x + recipe.(n)), r : Power(pow := right_power notation x + recipe.(n)) {}",
+    "theory Fixed(U < UU0) extends b : Both(left_power := product notation x * recipe.(n)) {}",
+  ].map(text=>buildSource(text));
+  assert.equal(built[1].record.ambiguousNotationBindings["+"].length,2);
+  const fixed=built[2].record;
+  assert.deepEqual(fixed.ambiguousNotations,{});
+  assert.equal(fixed.notationBindings["+"].field,fixed.fields.find(field=>field.label==="right_power").id);
+  assert.equal(fixed.notationBindings["*"].field,fixed.fields.find(field=>field.label==="product").id);
+  const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def both : Both(U0) := Both.make(M := Nat, left_power := fun (x, n : Nat) => n, right_power := fun (x, n : Nat) => succ(n));
+    def ambiguous : Nat := both.(zero + 0);
+    def left_call : both.l.pow(zero, zero) = zero := refl(zero);
+    def right_call : both.r.pow(zero, zero) = succ(zero) := refl(succ(zero));
+    def fixed : Fixed(U0) := Fixed.make(M := Nat, product := fun (x, n : Nat) => n, right_power := fun (x, n : Nat) => succ(n));
+    def left_intended : fixed.(zero * 0) = zero := refl(zero);
+    def right_intended : fixed.(zero + 0) = succ(zero) := refl(succ(zero));
+    def wrong : fixed.(zero + 0) = zero := refl(zero);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["ambiguous","wrong"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/Write both\.l\.pow\(x, y\) or both\.r\.pow\(x, y\)/);
+});
+
+test("notation carrier classification uses retained helper analysis while preserving argument checks",async t=>{
+  for(const argument of ["tt","left_"])await t.test(argument,async t=>{
+    const {buildSource,check}=await setup(t);
+    const built=buildSource(`theory Alias(U < UU0) {
+      M : U; def Carrier(a : Unit) : U := M;
+      add(x, y : Carrier(${argument})) : Carrier(${argument}) notation x + y;
+    }`);
+    const {result}=check(built,argument==="tt"?`
+      def chosen : Alias(U0) := Alias.make(Two, fun (x, y : Two) => x);
+      def value : Two := chosen.(left_ + right_);
+      def intended : value = left_ := refl(left_);
+      def wrong : value = right_ := refl(right_);
+    `:"");
+    if(argument==="tt")assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+    else assert.ok(failures(result).some(([name])=>name==="Alias"),"normalization cannot discard the helper's invalid argument");
+  });
+});

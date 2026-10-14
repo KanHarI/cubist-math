@@ -100,6 +100,8 @@ export const openingResolution=(id,label,enclosing,candidates=[])=>Object.freeze
   ...(candidates.length?{candidates:Object.freeze(candidates.map(resolution))}:{})});
 export const projectedResolution=(projection,receiver)=>Object.freeze({tag:"projected",
   projection:string(projection,"a projection identity"),receiver:string(receiver,"a receiver identity")});
+export const applicationResolution=(fn,args)=>Object.freeze({tag:"application",fn:resolution(fn),
+  args:Object.freeze([...args].map(resolution))});
 export const failedResolution=({message,namespace,member,description,origin})=>Object.freeze({tag:"failure",
   message:string(message,"a resolution failure"),...(namespace===undefined?{}:{namespace,member,description}),
   ...(origin?{origin:sourceOrigin(origin)}:{})});
@@ -109,9 +111,10 @@ const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:str
 // A qualified namespace closes its member table. Its bare label can keep
 // an enclosing value, but an absent member never searches that value's
 // ambient namespace. Ordinary later bindings still shadow the whole entry.
-export const namespaceResolution=(members,fallback,description)=>Object.freeze({tag:"namespace",
+export const namespaceResolution=(members,fallback,description,receiver=null)=>Object.freeze({tag:"namespace",
   members:Object.freeze([...members].map(([label,value])=>Object.freeze([string(label,"an interface member"),resolution(value)]))),
-  fallback:resolution(fallback),description:string(description,"an interface description")});
+  fallback:resolution(fallback),description:string(description,"an interface description"),
+  ...(receiver?{receiver:resolution(receiver)}:{})});
 // After source resolution the occurrences carry their own candidates. The
 // selector only needs to decide that this branch selected that namespace.
 export const namespaceSelectorResolution=()=>Object.freeze({tag:"namespace-selector"});
@@ -137,8 +140,9 @@ export function resolution(value) {
     case "opening-frame": return openingFrame(value.id,value.candidates);
     case "member": return memberResolution(value.receiver,value.fields);
     case "projected": return projectedResolution(value.projection,value.receiver);
+    case "application":return applicationResolution(value.fn,value.args);
     case "failure": return failedResolution(value);
-    case "namespace": return namespaceResolution(value.members,value.fallback,value.description);
+    case "namespace": return namespaceResolution(value.members,value.fallback,value.description,value.receiver);
     case "namespace-selector":return namespaceSelectorResolution();
     default: throw new TypeError("Invalid lexical resolution.");
   }
@@ -158,7 +162,9 @@ export function mapResolution(value,identity=id=>id,project=value=>value) {
       ...(value.candidates?{candidates:value.candidates.map(map)}:{})};break;
     case "member":mapped={...value,receiver:map(value.receiver)};break;
     case "projected":mapped={...value,projection:identity(value.projection,"projection"),receiver:identity(value.receiver,"receiver")};break;
-    case "namespace":mapped={...value,fallback:map(value.fallback),members:value.members.map(([label,value])=>[label,map(value)])};break;
+    case "application":mapped={...value,fn:map(value.fn),args:value.args.map(map)};break;
+    case "namespace":mapped={...value,fallback:map(value.fallback),members:value.members.map(([label,value])=>[label,map(value)]),
+      ...(value.receiver?{receiver:map(value.receiver)}:{})};break;
     case "missing": case "reserved": case "failure": case "namespace-selector":mapped=value;break;
     default:throw new TypeError("Invalid lexical resolution.");
   }
@@ -246,7 +252,9 @@ export class LexicalContext {
     context.#head=Object.freeze({label:null,value:openingFrame(id,candidates),parent:this.#head});
     return context;
   }
-  namespace(label,members,description) {return this.bind(label,namespaceResolution(members,this.lookup(label),description));}
+  namespace(label,members,description,{receiver=null}={}) {
+    return this.bind(label,namespaceResolution(members,this.lookup(label),description,receiver));
+  }
   introducedAfter(id,boundary) {
     let found=false,entry=this.#head;
     for(;entry&&entry!==boundary.#head;entry=entry.parent)
@@ -294,6 +302,7 @@ export class SlotOutcomes {
   }
   resolve(value) {
     if(value.tag==="member")return memberResolution(this.resolve(value.receiver),value.fields);
+    if(value.tag==="application")return applicationResolution(this.resolve(value.fn),value.args.map(value=>this.resolve(value)));
     if(value.tag==="opening") {
       const ready=this.activation(value.id);
       if(!ready)return value;
@@ -348,7 +357,7 @@ export class BindingAdapter {
   }
   lower(value, outcomes = new SlotOutcomes(), {deferMissing = false} = {}) {
     value = this.resolve(value, outcomes);
-    if (["slot","opening","member","projected","namespace","namespace-selector"].includes(value.tag)) return null; // Resolution/selection owns these forms.
+    if (["slot","opening","member","projected","application","namespace","namespace-selector"].includes(value.tag)) return null; // Resolution/selection owns these forms.
     if (value.tag === "missing" && deferMissing) return null;
     if (value.tag === "binding") return this.key(value.id);
     if(value.tag==="failure")throw resolutionError(value);

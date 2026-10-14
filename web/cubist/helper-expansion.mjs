@@ -122,7 +122,16 @@ export class HelperExpansion {
       }
       return args.length||!reduced?{...node,fn,args}:fn;
     }},null);
-    return {checking,analysis:view(normalize(checking.tree)),
+    const analysis=view(normalize(checking.tree)),parameters=new Map();
+    const wanted=new Set(entry.syntax.tree.params.map(p=>p.name.bindingId));
+    let telescope=analysis.tree;
+    while(wanted.size&&(telescope.kind==="forall"||telescope.kind==="binderGroup"&&telescope.binderKind==="forall")) {
+      for(const token of telescope.kind==="forall"?[telescope.name]:telescope.names)if(wanted.delete(token.bindingId))
+        parameters.set(token.bindingId,telescope.domain??telescope.bound);
+      telescope=telescope.body;
+    }
+    if(wanted.size)throw new TypeError("Helper analysis must preserve the complete parameter interface.");
+    return {checking,analysis,parameters,
       obligations:[{kind:"interface-check",entry:entry.id,origin:entry.binding.origin}]};
   }
 }

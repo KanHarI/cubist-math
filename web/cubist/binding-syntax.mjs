@@ -37,7 +37,7 @@ function namespaceSelector(value,context,table,boundary) {
     :local.tag==="opening"?protect(local.enclosing,target)
     :local.tag==="namespace"?protect(local.fallback,target):target;
   if(value.tag==="namespace")return namespaceResolution(value.members.map(([label,target])=>
-    [label,protect(context.lookup(label),target)]),value.fallback,value.description);
+    [label,protect(context.lookup(label),target)]),value.fallback,value.description,value.receiver);
   if(["slot","opening"].includes(value.tag))return {...value,enclosing:namespaceSelector(value.enclosing,context,table,boundary)};
   return value;
 }
@@ -46,6 +46,13 @@ const namespaceCandidates=value=>value?.tag==="namespace"?value.members
 
 export function resolveBindingSyntax(tree, options) {
   return resolveBindings(tree,options);
+}
+
+// A selected receiver uses the selection namespace at its root. A parent's
+// abstract model is explicit syntax over its interface, never its bare-name
+// fallback to an unrelated declaration. Operand recipes use this entry.
+export function resolveBindingReceiver(tree,options) {
+  return resolveBindings(tree,{...options,selectionReceiver:true});
 }
 
 // Transitional generated templates own their binders and explicit holes.
@@ -58,7 +65,7 @@ export function resolveBindingTemplate(tree,options,splices) {
 
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
-  fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null},splices=null) {
+  fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false},splices=null) {
   const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
@@ -145,7 +152,12 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         throw new TypeError("Binding syntax family has not migrated: notation operator");
       if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
       if (node.kind !== "name") return node;
-      const {value, fields} = lookup(at,node.name,node);
+      let {value, fields} = lookup(at,node.name,node,selectionReceiver&&node===declaration);
+      if(selectionReceiver&&node===declaration)value=mapResolution(value,undefined,value=>{
+        if(value.tag!=="namespace")return value;
+        if(!value.receiver)throw new TypeError("A namespace notation receiver needs its explicit model interface.");
+        return value.receiver;
+      });
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));
       return fields.length ? members(node, {...ref, end: node.start + spelling.length}, fields) : ref;
@@ -449,5 +461,7 @@ function resolutionExpression(node,value) {
   if(value.tag==="member")return members(node,reference(value.receiver),value.fields);
   if(value.tag==="projected")return {kind:"call",fn:reference(bindingResolution(value.projection)),
     args:[reference(bindingResolution(value.receiver))],start:node.start,end:node.end,origin:node.origin};
+  if(value.tag==="application")return {kind:"call",fn:reference(value.fn),args:value.args.map(reference),
+    start:node.start,end:node.end,origin:node.origin};
   return node;
 }

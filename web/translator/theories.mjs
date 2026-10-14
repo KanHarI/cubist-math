@@ -11,7 +11,7 @@ import {rewritten,selectionEffects,fileSelectionEffects} from "../cubist/scopes.
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
-import {modelNotations,modelOperandRecipes} from "./model-notation.mjs";
+import {modelNotations,modelOperandRecipes,notationAlternative} from "./model-notation.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -153,7 +153,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
     added.push([field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message}]);
   if(effects.notation)for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     added.push([operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
-      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`}]);
+      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(node.name??"m",operator,e)).join(" or ")}.`}]);
   // A theory's numeral rule, its derived operation marked notation numeral,
   // whose natural number is built from that operation's own Nat. A refused
   // operation keeps the rule, which reads the operation alone: a numeral
@@ -357,7 +357,7 @@ export function qualifiedOperator(t,scope,n) {
   if(!field) {
     const list=record.ambiguousNotations?.[n.operator];
     throw scope.unit.locate(Error(list
-      ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`${spelling}.${e.label}.(${n.operator})`).join(" or ")}.`
+      ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(spelling,n.operator,e)).join(" or ")}.`
       :`${record.name} binds no operation to ${n.operator}.`),at);
   }
   return scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[n.model],start:n.start,end:n.end});
