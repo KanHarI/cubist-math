@@ -38,6 +38,14 @@ test("pending openings retain whole qualified fallbacks and resolve independentl
   assert.equal(missing.tag,"opening","a pending opening may supply p before the saved namespace refusal");
   assert.throws(()=>adapter.lower(missing,absent),UnknownNamespaceMember);
   assert.equal(present.resolve(missing).tag,"member");
+  const slot=make("p","pattern"),pattern=before.defer("p",slot.id).qualified("p.x");
+  assert.equal(new SlotOutcomes().decide(slot.id,"constructor").resolve(pattern.value).id,px.id,
+    "a constructor decision restores the whole qualified declaration");
+  assert.deepEqual(new SlotOutcomes().decide(slot.id,"variable").resolve(pattern.value),
+    {tag:"member",receiver:bindingResolution(slot.id),fields:["x"]});
+  const unknown=before.namespace("p",[["x",bindingResolution(px.id)]],"Parent").defer("p",slot.id).qualified("p.unknown").value;
+  assert.equal(new SlotOutcomes().decide(slot.id,"variable").resolve(unknown).tag,"member");
+  assert.throws(()=>adapter.lower(unknown,new SlotOutcomes().decide(slot.id,"constructor")),UnknownNamespaceMember);
 });
 
 const wasm=await create();
@@ -213,4 +221,101 @@ test("source activation is ordered, required per consumer and outside declaratio
   const unused=activateSourceItem(translator,new Scope(translator.unit(),new Map(),env),item,inputs,
     {owner:["ordered","registration"],source});
   assert.equal(unused.context,inputs.context);assert.deepEqual(unused.captures,[]);assert.deepEqual(unused.activations,[]);
+});
+
+test("parent namespace selections preserve fields, lexical binders and model shadowing through generation",async t=>{
+  const {table,inputs,program,env,source}=await setup(t);
+  const records=new Map();
+  const build=(text,owner)=>{
+    const record=retainTheorySource(parse(text).declarations[0],{table,source,owner,context:inputs.context,
+      constructors:inputs.constructors},{lookup:name=>records.get(name)});
+    const built=retainedTheoryArtifacts(record,{table,owner:[...owner,"generated"]});
+    records.set(record.name,built.record);return built;
+  };
+  const parent=build("theory Parent(U < UU0) { x : Two; y : Two; }",["namespace","parent"]);
+  const child=build(`theory Child(U < UU0) extends chosen : Parent {
+    def picked : Two := chosen.(x);
+    def qualified : Two := chosen.x;
+    def local(x : Two) : Two := chosen.(x);
+    def from_model(chosen : Leaf(U0)) : chosen.M := chosen.(x);
+    def nested : Two := chosen.((fun (x : Two) => x)(left_));
+    def fallback : Two := chosen.(outside);
+  }`,["namespace","child"]);
+  const picked=child.record.derived.find(field=>field.label==="picked");
+  const uses=bindingUses(picked.syntax);
+  assert.ok(uses.every(use=>!["deferred-activation","deferred-opening"].includes(use.kind)));
+  assert.ok(uses.some(use=>use.id===child.record.fields.find(field=>field.label==="x").id));
+  assert.ok(uses.every(use=>use.id!==child.record.fields.find(field=>field.label==="y").id),"unused namespace members are not dependencies");
+  const absent=build("theory Absent(U < UU0) extends absent_ : Parent { def picked : Two := absent_.(x); }",["namespace","absent"]);
+  const sorts=build("theory Sorts(U < UU0) { M : set U; }",["namespace","sorts"]);
+  const domains=build("theory Domains(U < UU0) extends chosen : Sorts { N : set U; f(a : chosen.(M)) : N; }",["namespace","domains"]);
+  assert.equal(domains.record.fields.find(f=>f.label==="f").syntax.tree.params[0].type.resolution.id,
+    domains.record.fields.find(f=>f.label==="M").id);
+  const patterns=build(`theory Patterns(U < UU0) extends left_ : Parent {
+    def selected_(b : Two) : Two := match b { left_ => left_.(x); right_ => left_.(y); };
+    def qualified_(b : Two) : Two := match b { left_ => left_.x; right_ => left_.y; };
+  }`,["namespace","patterns"]);
+  const checker=Object.create(program.checker);checker.bindingName=label=>`namespace__${label}`;
+  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
+  const translator=new Translator({checker,normalize:false,moduleName:"namespace",compilationBindings:program.compilationBindings});
+  const declarations=[parent,child,absent,sorts,domains,patterns].flatMap(built=>built.artifacts)
+    .map(({binding,syntax,...annotations})=>bindingDeclaration(binding,syntax,annotations));
+  const result=translator.translateSyntax({declarations:[...declarations,...parse(`
+    def instance_ : Child(U0) := Child.make(right_, left_);
+    def parent_value : Two := instance_.picked;
+    def qualified_value : Two := instance_.qualified;
+    def local_value : Two := instance_.local(left_);
+    def model_value : Two := instance_.from_model(chosen);
+    def nested_value : Two := instance_.nested;
+    def fallback_value : Two := instance_.fallback;
+    def absent_model : Absent(U0) := Absent.make(right_, left_);
+    def absent_value : Two := absent_model.picked;
+    def parent_domain : Domains(U0) := Domains.make(M := Unit, N := Two, f := fun (a : Unit) => left_);
+    def wrong_domain : Domains(U0) := Domains.make(M := Unit, N := Two, f := fun (a : Two) => a);
+    def matched : Patterns(U0) := Patterns.make(right_, left_);
+    def first_selection : Two := matched.selected_(left_);
+    def second_selection : Two := matched.selected_(right_);
+    def first_qualified : Two := matched.qualified_(left_);
+  `).declarations]},"",env);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong_domain"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/Type mismatch/);
+  const scope=new Scope(translator.unit(),new Map(),result.env);
+  for(const [label,value] of [["parent_value","right_"],["qualified_value","right_"],["local_value","left_"],
+    ["model_value","left_"],["nested_value","left_"],["fallback_value","right_"],["absent_value","right_"],
+    ["first_selection","right_"],["second_selection","left_"],["first_qualified","right_"]]) {
+    assert.equal(scope.equal(result.env.get(label),translator.term(parse(value,true),scope)),true,label);
+    assert.equal(scope.equal(result.env.get(label),translator.term(parse(value==="right_"?"left_":"right_",true),scope)),false,label);
+  }
+});
+
+test("deferred namespace selectors retain member substitutions and pattern-local alternatives",async t=>{
+  const {table,inputs,program,env,source}=await setup(t);
+  const origin=sourceOrigin({...source,start:0,end:1});
+  const field=table.allocate(["namespace","deferred"],{role:"field",label:"x",origin});
+  const p=table.allocate(["namespace","deferred"],{role:"pattern",label:"p",origin});
+  const x=table.allocate(["namespace","deferred"],{role:"pattern",label:"x",origin});
+  const context=inputs.context.namespace("p",[["x",bindingResolution(field.id)]],"Parent").defer("p",p.id).defer("x",x.id);
+  const resolve=(text,at=context)=>resolveBindingSyntax(parse(text,true),{table,source,owner:["namespace","expression"],
+    context:at,constructors:inputs.constructors});
+  assert.ok(bindingUses(resolve("_.(x)",inputs.context)).some(use=>use.kind==="hole"),"an ordinary receiver hole stays a hole");
+  const syntax=resolve("p.(x)"),cloned=cloneBindingSyntax(syntax,table,["namespace","copy"]).syntax;
+  assert.equal(sameBindingSyntax(syntax,cloned),true);
+  assert.deepEqual(new LexicalContext(JSON.parse(JSON.stringify(context.snapshot()))).selector("p"),context.selector("p"));
+  const replacement=resolve("right_",inputs.context);
+  const substituted=substituteBindingSyntax(cloned,new Map([[field.id,replacement]]),table,["namespace","substitution"]);
+  const qualified=substituteBindingSyntax(resolve("p.x"),new Map([[field.id,replacement]]),table,["namespace","qualified"]);
+  const translator=new Translator({checker:program.checker,normalize:false,compilationBindings:program.compilationBindings});
+  const values=new Map(env).set(inputs.adapter.key(p.id),env.get("chosen")).set(inputs.adapter.key(x.id),env.get("left_"));
+  for(const [pRole,xRole,expected] of [["constructor","constructor","right_"],["constructor","variable","left_"],
+    ["variable","constructor","left_"],["variable","variable","left_"]]) {
+    const outcomes=new SlotOutcomes().decide(p.id,pRole).decide(x.id,xRole);
+    const scope=new Scope(translator.unit({bindingAdapter:inputs.adapter}),new Map(),values,new Map(),outcomes);
+    const value=translator.term(lowerBindingSyntax(substituted,inputs.adapter,outcomes),scope);
+    assert.equal(scope.equal(value,translator.term(parse(expected,true),scope)),true,`${pRole}/${xRole}`);
+    assert.equal(scope.equal(value,translator.term(parse(expected==="right_"?"left_":"right_",true),scope)),false,`${pRole}/${xRole}`);
+    const member=translator.term(lowerBindingSyntax(qualified,inputs.adapter,outcomes),scope);
+    assert.equal(scope.equal(member,translator.term(parse(pRole==="constructor"?"right_":"left_",true),scope)),true,
+      "qualified references restore the namespace field after a constructor decision");
+  }
+  assert.doesNotThrow(()=>snapshotSyntax(substituted));
 });

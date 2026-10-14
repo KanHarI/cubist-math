@@ -309,6 +309,14 @@ export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind===
 export function selected(t,scope,node,{effects=selectionEffects.all,activation=null}={}) {
   if(!effects.labels&&!effects.notation)return activation
     ?scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,[])):scope;
+  const selector=node.kind==="bindingReference"?scope.unit.bindingAdapter.resolve(node.resolution,scope.slotOutcomes):null;
+  if(selector?.tag==="namespace") {
+    if(!activation)throw new TypeError("A retained namespace selection needs its activation identity.");
+    // These are exact interface targets, not a model value. No member is
+    // evaluated eagerly; the body's occurrence applies its own substitution
+    // after this decision, including candidates retained under pending slots.
+    return scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,effects.labels?selector.members:[]));
+  }
   const key=referenceKey(node),notation=key?scope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {
     const inner=effects.notation?notationSelected(scope,notation):scope;

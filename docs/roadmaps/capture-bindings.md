@@ -182,6 +182,11 @@ introduces a binder ID; a constructor introduces no variable and the body
 uses its saved enclosing resolution. Constructor selection itself follows
 the matched type's constructor table. Preserve nested patterns, coordinates,
 induction hypotheses and existing shadowing behavior.
+For a qualified occurrence such as `p.x`, retain the whole enclosing lookup
+for the constructor branch and the member suffix for the variable branch.
+Restoring only the enclosing `p` could replace a qualified declaration or
+parent member with a projection of an unrelated value. A closed-namespace
+failure remains conditional until the candidate's role is decided.
 
 Deferred slots remain explicit into elaboration. Once the role is known,
 the shared adapter installs the selected binder/constructor mapping and
@@ -204,6 +209,15 @@ original lexical context until that effect is determined.
 Opening a model is another deferred lexical effect. Block/file `use`, section
 parameters and `m.(expression)` can introduce bare field and derived labels
 only after the receiver's type is known (`opened` in `translator/theories.mjs`).
+Explicit parent-label selections inside a theory have a separate source
+namespace: `p.(e)` reads free fields through the parent labelled `p`, preserving
+lexical parameters and locals. Ordinary term lookup and block `use p` retain
+the label's bare-value fallback. A static parent selection resolves its body
+immediately and leaves no runtime receiver or unused-member dependencies.
+If a deferred binding can shadow the label, retain the namespace alternative
+and its candidate member IDs until resolution. Substitution records the
+arguments for those candidates in the affected body occurrences; a namespace
+decision opens exact interface targets without evaluating unused members.
 An activation retains the receiver occurrence and its activation
 context, separately from the authored recipe's origin. Block/section openings
 and explicit selections activate at their lexical source point. File-level

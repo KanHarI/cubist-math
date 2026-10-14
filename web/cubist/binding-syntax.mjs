@@ -4,7 +4,7 @@
 // through nominal capture on failure.
 import {scopeMapped, binderName, bindingRole} from "./scopes.mjs";
 import {members} from "./references.mjs";
-import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution} from "./bindings.mjs";
+import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution} from "./bindings.mjs";
 import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
 import {syntaxValue,expandedSource} from "./source-syntax.mjs";
 
@@ -22,6 +22,24 @@ const freeze = value => {
 };
 const occurrence = (at, value, spelling, origin) => ({kind: "bindingReference", resolution: value, spelling, origin,
   start: at.start, end: at.end});
+
+// Parent-interface selections reinterpret free field labels, preserving
+// lexical binders. Model openings are different: they shadow preceding
+// locals. A pending pattern keeps its variable alternative and replaces only
+// the constructor branch's enclosing interpretation with the selected field.
+function namespaceSelector(value,context,table) {
+  const localRoles=new Set(["parameter","universe","local","dimension","pattern"]);
+  const protect=(local,target)=>local.tag==="binding"&&localRoles.has(table.get(local.id).role)?local
+    :local.tag==="slot"?slotResolution(local.id,protect(local.enclosing,target))
+    :local.tag==="opening"?protect(local.enclosing,target)
+    :local.tag==="namespace"?protect(local.fallback,target):target;
+  if(value.tag==="namespace")return namespaceResolution(value.members.map(([label,target])=>
+    [label,protect(context.lookup(label),target)]),value.fallback,value.description);
+  if(["slot","opening"].includes(value.tag))return {...value,enclosing:namespaceSelector(value.enclosing,context,table)};
+  return value;
+}
+const namespaceCandidates=value=>value?.tag==="namespace"?value.members
+  :["slot","opening"].includes(value?.tag)?namespaceCandidates(value.enclosing):[];
 
 export function resolveBindingSyntax(tree, options) {
   return resolveBindings(tree,options);
@@ -54,19 +72,34 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       throw new TypeError("Structural self must be the identity of a retained declaration.");
   }
   const owned = [];
+  const selectors=new Map();
+  let staticNamespace=false;
   let splice=0;
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
   tree = scopeMapped(tree, {
     deferred: true,
-    prepare(node) {
+    prepare(node,at) {
       if(!["select","use"].includes(node.kind))return node;
       if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
-      return {...node,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model)}};
+      let model=node.model,selector;
+      if(node.kind==="select"&&model.kind==="name") {
+        let found;
+        try {found=at.selector(model.name);}
+        catch(error) {error.at??=model;throw error;}
+        if(model.name!=="_"||found.value.tag==="namespace") {
+          selector=memberResolution(namespaceSelector(found.value,at,table),found.fields);
+          if(selector.tag==="namespace")staticNamespace=true;
+          model={...model};selectors.set(model,selector);
+        }
+      }
+      return {...node,model,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model),
+        ...(selector?.tag==="namespace"?{activationMode:"namespace"}:{})}};
     },
     region: (at,node,key) => self&&node===declaration&&["body","value"].includes(key)
       ?at.bind(self.label,bindingResolution(self.id)):at,
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
     enter(node, at) {
+      if(selectors.has(node))return occurrence(node,selectors.get(node),node.name,origin(node));
       if(fixedReferences.has(node)) {
         const fixed=fixedReferences.get(node);
         if(fixed.tag==="universe"&&fixed.label==="_")
@@ -116,8 +149,16 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
         ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lookup(binderName(token))} : {})};
     },
-    extend(at, binders,_node,scope) {
-      if(scope.role==="activation")return scope.effects.labels?at.open(binders[0].bindingId):at;
+    extend(at, binders,node,scope) {
+      if(scope.role==="activation") {
+        if(!scope.effects.labels)return at;
+        const selector=selectors.get(node.model),candidates=namespaceCandidates(selector);
+        if(selector?.tag==="namespace") {
+          for(const [label,value] of selector.members)at=at.bind(label,value);
+          return at;
+        }
+        return at.open(binders[0].bindingId,{candidates});
+      }
       for (const token of binders) {
         if (!token.bindingId||binderName(token)==="_") continue;
         at = token.bindingRole === "pattern" ? at.defer(binderName(token), token.bindingId)
@@ -127,7 +168,15 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     },
   }, context);
   if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
-  return freeze({format, tree, owned, inferred: canonical.inferred});
+  const syntax=freeze({format, tree, owned, inferred: canonical.inferred});
+  if(!staticNamespace)return syntax;
+  // A statically selected interface is a lexical scope, not a runtime model.
+  // Its body is now resolved, so discard that scope descriptor. Keeping its
+  // unused member table would invent dependencies and affect alpha equality.
+  const erase=tree=>scopeMapped(tree,{deferred:true,extend:at=>at,enter(node) {
+    return node.kind==="select"&&node.activation?.activationMode==="namespace"?erase(node.body):node;
+  }},null);
+  return bindingSyntaxView(syntax,erase(tree),{inferred:canonical.inferred});
 }
 
 const requireSyntax = syntax => {
@@ -183,17 +232,21 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
           let alternative=selected;
           const required=[...conditions];
           while(alternative.tag==="slot"||alternative.tag==="opening") {
+            for(const candidate of alternative.candidates??[])
+              visit({...node,resolution:candidate},[...required,{activation:alternative.id,label:alternative.label.split(".")[0],outcome:"provided"}]);
             required.push(alternative.tag==="slot"?{slot:alternative.id,outcome:"constructor"}
               :{activation:alternative.id,label:alternative.label.split(".")[0],outcome:"absent"});
             alternative=outcomes.resolve(alternative.enclosing);
           }
           visit({...node,resolution:alternative},required);
         }
-      } else uses.push({kind:selected.tag,label:selected.label,origin:node.origin});
+      } else if(selected.tag!=="namespace")uses.push({kind:selected.tag,label:selected.label,origin:node.origin});
+      // A namespace selector describes alternatives; it evaluates no member.
+      // Its body carries the actual (possibly conditional) dependencies.
       return node;
     },
     bind(token) {
-      if(token.bindingRole==="activation"&&!outcomes.activation(token.bindingId))uses.push({kind:"deferred-activation",
+      if(token.bindingRole==="activation"&&token.activationMode!=="namespace"&&!outcomes.activation(token.bindingId))uses.push({kind:"deferred-activation",
         activation:token.bindingId,origin:token.origin});
       if(token.bindingRole==="pattern"&&binderName(token)!=="_"&&!outcomes.get(token.bindingId))uses.push({kind:"deferred-pattern",
         slot:token.bindingId,spelling:token.label??binderName(token),origin:token.origin,
