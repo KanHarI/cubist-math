@@ -3,7 +3,7 @@
 // Subsequent consumers transform the retained syntax through ID maps; they
 // never rebuild its lexical scope from the eventual list of field labels.
 import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin,mapResolution} from "./bindings.mjs";
-import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,bindingSyntaxView,sameBindingSyntax} from "./binding-syntax.mjs";
+import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,bindingSyntaxView,sameBindingSyntax,bindingUses} from "./binding-syntax.mjs";
 import {parameterForalls} from "./telescopes.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
@@ -74,7 +74,7 @@ export class RetainedInterfaces {
     this.header=syntax;
     return syntax;
   }
-  retain(item,{kind=item.kind,self=false,transform=syntax=>syntax,notation=null}={}) {
+  retain(item,{kind=item.kind,self=false,transform=syntax=>syntax,notation=null,ownNotation=null}={}) {
     const tree=interfaceTree(item);
     const fixedReferences=new Map();
     if(item.universe)fixedReferences.set(tree.type,{tag:"universe",label:item.universe.text});
@@ -82,8 +82,14 @@ export class RetainedInterfaces {
     const binding=this.table.allocate(owner,{role:kind==="derived"?"helper":"field",label:item.name.text,
       origin:item.name.origin??sourceOrigin({...this.source,start:item.name.start,end:item.name.end})});
     const context=this.context;
+    // The declaration owns its operation before its body is resolved. The
+    // rule's operands/receiver were prepared outside the formal parameters;
+    // adding this ID does not publish a term name or grant availability.
+    if(ownNotation)notation={...notation,bindings:{...notation?.bindings,
+      [ownNotation.key]:{...ownNotation,field:binding.id}}};
     const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null,fixedReferences,notation}));
-    const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive:self,lexical:context.snapshot(),
+    const recursive=self||kind==="derived"&&bindingUses(syntax,{conditional:true}).some(use=>use.id===binding.id);
+    const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive,lexical:context.snapshot(),
       interface:Object.freeze(this.#interface()),
       ...(kind==="sort"?{level:item.level??null}:{})});
     this.entries.push(entry);

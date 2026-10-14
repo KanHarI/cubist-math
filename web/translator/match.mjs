@@ -23,6 +23,7 @@ import {orderedHLevelRules} from "./simp-registry.mjs";
 import {lowerBindingReferences} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
 import {clauseTelescope,bindClauseName} from "../cubist/telescopes.mjs";
+import {enterExpressionScope} from "./expression-scopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
@@ -577,13 +578,12 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
 export const selfReference = name => `${name} is being defined: it can call itself only on an argument of a constructor that `
   + `its match takes apart, as ${name}(m) in succ(m) => …, when that match on one of its parameters is its whole body.`;
 export function resolveRecursive(translator, node, value, args, scope) {
-  if(args&&scope.unit.bindingAdapter)args=lowerBindingReferences(args,scope.unit.bindingAdapter,scope.slotOutcomes);
   const parameter=index=>value.labels?.[index]??value.params[index];
   const locate = (error, at = node) => scope.unit.locate(error, at);
   // A name that a match statement took apart names its constructor there,
   // but a recursive call means the variable it named.
-  const resolve = name => {
-    const bound = scope.env.get(name), taken = value.destructed?.get(name);
+  const resolve = (name,at) => {
+    const bound = at.env.get(name), taken = value.destructed?.get(name);
     return taken && bound === taken.alias ? T.variable(taken.variable) : bound;
   };
   const example = `as ${value.source}(m) in succ(m) => …`;
@@ -601,6 +601,17 @@ export function resolveRecursive(translator, node, value, args, scope) {
   }
   if (!args || args.length !== value.params.length)
     throw locate(Error(`${value.source} takes ${value.params.length} argument${value.params.length === 1 ? "" : "s"}.`));
+  // A recipe can change the notation or scope of a structural argument.
+  // Enter it once, checking the receiver, and retain that scope for the
+  // fixed-argument test, structural spine and generalized arguments alike.
+  const scoped=args.map(node=>{
+    let current=scope,entered;
+    while((entered=enterExpressionScope(translator,current,node)))({node,scope:current}=entered);
+    if(current.unit.bindingAdapter&&node.kind!=="passedParameter")
+      node=lowerBindingReferences(node,current.unit.bindingAdapter,current.slotOutcomes);
+    return {node,scope:current};
+  });
+  args=scoped.map(argument=>argument.node);
   args.forEach((arg, index) => {
     // A generalized parameter takes the call's own value.
     if (index === value.index || value.generalized?.[index]) return;
@@ -614,7 +625,7 @@ export function resolveRecursive(translator, node, value, args, scope) {
       }
       return;
     }
-    const current = arg.kind === "name" ? scope.env.get(arg.name) : undefined, taken = arg.kind === "name" ? value.destructed?.get(arg.name) : undefined;
+    const current = arg.kind === "name" ? scoped[index].scope.env.get(arg.name) : undefined, taken = arg.kind === "name" ? value.destructed?.get(arg.name) : undefined;
     const unchanged = current !== undefined && (current === value.fixed[index]
       || taken && current === taken.alias && value.fixed[index]?.tag === "Var" && value.fixed[index].name === taken.variable);
     // One the motive may quantify over, changed, or whose type mentions the
@@ -630,14 +641,14 @@ export function resolveRecursive(translator, node, value, args, scope) {
   });
   // The argument: a position, applied to its arity's arguments, and a path
   // position at each of its dimensions, f(q(y) @ i): that is an element.
-  const target = args[value.index], dimensions = [];
+  const target = args[value.index],targetScope=scoped[value.index].scope, dimensions = [];
   let element = target;
   while (element.kind === "pathApply") { dimensions.unshift(element.right); element = element.left; }
   // Its application spine, curried or not: p(0, 0) and p(0)(0) alike.
   const applied = [];
   let head = element;
   while (head.kind === "call") { applied.unshift(...head.args); head = head.fn; }
-  const bound = head.kind === "name" ? resolve(head.name) : null;
+  const bound = head.kind === "name" ? resolve(head.name,targetScope) : null;
   const position = bound?.tag === "Var" ? value.results.get(bound.name) : undefined;
   if (!position)
     throw locate(Error(`The recursive call of ${value.source} is not on an argument of the matched constructor: only structural recursion, ${example}.`), target);
@@ -655,16 +666,16 @@ export function resolveRecursive(translator, node, value, args, scope) {
   for (const arg of applied) {
     const pi = scope.nf(scope.infer(term).type);
     if (pi.tag !== "Pi") throw locate(Error(`${head.name} takes fewer arguments.`), arg);
-    term = T.app(term, translator.term(arg, scope, pi.domain));
+    term = T.app(term, translator.term(arg, targetScope, pi.domain));
   }
-  for (const dimension of dimensions) term = T.at(term, translator.interval(dimension, scope.env));
+  for (const dimension of dimensions) term = T.at(term, translator.interval(dimension, targetScope.env));
   // A recursive result quantifies over the generalized parameters, in their
   // order: the call's values for them, each at its type there.
   if (value.generalized) args.forEach((arg, index) => {
     if (!value.generalized[index]) return;
     const pi = scope.nf(scope.infer(term).type);
     if (pi.tag !== "Pi") throw locate(Error(`Internal elaboration error: the recursive result of ${value.source} takes fewer hypotheses.`), arg);
-    term = T.app(term, arg.kind === "passedParameter" ? value.fixed[index] : translator.term(arg, scope, pi.domain));
+    term = T.app(term, arg.kind === "passedParameter" ? value.fixed[index] : translator.term(arg, scoped[index].scope, pi.domain));
   });
   value.state.called = true;
   translator.reference(scope, node, term);

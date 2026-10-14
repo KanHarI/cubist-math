@@ -10,7 +10,8 @@ import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped} from "./scopes.mjs";
 import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
-import {retainFieldNotation} from "./retained-notation.mjs";
+import {retainFieldNotation,retainOperandRecipe} from "./retained-notation.mjs";
+import {notationKey,notationViews} from "./theory-notation.mjs";
 
 const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
 const reference=token=>({kind:"bindingReference",resolution:bindingResolution(token.bindingId),
@@ -89,8 +90,10 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   for(const item of theory.fields) {
     const self=item.kind==="derived"&&freeNames(item.value,new Set(item.params.map(p=>p.name.text))).has(item.name.text);
     const {notation,...plain}=item;
+    const ownNotation=notation?{key:notationKey(notation),recipe:retainOperandRecipe(notationViews(notation),interfaces.context,
+      {...options,theory:T,owner:[...options.owner,"own-notation",String(interfaces.entries.length)]})}:null;
     const entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families),
-      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations}});
+      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations},ownNotation});
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);
@@ -104,7 +107,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
       }
     }
     const views=helpers?.type(entry);
-    const retainedNotation=retainFieldNotation(item,entry,fields,{...options,theory:T,domains:views?.parameters});
+    const retainedNotation=retainFieldNotation(item,entry,fields,{...options,theory:T,domains:views?.parameters,recipe:ownNotation?.recipe});
     if(retainedNotation) {
       const conflicts=ambiguousNotations[retainedNotation.key];
       if(conflicts)throw located(Error(`${retainedNotation.key} would stand for ${entry.label} in ${T}, and its parents bind it to ${conflicts.map(e=>e.field).join(" and ")}: a notation means one operation; rename one's notation.`),notation);

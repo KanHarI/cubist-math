@@ -346,9 +346,16 @@ and apply only a notation effect. Nested explicit selections and block uses
 replace the operator context, so the outer theory's rules cannot rewrite
 their bodies. Inherited rules use the same parent correspondence as ordinary
 field references, including inside helpers, laws and generated artifacts.
-This migration currently admits earlier theory rules; a rule's own recursive
-operator body, model-selected operator bodies and literal readers still need
-their respective retained rule/selection contexts before their gates open.
+A declaration reserves its own operation ID before resolving its body; its
+operand receivers are captured once outside the formal parameters. Resolved
+self references, including those introduced by notation, determine recursive
+helper status. Reserving an ID grants no checking or publication authority.
+Structural recursion enters an operand's actual expression scope before
+inspecting its constructor argument, checking any selected receiver and
+keeping that scope for fixed, structural and generalized arguments. It must
+not strip an operand wrapper or admit an argument outside the recursive
+constructor positions. Model-selected operator bodies and literal readers
+still need their retained rule/selection contexts before their gates open.
 
 Shared notation validation returns both the operator and its operand views.
 Both producers honor explicit views on family notation, correcting the

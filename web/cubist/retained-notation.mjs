@@ -14,7 +14,7 @@ export function retainFieldNotation(item,entry,fields,options) {
     return type?.kind==="bindingReference"&&type.resolution.tag==="binding"
       &&fields.some(field=>field.id===type.resolution.id&&field.kind==="sort");
   }});
-  const recipe=retainOperandRecipe(views,new LexicalContext(entry.lexical),
+  const recipe=options.recipe??retainOperandRecipe(views,new LexicalContext(entry.lexical),
     {...options,owner:[...options.owner,"notation",entry.id]});
   return Object.freeze({key,field:entry.id,recipe});
 }

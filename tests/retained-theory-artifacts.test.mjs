@@ -730,6 +730,49 @@ test("retained source operator laws feed Hom and Iso generation through exact fi
   }
 });
 
+test("a derived operation's own notation retains structural self through inherited renaming",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const base=buildSource(`theory Iterate(U < UU0) {
+    M : U;
+    def count(n : Nat, x : M) : M := match n { zero => x; succ(k) => k + x; } notation recipe.(n) + x;
+    def call(n : Nat, x : M) : M := n + x;
+  }`);
+  const recursive=base.record.derived.find(entry=>entry.label==="count");
+  assert.equal(recursive.recursive,true);
+  assert.ok(bindingUses(recursive.syntax).some(use=>use.id===recursive.id));
+  const child=buildSource("theory Child(U < UU0) extends p : Iterate(M := Carrier) {}");
+  const {result,equal}=check({declarations:[...base.declarations,...child.declarations]},`
+    def chosen : Child(U0) := Child.make(Two);
+    def value : Two := chosen.count(succ(succ(zero)), right_);
+    def through_helper : Two := chosen.call(succ(zero), right_);
+    def intended : value = right_ := refl(right_);
+    def wrong : value = left_ := refl(left_);
+  `,"def count(n : Nat, x : Two) : Two := left_;");
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  for(const name of ["value","through_helper"]) {
+    assert.equal(equal(name,"right_"),true);assert.equal(equal(name,"left_"),false);
+  }
+});
+
+test("recursive operand scopes check their receivers and cannot make a non-structural call admissible",async t=>{
+  for(const variant of ["invalid receiver","non-structural argument"])await t.test(variant,async t=>{
+    const {buildSource,check}=await setup(t,undefined,operandModels);
+    const invalidReceiver=variant==="invalid receiver",receiver=invalidReceiver?"bad":"recipe";
+    const built=buildSource(`theory Refused(U < UU0) {
+      M : U; ${invalidReceiver?"bad : Unit;":""}
+      def count(n : Nat, x : M) : M := match n {
+        zero => x; succ(k) => ${invalidReceiver?"k":"succ(k)"} + x;
+      } notation ${receiver}.(n) + x;
+    }`);
+    const {result}=check(built,`
+      def healthy : Refused(U0) := Refused.make(Two${invalidReceiver?", tt":""});
+      def unavailable : Two := healthy.count(succ(zero), right_);
+    `);
+    assert.deepEqual(failures(result).map(([name])=>name),["Refused.count","unavailable"],JSON.stringify(failures(result)));
+    assert.match(failures(result)[0][1],invalidReceiver?/use selects a model/:/not on an argument of the matched constructor/);
+  });
+});
+
 test("source operand recipes retain their field receiver and never open labels over operands",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const base=buildSource(`theory Power(U < UU0) {

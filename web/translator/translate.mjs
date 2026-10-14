@@ -36,6 +36,7 @@ import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {notationOperand} from "./model-notation.mjs";
+import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
@@ -1327,9 +1328,13 @@ export class Translator {
       // Copied theory syntax keeps its selected notation, while term and
       // universe binders come from the generated declaration's current scope.
       // It has no source links here, including syntax a captured rule expands.
-      case "notationScope": return this.term(n.body,scope.withUnit(scope.unit.with({references:null})).aliases(n.aliases),expected);
+      case "notationScope":
       // An operand of a notation's rule, read where it stood (L2.10a).
-      case "scoped": return this.term(n.node,n.scope,expected);
+      case "scoped":
+      case "select": {
+        const entered=enterExpressionScope(this,scope,n);
+        return this.term(entered.node,entered.scope,expected);
+      }
       // An elaborated argument abstracted over a generated declaration's
       // parameters. Its arguments are syntax in the current scope; ordinary
       // substitution reconnects the checked value to those local bindings.
@@ -1341,7 +1346,6 @@ export class Translator {
       }
       // A literal, read by the selected notation's literal rule (L2.10c).
       case "literal": return this.literalTerm(n,scope,expected);
-      case "select": return this.term(n.body,selected(this,scope,n.model,{effects:n.effects,activation:n.activation}),expected);
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);
         if(operation.kind!=="notationRule")return tr(operation,expected);
