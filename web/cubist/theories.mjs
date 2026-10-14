@@ -24,7 +24,7 @@
 
 import { parse, reservedNames } from "./parser.mjs";
 import {notAProposition} from "./theory-propositions.mjs";
-import {notationKey,validateFieldNotation} from "./theory-notation.mjs";
+import {notationKey,notationViews,validateFieldNotation} from "./theory-notation.mjs";
 import { morphismSource } from "./morphisms.mjs";
 import {syntaxValue as semanticSyntax} from "./source-syntax.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
@@ -249,7 +249,8 @@ function theoryFields(theory, lookup, proposition, capture) {
           throw located(Error(notation.unary ? `-x names an operation's one argument; ${from.text} is not an operation of one.`
             : `A notation names an operation's two arguments; ${from.text} is not an operation of two.`), notation);
         renotated.set(from.text, keyOf(notation));
-        recipes.set(keyOf(notation), { left: notation.leftView?.text ?? null, right: notation.rightView?.text ?? null });
+        const views=notationViews(notation);
+        recipes.set(keyOf(notation), { left: views.left?.text ?? null, right: views.right?.text ?? null });
       }
     }
     // A sort's evidence follows the sort's name.
@@ -404,7 +405,11 @@ function theoryFields(theory, lookup, proposition, capture) {
       const family = binders.length > 0;
       add({ name: item.name.text, kind: "sort", type: quantified(binders, name(own, item.name), item), origin,
         ...(family ? { family: true, visible: item.params.map(p => p.level ?? null) } : {}) }, item.name);
-      if (item.notation) notate(validateFieldNotation(item,{theory:T}),item.name.text,item.notation);
+      if (item.notation) {
+        const {key,views}=validateFieldNotation(item,{theory:T});
+        notate(key,item.name.text,item.notation);
+        recipes.set(key,{left:views.left?.text??null,right:views.right?.text??null});
+      }
       if (!item.level) continue;
       const evidence = item.level === "set" ? "IsSet" : "IsProp";
       const member = family ? call(item.name.text, binders.map(p => name(p.name.text, item.name)), item.name) : name(item.name.text, item.name);
@@ -414,12 +419,12 @@ function theoryFields(theory, lookup, proposition, capture) {
       continue;
     }
     if (item.notation) {
-      const key=validateFieldNotation(item,{theory:T,isCarrier:k=>{
+      const {key,views}=validateFieldNotation(item,{theory:T,isCarrier:k=>{
         const type=item.params[k].type;
         return type.kind==="name"&&byName.get(type.name)?.kind==="sort";
       }});
       notate(key,item.name.text,item.notation);
-      if(!item.notation.numeral)recipes.set(key,{left:item.notation.leftView?.text??null,right:item.notation.rightView?.text??null});
+      if(!item.notation.numeral)recipes.set(key,{left:views.left?.text??null,right:views.right?.text??null});
     }
     // forall over the parameters, innermost last, each index's evidence
     // after it.

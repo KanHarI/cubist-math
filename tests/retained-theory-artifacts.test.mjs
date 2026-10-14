@@ -6,7 +6,7 @@ import create from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
-import {bindingInputs,bindingDeclaration} from "../web/translator/binding-module.mjs";
+import {sourceBindingInputs,bindingDeclaration} from "../web/translator/binding-module.mjs";
 import {parse} from "../web/cubist/parser.mjs";
 import {RetainedInterfaces} from "../web/cubist/retained-interfaces.mjs";
 import {retainedTheoryArtifacts,retainedMorphismArtifacts} from "../web/cubist/retained-theory-artifacts.mjs";
@@ -21,11 +21,8 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;",base="") {
   assert.deepEqual((await program.check(`inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); }
     def Index : U0 := Two; def IsSet(U < UU0, A : U) : U := forall x, y : A. forall p, q : x = y. p = q;
     ${base}`,"base")).gaps,[]);
-  const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base"),values=new Map();
-  for(const [label,value] of env)if(/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) {
-    const binding=registry.ofValue(value);if(binding)values.set(binding.id,value);
-  }
-  const inputs=bindingInputs(table,values,{reserved:["U0","UU0","Unit","tt","refl"]});
+  const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base");
+  const inputs=sourceBindingInputs(registry,env,{reserved:["U0","UU0","Unit","tt","refl"]});
   const source={revision:"source",module:"source"};
   const retained=new RetainedInterfaces({table,source,owner:["T"],context:inputs.context,constructors:inputs.constructors});
   const d=parse(header).declarations[0];retained.parameters(d.name,d.params);
@@ -49,11 +46,11 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;",base="") {
   const buildSource=(text,options)=>{
     const built=construct(retain(text),options);records.set(built.record.name,built.record);return built;
   };
-  const check=(built,source="",before="")=>{
+  const check=(built,source="",before="",{onReference=null,onDeclarationStart=null}={})=>{
     const checker=Object.create(program.checker);
     checker.bindingName=label=>`pilot__${label}`;
     checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-    const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+    const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry,onReference,onDeclarationStart});
     const result=translator.translateSyntax({declarations:[...parse(before).declarations,...built.declarations,...parse(source).declarations]},source,env);
     const scope=new Scope(translator.unit(),new Map(),result.env);
     const equal=(label,expected)=>scope.equal(result.env.get(label),translator.term(parse(expected,true),scope));
@@ -557,6 +554,89 @@ test("retained operand recipes keep declaration receivers and caller operand bin
   assert.equal(JSON.stringify(built.record),snapshot,"opening instantiates recipes without changing their canonical source");
 });
 
+test("operand receivers require a complete source selection namespace and reject known missing names",async t=>{
+  const {retain,inputs}=await setup(t,undefined,operandModels);
+  const theory=`theory Power(U < UU0) { M : U; pow(x : M, n : Nat) : M notation x ^ absent.(n); }`;
+  assert.throws(()=>retain(theory),error=>error.message==="Untranslated name: absent"
+    &&error.offset===theory.indexOf("absent")&&error.sourceEnd===theory.indexOf("absent")+6
+    &&error.origin.module==="source");
+  const context=new LexicalContext(inputs.context.snapshot().filter(([,value])=>value.tag!=="notation-inventory"));
+  assert.throws(()=>retain(theory.replace("absent","recipe"),{context}),/complete source notation inventory/);
+});
+
+test("standalone named notation takes precedence over model receivers and later binders",async t=>{
+  for(const model of [false,true])await t.test(model?"same-named model":"notation only",async t=>{
+    const {retain,inputs}=await setup(t,undefined,`
+      notation recipe { numeral(n : Nat) := n; }
+      ${model?operandModels:""}
+    `);
+    const inventory=inputs.context.notations();
+    assert.deepEqual(inventory,[{name:"recipe",model:null}]);
+    assert.doesNotThrow(()=>snapshotSyntax(inventory));
+    for(const context of [inputs.context,new LexicalContext(JSON.parse(JSON.stringify(inputs.context.snapshot())))]) {
+      for(const header of ["",", recipe : Unit"])
+        assert.throws(()=>retain(`theory Power(U < UU0${header}) {
+          M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+        }`,{context}),/Retained named notation activation has not migrated/);
+    }
+  });
+});
+
+test("model notation extensions follow that model's identity, not a later same-named receiver",async t=>{
+  const {retain,buildSource,check,inputs}=await setup(t,undefined,`
+    ${operandModels}
+    notation recipe { numeral(n : Nat) := succ(n); }
+  `);
+  assert.equal(inputs.context.notations()[0].model.id,inputs.context.lookup("recipe").id);
+  assert.throws(()=>retain(`theory Original(U < UU0) {
+    M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+  }`),/Retained named notation activation has not migrated/);
+  const built=buildSource(`theory Power(U < UU0, recipe : Numerals(U0)) {
+    M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+  }`);
+  const {result,equal}=check(built,`
+    def chosen : Power(U0, original) := Power.make(original, Nat, fun (x, n : Nat) => n);
+    def value : Nat := chosen.(zero ^ 0);
+    def intended : value = zero := refl(zero);
+    def wrong : value = succ(zero) := refl(succ(zero));
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.equal(equal("value","zero"),true);assert.equal(equal("value","succ(zero)"),false);
+});
+
+test("both producers honor operand views on family notation",async t=>{
+  const {program,buildSource,check}=await setup(t,undefined,operandModels);
+  const theory=`theory Order(U < UU0) {
+    M : U; le(x : M, n : Nat) : U notation x <= shifted.(n);
+  }`;
+  const client=`
+    def ord : Order(U0) := Order.make(Two, fun (x : Two, n : Nat) => n = succ(zero));
+    def viewed : ord.(left_ <= 0) := refl(succ(zero));
+    def wrong : ord.(left_ <= 0) := refl(zero);
+  `;
+  const {result}=check(buildSource(theory),client);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  const nominal=await program.check(`${program.sources.base}\n${theory}\n${client}`,"nominal");
+  assert.deepEqual(nominal.gaps.map(gap=>gap.name),["wrong"],JSON.stringify(nominal.gaps));
+});
+
+test("retained operand receivers cannot record their source offsets as client references",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const built=buildSource(`theory Power(U < UU0) {
+    inner : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ inner.(n);
+  }`);
+  const client=`def chosen : Power(U0) := Power.make(shifted, Nat, fun (x, n : Nat) => n);
+    def value : Nat := chosen.(zero ^ zero);`;
+  const references=[];let declaration;
+  const {result,equal}=check(built,client,"",{onDeclarationStart:node=>{declaration=node.name.text;},
+    onReference:node=>{if(declaration==="value")references.push(node);}});
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  assert.equal(equal("value","zero"),true);
+  assert.equal(references.some(node=>node.origin?.module==="source"),false);
+  const start=client.indexOf("chosen.(zero"),operands=[client.indexOf("zero",start),client.lastIndexOf("zero")];
+  for(const offset of [start,...operands])assert.ok(references.some(node=>node.start===offset),`caller reference at ${offset}`);
+});
+
 test("retained operand recipes instantiate the selected model's header and field identities",async t=>{
   for(const location of ["header","field"] )await t.test(location,async t=>{
     const {buildSource,check}=await setup(t,undefined,operandModels);
@@ -721,7 +801,10 @@ test("one shared operation with different inherited operand receivers stays ambi
 });
 
 test("operand receivers select parent namespaces instead of ambient same-named models",async t=>{
-  const {buildSource,check}=await setup(t,undefined,operandModels+"def num : Numerals(U0) := shifted;");
+  const {buildSource,check}=await setup(t,undefined,operandModels+`
+    def num : Numerals(U0) := shifted;
+    notation num { numeral(n : Nat) := succ(n); }
+  `);
   const parent=buildSource(`theory Num(U, V < UU0) {
     M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral;
   }`);

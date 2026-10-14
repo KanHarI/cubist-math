@@ -3,28 +3,28 @@
 // syntax stays open over that interface until a checked model supplies it.
 import {LexicalContext} from "./bindings.mjs";
 import {resolveBindingReceiver,cloneBindingSyntax,remapBindingSyntax,sameBindingSyntax} from "./binding-syntax.mjs";
-import {notationKey,validateFieldNotation} from "./theory-notation.mjs";
+import {notationKey,notationViews,validateFieldNotation} from "./theory-notation.mjs";
 import {parentNamespaceFailure} from "./retained-interfaces.mjs";
 
 export function retainFieldNotation(item,entry,fields,options) {
   if(!item.notation)return null;
   const parameters=entry.syntax.tree.params.filter(p=>!p.name.synthetic);
-  const key=validateFieldNotation(item,{theory:options.theory,isCarrier:k=>{
+  const {key,views}=validateFieldNotation(item,{theory:options.theory,isCarrier:k=>{
     const type=options.domains?.get(parameters[k]?.name.bindingId)??parameters[k]?.type;
     return type?.kind==="bindingReference"&&type.resolution.tag==="binding"
       &&fields.some(field=>field.id===type.resolution.id&&field.kind==="sort");
   }});
-  const recipe=retainOperandRecipe(item.notation,new LexicalContext(entry.lexical),
+  const recipe=retainOperandRecipe(views,new LexicalContext(entry.lexical),
     {...options,owner:[...options.owner,"notation",entry.id]});
   return Object.freeze({key,field:entry.id,recipe});
 }
 
-export function retainOperandRecipe(notation,context,options) {
+export function retainOperandRecipe(views,context,options) {
   const receiver=(token,side)=>token?resolveBindingReceiver({kind:"name",name:token.text,...token},{
     ...options,owner:[...options.owner,side],context,
     namespaceFailure:error=>parentNamespaceFailure(options.theory,error),
   }):null;
-  return Object.freeze({left:receiver(notation.leftView,"left"),right:receiver(notation.rightView,"right")});
+  return Object.freeze({left:receiver(views.left,"left"),right:receiver(views.right,"right")});
 }
 
 // The operation and both operand receivers determine a notation's meaning.
@@ -68,7 +68,7 @@ export function inheritNotations(parents,options) {
     for(const [field,rename] of parent.renotated) {
       const key=notationKey(rename.notation);
       add(key,Object.freeze({key,field:correspondence.get(field),
-        recipe:retainOperandRecipe(rename.notation,context,{...options,owner:[...owner,"renotation",String(serial++)]}),
+        recipe:retainOperandRecipe(notationViews(rename.notation),context,{...options,owner:[...owner,"renotation",String(serial++)]}),
         path:Object.freeze([parent.label]),parentField:table.get(field).label,call:true}));
     }
   }

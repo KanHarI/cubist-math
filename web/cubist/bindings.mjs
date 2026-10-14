@@ -108,6 +108,11 @@ export const failedResolution=({message,namespace,member,description,origin})=>O
 const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:string(id,"an activation identity"),
   ...(candidates.length?{candidates:Object.freeze(candidates.map(([label,value])=>
     Object.freeze([string(label,"an interface candidate"),resolution(value)])))}:{})});
+// This records the source selection namespace even before named notation
+// rules migrate. A known named selection must hit its family gate instead
+// of falling through to a model with the same spelling.
+const notationInventory=entries=>Object.freeze({tag:"notation-inventory",entries:Object.freeze(entries.map(({name,model=null})=>
+  Object.freeze({name:string(name,"a notation label"),model:model?resolution(model):null})))});
 // A qualified namespace closes its member table. Its bare label can keep
 // an enclosing value, but an absent member never searches that value's
 // ambient namespace. Ordinary later bindings still shadow the whole entry.
@@ -138,6 +143,7 @@ export function resolution(value) {
     case "slot": return slotResolution(value.id, value.enclosing,value.fields);
     case "opening": return openingResolution(value.id,value.label,value.enclosing,value.candidates);
     case "opening-frame": return openingFrame(value.id,value.candidates);
+    case "notation-inventory":return notationInventory(value.entries);
     case "member": return memberResolution(value.receiver,value.fields);
     case "projected": return projectedResolution(value.projection,value.receiver);
     case "application":return applicationResolution(value.fn,value.args);
@@ -158,6 +164,7 @@ export function mapResolution(value,identity=id=>id,project=value=>value) {
     case "binding":mapped={...value,id:identity(value.id,value.tag)};break;
     case "opening-frame":mapped={...value,id:identity(value.id,value.tag),
       ...(value.candidates?{candidates:value.candidates.map(([label,value])=>[label,map(value)])}:{})};break;
+    case "notation-inventory":mapped={...value,entries:value.entries.map(entry=>({...entry,model:entry.model?map(entry.model):null}))};break;
     case "slot": case "opening":mapped={...value,id:identity(value.id,value.tag),enclosing:map(value.enclosing),
       ...(value.candidates?{candidates:value.candidates.map(map)}:{})};break;
     case "member":mapped={...value,receiver:map(value.receiver)};break;
@@ -177,11 +184,12 @@ export class LexicalContext {
   #head = null;
   constructor(entries = []) {
     for (const [label, value] of entries) this.#head = Object.freeze({
-      label: label===null&&value.tag==="opening-frame"?null:string(label, "a lexical label"), value: resolution(value), parent: this.#head});
+      label: label===null&&["opening-frame","notation-inventory"].includes(value.tag)?null:string(label, "a lexical label"), value: resolution(value), parent: this.#head});
     Object.freeze(this);
   }
   lookup(label) {
     for (let entry = this.#head; entry; entry = entry.parent) {
+      if(entry.value.tag==="notation-inventory")continue;
       if(entry.value.tag==="opening-frame")return this.#opened(entry.value,label,this.#lookupAfter(entry.parent,label,false).value);
       if (entry.label === label) return entry.value.tag==="namespace"?entry.value.fallback:entry.value;
     }
@@ -193,7 +201,30 @@ export class LexicalContext {
   // An explicit selection can name an interface namespace. Its ordinary
   // bare-value fallback has a different meaning, including under a deferred
   // pattern or model opening, so it cannot be reused for this lookup.
-  selector(name) {return this.#lookupAfter(this.#head,name,true,true);}
+  selector(name) {
+    const notation=this.notations()?.find(entry=>entry.name===name);
+    if(notation&&!notation.model)throw new TypeError("Retained named notation activation has not migrated.");
+    const found=this.#lookupAfter(this.#head,name,true,true);
+    if(notation?.model) {
+      // Only a selected model branch receives its attached rules. A parent
+      // namespace may retain that model as its ordinary bare-value fallback,
+      // but selection does not take that fallback.
+      const matches=value=>value.tag==="binding"?value.id===notation.model.id
+        :["slot","opening"].includes(value.tag)
+          &&(matches(value.enclosing)||(value.candidates??[]).some(matches));
+      if(matches(found.value))throw new TypeError("Retained named notation activation has not migrated.");
+    }
+    return found;
+  }
+  notations() {
+    for(let entry=this.#head;entry;entry=entry.parent)if(entry.value.tag==="notation-inventory")return entry.value.entries;
+    return null;
+  }
+  withNotations(entries) {
+    const context=new LexicalContext();
+    context.#head=Object.freeze({label:null,value:notationInventory(entries),parent:this.#head});
+    return context;
+  }
   #opened(frame,name,enclosing) {
     const [root,...fields]=name.split(".");
     const candidates=(frame.candidates??[]).filter(([label])=>label===root)
@@ -204,6 +235,7 @@ export class LexicalContext {
     // Ordered shadowing applies to a receiver too: a later local T hides
     // an earlier declaration T.f. Member labels are resolved on that receiver.
     for (let entry = head; entry; entry = entry.parent) {
+      if(entry.value.tag==="notation-inventory")continue;
       if(entry.value.tag==="opening-frame") {
         let fallback;
         try {fallback=this.#lookupAfter(entry.parent,name,qualified,selector);}

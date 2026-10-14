@@ -112,3 +112,20 @@ test("interface namespaces survive snapshots and close members while later local
       {value:bindingResolution(local.id),fields:["missing"]});
   }
 });
+
+test("model notation inventories classify selected branches without following namespace fallbacks",()=>{
+  const table=new BindingTable("compilation"),model=allocate(table,"p","declaration"),local=allocate(table,"p"),
+    slot=allocate(table,"p","pattern"),field=allocate(table,"field","field");
+  const context=new LexicalContext().bind("p",bindingResolution(model.id))
+    .withNotations([{name:"p",model:bindingResolution(model.id)}]);
+  for(const restored of [context,new LexicalContext(roundtrip(context.snapshot()))]) {
+    assert.equal(restored.lookup("p").id,model.id);
+    assert.throws(()=>restored.selector("p"),/named notation activation/);
+    assert.throws(()=>restored.defer("p",slot.id).selector("p"),/named notation activation/);
+    assert.equal(restored.bind("p",bindingResolution(local.id)).selector("p").value.id,local.id);
+    const namespace=restored.namespace("p",[["field",bindingResolution(field.id)]],"Parent");
+    assert.equal(namespace.lookup("p").id,model.id);
+    assert.equal(namespace.selector("p").value.tag,"namespace");
+    assert.equal(namespace.defer("p",slot.id).selector("p").value.enclosing.tag,"namespace");
+  }
+});

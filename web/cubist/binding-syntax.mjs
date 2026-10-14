@@ -52,6 +52,8 @@ export function resolveBindingSyntax(tree, options) {
 // abstract model is explicit syntax over its interface, never its bare-name
 // fallback to an unrelated declaration. Operand recipes use this entry.
 export function resolveBindingReceiver(tree,options) {
+  if(options.context.notations()===null)
+    throw new TypeError("A retained selection receiver requires the complete source notation inventory.");
   return resolveBindings(tree,{...options,selectionReceiver:true});
 }
 
@@ -153,6 +155,8 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
       if (node.kind !== "name") return node;
       let {value, fields} = lookup(at,node.name,node,selectionReceiver&&node===declaration);
+      if(selectionReceiver&&node===declaration&&value.tag==="missing")
+        throw resolutionError(failedResolution({message:`Untranslated name: ${value.label}`,origin:origin(node)}));
       if(selectionReceiver&&node===declaration)value=mapResolution(value,undefined,value=>{
         if(value.tag!=="namespace")return value;
         if(!value.receiver)throw new TypeError("A namespace notation receiver needs its explicit model interface.");

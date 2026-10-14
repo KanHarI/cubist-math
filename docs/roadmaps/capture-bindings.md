@@ -322,6 +322,22 @@ with notation's operand-hygiene contract. A structural member keeps its
 resolved receiver and public field label until the receiver's type selects
 the projection ID. Neither is treated as a dotted global string.
 
+Source selection contexts include the separate named-notation namespace;
+a term-only binding map cannot establish that a notation is absent. Resolve
+standalone named notation before a namespace or model of the same spelling.
+Model-attached rules apply only to that model's identity, not to a later
+same-named binder or a parent namespace's unused bare-value fallback. Until
+named rule identities migrate, known named selections are explicitly refused
+at retention. A receiver already known to be missing also fails there.
+The source context builder must supply a complete notation inventory, even
+when empty, before retaining operand receivers.
+
+Shared notation validation returns both the operator and its operand views.
+Both producers honor explicit views on family notation, correcting the
+nominal producer's previous omission. Elaborating a retained receiver must
+not record its authored offsets as links in the caller's document; suppress
+those observations while preserving the caller operand's reference recorder.
+
 Inheritance carries the operation ID and both operand recipes through the
 same parent-to-child correspondence. Sharing a notation requires all three
 to agree; one shared operation with different receiver recipes remains

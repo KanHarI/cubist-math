@@ -57,7 +57,7 @@ export function notationOperand(t,scope,node,recipe) {
   let model;
   if(typeof recipe==="string")model={kind:"name",name:recipe,start:node.start,end:node.end};
   else if(recipe.kind==="retainedOperandRecipe")model={kind:"scoped",node:recipe.syntax.tree,
-    scope:scope.withUnit(scope.unit.with({bindingAdapter:bindingSyntaxAdapter(recipe.syntax,t.compilationBindings.table)}))};
+    scope:scope.withUnit(scope.unit.with({bindingAdapter:bindingSyntaxAdapter(recipe.syntax,t.compilationBindings.table),references:null}))};
   else throw new TypeError("Unknown operand recipe representation.");
   return {kind:"select",effects:selectionEffects.notation,model,body:node,start:node.start,end:node.end};
 }

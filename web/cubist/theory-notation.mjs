@@ -2,6 +2,7 @@
 // representation. Consumers supply the carrier test in their own interface.
 const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
 export const notationKey=notation=>notation.numeral?"numeral":notation.unary?"unary -":notation.operator;
+export const notationViews=notation=>Object.freeze({left:notation.leftView??null,right:notation.rightView??null});
 
 export function validateFieldNotation(item,{theory:T,isCarrier}) {
   if(!item.notation)return null;
@@ -26,5 +27,5 @@ export function validateFieldNotation(item,{theory:T,isCarrier}) {
       if(!view&&!isCarrier(k))
         throw located(Error(`The notation of ${item.name.text} reads ${token.text} in the notation selected where it is used, which is ${T}'s; ${token.text} is no carrier's element: name the notation it is read in, as ${token.text===left?.text&&!unary?`nat.(${token.text}) ^ y`:`x ^ nat.(${token.text})`}.`),token);
   }
-  return notationKey(item.notation);
+  return Object.freeze({key:notationKey(item.notation),views:notationViews(item.notation)});
 }

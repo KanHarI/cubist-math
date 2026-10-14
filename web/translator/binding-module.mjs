@@ -10,13 +10,33 @@ import {DeclarationOwnership} from "./declarations.mjs";
 // A source context and its constructor inventory come from one explicit
 // identity-to-value correspondence. The lexical projection may include
 // aliases or accepted scratch bindings; it never consults a destination env.
-export function bindingInputs(table,values,{reserved=[],lexical=null}={}) {
+export function bindingInputs(table,values,{reserved=[],lexical=null,notations=null}={}) {
   const adapter=new BindingAdapter(table,{reserved});
   const entries=lexical??[...values].map(([id])=>[table.get(id).label,bindingResolution(id)]);
-  const context=new LexicalContext([...reserved.map(label=>[label,reservedResolution(label)]),...entries]);
+  let context=new LexicalContext([...reserved.map(label=>[label,reservedResolution(label)]),...entries]);
+  if(notations!==null)context=context.withNotations(notations);
   const constructors=[...values].filter(([,value])=>value?.tag==="InductiveConstructor").map(([id,value])=>
     ({id,label:table.get(id).label,nullary:!value.arity&&!value.dims}));
   return {adapter,context,constructors,env:new Map([...values].map(([id,value])=>[adapter.key(id),value]))};
+}
+
+// Source entry has the complete ordered environment, including its separate
+// notation namespace. A term-only identity map cannot establish the absence
+// of a named notation. Later lexical binders preserve this inventory while
+// the selector checks whether a model extension still names that model.
+export function sourceBindingInputs(registry,env,{reserved=[]}={}) {
+  const values=new Map(),lexical=[],notations=[];
+  for(const [label,value] of env) {
+    if(label.startsWith("\u0000notation ")&&value?.tag==="Notation") {
+      const model=value.model?registry.ofValue(value.model):null;
+      if(value.model&&!model)throw new TypeError("A model's notation needs its declaration identity.");
+      notations.push({name:label.slice("\u0000notation ".length),model:model?bindingResolution(model.id):null});
+    } else if(!label.startsWith("\u0000")) {
+      const binding=registry.ofValue(value);
+      if(binding){values.set(binding.id,value);lexical.push([label,bindingResolution(binding.id)]);}
+    }
+  }
+  return bindingInputs(registry.table,values,{reserved,lexical,notations});
 }
 
 export function resolveBindingModule(ast,text,{table,source,imports=new Map()}) {
