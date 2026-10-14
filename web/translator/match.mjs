@@ -22,7 +22,7 @@ import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
 import {lowerBindingReferences} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
-import {clauseTelescope} from "../cubist/telescopes.mjs";
+import {clauseTelescope,bindClauseName} from "../cubist/telescopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
@@ -430,6 +430,10 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   if (source.coordinates.length !== constructor.dims)
     throw locate(Error(constructor.dims ? `${name} is a path constructor: name its ${constructor.dims} dimension${constructor.dims === 1 ? "" : "s"} after its arguments, as in ${spelled}.`
       : `${name} has no dimensions to name.`));
+  const telescope=clauseTelescope(source,{args,hypotheses});
+  let bound=new Set();
+  for(const group of telescope)if(group.distinct)
+    for(const token of group.tokens)bound=bindClauseName(bound,token,locate);
   let type = clauseType, inner = scope.withSlotOutcomes(decidePatternSlot(scope.slotOutcomes,source.constructor,"constructor"));
   const binders = [], results = new Map();
   // The declaration's own name first, so that an argument or a dimension of
@@ -439,31 +443,44 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
     const current = { ...recursion, results };
     inner = withRecursion(inner,current);
   }
-  const bind = (token, stem) => {
+  const bind = (token, recursiveOf=null) => {
     if (type?.tag !== "Pi") throw locate(Error(`The clause type of ${name} has fewer arguments than expected.`));
+    // Derive core names here from source tokens, never from caller-supplied
+    // key strings. Unwritten hypotheses use their field's public stem.
+    const stem=token?token.stem??bindingStem(token):`${bindingStem(recursiveOf)}_rec`;
     const variable = inner.fresh(stem), domain = type.domain;
-    inner = token ? translator.sourceBinding(token, T.variable(variable), inner.bind(variable, domain)) : inner.bind(variable, domain);
+    inner = inner.bind(variable, domain);
     type = substituteTerm(type.body, type.name, T.variable(variable));
     binders.push([variable, domain]);
     return variable;
   };
   // The data and positions, in the kernel's order: data first.
   const positions = [],lines=[];
-  for(const group of clauseTelescope(source,{args,hypotheses})) {
-    if(group.field==="args")constructor.order.forEach((sourceIndex, kernelIndex) => {
-      // A position's arity, the arguments it takes before its cube, and its
-      // cube's depth: 0 for an element, 1 for a path, and so on.
-      let arity = 0, depth = 0, t = type?.domain;
-      for (; t?.tag === "Pi"; t = t.body) arity++;
-      for (; t?.tag === "Path"; t = t.family) depth++;
-      const token = group.tokens[sourceIndex], variable = bind(token, bindingStem(token));
-      if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
-    });
+  for(const group of telescope) {
+    if(group.field==="args") {
+      const variables=[];
+      constructor.order.forEach((sourceIndex, kernelIndex) => {
+        // A position's arity, the arguments it takes before its cube, and its
+        // cube's depth: 0 for an element, 1 for a path, and so on.
+        let arity = 0, depth = 0, t = type?.domain;
+        for (; t?.tag === "Pi"; t = t.body) arity++;
+        for (; t?.tag === "Path"; t = t.family) depth++;
+        const token = group.tokens[sourceIndex], variable = bind(token);
+        variables[sourceIndex]=variable;
+        if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
+      });
+      // Core domains follow kernel field order; lexical entries follow the
+      // shared source telescope after those domains have been instantiated.
+      group.tokens.forEach((token,k)=>{inner=translator.sourceBinding(token,T.variable(variables[k]),inner);});
+    }
     // Each position's recursive result, named by its induction hypothesis
     // when the clause gives one.
-    if(group.field==="hypotheses")for (const [k, { variable, token, arity, depth }] of positions.entries())
-      results.set(variable, { result: bind(group.tokens[k] ? { ...group.tokens[k], role: "induction hypothesis" } : null,
-        group.tokens[k]?.text ?? `${token.text}_rec`), arity, depth });
+    if(group.field==="hypotheses")for (const [k, { variable, token, arity, depth }] of positions.entries()) {
+      const hypothesis=group.tokens[k]?{...group.tokens[k],role:"induction hypothesis"}:null;
+      const result=bind(hypothesis,token);
+      if(hypothesis)inner=translator.sourceBinding(hypothesis,T.variable(result),inner);
+      results.set(variable,{result,arity,depth});
+    }
     // The dimensions, each a path of the result.
     if(group.field==="coordinates")for (const token of group.tokens) {
       if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);

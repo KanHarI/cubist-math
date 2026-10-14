@@ -12,7 +12,7 @@ import {sourceOrigin} from "../web/cubist/bindings.mjs";
 import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const module=await create();
-const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); }";
+const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); }";
 
 // Exercise complete ordinary declarations through the real translator's
 // admission path. This pilot prepares the explicitly migrated family only;
@@ -161,4 +161,33 @@ def length_value : Nat := len2(Two, cons(left_, cons(right_, nil)));
   assert.deepEqual(nominal.gaps,[]);
   const translator=new Translator({checker:program.checker}),scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
   assert.equal(scope.equal(program.modules.get("main").get("shadow_value"),translator.term(parse("zero",true),scope)),true);
+});
+
+test("clause variables are distinct by public label in direct and compiled paths",async t=>{
+  const source=`
+def duplicate_tree(t : Tree) : Nat := induction t return Nat { leaf => zero; node(x, x, r) with a, b => x; };
+def duplicate_match(t : Tree) : Nat := match t { leaf => zero; node(x, x, r) => zero; };
+def duplicate_dimension(t : Loopy) : Unit := match t { base => tt; loop(y) @ y => tt; };
+def duplicate_compiled_dimension(t : Loopy, u : Unit) : Unit := match t, u { base, _ => tt; loop(y) @ y, _ => tt; };
+def pick(t : Tree) : Nat := induction t return Nat { leaf => zero; node(l, d, r) with a, b => d; };
+def picked : Nat := pick(node(leaf, succ(zero), leaf));
+def hypothesis(n : Nat) : Nat := induction n return Nat { zero => zero; succ(k) with h => h; };
+`;
+  const program=new CubicalProgram(module,async()=>base);t.after(()=>program.dispose());
+  const nominal=await program.check(`import base; ${source}`,"main");
+  assert.deepEqual(nominal.gaps.map(gap=>gap.name),["duplicate_tree","duplicate_match","duplicate_dimension","duplicate_compiled_dimension"]);
+  for(const gap of nominal.gaps)assert.match(gap.reason,/^[xy] is bound twice in this clause/);
+  for(const clone of [false,true]) {
+    const {result,program,translator}=await prepared(t,source,{clone});
+    const failures=result.declarations.filter(d=>d.status!=="checked-native-cubical");
+    assert.deepEqual(failures.map(d=>d.name),nominal.gaps.map(gap=>gap.name));
+    for(const failure of failures)assert.match(failure.reason,/^[xy] is bound twice in this clause/);
+    const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+    assert.equal(scope.equal(result.env.get("picked"),translator.term(parse("succ(zero)",true),scope)),true);
+    const term=result.declarations.find(d=>d.name==="hypothesis").term;
+    assert.doesNotMatch(JSON.stringify(term),/\\u0000id/);
+    const shown=program.checker.displayText(term,1000);
+    assert.match(shown,/with h/);
+    assert.doesNotMatch(shown,/id \[/);
+  }
 });

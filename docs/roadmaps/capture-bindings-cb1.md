@@ -28,6 +28,12 @@ binder derives its key from its identity. Structural recursive-call checks
 lower the decided slots before inspecting their arguments.
 Resolution and native clause elaboration share a telescope ordered as fields,
 induction hypotheses and dimensions, including their shadowing behavior.
+The telescope also owns clause distinctness: fields and dimensions cannot
+repeat a public label, while hypotheses may shadow fields. Deferred patterns
+apply this rule when their variable/constructor roles are decided. Native
+argument construction follows kernel field order; lexical entries are then
+introduced in source order. Binder introduction derives core-name stems from
+public tokens, including written and implicit induction hypotheses.
 Covering patterns construct values from the matched constructor table;
 the compact Nat induction form infers that table from its scrutinee.
 
@@ -119,7 +125,7 @@ native handle; WASM and the Node process are shared, without explicit JIT
 warm-up. Process memory is measured around checks after GC and before JSON
 serialization or queries. These are observations, not performance budgets.
 
-After the round-2 corrections in this commit, Node v24.13.0:
+At `ff7d1b79` (the round-2 corrections), Node v24.13.0:
 
 | Measurement | Collection off | Collection on |
 | --- | ---: | ---: |
@@ -175,3 +181,9 @@ The final full run passed 980 tests with 51 remaining TODOs and one corpus
 timeout. The unchanged corpus test then passed alone under the same limits,
 checking all 3,857 declarations in 20 seconds. The standalone pilot passed
 after those checks and supplies the measurements above.
+
+Round 3 found an argument-order-dependent duplicate-label ambiguity and a
+private-key leak in hypothesis core names. The shared clause policy and
+token-based binder introduction above address both. The focused run passed
+66 tests; the subsequent full run passed 982 tests with 51 existing TODOs
+and zero failures, including all 3,857 canonical corpus declarations.

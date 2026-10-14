@@ -20,6 +20,7 @@
 import {RECURSIVE,withRecursion} from "./match.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
 import {T} from "./core.mjs";
+import {bindClauseName} from "../cubist/telescopes.mjs";
 
 // A head of the parser with neither arguments, coordinates nor binders.
 const bare = head => !head.args && !head.coordinates?.length && !head.binders?.length;
@@ -133,11 +134,7 @@ function compile(t, scope, columns, rows, context) {
   });
   // A clause names each variable once. A name is a variable only once its
   // type has decided it is no constructor, so it is counted here.
-  const bindOnce = (row, token) => {
-    if (token.text === "_") return row;
-    if (row.bound.has(token.text)) throw locate(Error(`${token.text} is bound twice in this clause: name each variable once.`), token);
-    return { ...row, bound: new Set(row.bound).add(token.text) };
-  };
+  const bindOnce = (row, token) => ({...row,bound:bindClauseName(row.bound,token,locate)});
   // No constructor here: each variable names the value.
   if (resolved.every(({head}) => head.kind === "name"))
     return compile(t, scope, others, resolved.map(({row, head, rest}) => bindOnce({ ...row, patterns: rest,

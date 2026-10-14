@@ -23,15 +23,25 @@ export function parameterLambdas(params, body) {
 }
 
 // The native clause telescope introduces fields, recursive hypotheses and
-// then dimensions. Source resolution uses the same order, so later groups
-// shadow earlier ones identically before and after identity lowering.
+// then dimensions. Fields and dimensions name distinct variables; hypotheses
+// deliberately may shadow fields. Deferred patterns enforce distinctness
+// only when their types have decided which tokens introduce variables.
 export function clauseTelescope(clause,{args=clause.args??[],hypotheses=clause.hypotheses??[]}={}) {
   return [
-    {field:"args",tokens:args,role:"pattern"},
-    {field:"binders",tokens:clause.binders??[],role:"local"},
-    {field:"hypotheses",tokens:hypotheses,role:"local"},
-    {field:"coordinates",tokens:clause.coordinates??[],role:"dimension"},
+    {field:"args",tokens:args,role:"pattern",distinct:true},
+    {field:"binders",tokens:clause.binders??[],role:"local",distinct:true},
+    {field:"hypotheses",tokens:hypotheses,role:"local",distinct:false},
+    {field:"coordinates",tokens:clause.coordinates??[],role:"dimension",distinct:true},
   ];
+}
+
+// One clause-wide policy for direct and compiled clauses. A lowered key is
+// never a public variable name, and a constructor decision never calls this.
+export function bindClauseName(bound,token,locate=error=>error) {
+  const label=token.label??token.text;
+  if(label==="_")return bound;
+  if(bound.has(label))throw locate(Error(`${label} is bound twice in this clause: name each variable once.`),token);
+  return new Set(bound).add(label);
 }
 
 // The parser's inferred-declaration form repeats its header as lambdas and
