@@ -35,6 +35,7 @@ import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
+import {notationOperand} from "./model-notation.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
@@ -1269,9 +1270,8 @@ export class Translator {
           const selection=bound?found:null;
           if(!selection&&!["+","*","<=","<"].includes(n.operator))throw unselectedOperator(n.operator);
           // An operand with a recipe is read in its notation (L2.10b).
-          const recipe=selection?.recipes?.[n.operator]??{},operand=(node,view)=>view
-            ?{kind:"select",effects:selectionEffects.notation,model:{kind:"name",name:view,start:node.start,end:node.end},body:node,start:node.start,end:node.end}:node;
-          const left=operand(n.left,recipe.left),right=operand(n.right,recipe.right);
+          const recipe=selection?.recipes?.[n.operator]??{};
+          const left=notationOperand(this,scope,n.left,recipe.left),right=notationOperand(this,scope,n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
             const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
@@ -1313,7 +1313,7 @@ export class Translator {
         if(!selection||!selection.complete&&!selection.operators.has("unary -"))throw unselectedNegation();
         if(!selection.operators.has("unary -"))throw unboundNegation(selection);
         const view=selection.recipes?.["unary -"]?.left;
-        const operand=view?{kind:"select",effects:selectionEffects.notation,model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
+        const operand=notationOperand(this,scope,n.operand,view);
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
           const applied=appliedRule(scope,binding.rule,operand,null,n);

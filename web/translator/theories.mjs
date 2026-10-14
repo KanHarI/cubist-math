@@ -11,6 +11,7 @@ import {rewritten,selectionEffects,fileSelectionEffects} from "../cubist/scopes.
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
+import {modelNotations,modelOperandRecipes} from "./model-notation.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -135,18 +136,18 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   // All projections share this activation's checked receiver. Reading one
   // selected field must not elaborate the source receiver again.
   const value={kind:"instantiated",value:receiver,args:[],...at};
-  const notationFields=new Set(Object.values(record.notations));
-  const values=new Map([...record.fields,...record.derived??[]].filter(field=>effects.labels||effects.notation&&notationFields.has(field.name)).map(field=>{
+  const notations=modelNotations(record),notationFields=new Set(notations.values());
+  const values=new Map([...record.fields,...record.derived??[]].filter(field=>effects.labels||effects.notation&&notationFields.has(field)).map(field=>{
     const key=field.projectionId?t.identityAdapter.key(field.projectionId):field.reference;
     const unavailable=key&&scope.env.get(key);
     // A refused optional operation is still a refused dependency when named;
     // opening the model must not eagerly call it and hide the checked fields.
-    return [field.name,unavailable?.tag==="Untranslated"?unavailable
+    return [field,unavailable?.tag==="Untranslated"?unavailable
       :t.term(scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[value],...at}),scope,null)];
   }));
   // All of them in scope with one copy of the names there.
-  const added=effects.labels?[...values]:[];
-  if(effects.notation)for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
+  const added=effects.labels?[...values].map(([field,value])=>[field.name,value]):[];
+  if(effects.notation)for(const [operator,field] of notations)added.push([operatorBinding(operator),values.get(field)]);
   // An ambiguous name or operator is refused where it is used.
   if(effects.labels)for(const field of Object.keys(record.ambiguous??{}))
     added.push([field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message}]);
@@ -157,7 +158,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   // whose natural number is built from that operation's own Nat. A refused
   // operation keeps the rule, which reads the operation alone: a numeral
   // reports that failed dependency.
-  const operation=record.notations.numeral?values.get(record.notations.numeral):null;
+  const operation=values.get(notations.get("numeral"));
   const reads={kind:"name",name:operatorBinding("numeral"),...at};
   const numeral=!operation?null:operation.tag==="Untranslated"?{left:"n",right:null,recipe:{},aliases:new Map(),value:reads}
     :{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
@@ -166,8 +167,8 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).
-  if(effects.notation)added.push([SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
-    operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])}]);
+  if(effects.notation)added.push([SELECTION,{name:node.name??"this model",recipes:modelOperandRecipes(t,scope,receiver,record),complete,numeral,literal:null,
+    operators:new Set([...notations.keys(),...Object.keys(record.ambiguousNotations??{})])}]);
   let inner=scope.aliases(added);
   if(activation) {
     const members=new Map(effects.labels?[...record.fields,...record.derived??[]].map(field=>{
@@ -351,14 +352,14 @@ export function qualifiedOperator(t,scope,n) {
   }
   const record=recordOf(t,scope,t.term(n.model,scope,null));
   if(!record)throw scope.unit.locate(Error(`${spelling}.(${n.operator}) takes a model of a theory; ${spelling} is not one.`),n.model);
-  const field=record.notations[n.operator];
+  const field=modelNotations(record).get(n.operator);
   if(!field) {
     const list=record.ambiguousNotations?.[n.operator];
     throw scope.unit.locate(Error(list
       ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`${spelling}.${e.label}.(${n.operator})`).join(" or ")}.`
       :`${record.name} binds no operation to ${n.operator}.`),at);
   }
-  return {kind:"member",value:n.model,field:{text:field,...at},dot:at,start:n.start,end:n.end};
+  return scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[n.model],start:n.start,end:n.end});
 }
 
 // The declarations a theory expands to, checked in its place; its record

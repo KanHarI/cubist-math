@@ -10,6 +10,7 @@ import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped,rewritten} from "./scopes.mjs";
 import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
+import {retainFieldNotation} from "./retained-notation.mjs";
 
 const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
 const reference=token=>({kind:"bindingReference",resolution:bindingResolution(token.bindingId),
@@ -45,8 +46,8 @@ function familyEvidence(syntax,families) {
 
 export function retainTheorySource(theory,options,{proposition=()=>false,lookup=()=>null}={}) {
   if(theory.kind!=="theory")throw new TypeError("Theory retention requires a parsed theory declaration.");
-  if(theory.uses?.length||theory.fields.some(field=>field.notation))
-    throw new TypeError("Retained theory selections and notation have not migrated.");
+  if(theory.uses?.length)
+    throw new TypeError("Retained theory source selections must be activated before retention.");
   const T=theory.name.text,interfaces=new RetainedInterfaces(options),taken=new Set(allNames(theory));
   const origin=sourceOrigin({...options.source,start:theory.name.start,end:theory.name.end});
   const generatedUniverse=!theory.universes.length;
@@ -66,7 +67,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   }
   const header=interfaces.parameters(theory.name,params,{fixedReferences:new Map(params.filter(p=>p.bound)
     .map(p=>[p.bound,reservedResolution("UU0")]))}),families=new Map(),fields=[],derived=[];
-  const byName=new Map(),byIdentity=new Map();
+  const byName=new Map(),byIdentity=new Map(),notationBindings={};
   const admit=(entry,metadata={})=>{
     if(byName.has(entry.label))throw located(Error(`${T} has two fields named ${entry.label}: give each its own name.`),entry.binding.origin);
     if(entry.kind!=="derived"&&headerNames.has(entry.label))
@@ -94,7 +95,8 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     });
     const self=item.kind==="derived"&&freeNames(item.value,new Set(item.params.map(p=>p.name.text))).has(item.name.text);
     let entry;
-    try {entry=interfaces.retain(item,{self,transform:syntax=>familyEvidence(syntax,families)});}
+    const {notation,...plain}=item;
+    try {entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families)});}
     catch(error) {
       if(error instanceof UnknownNamespaceMember)
         throw located(Error(`${error.description}, ${T}'s parent ${error.namespace}, has no field ${error.member}.`),error.at??item);
@@ -103,6 +105,13 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);
+    const retainedNotation=retainFieldNotation(item,entry,fields,{...options,theory:T});
+    if(retainedNotation) {
+      const previous=notationBindings[retainedNotation.key];
+      if(previous&&previous.field!==entry.id)
+        throw located(Error(`${retainedNotation.key} would stand for both ${options.table.get(previous.field).label} and ${entry.label} in ${T}: a notation means one operation; rename one's notation.`),notation);
+      notationBindings[retainedNotation.key]=retainedNotation;
+    }
     if(item.kind==="derived")continue;
     if(full.visible)families.set(entry.id,full);
     const helpers=new HelperExpansion(interfaces.entries,{table:options.table,owner:[...options.owner,"validate",String(fields.length)]});
@@ -127,7 +136,9 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   if(!fields.length)throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`),theory.name);
   for(const parent of parents)if(byName.has(parent.label))
     throw located(Error(`${T}'s parent ${parent.theory} is labelled ${parent.label}, which names a field of ${T} too: label it apart, as in base : ${parent.theory}.`),theory.name);
-  return {name:T,origin,bindingSyntax:header,entries:interfaces.entries.map(entry=>byName.get(entry.label)),fields,derived,parents,notations:{},
+  return {name:T,origin,bindingSyntax:header,entries:interfaces.entries.map(entry=>byName.get(entry.label)),fields,derived,parents,
+    notationBindings:Object.freeze(notationBindings),
+    notations:Object.fromEntries(Object.entries(notationBindings).map(([key,value])=>[key,options.table.get(value.field).label])),
     ambiguous:Object.fromEntries(ambiguous),
     ...(generatedUniverse?{generatedUniverse:true}:{})};
 }

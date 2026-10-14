@@ -67,10 +67,14 @@ export function lowerBindingDeclaration(declaration,table) {
     throw new TypeError("Invalid retained declaration entry.");
   table.get(tree.name.bindingId);
   const syntax={...bindings,tree};
+  const adapter=bindingSyntaxAdapter(syntax,table);
+  return {adapter,declaration:{...lowerBindingSyntax(syntax,adapter),
+    ...(theory?{theory}:{}),...(generated?{generated}:{})}};
+}
+
+export function bindingSyntaxAdapter(syntax,table) {
   const reserved=bindingUses(syntax,{conditional:true}).filter(use=>use.kind==="reserved").map(use=>use.label);
   const allowed=new Set(reservedReferences(reserved.join(" ")));
   for(const label of reserved)if(!allowed.has(label))throw new TypeError(`A late lookup is not allowed: ${label}`);
-  const adapter=new BindingAdapter(table,{reserved});
-  return {adapter,declaration:{...lowerBindingSyntax(syntax,adapter),
-    ...(theory?{theory}:{}),...(generated?{generated}:{})}};
+  return new BindingAdapter(table,{reserved});
 }

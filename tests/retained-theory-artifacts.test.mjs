@@ -16,10 +16,11 @@ import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 import {LexicalContext,bindingResolution} from "../web/cubist/bindings.mjs";
 
 const module=await create();
-async function setup(t,header="def T(U < UU0) : Unit := tt;") {
+async function setup(t,header="def T(U < UU0) : Unit := tt;",base="") {
   const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
   assert.deepEqual((await program.check(`inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); }
-    def Index : U0 := Two; def IsSet(U < UU0, A : U) : U := forall x, y : A. forall p, q : x = y. p = q;`,"base")).gaps,[]);
+    def Index : U0 := Two; def IsSet(U < UU0, A : U) : U := forall x, y : A. forall p, q : x = y. p = q;
+    ${base}`,"base")).gaps,[]);
   const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base"),values=new Map();
   for(const [label,value] of env)if(/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) {
     const binding=registry.ofValue(value);if(binding)values.set(binding.id,value);
@@ -523,4 +524,59 @@ test("universe and term header correspondence preserve anonymous positions indep
   assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
   assert.equal(equal("value","fun (h : IsSet(U0, Two)) => right_"),true);
   assert.equal(equal("value","fun (h : IsSet(U0, Two)) => left_"),false);
+});
+
+const operandModels=`
+  theory Numerals(U < UU0) {
+    M : U; one : Nat; ghost : Nat; read(n : Nat) : M;
+    def numeral_(n : Nat) : M := read(n) notation numeral;
+  }
+  def recipe : Numerals(U0) := Numerals.make(Nat, succ(zero), succ(zero), fun (n : Nat) => n);
+  def shifted : Numerals(U0) := Numerals.make(Nat, succ(zero), succ(zero), fun (n : Nat) => succ(n));
+  def original : Numerals(U0) := recipe;
+`;
+
+test("retained operand recipes keep declaration receivers and caller operand bindings",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const built=buildSource(`theory Power(U < UU0) {
+    M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+  }`);
+  const snapshot=JSON.stringify(built.record);
+  assert.doesNotThrow(()=>snapshotSyntax(built.declarations));
+  const {result,equal}=check(built,`
+    def chosen : Power(U0) := Power.make(Nat, fun (x, n : Nat) => n);
+    def value(recipe : Numerals(U0)) : Nat := chosen.(zero ^ 0);
+    def local_operand(one : Nat) : Nat := chosen.(zero ^ one);
+    def intended : value(shifted) = zero := refl(zero);
+    def wrong : value(shifted) = succ(zero) := refl(succ(zero));
+    def unbound : Nat := chosen.(zero ^ ghost);
+  `,"def recipe : Numerals(U0) := shifted;");
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong","unbound"],JSON.stringify(failures(result)));
+  assert.equal(equal("value","fun (recipe : Numerals(U0)) => zero"),true);
+  assert.equal(equal("local_operand","fun (one : Nat) => one"),true);
+  assert.equal(JSON.stringify(built.record),snapshot,"opening instantiates recipes without changing their canonical source");
+});
+
+test("retained operand recipes instantiate the selected model's header and field identities",async t=>{
+  for(const location of ["header","field"] )await t.test(location,async t=>{
+    const {buildSource,check}=await setup(t,undefined,operandModels);
+    const header=location==="header"?", recipe : Numerals(U0)":"";
+    const field=location==="field"?"recipe : Numerals(U0);":"";
+    const built=buildSource(`theory Power(U < UU0${header}) {
+      ${field} M : U; pow(recipe : M, n : Nat) : M notation recipe ^ recipe.(n);
+    }`);
+    const model=arg=>location==="header"?`Power(U0, ${arg})`:"Power(U0)";
+    const {result,equal}=check(built,`
+      def plain : ${model("original")} := Power.make(original, Nat, fun (x, n : Nat) => n);
+      def raised : ${model("shifted")} := Power.make(shifted, Nat, fun (x, n : Nat) => n);
+      def plain_value(recipe : Numerals(U0)) : Nat := plain.(zero ^ 0);
+      def raised_value(recipe : Numerals(U0)) : Nat := raised.(zero ^ 0);
+      def intended : plain_value(shifted) = zero := refl(zero);
+      def shifted_value : raised_value(original) = succ(zero) := refl(succ(zero));
+      def wrong : raised_value(original) = zero := refl(zero);
+    `);
+    assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+    assert.equal(equal("plain_value","fun (recipe : Numerals(U0)) => zero"),true);
+    assert.equal(equal("raised_value","fun (recipe : Numerals(U0)) => succ(zero)"),true);
+  });
 });
