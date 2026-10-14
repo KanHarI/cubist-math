@@ -119,7 +119,7 @@ try {
       assert.equal(await page.locator("#inspect-name").textContent(), name);
       assert.equal(await page.locator("#diagnostic").isVisible(), false);
       if (name === "russell") {
-        assert.match(await page.locator("#inspect-type").textContent(), /IsUSmall\(U0, U0\).*Void/);
+        assert.match(await page.locator("#inspect-type").textContent(), /exists X : U0\. ContrEquiv\(U1, X, U0\).*Void/s);
       } else {
         assert.equal(await page.locator("#inspect-type").textContent(), "Void");
         assert.match(await page.locator("#inspect-parameters-list").textContent(), /covers.*ContrEquiv/s);
