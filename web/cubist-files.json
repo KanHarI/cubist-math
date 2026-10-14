@@ -2448,7 +2448,7 @@
   },
   {
    "path": "library/universe_smallness.cubist",
-   "summary": "Russell's paradox via well-founded trees: no family `B : A -> U` with `A : U` represents every type in `U` up to equivalence (`no_small_universe_family`). Consequently `IsUSmall(U, U)` implies `Void` (`universe_not_small`), with equality taken in `next(U)`; `russell` specializes this to `U0`. Works in every universe below `UU0`, without univalence."
+   "summary": "Russell's paradox via well-founded trees: no family `B : A -> U` with `A : U` represents every type in `U` up to equivalence (`no_small_universe_family`). Consequently `IsUSmall(U, U)` implies `Void` (`universe_not_small`), with equality taken in `next(U)`, and no type `X : U` is equivalent to `U` (`universe_not_equivalent_to_type`); `russell` states the latter for `U0`. Works in every universe below `UU0`, without univalence."
   }
  ]
 }
