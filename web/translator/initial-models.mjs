@@ -11,7 +11,7 @@ import {repeatedName} from "./names.mjs";
 import {T as Term} from "./core.mjs";
 import {reference} from "../cubist/references.mjs";
 import {DependencyAnalysis} from "../cubist/dependencies.mjs";
-import {bindingSyntaxView,bindingUses} from "../cubist/binding-syntax.mjs";
+import {bindingSyntaxView,bindingUses,unresolvedBindingUse} from "../cubist/binding-syntax.mjs";
 
 // This strategy shares exact dependency facts with Hom planning, not its
 // admissibility predicate. A constructor argument is a carrier value or a
@@ -22,7 +22,7 @@ export function equationalSupport(record) {
   const reference=node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null;
   const analysis=new DependencyAnalysis([...record.fields,...record.derived??[]]);
   const pending=record.fields.flatMap(field=>bindingUses(view(field.type))
-    .filter(use=>["missing","deferred","deferred-pattern"].includes(use.kind)).map(use=>({field:field.id,...use})));
+    .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
   if(pending.length)return {status:"pending",strategy:"equational",obligations:pending};
   const origin=record.fields[0]?.binding?.origin;
   const refuse=(error,at=origin,detail={})=>({status:"unsupported",strategy:"equational",reason:error.message,at,...detail});
@@ -68,7 +68,8 @@ export function equationalSupport(record) {
     mapping.push({id:field.id,kind:field.kind,arguments:args,body});
   }
   return {status:"conditional",strategy:"equational",mapping:{carrier:carrier.id,evidence:evidence.id,constructors:mapping},
-    obligations:["checked retained interfaces","constructor universes","positive constructor domains","law boundaries","model","fold map","fold preservation"]};
+    obligations:["interfaces","universes","positivity","boundaries","model","fold","preservation"]
+      .map(kind=>({kind,strategy:"equational",theory:record.name}))};
 }
 
 // The declarations an initial or free model expands to, checked in its

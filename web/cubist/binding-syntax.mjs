@@ -80,7 +80,8 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
       if(node.kind==="binary"&&(node.qualifier||!["=","->","and","or","++","&","|"].includes(node.operator)))
         throw new TypeError("Binding syntax family has not migrated: notation operator");
-      if (node.kind !== "name" || node.name === "_") return node;
+      if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
+      if (node.kind !== "name") return node;
       const {value, fields} = at.qualified(node.name);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));
@@ -140,6 +141,7 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
   const visit=(tree,conditions=[])=>scopeMapped(tree,{
     deferred:true,
     enter(node) {
+      if(node.kind==="name"&&node.name==="_")uses.push({kind:"hole",origin:node.origin});
       if(node.kind!=="bindingReference")return node;
       const selected=outcomes.resolve(node.resolution);
       if(selected.tag==="binding") {
@@ -175,6 +177,10 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
   visit(syntax.tree);
   return uses;
 }
+
+// Every unresolved interpretation is an obligation, including inferred
+// holes. Only an exact ID or an explicit reserved reference is decided.
+export const unresolvedBindingUse=use=>!["binding","reserved"].includes(use.kind);
 
 // Structural equality for retained interfaces, up to their local binders
 // and an explicit correspondence of external fields/parameters. Public

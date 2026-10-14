@@ -54,6 +54,19 @@ test("morphism planning returns pending interpretations instead of treating them
   assert.equal(result.missing,undefined,"an unresolved interpretation is not a support refusal");
 });
 
+test("both support strategies retain inferred type holes as pending obligations",()=>{
+  const {retain,field,record}=setup();
+  const carrier=retain("def M : U := Unit;","sort");field(carrier);
+  field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
+  const operation=retain("def op(x : _) : M := tt;");field(operation);
+  const retained=record(),hom=morphismSource(retained),equational=equationalSupport(retained);
+  for(const support of [hom.support,hom.isoSupport,equational]) {
+    assert.equal(support.status,"pending");
+    assert.ok(support.obligations.some(use=>use.kind==="hole"&&use.field===operation.id));
+  }
+  assert.equal(hom.declarations,undefined);
+});
+
 test("Hom transport support follows proof identities and records its dependency",()=>{
   const {retain,field,record}=setup();
   const carrier=retain("def M : U := Unit;","sort");field(carrier);

@@ -41,7 +41,7 @@
 // every binding form (scopes.mjs).
 import { freeNames, allNames, renamedFree, freshName } from "./scopes.mjs";
 import { reservedNames } from "./parser.mjs";
-import {bindingSyntaxView,bindingUses} from "./binding-syntax.mjs";
+import {bindingSyntaxView,bindingUses,unresolvedBindingUse} from "./binding-syntax.mjs";
 import {DependencyAnalysis} from "./dependencies.mjs";
 
 // The old record entry remains explicit until theory retention is migrated.
@@ -199,10 +199,12 @@ export function morphismSource(record, isTheory = () => false) {
   const origin=record.fields[0]?.binding?.origin;
   result.support=result.pending?{status:"pending",obligations:result.pending}
     :result.missing?{status:"unsupported",reason:result.missing,at:result.refusal?.at??origin,...result.refusal}
-      :{status:"conditional",mapping:result.mapping,obligations:["checked retained interfaces","generated telescope universes","preservation","identity","composition"]};
+      :{status:"conditional",mapping:result.mapping,obligations:["interfaces","universes","preservation","identity","composition"]
+        .map(kind=>({kind,family:`${record.name}.Hom`}))};
   result.isoSupport=result.pending||result.missing?result.support
     :result.missingIso?{status:"unsupported",reason:result.missingIso,at:origin}
-      :{status:"conditional",mapping:result.mapping,obligations:["checked Hom family","inverse","inverse identities","inverse composition"]};
+      :{status:"conditional",mapping:result.mapping,obligations:["Hom","inverse","identity","composition"]
+        .map(kind=>({kind,family:`${record.name}.Iso`}))};
   return result;
 }
 
@@ -212,7 +214,7 @@ function planMorphisms(record,isTheory) {
   const dependencies=record.bindingSyntax?new DependencyAnalysis([...record.fields,...record.derived??[]]):null;
   if(record.bindingSyntax) {
     const pending=record.fields.flatMap(field=>bindingUses(bindingSyntaxView(record.bindingSyntax,field.type))
-      .filter(use=>["missing","deferred","deferred-pattern"].includes(use.kind)).map(use=>({field:field.id,...use})));
+      .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
     if(pending.length)return {pending};
   }
   // The source's models, A, B and C, and homomorphisms, f and g. A theory's

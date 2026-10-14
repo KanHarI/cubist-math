@@ -2,7 +2,7 @@
 // their references and freshens local identities; it does not reinterpret a
 // label at the use site. Keep applications intact for the checker, including
 // unused arguments whose domains must still be checked.
-import {bindingSyntaxView,substituteBindingSyntax} from "./binding-syntax.mjs";
+import {bindingSyntaxView,substituteBindingSyntax,unresolvedBindingUse} from "./binding-syntax.mjs";
 import {parameterLambdas} from "./telescopes.mjs";
 import {DependencyAnalysis} from "./dependencies.mjs";
 import {interfaceSignature} from "./retained-interfaces.mjs";
@@ -92,6 +92,6 @@ export class HelperExpansion {
     // original interface. Both bare and applied recursive values are facts.
     const dependencies=this.analysis.dependencies(syntax);
     return {syntax,dependencies,recursive:dependencies.find(use=>use.category==="recursive-helper")??null,
-      pending:dependencies.filter(use=>use.kind==="deferred"||use.kind==="deferred-pattern")};
+      pending:dependencies.filter(unresolvedBindingUse)};
   }
 }

@@ -1,7 +1,7 @@
 // Retained interfaces supply already resolved occurrences. Display labels
 // are used in explanations only; an eventual field cannot retarget an
 // occurrence that resolved to an earlier parameter, helper or missing name.
-import {bindingUses} from "./binding-syntax.mjs";
+import {bindingUses,unresolvedBindingUse} from "./binding-syntax.mjs";
 
 const category=entry=>entry.kind==="sort"?"carrier"
   :entry.kind==="derived"?entry.recursive?"recursive-helper":"helper":entry.kind;
@@ -58,7 +58,7 @@ export class DependencyAnalysis {
         if(use.kind==="binding") {
           const dependency=this.byIdentity.get(use.id);
           if(dependency)visit(dependency);
-        } else if(use.kind==="deferred"||use.kind==="deferred-pattern")pending.push({owner:entry.id,...use});
+        } else if(unresolvedBindingUse(use))pending.push({owner:entry.id,...use});
       path.pop();visiting.delete(entry.id);done.add(entry.id);
     };
     for(const entry of this.byIdentity.values())visit(entry);
