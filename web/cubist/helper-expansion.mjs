@@ -5,7 +5,7 @@
 import {bindingSyntaxView,substituteBindingSyntax,unresolvedBindingUse} from "./binding-syntax.mjs";
 import {parameterLambdas} from "./telescopes.mjs";
 import {DependencyAnalysis} from "./dependencies.mjs";
-import {interfaceSignature} from "./retained-interfaces.mjs";
+import {interfaceSignature,interfaceType} from "./retained-interfaces.mjs";
 import {reservedResolution} from "./bindings.mjs";
 import {scopeMapped} from "./scopes.mjs";
 import {assignArguments} from "./call-arguments.mjs";
@@ -93,5 +93,36 @@ export class HelperExpansion {
     const dependencies=this.analysis.dependencies(syntax);
     return {syntax,dependencies,recursive:dependencies.find(use=>use.category==="recursive-helper")??null,
       pending:dependencies.filter(unresolvedBindingUse)};
+  }
+  // A support planner needs the beta-expanded shape; admission needs every
+  // application, domain and result annotation. The analysis view is valid
+  // only under the accompanying complete-interface checking obligation.
+  type(entry) {
+    const checking=this.expand(interfaceType(entry));
+    let index=0;
+    const view=tree=>bindingSyntaxView(checking,tree);
+    const normalize=tree=>scopeMapped(tree,{deferred:true,extend:at=>at,enter:node=>{
+      if(node.kind!=="call")return node;
+      let fn=normalize(node.fn),args=node.args.map(normalize);
+      if(fn.kind==="bindingReference"&&fn.resolution.tag==="reserved"&&fn.resolution.label==="typed"
+        &&args.length===2&&!node.implicitArgs)return args[1];
+      if(node.implicitArgs||args.some(arg=>arg.kind==="namedArgument"))return {...node,fn,args};
+      let reduced=false;
+      while(args.length&&(fn.kind==="lambda"||fn.kind==="binderGroup"&&fn.binderKind==="lambda")) {
+        // Shared domains belong outside all binders in the group. A
+        // partially applied group keeps its remaining telescope intact.
+        const names=fn.kind==="lambda"?[fn.name]:fn.names,count=Math.min(names.length,args.length);
+        if(names.some(name=>!name.bindingId))return {...node,fn,args};
+        const body=count===names.length?fn.body:{...fn,names:names.slice(count)};
+        const replacements=new Map(names.slice(0,count).map((name,k)=>[name.bindingId,view(args[k])]));
+        fn=normalize(substituteBindingSyntax(view(body),replacements,this.table,
+          [...this.owner,"analysis",String(this.#serial++),String(index++)]).tree);
+        args=args.slice(count);
+        reduced=true;
+      }
+      return args.length||!reduced?{...node,fn,args}:fn;
+    }},null);
+    return {checking,analysis:view(normalize(checking.tree)),
+      obligations:[{kind:"interface-check",entry:entry.id,origin:entry.binding.origin}]};
   }
 }

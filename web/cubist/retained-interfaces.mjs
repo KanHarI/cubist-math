@@ -50,6 +50,7 @@ export class RetainedInterfaces {
   }
   parameters(name,params) {
     if(this.header||this.entries.length)throw new TypeError("A retained header precedes its members and is resolved once.");
+    name={...name,origin:name.origin??sourceOrigin({...this.source,start:name.start,end:name.end})};
     const syntax=this.#resolve({kind:"def",name,params,type:null,value:null},[...this.owner,"header"]);
     for(const parameter of syntax.tree.params)if(parameter.name.bindingId)
       this.context=this.context.bind(parameter.name.text,bindingResolution(parameter.name.bindingId));

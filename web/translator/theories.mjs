@@ -66,10 +66,11 @@ export function modelField(t,scope,n) {
   if(!known&&record.ambiguous?.[field])throw ambiguousField(record,owner.name,field);
   if(!known)throw Error(`${owner.name} is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
     record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:projectionReference(known,n),args:[owner],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:projectionReference(t,known,n),args:[owner],start:n.start,end:n.end});
 }
 
-const projectionReference=(field,at)=>field.reference?syntaxReference(field.reference,field.projection,at)
+const projectionReference=(t,field,at)=>field.projectionId?syntaxReference(t.identityAdapter.key(field.projectionId),field.projection,at)
+  :field.reference?syntaxReference(field.reference,field.projection,at)
   :{...at,kind:"name",name:field.projection};
 
 // A field that two independent parents give under one name (L2.4c): the
@@ -107,7 +108,7 @@ export function memberField(t,scope,n) {
       record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`)
     : Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
       record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:projectionReference(known,{start:n.field.start,end:n.field.end}),args:[n.value],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:projectionReference(t,known,{start:n.field.start,end:n.field.end}),args:[n.value],start:n.start,end:n.end});
 }
 
 // The scope with the model `node` opened, or null when it is no model: each
@@ -118,11 +119,12 @@ export function opened(t,scope,node,{complete=true}={}) {
   if(!record)return null;
   const at={start:node.start,end:node.end};
   const values=new Map([...record.fields,...record.derived??[]].map(field=>{
-    const unavailable=field.reference&&scope.env.get(field.reference);
+    const key=field.projectionId?t.identityAdapter.key(field.projectionId):field.reference;
+    const unavailable=key&&scope.env.get(key);
     // A refused optional operation is still a refused dependency when named;
     // opening the model must not eagerly call it and hide the checked fields.
     return [field.name,unavailable?.tag==="Untranslated"?unavailable
-      :t.term(scope.declared({kind:"call",fn:projectionReference(field,at),args:[node],...at}),scope,null)];
+      :t.term(scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[node],...at}),scope,null)];
   }));
   // All of them in scope with one copy of the names there.
   const added=[...values];
