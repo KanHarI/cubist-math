@@ -168,7 +168,8 @@ export function rewritten(node, rewrite, bound = new Set()) {
 // regions. Neither this walker nor its clients rediscover binding forms.
 // `bind` returns a binder token; `extend` adds a group's mapped binders to
 // an immutable context. A replacement returned by `enter` is not entered.
-export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n => n, extend, deferred = false}, context) {
+export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n => n,
+  region = at => at, extend, deferred = false}, context) {
   const walk = (node, outer, replacements) => {
     if (!node || typeof node !== "object") return node;
     if (replacements.has(node)) return replacements.get(node);
@@ -198,7 +199,11 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
       if (!tokens.has(binder)) tokens.set(binder, bind(binder, node, scope, outer));
       return tokens.get(binder);
     })}));
-    const inside = predicate => regions.filter(predicate).reduce((at, scope) => extend(at, scope.binders, node, scope), outer);
+    // A declaration can supply a region-specific outer scope (structural
+    // self in its body, for example). Its ordinary telescope is then applied
+    // in the usual order, so parameters still shadow that outer binding.
+    const inside = (predicate,key) => regions.filter(predicate)
+      .reduce((at, scope) => extend(at, scope.binders, node, scope), region(outer,node,key));
     const copy = {};
     for (const [key, value] of Object.entries(node)) {
       if (captured(node, key)) {copy[key] = value; continue;}
@@ -216,7 +221,7 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
       }
       if (key === "params" && Array.isArray(value)) {
         copy[key] = parameterGroups(value).flatMap(({parameters,after,bound})=>{
-          const at=inside(scope=>scope.paramsAfter<=after-parameters.length);
+          const at=inside(scope=>scope.paramsAfter<=after-parameters.length,key);
           const field=bound?"bound":"type",first=parameters[0][field];
           if(parameters.some(param=>param[field]!==first&&syntaxValue(param[field])!==syntaxValue(first)))
             throw new TypeError("Grouped parameters must share one domain.");
@@ -228,7 +233,7 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
         });
         continue;
       }
-      copy[key] = walk(value, inside(scope => scope.keys.includes(key)), tokens);
+      copy[key] = walk(value, inside(scope => scope.keys.includes(key),key), tokens);
     }
     return copy;
   };

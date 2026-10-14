@@ -27,6 +27,19 @@ test("retained interfaces resolve complete grouped telescopes in source order",(
   assert.ok(analysis.dependencies(interfaceSignature(earlier)).every(use=>use.id!==later.id));
 });
 
+test("structural self is visible only in the body and remains shadowable by parameters",()=>{
+  const options=setup(),interfaces=new RetainedInterfaces(options);
+  const declarationHeader=declaration("def T(loop : U0) : Unit := tt;");
+  const header=interfaces.parameters(declarationHeader.name,declarationHeader.params);
+  const previous=header.tree.params[0].name.bindingId;
+  const recursive=interfaces.retain(declaration("def loop(x : loop) : loop := loop(x);"),{kind:"derived",self:true});
+  assert.equal(recursive.syntax.tree.params[0].type.resolution.id,previous);
+  assert.equal(recursive.syntax.tree.type.resolution.id,previous);
+  assert.equal(recursive.syntax.tree.body[0].value.fn.resolution.id,recursive.id);
+  const shadowed=interfaces.retain(declaration("def shadow(shadow : Unit) : Unit := shadow;"),{kind:"derived",self:true});
+  assert.equal(shadowed.syntax.tree.body[0].value.resolution.id,shadowed.syntax.tree.params[0].name.bindingId);
+});
+
 test("inherited complete interfaces freshen locals and map only explicit open identities",()=>{
   const options=setup(),parent=new RetainedInterfaces(options);
   const pHeader=declaration("def P(U < UU0) : Unit := tt;");

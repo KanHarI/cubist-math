@@ -31,8 +31,8 @@ export function resolveBindingModule(ast,text,{table,source,imports=new Map()}) 
       origin:sourceOrigin({...source,start:declaration.name.start,end:declaration.name.end})});
     const conflict=ownership.reserve([declaration],declaration);
     const own=declaration.params.length?declaration.params:declaration.valueParameters??[];
-    const at=recursionSite(declaration,own)?context.bind(label,bindingResolution(binding.id)):context;
-    const syntax=resolveBindingSyntax(declaration,{table,owner,context:at,constructors:inputs.constructors,source});
+    const self=recursionSite(declaration,own)?binding:null;
+    const syntax=resolveBindingSyntax(declaration,{table,owner,context,constructors:inputs.constructors,source,self});
     if(!conflict)context=context.bind(label,bindingResolution(binding.id));
     return {binding,syntax};
   });

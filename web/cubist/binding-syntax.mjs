@@ -23,7 +23,7 @@ const freeze = value => {
 const occurrence = (at, value, spelling, origin) => ({kind: "bindingReference", resolution: value, spelling, origin,
   start: at.start, end: at.end});
 
-export function resolveBindingSyntax(tree, {table, owner, context, source, constructors = []}) {
+export function resolveBindingSyntax(tree, {table, owner, context, source, constructors = [], self = null}) {
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
     if (typeof label !== "string" || typeof nullary !== "boolean") throw new TypeError("Invalid source constructor inventory.");
@@ -31,10 +31,18 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
   }));
   const canonical = tree.kind === "def" ? declarationTelescope(tree) : {tree, inferred: false};
   tree = canonical.tree;
+  const declaration=tree;
+  if(self) {
+    self=table.get(self.id);
+    if(tree.kind!=="def"||!["declaration","helper"].includes(self.role))
+      throw new TypeError("Structural self must be the identity of a retained declaration.");
+  }
   const owned = [];
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
   tree = scopeMapped(tree, {
     deferred: true,
+    region: (at,node,key) => self&&node===declaration&&["body","value"].includes(key)
+      ?at.bind(self.label,bindingResolution(self.id)):at,
     enter(node, at) {
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");

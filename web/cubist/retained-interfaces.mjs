@@ -18,8 +18,8 @@ export class RetainedInterfaces {
     Object.assign(this,{table,owner,context,source,constructors});
     this.entries=[];this.header=null;
   }
-  #resolve(tree,owner,context=this.context) {
-    return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors});
+  #resolve(tree,owner,{context=this.context,self=null}={}) {
+    return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors,self});
   }
   parameters(name,params) {
     if(this.header||this.entries.length)throw new TypeError("A retained header precedes its members and is resolved once.");
@@ -33,11 +33,11 @@ export class RetainedInterfaces {
     const owner=[...this.owner,"member",String(this.#next++)];
     const binding=this.table.allocate(owner,{role:kind==="derived"?"helper":"field",label:item.name.text,
       origin:item.name.origin??sourceOrigin({...this.source,start:item.name.start,end:item.name.end})});
-    const context=self?this.context.bind(binding.label,bindingResolution(binding.id)):this.context;
+    const context=this.context;
     const tree={kind:"def",name:item.name,params:item.params??[],type:item.type??null,
       ...(item.valueParameters?{valueParameters:item.valueParameters}:{}),
       ...(item.value===undefined?{}:{value:item.value}),...(item.body===undefined?{}:{body:item.body})};
-    const syntax=this.#resolve(tree,[...owner,"telescope"],context);
+    const syntax=this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null});
     const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive:self,lexical:context.snapshot(),
       ...(kind==="sort"?{level:item.level??null}:{})});
     this.entries.push(entry);

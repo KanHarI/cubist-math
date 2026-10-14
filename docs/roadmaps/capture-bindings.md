@@ -330,7 +330,11 @@ calls before they are instantiated.
 
 Classify references/calls as nonrecursive helpers, earlier checked recursive
 values, or the current definition's structural self-calls. Preserve the
-private recursion mechanism for the last case. Field types/laws keep E845
+private recursion mechanism for the last case. Structural self is in scope
+only in the body, beneath the declaration's parameters: a parameter may
+shadow self, and parameter domains and result types still read the earlier
+source context, including an imported type with the same public label.
+Field types/laws keep E845
 for unsupported recursive dependencies, including bare references and calls
 hidden inside helpers. Ordinary derived values still call checked earlier
 recursive operations. Point refusal at the written request, with the

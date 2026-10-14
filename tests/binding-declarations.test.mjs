@@ -12,7 +12,7 @@ import {sourceOrigin} from "../web/cubist/bindings.mjs";
 import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const module=await create();
-const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); }";
+const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); } def recurse_ : U0 := Unit;";
 
 // Exercise complete ordinary declarations through the real translator's
 // admission path. This pilot prepares the explicitly migrated family only;
@@ -41,6 +41,16 @@ async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const result=translator.translateSyntax(lowerBindingModule(prepared),source,env,{bindingAdapter:adapter});
   return {program,translator,result,points,table,artifacts,adapter};
 }
+
+test("recursive bodies do not replace an earlier same-named declaration in their signature",async t=>{
+  const source=`def recurse_(n : Nat, x : recurse_) : recurse_ := match n {
+    zero => x; succ(k) => recurse_(k, x);
+  }; def client : Unit := recurse_(succ(zero), tt);`;
+  const {program,translator,result}=await prepared(t,source);
+  assert.deepEqual(result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]),[]);
+  const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+  assert.equal(scope.equal(result.env.get("client"),translator.term(parse("tt",true),scope)),true);
+});
 
 test("complete ordinary modules preserve dependent telescopes, named labels, recursion and dimensions",async t=>{
   const source=`
