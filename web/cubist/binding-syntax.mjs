@@ -23,8 +23,20 @@ const freeze = value => {
 const occurrence = (at, value, spelling, origin) => ({kind: "bindingReference", resolution: value, spelling, origin,
   start: at.start, end: at.end});
 
-export function resolveBindingSyntax(tree, {table, owner, context, source, constructors = [], self = null,
-  evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)]))}) {
+export function resolveBindingSyntax(tree, options) {
+  return resolveBindings(tree,options);
+}
+
+// Transitional generated templates own their binders and explicit holes.
+// Resolve those binders once; a hole supplies already retained syntax using
+// an explicit interface map. Its contents never enter source resolution.
+export function resolveBindingTemplate(tree,options,splices) {
+  if(!(splices instanceof Map))throw new TypeError("A binding template needs explicit syntax splices.");
+  return resolveBindings(tree,options,splices);
+}
+
+function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
+  evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)]))},splices=null) {
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
     if (typeof label !== "string" || typeof nullary !== "boolean") throw new TypeError("Invalid source constructor inventory.");
@@ -40,6 +52,7 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
       throw new TypeError("Structural self must be the identity of a retained declaration.");
   }
   const owned = [];
+  let splice=0;
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
   tree = scopeMapped(tree, {
     deferred: true,
@@ -54,6 +67,13 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
         if(!evidenceTypes.has(builtin))throw new TypeError(`A leveled parameter needs a source resolution for ${builtin}.`);
         return {kind:"call",fn:occurrence(token,evidenceTypes.get(builtin),builtin,at),
           args:[mapped.type,occurrence(token,bindingResolution(token.bindingId),token.text,at)],origin:at};
+      }
+      if(node.kind==="templateHole"&&splices) {
+        const insert=splices.get(node.hole);
+        if(!insert)throw new TypeError(`Unknown template syntax hole: ${node.hole}`);
+        const {syntax}=cloneBindingSyntax(insert(at),table,[...owner,"splice",String(splice++)]);
+        owned.push(...syntax.owned);
+        return syntax.tree;
       }
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");

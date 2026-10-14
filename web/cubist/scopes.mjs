@@ -96,7 +96,7 @@ export const UNBINDING = new Set([
   "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall",
+  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall", "templateHole",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",

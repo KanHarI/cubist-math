@@ -10,6 +10,66 @@ import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
 import {T as Term} from "./core.mjs";
 import {reference} from "../cubist/references.mjs";
+import {DependencyAnalysis} from "../cubist/dependencies.mjs";
+import {bindingSyntaxView,bindingUses} from "../cubist/binding-syntax.mjs";
+
+// This strategy shares exact dependency facts with Hom planning, not its
+// admissibility predicate. A constructor argument is a carrier value or a
+// type independent of carrier values/proofs; arbitrary variance is not enough.
+export function equationalSupport(record) {
+  if(!record.bindingSyntax)throw new TypeError("Equational dependency planning needs retained binding interfaces.");
+  const view=tree=>bindingSyntaxView(record.bindingSyntax,tree);
+  const reference=node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null;
+  const analysis=new DependencyAnalysis([...record.fields,...record.derived??[]]);
+  const pending=record.fields.flatMap(field=>bindingUses(view(field.type))
+    .filter(use=>["missing","deferred","deferred-pattern"].includes(use.kind)).map(use=>({field:field.id,...use})));
+  if(pending.length)return {status:"pending",strategy:"equational",obligations:pending};
+  const origin=record.fields[0]?.binding?.origin;
+  const refuse=(error,at=origin,detail={})=>({status:"unsupported",strategy:"equational",reason:error.message,at,...detail});
+  const carriers=record.fields.filter(field=>field.kind==="sort");
+  if(carriers.length!==1||carriers[0].family)return refuse(notOneCarrier(record.name,carriers));
+  const carrier=carriers[0],evidence=record.fields.find(field=>field.kind==="evidence"&&field.of===carrier.id);
+  if(!evidence)return refuse(untruncatedCarrier(record.name,carrier.name));
+  const mapping=[];
+  for(const field of record.fields) {
+    if(["sort","evidence"].includes(field.kind))continue;
+    const recursive=new Map(),args=[];
+    let body=field.type,group=0;
+    while(body.kind==="forall"||body.kind==="binderGroup"&&body.binderKind==="forall") {
+      const names=body.kind==="forall"?[body.name]:body.names;
+      if(body.bound)return refuse(universeArguments(field.name),names[0].origin,{field:field.id});
+      const domain=body.domain,isCarrier=reference(domain)===carrier.id;
+      if(!isCarrier) {
+        const dependencies=analysis.dependencies(view(domain));
+        const dependency=dependencies.find(use=>["law","evidence"].includes(use.category))
+          ??dependencies.find(use=>["carrier","operation","helper","recursive-helper"].includes(use.category));
+        const local=bindingUses(view(domain)).find(use=>use.kind==="binding"&&recursive.has(use.id));
+        if(dependency||local) {
+          const use=dependency??local,proof=["law","evidence"].includes(use.category);
+          const label=analysis.byIdentity.get(use.id)?.label??recursive.get(use.id)?.label;
+          return refuse(proof?onProof(field.name,names[0].label??names[0].text,use.category,label)
+            :notPositive(field.name,names[0].label??names[0].text,carrier.name),use.origin,{field:field.id,dependency:use});
+        }
+      }
+      for(const token of names) {
+        if(!token.bindingId)throw new TypeError("An equational constructor telescope needs binding identities.");
+        args.push({id:token.bindingId,name:token.label??token.text,action:isCarrier?"recurse":"fixed",type:domain,group});
+        if(isCarrier)recursive.set(token.bindingId,{label:token.label??token.text});
+      }
+      body=body.body;group++;
+    }
+    if(field.kind==="law"&&(!(body.kind==="binary"&&body.operator==="=")
+      ||analysis.first(view(body),["law","evidence"])))
+      return refuse(notEquational(field.name),body.origin??field.binding.origin,{field:field.id});
+    if(field.kind==="operation") {
+      if(body.kind==="binary"&&body.operator==="->")return refuse(arrowOperation(field.name),body.origin??field.binding.origin,{field:field.id});
+      if(reference(body)!==carrier.id)return refuse(notCarrierValued(field.name,carrier.name),body.origin??field.binding.origin,{field:field.id});
+    }
+    mapping.push({id:field.id,kind:field.kind,arguments:args,body});
+  }
+  return {status:"conditional",strategy:"equational",mapping:{carrier:carrier.id,evidence:evidence.id,constructors:mapping},
+    obligations:["checked retained interfaces","constructor universes","positive constructor domains","law boundaries","model","fold map","fold preservation"]};
+}
 
 // The declarations an initial or free model expands to, checked in its
 // place; one that does not expand fails as a declaration of its name.

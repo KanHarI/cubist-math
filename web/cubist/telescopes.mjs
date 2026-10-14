@@ -34,16 +34,18 @@ export function evidenceTelescope(tree) {
   return {tree:{...tree,params},evidence};
 }
 
-export function parameterLambdas(params, body) {
+function parameterBinders(kind,params,body) {
   for (const group of parameterGroups(params).reverse()) {
     const {parameters, bound, domain} = group;
     const binder = bound ? {bound} : {domain};
     body = parameters.length === 1
-      ? {kind: "lambda", name: parameters[0].name, ...binder, body}
-      : {kind: "binderGroup", binderKind: "lambda", names: parameters.map(p => p.name), ...binder, body};
+      ? {kind, name: parameters[0].name, ...binder, body}
+      : {kind: "binderGroup", binderKind: kind, names: parameters.map(p => p.name), ...binder, body};
   }
   return body;
 }
+export const parameterLambdas=(params,body)=>parameterBinders("lambda",params,body);
+export const parameterForalls=(params,body)=>parameterBinders("forall",params,body);
 
 // The native clause telescope introduces fields, recursive hypotheses and
 // then dimensions. Fields and dimensions name distinct variables; hypotheses

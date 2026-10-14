@@ -4,6 +4,7 @@
 // never rebuild its lexical scope from the eventual list of field labels.
 import {bindingResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
 import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,bindingSyntaxView,sameBindingSyntax} from "./binding-syntax.mjs";
+import {parameterForalls} from "./telescopes.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
   "notation","uses","computable","keyword","levelToken","start","end","origin","typedValue","valueStart","valueEnd","modifierStart","implicitParameters"]);
@@ -26,6 +27,14 @@ function interfaceTree(item) {
 export function interfaceSignature(entry) {
   const {name,value,body,...tree}=entry.syntax.tree;
   return bindingSyntaxView(entry.syntax,tree);
+}
+
+// A type-purpose view closes the same parameter IDs with their retained
+// groups. It allocates nothing and never recovers groups from equal domains.
+export function interfaceType(entry) {
+  const {params,type}=entry.syntax.tree;
+  if(!type)throw new TypeError("An inferred interface needs its checked result type before type analysis.");
+  return bindingSyntaxView(entry.syntax,parameterForalls(params,type));
 }
 
 export class RetainedInterfaces {
