@@ -81,6 +81,38 @@ export function initialDeclarations(t, module, d, env, declarations) {
   finally { unit.fuel.close(); }
 }
 
+// Check the whole application once under its complete caller telescope.
+// Return inert core arguments abstracted over that telescope: the nominal
+// and retained builders supply their own references when instantiating them
+// in each generated declaration. In particular, solved holes are not solved
+// again independently in copied field types.
+export function checkedInitialArguments(t,module,{theory,params,parameters,env,uses,name,at=theory}) {
+  const args=theory.kind==="call"?theory.args:[];
+  const argument=assignArguments({...theory,args},parameters,module,name);
+  if(args.length!==parameters.length)
+    throw module.locate(theoryArguments(name,parameters.length,args.length),theory);
+  const place={start:at.start,end:at.end,...(at.origin?{origin:at.origin}:{}),...(at.synthetic?{synthetic:true}:{})};
+  const named=(label,value)=>({kind:"namedArgument",name:{text:label,...place},value,...place});
+  let checked=args.length?{...theory,args:parameters.map((p,k)=>named(p.name,argument(k)))}:theory;
+  for(let k=params.length-1;k>=0;) {
+    const group=params[k].group,members=[];
+    while(k>=0&&params[k].group===group)members.unshift(params[k--]);
+    checked={kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),
+      ...(members[0].bound?{bound:members[0].bound}:{domain:members[0].type}),body:checked,...place};
+  }
+  const scope=usesScope(t,new Scope(module,new Map(),env),uses),application=t.term(checked,scope);
+  scope.infer(application);
+  const telescope=[],values=[];
+  let applied=application;
+  for(let k=0;k<params.length;k++){telescope.push(applied);applied=applied.body;}
+  for(let k=parameters.length-1;k>=0;k--) {
+    const value=applied.tag==="LApp"?Term.universe(applied.level):applied.arg;
+    values[k]=telescope.reduceRight((body,binder)=>({...binder,body}),value);
+    applied=applied.fn;
+  }
+  return values;
+}
+
 function expand(t, module, d, env) {
   // Generated syntax stands at the declared name and is synthetic: it links
   // nowhere, while the header's own syntax keeps its positions and links.
@@ -143,39 +175,14 @@ function expand(t, module, d, env) {
   if (env.has(N) && (freeNames([theory, ...params.map(p => p.bound ?? p.type), ...(d.uses ?? [])], new Set(params.map(p => p.name.text))).has(N)
       || record.fields.some(f => freeNames(f.type, fieldScope).has(N))))
     throw module.locate(hiddenDependency(N), d.name);
-  const args = theory.kind === "call" ? theory.args : [];
   const parameters = [...(record.universeLabels ?? record.universes).map(name => ({name})), ...record.params];
-  const argument = assignArguments({...theory, args}, parameters, module, T);
-  if (args.length !== parameters.length)
-    throw module.locate(theoryArguments(T, parameters.length, args.length), d.theory);
-
-  // Check the theory application before substituting its arguments into
-  // field types. This uses ordinary application checking, in the header's
-  // scope and notation, so a bad argument fails once at its own source span.
-  let checked = args.length ? {...theory, args: parameters.map((p, k) => named(p.name, argument(k)))} : theory;
-  for (let k = params.length - 1; k >= 0;) {
-    const group = params[k].group, members = [];
-    while (k >= 0 && params[k].group === group) members.unshift(params[k--]);
-    checked = {kind: "binderGroup", binderKind: "lambda", names: members.map(p => p.name),
-      ...(members[0].bound ? {bound: members[0].bound} : {domain: members[0].type}), body: checked, ...at};
-  }
-  const scope = usesScope(t, new Scope(module, new Map(), env), d.uses);
-  const application = t.term(checked, scope);
-  scope.infer(application);
   // Keep the elaborated arguments: a hole solved by the call is no longer
   // a hole when substituted into a carrier universe or constructor domain.
   // Abstract over the free declaration's parameters, then instantiate in
   // each generated declaration's scope; the checking scope's local names
   // cannot escape into a later declaration.
-  const telescope = [], values = [];
-  let applied = application;
-  for (let k = 0; k < params.length; k++) { telescope.push(applied); applied = applied.body; }
-  for (let k = parameters.length - 1; k >= 0; k--) {
-    const value = applied.tag === "LApp" ? Term.universe(applied.level) : applied.arg;
-    values[k] = {kind: "instantiated", value: telescope.reduceRight((body, binder) => ({...binder, body}), value),
-      args: params.map(p => name(p.name.text)), ...at};
-    applied = applied.fn;
-  }
+  const values=checkedInitialArguments(t,module,{theory,params,parameters,env,uses:d.uses,name:T,at})
+    .map(value=>({kind:"instantiated",value,args:params.map(p=>name(p.name.text)),...at}));
   const given = new Map([...record.universes.map((_, k) => [universeAt(k), values[k]]),
     ...record.params.map((p, k) => [p.name, values[record.universes.length + k]])]);
 
