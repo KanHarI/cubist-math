@@ -95,8 +95,9 @@ export function checkedInitialArguments(t,module,{theory,params,parameters,env,u
   if(args.length!==parameters.length)
     throw module.locate(theoryArguments(name,parameters.length,args.length),theory);
   const place={start:at.start,end:at.end,...(at.origin?{origin:at.origin}:{}),...(at.synthetic?{synthetic:true}:{})};
-  const named=(label,value)=>({kind:"namedArgument",name:{text:label,...place},value,...place});
-  let checked=args.length?{...theory,args:parameters.map((p,k)=>named(p.name,argument(k)))}:theory;
+  // Assignment has already selected exact positions. Converting those back
+  // to names would merge anonymous positions that share the public label _.
+  let checked=args.length?{...theory,args:parameters.map((_,k)=>argument(k)),checkArguments:true}:theory;
   for(let k=params.length-1;k>=0;) {
     const group=params[k].group,members=[];
     while(k>=0&&params[k].group===group)members.unshift(params[k--]);

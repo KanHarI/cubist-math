@@ -288,7 +288,11 @@ class ArgumentSolver {
           // parameter's type, so that a wrong solution is reported here;
           // otherwise the call's own check compares the two, at no extra
           // kernel work.
-          try { this.solution.set(slot.variable, this.determined ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
+          // A generator's checked application validates each argument here
+          // before extracting solved values, including fully positional calls.
+          // This policy is independent of whether source arguments had labels.
+          try { this.solution.set(slot.variable, this.determined||this.call.checkArguments
+            ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
           catch (error) {propagateElaborationStop(error); throw this.scope.unit.locate(error, slot.node); }
           progress = true;
         } else if (!slot.tried) {

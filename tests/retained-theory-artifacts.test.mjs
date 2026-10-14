@@ -420,3 +420,60 @@ test("anonymous helper arguments normalize for support while their complete chec
   const bad=buildSource("theory Bad(U < UU0) { M : set U; def K(_ : Two) : U := M; op(x : K(tt)) : M; }",{morphisms:true});
   assert.ok(failures(check(bad).result).some(([name,reason])=>name==="Bad"&&/Type mismatch/.test(reason)));
 });
+
+test("theory retention preserves grouped and separate universe domains through Hom and Iso",async t=>{
+  for(const [header,groups] of [["U, V < UU0",[0,0]],["U < UU0, V < UU0",[0,1]]]) {
+    const {retain,construct,check}=await setup(t);
+    const record=retain(`theory T(${header}) { M : set U; N : set V; op(x : M) : N; }`);
+    const params=record.bindingSyntax.tree.params;
+    assert.deepEqual(params.map(p=>p.group),groups);
+    if(groups[0]===groups[1])assert.equal(params[0].bound,params[1].bound);
+    else assert.notEqual(params[0].bound,params[1].bound);
+    const built=construct(record,{morphisms:true});
+    const {result,equal}=check(built,`
+      def instance_(h : IsSet(U0, Two)) : T(U0, U0) := T.make(Two, h, Two, h, fun (x : Two) => x);
+      def value(h : IsSet(U0, Two)) : Two := T.Hom.id(instance_(h)).map_N(right_);
+      def inverse_(h : IsSet(U0, Two)) : Two := T.Iso.inverse(T.Iso.id(instance_(h))).to.map_M(left_);
+    `);
+    assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+    assert.equal(equal("value","fun (h : IsSet(U0, Two)) => right_"),true);
+    assert.equal(equal("value","fun (h : IsSet(U0, Two)) => left_"),false);
+    assert.equal(equal("inverse_","fun (h : IsSet(U0, Two)) => left_"),true);
+  }
+});
+
+test("anonymous operation and family positions remain usable through generated Hom applications",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=buildSource(`theory T(U < UU0) { M : set U; F(_ : Two) : set U;
+    op(_, _ : Two) : M; point : F(left_); pick(_ : set U, x : M) : M; }`,{morphisms:true});
+  assert.equal(built.record.homSupport.status,"conditional");
+  const {result,equal}=check(built,`
+    def instance_(h : IsSet(U0, Two)) : T(U0) := T.make(M := Two, M_is_set := h,
+      F := fun (x : Two) => Two, F_is_set := fun (x : Two) => h,
+      op := fun (x, y : Two) => x, point := right_,
+      pick := fun (A : U0) => fun (e : IsSet(U0, A), x : Two) => x);
+    def value(h : IsSet(U0, Two)) : Two := T.Hom.id(instance_(h)).map_M(T.op(instance_(h), right_, left_));
+    def family(h : IsSet(U0, Two)) : Two := T.Hom.id(instance_(h)).map_F(left_, right_);
+    def evidence_(h : IsSet(U0, Two)) : Two := T.pick(instance_(h), Two, h, right_);
+  `);
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  for(const name of ["value","family","evidence_"]) {
+    assert.equal(equal(name,"fun (h : IsSet(U0, Two)) => right_"),true,name);
+    assert.equal(equal(name,"fun (h : IsSet(U0, Two)) => left_"),false,name);
+  }
+});
+
+test("anonymous parent header positions retain distinct child correspondences",async t=>{
+  const {buildSource,check}=await setup(t);
+  const parent=buildSource("theory P(U < UU0, _, _ : Two) { M : set U; c : M; }",{morphisms:true});
+  const child=buildSource("theory C(U < UU0, _, _ : Two) extends p : P {}",{morphisms:true});
+  assert.equal(new Set(child.record.parents[0].parameterIds).size,2);
+  assert.deepEqual(child.record.parents[0].parameterIds,child.record.params.map(p=>p.id));
+  const {result,equal}=check({declarations:[...parent.declarations,...child.declarations]},`
+    def instance_(h : IsSet(U0, Two)) : C(U0, left_, right_) := C.make(left_, right_, Two, h, right_);
+    def value(h : IsSet(U0, Two)) : Two := instance_(h).p.c;
+    def mapped(h : IsSet(U0, Two)) : Two := C.Hom.id(instance_(h)).p.map(right_);
+  `);
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  for(const name of ["value","mapped"])assert.equal(equal(name,"fun (h : IsSet(U0, Two)) => right_"),true);
+});

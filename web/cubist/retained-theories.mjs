@@ -6,7 +6,7 @@ import {RetainedInterfaces} from "./retained-interfaces.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
 import {bindingSyntaxView} from "./binding-syntax.mjs";
 import {bindingResolution,reservedResolution,sourceOrigin,UnknownNamespaceMember} from "./bindings.mjs";
-import {evidenceLayout} from "./telescopes.mjs";
+import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped,rewritten} from "./scopes.mjs";
 import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
@@ -50,12 +50,17 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   const T=theory.name.text,interfaces=new RetainedInterfaces(options),taken=new Set(allNames(theory));
   const origin=sourceOrigin({...options.source,start:theory.name.start,end:theory.name.end});
   const generatedUniverse=!theory.universes.length;
-  const universes=generatedUniverse?[{text:freshName("U",taken),start:origin.start,end:origin.end,synthetic:true}]:theory.universes;
-  const params=[...universes.map(name=>({name,bound:{kind:"name",name:"UU0",start:name.start,end:name.end},group:0})),
-    ...theory.params.map(p=>({...p,group:1+p.group}))];
+  // The public theory interface puts universes first, retaining the written
+  // groups and their shared bounds. The flattened list of universe labels
+  // cannot reconstruct those source regions.
+  const universes=generatedUniverse?parameterGroup([
+    {text:freshName("U",taken),start:origin.start,end:origin.end,synthetic:true}],
+    {bound:{kind:"name",name:"UU0",start:origin.start,end:origin.end}},-1):theory.header.filter(p=>p.bound);
+  const params=[...universes,...theory.params];
   if(generatedUniverse)params[0].label=freshName("U",new Set(theory.params.map(p=>p.name.text)));
   const headerNames=new Set();
   for(const parameter of params) {
+    if(parameter.name.text==="_")continue;
     if(headerNames.has(parameter.name.text))throw located(Error(`${T}'s header binds ${parameter.name.text} twice: give each its own name.`),parameter.name);
     headerNames.add(parameter.name.text);
   }

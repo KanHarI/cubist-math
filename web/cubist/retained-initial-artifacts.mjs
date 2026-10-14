@@ -95,7 +95,7 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
     ?recurse(evidence,reference(variables[k])):reference(variables[k]));
   const variables=shape=>shape.arguments.map(argument=>local(argument.name,table.get(argument.id).origin));
   define("model",[],theory,call(reference(table.get(record.makeId)),[
-    ...record.params.map(p=>named(p.name,given.get(p.id).tree)),named(carrier.name,self()),named(evidence.name,hole()),
+    ...record.params.map(p=>given.get(p.id).tree),named(carrier.name,self()),named(evidence.name,hole()),
     ...shapes.map(shape=>{
       const args=variables(shape);
       return named(shape.field.name,lambdas(args,call(reference(declared(shape.field.name)),args.map(reference))));

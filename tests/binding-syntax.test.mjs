@@ -102,6 +102,27 @@ test("inferred headers and parameter lambdas share identities and retain named a
   assert.deepEqual(lowered.valueParameters.map(p => !!p.implicit), [true, true, false, false]);
 });
 
+test("anonymous binder positions have distinct owned IDs without binding source holes",()=>{
+  const setup=prepare();
+  const syntax=resolveBindingSyntax(parse("def f(_, _ : Unit, x : Unit) : Unit := _;").declarations[0],setup);
+  const ids=syntax.tree.params.map(p=>p.name.bindingId);
+  assert.equal(new Set(ids).size,3);
+  for(const id of ids)assert.ok(syntax.owned.includes(id));
+  assert.deepEqual(ids.map(id=>setup.table.get(id).label),["_","_","x"]);
+  assert.equal(syntax.tree.body[0].value.kind,"name");
+  assert.equal(syntax.tree.body[0].value.name,"_");
+  const lowered=lowerBindingSyntax(syntax,setup.adapter);
+  assert.notEqual(lowered.params[0].name.text,lowered.params[1].name.text);
+  assert.equal(lowered.params[0].name.label,"_");
+  assert.equal(lowered.body[0].value.name,"_");
+  const cloned=cloneBindingSyntax(syntax,setup.table,["anonymous-clone"]).syntax;
+  assert.ok(cloned.owned.every(id=>!syntax.owned.includes(id)));
+  assert.equal(sameBindingSyntax(syntax,cloned),true);
+  assert.equal(sameBindingSyntax(
+    resolveBindingSyntax(expression("fun (_ : Unit) => tt"),{...setup,owner:["anonymous"]}),
+    resolveBindingSyntax(expression("fun (x : Unit) => tt"),{...setup,owner:["unused"]})),true);
+});
+
 test("a grouped domain is one scoped region even when it contains binders",()=>{
   const setup=prepare();
   const syntax=resolveBindingSyntax(parse("def f(a, b : (fun (n : Unit) => Unit)(tt)) : Unit := a;").declarations[0],setup);

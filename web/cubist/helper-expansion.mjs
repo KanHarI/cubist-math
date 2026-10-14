@@ -112,9 +112,9 @@ export class HelperExpansion {
         // Shared domains belong outside all binders in the group. A
         // partially applied group keeps its remaining telescope intact.
         const names=fn.kind==="lambda"?[fn.name]:fn.names,count=Math.min(names.length,args.length);
-        if(names.some(name=>!name.bindingId&&name.text!=="_"))return {...node,fn,args};
+        if(names.some(name=>!name.bindingId))throw new TypeError("A retained lambda position needs a binding identity.");
         const body=count===names.length?fn.body:{...fn,names:names.slice(count)};
-        const replacements=new Map(names.slice(0,count).flatMap((name,k)=>name.bindingId?[[name.bindingId,view(args[k])]]:[]));
+        const replacements=new Map(names.slice(0,count).map((name,k)=>[name.bindingId,view(args[k])]));
         fn=normalize(substituteBindingSyntax(view(body),replacements,this.table,
           [...this.owner,"analysis",String(this.#serial++),String(index++)]).tree);
         args=args.slice(count);

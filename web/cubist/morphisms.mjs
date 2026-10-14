@@ -97,7 +97,7 @@ function binders(type, parameters, symbols=nominalSymbols, locals=new Map()) {
     while(type.kind==="forall"||type.kind==="binderGroup"&&type.binderKind==="forall") {
       for(const token of type.kind==="forall"?[type.name]:type.names) {
         const label=token.label??token.text;
-        const name=bound.has(label)?freshName(label,taken):label;
+        const name=label==="_"||bound.has(label)?freshName(label,taken):label;
         const id=symbols.binder(token);
         if(!id)throw new TypeError("A retained morphism telescope needs binding identities.");
         list.push({name,label,id,type:type.domain});bound.add(name);locals.set(id,name);
@@ -235,7 +235,13 @@ function planMorphisms(record,isTheory) {
   // Every model of a theory with parameters shares them, and its universes:
   // a homomorphism keeps them fixed (L2.4c). Otherwise each model has its
   // own universes, as many as the theory's header binds.
-  const params = record.params ?? [], count = Math.max(1, record.universes?.length ?? 0);
+  const headerNames=new Set([...reservedNames,...(record.params??[]).map(p=>p.name),
+    ...record.fields.flatMap(field=>[...allNames(field.type)])]);
+  // Template variables must be referable. An anonymous public parameter
+  // still has a position/ID, but '_' in an expression is always a hole.
+  const params=(record.params??[]).map(p=>symbols.retained&&p.name==="_"
+    ?{...p,label:p.name,name:freshName("argument",headerNames)}:p);
+  const count = Math.max(1, record.universes?.length ?? 0);
   const parameters = params.map(p => p.name);
   // Every binder the source introduces is fresh: none captures a parameter
   // or a name that a field's type mentions free, which the source writes as
@@ -511,7 +517,7 @@ function planMorphisms(record,isTheory) {
   const indexedSet = carrierFields.find(field => families.has(field.name) && levelOf(field.name) === "IsSet"
     && families.get(field.name).some(index => index.shape.kind === "carrier"));
   if (indexedSet)
-    return { declarations, universes: uA, parameterMarker, typeMarkers, references,mapping:supportMapping,
+    return { declarations, universes: uA, parameters:params, parameterMarker, typeMarkers, references,mapping:supportMapping,
       missingIso: `its family of sets ${indexedSet.name} is indexed by a carrier, and its round trips would need a transport that is not generated` };
   const tripped = sorts.filter(sort => !(families.has(sort) && levelOf(sort) === "IsProp"));
   const single = sorts.length === 1;
@@ -557,5 +563,5 @@ function planMorphisms(record,isTheory) {
   // The inverse: the two homomorphisms and the two round trips swapped.
   declare(`${iso}.inverse`, `${implicitModels}(${f} : ${isoType(A, B)}) : ${isoType(B, A)} := ${global(`${iso}.make`)}${implicitArgs([B, A], false)}(${B}, ${A}, ${
     back(fIso).text}, ${there(fIso).text}${isoFields.slice(2).map(field => `, ${project(iso, other(field), fIso)}`).join("")});`, "inverse");
-  return { declarations, universes: uA, parameterMarker, typeMarkers, references,mapping:supportMapping };
+  return { declarations, universes: uA, parameters:params, parameterMarker, typeMarkers, references,mapping:supportMapping };
 }

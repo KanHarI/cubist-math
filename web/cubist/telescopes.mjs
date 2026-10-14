@@ -11,6 +11,11 @@ export function parameterGroups(params) {
   return groups;
 }
 
+// Construct one telescope group from one domain node. Authored and generated
+// groups use the same shape, so traversals resolve the domain exactly once
+// before introducing any member of the group.
+export const parameterGroup=(names,domain,group)=>names.map(name=>({name,...domain,group}));
+
 // The public argument convention interleaves each leveled parameter and
 // its evidence. Both telescope construction and implicit call completion
 // consume this layout, rather than deriving separate argument orders.
@@ -29,11 +34,11 @@ export function evidenceTelescope(tree) {
     const originals=parameters.map(p=>({...p,group})),witnesses=new Map();
     params.push(...originals);
     for(const [index,p] of originals.entries())if(p.level) {
-      if(!["set","prop"].includes(p.level)||p.bound||p.name.text==="_")
-        throw new TypeError("A leveled parameter needs a named type and set or prop evidence.");
+      if(!["set","prop"].includes(p.level)||p.bound)
+        throw new TypeError("A leveled parameter needs a type and set or prop evidence.");
       const type={kind:"call"}; // private marker, consumed before traversal
       evidence.set(type,{parameter:p,builtin:p.level==="set"?"IsSet":"IsProp"});
-      const witness={name:{...p.name,text:`${p.name.text}_is_${p.level}`,synthetic:true},type,group:params.length};
+      const witness={name:{...p.name,text:p.name.text==="_"?"_":`${p.name.text}_is_${p.level}`,synthetic:true},type,group:params.length};
       witnesses.set(index,witness);params.push(witness);
     }
     const first=order.length;

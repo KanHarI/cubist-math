@@ -94,6 +94,15 @@ The invariants are:
 2. Every local reference has a dominating binder or belongs to an explicit
    open interface. A group's domain precedes all of that group's binders;
    subsequent groups and the result/body see them.
+   Every binder position, including `_`, has an owned ID. Anonymous positions
+   introduce no lexical name: `_` in an expression remains a hole. Generated
+   forwarding and evidence use the position's ID. Parser and artifact builders
+   construct each group from one shared domain node; retention preserves
+   written groups instead of reconstructing them from flattened labels.
+   Anonymous parent header parameters correspond to anonymous child positions;
+   named header parameters retain the existing correspondence by public label.
+   Transitional templates give anonymous positions referable internal labels
+   and retain their public `_` labels separately.
 3. Cloning a declaration for a new instance freshens its bound IDs and all
    corresponding uses. External references remain shared. Merely revisiting
    immutable syntax does not allocate new identities.

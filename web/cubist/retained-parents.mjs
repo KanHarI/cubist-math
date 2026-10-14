@@ -28,18 +28,25 @@ export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
       throw located(Error(`${T} has two parents labelled ${parentLabel}: label one, as in other : ${parent.name.text}.`),parent.label??parent.name);
     const universes=record.bindingSyntax.tree.params.filter(p=>p.bound),parameters=record.bindingSyntax.tree.params.filter(p=>!p.bound);
     const correspondence=new Map();
+    // Named header parameters correspond by public label. Anonymous ones
+    // have only a position; matching every '_' to the first would merge IDs.
+    const ownParameter=(parameter,index)=>{
+      if(label(parameter)!=="_")return ownParameters.find(p=>label(p)===label(parameter));
+      const own=ownParameters[index];
+      return own&&label(own)==="_"?own:null;
+    };
     for(const universe of universes) {
       const own=universes.length===1&&ownUniverses.length===1?ownUniverses[0]:ownUniverses.find(p=>label(p)===label(universe));
       if(!own)throw located(Error(`${T} extends ${record.name}, whose header binds the universe ${label(universe)}: bind ${label(universe)} in ${T}'s header too.`),parent.name);
       correspondence.set(universe.name.bindingId,own.name.bindingId);
     }
-    for(const parameter of parameters) {
-      const own=ownParameters.find(p=>label(p)===label(parameter));
+    for(const [index,parameter] of parameters.entries()) {
+      const own=ownParameter(parameter,index);
       if(!own)throw located(Error(`${T} extends ${record.name}, whose header has the parameter ${label(parameter)}: give ${T} the parameter ${label(parameter)} with the same type.`),parent.name);
       correspondence.set(parameter.name.bindingId,own.name.bindingId);
     }
-    for(const parameter of parameters) {
-      const own=ownParameters.find(p=>label(p)===label(parameter));
+    for(const [index,parameter] of parameters.entries()) {
+      const own=ownParameter(parameter,index);
       const expected=remapBindingSyntax(bindingSyntaxView(record.bindingSyntax,parameter.type),table,correspondence);
       if(!sameBindingSyntax(expected,bindingSyntaxView(header,own.type)))
         throw located(Error(`${T} extends ${record.name}, whose header has the parameter ${label(parameter)}: give ${T} the parameter ${label(parameter)} with the same type.`),parent.name);

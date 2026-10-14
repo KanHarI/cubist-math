@@ -184,7 +184,7 @@ export function retainedMorphismArtifacts(record,{table,owner,bindings,outerRefe
     const syntax=view(tree),needed=new Set(bindingUses(syntax,{conditional:true}).filter(use=>use.kind==="binding").map(use=>use.id));
     const replacements=new Map();
     record.universeIds.forEach((id,k)=>{if(needed.has(id))replacements.set(id,local(context,universes[k]));});
-    for(const parameter of record.params)if(needed.has(parameter.id))replacements.set(parameter.id,local(context,parameter.name));
+    for(const parameter of plan.parameters)if(needed.has(parameter.id))replacements.set(parameter.id,local(context,parameter.name));
     for(const [id,label] of locals)if(needed.has(id))replacements.set(id,local(context,label));
     for(const field of record.fields)if(needed.has(field.id)) {
       if(!model)throw new TypeError("A retained field needs an explicit template model.");
@@ -208,6 +208,10 @@ export function retainedMorphismArtifacts(record,{table,owner,bindings,outerRefe
       ?{kind:"templateHole",hole:node.name,...at(origin)}:node);
     for(const parameter of tree.params??[])if(Object.hasOwn(declaration.labels??{},parameter.name.text))
       parameter.label=declaration.labels[parameter.name.text];
+    for(const parameter of tree.params??[]) {
+      const source=plan.parameters.find(p=>p.name===parameter.name.text);
+      if(source?.label)parameter.label=source.label;
+    }
     const context=new LexicalContext(reservedReferences(source).map(label=>[label,reservedResolution(label)]));
     const syntax=resolveBindingTemplate(tree,{table,owner:[...owner,"artifact",String(index)],context,source:origin},splices);
     const theory=declaration.record?{...declaration.record,modelId:bindings.get(declaration.record.model).id,

@@ -99,7 +99,8 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     },
     bind(token, node, scope, at) {
       if (token.bindingId) throw new TypeError("Source resolution cannot allocate an existing binder twice.");
-      if (binderName(token) === "_") return token;
+      // Anonymous positions still need identities for forwarding, evidence,
+      // cloning and generated applications. They introduce no lexical name.
       const record = table.allocate(owner, {role: bindingRole(node, scope, token), label: binderName(token), origin: origin(token)});
       if(record.role==="universe"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
       owned.push(record.id);
@@ -108,7 +109,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     },
     extend(at, binders) {
       for (const token of binders) {
-        if (!token.bindingId) continue;
+        if (!token.bindingId||binderName(token)==="_") continue;
         at = token.bindingRole === "pattern" ? at.defer(binderName(token), token.bindingId)
           : at.bind(binderName(token), bindingResolution(token.bindingId));
       }
@@ -179,7 +180,7 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
       return node;
     },
     bind(token) {
-      if(token.bindingRole==="pattern"&&!outcomes.get(token.bindingId))uses.push({kind:"deferred-pattern",
+      if(token.bindingRole==="pattern"&&binderName(token)!=="_"&&!outcomes.get(token.bindingId))uses.push({kind:"deferred-pattern",
         slot:token.bindingId,spelling:token.label??binderName(token),origin:token.origin,
         enclosing:token.patternEnclosing,constructors:token.constructorInventory});
       return token;

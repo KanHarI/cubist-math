@@ -116,3 +116,40 @@ test("retained initial arguments solve named universe holes once under the calle
   assert.equal(equal("wf","right_"),true);assert.equal(equal("wf","left_"),false);
   assert.throws(()=>prepare("def Bad : T(U0, tt) := tt;"),/Type mismatch/);
 });
+
+test("anonymous law, operation and request positions survive initial and free folds",async t=>{
+  const {prepare,check,env}=await setup(t,`theory T(U < UU0) {
+    M : set U; point(_ : Two) : M; step(x : M) : M;
+    law fixed(_ : Two, x : M) : step(x) = x;
+  }`);
+  const initial=prepare("def N : T(U0) := tt;");
+  const free=prepare("def W(_, _ : Two, A : U0) : T(U0) := A;",{free:true});
+  const {result,equal}=check([...queue(initial),...queue(free)],`
+    def target : T(U0) := T.make(M := Two, point := fun (x : Two) => x,
+      step := fun (x : Two) => x, fixed := fun (_ : Two, x : Two) => refl(x));
+    def ni : Two := N.fold(target).map(N.step(N.point(right_)));
+    def wf : Two := W.fold(left_, right_, Unit, target, fun (a : Unit) => left_).map(W.point(right_));
+    def wg : Two := W.fold(left_, right_, Unit, target, fun (a : Unit) => left_).map(W.gen(tt));
+  `,env);
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  for(const name of ["ni","wf"]) {
+    assert.equal(equal(name,"right_"),true);assert.equal(equal(name,"left_"),false);
+  }
+  assert.equal(equal("wg","left_"),true);assert.equal(equal("wg","right_"),false);
+});
+
+test("anonymous theory header arguments are forwarded positionally through Hom and initial models",async t=>{
+  const {prepare,check,env}=await setup(t,`theory T(U < UU0, _, _ : Two) {
+    M : set U; point(_ : Two) : M;
+  }`);
+  const initial=prepare("def N : T(U0, left_, right_) := tt;");
+  const {result,equal}=check(queue(initial),`
+    def target : T(U0, left_, right_) := T.make(left_, right_, M := Two, point := fun (x : Two) => x);
+    def ni : Two := N.fold(target).map(N.point(right_));
+    def identity_ : Two := T.Hom.id(target).map(right_);
+  `,env);
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  for(const name of ["ni","identity_"]) {
+    assert.equal(equal(name,"right_"),true);assert.equal(equal(name,"left_"),false);
+  }
+});
