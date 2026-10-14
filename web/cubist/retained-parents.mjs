@@ -2,7 +2,7 @@
 // Sharing uses explicit origin and binding correspondences; display labels
 // choose the public child interface but never decide syntax equality.
 import {bindingSyntaxView,remapBindingSyntax,sameBindingSyntax,bindingUses} from "./binding-syntax.mjs";
-import {bindingResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
+import {bindingResolution,sourceOrigin,expandedOrigin,failedResolution} from "./bindings.mjs";
 import {freshName} from "./scopes.mjs";
 import {reservedNames} from "./parser.mjs";
 import {InheritedInterfaceConflict} from "./retained-interfaces.mjs";
@@ -114,6 +114,11 @@ export function retainParents(theory,interfaces,{lookup,source,owner},admit) {
     admit(entry);admitted.add(entry.id);remaining.delete(group);
   }
   const headerLabels=new Set(header.tree.params.map(p=>p.name.text));
+  // Ambiguity participates in ordered lookup. A later local or an explicit
+  // parent selection can shadow it without a separate spelling pre-pass.
+  for(const [name,candidates] of ambiguous)if(!headerLabels.has(name))
+    interfaces.context=interfaces.context.bind(name,failedResolution({message:
+      `${name} is ambiguous in ${T}: ${candidates.map(e=>`${e.label}'s`).join(" and ")}. Write ${candidates.map(e=>`${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`}));
   for(const parent of prepared)if(!headerLabels.has(parent.label))
     interfaces.context=interfaces.context.namespace(parent.label,parent.entries.map(entry=>
       [entry.label,bindingResolution(parent.correspondence.get(entry.id))]),parent.record.name);

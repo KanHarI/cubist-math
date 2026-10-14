@@ -311,12 +311,13 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   if(!effects.labels&&!effects.notation)return activation
     ?scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,[])):scope;
   const selector=node.kind==="bindingReference"?scope.unit.bindingAdapter.resolve(node.resolution,scope.slotOutcomes):null;
-  if(selector?.tag==="namespace") {
+  if(selector?.tag==="namespace-selector") {
     if(!activation)throw new TypeError("A retained namespace selection needs its activation identity.");
-    // These are exact interface targets, not a model value. No member is
-    // evaluated eagerly; the body's occurrence applies its own substitution
-    // after this decision, including candidates retained under pending slots.
-    return scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,effects.labels?selector.members:[]));
+    // The body occurrences hold exact interface candidates. This decision
+    // carries no unused member table; each use applies its own substitution
+    // after the branch selects the namespace.
+    return scope.withSlotOutcomes(effects.labels?scope.slotOutcomes.selectNamespace(activation.bindingId)
+      :scope.slotOutcomes.activate(activation.bindingId,[]));
   }
   const key=referenceKey(node),notation=key?scope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {

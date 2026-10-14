@@ -100,8 +100,9 @@ export const openingResolution=(id,label,enclosing,candidates=[])=>Object.freeze
   ...(candidates.length?{candidates:Object.freeze(candidates.map(resolution))}:{})});
 export const projectedResolution=(projection,receiver)=>Object.freeze({tag:"projected",
   projection:string(projection,"a projection identity"),receiver:string(receiver,"a receiver identity")});
-export const failedResolution=({message,namespace,member,description})=>Object.freeze({tag:"failure",
-  message:string(message,"a resolution failure"),...(namespace===undefined?{}:{namespace,member,description})});
+export const failedResolution=({message,namespace,member,description,origin})=>Object.freeze({tag:"failure",
+  message:string(message,"a resolution failure"),...(namespace===undefined?{}:{namespace,member,description}),
+  ...(origin?{origin:sourceOrigin(origin)}:{})});
 const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:string(id,"an activation identity"),
   ...(candidates.length?{candidates:Object.freeze(candidates.map(([label,value])=>
     Object.freeze([string(label,"an interface candidate"),resolution(value)])))}:{})});
@@ -111,11 +112,20 @@ const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:str
 export const namespaceResolution=(members,fallback,description)=>Object.freeze({tag:"namespace",
   members:Object.freeze([...members].map(([label,value])=>Object.freeze([string(label,"an interface member"),resolution(value)]))),
   fallback:resolution(fallback),description:string(description,"an interface description")});
+// After source resolution the occurrences carry their own candidates. The
+// selector only needs to decide that this branch selected that namespace.
+export const namespaceSelectorResolution=()=>Object.freeze({tag:"namespace-selector"});
 export class UnknownNamespaceMember extends TypeError {
-  constructor(namespace,member,description) {
-    super("Unknown member of a resolved interface namespace.");
+  constructor(namespace,member,description,message="Unknown member of a resolved interface namespace.") {
+    super(message);
     Object.assign(this,{namespace,member,description});
   }
+}
+export function resolutionError(value) {
+  const error=value.namespace===undefined?Error(value.message)
+    :new UnknownNamespaceMember(value.namespace,value.member,value.description,value.message);
+  if(value.origin)Object.assign(error,{origin:value.origin,offset:value.origin.start,sourceEnd:value.origin.end});
+  return error;
 }
 export function resolution(value) {
   switch (value?.tag) {
@@ -129,6 +139,7 @@ export function resolution(value) {
     case "projected": return projectedResolution(value.projection,value.receiver);
     case "failure": return failedResolution(value);
     case "namespace": return namespaceResolution(value.members,value.fallback,value.description);
+    case "namespace-selector":return namespaceSelectorResolution();
     default: throw new TypeError("Invalid lexical resolution.");
   }
 }
@@ -136,20 +147,22 @@ export function resolution(value) {
 // One identity traversal covers nested fallbacks, namespaces and structural
 // targets. Cloning, correspondence, validation and alpha comparison use it;
 // none may silently leave an identity hidden in a new resolution variant.
-export function mapResolution(value,identity=id=>id) {
-  const map=value=>mapResolution(value,identity);
+export function mapResolution(value,identity=id=>id,project=value=>value) {
+  const map=value=>mapResolution(value,identity,project);
+  let mapped;
   switch(value.tag) {
-    case "binding":return {...value,id:identity(value.id,value.tag)};
-    case "opening-frame":return {...value,id:identity(value.id,value.tag),
-      ...(value.candidates?{candidates:value.candidates.map(([label,value])=>[label,map(value)])}:{})};
-    case "slot": case "opening":return {...value,id:identity(value.id,value.tag),enclosing:map(value.enclosing),
-      ...(value.candidates?{candidates:value.candidates.map(map)}:{})};
-    case "member":return {...value,receiver:map(value.receiver)};
-    case "projected":return {...value,projection:identity(value.projection,"projection"),receiver:identity(value.receiver,"receiver")};
-    case "namespace":return {...value,fallback:map(value.fallback),members:value.members.map(([label,value])=>[label,map(value)])};
-    case "missing": case "reserved": case "failure":return value;
+    case "binding":mapped={...value,id:identity(value.id,value.tag)};break;
+    case "opening-frame":mapped={...value,id:identity(value.id,value.tag),
+      ...(value.candidates?{candidates:value.candidates.map(([label,value])=>[label,map(value)])}:{})};break;
+    case "slot": case "opening":mapped={...value,id:identity(value.id,value.tag),enclosing:map(value.enclosing),
+      ...(value.candidates?{candidates:value.candidates.map(map)}:{})};break;
+    case "member":mapped={...value,receiver:map(value.receiver)};break;
+    case "projected":mapped={...value,projection:identity(value.projection,"projection"),receiver:identity(value.receiver,"receiver")};break;
+    case "namespace":mapped={...value,fallback:map(value.fallback),members:value.members.map(([label,value])=>[label,map(value)])};break;
+    case "missing": case "reserved": case "failure": case "namespace-selector":mapped=value;break;
     default:throw new TypeError("Invalid lexical resolution.");
   }
+  return project(mapped);
 }
 
 // Immutable ordered source scope. Live terms, checker maps, native handles
@@ -234,6 +247,13 @@ export class LexicalContext {
     return context;
   }
   namespace(label,members,description) {return this.bind(label,namespaceResolution(members,this.lookup(label),description));}
+  introducedAfter(id,boundary) {
+    let found=false,entry=this.#head;
+    for(;entry&&entry!==boundary.#head;entry=entry.parent)
+      if(["binding","slot"].includes(entry.value.tag)&&entry.value.id===id)found=true;
+    if(entry!==boundary.#head)throw new TypeError("A namespace scope boundary must enclose the current context.");
+    return found;
+  }
   snapshot() {
     const entries = [];
     for (let entry = this.#head; entry; entry = entry.parent) entries.push(Object.freeze([entry.label, entry.value]));
@@ -250,19 +270,23 @@ export class SlotOutcomes {
     this.#entries = new Map();
     for (const [id, outcome] of entries) {
       string(id, "a slot identity");
-      if ((!['variable','constructor'].includes(outcome)&&outcome?.kind!=="opening") || this.#entries.has(id))
+      if ((!['variable','constructor'].includes(outcome)&&!["opening","namespace"].includes(outcome?.kind)) || this.#entries.has(id))
         throw new TypeError("Invalid or repeated slot outcome.");
       const value=outcome?.kind==="opening"?Object.freeze({kind:"opening",members:Object.freeze(outcome.members.map(([label,value])=>
-        Object.freeze([string(label,"an opened member"),resolution(value)])))}):outcome;
+        Object.freeze([string(label,"an opened member"),resolution(value)])))}):outcome?.kind==="namespace"?Object.freeze({kind:"namespace"}):outcome;
       this.#entries.set(id,value);
     }
     Object.freeze(this);
   }
   get(id) {const value=this.#entries.get(id);return typeof value==="string"?value:null;}
-  activation(id) {const value=this.#entries.get(id);return value?.kind==="opening"?value:null;}
+  activation(id) {const value=this.#entries.get(id);return ["opening","namespace"].includes(value?.kind)?value:null;}
   activate(id,members) {
     if(this.#entries.has(id))throw new TypeError("An activation has already been resolved in this branch.");
     return new SlotOutcomes([...this.#entries,[id,{kind:"opening",members:[...members]}]]);
+  }
+  selectNamespace(id) {
+    if(this.#entries.has(id))throw new TypeError("An activation has already been resolved in this branch.");
+    return new SlotOutcomes([...this.#entries,[id,{kind:"namespace"}]]);
   }
   decide(id, outcome) {
     if (this.#entries.has(id)) throw new TypeError("A slot has already been decided in this branch.");
@@ -273,6 +297,10 @@ export class SlotOutcomes {
     if(value.tag==="opening") {
       const ready=this.activation(value.id);
       if(!ready)return value;
+      if(ready.kind==="namespace") {
+        if(value.candidates?.length>1)throw new TypeError("A namespace occurrence needs one unambiguous candidate.");
+        return this.resolve(value.candidates?.[0]??value.enclosing);
+      }
       const [root,...fields]=value.label.split("."),member=ready.members.find(([label])=>label===root);
       return this.resolve(member?memberResolution(member[1],fields):value.enclosing);
     }
@@ -320,11 +348,10 @@ export class BindingAdapter {
   }
   lower(value, outcomes = new SlotOutcomes(), {deferMissing = false} = {}) {
     value = this.resolve(value, outcomes);
-    if (["slot","opening","member","projected","namespace"].includes(value.tag)) return null; // Resolution/selection owns these forms.
+    if (["slot","opening","member","projected","namespace","namespace-selector"].includes(value.tag)) return null; // Resolution/selection owns these forms.
     if (value.tag === "missing" && deferMissing) return null;
     if (value.tag === "binding") return this.key(value.id);
-    if(value.tag==="failure")throw value.namespace===undefined?Error(value.message)
-      :new UnknownNamespaceMember(value.namespace,value.member,value.description);
+    if(value.tag==="failure")throw resolutionError(value);
     if (value.tag === "reserved" && this.#reserved.has(value.label)) return value.label;
     if (value.tag === "missing") throw Error(`Untranslated name: ${value.label}`);
     throw new TypeError(`A late lookup is not allowed: ${value.label}`);

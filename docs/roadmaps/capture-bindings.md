@@ -211,13 +211,21 @@ parameters and `m.(expression)` can introduce bare field and derived labels
 only after the receiver's type is known (`opened` in `translator/theories.mjs`).
 Explicit parent-label selections inside a theory have a separate source
 namespace: `p.(e)` reads free fields through the parent labelled `p`, preserving
-lexical parameters and locals. Ordinary term lookup and block `use p` retain
+parameters and locals introduced within the current field or derived
+declaration. Its starting lexical context is an explicit boundary: theory
+header parameters and universes do not override the selected parent's fields.
+Inherited ambiguity is a failure in the ordered context, which an explicit
+namespace or a later local can shadow. Ordinary term lookup and block `use p` retain
 the label's bare-value fallback. A static parent selection resolves its body
 immediately and leaves no runtime receiver or unused-member dependencies.
-If a deferred binding can shadow the label, retain the namespace alternative
-and its candidate member IDs until resolution. Substitution records the
+If a deferred binding can shadow the label, retain a namespace decision and
+the body occurrences' candidate member IDs until resolution. Do not copy
+the whole member table into the selector: unused members must not affect
+sharing, dependencies or substitution. Substitution records the
 arguments for those candidates in the affected body occurrences; a namespace
 decision opens exact interface targets without evaluating unused members.
+An immediate or deferred failed lookup carries the same source diagnostic
+and occurrence origin through cloning and inheritance.
 An activation retains the receiver occurrence and its activation
 context, separately from the authored recipe's origin. Block/section openings
 and explicit selections activate at their lexical source point. File-level
@@ -232,7 +240,14 @@ copies inherit the resolved activation, never activate a source recipe again
 in the transformation's destination.
 
 The closed file-level activation boundary returns a retained source item,
-its lexical context and explicit receiver captures keyed by activation ID.
+its lexical context and explicit receiver captures keyed by semantic receiver
+ID. Activation occurrences and receiver meaning are distinct: equal closed
+receiver syntax, up to alpha-renaming, shares one capture identity within the
+compilation, reusing a declaration ID when available. Every source consumer
+still performs its own activation and retains its own origin. A changed
+receiver has a different identity; interning is not definitional equality or
+permission to skip source checking. Structural interface comparisons therefore
+do not mistake two occurrences of the same capture for different types.
 These captures are external to each generated declaration's local telescope:
 inheritance and local freshening preserve them like source imports. Their
 values are checked, closed core descriptions carried in the module's private

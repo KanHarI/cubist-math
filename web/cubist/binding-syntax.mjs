@@ -4,9 +4,11 @@
 // through nominal capture on failure.
 import {scopeMapped, binderName, bindingRole} from "./scopes.mjs";
 import {members} from "./references.mjs";
-import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution} from "./bindings.mjs";
+import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution,
+  failedResolution,resolutionError,UnknownNamespaceMember,namespaceSelectorResolution} from "./bindings.mjs";
 import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
 import {syntaxValue,expandedSource} from "./source-syntax.mjs";
+import {mapSyntax} from "../translator/syntax-graph.mjs";
 
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
@@ -27,15 +29,16 @@ const occurrence = (at, value, spelling, origin) => ({kind: "bindingReference", 
 // lexical binders. Model openings are different: they shadow preceding
 // locals. A pending pattern keeps its variable alternative and replaces only
 // the constructor branch's enclosing interpretation with the selected field.
-function namespaceSelector(value,context,table) {
+function namespaceSelector(value,context,table,boundary) {
   const localRoles=new Set(["parameter","universe","local","dimension","pattern"]);
-  const protect=(local,target)=>local.tag==="binding"&&localRoles.has(table.get(local.id).role)?local
-    :local.tag==="slot"?slotResolution(local.id,protect(local.enclosing,target))
+  const localBinding=id=>localRoles.has(table.get(id).role)&&(!boundary||context.introducedAfter(id,boundary));
+  const protect=(local,target)=>local.tag==="binding"&&localBinding(local.id)?local
+    :local.tag==="slot"&&localBinding(local.id)?slotResolution(local.id,protect(local.enclosing,target))
     :local.tag==="opening"?protect(local.enclosing,target)
     :local.tag==="namespace"?protect(local.fallback,target):target;
   if(value.tag==="namespace")return namespaceResolution(value.members.map(([label,target])=>
     [label,protect(context.lookup(label),target)]),value.fallback,value.description);
-  if(["slot","opening"].includes(value.tag))return {...value,enclosing:namespaceSelector(value.enclosing,context,table)};
+  if(["slot","opening"].includes(value.tag))return {...value,enclosing:namespaceSelector(value.enclosing,context,table,boundary)};
   return value;
 }
 const namespaceCandidates=value=>value?.tag==="namespace"?value.members
@@ -55,7 +58,7 @@ export function resolveBindingTemplate(tree,options,splices) {
 
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
-  fixedReferences=new Map(),universeReferences=new Map()},splices=null) {
+  fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null},splices=null) {
   const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
@@ -73,9 +76,22 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   }
   const owned = [];
   const selectors=new Map();
-  let staticNamespace=false;
+  let namespaces=false;
   let splice=0;
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
+  const resolvedAt=(value,node)=>mapResolution(value,undefined,value=>value.tag==="failure"?failedResolution({...value,
+    ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
+  const lookup=(at,name,node,selector=false)=>{
+    let found;
+    try {found=selector?at.selector(name):at.qualified(name);}
+    catch(error) {
+      if(!(error instanceof UnknownNamespaceMember))throw error;
+      throw resolutionError(resolvedAt(failedResolution(error),node));
+    }
+    const value=resolvedAt(found.value,node);
+    if(value.tag==="failure")throw resolutionError(value);
+    return {...found,value};
+  };
   tree = scopeMapped(tree, {
     deferred: true,
     prepare(node,at) {
@@ -83,12 +99,10 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
       let model=node.model,selector;
       if(node.kind==="select"&&model.kind==="name") {
-        let found;
-        try {found=at.selector(model.name);}
-        catch(error) {error.at??=model;throw error;}
+        const found=lookup(at,model.name,model,true);
         if(model.name!=="_"||found.value.tag==="namespace") {
-          selector=memberResolution(namespaceSelector(found.value,at,table),found.fields);
-          if(selector.tag==="namespace")staticNamespace=true;
+          selector=memberResolution(namespaceSelector(found.value,at,table,namespaceBoundary),found.fields);
+          if(selector.tag==="namespace"||namespaceCandidates(selector).length)namespaces=true;
           model={...model};selectors.set(model,selector);
         }
       }
@@ -131,10 +145,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         throw new TypeError("Binding syntax family has not migrated: notation operator");
       if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
       if (node.kind !== "name") return node;
-      let qualified;
-      try {qualified=at.qualified(node.name);}
-      catch(error){error.at??=node;throw error;}
-      const {value, fields} = qualified;
+      const {value, fields} = lookup(at,node.name,node);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));
       return fields.length ? members(node, {...ref, end: node.start + spelling.length}, fields) : ref;
@@ -169,13 +180,16 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   }, context);
   if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
   const syntax=freeze({format, tree, owned, inferred: canonical.inferred});
-  if(!staticNamespace)return syntax;
+  if(!namespaces)return syntax;
   // A statically selected interface is a lexical scope, not a runtime model.
   // Its body is now resolved, so discard that scope descriptor. Keeping its
   // unused member table would invent dependencies and affect alpha equality.
-  const erase=tree=>scopeMapped(tree,{deferred:true,extend:at=>at,enter(node) {
-    return node.kind==="select"&&node.activation?.activationMode==="namespace"?erase(node.body):node;
-  }},null);
+  const erase=tree=>mapSyntax(tree,node=>{
+    if(node.kind==="select"&&node.activation?.activationMode==="namespace")return erase(node.body);
+    // A deferred selector carries only the decision, not the entire source
+    // namespace. Each body occurrence already retained its needed candidate.
+    if(node.tag==="namespace")return namespaceSelectorResolution();
+  });
   return bindingSyntaxView(syntax,erase(tree),{inferred:canonical.inferred});
 }
 
@@ -240,7 +254,7 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
           }
           visit({...node,resolution:alternative},required);
         }
-      } else if(selected.tag!=="namespace")uses.push({kind:selected.tag,label:selected.label,origin:node.origin});
+      } else if(!["namespace","namespace-selector"].includes(selected.tag))uses.push({kind:selected.tag,label:selected.label,origin:node.origin});
       // A namespace selector describes alternatives; it evaluates no member.
       // Its body carries the actual (possibly conditional) dependencies.
       return node;

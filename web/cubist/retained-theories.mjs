@@ -5,9 +5,9 @@
 import {RetainedInterfaces} from "./retained-interfaces.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
 import {bindingSyntaxView} from "./binding-syntax.mjs";
-import {bindingResolution,reservedResolution,sourceOrigin,UnknownNamespaceMember} from "./bindings.mjs";
+import {bindingResolution,reservedResolution,sourceOrigin} from "./bindings.mjs";
 import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
-import {allNames,freeNames,freshName,scopeMapped,rewritten} from "./scopes.mjs";
+import {allNames,freeNames,freshName,scopeMapped} from "./scopes.mjs";
 import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
 import {retainFieldNotation} from "./retained-notation.mjs";
@@ -86,22 +86,9 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     }
   }
   for(const item of theory.fields) {
-    // Ambiguity is a source-scope refusal. Locals and already admitted own
-    // members may shadow it; a destination global cannot disambiguate it.
-    rewritten(item,(node,bound)=>{
-      if(node.kind==="name"&&ambiguous.has(node.name)&&!bound.has(node.name)&&!headerNames.has(node.name)&&!byName.has(node.name))
-        throw located(Error(`${node.name} is ambiguous in ${T}: ${ambiguous.get(node.name).map(e=>`${e.label}'s`).join(" and ")}. Write ${ambiguous.get(node.name).map(e=>`${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`),node);
-      return node;
-    });
     const self=item.kind==="derived"&&freeNames(item.value,new Set(item.params.map(p=>p.name.text))).has(item.name.text);
-    let entry;
     const {notation,...plain}=item;
-    try {entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families)});}
-    catch(error) {
-      if(error instanceof UnknownNamespaceMember)
-        throw located(Error(`${error.description}, ${T}'s parent ${error.namespace}, has no field ${error.member}.`),error.at??item);
-      throw error;
-    }
+    const entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families)});
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);

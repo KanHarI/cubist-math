@@ -4,6 +4,7 @@
 import {LexicalContext} from "./bindings.mjs";
 import {resolveBindingSyntax} from "./binding-syntax.mjs";
 import {validateFieldNotation} from "./theory-notation.mjs";
+import {parentNamespaceFailure} from "./retained-interfaces.mjs";
 
 export function retainFieldNotation(item,entry,fields,options) {
   if(!item.notation)return null;
@@ -16,6 +17,7 @@ export function retainFieldNotation(item,entry,fields,options) {
   const context=new LexicalContext(entry.lexical);
   const receiver=(token,side)=>token?resolveBindingSyntax({kind:"name",name:token.text,...token},{
     ...options,owner:[...options.owner,"notation",entry.id,side],context,
+    namespaceFailure:error=>parentNamespaceFailure(options.theory,error),
   }):null;
   const recipe=Object.freeze({left:receiver(item.notation.leftView,"left"),right:receiver(item.notation.rightView,"right")});
   return Object.freeze({key,field:entry.id,recipe});

@@ -8,6 +8,8 @@ import {parameterForalls} from "./telescopes.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
   "notation","uses","computable","keyword","levelToken","start","end","origin","typedValue","valueStart","valueEnd","modifierStart","implicitParameters"]);
+export const parentNamespaceFailure=(theory,{description,namespace,member})=>
+  `${description}, ${theory}'s parent ${namespace}, has no field ${member}.`;
 export class InheritedInterfaceConflict extends TypeError {
   constructor(label) {
     super(`Inherited interfaces for ${label} have different origins, kinds or instantiated types.`);
@@ -60,7 +62,8 @@ export class RetainedInterfaces {
       fixedReferences.set(parameter.type,/^U+[0-9]+$/.test(label)?reservedResolution(label):{tag:"universe",label});
     }
     return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors,
-      evidenceTypes:this.evidenceTypes,self,fixedReferences,universeReferences});
+      evidenceTypes:this.evidenceTypes,self,fixedReferences,universeReferences,namespaceBoundary:context,
+      namespaceFailure:error=>parentNamespaceFailure(this.header?.tree.name.text??tree.name.text,error)});
   }
   parameters(name,params,{fixedReferences=new Map()}={}) {
     if(this.header||this.entries.length)throw new TypeError("A retained header precedes its members and is resolved once.");

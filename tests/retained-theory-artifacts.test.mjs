@@ -580,3 +580,84 @@ test("retained operand recipes instantiate the selected model's header and field
     assert.equal(equal("raised_value","fun (recipe : Numerals(U0)) => succ(zero)"),true);
   });
 });
+
+test("parent namespace selections distinguish header scope from field-local binders",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=[
+    "theory P(U < UU0) { M : U; }",
+    "theory Header(U < UU0, M : U0) extends p : P(M := N) { f(a : p.(M)) : N; }",
+    "theory Universe(U, M < UU0) extends p : P(M := N) { f(a : p.(M)) : N; }",
+    "theory Local(U < UU0, M : U0) extends p : P(M := N) { f(M : U0, a : p.(M)) : M; }",
+  ].map(text=>buildSource(text));
+  const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def intended : Header(U0, Unit) := Header.make(Unit, Two, fun (a : Two) => a);
+    def wrong_header : Header(U0, Unit) := Header.make(Unit, Two, fun (a : Unit) => left_);
+    def universe_intended : Universe(U0, U0) := Universe.make(Two, fun (a : Two) => a);
+    def wrong_universe : Universe(U0, U0) := Universe.make(Two, fun (a : U0) => left_);
+    def local_intended : Local(U0, Unit) := Local.make(Unit, Two, fun (M : U0) => fun (a : M) => a);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong_header","wrong_universe"],JSON.stringify(failures(result)));
+});
+
+test("inherited ambiguity is an ordered resolution that explicit namespaces and locals can shadow",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=[
+    "theory P(U < UU0) { M : U; x : M; }",
+    "theory Q(U < UU0) { M : U; x : M; }",
+    "theory C(U < UU0) extends p : P, q : Q { f(a : M, e : a = p.(x)) : M; def local(x : M) : M := x; }",
+  ].map(text=>buildSource(text));
+  assert.throws(()=>buildSource("theory Bad(U < UU0) extends p : P, q : Q { def bad : M := x; }"),/x is ambiguous in Bad/);
+  const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def intended : C(U0) := C.make(Two, left_, right_, fun (a : Two, e : a = left_) => a);
+    def wrong : C(U0) := C.make(Two, left_, right_, fun (a : Two, e : a = right_) => a);
+    def local_value : intended.local(right_) = right_ := refl(right_);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+});
+
+test("deferred namespaces retain only the member candidates used by their bodies",async t=>{
+  const {buildSource,check}=await setup(t,undefined,`
+    theory Leaf(U < UU0) { w : Two; } def leaf : Leaf(U0) := Leaf.make(left_);
+  `);
+  const built=[
+    "theory G(U < UU0) { x : Two; y : Two; }",
+    "theory A(U < UU0) extends g : G { def pick(m : Leaf(U0)) : Two := m.(g.(x)); }",
+    "theory B(U < UU0) extends a : A(y := z) {}",
+    "theory C(U < UU0) extends a : A {}",
+    "theory D(U < UU0) extends b : B, c : C {}",
+  ].map(text=>buildSource(text));
+  assert.equal(built.at(-1).record.derived.filter(d=>d.label==="pick").length,1);
+  const source=built[1].record,unused=source.fields.find(f=>f.label==="y").id;
+  assert.ok(bindingUses(source.derived[0].syntax,{conditional:true}).every(use=>use.id!==unused));
+  const {result,equal}=check({declarations:built.flatMap(b=>b.declarations)},`
+    def d : D(U0) := D.make(x := right_, z := left_, y := left_);
+    def picked : Two := D.pick(d, leaf);
+    def wrong : picked = left_ := refl(left_);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.equal(equal("picked","right_"),true);
+});
+
+test("deferred namespace failures keep the same source diagnostic as immediate lookup",async t=>{
+  const {buildSource,check}=await setup(t,undefined,"theory Leaf(U < UU0) { w : Two; }");
+  const parent=buildSource("theory Parent(U < UU0) { x : Two; }");
+  const immediate="theory Static(U < UU0) extends left_ : Parent { def bad : Two := left_.unknown; }";
+  assert.throws(()=>buildSource(immediate),error=>{
+    assert.equal(error.message,"Parent, Static's parent left_, has no field unknown.");
+    assert.equal(error.offset,immediate.indexOf("left_.unknown"));
+    return true;
+  });
+  const text=`theory C(U < UU0) extends left_ : Parent {
+    def pick(b : Two) : Two := match b { left_ => left_.unknown; right_ => right_; };
+    def opened(m : Leaf(U0)) : Two := m.(left_.unknown);
+  }`;
+  const child=buildSource(text),{result}=check({declarations:[...parent.declarations,...child.declarations]});
+  const errors=result.declarations.filter(d=>d.status!=="checked-native-cubical");
+  assert.deepEqual(errors.map(e=>e.name),["C.pick","C.opened"]);
+  for(const [index,error] of errors.entries()) {
+    assert.equal(error.reason,"Parent, C's parent left_, has no field unknown.");
+    const offset=index===0?text.indexOf("left_.unknown"):text.lastIndexOf("left_.unknown");
+    assert.equal(error.errorStart,offset);
+    assert.equal(error.errorEnd,offset+"left_.unknown".length);
+  }
+});
