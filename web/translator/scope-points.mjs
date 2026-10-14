@@ -7,6 +7,7 @@ import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
 import {snapshotSyntax} from "./syntax-graph.mjs";
 import {expandedSource} from "../cubist/source-syntax.mjs";
+import {sourceNotationInventory} from "./binding-module.mjs";
 
 const publicName=/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
 const RECURSIVE="\u0000recursive",SELECTION="\u0000selection";
@@ -79,7 +80,7 @@ export class ScopePoints {
   // value mapping. Only the description is stored; the mapping is used by the
   // synchronous query callback and cannot leave its isolated session.
   bindings(scope) {
-    let lexical=new LexicalContext();
+    let lexical=new LexicalContext().withNotations(sourceNotationInventory(this.compilation,scope.env));
     const values=new Map(),keys=new Map(),records=[],recursive=[];
     for(const [key,value] of scope.env) {
       const local=scope.sourceBindings.get(key),identified=scope.unit.bindingAdapter?.bindingForKey(key);

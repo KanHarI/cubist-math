@@ -5,7 +5,7 @@ import create from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
-import {bindingInputs,bindingDeclaration} from "../web/translator/binding-module.mjs";
+import {sourceBindingInputs,bindingDeclaration} from "../web/translator/binding-module.mjs";
 import {parse,reservedReferences} from "../web/cubist/parser.mjs";
 import {BindingTable,BindingAdapter,LexicalContext,SlotOutcomes,sourceOrigin,bindingResolution,
   projectedResolution,UnknownNamespaceMember} from "../web/cubist/bindings.mjs";
@@ -62,12 +62,8 @@ async function setup(t) {
     def receiver(a : Unit) : Leaf(U0) := chosen;
     def outside : Two := right_;
   `,"base")).gaps,[]);
-  const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base"),values=new Map(),lexical=[];
-  for(const [label,value] of env)if(!label.startsWith("\u0000")) {
-    const binding=registry.ofValue(value);
-    if(binding){values.set(binding.id,value);lexical.push([label,bindingResolution(binding.id)]);}
-  }
-  const inputs=bindingInputs(table,values,{lexical,reserved:reservedReferences("U0 UU0 Unit tt refl")});
+  const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base");
+  const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences("U0 UU0 Unit tt refl")});
   const source={revision:"retained-opening",module:"source"};let serial=0;
   const retain=text=>{
     const d=parse(text).declarations[0],owner=["retained",String(serial++)];

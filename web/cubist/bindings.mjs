@@ -201,10 +201,16 @@ export class LexicalContext {
   // An explicit selection can name an interface namespace. Its ordinary
   // bare-value fallback has a different meaning, including under a deferred
   // pattern or model opening, so it cannot be reused for this lookup.
-  selector(name) {
-    const notation=this.notations()?.find(entry=>entry.name===name);
+  selector(name,{namespace=true}={}) {
+    const found=this.#lookupAfter(this.#head,name,true,namespace);
+    // A lexically selected parent is an explicit interface scope. Module
+    // notation labels do not replace it. `use p` requests an ordinary model
+    // instead, so it does not take this namespace interpretation.
+    if(found.value.tag==="namespace")return found;
+    const inventory=this.notations();
+    if(inventory===null)throw new TypeError("A retained selection requires the complete source notation inventory.");
+    const notation=inventory.find(entry=>entry.name===name);
     if(notation&&!notation.model)throw new TypeError("Retained named notation activation has not migrated.");
-    const found=this.#lookupAfter(this.#head,name,true,true);
     if(notation?.model) {
       // Only a selected model branch receives its attached rules. A parent
       // namespace may retain that model as its ordinary bare-value fallback,

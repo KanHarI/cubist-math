@@ -109,6 +109,33 @@ test("contextual model queries share the replay compilation's exact projection i
   await query(session,"typeof m.x","type");
 });
 
+test("contextual selections preserve the source named-notation namespace across scratch bindings",async t=>{
+  for(const attached of [false,true])await t.test(attached?"model-attached rules":"standalone notation",async t=>{
+    const model=`def recipe : Numerals(U0) := Numerals.make(Nat, fun (n : Nat) => n);`;
+    const notation=`notation recipe { numeral(n : Nat) := succ(n); }`;
+    const source=`inductive Nat { zero; succ(n : Nat); }
+      theory Numerals(U < UU0) { M : U; read(n : Nat) : M; }
+      def read(n : Nat) : Nat := succ(n);
+      ${attached?model+notation:notation+model}
+      def source_value : Nat := recipe.(read(zero));
+      def intended : source_value = ${attached?"zero":"succ(zero)"} := refl(${attached?"zero":"succ(zero)"});
+      def f(k : Nat) : Nat := k;`;
+    const {program,result}=await setup(t,source);
+    assert.deepEqual(result.gaps,[]);
+    const session=at(program,source,"k;");
+    const rejected=await query(session,"evaluate recipe.(read(zero))","error");
+    assert.match(rejected.text,/Retained named notation activation has not migrated/);
+    await query(session,"evaluate read(zero)","value","succ(zero)");
+    await query(session,"evaluate source_value","value",attached?"zero":"succ(zero)");
+    await query(session,"let saved := source_value","defined");
+    assert.match((await query(session,"recipe.(read(zero))","error")).text,/named notation activation/);
+    await query(session,"let recipe := tt","defined");
+    const shadowed=await query(session,"recipe.(read(zero))","error");
+    assert.match(shadowed.text,attached?/use selects a model/:/named notation activation/);
+    await query(session,"evaluate saved","value",attached?"zero":"succ(zero)");
+  });
+});
+
 test("CB1 contextual session: let-before-after",async t=>{
   const fixture=scenario("let-before-after"),{program}=await setup(t,fixture.source);
   const initializer=at(program,fixture.source,"succ(next_)"),after=at(program,fixture.source,fixture.marker,"after");

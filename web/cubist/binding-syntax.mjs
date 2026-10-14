@@ -94,7 +94,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
   const lookup=(at,name,node,selector=false)=>{
     let found;
-    try {found=selector?at.lexical.selector(name):at.lexical.qualified(name);}
+    try {found=selector?at.lexical.selector(name,selector===true?{}:selector):at.lexical.qualified(name);}
     catch(error) {
       if(!(error instanceof UnknownNamespaceMember))throw error;
       throw resolutionError(resolvedAt(failedResolution(error),node));
@@ -109,8 +109,8 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(!["select","use"].includes(node.kind))return node;
       if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
       let model=node.model,selector;
-      if(node.kind==="select"&&model.kind==="name") {
-        const found=lookup(at,model.name,model,true);
+      if(model.kind==="name") {
+        const found=lookup(at,model.name,model,{namespace:node.kind==="select"});
         if(model.name!=="_"||found.value.tag==="namespace") {
           selector=memberResolution(namespaceSelector(found.value,at.lexical,table,namespaceBoundary),found.fields);
           if(selector.tag==="namespace"||namespaceCandidates(selector).length)namespaces=true;

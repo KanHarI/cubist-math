@@ -129,3 +129,13 @@ test("model notation inventories classify selected branches without following na
     assert.equal(namespace.defer("p",slot.id).selector("p").value.enclosing.tag,"namespace");
   }
 });
+
+test("selection requires a known namespace and distinguishes parent scope selection from ordinary use",()=>{
+  const table=new BindingTable("compilation"),model=allocate(table,"p","declaration"),field=allocate(table,"field","field");
+  const context=new LexicalContext().bind("p",bindingResolution(model.id));
+  assert.throws(()=>context.selector("p"),/complete source notation inventory/);
+  const named=context.withNotations([{name:"p"}]).namespace("p",[["field",bindingResolution(field.id)]],"Parent");
+  assert.equal(named.selector("p").value.tag,"namespace");
+  assert.throws(()=>named.selector("p",{namespace:false}),/named notation activation/);
+  assert.equal(context.withNotations([]).selector("p").value.id,model.id);
+});

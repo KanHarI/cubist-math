@@ -25,18 +25,24 @@ export function bindingInputs(table,values,{reserved=[],lexical=null,notations=n
 // of a named notation. Later lexical binders preserve this inventory while
 // the selector checks whether a model extension still names that model.
 export function sourceBindingInputs(registry,env,{reserved=[]}={}) {
-  const values=new Map(),lexical=[],notations=[];
-  for(const [label,value] of env) {
-    if(label.startsWith("\u0000notation ")&&value?.tag==="Notation") {
+  const values=new Map(),lexical=[];
+  for(const [label,value] of env)if(!label.startsWith("\u0000")) {
+    const binding=registry.ofValue(value);
+    if(binding){values.set(binding.id,value);lexical.push([label,bindingResolution(binding.id)]);}
+  }
+  return bindingInputs(registry.table,values,{reserved,lexical,notations:sourceNotationInventory(registry,env)});
+}
+
+// Module entry and replayed local scopes describe the same selection
+// namespace. Attached rules retain their declaring model even when a local
+// binding currently shadows that model's public label.
+export function sourceNotationInventory(registry,env) {
+  return [...env].filter(([label,value])=>label.startsWith("\u0000notation ")&&value?.tag==="Notation")
+    .map(([label,value])=>{
       const model=value.model?registry.ofValue(value.model):null;
       if(value.model&&!model)throw new TypeError("A model's notation needs its declaration identity.");
-      notations.push({name:label.slice("\u0000notation ".length),model:model?bindingResolution(model.id):null});
-    } else if(!label.startsWith("\u0000")) {
-      const binding=registry.ofValue(value);
-      if(binding){values.set(binding.id,value);lexical.push([label,bindingResolution(binding.id)]);}
-    }
-  }
-  return bindingInputs(registry.table,values,{reserved,lexical,notations});
+      return {name:label.slice("\u0000notation ".length),model:model?bindingResolution(model.id):null};
+    });
 }
 
 export function resolveBindingModule(ast,text,{table,source,imports=new Map()}) {

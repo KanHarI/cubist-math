@@ -566,7 +566,7 @@ test("operand receivers require a complete source selection namespace and reject
 
 test("standalone named notation takes precedence over model receivers and later binders",async t=>{
   for(const model of [false,true])await t.test(model?"same-named model":"notation only",async t=>{
-    const {retain,inputs}=await setup(t,undefined,`
+    const {retain,inputs,retained}=await setup(t,undefined,`
       notation recipe { numeral(n : Nat) := n; }
       ${model?operandModels:""}
     `);
@@ -579,7 +579,22 @@ test("standalone named notation takes precedence over model receivers and later 
           M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
         }`,{context}),/Retained named notation activation has not migrated/);
     }
+    assert.throws(()=>retained.retain(parse("def value(x : Nat) : Nat { use recipe; exact x; }").declarations[0],
+      {kind:"derived"}),/Retained named notation activation has not migrated/);
   });
+});
+
+test("explicit parent scopes precede module named notation while use keeps its ordinary selection namespace",async t=>{
+  const {buildSource,check,retained}=await setup(t,undefined,"notation p { numeral(n : Nat) := n; }");
+  const parent=buildSource("theory Parent(U < UU0) { M : U; x : M; }");
+  const child=buildSource("theory Child(U < UU0) extends p : Parent(M := Carrier) { N : U; f(a : p.(M)) : N; }");
+  const {result}=check({declarations:[...parent.declarations,...child.declarations]},`
+    def intended : Child(U0) := Child.make(Nat, zero, Two, fun (a : Nat) => left_);
+    def wrong : Child(U0) := Child.make(Nat, zero, Two, fun (a : Two) => a);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.throws(()=>retained.retain(parse("def value(x : Nat) : Nat { use p; exact x; }").declarations[0],
+    {kind:"derived"}),/Retained named notation activation has not migrated/);
 });
 
 test("model notation extensions follow that model's identity, not a later same-named receiver",async t=>{

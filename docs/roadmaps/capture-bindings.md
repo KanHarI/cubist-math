@@ -324,13 +324,18 @@ the projection ID. Neither is treated as a dotted global string.
 
 Source selection contexts include the separate named-notation namespace;
 a term-only binding map cannot establish that a notation is absent. Resolve
-standalone named notation before a namespace or model of the same spelling.
+an explicit lexical parent namespace first, then standalone named notation
+before an ordinary model of the same spelling. Block `use` selects an
+ordinary model or named notation, not a parent interface namespace.
 Model-attached rules apply only to that model's identity, not to a later
 same-named binder or a parent namespace's unused bare-value fallback. Until
 named rule identities migrate, known named selections are explicitly refused
 at retention. A receiver already known to be missing also fails there.
-The source context builder must supply a complete notation inventory, even
-when empty, before retaining operand receivers.
+The source context builder and scope-point recorder must supply a complete
+notation inventory, even when empty, before retaining model-name selections.
+Unknown inventory is not an empty namespace. Replay carries that same inert
+inventory into contextual queries and preserves it across scratch bindings;
+it cannot silently turn a named selection into label opening by a model.
 
 Within a retained theory, an earlier declared operator resolves to its exact
 operation ID independently of term binders bearing that operation's label.
