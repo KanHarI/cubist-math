@@ -45,10 +45,10 @@ export function sourceNotationInventory(registry,env) {
     });
 }
 
-export function resolveBindingModule(ast,text,{table,source,imports=new Map()}) {
+export function resolveBindingModule(ast,text,{table,source,imports=new Map(),notations=null}) {
   if(ast.imports.length||!(ast.items??ast.declarations).every(d=>d.kind==="def"))
     throw new TypeError("The binding module entry currently accepts ordinary declarations with explicit imports only.");
-  const inputs=bindingInputs(table,imports,{reserved:reservedReferences(text)});
+  const inputs=bindingInputs(table,imports,{reserved:reservedReferences(text),notations});
   let context=inputs.context;
   const ownership=new DeclarationOwnership();
   const declarations=ast.declarations.map((declaration,index)=>{

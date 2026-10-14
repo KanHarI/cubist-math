@@ -49,7 +49,7 @@ test("pending openings retain whole qualified fallbacks and resolve independentl
 });
 
 const wasm=await create();
-async function setup(t) {
+async function setup(t,extra="") {
   const library=sourceReader();
   const program=new CubicalProgram(wasm,(name,importer)=>name==="two"?`import hlevels; inductive Two : set U0 { left_; right_; }`
     :name==="p"?`import two; theory p(U < UU0) { M : set U; x : M; missing : M; }
@@ -61,6 +61,7 @@ async function setup(t) {
     def box : Box(U0) := Box.make(Two, _, chosen);
     def receiver(a : Unit) : Leaf(U0) := chosen;
     def outside : Two := right_;
+    ${extra}
   `,"base")).gaps,[]);
   const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base");
   const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences("U0 UU0 Unit tt refl")});
@@ -217,6 +218,41 @@ test("source activation is ordered, required per consumer and outside declaratio
   const unused=activateSourceItem(translator,new Scope(translator.unit(),new Map(),env),item,inputs,
     {owner:["ordered","registration"],source});
   assert.equal(unused.context,inputs.context);assert.deepEqual(unused.captures,[]);assert.deepEqual(unused.activations,[]);
+});
+
+test("file-level activation classifies attached notation against the ordered opened receiver",async t=>{
+  const {table,inputs,program,env,source}=await setup(t,`
+    theory Numerals(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
+    def recipe : Numerals(U0) := Numerals.make(Nat, fun (n : Nat) => n);
+    notation recipe { numeral(n : Nat) := succ(n); }
+    theory Pack(U < UU0) { recipe : Numerals(U); }
+    def outer : Pack(U0) := Pack.make(Numerals.make(Nat, fun (n : Nat) => succ(succ(n))));
+  `);
+  const checker=Object.create(program.checker);
+  checker.bindingName=label=>`activation__${label}`;
+  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
+  const translator=new Translator({checker,normalize:false,compilationBindings:program.compilationBindings});
+  let index=0;
+  const prepare=text=>activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),env),
+    parse(text).declarations[0],inputs,{owner:["attached","source",String(index++)],source});
+  assert.throws(()=>prepare("use recipe; theory Refused(U < UU0) { M : U; }"),/named notation activation/);
+  const prepared=prepare(`use outer; use recipe;
+    theory T(U < UU0) { M : U; point : M; def picked : Nat := read(zero); }`);
+  assert.equal(prepared.activations.length,2);
+  const record=retainTheorySource(prepared.item,{table,source,owner:["attached","T"],context:prepared.context,
+    constructors:prepared.constructors});
+  const built=retainedTheoryArtifacts(record,{table,owner:["attached","generated"]});
+  const declarations=built.artifacts.map(({binding,syntax,...annotations})=>bindingDeclaration(binding,syntax,annotations));
+  const result=translator.translateSyntax({declarations:[...declarations,...parse(`
+    def chosen : T(U0) := T.make(Two, left_);
+    def value : Nat := chosen.picked;
+    def intended : value = succ(succ(zero)) := refl(succ(succ(zero)));
+    def wrong : value = succ(zero) := refl(succ(zero));
+  `).declarations]},"",withSourceCaptures(env,prepared,inputs.adapter));
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  const scope=new Scope(translator.unit(),new Map(),result.env);
+  assert.equal(scope.equal(result.env.get("value"),translator.term(parse("succ(succ(zero))",true),scope)),true);
+  assert.equal(scope.equal(result.env.get("value"),translator.term(parse("succ(zero)",true),scope)),false);
 });
 
 test("parent namespace selections preserve fields, lexical binders and model shadowing through generation",async t=>{

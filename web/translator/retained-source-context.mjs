@@ -4,10 +4,10 @@
 // in the destination. The caller explicitly carries this capture environment
 // with the retained syntax across module/generation boundaries.
 import {sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
-import {resolveBindingSyntax,lowerBindingSyntax} from "../cubist/binding-syntax.mjs";
+import {resolveBindingReceiver,lowerBindingSyntax} from "../cubist/binding-syntax.mjs";
 import {fileSelectionEffects} from "../cubist/scopes.mjs";
 import {freeNames,isTerm} from "./core.mjs";
-import {selected,notationBinding} from "./theories.mjs";
+import {selected} from "./theories.mjs";
 
 export function activateSourceItem(t,scope,item,{context,constructors,adapter},{owner,source}) {
   if(scope.context.size||scope.dimensions.size)
@@ -16,11 +16,10 @@ export function activateSourceItem(t,scope,item,{context,constructors,adapter},{
   const captures=[],activations=[];
   let inner=scope.withUnit(scope.unit.with({bindingAdapter:adapter}));
   if(effects.labels||effects.notation)for(const [index,recipe] of (item.uses??[]).entries()) {
-    if(recipe.kind==="name"&&inner.env.get(notationBinding(recipe.name))?.tag==="Notation")
-      throw new TypeError("Retained named notation activation has not migrated.");
     const origin=sourceOrigin({...source,start:recipe.start,end:recipe.end});
     const binding=table.allocate([...owner,"activation",String(index)],{role:"activation",label:"selection",origin});
-    const syntax=resolveBindingSyntax(recipe,{table,owner:[...owner,"recipe",String(index)],context,constructors,source});
+    const syntax=resolveBindingReceiver(recipe,{table,owner:[...owner,"recipe",String(index)],context,constructors,source},
+      {namespace:false});
     const token={text:binding.label,bindingId:binding.id,bindingRole:binding.role,origin,
       start:recipe.start,end:recipe.end};
     inner=selected(t,inner,lowerBindingSyntax(syntax,adapter),{effects,activation:token});

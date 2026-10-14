@@ -52,10 +52,10 @@ export function resolveBindingSyntax(tree, options) {
 // A selected receiver uses the selection namespace at its root. A parent's
 // abstract model is explicit syntax over its interface, never its bare-name
 // fallback to an unrelated declaration. Operand recipes use this entry.
-export function resolveBindingReceiver(tree,options) {
+export function resolveBindingReceiver(tree,options,{namespace=true}={}) {
   if(options.context.notations()===null)
     throw new TypeError("A retained selection receiver requires the complete source notation inventory.");
-  return resolveBindings(tree,{...options,selectionReceiver:true});
+  return resolveBindings(tree,{...options,selectionReceiver:true,receiverNamespace:namespace});
 }
 
 // Transitional generated templates own their binders and explicit holes.
@@ -69,7 +69,7 @@ export function resolveBindingTemplate(tree,options,splices) {
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
   fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
-  notation=null},splices=null) {
+  notation=null,receiverNamespace=true},splices=null) {
   const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
@@ -194,7 +194,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         throw new TypeError("Binding syntax family has not migrated: notation operator");
       if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
       if (node.kind !== "name") return node;
-      let {value, fields} = lookup(at,node.name,node,selectionReceiver&&node===declaration);
+      let {value, fields} = lookup(at,node.name,node,selectionReceiver&&node===declaration?{namespace:receiverNamespace}:false);
       if(selectionReceiver&&node===declaration&&value.tag==="missing")
         throw resolutionError(failedResolution({message:`Untranslated name: ${value.label}`,origin:origin(node)}));
       if(selectionReceiver&&node===declaration)value=mapResolution(value,undefined,value=>{

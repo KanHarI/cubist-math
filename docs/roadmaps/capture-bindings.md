@@ -336,6 +336,11 @@ notation inventory, even when empty, before retaining model-name selections.
 Unknown inventory is not an empty namespace. Replay carries that same inert
 inventory into contextual queries and preserves it across scratch bindings;
 it cannot silently turn a named selection into label opening by a model.
+File-level activation uses this same classifier after each earlier opening;
+it cannot gate attached rules by looking up the receiver's spelling in the
+original module environment. The ordinary-module entry accepts the explicit
+inventory alongside its import correspondence; omitting it leaves selection
+capability unknown, not an empty namespace.
 
 Within a retained theory, an earlier declared operator resolves to its exact
 operation ID independently of term binders bearing that operation's label.
