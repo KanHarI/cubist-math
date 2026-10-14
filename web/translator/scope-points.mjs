@@ -58,15 +58,6 @@ export class ScopePoints {
     this.#owners.set(module,index+1);
     return Object.freeze(["module",module,"declaration",String(index)]);
   }
-  source(tree,module) {
-    // Called once on a freshly parsed module, before any syntax is moved.
-    // Rewriters retain these authored origins even across module boundaries.
-    visitSyntax(tree,node=>{
-      if(node&&(node.kind||typeof node.text==="string")&&Number.isInteger(node.start)&&Number.isInteger(node.end))
-        node.origin??=sourceOrigin({revision:this.revision,module,start:node.start,end:node.end});
-    });
-    return tree;
-  }
   expansion(tree,kind,node,unit) {
     const at=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
     const site=sourceOrigin({...at,expansion:[]}),copy=mapSyntax(tree,()=>undefined);
@@ -138,7 +129,8 @@ export class ScopePoints {
     const owner=scope.unit.contextOwner;
     if(!owners.has(owner)) {
       const live=this.bindings(scope);
-      owners.set(owner,freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),recursive:live.recursive}));
+      owners.set(owner,freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),
+        sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive}));
     }
     return owners.get(owner);
   }
@@ -188,7 +180,7 @@ export class ScopePoints {
       if(declaration?.generated||scope.env.get(SELECTION))throw new TypeError("This generated or selected scope awaits its binding-family migration.");
       const environment=this.#environment(scope);
       description=freeze({...basic,available:true,lexical:environment.lexical,
-        state:{format:"cubist-scope-state-1",bindings:environment.bindings,
+        state:{format:"cubist-scope-state-1",bindings:environment.bindings,sources:environment.sources,
           context:this.#mapDescription(this.#contexts,scope.context),dimensions:this.#mapDescription(this.#dimensions,scope.dimensions),
           slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
             bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}),

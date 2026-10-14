@@ -8,6 +8,7 @@ import {ElaborationStop} from "../web/translator/control.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
 import {Scope,SourceUnit} from "../web/translator/elaboration.mjs";
 import {T} from "../web/translator/core.mjs";
+import {sourceReader} from "../tools/module-sources.mjs";
 
 const module=await create();
 const scenario=id=>contextualScenarios.find(entry=>entry.id===id);
@@ -76,6 +77,29 @@ def h(x : N) : N := match x { zero => zero; y => y; };`;
   const variable=entries.find(p=>p.phase==="expression"&&p.origin.start===last&&p.origin.end===last+1);
   assert.ok(variable?.available,variable?.reason);
   assert.equal(program.scopeRecorder.table.get(binding(variable,"y")).origin.start,source.lastIndexOf("y =>"));
+});
+
+test("pattern aliases preserve parameter permissions without forcing a generalized attempt",async t=>{
+  const source=`inductive Nat { zero; succ(n : Nat); }
+def add(n, m : Nat) : Nat := match n, m { zero, y => y; succ(k), y => succ(add(k, y)); };`;
+  const {program,result}=await setup(t,source);
+  assert.deepEqual(result.gaps,[]);
+  const attempts=points(program).filter(point=>point.declaration==="add").flatMap(point=>point.attempt);
+  assert.ok(attempts.some(attempt=>attempt.kind==="recursive-fixed"));
+  assert.ok(attempts.every(attempt=>attempt.kind!=="recursive-generalized"));
+});
+
+test("local alias metadata preserves definition links without making its global value a local witness",async t=>{
+  const source=`def global : Unit := tt;
+def aliases(a : Unit) : Unit { let b := a; exact b; }
+def positive : Unit { let named := global; simpa with [named] using named; }
+def negative : Unit { let named := global; simpa with [global] using named; }`;
+  const {result}=await setup(t,source);
+  assert.equal(result.gaps.length,1);
+  assert.equal(result.gaps[0].name,"negative");
+  assert.match(result.gaps[0].reason,/witness must be local: global/);
+  const use=source.indexOf("exact b")+6;
+  assert.equal(result.links.find(link=>link.start===use&&link.name==="b").definitionStart,source.indexOf("b :="));
 });
 
 test("shared lexical descriptions retain each point's mutable recursion permissions",()=>{
@@ -160,6 +184,18 @@ test("reference collection cannot change scope identities or declaration fuel",a
   const unobserved=await checkProgram(t,fixture.source,{module});
   assert.deepEqual(withReferences.result.outputs.map(output=>output.searchFuel),unobserved.result.outputs.map(output=>output.searchFuel));
   assert.deepEqual(withReferences.program.kernel.work(),unobserved.program.kernel.work());
+});
+
+test("source provenance and scope collection cannot change cross-module carrier sharing",async t=>{
+  const dependency="import hlevels; theory P(U < UU0) { F(A : set U) : set U; }";
+  const source="import dep; theory Q(U < UU0) { F(A : set U) : set U; } theory PQ(U < UU0) extends P, Q {}";
+  const library=sourceReader(),reader=name=>name==="dep"?dependency:library(name);
+  const off=await checkProgram(t,source,{module,reader});
+  const on=await checkProgram(t,source,{module,reader,options:{collectScopes:true}});
+  assert.deepEqual(off.result.gaps,[]);
+  assert.deepEqual(on.result.gaps,[]);
+  assert.deepEqual(on.result.outputs.map(d=>[d.name,d.searchFuel]),off.result.outputs.map(d=>[d.name,d.searchFuel]));
+  assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
 });
 
 test("source rechecks rebuild imported scopes and invalidate the previous registry",async t=>{

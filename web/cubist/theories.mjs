@@ -24,6 +24,7 @@
 
 import { parse, reservedNames } from "./parser.mjs";
 import { morphismSource } from "./morphisms.mjs";
+import {syntaxValue as semanticSyntax} from "./source-syntax.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
@@ -71,7 +72,7 @@ function namesIn(node, names = new Set()) {
 export const snake = text => text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 const syntaxValue = (key, value) => ["spelling", "label", "synthetic"].includes(key)
   || typeof value === "number" && /^(start|end)$|Start$|End$/.test(key) ? undefined : value;
-const sameSyntax = (a, b) => JSON.stringify(a, syntaxValue) === JSON.stringify(b, syntaxValue);
+const sameSyntax = (a, b) => semanticSyntax(a, syntaxValue) === semanticSyntax(b, syntaxValue);
 // Keep each written shared domain outside its binders. Generated evidence
 // may share a group number but has a different, dependent domain.
 function parameterGroups(params) {

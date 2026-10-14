@@ -12,7 +12,7 @@ import {sourceOrigin} from "../web/cubist/bindings.mjs";
 import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const module=await create();
-const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; }";
+const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); }";
 
 // Exercise complete ordinary declarations through the real translator's
 // admission path. This pilot prepares the explicitly migrated family only;
@@ -132,4 +132,33 @@ test("module preparation and admission share duplicate ownership without replaci
   const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
   assert.equal(scope.equal(result.env.get("client"),translator.term(parse("right_",true),scope)),true);
   assert.equal(scope.equal(result.env.get("client"),translator.term(parse("left_",true),scope)),false);
+});
+
+test("identity clauses preserve nominal shadowing and construct values without destination spellings",async t=>{
+  const source=`
+def same(n : Nat) : Nat := match n { zero => zero; m => m; };
+def legacy(n : Nat) : Nat := induction n return Nat { zero => zero; succ h => succ(h); };
+def shadow(n : Nat) : Nat := induction n return Nat { zero => zero; succ(k) with k => k; };
+def len2(A : U0, xs : List(A)) : Nat := match xs, A {
+  nil, B => zero; cons(x, rest), B => succ(len2(B, rest));
+};
+def same_value : Nat := same(succ(succ(zero)));
+def legacy_value : Nat := legacy(succ(succ(zero)));
+def shadow_value : Nat := shadow(succ(succ(zero)));
+def length_value : Nat := len2(Two, cons(left_, cons(right_, nil)));
+`;
+  for(const clone of [false,true]) {
+    const {result,program,translator}=await prepared(t,source,{clone});
+    assert.deepEqual(result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]),[]);
+    const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+    const zero=translator.term(parse("zero",true),scope),two=translator.term(parse("succ(succ(zero))",true),scope);
+    for(const label of ["same_value","legacy_value","length_value"])assert.equal(scope.equal(result.env.get(label),two),true,label);
+    assert.equal(scope.equal(result.env.get("shadow_value"),zero),true);
+    assert.equal(scope.equal(result.env.get("shadow_value"),two),false);
+  }
+  const program=new CubicalProgram(module,async()=>base);t.after(()=>program.dispose());
+  const nominal=await program.check(`import base; ${source}`,"main");
+  assert.deepEqual(nominal.gaps,[]);
+  const translator=new Translator({checker:program.checker}),scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+  assert.equal(scope.equal(program.modules.get("main").get("shadow_value"),translator.term(parse("zero",true),scope)),true);
 });

@@ -26,11 +26,18 @@ resolution and source inventory. Compiled matches and direct induction or
 obligation clauses use the same slot-decision operation. Introducing a source
 binder derives its key from its identity. Structural recursive-call checks
 lower the decided slots before inspecting their arguments.
+Resolution and native clause elaboration share a telescope ordered as fields,
+induction hypotheses and dimensions, including their shadowing behavior.
+Covering patterns construct values from the matched constructor table;
+the compact Nat induction form infers that table from its scrutinee.
 
 Migration is an explicit allowlist. The scope schema records plain-token
 reference fields and their namespaces, including local witnesses and
 simplification rule/set selectors. Simplification statements remain refused
-at the identity boundary until those namespaces migrate in CB3.
+at the identity boundary until those namespaces migrate in CB3. Notation
+operators and literals also remain outside the identity path, including the
+historical spelling-based expansions. Numeric interval endpoints are data
+and remain supported.
 
 `Translator.translateSyntax` accepts prepared syntax through the same checking
 and admission path as parsed source. The complete ordinary-declaration pilot
@@ -63,8 +70,16 @@ owner/attempt paths identify instances. No description retains a live `Scope`,
 checker, mutable environment or native handle.
 
 Binding introduction clears shadowed metadata; refinement explicitly keeps
-the same identity. Parsed syntax carries source-qualified origins before
-expansion. Notation expansion preserves the authored origin and adds a use
+the same identity. Local labels/evidence metadata belongs to lexical scope
+entries, so two aliases share their checked value without overwriting labels
+or breaking recursion's unchanged-parameter correspondence. Reference events
+carry that entry's key separately from its display label; navigation consumes
+the key rather than matching labels or shared values. This also fulfills the
+G9 generated-law navigation control, whose known-defect record is retired.
+Parsed syntax
+carries source-qualified origins before expansion, with collection on or off.
+A shared metadata gate excludes provenance from structural comparison and
+preserves authored spans during relocation. Notation expansion preserves the authored origin and adds a use
 frame; those scopes remain unavailable until CB3. Registered rule descriptions
 are shared within a declaration and snapshotted anew after registrations.
 
@@ -104,21 +119,21 @@ native handle; WASM and the Node process are shared, without explicit JIT
 warm-up. Process memory is measured around checks after GC and before JSON
 serialization or queries. These are observations, not performance budgets.
 
-After the round-1 corrections, Node v24.13.0:
+After the round-2 corrections in this commit, Node v24.13.0:
 
 | Measurement | Collection off | Collection on |
 | --- | ---: | ---: |
-| Check elapsed | 143 ms | 180 ms |
-| Retained heap growth | 7.13 MB | 4.89 MB |
+| Check elapsed | 111 ms | 140 ms |
+| Retained heap growth | 7.44 MB | 4.77 MB |
 | Scope instances | 0 | 1,620 |
 | Available instances | 0 | 113 |
 
 | Request stage, across 15 entries | Minimum | Median | Maximum |
 | --- | ---: | ---: | ---: |
-| Full prefix replay | 69.22 ms | 81.69 ms | 117.84 ms |
-| Native context validation | 0.164 ms | 0.178 ms | 0.381 ms |
-| Accepted scratch history | 0.001 ms | 0.317 ms | 0.423 ms |
-| New query | 0.168 ms | 0.313 ms | 2.108 ms |
+| Full prefix replay | 56.75 ms | 63.58 ms | 89.59 ms |
+| Native context validation | 0.130 ms | 0.141 ms | 0.315 ms |
+| Accepted scratch history | 0.001 ms | 0.257 ms | 0.323 ms |
+| New query | 0.131 ms | 0.254 ms | 1.116 ms |
 
 These figures are not directly comparable to the earlier run at `69ec8a52`
 (18.79 MB with collection, 199 ms median prefix). The corrected eligibility
@@ -129,7 +144,7 @@ Heap growth is a process observation across separate checks, including cache
 retention and GC effects; it is not an estimate of collection's marginal cost.
 Collection off/on performs identical kernel work: 14,186 instructions and
 1,035 queries. Naively JSON-serializing the entire index still repeats shared
-components (2.73 MB); it is not the intended CB6 transport encoding. The stored
+components (2.77 MB); it is not the intended CB6 transport encoding. The stored
 replay inputs occupy about 28 KB. There is no retained execution session or
 dependency-only replay optimization.
 
@@ -147,3 +162,16 @@ full run passed 974 tests with 52 existing TODOs and no failures, including all
 ownership between preparation and admission; all five declaration tests passed
 afterward, including its new distinguishing duplicate-declaration control.
 Subsequent external review results are recorded in the PR.
+
+Round 2 exposed interactions between provenance and legacy structural
+comparison, between value copying and recursion permissions, and between
+clause binding order and direct induction. Those mechanisms now share the
+metadata gate, lexical entry metadata and clause telescope described above.
+The expanded focused suite passed 70 tests; the subsequent migration-boundary
+audit passed 32 identity/declaration/replay tests. The full run exposed a
+partial navigation improvement in G9; completing the lexical-key reference
+contract made its original desired observation pass, retiring that exemption.
+The final full run passed 980 tests with 51 remaining TODOs and one corpus
+timeout. The unchanged corpus test then passed alone under the same limits,
+checking all 3,857 declarations in 20 seconds. The standalone pilot passed
+after those checks and supplies the measurements above.

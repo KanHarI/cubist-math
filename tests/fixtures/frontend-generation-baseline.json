@@ -451,48 +451,6 @@
           1
         ]
       }
-    },
-    "G9": {
-      "phase": "CB5",
-      "observed": {
-        "diagnostics": [],
-        "missing": [],
-        "assumes": [],
-        "links": [
-          [
-            {
-              "name": "c",
-              "target": null,
-              "start": 0,
-              "end": 0
-            }
-          ],
-          [
-            {
-              "name": "c1",
-              "target": null,
-              "start": 0,
-              "end": 0
-            }
-          ],
-          [
-            {
-              "name": "c1",
-              "target": null,
-              "start": 0,
-              "end": 0
-            }
-          ],
-          [
-            {
-              "name": "c1",
-              "target": null,
-              "start": 0,
-              "end": 0
-            }
-          ]
-        ]
-      }
     }
   }
 }

@@ -80,20 +80,21 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map()) {
-    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map()) {
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
-  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions,this.slotOutcomes,this.sourceBindings);}
-  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,this.sourceBindings);}
-  withSlotOutcomes(slotOutcomes) {return new Scope(this.unit,this.context,this.env,this.dimensions,slotOutcomes,this.sourceBindings);}
-  sourceBinding(name,value,record) {
+  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);}
+  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);}
+  withSlotOutcomes(slotOutcomes) {return new Scope(this.unit,this.context,this.env,this.dimensions,slotOutcomes,this.sourceBindings,this.localSources);}
+  sourceBinding(name,value,record,source=null) {
     const scope=this.alias(name,value);
-    if(!record&&!this.sourceBindings.has(name))return scope;
-    const sourceBindings=new Map(this.sourceBindings);
-    if(record)sourceBindings.set(name,record);else sourceBindings.delete(name);
-    return new Scope(this.unit,this.context,scope.env,this.dimensions,this.slotOutcomes,sourceBindings);
+    if(!record&&!source)return scope;
+    const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
+    if(record)sourceBindings.set(name,record);
+    if(source)localSources.set(name,Object.freeze(source));
+    return new Scope(this.unit,this.context,scope.env,this.dimensions,this.slotOutcomes,sourceBindings,localSources);
   }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
@@ -104,14 +105,14 @@ export class Scope {
     const ends=new Map(face[0].map(literal=>[literal.slice(0,literal.lastIndexOf(":")),literal.endsWith(":1")?1:0]));
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
-    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions,this.slotOutcomes,this.sourceBindings);
+    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);
   }
   alias(name,value) {
     const env=new Map(this.env);
     hide(env,name);
-    const sourceBindings=new Map(this.sourceBindings);
-    sourceBindings.delete(name);
-    return new Scope(this.unit,this.context,env.set(name,value),this.dimensions,this.slotOutcomes,sourceBindings);
+    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
+    sourceBindings.delete(name);localSources.delete(name);
+    return new Scope(this.unit,this.context,env.set(name,value),this.dimensions,this.slotOutcomes,sourceBindings,localSources);
   }
   // Refinement changes a value at the same lexical binding. Introduction
   // (alias/sourceBinding) must never inherit a shadowed binder's identity.
@@ -123,9 +124,9 @@ export class Scope {
   aliases(pairs) {
     if(!pairs.length)return this;
     const env=new Map(this.env);
-    const sourceBindings=new Map(this.sourceBindings);
-    for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);}
-    return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,sourceBindings);
+    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
+    for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);localSources.delete(name);}
+    return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,sourceBindings,localSources);
   }
   // The source name bound here that hides the declaration `name`, or null.
   hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}
@@ -144,14 +145,14 @@ export class Scope {
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
-    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions,this.slotOutcomes,this.sourceBindings);
+    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);
   }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
     if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
-    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index),this.slotOutcomes,this.sourceBindings);
+    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index),this.slotOutcomes,this.sourceBindings,this.localSources);
   }
   // A name from the unit's supply that nothing here binds: a scope built
   // apart from elaboration may bind names another supply gave.

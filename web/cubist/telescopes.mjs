@@ -22,6 +22,18 @@ export function parameterLambdas(params, body) {
   return body;
 }
 
+// The native clause telescope introduces fields, recursive hypotheses and
+// then dimensions. Source resolution uses the same order, so later groups
+// shadow earlier ones identically before and after identity lowering.
+export function clauseTelescope(clause,{args=clause.args??[],hypotheses=clause.hypotheses??[]}={}) {
+  return [
+    {field:"args",tokens:args,role:"pattern"},
+    {field:"binders",tokens:clause.binders??[],role:"local"},
+    {field:"hypotheses",tokens:hypotheses,role:"local"},
+    {field:"coordinates",tokens:clause.coordinates??[],role:"dimension"},
+  ];
+}
+
 // The parser's inferred-declaration form repeats its header as lambdas and
 // metadata. Canonicalize before assigning identities, then rebuild both
 // views from the same resolved parameter tokens at the adapter boundary.

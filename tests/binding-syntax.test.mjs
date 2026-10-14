@@ -6,7 +6,8 @@ import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
 import {parse} from "../web/cubist/parser.mjs";
-import {rewritten} from "../web/cubist/scopes.mjs";
+import {rewritten,relocated} from "../web/cubist/scopes.mjs";
+import {qualifySource,syntaxValue} from "../web/cubist/source-syntax.mjs";
 import {BindingTable, BindingAdapter, LexicalContext, SlotOutcomes, sourceOrigin, bindingResolution, reservedResolution} from "../web/cubist/bindings.mjs";
 import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
@@ -67,6 +68,9 @@ test("a grouped domain is one scoped region even when it contains binders",()=>{
   assert.equal(cloned.tree.params[0].type,cloned.tree.params[1].type);
   const lowered=lowerBindingSyntax(cloned,setup.adapter);
   assert.equal(lowered.params[0].type,lowered.params[1].type);
+  const malformed=parse("def f(a, b : Unit) : Unit := a;").declarations[0];
+  malformed.params[1].type=expression("U0");
+  assert.throws(()=>resolveBindingSyntax(malformed,prepare()),/Grouped parameters must share one domain/);
 });
 
 test("unmigrated reference namespaces and new syntax families are refused at source resolution",()=>{
@@ -77,6 +81,21 @@ test("unmigrated reference namespaces and new syntax families are refused at sou
     "def a(x : Unit) : Unit { simpa only [rules] using x; }",
   ])assert.throws(()=>resolveBindingSyntax(parse(source).declarations[0],setup),/family has not migrated: simpaOnly/);
   assert.throws(()=>resolveBindingSyntax({kind:"futureFamily"},setup),/family has not migrated: futureFamily/);
+  for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10","tt pl.(+) tt"])
+    assert.throws(()=>resolveBindingSyntax(expression(source),setup),/family has not migrated/);
+});
+
+test("authored provenance is opaque to rewriting, relocation and structural comparison",()=>{
+  const source="fun (x : Unit) => x";
+  const tree=qualifySource(expression(source),{revision:"dep-revision",module:"dep"});
+  const shifted=relocated(tree,{start:100,end:120,synthetic:true});
+  assert.equal(shifted.origin,tree.origin);
+  assert.equal(shifted.body.origin,tree.body.origin);
+  assert.equal(shifted.body.start,100);
+  const other=qualifySource(expression(source),{revision:"other-revision",module:"other"});
+  assert.equal(syntaxValue(tree),syntaxValue(other));
+  const seen=[];rewritten(tree,node=>{if(node.kind)seen.push(node.kind);return node;});
+  assert.deepEqual(seen,["lambda","name","name"]);
 });
 
 test("cloning freshens binders and their uses without allocating when syntax is revisited or serialized", () => {
@@ -172,6 +191,11 @@ test("the pattern compiler resolves slots at the matched type, including nested 
     return {term, scope};
   };
   const elaborate = (source, context = setup.context) => elaborateSyntax(resolve(source, context), source);
+  // Historical mode cannot turn literal data into an invented destination
+  // reference. Interval endpoints still bypass term elaboration normally.
+  translator.nameBased=true;
+  assert.throws(()=>elaborate("1"),/family has not migrated: numeral/);
+  translator.nameBased=false;
   const left = elaborate("left_").term, right = elaborate("right_").term;
   for (const [source, expected, refused] of [
     ["(fun (left_ : Two) => match first return Two { left_ => left_; right_ => right_; })(right_)", right, left],

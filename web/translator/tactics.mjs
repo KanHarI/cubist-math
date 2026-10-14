@@ -94,7 +94,7 @@ const tactics = {
     if(first.at) {
       if(!rest.length)throw Error("A simplified hypothesis copy must be followed by a proof statement.");
       const source=env.get(first.at.text);
-      if(!source||!t.localSources.has(source))
+      if(!source||!scope.localSources.has(first.at.text))
         throw Error(`simp at requires a local hypothesis: ${first.at.text}.`);
       // The hypothesis's statement is simplified and its proof carried forward.
       const hypothesis=goal.with(scope.infer(source).type);

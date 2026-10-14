@@ -4,7 +4,8 @@
 // form is described once and no substitution captures a name or misses an
 // occurrence (tests/scopes.test.mjs checks that every kind of node the parser
 // and the translator build is described here).
-import {parameterGroups} from "./telescopes.mjs";
+import {parameterGroups,clauseTelescope} from "./telescopes.mjs";
+import {sourceMetadata,syntaxValue} from "./source-syntax.mjs";
 
 // A binder is a token, { text }, or, in a statement's pattern, a name node.
 export const binderName = binder => binder?.text ?? binder?.name ?? null;
@@ -19,18 +20,16 @@ function patternArguments(pattern) {
   return present([...args, ...(pattern.more ?? []).flatMap(more => [...patternArguments(more), ...present(more.binders ?? []), ...present(more.coordinates ?? [])])]);
 }
 const barePattern = pattern => !pattern.args && !pattern.binders?.length && !pattern.coordinates?.length;
-function patternBindings(pattern) {
-  const known = present([...(pattern.binders ?? []), ...(pattern.coordinates ?? []), ...(pattern.hypotheses ?? [])]);
-  const candidates = present(barePattern(pattern) && pattern.kind !== "pattern" ? [pattern.constructor] : []);
-  for (const arg of pattern.args ?? []) {
-    if (arg.kind === "pattern") {
-      const nested = patternBindings(arg); known.push(...nested.known); candidates.push(...nested.candidates);
-    } else candidates.push(arg);
+function patternScopes(pattern) {
+  const groups=[];
+  const add=(binders,role)=>groups.push({binders:present(binders),role,keys:["body","obligation"],renamable:role!=="pattern"});
+  if(barePattern(pattern)&&pattern.kind!=="pattern")add([pattern.constructor],"pattern");
+  for(const {tokens,role} of clauseTelescope(pattern))for(const token of tokens) {
+    if(token.kind==="pattern")groups.push(...patternScopes(token));
+    else add([token],role);
   }
-  for (const more of pattern.more ?? []) {
-    const nested = patternBindings(more); known.push(...nested.known); candidates.push(...nested.candidates);
-  }
-  return {known, candidates};
+  for(const more of pattern.more??[])groups.push(...patternScopes(more));
+  return groups;
 }
 // Parameters form a telescope. Each group's domain is outside that group's
 // binders, and every subsequent group is inside them.
@@ -63,10 +62,10 @@ const SCOPES = {
   // A clause's own names, a sum's side and a path constructor's
   // coordinates, are variables; its patterns' arguments may be constructors.
   clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? []), ...(n.hypotheses ?? [])]),
-    identityBinders: patternBindings(n).known, keys: ["body", "obligation"], renamable: true },
+    keys: ["body", "obligation"], renamable: true },
     // `binders` is the nominal substitution contract until CB3 migrates its
     // consumers. Identity resolution also retains a bare head's candidate.
-    { binders: patternArguments(n), identityBinders: patternBindings(n).candidates, keys: ["body", "obligation"], renamable: false, role: "pattern" }],
+    { binders: patternArguments(n), keys: ["body", "obligation"], renamable: false, role: "pattern" }],
   unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"], renamable: true }],
   // Declarations and a theory's items: their parameters.
   def: n => parameterScopes(n, ["type", "body", "value"]),
@@ -108,7 +107,7 @@ const sequenceScope = (node, index, binders) => ({binders, renamable: false,
   // Most traversals need only the ordered boundary. Materialize the region
   // keys only for clients which ask for them, such as nominal substitution.
   after: index + 1, get keys() {return node.slice(index + 1).map((_, k) => index + 1 + k);}});
-export const scopesOf = node => {
+export const scopesOf = (node,{deferred=false}={}) => {
   // A sequence has scopes too: each statement binds in its later siblings,
   // never in its own initializer. Until elaboration fixes tactic/pattern
   // roles, these binders may not be renamed by syntax substitution.
@@ -118,7 +117,7 @@ export const scopesOf = node => {
   });
   if (!BINDING.has(node.kind) && !UNBINDING.has(node.kind))
     throw new TypeError("Unregistered syntax kind in scope traversal: " + node.kind);
-  return SCOPES[node.kind]?.(node) ?? [];
+  return deferred&&node.kind==="clause"?patternScopes(node):SCOPES[node.kind]?.(node)??[];
 };
 export const statementBinders = node => Object.hasOwn(STATEMENTS, node.kind) ? STATEMENTS[node.kind](node) : [];
 // Binding roles follow the same schema as visibility. They describe syntax
@@ -136,7 +135,7 @@ const root = name => name.split(".")[0];
 const isToken = value => typeof value?.text === "string" && !value.kind;
 // Captured elaboration values are not source syntax: neither core binders
 // nor a notation rule's closed aliases participate in syntax substitution.
-const captured = (node, key) => node.kind === "instantiated" && key === "value"
+const captured = (node, key) => sourceMetadata(key,node[key]) || node.kind === "instantiated" && key === "value"
   || node.kind === "notationScope" && key === "aliases"
   || node.kind === "scoped" && ["node", "scope"].includes(key)
   || node.kind === "bindingReference" && ["resolution", "origin", "substitutions"].includes(key);
@@ -193,9 +192,9 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
         return out;
       });
     }
-    const scopes = node.kind ? scopesOf(node) : [];
+    const scopes = node.kind ? scopesOf(node,{deferred}) : [];
     const tokens = scopes.length ? new Map(replacements) : replacements;
-    const regions = scopes.map(scope => ({...scope, binders: (deferred && scope.identityBinders ? scope.identityBinders : scope.binders).map(binder => {
+    const regions = scopes.map(scope => ({...scope, binders: scope.binders.map(binder => {
       if (!tokens.has(binder)) tokens.set(binder, bind(binder, node, scope, outer));
       return tokens.get(binder);
     })}));
@@ -218,7 +217,10 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
       if (key === "params" && Array.isArray(value)) {
         copy[key] = parameterGroups(value).flatMap(({parameters,after,bound})=>{
           const at=inside(scope=>scope.paramsAfter<=after-parameters.length);
-          const field=bound?"bound":"type",domain=walk(parameters[0][field],at,tokens);
+          const field=bound?"bound":"type",first=parameters[0][field];
+          if(parameters.some(param=>param[field]!==first&&syntaxValue(param[field])!==syntaxValue(first)))
+            throw new TypeError("Grouped parameters must share one domain.");
+          const domain=walk(first,at,tokens);
           return parameters.map(param=>{
             const rest={...param};delete rest[field];
             return {...walk(rest,at,tokens),[field]:domain};

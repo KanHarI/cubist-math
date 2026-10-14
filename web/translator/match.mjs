@@ -22,6 +22,7 @@ import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
 import {lowerBindingReferences} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
+import {clauseTelescope} from "../cubist/telescopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
@@ -149,15 +150,6 @@ const generalizedParameters = (recursion, motive) => {
   return recursion.fixed.map(binding => binding?.tag === "Var" && names.has(binding.name));
 };
 
-// A source name bound again to `term`, as the binding it replaces was: an
-// alias of its own, recorded as that local source, so that a tactic that
-// needs a local hypothesis, and a nested match, see it as one.
-function rebind(translator, previous, term) {
-  const alias = { ...term }, source = translator.localSources.get(previous);
-  if (source) translator.localSources.set(alias, source);
-  return alias;
-}
-
 // The declared type of a value, as the pattern compiler (patterns.mjs) reads
 // it: its source name, its instance and its constructors but the generated
 // one, or null for a value of another type.
@@ -168,7 +160,7 @@ export function matchedType(translator, scope, value) {
   if (!inductive) return null;
   const info = translator.checker.kernel.signature(inductive.record.index);
   return { source: inductive.source, instance, constructors: inductive.record.constructors
-    .map((name, k) => ({ name, ...inductive.constructors[k] }))
+    .map((name, k) => ({ name, index:k, ...inductive.constructors[k] }))
     .filter((_, k) => k < inductive.constructors.length && !info.constructors[k]?.generated) };
 }
 
@@ -350,17 +342,17 @@ function branch(translator, motive, value, scope, inner, built) {
   for (const [name, bound] of transition.next.scope.env) {
     if (bound?.tag === "Var") {
       if (!values.has(bound.name)) continue;
-      const alias = rebind(translator, bound, values.get(bound.name));
+      const alias = values.get(bound.name);
       at = at.refine(name, alias);
       if (bound.name === value.name) destructed.set(name, { alias, variable: value.name });
       continue;
     }
-    if (!bound || !translator.localSources.has(bound)) continue;
+    if (!bound || !at.localSources.has(name)) continue;
     const free = freeNames(bound);
     const again = [...values].reduce((term, [variable, replacement]) =>
       free.has(variable) ? substituteTerm(term, variable, replacement) : term, bound);
     if (again === bound) continue;
-    const alias = rebind(translator, bound, again);
+    const alias = again;
     at = at.refine(name, alias);
     // A name an enclosing match took apart, made again here, still names the
     // variable it named, for recursion.
@@ -456,30 +448,31 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
     return variable;
   };
   // The data and positions, in the kernel's order: data first.
-  const positions = [];
-  constructor.order.forEach((sourceIndex, kernelIndex) => {
-    // A position's arity, the arguments it takes before its cube, and its
-    // cube's depth: 0 for an element, 1 for a path, and so on.
-    let arity = 0, depth = 0, t = type?.domain;
-    for (; t?.tag === "Pi"; t = t.body) arity++;
-    for (; t?.tag === "Path"; t = t.family) depth++;
-    const token = args[sourceIndex], variable = bind(token, bindingStem(token));
-    if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
-  });
-  // Each position's recursive result, named by its induction hypothesis
-  // when the clause gives one.
-  for (const [k, { variable, token, arity, depth }] of positions.entries())
-    results.set(variable, { result: bind(hypotheses[k] ? { ...hypotheses[k], role: "induction hypothesis" } : null,
-      hypotheses[k]?.text ?? `${token.text}_rec`), arity, depth });
-  // The dimensions, each a path of the result.
-  const lines = [];
-  for (const token of source.coordinates) {
-    if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
-    const dim = inner.fresh(token.stem ?? bindingStem(token));
-    inner = translator.sourceDimension(token,dim,inner);
-    const family = substituteDimension(type.family, type.dim, I.variable(dim));
-    lines.push({ dim, family });
-    type = family;
+  const positions = [],lines=[];
+  for(const group of clauseTelescope(source,{args,hypotheses})) {
+    if(group.field==="args")constructor.order.forEach((sourceIndex, kernelIndex) => {
+      // A position's arity, the arguments it takes before its cube, and its
+      // cube's depth: 0 for an element, 1 for a path, and so on.
+      let arity = 0, depth = 0, t = type?.domain;
+      for (; t?.tag === "Pi"; t = t.body) arity++;
+      for (; t?.tag === "Path"; t = t.family) depth++;
+      const token = group.tokens[sourceIndex], variable = bind(token, bindingStem(token));
+      if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
+    });
+    // Each position's recursive result, named by its induction hypothesis
+    // when the clause gives one.
+    if(group.field==="hypotheses")for (const [k, { variable, token, arity, depth }] of positions.entries())
+      results.set(variable, { result: bind(group.tokens[k] ? { ...group.tokens[k], role: "induction hypothesis" } : null,
+        group.tokens[k]?.text ?? `${token.text}_rec`), arity, depth });
+    // The dimensions, each a path of the result.
+    if(group.field==="coordinates")for (const token of group.tokens) {
+      if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
+      const dim = inner.fresh(token.stem ?? bindingStem(token));
+      inner = translator.sourceDimension(token,dim,inner);
+      const family = substituteDimension(type.family, type.dim, I.variable(dim));
+      lines.push({ dim, family });
+      type = family;
+    }
   }
   // The constructor here, at the clause's arguments and dimensions.
   let built = T.constructor(index, instance, name);
@@ -491,7 +484,7 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   if (recursion) {
     const parameter = recursion.params[recursion.index];
     if (![...args, ...hypotheses, ...source.coordinates].some(token => translator.sourceKey(token,inner) === parameter))
-      inner = inner.refine(parameter, rebind(translator, scope.env.get(parameter), built));
+      inner = inner.refine(parameter, built);
   }
   let term = body(inner, type, built);
   for (const { dim, family } of lines.reverse()) term = T.line(dim, family, term);
@@ -542,7 +535,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
     const path = at.nf(target);
     if (path.tag !== "Path") throw Error(`The obligation ${name} is not a path clause.`);
     const locals = [];
-    for (const bound of at.env.values()) if (translator.localSources.has(bound)
+    for (const [key,bound] of at.env) if (at.localSources.has(key)
       && !(bound.tag === "Var" && at.context.has(bound.name))) locals.push({term:bound,type:at.infer(bound).type});
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};

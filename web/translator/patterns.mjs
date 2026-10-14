@@ -19,6 +19,7 @@
 // The environment key of the declaration's own name (match.mjs, RECURSIVE).
 import {RECURSIVE,withRecursion} from "./match.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
+import {T} from "./core.mjs";
 
 // A head of the parser with neither arguments, coordinates nor binders.
 const bare = head => !head.args && !head.coordinates?.length && !head.binders?.length;
@@ -227,10 +228,12 @@ function bind(t, scope, token, target) {
     return t.sourceBinding(token, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null),scope);
   }
   const {constructor, args, coordinates, instance} = target;
-  let point = scope.declared(args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
-    : { kind: "name", name: constructor.name });
-  for (const coordinate of coordinates) point = { kind: "pathApply", left: point, right: { kind: "name", name: coordinate.text } };
-  return t.sourceBinding(token, t.term(point, scope, instance),scope);
+  // This value comes from the matched type's constructor table. It is not
+  // a source occurrence to resolve in the destination environment.
+  let point=T.constructor(constructor.index,instance,constructor.name);
+  for(const index of constructor.order)point=T.app(point,scope.env.get(args[index].text));
+  for(const coordinate of coordinates)point=T.at(point,t.interval({kind:"name",name:coordinate.text},scope.env));
+  return t.sourceBinding(token,point,scope);
 }
 
 // Whether a name may be a constructor without arguments: one in scope, or

@@ -55,7 +55,7 @@ function copiedScope(scope,unit) {
   // fixed-argument correspondences keep their internal sharing. Native
   // caches are outside these descriptions and must be re-derived.
   const data=structuredClone({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions]});
-  return new Scope(unit,new Map(data.context),new Map(data.env),new Map(data.dimensions),scope.slotOutcomes);
+  return new Scope(unit,new Map(data.context),new Map(data.env),new Map(data.dimensions),scope.slotOutcomes,new Map(),new Map(scope.localSources));
 }
 
 function queryEnvironment(live,adapter,unit) {
@@ -74,7 +74,9 @@ function queryEnvironment(live,adapter,unit) {
     if(recursive.destructed)recursive.destructed=new Map([...recursive.destructed].flatMap(([key,value])=>
       live.keys.has(key)?[[adapter.key(live.keys.get(key)),value]]:[]));
   }
-  return new Scope(unit,new Map(data.context),env,new Map(data.dimensions),live.scope.slotOutcomes);
+  const localSources=new Map([...live.scope.localSources].flatMap(([key,source])=>live.keys.has(key)
+    ?[[adapter.key(live.keys.get(key)),{...source,key:adapter.key(live.keys.get(key)),bindingId:live.keys.get(key)}]]:[]));
+  return new Scope(unit,new Map(data.context),env,new Map(data.dimensions),live.scope.slotOutcomes,new Map(),localSources);
 }
 
 export class ContextualSession {
@@ -158,15 +160,6 @@ export class ContextualSession {
           const unit=translator.unit({source:parsed.text,moduleName,bindingAdapter:entryAdapter,names,
             declaring:live.scope.unit.declaring}).declaration(translator.declarationFuel);
           let current=copiedScope(scope,unit),result,extension=null;
-          // Search distinguishes local evidence from imported declarations.
-          // Install its metadata on the copied values without rebinding or
-          // breaking the recursion records' internal correspondences.
-          translator.localSources=new WeakMap();
-          for(const [label,resolution] of lexical.snapshot())if(resolution.tag==="binding") {
-            const record=table.get(resolution.id),key=entryAdapter.key(record.id),value=current.env.get(key);
-            if(record.role!=="declaration"&&value)translator.localSources.set(value,{name:label,key,bindingId:record.id,
-              start:record.origin.start,end:record.origin.end});
-          }
           try {
             if(parsed.kind==="let") {
               current=translator.bindLet(tree[0],current);

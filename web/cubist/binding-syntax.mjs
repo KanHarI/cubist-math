@@ -10,9 +10,9 @@ import {declarationTelescope, parameterLambdas} from "./telescopes.mjs";
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
 // modelled. New parser kinds cannot silently enter nominal lookup paths.
-const migrated = new Set(["name", "number", "binaryNumber", "lambda", "forall", "exists", "binderGroup",
+const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
-  "unary", "pair", "projection", "member", "pathApply", "negation", "transport", "lift", "over", "prop", "set",
+  "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
   "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
@@ -38,6 +38,8 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
       if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
+      if(node.kind==="binary"&&(node.qualifier||!["=","->","and","or","++","&","|"].includes(node.operator)))
+        throw new TypeError("Binding syntax family has not migrated: notation operator");
       if (node.kind !== "name" || node.name === "_") return node;
       const {value, fields} = at.qualified(node.name);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;

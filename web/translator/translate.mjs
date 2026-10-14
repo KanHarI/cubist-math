@@ -2,6 +2,7 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
+import {qualifySource} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
@@ -84,6 +85,7 @@ export class Translator {
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,onDirectiveStart=null,onDirective=null}={}) {
     this.scopePoints=scopePoints;
+    this.sourceRevision=scopePoints?.revision??globalThis.crypto.randomUUID();
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
@@ -106,12 +108,11 @@ export class Translator {
     if(!checker)throw Error("A translator needs a checker: the elaborator over a kernel.");
     this.checker=checker;
     this.normalize=normalize;
-    this.localSources=new WeakMap();
     // An inspector record carries the context and dimensions of its scope and
     // the source aliases in `env`.
     this.references=onReference ? (node,term,scope,env)=>onReference(node,term,new Map(scope.context),
       new Map(scope.dimensions),[...(env??[])].flatMap(([name,value])=>{
-        const source=this.localSources.get(value);
+        const source=scope.localSources.get(name);
         return (source?.key??source?.name)===name ? [{...source,term:value}] : [];
       })) : null;
     this.onPublicationStart=onPublicationStart;
@@ -131,7 +132,17 @@ export class Translator {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
       references:this.references,steps:this.onStep,scopePoints:this.scopePoints,freezeSuggestions:this.freezeSuggestions,...options});
   }
-  reference(scope,node,term,env=scope.env) {scope.unit.recordReference(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
+  reference(scope,node,term,env=scope.env) {
+    // A display label need not be the environment key (freshened generated
+    // binders and identity lowering both separate them). Carry the lexical
+    // entry through observation; consumers must not rediscover it by label
+    // or by a shared core value.
+    const key=node.bindingId?scope.unit.bindingAdapter.key(node.bindingId)
+      :node.isBinding?node.text??node.name:node.name;
+    const source=env?.get(key)===term?scope.localSources.get(key):null;
+    scope.unit.recordReference(source?{...node,name:source.name,localBindingKey:key}
+      :node.spelling?{...node,name:node.spelling}:node,term,scope,env);
+  }
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
   // in a message. A search already running at the scope is joined instead.
@@ -162,13 +173,12 @@ export class Translator {
     // candidate when it introduces the variable. Constructor alternatives
     // are decided by the pattern compiler without introducing a binder.
     scope=scope.withSlotOutcomes(decidePatternSlot(scope.slotOutcomes,node,"variable"));
-    // A source alias gets its own syntax object, even for `let y = x`.
-    // This keeps lexical labels from overwriting x or leaking into siblings.
-    term={...term};
+    // Source metadata belongs to the lexical entry, not its core value.
+    // Two aliases may share a parameter value without overwriting labels or
+    // losing the unchanged-argument permission carried by that value.
     const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
-    scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null);
-    this.localSources.set(term,{name:label,start:node.start,end:node.end,
-      ...(node.bindingId?{key:name,bindingId:node.bindingId}: {})});
+    scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
+      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,...(node.bindingId?{bindingId:node.bindingId}: {})});
     this.reference(scope,{...node,name:label,isBinding:true},term);
     return scope;
   }
@@ -366,8 +376,7 @@ export class Translator {
   // terms share no variable, and are shown alone.
   shownTogether(terms) {return this.checker.displayTexts?.(terms,1000)??terms.map(term=>sourceText(term));}
   translate(source, imported=new Map()) {
-    const ast=parse(source);
-    this.scopePoints?.source(ast,this.moduleName);
+    const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
   }
   // Prepared syntax enters the same declaration checking/admission path as
@@ -773,7 +782,7 @@ export class Translator {
     const witnesses=witnessNames.map(token=>{
       try {
         const proof=env.get(token.text);
-        if(!proof||!this.localSources.has(proof))
+        if(!proof||!scope.localSources.has(token.text))
           throw Error(`Simplification premise witness must be local: ${token.text}.`);
         scope.infer(proof);
         return proof;
@@ -1000,7 +1009,10 @@ export class Translator {
   // Numerals and the legacy induction syntax use the Nat in the source's
   // environment. Its declaration and admission belong to the imported module.
   naturalConstructors(scope,name="Nat") {
-    const type=scope.nf(this.term({kind:"name",name},scope,null));
+    return this.naturalSignature(scope,this.term({kind:"name",name},scope,null));
+  }
+  naturalSignature(scope,type) {
+    type=scope.nf(type);
     const natural=type.tag==="Sort"?this.checker.inductives?.get(type.signature):null;
     const zero=natural?.constructors.findIndex(c=>c.source==="zero"&&c.arity===0&&c.dims===0);
     const succ=natural?.constructors.findIndex(c=>c.source==="succ"&&c.arity===1&&c.dims===0);
@@ -1115,6 +1127,10 @@ export class Translator {
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
+        // Numeric nodes also occur as interval endpoints, consumed directly
+        // by interval()/face parsing. As terms they require an unmigrated
+        // notation recipe; legacy mode must not synthesize an ambient Nat.
+        if(scope.unit.bindingAdapter)throw new TypeError("Binding syntax family has not migrated: numeral");
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
         // reads none (L2.10c). A numeral rule's own natural number is raw
@@ -1360,8 +1376,8 @@ export class Translator {
           return elaborateMatch(this,n,value,sort,scope,expected);
         }
         // Binders keep their source names, so the checked term reads as written.
-        const natural=this.naturalConstructors(scope),type=natural.type;
-        const value=tr(n.value,type),k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
+        const value=tr(n.value,null),natural=this.naturalSignature(scope,inferred(value).type),type=natural.type;
+        const k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
         // Without `as`, the motive is constant and the predecessor unnamed.
         const stepScope=n.index?this.sourceBinding(n.index,T.variable(k),scope.bind(k,type)):scope.bind(k,type);
         const motiveBody=this.term(n.type,stepScope,null),motive=T.lam(k,type,motiveBody);
@@ -1572,8 +1588,8 @@ export class Translator {
   // which the search uses as a rule (L2.5b).
   hlevelLocals(scope) {
     const locals=[];
-    for(const bound of scope.env.values()) {
-      if(!this.localSources.has(bound)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+    for(const [key,bound] of scope.env) {
+      if(!scope.localSources.has(key)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
       const type=scope.infer(bound).type;
       if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
     }
