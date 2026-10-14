@@ -305,13 +305,14 @@ export class Translator {
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRule(natural,selection.numeral,
-        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null,n);
+        {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
+          start:n.start,end:n.end},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
     // A glyph's number is built from the library's Nat, as its glyphs are.
     const lexeme=[...n.text].reduceRight((tail,character)=>{
-      const raw=value=>({kind:"number",value,raw:true,natural:lexemeKey("Nat")});
+      const raw=value=>({kind:"rawNumeral",value,natural:rule.aliases.get(lexemeKey("Nat"))});
       const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[raw(Number(character))]}
         :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[raw(character.charCodeAt(0)-97)]}
         :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[raw(character.charCodeAt(0)-65)]}
@@ -1054,6 +1055,24 @@ export class Translator {
       throw Error("Numerals and induction require an imported Nat with zero and succ constructors.");
     return {type,zero:T.constructor(zero,type,"zero"),succ:T.constructor(succ,type,"succ")};
   }
+  // Both a source binding and a closed notation capture supply an elaboration
+  // value. Resolve descriptors through the same path, without looking their
+  // public label up again in the destination environment.
+  valueTerm(n,value,scope,expected=null) {
+    if(value.tag==="Untranslated") {
+      const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" ")
+        :n.name.startsWith("\u0000")?value.name:n.name)}`);
+      error.blockedBy=value.blockedBy??value.binding??value.name;
+      error.cause=value.cause??value.reason;
+      throw error;
+    }
+    if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+    if(value.tag==="Ambiguous")throw Error(value.message);
+    if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
+    if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
+    this.reference(scope,n,value);
+    return value;
+  }
   termBody(n,scope,expected=null) {
     scope.checkDeadline();
     if(!n) throw Error("Missing source expression.");
@@ -1119,26 +1138,7 @@ export class Translator {
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.
         if(isHole(n))throw Error("A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.");
-        if(env.has(n.name)) {
-          const value=env.get(n.name);
-          if(value.tag==="Untranslated") {
-            // A notation rule's name is read under its key: the message
-            // names it as the rule does. A model's operator or numeral is
-            // read under a key too: the message names its operation.
-            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" ")
-              :n.name.startsWith("\u0000")?value.name:n.name)}`);
-            error.blockedBy=value.blockedBy??value.binding??value.name;
-            error.cause=value.cause??value.reason;
-            throw error;
-          }
-          if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
-          if(value.tag==="Ambiguous")throw Error(value.message);
-          // A declared type or constructor (L2.1), or the declaration's own name.
-          if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
-          if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
-          this.reference(scope,n,value);
-          return value;
-        }
+        if(env.has(n.name))return this.valueTerm(n,env.get(n.name),scope,expected);
         const constant=universeConstant(n.name);
         if(constant!==null)return T.universe(constant);
         if(n.name==="Universe")throw Error("Universe was removed: bind a universe variable as U < UU0.");
@@ -1161,9 +1161,11 @@ export class Translator {
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
+        if(n.notationSelection)return tr({kind:"boundNotation",selection:n.notationSelection,
+          body:{...n,kind:"literal",text:n.text??String(n.value)},start:n.start,end:n.end});
         // Numeric nodes also occur as interval endpoints, consumed directly
-        // by interval()/face parsing. As terms they require an unmigrated
-        // notation recipe; legacy mode must not synthesize an ambient Nat.
+        // by interval()/face parsing. A term without a retained reader must
+        // not synthesize an ambient Nat, including in legacy mode.
         if(scope.unit.bindingAdapter)throw new TypeError("Binding syntax family has not migrated: numeral");
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
@@ -1177,6 +1179,18 @@ export class Translator {
         const natural=this.naturalConstructors(scope,n.natural??"Nat");
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
+      case "rawNumeral": {
+        // A reader's input is lazy data over its own checked Nat. Building it
+        // only when used preserves ignored-operand and refused-rule behavior.
+        // No source/destination name is consulted, even under a binding adapter.
+        if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
+        if(!n.natural)throw new TypeError("A numeral reader requires its captured natural-number type.");
+        // The implicit type is not another authored occurrence at the token.
+        const type=this.valueTerm({kind:"name",name:n.natural.source??"Nat"},n.natural,scope);
+        const natural=this.naturalSignature(scope,type);
+        let value=natural.zero;for(let i=0;i<n.value;i++)value=T.app(natural.succ,value);
+        this.reference(scope,{...n,name:String(n.value)},value);return value;
+      }
       case "binaryNumber": {
         // A binary literal is a selected notation's literal rule's, as any
         // numeric token is (L2.10c), as binary.(0b1101) (L2.10j).
@@ -1331,6 +1345,8 @@ export class Translator {
       case "notationScope":
       // An operand of a notation's rule, read where it stood (L2.10a).
       case "scoped":
+      case "boundNotation":
+      case "notationArgument":
       case "select": {
         const entered=enterExpressionScope(this,scope,n);
         return this.term(entered.node,entered.scope,expected);

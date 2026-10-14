@@ -359,8 +359,23 @@ Structural recursion enters an operand's actual expression scope before
 inspecting its constructor argument, checking any selected receiver and
 keeping that scope for fixed, structural and generalized arguments. It must
 not strip an operand wrapper or admit an argument outside the recursive
-constructor positions. Model-selected operator bodies and literal readers
-still need their retained rule/selection contexts before their gates open.
+constructor positions.
+
+A model-selected operator retains its activation identity. Each operand
+abstracts over a fresh notation parameter, separately from its resolved term
+names: the checked operation's recipe supplies that parameter, while an
+explicit selection inside the operand supersedes it. Canonical syntax holds
+these IDs and scopes; live checked notation effects stay in the elaboration
+environment. Cloning freshens operand parameters and activation IDs through
+the ordinary binding correspondence. A missing context cannot fall back to
+the destination selection. Numeric tokens retain the same context for term
+elaboration while remaining numeric endpoints for interval consumers.
+Numeral readers construct their input lazily from their own captured natural
+type, using the shared value elaborator for inductive descriptors; they do
+not look up `Nat` in the destination. This preserves failed-dependency and
+ignored-operand behavior. Named rules, parent-namespace notation alternatives
+and closed file-level notation captures still require their retained context
+contracts before those migration gates open.
 
 Shared notation validation returns both the operator and its operand views.
 Both producers honor explicit views on family notation, correcting the

@@ -88,6 +88,87 @@ async function setup(t,extra="") {
 }
 const failures=result=>result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]);
 
+const operatorModels=`
+  theory Arithmetic(U < UU0) {
+    M : U; x : M;
+    plus(a, b : M) : M notation a + b;
+    negate(a : M) : M notation -a;
+  }
+  def leftOps : Arithmetic(U0) := Arithmetic.make(Two, right_, fun (a, b : Two) => a, fun (a : Two) => right_);
+  def rightOps : Arithmetic(U0) := Arithmetic.make(Two, right_, fun (a, b : Two) => b, fun (a : Two) => left_);
+  theory Routed(U < UU0) {
+    M : U;
+    plus(a, b : M) : M notation a + b;
+    power(a : M, b : Two) : M notation a ^ rightOps.(b);
+  }
+  def routed : Routed(U0) := Routed.make(Two, fun (a, b : Two) => a, fun (a, b : Two) => b);
+`;
+
+test("retained selected operators bind notation separately from caller names and nested selections",async t=>{
+  const {retain,check,table}=await setup(t,operatorModels);
+  const declarations=[
+    "def source_ : Two := leftOps.(left_ + right_);",
+    "def negative : Two := leftOps.(-left_);",
+    "def nested : Two := leftOps.(rightOps.(left_ + right_));",
+    "def local : Two := leftOps.((fun (plus : Two) => plus + right_)(left_));",
+    "def sequential : Two { use leftOps; let saved := left_ + right_; use rightOps; exact saved + right_; }",
+    "def recipe : Two := routed.(left_ ^ (left_ + right_));",
+    "def override : Two := routed.(left_ ^ leftOps.(left_ + right_));",
+    "def recipeLocal(x : Two) : Two := routed.(left_ ^ (x + left_));",
+    "def callerName(x : Two) : Two := routed.(left_ ^ x);",
+    "def endpoint : Two := leftOps.(refl(left_) @ 1);",
+    "def missing : Two := leftOps.(chosen.(left_ + right_));",
+  ].map(retain);
+  const original=JSON.stringify(declarations);
+  const copy=cloneBindingSyntax(declarations[5].syntax,table,["operator-copy"]);
+  assert.equal(sameBindingSyntax(declarations[5].syntax,copy.syntax),true);
+  assert.ok(copy.syntax.owned.every(id=>!declarations[5].syntax.owned.includes(id)));
+  assert.ok(copy.syntax.owned.some(id=>table.get(id).role==="notation"));
+  declarations[5]={...declarations[5],syntax:copy.syntax};
+  assert.doesNotThrow(()=>snapshotSyntax(declarations));
+  const {result,equal}=check(declarations,"def leftOps : Arithmetic(U0) := rightOps; def rightOps : Arithmetic(U0) := leftOps;");
+  assert.deepEqual(failures(result).map(([name])=>name),["missing"],JSON.stringify(failures(result)));
+  for(const name of ["source_","local","override","endpoint"]) {
+    assert.equal(equal(name,"left_"),true,name);assert.equal(equal(name,"right_"),false,name);
+  }
+  for(const name of ["negative","nested","sequential","recipe"]) {
+    assert.equal(equal(name,"right_"),true,name);assert.equal(equal(name,"left_"),false,name);
+  }
+  assert.equal(equal("recipeLocal","fun (x : Two) => left_"),true);
+  assert.equal(equal("recipeLocal","fun (x : Two) => right_"),false);
+  assert.equal(equal("callerName","fun (x : Two) => x"),true);
+  assert.equal(equal("callerName","fun (x : Two) => right_"),false);
+  assert.equal(JSON.stringify(declarations.slice(0,5)),JSON.stringify(JSON.parse(original).slice(0,5)));
+});
+
+test("retained numeral uses keep their reader and Nat through operand recipes and destination shadowing",async t=>{
+  const {retain,check}=await setup(t,`
+    theory Numeric(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
+    def plain : Numeric(U0) := Numeric.make(Nat, fun (n : Nat) => n);
+    def shifted : Numeric(U0) := Numeric.make(Nat, fun (n : Nat) => succ(n));
+    theory Powers(U < UU0) { M : U; power(x : M, n : Nat) : M notation x ^ shifted.(n); }
+    def powers : Powers(U0) := Powers.make(Nat, fun (x, n : Nat) => n);
+  `);
+  const declarations=[
+    "def literal_value : Nat := plain.(2);",
+    "def nested : Nat := shifted.(plain.(0));",
+    "def recipe_value : Nat := powers.(zero ^ 0);",
+    "def local(shifted : Unit) : Nat := powers.(zero ^ 0);",
+    "def param(m : Numeric(U0)) : m.M := m.(2);",
+    "def missing_reader : Two := chosen.(0);",
+    "def missing_literal : Nat := plain.(0b10);",
+    "def limited : Nat := plain.(257);",
+  ].map(retain);
+  const {result,equal}=check(declarations,"def plain : Numeric(U0) := shifted; def Nat : U0 := Unit;");
+  assert.deepEqual(failures(result).map(([name])=>name),["missing_reader","missing_literal","limited"],JSON.stringify(failures(result)));
+  assert.match(failures(result).find(([name])=>name==="limited")[1],/limited to 256/);
+  assert.equal(equal("literal_value","succ(succ(zero))"),true);
+  assert.equal(equal("literal_value","succ(succ(succ(zero)))"),false);
+  assert.equal(equal("nested","zero"),true);assert.equal(equal("nested","succ(zero)"),false);
+  assert.equal(equal("recipe_value","succ(zero)"),true);assert.equal(equal("recipe_value","zero"),false);
+  assert.equal(equal("local","fun (shifted : Unit) => succ(zero)"),true);
+});
+
 test("retained model openings keep source receivers, local shadowing and qualified targets through the kernel",async t=>{
   const {retain,check}=await setup(t);
   const declarations=[

@@ -779,6 +779,7 @@ test("source operand recipes retain their field receiver and never open labels o
     recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
     def apply(recipe : Unit, x : M, n : Nat) : M := x ^ n;
     def local_operand(x : M, one : Nat) : M := x ^ one;
+    def literal_operand(x : M) : M := x ^ original.(0);
     def unbound(x : M) : M := x ^ ghost;
   }`);
   const child=buildSource("theory Child(U < UU0) extends p : Power(recipe := reader, pow := power) {}");
@@ -788,12 +789,34 @@ test("source operand recipes retain their field receiver and never open labels o
     def chosen : Child(U0) := Child.make(original, Nat, fun (x, n : Nat) => n);
     def value : Nat := chosen.apply(tt, succ(zero), zero);
     def local_value : Nat := chosen.local_operand(succ(zero), zero);
+    def literal_value : Nat := chosen.literal_operand(succ(zero));
     def wrong : value = succ(zero) := refl(succ(zero));
   `);
   assert.deepEqual(failures(result).map(([name])=>name),["Power.unbound","Child.unbound","wrong"],JSON.stringify(failures(result)));
   assert.match(failures(result)[0][1],/Untranslated name: ghost/);
-  for(const name of ["value","local_value"]) {
+  for(const name of ["value","local_value","literal_value"]) {
     assert.equal(equal(name,"zero"),true);assert.equal(equal(name,"succ(zero)"),false);
+  }
+});
+
+test("a refused retained numeral operation preserves its dependency without forcing the raw input",async t=>{
+  const {buildSource,retain,construct,inputs,check}=await setup(t);
+  const reader=buildSource(`theory Broken(U < UU0) {
+    M : U; def numeral_(n : Nat) : M := missing notation numeral;
+  }`);
+  const context=inputs.context.bind("Broken",bindingResolution(reader.record.modelId));
+  const consumer=construct(retain(`theory Consumer(U < UU0, m : Broken(U0)) {
+    anchor : Unit;
+    def value : m.M := m.(999);
+  }`,{context}));
+  const {result}=check({declarations:[...reader.declarations,...consumer.declarations]},`
+    def healthy : Broken(U0) := Broken.make(Nat);
+    def unavailable : Nat := healthy.(999);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["Broken.numeral_","Consumer.value","unavailable"],JSON.stringify(failures(result)));
+  for(const [,reason] of failures(result).slice(1)) {
+    assert.match(reason,/Untranslated dependency/);
+    assert.doesNotMatch(reason,/limited to 256|captured natural-number/);
   }
 });
 
@@ -815,7 +838,7 @@ test("source reversed comparisons use the selected operation's operand order",as
 });
 
 test("source operators diagnose inherited ambiguity and cannot leak into another selection",async t=>{
-  const {buildSource,retain,retained}=await setup(t,undefined,operandModels);
+  const {buildSource,retain,retained,construct,check}=await setup(t,undefined,operandModels);
   const arithmetic=buildSource("theory Arithmetic(U < UU0) { M : U; plus(x, y : M) : M notation x + y; }");
   const ambiguous=`theory Both(U < UU0) extends l : Arithmetic(plus := a), r : Arithmetic(plus := b) {
     def value(x : M) : M := x + x;
@@ -823,12 +846,14 @@ test("source operators diagnose inherited ambiguity and cannot leak into another
   assert.throws(()=>retain(ambiguous),error=>/\+ is ambiguous in Both/.test(error.message)
     &&/l\.\(\+\)/.test(error.message)&&/r\.\(\+\)/.test(error.message)
     &&error.offset===ambiguous.indexOf("x + x"));
-  assert.throws(()=>retain(`theory Selected(U < UU0) extends p : Arithmetic {
+  const selected=construct(retain(`theory Selected(U < UU0) extends p : Arithmetic {
     def value(x : M) : M := original.(x + x);
-  }`),/Binding syntax family has not migrated: notation operator/);
-  assert.throws(()=>retained.retain(parse("def value(x : Two) : Two { use original; exact x + x; }").declarations[0],
-    {kind:"derived",notation:{name:"Arithmetic",bindings:arithmetic.record.notationBindings}}),
-    /Binding syntax family has not migrated: notation operator/);
+  }`));
+  const {result}=check({declarations:[...arithmetic.declarations,...selected.declarations]});
+  assert.deepEqual(failures(result).map(([name])=>name),["Selected.value"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/\+.*(not|no)/);
+  assert.doesNotThrow(()=>retained.retain(parse("def value(x : Two) : Two { use original; exact x + x; }").declarations[0],
+    {kind:"derived",notation:{name:"Arithmetic",bindings:arithmetic.record.notationBindings}}));
 });
 
 test("parent namespace selections distinguish header scope from field-local binders",async t=>{

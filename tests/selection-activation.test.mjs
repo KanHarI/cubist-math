@@ -20,6 +20,20 @@ def set_proof : IsSet(U0, Nat) := nat_is_set;`;
 const check=(t,source)=>checkProgram(t,source,{module,
   reader:(name,importer)=>name==="shared"?shared:library(name,importer)});
 
+test("captured numeral types elaborate lazily and preserve ignored notation arguments",async t=>{
+  const {result,get}=await check(t,`import nat;
+    notation ignored { numeral(n : Nat) := zero; }
+    notation identity { numeral(n : Nat) := n; }
+    def ignored_large : Nat := ignored.(999);
+    def intended : ignored_large = zero := refl(zero);
+    def wrong : ignored_large = succ(zero) := refl(succ(zero));
+    def consumed_large : Nat := identity.(999);
+  `);
+  assert.deepEqual(result.gaps.map(g=>g.name),["wrong","consumed_large"],JSON.stringify(result.gaps));
+  assert.match(result.gaps[1].reason,/limited to 256/);
+  for(const name of ["ignored_large","intended"])assert.equal(get(name).verified,true);
+});
+
 test("one selection activation checks its receiver once and applies only the requested effects",async t=>{
   const {program,result}=await check(t,"import shared;");assert.deepEqual(result.gaps,[]);
   const env=program.modules.get("main"),translator=new Translator({checker:program.checker,compilationBindings:program.compilationBindings});

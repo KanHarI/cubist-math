@@ -118,14 +118,14 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         }
       }
       return {...node,model,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model),
-        ...(selector?.tag==="namespace"?{activationMode:"namespace"}:{})}};
+        ...(selector?.tag==="namespace"?{activationMode:"namespace"}
+          :namespaceCandidates(selector).length?{activationMode:"conditional-namespace"}:{})}};
     },
     region(at,node,key) {
       if(self&&node===declaration&&["body","value"].includes(key))
         at={...at,lexical:at.lexical.bind(self.label,bindingResolution(self.id))};
-      // An explicitly selected notation is complete; the surrounding
-      // theory's operator table cannot rewrite its body. Its deferred rules
-      // enter through their own migration boundary.
+      // The activation's notation context is installed by extend below;
+      // the surrounding theory's operator table cannot rewrite this body.
       if(node.kind==="select"&&key==="body"&&(node.effects??selectionEffects.all).notation)
         at={...at,notation:null};
       return at;
@@ -157,15 +157,40 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         owned.push(...syntax.owned);
         return syntax.tree;
       }
+      if(at.notation?.activation&&["number","binaryNumber","literal"].includes(node.kind)) {
+        const selection=occurrence(node,bindingResolution(at.notation.activation),"notation",origin(node));
+        // Interval/face consumers still need the numeric node itself. Only
+        // term elaboration invokes its reader through the retained context.
+        if(node.kind==="number")return {...node,notationSelection:selection,origin:origin(node)};
+        return {kind:"boundNotation",selection,body:{kind:"literal",
+          text:node.kind==="binaryNumber"?node.spelling??`0b${node.digits}`:node.text,
+          origin:origin(node),start:node.start,end:node.end},origin:origin(node),start:node.start,end:node.end};
+      }
       const key=node.kind==="negation"&&!node.qualifier?"unary -":node.kind==="binary"&&!node.qualifier
         ?node.operator===">"?"<":node.operator===">="?"<=":node.operator:null;
       if(key&&at.notation) {
+        if(at.notation.activation&&["+","-","*","/","^","<","<=","unary -"].includes(key)) {
+          // Each operand abstracts over its notation, while its term names
+          // resolve here. At use, the operator's checked recipe supplies that
+          // parameter; an explicit selection inside the operand supersedes it.
+          const operand=child=>{
+            const record=table.allocate(owner,{role:"notation",label:"operand notation",origin:origin(child)});
+            owned.push(record.id);
+            return {kind:"notationArgument",notation:{text:record.label,bindingId:record.id,bindingRole:record.role,
+              origin:record.origin,start:child.start,end:child.end},
+              body:descend(child,{...at,notation:{activation:record.id}}),origin:origin(child),start:child.start,end:child.end};
+          };
+          const body=node.kind==="negation"?{...node,operand:operand(node.operand)}
+            :{...node,left:operand(node.left),right:operand(node.right)};
+          return {kind:"boundNotation",selection:occurrence(node,bindingResolution(at.notation.activation),"notation",origin(node)),
+            body,origin:origin(node),start:node.start,end:node.end};
+        }
         const ambiguous=at.notation.ambiguous?.[key];
         if(ambiguous)throw Object.assign(Error(`${key} is ambiguous in ${at.notation.name}: it is ${
           ambiguous.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${
           ambiguous.map(e=>notationAlternative("",key,e)).join(" or ")}, or give one another notation in extends.`),
           {offset:node.start,sourceEnd:node.end,origin:origin(node)});
-        const rule=at.notation.bindings[key];
+        const rule=at.notation.bindings?.[key];
         if(rule) {
           const operand=(child,recipe)=>{
             if(!recipe)return descend(child);
@@ -177,7 +202,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
             return {kind:"select",effects:selectionEffects.notation,model:syntax.tree,
               activation:{text:activation.label,bindingId:activation.id,bindingRole:activation.role,origin:activation.origin,
                 start:child.start,end:child.end},
-              body:descend(child,{...at,notation:null}),origin:origin(child),start:child.start,end:child.end};
+              body:descend(child,{...at,notation:{activation:activation.id}}),origin:origin(child),start:child.start,end:child.end};
           };
           const reverse=node.operator===">"||node.operator===">=";
           const args=key==="unary -"?[operand(node.operand,rule.recipe.left)]
@@ -218,7 +243,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     },
     extend(at, binders,node,scope) {
       if(scope.role==="activation") {
-        if(scope.effects.notation)at={...at,notation:null};
+        if(scope.effects.notation)at={...at,notation:binders[0].activationMode?null:{activation:binders[0].bindingId}};
         if(!scope.effects.labels)return at;
         const selector=selectors.get(node.model),candidates=namespaceCandidates(selector);
         if(selector?.tag==="namespace") {

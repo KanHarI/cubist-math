@@ -12,10 +12,9 @@ import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
 import {modelNotations,modelOperandRecipes,notationAlternative} from "./model-notation.mjs";
+import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
+export {operatorBinding,SELECTION} from "./notation-context.mjs";
 
-// The scope's key for an operator a model's notation binds: no source name
-// can spell it.
-export const operatorBinding = operator => "\u0000operator " + operator;
 // The environment's key for a theory's record. The theory's name is its type
 // of models (L2.4c), a definition like any other.
 export const theoryBinding = name => "\u0000theory " + name;
@@ -24,7 +23,6 @@ export const theoryBinding = name => "\u0000theory " + name;
 // binds. A selection is complete: an operator it does not bind is an error,
 // never an earlier selection's or a function named add.
 export const notationBinding = name => "\u0000notation " + name;
-export const SELECTION = "\u0000selection";
 // The extensible operators a notation can bind, unary - as "unary -".
 export const notationOperators = ["+", "-", "*", "/", "^", "<", "<=", ">", ">=", "unary -"];
 
@@ -179,6 +177,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
       members.set(field,failedResolution(ambiguousField(record,node.spelling??node.name??"m",field)));
     inner=inner.alias(t.identityAdapter.key(activation.bindingId),receiver)
       .withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,members));
+    if(effects.notation)inner=bindNotationContext(inner,t.identityAdapter.key(activation.bindingId));
   }
   return inner;
 }

@@ -1,4 +1,6 @@
 import {selected} from "./theories.mjs";
+import {bindNotationContext,selectNotationContext} from "./notation-context.mjs";
+import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 
 // One expression boundary, shared by term elaboration and consumers which
 // inspect a term's structure. Enter its actual scope/effects before examining
@@ -11,6 +13,14 @@ export function enterExpressionScope(translator,scope,node) {
       {effects:node.effects,activation:node.activation})};
     case "scoped":return {node:node.node,scope:node.scope};
     case "notationScope":return {node:node.body,scope:scope.withUnit(scope.unit.with({references:null})).aliases(node.aliases)};
+    case "boundNotation": {
+      const reference=node.selection.kind==="bindingReference"
+        ?lowerBindingReference(node.selection,scope.unit.bindingAdapter,scope.slotOutcomes):node.selection;
+      if(reference.kind!=="name")throw new TypeError("A retained notation context must resolve to its exact identity.");
+      return {node:node.body,scope:selectNotationContext(scope,reference.name)};
+    }
+    case "notationArgument":return {node:node.body,
+      scope:bindNotationContext(scope,translator.identityAdapter.key(node.notation.bindingId))};
     default:return null;
   }
 }
