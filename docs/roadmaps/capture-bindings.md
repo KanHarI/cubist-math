@@ -1,6 +1,8 @@
 # Correct capture and bindings
 
-Status: CB0 baseline and witnesses implemented, 2026-10-13; CB1–CB7 pending.
+Status: CB0 and CB1 implemented; CB2 in progress, 2026-10-14; CB3–CB7 pending.
+The [CB1 evidence](capture-bindings-cb1.md) records its identity and replay
+pilots. PR #231 received a clean fourth external review at `5f2d645b`.
 The [baseline report](../reports/capture-bindings-baseline.md) records exact
 known defects, active controls and contextual-execution TODOs.
 The production baseline is `docs/frontend-generation-roadmap` at
@@ -317,6 +319,14 @@ Expansion of nonrecursive helpers is separate from validation of the full
 expanded signature and its helper dependencies, with cycle detection.
 Replacement subtrees cannot bypass validation because a generic visitor
 stops at replacement nodes.
+
+Inlining also preserves the helper's parameter-domain checks and declared
+result type. Keep the application and result ascription in the checked
+expression: an unused argument still has to inhabit its declared domain.
+A normalized view used by support analysis needs a checked correspondence
+to that expression; beta reduction must not erase an unchecked obligation.
+Named and implicit arguments use the same telescope assignment as ordinary
+calls before they are instantiated.
 
 Classify references/calls as nonrecursive helpers, earlier checked recursive
 values, or the current definition's structural self-calls. Preserve the

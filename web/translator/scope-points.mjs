@@ -2,7 +2,8 @@
 // Scope or native handle. Execution is reconstructed by full-prefix replay.
 // The nominal frontend bridge is explicit here while retained families move
 // to the identity representation in CB2/CB3; it does not resolve moved syntax.
-import {BindingTable,BindingAdapter,LexicalContext,bindingResolution,sourceOrigin} from "../cubist/bindings.mjs";
+import {BindingAdapter,LexicalContext,bindingResolution,sourceOrigin} from "../cubist/bindings.mjs";
+import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
 import {snapshotSyntax,visitSyntax,mapSyntax} from "./syntax-graph.mjs";
 
@@ -34,22 +35,18 @@ function describedValue(value) {
   if(value?.tag==="Recursive")return {tag:value.tag,source:value.source};
   throw new TypeError(`Scope value has no persistent description: ${value?.tag??typeof value}`);
 }
-const declaredIdentity=value=>value?.tag==="DefRef"?value.name
-  :value?.tag==="InductiveConstructor"?`${value.inductive.binding}:constructor:${value.index}`:value?.binding;
-
 export class ScopePoints {
   #owners=new Map();
   #occurrences=new Map();
-  #origins=new Map();
-  #available=new Map();
   #parents=[];
   #environments=new WeakMap();
   #contexts=new WeakMap();
   #dimensions=new WeakMap();
   #rules=new WeakMap();
-  constructor(revision,{onPoint=()=>{},probe=null,target=null}={}) {
+  constructor(revision,{onPoint=()=>{},probe=null,target=null,compilation=new CompilationBindings(revision)}={}) {
+    if(compilation.revision!==revision)throw new TypeError("Scope collection binding revision mismatch.");
     this.revision=revision;
-    this.table=new BindingTable(revision);
+    this.compilation=compilation;this.table=compilation.table;
     this.onPoint=onPoint;this.probe=probe;
     this.target=target;
   }
@@ -68,19 +65,7 @@ export class ScopePoints {
     return copy;
   }
   declaration(module,declaration,binding) {
-    // A rejected duplicate cannot replace the origin of the declaration
-    // whose value remains in the environment, even before its first use.
-    if(this.#origins.has(binding))return;
-    const origin=at=>sourceOrigin({revision:this.revision,module,start:at.start,end:at.end});
-    const register=(key,token)=>{
-      if(!this.#origins.has(key))this.#origins.set(key,{label:token.text,origin:origin(token),generated:!!declaration.generated});
-    };
-    register(binding,declaration.name);
-    if(declaration.name.bindingId)this.#available.set(binding,this.table.get(declaration.name.bindingId));
-    for(const [index,constructor] of (declaration.constructors??[]).entries()) {
-      register(`${binding}:constructor:${index}`,constructor.name);
-      register(`${module}__${constructor.name.text}`,constructor.name); // A refused constructor's source identity.
-    }
+    return this.compilation.declare(module,declaration,binding);
   }
   bind(node,scope,role="local") {
     if(node.bindingId)return this.table.get(node.bindingId);
@@ -90,16 +75,8 @@ export class ScopePoints {
       origin:node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end})});
   }
   #global(label,value,scope) {
-    const identity=declaredIdentity(value);
-    // Recursive placeholders are available only with their live structural
-    // permissions. They are never materialized as checked global bodies.
-    const key=identity??(value?.tag==="Recursive"?`${scope.unit.moduleName}__${value.source}`:null);
-    if(!key)throw new TypeError(`Scope entry has no declaration identity: ${label}`);
-    if(this.#available.has(key))return this.#available.get(key);
-    const declared=this.#origins.get(key);
-    if(!declared)throw new TypeError(`Scope entry has no source origin: ${label}`);
-    const record=this.table.allocate(["available",key],{role:"declaration",label:declared.label,origin:declared.origin});
-    this.#available.set(key,record);
+    const record=this.compilation.ofValue(value,scope.unit);
+    if(!record)throw new TypeError(`Scope entry has no declaration identity: ${label}`);
     return record;
   }
   // Reconstruct an immutable lexical description and a separate live ID to
@@ -173,7 +150,7 @@ export class ScopePoints {
       declaration:unit.declaring};
     let description,live;
     try {
-      const declaration=this.#origins.get(`${unit.moduleName}__${unit.declaring}`);
+      const declaration=this.compilation.declaration(`${unit.moduleName}__${unit.declaring}`);
       if(unit.scopeUnavailable)throw new TypeError(unit.scopeUnavailable);
       if(origin.module!==unit.moduleName||origin.end>unit.source.length)
         throw new TypeError("This scope's syntax is not owned by the current source unit.");

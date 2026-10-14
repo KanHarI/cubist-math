@@ -9,7 +9,7 @@ import {parse} from "../web/cubist/parser.mjs";
 import {rewritten,relocated} from "../web/cubist/scopes.mjs";
 import {qualifySource,syntaxValue} from "../web/cubist/source-syntax.mjs";
 import {BindingTable, BindingAdapter, LexicalContext, SlotOutcomes, sourceOrigin, bindingResolution, reservedResolution} from "../web/cubist/bindings.mjs";
-import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax,sameBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const reserved = ["U0", "UU0", "Unit", "tt", "typed", "Interval"];
 const prepare = () => {
@@ -23,6 +23,23 @@ const uses = tree => {
   rewritten(tree, n => {if (n.kind === "bindingReference") found.push(n); return n;});
   return found;
 };
+
+test("binding comparison uses local alpha-equivalence and explicit external correspondence",()=>{
+  const setup=prepare(),resolve=(text,owner)=>resolveBindingSyntax(expression(text),{...setup,owner:[owner]});
+  const left=resolve("fun (A : U0) => fun (x : A) => x","left");
+  const right=resolve("fun (B : U0) => fun (y : B) => y","right");
+  assert.equal(sameBindingSyntax(left,right),true);
+  assert.equal(sameBindingSyntax(left,cloneBindingSyntax(left,setup.table,["clone"]).syntax),true);
+  assert.equal(sameBindingSyntax(left,resolve("fun (A : U0) => fun (x : A) => A","different")),false);
+  const origin=sourceOrigin({...setup.source,start:0,end:1});
+  const a=setup.table.allocate(["parent-a"],{role:"field",label:"M",origin});
+  const b=setup.table.allocate(["parent-b"],{role:"field",label:"M",origin});
+  const field=record=>resolveBindingSyntax(expression("fun (x : M) => x"),{...setup,
+    owner:[record.id],context:setup.context.bind("M",bindingResolution(record.id))});
+  assert.equal(sameBindingSyntax(field(a),field(b)),false,"same labels cannot merge different fields");
+  assert.equal(sameBindingSyntax(field(a),field(b),new Map([[a.id,b.id]])),true);
+  assert.equal(sameBindingSyntax(left,JSON.parse(JSON.stringify(right))),true);
+});
 
 test("grouped domains precede every own binder and subsequent groups use the complete telescope", () => {
   const setup = prepare();

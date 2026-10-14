@@ -7,6 +7,7 @@ import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
+import {CompilationBindings} from "./compilation-bindings.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -83,9 +84,10 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null,onDirectiveStart=null,onDirective=null}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null}={}) {
     this.scopePoints=scopePoints;
-    this.sourceRevision=scopePoints?.revision??globalThis.crypto.randomUUID();
+    this.compilationBindings=compilationBindings??scopePoints?.compilation??new CompilationBindings(globalThis.crypto.randomUUID());
+    this.sourceRevision=this.compilationBindings.revision;
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
@@ -118,7 +120,10 @@ export class Translator {
     this.onPublicationStart=onPublicationStart;
     this.onPublicationEnd=onPublicationEnd;
     this.onDeclaration=onDeclaration;
-    this.onDeclarationStart=onDeclarationStart;
+    this.onDeclarationStart=declaration=>{
+      this.compilationBindings.declare(this.moduleName,declaration,this.checker.bindingName?.(declaration.name.text)??declaration.name.text);
+      onDeclarationStart?.(declaration);
+    };
     this.onDirectiveStart=onDirectiveStart;this.onDirective=onDirective;
     // The declarations to check changed by a number: a theory's expansion
     // adds the ones beyond itself, and a failed type of models takes the

@@ -15,6 +15,7 @@ import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notati
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { ScopePoints } from "./translator/scope-points.mjs";
+import {CompilationBindings} from "./translator/compilation-bindings.mjs";
 import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
 import naturalSource from "./translator/nat-source.mjs";
 
@@ -61,6 +62,7 @@ export class CubicalProgram {
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.collectScopes = collectScopes;
+    this.compilationBindings=new CompilationBindings(options.scopeRevision??globalThis.crypto.randomUUID());
     this.scopePoints = new Map();
     this.scopeRevision = null;
     this.scopeRecorder = null;
@@ -254,12 +256,12 @@ export class CubicalProgram {
       onProgress({completed:0,total:discovery.total,current:main,phase:"loading",unit:"declarations",instructions:0});
     }
     if(collectScopes) {
-      this.scopeRevision=this.options.scopeRevision??globalThis.crypto.randomUUID();
+      this.scopeRevision=this.compilationBindings.revision;
       this.scopePoints=new Map();
       this.scopeSources=Object.freeze(Object.fromEntries([...prepared].filter(([,entry])=>typeof entry.text==="string")
         .map(([name,entry])=>[name,entry.text])));
       this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
-        probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null});
+        probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null,compilation:this.compilationBindings});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
         fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
     }
@@ -324,7 +326,7 @@ export class CubicalProgram {
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
-        scopePoints:scopeRecorder,
+        scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
           this.scopeReplay.record("directive-start",name,directive,this.kernel);
