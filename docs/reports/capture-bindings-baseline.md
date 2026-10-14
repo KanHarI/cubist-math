@@ -22,6 +22,15 @@ unexpected fixes and import/infrastructure failures fail normally. Strict
 mode (`CUBIST_GENERATION_STRICT=1`) requires the desired behavior without
 TODOs. There is no automatic expectation-update command.
 
+During CB2 implementation, the `operand-local` observation was retired:
+synthesized operand selections now request notation without opening model
+labels, so the caller's variable retains its meaning. The original semantic
+witness now passes as a required test. Additional selection tests cover caller
+globals, unbound names, explicit written openings, one receiver elaboration,
+and failed activation before generation. Capturing the operand recipe's
+receiver in its declaration context remains pending; its two separate
+known-defect observations remain active. Counts below describe the CB0 snapshot.
+
 The [case manifest](../../tests/fixtures/frontend-generation.md) explains the
 36 inherited fixtures: 18 pass and 18 remain known defects. The old suite
 represented them with 12 coarse TODOs. Fifteen binding known-defect witnesses cover

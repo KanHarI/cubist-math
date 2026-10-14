@@ -11,6 +11,25 @@ import {sourceMetadata,syntaxValue} from "./source-syntax.mjs";
 export const binderName = binder => binder?.text ?? binder?.name ?? null;
 const present = binders => binders.filter(binder => binderName(binder) !== null);
 
+// Selection is two effects: opening model labels and selecting notation.
+// Compiler operand recipes request notation only; written selections request
+// both. File-level recipes activate according to the consuming source item,
+// before its parameters. A registration must not evaluate unused receivers.
+export const selectionEffects=Object.freeze({
+  all:Object.freeze({labels:true,notation:true}),
+  notation:Object.freeze({labels:false,notation:true}),
+  none:Object.freeze({labels:false,notation:false}),
+});
+const selectionConsumers=new Map([
+  ...["def","inductive","theory","initial","free","evaluate","print","notation","use"].map(kind=>[kind,selectionEffects.all]),
+  ...["simp_rule","simp_set","hlevel_rule"].map(kind=>[kind,selectionEffects.none]),
+]);
+export function fileSelectionEffects(kind) {
+  const effects=selectionConsumers.get(kind);
+  if(!effects)throw new TypeError(`A source consumer needs an explicit selection policy: ${kind}`);
+  return effects;
+}
+
 // A pattern's arguments, nested patterns included, and its alternatives'.
 // A bare argument may name a constructor, not a variable: it is in scope
 // either way, so that a name of its spelling in the clause is never read as

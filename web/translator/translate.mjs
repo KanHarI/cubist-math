@@ -5,6 +5,7 @@ import {parse} from "../cubist/parser.mjs";
 import {qualifySource} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
+import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot,BindingAdapter} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
@@ -34,7 +35,7 @@ import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -487,6 +488,7 @@ export class Translator {
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
       const d=retained?.declaration??(queued.generated?elaborationSyntax(queued):queued);
+      const effects=fileSelectionEffects(d.kind);
       const directiveStart=directives.length;
       const finishDirective=()=>this.onDirective?.(d,directives.length>directiveStart?directives.at(-1):{status:"checked"});
       if(directiveKinds.has(d.kind))this.onDirectiveStart?.(d);
@@ -531,10 +533,10 @@ export class Translator {
         try {
           let scope=new Scope(unit,new Map(),env);
           for(const model of d.uses??[]) {
-            try { scope=selected(this,scope,model); }
+            try { scope=selected(this,scope,model,{effects}); }
             catch(error) {propagateElaborationStop(error); if(!refusedUses.has(model))throw error; scope=null; break; }
           }
-          if(scope)selected(this,scope,d.model);
+          if(scope)selected(this,scope,d.model,{effects});
         } catch(error) {
           propagateElaborationStop(error);
           refusedUses.add(d.model);
@@ -558,7 +560,7 @@ export class Translator {
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
-          const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
+          const scope=sourceItemScope(this,new Scope(unit,new Map(),env),d);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
             normalText:this.evaluate(d,scope)});
         } catch(error) {
@@ -576,7 +578,7 @@ export class Translator {
         const unit=module.declaration(this.declarationFuel);
         try {
           // A file-level use selects for directives too, which print in it.
-          const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
+          const scope=sourceItemScope(this,new Scope(unit,new Map(),env),d);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
             text:this.printed(d,scope)});
         } catch(error) {
@@ -670,7 +672,7 @@ export class Translator {
         if(d.section)expression=lambdas(d.section.params,{kind:"sectionScope",section:d.section,body:expression,
           start:d.start,end:d.start});
         // The models a file-level use selected before it, outermost.
-        if(d.uses)expression={kind:"useScope",uses:d.uses,body:expression,start:d.start,end:d.start};
+        if(d.uses)expression={kind:"useScope",uses:d.uses,effects,body:expression,start:d.start,end:d.start};
         // A body that is, as a whole, a match on a declared type may call the
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
@@ -764,7 +766,7 @@ export class Translator {
         failure.reason??failure.message,root));
     };
     try {
-      const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
+      const scope=sourceItemScope(this,new Scope(unit,new Map(),env),d);
       const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)this.publishDeclaration(env,name,value);
       // An initial/free model's declared type brings its generated syntax,
@@ -1259,7 +1261,7 @@ export class Translator {
           if(!selection&&!["+","*","<=","<"].includes(n.operator))throw unselectedOperator(n.operator);
           // An operand with a recipe is read in its notation (L2.10b).
           const recipe=selection?.recipes?.[n.operator]??{},operand=(node,view)=>view
-            ?{kind:"select",model:{kind:"name",name:view,start:node.start,end:node.end},body:node,start:node.start,end:node.end}:node;
+            ?{kind:"select",effects:selectionEffects.notation,model:{kind:"name",name:view,start:node.start,end:node.end},body:node,start:node.start,end:node.end}:node;
           const left=operand(n.left,recipe.left),right=operand(n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
@@ -1302,7 +1304,7 @@ export class Translator {
         if(!selection||!selection.complete&&!selection.operators.has("unary -"))throw unselectedNegation();
         if(!selection.operators.has("unary -"))throw unboundNegation(selection);
         const view=selection.recipes?.["unary -"]?.left;
-        const operand=view?{kind:"select",model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
+        const operand=view?{kind:"select",effects:selectionEffects.notation,model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
           const applied=appliedRule(scope,binding.rule,operand,null,n);
@@ -1312,7 +1314,7 @@ export class Translator {
           args:[operand],start:n.start,end:n.end},expected);
       }
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
-      case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
+      case "useScope": return this.term(n.body,usesScope(this,scope,n.uses,{effects:n.effects}),expected);
       // Copied theory syntax keeps its selected notation, while term and
       // universe binders come from the generated declaration's current scope.
       // It has no source links here, including syntax a captured rule expands.
@@ -1330,7 +1332,7 @@ export class Translator {
       }
       // A literal, read by the selected notation's literal rule (L2.10c).
       case "literal": return this.literalTerm(n,scope,expected);
-      case "select": return this.term(n.body,selected(this,scope,n.model),expected);
+      case "select": return this.term(n.body,selected(this,scope,n.model,{effects:n.effects}),expected);
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);
         if(operation.kind!=="notationRule")return tr(operation,expected);

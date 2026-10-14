@@ -29,7 +29,7 @@ import {syntaxValue as semanticSyntax} from "./source-syntax.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
 // outermost first; `bound` holds the names bound there, by every binding
 // form (scopes.mjs).
-import { rewritten, substituted, freeNames, relocated, freshName } from "./scopes.mjs";
+import { rewritten, substituted, freeNames, relocated, freshName, selectionEffects } from "./scopes.mjs";
 
 // The universes of a theory's carriers, in the fields a theory records, the
 // first, UNIVERSE, and the k-th: each expansion names them afresh.
@@ -450,7 +450,8 @@ function theoryFields(theory, lookup, proposition, capture) {
     // Inside the theory, a notation means its operation.
     // An operand with a recipe is read in its notation, which the theory's
     // own does not rewrite.
-    const operand = (node, view) => view ? { kind: "select", model: name(view, node), body: node, start: node.start, end: node.end }
+    const operand = (node, view) => view ? { kind: "select", effects:selectionEffects.notation,
+      model: name(view, node), body: node, start: node.start, end: node.end }
       : operatorsAsCalls(node);
     const operatorsAsCalls = node => rewritten(node, (n, bound) => {
       // Another notation's selection, nat.(n + 1), is that notation's.

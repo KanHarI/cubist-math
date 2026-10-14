@@ -7,7 +7,7 @@ import {expandTheory} from "../cubist/theories.mjs";
 import {capturedName, capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
 import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/references.mjs";
 import {Scope} from "./elaboration.mjs";
-import {rewritten} from "../cubist/scopes.mjs";
+import {rewritten,selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated} from "./declarations.mjs";
 
@@ -114,25 +114,29 @@ export function memberField(t,scope,n) {
 // The scope with the model `node` opened, or null when it is no model: each
 // field by its name, as its projection T.f(m), and each notation of the
 // theory as m's operation. A later binding of a name or operator shadows it.
-export function opened(t,scope,node,{complete=true}={}) {
-  const record=recordOf(t,scope,t.term(node,scope,null));
+export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,receiver=t.term(node,scope,null)}={}) {
+  const record=recordOf(t,scope,receiver);
   if(!record)return null;
   const at={start:node.start,end:node.end};
-  const values=new Map([...record.fields,...record.derived??[]].map(field=>{
+  // All projections share this activation's checked receiver. Reading one
+  // selected field must not elaborate the source receiver again.
+  const value={kind:"instantiated",value:receiver,args:[],...at};
+  const notationFields=new Set(Object.values(record.notations));
+  const values=new Map([...record.fields,...record.derived??[]].filter(field=>effects.labels||effects.notation&&notationFields.has(field.name)).map(field=>{
     const key=field.projectionId?t.identityAdapter.key(field.projectionId):field.reference;
     const unavailable=key&&scope.env.get(key);
     // A refused optional operation is still a refused dependency when named;
     // opening the model must not eagerly call it and hide the checked fields.
     return [field.name,unavailable?.tag==="Untranslated"?unavailable
-      :t.term(scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[node],...at}),scope,null)];
+      :t.term(scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[value],...at}),scope,null)];
   }));
   // All of them in scope with one copy of the names there.
-  const added=[...values];
-  for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
+  const added=effects.labels?[...values]:[];
+  if(effects.notation)for(const [operator,field] of Object.entries(record.notations))added.push([operatorBinding(operator),values.get(field)]);
   // An ambiguous name or operator is refused where it is used.
-  for(const field of Object.keys(record.ambiguous??{}))
+  if(effects.labels)for(const field of Object.keys(record.ambiguous??{}))
     added.push([field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message}]);
-  for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
+  if(effects.notation)for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     added.push([operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
       list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>`x ${node.name??"m"}.${e.label}.(${operator}) y`).join(" or ")}.`}]);
   // A theory's numeral rule, its derived operation marked notation numeral,
@@ -148,7 +152,7 @@ export function opened(t,scope,node,{complete=true}={}) {
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).
-  added.push([SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
+  if(effects.notation)added.push([SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
     operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])}]);
   return scope.aliases(added);
 }
@@ -171,7 +175,7 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
   // The rules are read in the selection where the notation is declared, a
   // file-level use's (L2.10j): their names, and their numerals and operators,
   // wherever they are applied.
-  const at=usesScope(t,new Scope(module,new Map(),env),d.uses).env;
+  const at=sourceItemScope(t,new Scope(module,new Map(),env),d).env;
   const selection=[...at].filter(([key,value])=>(key===SELECTION||key.startsWith(operatorBinding("")))&&env.get(key)!==value);
   // A notation named after a model of this module adds literal rules to
   // that model's notation (L2.10c); no other module can. They are that
@@ -277,20 +281,21 @@ function notationSelected(scope,notation) {
 // The name of what a list of file-level uses selects last, or null: the
 // notation the declaration after them prints in (L2.10j).
 export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
-export function selected(t,scope,node) {
+export function selected(t,scope,node,{effects=selectionEffects.all}={}) {
+  if(!effects.labels&&!effects.notation)return scope;
   const key=referenceKey(node),notation=key?scope.env.get(notationBinding(key)):null;
-  if(notation?.tag==="Notation"&&!notation.model)return notationSelected(scope,notation);
-  const inner=opened(t,scope,node);
+  if(notation?.tag==="Notation"&&!notation.model)return effects.notation?notationSelected(scope,notation):scope;
+  const receiver=t.term(node,scope,null),inner=opened(t,scope,node,{effects,receiver});
   // A model's notation with the literal rules its module added, where the
   // name is still that model.
-  if(inner&&notation?.model&&scope.env.get(key)===notation.model) {
+  if(effects.notation&&inner&&notation?.model&&scope.env.get(key)===notation.model) {
     const selection=inner.env.get(SELECTION);
     return inner.alias(SELECTION,{...selection,numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});
   }
   if(inner)return inner;
   throw scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
-    t.shown(scope.infer(t.term(node,scope,null)).type)}.`),node);
+    t.shown(scope.infer(receiver).type)}.`),node);
 }
 
 // m.(+), a model's operation that its theory's notation binds + to: the
@@ -322,14 +327,15 @@ export function qualifiedOperator(t,scope,n) {
 // The declarations a theory expands to, checked in its place; its record
 // is in scope by its name, so that a later theory extends it. A theory that
 // does not expand fails as a declaration of its name.
-export function theoryDeclarations(t,module,d,env,declarations) {
+export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
+  const module=sourceUnit.declaration(t.declarationFuel).with({references:null});
   try {
     // A declared type whose header says it is a proposition, as Trunc's
     // : prop U does, states a law (L2.10k).
     const proposition=name=>{const entry=env.get(name);
       return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
-    const selected=capturedScope(t,module,d,env),notation=selected?.notation??null;
-    const capture=capturedTheorySyntax(t,env,notation,selected?.env??env);
+    const selected=capturedScope(t,module,d,env),notation=selected.notation;
+    const capture=capturedTheorySyntax(t,env,notation,selected.env);
     const reference=name=>lexicalBinding(t.checker.bindingName?.(name)??name);
     const generatedReference=(node,scope)=>{
       if(scope==="generated")return syntaxReference(reference(node.name),node.name,node);
@@ -366,7 +372,7 @@ export function theoryDeclarations(t,module,d,env,declarations) {
     propagateElaborationStop(failure);
     // The message says where, as an elaboration error does.
     return failedExpansion(t,d,env,declarations,module.locate(failure,{start:failure.offset,end:failure.sourceEnd??failure.offset}));
-  }
+  } finally {module.fuel.close();}
 }
 
 // Resolve source globals before retaining or inlining a field. Notation is
@@ -397,20 +403,19 @@ function capturedTheorySyntax(t,env,notation,lexical) {
 // names. Retained references are published in the module's environment;
 // source names are resolved in this selected scope. Without a use there is
 // no selection, and the module's environment binds no operator. A refused
-// use is reported by the theory's own
-// declarations, which read the same uses, as at any declaration; the
-// theory's models then depend on a failed theory: null.
+// use refuses retention itself: there is no valid unopened context to use
+// instead, and no generated family may depend on that failed activation.
 function capturedScope(t,module,d,env) {
   if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};
-  let scope;
-  try { scope=usesScope(t,new Scope(module.with({references:null}),new Map(),env),d.uses); }
-  catch (control) {propagateElaborationStop(control); return null; }
+  const scope=sourceItemScope(t,new Scope(module.with({references:null}),new Map(),env),d);
   return {env:scope.env,notation:[[SELECTION,scope.env.get(SELECTION)??null],
     ...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))]};
 }
 
 // `scope` with a declaration's file-level uses selected (L2.10j), in order.
-export const usesScope=(t,scope,uses)=>(uses??[]).reduce((inner,model)=>selected(t,inner,model),scope);
+export const usesScope=(t,scope,uses,{effects=selectionEffects.all}={})=>!effects.labels&&!effects.notation?scope
+  :(uses??[]).reduce((inner,model)=>selected(t,inner,model,{effects}),scope);
+export const sourceItemScope=(t,scope,item)=>usesScope(t,scope,item.uses,{effects:fileSelectionEffects(item.kind)});
 
 // A declaration that does not expand, a theory or an initial or free model,
 // fails as a declaration of its name, with the located `error`; it expands

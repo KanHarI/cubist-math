@@ -2,7 +2,7 @@
 // an initial/free capability: deriving and the universal proofs are pending.
 // The expansion is ordinary syntax, checked with no new kernel rule.
 import {propagateElaborationStop} from "./control.mjs";
-import {theoryBinding, usesScope, failedExpansion} from "./theories.mjs";
+import {theoryBinding, usesScope, sourceItemScope, failedExpansion} from "./theories.mjs";
 import {universeAt, nodes} from "../cubist/theories.mjs";
 import {freeNames, substituted, renamedFree, allNames, relocated, unlinked, freshName, fixedBinders} from "../cubist/scopes.mjs";
 import {assignArguments} from "./arguments.mjs";
@@ -76,7 +76,10 @@ export function equationalSupport(record) {
 // place; one that does not expand fails as a declaration of its name.
 export function initialDeclarations(t, module, d, env, declarations) {
   const unit = module.declaration(t.declarationFuel).with({references: null});
-  try { return expand(t, unit, d, env); }
+  try {
+    const scope=sourceItemScope(t,new Scope(unit,new Map(),env),d);
+    return expand(t,unit,d,scope);
+  }
   catch (failure) {propagateElaborationStop(failure); return failedExpansion(t, d, env, declarations, unit.locate(failure, d.name)); }
   finally { unit.fuel.close(); }
 }
@@ -86,7 +89,7 @@ export function initialDeclarations(t, module, d, env, declarations) {
 // and retained builders supply their own references when instantiating them
 // in each generated declaration. In particular, solved holes are not solved
 // again independently in copied field types.
-export function checkedInitialArguments(t,module,{theory,params,parameters,env,uses,name,at=theory}) {
+export function checkedInitialArguments(t,module,{theory,params,parameters,env,uses,name,at=theory,scope=null}) {
   const args=theory.kind==="call"?theory.args:[];
   const argument=assignArguments({...theory,args},parameters,module,name);
   if(args.length!==parameters.length)
@@ -100,7 +103,8 @@ export function checkedInitialArguments(t,module,{theory,params,parameters,env,u
     checked={kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),
       ...(members[0].bound?{bound:members[0].bound}:{domain:members[0].type}),body:checked,...place};
   }
-  const scope=usesScope(t,new Scope(module,new Map(),env),uses),application=t.term(checked,scope);
+  scope??=usesScope(t,new Scope(module,new Map(),env),uses);
+  const application=t.term(checked,scope);
   scope.infer(application);
   const telescope=[],values=[];
   let applied=application;
@@ -113,7 +117,8 @@ export function checkedInitialArguments(t,module,{theory,params,parameters,env,u
   return values;
 }
 
-function expand(t, module, d, env) {
+function expand(t, module, d, scope) {
+  const env=scope.env;
   // Generated syntax stands at the declared name and is synthetic: it links
   // nowhere, while the header's own syntax keeps its positions and links.
   const N = d.name.text, at = {start: d.name.start, end: d.name.end, synthetic: true}, free = d.kind === "free";
@@ -181,7 +186,7 @@ function expand(t, module, d, env) {
   // Abstract over the free declaration's parameters, then instantiate in
   // each generated declaration's scope; the checking scope's local names
   // cannot escape into a later declaration.
-  const values=checkedInitialArguments(t,module,{theory,params,parameters,env,uses:d.uses,name:T,at})
+  const values=checkedInitialArguments(t,module,{theory,params,parameters,env,scope,name:T,at})
     .map(value=>({kind:"instantiated",value,args:params.map(p=>name(p.name.text)),...at}));
   const given = new Map([...record.universes.map((_, k) => [universeAt(k), values[k]]),
     ...record.params.map((p, k) => [p.name, values[record.universes.length + k]])]);
