@@ -4,9 +4,7 @@ import {bindingSyntaxView,substituteBindingSyntax} from "../cubist/binding-synta
 import {selectionEffects} from "../cubist/scopes.mjs";
 import {bindingSyntaxAdapter} from "./binding-module.mjs";
 
-export const notationAlternative=(model,operator,entry,{applied=true}={})=>entry.call
-  ?`${model}.${entry.label}.${entry.parentField}(${operator==="unary -"?"x":"x, y"})`
-  :applied?`x ${model}.${entry.label}.(${operator}) y`:`${model}.${entry.label}.(${operator})`;
+export {notationAlternative} from "../cubist/theory-notation.mjs";
 
 // Retained records select operations by identity. The nominal record format
 // remains an explicit producer boundary until the production switch.

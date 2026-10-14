@@ -332,6 +332,19 @@ at retention. A receiver already known to be missing also fails there.
 The source context builder must supply a complete notation inventory, even
 when empty, before retaining operand receivers.
 
+Within a retained theory, an earlier declared operator resolves to its exact
+operation ID independently of term binders bearing that operation's label.
+Resolve the original operands in their current lexical context, then combine
+them with that operation reference; never resolve the combined tree again.
+Explicit operand receivers are cloned from the rule's retained interface,
+and apply only a notation effect. Nested explicit selections and block uses
+replace the operator context, so the outer theory's rules cannot rewrite
+their bodies. Inherited rules use the same parent correspondence as ordinary
+field references, including inside helpers, laws and generated artifacts.
+This migration currently admits earlier theory rules; a rule's own recursive
+operator body, model-selected operator bodies and literal readers still need
+their respective retained rule/selection contexts before their gates open.
+
 Shared notation validation returns both the operator and its operand views.
 Both producers honor explicit views on family notation, correcting the
 nominal producer's previous omission. Elaborating a retained receiver must

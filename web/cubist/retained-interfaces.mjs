@@ -52,7 +52,7 @@ export class RetainedInterfaces {
     Object.assign(this,{table,owner,context,source,constructors,evidenceTypes});
     this.entries=[];this.header=null;
   }
-  #resolve(tree,owner,{context=this.context,self=null,fixedReferences=new Map()}={}) {
+  #resolve(tree,owner,{context=this.context,self=null,fixedReferences=new Map(),notation=null}={}) {
     const universeReferences=new Map((this.header?.tree.params??[]).filter(p=>p.bound&&p.name.text!=="_")
       .map(p=>[p.name.text,bindingResolution(p.name.bindingId)]));
     // `set U` and `prop U` are universe positions fixed by the grammar.
@@ -62,7 +62,7 @@ export class RetainedInterfaces {
       fixedReferences.set(parameter.type,/^U+[0-9]+$/.test(label)?reservedResolution(label):{tag:"universe",label});
     }
     return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors,
-      evidenceTypes:this.evidenceTypes,self,fixedReferences,universeReferences,namespaceBoundary:context,
+      evidenceTypes:this.evidenceTypes,self,fixedReferences,universeReferences,namespaceBoundary:context,notation,
       namespaceFailure:error=>parentNamespaceFailure(this.header?.tree.name.text??tree.name.text,error)});
   }
   parameters(name,params,{fixedReferences=new Map()}={}) {
@@ -74,7 +74,7 @@ export class RetainedInterfaces {
     this.header=syntax;
     return syntax;
   }
-  retain(item,{kind=item.kind,self=false,transform=syntax=>syntax}={}) {
+  retain(item,{kind=item.kind,self=false,transform=syntax=>syntax,notation=null}={}) {
     const tree=interfaceTree(item);
     const fixedReferences=new Map();
     if(item.universe)fixedReferences.set(tree.type,{tag:"universe",label:item.universe.text});
@@ -82,7 +82,7 @@ export class RetainedInterfaces {
     const binding=this.table.allocate(owner,{role:kind==="derived"?"helper":"field",label:item.name.text,
       origin:item.name.origin??sourceOrigin({...this.source,start:item.name.start,end:item.name.end})});
     const context=this.context;
-    const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null,fixedReferences}));
+    const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null,fixedReferences,notation}));
     const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive:self,lexical:context.snapshot(),
       interface:Object.freeze(this.#interface()),
       ...(kind==="sort"?{level:item.level??null}:{})});

@@ -2,13 +2,14 @@
 // packages move retained theories and goal-dependent blocks through this
 // same representation; an unmigrated family is rejected here, not retried
 // through nominal capture on failure.
-import {scopeMapped, binderName, bindingRole} from "./scopes.mjs";
+import {scopeMapped, binderName, bindingRole,selectionEffects} from "./scopes.mjs";
 import {members} from "./references.mjs";
 import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution,
   failedResolution,resolutionError,UnknownNamespaceMember,namespaceSelectorResolution} from "./bindings.mjs";
 import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
 import {syntaxValue,expandedSource} from "./source-syntax.mjs";
 import {mapSyntax} from "../translator/syntax-graph.mjs";
+import {notationAlternative} from "./theory-notation.mjs";
 
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
@@ -67,7 +68,8 @@ export function resolveBindingTemplate(tree,options,splices) {
 
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
-  fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false},splices=null) {
+  fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
+  notation=null},splices=null) {
   const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
@@ -92,7 +94,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
   const lookup=(at,name,node,selector=false)=>{
     let found;
-    try {found=selector?at.selector(name):at.qualified(name);}
+    try {found=selector?at.lexical.selector(name):at.lexical.qualified(name);}
     catch(error) {
       if(!(error instanceof UnknownNamespaceMember))throw error;
       throw resolutionError(resolvedAt(failedResolution(error),node));
@@ -110,7 +112,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(node.kind==="select"&&model.kind==="name") {
         const found=lookup(at,model.name,model,true);
         if(model.name!=="_"||found.value.tag==="namespace") {
-          selector=memberResolution(namespaceSelector(found.value,at,table,namespaceBoundary),found.fields);
+          selector=memberResolution(namespaceSelector(found.value,at.lexical,table,namespaceBoundary),found.fields);
           if(selector.tag==="namespace"||namespaceCandidates(selector).length)namespaces=true;
           model={...model};selectors.set(model,selector);
         }
@@ -118,10 +120,18 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       return {...node,model,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model),
         ...(selector?.tag==="namespace"?{activationMode:"namespace"}:{})}};
     },
-    region: (at,node,key) => self&&node===declaration&&["body","value"].includes(key)
-      ?at.bind(self.label,bindingResolution(self.id)):at,
+    region(at,node,key) {
+      if(self&&node===declaration&&["body","value"].includes(key))
+        at={...at,lexical:at.lexical.bind(self.label,bindingResolution(self.id))};
+      // An explicitly selected notation is complete; the surrounding
+      // theory's operator table cannot rewrite its body. Its deferred rules
+      // enter through their own migration boundary.
+      if(node.kind==="select"&&key==="body"&&(node.effects??selectionEffects.all).notation)
+        at={...at,notation:null};
+      return at;
+    },
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
-    enter(node, at) {
+    enter(node, at, descend) {
       if(selectors.has(node))return occurrence(node,selectors.get(node),node.name,origin(node));
       if(fixedReferences.has(node)) {
         const fixed=fixedReferences.get(node);
@@ -143,9 +153,39 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(node.kind==="templateHole"&&splices) {
         const insert=splices.get(node.hole);
         if(!insert)throw new TypeError(`Unknown template syntax hole: ${node.hole}`);
-        const {syntax}=cloneBindingSyntax(insert(at),table,[...owner,"splice",String(splice++)]);
+        const {syntax}=cloneBindingSyntax(insert(at.lexical),table,[...owner,"splice",String(splice++)]);
         owned.push(...syntax.owned);
         return syntax.tree;
+      }
+      const key=node.kind==="negation"&&!node.qualifier?"unary -":node.kind==="binary"&&!node.qualifier
+        ?node.operator===">"?"<":node.operator===">="?"<=":node.operator:null;
+      if(key&&at.notation) {
+        const ambiguous=at.notation.ambiguous?.[key];
+        if(ambiguous)throw Object.assign(Error(`${key} is ambiguous in ${at.notation.name}: it is ${
+          ambiguous.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${
+          ambiguous.map(e=>notationAlternative("",key,e)).join(" or ")}, or give one another notation in extends.`),
+          {offset:node.start,sourceEnd:node.end,origin:origin(node)});
+        const rule=at.notation.bindings[key];
+        if(rule) {
+          const operand=(child,recipe)=>{
+            if(!recipe)return descend(child);
+            const {syntax}=cloneBindingSyntax(recipe,table,[...owner,"operand",String(splice++)],
+              {expansion:{kind:"notation",site:origin(child)}});
+            owned.push(...syntax.owned);
+            const activation=table.allocate(owner,{role:"activation",label:"selection",origin:origin(child)});
+            owned.push(activation.id);
+            return {kind:"select",effects:selectionEffects.notation,model:syntax.tree,
+              activation:{text:activation.label,bindingId:activation.id,bindingRole:activation.role,origin:activation.origin,
+                start:child.start,end:child.end},
+              body:descend(child,{...at,notation:null}),origin:origin(child),start:child.start,end:child.end};
+          };
+          const reverse=node.operator===">"||node.operator===">=";
+          const args=key==="unary -"?[operand(node.operand,rule.recipe.left)]
+            :[operand(reverse?node.right:node.left,rule.recipe.left),operand(reverse?node.left:node.right,rule.recipe.right)];
+          const site={...node,start:node.operatorStart??node.start,end:node.operatorEnd??node.end};
+          return {kind:"call",fn:occurrence(site,bindingResolution(rule.field),table.get(rule.field).label,origin(site)),
+            args,origin:origin(node),start:node.start,end:node.end};
+        }
       }
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
@@ -174,26 +214,27 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(record.role==="universe"&&record.label!=="_"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
       owned.push(record.id);
       return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
-        ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lookup(binderName(token))} : {})};
+        ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lexical.lookup(binderName(token))} : {})};
     },
     extend(at, binders,node,scope) {
       if(scope.role==="activation") {
+        if(scope.effects.notation)at={...at,notation:null};
         if(!scope.effects.labels)return at;
         const selector=selectors.get(node.model),candidates=namespaceCandidates(selector);
         if(selector?.tag==="namespace") {
-          for(const [label,value] of selector.members)at=at.bind(label,value);
+          for(const [label,value] of selector.members)at={...at,lexical:at.lexical.bind(label,value)};
           return at;
         }
-        return at.open(binders[0].bindingId,{candidates});
+        return {...at,lexical:at.lexical.open(binders[0].bindingId,{candidates})};
       }
       for (const token of binders) {
         if (!token.bindingId||binderName(token)==="_") continue;
-        at = token.bindingRole === "pattern" ? at.defer(binderName(token), token.bindingId)
-          : at.bind(binderName(token), bindingResolution(token.bindingId));
+        at={...at,lexical:token.bindingRole==="pattern"?at.lexical.defer(binderName(token),token.bindingId)
+          :at.lexical.bind(binderName(token),bindingResolution(token.bindingId))};
       }
       return at;
     },
-  }, context);
+  }, {lexical:context,notation});
   if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
   const syntax=freeze({format, tree, owned, inferred: canonical.inferred});
   if(!namespaces)return syntax;

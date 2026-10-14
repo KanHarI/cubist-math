@@ -193,6 +193,9 @@ export function rewritten(node, rewrite, bound = new Set()) {
 // regions. Neither this walker nor its clients rediscover binding forms.
 // `bind` returns a binder token; `extend` adds a group's mapped binders to
 // an immutable context. A replacement returned by `enter` is not entered.
+// Its third argument can descend into original children in their current
+// context. This permits a resolved operation or splice around source operands
+// without resolving inserted syntax again or losing the enclosing binders.
 export function scopeMapped(node, {prepare=n=>n,enter = n => n, bind = n => n, reference = n => n,
   region = at => at, parameter = n => n, extend, deferred = false}, context) {
   const walk = (node, outer, replacements,prepared=false) => {
@@ -201,7 +204,7 @@ export function scopeMapped(node, {prepare=n=>n,enter = n => n, bind = n => n, r
     if (isToken(node)) return node;
     if(!prepared)node=prepare(node,outer);
     if (node.kind || Array.isArray(node)) {
-      const replaced = enter(node, outer);
+      const replaced = enter(node, outer, (child,at=outer)=>walk(child,at,replacements));
       if (replaced !== node) return replaced;
     }
     if (Array.isArray(node)) {

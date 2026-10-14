@@ -3,6 +3,11 @@
 const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
 export const notationKey=notation=>notation.numeral?"numeral":notation.unary?"unary -":notation.operator;
 export const notationViews=notation=>Object.freeze({left:notation.leftView??null,right:notation.rightView??null});
+export const notationAlternative=(model,operator,entry,{applied=true}={})=>{
+  const receiver=`${model?`${model}.`:""}${entry.label}`;
+  return entry.call?`${receiver}.${entry.parentField}(${operator==="unary -"?"x":"x, y"})`
+    :applied?operator==="unary -"?`${receiver}.(-) x`:`x ${receiver}.(${operator}) y`:`${receiver}.(${operator})`;
+};
 
 export function validateFieldNotation(item,{theory:T,isCarrier}) {
   if(!item.notation)return null;

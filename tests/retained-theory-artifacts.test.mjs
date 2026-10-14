@@ -661,6 +661,118 @@ test("retained operand recipes instantiate the selected model's header and field
   });
 });
 
+test("source operators retain operation identities under binders and through inherited renaming",async t=>{
+  const {buildSource,check}=await setup(t);
+  const base=buildSource(`theory Arithmetic(U < UU0) {
+    M : U; plus(x, y : M) : M notation x + y;
+    neg(x : M) : M notation -x;
+    def double(plus : M, x : M) : M := x + x;
+    def under_lambda(x : M) : M := (fun (plus : M) => x + plus)(x);
+    def minus(neg : M, x : M) : M := -x;
+    def nested(x : M) : M := (x + x) + -x;
+    proof(x : M) : double(x, x) = x + x;
+  }`);
+  const child=buildSource("theory Child(U < UU0) extends p : Arithmetic(M := Carrier, plus := add_, neg := inverse_) {}");
+  const double=child.record.derived.find(entry=>entry.label==="double"),operation=child.record.fields.find(entry=>entry.label==="add_");
+  assert.ok(bindingUses(double.syntax).some(use=>use.id===operation.id));
+  const snapshot=JSON.stringify(base.record);
+  const {result,equal}=check({declarations:[...base.declarations,...child.declarations]},`
+    def chosen : Child(U0) := Child.make(Two, fun (x, y : Two) => left_, fun (x : Two) => left_,
+      fun (x : Two) => refl(left_));
+    def doubled : Two := chosen.double(right_, right_);
+    def lambda_value : Two := chosen.under_lambda(right_);
+    def negative : Two := chosen.minus(right_, right_);
+    def nested_value : Two := chosen.nested(right_);
+    def wrong : doubled = right_ := refl(right_);
+  `,"def plus(x, y : Two) : Two := right_; def neg(x : Two) : Two := right_;");
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  for(const name of ["doubled","lambda_value","negative","nested_value"]) {
+    assert.equal(equal(name,"left_"),true);assert.equal(equal(name,"right_"),false);
+  }
+  assert.equal(JSON.stringify(base.record),snapshot);
+});
+
+test("retained source operator laws feed Hom and Iso generation through exact field identities",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=buildSource(`theory Algebra(U < UU0) {
+    M : set U; plus(x, y : M) : M notation x + y;
+    def doubled(plus : M, x : M) : M := x + x;
+    law same(plus, x : M) : doubled(plus, x) = x + x;
+  }`,{morphisms:true});
+  const {result,equal}=check(built,`
+    def chosen(h : IsSet(U0, Two)) : Algebra(U0) := Algebra.make(Two, h,
+      fun (x, y : Two) => left_, fun (plus, x : Two) => refl(left_));
+    def value(h : IsSet(U0, Two)) : Two := chosen(h).doubled(right_, right_);
+    def image(h : IsSet(U0, Two)) : Two := (Algebra.Hom.id(chosen(h))).map(right_);
+    def inverse_value(h : IsSet(U0, Two)) : Two := (Algebra.Iso.inverse(Algebra.Iso.id(chosen(h)))).to.map(right_);
+    def wrong(h : IsSet(U0, Two)) : value(h) = right_ := refl(right_);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.equal(equal("value","fun (h : IsSet(U0, Two)) => left_"),true);
+  for(const label of ["image","inverse_value"]) {
+    assert.equal(equal(label,"fun (h : IsSet(U0, Two)) => right_"),true);
+    assert.equal(equal(label,"fun (h : IsSet(U0, Two)) => left_"),false);
+  }
+});
+
+test("source operand recipes retain their field receiver and never open labels over operands",async t=>{
+  const {buildSource,check}=await setup(t,undefined,operandModels);
+  const base=buildSource(`theory Power(U < UU0) {
+    recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+    def apply(recipe : Unit, x : M, n : Nat) : M := x ^ n;
+    def local_operand(x : M, one : Nat) : M := x ^ one;
+    def unbound(x : M) : M := x ^ ghost;
+  }`);
+  const child=buildSource("theory Child(U < UU0) extends p : Power(recipe := reader, pow := power) {}");
+  const helper=child.record.derived.find(entry=>entry.label==="apply"),receiver=child.record.fields.find(entry=>entry.label==="reader");
+  assert.ok(bindingUses(helper.syntax).some(use=>use.id===receiver.id));
+  const {result,equal}=check({declarations:[...base.declarations,...child.declarations]},`
+    def chosen : Child(U0) := Child.make(original, Nat, fun (x, n : Nat) => n);
+    def value : Nat := chosen.apply(tt, succ(zero), zero);
+    def local_value : Nat := chosen.local_operand(succ(zero), zero);
+    def wrong : value = succ(zero) := refl(succ(zero));
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["Power.unbound","Child.unbound","wrong"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/Untranslated name: ghost/);
+  for(const name of ["value","local_value"]) {
+    assert.equal(equal(name,"zero"),true);assert.equal(equal(name,"succ(zero)"),false);
+  }
+});
+
+test("source reversed comparisons use the selected operation's operand order",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=buildSource(`theory Order(U < UU0) {
+    M : U; less(x, y : M) : U notation x < y;
+    def forward(x, y : M) : U := x < y;
+    def reverse(less : M, x, y : M) : U := x > y;
+  }`);
+  const {result,equal}=check(built,`
+    def chosen : Order(U0) := Order.make(Two, fun (x, y : Two) => x = y);
+    def value : U0 := chosen.reverse(left_, left_, right_);
+    def intended : value = (right_ = left_) := refl(right_ = left_);
+    def wrong : value = (left_ = right_) := refl(left_ = right_);
+  `);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.equal(equal("value","right_ = left_"),true);assert.equal(equal("value","left_ = right_"),false);
+});
+
+test("source operators diagnose inherited ambiguity and cannot leak into another selection",async t=>{
+  const {buildSource,retain,retained}=await setup(t,undefined,operandModels);
+  const arithmetic=buildSource("theory Arithmetic(U < UU0) { M : U; plus(x, y : M) : M notation x + y; }");
+  const ambiguous=`theory Both(U < UU0) extends l : Arithmetic(plus := a), r : Arithmetic(plus := b) {
+    def value(x : M) : M := x + x;
+  }`;
+  assert.throws(()=>retain(ambiguous),error=>/\+ is ambiguous in Both/.test(error.message)
+    &&/l\.\(\+\)/.test(error.message)&&/r\.\(\+\)/.test(error.message)
+    &&error.offset===ambiguous.indexOf("x + x"));
+  assert.throws(()=>retain(`theory Selected(U < UU0) extends p : Arithmetic {
+    def value(x : M) : M := original.(x + x);
+  }`),/Binding syntax family has not migrated: notation operator/);
+  assert.throws(()=>retained.retain(parse("def value(x : Two) : Two { use original; exact x + x; }").declarations[0],
+    {kind:"derived",notation:{name:"Arithmetic",bindings:arithmetic.record.notationBindings}}),
+    /Binding syntax family has not migrated: notation operator/);
+});
+
 test("parent namespace selections distinguish header scope from field-local binders",async t=>{
   const {buildSource,check}=await setup(t);
   const built=[

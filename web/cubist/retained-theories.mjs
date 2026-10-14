@@ -89,7 +89,8 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   for(const item of theory.fields) {
     const self=item.kind==="derived"&&freeNames(item.value,new Set(item.params.map(p=>p.name.text))).has(item.name.text);
     const {notation,...plain}=item;
-    const entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families)});
+    const entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families),
+      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations}});
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);
