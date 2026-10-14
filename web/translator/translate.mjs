@@ -1332,7 +1332,7 @@ export class Translator {
       }
       // A literal, read by the selected notation's literal rule (L2.10c).
       case "literal": return this.literalTerm(n,scope,expected);
-      case "select": return this.term(n.body,selected(this,scope,n.model,{effects:n.effects}),expected);
+      case "select": return this.term(n.body,selected(this,scope,n.model,{effects:n.effects,activation:n.activation}),expected);
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);
         if(operation.kind!=="notationRule")return tr(operation,expected);

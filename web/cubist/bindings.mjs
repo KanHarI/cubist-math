@@ -1,7 +1,7 @@
 // Frontend identities are data, separate from both public labels and live
 // elaboration values. A revision is supplied by the compilation which owns
 // the source/import snapshot; replay uses that same revision and owner path.
-const roles = new Set(["declaration", "local", "parameter", "universe", "dimension", "field", "helper", "pattern"]);
+const roles = new Set(["declaration", "local", "parameter", "universe", "dimension", "field", "helper", "pattern", "activation"]);
 const string = (value, description) => {
   if (typeof value !== "string" || !value.length) throw new TypeError(`Expected ${description}.`);
   return value;
@@ -92,6 +92,15 @@ export const bindingResolution = id => Object.freeze({tag: "binding", id: string
 export const missingResolution = label => Object.freeze({tag: "missing", label: string(label, "a missing label")});
 export const reservedResolution = label => Object.freeze({tag: "reserved", label: string(label, "a reserved label")});
 export const slotResolution = (id, enclosing) => Object.freeze({tag: "slot", id: string(id, "a slot identity"), enclosing: resolution(enclosing)});
+export const memberResolution=(receiver,fields)=>fields.length?Object.freeze({tag:"member",receiver:resolution(receiver),
+  fields:Object.freeze(fields.map(label=>string(label,"a member label")))}):resolution(receiver);
+export const openingResolution=(id,label,enclosing)=>Object.freeze({tag:"opening",id:string(id,"an activation identity"),
+  label:string(label,"an opened occurrence"),enclosing:resolution(enclosing)});
+export const projectedResolution=(projection,receiver)=>Object.freeze({tag:"projected",
+  projection:string(projection,"a projection identity"),receiver:string(receiver,"a receiver identity")});
+export const failedResolution=({message,namespace,member,description})=>Object.freeze({tag:"failure",
+  message:string(message,"a resolution failure"),...(namespace===undefined?{}:{namespace,member,description})});
+const openingFrame=id=>Object.freeze({tag:"opening-frame",id:string(id,"an activation identity")});
 // A qualified namespace closes its member table. Its bare label can keep
 // an enclosing value, but an absent member never searches that value's
 // ambient namespace. Ordinary later bindings still shadow the whole entry.
@@ -110,8 +119,29 @@ export function resolution(value) {
     case "missing": return missingResolution(value.label);
     case "reserved": return reservedResolution(value.label);
     case "slot": return slotResolution(value.id, value.enclosing);
+    case "opening": return openingResolution(value.id,value.label,value.enclosing);
+    case "opening-frame": return openingFrame(value.id);
+    case "member": return memberResolution(value.receiver,value.fields);
+    case "projected": return projectedResolution(value.projection,value.receiver);
+    case "failure": return failedResolution(value);
     case "namespace": return namespaceResolution(value.members,value.fallback,value.description);
     default: throw new TypeError("Invalid lexical resolution.");
+  }
+}
+
+// One identity traversal covers nested fallbacks, namespaces and structural
+// targets. Cloning, correspondence, validation and alpha comparison use it;
+// none may silently leave an identity hidden in a new resolution variant.
+export function mapResolution(value,identity=id=>id) {
+  const map=value=>mapResolution(value,identity);
+  switch(value.tag) {
+    case "binding": case "opening-frame":return {...value,id:identity(value.id,value.tag)};
+    case "slot": case "opening":return {...value,id:identity(value.id,value.tag),enclosing:map(value.enclosing)};
+    case "member":return {...value,receiver:map(value.receiver)};
+    case "projected":return {...value,projection:identity(value.projection,"projection"),receiver:identity(value.receiver,"receiver")};
+    case "namespace":return {...value,fallback:map(value.fallback),members:value.members.map(([label,value])=>[label,map(value)])};
+    case "missing": case "reserved": case "failure":return value;
+    default:throw new TypeError("Invalid lexical resolution.");
   }
 }
 
@@ -121,26 +151,40 @@ export class LexicalContext {
   #head = null;
   constructor(entries = []) {
     for (const [label, value] of entries) this.#head = Object.freeze({
-      label: string(label, "a lexical label"), value: resolution(value), parent: this.#head});
+      label: label===null&&value.tag==="opening-frame"?null:string(label, "a lexical label"), value: resolution(value), parent: this.#head});
     Object.freeze(this);
   }
   lookup(label) {
-    for (let entry = this.#head; entry; entry = entry.parent)
+    for (let entry = this.#head; entry; entry = entry.parent) {
+      if(entry.value.tag==="opening-frame")return openingResolution(entry.value.id,label,this.#lookupAfter(entry.parent,label,false).value);
       if (entry.label === label) return entry.value.tag==="namespace"?entry.value.fallback:entry.value;
+    }
     return missingResolution(label);
   }
   qualified(name) {
+    return this.#lookupAfter(this.#head,name,true);
+  }
+  #lookupAfter(head,name,qualified) {
     // Ordered shadowing applies to a receiver too: a later local T hides
     // an earlier declaration T.f. Member labels are resolved on that receiver.
-    for (let entry = this.#head; entry; entry = entry.parent) {
+    for (let entry = head; entry; entry = entry.parent) {
+      if(entry.value.tag==="opening-frame") {
+        let fallback;
+        try {fallback=this.#lookupAfter(entry.parent,name,qualified);}
+        catch(error) {
+          if(!(error instanceof UnknownNamespaceMember))throw error;
+          fallback={value:failedResolution(error),fields:[]};
+        }
+        return {value:openingResolution(entry.value.id,name,memberResolution(fallback.value,fallback.fields)),fields:[]};
+      }
       if (entry.label === name) return {value:entry.value.tag==="namespace"?entry.value.fallback:entry.value,fields:[]};
-      if(name.startsWith(entry.label+".")&&entry.value.tag==="namespace") {
+      if(qualified&&name.startsWith(entry.label+".")&&entry.value.tag==="namespace") {
         const [member,...fields]=name.slice(entry.label.length+1).split(".");
         const found=entry.value.members.find(([label])=>label===member);
         if(!found)throw new UnknownNamespaceMember(entry.label,member,entry.value.description);
         return {value:found[1],fields};
       }
-      if (name.startsWith(entry.label + "."))
+      if (qualified&&name.startsWith(entry.label + "."))
         return {value: entry.value, fields: name.slice(entry.label.length + 1).split(".")};
     }
     return {value: missingResolution(name), fields: []};
@@ -151,6 +195,11 @@ export class LexicalContext {
     return context;
   }
   defer(label, id) {return this.bind(label, slotResolution(id, this.lookup(label)));}
+  open(id) {
+    const context=new LexicalContext();
+    context.#head=Object.freeze({label:null,value:openingFrame(id),parent:this.#head});
+    return context;
+  }
   namespace(label,members,description) {return this.bind(label,namespaceResolution(members,this.lookup(label),description));}
   snapshot() {
     const entries = [];
@@ -168,18 +217,32 @@ export class SlotOutcomes {
     this.#entries = new Map();
     for (const [id, outcome] of entries) {
       string(id, "a slot identity");
-      if (!["variable", "constructor"].includes(outcome) || this.#entries.has(id))
+      if ((!['variable','constructor'].includes(outcome)&&outcome?.kind!=="opening") || this.#entries.has(id))
         throw new TypeError("Invalid or repeated slot outcome.");
-      this.#entries.set(id, outcome);
+      const value=outcome?.kind==="opening"?Object.freeze({kind:"opening",members:Object.freeze(outcome.members.map(([label,value])=>
+        Object.freeze([string(label,"an opened member"),resolution(value)])))}):outcome;
+      this.#entries.set(id,value);
     }
     Object.freeze(this);
   }
-  get(id) {return this.#entries.get(id)??null;}
+  get(id) {const value=this.#entries.get(id);return typeof value==="string"?value:null;}
+  activation(id) {const value=this.#entries.get(id);return value?.kind==="opening"?value:null;}
+  activate(id,members) {
+    if(this.#entries.has(id))throw new TypeError("An activation has already been resolved in this branch.");
+    return new SlotOutcomes([...this.#entries,[id,{kind:"opening",members:[...members]}]]);
+  }
   decide(id, outcome) {
     if (this.#entries.has(id)) throw new TypeError("A slot has already been decided in this branch.");
     return new SlotOutcomes([...this.#entries, [id, outcome]]);
   }
   resolve(value) {
+    if(value.tag==="member")return memberResolution(this.resolve(value.receiver),value.fields);
+    if(value.tag==="opening") {
+      const ready=this.activation(value.id);
+      if(!ready)return value;
+      const [root,...fields]=value.label.split("."),member=ready.members.find(([label])=>label===root);
+      return this.resolve(member?memberResolution(member[1],fields):value.enclosing);
+    }
     if (value.tag !== "slot") return value;
     const outcome = this.#entries.get(value.id);
     if (!outcome) return value;
@@ -214,19 +277,21 @@ export class BindingAdapter {
   bindingForKey(key) {return key.startsWith("\u0000id ")?this.#table.get(key.slice(4)):null;}
   resolve(value, outcomes = new SlotOutcomes()) {
     value = resolution(value);
-    for (let at = value; at; at = at.tag === "slot" ? at.enclosing : null) {
-      if (at.tag === "binding" || at.tag === "slot") {
-        const record = this.#table.get(at.id);
-        if (at.tag === "slot" && record.role !== "pattern") throw new TypeError("A slot must name a candidate pattern binding.");
-      }
-    }
+    mapResolution(value,(id,kind)=>{
+      const record=this.#table.get(id);
+      if(kind==="slot"&&record.role!=="pattern")throw new TypeError("A slot must name a candidate pattern binding.");
+      if(["opening","opening-frame"].includes(kind)&&record.role!=="activation")throw new TypeError("An opening must name a selection activation.");
+      return id;
+    });
     return outcomes.resolve(value);
   }
   lower(value, outcomes = new SlotOutcomes(), {deferMissing = false} = {}) {
     value = this.resolve(value, outcomes);
-    if (value.tag === "slot") return null; // Must wait for the role's type.
+    if (["slot","opening","member","projected"].includes(value.tag)) return null; // Wait for resolution or structural lowering.
     if (value.tag === "missing" && deferMissing) return null;
     if (value.tag === "binding") return this.key(value.id);
+    if(value.tag==="failure")throw value.namespace===undefined?Error(value.message)
+      :new UnknownNamespaceMember(value.namespace,value.member,value.description);
     if (value.tag === "reserved" && this.#reserved.has(value.label)) return value.label;
     if (value.tag === "missing") throw Error(`Untranslated name: ${value.label}`);
     throw new TypeError(`A late lookup is not allowed: ${value.label}`);

@@ -85,7 +85,7 @@ export class ScopePoints {
       const local=scope.sourceBindings.get(key),identified=scope.unit.bindingAdapter?.bindingForKey(key);
       if(!local&&!identified&&!publicName.test(key))continue;
       const record=local??identified??this.#global(key,value,scope),label=local?.label??identified?.label??key;
-      lexical=lexical.bind(label,bindingResolution(record.id));
+      if(record.role!=="activation")lexical=lexical.bind(label,bindingResolution(record.id));
       values.set(record.id,value);
       keys.set(key,record.id);
       records.push({label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});

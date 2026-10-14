@@ -10,6 +10,7 @@ import {Scope} from "./elaboration.mjs";
 import {rewritten,selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated} from "./declarations.mjs";
+import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
 
 // The scope's key for an operator a model's notation binds: no source name
 // can spell it.
@@ -38,7 +39,20 @@ export function recordOf(t,scope,value) {
 // projections, which print as m.f.
 export function registerTheoryDeclaration(t,d) {
   const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
-  if(d.theory)(t.checker.theories??=new Map()).set(binding,d.theory);
+  if(d.theory) {
+    // The queue reserved the whole family before admission. Record exact
+    // projection identities once here, independently of their availability.
+    const identify=field=>{
+      if(field.projectionId)return field;
+      const key=t.checker.bindingName?.(field.projection)??field.projection;
+      const identity=t.compilationBindings.declaration(key)?.binding;
+      if(!identity)throw new TypeError("A model interface needs reserved projection identities.");
+      return {...field,projectionId:identity.id};
+    };
+    (t.checker.theories??=new Map()).set(binding,{...d.theory,
+      fields:d.theory.fields.map(identify),derived:(d.theory.derived??[]).map(identify),
+      parents:d.theory.parents.map(identify)});
+  }
   if(d.generated?.role==="projection")(t.checker.theoryProjections??=new Map()).set(binding,d.generated.field);
   // A projection whose field a notation names prints with that operator
   // where its model is selected (L2.10d), each operand in its view.
@@ -114,7 +128,7 @@ export function memberField(t,scope,n) {
 // The scope with the model `node` opened, or null when it is no model: each
 // field by its name, as its projection T.f(m), and each notation of the
 // theory as m's operation. A later binding of a name or operator shadows it.
-export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,receiver=t.term(node,scope,null)}={}) {
+export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,receiver=t.term(node,scope,null),activation=null}={}) {
   const record=recordOf(t,scope,receiver);
   if(!record)return null;
   const at={start:node.start,end:node.end};
@@ -154,7 +168,18 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   // L2.10j, whose sections read one by name (sectionScope).
   if(effects.notation)added.push([SELECTION,{name:node.name??"this model",recipes:record.recipes??{},complete,numeral,literal:null,
     operators:new Set([...Object.keys(record.notations),...Object.keys(record.ambiguousNotations??{})])}]);
-  return scope.aliases(added);
+  let inner=scope.aliases(added);
+  if(activation) {
+    const members=new Map(effects.labels?[...record.fields,...record.derived??[]].map(field=>{
+      if(!field.projectionId)throw new TypeError("A retained opening needs an exact projection identity.");
+      return [field.name,projectedResolution(field.projectionId,activation.bindingId)];
+    }):[]);
+    if(effects.labels)for(const field of Object.keys(record.ambiguous??{}))
+      members.set(field,failedResolution(ambiguousField(record,node.spelling??node.name??"m",field)));
+    inner=inner.alias(t.identityAdapter.key(activation.bindingId),receiver)
+      .withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,members));
+  }
+  return inner;
 }
 
 // A named notation (L2.10a): each rule's right side, its free names read
@@ -281,11 +306,15 @@ function notationSelected(scope,notation) {
 // The name of what a list of file-level uses selects last, or null: the
 // notation the declaration after them prints in (L2.10j).
 export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
-export function selected(t,scope,node,{effects=selectionEffects.all}={}) {
-  if(!effects.labels&&!effects.notation)return scope;
+export function selected(t,scope,node,{effects=selectionEffects.all,activation=null}={}) {
+  if(!effects.labels&&!effects.notation)return activation
+    ?scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,[])):scope;
   const key=referenceKey(node),notation=key?scope.env.get(notationBinding(key)):null;
-  if(notation?.tag==="Notation"&&!notation.model)return effects.notation?notationSelected(scope,notation):scope;
-  const receiver=t.term(node,scope,null),inner=opened(t,scope,node,{effects,receiver});
+  if(notation?.tag==="Notation"&&!notation.model) {
+    const inner=effects.notation?notationSelected(scope,notation):scope;
+    return activation?inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[])):inner;
+  }
+  const receiver=t.term(node,scope,null),inner=opened(t,scope,node,{effects,receiver,activation});
   // A model's notation with the literal rules its module added, where the
   // name is still that model.
   if(effects.notation&&inner&&notation?.model&&scope.env.get(key)===notation.model) {

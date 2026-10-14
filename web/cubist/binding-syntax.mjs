@@ -4,7 +4,7 @@
 // through nominal capture on failure.
 import {scopeMapped, binderName, bindingRole} from "./scopes.mjs";
 import {members} from "./references.mjs";
-import {sourceOrigin, bindingResolution, SlotOutcomes} from "./bindings.mjs";
+import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution} from "./bindings.mjs";
 import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
 import {syntaxValue,expandedSource} from "./source-syntax.mjs";
 
@@ -14,7 +14,7 @@ const format = "cubist-bindings-1";
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
-  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel"]);
+  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);
@@ -58,6 +58,11 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
   tree = scopeMapped(tree, {
     deferred: true,
+    prepare(node) {
+      if(!["select","use"].includes(node.kind))return node;
+      if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
+      return {...node,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model)}};
+    },
     region: (at,node,key) => self&&node===declaration&&["body","value"].includes(key)
       ?at.bind(self.label,bindingResolution(self.id)):at,
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
@@ -107,7 +112,8 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
         ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lookup(binderName(token))} : {})};
     },
-    extend(at, binders) {
+    extend(at, binders,_node,scope) {
+      if(scope.role==="activation")return scope.effects.labels?at.open(binders[0].bindingId):at;
       for (const token of binders) {
         if (!token.bindingId||binderName(token)==="_") continue;
         at = token.bindingRole === "pattern" ? at.defer(binderName(token), token.bindingId)
@@ -157,21 +163,24 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
       if(node.kind==="name"&&node.name==="_")uses.push({kind:"hole",origin:node.origin});
       if(node.kind!=="bindingReference")return node;
       const selected=outcomes.resolve(node.resolution);
+      const structural=resolutionExpression(node,selected);
+      if(structural!==node) {visit(structural,conditions);return node;}
       if(selected.tag==="binding") {
         const replacement=node.substitutions?.find(([id])=>id===selected.id)?.[1];
         if(replacement)visit(replacement,conditions);
         else if(!owned.has(selected.id))uses.push({kind:"binding",id:selected.id,spelling:node.spelling,origin:node.origin,
           ...(conditions.length?{conditions}:{})});
-      } else if(selected.tag==="slot") {
-        uses.push({kind:"deferred",slot:selected.id,resolution:selected,spelling:node.spelling,origin:node.origin});
+      } else if(selected.tag==="slot"||selected.tag==="opening") {
+        uses.push({kind:selected.tag==="slot"?"deferred":"deferred-opening",slot:selected.id,resolution:selected,spelling:node.spelling,origin:node.origin});
         // The arguments remain conditional, rather than unconditional
         // dependencies of whichever alternative a later type will select.
         if(node.substitutions?.length)uses.at(-1).substitutions=node.substitutions;
         if(conditional) {
           let alternative=selected;
           const required=[...conditions];
-          while(alternative.tag==="slot") {
-            required.push({slot:alternative.id,outcome:"constructor"});
+          while(alternative.tag==="slot"||alternative.tag==="opening") {
+            required.push(alternative.tag==="slot"?{slot:alternative.id,outcome:"constructor"}
+              :{activation:alternative.id,label:alternative.label.split(".")[0],outcome:"absent"});
             alternative=outcomes.resolve(alternative.enclosing);
           }
           visit({...node,resolution:alternative},required);
@@ -180,6 +189,8 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
       return node;
     },
     bind(token) {
+      if(token.bindingRole==="activation"&&!outcomes.activation(token.bindingId))uses.push({kind:"deferred-activation",
+        activation:token.bindingId,origin:token.origin});
       if(token.bindingRole==="pattern"&&binderName(token)!=="_"&&!outcomes.get(token.bindingId))uses.push({kind:"deferred-pattern",
         slot:token.bindingId,spelling:token.label??binderName(token),origin:token.origin,
         enclosing:token.patternEnclosing,constructors:token.constructorInventory});
@@ -218,8 +229,7 @@ export function sameBindingSyntax(left,right,correspondence=new Map()) {
     },null);
     collect(syntax.tree);
     const identity=id=>locals.has(id)?["local",locals.get(id)]:["external",external.get(id)??id];
-    const resolution=value=>value.tag==="binding"?{tag:"binding",id:identity(value.id)}
-      :value.tag==="slot"?{tag:"slot",id:identity(value.id),enclosing:resolution(value.enclosing)}:value;
+    const resolution=value=>mapResolution(value,identity);
     const map=tree=>scopeMapped(tree,{
       deferred:true,
       enter(node) {
@@ -248,8 +258,7 @@ export function sameBindingSyntax(left,right,correspondence=new Map()) {
   };
   return canonical(left,correspondence)===canonical(right,new Map());
 }
-const mappedResolution = (value, ids) => value.tag === "binding" ? {...value, id: ids.get(value.id) ?? value.id}
-  : value.tag === "slot" ? {...value, id: ids.get(value.id) ?? value.id, enclosing: mappedResolution(value.enclosing, ids)} : value;
+const mappedResolution = (value, ids) => mapResolution(value,id=>ids.get(id)??id);
 
 // Apply an explicit interface correspondence without any source lookup.
 // Open parent fields may share a child identity. This public operation may
@@ -312,10 +321,10 @@ export function substituteBindingSyntax(syntax, replacements, table, owner, {kin
       if (node.resolution.tag === "binding" && replacements.has(node.resolution.id))
         return insert(replacements.get(node.resolution.id),node,node.resolution.id);
       const pending = new Map((node.substitutions ?? []).map(([id, value]) => [id, map(value)]));
-      for (let value = node.resolution; value; value = value.tag === "slot" ? value.enclosing : null) {
-        if (value.tag === "binding" && !pending.has(value.id) && replacements.has(value.id))
-          pending.set(value.id, insert(replacements.get(value.id),node,value.id));
-      }
+      mapResolution(node.resolution,id=>{
+        if(!pending.has(id)&&replacements.has(id))pending.set(id,insert(replacements.get(id),node,id));
+        return id;
+      });
       return pending.size ? {...node, substitutions: [...pending]} : node;
     },
     extend: at => at,
@@ -331,7 +340,7 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
   const tree = scopeMapped(syntax.tree, {
     deferred: true,
     enter: node => node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferMissing: true}) : node,
-    bind: token => token.bindingId && token.bindingRole !== "pattern"
+    bind: token => token.bindingId && !["pattern","activation"].includes(token.bindingRole)
       ? {...token, text: adapter.key(token.bindingId), label: token.label ?? binderName(token)} : token,
     extend: at => at,
   }, null);
@@ -352,10 +361,22 @@ export function lowerBindingReferences(tree,adapter,outcomes=new SlotOutcomes())
 
 export function lowerBindingReference(node, adapter, outcomes = new SlotOutcomes(), options = {}) {
   const resolved = adapter.resolve(node.resolution, outcomes);
+  const structural=resolutionExpression(node,resolved);
+  if(structural!==node)return lowerBindingSyntax({format,tree:structural,owned:[]},adapter,outcomes);
   if (resolved.tag === "binding") {
     const replacement = node.substitutions?.find(([id]) => id === resolved.id)?.[1];
     if (replacement) return lowerBindingSyntax({format, tree: replacement, owned: []}, adapter, outcomes);
   }
   const name = adapter.lower(node.resolution, outcomes, options);
   return name === null ? node : {...node, kind: "name", name};
+}
+
+// Structural targets are syntax over exact IDs, never a dotted global name.
+// Keep substitutions attached until every opening/slot on the path resolves.
+function resolutionExpression(node,value) {
+  const reference=resolution=>({...node,resolution});
+  if(value.tag==="member")return members(node,reference(value.receiver),value.fields);
+  if(value.tag==="projected")return {kind:"call",fn:reference(bindingResolution(value.projection)),
+    args:[reference(bindingResolution(value.receiver))],start:node.start,end:node.end,origin:node.origin};
+  return node;
 }

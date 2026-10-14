@@ -66,6 +66,8 @@ const SCOPES = {
   forall: n => [{ binders: present([n.name]), keys: ["body"], renamable: true }],
   exists: n => [{ binders: present([n.name]), keys: ["body"], renamable: true }],
   binderGroup: n => [{ binders: present(n.names), keys: ["body"], renamable: true }],
+  select:n=>n.activation?[{binders:[n.activation],keys:["body"],renamable:false,role:"activation",
+    effects:n.effects??selectionEffects.all}]:[],
   pathLambda: n => [{ binders: present([n.dimension]), keys: ["body"], renamable: true, role: "dimension" }],
   // induction n as k return P(k) { zero => …; succ h => …; }: the index in
   // the motive and, as the predecessor, in the step; the hypothesis in the
@@ -100,6 +102,7 @@ const SCOPES = {
 };
 // Statements that bind names for the statements after them, in a block.
 const STATEMENTS = {
+  use:n=>n.activation?[n.activation]:[],
   let: n => targetNames(n.target),
   obtain: n => targetNames(n.target),
   intro: n => present([n.name]),
@@ -112,8 +115,8 @@ const targetNames = target => !target ? [] : target.kind === "name" ? [target]
 export const UNBINDING = new Set([
   "transport", "lift", "binary", "binaryNumber", "block", "calc", "call", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
   "initial", "matchStatement", "member", "name", "namedArgument", "negation", "notation", "number", "operatorOf", "over",
-  "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
-  "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",
+  "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
+  "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "withUnfolding",
   // Built by the translator and the theory expansion.
   "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall", "templateHole",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
@@ -122,7 +125,8 @@ export const UNBINDING = new Set([
 ]);
 export const BINDING = new Set([...Object.keys(SCOPES), ...Object.keys(STATEMENTS)]);
 
-const sequenceScope = (node, index, binders) => ({binders, renamable: false,
+const sequenceScope = (node, index, binders,item=node[index]) => ({binders, renamable: false,
+  ...(item?.kind==="use"&&item.activation?{role:"activation",effects:item.effects??selectionEffects.all}:{}),
   // Most traversals need only the ordered boundary. Materialize the region
   // keys only for clients which ask for them, such as nominal substitution.
   after: index + 1, get keys() {return node.slice(index + 1).map((_, k) => index + 1 + k);}});
@@ -131,14 +135,16 @@ export const scopesOf = (node,{deferred=false}={}) => {
   // never in its own initializer. Until elaboration fixes tactic/pattern
   // roles, these binders may not be renamed by syntax substitution.
   if (Array.isArray(node)) return node.flatMap((item, index) => {
-    const binders = item?.kind ? statementBinders(item) : [];
+    const binders = item?.kind ? statementBinders(item,{deferred}) : [];
     return binders.length ? [sequenceScope(node, index, binders)] : [];
   });
   if (!BINDING.has(node.kind) && !UNBINDING.has(node.kind))
     throw new TypeError("Unregistered syntax kind in scope traversal: " + node.kind);
-  return deferred&&node.kind==="clause"?patternScopes(node):SCOPES[node.kind]?.(node)??[];
+  const scopes=deferred&&node.kind==="clause"?patternScopes(node):SCOPES[node.kind]?.(node)??[];
+  return deferred?scopes:scopes.filter(scope=>scope.role!=="activation");
 };
-export const statementBinders = node => Object.hasOwn(STATEMENTS, node.kind) ? STATEMENTS[node.kind](node) : [];
+export const statementBinders = (node,{deferred=false}={}) => node.kind==="use"&&!deferred?[]
+  :Object.hasOwn(STATEMENTS, node.kind) ? STATEMENTS[node.kind](node) : [];
 // Binding roles follow the same schema as visibility. They describe syntax
 // ownership; a pattern role remains a candidate until elaboration decides.
 export function bindingRole(node, scope, binder) {
@@ -178,7 +184,7 @@ export const referenceFields = Object.freeze({
 export function rewritten(node, rewrite, bound = new Set()) {
   return scopeMapped(node, {
     enter: rewrite,
-    extend: (outer, binders) => new Set([...outer, ...binders.map(binderName)]),
+    extend: (outer, binders,_node,scope) => scope.role==="activation"?outer:new Set([...outer, ...binders.map(binderName)]),
   }, bound);
 }
 
@@ -187,12 +193,13 @@ export function rewritten(node, rewrite, bound = new Set()) {
 // regions. Neither this walker nor its clients rediscover binding forms.
 // `bind` returns a binder token; `extend` adds a group's mapped binders to
 // an immutable context. A replacement returned by `enter` is not entered.
-export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n => n,
+export function scopeMapped(node, {prepare=n=>n,enter = n => n, bind = n => n, reference = n => n,
   region = at => at, parameter = n => n, extend, deferred = false}, context) {
-  const walk = (node, outer, replacements) => {
+  const walk = (node, outer, replacements,prepared=false) => {
     if (!node || typeof node !== "object") return node;
     if (replacements.has(node)) return replacements.get(node);
     if (isToken(node)) return node;
+    if(!prepared)node=prepare(node,outer);
     if (node.kind || Array.isArray(node)) {
       const replaced = enter(node, outer);
       if (replaced !== node) return replaced;
@@ -200,14 +207,15 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
     if (Array.isArray(node)) {
       let inner = outer, tokens = replacements;
       return node.map((item, index) => {
-        const binders = item?.kind ? statementBinders(item) : [];
-        const scope = sequenceScope(node, index, binders);
+        if(item&&typeof item==="object")item=prepare(item,inner);
+        const binders = item?.kind ? statementBinders(item,{deferred}) : [];
+        const scope = sequenceScope(node, index, binders,item);
         if (binders.length) tokens = new Map(tokens);
         const mapped = binders.map(binder => {
           if (!tokens.has(binder)) tokens.set(binder, bind(binder, node, scope, inner));
           return tokens.get(binder);
         });
-        const out = walk(item, inner, tokens);
+        const out = walk(item, inner, tokens,true);
         if (mapped.length) inner = extend(inner, mapped, node, scope);
         return out;
       });

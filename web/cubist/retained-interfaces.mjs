@@ -2,7 +2,7 @@
 // member parameter domains, result and body are resolved together, once.
 // Subsequent consumers transform the retained syntax through ID maps; they
 // never rebuild its lexical scope from the eventual list of field labels.
-import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
+import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin,mapResolution} from "./bindings.mjs";
 import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,bindingSyntaxView,sameBindingSyntax} from "./binding-syntax.mjs";
 import {parameterForalls} from "./telescopes.mjs";
 
@@ -137,9 +137,7 @@ export class RetainedInterfaces {
     const map=new Map(correspondence).set(entry.id,binding.id);
     const cloned=cloneBindingSyntax(entry.syntax,this.table,[...owner,"telescope"],{expansion});
     const syntax=remapBindingSyntax(cloned.syntax,this.table,map);
-    const resolution=value=>value.tag==="binding"?{...value,id:map.get(value.id)??value.id}
-      :value.tag==="slot"?{...value,id:map.get(value.id)??value.id,enclosing:resolution(value.enclosing)}
-      :value.tag==="namespace"?{...value,fallback:resolution(value.fallback),members:value.members.map(([label,value])=>[label,resolution(value)])}:value;
+    const resolution=value=>mapResolution(value,id=>map.get(id)??id);
     // Only the canonical interface and its structural metadata inherit.
     // Analysis/checking views and generated projection IDs belong to the
     // parent's artifacts and must be rebuilt for the child correspondence.

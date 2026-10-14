@@ -231,7 +231,7 @@ const tactics = {
   // the block (theories.mjs).
   use(t,first,rest,goal) {
     const {scope}=goal;
-    return t.continueBlock(first,rest,goal.at(selected(t,scope,first.model)));
+    return t.continueBlock(first,rest,goal.at(selected(t,scope,first.model,{effects:first.effects,activation:first.activation})));
   },
   obtain(t,first,rest,goal) {
     const {scope}=goal;
