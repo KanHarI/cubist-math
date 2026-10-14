@@ -124,6 +124,7 @@ export const diagnostics = [
   ["E196", "Historical over migration requires a single exact expression."],
   ["E197", "Induction hypotheses after with are only available in induction clauses."],
   ["E198", "An induction clause takes one constructor pattern."],
+  ["E199", "An anonymous universe has no name: name the header universe to refer to it here."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
