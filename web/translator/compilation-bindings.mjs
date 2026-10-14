@@ -2,6 +2,8 @@
 // and scope collection. This registry records declarations, not availability:
 // only the checked environment/publication groups supply elaboration values.
 import {BindingTable,sourceOrigin} from "../cubist/bindings.mjs";
+import {alphaKey,isTerm,freeNames} from "./core.mjs";
+import {freeDimensions} from "./dimension-slots.mjs";
 
 export const declarationIdentity=value=>value?.tag==="DefRef"?value.name
   :value?.tag==="InductiveConstructor"?`${value.inductive.binding}:constructor:${value.index}`:value?.binding;
@@ -9,6 +11,7 @@ export const declarationIdentity=value=>value?.tag==="DefRef"?value.name
 export class CompilationBindings {
   #declarations=new Map();
   #owners=new Map();
+  #captures=new Map();
   constructor(revision,{table=new BindingTable(revision)}={}) {
     if(table.revision!==revision)throw new TypeError("Compilation binding revision mismatch.");
     this.revision=revision;this.table=table;
@@ -47,5 +50,20 @@ export class CompilationBindings {
   ofValue(value,{moduleName}={}) {
     const key=declarationIdentity(value)??(value?.tag==="Recursive"&&moduleName?`${moduleName}__${value.source}`:null);
     return key?this.declaration(key)?.binding??null:null;
+  }
+  // A checked closed receiver has one semantic identity in this compilation.
+  // Source activations remain separate occurrences with their own origins.
+  // This registry grants no availability: the consumer still carries the
+  // captured value explicitly in its environment, after checking activation.
+  capture(value,origin) {
+    if(!isTerm(value)||freeNames(value).size||freeDimensions(value).size)
+      throw new TypeError("A source capture requires a closed core value.");
+    const declared=this.ofValue(value);
+    if(declared)return declared;
+    const key=alphaKey(value);
+    if(!this.#captures.has(key))this.#captures.set(key,this.table.allocate(["captures"],{
+      role:"capture",label:"selection receiver",origin,
+    }));
+    return this.#captures.get(key);
   }
 }

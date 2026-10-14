@@ -203,8 +203,8 @@ test("source activation is ordered, required per consumer and outside declaratio
   const prepared=prepare("use box; use p; def value(x : Two) : Two := x;");
   assert.equal(prepared.activations.length,2);
   const final=prepared.context.lookup("x");
-  assert.equal(final.tag,"projected");assert.equal(final.receiver,prepared.activations[1].binding.id);
-  assert.equal(prepared.context.qualified("p.x").value.receiver,prepared.activations[0].binding.id);
+  assert.equal(final.tag,"projected");assert.equal(final.receiver,prepared.activations[1].capture.id);
+  assert.equal(prepared.context.qualified("p.x").value.receiver,prepared.activations[0].capture.id);
   const retained=resolveBindingSyntax(prepared.item,{table,source,owner:["ordered","def"],context:prepared.context,
     constructors:prepared.constructors});
   assert.equal(retained.tree.body[0].value.resolution.id,retained.tree.params[0].name.bindingId);
@@ -318,4 +318,44 @@ test("deferred namespace selectors retain member substitutions and pattern-local
       "qualified references restore the namespace field after a constructor decision");
   }
   assert.doesNotThrow(()=>snapshotSyntax(substituted));
+});
+
+test("source activation occurrences share receiver meaning without merging their source histories",async t=>{
+  const {table,inputs,program,env,source}=await setup(t);
+  const translator=new Translator({checker:program.checker,normalize:false,compilationBindings:program.compilationBindings});
+  const records=new Map();let index=0,capturedEnv=env;
+  const prepare=(text,changed={})=>activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),changed.env??env),
+    parse(text).declarations[0],{...inputs,...changed},{owner:["capture-equality",String(index++)],source});
+  const build=text=>{
+    const prepared=prepare(text),record=retainTheorySource(prepared.item,{table,source,owner:["capture-equality",String(index)],
+      context:prepared.context,constructors:inputs.constructors},{lookup:name=>records.get(name)});
+    const built=retainedTheoryArtifacts(record,{table,owner:["capture-equality","generated",String(index)]});
+    records.set(record.name,built.record);capturedEnv=withSourceCaptures(capturedEnv,prepared,inputs.adapter);
+    return {prepared,...built};
+  };
+  const parent=build("use chosen; theory P(U < UU0, i : M) { k : Two; }");
+  const child=build("use chosen; theory C(U < UU0, i : M) extends p : P {}");
+  assert.notEqual(parent.prepared.activations[0].binding.id,child.prepared.activations[0].binding.id);
+  assert.equal(parent.prepared.activations[0].capture.id,child.prepared.activations[0].capture.id);
+  const first=build("use chosen; theory F1(U < UU0) { F(a : M) : set U; }");
+  const second=build("use chosen; theory F2(U < UU0) { F(a : M) : set U; }");
+  const both=build("theory Both(U < UU0) extends f1 : F1, f2 : F2 {}");
+  assert.equal(both.record.fields.filter(field=>field.kind==="sort").length,1);
+  const repeat1=prepare("use receiver(tt); theory A(U < UU0) { k : M; }");
+  const repeat2=prepare("use receiver(tt); theory B(U < UU0) { k : M; }");
+  assert.equal(repeat1.activations[0].capture.id,repeat2.activations[0].capture.id,"computed receivers also share semantic identities");
+  assert.notEqual(repeat1.activations[0].binding.id,repeat2.activations[0].binding.id);
+  const other=inputs.context.lookup("other");
+  const changed=prepare("use chosen; theory D(U < UU0) { k : M; }",{context:inputs.context.bind("chosen",other)});
+  assert.notEqual(changed.activations[0].capture.id,parent.prepared.activations[0].capture.id,"a newly resolved receiver keeps a different meaning");
+  const declarations=[parent,child,first,second,both].flatMap(built=>built.artifacts.map(({binding,syntax,...annotations})=>
+    bindingDeclaration(binding,syntax,annotations)));
+  const result=translator.translateSyntax({declarations:[...declarations,...parse(`
+    def instance_ : C(U0, left_) := C.make(left_, right_);
+    def intended : instance_.k = right_ := refl(right_);
+    def wrong : instance_.k = left_ := refl(left_);
+  `).declarations]},"",capturedEnv);
+  assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
+  assert.doesNotThrow(()=>snapshotSyntax({captures:parent.prepared.captures,activations:parent.prepared.activations,
+    context:parent.prepared.context.snapshot()}));
 });

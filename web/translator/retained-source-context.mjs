@@ -3,7 +3,7 @@
 // closed values, just as they use their source imports; no recipe is replayed
 // in the destination. The caller explicitly carries this capture environment
 // with the retained syntax across module/generation boundaries.
-import {sourceOrigin} from "../cubist/bindings.mjs";
+import {sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax} from "../cubist/binding-syntax.mjs";
 import {fileSelectionEffects} from "../cubist/scopes.mjs";
 import {freeNames,isTerm} from "./core.mjs";
@@ -27,12 +27,16 @@ export function activateSourceItem(t,scope,item,{context,constructors,adapter},{
     const outcome=inner.slotOutcomes.activation(binding.id),value=inner.env.get(adapter.key(binding.id));
     if(!outcome||!isTerm(value)||freeNames(value).size)
       throw new TypeError("A retained model activation needs its checked closed receiver and resolved interface.");
+    const capture=t.compilationBindings.capture(value,origin);
+    const members=Object.freeze(outcome.members.map(([label,resolution])=>Object.freeze([label,
+      mapResolution(resolution,id=>id===binding.id?capture.id:id)])));
+    inner=inner.alias(adapter.key(capture.id),value);
     // Binding all ready labels at this boundary preserves later-local
     // shadowing and hides conflicting qualified globals through their root.
     // Labels the interface does not provide keep the previous whole lookup.
-    for(const [label,resolution] of outcome.members)context=context.bind(label,resolution);
-    captures.push(Object.freeze([binding.id,value]));
-    activations.push(Object.freeze({binding,syntax,effects,members:outcome.members,
+    for(const [label,resolution] of members)context=context.bind(label,resolution);
+    captures.push(Object.freeze([capture.id,value]));
+    activations.push(Object.freeze({binding,capture,syntax,effects,members,
       consumer:sourceOrigin({...source,start:item.start,end:item.end})}));
   }
   return Object.freeze({item:Object.freeze({...item,uses:[]}),context,constructors,

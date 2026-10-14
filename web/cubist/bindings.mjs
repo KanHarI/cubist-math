@@ -1,7 +1,7 @@
 // Frontend identities are data, separate from both public labels and live
 // elaboration values. A revision is supplied by the compilation which owns
 // the source/import snapshot; replay uses that same revision and owner path.
-const roles = new Set(["declaration", "local", "parameter", "universe", "dimension", "field", "helper", "pattern", "activation"]);
+const roles = new Set(["declaration", "local", "parameter", "universe", "dimension", "field", "helper", "pattern", "activation", "capture"]);
 const string = (value, description) => {
   if (typeof value !== "string" || !value.length) throw new TypeError(`Expected ${description}.`);
   return value;
