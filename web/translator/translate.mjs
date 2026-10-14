@@ -6,7 +6,7 @@ import {qualifySource} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
-import {decidePatternSlot} from "../cubist/bindings.mjs";
+import {decidePatternSlot,BindingAdapter} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
@@ -87,6 +87,7 @@ export class Translator {
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null}={}) {
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??new CompilationBindings(globalThis.crypto.randomUUID());
+    this.identityAdapter=new BindingAdapter(this.compilationBindings.table);
     this.sourceRevision=this.compilationBindings.revision;
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
@@ -384,17 +385,23 @@ export class Translator {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
   }
+  // Availability has one writer for public names and exact identities.
+  // Reservations carry no values; a failed/rolled-back family publishes the
+  // same refusal under every alias, never a previous imported value.
+  publishDeclaration(env,name,value) {
+    env.set(name,value);
+    const key=this.checker.bindingName?.(name)??name;
+    const declared=this.compilationBindings.declaration(key);
+    if(declared)env.set(this.identityAdapter.key(declared.binding.id),value);
+  }
   // Prepared syntax enters the same declaration checking/admission path as
   // parsed source. Binding-aware producers supply the one identity adapter;
   // no printing or second source-resolution pass occurs at this boundary.
   translateSyntax(ast,source,imported=new Map(),{bindingAdapter=null}={}) {
     const module=this.unit({source,bindingAdapter});
     const env=new Map(imported),declarations=[],directives=[];
-    const declarationKey=d=>d.name.bindingId?bindingAdapter.key(d.name.bindingId):null;
-    const publish=(d,value)=>{
-      env.set(d.name.text,value);
-      const key=declarationKey(d);if(key)env.set(key,value);
-    };
+    const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
+    const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
     // The models of the file-level uses refused where they stand.
     const refusedUses=new Set();
     const ownership=new DeclarationOwnership();
@@ -405,7 +412,7 @@ export class Translator {
     const unavailable=(group,via)=>{
       for(const declaration of group.members)for(const {name} of declaredNames(declaration)) {
         const value=untranslated(name,this.checker.bindingName?.(name)??name,`Untranslated dependency: ${via}`,group.cause);
-        env.set(name,value); env.set(lexicalBinding(value.binding),value);
+        this.publishDeclaration(env,name,value);env.set(lexicalBinding(value.binding),value);
       }
     };
     const finishPublication=(accept,failed=null)=>{
@@ -446,7 +453,7 @@ export class Translator {
       const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
       const bind=name=>{
         const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
-        env.set(name,value);env.set(lexicalBinding(value.binding),value);
+        this.publishDeclaration(env,name,value);env.set(lexicalBinding(value.binding),value);
       };
       for(const member of members)for(const {name} of declaredNames(member))
         if(ownership.owns(name,d))bind(name);
@@ -493,6 +500,10 @@ export class Translator {
       if(d.kind==="theory"||d.kind==="initial"||d.kind==="free") {
         const before=new Map(env);
         const generated=(d.kind==="theory"?theoryDeclarations:initialDeclarations)(this,module,d,env,declarations);
+        // Reserve identities for every group, including optional groups
+        // later blocked before elaboration. This grants no availability.
+        for(const declaration of generated)this.compilationBindings.declare(this.moduleName,declaration,
+          this.checker.bindingName?.(declaration.name.text)??declaration.name.text);
         const conflict=ownership.reserve(generated,d);
         if(conflict) {
           env.clear(); for(const [key,value] of before)env.set(key,value);
@@ -746,13 +757,13 @@ export class Translator {
     const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
     const unavailable=failure=>{
       const root=failureRoot(failure,binding);
-      for(const name of names)env.set(name,untranslated(name,this.checker.bindingName?.(name)??name,
+      for(const name of names)this.publishDeclaration(env,name,untranslated(name,this.checker.bindingName?.(name)??name,
         failure.reason??failure.message,root));
     };
     try {
       const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
       const lowered=lowerInductive(this,d,scope);
-      for(const [name,value] of lowered.entries)env.set(name,value);
+      for(const [name,value] of lowered.entries)this.publishDeclaration(env,name,value);
       // An initial/free model's declared type brings its generated syntax,
       // so that it is recorded as the inductive it is.
       declarations.push({name:d.name.text,status:"checked-native-cubical",inductive:lowered.record,

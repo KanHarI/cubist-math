@@ -418,7 +418,7 @@ export function failedExpansion(t,d,env,declarations,error) {
   declarations.push({name:d.name.text,syntax:d,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd,
     ...(error.blockedBy?{blockedBy:error.blockedBy}:{}),...(error.cause?{cause:error.cause}:{})});
   const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
-  env.set(d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
+  t.publishDeclaration(env,d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
   t.onDeclaration?.(d,declarations.at(-1));
   return [];
 }

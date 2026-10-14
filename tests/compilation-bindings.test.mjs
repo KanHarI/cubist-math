@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import create from "../web/dist/cubical.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
+import {BindingAdapter} from "../web/cubist/bindings.mjs";
 
 const module=await create();
 
@@ -21,6 +22,9 @@ test("declaration identities and source ownership do not depend on scope collect
     assert.equal(imported.origin.module,"dep");
     assert.equal(local.origin.start,source.indexOf("saved"));
     assert.equal(registry.ofValue(program.modules.get("main").get("saved")).id,local.id);
+    const adapter=new BindingAdapter(registry.table),env=program.modules.get("main");
+    assert.equal(env.get(adapter.key(local.id)),env.get("saved"));
+    assert.equal(env.get(adapter.key(imported.id)),program.modules.get("dep").get("saved"));
     const constructor=registry.ofValue(program.modules.get("dep").get("right_"));
     assert.equal(constructor.origin.module,"dep");assert.equal(constructor.label,"right_");
     const squash=registry.ofValue(program.modules.get("dep").get("Two.squash"));
@@ -56,6 +60,7 @@ test("failed constructors keep distinct declared identities and the common failu
       assert.equal(binding.label,name);
       assert.equal(binding,registry.declaration(`main__${name}`).binding);
       assert.equal(value.blockedBy,"main__T");
+      assert.equal(env.get(new BindingAdapter(registry.table).key(binding.id)),value);
       return binding.id;
     });
     assert.equal(new Set(identities).size,4);
