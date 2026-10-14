@@ -645,7 +645,7 @@ export class Translator {
         continue;
       }
       if(d.kind==="inductive") {
-        this.inductiveDeclaration(d,module,env,declarations);
+        this.inductiveDeclaration(d,module.with({bindingAdapter:retained?.adapter??bindingAdapter}),env,declarations);
         settle(queue);
         continue;
       }

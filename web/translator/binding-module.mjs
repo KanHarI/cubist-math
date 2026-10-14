@@ -52,8 +52,8 @@ export function lowerBindingModule(prepared) {
 // is serialized with it. Generators keep their canonical interfaces and
 // hand this final declaration to the normal admission/publication path.
 export function bindingDeclaration(binding,syntax,annotations={}) {
-  if(binding.role!=="declaration"||syntax.tree.kind!=="def")
-    throw new TypeError("A retained declaration needs a declaration identity and a complete definition.");
+  if(binding.role!=="declaration"||!["def","inductive"].includes(syntax.tree.kind))
+    throw new TypeError("A retained declaration needs a declaration identity and complete declaration syntax.");
   const {tree,...bindings}=bindingSyntaxView(syntax,syntax.tree,{inferred:syntax.inferred});
   return {...annotations,...tree,name:{...tree.name,text:binding.label,bindingId:binding.id},bindings};
 }
@@ -63,7 +63,7 @@ export function bindingDeclaration(binding,syntax,annotations={}) {
 // against the language namespace, including universes carried from imports.
 export function lowerBindingDeclaration(declaration,table) {
   const {bindings,theory,generated,...tree}=declaration;
-  if(tree.kind!=="def"||!tree.name.bindingId)
+  if(!["def","inductive"].includes(tree.kind)||!tree.name.bindingId)
     throw new TypeError("Invalid retained declaration entry.");
   table.get(tree.name.bindingId);
   const syntax={...bindings,tree};

@@ -6,19 +6,14 @@
 import {propagateElaborationStop} from "./control.mjs";
 import {T,finiteLevel,freeNames,substituteTerm,substituteDimension,betaReduce} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
-import {repeatedName} from "./names.mjs";
+import {repeatedName,bindingStem} from "./names.mjs";
+import {parameterGroups} from "../cubist/telescopes.mjs";
 
 export const INDUCTIVE_TAGS = new Set(["Inductive","InductiveSelf","InductiveConstructor"]);
 
 // A parameter list's binder groups, in order: (a, b : A) is one group.
-function groups(params) {
-  const result = [];
-  for (const p of params) {
-    if (result.length && result.at(-1)[0].group === p.group) result.at(-1).push(p);
-    else result.push([p]);
-  }
-  return result;
-}
+const groups=params=>parameterGroups(params).map(group=>group.parameters);
+const parameterLabel=parameter=>parameter.label??bindingStem(parameter.name);
 // The end of a type after its Π binders.
 function codomainEnd(type) {
   while (type?.tag === "Pi") type = type.body;
@@ -50,7 +45,7 @@ export function lowerInductive(translator, d, scope) {
   const binding = checker.bindingName?.(d.name.text) ?? d.name.text;
   // The header's parameters: universes as level parameters, then terms.
   const repeated = repeatedName(d.params);
-  if (repeated) throw locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`), repeated.name);
+  if (repeated) throw locate(Error(`${d.name.text} has two parameters named ${bindingStem(repeated.name)}: give each its own name.`), repeated.name);
   let at = scope;
   const levels = [], parameters = [], slots = [];
   for (const group of groups(d.params)) {
@@ -58,19 +53,19 @@ export function lowerInductive(translator, d, scope) {
       for (const p of group) {
         const { name, inner } = translator.universeBinder(p.name, p.bound, at);
         at = inner;
-        slots.push({ source: p.label ?? p.name.text, level: levels.length, name });
-        levels.push({ source: p.label ?? p.name.text, name });
+        slots.push({ source: parameterLabel(p), level: levels.length, name });
+        levels.push({ source: parameterLabel(p), name });
       }
       continue;
     }
     // A group's shared domain is elaborated once, before any of its names.
     const type = tr(group[0].type, at, null);
-    closed(type, `${d.name.text}'s parameter ${group[0].name.text}`, group[0].name);
+    closed(type, `${d.name.text}'s parameter ${parameterLabel(group[0])}`, group[0].name);
     for (const p of group) {
-      const name = at.fresh(p.label ?? p.name.text);
+      const name = at.fresh(parameterLabel(p));
       at = translator.sourceBinding(p.name, T.variable(name), at.bind(name, type));
-      slots.push({ source: p.label ?? p.name.text, parameter: parameters.length, name });
-      parameters.push({ source: p.label ?? p.name.text, name, type });
+      slots.push({ source: parameterLabel(p), parameter: parameters.length, name });
+      parameters.push({ source: parameterLabel(p), name, type });
     }
   }
   const header = d.result?.modifier;
@@ -81,7 +76,11 @@ export function lowerInductive(translator, d, scope) {
   // no data type or arity mentions the sort, so none depends on its level.
   const sortName = at.fresh(d.name.text), sortVariable = T.variable(sortName);
   const placeholder = T.universe(declared ?? { tag: "LConst", tier: 1, value: 0 });
-  let inner = at.bind(sortName, placeholder).alias(d.name.text,
+  const declareLocal=(at,token,value)=>{
+    const named=at.alias(token.text,value);
+    return token.bindingId?named.alias(translator.identityAdapter.key(token.bindingId),value):named;
+  };
+  let inner = declareLocal(at.bind(sortName, placeholder),d.name,
     { tag: "InductiveSelf", source: d.name.text, binding, sort: sortVariable, slots });
   const constructors = [], sizes = [];
   for (const c of d.constructors) {
@@ -90,7 +89,7 @@ export function lowerInductive(translator, d, scope) {
     if (c.name.text === d.name.text) throw locate(Error(`A constructor cannot be named ${d.name.text}, as its type is.`), c.name);
     const repeatedField = repeatedName(c.params);
     if (repeatedField)
-      throw locate(Error(`${c.name.text} has two arguments named ${repeatedField.name.text}: give each its own name.`), repeatedField.name);
+      throw locate(Error(`${c.name.text} has two arguments named ${bindingStem(repeatedField.name)}: give each its own name.`), repeatedField.name);
     let cs = inner;
     const args = [];
     // Types are beta-reduced: a boundary must be a constructor expression,
@@ -98,11 +97,11 @@ export function lowerInductive(translator, d, scope) {
     // mentions the sort (the specification's 1.4).
     for (const group of groups(c.params)) {
       const type = reduced(group[0].type, cs);
-      closed(type, `${c.name.text}'s argument ${group[0].name.text}`, group[0].name);
+      closed(type, `${c.name.text}'s argument ${parameterLabel(group[0])}`, group[0].name);
       for (const p of group) {
-        const name = cs.fresh(p.label ?? p.name.text);
+        const name = cs.fresh(parameterLabel(p));
         cs = translator.sourceBinding(p.name, T.variable(name), cs.bind(name, type));
-        args.push({ source: p.label ?? p.name.text, name, type, node: p.name });
+        args.push({ source: parameterLabel(p), name, type, node: p.name });
       }
     }
     let result = c.type ? reduced(c.type, cs) : sortVariable;
@@ -159,7 +158,7 @@ export function lowerInductive(translator, d, scope) {
     }
     const name = inner.fresh(c.name.text), order = kernelOrder.map(a => args.indexOf(a));
     constructors.push({ source: c.name.text, name, type, order, arity: args.length, dims, fields: args.map(a => a.source) });
-    inner = inner.bind(name, type).alias(c.name.text,
+    inner = declareLocal(inner.bind(name, type),c.name,
       { tag: "InductiveConstructor", source: c.name.text, head: T.variable(name), order, arity: args.length, dims });
   }
   // The sort's level: written, or the least one containing every data type
