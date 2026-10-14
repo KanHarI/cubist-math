@@ -8,8 +8,12 @@ import {sourceOrigin, bindingResolution, SlotOutcomes} from "./bindings.mjs";
 import {declarationTelescope, parameterLambdas} from "./telescopes.mjs";
 
 const format = "cubist-bindings-1";
-const unmigrated = new Set(["theory", "free", "initial", "select", "use", "useScope", "notationScope", "sectionScope",
-  "scoped", "instantiated", "intro", "obtain", "ext", "simpOnly", "withUnfolding", "operatorOf", "notation"]);
+// Opt in only after every binder and reference namespace of a family is
+// modelled. New parser kinds cannot silently enter nominal lookup paths.
+const migrated = new Set(["name", "number", "binaryNumber", "lambda", "forall", "exists", "binderGroup",
+  "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
+  "unary", "pair", "projection", "member", "pathApply", "negation", "transport", "lift", "over", "prop", "set",
+  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);
@@ -33,7 +37,7 @@ export function resolveBindingSyntax(tree, {table, owner, context, source, const
     enter(node, at) {
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
-      if (unmigrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
+      if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
       if (node.kind !== "name" || node.name === "_") return node;
       const {value, fields} = at.qualified(node.name);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;

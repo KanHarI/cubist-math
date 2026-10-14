@@ -4,7 +4,8 @@
 import {CubicalProgram} from "./cubical-program.mjs";
 import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayPolicy} from "./cubical-replay-inputs.mjs";
 import {parse,reservedReferences} from "./cubist/parser.mjs";
-import {BindingAdapter,LexicalContext,bindingResolution,reservedResolution} from "./cubist/bindings.mjs";
+import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
+import {bindingInputs} from "./translator/binding-module.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax} from "./cubist/binding-syntax.mjs";
 import {Translator} from "./translator/translate.mjs";
 import {Scope} from "./translator/elaboration.mjs";
@@ -65,11 +66,14 @@ function queryEnvironment(live,adapter,unit) {
   // These are translator permissions, never a destination spelling lookup.
   for(const key of [RECURSIVE,"\u0000superseded"])if(original.has(key))env.set(key,original.get(key));
   const recursive=env.get(RECURSIVE);
-  if(recursive?.destructed)recursive.destructed=new Map([...recursive.destructed].map(([label,value])=>{
-    const resolution=live.lexical.lookup(label);
-    if(resolution.tag!=="binding")throw new TypeError("A recursive refinement lost its source binding.");
-    return [adapter.key(resolution.id),value];
-  }));
+  if(recursive) {
+    const key=live.keys.get(recursive.key??recursive.source);
+    if(key)recursive.key=adapter.key(key);
+    // Permissions refer to environment keys, not labels. Compiler-private
+    // aliases are not callable from the query and carry no lexical binding.
+    if(recursive.destructed)recursive.destructed=new Map([...recursive.destructed].flatMap(([key,value])=>
+      live.keys.has(key)?[[adapter.key(live.keys.get(key)),value]]:[]));
+  }
   return new Scope(unit,new Map(data.context),env,new Map(data.dimensions),live.scope.slotOutcomes);
 }
 
@@ -143,11 +147,9 @@ export class ContextualSession {
 
         const execute=(source,index)=>{
           applyKernelReplayPolicy(replay.kernel,selectedPolicy);
-          const parsed=parsedEntry(source),reserved=reservedReferences(parsed.text),entryAdapter=new BindingAdapter(table,{reserved});
-          const context=new LexicalContext([...reserved.map(label=>[label,reservedResolution(label)]),...lexical.snapshot()]);
+          const parsed=parsedEntry(source),reserved=reservedReferences(parsed.text);
+          const {adapter:entryAdapter,context,constructors}=bindingInputs(table,live.values,{reserved,lexical:lexical.snapshot()});
           const owner=["contextual-session",this.#serial,"entry",String(index)],moduleName=owner.join("/");
-          const constructors=[...live.values].filter(([,value])=>value?.tag==="InductiveConstructor").map(([id,value])=>
-            ({id,label:table.get(id).label,nullary:!value.arity&&!value.dims}));
           const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,
             source:{revision:inputs.revision,module:moduleName}});
           const tree=lowerBindingSyntax(syntax,entryAdapter);

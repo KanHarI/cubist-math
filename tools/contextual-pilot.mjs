@@ -23,6 +23,10 @@ for(const collectScopes of [false,true]) {
     const memoryAfter=process.memoryUsage();
     const row={collectScopes,checkMs,memoryBefore,memoryAfter,kernelWork:program.kernel.work(),points:program.scopePoints.size};
     if(collectScopes) {
+      row.availablePoints=[...program.scopePoints.values()].filter(point=>point.available).length;
+      row.unavailableReasons={};
+      for(const point of program.scopePoints.values())if(!point.available)
+        row.unavailableReasons[point.reason]=(row.unavailableReasons[point.reason]??0)+1;
       row.scopeJsonBytes=Buffer.byteLength(JSON.stringify([...program.scopePoints.values()]));
       row.inputJsonBytes=Buffer.byteLength(JSON.stringify(program.scopeReplay.snapshot()));
       const point=[...program.scopePoints.values()].find(point=>point.origin.module==="main"

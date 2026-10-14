@@ -21,6 +21,7 @@ import {bindingStem} from "./names.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
 import {lowerBindingReferences} from "../cubist/binding-syntax.mjs";
+import {decidePatternSlot} from "../cubist/bindings.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
@@ -28,6 +29,16 @@ const keyword = n => n.kind === "induction" || n.induction === true ? "induction
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
 export const RECURSIVE = "\u0000recursive";
+
+// All scope transitions update the permission record and its callable alias
+// together. A source binder may shadow the callable alias without changing
+// the enclosing match's permissions.
+export function withRecursion(scope,record,{introduce=false}={}) {
+  const key=record.key??record.source;
+  if(introduce)scope=scope.alias(key,record);
+  else if(scope.env.get(key)?.tag==="Recursive")scope=scope.refine(key,record);
+  return scope.alias(RECURSIVE,record);
+}
 
 // The declared type a signature was registered as: from the checker's
 // registry, whatever names are in scope, or from the names in scope.
@@ -340,7 +351,7 @@ function branch(translator, motive, value, scope, inner, built) {
     if (bound?.tag === "Var") {
       if (!values.has(bound.name)) continue;
       const alias = rebind(translator, bound, values.get(bound.name));
-      at = at.alias(name, alias);
+      at = at.refine(name, alias);
       if (bound.name === value.name) destructed.set(name, { alias, variable: value.name });
       continue;
     }
@@ -350,7 +361,7 @@ function branch(translator, motive, value, scope, inner, built) {
       free.has(variable) ? substituteTerm(term, variable, replacement) : term, bound);
     if (again === bound) continue;
     const alias = rebind(translator, bound, again);
-    at = at.alias(name, alias);
+    at = at.refine(name, alias);
     // A name an enclosing match took apart, made again here, still names the
     // variable it named, for recursion.
     const taken = current?.destructed?.get(name);
@@ -363,8 +374,7 @@ function branch(translator, motive, value, scope, inner, built) {
     const now = variable => values.get(variable)?.tag === "Var" ? values.get(variable).name : variable;
     const results = new Map([...current.results].map(([position, entry]) => [now(position), { ...entry, result: now(entry.result) }]));
     const updated = { ...current, results, destructed: new Map([...(current.destructed ?? []), ...destructed]) };
-    if (at.env.get(enclosing.source)?.tag === "Recursive") at = at.alias(enclosing.source, updated);
-    at = at.alias(RECURSIVE, updated);
+    at = withRecursion(at,updated);
   }
   return { transition, goal: transition.next.at(at) };
 }
@@ -428,16 +438,14 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   if (source.coordinates.length !== constructor.dims)
     throw locate(Error(constructor.dims ? `${name} is a path constructor: name its ${constructor.dims} dimension${constructor.dims === 1 ? "" : "s"} after its arguments, as in ${spelled}.`
       : `${name} has no dimensions to name.`));
-  let type = clauseType, inner = scope;
+  let type = clauseType, inner = scope.withSlotOutcomes(decidePatternSlot(scope.slotOutcomes,source.constructor,"constructor"));
   const binders = [], results = new Map();
   // The declaration's own name first, so that an argument or a dimension of
   // the same name shadows it; the results are filled in as they are bound.
   // A parameter that already shadows the name keeps it.
   if (recursion) {
     const current = { ...recursion, results };
-    inner = inner.alias(RECURSIVE, current);
-    const key=recursion.key??recursion.source;
-    if (scope.env.get(key)?.tag === "Recursive") inner = inner.alias(key, current);
+    inner = withRecursion(inner,current);
   }
   const bind = (token, stem) => {
     if (type?.tag !== "Pi") throw locate(Error(`The clause type of ${name} has fewer arguments than expected.`));
@@ -455,7 +463,7 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
     let arity = 0, depth = 0, t = type?.domain;
     for (; t?.tag === "Pi"; t = t.body) arity++;
     for (; t?.tag === "Path"; t = t.family) depth++;
-    const token = args[sourceIndex], variable = bind(token, token.text);
+    const token = args[sourceIndex], variable = bind(token, bindingStem(token));
     if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
   });
   // Each position's recursive result, named by its induction hypothesis
@@ -482,8 +490,8 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
   // first value must not be captured. A clause name of its own shadows it.
   if (recursion) {
     const parameter = recursion.params[recursion.index];
-    if (![...args, ...hypotheses, ...source.coordinates].some(token => token.text === parameter))
-      inner = inner.alias(parameter, rebind(translator, scope.env.get(parameter), built));
+    if (![...args, ...hypotheses, ...source.coordinates].some(token => translator.sourceKey(token,inner) === parameter))
+      inner = inner.refine(parameter, rebind(translator, scope.env.get(parameter), built));
   }
   let term = body(inner, type, built);
   for (const { dim, family } of lines.reverse()) term = T.line(dim, family, term);

@@ -245,15 +245,16 @@ const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
 // scope that resolves its names. Each operand is elaborated where the rule
 // uses it, in the scope the operator is written in: no binder of the rule
 // captures a name of an operand.
-export function appliedRule(scope,rule,left,right) {
+export function appliedRule(scope,rule,left,right,site=left) {
   // The rule's own names are read as where it was declared, in that
   // place's selection or none; its operands where they stand, in the use's
   // scope.
-  let inner=scope.alias(SELECTION,null);
+  let inner=scope.withUnit(scope.unit.with({scopeUnavailable:"Notation expansion awaits its binding-family migration."})).alias(SELECTION,null);
   for(const [key,value] of [...rule.aliases,...rule.selection??[]])inner=inner.alias(key,value);
   const scoped=node=>node&&{kind:"scoped",node,scope,start:node.start,end:node.end};
   const operands=new Map([[rule.left,scoped(left)],...(rule.right?[[rule.right,scoped(right)]]:[])]);
-  const substituted=substitute(rule.value,operands);
+  const value=scope.unit.scopePoints?.expansion(rule.value,"notation",site,scope.unit)??rule.value;
+  const substituted=substitute(value,operands);
   return {node:substituted,scope:inner};
 }
 const substitute=(node,operands)=>rewritten(node,(n,bound)=>

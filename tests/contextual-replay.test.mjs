@@ -6,6 +6,7 @@ import {checkProgram} from "./check-program.mjs";
 import {contextualScenarios} from "./fixtures/contextual-sessions.mjs";
 import {ContextualSession} from "../web/contextual-session.mjs";
 import {CubicalKernel,KernelError} from "../web/cubical-kernel.mjs";
+import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {replayPolicyCallbacks,kernelReplayPolicy} from "../web/cubical-replay-inputs.mjs";
 
@@ -266,4 +267,28 @@ test("recorded fuel limits cannot be changed by mutating the caller's options",a
   await program.check(source,"main");
   assert.equal(program.scopeReplay.snapshot().fuelLimits.declarationFuel.queries,50000);
   await query(at(program,source,"x;"),"x","value","x");
+});
+
+test("context collection requires the transaction policy used by isolated replay",async t=>{
+  assert.throws(()=>new CubicalProgram(module,async()=>"",{collectScopes:true,manageTransactions:false}),/requires declaration transactions/);
+  const {program}=await setup(t,"def f : Unit := tt;");
+  program.manageTransactions=false;
+  await assert.rejects(program.check("def g : Unit := tt;","main"),/requires declaration transactions/);
+});
+
+test("recursive queries retain permissions through compiled nested match refinements",async t=>{
+  const source=`inductive N { zero; succ(n : N); }
+def f(n : N) : N {
+  match n { zero => { exact zero; } succ(k) => {
+    match k {
+      zero => { exact zero; }
+      succ(zero) => { exact zero; }
+      succ(succ(j)) => { exact f(k); }
+    }
+  } }
+}`;
+  const {program,result}=await setup(t,source);
+  assert.deepEqual(result.gaps,[]);
+  await query(at(program,source,"f(k)"),"typeof f(k)","type","N");
+  await query(at(program,source,"f(k)"),"typeof f(n)","error");
 });

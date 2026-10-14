@@ -141,6 +141,19 @@ const captured = (node, key) => node.kind === "instantiated" && key === "value"
   || node.kind === "scoped" && ["node", "scope"].includes(key)
   || node.kind === "bindingReference" && ["resolution", "origin", "substitutions"].includes(key);
 
+// Plain tokens can be references too. Their namespace is explicit rather
+// than guessed from spelling. Identity migration must implement these
+// namespaces before opting a family into binding-syntax's allowlist.
+const simplificationReferences = {witnesses:"local",without:"simp-rule-or-set",at:"local"};
+export const referenceFields = Object.freeze({
+  simpOnly:Object.freeze(simplificationReferences),
+  simpaOnly:Object.freeze({...simplificationReferences}),
+  withUnfolding:Object.freeze({hints:"lexical"}),
+  simp_rule:Object.freeze({rule:"lexical"}),
+  hlevel_rule:Object.freeze({rule:"lexical"}),
+  simp_set:Object.freeze({rules:"lexical"}),
+});
+
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node
 // and sequence, outermost first; `bound` holds the names bound there. A node `rewrite`
 // returns in place of another is not entered.
@@ -156,7 +169,7 @@ export function rewritten(node, rewrite, bound = new Set()) {
 // regions. Neither this walker nor its clients rediscover binding forms.
 // `bind` returns a binder token; `extend` adds a group's mapped binders to
 // an immutable context. A replacement returned by `enter` is not entered.
-export function scopeMapped(node, {enter = n => n, bind = n => n, extend, deferred = false}, context) {
+export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n => n, extend, deferred = false}, context) {
   const walk = (node, outer, replacements) => {
     if (!node || typeof node !== "object") return node;
     if (replacements.has(node)) return replacements.get(node);
@@ -190,6 +203,12 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, extend, deferr
     const copy = {};
     for (const [key, value] of Object.entries(node)) {
       if (captured(node, key)) {copy[key] = value; continue;}
+      const namespace=Object.hasOwn(referenceFields,node.kind)?referenceFields[node.kind][key]:null;
+      if(namespace) {
+        const use=token=>token?reference(token,{namespace,node,key},outer):token;
+        copy[key]=Array.isArray(value)?value.map(use):use(value);
+        continue;
+      }
       // A statement target is a binder, never a reference. Identity clients
       // replace its individual tokens, including within pair targets.
       if (key === "target" && Object.hasOwn(STATEMENTS, node.kind)) {
@@ -197,7 +216,14 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, extend, deferr
         copy[key] = target(value); continue;
       }
       if (key === "params" && Array.isArray(value)) {
-        copy[key] = value.map((param, index) => walk(param, inside(scope => scope.paramsAfter <= index), tokens));
+        copy[key] = parameterGroups(value).flatMap(({parameters,after,bound})=>{
+          const at=inside(scope=>scope.paramsAfter<=after-parameters.length);
+          const field=bound?"bound":"type",domain=walk(parameters[0][field],at,tokens);
+          return parameters.map(param=>{
+            const rest={...param};delete rest[field];
+            return {...walk(rest,at,tokens),[field]:domain};
+          });
+        });
         continue;
       }
       copy[key] = walk(value, inside(scope => scope.keys.includes(key)), tokens);

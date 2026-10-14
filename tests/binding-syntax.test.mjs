@@ -57,6 +57,28 @@ test("inferred headers and parameter lambdas share identities and retain named a
   assert.deepEqual(lowered.valueParameters.map(p => !!p.implicit), [true, true, false, false]);
 });
 
+test("a grouped domain is one scoped region even when it contains binders",()=>{
+  const setup=prepare();
+  const syntax=resolveBindingSyntax(parse("def f(a, b : (fun (n : Unit) => Unit)(tt)) : Unit := a;").declarations[0],setup);
+  assert.deepEqual(syntax.owned.map(id=>setup.table.get(id).label),["a","b","n"]);
+  assert.equal(syntax.tree.params[0].type,syntax.tree.params[1].type);
+  const cloned=cloneBindingSyntax(syntax,setup.table,["clone"]).syntax;
+  assert.equal(cloned.owned.length,3);
+  assert.equal(cloned.tree.params[0].type,cloned.tree.params[1].type);
+  const lowered=lowerBindingSyntax(cloned,setup.adapter);
+  assert.equal(lowered.params[0].type,lowered.params[1].type);
+});
+
+test("unmigrated reference namespaces and new syntax families are refused at source resolution",()=>{
+  const setup=prepare();
+  for(const source of [
+    "def a(x : Unit) : Unit { simpa with [x] using x; }",
+    "def a(x : Unit) : Unit { simpa without [r] using x; }",
+    "def a(x : Unit) : Unit { simpa only [rules] using x; }",
+  ])assert.throws(()=>resolveBindingSyntax(parse(source).declarations[0],setup),/family has not migrated: simpaOnly/);
+  assert.throws(()=>resolveBindingSyntax({kind:"futureFamily"},setup),/family has not migrated: futureFamily/);
+});
+
 test("cloning freshens binders and their uses without allocating when syntax is revisited or serialized", () => {
   const setup = prepare();
   const outer = setup.table.allocate(["import"], {role: "declaration", label: "x",
@@ -115,7 +137,7 @@ test("ordinary term, universe and dimension binders elaborate and kernel-check t
   ].entries()) {
     const setup = prepare();
     const syntax = resolveBindingSyntax(expression(source), {...setup, owner: ["expression", String(index)]});
-    const scope = new Scope(translator.unit({source}));
+    const scope = new Scope(translator.unit({source,bindingAdapter:setup.adapter}));
     const term = translator.term(lowerBindingSyntax(syntax, setup.adapter), scope);
     assert.ok(scope.infer(term).type);
     const {syntax: cloned} = cloneBindingSyntax(syntax, setup.table, ["clone", String(index)]);

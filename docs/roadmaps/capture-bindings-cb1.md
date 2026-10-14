@@ -17,21 +17,32 @@ references, including under undecided slots. Serialized tables validate their
 allocation correspondence when restored.
 
 `resolveBindingSyntax` shares the existing scope schema and traversal.
-Grouped domains precede their entire group. Inferred declaration headers and
+Grouped domains are resolved once and shared by their entire group, outside
+all that group's binders. Inferred declaration headers and
 their parameter lambdas use the same canonical telescope. `BindingAdapter`
 lowers identities to private keys; a missing source resolution cannot acquire
 a destination meaning. Constructor candidates retain their enclosing
-resolution and source inventory. The pattern compiler decides them at the
-matched type, and structural recursive-call checks lower the decided slots
-before inspecting their arguments.
+resolution and source inventory. Compiled matches and direct induction or
+obligation clauses use the same slot-decision operation. Introducing a source
+binder derives its key from its identity. Structural recursive-call checks
+lower the decided slots before inspecting their arguments.
+
+Migration is an explicit allowlist. The scope schema records plain-token
+reference fields and their namespaces, including local witnesses and
+simplification rule/set selectors. Simplification statements remain refused
+at the identity boundary until those namespaces migrate in CB3.
 
 `Translator.translateSyntax` accepts prepared syntax through the same checking
 and admission path as parsed source. The complete ordinary-declaration pilot
 checks dependent term/universe telescopes, dimensions, named arguments after
 freshening, shadowing, recursive/generalized calls and structural refusals.
-Declaration admission and failure install the corresponding identity entry.
+`resolveBindingModule` owns ordered declaration resolution, self-reference
+eligibility and identity allocation; the pilot uses this production entry.
+Module preparation and contextual queries share the context/constructor
+inventory builder. Declaration admission and failure install the corresponding identity entry.
 Recursive permissions have an environment key separate from their display
-label. Failed declarations do not supply usable identity entries. The pilot
+label, and every recursive scope transition updates the permission record and
+callable alias together. Failed declarations do not supply usable identity entries. The pilot
 prepares only the migrated ordinary family; it is not a second checker or an
 automatic module-wide migration switch.
 
@@ -51,6 +62,12 @@ permissions are projected separately at every point. Source positions and
 owner/attempt paths identify instances. No description retains a live `Scope`,
 checker, mutable environment or native handle.
 
+Binding introduction clears shadowed metadata; refinement explicitly keeps
+the same identity. Parsed syntax carries source-qualified origins before
+expansion. Notation expansion preserves the authored origin and adds a use
+frame; those scopes remain unavailable until CB3. Registered rule descriptions
+are shared within a declaration and snapshotted anew after registrations.
+
 `new ContextualSession(program, pointId)` opens one selected point. Each
 `run(input)` entry creates a fresh native session and replays the full ordered
 prefix, including imports, directives and earlier attempts. It materializes
@@ -66,6 +83,9 @@ select another point or increase a limit. Scratch history contains source and
 binding correspondence only. Failure preserves it; source rechecks invalidate
 sessions before asynchronous discovery completes. Successful results are
 explicitly conditional on the selected scope.
+Collection requires declaration transactions. Replay remaps recursive
+permissions through the recorded environment-key correspondence, discarding
+compiler-private aliases which query syntax cannot name.
 
 The nested-function script checks a local equality, accepts a scratch let,
 evaluates it to `succ(succ(k))`, rejects a type mismatch, then answers `Nat`.
@@ -84,33 +104,46 @@ native handle; WASM and the Node process are shared, without explicit JIT
 warm-up. Process memory is measured around checks after GC and before JSON
 serialization or queries. These are observations, not performance budgets.
 
-At implementation commit `69ec8a52`, Node v24.13.0:
+After the round-1 corrections, Node v24.13.0:
 
 | Measurement | Collection off | Collection on |
 | --- | ---: | ---: |
-| Check elapsed | 361 ms | 580 ms |
-| Retained heap growth | 7.09 MB | 18.79 MB |
+| Check elapsed | 143 ms | 180 ms |
+| Retained heap growth | 7.13 MB | 4.89 MB |
 | Scope instances | 0 | 1,620 |
+| Available instances | 0 | 113 |
 
 | Request stage, across 15 entries | Minimum | Median | Maximum |
 | --- | ---: | ---: | ---: |
-| Full prefix replay | 78.65 ms | 199.34 ms | 251.60 ms |
-| Native context validation | 0.139 ms | 0.366 ms | 0.471 ms |
-| Accepted scratch history | 0.002 ms | 0.835 ms | 1.162 ms |
-| New query | 0.263 ms | 0.654 ms | 1.683 ms |
+| Full prefix replay | 69.22 ms | 81.69 ms | 117.84 ms |
+| Native context validation | 0.164 ms | 0.178 ms | 0.381 ms |
+| Accepted scratch history | 0.001 ms | 0.317 ms | 0.423 ms |
+| New query | 0.168 ms | 0.313 ms | 2.108 ms |
 
-The same pilot before shared storage retained 45.75 MB with collection and
-had a 469 ms median prefix replay. Timing varies between runs. Collection
-off/on performs identical kernel work: 14,186 instructions and 1,035 queries.
-Naively JSON-serializing the entire index still repeats shared components
-(15.25 MB); it is not the intended CB6 transport encoding. The stored replay
-inputs occupy about 27 KB. There is no retained execution session or
+These figures are not directly comparable to the earlier run at `69ec8a52`
+(18.79 MB with collection, 199 ms median prefix). The corrected eligibility
+boundary marks 628 notation-expansion instances unavailable until CB3, along
+with 878 generated/selected instances and one inductive-self context. Earlier
+measurements incorrectly treated those notation expansions as available.
+Heap growth is a process observation across separate checks, including cache
+retention and GC effects; it is not an estimate of collection's marginal cost.
+Collection off/on performs identical kernel work: 14,186 instructions and
+1,035 queries. Naively JSON-serializing the entire index still repeats shared
+components (2.73 MB); it is not the intended CB6 transport encoding. The stored
+replay inputs occupy about 28 KB. There is no retained execution session or
 dependency-only replay optimization.
 
 ## Validation
 
 The focused declaration/identity/argument/match/replay suites passed 57 tests.
 The subsequent prefix-outcome, immutable-limit and scope suite passed 28 tests.
-Full-suite validation and external review are recorded in the implementation
-PR after they finish. The last earlier full run, at `bcdb1aad`, passed 960
-tests with 52 existing TODOs and all 3,857 canonical corpus declarations.
+External review round 1 identified gaps in direct-clause slot decisions,
+recursive record updates, binder metadata, source ownership and migration
+boundaries. The expanded focused suite after the corrections passed 68 tests.
+It includes induction obligations, nested recursive queries, pattern
+shadowing, shared grouped domains and imported notation origins. The subsequent
+full run passed 974 tests with 52 existing TODOs and no failures, including all
+3,857 canonical corpus declarations. A final correction shares declaration
+ownership between preparation and admission; all five declaration tests passed
+afterward, including its new distinguishing duplicate-declaration control.
+Subsequent external review results are recorded in the PR.

@@ -17,7 +17,8 @@
 // arguments, and otherwise a variable.
 
 // The environment key of the declaration's own name (match.mjs, RECURSIVE).
-const RECURSIVE = "\u0000recursive";
+import {RECURSIVE,withRecursion} from "./match.mjs";
+import {decidePatternSlot} from "../cubist/bindings.mjs";
 
 // A head of the parser with neither arguments, coordinates nor binders.
 const bare = head => !head.args && !head.coordinates?.length && !head.binders?.length;
@@ -126,7 +127,7 @@ function compile(t, scope, columns, rows, context) {
     if (head.kind === "constructor" && !byName.has(head.token.text))
       throw locate(Error(`${type.source} has no constructor ${head.token.text}: its constructors are ${type.constructors.map(c => c.name).join(", ")}.`), head.token);
     if (first.kind === "name" && first.token.bindingRole === "pattern") row = {...row,
-      outcomes: row.outcomes.decide(first.token.bindingId, head.kind === "name" ? "variable" : "constructor")};
+      outcomes: decidePatternSlot(row.outcomes,first.token,head.kind === "name" ? "variable" : "constructor")};
     return { row, head, rest };
   });
   // A clause names each variable once. A name is a variable only once its
@@ -208,7 +209,7 @@ function compile(t, scope, columns, rows, context) {
   const node = { kind: statement ? "matchStatement" : "match", value: column.node, clauses,
     ...(top?.type ? { type: top.type } : {}), ...(top?.motiveName ? { motiveName: top.motiveName } : {}),
     ...(top ? obligationsOf(top) : {}), start: column.node.start, end: column.node.end };
-  const recursive = scope.env.get(RECURSIVE), at = top && recursive?.site === top ? scope.alias(RECURSIVE, { ...recursive, site: node }) : scope;
+  const recursive = scope.env.get(RECURSIVE), at = top && recursive?.site === top ? withRecursion(scope, { ...recursive, site: node }) : scope;
   return statement ? t.block([node], context.goal.at(at)) : t.term(node, at, context.expected);
 }
 
@@ -218,19 +219,18 @@ const obligationsOf = node => Object.fromEntries(["obligations", "obligationProo
 // Bind a clause's name to what it stands for: a value, a dimension, or a
 // constructor at the clause's arguments and coordinates.
 function bind(t, scope, token, target) {
-  const key = token.bindingId ? scope.unit.bindingAdapter.key(token.bindingId) : token.text;
-  if (target.dimension) return scope.alias(key, scope.env.get(target.dimension.text));
+  if (target.dimension) return t.sourceBinding(token, scope.env.get(target.dimension.text),scope);
   if (target.node) {
     // A value that is a name keeps its binding, so that recursion sees the
     // parameter it is.
     const {node} = target;
-    return scope.alias(key, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null));
+    return t.sourceBinding(token, node.kind === "name" && scope.env.has(node.name) ? scope.env.get(node.name) : t.term(node, scope, null),scope);
   }
   const {constructor, args, coordinates, instance} = target;
   let point = scope.declared(args.length ? { kind: "call", fn: { kind: "name", name: constructor.name }, args: args.map(arg => ({ kind: "name", name: arg.text })) }
     : { kind: "name", name: constructor.name });
   for (const coordinate of coordinates) point = { kind: "pathApply", left: point, right: { kind: "name", name: coordinate.text } };
-  return scope.alias(key, t.term(point, scope, instance));
+  return t.sourceBinding(token, t.term(point, scope, instance),scope);
 }
 
 // Whether a name may be a constructor without arguments: one in scope, or

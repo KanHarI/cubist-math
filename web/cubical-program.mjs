@@ -35,6 +35,7 @@ export class CubicalProgram {
     const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,optimizations={},manageTransactions=true,
       searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
     this.options={...options};
+    if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     // The representation map τ to declared counterparts was the differential
     // fixtures' (H1 specification, 7.4), retired with them.
     if (representation !== undefined)
@@ -230,6 +231,7 @@ export class CubicalProgram {
     // their own entries do not publish source scope points.
     const collectScopes=this.collectScopes&&!reuseModules;
     if(collectScopes)this.scopeReady=false;
+    if(collectScopes&&!this.manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     this.readSource.beginCheck?.();
     const discovery = { prepared: new Map(), total: this.completed, reuseModules };
     await this.discover(discovery, main, source, null, onProgress);

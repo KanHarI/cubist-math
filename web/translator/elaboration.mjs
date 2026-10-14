@@ -25,9 +25,9 @@ export class SourceUnit {
   constructor({checker,source="",moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
     names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null,bindingAdapter=null,
-    scopePoints=null,contextOwner=null}) {
+    scopePoints=null,contextOwner=null,scopeUnavailable=null}) {
     observations ??= new ObservationFrame({reference:references,step:steps});
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner});
+    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
@@ -109,14 +109,23 @@ export class Scope {
   alias(name,value) {
     const env=new Map(this.env);
     hide(env,name);
-    return this.withEnv(env.set(name,value));
+    const sourceBindings=new Map(this.sourceBindings);
+    sourceBindings.delete(name);
+    return new Scope(this.unit,this.context,env.set(name,value),this.dimensions,this.slotOutcomes,sourceBindings);
+  }
+  // Refinement changes a value at the same lexical binding. Introduction
+  // (alias/sourceBinding) must never inherit a shadowed binder's identity.
+  refine(name,value) {
+    if(!this.env.has(name))throw new TypeError("Cannot refine an absent binding.");
+    return this.withEnv(new Map(this.env).set(name,value));
   }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {
     if(!pairs.length)return this;
     const env=new Map(this.env);
-    for(const [name,value] of pairs){hide(env,name);env.set(name,value);}
-    return this.withEnv(env);
+    const sourceBindings=new Map(this.sourceBindings);
+    for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);}
+    return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,sourceBindings);
   }
   // The source name bound here that hides the declaration `name`, or null.
   hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}

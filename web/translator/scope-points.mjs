@@ -4,7 +4,7 @@
 // to the identity representation in CB2/CB3; it does not resolve moved syntax.
 import {BindingTable,BindingAdapter,LexicalContext,bindingResolution,sourceOrigin} from "../cubist/bindings.mjs";
 import {isTerm} from "./core.mjs";
-import {snapshotSyntax} from "./syntax-graph.mjs";
+import {snapshotSyntax,visitSyntax,mapSyntax} from "./syntax-graph.mjs";
 
 const publicName=/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
 const RECURSIVE="\u0000recursive",SELECTION="\u0000selection";
@@ -46,6 +46,7 @@ export class ScopePoints {
   #environments=new WeakMap();
   #contexts=new WeakMap();
   #dimensions=new WeakMap();
+  #rules=new WeakMap();
   constructor(revision,{onPoint=()=>{},probe=null,target=null}={}) {
     this.revision=revision;
     this.table=new BindingTable(revision);
@@ -56,6 +57,24 @@ export class ScopePoints {
     const index=this.#owners.get(module)??0;
     this.#owners.set(module,index+1);
     return Object.freeze(["module",module,"declaration",String(index)]);
+  }
+  source(tree,module) {
+    // Called once on a freshly parsed module, before any syntax is moved.
+    // Rewriters retain these authored origins even across module boundaries.
+    visitSyntax(tree,node=>{
+      if(node&&(node.kind||typeof node.text==="string")&&Number.isInteger(node.start)&&Number.isInteger(node.end))
+        node.origin??=sourceOrigin({revision:this.revision,module,start:node.start,end:node.end});
+    });
+    return tree;
+  }
+  expansion(tree,kind,node,unit) {
+    const at=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
+    const site=sourceOrigin({...at,expansion:[]}),copy=mapSyntax(tree,()=>undefined);
+    visitSyntax(copy,node=>{
+      if(node?.origin&&(node.kind||typeof node.text==="string"))
+        node.origin=sourceOrigin({...node.origin,expansion:[...node.origin.expansion,{kind,site}]});
+    });
+    return copy;
   }
   declaration(module,declaration,binding) {
     // A rejected duplicate cannot replace the origin of the declaration
@@ -97,17 +116,18 @@ export class ScopePoints {
   // synchronous query callback and cannot leave its isolated session.
   bindings(scope) {
     let lexical=new LexicalContext();
-    const values=new Map(),records=[],recursive=[];
+    const values=new Map(),keys=new Map(),records=[],recursive=[];
     for(const [key,value] of scope.env) {
       const local=scope.sourceBindings.get(key),identified=scope.unit.bindingAdapter?.bindingForKey(key);
       if(!local&&!identified&&!publicName.test(key))continue;
       const record=local??identified??this.#global(key,value,scope),label=local?.label??identified?.label??key;
       lexical=lexical.bind(label,bindingResolution(record.id));
       values.set(record.id,value);
+      keys.set(key,record.id);
       records.push({label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
       if(value?.tag==="Recursive")recursive.push([key,record.id]);
     }
-    return {lexical,values,records,recursive};
+    return {lexical,values,keys,records,recursive};
   }
   #environment(scope) {
     // Scope operations copy their maps. The module's top-level environment
@@ -125,6 +145,18 @@ export class ScopePoints {
   #mapDescription(cache,map) {
     if(!cache.has(map))cache.set(map,snapshotSyntax([...map]));
     return cache.get(map);
+  }
+  #ruleDescription(unit) {
+    const registry=unit.simpRegistry;
+    if(!registry)return snapshotSyntax({});
+    // Registrations occur between declarations; a declaration/attempt may
+    // read or copy its registry, never mutate its entries. The owner keeps a
+    // later registration from reusing an earlier description.
+    let owners=this.#rules.get(registry);
+    if(!owners)this.#rules.set(registry,owners=new WeakMap());
+    if(!owners.has(unit.contextOwner))owners.set(unit.contextOwner,
+      snapshotSyntax(Object.fromEntries(Object.entries(registry).map(([kind,entries])=>[kind,[...entries]]))));
+    return owners.get(unit.contextOwner);
   }
   #inside(id,body) {
     this.#parents.push(id);
@@ -150,6 +182,9 @@ export class ScopePoints {
     let description,live;
     try {
       const declaration=this.#origins.get(`${unit.moduleName}__${unit.declaring}`);
+      if(unit.scopeUnavailable)throw new TypeError(unit.scopeUnavailable);
+      if(origin.module!==unit.moduleName||origin.end>unit.source.length)
+        throw new TypeError("This scope's syntax is not owned by the current source unit.");
       if(declaration?.generated||scope.env.get(SELECTION))throw new TypeError("This generated or selected scope awaits its binding-family migration.");
       const environment=this.#environment(scope);
       description=freeze({...basic,available:true,lexical:environment.lexical,
@@ -158,7 +193,7 @@ export class ScopePoints {
           slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
             bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}),
           goal:snapshotSyntax(goal),expected:snapshotSyntax(expected),
-          rules:snapshotSyntax(Object.fromEntries(Object.entries(unit.simpRegistry??{}).map(([kind,entries])=>[kind,[...entries]])))}});
+          rules:this.#ruleDescription(unit)}});
       if(this.probe)live=this.bindings(scope);
     } catch(error) {
       // A description failure never changes which source declarations check.

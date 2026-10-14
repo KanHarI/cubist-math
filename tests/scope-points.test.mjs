@@ -59,10 +59,29 @@ test("a shadowing let has separate initializer and after-statement contexts",asy
   assert.equal(binding(conclusion,"next_"),binding(after,"next_"));
 });
 
+test("compiled pattern binders introduce their own identities, including shadowing",async t=>{
+  const source=`inductive N { zero; succ(n : N); }
+def g(x : N) : N := match x { succ(x) => x; y => y; };
+def h(x : N) : N := match x { zero => zero; y => y; };`;
+  const {program,result}=await setup(t,source);
+  assert.deepEqual(result.gaps,[]);
+  const entries=points(program),record=point=>program.scopeRecorder.table.get(binding(point,"x"));
+  const before=entries.find(p=>p.phase==="expression"&&p.origin.start===source.indexOf("match x"));
+  const start=source.indexOf("=> x")+3;
+  const body=entries.find(p=>p.phase==="expression"&&p.origin.start===start&&p.origin.end===start+1);
+  assert.ok(body?.available,body?.reason);
+  assert.notEqual(binding(before,"x"),binding(body,"x"));
+  assert.equal(record(body).origin.start,source.indexOf("succ(x)")+5);
+  const last=source.lastIndexOf("=> y")+3;
+  const variable=entries.find(p=>p.phase==="expression"&&p.origin.start===last&&p.origin.end===last+1);
+  assert.ok(variable?.available,variable?.reason);
+  assert.equal(program.scopeRecorder.table.get(binding(variable,"y")).origin.start,source.lastIndexOf("y =>"));
+});
+
 test("shared lexical descriptions retain each point's mutable recursion permissions",()=>{
   const descriptions=[],recorder=new ScopePoints("permissions",{onPoint:point=>descriptions.push(point)});
   recorder.declaration("main",{name:{text:"f",start:4,end:5}},"main__f");
-  const unit=new SourceUnit({checker:{},moduleName:"main",declaring:"f",scopePoints:recorder}).declaration();
+  const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",declaring:"f",scopePoints:recorder}).declaration();
   const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
   const scope=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
   const node={kind:"name",name:"f",start:20,end:21};
@@ -75,6 +94,42 @@ test("shared lexical descriptions retain each point's mutable recursion permissi
   assert.equal(descriptions[0].state.bindings,descriptions[1].state.bindings);
   assert.notDeepEqual(descriptions[0].state.recursion,descriptions[1].state.recursion);
   assert.equal(JSON.stringify(descriptions[0]),saved);
+});
+
+test("a declaration shares registered-rule descriptions and later registrations get a new snapshot",()=>{
+  const points=[],recorder=new ScopePoints("rules",{onPoint:point=>points.push(point)});
+  const rule={term:T.point,identity:"first",priority:0,origin:"main"};
+  const simpRegistry={defaults:new Map([["first",rule]]),sets:new Map(),hlevel:new Map()};
+  const base=new SourceUnit({checker:{},source:"tt",moduleName:"main",scopePoints:recorder,simpRegistry});
+  const node={kind:"name",name:"tt",start:0,end:2},scope=new Scope(base.declaration());
+  recorder.around(null,node,scope,{},()=>{});
+  recorder.around(null,node,scope,{},()=>{});
+  assert.ok(points.every(point=>point.available));
+  assert.equal(points[0].state.rules,points[1].state.rules);
+  const saved=JSON.stringify(points[0].state.rules);
+  simpRegistry.defaults.set("second",{...rule,identity:"second"});
+  recorder.around(null,node,new Scope(base.declaration()),{},()=>{});
+  assert.notDeepEqual(points[0].state.rules,points[2].state.rules);
+  assert.equal(JSON.stringify(points[0].state.rules),saved);
+});
+
+test("imported notation preserves authored origins and marks its unmigrated expansion unavailable",async t=>{
+  const dep="inductive N { zero; succ(n : N); } def add(a, b : N) : N := a; notation pl { x + y := add(x, y); }";
+  const source="import dep; def t(p : N) : N := pl.(p + p);";
+  const {program,result}=await checkProgram(t,source,{module,reader:async()=>dep,options:{collectScopes:true}});
+  assert.deepEqual(result.gaps,[]);
+  const all=[...program.scopePoints.values()],expanded=all.filter(p=>p.origin.expansion.length);
+  assert.ok(expanded.length);
+  for(const point of expanded) {
+    assert.equal(point.origin.module,"dep");
+    assert.equal(point.available,false);
+    assert.match(point.reason,/Notation expansion/);
+    const frame=point.origin.expansion.at(-1);
+    assert.equal(frame.kind,"notation");
+    assert.equal(frame.site.module,"main");
+    assert.equal(source.slice(frame.site.start,frame.site.end),"p + p");
+  }
+  assert.ok(all.filter(p=>p.origin.module==="main").every(p=>p.origin.end<=source.length));
 });
 
 test("a declaration's later failure keeps selected prefix descriptions after native rollback",async t=>{

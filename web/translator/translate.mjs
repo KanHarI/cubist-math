@@ -5,6 +5,7 @@ import {parse} from "../cubist/parser.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
+import {decidePatternSlot} from "../cubist/bindings.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -20,7 +21,7 @@ import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
 import {Goal,Transition,steps,byConversion,composePaths} from "./proof-goals.mjs";
 import {INDUCTIVE_TAGS,lowerInductive,resolveInductive} from "./inductive.mjs";
-import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
+import {RECURSIVE,withRecursion,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem,bindingStem} from "./names.mjs";
@@ -154,16 +155,21 @@ export class Translator {
     return new SearchFuel(name,this.searchFuel,{parent:scope.unit.fuel,
       record:used=>recordSearch(scope.unit.searches,used)});
   }
+  sourceKey(node,scope) {return node.bindingId?scope.unit.bindingAdapter.key(node.bindingId):node.text??node.name;}
   sourceBinding(node,term,scope) {
-    const name=node.text??node.name;
+    const name=this.sourceKey(node,scope),label=node.label??node.text??node.name;
+    // Every clause path, including induction and obligations, commits a
+    // candidate when it introduces the variable. Constructor alternatives
+    // are decided by the pattern compiler without introducing a binder.
+    scope=scope.withSlotOutcomes(decidePatternSlot(scope.slotOutcomes,node,"variable"));
     // A source alias gets its own syntax object, even for `let y = x`.
     // This keeps lexical labels from overwriting x or leaking into siblings.
     term={...term};
     const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null);
-    this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end,
+    this.localSources.set(term,{name:label,start:node.start,end:node.end,
       ...(node.bindingId?{key:name,bindingId:node.bindingId}: {})});
-    this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
+    this.reference(scope,{...node,name:label,isBinding:true},term);
     return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
@@ -219,7 +225,7 @@ export class Translator {
     return this.term(n.body,this.sourceDimension(n.name,dim,scope),expected);
   }
   sourceDimension(token,dim,scope) {
-    return scope.bindDimension(dim).sourceBinding(token.text,{tag:"Dimension",name:dim},
+    return scope.bindDimension(dim).sourceBinding(this.sourceKey(token,scope),{tag:"Dimension",name:dim},
       scope.unit.scopePoints?.bind(token,scope,"dimension")??null);
   }
   // A result computes only if it uses no assumption: every assumption is a
@@ -270,7 +276,7 @@ export class Translator {
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRule(natural,selection.numeral,
-        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null);
+        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
@@ -286,7 +292,7 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRule(glyphs,rule,lexeme,null);
+    const applied=appliedRule(glyphs,rule,lexeme,null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
@@ -360,7 +366,9 @@ export class Translator {
   // terms share no variable, and are shown alone.
   shownTogether(terms) {return this.checker.displayTexts?.(terms,1000)??terms.map(term=>sourceText(term));}
   translate(source, imported=new Map()) {
-    return this.translateSyntax(parse(source),source,imported);
+    const ast=parse(source);
+    this.scopePoints?.source(ast,this.moduleName);
+    return this.translateSyntax(ast,source,imported);
   }
   // Prepared syntax enters the same declaration checking/admission path as
   // parsed source. Binding-aware producers supply the one identity adapter;
@@ -639,7 +647,7 @@ export class Translator {
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
         // declaration's value on it.
-        let bodyEnv=env;
+        let bodyScope=new Scope(unit,new Map(),env);
         const own=[...(d.section?.params??[]),...(d.params.length?d.params:d.valueParameters??[])],site=recursionSite(d,own);
         if(site) {
           // Its parameters are known by their binders' tokens, and each is
@@ -649,9 +657,9 @@ export class Translator {
             params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
-          bodyEnv=new Map(env).set(recursive.key,recursive).set(RECURSIVE,recursive);
+          bodyScope=withRecursion(bodyScope,recursive,{introduce:true});
         }
-        const term=this.term(expression,new Scope(unit,new Map(),bodyEnv));
+        const term=this.term(expression,bodyScope);
         // Normal forms are optional inspection output, not a prerequisite for
         // checking a declaration whose Nat value may have millions of successors.
         // The declaration's closing check, and its admission below, are
@@ -1195,7 +1203,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.left,n.right);
+            const applied=appliedRule(scope,operation.rule,n.left,n.right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
@@ -1218,7 +1226,7 @@ export class Translator {
           const left=operand(n.left,recipe.left),right=operand(n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
-            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right);
+            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           // A notation open binds means the model's operation (L2.4).
@@ -1248,7 +1256,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier,operator:"unary -"});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.operand,null);
+            const applied=appliedRule(scope,operation.rule,n.operand,null,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.operand],start:n.start,end:n.end},expected);
@@ -1260,7 +1268,7 @@ export class Translator {
         const operand=view?{kind:"select",model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
-          const applied=appliedRule(scope,binding.rule,operand,null);
+          const applied=appliedRule(scope,binding.rule,operand,null,n);
           return this.term(applied.node,applied.scope,expected);
         }
         return tr({kind:"call",fn:{kind:"name",name:operatorBinding("unary -"),start:n.operatorStart,end:n.operatorEnd},
@@ -1380,12 +1388,12 @@ export class Translator {
         // Binders keep their source names, as induction's do.
         const name=scope.fresh(bindingStem(n.motiveName)),inner=scope.bind(name,type);
         const motive=T.lam(name,type,this.term(n.type,
-          n.motiveName?inner.alias(n.motiveName.text,T.variable(name)):inner,null));
+          n.motiveName?this.sourceBinding(n.motiveName,T.variable(name),inner):inner,null));
         const branch=side=>{
           const local=scope.fresh(bindingStem(n[side])),domain=sum[side],variable=T.variable(local);
           const injection=(side==="left"?T.inl:T.inr)(type,variable);
           return T.lam(local,domain,this.term(n[side+"Body"],
-            scope.bind(local,domain).alias(n[side].text,variable),T.app(motive,injection)));
+            this.sourceBinding(n[side],variable,scope.bind(local,domain)),T.app(motive,injection)));
         };
         return T.sumrec(motive,branch("left"),branch("right"),value);
       }
@@ -1394,7 +1402,7 @@ export class Translator {
         if(sigma.tag!=="Sigma")throw Error("unpack requires a dependent pair.");
         const goal=tr(n.type,null);
         const body=this.term(n.body,
-          scope.alias(n.left.text,T.first(value)).alias(n.right.text,T.second(value)),goal);
+          this.sourceBinding(n.right,T.second(value),this.sourceBinding(n.left,T.first(value),scope)),goal);
         scope.check(body,goal);
         return body;
       }

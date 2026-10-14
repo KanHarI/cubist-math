@@ -144,6 +144,7 @@ export class SlotOutcomes {
     }
     Object.freeze(this);
   }
+  get(id) {return this.#entries.get(id)??null;}
   decide(id, outcome) {
     if (this.#entries.has(id)) throw new TypeError("A slot has already been decided in this branch.");
     return new SlotOutcomes([...this.#entries, [id, outcome]]);
@@ -155,6 +156,16 @@ export class SlotOutcomes {
     return outcome === "variable" ? bindingResolution(value.id) : this.resolve(value.enclosing);
   }
   snapshot() {return Object.freeze([...this.#entries].map(pair => Object.freeze(pair)));}
+}
+
+// Both compiled matches and direct kernel clauses commit through this
+// operation. Binding a variable after classifying it is idempotent; an
+// inconsistent interpretation in the same branch is an elaborator error.
+export function decidePatternSlot(outcomes,token,role) {
+  if(token?.bindingRole!=="pattern")return outcomes;
+  const previous=outcomes.get(token.bindingId);
+  if(previous&&previous!==role)throw new TypeError("A pattern slot changed its interpretation in one branch.");
+  return previous?outcomes:outcomes.decide(token.bindingId,role);
 }
 
 // The only bridge from the new identity representation to the translator's
