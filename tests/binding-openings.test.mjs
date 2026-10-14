@@ -12,6 +12,9 @@ import {BindingTable,BindingAdapter,LexicalContext,SlotOutcomes,sourceOrigin,bin
 import {resolveBindingSyntax,cloneBindingSyntax,bindingUses,substituteBindingSyntax,lowerBindingSyntax,sameBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
+import {activateSourceItem,withSourceCaptures} from "../web/translator/retained-source-context.mjs";
+import {retainTheorySource} from "../web/cubist/retained-theories.mjs";
+import {retainedTheoryArtifacts} from "../web/cubist/retained-theory-artifacts.mjs";
 
 test("pending openings retain whole qualified fallbacks and resolve independently in each branch",()=>{
   const table=new BindingTable("openings"),origin=sourceOrigin({revision:"source",module:"main",start:0,end:1});
@@ -76,7 +79,7 @@ async function setup(t) {
     const scope=new Scope(translator.unit(),new Map(),result.env);
     return {result,receivers,equal:(name,expected)=>scope.equal(result.env.get(name),term(parse(expected,true),scope))};
   };
-  return {table,retain,check,inputs};
+  return {table,retain,check,inputs,program,env,source};
 }
 const failures=result=>result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]);
 
@@ -140,4 +143,74 @@ test("activation ownership and saved alternatives survive cloning and conditiona
   assert.equal(equal("source_","left_"),true);assert.equal(equal("source_","right_"),false);
   assert.doesNotThrow(()=>lowerBindingSyntax(syntax,inputs.adapter));
   assert.doesNotThrow(()=>snapshotSyntax(syntax));
+});
+
+test("file-level activations retain closed source receivers through theory generation and inheritance",async t=>{
+  const {table,inputs,program,env,source}=await setup(t);
+  const registry=program.compilationBindings,checker=Object.create(program.checker);
+  checker.bindingName=label=>`files__${label}`;
+  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
+  const translator=new Translator({checker,normalize:false,moduleName:"files",compilationBindings:registry});
+  const term=translator.term.bind(translator);let receivers=0;
+  translator.term=(node,...args)=>{if(node.kind==="call"&&node.fn.spelling==="receiver")receivers++;return term(node,...args);};
+  const text=`use receiver(tt);
+    theory T(U < UU0) { M : set U; c : M; def picked : Two := x; def local(x : Two) : Two := x; }`;
+  const item=parse(text).declarations[0],unit=translator.unit({source:text});
+  const prepared=activateSourceItem(translator,new Scope(unit,new Map(),env),item,inputs,{owner:["file","T"],source});
+  assert.equal(receivers,1);
+  const record=retainTheorySource(prepared.item,{table,source,owner:["file","T"],context:prepared.context,
+    constructors:prepared.constructors});
+  const parent=retainedTheoryArtifacts(record,{table,owner:["file","generated","T"]});
+  const childRecord=retainTheorySource(parse("theory C(U < UU0) extends p : T {}").declarations[0],
+    {table,source,owner:["file","C"],context:inputs.context,constructors:inputs.constructors},
+    {lookup:name=>name==="T"?parent.record:null});
+  const child=retainedTheoryArtifacts(childRecord,{table,owner:["file","generated","C"]});
+  const declarations=[...parent.artifacts,...child.artifacts].map(({binding,syntax,...annotations})=>bindingDeclaration(binding,syntax,annotations));
+  assert.doesNotThrow(()=>snapshotSyntax({captures:prepared.captures,activations:prepared.activations,record:child.record}));
+  const held=JSON.stringify({captures:prepared.captures,activations:prepared.activations});
+  const result=translator.translateSyntax({declarations:[...parse(`def receiver(a : Unit) : Unit := tt;
+    def x : Two := right_;`).declarations,...declarations,...parse(`
+    def instance_ : C(U0) := C.make(Two, _, left_);
+    def chosen_value : Two := instance_.picked;
+    def local_value : Two := instance_.local(right_);
+  `).declarations]},"",withSourceCaptures(env,prepared,inputs.adapter));
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  const scope=new Scope(translator.unit(),new Map(),result.env);
+  assert.equal(scope.equal(result.env.get("chosen_value"),term(parse("left_",true),scope)),true);
+  assert.equal(scope.equal(result.env.get("chosen_value"),term(parse("right_",true),scope)),false);
+  assert.equal(scope.equal(result.env.get("local_value"),term(parse("right_",true),scope)),true);
+  assert.equal(receivers,1,"generation and inheritance never reactivate the source recipe");
+  assert.equal(JSON.stringify({captures:prepared.captures,activations:prepared.activations}),held);
+});
+
+test("source activation is ordered, required per consumer and outside declaration parameters",async t=>{
+  const {table,inputs,program,env,source}=await setup(t);
+  const translator=new Translator({checker:program.checker,normalize:false,compilationBindings:program.compilationBindings});
+  let index=0;
+  const prepare=(text,changed={})=>{
+    const item=parse(text).declarations[0];
+    return activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),changed.env??env),item,
+      {...inputs,...changed},{owner:["ordered",String(index++)],source});
+  };
+  const prepared=prepare("use box; use p; def value(x : Two) : Two := x;");
+  assert.equal(prepared.activations.length,2);
+  const final=prepared.context.lookup("x");
+  assert.equal(final.tag,"projected");assert.equal(final.receiver,prepared.activations[1].binding.id);
+  assert.equal(prepared.context.qualified("p.x").value.receiver,prepared.activations[0].binding.id);
+  const retained=resolveBindingSyntax(prepared.item,{table,source,owner:["ordered","def"],context:prepared.context,
+    constructors:prepared.constructors});
+  assert.equal(retained.tree.body[0].value.resolution.id,retained.tree.params[0].name.bindingId);
+  const qualified=prepare("use chosen; def value : Two := p.x(other);");
+  assert.equal(qualified.context.qualified("p.x").value.id,inputs.context.qualified("p.x").value.id);
+  assert.throws(()=>prepare("use tt; theory Refused(U < UU0) { k : Two; }"),/use selects a model/);
+  assert.throws(()=>prepare("use chosen; use absent; theory Refused(U < UU0) { k : Two; }"),/Untranslated name: absent/);
+  const shadow=table.allocate(["ordered","shadow"],{role:"declaration",label:"chosen",origin:sourceOrigin({...source,start:0,end:1})});
+  const shadowed=new Map(env).set("chosen",{tag:"Point"}).set(inputs.adapter.key(shadow.id),{tag:"Point"});
+  assert.throws(()=>prepare("use chosen; theory Later(U < UU0) { k : Two; }",
+    {env:shadowed,context:inputs.context.bind("chosen",bindingResolution(shadow.id))}),/use selects a model/,
+    "a new source item activates the recipe in its own current source context");
+  const item={kind:"simp_rule",uses:[parse("missing",true)],start:0,end:7};
+  const unused=activateSourceItem(translator,new Scope(translator.unit(),new Map(),env),item,inputs,
+    {owner:["ordered","registration"],source});
+  assert.equal(unused.context,inputs.context);assert.deepEqual(unused.captures,[]);assert.deepEqual(unused.activations,[]);
 });

@@ -217,6 +217,15 @@ It does not rebind an existing reference ID. Retained or compiler-generated
 copies inherit the resolved activation, never activate a source recipe again
 in the transformation's destination.
 
+The closed file-level activation boundary returns a retained source item,
+its lexical context and explicit receiver captures keyed by activation ID.
+These captures are external to each generated declaration's local telescope:
+inheritance and local freshening preserve them like source imports. Their
+values are checked, closed core descriptions carried in the module's private
+identity environment, never a live scope or a native handle. Missing capture
+values cannot fall back to destination labels. An item with no selection
+effects does not inspect or evaluate its recipes.
+
 Subsequent bare occurrences keep candidate opened-label slots and their saved
 enclosing resolution, including a missing lookup. Once checked, the receiver's
 record maps those slots to its projection IDs applied to that receiver;
