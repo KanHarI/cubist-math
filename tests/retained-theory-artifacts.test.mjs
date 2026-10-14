@@ -9,6 +9,7 @@ import {bindingInputs,bindingDeclaration} from "../web/translator/binding-module
 import {parse} from "../web/cubist/parser.mjs";
 import {RetainedInterfaces} from "../web/cubist/retained-interfaces.mjs";
 import {retainedTheoryArtifacts,retainedMorphismArtifacts} from "../web/cubist/retained-theory-artifacts.mjs";
+import {retainTheorySource} from "../web/cubist/retained-theories.mjs";
 import {bindingUses} from "../web/cubist/binding-syntax.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
@@ -27,15 +28,23 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;") {
   const d=parse(header).declarations[0];retained.parameters(d.name,d.params);
   const add=(source,kind="operation",options={})=>retained.retain(parse(source).declarations[0],{kind,...options});
   const metadata=new Map();
-  const build=({morphisms=false}={})=>{
-    const record={name:"T",bindingSyntax:retained.header,fields:retained.entries.filter(e=>e.kind!=="derived").map(e=>({...e,...metadata.get(e.id)})),
-      derived:retained.entries.filter(e=>e.kind==="derived"),parents:[]};
+  const construct=(record,{morphisms=false}={})=>{
     const built=retainedTheoryArtifacts(record,{table,owner:["T","generated"]});
     if(morphisms) {
       const generated=retainedMorphismArtifacts(built.record,{table,owner:["T","morphisms"],bindings:built.bindings});
       built.plan=generated.plan;built.artifacts.push(...generated.artifacts);
+      built.record=generated.record;built.artifacts[0].theory=built.record;
     }
     return {...built,declarations:built.artifacts.map(({binding,syntax,generated,theory})=>bindingDeclaration(binding,syntax,{generated,...(theory?{theory}:{})}))};
+  };
+  const build=options=>construct({name:"T",bindingSyntax:retained.header,
+    fields:retained.entries.filter(e=>e.kind!=="derived").map(e=>({...e,...metadata.get(e.id)})),
+    derived:retained.entries.filter(e=>e.kind==="derived"),parents:[]},options);
+  const records=new Map();
+  const retain=text=>retainTheorySource(parse(text).declarations[0],{table,source,owner:["source","T"],
+    context:inputs.context,constructors:inputs.constructors},{lookup:name=>records.get(name)});
+  const buildSource=(text,options)=>{
+    const built=construct(retain(text),options);records.set(built.record.name,built.record);return built;
   };
   const check=(built,source="",before="")=>{
     const checker=Object.create(program.checker);
@@ -47,7 +56,7 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;") {
     const equal=(label,expected)=>scope.equal(result.env.get(label),translator.term(parse(expected,true),scope));
     return {result,equal};
   };
-  return {program,table,retained,add,build,check,metadata,inputs,source};
+  return {program,table,retained,add,build,check,metadata,inputs,source,retain,buildSource};
 }
 const failures=result=>result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]);
 
@@ -186,4 +195,141 @@ test("opening a retained model preserves usable fields beside an unavailable opt
   assert.deepEqual(failures(result).map(([name])=>name),["T.bad","broken"]);
   assert.equal(result.env.get("broken").blockedBy,"pilot__T.bad");
   assert.equal(equal("healthy","left_"),true);assert.equal(equal("healthy","right_"),false);
+});
+
+test("the source entry retains header and helper meanings through generation and law classification",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=buildSource(`theory T(U < UU0, n : Two) {
+    M : set U;
+    c : M;
+    op(p : n = n) : M;
+    def get(x : Two) : M := c;
+    def n : Two := right_;
+    law same(c : Two) : get(c) = get(c);
+  }`,{morphisms:true});
+  const header=built.record.bindingSyntax.tree.params[1].name.bindingId;
+  const op=built.record.fields.find(field=>field.name==="op"),helper=built.record.derived.find(field=>field.name==="n");
+  assert.equal(op.type.domain.left.resolution.id,header);
+  assert.notEqual(header,helper.id);
+  assert.equal(built.plan.support.status,"conditional",built.plan.missing);
+  const {result,equal}=check(built,`
+    def instance_(h : IsSet(U0, Two)) : T(U0, left_) := T.make(n := left_, M := Two, M_is_set := h, c := left_,
+      op := fun (p : left_ = left_) => left_, same := fun (c : Two) => refl(left_));
+    def got(h : IsSet(U0, Two)) : Two := instance_(h).get(right_);
+    def image(h : IsSet(U0, Two)) : Two := (T.Hom.id(instance_(h))).map(right_);
+  `);
+  assert.deepEqual(failures(result),[]);
+  assert.equal(equal("got","fun (h : IsSet(U0, Two)) => left_"),true);
+  assert.equal(equal("got","fun (h : IsSet(U0, Two)) => right_"),false);
+  assert.equal(equal("image","fun (h : IsSet(U0, Two)) => right_"),true);
+});
+
+test("the source entry connects leveled family arguments to their exact evidence binders",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=buildSource(`theory T(U < UU0) {
+    F(A : set U) : set U;
+    get(A : set U, x : F(A)) : F(A);
+    def again(A : set U, x : F(A)) : F(A) := get(A, x);
+  }`);
+  const operation=built.record.fields.find(field=>field.name==="get"),parameters=operation.syntax.tree.params;
+  const witness=parameters[1].name.bindingId;
+  assert.equal(parameters[2].type.args[1].resolution.id,witness);
+  assert.equal(operation.syntax.tree.type.args[1].resolution.id,witness);
+  const {result,equal}=check(built,`
+    def instance_ : T(U0) := T.make(
+      F := fun (A : U0) => fun (h : IsSet(U0, A)) => A,
+      F_is_set := fun (A : U0) => fun (h : IsSet(U0, A)) => h,
+      get := fun (A : U0) => fun (h : IsSet(U0, A)) => fun (x : A) => x);
+    def got(h : IsSet(U0, Two)) : Two := instance_.get(Two, h, right_);
+    def repeated(h : IsSet(U0, Two)) : Two := instance_.again(Two, h, right_);
+  `);
+  assert.deepEqual(failures(result),[]);
+  assert.equal(equal("got","fun (h : IsSet(U0, Two)) => right_"),true);
+  assert.equal(equal("got","fun (h : IsSet(U0, Two)) => left_"),false);
+  assert.equal(equal("repeated","fun (h : IsSet(U0, Two)) => right_"),true);
+});
+
+test("the retained law predicate rejects data and recursive helper dependencies by identity",async t=>{
+  const {retain}=await setup(t);
+  assert.throws(()=>retain("theory T(U < UU0) { M : set U; law invalid : M; }"),/elements are data/);
+  assert.throws(()=>retain("theory T(U < UU0) { M : U; c : M; law invalid : c = c; }"),/has no h-level/);
+  for(const reference of ["recurse_","recurse_(zero)"])
+    assert.throws(()=>retain(`theory T(U < UU0) { M : set U;
+      def recurse_(n : Nat) : M := match n { zero => recurse_(zero); succ(k) => recurse_(k); };
+      law invalid : ${reference} = ${reference}; }`),/recursive, and a field's type cannot unfold it/);
+});
+
+test("source diamonds share ancestor identities and preserve every parent projection",async t=>{
+  const {buildSource,check}=await setup(t);
+  const root=buildSource("theory Root(U < UU0) { M : set U; c : M; def get(x : Two) : M := c; }",{morphisms:true});
+  const left=buildSource("theory Left(U < UU0) extends base_ : Root { }",{morphisms:true});
+  const right=buildSource("theory Right(U < UU0) extends base_ : Root { }",{morphisms:true});
+  const child=buildSource("theory Child(V < UU0) extends l : Left, r : Right { def chosen : M := l.c; }",{morphisms:true});
+  assert.deepEqual(child.record.fields.map(field=>field.name),["M","M_is_set","c"]);
+  assert.equal(child.record.derived.filter(entry=>entry.name==="get").length,1);
+  assert.equal(child.record.fields[2].binding.original,root.record.fields[2].id);
+  const {result,equal}=check({declarations:[...root.declarations,...left.declarations,...right.declarations,...child.declarations]},`
+    def instance_(h : IsSet(U0, Two)) : Child(U0) := Child.make(Two, h, left_);
+    def direct(h : IsSet(U0, Two)) : Two := instance_(h).chosen;
+    def through_left(h : IsSet(U0, Two)) : Two := instance_(h).l.base_.get(right_);
+    def through_right(h : IsSet(U0, Two)) : Two := instance_(h).r.base_.get(right_);
+    def hom_parent(h : IsSet(U0, Two)) : Two := (Child.Hom.id(instance_(h))).l.base_.map(right_);
+  `);
+  assert.deepEqual(failures(result),[]);
+  for(const label of ["direct","through_left","through_right"]) {
+    assert.equal(equal(label,"fun (h : IsSet(U0, Two)) => left_"),true,label);
+    assert.equal(equal(label,"fun (h : IsSet(U0, Two)) => right_"),false,label);
+  }
+  assert.equal(equal("hom_parent","fun (h : IsSet(U0, Two)) => right_"),true);
+  assert.equal(equal("hom_parent","fun (h : IsSet(U0, Two)) => left_"),false);
+});
+
+test("independent parent families share alpha-equivalent telescopes and retain distinct operations",async t=>{
+  const {buildSource,retain,check}=await setup(t);
+  const p=buildSource("theory P(U < UU0) { F(x : Unit) : set U; point(x : Unit) : F(x); }");
+  const q=buildSource("theory Q(U < UU0) { F(y : Unit) : set U; point(y : Unit) : F(y); }");
+  const c=buildSource("theory C(U < UU0) extends p : P, q : Q { def get(x : Unit) : F(x) := p.point(x); }");
+  assert.deepEqual(c.record.fields.map(field=>field.name),["F","F_is_set","p_point","q_point"]);
+  assert.throws(()=>retain("theory Ambiguous(U < UU0) extends p : P, q : Q { def get(x : Unit) : F(x) := point(x); }"),/point is ambiguous/);
+  const {result,equal}=check({declarations:[...p.declarations,...q.declarations,...c.declarations]},`
+    def instance_(h : IsSet(U0, Two)) : C(U0) := C.make(fun (x : Unit) => Two,
+      fun (x : Unit) => h, fun (x : Unit) => left_, fun (x : Unit) => right_);
+    def left_value(h : IsSet(U0, Two)) : Two := instance_(h).get(tt);
+    def right_value(h : IsSet(U0, Two)) : Two := instance_(h).q.point(tt);
+  `);
+  assert.deepEqual(failures(result),[]);
+  assert.equal(equal("left_value","fun (h : IsSet(U0, Two)) => left_"),true);
+  assert.equal(equal("left_value","fun (h : IsSet(U0, Two)) => right_"),false);
+  assert.equal(equal("right_value","fun (h : IsSet(U0, Two)) => right_"),true);
+  buildSource("theory Different(U < UU0) { F(y : Two) : set U; }");
+  assert.throws(()=>retain("theory Conflict(U < UU0) extends p : P, d : Different { }"),/different kinds or indices/);
+});
+
+test("carrier evidence retains its source predicate even when a field shadows its public name",async t=>{
+  const {buildSource,check}=await setup(t);
+  const built=buildSource("theory T(U < UU0) { IsSet : Unit; M : set U; c : M; }");
+  const shadow=built.record.fields[0],evidence=built.record.fields.find(field=>field.kind==="evidence");
+  assert.notEqual(evidence.syntax.tree.type.fn.resolution.id,shadow.id);
+  const {result,equal}=check(built,`
+    def instance_(h : IsSet(U0, Two)) : T(U0) := T.make(tt, Two, h, left_);
+    def got(h : IsSet(U0, Two)) : Two := instance_(h).c;
+  `);
+  assert.deepEqual(failures(result),[]);
+  assert.equal(equal("got","fun (h : IsSet(U0, Two)) => left_"),true);
+  assert.equal(equal("got","fun (h : IsSet(U0, Two)) => right_"),false);
+});
+
+test("independent parent field orders merge according to dependencies",async t=>{
+  const {buildSource,check}=await setup(t);
+  const p=buildSource("theory P(U < UU0) { M : set U; N : set U; m : M; }");
+  const q=buildSource("theory Q(U < UU0) { N : set U; M : set U; n : N; }");
+  const child=buildSource("theory C(U < UU0) extends p : P, q : Q { }");
+  const {result,equal}=check({declarations:[...p.declarations,...q.declarations,...child.declarations]},`
+    def instance_(h : IsSet(U0, Two)) : C(U0) := C.make(M := Two, M_is_set := h, N := Two, N_is_set := h, m := left_, n := right_);
+    def first_(h : IsSet(U0, Two)) : Two := instance_(h).p.m;
+    def second_(h : IsSet(U0, Two)) : Two := instance_(h).q.n;
+  `);
+  assert.deepEqual(failures(result),[]);
+  assert.equal(equal("first_","fun (h : IsSet(U0, Two)) => left_"),true);
+  assert.equal(equal("second_","fun (h : IsSet(U0, Two)) => right_"),true);
 });

@@ -23,6 +23,7 @@
 // ancestor's field, with one name and one type; otherwise it is refused.
 
 import { parse, reservedNames } from "./parser.mjs";
+import {notAProposition} from "./theory-propositions.mjs";
 import { morphismSource } from "./morphisms.mjs";
 import {syntaxValue as semanticSyntax} from "./source-syntax.mjs";
 // A copy of a syntax tree with `rewrite(node, bound)` applied to each node,
@@ -84,68 +85,6 @@ function parameterGroups(params) {
     groups.push(members);
   }
   return groups;
-}
-
-// Why a law's statement is not evidently a proposition, or null when it is.
-// Laws are propositions: homomorphisms ignore them (L2.4). Accepted are an
-// equation between elements of a sort (every sort is a set or a
-// proposition, so its equations are propositions), Void and Unit, an
-// element of a proposition sort, a declared type whose header says it is a
-// proposition, as Trunc(U, A) (L2.10k), and forall, -> into one, and `and`
-// of two. `byName` holds the fields declared so far, `proposition` says
-// whether a name is such a declared type, and `header` lists the names the
-// theory's header binds.
-function notAProposition(statement, byName, proposition = () => false, header = []) {
-  // A carrier, M, or a family's member, F(A).
-  const sortNamed = (node, bound) =>
-    node?.kind === "name" && !bound.has(node.name) && byName.get(node.name)?.kind === "sort" ? node.name
-      : node?.kind === "call" && node.fn.kind === "name" && !bound.has(node.fn.name) && byName.get(node.fn.name)?.kind === "sort"
-        ? node.fn.name : null;
-  // The sort an operation or a constant returns: its type past the foralls.
-  const returns = field => {
-    if (field?.kind !== "operation") return null;
-    let type = field.type;
-    while (type.kind === "forall" || type.kind === "binderGroup") type = type.body;
-    return sortNamed(type, new Map());
-  };
-  // The sort a term lies in, where the theory's own syntax says so; `bound`
-  // maps a bound variable to its sort, or to null.
-  const sortOf = (term, bound) =>
-    term.kind === "name" ? (bound.has(term.name) ? bound.get(term.name) : returns(byName.get(term.name)))
-      : term.kind === "call" && term.fn.kind === "name" && !bound.has(term.fn.name) ? returns(byName.get(term.fn.name))
-        : null;
-  const propositionSort = name => byName.get(name)?.kind === "sort"
-    && [...byName.values()].some(field => field.kind === "evidence" && field.of === name && field.evidence === "IsProp");
-  const check = (node, bound) => {
-    if (node.kind === "forall" || node.kind === "binderGroup" && node.binderKind === "forall") {
-      const sort = sortNamed(node.domain, bound), inner = new Map(bound);
-      for (const binder of node.kind === "forall" ? [node.name] : node.names) inner.set(binder.text, sort);
-      return check(node.body, inner);
-    }
-    if (node.kind === "binary" && node.operator === "->") return check(node.right, bound);
-    if (node.kind === "binary" && node.operator === "and") return check(node.left, bound) ?? check(node.right, bound);
-    if (node.kind === "binary" && node.operator === "=") {
-      const sort = node.carrier ? sortNamed(node.carrier, bound) : sortOf(node.left, bound) ?? sortOf(node.right, bound);
-      if (!sort) return { node, why: "the sides of an equation in it are not elements of one of the theory's sorts" };
-      return [...byName.values()].some(field => field.kind === "evidence" && field.of === sort) ? null
-        : { node, why: `${sort} has no h-level, so an equation between its elements is not a proposition` };
-    }
-    if (node.kind === "name" && !bound.has(node.name)
-      && (["Void", "Unit"].includes(node.name) && !byName.has(node.name) || propositionSort(node.name))) return null;
-    // A member of a family of propositions, as a relation's x <= y.
-    if (node.kind === "call" && sortNamed(node, bound) && propositionSort(node.fn.name)) return null;
-    // A declared proposition, as a truncation.
-    const head = node.kind === "call" ? node.fn : node;
-    // Inlining a retained helper can expose a resolved declaration. Its
-    // spelling may now be bound to something else; ask about its identity.
-    if (head.kind === "reference" && proposition(head.binding)) return null;
-    if (head.kind === "name" && !bound.has(head.name) && !byName.has(head.name) && proposition(head.name)) return null;
-    return { node, why: node.kind === "name" && byName.get(node.name)?.kind === "sort"
-      ? `${node.name} is a sort, whose elements are data` : "its statement is none of these" };
-  };
-  // The header's universes and parameters are bound, with no sort: a
-  // parameter that takes a proposition's name is not that proposition.
-  return check(statement, new Map(header.map(binder => [binder, null])));
 }
 
 // A theory's fields, in order, with types over the earlier fields' names,

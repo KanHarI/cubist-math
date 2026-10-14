@@ -155,14 +155,24 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
 // Until CB4 replaces the Hom/Iso templates, only the template-owned text is
 // parsed. Each source fragment is spliced under an explicit correspondence
 // to the already-resolved template binders and generated declarations.
-export function retainedMorphismArtifacts(record,{table,owner,bindings,outerReferences=new Map(),isTheory}) {
+export function retainedMorphismArtifacts(record,{table,owner,bindings,outerReferences=null,isTheory}) {
   const plan=morphismSource(record,isTheory),artifacts=[];
-  if(!plan.declarations)return {plan,artifacts,bindings};
+  const support={homSupport:plan.support,isoSupport:plan.isoSupport,
+    ...(plan.missing?{noMorphisms:plan.missing}:{}),...(plan.missingIso?{noIsomorphisms:plan.missingIso}:{})};
+  if(!plan.declarations)return {plan,artifacts,bindings,record:{...record,...support}};
   const origin=record.origin??record.bindingSyntax.tree.name.origin;
   const view=tree=>bindingSyntaxView(record.bindingSyntax,tree);
   for(const declaration of plan.declarations) {
     if(bindings.has(declaration.name))throw new TypeError("A morphism artifact identity is already reserved.");
     bindings.set(declaration.name,table.allocate([...owner,"declarations"],{role:"declaration",label:declaration.name,origin}));
+  }
+  if(!outerReferences) {
+    outerReferences=new Map();
+    for(const parent of record.parents)for(const [name,id] of [[`${parent.theory}.Hom`,parent.homId],[`${parent.theory}.Hom.make`,parent.homMakeId]])if(id) {
+      if(outerReferences.has(name)&&outerReferences.get(name).id!==id)
+        throw new TypeError("Parent template references require distinct declaration markers.");
+      outerReferences.set(name,table.get(id));
+    }
   }
   let serial=0;
   const local=(context,label)=>{
@@ -208,5 +218,6 @@ export function retainedMorphismArtifacts(record,{table,owner,bindings,outerRefe
       generated:{theory:record.name,role:declaration.role,family:declaration.family,...(declaration.field?{field:declaration.field}:{})},
       ...(theory?{theory}:{})});
   }
-  return {plan,artifacts,bindings};
+  return {plan,artifacts,bindings,record:{...record,...support,
+    homId:bindings.get(`${record.name}.Hom`).id,homMakeId:bindings.get(`${record.name}.Hom.make`).id}};
 }

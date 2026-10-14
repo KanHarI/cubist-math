@@ -8,6 +8,12 @@ import {parameterForalls} from "./telescopes.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
   "notation","uses","computable","keyword","levelToken","start","end","origin","typedValue","valueStart","valueEnd","modifierStart","implicitParameters"]);
+export class InheritedInterfaceConflict extends TypeError {
+  constructor(label) {
+    super(`Inherited interfaces for ${label} have different origins, kinds or instantiated types.`);
+    this.name="InheritedInterfaceConflict";this.label=label;
+  }
+}
 function interfaceTree(item) {
   for(const key of Object.keys(item))if(!retainedKeys.has(key))
     throw new TypeError(`Unmodelled retained interface property: ${key}`);
@@ -57,18 +63,41 @@ export class RetainedInterfaces {
     this.header=syntax;
     return syntax;
   }
-  retain(item,{kind=item.kind,self=false}={}) {
+  retain(item,{kind=item.kind,self=false,transform=syntax=>syntax}={}) {
     const tree=interfaceTree(item);
     const owner=[...this.owner,"member",String(this.#next++)];
     const binding=this.table.allocate(owner,{role:kind==="derived"?"helper":"field",label:item.name.text,
       origin:item.name.origin??sourceOrigin({...this.source,start:item.name.start,end:item.name.end})});
     const context=this.context;
-    const syntax=this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null});
+    const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null}));
     const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive:self,lexical:context.snapshot(),
       interface:Object.freeze(this.#interface()),
       ...(kind==="sort"?{level:item.level??null}:{})});
     this.entries.push(entry);
     this.context=this.context.bind(binding.label,bindingResolution(binding.id));
+    return entry;
+  }
+  // Carrier evidence is generated from the resolved carrier interface. Its
+  // own telescope is cloned once; neither its predicate nor its family
+  // application is read back as source text in the extended field scope.
+  evidence(carrier) {
+    if(!this.entries.includes(carrier)||carrier.kind!=="sort"||!["set","prop"].includes(carrier.level))
+      throw new TypeError("Carrier evidence needs an admitted set or proposition interface.");
+    const label=`${carrier.label}_is_${carrier.level}`,predicate=carrier.level==="set"?"IsSet":"IsProp";
+    if(!this.evidenceTypes.has(predicate))throw new TypeError(`Carrier evidence needs a source resolution for ${predicate}.`);
+    const owner=[...this.owner,"member",String(this.#next++)],origin=carrier.binding.origin;
+    const binding=this.table.allocate(owner,{role:"field",label,origin});
+    const ref=(resolution,spelling)=>({kind:"bindingReference",resolution,spelling,origin,start:origin.start,end:origin.end});
+    const {params,type}=carrier.syntax.tree;
+    let member=ref(bindingResolution(carrier.id),carrier.label);
+    if(params.length)member={kind:"call",fn:member,args:params.map(p=>ref(bindingResolution(p.name.bindingId),p.name.text)),origin};
+    const tree={kind:"def",name:{text:label,start:origin.start,end:origin.end,origin},params,
+      type:{kind:"call",fn:ref(this.evidenceTypes.get(predicate),predicate),args:[type,member],origin}};
+    const syntax=cloneBindingSyntax(bindingSyntaxView(carrier.syntax,tree),this.table,[...owner,"telescope"],
+      {expansion:{kind:"generation",site:origin}}).syntax;
+    const entry=Object.freeze({id:binding.id,label,kind:"evidence",binding,syntax,recursive:false,
+      lexical:this.context.snapshot(),interface:Object.freeze(this.#interface()),of:carrier.id,evidence:predicate});
+    this.entries.push(entry);this.context=this.context.bind(label,bindingResolution(binding.id));
     return entry;
   }
   #interface() {
@@ -100,7 +129,13 @@ export class RetainedInterfaces {
     const syntax=remapBindingSyntax(cloned.syntax,this.table,map);
     const resolution=value=>value.tag==="binding"?{...value,id:map.get(value.id)??value.id}
       :value.tag==="slot"?{...value,id:map.get(value.id)??value.id,enclosing:resolution(value.enclosing)}:value;
-    const inherited=Object.freeze({...entry,id:binding.id,label,binding,syntax,
+    // Only the canonical interface and its structural metadata inherit.
+    // Analysis/checking views and generated projection IDs belong to the
+    // parent's artifacts and must be rebuilt for the child correspondence.
+    const metadata=Object.fromEntries(["kind","recursive","level","family","visible","evidence"]
+      .filter(key=>Object.hasOwn(entry,key)).map(key=>[key,entry[key]]));
+    const inherited=Object.freeze({...metadata,id:binding.id,label,binding,syntax,
+      ...(entry.of?{of:map.get(entry.of)??entry.of}:{}),
       interface:Object.freeze(this.#interface()),
       lexical:Object.freeze(entry.lexical.map(([label,value])=>Object.freeze([label,Object.freeze(resolution(value))])))});
     this.entries.push(inherited);this.context=this.context.bind(label,bindingResolution(binding.id));
@@ -131,7 +166,7 @@ export class RetainedInterfaces {
       const independentCarrier=["sort","evidence"].includes(a.kind);
       if(a.kind!==b.kind||!commonOrigin&&!independentCarrier||a.level!==b.level
         ||!sameBindingSyntax(expected,signature(candidate)))
-        throw new TypeError(`Inherited interfaces for ${label} have different origins, kinds or instantiated types.`);
+        throw new InheritedInterfaceConflict(label);
     }
     const map=new Map(first.correspondence);
     if(assigned.size)map.set(first.entry.id,[...assigned][0]);

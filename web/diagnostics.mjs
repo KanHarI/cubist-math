@@ -567,6 +567,7 @@ export const diagnostics = [
   ["E872", "Duplicate declaration …: a declaration in this module already owns that name."],
   ["E873", "initial takes no parameters; use free for a parameterized model."],
   ["E874", "free takes explicit parameters in parentheses, as free W(A : U0) : T(U0) on A; implicit parameters are not supported."],
+  ["E875", "…'s inherited interfaces have cyclic dependencies after sharing."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],
