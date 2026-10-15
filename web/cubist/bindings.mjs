@@ -113,6 +113,8 @@ const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:str
 // of falling through to a model with the same spelling.
 const notationInventory=entries=>Object.freeze({tag:"notation-inventory",entries:Object.freeze(entries.map(({name,model=null})=>
   Object.freeze({name:string(name,"a notation label"),model:model?resolution(model):null})))});
+const notationContext=id=>Object.freeze({tag:"notation-context",id:string(id,"a selected notation identity")});
+const scopeMetadata=new Set(["notation-inventory","notation-context"]);
 // A qualified namespace closes its member table. Its bare label can keep
 // an enclosing value, but an absent member never searches that value's
 // ambient namespace. Ordinary later bindings still shadow the whole entry.
@@ -144,6 +146,7 @@ export function resolution(value) {
     case "opening": return openingResolution(value.id,value.label,value.enclosing,value.candidates);
     case "opening-frame": return openingFrame(value.id,value.candidates);
     case "notation-inventory":return notationInventory(value.entries);
+    case "notation-context":return notationContext(value.id);
     case "member": return memberResolution(value.receiver,value.fields);
     case "projected": return projectedResolution(value.projection,value.receiver);
     case "application":return applicationResolution(value.fn,value.args);
@@ -162,6 +165,7 @@ export function mapResolution(value,identity=id=>id,project=value=>value) {
   let mapped;
   switch(value.tag) {
     case "binding":mapped={...value,id:identity(value.id,value.tag)};break;
+    case "notation-context":mapped={...value,id:identity(value.id,value.tag)};break;
     case "opening-frame":mapped={...value,id:identity(value.id,value.tag),
       ...(value.candidates?{candidates:value.candidates.map(([label,value])=>[label,map(value)])}:{})};break;
     case "notation-inventory":mapped={...value,entries:value.entries.map(entry=>({...entry,model:entry.model?map(entry.model):null}))};break;
@@ -184,12 +188,12 @@ export class LexicalContext {
   #head = null;
   constructor(entries = []) {
     for (const [label, value] of entries) this.#head = Object.freeze({
-      label: label===null&&["opening-frame","notation-inventory"].includes(value.tag)?null:string(label, "a lexical label"), value: resolution(value), parent: this.#head});
+      label: label===null&&(value.tag==="opening-frame"||scopeMetadata.has(value.tag))?null:string(label, "a lexical label"), value: resolution(value), parent: this.#head});
     Object.freeze(this);
   }
   lookup(label) {
     for (let entry = this.#head; entry; entry = entry.parent) {
-      if(entry.value.tag==="notation-inventory")continue;
+      if(scopeMetadata.has(entry.value.tag))continue;
       if(entry.value.tag==="opening-frame")return this.#opened(entry.value,label,this.#lookupAfter(entry.parent,label,false).value);
       if (entry.label === label) return entry.value.tag==="namespace"?entry.value.fallback:entry.value;
     }
@@ -231,6 +235,15 @@ export class LexicalContext {
     context.#head=Object.freeze({label:null,value:notationInventory(entries),parent:this.#head});
     return context;
   }
+  selectedNotation() {
+    for(let entry=this.#head;entry;entry=entry.parent)if(entry.value.tag==="notation-context")return entry.value.id;
+    return null;
+  }
+  withSelectedNotation(id) {
+    const context=new LexicalContext();
+    context.#head=Object.freeze({label:null,value:notationContext(id),parent:this.#head});
+    return context;
+  }
   #opened(frame,name,enclosing) {
     const [root,...fields]=name.split(".");
     const candidates=(frame.candidates??[]).filter(([label])=>label===root)
@@ -241,7 +254,7 @@ export class LexicalContext {
     // Ordered shadowing applies to a receiver too: a later local T hides
     // an earlier declaration T.f. Member labels are resolved on that receiver.
     for (let entry = head; entry; entry = entry.parent) {
-      if(entry.value.tag==="notation-inventory")continue;
+      if(scopeMetadata.has(entry.value.tag))continue;
       if(entry.value.tag==="opening-frame") {
         let fallback;
         try {fallback=this.#lookupAfter(entry.parent,name,qualified,selector);}

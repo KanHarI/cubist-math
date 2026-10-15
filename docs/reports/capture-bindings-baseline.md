@@ -27,9 +27,12 @@ synthesized operand selections now request notation without opening model
 labels, so the caller's variable retains its meaning. The original semantic
 witness now passes as a required test. Additional selection tests cover caller
 globals, unbound names, explicit written openings, one receiver elaboration,
-and failed activation before generation. Capturing the operand recipe's
-receiver in its declaration context remains pending; its two separate
-known-defect observations remain active. Counts below describe the CB0 snapshot.
+and failed activation before generation. On 2026-10-15, the model producer's
+operand recipes also began retaining source receivers and explicit model
+interfaces. The `operand-receiver-local` and `operand-receiver-global`
+observations were retired: both original witnesses now accept the intended
+client and reject the captured reading as required tests. Counts below
+describe the CB0 snapshot.
 
 The [case manifest](../../tests/fixtures/frontend-generation.md) explains the
 36 inherited fixtures: 18 pass and 18 remain known defects. The old suite

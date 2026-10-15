@@ -5,13 +5,16 @@ export const operatorBinding = operator => "\u0000operator " + operator;
 export const SELECTION = "\u0000selection";
 const contextKey = key => "\u0000notation context " + key;
 
-export function bindNotationContext(scope,key) {
+export function checkedNotationContext(scope) {
   const selection=scope.env.get(SELECTION);
   if(!selection?.complete)throw new TypeError("A retained notation context requires a complete checked selection.");
   const aliases=[[SELECTION,selection],...[...selection.operators].map(operator=>
     [operatorBinding(operator),scope.env.get(operatorBinding(operator))])];
-  return scope.alias(contextKey(key),Object.freeze(aliases.map(Object.freeze)));
+  return Object.freeze(aliases.map(Object.freeze));
 }
+
+export const notationContextEntry=(key,aliases)=>Object.freeze([contextKey(key),aliases]);
+export const bindNotationContext=(scope,key)=>scope.aliases([notationContextEntry(key,checkedNotationContext(scope))]);
 
 export function selectNotationContext(scope,key) {
   const aliases=scope.env.get(contextKey(key));

@@ -68,42 +68,6 @@
         "assumes": []
       }
     },
-    "operand-receiver-local": {
-      "phase": "CB3",
-      "observed": {
-        "gaps": [
-          [
-            "main",
-            "intended",
-            "E606"
-          ]
-        ],
-        "clients": {
-          "client": true,
-          "intended": false,
-          "captured": true
-        },
-        "assumes": []
-      }
-    },
-    "operand-receiver-global": {
-      "phase": "CB3",
-      "observed": {
-        "gaps": [
-          [
-            "main",
-            "intended",
-            "E606"
-          ]
-        ],
-        "clients": {
-          "client": true,
-          "intended": false,
-          "captured": true
-        },
-        "assumes": []
-      }
-    },
     "family-domain-helper-absent": {
       "phase": "CB2",
       "observed": {

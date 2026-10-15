@@ -70,6 +70,11 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
   fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
   notation=null,receiverNamespace=true},splices=null) {
+  const selectedNotation=context.selectedNotation();
+  if(selectedNotation) {
+    const fallback={activation:selectedNotation};
+    notation=notation?{...notation,fallback}:fallback;
+  }
   const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
@@ -157,8 +162,10 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         owned.push(...syntax.owned);
         return syntax.tree;
       }
-      if(at.notation?.activation&&["number","binaryNumber","literal"].includes(node.kind)) {
-        const selection=occurrence(node,bindingResolution(at.notation.activation),"notation",origin(node));
+      const dynamic=at.notation?.activation??at.notation?.fallback?.activation;
+      if(dynamic&&["number","binaryNumber","literal"].includes(node.kind)
+        &&!(node.kind==="number"&&at.notation?.bindings?.numeral)) {
+        const selection=occurrence(node,bindingResolution(dynamic),"notation",origin(node));
         // Interval/face consumers still need the numeric node itself. Only
         // term elaboration invokes its reader through the retained context.
         if(node.kind==="number")return {...node,notationSelection:selection,origin:origin(node)};
@@ -169,7 +176,8 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       const key=node.kind==="negation"&&!node.qualifier?"unary -":node.kind==="binary"&&!node.qualifier
         ?node.operator===">"?"<":node.operator===">="?"<=":node.operator:null;
       if(key&&at.notation) {
-        if(at.notation.activation&&["+","-","*","/","^","<","<=","unary -"].includes(key)) {
+        if(dynamic&&!at.notation.bindings?.[key]&&!at.notation.ambiguous?.[key]
+          &&["+","-","*","/","^","<","<=","unary -"].includes(key)) {
           // Each operand abstracts over its notation, while its term names
           // resolve here. At use, the operator's checked recipe supplies that
           // parameter; an explicit selection inside the operand supersedes it.
@@ -182,7 +190,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
           };
           const body=node.kind==="negation"?{...node,operand:operand(node.operand)}
             :{...node,left:operand(node.left),right:operand(node.right)};
-          return {kind:"boundNotation",selection:occurrence(node,bindingResolution(at.notation.activation),"notation",origin(node)),
+          return {kind:"boundNotation",selection:occurrence(node,bindingResolution(dynamic),"notation",origin(node)),
             body,origin:origin(node),start:node.start,end:node.end};
         }
         const ambiguous=at.notation.ambiguous?.[key];

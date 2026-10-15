@@ -95,7 +95,7 @@ function theoryFields(theory, lookup, proposition, capture) {
   const T = theory.name.text, fields = [], notations = new Map(), parents = [], byName = new Map();
   // Each notation's operand recipes: the notation an operand is read in,
   // other than the current one (L2.10b), as nat for x ^ nat.(n).
-  const recipes = new Map();
+  const recipes = new Map(),operandRecipes=new Map();
   // A notation's key: its operator, unary - for -x, or numeral.
   const keyOf = notationKey;
   // Derived operations, a theory's own and its parents' (L2.10b): each
@@ -208,7 +208,7 @@ function theoryFields(theory, lookup, proposition, capture) {
     members.length === 1 ? quantifier("forall", members[0].name, members[0].type, inner, at)
       : {kind: "binderGroup", binderKind: "forall", names: members.map(p => p.name), domain: members[0].type, body: inner, ...place(at)}, body);
   // Each parent prepared: its record, label, universes and renamings.
-  const prepared = [];
+  const prepared = [],replacementRecipes=[];
   for (const parent of theory.parents ?? []) {
     const record = lookup(parent.name.text);
     if (!record) throw located(Error(`${parent.name.text} is not a theory here: ${T} extends theories in scope.`), parent.name);
@@ -251,6 +251,7 @@ function theoryFields(theory, lookup, proposition, capture) {
         renotated.set(from.text, keyOf(notation));
         const views=notationViews(notation);
         recipes.set(keyOf(notation), { left: views.left?.text ?? null, right: views.right?.text ?? null });
+        replacementRecipes.push({key:keyOf(notation),views});
       }
     }
     // A sort's evidence follows the sort's name.
@@ -325,6 +326,9 @@ function theoryFields(theory, lookup, proposition, capture) {
       if (renotated.has(field)) continue;
       bind(operator, names.get(field) ?? field, field);
       if (record.recipes?.[operator]) recipes.set(operator, record.recipes[operator]);
+      if(record.operandRecipes?.[operator])operandRecipes.set(operator,Object.fromEntries(
+        Object.entries(record.operandRecipes[operator]).map(([side,recipe])=>[side,recipe?
+          {tag:"parent-recipe",parent:label,recipe}:null])));
     }
     for (const [operator, list] of Object.entries(record.ambiguousNotations ?? {}))
       for (const entry of list) bind(operator, names.get(entry.field) ?? entry.field, entry.field);
@@ -342,6 +346,30 @@ function theoryFields(theory, lookup, proposition, capture) {
   // Inside the theory, label.f is the field the parent labelled label gave
   // as f, and an ambiguous name is refused with the qualified forms.
   const viaLabel = new Map(prepared.map(p => [p.label, p]));
+  // The legacy producer also owns each operand receiver at declaration time.
+  // Abstract header/field references use its explicit model interface; globals
+  // use the same captured-reference boundary as its other retained syntax.
+  // No receiver descriptor is looked up in the eventual caller's names.
+  const operandReceiver=view=>{
+    if(!view)return null;
+    const parameter=params.some(parameter=>parameter.name===view.text);
+    const field=byName.has(view.text)||derivedByName.has(view.text);
+    if(viaLabel.has(view.text)&&!parameter&&!field)return {tag:"parent",name:view.text};
+    // Standalone named notation has its own namespace. Otherwise the most
+    // recent interface member shadows a header parameter, just as in the
+    // source scope; the operation's formal operands have not entered yet.
+    const bound=new Set([...params.map(p=>p.name),...byName.keys(),...derivedByName.keys()]);
+    const receiver=capture(name(view.text,view),bound,{selection:true});
+    if(receiver.kind!=="name")return {tag:"source",receiver};
+    if(field)return {tag:"field",name:view.text};
+    if(parameter)return {tag:"parameter",name:view.text};
+    return receiver.kind==="name"&&!reservedNames.has(receiver.name)
+      ?{tag:"missing",name:view.text,start:view.start,end:view.end}:{tag:"source",receiver};
+  };
+  const operandRecipe=views=>({left:operandReceiver(views.left),right:operandReceiver(views.right)});
+  // An extends replacement belongs to the complete inherited child interface,
+  // whereas an own field's receiver is captured before its formal parameters.
+  for(const {key,views} of replacementRecipes)operandRecipes.set(key,operandRecipe(views));
   const resolved = (node, scope = new Set()) => rewritten(node, (n, bound) => {
     if (n.kind !== "name" || bound.has(n.name.split(".")[0])) return n;
     const dot = n.name.indexOf(".");
@@ -383,6 +411,7 @@ function theoryFields(theory, lookup, proposition, capture) {
     return labelled(inside(n.body), bound);
   }, scope);
   for (const source of theory.fields) {
+    const ownRecipe=source.notation?operandRecipe(notationViews(source.notation)):null;
     // A field's parameters are in scope in the later ones' types and in its
     // own: a parameter named as an ambiguous field is that parameter.
     const scope = new Set();
@@ -409,6 +438,7 @@ function theoryFields(theory, lookup, proposition, capture) {
         const {key,views}=validateFieldNotation(item,{theory:T});
         notate(key,item.name.text,item.notation);
         recipes.set(key,{left:views.left?.text??null,right:views.right?.text??null});
+        operandRecipes.set(key,ownRecipe);
       }
       if (!item.level) continue;
       const evidence = item.level === "set" ? "IsSet" : "IsProp";
@@ -424,7 +454,10 @@ function theoryFields(theory, lookup, proposition, capture) {
         return type.kind==="name"&&byName.get(type.name)?.kind==="sort";
       }});
       notate(key,item.name.text,item.notation);
-      if(!item.notation.numeral)recipes.set(key,{left:views.left?.text??null,right:views.right?.text??null});
+      if(!item.notation.numeral) {
+        recipes.set(key,{left:views.left?.text??null,right:views.right?.text??null});
+        operandRecipes.set(key,ownRecipe);
+      }
     }
     // forall over the parameters, innermost last, each index's evidence
     // after it.
@@ -495,7 +528,7 @@ function theoryFields(theory, lookup, proposition, capture) {
   for (const p of prepared)
     if (byName.has(p.label))
       throw located(Error(`${T}'s parent ${p.record.name} is labelled ${p.label}, which names a field of ${T} too: label it apart, as in base : ${p.record.name}.`), p.parent.label ?? p.parent.name);
-  return { fields, notations, recipes, derived, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p),
+  return { fields, notations, recipes, operandRecipes, derived, parents, universes: headerUniverses, params: params.map(({ at: _, ...p }) => p),
     ambiguous: Object.fromEntries([...ambiguous].map(([n, list]) => [n, list])), ambiguousNotations: Object.fromEntries(ambiguousNotations) };
 }
 
@@ -510,7 +543,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   // source syntax is already resolved and is never searched for matching text.
   const globalCall = (fn, args, span) => call(reference(name(fn, span), "generated"), args, span);
   const outerCall = (fn, args, span) => call(reference(name(fn, span), "outer"), args, span);
-  const { fields, notations, recipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition, capture);
+  const { fields, notations, recipes, operandRecipes, derived, parents, universes: headerUniverses, params, ambiguous, ambiguousNotations } = theoryFields(theory, lookup, proposition, capture);
   if (!fields.length) throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`), at);
   const taken = new Set([...namesIn(theory), ...fields.map(field => field.name), ...fields.flatMap(field => [...namesIn(field.type)]),
     ...derived.flatMap(operation => [...namesIn(operation)])]);
@@ -542,7 +575,7 @@ export function expandTheory(theory, lookup = () => null, proposition = () => fa
   const record = {
     name: T, model: T, make: `${T}.make`, universes, universeLabels, ...(headerUniverses.length ? {} : { generatedUniverse: true }), params, ambiguous, ambiguousNotations,
     fields: fields.map(({ at: _, from: __, ...field }) => ({ ...field, projection: `${T}.${field.name}` })),
-    notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), parents,
+    notations: Object.fromEntries(notations), recipes: Object.fromEntries(recipes), operandRecipes:Object.fromEntries(operandRecipes), parents,
     derived: derived.map(({ at: _, ...d }) => ({ ...d, projection: `${T}.${d.name}` })),
   };
   // The sorts' evidence comes from hlevels.

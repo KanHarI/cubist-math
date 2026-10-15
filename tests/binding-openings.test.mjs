@@ -126,7 +126,8 @@ test("retained selected operators bind notation separately from caller names and
   assert.ok(copy.syntax.owned.some(id=>table.get(id).role==="notation"));
   declarations[5]={...declarations[5],syntax:copy.syntax};
   assert.doesNotThrow(()=>snapshotSyntax(declarations));
-  const {result,equal}=check(declarations,"def leftOps : Arithmetic(U0) := rightOps; def rightOps : Arithmetic(U0) := leftOps;");
+  const {result,equal}=check(declarations,`def leftOps : Arithmetic(U0) := rightOps;
+    def rightOps : Arithmetic(U0) := Arithmetic.make(Two, right_, fun (a, b : Two) => a, fun (a : Two) => right_);`);
   assert.deepEqual(failures(result).map(([name])=>name),["missing"],JSON.stringify(failures(result)));
   for(const name of ["source_","local","override","endpoint"]) {
     assert.equal(equal(name,"left_"),true,name);assert.equal(equal(name,"right_"),false,name);
@@ -267,6 +268,107 @@ test("file-level activations retain closed source receivers through theory gener
   assert.equal(scope.equal(result.env.get("local_value"),term(parse("right_",true),scope)),true);
   assert.equal(receivers,1,"generation and inheritance never reactivate the source recipe");
   assert.equal(JSON.stringify({captures:prepared.captures,activations:prepared.activations}),held);
+});
+
+test("file-level notation contexts survive headers, ordered theory operators and inherited helpers",async t=>{
+  const {table,inputs,program,env,source}=await setup(t,operatorModels+`
+    theory Digits(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
+    def digits : Digits(U0) := Digits.make(Nat, fun (n : Nat) => n);
+    def numberReceiver(n : Nat) : Arithmetic(U0) := match n { zero => leftOps; succ(k) => rightOps; };
+  `);
+  const checker=Object.create(program.checker);checker.bindingName=label=>`notations__${label}`;
+  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
+  const translator=new Translator({checker,normalize:false,moduleName:"notations",compilationBindings:program.compilationBindings});
+  const term=translator.term.bind(translator);let receiverCalls=0;
+  translator.term=(node,...args)=>{if(node.kind==="call"&&node.fn.spelling==="numberReceiver")receiverCalls++;return term(node,...args);};
+  const records=new Map();let capturedEnv=env,index=0;
+  const build=text=>{
+    const owner=["file-notation",String(index++)];
+    const prepared=activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),env),
+      parse(text).declarations[0],inputs,{owner,source});
+    const record=retainTheorySource(prepared.item,{table,source,owner,context:prepared.context,
+      constructors:inputs.constructors},{lookup:name=>records.get(name)});
+    const built=retainedTheoryArtifacts(record,{table,owner:[...owner,"generated"]});
+    records.set(record.name,built.record);capturedEnv=withSourceCaptures(capturedEnv,prepared,inputs.adapter);
+    assert.doesNotThrow(()=>snapshotSyntax({record,context:prepared.context.snapshot(),activations:prepared.activations}));
+    return {prepared,...built};
+  };
+  const header=build(`use leftOps; theory Header(U < UU0, p : (left_ + right_) = left_) { anchor : Unit; }`);
+  const parent=build(`use leftOps; theory Selected(U < UU0) {
+    M : set U;
+    def captured(x : Two) : Two := x + right_;
+    choose(a, b : M) : M notation a + b;
+    def own(a, b : M) : M := a + b;
+  }`);
+  const child=build(`use rightOps; theory Child(U < UU0) extends s : Selected {}`);
+  const later=build(`use leftOps; use rightOps; theory Later(U < UU0) {
+    anchor : Unit; def captured : Two := left_ + right_;
+  }`);
+  const ordered=build(`use digits; use numberReceiver(0); theory Ordered(U < UU0) {
+    anchor : Unit; def captured : Two := left_ + right_;
+  }`);
+  assert.equal(receiverCalls,1,"a later source receiver consumes the earlier captured notation");
+  const numeric=build(`use digits; theory Numeric(U < UU0, n : Nat, p : n = 0) {
+    anchor : Unit; def captured : Nat := 0;
+  }`);
+  const refused=build(`use leftOps; use chosen; theory Refused(U < UU0) {
+    anchor : Unit; def captured : Two := left_ + right_;
+  }`);
+  const first=build("use digits; theory First(U < UU0) { F(p : zero = 0) : set U; }");
+  const second=build("use digits; theory Second(U < UU0) { F(p : zero = 0) : set U; }");
+  const shared=build("theory Shared(U < UU0) extends first_ : First, second_ : Second {}");
+  assert.equal(shared.record.fields.filter(field=>field.kind==="sort").length,1);
+  assert.equal(first.prepared.activations[0].notation.id,second.prepared.activations[0].notation.id);
+  assert.notEqual(first.prepared.activations[0].binding.id,second.prepared.activations[0].binding.id);
+  assert.equal(new LexicalContext(JSON.parse(JSON.stringify(parent.prepared.context.snapshot()))).selectedNotation(),
+    parent.prepared.activations[0].notation.id);
+  assert.ok(bindingUses(parent.record.derived.find(field=>field.label==="captured").syntax)
+    .some(use=>use.id===parent.prepared.activations[0].notation.id));
+  const declarations=[header,parent,child,later,ordered,numeric,refused,first,second,shared].flatMap(built=>built.artifacts.map(({binding,syntax,...annotations})=>
+    bindingDeclaration(binding,syntax,annotations)));
+  const result=translator.translateSyntax({declarations:[...parse(`def leftOps : Unit := tt;
+    def digits : Unit := tt; def x : Two := right_;`).declarations,...declarations,...parse(`
+    def header_value : Header(U0, refl(left_)) := Header.make(refl(left_), tt);
+    def chosen : Child(U0) := Child.make(Two, _, fun (a, b : Two) => b);
+    def captured_value : Two := chosen.captured(left_);
+    def own_value : Two := chosen.own(left_, right_);
+    def later_instance : Later(U0) := Later.make(tt);
+    def ordered_instance : Ordered(U0) := Ordered.make(tt);
+    def numeric_instance : Numeric(U0, zero, refl(zero)) := Numeric.make(zero, refl(zero), tt);
+    def later_value : Two := later_instance.captured;
+    def ordered_value : Two := ordered_instance.captured;
+    def numeric_value : Nat := numeric_instance.captured;
+    def intended : captured_value = left_ := refl(left_);
+    def wrong : captured_value = right_ := refl(right_);
+  `).declarations]},"",capturedEnv);
+  assert.deepEqual(failures(result).map(([name])=>name),["Refused.captured","wrong"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/\+.*(not|no)/);
+  assert.match(failures(result)[0][1],/chosen's notation/);
+  assert.doesNotMatch(failures(result)[0][1],/\u0000id/);
+  const scope=new Scope(translator.unit(),new Map(),result.env),equal=(name,source)=>
+    scope.equal(result.env.get(name),translator.term(parse(source,true),scope));
+  assert.equal(equal("captured_value","left_"),true);assert.equal(equal("captured_value","right_"),false);
+  assert.equal(equal("ordered_value","left_"),true);assert.equal(equal("ordered_value","right_"),false);
+  assert.equal(receiverCalls,1,"generation never reactivates the captured source receiver");
+  for(const name of ["own_value","later_value"]) {
+    assert.equal(equal(name,"right_"),true);assert.equal(equal(name,"left_"),false);
+  }
+  assert.equal(equal("numeric_value","zero"),true);assert.equal(equal("numeric_value","succ(zero)"),false);
+});
+
+test("a retained source notation cannot fall back when its capture environment is absent",async t=>{
+  const {table,inputs,program,env,source}=await setup(t,operatorModels);
+  const translator=new Translator({checker:program.checker,normalize:false,compilationBindings:program.compilationBindings});
+  const text="use leftOps; def captured : Two := left_ + right_;";
+  const prepared=activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),env),
+    parse(text).declarations[0],inputs,{owner:["missing-notation"],source});
+  const syntax=resolveBindingSyntax(prepared.item,{table,source,owner:["missing-notation","body"],
+    context:prepared.context,constructors:inputs.constructors});
+  const node=lowerBindingSyntax(syntax,inputs.adapter).body[0].value;
+  const missing=new Scope(translator.unit({bindingAdapter:inputs.adapter}),new Map(),env);
+  assert.throws(()=>translator.term(node,missing),/no checked context for its identity/);
+  const present=missing.withEnv(withSourceCaptures(env,prepared,inputs.adapter));
+  assert.equal(present.equal(translator.term(node,present),translator.term(parse("left_",true),present)),true);
 });
 
 test("source activation is ordered, required per consumer and outside declaration parameters",async t=>{
@@ -450,6 +552,7 @@ test("source activation occurrences share receiver meaning without merging their
   const child=build("use chosen; theory C(U < UU0, i : M) extends p : P {}");
   assert.notEqual(parent.prepared.activations[0].binding.id,child.prepared.activations[0].binding.id);
   assert.equal(parent.prepared.activations[0].capture.id,child.prepared.activations[0].capture.id);
+  assert.equal(parent.prepared.activations[0].notation.id,child.prepared.activations[0].notation.id);
   const first=build("use chosen; theory F1(U < UU0) { F(a : M) : set U; }");
   const second=build("use chosen; theory F2(U < UU0) { F(a : M) : set U; }");
   const both=build("theory Both(U < UU0) extends f1 : F1, f2 : F2 {}");
@@ -457,10 +560,12 @@ test("source activation occurrences share receiver meaning without merging their
   const repeat1=prepare("use receiver(tt); theory A(U < UU0) { k : M; }");
   const repeat2=prepare("use receiver(tt); theory B(U < UU0) { k : M; }");
   assert.equal(repeat1.activations[0].capture.id,repeat2.activations[0].capture.id,"computed receivers also share semantic identities");
+  assert.equal(repeat1.activations[0].notation.id,repeat2.activations[0].notation.id);
   assert.notEqual(repeat1.activations[0].binding.id,repeat2.activations[0].binding.id);
   const other=inputs.context.lookup("other");
   const changed=prepare("use chosen; theory D(U < UU0) { k : M; }",{context:inputs.context.bind("chosen",other)});
   assert.notEqual(changed.activations[0].capture.id,parent.prepared.activations[0].capture.id,"a newly resolved receiver keeps a different meaning");
+  assert.notEqual(changed.activations[0].notation.id,parent.prepared.activations[0].notation.id);
   const declarations=[parent,child,first,second,both].flatMap(built=>built.artifacts.map(({binding,syntax,...annotations})=>
     bindingDeclaration(binding,syntax,annotations)));
   const result=translator.translateSyntax({declarations:[...declarations,...parse(`

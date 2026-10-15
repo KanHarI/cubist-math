@@ -12,6 +12,7 @@ export class CompilationBindings {
   #declarations=new Map();
   #owners=new Map();
   #captures=new Map();
+  #modelNotations=new Map();
   constructor(revision,{table=new BindingTable(revision)}={}) {
     if(table.revision!==revision)throw new TypeError("Compilation binding revision mismatch.");
     this.revision=revision;this.table=table;
@@ -65,5 +66,15 @@ export class CompilationBindings {
       role:"capture",label:"selection receiver",origin,
     }));
     return this.#captures.get(key);
+  }
+  // A model's complete notation has the receiver's semantic identity, but
+  // lives in a separate namespace from terms. Source activation occurrences
+  // keep their own histories. Named extensions need their own rule identity
+  // in this key before that source family can use this producer boundary.
+  captureModelNotation(receiver,origin) {
+    this.table.get(receiver.id);
+    if(!this.#modelNotations.has(receiver.id))this.#modelNotations.set(receiver.id,
+      this.table.allocate(["model-notation-captures"],{role:"capture",label:"selected notation",origin}));
+    return this.#modelNotations.get(receiver.id);
   }
 }

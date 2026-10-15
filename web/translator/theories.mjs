@@ -11,7 +11,8 @@ import {rewritten,selectionEffects,fileSelectionEffects} from "../cubist/scopes.
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
-import {modelNotations,modelOperandRecipes,notationAlternative} from "./model-notation.mjs";
+import {modelNotations,modelOperandRecipes,modelOperandReceiver,recordOf,notationAlternative} from "./model-notation.mjs";
+export {recordOf} from "./model-notation.mjs";
 import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
 export {operatorBinding,SELECTION} from "./notation-context.mjs";
 
@@ -25,14 +26,6 @@ export const theoryBinding = name => "\u0000theory " + name;
 export const notationBinding = name => "\u0000notation " + name;
 // The extensible operators a notation can bind, unary - as "unary -".
 export const notationOperators = ["+", "-", "*", "/", "^", "<", "<=", ">", ">=", "unary -"];
-
-// The record of the theory whose models `value` is one of, from the head of
-// its type, T(U), or null.
-export function recordOf(t,scope,value) {
-  let head=scope.infer(value).type;
-  while(head&&["App","LApp"].includes(head.tag))head=head.fn;
-  return head?.tag==="DefRef"?t.checker.theories?.get(head.name)??null:null;
-}
 
 // A theory's records, by the binding of its type of models, and its
 // projections, which print as m.f.
@@ -127,9 +120,11 @@ export function memberField(t,scope,n) {
 // The scope with the model `node` opened, or null when it is no model: each
 // field by its name, as its projection T.f(m), and each notation of the
 // theory as m's operation. A later binding of a name or operator shadows it.
-export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,receiver=t.term(node,scope,null),activation=null}={}) {
-  const record=recordOf(t,scope,receiver);
+export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,receiverScope=scope,
+  receiver=t.term(node,receiverScope,null),activation=null}={}) {
+  const record=recordOf(t,receiverScope,receiver);
   if(!record)return null;
+  const spelling=sourceName(node);
   const at={start:node.start,end:node.end};
   // All projections share this activation's checked receiver. Reading one
   // selected field must not elaborate the source receiver again.
@@ -137,21 +132,21 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   const notations=modelNotations(record),notationFields=new Set(notations.values());
   const values=new Map([...record.fields,...record.derived??[]].filter(field=>effects.labels||effects.notation&&notationFields.has(field)).map(field=>{
     const key=field.projectionId?t.identityAdapter.key(field.projectionId):field.reference;
-    const unavailable=key&&scope.env.get(key);
+    const unavailable=key&&receiverScope.env.get(key);
     // A refused optional operation is still a refused dependency when named;
     // opening the model must not eagerly call it and hide the checked fields.
     return [field,unavailable?.tag==="Untranslated"?unavailable
-      :t.term(scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[value],...at}),scope,null)];
+      :t.term(receiverScope.declared({kind:"call",fn:projectionReference(t,field,at),args:[value],...at}),receiverScope,null)];
   }));
   // All of them in scope with one copy of the names there.
   const added=effects.labels?[...values].map(([field,value])=>[field.name,value]):[];
   if(effects.notation)for(const [operator,field] of notations)added.push([operatorBinding(operator),values.get(field)]);
   // An ambiguous name or operator is refused where it is used.
   if(effects.labels)for(const field of Object.keys(record.ambiguous??{}))
-    added.push([field,{tag:"Ambiguous",message:ambiguousField(record,node.name??"m",field).message}]);
+    added.push([field,{tag:"Ambiguous",message:ambiguousField(record,spelling??"m",field).message}]);
   if(effects.notation)for(const [operator,list] of Object.entries(record.ambiguousNotations??{}))
     added.push([operatorBinding(operator),{tag:"Ambiguous",message:`${operator} is ambiguous in ${record.name}: it is ${
-      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(node.name??"m",operator,e)).join(" or ")}.`}]);
+      list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(spelling??"m",operator,e)).join(" or ")}.`}]);
   // A theory's numeral rule, its derived operation marked notation numeral,
   // whose natural number is built from that operation's own Nat. A refused
   // operation keeps the rule, which reads the operation alone: a numeral
@@ -160,12 +155,12 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   const reads={kind:"name",name:operatorBinding("numeral"),...at};
   const numeral=!operation?null:operation.tag==="Untranslated"?{left:"n",right:null,recipe:{},aliases:new Map(),value:reads}
     :{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
-      aliases:new Map([[NUMERAL_NAT,scope.nf(scope.infer(operation).type).domain]]),
+      aliases:new Map([[NUMERAL_NAT,receiverScope.nf(receiverScope.infer(operation).type).domain]]),
       value:{kind:"call",fn:reads,args:[{kind:"name",name:"n",...at}],...at}};
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).
-  if(effects.notation)added.push([SELECTION,{name:node.name??"this model",recipes:modelOperandRecipes(t,scope,receiver,record),complete,numeral,literal:null,
+  if(effects.notation)added.push([SELECTION,{name:spelling??"this model",recipes:modelOperandRecipes(t,receiverScope,receiver,record),complete,numeral,literal:null,
     operators:new Set([...notations.keys(),...Object.keys(record.ambiguousNotations??{})])}]);
   let inner=scope.aliases(added);
   if(activation) {
@@ -174,7 +169,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
       return [field.name,projectedResolution(field.projectionId,activation.bindingId)];
     }):[]);
     if(effects.labels)for(const field of Object.keys(record.ambiguous??{}))
-      members.set(field,failedResolution(ambiguousField(record,node.spelling??node.name??"m",field)));
+      members.set(field,failedResolution(ambiguousField(record,spelling??"m",field)));
     inner=inner.alias(t.identityAdapter.key(activation.bindingId),receiver)
       .withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,members));
     if(effects.notation)inner=bindNotationContext(inner,t.identityAdapter.key(activation.bindingId));
@@ -309,7 +304,15 @@ export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind===
 export function selected(t,scope,node,{effects=selectionEffects.all,activation=null}={}) {
   if(!effects.labels&&!effects.notation)return activation
     ?scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,[])):scope;
-  const selector=node.kind==="bindingReference"?scope.unit.bindingAdapter.resolve(node.resolution,scope.slotOutcomes):null;
+  // Synthesized operand selection owns only its receiver environment. Apply
+  // the resulting effects in the caller, preserving its names and reference
+  // observations even when the receiver is a captured named notation.
+  let receiverScope=scope;
+  while(node.kind==="scoped"||node.kind==="modelOperandReceiver") {
+    if(node.kind==="scoped") {receiverScope=node.scope;node=node.node;}
+    else node=modelOperandReceiver(t,receiverScope,node);
+  }
+  const selector=node.kind==="bindingReference"?receiverScope.unit.bindingAdapter.resolve(node.resolution,receiverScope.slotOutcomes):null;
   if(selector?.tag==="namespace-selector") {
     if(!activation)throw new TypeError("A retained namespace selection needs its activation identity.");
     // The body occurrences hold exact interface candidates. This decision
@@ -318,15 +321,15 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
     return scope.withSlotOutcomes(effects.labels?scope.slotOutcomes.selectNamespace(activation.bindingId)
       :scope.slotOutcomes.activate(activation.bindingId,[]));
   }
-  const key=referenceKey(node),notation=key?scope.env.get(notationBinding(key)):null;
+  const key=referenceKey(node),notation=key?receiverScope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {
     const inner=effects.notation?notationSelected(scope,notation):scope;
     return activation?inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[])):inner;
   }
-  const receiver=t.term(node,scope,null),inner=opened(t,scope,node,{effects,receiver,activation});
+  const receiver=t.term(node,receiverScope,null),inner=opened(t,scope,node,{effects,receiver,receiverScope,activation});
   // A model's notation with the literal rules its module added, where the
   // name is still that model.
-  if(effects.notation&&inner&&notation?.model&&scope.env.get(key)===notation.model) {
+  if(effects.notation&&inner&&notation?.model&&receiverScope.env.get(key)===notation.model) {
     const selection=inner.env.get(SELECTION);
     return inner.alias(SELECTION,{...selection,numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});
@@ -419,7 +422,10 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
 function capturedTheorySyntax(t,env,notation,lexical) {
   const binding=notation&&lexicalNotation(t.checker,notation);
   if(notation)env.set(binding,notation);
-  return (node,bound)=>{
+  return (node,bound,{selection=false}={})=>{
+    const rule=selection&&node.kind==="name"?lexical.get(notationBinding(node.name)):null;
+    if(rule?.tag==="Notation"&&!rule.model)
+      return capturedName(node,lexical,[notationBinding],env);
     const named=capturedNames(node,lexical,bound,[notationBinding,theoryBinding],env);
     return rewritten(named,n=>{
       if(n.kind==="select")return {...n};

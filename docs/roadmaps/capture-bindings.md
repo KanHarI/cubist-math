@@ -373,9 +373,31 @@ elaboration while remaining numeric endpoints for interval consumers.
 Numeral readers construct their input lazily from their own captured natural
 type, using the shared value elaborator for inductive descriptors; they do
 not look up `Nat` in the destination. This preserves failed-dependency and
-ignored-operand behavior. Named rules, parent-namespace notation alternatives
-and closed file-level notation captures still require their retained context
-contracts before those migration gates open.
+ignored-operand behavior. Named rules and parent-namespace notation alternatives
+still require their retained context contracts before those migration gates open.
+
+File-level model selection captures a separate notation identity alongside
+the closed receiver. The lexical context holds only that identity; an explicit
+capture environment carries the checked notation effect. Equal closed model
+receivers share a notation identity, so inherited headers compare consistently,
+while each source activation retains its own history. Ordered file-level uses
+can consume earlier captured notation, and generation never reactivates them.
+Theory operations declared so far take precedence over the captured module
+notation. A later complete selection replaces the earlier selection even when
+it lacks an operator. Named extensions must add their rule identity to this
+semantic key before their migration gate opens.
+
+The temporary nominal model producer must also close exported operand recipes.
+Its display labels are not executable receiver references: the selection
+boundary uses captured source references or explicit header, field and parent
+descriptors. Inheritance interprets the original recipe over the actual parent
+projection, preserving header substitution and renaming. Resolve these
+descriptors only when an operand consumes its recipe, so an unused failed
+helper cannot prevent selecting healthy fields. Receiver elaboration and its
+generated projections use the receiver's observation scope; only the resulting
+notation effect enters the caller. The operand keeps the caller's bindings
+and reference recorder. This boundary does not migrate named rule bodies or
+the nominal producer's internal textual expansion paths.
 
 Shared notation validation returns both the operator and its operand views.
 Both producers honor explicit views on family notation, correcting the
