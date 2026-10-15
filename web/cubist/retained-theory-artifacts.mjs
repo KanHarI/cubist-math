@@ -143,7 +143,6 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
     universeIds:universes.map(p=>p.name.bindingId),
     params:header.tree.params.filter(p=>!p.bound).map(p=>({id:p.name.bindingId,name:p.label??p.name.text,type:p.type,group:p.group})),
     fields:fields.map(field=>({...field,name:field.label,type:views.get(field.id).analysis.tree,
-      checkingType:views.get(field.id).checking,obligations:views.get(field.id).obligations,
       projection:`${record.name}.${field.label}`,projectionId:bindings.get(`${record.name}.${field.label}`).id})),
     derived:derived.map(entry=>({...entry,name:entry.label,projection:`${record.name}.${entry.label}`,
       projectionId:bindings.get(`${record.name}.${entry.label}`).id})),

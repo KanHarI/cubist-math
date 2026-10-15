@@ -58,3 +58,54 @@ telescopes. Support planning examines every captured pattern alternative without
 counting an unused binder or activation token as an unknown dependency. These
 changes preserve the existing positive and distinguishing negative clients,
 rather than changing them to accommodate generated artifacts.
+
+## CB0–CB2 simplification audit
+
+The follow-up audit found another consequence of the recurring roots above:
+old paths and descriptive metadata survived after their responsibilities moved
+elsewhere. Remove these instead of making every later consumer support both.
+
+- CB0's mutation runner had an audit mode and configurable expected outcomes,
+  although every supported mutation must be killed by a previously passing
+  semantic test. It now has one mode, with optional mutation IDs. The distinction
+  between a semantic failure, a failed precondition and a broken test run stays.
+- CB1's scope collector still forwarded declaration registration and exposed an
+  unused adapter factory. Declaration registration now goes only through the
+  translator's compilation registry. Collection reads that registry.
+- CB2 retained the full source lexical context on every member, and remapped
+  it during inheritance, for an obsolete notation-recipe fallback. The source
+  producer already resolves each operand recipe before admitting the operation.
+  Validation now requires that recipe. Members retain their resolved syntax and
+  open-interface IDs, without a second source resolver or lexical snapshot.
+- Inheritance used to build and discard a remapped tree just to validate an
+  interface map. It now shares correspondence validation with the actual remap
+  operation. Invalid IDs and attempts to capture a local still fail before
+  allocating a child binding.
+- Helper expansion no longer stores an unused pending summary, and generated
+  fields no longer copy unused checking trees and `interface-check` markers.
+  The builder uses the complete checking expression in the base declarations;
+  publication checks enforce admission. Dependency analysis still reports
+  unresolved decisions to support planners.
+
+The audit keeps the bounded mutation/shrinking evidence, distinct checking and
+analysis expressions, inert DAG snapshots, transactional observation frames and
+full-prefix replay. Each protects a tested semantic or resource boundary;
+replacing these with plain JSON copies, normalized types or live scopes would
+lose a guarantee. This followup preserves the default producer boundaries
+established by CB2; it does not start CB3.
+
+For a synthetic interface with 40 members and 200 unrelated imported bindings,
+serialized member data fell from 716,897 to 101,787 bytes after removing the
+lexical snapshots (about 86%). This measures that representation change only,
+not total compilation memory or runtime.
+
+Original audit validation before CB2 production integration: 1,191 tests,
+with 1,143 passes, 48 then-existing TODOs and no failures;
+all 3,857 canonical corpus checks passed. All four CB0 mutations were killed
+by their expected distinguishing tests. The inheritance controls also reject
+unknown IDs and local-binder capture without allocating child identities.
+
+Validation after applying the cleanup to completed CB2: `npm test` passed
+with 1,193 tests, 1,177 passes, 16 documented later-phase TODOs and no
+failures. All 3,857 canonical checks passed. The targeted cleanup suite
+passed all 102 tests, and all four production mutation checks were killed.

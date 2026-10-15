@@ -31,7 +31,7 @@ export class HelperExpansion {
     // Validate the complete dependency graph before recursively expanding
     // any value. A structural recursive helper is a checked value, not an
     // inline definition. Pending alternatives stay in the resulting trees.
-    this.pending=this.analysis.validateHelpers().pending;
+    this.analysis.validateHelpers();
     const value=entry=>{
       if(this.#values.has(entry.id))return this.#values.get(entry.id);
       const replacements=new Map();
@@ -131,7 +131,6 @@ export class HelperExpansion {
       telescope=telescope.body;
     }
     if(wanted.size)throw new TypeError("Helper analysis must preserve the complete parameter interface.");
-    return {checking,analysis,parameters,
-      obligations:[{kind:"interface-check",entry:entry.id,origin:entry.binding.origin}]};
+    return {checking,analysis,parameters};
   }
 }

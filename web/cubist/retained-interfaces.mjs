@@ -2,8 +2,8 @@
 // member parameter domains, result and body are resolved together, once.
 // Subsequent consumers transform the retained syntax through ID maps; they
 // never rebuild its lexical scope from the eventual list of field labels.
-import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin,mapResolution} from "./bindings.mjs";
-import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,bindingSyntaxView,sameBindingSyntax,bindingUses} from "./binding-syntax.mjs";
+import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
+import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,validateBindingCorrespondence,bindingSyntaxView,sameBindingSyntax,bindingUses} from "./binding-syntax.mjs";
 import {parameterForalls} from "./telescopes.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
@@ -89,7 +89,7 @@ export class RetainedInterfaces {
       [ownNotation.key]:{...ownNotation,field:binding.id}}};
     const syntax=transform(this.#resolve(tree,[...owner,"telescope"],{context,self:self?binding:null,fixedReferences,notation}));
     const recursive=self||kind==="derived"&&bindingUses(syntax,{conditional:true}).some(use=>use.id===binding.id);
-    const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive,lexical:context.snapshot(),
+    const entry=Object.freeze({id:binding.id,label:binding.label,kind,binding,syntax,recursive,
       interface:Object.freeze(this.#interface()),
       ...(kind==="sort"?{level:item.level??null}:{})});
     this.entries.push(entry);
@@ -115,7 +115,7 @@ export class RetainedInterfaces {
     const syntax=cloneBindingSyntax(bindingSyntaxView(carrier.syntax,tree),this.table,[...owner,"telescope"],
       {expansion:{kind:"generation",site:origin}}).syntax;
     const entry=Object.freeze({id:binding.id,label,kind:"evidence",binding,syntax,recursive:false,
-      lexical:this.context.snapshot(),interface:Object.freeze(this.#interface()),of:carrier.id,evidence:predicate});
+      interface:Object.freeze(this.#interface()),of:carrier.id,evidence:predicate});
     this.entries.push(entry);this.context=this.context.bind(label,bindingResolution(binding.id));
     return entry;
   }
@@ -123,16 +123,16 @@ export class RetainedInterfaces {
     return [...(this.header?.tree.params??[]).flatMap(p=>p.name.bindingId?[p.name.bindingId]:[]),
       ...this.entries.map(entry=>entry.id)];
   }
-  #mapped(entry,correspondence,syntax=entry.syntax) {
+  #requireCorrespondence(entry,correspondence) {
     for(const id of entry.interface)if(!correspondence.has(id))
       throw new TypeError(`An inherited interface is missing a correspondence for ${this.table.get(id).label}.`);
-    return remapBindingSyntax(syntax,this.table,correspondence);
+    validateBindingCorrespondence(entry.syntax,this.table,correspondence);
   }
   // Inheritance supplies the actual parent-to-child open-interface map.
   // Each member's own telescope gets fresh locals, preserving its authored
   // origins. Public renaming affects only the new field's label.
   inherit(entry,correspondence,{label=entry.label,site}={}) {
-    this.#mapped(entry,correspondence);
+    this.#requireCorrespondence(entry,correspondence);
     const owner=[...this.owner,"member",String(this.#next++)];
     const expansion=site?{kind:"inheritance",site:sourceOrigin(site)}:undefined;
     const origin=expansion?expandedOrigin(entry.binding.origin,expansion):entry.binding.origin;
@@ -146,7 +146,6 @@ export class RetainedInterfaces {
     const map=new Map(correspondence).set(entry.id,binding.id);
     const cloned=cloneBindingSyntax(entry.syntax,this.table,[...owner,"telescope"],{expansion});
     const syntax=remapBindingSyntax(cloned.syntax,this.table,map);
-    const resolution=value=>mapResolution(value,id=>map.get(id)??id);
     // Only the canonical interface and its structural metadata inherit.
     // Analysis/checking views and generated projection IDs belong to the
     // parent's artifacts and must be rebuilt for the child correspondence.
@@ -154,8 +153,7 @@ export class RetainedInterfaces {
       .filter(key=>Object.hasOwn(entry,key)).map(key=>[key,entry[key]]));
     const inherited=Object.freeze({...metadata,id:binding.id,label,binding,syntax,
       ...(entry.of?{of:map.get(entry.of)??entry.of}:{}),
-      interface:Object.freeze(this.#interface()),
-      lexical:Object.freeze(entry.lexical.map(([label,value])=>Object.freeze([label,Object.freeze(resolution(value))])))});
+      interface:Object.freeze(this.#interface())});
     this.entries.push(inherited);this.context=this.context.bind(label,bindingResolution(binding.id));
     correspondence.set(entry.id,binding.id);
     return inherited;
@@ -175,7 +173,8 @@ export class RetainedInterfaces {
       const {name,...tree}=entry.syntax.tree;
       const syntax=entry.kind==="derived"?bindingSyntaxView(entry.syntax,tree):interfaceSignature(entry);
       const map=new Map(correspondence).set(entry.id,[...assigned][0]??first.entry.id);
-      return this.#mapped(entry,map,syntax);
+      this.#requireCorrespondence(entry,map);
+      return remapBindingSyntax(syntax,this.table,map);
     };
     const expected=signature(first);
     for(const candidate of candidates.slice(1)) {

@@ -1,5 +1,5 @@
 // Repeatable contract mutations in an isolated copy, never the working tree.
-// node tools/frontend-generation-mutations.mjs REPORT.json [--audit] [ID...]
+// node tools/frontend-generation-mutations.mjs REPORT.json [ID...]
 import {mkdtemp,cp,readFile,writeFile,rm,mkdir,readdir} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
@@ -9,13 +9,12 @@ import {createHash} from "node:crypto";
 import {testResults,mutationOutcome} from "./frontend-test-results.mjs";
 
 const root=fileURLToPath(new URL("../",import.meta.url));
-const args=process.argv.slice(2),destination=args.shift(),audit=args.includes("--audit");
-const selected=args.filter(arg=>arg!=="--audit");
-if(!destination)throw Error("Usage: node tools/frontend-generation-mutations.mjs REPORT.json [--audit] [ID...]");
-const mutation=(id,file,from,to,test,pattern,expected="killed")=>({id,file,from,to,test,pattern,expected});
+const [destination,...selected]=process.argv.slice(2);
+if(!destination)throw Error("Usage: node tools/frontend-generation-mutations.mjs REPORT.json [ID...]");
+const mutation=(id,file,from,to,test,pattern)=>({id,file,from,to,test,pattern});
 // Mutate the production boundaries of four shared contracts. A missing
 // site or a broken baseline never counts as a killed mutant.
-export const mutations=[
+const mutations=[
   mutation("reference-spelling","web/cubist/binding-syntax.mjs",
     "const name = adapter.lower(node.resolution, outcomes, options);", "const name = node.spelling;",
     "retained-production","ordinary source and imported inheritance"),
@@ -29,7 +28,7 @@ export const mutations=[
     "frontend-publication","G7:"),
 ];
 for(const id of selected)if(!mutations.some(m=>m.id===id))throw Error(`Unknown mutation ${id}`);
-const chosen=mutations.filter(m=>(audit||m.expected==="killed")&&(!selected.length||selected.includes(m.id)));
+const chosen=mutations.filter(m=>!selected.length||selected.includes(m.id));
 const directory=await mkdtemp(join(tmpdir(),"cubist-generation-mutations-"));
 const report={version:2,adoptedFrom:"49499aa1c56c1b345eb0021468123cec377fb4b8",dirty:!!execFileSync("git",["status","--porcelain"],{cwd:root,encoding:"utf8"}).trim(),revision:execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim(),
   limits:{processMs:60000,testMs:45000,maxBufferBytes:8*1024*1024,checker:"unchanged defaults",cases:8},mutations:[]};
@@ -60,12 +59,12 @@ try {
     const reducedCases=await Promise.all((await readdir(failures).catch(error=>{
       if(error.code==="ENOENT")return [];throw error;
     })).map(async name=>JSON.parse(await readFile(join(failures,name),"utf8"))));
-    const entry={...m,sourceDigest:hash(original),...classification,status:result.status,error:result.error,
+    const entry={...m,expected:"killed",sourceDigest:hash(original),...classification,status:result.status,error:result.error,
       distinguishingTests:originalTests.passed,reducedCases,events:testResults(result).events??[],stderr:result.stderr};
     report.mutations.push(entry);
     await rm(failures,{recursive:true,force:true});
-    console.log(`${m.id}: ${outcome} (expected ${m.expected})`);
-    if(outcome!==m.expected)process.exitCode=1;
+    console.log(`${m.id}: ${outcome} (expected killed)`);
+    if(outcome!=="killed")process.exitCode=1;
     await mkdir(resolve(destination,".."),{recursive:true});
     await writeFile(resolve(destination),JSON.stringify(report,null,2)+"\n");
   }
