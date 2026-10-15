@@ -75,5 +75,15 @@ binder labels in expected `theory_variance` output; those comments now match.
 The mutation runner's copy filter now checks paths relative to the checkout,
 so a worktree nested under `build` is not skipped entirely. Running the actual
 mutation gate in that worktree verifies the fix without adding configuration.
-External review will use the committed implementation and stop at a clean round,
+External review uses the committed implementation and stops at a clean round,
 with up to eight rounds when real findings warrant them.
+
+Round 1 found no semantic defects and two small remnants of the textual path.
+The unused parent field-name list is deleted; generated internal locals now
+reuse one display label per stem while retaining fresh IDs. Public parameters
+and universes keep distinct labels, as their named interfaces require. The
+first unrestricted label cache failed existing collision controls; the corrected
+role distinction passes all 133 focused tests. Final frozen validation again
+passes 1,210 of 1,222 tests, with 12 later-package TODOs and zero failures;
+all 3,857 canonical checks pass and all four mutations are killed. Round 2
+will review this small cleanup delta.

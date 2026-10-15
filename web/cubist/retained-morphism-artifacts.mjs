@@ -30,7 +30,12 @@ export function retainedMorphismArtifacts(record,{table,owner,bindings,isTheory=
     ...[...plan.operations.values()].flatMap(op=>op.inputs.map(p=>p.name)),
     ...[...families.values()].flatMap(indices=>indices.map(p=>p.name))]);
   const avoided={has:name=>name===record.name||isTheory(name)||taken.has(name),add:name=>taken.add(name)};
-  const local=(stem,role="local")=>builder.local(freshName(stem,avoided),origin,role);
+  const labels=new Map();
+  const local=(stem,role="local")=>{
+    if(role!=="local")return builder.local(freshName(stem,avoided),origin,role);
+    if(!labels.has(stem))labels.set(stem,freshName(stem,avoided));
+    return builder.local(labels.get(stem),origin,role);
+  };
   const A=local("A","parameter"),B=local("B","parameter"),C=local("C","parameter");
   const f=local("f","parameter"),g=local("g","parameter");
   const count=record.universeIds.length;
