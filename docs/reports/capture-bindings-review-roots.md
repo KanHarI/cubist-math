@@ -401,3 +401,12 @@ Corrected validation: 133/133 focused tests; the full run passes 1,210 of
 1,222 tests with 12 later-package TODOs and zero failures. All 3,857 canonical
 checks pass and all four production mutations are killed. Source/tests were
 frozen throughout the final gates.
+
+## CB4 external review, round 2 — clean
+
+Claude reviewed `f2dd9212` against `285f7223`. Both cleanup findings are fixed,
+with no new actionable findings. Named public parameters remain unchanged;
+internal equal-label binders retain distinct IDs and print without capturing
+globals. A 24-file before/after comparison preserves verdicts, types and
+output modulo the intended internal-label changes. The source head and full
+validation remain unchanged. Stop at round 2; no speculative fixes follow.

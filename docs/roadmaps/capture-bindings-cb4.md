@@ -1,7 +1,7 @@
 # CB4: generated artifacts
 
 Status: implemented and validated on `cb4-artifact-builder`, stacked on CB3
-#236, whose fifth review is clean. External CB4 review is next. CB5–CB7 remain
+#236, whose fifth review is clean. CB4's second review is clean. CB5–CB7 remain
 subsequent packages.
 
 ## Contract
@@ -85,5 +85,10 @@ and universes keep distinct labels, as their named interfaces require. The
 first unrestricted label cache failed existing collision controls; the corrected
 role distinction passes all 133 focused tests. Final frozen validation again
 passes 1,210 of 1,222 tests, with 12 later-package TODOs and zero failures;
-all 3,857 canonical checks pass and all four mutations are killed. Round 2
-will review this small cleanup delta.
+all 3,857 canonical checks pass and all four mutations are killed.
+
+Claude's round 2 reviewed source head `f2dd9212` and found no actionable
+findings. It confirmed both cleanup fixes, unchanged named interfaces and
+capture-free checking and display for nested equal-label binders. Its 24-file
+comparison found the same verdicts, types and output after accounting for the
+intended internal-label changes. Review stops clean at round 2 of eight.
