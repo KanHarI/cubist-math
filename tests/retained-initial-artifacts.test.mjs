@@ -11,7 +11,7 @@ import {bindingResolution,sourceOrigin} from "../web/cubist/bindings.mjs";
 import {resolveBindingSyntax,bindingUses} from "../web/cubist/binding-syntax.mjs";
 import {retainTheorySource} from "../web/cubist/retained-theories.mjs";
 import {retainedTheoryArtifacts,retainedMorphismArtifacts} from "../web/cubist/retained-theory-artifacts.mjs";
-import {retainedInitialDeclarations} from "../web/translator/retained-initial-models.mjs";
+import {retainedInitialDeclarations} from "../web/translator/initial-models.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 

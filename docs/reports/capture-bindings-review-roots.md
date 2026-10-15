@@ -109,3 +109,49 @@ Validation after applying the cleanup to completed CB2: `npm test` passed
 with 1,193 tests, 1,177 passes, 16 documented later-phase TODOs and no
 failures. All 3,857 canonical checks passed. The targeted cleanup suite
 passed all 102 tests, and all four production mutation checks were killed.
+
+
+## Expanded cleanup after production integration
+
+The first simplification pass was too narrow: it removed metadata while leaving
+whole superseded producers behind. This repeats the second review root above:
+consumers can independently reconstruct a source decision. Once CB2's retained
+producers became the default and their clients passed, keeping both producers
+and propagating a mode switch through replay no longer protected a migration
+boundary. It kept a second implementation of that boundary alive.
+
+The expanded cleanup removes the nominal theory and initial/free generators,
+nominal named-rule capture, the lexical capture service and its duplicate
+private environment keys, and the separate model-operand descriptor interpreter.
+Theory, initial/free and named-notation source entry now have one implementation.
+Replay uses the same implementation without producer-mode switches. Hom shape
+planning and proposition classification consume retained identities directly;
+their nominal/retained symbol adapters disappear. Initial source retention and
+checked-argument elaboration share one module instead of importing each other.
+The reference transformation tests remain, and source-resolution assertions now
+exercise the retained resolver. No semantic positive or negative client was
+removed to make this cleanup pass.
+
+Following removed producers to their consumers also exposed diagnostic strings
+that the old producer alone kept visible to the catalogue scanner. Active
+namespace and notation failures keep their codes; only the gone implementations
+are retired. Missing literal/numeral readers report their source import advice,
+and a refused model extension keeps its original diagnostic and publication
+behavior. New controls check these user-visible boundaries.
+
+The audit also examined CB0's witness controls, mutation/shrinking and cost
+records, and CB1's observation frames, scope descriptions and replay ownership.
+Those mechanisms have separate tested responsibilities: semantic client
+comparisons, failure classification, deterministic work accounting, discarded
+attempt isolation, bounded DAG serialization and full-prefix reconstruction.
+The cleanup removes duplicate registration and mode propagation around them;
+it does not replace those guarantees with unverified shortcuts. Historical
+source rewriting remains isolated, and the Hom/Iso template adapter remains
+until CB4 replaces the actual template producer. The small generated model
+numeral rule remains because model numerals still consume it.
+
+Expanded validation on frozen source: `npm test` passed 1,178 of 1,194 tests,
+with the same 16 later-phase TODOs and zero failures. All 3,857 canonical checks
+passed. All four production mutations were killed. The targeted retirement and
+recipe suites passed 83/83 and 55/55 tests, respectively; both explicit notation
+diagnostic controls passed. External Claude review has not yet run.

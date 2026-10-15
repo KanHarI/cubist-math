@@ -34,7 +34,6 @@ import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroup
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
-import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
@@ -89,8 +88,7 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,
-    retainedNotations=true,retainedTheories=true}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null}={}) {
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
     if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
@@ -101,8 +99,6 @@ export class Translator {
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
     // scope. Only the migration verifier reads one (legacy-syntax.mjs).
     this.nameBased=nameBased;
-    this.retainedNotations=retainedNotations;
-    this.retainedTheories=retainedTheories;
     // A declared type's signature as `print(inspect(T));` shows it, from the
     // program that admitted it (web/cubical-program.mjs).
     this.inspectSignature=inspectSignature;
@@ -153,8 +149,7 @@ export class Translator {
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
     return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,
-      moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,retainedNotations:this.retainedNotations,
-      retainedTheories:this.retainedTheories,
+      moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
   reference(scope,node,term,env=scope.env) {
@@ -441,7 +436,7 @@ export class Translator {
     const unavailable=(group,via)=>{
       for(const declaration of group.members)for(const {name} of declaredNames(declaration)) {
         const value=untranslated(name,this.checker.bindingName?.(name)??name,`Untranslated dependency: ${via}`,group.cause);
-        this.publishDeclaration(env,name,value);env.set(lexicalBinding(value.binding),value);
+        this.publishDeclaration(env,name,value);
       }
     };
     const finishPublication=(accept,failed=null)=>{
@@ -482,7 +477,7 @@ export class Translator {
       const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
       const bind=name=>{
         const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
-        this.publishDeclaration(env,name,value);env.set(lexicalBinding(value.binding),value);
+        this.publishDeclaration(env,name,value);
       };
       for(const member of members)for(const {name} of declaredNames(member))
         if(ownership.owns(name,d))bind(name);
@@ -765,7 +760,6 @@ export class Translator {
         const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
         publish(d,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
       }
-      if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
       settle(queue);
     }
     return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
@@ -1046,7 +1040,6 @@ export class Translator {
     if(n.kind==="call")n={...n,fn:resolve(n.fn)};
     if(n.kind==="reference")n=elaborationSyntax(n);
     else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
-    if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
     const result=this.termBody(n,scope,expected);
     if(scope.unit.references) {
       const {env,unit}=scope;
@@ -1358,10 +1351,6 @@ export class Translator {
       }
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
       case "useScope": return this.term(n.body,usesScope(this,scope,n.uses,{effects:n.effects}),expected);
-      // Copied theory syntax keeps its selected notation, while term and
-      // universe binders come from the generated declaration's current scope.
-      // It has no source links here, including syntax a captured rule expands.
-      case "notationScope":
       // An operand of a notation's rule, read where it stood (L2.10a).
       case "scoped":
       case "boundNotation":

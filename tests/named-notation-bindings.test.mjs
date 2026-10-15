@@ -290,17 +290,16 @@ test("lazy rule operands enter caller scope for interval and universe consumers"
   assert.equal(equal("universe_value","Reader(U0)"),true);
 });
 
-test("the named-rule producer and isolated replay use the same migration policy and receipts",async t=>{
+test("named-rule receipts survive isolated replay",async t=>{
   const library=sourceReader();
   const source=`import nat;
     notation increment { numeral(n : Nat) := succ(n); }
     def source_value : Nat := increment.(0);
     def anchor(x : Nat) : Nat := x;`;
-  const program=new CubicalProgram(wasm,library,{retainedNotations:true,collectScopes:true});
+  const program=new CubicalProgram(wasm,library,{collectScopes:true});
   t.after(()=>program.dispose());
   const result=await program.check(source,"main");
   assert.deepEqual(result.gaps,[],JSON.stringify(result.gaps));
-  assert.equal(program.scopeReplay.snapshot().retainedNotations,true);
   const points=[...program.scopePoints.values()].filter(point=>point.origin.module==="main"
     &&point.origin.start===source.lastIndexOf("x;")&&point.phase==="expression");
   assert.equal(points.length,1);
@@ -336,4 +335,20 @@ test("nested rule expansion preserves both producer sites and the outer caller",
     [inner.artifact.binding.id,"recipe_source"],[outer.artifact.binding.id,"client"]]);
   assert.equal(source.slice(origin.expansion.at(-1).site.start,origin.expansion.at(-1).site.end),"left_ * right_");
   assert.ok(origin.expansion.every(frame=>frame.site.expansion.length===0));
+});
+
+
+test("missing notation readers keep their source diagnostics",async t=>{
+  for(const [rule,code,advice] of [
+    ["numeral(n : Nat) := n;","E847","import nat"],
+    ["literal(s : Lexeme) := s;","E844","import lexemes"],
+  ]) {
+    const program=new CubicalProgram(wasm,async()=>"");t.after(()=>program.dispose());
+    const source=`notation incomplete { ${rule} }
+def independent : Unit := tt;`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
+    assert.ok(result.gaps[0].reason.includes(advice));
+    assert.ok(result.outputs.find(output=>output.name==="independent").verified);
+  }
 });

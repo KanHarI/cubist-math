@@ -8,7 +8,7 @@ import {bindingSyntaxView} from "./binding-syntax.mjs";
 import {bindingResolution,reservedResolution,sourceOrigin} from "./bindings.mjs";
 import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped} from "./scopes.mjs";
-import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
+import {notAProposition} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
 import {retainFieldNotation,retainOperandRecipe} from "./retained-notation.mjs";
 import {notationKey,notationViews} from "./theory-notation.mjs";
@@ -123,7 +123,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     byIdentity.set(entry.id,{...full,type:views.analysis.tree});
     if(item.kind==="law") {
       const data=notAProposition(views.analysis.tree,byIdentity,proposition,
-        header.tree.params.map(p=>p.name.bindingId),retainedPropositionSymbols);
+        header.tree.params.map(p=>p.name.bindingId));
       if(data)throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, a type declared at prop, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`),data.node.origin??data.node);
     }
     if(item.kind==="sort") {

@@ -264,8 +264,7 @@ export class CubicalProgram {
       this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
         probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null,compilation:this.compilationBindings});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
-        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences,
-        retainedNotations:this.options.retainedNotations??true,retainedTheories:this.options.retainedTheories??true});
+        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
     }
     const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
@@ -329,8 +328,6 @@ export class CubicalProgram {
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
-        retainedNotations:this.options.retainedNotations??true,
-        retainedTheories:this.options.retainedTheories??true,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
           this.scopeReplay.record("directive-start",name,directive,this.kernel);

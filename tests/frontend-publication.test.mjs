@@ -236,6 +236,7 @@ notation n { x + y := add(x, y); }
 def after : n.M := n.(8);`);
   assert.equal(result.gaps.length, 1);
   assert.equal(result.gaps[0].directive, true);
+  assert.equal(result.gaps[0].code,"E843");
   assert.match(result.gaps[0].reason, /adds only a numeral or a literal rule/);
   assert.equal(result.complete, false);
   for(const name of ["n","selected","after"])assert.equal(get(name).verified,true);

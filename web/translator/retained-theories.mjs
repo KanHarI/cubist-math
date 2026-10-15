@@ -24,7 +24,7 @@ export function retainedTheoryDeclarations(t,module,declaration,env,{lookup,isTh
   const built=retainedTheoryArtifacts(retained,{table,owner:[...owner,"base"]});
   const morphisms=retainedMorphismArtifacts(built.record,{table,owner:[...owner,"morphisms"],
     bindings:built.bindings,isTheory});
-  const record={...morphisms.record,reference:inputs.adapter.key(built.bindings.get(declaration.name.text).id)};
+  const record=morphisms.record;
   built.artifacts[0].theory=record;
   const requires=[...new Set(record.fields.filter(field=>field.evidence).map(field=>field.evidence))];
   const declarations=[...built.artifacts,...morphisms.artifacts].map(({binding,syntax,...metadata})=>

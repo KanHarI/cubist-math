@@ -43,8 +43,9 @@ Validation: `npm test`: 1,193 tests, 1,177 passed, 16 documented later-phase TOD
 - CB5 finishes lint, binding-faithful generated views and contextual diagnostics.
 - CB6 delivers the arbitrary-context REPL; the isolated replay pilots are already
   present but do not constitute that release.
-- CB7 retires the explicit nominal producer switches and remaining compatibility
-  paths. Retained resolution never falls back to the nominal path on failure.
+- CB7 audits remaining compatibility paths and completes release evidence.
+  The cleanup removes the superseded theory, initial/free and named-notation
+  producers and their switches; those migrated families have one source path.
 
 All eight authorized external CB2 review rounds were used. Later integration
 checks are implementation validation, not a ninth external review or a claim of
@@ -52,5 +53,7 @@ an externally approved final head. The cross-round design analysis is recorded
 in [review obligations](../reports/capture-bindings-review-roots.md).
 
 The CB0–CB2 overengineering cleanup is a separate PR stacked on CB2. It removes
-obsolete snapshots, forwarding APIs, duplicate validation work and passive
-metadata without changing these contracts.
+superseded producers and receiver interpreters, their mode switches and capture
+keys, obsolete snapshots, forwarding APIs and duplicate validation work.
+Historical source rewriting remains isolated in `legacy-syntax.mjs`; the
+Hom/Iso template boundary and deferred-scope contracts remain for CB3/CB4.

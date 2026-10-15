@@ -124,7 +124,7 @@ export const UNBINDING = new Set([
   "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationScope", "notationReceiver", "notationRule", "boundNotation", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall", "templateHole",
+  "useScope", "notationReceiver", "notationRule", "boundNotation", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall", "templateHole",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",
@@ -168,7 +168,6 @@ const isToken = value => typeof value?.text === "string" && !value.kind;
 // nor a notation rule's closed aliases participate in syntax substitution.
 const captured = (node, key) => sourceMetadata(key,node[key]) || node.kind === "instantiated" && key === "value"
   || node.kind === "rawNumeral" && key === "natural"
-  || node.kind === "notationScope" && key === "aliases"
   || node.kind === "scoped" && ["node", "scope"].includes(key)
   || node.kind === "bindingReference" && ["resolution", "origin", "substitutions"].includes(key);
 

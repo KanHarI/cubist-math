@@ -17,7 +17,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const described = kind => BINDING.has(kind) || UNBINDING.has(kind);
 
 test("every kind of node the parser and the theory expansion write is described", () => {
-  for (const file of ["web/cubist/parser.mjs", "web/cubist/theories.mjs", "web/cubist/morphisms.mjs", "web/cubist/tuples.mjs"])
+  for (const file of ["web/cubist/parser.mjs", "web/cubist/morphisms.mjs", "web/cubist/tuples.mjs"])
     for (const [, kind] of readFileSync(root + file, "utf8").matchAll(/kind: *"([A-Za-z_]+)"/g))
       assert.ok(described(kind), `${kind} (${file}) is in scopes.mjs, as binding or not`);
 });

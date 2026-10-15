@@ -8,8 +8,8 @@ import {parameterForalls} from "./telescopes.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
   "notation","uses","computable","keyword","levelToken","start","end","origin","typedValue","valueStart","valueEnd","modifierStart","implicitParameters"]);
-export const parentNamespaceFailure=(theory,{description,namespace,member})=>
-  `${description}, ${theory}'s parent ${namespace}, has no field ${member}.`;
+export const parentNamespaceFailure=(theory,failure)=>
+  `${failure.description}, ${theory}'s parent ${failure.namespace}, has no field ${failure.member}.`;
 export class InheritedInterfaceConflict extends TypeError {
   constructor(label) {
     super(`Inherited interfaces for ${label} have different origins, kinds or instantiated types.`);

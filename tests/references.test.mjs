@@ -3,7 +3,17 @@ import assert from "node:assert/strict";
 import {parse} from "../web/cubist/parser.mjs";
 import {reference, elaborationSyntax} from "../web/cubist/references.mjs";
 import {rewritten, freeNames, fixedBinders, renamedFree, substituted, relocated} from "../web/cubist/scopes.mjs";
-import {capturedNames} from "../web/translator/lexical.mjs";
+import {BindingTable,LexicalContext,bindingResolution,sourceOrigin} from "../web/cubist/bindings.mjs";
+import {resolveBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+
+const resolved=(tree,labels)=>{
+  const table=new BindingTable("reference-tests"),source={revision:table.revision,module:"main"};
+  const context=new LexicalContext(labels.map(label=>{
+    const binding=table.allocate(["declarations"],{role:"declaration",label,origin:sourceOrigin({...source,start:0,end:1})});
+    return [label,bindingResolution(binding.id)];
+  }));
+  return resolveBindingSyntax(tree,{table,context,source,owner:["source"]}).tree;
+};
 
 const expression = source => parse(`def result := ${source};`).declarations[0].value;
 const refs = node => {
@@ -13,8 +23,8 @@ const refs = node => {
 };
 
 test("declaration identities survive every syntax transformation independently of spelling", () => {
-  const env = new Map([["g", {tag: "DefRef", name: "module__g"}]]);
-  const captured = capturedNames(expression("g(x)"), env);
+  const captured = rewritten(expression("g(x)"),node=>node.kind==="name"&&node.name==="g"
+    ?reference("module__g","g",node):node);
   const identities = refs(captured);
   assert.equal(identities.length, 1);
   assert.deepEqual([...freeNames(captured)], ["x"]);
@@ -30,16 +40,16 @@ test("declaration identities survive every syntax transformation independently o
 });
 
 test("local and captured receivers have structural field selections", () => {
-  const env = new Map([["T", {tag: "DefRef", name: "module__model"}]]);
-  const local = capturedNames(expression("fun (T : Unit) => T.M"), env);
+  const local = resolved(expression("fun (T : Unit) => T.M"),["T"]);
   assert.equal(local.body.kind, "member");
-  assert.equal(local.body.value.name, "T");
+  assert.equal(local.body.value.resolution.id,local.name.bindingId);
   assert.equal(local.body.field.text, "M");
   assert.deepEqual(refs(local), []);
-  const global = capturedNames(expression("T.parent.M"), env);
+  const global = resolved(expression("T.parent.M"),["T"]);
   assert.equal(global.kind, "member");
   assert.equal(global.value.kind, "member");
-  assert.equal(global.value.value.kind, "reference");
+  assert.equal(global.value.value.kind, "bindingReference");
+  assert.equal(global.value.value.resolution.tag,"binding");
   assert.deepEqual([...freeNames(global)], []);
 });
 
@@ -66,11 +76,11 @@ test("a captured syntax closure is opaque to caller substitution and relocation"
 test("parameter telescopes expose only earlier groups, and never their own shared domain", () => {
   const declaration = parse("def f(A, x : A, y : x) : Unit := tt;").declarations[0];
   assert.deepEqual([...freeNames(declaration)].sort(), ["A", "Unit", "tt"]);
-  const captured = capturedNames(declaration, new Map([["A", {tag: "DefRef", name: "module__A"}]]));
-  assert.equal(captured.params[0].type.kind, "reference");
-  assert.equal(captured.params[1].type.kind, "reference");
-  assert.equal(captured.params[2].type.kind, "name");
-  assert.equal(captured.params[2].type.name, "x");
+  const captured = resolved(declaration,["A"]);
+  assert.equal(captured.params[0].type.kind, "bindingReference");
+  assert.equal(captured.params[0].type,captured.params[1].type);
+  assert.notEqual(captured.params[0].type.resolution.id,captured.params[0].name.bindingId);
+  assert.equal(captured.params[2].type.resolution.id,captured.params[1].name.bindingId);
   const dependent = parse("def f(x : Unit, y : hole) : Unit := tt;").declarations[0];
   assert.throws(() => substituted(dependent, new Map([["hole", expression("x")]]), name => Error(`capture ${name}`)), /capture x/);
 });

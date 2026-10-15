@@ -20,7 +20,6 @@ export function enterExpressionScope(translator,scope,node) {
     case "select":return {node:node.body,scope:selected(translator,scope,node.model,
       {effects:node.effects,activation:node.activation})};
     case "scoped":return {node:node.node,scope:node.scope};
-    case "notationScope":return {node:node.body,scope:scope.withUnit(scope.unit.with({references:null})).aliases(node.aliases)};
     case "boundNotation": {
       const reference=node.selection.kind==="bindingReference"
         ?lowerBindingReference(node.selection,scope.unit.bindingAdapter,scope.slotOutcomes):node.selection;

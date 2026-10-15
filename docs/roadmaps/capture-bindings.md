@@ -390,26 +390,13 @@ notation. A later complete selection replaces the earlier selection even when
 it lacks an operator. Named extensions must add their rule identity to this
 semantic key before their migration gate opens.
 
-The temporary nominal model producer must also close exported operand recipes.
-Its display labels are not executable receiver references: the selection
-boundary uses captured source references or explicit header, field and parent
-descriptors. Inheritance interprets the original recipe over the actual parent
-projection, preserving header substitution and renaming. Resolve these
-descriptors only when an operand consumes its recipe, so an unused failed
-helper cannot prevent selecting healthy fields. Receiver elaboration and its
-generated projections use the receiver's observation scope; only the resulting
-notation effect enters the caller. The operand keeps the caller's bindings
-and reference recorder. The selection boundary also keeps its caller use site
-separate from the captured receiver, so a rejected receiver cannot report an
-offset from the producer against the caller's document. This boundary does
-not migrate named rule bodies or the nominal producer's internal textual
-expansion paths.
-
-Shared notation validation returns both the operator and its operand views.
-Both producers honor explicit views on family notation, correcting the
-nominal producer's previous omission. Elaborating a retained receiver must
-not record its authored offsets as links in the caller's document; suppress
-those observations while preserving the caller operand's reference recorder.
+Operand recipes retain their receiver syntax and source identities. Resolve
+those receivers only when an operand consumes its recipe, so an unused failed
+helper cannot prevent selecting healthy fields. Receiver elaboration uses its
+source binding environment without recording producer offsets as caller links;
+the operand keeps the caller's bindings and reference recorder. The selection
+boundary keeps the caller use site separate from the captured receiver.
+Shared notation validation preserves explicit operand views on family notation.
 
 Inheritance carries the operation ID and both operand recipes through the
 same parent-to-child correspondence. Sharing a notation requires all three
@@ -741,7 +728,7 @@ boundaries, not repeated approval checkpoints.
 | CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. |
 | CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. |
 | CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work. Multiple selected instances are labelled separately; discarded attempts cannot be opened. Sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
-| CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; remove retained nominal-syntax fallbacks. | Remove capture-only E801/E860/E869/E871 implementations and E866 workaround; retire catalogue entries without reusing codes. Record the isolated historical adapter and complete release evidence. |
+| CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; verify retirement of migrated paths. | Verify the cleanup’s removal of capture-only E801/E860/E869/E871 implementations and the E866 workaround; preserve retired codes without reuse. Record the isolated historical adapter and complete release evidence. |
 
 CB3's ambiguous pattern slot is the risk to prototype during CB1, before
 spreading the representation to every generator. Scope-point replay is the
