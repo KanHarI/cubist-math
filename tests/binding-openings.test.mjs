@@ -142,6 +142,24 @@ test("retained selected operators bind notation separately from caller names and
   assert.equal(JSON.stringify(declarations.slice(0,5)),JSON.stringify(JSON.parse(original).slice(0,5)));
 });
 
+test("qualified model operations retain their source receiver and surrounding operand notation",async t=>{
+  const {retain,check}=await setup(t,operatorModels);
+  const declarations=[
+    "def direct : Two := left_ leftOps.(+) right_;",
+    "def operation : Two -> Two -> Two := leftOps.(+);",
+    "def negated : Two := leftOps.(-) left_;",
+    "def surrounding : Two := rightOps.((left_ + right_) leftOps.(+) left_);",
+  ].map(retain);
+  const {result,equal}=check(declarations,"def leftOps : Arithmetic(U0) := rightOps;");
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  assert.equal(equal("direct","left_"),true);assert.equal(equal("direct","right_"),false);
+  assert.equal(equal("operation","fun (a, b : Two) => a"),true);
+  assert.equal(equal("operation","fun (a, b : Two) => b"),false);
+  for(const name of ["negated","surrounding"]) {
+    assert.equal(equal(name,"right_"),true,name);assert.equal(equal(name,"left_"),false,name);
+  }
+});
+
 test("retained numeral uses keep their reader and Nat through operand recipes and destination shadowing",async t=>{
   const {retain,check}=await setup(t,`
     theory Numeric(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }

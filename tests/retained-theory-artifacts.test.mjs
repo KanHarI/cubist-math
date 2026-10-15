@@ -60,6 +60,25 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;",base="") {
 }
 const failures=result=>result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]);
 
+test("qualified parent operators retain their interface through inheritance and notation-name collisions",async t=>{
+  const {buildSource,check}=await setup(t,undefined,"notation p { x + y := x; }");
+  const parent=buildSource("theory P(U < UU0) { M : U; add(a, b : M) : M notation a + b; }");
+  const child=buildSource(`theory C(U < UU0) extends p : P(M := N) {
+    def selected(a, b : N) : N := a p.(+) b;
+    def operation : N -> N -> N := p.(+);
+  }`);
+  const grandchild=buildSource("theory D(U < UU0) extends c : C(N := K) {}");
+  const {result,equal}=check({declarations:[...parent.declarations,...child.declarations,...grandchild.declarations]},`
+    def instance_ : D(U0) := D.make(Two, fun (a, b : Two) => b);
+    def selected_value : Two := instance_.selected(left_, right_);
+    def bare_value : Two := instance_.operation(left_, right_);
+  `,"def p : Unit := tt;");
+  assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
+  for(const name of ["selected_value","bare_value"]) {
+    assert.equal(equal(name,"right_"),true,name);assert.equal(equal(name,"left_"),false,name);
+  }
+});
+
 test("retained base artifacts and derived telescopes preserve source IDs through the real declaration queue",async t=>{
   const {retained,add,build,check}=await setup(t);
   add("def M : U := Unit;","sort");
