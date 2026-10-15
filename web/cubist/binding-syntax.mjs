@@ -1,7 +1,5 @@
-// Explicit migration boundary for ordinary binding-aware syntax. Later
-// packages move retained theories and goal-dependent blocks through this
-// same representation; an unmigrated family is rejected here, not retried
-// through nominal capture on failure.
+// Source entry for binding-aware syntax. Unmigrated namespaces are rejected
+// here, never retried through nominal capture on failure.
 import {scopeMapped, binderName, bindingRole,selectionEffects} from "./scopes.mjs";
 import {members} from "./references.mjs";
 import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution,
@@ -18,7 +16,7 @@ const format = "cubist-bindings-1";
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
-  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
+  "trunc", "typed", "exact", "let", "intro", "ext", "obtain", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);

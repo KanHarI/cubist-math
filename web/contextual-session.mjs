@@ -7,7 +7,6 @@ import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs} from "./translator/binding-module.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax} from "./cubist/binding-syntax.mjs";
-import {Scope} from "./translator/elaboration.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxNames} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
@@ -52,13 +51,14 @@ function copiedScope(scope,unit) {
   // Copy the maps and their mutable recursion/proof records together so
   // fixed-argument correspondences keep their internal sharing. Native
   // caches are outside these descriptions and must be re-derived.
-  const data=structuredClone({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions]});
-  return new Scope(unit,new Map(data.context),new Map(data.env),new Map(data.dimensions),scope.slotOutcomes,new Map(),new Map(scope.localSources));
+  const data=structuredClone({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions],evidence:scope.evidence});
+  return scope.with({unit,context:new Map(data.context),env:new Map(data.env),dimensions:new Map(data.dimensions),
+    sourceBindings:new Map(),localSources:new Map(scope.localSources),evidence:data.evidence});
 }
 
 function queryEnvironment(live,adapter,unit) {
   const data=structuredClone({context:[...live.scope.context],env:[...live.scope.env],values:[...live.values],
-    dimensions:[...live.scope.dimensions]});
+    dimensions:[...live.scope.dimensions],evidence:live.scope.evidence});
   const original=new Map(data.env),values=new Map(data.values),env=new Map();
   for(const [id,value] of values)env.set(adapter.key(id),value);
   // These are translator permissions, never a destination spelling lookup.
@@ -74,7 +74,8 @@ function queryEnvironment(live,adapter,unit) {
   }
   const localSources=new Map([...live.scope.localSources].flatMap(([key,source])=>live.keys.has(key)
     ?[[adapter.key(live.keys.get(key)),{...source,key:adapter.key(live.keys.get(key)),bindingId:live.keys.get(key)}]]:[]));
-  return new Scope(unit,new Map(data.context),env,new Map(data.dimensions),live.scope.slotOutcomes,new Map(),localSources);
+  return live.scope.with({unit,context:new Map(data.context),env,dimensions:new Map(data.dimensions),
+    sourceBindings:new Map(),localSources,evidence:data.evidence});
 }
 
 export class ContextualSession {

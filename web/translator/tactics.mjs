@@ -201,7 +201,7 @@ const tactics = {
       return new Transition(goal,next,[steps.abstraction(name,null)]).rebuild(t.continueBlock(first,rest,next));
     }
     if(pi.tag!=="Pi")throw Error("intro requires a dependent function goal.");
-    const name=scope.fresh(first.name.text),variable=T.variable(name);
+    const name=scope.fresh(first.name.label??first.name.text),variable=T.variable(name);
     const inner=t.sourceBinding(first.name,variable,scope.bind(name,pi.domain));
     const next=new Goal(T.app(T.lam(pi.name,pi.domain,pi.body),variable),inner);
     return new Transition(goal,next,[steps.abstraction(name,pi.domain)]).rebuild(t.continueBlock(first,rest,next));
@@ -217,7 +217,7 @@ const tactics = {
     if(!path)throw Error("ext requires equality of functions with a fixed type.");
     const pi=scope.nf(path.family);
     if(pi.tag!=="Pi")throw Error("ext requires equality of functions.");
-    const name=scope.fresh(first.variable.text),variable=T.variable(name);
+    const name=scope.fresh(first.variable.label??first.variable.text),variable=T.variable(name);
     const inner=t.sourceBinding(first.variable,variable,scope.bind(name,pi.domain));
     const output=T.app(T.lam(pi.name,pi.domain,pi.body),variable);
     const next=new Goal(T.path(scope.fresh("i"),output,T.app(path.left,variable),T.app(path.right,variable)),inner);

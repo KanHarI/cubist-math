@@ -129,6 +129,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   receiver=t.term(node,receiverScope,null),activation=null}={}) {
   const record=recordOf(t,receiverScope,receiver);
   if(!record)return null;
+  scope=scope.modelEvidence(receiver);
   const spelling=sourceName(node);
   const at={start:node.start,end:node.end};
   // All projections share this activation's checked receiver. Reading one

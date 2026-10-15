@@ -17,6 +17,7 @@ import {interval as I} from "./lattice.mjs";
 import {abstractMotive} from "./motives.mjs";
 import {Goal} from "./proof-goals.mjs";
 import {SearchFuel} from "./fuel.mjs";
+import {SearchLimit} from "./proof-rewrite.mjs";
 import {bindingStem} from "./names.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
@@ -27,6 +28,7 @@ import {enterExpressionScope} from "./expression-scopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
+const resourceFailure=error=>["fuel","budget","deadline"].includes(error?.kind)||error instanceof SearchLimit;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
@@ -111,9 +113,11 @@ function recursively(translator, scope, recursion, elaborate) {
   if (!recursion?.generalizable.some(Boolean))
     return elaborate(scope, recursion && { ...recursion, state: { varied: false, called: false } }, []);
   const first = attempt(translator, scope, recursion, [], elaborate);
+  if(resourceFailure(first.failure))return first.keep();
   if (!first.state.varied && !first.failure) return first.keep();
   const second = attempt(translator, scope, recursion,
     recursion.fixed.filter((_, i) => recursion.generalizable[i]).map(binding => binding.name), elaborate);
+  if(resourceFailure(second.failure)) {first.discard();return second.keep();}
   const selected = first.state.varied || first.failure && !second.failure ? second : first;
   (selected === first ? second : first).discard();
   return selected.keep();
@@ -335,7 +339,7 @@ function branch(translator, motive, value, scope, inner, built) {
   const {transition, renamed} = motive.introduce(motive.instance([built], inner));
   const values = new Map(renamed);
   if (value.tag === "Var") values.set(value.name, built);
-  let at = transition.next.scope.supersede(renamed.keys());
+  let at = transition.next.scope.supersede(renamed.keys()).refineEvidence(values);
   // An enclosing recursive match's calls, and the names matches took apart
   // for them.
   const enclosing = scope.env.get(RECURSIVE), current = enclosing && at.env.get(RECURSIVE);
@@ -386,10 +390,9 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   // work, even if automatic coherence replaces it. Only its observations are
   // speculative; no native checkpoint or resource counter is reset here.
   const observations = scope.unit.observations.fork("implicit-path-body");
-  let term, fits;
+  let term, primary;
   try {
     term = written(scope.withUnit(scope.unit.with({observations})));
-    fits = scope.accepts(term,clauseType);
   } catch (error) {
     propagateElaborationStop(error);
     // Without a fallback, a successfully elaborated prefix remains selected
@@ -397,9 +400,23 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
     observations.select();
     throw error;
   }
-  if (fits) { observations.select(); return term; }
-  observations.discard();
-  return automaticClause(translator,scope,clauseType,name,node,obligationProof,index);
+  try {scope.check(term,clauseType);}
+  catch(error) {
+    propagateElaborationStop(error);
+    if(error.kind!=="mismatch") {observations.select();throw error;}
+    primary=scope.unit.locate(error,source.implicitPathSite??source.body);
+  }
+  if (!primary) { observations.select(); return term; }
+  const recovery=scope.unit.observations.fork("implicit-path-coherence");
+  try {
+    const coherence=automaticClause(translator,scope.withUnit(scope.unit.with({observations:recovery})),
+      clauseType,name,node,obligationProof,index);
+    observations.discard();recovery.select();return coherence;
+  } catch(error) {
+    propagateElaborationStop(error);
+    if(resourceFailure(error)) {observations.discard();recovery.select();throw error;}
+    recovery.discard();observations.select();throw primary;
+  }
 }
 
 function writtenClause(translator, scope, { source, name, index, constructor, shape, obligationProof, node, induction }, instance, clauseType, recursion, body) {

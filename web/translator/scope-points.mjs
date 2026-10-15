@@ -166,7 +166,7 @@ export class ScopePoints {
           context:this.#mapDescription(this.#contexts,scope.context),dimensions:this.#mapDescription(this.#dimensions,scope.dimensions),
           slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
             bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}),
-          goal:snapshotSyntax(goal),expected:snapshotSyntax(expected),
+          goal:snapshotSyntax(goal),expected:snapshotSyntax(expected),evidence:snapshotSyntax(scope.evidence),
           rules:this.#ruleDescription(unit)}});
       if(this.probe)live=this.bindings(scope);
     } catch(error) {

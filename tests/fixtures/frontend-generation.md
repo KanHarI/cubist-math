@@ -100,8 +100,11 @@ changes the case's comment, and the new wording needs the same review.
   reports its failed dependency once (E340 naming `P`); an unrelated client
   checks.
 - **G8** refuses the wildcard with ordered endpoints
-  (`found t1 = t1, expected t0 = t1`) over the wildcard's body `t1`, without
-  starting a coherence search at its nonrecursive boundary.
+  (`found t1 = t1, expected t0 = t1`) over the wildcard's body `t1`.
+  CB3 reconciles the original zero-search expectation with CB1's required
+  nonrecursive S1 wildcard recovery: the attempted recovery keeps its one
+  search charge, and failure preserves the original mismatch. Skipping all
+  nonrecursive recovery would reject that existing checked S1 client.
 - **G9** freshens a law binder; every written `c` keeps its label, links to
   the binder and spans exactly the label, and `meaning` fixes the law's
   meaning. CB1's lexical-entry observation metadata fulfills this control;

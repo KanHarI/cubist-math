@@ -1,6 +1,8 @@
 # Correct capture and bindings
 
-Status: CB0–CB2 implemented, 2026-10-15; CB3–CB7 pending.
+Status: CB0–CB2 implemented, 2026-10-15; CB3 in progress; CB4–CB7 pending.
+The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
+evidence integration, remaining requirements and validation.
 The [CB2 evidence](capture-bindings-cb2.md) records production integration,
 validation and the remaining phase boundaries.
 The [CB1 evidence](capture-bindings-cb1.md) records its identity and replay

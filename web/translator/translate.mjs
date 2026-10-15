@@ -201,7 +201,7 @@ export class Translator {
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
       term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,...(node.bindingId?{bindingId:node.bindingId}: {})});
     this.reference(scope,{...node,name:label,isBinding:true},term);
-    return scope;
+    return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
   expressionScope(node,scope) {
