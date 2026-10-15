@@ -86,6 +86,16 @@ export function retainedNotationReceipt(t,artifact,scope) {
     modelBinding:artifact.model});
 }
 
+// Both rule application and an operator section enter the source rule's
+// environment. Foreign implementation offsets belong to the caller's site;
+// lazy operands still enter their own caller scopes.
+function ruleScope(scope,rule,adapter,site) {
+  const blameSite=scope.unit.blameSite??(rule.syntax.tree.origin.module!==scope.unit.moduleName
+    ?{start:site.start,end:site.end}:null);
+  return scope.withUnit(scope.unit.with({bindingAdapter:adapter,references:null,blameSite,
+    scopeUnavailable:"Notation expansion awaits its contextual observation migration."}));
+}
+
 // Each invocation owns fresh local/activation/pattern identities. Arguments
 // remain suspended in their caller scope and are elaborated only where the
 // rule consumes them, preserving macro laziness and caller name resolution.
@@ -95,9 +105,7 @@ export function appliedRetainedRule(t,scope,rule,left,right,site=left) {
   const {syntax}=cloneBindingSyntax(rule.syntax,t.compilationBindings.table,["notation-expansions",rule.binding],
     {expansion:{kind:"notation",site:source,binding:rule.binding}});
   const adapter=bindingSyntaxAdapter(syntax,t.compilationBindings.table);
-  let inner=scope.withUnit(scope.unit.with({bindingAdapter:adapter,references:null,
-    scopeUnavailable:"Notation expansion awaits its contextual observation migration."})).alias(SELECTION,null)
-    .aliases(rule.aliases??[]);
+  let inner=ruleScope(scope,rule,adapter,site).alias(SELECTION,null).aliases(rule.aliases??[]);
   for(const [index,operand] of syntax.tree.operands.entries()) {
     const node=[left,right][index];
     if(!node)throw new TypeError("A named notation rule needs every explicit operand argument.");
@@ -106,7 +114,7 @@ export function appliedRetainedRule(t,scope,rule,left,right,site=left) {
   return {node:lowerBindingSyntax(syntax,adapter,inner.slotOutcomes).value,scope:inner};
 }
 
-export function retainedRuleOperation(t,scope,rule) {
+export function retainedRuleOperation(t,scope,rule,site) {
   const adapter=bindingSyntaxAdapter(rule.syntax,t.compilationBindings.table);
   const tree=lowerBindingSyntax(rule.syntax,adapter),value=tree.value;
   const operands=tree.operands.map(token=>adapter.key(token.bindingId));
@@ -116,6 +124,5 @@ export function retainedRuleOperation(t,scope,rule) {
   // Resolution may have made that name structural; it stays an exact source
   // reference instead of being classified again from a destination label.
   if(!["bindingReference","member"].includes(rule.syntax.tree.value.fn.kind))return null;
-  return {node:value.fn,scope:scope.withUnit(scope.unit.with({bindingAdapter:adapter,references:null,
-    scopeUnavailable:"Notation expansion awaits its contextual observation migration."})).aliases(rule.aliases)};
+  return {node:value.fn,scope:ruleScope(scope,rule,adapter,site).aliases(rule.aliases)};
 }

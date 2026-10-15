@@ -7,7 +7,7 @@ import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
-import {decidePatternSlot,BindingAdapter} from "../cubist/bindings.mjs";
+import {decidePatternSlot,BindingAdapter,resolutionError} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
@@ -1185,7 +1185,8 @@ export class Translator {
         // Numeric nodes also occur as interval endpoints, consumed directly
         // by interval()/face parsing. A term without a retained reader must
         // not synthesize an ambient Nat, including in legacy mode.
-        if(scope.unit.bindingAdapter)throw scope.unit.locate(unselectedLiteral(n.text??String(n.value)),n);
+        if(scope.unit.bindingAdapter)throw scope.unit.locate(n.literalFailure?resolutionError(n.literalFailure)
+          :unselectedLiteral(n.text??String(n.value)),n);
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
         // reads none (L2.10c). A numeral rule's own natural number is raw
@@ -1380,19 +1381,9 @@ export class Translator {
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);
         if(operation.kind!=="notationRule")return tr(operation,expected);
-        if(operation.rule.syntax) {
-          const retained=retainedRuleOperation(this,scope,operation.rule);
-          if(!retained)throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
-          return this.term(retained.node,retained.scope,expected);
-        }
-        // A named notation's operator alone: the function its rule applies
-        // to the pattern's names, x + y := add(x, y).
-        const {value,left,right,aliases}=operation.rule;
-        if(value.kind!=="call"||value.args.length!==2||value.args[0].name!==left||value.args[1].name!==right||value.fn.kind!=="name")
-          throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
-        let inner=scope;
-        for(const [key,alias] of aliases)inner=inner.alias(key,alias);
-        return this.term(value.fn,inner,expected);
+        const retained=retainedRuleOperation(this,scope,operation.rule,n);
+        if(!retained)throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
+        return this.term(retained.node,retained.scope,expected);
       }
       // A generated recursive call names this declaration's recursion
       // directly, independently of a source binder hiding its namespace.

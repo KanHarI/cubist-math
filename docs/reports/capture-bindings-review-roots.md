@@ -39,7 +39,7 @@ extra rules only when that branch selects the declaring model. A standalone
 notation opens no term labels. Model captures with different rule extensions
 are distinct semantic notation contexts even when their receiver is the same.
 
-The retained theory and named-rule producers are now the default. Lazy operands used as selection
+Theory and named-rule source entry use retained producers. Lazy operands used as selection
 receivers still require a source description that preserves both their term
 and selection-namespace interpretations. Such rules are refused at retention
 until that contract is implemented; treating an already resolved term operand
@@ -196,3 +196,34 @@ Final validation after round 1: `npm test` passed 1,177 of 1,193 tests, with
 passed. All four production mutations were killed. An earlier full run had
 only a stale coverage-index test name; the corrected index passed in isolation
 and in the final full run. Source and tests were frozen throughout each run.
+
+
+## Cleanup external review, round 2
+
+Claude's review of `25c5f7ef` confirmed the first-round simplifications and
+found two diagnostic boundary errors plus two lost scope controls. The same
+source-ownership and source-decision roots apply. Imported rule bodies now
+carry a caller blame site in the existing elaboration unit; application and
+operator-section entry share that rule scope. Nested expansions keep the outer
+site, while lazy operands retain their precise caller spans. This fixes lowered
+nodes that no longer carry their authored origin, without a separate location
+service or reconstruction of source environments.
+
+Explicit parent namespace selection now determines missing-operation errors.
+Decimal syntax keeps its missing-reader error inert until used as a term,
+because the same numeric token can be an interval endpoint. That diagnostic
+uses the existing failure representation and metadata filter: its wording
+cannot change binding equality. Controls check both interval acceptance and
+comparison, imported/nested rule errors, and precise caller-operand errors.
+The retained resolver again has explicit controls for induction shadowing and
+disjoint match branches, plus unpack, path and clause-coordinate scopes. Both
+scope mutations reported by the reviewer fail the restored control.
+
+The unused sequence-region getter/array branch and the remaining nominal
+operator-section fallback are also removed. This round removes three net
+application lines. The focused suites pass 169/169; the full run below includes
+the final removal of unused sequence-region metadata.
+
+Round-2 final validation: `npm test` passed 1,181 of 1,197 tests, with
+16 existing later-phase TODOs and zero failures. All 3,857 canonical checks
+passed, and all four production mutations were killed.

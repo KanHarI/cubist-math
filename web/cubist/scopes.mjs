@@ -87,8 +87,8 @@ const SCOPES = {
   // coordinates, are variables; its patterns' arguments may be constructors.
   clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? []), ...(n.hypotheses ?? [])]),
     keys: ["body", "obligation"] },
-    // `binders` is the nominal substitution contract until CB3 migrates its
-    // consumers. Identity resolution also retains a bare head's candidate.
+    // Undecided bare heads are candidates in identity resolution; ordinary
+    // free-name traversal sees only explicit pattern arguments.
     { binders: patternArguments(n), keys: ["body", "obligation"], role: "pattern" }],
   unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"] }],
   // Declarations and a theory's items: their parameters.
@@ -128,19 +128,7 @@ export const UNBINDING = new Set([
 ]);
 export const BINDING = new Set([...Object.keys(SCOPES), ...Object.keys(STATEMENTS)]);
 
-const sequenceScope = (node, index, binders,item=node[index]) => ({binders,
-  ...(item?.kind==="use"&&item.activation?{role:"activation",effects:item.effects??selectionEffects.all}:{}),
-  // Most traversals need only the ordered boundary. Materialize the region
-  // keys only for clients which ask for them, such as nominal substitution.
-  after: index + 1, get keys() {return node.slice(index + 1).map((_, k) => index + 1 + k);}});
 export const scopesOf = (node,{deferred=false}={}) => {
-  // A sequence has scopes too: each statement binds in its later siblings,
-  // never in its own initializer. Until elaboration fixes tactic/pattern
-  // roles, these binders may not be renamed by syntax substitution.
-  if (Array.isArray(node)) return node.flatMap((item, index) => {
-    const binders = item?.kind ? statementBinders(item,{deferred}) : [];
-    return binders.length ? [sequenceScope(node, index, binders)] : [];
-  });
   if (!BINDING.has(node.kind) && !UNBINDING.has(node.kind))
     throw new TypeError("Unregistered syntax kind in scope traversal: " + node.kind);
   const scopes=deferred&&node.kind==="clause"?patternScopes(node):SCOPES[node.kind]?.(node)??[];
@@ -212,10 +200,11 @@ export function scopeMapped(node, {prepare=n=>n,enter = n => n, bind = n => n, r
     }
     if (Array.isArray(node)) {
       let inner = outer, tokens = replacements;
-      return node.map((item, index) => {
+      return node.map(item => {
         if(item&&typeof item==="object")item=prepare(item,inner);
         const binders = item?.kind ? statementBinders(item,{deferred}) : [];
-        const scope = sequenceScope(node, index, binders,item);
+        const scope={binders,...(item?.kind==="use"&&item.activation
+          ?{role:"activation",effects:item.effects??selectionEffects.all}:{})};
         if (binders.length) tokens = new Map(tokens);
         const mapped = binders.map(binder => {
           if (!tokens.has(binder)) tokens.set(binder, bind(binder, node, scope, inner));
