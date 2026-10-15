@@ -86,7 +86,7 @@ const tactics = {
         t.residual(transition.next,rewrites)}`));
     return t.conclude(first,transition,proof,()=>({
       description:`Checked rewrite using ${first.rules.map(item=>
-        unit.source.slice(item.value.start,item.value.end)).join(", ")}.`}));
+        t.writtenReference(item.value,unit)?.text??unit.text(item.value)??"a rule").join(", ")}.`}));
   },
   simpOnly(t,first,rest,goal) {
     const {scope}=goal,{unit}=scope;

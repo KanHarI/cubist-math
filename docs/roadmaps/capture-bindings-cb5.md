@@ -53,3 +53,14 @@ Hom/Iso and initial/free controls pass, including the distinguishing case where
 the old arrow rewrite loses generated capabilities. Both G5 fixtures pass in
 strict mode; their exemptions are retired. The focused generation/provenance/
 lint run passes 49/49. This is not yet full CB5 validation or completion.
+
+The next checkpoint carries structured diagnostics through the existing
+source-unit/result boundaries: code, binding parameters, failure kind and
+module-qualified primary/related spans. Source copies use their caller's
+expansion site and retain the authored span. The existing final proof checks
+accept a source site, so a late type mismatch keeps its closing statement
+without adding kernel queries. Display text reads the program's existing
+source map through `SourceUnit`; substituted rule descriptions share the
+written-reference lookup. The generation/provenance/publication/proof-reference/
+diagnostic run passes 95/95. Non-editing source-link ownership, distinct view
+instances, the generated printer/UI and full validation remain unfinished.

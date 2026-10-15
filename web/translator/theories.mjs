@@ -336,7 +336,7 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
     return built.declarations;
   } catch(failure) {
     propagateElaborationStop(failure);
-    return failedExpansion(t,d,env,declarations,failure);
+    return failedExpansion(t,d,env,declarations,module.locate(failure,d.name));
   } finally {module.fuel.close();}
 }
 

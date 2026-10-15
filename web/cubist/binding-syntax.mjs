@@ -621,8 +621,13 @@ export function lowerBindingReference(node, adapter, outcomes = new SlotOutcomes
     const replacement = node.substitutions?.find(([id]) => id === resolved.id)?.[1];
     if (replacement) return lowerBindingSyntax({format, tree: replacement, owned: []}, adapter, outcomes);
   }
-  const name = adapter.lower(node.resolution, outcomes, options);
-  return name === null ? node : {...node, kind: "name", name};
+  try {
+    const name = adapter.lower(node.resolution, outcomes, options);
+    return name === null ? node : {...node, kind: "name", name};
+  } catch(error) {
+    error.origin??=node.origin;
+    throw error;
+  }
 }
 
 // Structural targets are syntax over exact IDs, never a dotted global name.

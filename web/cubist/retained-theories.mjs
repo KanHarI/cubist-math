@@ -13,7 +13,7 @@ import {retainParents} from "./retained-parents.mjs";
 import {retainOperandRecipe} from "./retained-notation.mjs";
 import {notationKey,notationViews,validateFieldNotation} from "./theory-notation.mjs";
 
-const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
+const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end,origin:node.origin});
 const reference=token=>({kind:"bindingReference",resolution:bindingResolution(token.bindingId),
   spelling:token.text,origin:token.origin,start:token.start,end:token.end});
 

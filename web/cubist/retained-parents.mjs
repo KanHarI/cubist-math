@@ -11,7 +11,7 @@ import {inheritNotations} from "./retained-notation.mjs";
 
 const label=parameter=>parameter.label??parameter.name.label??parameter.name.text;
 const original=entry=>entry.binding.original??entry.id;
-const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
+const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end,origin:node.origin});
 const snake=text=>text.replace(/([a-z0-9])([A-Z])/g,"$1_$2").toLowerCase();
 
 export function retainParents(theory,interfaces,{lookup,source,owner,constructors=[]},admit) {

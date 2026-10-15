@@ -175,7 +175,7 @@ export class CubicalProgram {
           reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,
           start:directive.errorStart??directive.start,end:directive.errorEnd,
           ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
-          ...(directive.failure?{failure:directive.failure}:{})});
+          ...(directive.failure?{failure:directive.failure}:{}),...(directive.diagnostic?{diagnostic:directive.diagnostic}:{})});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
       else if(directive.kind==="print")
@@ -195,6 +195,7 @@ export class CubicalProgram {
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
         status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
+        ...(d.diagnostic?{diagnostic:d.diagnostic}:{}),
         ...(d.blockedBy?{blockedBy:d.blockedBy}:{}),...(d.failedMember?{failedMember:d.failedMember}:{}),...(d.cause?{cause:d.cause}:{}),
         axioms: d.native?.axioms ?? [],
         // Kernel extensions under review that the result relies on, shown
@@ -218,7 +219,8 @@ export class CubicalProgram {
       } else info.type = reason;
       this.symbols[binding] = info;
       if (!verified) this.gaps.push({ module: name, name: d.name,
-        reason, code: info.code, start: d.errorStart, end: d.errorEnd });
+        reason, code: info.code, start: d.errorStart, end: d.errorEnd,
+        ...(d.diagnostic?{diagnostic:d.diagnostic}:{}) });
       // A theory's name links to its models' type, a field's to its projection.
       // An initial/free name links to its declared type, whose generated
       // syntax this is. The generated definitions remain symbols, inspectable
@@ -328,7 +330,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
+      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,sources:this.sources,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);

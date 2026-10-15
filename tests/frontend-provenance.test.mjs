@@ -78,3 +78,67 @@ test("CB5: the original arrow rewrite loses generated capability despite equal f
   assert.deepEqual(lint(gaps.G5.source),[]);
 });
 
+
+test("CB5: inherited binding failures retain caller and authored source locations",async t=>{
+  const fixture=`import hlevels; import nat;
+notation consume { x + y := x; }
+theory Parent(U < UU0) { M : set U; c : M; }
+theory Child(U < UU0) extends p : Parent {
+  def rejected : Nat := consume.(p.absent + zero);
+}`;
+  for(const imported of [false,true]) {
+    const prefix=imported?"import fixture;\n":fixture+"\n";
+    const source=prefix+"theory Grand(U < UU0) extends Child {}\ndef tail : Unit := tt;";
+    const checked=await check(t,source,{fixture});
+    const gap=checked.result.gaps.find(g=>g.name==="Grand.rejected");
+    assert.equal(gap.code,"E829");assert.equal(source.slice(gap.start,gap.end),"Child");
+    assert.equal(gap.diagnostic.kind,"binding");
+    assert.equal(gap.diagnostic.parameters.member,"absent");
+    assert.deepEqual(gap.diagnostic.primary,{module:"main",start:gap.start,end:gap.end});
+    const authored=gap.diagnostic.related.find(site=>site.start===fixture.indexOf("p.absent"));
+    assert.equal(authored.module,imported?"fixture":"main");
+    assert.equal(fixture.slice(authored.start,authored.end),"p.absent");
+    assert.equal(checked.get("tail").verified,true);
+  }
+});
+
+test("CB5: inherited proof failures use caller spans and keep the exact written statement",async t=>{
+  for(const statement of ["rfl;","exact refl(succ(zero));","simp only [nat_add_zero];"]) {
+    const fixture=`import nat; import hlevels;
+inductive Edge { lo; hi; edge : lo = hi; }
+theory Parent(U < UU0) { M : set U;
+  def bad(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => succ(n); }
+    obligations by { ${statement} };
+}`;
+    for(const padding of ["","// "+"x".repeat(fixture.length)+"\n"]) {
+      const source="import fixture;\n"+padding+"theory Child(U < UU0) extends Parent {}";
+      const checked=await check(t,source,{fixture});
+      const gap=checked.result.gaps.find(g=>g.name==="Child.bad");
+      assert.ok(gap);assert.equal(source.slice(gap.start,gap.end),"Parent");
+      assert.equal(gap.diagnostic.primary.module,"main");
+      const related=gap.diagnostic.related.find(site=>site.module==="fixture"&&fixture.slice(site.start,site.end)===statement);
+      assert.ok(related,JSON.stringify(gap));
+    }
+  }
+});
+
+test("CB5: rewrite descriptions and residual errors name the written substituted rule",async t=>{
+  for(const fails of [false,true]) {
+    const source=`import nat; import hlevels;
+inductive Edge { lo; hi; edge : lo = hi; }
+theory Parent(U < UU0, n : Nat) { M : set U; fe : add(n, zero) = n;
+  def d(x : Edge) : Nat := match x { lo => add(n, zero); hi => ${fails?"succ(n)":"n"}; }
+    obligations by { rw [fe]; };
+}`;
+    const checked=await check(t,source);
+    if(fails) {
+      const gap=checked.result.gaps.find(g=>g.name==="Parent.d");
+      assert.equal(gap.code,"E452");assert.match(gap.reason,/fe/);
+      assert.doesNotMatch(gap.reason,/using Parent|rule Parent/);
+    } else {
+      clean(checked);
+      const links=checked.result.links.filter(link=>link.role==="rewrite witness");
+      assert.equal(links.length,1);assert.equal(links[0].description,"Checked rewrite using fe.");
+    }
+  }
+});
