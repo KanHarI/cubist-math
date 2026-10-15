@@ -200,7 +200,8 @@ export class Translator {
     // losing the unchanged-argument permission carried by that value.
     const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
-      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,...(node.bindingId?{bindingId:node.bindingId}: {})});
+      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,
+        ...(node.origin?{origin:node.origin}:{}),...(node.bindingId?{bindingId:node.bindingId}: {})});
     this.reference(scope,{...node,name:label,isBinding:true},term);
     return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
   }

@@ -64,3 +64,19 @@ source map through `SourceUnit`; substituted rule descriptions share the
 written-reference lookup. The generation/provenance/publication/proof-reference/
 diagnostic run passes 95/95. Non-editing source-link ownership, distinct view
 instances, the generated printer/UI and full validation remain unfinished.
+
+The view collision has the same root as the repeated source-ownership findings:
+an authored offset is a location, not an elaboration identity. Give each recorded
+local observation its declaration and observation index, and carry its lexical
+alias targets into inspection. This replaces reconstruction of view keys from
+offsets and core-value matching; it needs no second registry. Source publication
+shares the existing ownership rule, including non-editing annotations and
+generated definition links. Copied observations remain available for their own
+generated view but cannot overwrite or annotate the original source context.
+
+The view checkpoint passes 53 focused observation, evidence, provenance,
+inspection and scope tests. Pattern compilation preserves the original match's
+source site while marking private aliases and additional compiled matches as
+synthetic. This keeps checked coherence witnesses visible without publishing
+foreign helper offsets. The existing witness regression caught and prevented
+over-suppression; generated inspection and printing still remain to implement.

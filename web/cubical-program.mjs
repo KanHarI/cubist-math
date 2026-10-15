@@ -8,6 +8,7 @@ import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
 import { parse } from "./cubist/parser.mjs";
 import { lint } from "./cubist/lint.mjs";
+import {ownsSource} from "./cubist/link-sites.mjs";
 import { diagnosticCode } from "./diagnostics.mjs";
 import { leadingDocumentation } from "./cubist/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
@@ -25,8 +26,6 @@ function whenRead(object, key, compute) {
   return Object.defineProperty(object, key, { enumerable: true, configurable: true,
     get() { const value = compute(); keep(this, value); return value; }, set(value) { keep(this, value); } });
 }
-
-const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
 
 // Imports are source, loaded on demand. Every module has its own environment;
 // closed native definitions have qualified names so shadowing cannot retarget
@@ -122,7 +121,8 @@ export class CubicalProgram {
   // bindings and their views, each name's binding, and, in the checked
   // module, its source links.
   recordReferences(name, main, declaration, result, pending) {
-    this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
+    const binders=[],locals=new Map(),localKey=alias=>JSON.stringify([alias.key,alias.start]);
+    this.declarationBindings.set(`${name}__${result.name}`,binders);
     const references = [];
     const declarationLinks = [];
     this.declarationReferences.set(`${name}__${result.name}`, references);
@@ -133,22 +133,30 @@ export class CubicalProgram {
     // written; synthetic syntax, as what a theory's expansion places at its
     // name, links nowhere.
     const generated = declaration.generated ? declaration.name : null;
-    const written = node => !node.synthetic && (!node.origin||node.origin.module===name) && !(generated && node.start >= generated.start && node.start < generated.end);
-    for (const item of pending) {
+    const written = node => !node.synthetic && ownsSource(node,name) && !(generated && node.start >= generated.start && node.start < generated.end);
+    for (const [index,item] of pending.entries()) {
       if (!Number.isInteger(item.node.start)) continue;
       let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
       const source = item.aliases?.find(alias => alias.key === item.node.localBindingKey);
       const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
       const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
-      const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${
-        expansionSuffix(item.node.role,item.node.expansionIndex)}`;
+      const binding = definition ? declared || head.name : JSON.stringify(["view",name,result.name,index]);
+      if(item.node.isBinding) {
+        binders.push({...item,binding});
+        if(source)locals.set(localKey(source),binding);
+      }
+      const aliases=item.aliases?.map(alias=>({...alias,binding:locals.get(localKey(alias))}));
+      const origin=source?.origin??item.node.origin,sourceModule=origin?.module??name;
       references.push({ start: item.node.start, binding });
-      if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
+      if (!definition) this.views.set(binding, { ...item,aliases,module:name,
+        sourceBinding:source?locals.get(localKey(source)):null });
       if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
         role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
         expansion: item.node.expansion, description: item.node.description,
         definitionStart: source?.start ?? item.node.start,
-        ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
+        ...(origin?{origin}:{}),
+        ...(sourceModule === main ? {} : { sourceModule,sourceName:this.sourceAsts.get(sourceModule)?.declarations
+          .find(d=>d.start<=(source?.start??item.node.start)&&(source?.start??item.node.start)<d.end)?.name.text }) };
       if (name === main && written(item.node)) {
         const link={ name: item.node.name, binding, start: item.node.start,
         end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
@@ -225,7 +233,7 @@ export class CubicalProgram {
       // An initial/free name links to its declared type, whose generated
       // syntax this is. The generated definitions remain symbols, inspectable
       // by name and at their written uses.
-      if (name === main && syntax.generated?.role !== "make" && !(syntax.generated?.initial && syntax.kind !== "inductive"))
+      if (name === main && ownsSource(syntax.name,name) && syntax.generated?.role !== "make" && !(syntax.generated?.initial && syntax.kind !== "inductive"))
         this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }
@@ -693,10 +701,10 @@ export class CubicalProgram {
     const extensions = this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type));
     if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
-    const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.referencePrefix ?? local.module}__local_${alias.start}` }));
+    const aliases = local?.aliases ?? [];
     const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };
     const variableNames = Object.fromEntries([
-      ...bindings.map(item => ({ term: item.term, name: item.node.name, binding: `${local?.referencePrefix ?? info?.sourceModule ?? this.main}__local_${item.node.start}` })),
+      ...bindings.map(item => ({ term: item.term, name: item.node.name, binding: item.binding })),
       ...aliases,
     // A universe variable's source name stands for the universe U(x), so it
     // names the level variable x.
@@ -713,7 +721,7 @@ export class CubicalProgram {
       checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()],
       // The kernel extensions the inspected term relies on, apart from assumptions.
       extensions };
-    view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
+    view.sourceBinding = local?.sourceBinding;
     const simplifiedType = simplifyTypeApplications(view.type);
     const presentation = simplifiedType === view.type ? view
       : checkReduction(this, view, "type", simplifiedType).view;

@@ -26,7 +26,9 @@ def inherited(S : Child(U0), x : S.M) : S.op(x,S.c) = S.op(x,x) := S.l(x);`:sour
       for(const occurrence of fragment.matchAll(/\bc\b/g)) {
         const at=start+occurrence.index;
         const observations=imported
-          ?Object.values(checked.program.localSymbols).filter(info=>info.binding===`fixture__local_${at}`)
+          ?[...checked.program.declarationReferences].filter(([name])=>name.startsWith("fixture__"))
+            .flatMap(([,references])=>references.filter(reference=>reference.start===at)
+              .map(reference=>checked.program.localSymbols[reference.binding]).filter(Boolean))
           :checked.result.links.filter(link=>link.start===at&&link.end===at+1);
         assert.ok(observations.length,`missing source observation at ${at}`);
         for(const link of observations) {
@@ -140,5 +142,48 @@ theory Parent(U < UU0, n : Nat) { M : set U; fe : add(n, zero) = n;
       const links=checked.result.links.filter(link=>link.role==="rewrite witness");
       assert.equal(links.length,1);assert.equal(links[0].description,"Checked rewrite using fe.");
     }
+  }
+});
+
+test("CB5: copied observations keep distinct checked views and cannot annotate the parent's source",async t=>{
+  const source=gaps.G9.source+"\ntheory Child(U < UU0) extends T(M := N) {}";
+  const checked=await check(t,source);clean(checked);
+  const at=source.indexOf("law l(c")+"law l(".length;
+  const observed=name=>(checked.program.declarationReferences.get(`main__${name}.l`)??[])
+    .filter(reference=>reference.start===at&&checked.program.views.has(reference.binding));
+  const parent=observed("T"),child=observed("Child");
+  assert.ok(parent.length);assert.ok(child.length);
+  assert.ok(child.every(copy=>parent.every(original=>original.binding!==copy.binding)));
+  for(const reference of parent)assert.match(checked.program.inspect(reference.binding).typeText,/\.M\b/);
+  for(const reference of child)assert.match(checked.program.inspect(reference.binding).typeText,/\.N\b/);
+  assert.ok(checked.result.links.some(link=>parent.some(reference=>reference.binding===link.binding)));
+  assert.ok(checked.result.links.every(link=>child.every(reference=>reference.binding!==link.binding)));
+  const xUses=checked.result.links.filter(link=>link.name==="x"&&link.start>source.indexOf("def meaning"));
+  assert.ok(xUses.length>=2);
+  for(const link of xUses) {
+    const view=checked.program.inspect(link.binding);
+    assert.ok(checked.program.views.has(view.sourceBinding));
+    assert.equal(checked.program.inspect(view.sourceBinding).expressionText,"x");
+  }
+});
+
+test("CB5: imported generated observations keep their source module without foreign links",async t=>{
+  const fixture=`import nat; import hlevels;
+inductive Edge { lo; hi; edge : lo = hi; }
+theory Parent(U < UU0) { M : set U;
+  def d(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { simp only [nat_add_zero]; };
+}`;
+  const source="import fixture; theory Child(U < UU0) extends Parent {}";
+  const checked=await check(t,source,{fixture});clean(checked);
+  assert.ok(checked.result.links.every(link=>0<=link.start&&link.end<=source.length),JSON.stringify(checked.result.links));
+  const binder=fixture.indexOf("d(n")+2;
+  const references=checked.program.declarationReferences.get("main__Child.d").filter(ref=>ref.start===binder);
+  assert.ok(references.length);
+  for(const reference of references) {
+    const info=checked.program.localSymbols[reference.binding];
+    assert.equal(info.sourceModule,"fixture");assert.equal(info.sourceName,"Parent");
+    assert.equal(info.definitionStart,binder);assert.equal(info.origin.module,"fixture");
+    assert.ok(checked.program.inspect(reference.binding));
   }
 });
