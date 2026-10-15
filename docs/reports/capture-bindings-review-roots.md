@@ -39,11 +39,12 @@ extra rules only when that branch selects the declaring model. A standalone
 notation opens no term labels. Model captures with different rule extensions
 are distinct semantic notation contexts even when their receiver is the same.
 
-Theory and named-rule source entry use retained producers. Lazy operands used as selection
-receivers still require a source description that preserves both their term
-and selection-namespace interpretations. Such rules are refused at retention
-until that contract is implemented; treating an already resolved term operand
-as a selector could silently choose a same-named model over a notation.
+Theory and named-rule source entry use retained producers. CB3's lazy operands
+preserve their term and selection-namespace interpretations as retained syntax
+children. The consuming expression boundary chooses the interpretation, while
+cloning, substitution and dependency capture use the existing syntax traversal.
+Treating an already resolved term operand as a selector could silently choose
+a same-named model over a notation; entry lowering must preserve the alternatives.
 
 The eight authorized external CB2 rounds are exhausted. Subsequent implementation
 checks are not an additional external round or evidence of a clean external

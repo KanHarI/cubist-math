@@ -11,8 +11,7 @@ the arbitrary-context REPL is still the CB6 deliverable.
   source inventory; destination constructors cannot change a saved decision.
 - Complete lazy notation operands used as selectors. Preserve term and
   selection namespaces at source entry, including missing alternatives,
-  through substitution, inheritance and elaboration. Remove the current
-  explicit migration refusal only after these controls pass.
+  through substitution, inheritance and elaboration.
 - Retain proof-token references in their declared namespaces, including
   simplification witnesses/sets and unfolding hints. No late ambient lookup
   may recover a retained reference.
@@ -44,6 +43,20 @@ Their focused controls check nested universe introductions, repeated labels,
 dependent pair extraction, initializer visibility and cloning, with distinct
 accepted and rejected computations. Private environment keys do not become
 kernel binder labels.
+
+Lazy syntax arguments now retain separate term and receiver interpretations
+when their source meanings differ. Both are ordinary retained syntax, so the
+existing identity mapping, cloning and substitution cover them. The shared
+expression-scope boundary selects the interpretation when consumed; entry
+lowering leaves the alternatives inert. Dependency analysis records an
+unresolved operand and exposes its conditional branches to capture planning.
+Ignored operands do not force missing namespace members. A forwarded operand
+keeps its caller scope and notation; only an explicit operand recipe changes
+that notation. Controls distinguish standalone notations, attached rules,
+local model parameters, destination shadowing, nested forwarding, imported
+generation and unused failures. The focused run passes all 55 tests. The full
+run passes 1,195 of 1,208 tests, with 13 documented later-phase TODOs and zero
+failures; all four production mutations are killed.
 
 Checked model evidence now travels with `Scope`, using exact projection IDs
 and one scope-copy operation so transitions cannot omit it. Generalization

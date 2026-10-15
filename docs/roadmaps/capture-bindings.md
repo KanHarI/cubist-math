@@ -378,8 +378,10 @@ Numeral readers construct their input lazily from their own captured natural
 type, using the shared value elaborator for inductive descriptors; they do
 not look up `Nat` in the destination. This preserves failed-dependency and
 ignored-operand behavior. Named rules and static parent-namespace notation
-alternatives now retain their source identities. Lazy syntax operands used as
-selection receivers still require the term/selection alternatives in CB3.
+alternatives now retain their source identities. CB3 retains a lazy argument's
+term and selection interpretations separately when they differ. The consuming
+expression boundary chooses between those retained children without resolving
+the source label again; ignored operands do not force either interpretation.
 
 File-level model selection captures a separate notation identity alongside
 the closed receiver. The lexical context holds only that identity; an explicit

@@ -204,9 +204,9 @@ export class Translator {
     return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
-  expressionScope(node,scope) {
+  expressionScope(node,scope,options) {
     let entered;
-    while((entered=enterExpressionScope(this,scope,node)))({node,scope}=entered);
+    while((entered=enterExpressionScope(this,scope,node,options)))({node,scope}=entered);
     return {node,scope};
   }
   interval(n,scope,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
@@ -1363,6 +1363,7 @@ export class Translator {
       case "scoped":
       case "boundNotation":
       case "notationArgument":
+      case "operandAlternatives":
       case "select": {
         const entered=enterExpressionScope(this,scope,n);
         return this.term(entered.node,entered.scope,expected);

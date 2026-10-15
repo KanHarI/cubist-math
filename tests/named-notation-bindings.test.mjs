@@ -309,13 +309,75 @@ test("named-rule receipts survive isolated replay",async t=>{
   assert.equal(query.text,"nat.(1)");
 });
 
-test("a syntax operand cannot silently become a term-only selection receiver",async t=>{
-  const {retain}=await setup(t);
-  retain("notation m { numeral(n : Nat) := n; }");
-  for(const source of [
-    "notation select_operand { m + x := m.(x); }",
-    "notation qualify_operand { m + x := x m.(+) x; }",
-  ])assert.throws(()=>retain(source),/syntax operand used as a selection receiver needs source selection alternatives/);
+test("lazy operands retain distinct term and selection meanings through copying and invocation",async t=>{
+  const {retain,retainDeclaration,check,table}=await setup(t);
+  retain("notation m { numeral(n : Nat) := succ(n); x + y := add(x, y); }");
+  retain("notation select_operand { m + x := m.(0); m * x := m; m ^ x := x m.(+) x; }");
+  retain("notation forward { n + x := select_operand.(n + x); }");
+  const saved=["def selected : Nat := select_operand.(m + absent);",
+    "def qualified : Nat := select_operand.(m ^ succ(zero));",
+    "def forwarded : Nat := forward.(m + absent);",
+    "def term_missing : Nat := select_operand.(m * absent);"].map(retainDeclaration);
+  for(const item of saved) {
+    assert.doesNotThrow(()=>snapshotSyntax(item.syntax));
+    const clone=cloneBindingSyntax(item.syntax,table,["copied-operand",item.binding.label]).syntax;
+    assert.equal(sameBindingSyntax(item.syntax,clone),true);
+    item.syntax=clone;
+  }
+  const {result,equal}=check("def m : Reader(U0) := plain;",{retained:saved});
+  assert.deepEqual(failures(result).map(([name])=>name),["term_missing"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/Untranslated name: m/);
+  assert.equal(equal("selected","succ(zero)"),true);
+  assert.equal(equal("selected","zero"),false);
+  assert.equal(equal("forwarded","succ(zero)"),true);
+  assert.equal(equal("forwarded","zero"),false);
+  assert.equal(equal("qualified","succ(succ(zero))"),true);
+  assert.equal(equal("qualified","succ(zero)"),false);
+});
+
+test("lazy selector operands keep attached rules and the caller's ordinary operand notation",async t=>{
+  const {retain,retainDeclaration,check}=await setup(t);
+  retain("notation plain { numeral(n : Nat) := succ(succ(n)); }",{declared:new Set(["plain"])});
+  retain(`notation select_operand {
+    numeral(n : Nat) := n;
+    m + x := m.(0);
+    m * x := m.(x);
+  }`);
+  const saved=[
+    "def attached : Nat := select_operand.(plain + absent);",
+    "def parameter(plain : Reader(U0)) : plain.M := select_operand.(plain + absent);",
+    "def ambient : Nat := select_operand.(plain * 0);",
+    "def labels(read : Nat) : Nat := select_operand.(plain * read);",
+    "def missing_label : Nat := select_operand.(plain * read);",
+  ].map(retainDeclaration);
+  retain("notation plain { numeral(n : Nat) := n; }",{declared:new Set(["plain"])});
+  const {result,equal}=check("def plain : Reader(U0) := raised; def read : Nat := zero;",{retained:saved});
+  assert.deepEqual(failures(result).map(([name])=>name),["missing_label"],JSON.stringify(failures(result)));
+  assert.match(failures(result)[0][1],/Untranslated name: read/);
+  assert.equal(equal("attached","succ(succ(zero))"),true);
+  assert.equal(equal("attached","zero"),false);
+  assert.equal(equal("parameter","fun (plain : Reader(U0)) => plain.read(zero)"),true);
+  assert.equal(equal("ambient","zero"),true);
+  assert.equal(equal("ambient","succ(succ(zero))"),false);
+  assert.equal(equal("labels","fun (read : Nat) => read"),true);
+});
+
+test("unused lazy namespace failures survive retained generation without becoming destination names",async t=>{
+  const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+  const source=`import hlevels; import nat;
+notation ignore { x + y := zero; }
+notation consume { x + y := x; }
+theory Parent(U < UU0) { M : set U; c : M; }
+theory Child(U < UU0) extends p : Parent {
+  def ignored : Nat := ignore.(p.absent + zero);
+  def rejected : Nat := consume.(p.absent + zero);
+}
+def value(S : Child(U0)) : S.ignored = zero { rfl; }
+def wrong(S : Child(U0)) : S.ignored = succ(zero) { rfl; }`;
+  const result=await program.check(source,"main");
+  assert.deepEqual(result.gaps.map(g=>g.name),["Child.rejected","wrong"],JSON.stringify(result.gaps));
+  assert.match(result.gaps[0].reason,/absent/);
+  assert.ok(result.outputs.find(d=>d.name==="value").verified);
 });
 
 test("nested rule expansion preserves both producer sites and the outer caller",async t=>{

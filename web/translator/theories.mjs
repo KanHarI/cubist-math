@@ -233,10 +233,8 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   // Synthesized operand selection owns only its receiver environment. Apply
   // the resulting effects in the caller, preserving its names and reference
   // observations even when the receiver is a captured named notation.
-  let receiverScope=scope;
-  while(node.kind==="scoped") {receiverScope=node.scope;node=node.node;}
-  if(node.kind==="bindingReference")
-    node=lowerBindingReference(node,receiverScope.unit.bindingAdapter,receiverScope.slotOutcomes,{deferMissing:true});
+  const entered=t.expressionScope(node,scope,{receiver:true});
+  const receiverScope=entered.scope;node=entered.node;
   if(node.kind==="notationReceiver") {
     const notation=retainedReceiverNotation(t,receiverScope,node);
     if(node.model) {
@@ -295,16 +293,17 @@ export function qualifiedOperator(t,scope,n) {
   // A named notation's operator: its rule, applied where it stands. A
   // model's notation, with the literal rules its module added, binds its
   // theory's operators, read from the model below.
-  if(n.model.kind==="bindingReference")n={...n,model:lowerBindingReference(n.model,scope.unit.bindingAdapter,scope.slotOutcomes)};
-  const key=referenceKey(n.model),notation=n.model.kind==="notationReceiver"?retainedReceiverNotation(t,scope,n.model)
-    :key?scope.env.get(notationBinding(key)):null;
+  const {node:model,scope:receiverScope}=t.expressionScope(n.model,scope,{receiver:true});
+  n={...n,model};
+  const key=referenceKey(n.model),notation=n.model.kind==="notationReceiver"?retainedReceiverNotation(t,receiverScope,n.model)
+    :key?receiverScope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {
     const rule=notation.rules.get(n.operator);
     if(!rule)throw scope.unit.locate(Error(`${notation.name} binds no rule to ${n.operator}.`),at);
     return {kind:"notationRule",rule,start:n.start,end:n.end};
   }
   if(n.model.kind==="notationReceiver")n={...n,model:n.model.model};
-  const record=recordOf(t,scope,t.term(n.model,scope,null));
+  const record=recordOf(t,receiverScope,t.term(n.model,receiverScope,null));
   if(!record)throw scope.unit.locate(Error(`${spelling}.(${n.operator}) takes a model of a theory; ${spelling} is not one.`),n.model);
   const field=modelNotations(record).get(n.operator);
   if(!field) {
@@ -313,7 +312,8 @@ export function qualifiedOperator(t,scope,n) {
       ?`${n.operator} is ambiguous in ${record.name}: it is ${list.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${list.map(e=>notationAlternative(spelling,n.operator,e,{applied:false})).join(" or ")}.`
       :`${record.name} binds no operation to ${n.operator}.`),at);
   }
-  return scope.declared({kind:"call",fn:projectionReference(t,field,at),args:[n.model],start:n.start,end:n.end});
+  const operation=receiverScope.declared({kind:"call",fn:projectionReference(t,field,at),args:[n.model],start:n.start,end:n.end});
+  return receiverScope===scope?operation:{kind:"scoped",node:operation,scope:receiverScope,start:n.start,end:n.end};
 }
 
 // The declarations a theory expands to, checked in its place; its record
