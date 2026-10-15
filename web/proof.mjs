@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle, tokenPattern } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -126,6 +126,8 @@ let worker,
   inspectSerial = 0;
 const pending = new Map(),
   history = [];
+let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
+const generatedSources = new Map();
 $("editor").value = example;
 for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
@@ -241,8 +243,10 @@ function refreshStatus() {
   for (const id of ["share-syntax", "reuse-checks", "compact-paths"])
     $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
   $("export").disabled = !last || pending.size > 0;
+  $("generated-mode").disabled = !last;
+  $("generated-module").disabled = pending.size > 0;
   $("dirty").textContent = dirty()
-    ? "Edited — changes are not checked. Read shows the last checked version."
+    ? "Edited — changes are not checked. Read and Generated Cubist show the last checked version."
     : "";
   $("status").textContent = pending.size
     ? "Checking…"
@@ -274,7 +278,7 @@ function request(command, args = {}) {
     worker.postMessage({ id, command, args });
   });
 }
-let focusOffset = null, queuedExample = null;
+let focusOffset = query.has("offset") && Number.isSafeInteger(Number(query.get("offset"))) ? Number(query.get("offset")) : null, queuedExample = null;
 // Check an example sent by the embedding reference page, then inspect the
 // name the reader clicked.
 async function runExample({ source, offset }) {
@@ -298,10 +302,20 @@ async function check() {
     // (module-resolution.mjs): an archive proof imports only from the archive.
     const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
     last = result;
+    generationSerial++;
+    generatedSources.clear();
+    $("generated-source").replaceChildren();
+    const previousModule = restoring?.generatedModule ?? $("generated-module").value;
+    $("generated-module").replaceChildren(...Object.keys(result.sources).map(name => {
+      const option = document.createElement("option");
+      option.value = name; option.textContent = name === proofId ? `${name} (current)` : name;
+      return option;
+    }));
+    $("generated-module").value = Object.hasOwn(result.sources, previousModule) ? previousModule : proofId;
     history.length = 0;
     renderSource();
     renderResult();
-    setMode("read");
+    await setMode(sourceMode === "generated" ? "generated" : "read");
     const target = query.get("name");
     const info =
       target &&
@@ -314,17 +328,20 @@ async function check() {
       history.push(...saved.history);
       await inspect(saved.selected ?? decorate(result.outputs.at(-1)), false);
       $("read-source").scrollTop = saved.sourceScroll ?? 0;
+      $("generated-source").scrollTop = saved.generatedScroll ?? 0;
       window.scrollTo(0, saved.scroll ?? 0);
     } else {
       const fallback = result.outputs.at(-1);
       // An embedding page asks for the name at a source offset.
       const focus = focusOffset === null ? null : [...result.links].filter(link => link.start === focusOffset)
         .sort((a, b) => a.end - a.start - (b.end - b.start))[0];
+      const requestedOffset = focusOffset;
       focusOffset = null;
       if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
       else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
       // Embedded, the inspector is on top and the source below stays in place.
-      if (focus && !embedded) revealSource(focus);
+      if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
+        revealSource({ start: requestedOffset });
       else if (info) revealSource(info);
     }
     rememberDraft();
@@ -341,19 +358,41 @@ async function check() {
   refreshStatus();
 }
 function setMode(mode) {
+  sourceMode = mode;
   $("editor").hidden = mode !== "edit";
-  $("read-source").hidden = mode === "edit";
+  $("read-source").hidden = mode !== "read";
+  $("source-count").hidden = mode === "generated";
+  $("generated-panel").hidden = mode !== "generated";
   $("read-mode").setAttribute("aria-pressed", String(mode === "read"));
   $("edit-mode").setAttribute("aria-pressed", String(mode === "edit"));
+  $("generated-mode").setAttribute("aria-pressed", String(mode === "generated"));
   $("source-hint").textContent =
     mode === "edit"
       ? "Edit the source, then Check proof. A failed check preserves your last checked proof."
+      : mode === "generated" ? "Frontend expansion from the last check. Click a declaration or linked name to inspect it. Each family shows its checking status."
       : last?.backend === "cubical" ? "Click a name or numeral to inspect its checked type, context, and definition."
       : "Click a name to inspect it. Click a line number to see its goal and assumptions.";
+  if (mode === "generated") return showGeneration();
+}
+async function showGeneration() {
+  if (!last) return;
+  const sequence = ++generationSerial, module = $("generated-module").value;
+  $("generated-status").textContent = "Preparing generated source…";
+  $("generated-source").replaceChildren();
+  try {
+    const result = generatedSources.get(module) ?? await request("generation", { module });
+    if (sequence !== generationSerial) return;
+    generatedSources.set(module, result);
+    renderSource($("generated-source"), result);
+    $("generated-status").textContent = `${result.count} generated declarations`
+      + (last.gaps.some(gap => gap.module === module) ? " · check incomplete" : "");
+  } catch (error) {
+    if (sequence === generationSerial) $("generated-status").textContent = `Unable to display generation: ${error.message}`;
+  }
 }
 function decorate(info) {
   const imported = last?.imports.find(
-    (d) => d.binding === info.binding && d.name === info.name,
+    (d) => d.binding === info.binding,
   );
   const declaration = last?.declarations?.find(
     (d) => d.binding === info.binding,
@@ -363,8 +402,8 @@ function decorate(info) {
       d.binding === info.binding &&
       ["local", "parameter", "def"].includes(d.role),
   );
-  const output = last?.outputs.find(d => d.binding === info.binding && d.name === info.name);
-  const value = { ...declaration, ...output, ...info, ...imported, kind: "value" };
+  const output = last?.outputs.find(d => d.binding === info.binding);
+  const value = { ...declaration, ...output, ...imported, ...info, kind: "value" };
   if (value.definitionStart === undefined && local)
     value.definitionStart = local.start;
   if (/^[0-9]+$/.test(info.name ?? "")) {
@@ -389,24 +428,42 @@ function sourceLink(info) {
   const link = $("view-source");
   link.hidden = true;
   link.onclick = null;
-  if (info.sourceModule) {
-    link.href = `proof.html?proof=${encodeURIComponent(info.sourceModule)}${info.sourceName ? "&name=" + encodeURIComponent(info.sourceName) : ""}`;
-    link.textContent =
-      info.kind === "module" ? "View module source →" : "View source →";
+  link.textContent = info.kind === "module" ? "View module source →" : "View source →";
+  if (info.sourceModule || Number.isInteger(info.definitionStart)) {
     link.hidden = false;
+    sourceTarget(link, { module: info.sourceModule ?? proofId, start: info.definitionStart, name: info.sourceName });
+  }
+}
+// Source navigation uses the qualified site, independent of its display label.
+function sourceTarget(link, site) {
+  if (site.module !== proofId) {
+    link.href = `proof.html?proof=${encodeURIComponent(site.module)}${site.name ? "&name=" + encodeURIComponent(site.name) : ""}`
+      + (Number.isInteger(site.start) ? `&offset=${site.start}` : "");
     link.onclick = () => {
       const address = new URL(link.href);
       address.searchParams.set("back", rememberInspection());
       link.href = address.href;
     };
-  } else if (Number.isInteger(info.definitionStart)) {
+  } else {
     link.href = "#read-source";
-    link.textContent = "View source →";
-    link.hidden = false;
     link.onclick = (e) => {
       e.preventDefault();
-      revealSource(info);
+      revealSource(site);
     };
+  }
+}
+function diagnosticLocations(target, diagnostic) {
+  if (!diagnostic) return;
+  const sites = [diagnostic.primary, ...diagnostic.related];
+  for (const [index, site] of sites.entries()) {
+    const source = last.sources[site.module];
+    if (source === undefined || !Number.isInteger(site.start)) continue;
+    const before = source.slice(0, site.start), line = before.split("\n").length;
+    const at = document.createElement("a");
+    at.className = "diagnostic-site";
+    at.textContent = `${index ? "Related" : "Source"}: ${site.module}:${line}:${site.start - before.lastIndexOf("\n")}`;
+    sourceTarget(at, site);
+    target.append(" ", at);
   }
 }
 
@@ -474,7 +531,10 @@ function renderResult() {
     line.append(button, document.createTextNode(" : " + output.type));
     const dependencies = document.createElement("small");
     dependencies.className = "axiom-dependencies";
-    if (last.backend === "cubical" && !output.verified) dependencies.append(...codeLink(output.code), output.reason);
+    if (last.backend === "cubical" && !output.verified) {
+      dependencies.append(...codeLink(output.code), output.reason);
+      diagnosticLocations(dependencies, output.diagnostic);
+    }
     else renderAxioms(dependencies, output.axioms ?? [], output.extensions ?? []);
     line.append(dependencies);
     $("result").append(line);
@@ -485,6 +545,7 @@ function renderResult() {
     const line = document.createElement("div");
     line.className = "declaration-error";
     line.append("Not checked ", ...codeLink(gap.code), ": ", gap.reason);
+    diagnosticLocations(line, gap.diagnostic);
     if (gap.module === proofId && Number.isInteger(gap.start)) {
       const at = document.createElement("button");
       at.textContent = "View source";
@@ -506,32 +567,34 @@ function renderResult() {
   detail.textContent = `${last.instructionCount.toLocaleString()} checked instructions. ${last.axiomCount ? last.axiomCount + " explicit axioms in this module." : "No axioms."}`;
   $("result").append(detail);
 }
-function renderSource() {
-  $("read-source").replaceChildren();
-  if (!last) return;
+function renderSource(target = $("read-source"), snapshot = last) {
+  target.replaceChildren();
+  if (!snapshot) return;
+  const generated = target.id === "generated-source";
   const linkMap = new Map();
-  for (const link of last.links) {
+  for (const link of snapshot.links) {
     const old = linkMap.get(link.start);
     if (!old || link.end - link.start < old.end - old.start)
       linkMap.set(link.start, link);
   }
   const importStarts = new Map(
-    [...last.source.matchAll(/\bimport\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/g)].map(
+    [...snapshot.source.matchAll(/\bimport\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/g)].map(
       (match) => [match.index + match[0].indexOf(match[1]), match[1]],
     ),
   );
-  $("source-count").textContent = `${last.source.split("\n").length} lines · click a name or numeral`;
+  if (!generated) $("source-count").textContent = `${snapshot.source.split("\n").length} lines · click a name or numeral`;
   let offset = 0;
-  for (const [index, line] of last.source.split("\n").entries()) {
+  for (const [index, line] of snapshot.source.split("\n").entries()) {
     const row = document.createElement("div");
     row.className = "source-line";
     row.dataset.line = index + 1;
-    const number = document.createElement("button");
+    const number = document.createElement(generated ? "span" : "button");
     number.className = "line-number";
     number.textContent = index + 1;
-    number.setAttribute("aria-label", `Inspect goal at line ${index + 1}`);
+    if (!generated) number.setAttribute("aria-label", `Inspect goal at line ${index + 1}`);
+    else number.setAttribute("aria-hidden", "true");
     const lineOffset = offset;
-    number.onclick = () => {
+    if (!generated) number.onclick = () => {
       const step = last.steps
         .filter(
           (s) => s.start <= lineOffset + line.length && s.end > lineOffset,
@@ -548,14 +611,13 @@ function renderSource() {
     const code = document.createElement("span");
     code.className = "line-code";
     let cursor = 0;
-    for (const token of line.matchAll(
-      /\/\/.*|(?:<=|->|=>)|0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>]|\s+|./g,
-    )) {
+    for (const token of line.matchAll(tokenPattern)) {
+      if (token.index < cursor) continue;
       if (token.index > cursor)
         code.append(document.createTextNode(line.slice(cursor, token.index)));
-      const text = token[0],
-        start = offset + token.index,
-        end = start + text.length;
+      const start = offset + token.index, info = linkMap.get(start);
+      // A generated qualified name is one reference, including every dot.
+      const text = generated && info?.generated ? snapshot.source.slice(start, info.end) : token[0];
       if (text.startsWith("//")) {
         const span = document.createElement("span");
         span.className = "comment";
@@ -575,7 +637,6 @@ function renderSource() {
         };
         code.append(link);
       } else {
-        const info = linkMap.get(start);
         const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
         // The whole source: a header's colon and its inductive may be on earlier lines.
         const style = tokenStyle(text, expansion);
@@ -589,7 +650,8 @@ function renderSource() {
           } else button.title = `Inspect ${text}`;
           button.dataset.name = text;
           button.onclick = () =>
-            inspect({ ...decorate(info), line: index + 1 });
+            inspect({ ...decorate(info), line: index + 1, sourceView: target.id,
+              ...(generated ? { generatedModule: snapshot.module } : {}) });
           code.append(button);
         } else if (style) {
           const span = document.createElement("span");
@@ -602,7 +664,7 @@ function renderSource() {
       cursor = token.index + text.length;
     }
     row.append(number, code);
-    $("read-source").append(row);
+    target.append(row);
     offset += line.length + 1;
   }
 }
@@ -638,6 +700,12 @@ async function inspect(info, remember = true) {
   }
   selected = info;
   const sequence = ++inspectSerial;
+  if (info.sourceView === "generated-source" &&
+      (sourceMode !== "generated" || $("generated-module").value !== info.generatedModule)) {
+    $("generated-module").value = info.generatedModule;
+    await setMode("generated");
+    if (sequence !== inspectSerial) return;
+  } else if (info.sourceView === "read-source") setMode("read");
   $("back").hidden = !history.length && !proofReturnURL(crossFileBack);
   $("inspect-name").textContent = info.name;
   $("inspect-kind").textContent =
@@ -679,7 +747,7 @@ async function inspect(info, remember = true) {
   for (const line of document.querySelectorAll(".source-line.active"))
     line.classList.remove("active");
   if (info.line)
-    document
+    $(info.sourceView ?? "read-source")
       .querySelector(`.source-line[data-line="${info.line}"]`)
       ?.classList.add("active");
   if (info.kind === "goal") {
@@ -705,6 +773,7 @@ async function inspect(info, remember = true) {
       $("kernel-details").hidden = true;
       $("kernel-terms").hidden = true;
       $("inspect-description").textContent = `Not checked by cubical C: ${withCode(info.reason, info.code)}`;
+      diagnosticLocations($("inspect-description"), info.diagnostic);
       return;
     }
     // A declared type has no checked term: its signature and eliminator.
@@ -948,6 +1017,8 @@ for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) $(id).onchan
 };
 $("read-mode").onclick = () => setMode("read");
 $("edit-mode").onclick = () => setMode("edit");
+$("generated-mode").onclick = () => setMode("generated");
+$("generated-module").onchange = showGeneration;
 $("editor").oninput = () => {
   refreshStatus();
   rememberDraft();
@@ -959,9 +1030,10 @@ $("editor").onkeydown = (e) => {
   }
 };
 function rememberInspection() {
-  return saveProofNavigation({ proof: proofId, file: documentationExample ? filePath : undefined, backend, source: last.source,
+  return saveProofNavigation({ proof: proofId, example: exampleMode, file: documentationExample ? filePath : undefined, backend, source: last.source,
     selected, history, back: crossFileBack, scroll: window.scrollY,
-    sourceScroll: $("read-source").scrollTop });
+    sourceScroll: $("read-source").scrollTop, sourceMode,
+    generatedModule: $("generated-module").value, generatedScroll: $("generated-source").scrollTop });
 }
 $("back").onclick = () => {
   const previous = history.pop();

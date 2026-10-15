@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
+import { gaps } from "./frontend-generation-cases.mjs";
 // The page loads the WASM kernel from web/dist.
 assertFreshBuild();
 const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
@@ -56,6 +57,101 @@ try {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // Frontend generation is a read-only snapshot of the last check, including
+  // imported modules. Editing never changes that snapshot until a recheck.
+  const generatedExample = `import hlevels;
+theory Generated(U < UU0) { M : set U; c : M; }
+// Keep this definition and its documentation.
+def unchanged(x : Unit) : Unit := x;
+initial N : Generated(U0);`;
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(generatedExample);
+  await page.locator("#check").click(); await idle();
+  await page.locator("#generated-mode").click(); await idle();
+  const generatedSource = page.locator("#generated-source");
+  assert.equal(await generatedSource.evaluate(element => element.tagName), "DIV");
+  assert.equal(await generatedSource.locator("textarea, [contenteditable]").count(), 0);
+  assert.ok(await generatedSource.locator(".keyword").count() > 0);
+  assert.ok(await generatedSource.locator(".comment").count() > 0);
+  assert.ok(await generatedSource.locator(".line-number").count() > 0);
+  const generatedTextContent = async () => (await generatedSource.locator(".line-code").allTextContents()).join("\n");
+  assert.equal(await page.locator("#generated-mode").getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#editor").isVisible(), false);
+  assert.equal(await page.locator("#read-source").isVisible(), false);
+  const generatedText = await generatedTextContent();
+  assert.match(generatedText, /def Generated\.Hom\.id/);
+  assert.match(generatedText, /inductive N : set U0/);
+  assert.match(generatedText, /\/\/ theory Generated\(U < UU0\)/);
+  assert.match(generatedText, /\/\/ initial N : Generated\(U0\);/);
+  assert.match(generatedText, /\/\/ Keep this definition and its documentation\.\ndef unchanged\(x : Unit\) : Unit := x;/);
+  assert.doesNotMatch(generatedText, /display unavailable/);
+  await generatedSource.locator('button[data-name="unchanged"]').first().click(); await inspected("unchanged");
+  assert.equal(await page.locator("#kernel-type").textContent(), "Unit→Unit");
+  const unchangedLine = generatedSource.locator(".source-line").filter({ hasText: "def unchanged" });
+  await unchangedLine.locator('button[data-name="x"]').last().click(); await inspected("x");
+  assert.equal(await page.locator("#kernel-type").textContent(), "Unit");
+  const generatedIdentity = generatedSource.locator('button[data-name="Generated.Hom.id"]').first();
+  await generatedIdentity.click(); await inspected("Generated.Hom.id");
+  assert.ok((await page.locator("#kernel-type").textContent()).length > 0);
+  assert.equal(await generatedSource.locator(".source-line.active").count(), 1);
+  assert.equal(await page.locator("#read-source .source-line.active").count(), 0);
+  await page.locator("#view-source").click();
+  assert.equal(await page.locator("#read-source").isVisible(), true);
+  assert.equal(await page.locator("#read-source .source-line.active").getAttribute("data-line"), "2");
+  await page.locator('#read-source button[data-name="Generated"]').first().click(); await inspected("Generated");
+  await page.locator("#back").click(); await inspected("Generated.Hom.id");
+  assert.equal(await generatedSource.isVisible(), true, "Back restores the generated selection");
+  await generatedSource.locator('button[data-name="IsSet"]').first().click(); await inspected("IsSet");
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=hlevels/);
+  await generatedSource.locator('button[data-name="N"]').first().click(); await idle();
+  assert.equal(await page.locator("#inspect-signature").isVisible(), true);
+  assert.match(await page.locator("#inspect-kind").textContent(), /Declared type/);
+  await page.locator("#generated-module").selectOption("hlevels"); await idle();
+  assert.match(await generatedTextContent(), /Frontend generation · hlevels/);
+  assert.match(await generatedTextContent(), /No frontend-generated declarations/);
+  assert.match(await generatedTextContent(), /def IsSet/);
+  await generatedSource.locator('button[data-name="IsSet"]').first().click(); await inspected("IsSet");
+  await page.locator("#generated-module").selectOption("reference_example"); await idle();
+  assert.equal(await generatedTextContent(), generatedText);
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(generatedExample.replaceAll("Generated", "Replacement"));
+  await page.locator("#generated-mode").click(); await idle();
+  assert.equal(await generatedTextContent(), generatedText);
+  assert.match(await page.locator("#dirty").textContent(), /Generated Cubist show the last checked version/);
+  await generatedSource.locator('button[data-name="Generated.Hom.id"]').first().click(); await inspected("Generated.Hom.id");
+  await page.locator("#check").click(); await idle();
+  assert.equal(await generatedSource.isVisible(), true);
+  assert.match(await generatedTextContent(), /def Replacement\.Hom\.id/);
+  assert.doesNotMatch(await generatedTextContent(), /def Generated\./);
+  const replacementText = await generatedTextContent();
+  // A parse failure preserves the previous program and its generation.
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill("theory Broken {");
+  await page.locator("#check").click(); await idle();
+  assert.equal(await page.locator("#diagnostic").isVisible(), true);
+  await page.locator("#generated-mode").click(); await idle();
+  assert.equal(await generatedTextContent(), replacementText);
+  await generatedSource.locator('button[data-name="Replacement.Hom.id"]').first().click(); await inspected("Replacement.Hom.id");
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill(`import hlevels;
+theory Failed(U < UU0) { M : set U; c : M; law bad : c = tt; }`);
+  await page.locator("#check").click(); await idle();
+  await page.locator("#generated-mode").click(); await idle();
+  assert.match(await generatedTextContent(), /Failed:base · failed/);
+  assert.match(await generatedTextContent(), /Failed:hom · blocked/);
+  assert.match(await page.locator("#generated-status").textContent(), /check incomplete/);
+  await generatedSource.locator('button[data-name="Failed.Hom.id"]').first().click();
+  assert.equal(await page.locator("#kernel-terms").isVisible(), false);
+  assert.match(await page.locator("#inspect-description").textContent(), /Not checked by cubical C/);
+  await page.locator("#edit-mode").click();
+  await page.locator("#editor").fill("def plain : Unit := tt;");
+  await page.locator("#check").click(); await idle();
+  await page.locator("#generated-mode").click(); await idle();
+  assert.match(await generatedTextContent(), /No frontend-generated declarations/);
+  assert.match(await generatedTextContent(), /def plain : Unit := tt;/);
+  await generatedSource.locator('button[data-name="plain"]').first().click(); await inspected("plain");
+  assert.equal(await page.locator("#generated-module option").count(), 1);
+  assert.equal(await page.locator("#editor").inputValue(), "def plain : Unit := tt;");
   // The original remains inspectable after a duplicate is refused, and the
   // separate diagnostic points to the second declaration rather than it.
   const duplicate = Buffer.from("def kept : Unit := tt;\ndef kept : U0 := Unit;\ndef client : Unit := kept;").toString("base64url");
@@ -68,6 +164,44 @@ try {
   assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), "2");
   await page.locator('#read-source button[data-name="kept"]').first().click(); await inspected("kept");
   assert.equal(await page.locator("#kernel-type").textContent(), "Unit");
+  // G9: every freshened law occurrence has its written label and navigates
+  // to the binder, even when the uses occupy different source lines.
+  const lawSource = gaps.G9.source.replace("law l(c : M) : k(c) = op(c, c);",
+    "law l(c : M) :\n    k(c) =\n    op(c, c);");
+  const lawLine = lawSource.slice(0, lawSource.indexOf("law l(c : M)")).split("\n").length;
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(lawSource).toString("base64url")}`);
+  await page.reload(); await idle(); await page.locator("#read-mode").click();
+  const lawOccurrences = page.locator(`#read-source .source-line:is(${[0, 1, 2].map(n => `[data-line="${lawLine + n}"]`).join(", ")}) button[data-name="c"]`);
+  assert.equal(await lawOccurrences.count(), 4);
+  for (let index = 0; index < 4; index++) {
+    await lawOccurrences.nth(index).click(); await inspected("c");
+    assert.equal(await page.locator("#kernel-expression").textContent(), "c");
+    assert.doesNotMatch(await page.locator("#kernel-context").textContent(), /\bc1\b/);
+    await page.locator("#view-source").click();
+    assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), String(lawLine));
+  }
+  // A copied failure links both the caller and the precise imported source.
+  const producer = `import nat;
+inductive Edge { lo; hi; edge : lo = hi; }
+theory Parent(U < UU0) { M : U;
+  def bad(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { rw [nat_add_zero]; };
+}`;
+  await page.route("**/library/hlevels.cubist", route => route.fulfill({contentType:"text/plain",body:producer}));
+  const consumer = "import hlevels;\ntheory Child(U < UU0) extends Parent {}";
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(consumer).toString("base64url")}`);
+  await page.reload(); await idle();
+  const failure = page.locator("#result > div").filter({has:page.getByRole("button",{name:"Child.bad",exact:true})});
+  await failure.locator(".diagnostic-site").filter({hasText:"Source: reference_example:2:"}).click();
+  assert.match(await page.locator("#read-source .source-line.active").textContent(),/extends Parent/);
+  const related = failure.locator(".diagnostic-site").filter({hasText:"Related: hlevels:5:"});
+  assert.ok((await related.getAttribute("href")).includes(`offset=${producer.indexOf("nat_add_zero")}`));
+  await related.click(); await idle();
+  assert.equal(new URL(page.url()).searchParams.get("proof"),"hlevels");
+  assert.match(await page.locator("#read-source .source-line.active").textContent(),/rw \[nat_add_zero\]/);
+  await page.locator("#back").click(); await idle();
+  assert.equal(await page.locator("#editor").inputValue(),consumer);
+  await page.unroute("**/library/hlevels.cubist");
   // An inductive header wrapped over lines keeps its h-level keyword, which
   // the highlighter finds in the whole source, not the line alone (H1).
   const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")

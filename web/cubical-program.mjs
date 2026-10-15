@@ -149,7 +149,7 @@ export class CubicalProgram {
       }
       const aliases=item.aliases?.map(alias=>({...alias,binding:locals.get(localKey(alias))}));
       const origin=source?.origin??item.node.origin,sourceModule=origin?.module??name;
-      references.push({ start: item.node.start, binding });
+      references.push({start:item.node.start,end:item.node.end,name:item.node.name,binding,written:written(item.node)});
       if (!definition) this.views.set(binding, { ...item,aliases,module:name,
         sourceBinding:source?locals.get(localKey(source)):null });
       if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,

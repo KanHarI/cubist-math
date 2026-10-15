@@ -105,7 +105,7 @@ theory Child(U < UU0) extends p : Parent {
 });
 
 test("CB5: inherited proof failures use caller spans and keep the exact written statement",async t=>{
-  for(const statement of ["rfl;","exact refl(succ(zero));","simp only [nat_add_zero];"]) {
+  for(const statement of ["rfl;","exact refl(succ(zero));","simp only [nat_add_zero];","rw [nat_add_zero];"]) {
     const fixture=`import nat; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Parent(U < UU0) { M : set U;
@@ -118,7 +118,8 @@ theory Parent(U < UU0) { M : set U;
       const gap=checked.result.gaps.find(g=>g.name==="Child.bad");
       assert.ok(gap);assert.equal(source.slice(gap.start,gap.end),"Parent");
       assert.equal(gap.diagnostic.primary.module,"main");
-      const related=gap.diagnostic.related.find(site=>site.module==="fixture"&&fixture.slice(site.start,site.end)===statement);
+      const written=statement.startsWith("rw ")?"nat_add_zero":statement;
+      const related=gap.diagnostic.related.find(site=>site.module==="fixture"&&fixture.slice(site.start,site.end)===written);
       assert.ok(related,JSON.stringify(gap));
     }
   }

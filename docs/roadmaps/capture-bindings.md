@@ -1,7 +1,8 @@
 # Correct capture and bindings
 
 Status: CB0–CB3 implemented, 2026-10-15; CB3 review is clean at round 5.
-CB4 is implemented in a separate worktree, under validation; CB5–CB7 remain pending.
+CB4 is ready in #237 after a clean second Claude review. CB5 is implemented
+locally under validation; CB6–CB7 remain pending.
 The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
 evidence integration, remaining requirements and validation.
 The [CB2 evidence](capture-bindings-cb2.md) records production integration,

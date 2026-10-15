@@ -20,7 +20,9 @@ export function qualifySource(tree,{revision,module}) {
   // The parser owns this fresh graph. Annotate shared nodes once, before any
   // expansion; source collection is a consumer of provenance, not its owner.
   visitSyntax(tree,node=>{
-    if(node&&(node.kind||typeof node.text==="string")&&Number.isInteger(node.start)&&Number.isInteger(node.end))
+    // Clause/rule records have spans too, even when they have no `kind`.
+    // They can be the innermost diagnostic site after a source copy.
+    if(node&&!sourceMetadata("origin",node)&&Number.isInteger(node.start)&&Number.isInteger(node.end))
       node.origin??=sourceOrigin({revision,module,start:node.start,end:node.end});
   });
   return tree;

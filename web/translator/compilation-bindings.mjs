@@ -18,6 +18,7 @@ export class CompilationBindings {
     this.revision=revision;this.table=table;
   }
   declaration(key) {return this.#declarations.get(key)??null;}
+  declarationEntries() {return this.#declarations.entries();}
   declare(module,declaration,key) {
     // A rejected duplicate does not reassign the original declaration's
     // identity or source owner. Reservation itself grants no checked value.

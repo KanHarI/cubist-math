@@ -1,8 +1,8 @@
 # CB5: diagnostics and public views
 
-Status: implementation in a separate worktree on CB4 #237, now ready after a
-clean second Claude review. CB6 contextual sessions and CB7 retirement remain
-separate packages.
+Status: implemented locally on CB4 #237, under full validation. CB4 is ready
+after a clean second Claude review. CB5 has not yet had its external review;
+CB6 contextual sessions and CB7 retirement remain separate packages.
 
 ## Contract and implementation order
 
@@ -90,3 +90,38 @@ identical checking work/results, inert syntax, exact declaration IDs, imported
 origins, failure rollback and recheck invalidation. An unresolved source name
 is refused before artifact construction, so the failed-family control uses a
 well-resolved type mismatch instead. Printing and browser integration remain.
+
+## Generated display checkpoint
+
+The Generated Cubist tab and module selector now use retained declarations and
+publication states. Unchanged source keeps its comments and inspection links;
+failed and blocked families retain their syntax without claiming checked terms.
+Editing and parse failures preserve the previous checked snapshot. Generated
+links carry existing local/public inspection metadata by identity, including
+the source module and binder position of an inherited helper.
+
+The printer reuses the shared scope traversal to assign internal aliases and
+keeps public parameter labels. It uses exact declaration and local IDs for
+links, with no environment lookup or elaboration. Colliding captures, hidden
+outer parameters, model openings, deferred patterns and notation contexts are
+explicitly marked when ordinary source cannot express their binding structure.
+Checked initial/free arguments use the existing core printer only after exact
+global substitution; unsupported or potentially capturing fragments are marked.
+Source-expressible fragments pass binding-structure round trips, including a
+negative control that captures the wrong binder.
+
+Primary and related diagnostic sites now navigate to their qualified source
+positions. Imported binder navigation also preserves its precise offset, and
+Back restores an example's checked source rather than opening the default proof.
+The proof-block display control exposed an additional provenance gap: parser
+rule records have spans but no `kind`, so the original source qualification
+skipped them. The shared pass now qualifies every source span, including these
+records; an imported inherited rewrite failure verifies caller and producer
+locations. This closes the same source-ownership root recorded in earlier rounds.
+
+Focused printer/provenance controls pass, including generated proof blocks,
+imported navigation, captured declarations under model openings and a poisoned
+environment lookup. The browser suite passes. A display sweep covers 45 source
+modules and all 2,919 retained declarations without display failure. Full
+regression/corpus and production mutation gates are running; external review
+will use the committed, validated implementation.
