@@ -174,14 +174,18 @@ test("captured operand receivers keep caller references and defer refused depend
       def broken : Pick(U0) := tt;
       pow(x : M, n : Nat) : M notation x ^ broken.(n);
     }
+    def invalid : Unit := tt;
+    theory Invalid(U < UU0) { M : U; pow(x : M, n : Nat) : M notation x ^ invalid.(n); }
     def instance_ : Power(U0) := Power.make(Nat, fun (x, n : Nat) => n);
     def partial : Partial(U0) := Partial.make(Nat, zero, fun (x, n : Nat) => n);
+    def invalid_instance : Invalid(U0) := Invalid.make(Nat, fun (x, n : Nat) => n);
   `;
   const {program,result}=await checkProgram(t,source,{module,reader:(name,importer)=>name==="shared"?shared:library(name,importer)});
   assert.deepEqual(result.gaps.map(g=>g.name),["Partial.broken"],JSON.stringify(result.gaps));
   const client=`def value(n : Nat) : Nat := instance_.(zero ^ n);
     def healthy : Nat := partial.(point);
-    def uses_broken : Nat := partial.(zero ^ zero);`;
+    def uses_broken : Nat := partial.(zero ^ zero);
+    def uses_invalid : Nat := invalid_instance.(zero ^ zero);`;
   const references=[];let declaration;
   const checker=Object.create(program.checker);checker.bindingName=name=>`client__${name}`;
   checker.define=(name,...args)=>program.checker.define(checker.bindingName(name),...args);
@@ -190,8 +194,11 @@ test("captured operand receivers keep caller references and defer refused depend
     onReference:node=>{if(declaration==="value")references.push(node);}});
   const checked=translator.translateSyntax(parse(client),client,program.modules.get("main"));
   const failures=checked.declarations.filter(d=>d.status!=="checked-native-cubical");
-  assert.deepEqual(failures.map(d=>d.name),["uses_broken"],JSON.stringify(failures));
+  assert.deepEqual(failures.map(d=>d.name),["uses_broken","uses_invalid"],JSON.stringify(failures));
   assert.match(failures[0].reason,/Untranslated dependency: Partial.broken/);
+  assert.match(failures[1].reason,/use selects a model of a theory/);
+  assert.equal(failures[1].errorStart,client.lastIndexOf("zero"));
+  assert.equal(failures[1].errorEnd,client.lastIndexOf("zero")+4);
   assert.ok(references.every(node=>node.start<client.indexOf("def healthy")),JSON.stringify(references));
   for(const start of [client.indexOf("instance_."),client.indexOf("zero ^"),client.indexOf("n);")])
     assert.ok(references.some(node=>node.start===start),`caller reference at ${start}`);

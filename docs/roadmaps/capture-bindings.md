@@ -396,8 +396,11 @@ descriptors only when an operand consumes its recipe, so an unused failed
 helper cannot prevent selecting healthy fields. Receiver elaboration and its
 generated projections use the receiver's observation scope; only the resulting
 notation effect enters the caller. The operand keeps the caller's bindings
-and reference recorder. This boundary does not migrate named rule bodies or
-the nominal producer's internal textual expansion paths.
+and reference recorder. The selection boundary also keeps its caller use site
+separate from the captured receiver, so a rejected receiver cannot report an
+offset from the producer against the caller's document. This boundary does
+not migrate named rule bodies or the nominal producer's internal textual
+expansion paths.
 
 Shared notation validation returns both the operator and its operand views.
 Both producers honor explicit views on family notation, correcting the

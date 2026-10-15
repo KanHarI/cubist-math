@@ -302,6 +302,7 @@ function notationSelected(scope,notation) {
 // notation the declaration after them prints in (L2.10j).
 export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
 export function selected(t,scope,node,{effects=selectionEffects.all,activation=null}={}) {
+  const site=node;
   if(!effects.labels&&!effects.notation)return activation
     ?scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,[])):scope;
   // Synthesized operand selection owns only its receiver environment. Apply
@@ -336,7 +337,7 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   }
   if(inner)return inner;
   throw scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
-    t.shown(scope.infer(receiver).type)}.`),node);
+    t.shown(scope.infer(receiver).type)}.`),site);
 }
 
 // m.(+), a model's operation that its theory's notation binds + to: the
