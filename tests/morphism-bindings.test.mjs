@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {parse} from "../web/cubist/parser.mjs";
 import {BindingTable,LexicalContext,bindingResolution,reservedResolution,sourceOrigin} from "../web/cubist/bindings.mjs";
 import {RetainedInterfaces,interfaceType} from "../web/cubist/retained-interfaces.mjs";
-import {morphismSource} from "../web/cubist/morphisms.mjs";
+import {morphismPlan} from "../web/cubist/morphisms.mjs";
 import {equationalSupport} from "../web/translator/initial-models.mjs";
 
 const declaration=text=>parse(text).declarations[0];
@@ -30,16 +30,16 @@ test("morphism shape analysis distinguishes same-labelled external, carrier and 
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   field(retain("def c : M := tt;"));
   const polymorphic=retain("def poly(M : U0, x : M) : M := x;");field(polymorphic);
-  const result=morphismSource(record());
+  const result=morphismPlan(record());
   assert.equal(result.missing,undefined);assert.equal(result.pending,undefined);
   assert.equal(result.support.status,"conditional");assert.equal(result.isoSupport.status,"conditional");
-  assert.ok(result.declarations.some(d=>d.name==="T.Hom.id"));
-  const markers=[...result.typeMarkers.values()];
-  assert.ok(markers.some(({type})=>type.resolution?.id===outer.id),"a same-named source global stays external");
-  const local=polymorphic.syntax.tree.params[0].name.bindingId;
-  assert.ok(markers.some(({type,locals})=>type.resolution?.id===local&&locals.has(local)),
-    "a local type parameter carries its own template binder correspondence");
-  assert.ok(markers.every(({type})=>type.resolution?.id!==carrier.id),"carrier positions are mapped, not classified as fixed types");
+  const outside=result.mapping.operations.find(op=>op.id===external.id);
+  assert.equal(outside.inputs[0].shape.kind,"fixed");
+  assert.equal(outside.inputs[0].type.resolution.id,outer.id,"same-named source global stays external");
+  const poly=result.mapping.operations.find(op=>op.id===polymorphic.id);
+  assert.equal(poly.inputs[1].type.resolution.id,poly.inputs[0].id,"local dependent domains keep their binder ID");
+  const point=result.mapping.operations.find(op=>op.name==="c");
+  assert.deepEqual([point.result.shape.kind,point.result.shape.sort],["carrier",carrier.id]);
 });
 
 test("support plans keep unused pattern decisions conditional without inventing dependencies",()=>{
@@ -47,9 +47,9 @@ test("support plans keep unused pattern decisions conditional without inventing 
   const carrier=retain("def M : U := Unit;","sort");field(carrier);
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   field(retain("def op(x : match tt { unknown => Unit; }) : M := tt;"));
-  const retained=record(),result=morphismSource(retained);
+  const retained=record(),result=morphismPlan(retained);
   assert.equal(result.support.status,"conditional");
-  assert.ok(result.declarations.length);
+  assert.ok(result.homFields.length);
   assert.equal(equationalSupport(retained).status,"conditional");
 });
 
@@ -58,9 +58,9 @@ test("support considers the captured constructor alternative of a used pattern s
   const carrier=retain("def M : U := Unit;","sort");field(carrier);
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   field(retain("def op(x : match tt { M => M; }) : M := tt;"));
-  const retained=record(),result=morphismSource(retained);
+  const retained=record(),result=morphismPlan(retained);
   assert.equal(result.support.status,"unsupported");
-  assert.equal(result.declarations,undefined);
+  assert.equal(result.mapping,undefined);
   assert.equal(equationalSupport(retained).status,"unsupported");
 });
 
@@ -69,12 +69,12 @@ test("both support strategies retain inferred type holes as pending obligations"
   const carrier=retain("def M : U := Unit;","sort");field(carrier);
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   const operation=retain("def op(x : _) : M := tt;");field(operation);
-  const retained=record(),hom=morphismSource(retained),equational=equationalSupport(retained);
+  const retained=record(),hom=morphismPlan(retained),equational=equationalSupport(retained);
   for(const support of [hom.support,hom.isoSupport,equational]) {
     assert.equal(support.status,"pending");
     assert.ok(support.obligations.some(use=>use.kind==="hole"&&use.field===operation.id));
   }
-  assert.equal(hom.declarations,undefined);
+  assert.equal(hom.mapping,undefined);
 });
 
 test("Hom transport support follows proof identities and records its dependency",()=>{
@@ -83,12 +83,12 @@ test("Hom transport support follows proof identities and records its dependency"
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   const proof=retain("def proof_ : Unit := tt;","law");field(proof);
   const operation=retain("def op(p : proof_ = proof_) : M := tt;");field(operation);
-  const result=morphismSource(record());
+  const result=morphismPlan(record());
   assert.equal(result.support.status,"unsupported");
   assert.equal(result.support.dependency.id,proof.id);
   assert.equal(result.support.field,operation.id);
   assert.equal(result.isoSupport,result.support);
-  assert.equal(result.declarations,undefined);
+  assert.equal(result.mapping,undefined);
 });
 
 test("a later helper cannot retarget an earlier header dependency in Hom support",()=>{
@@ -97,7 +97,7 @@ test("a later helper cannot retarget an earlier header dependency in Hom support
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   field(retain("def op(p : n = n) : M := tt;"));
   const later=retain("def n : Unit := tt;","derived");
-  const retained=record(),result=morphismSource(retained);
+  const retained=record(),result=morphismPlan(retained);
   assert.equal(result.support.status,"conditional");
   const domain=result.support.mapping.operations[0].inputs[0].type;
   assert.equal(domain.left.resolution.id,retained.params[0].id);
@@ -111,7 +111,7 @@ test("Hom variance and equational constructor support remain different predicate
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   const operation=retain("def run(k : M -> Unit) : M := tt;");field(operation);
   const retained=record();
-  assert.equal(morphismSource(retained).support.status,"conditional");
+  assert.equal(morphismPlan(retained).support.status,"conditional");
   const equational=equationalSupport(retained);
   assert.equal(equational.status,"unsupported");assert.equal(equational.field,operation.id);
   assert.equal(equational.dependency.id,carrier.id);
@@ -123,9 +123,9 @@ test("an indexed set can have a Hom plan while its Iso plan remains unsupported"
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   const family=retain("def F(x : M) : U := Unit;","sort");field(family,{family:true});
   field(retain("def F_is_set(x : M) : IsSet(U, F(x)) := tt;","evidence"),{of:family.id,evidence:"IsSet"});
-  const result=morphismSource(record());
+  const result=morphismPlan(record());
   assert.equal(result.support.status,"conditional");
   assert.equal(result.isoSupport.status,"unsupported");
-  assert.ok(result.declarations.some(d=>d.name==="T.Hom.compose"));
-  assert.ok(!result.declarations.some(d=>d.name==="T.Iso"));
+  assert.ok(result.homFields.length);
+  assert.match(result.missingIso,/round trips would need a transport/);
 });

@@ -147,7 +147,7 @@ test("generated structural self calls keep the fixed model and explicit paramete
   assert.equal(equal("value","right_"),true);assert.equal(equal("value","left_"),false);
 });
 
-test("Hom and Iso templates splice retained helper types and dependent locals by identity",async t=>{
+test("Hom and Iso artifacts compose retained helper types and dependent locals by identity",async t=>{
   const {add,build,check,metadata}=await setup(t);
   const carrier=add("def M : U := Unit;","sort");
   const evidence=add("def M_is_set : IsSet(U, M) := tt;","evidence");

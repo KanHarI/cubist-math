@@ -1,14 +1,12 @@
 // Base theory artifacts are compositions of retained interfaces. Source
 // syntax never enters name resolution here: header and field substitutions
 // are explicit identities, and every emitted declaration owns fresh locals.
-import {reservedResolution,LexicalContext} from "./bindings.mjs";
-import {bindingSyntaxView,substituteBindingSyntax,resolveBindingTemplate,bindingUses} from "./binding-syntax.mjs";
+import {bindingSyntaxView} from "./binding-syntax.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
-import {freshName,scopeMapped,rewritten,relocated,unlinked} from "./scopes.mjs";
-import {parse,reservedReferences} from "./parser.mjs";
-import {morphismSource} from "./morphisms.mjs";
+import {freshName,scopeMapped,unlinked} from "./scopes.mjs";
+export {retainedMorphismArtifacts} from "./retained-morphism-artifacts.mjs";
 
-import {ArtifactBuilder,at,reference,builtin,token,call} from "./artifact-builder.mjs";
+import {ArtifactBuilder,at,reference,token,call} from "./artifact-builder.mjs";
 
 // Return inert artifacts; the translator's bindingDeclaration boundary puts
 // them on its ordinary checked/publication queue. Declaration identities are
@@ -54,8 +52,6 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
       family:generated.role==="derived"?`derived:${generated.field}`:"base",...generated},{inferred});
   };
   const local=(label,source=origin)=>builder.local(label,source);
-  const max=values=>values.length===1?values[0]:call(builtin("max",origin),[values[0],max(values.slice(1))],origin);
-  const modelUniverse=call(builtin("next",origin),[max(universes.map(p=>reference(table.get(p.name.bindingId))))],origin);
 
   // Model type: a dependent tuple closes each field identity with its own
   // fresh binder, after its complete type has been instantiated.
@@ -67,7 +63,7 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
     modelBody={kind:"exists",name:token(fieldLocals.get(field.id)),binderKind:"exists",
       domain:substitute(fieldTypes.get(field.id),fieldMap).tree,body:modelBody,...at(field.binding.origin)};
   }
-  emit(record.name,headerParameters(),modelUniverse,modelBody,{role:"model"});
+  emit(record.name,headerParameters(),null,modelBody,{role:"model"},{inferred:true});
 
   // Constructor: the same dependent interface, closed by parameters. Each
   // declaration clone below gives these binders independent identities.
@@ -135,78 +131,4 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
       projectionId:bindings.get(`${record.name}.${parent.label}`).id}))};
   artifacts[0].theory=retainedRecord;
   return {artifacts,bindings,views,record:retainedRecord};
-}
-
-// Until CB4 replaces the Hom/Iso templates, only the template-owned text is
-// parsed. Each source fragment is spliced under an explicit correspondence
-// to the already-resolved template binders and generated declarations.
-export function retainedMorphismArtifacts(record,{table,owner,bindings,outerReferences=null,isTheory}) {
-  const plan=morphismSource(record,isTheory),artifacts=[];
-  const support={homSupport:plan.support,isoSupport:plan.isoSupport,
-    ...(plan.missing?{noMorphisms:plan.missing}:{}),...(plan.missingIso?{noIsomorphisms:plan.missingIso}:{})};
-  if(!plan.declarations)return {plan,artifacts,bindings,record:{...record,...support}};
-  const origin=record.origin??record.bindingSyntax.tree.name.origin;
-  const view=tree=>bindingSyntaxView(record.bindingSyntax,tree);
-  for(const declaration of plan.declarations) {
-    if(bindings.has(declaration.name))throw new TypeError("A morphism artifact identity is already reserved.");
-    bindings.set(declaration.name,table.allocate([...owner,"declarations"],{role:"declaration",label:declaration.name,origin}));
-  }
-  if(!outerReferences) {
-    outerReferences=new Map();
-    for(const parent of record.parents)for(const [name,id] of [[`${parent.theory}.Hom`,parent.homId],[`${parent.theory}.Hom.make`,parent.homMakeId]])if(id) {
-      if(outerReferences.has(name)&&outerReferences.get(name).id!==id)
-        throw new TypeError("Parent template references require distinct declaration markers.");
-      outerReferences.set(name,table.get(id));
-    }
-  }
-  let serial=0;
-  const local=(context,label)=>{
-    const resolution=context.lookup(label);
-    if(resolution.tag!=="binding")throw new TypeError(`A template interface has no local binding for ${label}.`);
-    return view({...reference(table.get(resolution.id)),spelling:label});
-  };
-  const instantiate=(tree,context,{universes,model,locals=new Map()})=>{
-    const syntax=view(tree),needed=new Set(bindingUses(syntax,{conditional:true}).filter(use=>use.kind==="binding").map(use=>use.id));
-    const replacements=new Map();
-    record.universeIds.forEach((id,k)=>{if(needed.has(id))replacements.set(id,local(context,universes[k]));});
-    for(const parameter of plan.parameters)if(needed.has(parameter.id))replacements.set(parameter.id,local(context,parameter.name));
-    for(const [id,label] of locals)if(needed.has(id))replacements.set(id,local(context,label));
-    for(const field of record.fields)if(needed.has(field.id)) {
-      if(!model)throw new TypeError("A retained field needs an explicit template model.");
-      replacements.set(field.id,view(call(reference(table.get(field.projectionId)),[local(context,model).tree],origin)));
-    }
-    return substituteBindingSyntax(syntax,replacements,table,[...owner,"splice",String(serial++)]);
-  };
-  const splices=new Map([
-    ...record.params.map((parameter,k)=>[plan.parameterMarker(k),context=>instantiate(parameter.type,context,{universes:plan.universes})]),
-    ...[...plan.typeMarkers].map(([marker,payload])=>[marker,context=>instantiate(payload.type,context,payload)]),
-    ...[...plan.references].map(([marker,{name,scope}])=>[marker,()=>{
-      const binding=(scope==="generated"?bindings:scope==="outer"?outerReferences:null)?.get(name);
-      if(!binding)throw new TypeError(`A template declaration needs an explicit ${scope} identity for ${name}.`);
-      return view(reference(table.get(binding.id)));
-    }]),
-  ]);
-  for(const [index,declaration] of plan.declarations.entries()) {
-    const source=declaration.source.replace(/^def \S+?(?=[{(:])/,`def generated_${index}`);
-    let tree=relocated(parse(source).declarations[0],at(origin));
-    tree=rewritten(tree,node=>node.kind==="name"&&splices.has(node.name)
-      ?{kind:"templateHole",hole:node.name,...at(origin)}:node);
-    for(const parameter of tree.params??[])if(Object.hasOwn(declaration.labels??{},parameter.name.text))
-      parameter.label=declaration.labels[parameter.name.text];
-    for(const parameter of tree.params??[]) {
-      const source=plan.parameters.find(p=>p.name===parameter.name.text);
-      if(source?.label)parameter.label=source.label;
-    }
-    const context=new LexicalContext(reservedReferences(source).map(label=>[label,reservedResolution(label)]));
-    const syntax=resolveBindingTemplate(tree,{table,owner:[...owner,"artifact",String(index)],context,source:origin},splices);
-    const theory=declaration.record?{...declaration.record,modelId:bindings.get(declaration.record.model).id,
-      makeId:bindings.get(declaration.record.make).id,
-      fields:declaration.record.fields.map(field=>({...field,projectionId:bindings.get(field.projection).id})),
-      parents:declaration.record.parents.map(parent=>({...parent,projectionId:bindings.get(parent.projection).id}))}:null;
-    artifacts.push({binding:bindings.get(declaration.name),syntax,
-      generated:{theory:record.name,role:declaration.role,family:declaration.family,...(declaration.field?{field:declaration.field}:{})},
-      ...(theory?{theory}:{})});
-  }
-  return {plan,artifacts,bindings,record:{...record,...support,
-    homId:bindings.get(`${record.name}.Hom`).id,homMakeId:bindings.get(`${record.name}.Hom.make`).id}};
 }

@@ -1,8 +1,9 @@
 # CB4: generated artifacts
 
-Status: preparing on `cb4-artifact-builder`, stacked on CB3 #236. CB3's reviewed
-worktree stays frozen; this package will not be published before that review
-finishes. CB5–CB7 remain subsequent packages.
+Status: implemented, validation in progress on `cb4-artifact-builder`, stacked
+on CB3 #236. The separate worktree preserves CB3's frozen review. This package
+will not be published before that review finishes. CB5–CB7 remain subsequent
+packages.
 
 ## Contract
 
@@ -50,3 +51,19 @@ freshening between the existing direct base and initial/free builders. Their
 existing retained-theory, initial/free and morphism controls pass 72/72 after
 restoring the import still needed by the temporary morphism path. Hom/Iso
 still use templates at this checkpoint; this is not CB4 completion.
+
+Direct Hom/Iso construction now consumes identity-based support and mapping
+plans. Every source telescope occurrence receives fresh locals, including
+repeated family indices in disjoint round-trip fields. Calls supply explicit
+implicit arguments where the previous generator did; parent projections use
+exact parent declaration and child-field IDs. Base model, Hom and Iso types
+use ordinary inference. The source-string producer, marker splices and unused
+template resolver are removed. The old template test now exercises the same
+capture/distinct-computation contract through the artifact builder.
+
+Validation so far: the artifact, support and adopted #220 universe suites pass
+77/77. G2 passes in strict mode, so its known-defect exemption is retired. The
+broader generation/publication/invariant/theory/initial-model run has zero
+failures and only the two existing CB5 lint TODOs. These checks include exact
+parent availability, rollback, source-name collisions, preservation and fold
+computation. Full validation, mutations and external review are still required.
