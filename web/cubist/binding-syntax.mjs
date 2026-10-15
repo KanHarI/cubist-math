@@ -452,13 +452,18 @@ const mappedResolution = (value, ids) => mapResolution(value,id=>ids.get(id)??id
 // Open parent fields may share a child identity. This public operation may
 // never change or target a local binder. Only cloning can rename locals,
 // using fresh identities allocated by the table itself.
-export function remapBindingSyntax(syntax,table,correspondence) {
+// Validate before a caller allocates fresh identities, without constructing
+// a remapped tree solely to check the correspondence.
+export function validateBindingCorrespondence(syntax,table,correspondence) {
   requireSyntax(syntax);
   const locals=new Set(syntax.owned);
   for(const [before,after] of correspondence) {
     table.get(before);table.get(after);
     if(locals.has(before)||locals.has(after))throw new TypeError("An open interface correspondence cannot change or capture local binders.");
   }
+}
+export function remapBindingSyntax(syntax,table,correspondence) {
+  validateBindingCorrespondence(syntax,table,correspondence);
   return mappedBindingSyntax(syntax,correspondence);
 }
 function mappedBindingSyntax(syntax,correspondence) {

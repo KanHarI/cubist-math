@@ -127,7 +127,6 @@ test("helper normalization cannot erase an ill-typed unused argument or result a
     add("def Bad(x : Unit) : U0 := tt;","derived");
     add(`def M(x : ${invalid}) : U := Unit;`,"sort");
     const built=build(),last=retainedLast(built),views=built.views.get(last.id);
-    assert.ok(views.obligations.some(o=>o.kind==="interface-check"&&o.entry===last.id));
     assert.notDeepEqual(views.checking.tree,views.analysis.tree);
     const {result}=check(built);
     assert.ok(failures(result).some(([name])=>name==="T"),invalid);

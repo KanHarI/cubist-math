@@ -1,7 +1,6 @@
 // A model notation's operand receivers belong to the field declaration's
 // surrounding interface, outside the formal operand binders. The receiver
 // syntax stays open over that interface until a checked model supplies it.
-import {LexicalContext} from "./bindings.mjs";
 import {resolveBindingReceiver,cloneBindingSyntax,remapBindingSyntax,sameBindingSyntax} from "./binding-syntax.mjs";
 import {notationKey,notationViews,validateFieldNotation} from "./theory-notation.mjs";
 import {parentNamespaceFailure} from "./retained-interfaces.mjs";
@@ -9,13 +8,15 @@ import {parentNamespaceFailure} from "./retained-interfaces.mjs";
 export function retainFieldNotation(item,entry,fields,options) {
   if(!item.notation)return null;
   const parameters=entry.syntax.tree.params.filter(p=>!p.name.synthetic);
-  const {key,views}=validateFieldNotation(item,{theory:options.theory,isCarrier:k=>{
+  const {key}=validateFieldNotation(item,{theory:options.theory,isCarrier:k=>{
     const type=options.domains?.get(parameters[k]?.name.bindingId)??parameters[k]?.type;
     return type?.kind==="bindingReference"&&type.resolution.tag==="binding"
       &&fields.some(field=>field.id===type.resolution.id&&field.kind==="sort");
   }});
-  const recipe=options.recipe??retainOperandRecipe(views,new LexicalContext(entry.lexical),
-    {...options,owner:[...options.owner,"notation",entry.id]});
+  // The source producer resolves receivers before admitting the operation.
+  // Validation consumes that recipe; it cannot reconstruct a source scope.
+  const {recipe}=options;
+  if(!recipe)throw new TypeError("A field notation needs its source-resolved operand recipe.");
   return Object.freeze({key,field:entry.id,recipe});
 }
 

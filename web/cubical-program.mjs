@@ -359,7 +359,6 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
-          scopeRecorder?.declaration(name,declaration,checker.bindingName(declaration.name.text));
           if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);

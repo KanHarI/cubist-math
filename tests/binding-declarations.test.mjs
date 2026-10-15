@@ -37,8 +37,7 @@ async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const checker=Object.create(program.checker);
   checker.bindingName=label=>`pilot__${label}`;
   checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"pilot",scopePoints:recorder,
-    onDeclarationStart:d=>recorder.declaration("pilot",d,checker.bindingName(d.name.text))});
+  const translator=new Translator({checker,normalize:false,moduleName:"pilot",scopePoints:recorder});
   const result=translator.translateSyntax(lowerBindingModule(prepared),source,env,{bindingAdapter:adapter});
   return {program,translator,result,points,table,artifacts,adapter};
 }

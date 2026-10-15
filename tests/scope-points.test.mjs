@@ -104,7 +104,7 @@ def negative : Unit { let named := global; simpa with [global] using named; }`;
 
 test("shared lexical descriptions retain each point's mutable recursion permissions",()=>{
   const descriptions=[],recorder=new ScopePoints("permissions",{onPoint:point=>descriptions.push(point)});
-  recorder.declaration("main",{name:{text:"f",start:4,end:5}},"main__f");
+  recorder.compilation.declare("main",{name:{text:"f",start:4,end:5}},"main__f");
   const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",declaring:"f",scopePoints:recorder}).declaration();
   const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
   const scope=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
