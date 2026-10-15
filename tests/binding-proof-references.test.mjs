@@ -158,4 +158,78 @@ test("substituted proof fields keep their written diagnostic labels and source-o
   for(const [index,label] of ["fz","fr"].entries()) {
     assert.match(gaps[index].reason,new RegExp(`local(?: hypothesis)?: ${label}\\.`));
   }
+  const renamed=prelude+fields.slice(0,-1)+helpers+`}
+theory Child(U < UU0) extends Parent(fz := gz, fr := gr) {}
+theory Grand(U < UU0) extends Child(gz := hz, gr := hr) {}`;
+  const copy=new CubicalProgram(wasm,read);t.after(()=>copy.dispose());
+  const inherited=await copy.check(renamed,"main");
+  assert.equal(inherited.gaps.length,6,JSON.stringify(inherited.gaps));
+  for(const gap of inherited.gaps) {
+    const label=gap.code==="E331"?"fz":"fr";
+    assert.match(gap.reason,new RegExp(`local(?: hypothesis)?: ${label}\\.`));
+    assert.equal(renamed.slice(gap.start,gap.end),label);
+  }
+});
+
+test("freeze edits preserve written field, helper and using references through inheritance",async t=>{
+  const prelude="import nat; import hlevels; inductive Edge { lo; hi; edge : lo = hi; }";
+  const helper="def lemma(n : Nat) : add(n, zero) = n := nat_add_zero(n);";
+  const bodies=`
+def by_field(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  obligations by { simp [fe]; };
+def by_helper(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  obligations by { simp [lemma]; };
+def by_using(x : Edge) : Nat := match x { lo => add(zero, zero); hi => zero; }
+  obligations by { simpa [nat_add_zero] using fz; };`;
+  const sources=[
+    prelude+`def fe(n : Nat) : add(n, zero) = n := nat_add_zero(n);
+def fz : zero = zero := refl(zero);`+helper+bodies,
+    prelude+`theory Parent(U < UU0) { M : set U;
+fe(n : Nat) : add(n, zero) = n; fz : zero = zero; ${helper}${bodies}}
+theory Child(U < UU0) extends Parent(fe := renamed_fe, fz := renamed_fz) {}`,
+  ];
+  const run=async source=>{
+    const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps,[]);
+    assert.ok(result.outputs.filter(d=>/(^|\.)by_/.test(d.name)).every(d=>d.verified&&!d.axioms.length));
+    return result;
+  };
+  for(const source of sources) {
+    const result=await run(source);
+    for(const [original,text,label] of [
+      ["simp [fe];","simp only [fe];","fe"],
+      ["simp [lemma];","simp only [lemma];","lemma"],
+      ["simpa [nat_add_zero] using fz;","simpa only [nat_add_zero] using fz;","nat_add_zero"],
+    ]) {
+      const links=result.links.filter(link=>link.freeze?.original===original);
+      assert.ok(links.length,original);
+      for(const link of links) {
+        assert.equal(link.freeze.text,text);
+        assert.ok(link.description.endsWith(`using ${label}.`),link.description);
+      }
+      const edit=links[0].freeze;
+      await run(source.slice(0,edit.start)+edit.text+source.slice(edit.end));
+    }
+  }
+});
+
+test("conditional rule failures name the written field in ordinary and inherited proofs",async t=>{
+  const prelude="import nat; import hlevels; inductive Edge { lo; hi; edge : lo = hi; }";
+  const proof=`def rejected(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  obligations by { simp only [fc]; };`;
+  for(const source of [
+    prelude+"def fc(n : Nat, h : n = zero) : add(n, zero) = n := nat_add_zero(n);"+proof,
+    prelude+`theory Parent(U < UU0) { M : set U; fc(n : Nat, h : n = zero) : add(n, zero) = n; ${proof}}
+theory Child(U < UU0) extends Parent(fc := renamed_fc) {}`,
+  ]) {
+    const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+    const result=await program.check(source,"main");
+    assert.equal(result.gaps.length,source.includes("theory Parent")?2:1,JSON.stringify(result.gaps));
+    for(const gap of result.gaps) {
+      assert.equal(gap.code,"E456");
+      assert.match(gap.reason,/Rule fc has an unproved premise/);
+      assert.equal(source.slice(gap.start,gap.end),"fc");
+    }
+  }
 });

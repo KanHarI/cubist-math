@@ -264,3 +264,34 @@ state layer or compatibility mode was introduced.
 Final round-1 fix validation: 1,201 tests pass out of 1,214, with 13 documented
 later-phase TODOs and zero failures; all 3,857 canonical checks pass. All four
 production mutations are killed. Source/tests remained frozen during validation.
+
+## CB3 external review, round 2 — diagnosis before fixes
+
+Claude reviewed `2e483917`. The evidence guard is clean, including models
+passed through lazy notation operands. One actionable finding repeats the
+source-ownership root: the first fix repaired `localReference` but missed
+rule descriptions and freeze suggestions reading the same substituted nodes.
+They slice the projection's offsets, producing the theory name in place of a
+field or helper; applying the suggested edit breaks the proof. Renamed copies
+also pair a child's binding label with the parent's written token.
+
+The missing abstraction is one lookup of the existing written occurrence,
+shared by diagnostic labels, simplification rule text and `using` suggestions.
+When its source belongs to this unit, use that exact text and site together;
+otherwise retain the binding label without reading foreign offsets. No new
+frame data, state or resolver is needed. Before implementation, the consumers
+were traced through `displayName`, E456, step descriptions and freeze edits;
+local witness/target clauses cannot consume nonlocal substituted fields.
+Controls will apply the suggestions and recheck field/helper/using proofs,
+check E456 labels and test renamed inheritance against ordinary declarations.
+General imported statement locations remain the separately reproduced CB5 gap.
+
+The shared lookup now covers those consumers, and all 60 focused tests pass.
+The remaining source-slice audit also reproduced `rw [fe]` displaying
+"Checked rewrite using Parent" for a theory field, identically on this tree
+and base `790162dd`. That existing description and generic generated-expression
+views belong with CB5; no source edit is offered by that rewrite description.
+
+Final round-2 fix validation: 1,203 tests pass out of 1,216, with 13 documented
+later-phase TODOs and zero failures; all 3,857 canonical checks pass. All four
+production mutations are killed. Source/tests remained frozen during validation.

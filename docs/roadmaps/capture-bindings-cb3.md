@@ -1,6 +1,6 @@
 # CB3: deferred scopes
 
-Status: implemented; external round-1 fixes validated on `cb3-deferred-scopes`,
+Status: implemented; external round-2 fixes validated on `cb3-deferred-scopes`,
 based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
 the arbitrary-context REPL is still the CB6 deliverable.
 
@@ -138,3 +138,18 @@ Round-1 fix validation: 18/18 focused tests; `cb3-r1-full.log` passes 1,201 of
 1,214 tests, with 13 documented later-phase TODOs and zero failures. All 3,857
 canonical checks pass, and all four production mutations are killed. Source
 and tests were frozen for these runs. Round 2 will review this small delta.
+
+Round 2 found the same ownership loss in sibling consumers: explicit rule
+descriptions and freeze suggestions still sliced the replacement projection's
+offsets. The offered edit named the theory instead of the written field/helper
+and failed when applied. One `writtenReference` lookup now feeds diagnostic
+labels, rule text and `using` edits from the existing substitution frame.
+Same-module text and location stay together even after renamed inheritance;
+foreign origins provide only a binding label. No new frame data or state is
+introduced. The new controls apply every suggested edit and recheck the proof,
+and verify E456 rule labels against ordinary and inherited declarations.
+
+Round-2 fix validation: 60/60 focused tests; `cb3-r2-full.log` passes 1,203 of
+1,216 tests, with 13 documented later-phase TODOs and zero failures. All 3,857
+canonical checks pass, and all four production mutations are killed. Source
+and tests were frozen for both runs. Round 3 will review this shared lookup.

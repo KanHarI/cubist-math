@@ -830,17 +830,22 @@ export class Translator {
       module:module.moduleName,start:token.start,end:token.end}));
     return {term,identity,binding:binding.id,origin:module.moduleName,priority,sourceName:token.text};
   }
+  // Substituted fields/helpers keep their written occurrence in an expansion
+  // frame. Diagnostics and source edits must read that occurrence together.
+  writtenReference(expression,unit) {
+    const frame=expression.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding);
+    if(!frame)return null;
+    const site=frame.site.module===unit.moduleName?frame.site:null;
+    return {site,text:site?unit.source.slice(site.start,site.end):this.compilationBindings.table.get(frame.binding).label};
+  }
   localReference(token,scope,missing) {
     const expression=referenceSyntax(token),entered=this.expressionScope(expression,scope);
     const {node,scope:at}=entered,key=node.kind==="name"?node.name:null;
     const value=key&&at.env.get(key);
     if(!value||!at.localSources.has(key)) {
-      // Field substitution replaces a written token with projection syntax.
-      // Its existing expansion frame owns the diagnostic name and site.
-      const frame=expression.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding);
-      const label=sourceName(expression)??(frame?this.compilationBindings.table.get(frame.binding).label:null);
-      const error=missing(label);
-      throw frame?.site.module===scope.unit.moduleName?scope.unit.locate(error,frame.site):error;
+      const written=this.writtenReference(expression,scope.unit);
+      const error=missing(sourceName(expression)??written?.text??null);
+      throw written?.site?scope.unit.locate(error,written.site):error;
     }
     return value;
   }
@@ -864,7 +869,7 @@ export class Translator {
         try {term=this.term(item.value,scope,null);}
         catch(error) {propagateElaborationStop(error);throw unit.locate(error,item);}
         selected.push({term,identity:boundedStateKey(term,null,this.checker.kernel),reverse:item.reverse,
-          sourceText:unit.source.slice(item.value.start,item.value.end),
+          sourceText:this.writtenReference(item.value,unit)?.text??unit.source.slice(item.value.start,item.value.end),
           sourceStart:item.start,sourceEnd:item.end});
       }
     }
@@ -1009,7 +1014,7 @@ export class Translator {
     let text=`${keyword} only [${frozen.map(rule=>`${rule.reverse?"<- ":""}${rule.sourceText}`).join(", ")}]`;
     if(first.witnesses?.length)text+=` with [${first.witnesses.map(token=>sourceName(referenceSyntax(token))).join(", ")}]`;
     if(first.at)text+=` at ${sourceName(referenceSyntax(first.at))} as ${bindingStem(first.as)}`;
-    if(first.using)text+=` using ${unit.source.slice(first.using.start,first.using.end)}`;
+    if(first.using)text+=` using ${this.writtenReference(first.using,unit)?.text??unit.source.slice(first.using.start,first.using.end)}`;
     text+=";";
     return {start:first.start,end:first.end,
       original:unit.source.slice(first.start,first.end),text};
