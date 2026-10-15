@@ -89,8 +89,9 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
     this.sources=sources;
+    this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
     if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
@@ -772,7 +773,9 @@ export class Translator {
       }
       settle(queue);
     }
-    return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
+    return {declarations,env,directives,
+      ...(this.collectGeneration?{generation:publications.map(group=>({id:group.id,declarations:group.members.map(({theory,generated,...syntax})=>syntax)}))}:{}),
+      publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
       members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,
       ...(group.failedMember?{failedMember:group.failedMember}:{}),cause:group.cause})),simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};

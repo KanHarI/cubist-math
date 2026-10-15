@@ -32,7 +32,7 @@ function whenRead(object, key, compute) {
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
-    const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,optimizations={},manageTransactions=true,
+    const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,collectGeneration=false,optimizations={},manageTransactions=true,
       searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
     this.options={...options};
     if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
@@ -61,6 +61,7 @@ export class CubicalProgram {
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.collectScopes = collectScopes;
+    this.collectGeneration = collectGeneration;
     this.compilationBindings=new CompilationBindings(options.scopeRevision??globalThis.crypto.randomUUID());
     this.checker.compilationBindings=this.compilationBindings;
     this.scopePoints = new Map();
@@ -72,6 +73,7 @@ export class CubicalProgram {
     this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.publications = new Map();
+    this.generation = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
@@ -176,6 +178,7 @@ export class CubicalProgram {
   recordModule(name, main, text, ast, result, failure) {
     this.simpRegistries.set(name,result.simpRegistry);
     this.publications.set(name,result.publications??[]);
+    if(this.collectGeneration)this.generation.set(name,result.generation??[]);
     for(const directive of result.directives??[]) {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
@@ -338,7 +341,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,sources:this.sources,
+      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);

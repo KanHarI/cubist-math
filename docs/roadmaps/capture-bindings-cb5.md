@@ -1,7 +1,7 @@
 # CB5: diagnostics and public views
 
-Status: implementation in a separate worktree on CB4 #237 while its frozen
-implementation is reviewed. CB6 contextual sessions and CB7 retirement remain
+Status: implementation in a separate worktree on CB4 #237, now ready after a
+clean second Claude review. CB6 contextual sessions and CB7 retirement remain
 separate packages.
 
 ## Contract and implementation order
@@ -80,3 +80,13 @@ source site while marking private aliases and additional compiled matches as
 synthetic. This keeps checked coherence witnesses visible without publishing
 foreign helper offsets. The existing witness regression caught and prevented
 over-suppression; generated inspection and printing still remain to implement.
+
+Optional `collectGeneration` now retains the original binding-aware declaration
+artifacts from the publication groups, before lowering. It excludes live theory
+records and never regenerates syntax from the checked terms. Existing publication
+state separately determines availability, including failed and blocked groups.
+The retention, publication and provenance run passes 47/47; the controls verify
+identical checking work/results, inert syntax, exact declaration IDs, imported
+origins, failure rollback and recheck invalidation. An unresolved source name
+is refused before artifact construction, so the failed-family control uses a
+well-resolved type mismatch instead. Printing and browser integration remain.
