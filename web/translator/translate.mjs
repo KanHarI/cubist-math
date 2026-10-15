@@ -10,7 +10,7 @@ import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot,BindingAdapter} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {lowerBindingDeclaration} from "./binding-module.mjs";
-import {retainedRuleOperation} from "./named-notation.mjs";
+import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -30,14 +30,15 @@ import {RECURSIVE,withRecursion,recursionSite,elaborateMatch,resolveRecursive,se
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem,bindingStem} from "./names.mjs";
-import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated} from "./declarations.mjs";
+import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
+import {lexemeKey} from "./notation-context.mjs";
 import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -312,9 +313,17 @@ export class Translator {
     // The natural number is built from the Nat the rule read where it was
     // declared, whatever the use's scope binds.
     if(!selection.literal) {
+      if(selection.numeral.model) {
+        const natural=selection.numeral.natural,at={start:n.start,end:n.end};
+        const reads={kind:"name",name:operatorBinding("numeral"),...at};
+        const value=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
+        const node=scope.unit.scopePoints?.expansion(value,"notation",n,scope.unit)??value;
+        const inner=scope.withUnit(scope.unit.with({scopeUnavailable:"Model numeral expansion awaits its contextual observation migration."}));
+        return this.term(node,inner,expected);
+      }
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
-      const applied=appliedRule(this,natural,selection.numeral,
+      const applied=appliedRetainedRule(this,natural,selection.numeral,
         {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
           start:n.start,end:n.end},null,n);
       return this.term(applied.node,applied.scope,expected);
@@ -332,7 +341,7 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRule(this,glyphs,rule,lexeme,null,n);
+    const applied=appliedRetainedRule(this,glyphs,rule,lexeme,null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
@@ -473,7 +482,7 @@ export class Translator {
       const error=module.locate(duplicateDeclaration(conflict.name),conflict.at);
       this.onDeclarationStart?.(d);
       const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
-        reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd};
+        ...sourceFailure(error)};
       const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
       const bind=name=>{
         const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
@@ -563,7 +572,7 @@ export class Translator {
           propagateElaborationStop(error);
           refusedUses.add(d.model);
           directives.push({kind:"use",name:`at line ${source.slice(0,d.start).split("\n").length}`,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error),start:d.start});
           directives.at(-1).searchFuel=this.fuelRecord(unit);
         }
         unit.fuel.close();
@@ -573,7 +582,7 @@ export class Translator {
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
-        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind}); }
+        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",...sourceFailure(error),start:d.start}); }
         finishDirective();
         continue;
       }
@@ -588,7 +597,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -606,7 +615,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -635,7 +644,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:d.kind,name:d.rule?.text??d.name.text,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -661,7 +670,7 @@ export class Translator {
           directives.push({kind:d.kind,name:d.rule.text,status:"checked",start:d.start});
         } catch(error) {
           propagateElaborationStop(error);
-          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind});
+          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",...sourceFailure(error),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -745,8 +754,7 @@ export class Translator {
         publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
-        declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-          errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
+        declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error),
           syntax:d});
       }
       declarations.at(-1).rewriteWork={...unit.work};
@@ -801,8 +809,7 @@ export class Translator {
       // or generator type (initial-models.mjs).
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       unavailable(error);
-      declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-        errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
+      declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error),
         syntax:d});
     }
     declarations.at(-1).rewriteWork={...unit.work};
@@ -1178,7 +1185,7 @@ export class Translator {
         // Numeric nodes also occur as interval endpoints, consumed directly
         // by interval()/face parsing. A term without a retained reader must
         // not synthesize an ambient Nat, including in legacy mode.
-        if(scope.unit.bindingAdapter)throw new TypeError("Binding syntax family has not migrated: numeral");
+        if(scope.unit.bindingAdapter)throw scope.unit.locate(unselectedLiteral(n.text??String(n.value)),n);
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
         // reads none (L2.10c). A numeral rule's own natural number is raw
@@ -1279,7 +1286,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(this,scope,operation.rule,n.left,n.right,n);
+            const applied=appliedRetainedRule(this,scope,operation.rule,n.left,n.right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
@@ -1301,7 +1308,7 @@ export class Translator {
           const left=notationOperand(this,scope,n.left,recipe.left),right=notationOperand(this,scope,n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
-            const applied=appliedRule(this,scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
+            const applied=appliedRetainedRule(this,scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           // A notation open binds means the model's operation (L2.4).
@@ -1331,7 +1338,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier,operator:"unary -"});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(this,scope,operation.rule,n.operand,null,n);
+            const applied=appliedRetainedRule(this,scope,operation.rule,n.operand,null,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.operand],start:n.start,end:n.end},expected);
@@ -1343,7 +1350,7 @@ export class Translator {
         const operand=notationOperand(this,scope,n.operand,view);
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
-          const applied=appliedRule(this,scope,binding.rule,operand,null,n);
+          const applied=appliedRetainedRule(this,scope,binding.rule,operand,null,n);
           return this.term(applied.node,applied.scope,expected);
         }
         return tr({kind:"call",fn:{kind:"name",name:operatorBinding("unary -"),start:n.operatorStart,end:n.operatorEnd},

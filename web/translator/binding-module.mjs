@@ -30,7 +30,7 @@ export function sourceBindingInputs(registry,env,{reserved=[]}={}) {
     const binding=registry.ofValue(value);
     if(binding){values.set(binding.id,value);lexical.push([label,bindingResolution(binding.id)]);}
   }
-  for(const value of env.values())if(value?.tag==="Notation"&&value.bindingId) {
+  for(const value of env.values())if(value?.tag==="Notation") {
     registry.table.get(value.bindingId);values.set(value.bindingId,value);
   }
   return bindingInputs(registry.table,values,{reserved,lexical,notations:sourceNotationInventory(registry,env)});
@@ -45,7 +45,7 @@ export function sourceNotationInventory(registry,env) {
       const model=value.model?registry.ofValue(value.model):null;
       if(value.model&&!model)throw new TypeError("A model's notation needs its declaration identity.");
       return {name:label.slice("\u0000notation ".length),model:model?bindingResolution(model.id):null,
-        ...(value.bindingId?{notation:bindingResolution(value.bindingId)}:{})};
+        notation:bindingResolution(value.bindingId)};
     });
 }
 

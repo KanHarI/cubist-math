@@ -11,9 +11,8 @@ import {bindingSyntaxView,bindingUses,unresolvedBindingUse,resolveBindingSyntax}
 
 import {bindingResolution,sourceOrigin} from "../cubist/bindings.mjs";
 import {retainedInitialArtifacts} from "../cubist/retained-initial-artifacts.mjs";
-import {bindingDeclaration,lowerBindingDeclaration,sourceBindingInputs} from "./binding-module.mjs";
-import {activateSourceItem,withSourceCaptures} from "./retained-source-context.mjs";
-import {reservedReferences} from "../cubist/parser.mjs";
+import {bindingDeclaration,lowerBindingDeclaration} from "./binding-module.mjs";
+import {enterSourceItem} from "./retained-source-context.mjs";
 import {repeatedName} from "./names.mjs";
 
 // This strategy shares exact dependency facts with Hom planning, not its
@@ -88,13 +87,8 @@ export function initialDeclarations(t, module, d, env, declarations) {
 }
 
 function retainedInitialSource(t,module,declaration,env) {
-  const registry=t.compilationBindings,table=registry.table;
   const owner=["initial-source",module.moduleName,String(declaration.start)];
-  const source={revision:registry.revision,module:module.moduleName};
-  const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences(module.source)});
-  const prepared=activateSourceItem(t,new Scope(module,new Map(),new Map([...env,...inputs.env])),
-    declaration,inputs,{owner,source});
-  const captures=withSourceCaptures(new Map([...env,...inputs.env]),prepared,inputs.adapter);
+  const {table,source,inputs,prepared,captures}=enterSourceItem(t,module,declaration,env,owner);
   // The request's theory head belongs to the enclosing source scope; only
   // its arguments and generator live under the request's parameter telescope.
   const head=declaration.theory.kind==="call"?declaration.theory.fn:declaration.theory;

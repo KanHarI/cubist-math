@@ -6,6 +6,11 @@ import {bindingSyntaxAdapter} from "./binding-module.mjs";
 
 export {notationAlternative} from "../cubist/theory-notation.mjs";
 
+// Printing describes the views captured by the retained rule, without
+// resolving those names in the destination.
+export const notationPrintingRecipe=recipe=>Object.fromEntries(Object.entries(recipe)
+  .map(([side,syntax])=>[side,syntax?.tree.spelling??null]));
+
 // A checked model determines its interface through the head of its type.
 export function recordOf(t,scope,value) {
   let head=scope.infer(value).type;

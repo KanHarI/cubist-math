@@ -149,7 +149,7 @@ canonical corpus also checks `Constant`, `K`, `idem_at`, `Named` and
 
 | Coverage ID | Test file | Executable test name |
 | --- | --- | --- |
-| H1 | [references.test.mjs](../references.test.mjs) | `declaration identities survive every syntax transformation independently of spelling` |
+| H1 | [references.test.mjs](../references.test.mjs) | `declaration references survive traversals, relocation and serialization` |
 | H2 | [theory-resolution.test.mjs](../theory-resolution.test.mjs) | `initial and free models retain imported global types and law constants` |
 | H3 | [theory-resolution.test.mjs](../theory-resolution.test.mjs) | `family indices carry captured syntax through generated homomorphisms and isomorphisms` |
 | H4 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `theory capture uses opened fields before globals and retains them across imports and selections` |

@@ -1,11 +1,10 @@
 import {cloneBindingSyntax,lowerBindingSyntax,bindingUses} from "../cubist/binding-syntax.mjs";
 import {sourceOrigin} from "../cubist/bindings.mjs";
-import {bindingSyntaxAdapter,sourceBindingInputs} from "./binding-module.mjs";
+import {bindingSyntaxAdapter} from "./binding-module.mjs";
 import {retainNamedNotation} from "../cubist/named-notation.mjs";
-import {reservedReferences} from "../cubist/parser.mjs";
-import {activateSourceItem,withSourceCaptures} from "./retained-source-context.mjs";
-import {Scope} from "./elaboration.mjs";
-import {SELECTION,notationContextKey} from "./notation-context.mjs";
+import {enterSourceItem} from "./retained-source-context.mjs";
+import {notationPrintingRecipe} from "./model-notation.mjs";
+import {SELECTION,notationContextKey,NUMERAL_NAT,lexemeKey} from "./notation-context.mjs";
 
 // The source producer owns model attachment and ordered file activation.
 // A later destination only consumes the resulting artifact and explicit
@@ -18,13 +17,10 @@ export function retainSourceNotation(t,module,declaration,env,{declared=new Set(
     if(!declared.has(name))throw module.locate(Error(`${name} is declared in another module: only the module that declares a model adds rules to its notation.`),declaration.name);
     if(!model)throw new TypeError("A source model's notation needs its declaration identity.");
   }
-  const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences(module.source)});
-  const source={revision:registry.revision,module:module.moduleName};
-  const prepared=activateSourceItem(t,new Scope(module,new Map(),new Map([...env,...inputs.env])),
-    declaration,inputs,{owner,source});
+  const {source,inputs,prepared,captures}=enterSourceItem(t,module,declaration,env,owner);
   const artifact=retainNamedNotation(prepared.item,{table:registry.table,owner,source,
     context:prepared.context,constructors:inputs.constructors,model});
-  return {artifact,prepared,env:withSourceCaptures(new Map([...env,...inputs.env]),prepared,inputs.adapter),
+  return {artifact,prepared,env:captures,
     declaration:{...prepared.item,retainedNotation:artifact}};
 }
 
@@ -45,8 +41,7 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       &&v.args.every(arg=>arg.name===operands[0]||arg.kind==="number"))
       entry={numeral:v.args.map(arg=>arg.kind==="number"?arg.value:null)};
     else if(operands.length===2&&v.args.length===2&&v.args.every((arg,i)=>arg.name===operands[i]))
-      entry={operator:rule.key,recipe:Object.fromEntries(Object.entries(rule.recipe).map(([side,syntax])=>
-        [side,syntax?.tree.spelling??null]))};
+      entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe)};
     if(entry) {
       const printing=t.checker.notationPrinting??=new Map();
       printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,...entry}]);
@@ -80,12 +75,12 @@ export function retainedNotationReceipt(t,artifact,scope) {
       const adapter=bindingSyntaxAdapter(syntax,table),node=lowerBindingSyntax(syntax,adapter,scope.slotOutcomes);
       const value=node.kind==="name"&&scope.env.has(node.name)?scope.env.get(node.name)
         :t.term(node,scope.withUnit(scope.unit.with({bindingAdapter:adapter,references:null})),null);
-      aliases.set(rule.key==="literal"?"\u0000lexeme "+label:"\u0000notation Nat",value);
+      aliases.set(rule.key==="literal"?lexemeKey(label):NUMERAL_NAT,value);
     }
     const recipe=Object.fromEntries(Object.entries(rule.recipe).map(([side,syntax])=>[side,syntax
       ?{kind:"retainedOperandRecipe",syntax,aliases:[...captures(syntax)]}:null]));
     rules.set(rule.key,{binding:artifact.binding.id,syntax:rule.syntax,recipe,aliases,
-      ...(rule.key==="numeral"?{natural:"\u0000notation Nat"}:{})});
+      ...(rule.key==="numeral"?{natural:NUMERAL_NAT}:{})});
   }
   return Object.freeze({tag:"Notation",bindingId:artifact.binding.id,name:artifact.binding.label,rules,model,
     modelBinding:artifact.model});

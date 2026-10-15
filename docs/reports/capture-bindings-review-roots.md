@@ -147,11 +147,52 @@ attempt isolation, bounded DAG serialization and full-prefix reconstruction.
 The cleanup removes duplicate registration and mode propagation around them;
 it does not replace those guarantees with unverified shortcuts. Historical
 source rewriting remains isolated, and the Hom/Iso template adapter remains
-until CB4 replaces the actual template producer. The small generated model
-numeral rule remains because model numerals still consume it.
+until CB4 replaces the actual template producer. Model numeral behavior remains;
+the external cleanup review below replaces its nominal rule interpreter with
+a direct operation application.
 
 Expanded validation on frozen source: `npm test` passed 1,178 of 1,194 tests,
 with the same 16 later-phase TODOs and zero failures. All 3,857 canonical checks
 passed. All four production mutations were killed. The targeted retirement and
 recipe suites passed 83/83 and 55/55 tests, respectively; both explicit notation
-diagnostic controls passed. External Claude review has not yet run.
+diagnostic controls passed. This was the frozen head for the first external
+cleanup review.
+
+
+## Cleanup external review, round 1
+
+Claude Opus 5.5 at xhigh reviewed `ea1881bb` against the CB2 base `c908ffdc`.
+All 59 compared binding and generation fixture results matched the base. The
+review found three existing retained-path defects and four further cleanup
+opportunities. Before applying fixes, they were grouped under two recurring
+contracts rather than treated as isolated reproductions:
+
+- Source decisions must have one representation and one consuming path.
+  Theory printing still read the deleted producer's operand recipes; it now
+  shares retained-recipe printing with named rules. Parallel notation label
+  maps, duplicate universe labels and obsolete notation-inventory migration
+  gates are removed. Theory, initial/free and named-rule entry share activation
+  before parameters. The dead nominal substitution engine and its `renamable`
+  metadata are removed. Model numerals call their operation directly, including
+  the refused-operation case, so no general spelling-substitution interpreter
+  remains for a single generated rule.
+- Diagnostic ownership must survive phase changes. Unselected notation now
+  uses the existing coded source errors; numeral terms are located when their
+  term role is known, without changing interval endpoints. Declaration and
+  directive catches share one failure record, and directive gaps retain its
+  exact source span and dependency cause. Actual unmigrated syntax families
+  still fail at their explicit gates.
+
+Tests of the removed nominal engine were retired or moved to the live scope
+traversal and source resolver. Existing semantic clients remain. Added controls
+check unselected operators, negation, decimal and binary literals, the source
+spans of missing readers and refused model extensions, and operand-view printing.
+The first focused run passed 179 of 180 tests; its new numeral-span control
+exposed the generated-header blame described above. All four diagnostic and
+printing controls passed after correcting that boundary.
+
+Final validation after round 1: `npm test` passed 1,177 of 1,193 tests, with
+16 documented later-phase TODOs and zero failures; all 3,857 canonical checks
+passed. All four production mutations were killed. An earlier full run had
+only a stale coverage-index test name; the corrected index passed in isolation
+and in the final full run. Source and tests were frozen throughout each run.

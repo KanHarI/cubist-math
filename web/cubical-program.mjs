@@ -172,7 +172,9 @@ export class CubicalProgram {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start,
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,
+          start:directive.errorStart??directive.start,end:directive.errorEnd,
+          ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
           ...(directive.failure?{failure:directive.failure}:{})});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});

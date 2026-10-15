@@ -203,7 +203,7 @@ function planMorphisms(record,isTheory) {
   // still has a position/ID, but '_' in an expression is always a hole.
   const params=(record.params??[]).map(p=>p.name==="_"
     ?{...p,label:p.name,name:freshName("argument",headerNames)}:p);
-  const count = Math.max(1, record.universes?.length ?? 0);
+  const count = Math.max(1, record.universeLabels?.length ?? 0);
   const parameters = params.map(p => p.name);
   // Every binder the source introduces is fresh: none captures a parameter
   // or a name that a field's type mentions free, which the source writes as
@@ -414,7 +414,7 @@ function planMorphisms(record,isTheory) {
   });
   const record_ = (name, fields, parents = []) => ({ name, model: name, make: `${name}.make`,
     fields: fields.map(field => ({ name: field.name, kind: "morphism", projection: `${name}.${field.name}` })),
-    notations: {}, parents: parents.map(label => ({ label, projection: `${name}.${label}` })) });
+    parents: parents.map(label => ({ label, projection: `${name}.${label}` })) });
   // A carrier's or a family's values, bound at a side: (x : A.M), or a
   // family's indices and then its member.
   const memberBinders = (sort, at, x) => families.has(sort)

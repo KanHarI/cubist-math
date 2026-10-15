@@ -349,6 +349,40 @@ def independent : Unit := tt;`;
     const result=await program.check(source,"main");
     assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
     assert.ok(result.gaps[0].reason.includes(advice));
+    assert.equal(source.slice(result.gaps[0].start,result.gaps[0].end),rule);
     assert.ok(result.outputs.find(output=>output.name==="independent").verified);
   }
+});
+
+test("unselected retained notation reports source errors and preserves later declarations",async t=>{
+  for(const [expression,code] of [["x * x","E912"],["-x","E901"],["f(0)","E911"],["f(0b101)","E909"]]) {
+    const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+    const source=`import hlevels; import nat;
+theory T(U < UU0) { M : set U; f(n : Nat) : M; law l(x : M) : ${expression} = x; }
+def independent : Unit := tt;`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
+    const gap=result.gaps[0];
+    assert.ok(gap.start>=source.indexOf(expression)&&gap.end<=source.indexOf(expression)+expression.length,JSON.stringify(gap));
+    assert.ok(result.outputs.find(output=>output.name==="independent").verified);
+  }
+  const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+  const source="import nat;\nnotation n { x + y := x * y; }\ndef independent : Unit := tt;";
+  const result=await program.check(source,"main"),[gap]=result.gaps;
+  assert.deepEqual(result.gaps.map(gap=>gap.code),["E912"]);
+  assert.equal(source.slice(gap.start,gap.end),"x * y");
+  assert.ok(result.outputs.find(output=>output.name==="independent").verified);
+});
+
+test("theory notation printing uses its retained operand views",async t=>{
+  const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+  const result=await program.check(`import nat; import hlevels;
+theory Ring(U < UU0) { R : set U; mul(x, y : R) : R notation x * y; pow(x : R, n : Nat) : R notation x ^ nat.(n); }
+def Z : Ring(U0) := Ring.make(Nat, nat_is_set, mul, fun (x, n : Nat) => x);
+def p(x, n : Nat) : Z.pow(x, nat.(n + 1)) = Z.pow(x, nat.(n + 1)) := refl(Z.pow(x, nat.(n + 1)));
+use Z;
+print(typeof(p));`,"main");
+  assert.deepEqual(result.gaps,[]);
+  assert.match(program.prints[0].text,/x \^ \(n \+ 1\)/);
+  assert.doesNotMatch(program.prints[0].text,/nat\.\(/);
 });

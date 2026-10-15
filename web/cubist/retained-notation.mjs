@@ -2,23 +2,8 @@
 // surrounding interface, outside the formal operand binders. The receiver
 // syntax stays open over that interface until a checked model supplies it.
 import {resolveBindingReceiver,cloneBindingSyntax,remapBindingSyntax,sameBindingSyntax} from "./binding-syntax.mjs";
-import {notationKey,notationViews,validateFieldNotation} from "./theory-notation.mjs";
+import {notationKey,notationViews} from "./theory-notation.mjs";
 import {parentNamespaceFailure} from "./retained-interfaces.mjs";
-
-export function retainFieldNotation(item,entry,fields,options) {
-  if(!item.notation)return null;
-  const parameters=entry.syntax.tree.params.filter(p=>!p.name.synthetic);
-  const {key}=validateFieldNotation(item,{theory:options.theory,isCarrier:k=>{
-    const type=options.domains?.get(parameters[k]?.name.bindingId)??parameters[k]?.type;
-    return type?.kind==="bindingReference"&&type.resolution.tag==="binding"
-      &&fields.some(field=>field.id===type.resolution.id&&field.kind==="sort");
-  }});
-  // The source producer resolves receivers before admitting the operation.
-  // Validation consumes that recipe; it cannot reconstruct a source scope.
-  const {recipe}=options;
-  if(!recipe)throw new TypeError("A field notation needs its source-resolved operand recipe.");
-  return Object.freeze({key,field:entry.id,recipe});
-}
 
 export function retainOperandRecipe(views,context,options) {
   const receiver=(token,side)=>token?resolveBindingReceiver({kind:"name",name:token.text,...token},{
@@ -65,9 +50,6 @@ export function inheritNotations(parents,options) {
   for(const parent of parents) {
     const own=new Map();
     const {record,correspondence}=parent;
-    if(Object.keys(record.notations??{}).length&&!record.notationBindings
-      ||Object.keys(record.ambiguousNotations??{}).length&&!record.ambiguousNotationBindings)
-      throw new TypeError("Inherited notation requires its retained binding interface.");
     const inherit=(rule,path,parentField)=>{
       if(!correspondence.has(rule.field))throw new TypeError("An inherited notation is missing its operation correspondence.");
       const receiver=syntax=>syntax?remapBindingSyntax(cloneBindingSyntax(syntax,table,[...owner,"notation",String(serial++)],

@@ -10,6 +10,7 @@ import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./teles
 import {syntaxValue,expandedSource,qualifySource,sourceMetadata} from "./source-syntax.mjs";
 import {mapSyntax} from "../translator/syntax-graph.mjs";
 import {notationAlternative} from "./theory-notation.mjs";
+import {unselectedOperator,unselectedNegation,literalUnread} from "../translator/notations.mjs";
 
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
@@ -259,6 +260,10 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       }
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
+      const unselected=!node.qualifier&&(node.kind==="negation"?unselectedNegation()
+        :node.kind==="binary"&&["+","-","*","/","^","<","<=",">",">="].includes(node.operator)?unselectedOperator(node.operator)
+        :["binaryNumber","literal"].includes(node.kind)?literalUnread(null,node.spelling??node.text??`0b${node.digits}`):null);
+      if(unselected)throw Object.assign(unselected,{offset:node.start,sourceEnd:node.end});
       if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
       if(node.kind==="binary"&&(node.qualifier||!["=","->","and","or","++","&","|"].includes(node.operator)))
         throw new TypeError("Binding syntax family has not migrated: notation operator");
