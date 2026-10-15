@@ -19,7 +19,7 @@ export function applyKernelReplayPolicy(kernel,policy,{resetDeadline=true}={}) {
 
 export class ReplayInputs {
   #events=[];
-  constructor({revision,main,prepared,readSource,fuelLimits,kernel,collectReferences,retainedNotations=false}) {
+  constructor({revision,main,prepared,readSource,fuelLimits,kernel,collectReferences,retainedNotations=true,retainedTheories=true}) {
     this.revision=revision;this.main=main;
     this.modules=Object.freeze(Object.fromEntries([...prepared].map(([name,entry])=>[name,Object.freeze({
       text:entry.text??null,error:entry.error?.message??null,nameBased:!!readSource.nameBased?.(name),
@@ -29,6 +29,7 @@ export class ReplayInputs {
     this.initialPolicy=kernelReplayPolicy(kernel);
     this.collectReferences=collectReferences;
     this.retainedNotations=retainedNotations;
+    this.retainedTheories=retainedTheories;
     Object.freeze(this);
   }
   record(stage,module,declaration,kernel,result=null) {
@@ -38,6 +39,7 @@ export class ReplayInputs {
   snapshot() {
     return Object.freeze({revision:this.revision,main:this.main,modules:this.modules,fuelLimits:this.fuelLimits,
       initialPolicy:this.initialPolicy,collectReferences:this.collectReferences,retainedNotations:this.retainedNotations,
+      retainedTheories:this.retainedTheories,
       events:Object.freeze([...this.#events])});
   }
 }

@@ -436,7 +436,9 @@ test("file-level activation classifies attached notation against the ordered ope
   let index=0;
   const prepare=text=>activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),env),
     parse(text).declarations[0],inputs,{owner:["attached","source",String(index++)],source});
-  assert.throws(()=>prepare("use recipe; theory Refused(U < UU0) { M : U; }"),/named notation activation/);
+  const direct=prepare("use recipe; theory Direct(U < UU0) { M : U; }");
+  assert.equal(direct.activations.length,1);
+  assert.ok(direct.context.selectedNotation());
   const prepared=prepare(`use outer; use recipe;
     theory T(U < UU0) { M : U; point : M; def picked : Nat := read(zero); }`);
   assert.equal(prepared.activations.length,2);

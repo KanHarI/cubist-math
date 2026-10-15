@@ -1,6 +1,8 @@
 # Correct capture and bindings
 
-Status: CB0 and CB1 implemented; CB2 in progress, 2026-10-14; CB3–CB7 pending.
+Status: CB0–CB2 implemented, 2026-10-15; CB3–CB7 pending.
+The [CB2 evidence](capture-bindings-cb2.md) records production integration,
+validation and the remaining phase boundaries.
 The [CB1 evidence](capture-bindings-cb1.md) records its identity and replay
 pilots. PR #231 received a clean fourth external review at `5f2d645b`.
 The [baseline report](../reports/capture-bindings-baseline.md) records exact
@@ -373,8 +375,9 @@ elaboration while remaining numeric endpoints for interval consumers.
 Numeral readers construct their input lazily from their own captured natural
 type, using the shared value elaborator for inductive descriptors; they do
 not look up `Nat` in the destination. This preserves failed-dependency and
-ignored-operand behavior. Named rules and parent-namespace notation alternatives
-still require their retained context contracts before those migration gates open.
+ignored-operand behavior. Named rules and static parent-namespace notation
+alternatives now retain their source identities. Lazy syntax operands used as
+selection receivers still require the term/selection alternatives in CB3.
 
 File-level model selection captures a separate notation identity alongside
 the closed receiver. The lexical context holds only that identity; an explicit
@@ -484,7 +487,9 @@ it. Fresh clone IDs must neither prevent valid sharing nor hide conflicts.
 Expansion of nonrecursive helpers is separate from validation of the full
 expanded signature and its helper dependencies, with cycle detection.
 Conditional slot alternatives supply explicit dependency edges for expansion
-ordering and cycle checks, while remaining pending for support decisions.
+ordering and cycle checks. Support can be conditional when every captured
+alternative preserves admissibility; unresolved consumed openings and holes
+remain pending. Admission still checks the actual interpretation.
 Helper enumeration order cannot decide whether an alternative is expanded.
 Replacement subtrees cannot bypass validation because a generic visitor
 stops at replacement nodes.

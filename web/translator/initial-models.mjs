@@ -10,8 +10,9 @@ import {Scope} from "./elaboration.mjs";
 import {repeatedName} from "./names.mjs";
 import {T as Term} from "./core.mjs";
 import {reference} from "../cubist/references.mjs";
-import {DependencyAnalysis} from "../cubist/dependencies.mjs";
+import {DependencyAnalysis,dependencyUses} from "../cubist/dependencies.mjs";
 import {bindingSyntaxView,bindingUses,unresolvedBindingUse} from "../cubist/binding-syntax.mjs";
+import {retainedInitialSource} from "./retained-initial-models.mjs";
 
 // This strategy shares exact dependency facts with Hom planning, not its
 // admissibility predicate. A constructor argument is a carrier value or a
@@ -21,7 +22,7 @@ export function equationalSupport(record) {
   const view=tree=>bindingSyntaxView(record.bindingSyntax,tree);
   const reference=node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null;
   const analysis=new DependencyAnalysis([...record.fields,...record.derived??[]]);
-  const pending=record.fields.flatMap(field=>bindingUses(view(field.type))
+  const pending=record.fields.flatMap(field=>dependencyUses(view(field.type))
     .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
   if(pending.length)return {status:"pending",strategy:"equational",obligations:pending};
   const origin=record.fields[0]?.binding?.origin;
@@ -34,20 +35,20 @@ export function equationalSupport(record) {
   for(const field of record.fields) {
     if(["sort","evidence"].includes(field.kind))continue;
     const recursive=new Map(),args=[];
-    let body=field.type,group=0;
+    let body=field.type,group=0,refusal=null;
     while(body.kind==="forall"||body.kind==="binderGroup"&&body.binderKind==="forall") {
       const names=body.kind==="forall"?[body.name]:body.names;
       if(body.bound)return refuse(universeArguments(field.name),names[0].origin,{field:field.id});
       const domain=body.domain,isCarrier=reference(domain)===carrier.id;
       if(!isCarrier) {
-        const dependencies=analysis.dependencies(view(domain));
+        const dependencies=analysis.dependencies(view(domain),{conditional:true});
         const dependency=dependencies.find(use=>["law","evidence"].includes(use.category))
           ??dependencies.find(use=>["carrier","operation","helper","recursive-helper"].includes(use.category));
-        const local=bindingUses(view(domain)).find(use=>use.kind==="binding"&&recursive.has(use.id));
+        const local=dependencyUses(view(domain)).find(use=>use.kind==="binding"&&recursive.has(use.id));
         if(dependency||local) {
           const use=dependency??local,proof=["law","evidence"].includes(use.category);
           const label=analysis.byIdentity.get(use.id)?.label??recursive.get(use.id)?.label;
-          return refuse(proof?onProof(field.name,names[0].label??names[0].text,use.category,label)
+          refusal??=refuse(proof?onProof(field.name,names[0].label??names[0].text,use.category,label)
             :notPositive(field.name,names[0].label??names[0].text,carrier.name),use.origin,{field:field.id,dependency:use});
         }
       }
@@ -59,8 +60,9 @@ export function equationalSupport(record) {
       body=body.body;group++;
     }
     if(field.kind==="law"&&(!(body.kind==="binary"&&body.operator==="=")
-      ||analysis.first(view(body),["law","evidence"])))
+      ||analysis.first(view(body),["law","evidence"],{conditional:true})))
       return refuse(notEquational(field.name),body.origin??field.binding.origin,{field:field.id});
+    if(refusal)return refusal;
     if(field.kind==="operation") {
       if(body.kind==="binary"&&body.operator==="->")return refuse(arrowOperation(field.name),body.origin??field.binding.origin,{field:field.id});
       if(reference(body)!==carrier.id)return refuse(notCarrierValued(field.name,carrier.name),body.origin??field.binding.origin,{field:field.id});
@@ -77,6 +79,7 @@ export function equationalSupport(record) {
 export function initialDeclarations(t, module, d, env, declarations) {
   const unit = module.declaration(t.declarationFuel).with({references: null});
   try {
+    if(t.retainedTheories)return retainedInitialSource(t,unit,d,env);
     const scope=sourceItemScope(t,new Scope(unit,new Map(),env),d);
     return expand(t,unit,d,scope);
   }
@@ -334,7 +337,7 @@ export function initialRefusal(d, failure) {
 }
 
 // Refusals describe this strategy's limits, not nonexistence of a model.
-const notATheory = (kind, given) => Error(`${kind} takes a theory at its universes and parameters, as ${
+export const notATheory = (kind, given) => Error(`${kind} takes a theory at its universes and parameters, as ${
   kind === "free" ? "free W(A : U0) : Monoid(U0) on A" : "initial N : Monoid(U0)"}; ${given} is none.`);
 const theoryArguments = (T, wanted, given) => Error(`${T} takes ${wanted} argument${wanted === 1 ? "" : "s"}, its universes and parameters; this gives ${given}.`);
 const notOneCarrier = (T, carriers) => Error(`The equational strategy supports one carrier that is not a family; ${T} has ${
@@ -345,7 +348,7 @@ const onProof = (field, binder, kind, proof) => Error(`${field} takes ${binder} 
 const notCarrierValued = (field, carrier) => Error(`${field} does not return the carrier ${carrier}: the equational strategy supports carrier-valued operations.`);
 const notEquational = field => Error(`The law ${field} is not an equation between operation terms: the equational strategy does not support this law.`);
 const arrowOperation = field => Error(`${field} uses an arrow type: the equational strategy requires named operation arguments, as in succ(x : M) : M.`);
-const recursiveGenerators = N => Error(`The generator type of ${N} mentions ${N} or one of its generated names: free requires a type given independently of the declared model.`);
+export const recursiveGenerators = N => Error(`The generator type of ${N} mentions ${N} or one of its generated names: free requires a type given independently of the declared model.`);
 const generatorUniverse = N => Error(`The generator type of ${N} lives in a universe above its carrier's declared one: a free model cannot lower its generators. Choose a larger carrier universe or a smaller generator type.`);
 const capturedModel = (T, field, N) => Error(`${T}'s ${field} binds ${N} in a pattern, under which the expansion names the model ${N}: rename the initial or free model.`);
 const universeArguments = field => Error(`${field} binds a universe argument: the equational strategy supports term arguments only; bind universes in the theory header.`);

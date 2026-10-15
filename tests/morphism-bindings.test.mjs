@@ -42,16 +42,26 @@ test("morphism shape analysis distinguishes same-labelled external, carrier and 
   assert.ok(markers.every(({type})=>type.resolution?.id!==carrier.id),"carrier positions are mapped, not classified as fixed types");
 });
 
-test("morphism planning returns pending interpretations instead of treating them as fixed",()=>{
+test("support plans keep unused pattern decisions conditional without inventing dependencies",()=>{
   const {retain,field,record}=setup();
   const carrier=retain("def M : U := Unit;","sort");field(carrier);
   field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
   field(retain("def op(x : match tt { unknown => Unit; }) : M := tt;"));
-  const result=morphismSource(record());
-  assert.ok(result.pending.some(use=>use.kind==="deferred-pattern"));
+  const retained=record(),result=morphismSource(retained);
+  assert.equal(result.support.status,"conditional");
+  assert.ok(result.declarations.length);
+  assert.equal(equationalSupport(retained).status,"conditional");
+});
+
+test("support considers the captured constructor alternative of a used pattern slot",()=>{
+  const {retain,field,record}=setup();
+  const carrier=retain("def M : U := Unit;","sort");field(carrier);
+  field(retain("def M_is_set : IsSet(U, M) := tt;","evidence"),{of:carrier.id,evidence:"IsSet"});
+  field(retain("def op(x : match tt { M => M; }) : M := tt;"));
+  const retained=record(),result=morphismSource(retained);
+  assert.equal(result.support.status,"unsupported");
   assert.equal(result.declarations,undefined);
-  assert.equal(result.support.status,"pending");
-  assert.equal(result.missing,undefined,"an unresolved interpretation is not a support refusal");
+  assert.equal(equationalSupport(retained).status,"unsupported");
 });
 
 test("both support strategies retain inferred type holes as pending obligations",()=>{

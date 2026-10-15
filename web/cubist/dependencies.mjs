@@ -3,6 +3,24 @@
 // occurrence that resolved to an earlier parameter, helper or missing name.
 import {bindingUses,unresolvedBindingUse} from "./binding-syntax.mjs";
 
+// Pattern and activation tokens introduce decisions, not dependencies. Their
+// receiver expressions and body occurrences carry the actual uses. Patterns retain
+// both interpretations: the owned variable or the source enclosing binding.
+// Support may be conditional on the eventual pattern check when every such
+// interpretation is known. Openings still require their interface; a missing
+// conditional branch must fail elaboration, never acquire a destination name.
+export function dependencyUses(syntax) {
+  return bindingUses(syntax,{conditional:true}).filter(use=>{
+    if(["deferred-pattern","deferred-activation"].includes(use.kind))return false;
+    if(use.kind==="deferred") {
+      let value=use.resolution;
+      while(value.tag==="slot")value=value.enclosing;
+      return value.tag==="opening";
+    }
+    return !(use.kind==="missing"&&use.conditions?.length);
+  });
+}
+
 const category=entry=>entry.kind==="sort"?"carrier"
   :entry.kind==="derived"?entry.recursive?"recursive-helper":"helper":entry.kind;
 

@@ -63,6 +63,7 @@ export class CubicalProgram {
     this.collectReferences = collectReferences;
     this.collectScopes = collectScopes;
     this.compilationBindings=new CompilationBindings(options.scopeRevision??globalThis.crypto.randomUUID());
+    this.checker.compilationBindings=this.compilationBindings;
     this.scopePoints = new Map();
     this.scopeRevision = null;
     this.scopeRecorder = null;
@@ -132,7 +133,7 @@ export class CubicalProgram {
     // written; synthetic syntax, as what a theory's expansion places at its
     // name, links nowhere.
     const generated = declaration.generated ? declaration.name : null;
-    const written = node => !node.synthetic && !(generated && node.start >= generated.start && node.start < generated.end);
+    const written = node => !node.synthetic && (!node.origin||node.origin.module===name) && !(generated && node.start >= generated.start && node.start < generated.end);
     for (const item of pending) {
       if (!Number.isInteger(item.node.start)) continue;
       let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
@@ -264,7 +265,7 @@ export class CubicalProgram {
         probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null,compilation:this.compilationBindings});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
         fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences,
-        retainedNotations:this.options.retainedNotations??false});
+        retainedNotations:this.options.retainedNotations??true,retainedTheories:this.options.retainedTheories??true});
     }
     const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
@@ -328,7 +329,8 @@ export class CubicalProgram {
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
-        retainedNotations:this.options.retainedNotations??false,
+        retainedNotations:this.options.retainedNotations??true,
+        retainedTheories:this.options.retainedTheories??true,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
           this.scopeReplay.record("directive-start",name,directive,this.kernel);

@@ -3,7 +3,7 @@
 // builder never resolves them in the generated declaration's environment.
 import {bindingResolution,reservedResolution,expandedOrigin} from "./bindings.mjs";
 import {bindingSyntaxView,cloneBindingSyntax,substituteBindingSyntax} from "./binding-syntax.mjs";
-import {freshName} from "./scopes.mjs";
+import {freshName,unlinked,relocated} from "./scopes.mjs";
 
 const at=origin=>({start:origin.start,end:origin.end,origin,synthetic:true});
 const token=binding=>({text:binding.label,bindingId:binding.id,bindingRole:binding.role,...at(binding.origin)});
@@ -46,7 +46,7 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
   const self=()=>call(reference(binding),arguments_);
   const ownModel=()=>call(reference(declared("model")),arguments_);
   let serial=0;
-  const substitute=(tree,map)=>substituteBindingSyntax(view(tree),map,table,[...owner,"substitution",String(serial++)]).tree;
+  const substitute=(tree,map)=>relocated(substituteBindingSyntax(view(tree),map,table,[...owner,"substitution",String(serial++)]).tree,at(origin));
   const universe=substitute(carrier.type,given);
   const theory=call(reference(table.get(record.modelId)),headerIds.map(id=>given.get(id).tree));
   const inside=new Map([...given,[carrier.id,view(self())],
@@ -59,7 +59,7 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
       const label=freshName(argument.name,names),field=table.allocate([...owner,"constructor",shape.field.name],
         {role:"parameter",label,origin:table.get(argument.id).origin});
       const type=substitute(argument.type,correspondence);
-      parameters.push({name:token(field),type,group:argument.group});
+      parameters.push({name:{...token(field),label:argument.name},label:argument.name,type,group:argument.group});
       correspondence.set(argument.id,view(reference(field)));
     }
     return {kind:"constructor",name:token(declared(shape.field.name)),params:parameters,
@@ -72,7 +72,7 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
   }
   const generated={initial:N},artifacts=[];
   const emit=(binding,tree,metadata=generated)=>{
-    const syntax=cloneBindingSyntax(view(tree),table,[...owner,"artifact",String(artifacts.length)],
+    const syntax=cloneBindingSyntax(view(artifacts.length?{...tree,params:unlinked(tree.params)}:tree),table,[...owner,"artifact",String(artifacts.length)],
       {expansion:{kind:"generation",site:origin}}).syntax;
     artifacts.push({binding,syntax,generated:metadata});
   };
@@ -88,13 +88,13 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
   const lambdas=(bindings,body)=>bindings.reduceRight((body,binding)=>({kind:"lambda",name:token(binding),body,...at(origin)}),body);
   const target=local("target"),proof=local("evidence"),g=local("g"),x=local("x");
   const projected=field=>call(reference(table.get(field.projectionId)),[reference(target)]);
-  const generatorParam=free?[[g,{kind:"binary",operator:"->",left:generator.tree,right:projected(carrier),...at(origin)}]]:[];
+  const generatorParam=free?[[g,{kind:"binary",operator:"->",left:unlinked(generator.tree),right:projected(carrier),...at(origin)}]]:[];
   const recurse=(evidence,value)=>call(reference(declared("fold_map")),[...arguments_,reference(target),evidence,
     ...(free?[reference(g)]:[]),value]);
   const mapped=(shape,variables,evidence)=>shape.arguments.map((argument,k)=>argument.action==="recurse"
     ?recurse(evidence,reference(variables[k])):reference(variables[k]));
   const variables=shape=>shape.arguments.map(argument=>local(argument.name,table.get(argument.id).origin));
-  define("model",[],theory,call(reference(table.get(record.makeId)),[
+  define("model",[],header.tree.type,call(reference(table.get(record.makeId)),[
     ...record.params.map(p=>given.get(p.id).tree),named(carrier.name,self()),named(evidence.name,hole()),
     ...shapes.map(shape=>{
       const args=variables(shape);

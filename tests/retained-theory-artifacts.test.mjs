@@ -573,12 +573,13 @@ test("retained operand recipes keep declaration receivers and caller operand bin
   assert.equal(JSON.stringify(built.record),snapshot,"opening instantiates recipes without changing their canonical source");
 });
 
-test("operand receivers require a complete source selection namespace and reject known missing names",async t=>{
+test("operand receivers require a complete source selection namespace and retain missing names until use",async t=>{
   const {retain,inputs}=await setup(t,undefined,operandModels);
   const theory=`theory Power(U < UU0) { M : U; pow(x : M, n : Nat) : M notation x ^ absent.(n); }`;
-  assert.throws(()=>retain(theory),error=>error.message==="Untranslated name: absent"
-    &&error.offset===theory.indexOf("absent")&&error.sourceEnd===theory.indexOf("absent")+6
-    &&error.origin.module==="source");
+  const missing=retain(theory).notationBindings["^"].recipe.right.tree;
+  assert.deepEqual(missing.resolution,{tag:"missing",label:"absent"});
+  assert.equal(missing.origin.start,theory.indexOf("absent"));
+  assert.equal(missing.origin.module,"source");
   const context=new LexicalContext(inputs.context.snapshot().filter(([,value])=>value.tag!=="notation-inventory"));
   assert.throws(()=>retain(theory.replace("absent","recipe"),{context}),/complete source notation inventory/);
 });
@@ -590,16 +591,17 @@ test("standalone named notation takes precedence over model receivers and later 
       ${model?operandModels:""}
     `);
     const inventory=inputs.context.notations();
-    assert.deepEqual(inventory,[{name:"recipe",model:null}]);
+    assert.deepEqual(inventory.map(({name,model})=>({name,model})),[{name:"recipe",model:null}]);
+    assert.equal(inventory[0].notation.tag,"binding");
     assert.doesNotThrow(()=>snapshotSyntax(inventory));
     for(const context of [inputs.context,new LexicalContext(JSON.parse(JSON.stringify(inputs.context.snapshot())))]) {
       for(const header of ["",", recipe : Unit"])
-        assert.throws(()=>retain(`theory Power(U < UU0${header}) {
+        assert.doesNotThrow(()=>retain(`theory Power(U < UU0${header}) {
           M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
-        }`,{context}),/Retained named notation activation has not migrated/);
+        }`,{context}));
     }
-    assert.throws(()=>retained.retain(parse("def value(x : Nat) : Nat { use recipe; exact x; }").declarations[0],
-      {kind:"derived"}),/Retained named notation activation has not migrated/);
+    assert.doesNotThrow(()=>retained.retain(parse("def value(x : Nat) : Nat { use recipe; exact x; }").declarations[0],
+      {kind:"derived"}));
   });
 });
 
@@ -612,8 +614,8 @@ test("explicit parent scopes precede module named notation while use keeps its o
     def wrong : Child(U0) := Child.make(Nat, zero, Two, fun (a : Two) => a);
   `);
   assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
-  assert.throws(()=>retained.retain(parse("def value(x : Nat) : Nat { use p; exact x; }").declarations[0],
-    {kind:"derived"}),/Retained named notation activation has not migrated/);
+  assert.doesNotThrow(()=>retained.retain(parse("def value(x : Nat) : Nat { use p; exact x; }").declarations[0],
+    {kind:"derived"}));
 });
 
 test("model notation extensions follow that model's identity, not a later same-named receiver",async t=>{
@@ -622,9 +624,9 @@ test("model notation extensions follow that model's identity, not a later same-n
     notation recipe { numeral(n : Nat) := succ(n); }
   `);
   assert.equal(inputs.context.notations()[0].model.id,inputs.context.lookup("recipe").id);
-  assert.throws(()=>retain(`theory Original(U < UU0) {
+  assert.doesNotThrow(()=>retain(`theory Original(U < UU0) {
     M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
-  }`),/Retained named notation activation has not migrated/);
+  }`));
   const built=buildSource(`theory Power(U < UU0, recipe : Numerals(U0)) {
     M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
   }`);

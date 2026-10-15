@@ -39,13 +39,30 @@ export function sameRetainedNotation(left,right) {
 
 export function inheritNotations(parents,options) {
   const {table,owner,context}=options;
-  const candidates=new Map();let serial=0;
-  const add=(key,value)=>{
-    if(!candidates.has(key))candidates.set(key,[]);
-    const list=candidates.get(key);
-    if(!list.some(existing=>sameRetainedNotation(existing,value)))list.push(value);
+  const candidates=new Map(),namespaceNotations={};let serial=0;
+  const add=(own,key,value)=>{
+    for(const target of [candidates,own]) {
+      if(!target.has(key))target.set(key,[]);
+      const list=target.get(key);
+      if(!list.some(existing=>sameRetainedNotation(existing,value)))list.push(value);
+    }
+  };
+  const finish=candidates=>{
+    const notationBindings={},ambiguousNotationBindings={},ambiguousNotations={};
+    for(const [key,list] of candidates) {
+      if(list.length===1) {
+        const {path,parentField,call,...rule}=list[0];notationBindings[key]=Object.freeze(rule);
+      } else {
+        ambiguousNotationBindings[key]=Object.freeze(list);
+        ambiguousNotations[key]=Object.freeze(list.map(rule=>Object.freeze({label:rule.path.join("."),
+          field:table.get(rule.field).label,parentField:rule.parentField,...(rule.call?{call:true}:{})})));
+      }
+    }
+    return {notationBindings,ambiguousNotationBindings:Object.freeze(ambiguousNotationBindings),
+      ambiguousNotations:Object.freeze(ambiguousNotations)};
   };
   for(const parent of parents) {
+    const own=new Map();
     const {record,correspondence}=parent;
     if(Object.keys(record.notations??{}).length&&!record.notationBindings
       ||Object.keys(record.ambiguousNotations??{}).length&&!record.ambiguousNotationBindings)
@@ -59,29 +76,21 @@ export function inheritNotations(parents,options) {
         path:Object.freeze(path),parentField});
     };
     for(const [key,rule] of Object.entries(record.notationBindings??{}))if(!parent.renotated.has(rule.field))
-      add(key,inherit(rule,[parent.label],table.get(rule.field).label));
+      add(own,key,inherit(rule,[parent.label],table.get(rule.field).label));
     for(const [key,list] of Object.entries(record.ambiguousNotationBindings??{}))for(const rule of list)
-      if(!parent.renotated.has(rule.field))add(key,inherit(rule,[parent.label,...rule.path],rule.parentField));
+      if(!parent.renotated.has(rule.field))add(own,key,inherit(rule,[parent.label,...rule.path],rule.parentField));
     // A replacement annotation belongs to the child interface formed by
     // extends. Its receiver is resolved once there, after field renaming,
     // independently of both the parent's recipe and the pattern operands.
     for(const [field,rename] of parent.renotated) {
       const key=notationKey(rename.notation);
-      add(key,Object.freeze({key,field:correspondence.get(field),
+      add(own,key,Object.freeze({key,field:correspondence.get(field),
         recipe:retainOperandRecipe(notationViews(rename.notation),context,{...options,owner:[...owner,"renotation",String(serial++)]}),
         path:Object.freeze([parent.label]),parentField:table.get(field).label,call:true}));
     }
+    const selected=finish(own);
+    namespaceNotations[parent.label]=Object.freeze({name:record.name,bindings:selected.notationBindings,
+      ambiguous:selected.ambiguousNotations});
   }
-  const notationBindings={},ambiguousNotationBindings={},ambiguousNotations={};
-  for(const [key,list] of candidates) {
-    if(list.length===1) {
-      const {path,parentField,call,...rule}=list[0];notationBindings[key]=Object.freeze(rule);
-    } else {
-      ambiguousNotationBindings[key]=Object.freeze(list);
-      ambiguousNotations[key]=Object.freeze(list.map(rule=>Object.freeze({label:rule.path.join("."),
-        field:table.get(rule.field).label,parentField:rule.parentField,...(rule.call?{call:true}:{})})));
-    }
-  }
-  return {notationBindings,ambiguousNotationBindings:Object.freeze(ambiguousNotationBindings),
-    ambiguousNotations:Object.freeze(ambiguousNotations)};
+  return {...finish(candidates),namespaceNotations:Object.freeze(namespaceNotations)};
 }

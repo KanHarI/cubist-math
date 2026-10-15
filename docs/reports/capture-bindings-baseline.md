@@ -199,3 +199,19 @@ node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations
 node tools/frontend-generation-metrics.mjs build/frontend-generation-metrics.json 3
 node tools/capture-bindings-history.mjs build/capture-bindings-history.json
 ```
+
+## CB2 production completion, 2026-10-15
+
+All capture-binding witness observations now match their intended contracts,
+and their known-defect map is empty. Eleven frontend-generation observations
+(G3, G10, the G11 variants and the G12 variants including its diagnostic range)
+were also retired. The bounded production preservation configurations require
+their intended results; their old observation generator remains only as input
+to the shrinker contract tests. Independent incorrect clients and migration
+controls are unchanged.
+
+The mutation runner now changes the default binding-aware reference lowering
+and source file-activation boundary. Reservation and failed-publication mutants
+remain active. All four are killed. The original CB0 numbers above remain
+historical; current validation and phase boundaries are in the
+[CB2 evidence](../roadmaps/capture-bindings-cb2.md).

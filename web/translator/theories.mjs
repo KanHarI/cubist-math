@@ -16,6 +16,7 @@ export {recordOf} from "./model-notation.mjs";
 import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
 import {appliedRetainedRule,retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
+import {retainedTheoryDeclarations} from "./retained-theories.mjs";
 export {operatorBinding,SELECTION} from "./notation-context.mjs";
 
 // The environment's key for a theory's record. The theory's name is its type
@@ -99,11 +100,13 @@ export function memberField(t,scope,n) {
   const receiver=sourceName(n.value),spelling=receiver&&`${receiver}.${field}`,key=referenceKey(n.value);
   if(!record) {
     if(spelling) {
+      if(n.shadowedDeclaration)
+        throw Error(`${n.shadowedDeclaration} is bound here, which hides the declaration ${spelling}: rename the binding to refer to it.`);
       if(n.value.kind==="name"&&!n.value.spelling&&scope.hiding(spelling))
         throw Error(`${scope.hiding(spelling)} is bound here, which hides the declaration ${spelling}: rename the binding to refer to it.`);
       const missing=key&&missingMorphisms(scope,`${key}.${field}`,spelling);
       if(missing)throw missing;
-      if(field==="Model"&&key&&scope.env.has(theoryBinding(key)))
+      if(field==="Model"&&key&&t.checker.theories?.has(scope.env.get(key)?.name))
         throw Error(`${receiver}.Model is now ${receiver}: a theory's name is the type of its models, as in ${receiver}(U0).`);
       throw Error(`Untranslated name: ${spelling}`);
     }
@@ -116,7 +119,8 @@ export function memberField(t,scope,n) {
       record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`)
     : Error(`This is a model of ${record.name}, which has no field ${field}: it has ${record.fields.map(f=>f.name).join(", ")}${
       record.parents.length?`, and the parents ${record.parents.map(p=>p.label).join(", ")}`:""}.`);
-  return scope.declared({kind:"call",fn:projectionReference(t,known,{start:n.field.start,end:n.field.end}),args:[n.value],start:n.start,end:n.end});
+  return scope.declared({kind:"call",fn:projectionReference(t,known,{...n.field,...(n.synthetic?{synthetic:true}:{})}),args:[n.value],start:n.start,end:n.end,
+    ...(n.origin?{origin:n.origin}:{}),...(n.synthetic?{synthetic:true}:{})});
 }
 
 // The scope with the model `node` opened, or null when it is no model: each
@@ -438,8 +442,6 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
     // : prop U does, states a law (L2.10k).
     const proposition=name=>{const entry=env.get(name);
       return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
-    const selected=capturedScope(t,module,d,env),notation=selected.notation;
-    const capture=capturedTheorySyntax(t,env,notation,selected.env);
     const reference=name=>lexicalBinding(t.checker.bindingName?.(name)??name);
     const generatedReference=(node,scope)=>{
       if(scope==="generated")return syntaxReference(reference(node.name),node.name,node);
@@ -455,6 +457,13 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
       }
       return env.get(theoryBinding(name))?.record??null;
     };
+    if(t.retainedTheories) {
+      const built=retainedTheoryDeclarations(t,module,d,env,{lookup,isTheory:name=>env.has(theoryBinding(name))});
+      env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:built.record});
+      return built.declarations;
+    }
+    const selected=capturedScope(t,module,d,env),notation=selected.notation;
+    const capture=capturedTheorySyntax(t,env,notation,selected.env);
     // Avoiding a theory's spelling while choosing an internal binder is a
     // name query, not an inheritance dependency. An unrelated failed value
     // must not block generation merely because it is named x, f or A.

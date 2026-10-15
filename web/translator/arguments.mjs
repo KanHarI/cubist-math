@@ -588,7 +588,8 @@ class ArgumentSolver {
       else omitted.push(`${slot.parameter} := ${shown}`);
     }
     if (omitted.length && Number.isInteger(n.end))
-      t.reference(scope, {name: ")", start: n.end - 1, end: n.end, expressionSite: true, role: "inferred arguments",
+      t.reference(scope, {name: ")", start: n.end - 1, end: n.end,
+        ...(n.origin?{origin:n.origin}:{}),...(n.synthetic?{synthetic:true}:{}), expressionSite: true, role: "inferred arguments",
         description: `Arguments of ${this.called} inferred: ${omitted.join(", ")}.`}, term);
   }
 }

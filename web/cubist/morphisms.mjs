@@ -42,7 +42,7 @@
 import { freeNames, allNames, renamedFree, freshName } from "./scopes.mjs";
 import { reservedNames } from "./parser.mjs";
 import {bindingSyntaxView,bindingUses,unresolvedBindingUse} from "./binding-syntax.mjs";
-import {DependencyAnalysis} from "./dependencies.mjs";
+import {DependencyAnalysis,dependencyUses} from "./dependencies.mjs";
 
 // The old record entry remains explicit until theory retention is migrated.
 // Resolved interfaces never consult that spelling-based interpretation.
@@ -54,7 +54,7 @@ const retainedSymbols=syntax=>({
   field:field=>field.id,
   reference:node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null,
   binder:token=>token.bindingId,
-  references:tree=>new Set(bindingUses(bindingSyntaxView(syntax,tree)).filter(use=>use.kind==="binding").map(use=>use.id)),
+  references:tree=>new Set(dependencyUses(bindingSyntaxView(syntax,tree)).filter(use=>use.kind==="binding").map(use=>use.id)),
   retained:true,
 });
 
@@ -182,7 +182,7 @@ function operationShape(field, context) {
 function transportRefusal(field,type,place,context) {
   if(!context.dependencies)return null;
   const dependency=context.dependencies.first(bindingSyntaxView(context.bindingSyntax,type),
-    ["law","evidence","operation","helper","recursive-helper"]);
+    ["law","evidence","operation","helper","recursive-helper"],{conditional:true});
   if(!dependency)return null;
   const label=context.dependencies.byIdentity.get(dependency.id)?.label??dependency.spelling;
   return {why:`its ${field.name}'s ${place} depends on ${dependency.category} ${label}, whose transport and composition are not generated`,
@@ -224,7 +224,7 @@ function planMorphisms(record,isTheory) {
       if(support?.status==="pending"||!parent.homId||!parent.homMakeId)
         return {pending:[{kind:"parent-Hom",theory:parent.theory,obligations:support?.obligations??[]}]};
     }
-    const pending=record.fields.flatMap(field=>bindingUses(bindingSyntaxView(record.bindingSyntax,field.type))
+    const pending=record.fields.flatMap(field=>dependencyUses(bindingSyntaxView(record.bindingSyntax,field.type))
       .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
     if(pending.length)return {pending};
   }

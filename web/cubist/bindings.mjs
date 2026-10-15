@@ -305,8 +305,15 @@ export class LexicalContext {
         return {value:slotResolution(entry.value.id,memberResolution(fallback.value,fallback.fields),
           name.slice(entry.label.length+1).split(".")),fields:[]};
       }
-      if (qualified&&name.startsWith(entry.label + "."))
-        return {value: entry.value, fields: name.slice(entry.label.length + 1).split(".")};
+      if (qualified&&name.startsWith(entry.label + ".")) {
+        // Diagnostic provenance: this receiver shadows a declaration which
+        // was present in the source, independently of the destination env.
+        let shadowed=false;
+        for(let previous=entry.parent;previous;previous=previous.parent)
+          if(previous.label===name){shadowed=true;break;}
+        return {value:entry.value,fields:name.slice(entry.label.length+1).split("."),
+          ...(shadowed?{shadowed:entry.label}:{})};
+      }
     }
     return {value: missingResolution(name), fields: []};
   }

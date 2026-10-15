@@ -13,15 +13,14 @@ const args=process.argv.slice(2),destination=args.shift(),audit=args.includes("-
 const selected=args.filter(arg=>arg!=="--audit");
 if(!destination)throw Error("Usage: node tools/frontend-generation-mutations.mjs REPORT.json [--audit] [ID...]");
 const mutation=(id,file,from,to,test,pattern,expected="killed")=>({id,file,from,to,test,pattern,expected});
-// These four sites exist on the CB0 base. Later-phase mutations from #223
-// are deferred with their distinguishing witnesses in the CB0 report; a
-// missing site never counts as a killed mutant.
+// Mutate the production boundaries of four shared contracts. A missing
+// site or a broken baseline never counts as a killed mutant.
 export const mutations=[
-  mutation("reference-spelling","web/cubist/references.mjs",
-    '? {...n, kind: "name", name: n.binding}', '? {...n, kind: "name", name: n.spelling}',
-    "references","lowering references"),
-  mutation("lexical-use","web/translator/theories.mjs",
-    "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};","if(true)return {env,notation:[[SELECTION,null]]};",
+  mutation("reference-spelling","web/cubist/binding-syntax.mjs",
+    "const name = adapter.lower(node.resolution, outcomes, options);", "const name = node.spelling;",
+    "retained-production","ordinary source and imported inheritance"),
+  mutation("lexical-use","web/translator/retained-source-context.mjs",
+    "of (item.uses??[]).entries()", "of [].entries()",
     "frontend-invariants","uncolliding parameter, seed 2$"),
   mutation("reservation","web/translator/declarations.mjs",
     "conflict ??= entry;","conflict ??= null;","frontend-publication","definition then inductive"),

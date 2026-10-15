@@ -4,7 +4,7 @@
 import {bindingResolution,reservedResolution,expandedOrigin,LexicalContext} from "./bindings.mjs";
 import {bindingSyntaxView,cloneBindingSyntax,substituteBindingSyntax,resolveBindingTemplate,bindingUses} from "./binding-syntax.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
-import {freshName,scopeMapped,rewritten,relocated} from "./scopes.mjs";
+import {freshName,scopeMapped,rewritten,relocated,unlinked} from "./scopes.mjs";
 import {parse,reservedReferences} from "./parser.mjs";
 import {morphismSource} from "./morphisms.mjs";
 
@@ -44,10 +44,10 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
   // Public call labels stay on the parameters; generated binder labels avoid
   // the source members' own labels, including shadowing helper parameters.
   const headerParams=header.tree.params.map(p=>({...p,label:p.label??p.name.label??p.name.text,
-    name:{...p.name,text:freshName(p.name.text,taken),label:undefined}}));
+    name:{...p.name,text:freshName(p.name.text,taken),label:p.label??p.name.label??p.name.text}}));
   const universes=headerParams.filter(p=>p.bound);
   if(!universes.length)throw new TypeError("A retained theory header must include its generated or explicit universe.");
-  const headerParameters=mode=>headerParams.map(p=>({...p,
+  const headerParameters=mode=>headerParams.map(p=>({...unlinked(p),
     ...(mode==="all"||mode==="universes"&&p.bound?{implicit:true}:{})}));
   const headerArguments=headerParams.map(p=>reference(table.get(p.name.bindingId)));
   const modelType=()=>call(reference(bindings.get(record.name)),headerArguments,origin);
@@ -56,7 +56,8 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
   const substitute=(syntax,map)=>substituteBindingSyntax(syntax,map,table,[...owner,"substitution",String(serial++)]);
   const artifacts=[];
   const emit=(label,params,type,value,generated,{inferred=false,body=null,computable=false}={})=>{
-    const binding=bindings.get(label),declaration={kind:"def",name:token(binding),params,type,...at(origin),
+    const binding=bindings.get(label),site=entries.find(entry=>entry.label===generated.field)?.binding.origin??origin;
+    const declaration={kind:"def",name:{...token(binding),...at(site)},params,type,...at(site),
       ...(inferred?{value}:{body:body??[{kind:"exact",value,...at(origin)}],typedValue:true}),
       ...(computable?{computable:true}:{}),
       ...(params.some(p=>p.implicit)?{implicitParameters:at(origin)}:{})};

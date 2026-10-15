@@ -65,8 +65,9 @@ export const repeatedName = params => {
   return params.find(p => {
     // Identity lowering replaces a written name with a private key. Nominal
     // generated tokens still use text for their argument interface; their
-    // optional display label is not that interface's identity (until CB2).
-    const label=p.name.bindingId?p.name.label??p.name.text:p.name.text;
+    // optional display label is not that interface's identity. Lowering keeps
+    // the binding label separately when a generated telescope is flattened.
+    const label=p.name.bindingId?p.name.bindingLabel??p.name.label??p.name.text:p.name.text;
     return label!=="_"&&seen.size===seen.add(label).size;
   })??null;
 };

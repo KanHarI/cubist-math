@@ -78,7 +78,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     (entry.kind==="derived"?derived:fields).push(full);
     return full;
   };
-  const {parents,ambiguous,notationBindings,ambiguousNotationBindings,ambiguousNotations}
+  const {parents,ambiguous,notationBindings,ambiguousNotationBindings,ambiguousNotations,namespaceNotations}
     =retainParents(theory,interfaces,{...options,lookup},admit);
   if(parents.length) {
     const helpers=new HelperExpansion(interfaces.entries,{table:options.table,owner:[...options.owner,"inherited-views"]});
@@ -93,7 +93,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const ownNotation=notation?{key:notationKey(notation),recipe:retainOperandRecipe(notationViews(notation),interfaces.context,
       {...options,theory:T,owner:[...options.owner,"own-notation",String(interfaces.entries.length)]})}:null;
     const entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families),
-      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations},ownNotation});
+      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations,namespaces:namespaceNotations},ownNotation});
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
     const full=admit(entry,metadata);

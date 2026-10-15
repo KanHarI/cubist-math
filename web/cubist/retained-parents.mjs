@@ -30,7 +30,9 @@ export function retainParents(theory,interfaces,{lookup,source,owner,constructor
     const headerPairs=correspondingHeaderParameters(record.bindingSyntax.tree.params,header.tree.params);
     for(const [parameter,own] of headerPairs) {
       if(!own)throw located(Error(parameter.bound
-        ?`${T} extends ${record.name}, whose header binds the universe ${label(parameter)}: bind ${label(parameter)} in ${T}'s header too.`
+        ?record.generatedUniverse
+          ?`${T} extends ${record.name}, whose header binds no universe: bind ${label(parameter)}, its public universe parameter, in ${T}'s header, or name that universe in ${record.name}'s header.`
+          :`${T} extends ${record.name}, whose header binds the universe ${label(parameter)}: bind ${label(parameter)} in ${T}'s header too.`
         :`${T} extends ${record.name}, whose header has the parameter ${label(parameter)}: give ${T} the parameter ${label(parameter)} with the same type.`),parent.name);
       correspondence.set(parameter.name.bindingId,own.name.bindingId);
     }

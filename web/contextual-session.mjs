@@ -120,7 +120,7 @@ export class ContextualSession {
     let replay,answer=null,accepted=null;
     const costs={prefix:null,validation:null,history:null,query:null};
     replay=new CubicalProgram(original.kernel.module,replayReader(inputs),{...inputs.fuelLimits,
-      retainedNotations:inputs.retainedNotations??false,
+      retainedNotations:inputs.retainedNotations,retainedTheories:inputs.retainedTheories,
       bundledNat:false,collectReferences:inputs.collectReferences,collectScopes:true,scopeRevision:inputs.revision,scopeTarget:this.#point.id,
       scopeProbe:(point,live)=>{
         if(point.id!==this.#point.id)return;

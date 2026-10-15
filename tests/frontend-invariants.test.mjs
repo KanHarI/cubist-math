@@ -9,7 +9,6 @@ import { lint } from "../web/cubist/lint.mjs";
 import { assertStage, classifyStage } from "./known-defect.mjs";
 import { observeModule } from "./module-observation.mjs";
 import { ciSeeds, caseLimit, configuration, generate, minimize } from "./fixtures/frontend-invariants.mjs";
-import { knownPreservation } from "./fixtures/frontend-invariants-baseline.mjs";
 
 const count = Number(process.env.CUBIST_GENERATION_CASES ?? ciSeeds.length);
 assert.ok(Number.isSafeInteger(count) && count >= 1 && count <= caseLimit, "1..64 bounded cases");
@@ -41,7 +40,7 @@ async function verify(config) {
     const work = program.kernel.work();
     assert.ok(work.queries < 50000 && work.instructions < 500000, "bounded checker work; checker limits unchanged");
     assert.equal(work.deadlines, 0);
-    return { observed, desired, known: knownPreservation(config, desired) };
+    return { observed, desired };
   } finally { program.dispose(); }
 }
 

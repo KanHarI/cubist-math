@@ -1,3 +1,5 @@
+// Historical CB0 observations retained only for shrinker contract tests.
+// Production preservation tests require the intended result since CB2.
 // Known defects are transformations of this configuration's desired result,
 // never snapshots borrowed from another seed. Keep the actual distinctions:
 // inherited field renaming also breaks named calls; a colliding lambda binder

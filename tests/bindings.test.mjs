@@ -109,7 +109,7 @@ test("interface namespaces survive snapshots and close members while later local
     assert.deepEqual(restored.qualified("p.field.next"),{value:bindingResolution(field.id),fields:["next"]});
     assert.throws(()=>restored.qualified("p.missing"),error=>error.namespace==="p"&&error.member==="missing");
     assert.deepEqual(restored.bind("p",bindingResolution(local.id)).qualified("p.missing"),
-      {value:bindingResolution(local.id),fields:["missing"]});
+      {value:bindingResolution(local.id),fields:["missing"],shadowed:"p"});
   }
 });
 

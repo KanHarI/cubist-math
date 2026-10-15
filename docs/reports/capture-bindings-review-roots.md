@@ -39,7 +39,7 @@ extra rules only when that branch selects the declaring model. A standalone
 notation opens no term labels. Model captures with different rule extensions
 are distinct semantic notation contexts even when their receiver is the same.
 
-The named-rule producer remains opt-in. Lazy operands used as selection
+The retained theory and named-rule producers are now the default. Lazy operands used as selection
 receivers still require a source description that preserves both their term
 and selection-namespace interpretations. Such rules are refused at retention
 until that contract is implemented; treating an already resolved term operand
@@ -48,3 +48,13 @@ as a selector could silently choose a same-named model over a notation.
 The eight authorized external CB2 rounds are exhausted. Subsequent implementation
 checks are not an additional external round or evidence of a clean external
 re-review.
+
+Production integration exercised the same four roots again: complete request
+headers distinguish the enclosing theory head from parameter-scoped arguments;
+source selections retain parent notation and lazy missing receivers; subordinate
+translators reuse the checker's compilation registry; and source provenance
+survives member lowering, inferred-argument observations and flattened generated
+telescopes. Support planning examines every captured pattern alternative without
+counting an unused binder or activation token as an unknown dependency. These
+changes preserve the existing positive and distinguishing negative clients,
+rather than changing them to accommodate generated artifacts.

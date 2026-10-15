@@ -90,9 +90,10 @@ export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,
-    retainedNotations=false}={}) {
+    retainedNotations=true,retainedTheories=true}={}) {
     this.scopePoints=scopePoints;
-    this.compilationBindings=compilationBindings??scopePoints?.compilation??new CompilationBindings(globalThis.crypto.randomUUID());
+    this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
+    if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
     this.identityAdapter=new BindingAdapter(this.compilationBindings.table);
     this.sourceRevision=this.compilationBindings.revision;
     // A module of a revision before L2.10j reads an operator or a numeral
@@ -101,6 +102,7 @@ export class Translator {
     // scope. Only the migration verifier reads one (legacy-syntax.mjs).
     this.nameBased=nameBased;
     this.retainedNotations=retainedNotations;
+    this.retainedTheories=retainedTheories;
     // A declared type's signature as `print(inspect(T));` shows it, from the
     // program that admitted it (web/cubical-program.mjs).
     this.inspectSignature=inspectSignature;
@@ -152,6 +154,7 @@ export class Translator {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
     return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,retainedNotations:this.retainedNotations,
+      retainedTheories:this.retainedTheories,
       normalize,searchFuel,declarationFuel});
   }
   reference(scope,node,term,env=scope.env) {
