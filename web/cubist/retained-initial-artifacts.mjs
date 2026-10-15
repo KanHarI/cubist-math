@@ -1,14 +1,10 @@
 // Equational initial/free artifacts consume an explicit checked application
 // interface. Field syntax and caller arguments already have identities; this
 // builder never resolves them in the generated declaration's environment.
-import {bindingResolution,reservedResolution,expandedOrigin} from "./bindings.mjs";
-import {bindingSyntaxView,cloneBindingSyntax,substituteBindingSyntax} from "./binding-syntax.mjs";
+import {bindingSyntaxView} from "./binding-syntax.mjs";
 import {freshName,unlinked,relocated} from "./scopes.mjs";
 
-const at=origin=>({start:origin.start,end:origin.end,origin,synthetic:true});
-const token=binding=>({text:binding.label,bindingId:binding.id,bindingRole:binding.role,...at(binding.origin)});
-const reference=binding=>({kind:"bindingReference",resolution:bindingResolution(binding.id),spelling:binding.label,...at(binding.origin)});
-const builtin=(label,origin)=>({kind:"bindingReference",resolution:reservedResolution(label),spelling:label,...at(origin)});
+import {ArtifactBuilder,at,token,reference,builtin} from "./artifact-builder.mjs";
 
 // `given` maps the theory's complete header to arguments checked together in
 // the request header. Solved core arguments may be inert `instantiated` nodes
@@ -37,16 +33,15 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
     ...shapes.map(shape=>`${N}.${shape.field.name}`)];
   if(new Set(labels).size!==labels.length)throw new TypeError("Generated declaration labels must be distinct.");
   const bindings=new Map([[N,table.get(binding.id)]]);
-  for(const label of labels.slice(1))bindings.set(label,table.allocate([...owner,"declarations"],{role:"declaration",label,origin}));
+  const builder=new ArtifactBuilder(header,{table,owner,origin,bindings});
+  for(const label of labels.slice(1))builder.reserve(label);
   const declared=suffix=>bindings.get(`${N}.${suffix}`);
   const taken=new Set(header.tree.params.map(p=>p.name.text));
-  const local=(stem,source=origin,role="local")=>table.allocate([...owner,"locals"],
-    {role,label:freshName(stem,taken),origin:expandedOrigin(source,{kind:"generation",site:origin})});
+  const local=(stem,source=origin,role="local")=>builder.local(freshName(stem,taken),source,role);
   const params=header.tree.params,arguments_=params.map(p=>reference(table.get(p.name.bindingId)));
   const self=()=>call(reference(binding),arguments_);
   const ownModel=()=>call(reference(declared("model")),arguments_);
-  let serial=0;
-  const substitute=(tree,map)=>relocated(substituteBindingSyntax(view(tree),map,table,[...owner,"substitution",String(serial++)]).tree,at(origin));
+  const substitute=(tree,map)=>relocated(builder.substitute(view(tree),map).tree,at(origin));
   const universe=substitute(carrier.type,given);
   const theory=call(reference(table.get(record.modelId)),headerIds.map(id=>given.get(id).tree));
   const inside=new Map([...given,[carrier.id,view(self())],
@@ -70,12 +65,9 @@ export function retainedInitialArtifacts(record,request,{table,owner,plan}) {
     constructors.unshift({kind:"constructor",name:token(declared("gen")),
       params:[{name:token(item),type:generator.tree,group:0}],type:null,...at(origin)});
   }
-  const generated={initial:N},artifacts=[];
-  const emit=(binding,tree,metadata=generated)=>{
-    const syntax=cloneBindingSyntax(view(artifacts.length?{...tree,params:unlinked(tree.params)}:tree),table,[...owner,"artifact",String(artifacts.length)],
-      {expansion:{kind:"generation",site:origin}}).syntax;
-    artifacts.push({binding,syntax,generated:metadata});
-  };
+  const generated={initial:N},artifacts=builder.artifacts;
+  const emit=(binding,tree,metadata=generated)=>builder.emit(binding,
+    artifacts.length?{...tree,params:unlinked(tree.params)}:tree,metadata);
   emit(binding,{kind:"inductive",name:token(binding),params,
     result:{modifier:{kind:evidence.evidence==="IsSet"?"set":"prop",...at(origin)},universe},constructors,...at(origin)},
   {...generated,laws:Object.fromEntries(shapes.filter(s=>s.kind==="law").map(s=>[declared(s.field.name).label,s.field.name])),

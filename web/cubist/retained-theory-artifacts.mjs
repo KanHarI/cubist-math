@@ -1,19 +1,14 @@
 // Base theory artifacts are compositions of retained interfaces. Source
 // syntax never enters name resolution here: header and field substitutions
 // are explicit identities, and every emitted declaration owns fresh locals.
-import {bindingResolution,reservedResolution,expandedOrigin,LexicalContext} from "./bindings.mjs";
-import {bindingSyntaxView,cloneBindingSyntax,substituteBindingSyntax,resolveBindingTemplate,bindingUses} from "./binding-syntax.mjs";
+import {reservedResolution,LexicalContext} from "./bindings.mjs";
+import {bindingSyntaxView,substituteBindingSyntax,resolveBindingTemplate,bindingUses} from "./binding-syntax.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
 import {freshName,scopeMapped,rewritten,relocated,unlinked} from "./scopes.mjs";
 import {parse,reservedReferences} from "./parser.mjs";
 import {morphismSource} from "./morphisms.mjs";
 
-const at=origin=>({start:origin.start,end:origin.end,origin,synthetic:true});
-const reference=binding=>({kind:"bindingReference",resolution:bindingResolution(binding.id),
-  spelling:binding.label,...at(binding.origin)});
-const builtin=(label,origin)=>({kind:"bindingReference",resolution:reservedResolution(label),spelling:label,...at(origin)});
-const token=binding=>({text:binding.label,bindingId:binding.id,bindingRole:binding.role,...at(binding.origin)});
-const call=(fn,args,origin)=>({kind:"call",fn,args,...at(origin)});
+import {ArtifactBuilder,at,reference,builtin,token,call} from "./artifact-builder.mjs";
 
 // Return inert artifacts; the translator's bindingDeclaration boundary puts
 // them on its ordinary checked/publication queue. Declaration identities are
@@ -29,13 +24,8 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
   const labels=[record.name,`${record.name}.make`,...[...fields,...derived].map(field=>`${record.name}.${field.label}`),
     ...parents.map(parent=>`${record.name}.${parent.label}`)];
   if(new Set(labels).size!==labels.length)throw new TypeError("Generated declaration labels must be distinct.");
-  for(const label of labels) {
-    if(bindings.has(label)) {
-      const binding=table.get(bindings.get(label).id);
-      if(binding.role!=="declaration"||binding.label!==label)
-        throw new TypeError("A generated declaration has an incompatible reserved identity.");
-    } else bindings.set(label,table.allocate([...owner,"declarations"],{role:"declaration",label,origin}));
-  }
+  const builder=new ArtifactBuilder(header,{table,owner,origin,bindings});
+  for(const label of labels)builder.reserve(label);
   const entries=[...fields,...derived],helpers=new HelperExpansion(entries,{table,owner:[...owner,"helpers"]});
   const views=new Map(fields.map(field=>[field.id,helpers.type(field)]));
   const fieldTypes=new Map([...views].map(([id,view])=>[id,view.checking]));
@@ -52,23 +42,18 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
   const headerArguments=headerParams.map(p=>reference(table.get(p.name.bindingId)));
   const modelType=()=>call(reference(bindings.get(record.name)),headerArguments,origin);
   const nextGroup=1+Math.max(-1,...headerParams.map(p=>p.group??0));
-  let serial=0;
-  const substitute=(syntax,map)=>substituteBindingSyntax(syntax,map,table,[...owner,"substitution",String(serial++)]);
-  const artifacts=[];
+  const substitute=(syntax,map)=>builder.substitute(syntax,map);
+  const artifacts=builder.artifacts;
   const emit=(label,params,type,value,generated,{inferred=false,body=null,computable=false}={})=>{
     const binding=bindings.get(label),site=entries.find(entry=>entry.label===generated.field)?.binding.origin??origin;
     const declaration={kind:"def",name:{...token(binding),...at(site)},params,type,...at(site),
       ...(inferred?{value}:{body:body??[{kind:"exact",value,...at(origin)}],typedValue:true}),
       ...(computable?{computable:true}:{}),
       ...(params.some(p=>p.implicit)?{implicitParameters:at(origin)}:{})};
-    const syntax=bindingSyntaxView(header,declaration,{inferred});
-    const cloned=cloneBindingSyntax(syntax,table,[...owner,"artifact",String(artifacts.length)],
-      {expansion:{kind:"generation",site:origin}}).syntax;
-    artifacts.push({binding,syntax:cloned,generated:{theory:record.name,
-      family:generated.role==="derived"?`derived:${generated.field}`:"base",...generated}});
+    builder.emit(binding,declaration,{theory:record.name,
+      family:generated.role==="derived"?`derived:${generated.field}`:"base",...generated},{inferred});
   };
-  const local=(label,source=origin)=>table.allocate([...owner,"locals"],
-    {role:"parameter",label,origin:expandedOrigin(source,{kind:"generation",site:origin})});
+  const local=(label,source=origin)=>builder.local(label,source);
   const max=values=>values.length===1?values[0]:call(builtin("max",origin),[values[0],max(values.slice(1))],origin);
   const modelUniverse=call(builtin("next",origin),[max(universes.map(p=>reference(table.get(p.name.bindingId))))],origin);
 
