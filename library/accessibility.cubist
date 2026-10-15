@@ -1,0 +1,74 @@
+// Accessibility and well-founded induction for any relation R on any type A,
+// from the well-founded trees Tree(U, A, B) of universe_smallness: a node
+// labelled x has one subtree for each y with R(y, x). Accessibility is a
+// predicate in the universe of A, its induction has motives there, and no
+// indexed family is declared.
+import universe_smallness;
+
+// The elements related to x from below.
+def Predecessors(U < UU0, A : U, R : A -> A -> U) : A -> U := fun (x : A) => exists y : A. R(y, x);
+
+def AccTree(U < UU0, A : U, R : A -> A -> U) : U := Tree(U, A, Predecessors(U, A, R));
+
+computable def acc_root(U < UU0, A : U, R : A -> A -> U, t : AccTree(U, A, R)) : A := match t {
+    node(x, _) => x;
+  };
+
+// Well-formed: each child's root is the element it stands for, hereditarily.
+computable def acc_good(U < UU0, A : U, R : A -> A -> U, t : AccTree(U, A, R)) : U := match t {
+    node(x, children) => forall s : Predecessors(U, A, R)(x).
+    (acc_root(U, A, R, children(s)) =[A] s.1) and acc_good(U, A, R, children(s));
+  };
+
+// x is accessible: a well-formed tree stands for it.
+def Acc(U < UU0, A : U, R : A -> A -> U, x : A) :
+  U := exists t : AccTree(U, A, R). (acc_root(U, A, R, t) =[A] x) and acc_good(U, A, R, t);
+
+computable def acc_tree_induction(
+  U < UU0, A : U, R : A -> A -> U, P : A -> U, step : forall x : A. (forall y : A. R(y, x) -> P(y))
+  -> P(x), t : AccTree(U, A, R)
+) :
+  acc_good(U, A, R, t)
+  -> P(acc_root(U, A, R, t)) := induction t as u return (
+    acc_good(U, A, R, u) -> P(acc_root(U, A, R, u))
+  ) {
+    node(x, children) with ih => fun (
+      g : forall s : Predecessors(U, A, R)(x). (acc_root(U, A, R, children(s)) =[A] s.1)
+      and acc_good(U, A, R, children(s))
+    ) => step(x)(
+      fun (y : A, r : R(y, x)) => transport ih((y, r))(g((y, r)).2) along g((y, r)).1 in P
+    );
+  };
+
+// Well-founded induction on an accessible element.
+computable def wf_induction(
+  U < UU0, A : U, R : A -> A -> U, P : A -> U, step : forall x : A. (forall y : A. R(y, x) -> P(y))
+  -> P(x), x : A, acc : Acc(U, A, R, x)
+) :
+  P(x) := transport acc_tree_induction(U, A, R, P, step, acc.1)(acc.2.2) along acc.2.1 in P;
+
+// An element is accessible when everything below it is.
+computable def acc_intro(
+  U < UU0, A : U, R : A -> A -> U, x : A, below : forall y : A. R(y, x) -> Acc(U, A, R, y)
+) :
+  Acc(U, A, R, x) := (
+    typed(AccTree(U, A, R), node(x, fun (s : Predecessors(U, A, R)(x)) => below(s.1, s.2).1)),
+    refl(x), fun (s : Predecessors(U, A, R)(x)) => below(s.1, s.2).2
+  );
+
+computable def acc_tree_below(
+  U < UU0, A : U, R : A -> A -> U, t : AccTree(U, A, R), x : A, h : (acc_root(U, A, R, t) =[A] x)
+  and acc_good(U, A, R, t), y : A, r : R(y, x)
+) :
+  Acc(U, A, R, y) := match t {
+    node(_, children) => (
+      children((y, transport r along sym(h.1) in (fun (w : A) => R(y, w)))),
+      h.2((y, transport r along sym(h.1) in (fun (w : A) => R(y, w))))
+    );
+  };
+
+// Everything below an accessible element is accessible.
+computable def acc_below(
+  U < UU0, A : U, R : A -> A -> U, x : A, acc : Acc(U, A, R, x), y : A, r : R(y, x)
+) :
+  Acc(U, A, R, y) := acc_tree_below(U, A, R, acc.1, x, acc.2, y, r);

@@ -1,0 +1,245 @@
+// Kirby–Paris hydras and the end of every battle. A hydra is a finite rooted
+// tree. Hercules chops a head, a leaf other than the root; when the head's
+// parent is not the root, the hydra then grows n copies of the parent, with
+// the head removed, from the grandparent. Every battle ends, whichever head
+// Hercules chops and however many copies grow (hydra_terminates,
+// no_infinite_battle). The proof is well-founded induction nested twice
+// along the tree, the usual argument for the well-foundedness of epsilon
+// zero written on the trees instead of ordinal notations. It uses no axiom
+// and computes: leftmost_length counts the moves of a battle along it.
+import nat;
+import universe_smallness;
+import accessibility;
+use nat;
+
+// A hydra is its root's forest: leaf is a bare root, and attach(child, rest)
+// has the root of child as the first child of its root, with the children of
+// rest's root after it.
+inductive Hydra : U0 {
+  leaf;
+  attach(child : Hydra, rest : Hydra);
+}
+
+// n copies of child attached in front of rest.
+computable def replicate(n : Nat, child, rest : Hydra) : Hydra := match n {
+    zero => rest;
+    succ(k) => attach(child, replicate(k, child, rest));
+  };
+
+computable def is_leaf(h : Hydra) : U0 := match h {
+    leaf => Unit;
+    attach(_, _) => Void;
+  };
+
+// h2 is h with one head removed from among the root's children.
+computable def ChopHead(h, h2 : Hydra) : U0 := match h {
+    leaf => Void;
+    attach(child, rest) => (is_leaf(child) and (h2 =[Hydra] rest))
+    or (exists rest2 : Hydra. (h2 =[Hydra] attach(child, rest2)) and ChopHead(rest, rest2));
+  };
+
+// h2 is h after a move with n new copies that chops a head whose parent is a
+// child of the root, or deeper: the copies grow from the head's grandparent.
+computable def ChopDeep(n : Nat, h, h2 : Hydra) : U0 := match h {
+    leaf => Void;
+    attach(child, rest) => (
+      exists rest2 : Hydra. (h2 =[Hydra] attach(child, rest2)) and ChopDeep(n, rest, rest2)
+    )
+    or (
+      (exists child2 : Hydra. (h2 =[Hydra] attach(child2, rest)) and ChopDeep(n, child, child2))
+      or (
+        exists child2 : Hydra. (h2 =[Hydra] replicate(succ(n), child2, rest))
+        and ChopHead(child, child2)
+      )
+    );
+  };
+
+// A move at stage n: a head below the root is removed, or a deeper head is
+// removed and n copies of its parent grow from its grandparent.
+def Move(n : Nat, h, h2 : Hydra) : U0 := ChopHead(h, h2) or ChopDeep(n, h, h2);
+
+// h2 is reached from h by a move at some stage: the relation battles descend along.
+def Step(h2, h : Hydra) : U0 := exists n : Nat. Move(n, h, h2);
+
+// Chopping the only head of a two-node hydra, and the first move on
+// root - a - head: the head goes and two more copies of a, now a head, grow.
+def chop_example : Move(1, attach(leaf, leaf), leaf) := left(left((tt, refl(leaf))));
+
+def grow_example :
+  Move(2, attach(attach(leaf, leaf), leaf), attach(leaf, attach(leaf, attach(leaf, leaf)))) := right(
+    right(
+      right((leaf, refl(attach(leaf, attach(leaf, attach(leaf, leaf)))), left((tt, refl(leaf)))))
+    )
+  );
+
+def Accessible(h : Hydra) : U0 := Acc(U0, Hydra, Step, h);
+
+// A bare root has no move: the hydra is dead.
+computable def no_move_leaf(h2 : Hydra, s : Step(h2, leaf)) : Void := match s.2 return Void {
+    left chop => chop;
+    right deep => deep;
+  };
+
+// The motive of the outer induction: attaching child in front of an
+// accessible hydra keeps it accessible.
+def AttachAcc(child : Hydra) :
+  U0 := forall rest : Hydra. Accessible(rest) -> Accessible(attach(child, rest));
+
+// So does attaching copies of it.
+computable def replicate_acc(
+  child : Hydra, hc : AttachAcc(child), rest : Hydra, hr : Accessible(rest), n : Nat
+) :
+  Accessible(replicate(n, child, rest)) := induction n as k return Accessible(
+    replicate(k, child, rest)
+  ) {
+    zero => hr;
+    succ(k) with ih => hc(replicate(k, child, rest), ih);
+  };
+
+// The step of the inner induction: every move from attach(child, rest) lands
+// in an accessible hydra, by the hypotheses below child and below rest.
+computable def attach_acc_step(
+  child : Hydra, below : forall child2 : Hydra. Step(child2, child) -> AttachAcc(child2),
+  rest : Hydra, ihr : forall rest2 : Hydra. Step(rest2, rest) -> Accessible(rest2)
+  -> Accessible(attach(child, rest2)), hr : Accessible(rest)
+) :
+  Accessible(attach(child, rest)) := acc_intro(
+    U0, Hydra, Step, attach(child, rest),
+    fun (h2 : Hydra, s : Step(h2, attach(child, rest))) => match s.2 return Accessible(h2) {
+      left chop => match chop return Accessible(h2) {
+        left here => transport hr along sym(here.2) in Accessible;
+        right later => transport ihr(
+          later.1, (s.1, left(later.2.2)),
+          acc_below(U0, Hydra, Step, rest, hr, later.1, (s.1, left(later.2.2)))
+        ) along sym(later.2.1) in Accessible;
+      };
+      right deep => match deep return Accessible(h2) {
+        left later => transport ihr(
+          later.1, (s.1, right(later.2.2)),
+          acc_below(U0, Hydra, Step, rest, hr, later.1, (s.1, right(later.2.2)))
+        ) along sym(later.2.1) in Accessible;
+        right first => match first return Accessible(h2) {
+          left inside => transport below(inside.1, (s.1, right(inside.2.2)))(rest, hr) along sym(
+            inside.2.1
+          ) in Accessible;
+          right grown => transport replicate_acc(
+            grown.1, below(grown.1, (s.1, left(grown.2.2))), rest, hr, succ(s.1)
+          ) along sym(grown.2.1) in Accessible;
+        };
+      };
+    }
+  );
+
+// The main lemma: well-founded induction on the first child, then on the rest.
+computable def attach_acc(child : Hydra, hc : Accessible(child)) :
+  AttachAcc(child) := wf_induction(
+    U0, Hydra, Step, AttachAcc,
+    fun (c : Hydra, below : forall c2 : Hydra. Step(c2, c) -> AttachAcc(c2)) => fun (
+      rest : Hydra, hr : Accessible(rest)
+    ) => wf_induction(
+      U0, Hydra, Step, fun (r : Hydra) => Accessible(r) -> Accessible(attach(c, r)),
+      fun (
+        r : Hydra, ihr : forall r2 : Hydra. Step(r2, r) -> Accessible(r2)
+        -> Accessible(attach(c, r2))
+      ) => fun (hr2 : Accessible(r)) => attach_acc_step(c, below, r, ihr, hr2), rest, hr
+    )(hr), child, hc
+  );
+
+// Every hydra is accessible: Hercules wins every battle, whatever he does.
+computable def hydra_terminates(h : Hydra) :
+  Accessible(h) := induction h as g return Accessible(g) {
+    leaf => acc_intro(
+      U0, Hydra, Step, leaf, fun (h2 : Hydra, s : Step(h2, leaf)) => absurd(no_move_leaf(h2, s))
+    );
+    attach(child, rest) with hc, hr => attach_acc(child, hc)(rest, hr);
+  };
+
+// A battle: at stage i + 1 Hercules chops a head, and i + 1 copies grow.
+def Battle(play : Nat -> Hydra) : U0 := forall i : Nat. Move(succ(i), play(i), play(succ(i)));
+
+// No play of moves from h, at whatever stages, goes on forever.
+def NoInfinitePlay(h : Hydra) :
+  U0 := forall play : Nat -> Hydra. (play(0) =[Hydra] h)
+  -> (forall i : Nat. Step(play(succ(i)), play(i))) -> Void;
+
+computable def no_infinite_play(h : Hydra, acc : Accessible(h)) :
+  NoInfinitePlay(h) := wf_induction(
+    U0, Hydra, Step, NoInfinitePlay,
+    fun (g : Hydra, ih : forall g2 : Hydra. Step(g2, g) -> NoInfinitePlay(g2)) => fun (
+      play : Nat -> Hydra, start : play(0) =[Hydra] g, steps : forall i : Nat.
+      Step(play(succ(i)), play(i))
+    ) => ih(
+      play(1), transport steps(0) along start in (fun (w : Hydra) => Step(play(1), w)),
+      fun (i : Nat) => play(succ(i)), refl(play(1)), fun (i : Nat) => steps(succ(i))
+    ), h, acc
+  );
+
+// No battle goes on forever.
+computable def no_infinite_battle(play : Nat -> Hydra, battle : Battle(play)) :
+  Void := no_infinite_play(
+    play(0), hydra_terminates(play(0)), play, refl(play(0)), fun (i : Nat) => (succ(i), battle(i))
+  );
+
+// What chopping the leftmost head does: the hydra is dead, a head below the
+// root goes, or a deeper head goes.
+def Leftmost(n : Nat, h : Hydra) :
+  U0 := is_leaf(h)
+  or ((exists h2 : Hydra. ChopHead(h, h2)) or (exists h2 : Hydra. ChopDeep(n, h, h2)));
+
+// The leftmost move below the first child, as a move at the root: a bare
+// first child is a head to remove; a head below it grows copies; a deeper
+// move stays inside it.
+computable def leftmost_lift(n : Nat, child, rest : Hydra, l : Leftmost(n, child)) :
+  Leftmost(n, attach(child, rest)) := match l return Leftmost(n, attach(child, rest)) {
+    left dead => right(left((rest, left((dead, refl(rest))))));
+    right alive => match alive return Leftmost(n, attach(child, rest)) {
+      left chopped => right(
+        right(
+          (
+            replicate(succ(n), chopped.1, rest),
+            right(right((chopped.1, refl(replicate(succ(n), chopped.1, rest)), chopped.2)))
+          )
+        )
+      );
+      right deep => right(
+        right((attach(deep.1, rest), right(left((deep.1, refl(attach(deep.1, rest)), deep.2)))))
+      );
+    };
+  };
+
+computable def leftmost(n : Nat, h : Hydra) : Leftmost(n, h) := match h as g return Leftmost(n, g) {
+    leaf => left(tt);
+    attach(child, rest) => leftmost_lift(n, child, rest, leftmost(n, child));
+  };
+
+// The number of moves of the battle from stage n in which Hercules always
+// chops the leftmost head, computed along the accessibility tree.
+computable def leftmost_length(h : Hydra, acc : Accessible(h), n : Nat) :
+  Nat := wf_induction(
+    U0, Hydra, Step, fun (g : Hydra) => Nat -> Nat,
+    fun (g : Hydra, ih : forall g2 : Hydra. Step(g2, g) -> Nat -> Nat) => fun (stage : Nat) => match leftmost(
+      stage, g
+    ) return Nat {
+      left dead => 0;
+      right alive => match alive return Nat {
+        left chopped => succ(ih(chopped.1, (stage, left(chopped.2)))(succ(stage)));
+        right deep => succ(ih(deep.1, (stage, right(deep.2)))(succ(stage)));
+      };
+    }, h, acc
+  )(n);
+
+// root - a - head from stage 1: the head goes and two copies of a grow, then three heads go.
+evaluate leftmost_length(
+  attach(attach(leaf, leaf), leaf), hydra_terminates(attach(attach(leaf, leaf), leaf)), 1
+) expecting 3;
+
+// The same hydra from stage 3: four copies grow.
+evaluate leftmost_length(
+  attach(attach(leaf, leaf), leaf), hydra_terminates(attach(attach(leaf, leaf), leaf)), 3
+) expecting 5;
+
+// A head beside root - a - head: five moves.
+evaluate leftmost_length(
+  attach(leaf, attach(attach(leaf, leaf), leaf)),
+  hydra_terminates(attach(leaf, attach(attach(leaf, leaf), leaf))), 1
+) expecting 5;

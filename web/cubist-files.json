@@ -2383,6 +2383,10 @@
    "summary": "Checked transport through paths of types and type-valued families."
   },
   {
+   "path": "library/accessibility.cubist",
+   "summary": "Accessibility and well-founded induction for any relation `R` on a type `A` in any universe below `UU0`, as a predicate `Acc(U, A, R, x)` in that universe, made from [`universe_smallness`](universe_smallness.cubist)'s trees: a well-formed tree with a subtree for every element below `x`, so no indexed family is declared. Induction on an accessible element with any motive in `U` (`wf_induction`); an element is accessible when everything below it is (`acc_intro`), and everything below an accessible element is accessible (`acc_below`)."
+  },
+  {
    "path": "library/algebra.cubist",
    "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `CommRing` (an abelian group written `+`, with `zero` and `neg`, and a commutative monoid on one set, with distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
@@ -2405,6 +2409,10 @@
   {
    "path": "library/hlevels.cubist",
    "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg)."
+  },
+  {
+   "path": "library/hydra.cubist",
+   "summary": "Kirby–Paris hydras, finite rooted trees as the forests below their roots, and their battles: a move chops a head and, when its parent is not the root, grows copies of the parent from the grandparent. Every hydra is accessible for the moves with any number of copies (`hydra_terminates`), by well-founded induction nested twice along the tree, so no battle goes on forever (`no_infinite_battle`). The number of moves of the battle that always chops the leftmost head computes along the proof (`leftmost_length`)."
   },
   {
    "path": "library/integers.cubist",
