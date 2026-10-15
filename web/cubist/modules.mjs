@@ -381,8 +381,8 @@ export const archiveModules = [
 // archive module of the same name. The first, nat, is the natural numbers,
 // which a module imports to use them.
 export const libraryModules = ["nat", "classical_axioms", "universe_automorphisms", "hlevels",
-  "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
-  "lists", "lexemes", "quotients", "algebra", "integers", "rationals", "squares"];
+  "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "accessibility",
+  "propositions", "lists", "lexemes", "quotients", "algebra", "integers", "rationals", "squares", "hydra"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/cubist-tests.test.mjs
