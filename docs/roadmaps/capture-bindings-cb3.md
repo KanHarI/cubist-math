@@ -1,6 +1,6 @@
 # CB3: deferred scopes
 
-Status: implemented and entering external review on `cb3-deferred-scopes`,
+Status: implemented; external round-1 fixes validated on `cb3-deferred-scopes`,
 based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
 the arbitrary-context REPL is still the CB6 deliverable.
 
@@ -123,3 +123,18 @@ diagnostic-catalogue failure after extracting local lookup; the shared lookup
 now leaves the existing diagnostic constructors at their consumers, retaining
 their codes. External review begins from the committed implementation below;
 this validation does not substitute for its verdict.
+
+External round 1 found two defects at shared boundaries. Evidence collection
+now uses the existing `isTerm` predicate before inference, because source aliases
+also carry dimensions, constructor descriptors and lazy operands. Proof-field
+errors read their labels and same-module occurrence sites from existing
+substitution frames. These repeat the input-classification and source-ownership
+roots recorded in the review obligations; neither needs new state or a resolver.
+Controls cover all three non-term alias categories, correct and wrong
+computations, local/imported fields, shadowing and exact owned token spans.
+General imported statement spans remain the pre-existing CB5 gap.
+
+Round-1 fix validation: 18/18 focused tests; `cb3-r1-full.log` passes 1,201 of
+1,214 tests, with 13 documented later-phase TODOs and zero failures. All 3,857
+canonical checks pass, and all four production mutations are killed. Source
+and tests were frozen for these runs. Round 2 will review this small delta.

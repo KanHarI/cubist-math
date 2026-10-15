@@ -228,3 +228,39 @@ the final removal of unused sequence-region metadata.
 Round-2 final validation: `npm test` passed 1,181 of 1,197 tests, with
 16 existing later-phase TODOs and zero failures. All 3,857 canonical checks
 passed, and all four production mutations were killed.
+
+## CB3 external review, round 1 — diagnosis before fixes
+
+Claude Opus 5.5 at xhigh reviewed `1e40d0a4` against #235 at `790162dd`.
+It found two actionable issues and confirmed the CB3/later-package boundary.
+Before changing code, both findings were compared with the earlier rounds:
+
+- Evidence collection repeats the source-decision root (CB2 round 3): a shared
+  alias boundary carries dimensions, constructor descriptors and lazy operands
+  as well as terms. Its new evidence consumer independently classified inputs
+  with two excluded tags. The shared evidence operation must use the existing
+  core-term predicate before inference; callers must not grow separate lists.
+- Proof-reference errors repeat the source-ownership root (CB2 round 1 and
+  cleanup round 2): field substitution replaces the written occurrence with a
+  projection expression. The existing substitution frame still records the
+  occurrence's site and binding. Error reporting must consume that provenance,
+  rather than the generated projection's label and offsets. A foreign site
+  must never become offsets in the current module. General inherited error
+  spans remain the explicit CB5 work; the newly admitted proof references
+  must name their actual source occurrence now.
+
+The intended fixes reuse `isTerm` and the existing expansion frames, without
+new state, resolver modes or a diagnostic service. Controls cover each
+non-term alias with intended and wrong computations, plus local/inherited
+proof-field labels and precise same-module sites. The new diagnostic lookup
+ignores foreign substitution sites. The surrounding imported statement catch
+still has the pre-existing foreign-offset defect recorded by the reviewer;
+the inherited-label control does not claim to repair that CB5 boundary.
+
+Both fixes now use those existing contracts. The focused evidence,
+proof-reference and diagnostic-catalogue suites pass 18/18. No new resolver,
+state layer or compatibility mode was introduced.
+
+Final round-1 fix validation: 1,201 tests pass out of 1,214, with 13 documented
+later-phase TODOs and zero failures; all 3,857 canonical checks pass. All four
+production mutations are killed. Source/tests remained frozen during validation.

@@ -5,7 +5,7 @@
 // authority: every term they help build is checked.
 import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
-import {T,freeNames,onFace,substituteTerm} from "./core.mjs";
+import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
 import {BindingAdapter,SlotOutcomes} from "../cubist/bindings.mjs";
@@ -98,6 +98,7 @@ export class Scope {
   // Evidence belongs to the checked model, independently of aliases used
   // to display or open it. A reserved or refused projection grants nothing.
   modelEvidence(model,type=null) {
+    if(!isTerm(model))return this;
     if(!this.checker.theories?.size)return this;
     if(this.evidence.some(e=>e.model===model||model.tag==="Var"&&e.model.tag==="Var"&&e.model.name===model.name))return this;
     let head=type??this.infer(model).type;

@@ -834,7 +834,14 @@ export class Translator {
     const expression=referenceSyntax(token),entered=this.expressionScope(expression,scope);
     const {node,scope:at}=entered,key=node.kind==="name"?node.name:null;
     const value=key&&at.env.get(key);
-    if(!value||!at.localSources.has(key))throw missing(sourceName(expression));
+    if(!value||!at.localSources.has(key)) {
+      // Field substitution replaces a written token with projection syntax.
+      // Its existing expansion frame owns the diagnostic name and site.
+      const frame=expression.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding);
+      const label=sourceName(expression)??(frame?this.compilationBindings.table.get(frame.binding).label:null);
+      const error=missing(label);
+      throw frame?.site.module===scope.unit.moduleName?scope.unit.locate(error,frame.site):error;
+    }
     return value;
   }
   selectedSimpRules(items,scope,only,without=[],witnessNames=[]) {

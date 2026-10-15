@@ -123,3 +123,39 @@ def independent : Unit := tt;`;
   assert.match(result.gaps[0].reason,/Simplification set conflict is ambiguous: a, b/);
   assert.ok(result.outputs.find(d=>d.name==="independent").verified);
 });
+
+test("substituted proof fields keep their written diagnostic labels and source-owned sites",async t=>{
+  const read=sourceReader();
+  const prelude=base+"\ninductive Edge { lo; hi; edge : lo = hi; }";
+  const fields="theory Parent(U < UU0) { M : set U; fz : zero = zero; fr(n : Nat) : add(n, zero) = n; }";
+  const helpers=`
+  def field_witness(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { simp only [zero_if] with [fz]; };
+  def copy(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { simp only [saved] at fr as h2; simpa only [saved] using h2; };
+  def shadow(n : Nat, fr : add(n, zero) = n, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { simp only [saved] at fr as h2; simpa only [saved] using h2; };`;
+  for(const imported of [false,true]) {
+    const program=new CubicalProgram(wasm,name=>name==="parent"?prelude+fields:read(name));t.after(()=>program.dispose());
+    const source=(imported?"import parent;":prelude+fields)+`\ntheory Child(U < UU0) extends p : Parent {${helpers}\n}`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["Child.field_witness","E331"],["Child.copy","E454"]],JSON.stringify(result.gaps));
+    for(const [index,label,marker] of [[0,"fz","with [fz]"],[1,"fr","at fr as"]]) {
+      const gap=result.gaps[index],start=source.indexOf(marker)+(index===0?6:3);
+      assert.match(gap.reason,new RegExp(`local(?: hypothesis)?: ${label}\\.`));
+      assert.deepEqual([gap.start,gap.end],[start,start+label.length]);
+    }
+    assert.ok(result.outputs.find(d=>d.name==="Child.shadow").verified);
+  }
+  // A helper inherited from another module keeps its source binding label.
+  // Imported statement spans are the existing CB5 ownership gap.
+  const parent=prelude+fields+`\ntheory Middle(U < UU0) extends p : Parent {${helpers}\n}`;
+  const program=new CubicalProgram(wasm,name=>name==="middle"?parent:read(name));t.after(()=>program.dispose());
+  const source="import middle; theory Child(U < UU0) extends p : Middle {}";
+  const result=await program.check(source,"main");
+  const gaps=result.gaps.filter(g=>g.module==="main");
+  assert.deepEqual(gaps.map(g=>g.name),["Child.field_witness","Child.copy"],JSON.stringify(result.gaps));
+  for(const [index,label] of ["fz","fr"].entries()) {
+    assert.match(gaps[index].reason,new RegExp(`local(?: hypothesis)?: ${label}\\.`));
+  }
+});

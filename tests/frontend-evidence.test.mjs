@@ -23,6 +23,34 @@ const accepts=(result,get,names)=>{
   }
 };
 
+test("CB3: evidence ignores dimension, constructor and lazy operand aliases",async t=>{
+  const body=`
+inductive Circle { base; loop : base = base; }
+inductive Bit { off; yes; }
+def coordinate(x : Circle, b : Bit) : Circle := match x, b {
+  base, off => base; base, yes => base;
+  loop @ i, off => loop @ i; loop @ j, yes => loop @ j;
+};
+def coordinate_value : coordinate(base, yes) = base { rfl; }
+def coordinate_loop : base = base := path k => coordinate(loop @ k, yes);
+def coordinate_path : coordinate_loop = loop { rfl; }
+def wrong_path : coordinate_loop = refl(base) { rfl; }
+def constructor(b : Bit) : Nat := match zero, b { n, off => n; n, yes => succ(n); };
+def constructor_value : constructor(yes) = succ(zero) { rfl; }
+def wrong_constructor : constructor(yes) = zero { rfl; }
+notation pick { x + y := match x, y { zero, m => m; succ(n), m => succ(m); }; }
+def operand : Nat := pick.(succ(zero) + succ(zero));
+def operand_value : operand = succ(succ(zero)) { rfl; }
+def wrong_operand : operand = succ(zero) { rfl; }`;
+  for(const context of ["", "theory T(U < UU0) { M : set U; }", "import algebra;"]) {
+    const {result,get}=await check(t,`import nat; import hlevels; ${context}\n${body}`);
+    assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),
+      [["wrong_path","E606"],["wrong_constructor","E606"],["wrong_operand","E606"]],JSON.stringify(result.gaps));
+    for(const name of ["coordinate_value","coordinate_path","constructor_value","operand_value"])
+      assert.equal(get(name).verified,true,get(name).reason);
+  }
+});
+
 test("CB3: nested matches retain model evidence through imported renamed inheritance and shadowing",async t=>{
   const fixture=`import hlevels;
 inductive Bit : set U0 { off; yes; }
