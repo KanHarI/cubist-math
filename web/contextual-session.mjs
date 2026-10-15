@@ -5,7 +5,7 @@ import {CubicalProgram} from "./cubical-program.mjs";
 import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayPolicy} from "./cubical-replay-inputs.mjs";
 import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
-import {bindingInputs} from "./translator/binding-module.mjs";
+import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxNames} from "./translator/syntax-graph.mjs";
@@ -130,12 +130,14 @@ export class ContextualSession {
           throw new ElaborationStop(unavailable("The selected scope did not reproduce its recorded context."));
         const table=replay.scopeRecorder.table,adapter=new BindingAdapter(table);
         const translator=live.translator.forkScope(live.scope,{normalize:false,...inputs.fuelLimits});
+        const {sets:simpSets,captures}=sourceSimpSets(table,live.scope.unit.simpRegistry);
         const selectedPolicy=kernelReplayPolicy(replay.kernel);
         let scope,lexical=live.lexical;
         const validation=measure(replay.kernel);
         try {
           applyKernelReplayPolicy(replay.kernel,selectedPolicy);
           scope=queryEnvironment(live,adapter,translator.unit().declaration(translator.declarationFuel));
+          scope=scope.aliases(structuredClone([...captures].map(([id,value])=>[adapter.key(id),value])));
           // Inferring even Unit derives every local type in order through
           // contextScope. A recorded lambda domain is not typing authority.
           scope.infer(T.unit);
@@ -150,7 +152,7 @@ export class ContextualSession {
           const parsed=parsedEntry(source),reserved=reservedReferences(parsed.text);
           const {adapter:entryAdapter,context,constructors}=bindingInputs(table,live.values,{reserved,lexical:lexical.snapshot()});
           const owner=["contextual-session",this.#serial,"entry",String(index)],moduleName=owner.join("/");
-          const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,
+          const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,simpSets,
             source:{revision:inputs.revision,module:moduleName}});
           const tree=lowerBindingSyntax(syntax,entryAdapter);
           const used=syntaxNames({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions]});

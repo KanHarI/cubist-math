@@ -8,6 +8,8 @@ import {sourceMetadata,syntaxValue} from "./source-syntax.mjs";
 
 // A binder is a token, { text }, or, in a statement's pattern, a name node.
 export const binderName = binder => binder?.text ?? binder?.name ?? null;
+// Parsed reference tokens and retained expressions share their consumers.
+export const referenceSyntax = token => token.kind ? token : {...token,kind:"name",name:token.text};
 const present = binders => binders.filter(binder => binderName(binder) !== null);
 
 // Selection is two effects: opening model labels and selecting notation.
@@ -231,7 +233,7 @@ export function scopeMapped(node, {prepare=n=>n,enter = n => n, bind = n => n, r
       if (captured(node, key)) {copy[key] = value; continue;}
       const namespace=Object.hasOwn(referenceFields,node.kind)?referenceFields[node.kind][key]:null;
       if(namespace) {
-        const use=token=>token?reference(token,{namespace,node,key},outer):token;
+        const use=token=>token?.kind?walk(token,outer,tokens):token?reference(token,{namespace,node,key},outer):token;
         copy[key]=Array.isArray(value)?value.map(use):use(value);
         continue;
       }

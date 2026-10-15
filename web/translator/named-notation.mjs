@@ -19,7 +19,7 @@ export function retainSourceNotation(t,module,declaration,env,{declared=new Set(
   }
   const {source,inputs,prepared,captures}=enterSourceItem(t,module,declaration,env,owner);
   const artifact=retainNamedNotation(prepared.item,{table:registry.table,owner,source,
-    context:prepared.context,constructors:inputs.constructors,model});
+    context:prepared.context,constructors:inputs.constructors,simpSets:inputs.simpSets,model});
   return {artifact,prepared,env:captures,
     declaration:{...prepared.item,retainedNotation:artifact}};
 }

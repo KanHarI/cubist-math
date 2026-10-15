@@ -138,13 +138,21 @@ test("a grouped domain is one scoped region even when it contains binders",()=>{
   assert.throws(()=>resolveBindingSyntax(malformed,prepare()),/Grouped parameters must share one domain/);
 });
 
-test("unmigrated reference namespaces and new syntax families are refused at source resolution",()=>{
+test("proof references require a known set inventory and new syntax families remain gated",()=>{
   const setup=prepare();
+  const local=resolveBindingSyntax(parse("def a(x : Unit) : Unit { simpa with [x] using x; }").declarations[0],setup);
+  assert.equal(local.tree.body[0].witnesses[0].resolution.id,local.tree.params[0].name.bindingId);
+  assert.equal(sameBindingSyntax(local,cloneBindingSyntax(local,setup.table,["proof-copy"]).syntax),true);
   for(const source of [
-    "def a(x : Unit) : Unit { simpa with [x] using x; }",
     "def a(x : Unit) : Unit { simpa without [r] using x; }",
     "def a(x : Unit) : Unit { simpa only [rules] using x; }",
-  ])assert.throws(()=>resolveBindingSyntax(parse(source).declarations[0],setup),/family has not migrated: simpaOnly/);
+  ]) {
+    const declaration=parse(source).declarations[0];
+    assert.throws(()=>resolveBindingSyntax(declaration,setup),/complete source set inventory/);
+    const syntax=resolveBindingSyntax(declaration,{...setup,simpSets:new Map()});
+    const copy=cloneBindingSyntax(syntax,setup.table,["known-empty-sets"]).syntax;
+    assert.equal(sameBindingSyntax(syntax,copy),true);
+  }
   assert.throws(()=>resolveBindingSyntax({kind:"futureFamily"},setup),/family has not migrated: futureFamily/);
   for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10"])
     assert.throws(()=>resolveBindingSyntax(expression(source),setup),error=>/selected notation/.test(error.message)&&Number.isInteger(error.offset)&&error.sourceEnd>error.offset);

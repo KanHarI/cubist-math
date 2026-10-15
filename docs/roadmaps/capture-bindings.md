@@ -1,6 +1,6 @@
 # Correct capture and bindings
 
-Status: CB0–CB2 implemented, 2026-10-15; CB3 in progress; CB4–CB7 pending.
+Status: CB0–CB2 implemented, 2026-10-15; CB3 implemented, entering review; CB4–CB7 pending.
 The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
 evidence integration, remaining requirements and validation.
 The [CB2 evidence](capture-bindings-cb2.md) records production integration,
@@ -204,11 +204,20 @@ an explicit substitution environment. An inserted argument keeps its own
 references and is not retrospectively captured by a candidate binder.
 Do not rewrite opaque clause text and then re-resolve it in the caller.
 
-Statement targets get IDs as their binding effects become known. An
-initializer sees preceding statements; later statements see its new IDs.
-When a proof goal determines the effect of `intro`, `obtain`, `ext` or a
-related statement, retain the remaining block with explicit slots and its
-original lexical context until that effect is determined.
+Statement targets own IDs at source resolution through the shared scope
+schema. An initializer sees preceding statements; later statements see the
+new IDs. A proof goal determines the checked values/types of `intro`, `obtain`
+and `ext` at execution. Only successful execution enters the continuation.
+These fixed syntactic binder positions need no additional deferred-block
+representation; ambiguous pattern roles still use the slots described above.
+
+Proof-token references use the same retained syntax as term occurrences.
+Local witnesses and hypothesis targets keep their IDs through branch slot
+resolution; unfolding hints keep exact source definitions. Explicit named
+simplification sets expand to their checked member identities at source
+entry, independently of local term labels. Unknown set inventory is not an
+empty inventory. Default simplification remains a contextual search, while
+an explicit set name cannot select a same-spelled destination registry entry.
 
 Opening a model is another deferred lexical effect. Block/file `use`, section
 parameters and `m.(expression)` can introduce bare field and derived labels

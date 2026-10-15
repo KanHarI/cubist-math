@@ -2,7 +2,7 @@
 // resolution and elaboration remain separate; neither admission nor replay
 // may reconstruct a retained declaration's references from destination names.
 import {reservedReferences} from "../cubist/parser.mjs";
-import {BindingAdapter,LexicalContext,bindingResolution,reservedResolution,sourceOrigin} from "../cubist/bindings.mjs";
+import {BindingAdapter,LexicalContext,bindingResolution,reservedResolution,sourceOrigin,failedResolution} from "../cubist/bindings.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax,bindingUses,bindingSyntaxView} from "../cubist/binding-syntax.mjs";
 import {recursionSite} from "./match.mjs";
 import {DeclarationOwnership} from "./declarations.mjs";
@@ -24,7 +24,7 @@ export function bindingInputs(table,values,{reserved=[],lexical=null,notations=n
 // notation namespace. A term-only identity map cannot establish the absence
 // of a named notation. Later lexical binders preserve this inventory while
 // the selector checks whether a model extension still names that model.
-export function sourceBindingInputs(registry,env,{reserved=[]}={}) {
+export function sourceBindingInputs(registry,env,{reserved=[],simpRegistry=null}={}) {
   const values=new Map(),lexical=[];
   for(const [label,value] of env)if(!label.startsWith("\u0000")) {
     const binding=registry.ofValue(value);
@@ -33,7 +33,23 @@ export function sourceBindingInputs(registry,env,{reserved=[]}={}) {
   for(const value of env.values())if(value?.tag==="Notation") {
     registry.table.get(value.bindingId);values.set(value.bindingId,value);
   }
-  return bindingInputs(registry.table,values,{reserved,lexical,notations:sourceNotationInventory(registry,env)});
+  const {sets:simpSets,captures}=sourceSimpSets(registry.table,simpRegistry);
+  for(const [id,value] of captures)values.set(id,value);
+  return {...bindingInputs(registry.table,values,{reserved,lexical,notations:sourceNotationInventory(registry,env)}),simpSets};
+}
+
+// Source producers and isolated queries consume the same checked registry.
+// Its portable inventory contains IDs only; captures remain explicit values
+// in the current kernel and never become serialized syntax or lexical data.
+export function sourceSimpSets(table,registry) {
+  const captures=new Map();
+  const sets=registry?new Map([...registry.sets].map(([label,set])=>[label,set.ambiguous
+    ?{failure:failedResolution(Error(`Simplification set ${label} is ambiguous: ${set.origins.join(", ")}.`))}
+    :{rules:set.rules.map(rule=>{
+      table.get(rule.binding);captures.set(rule.binding,rule.term);
+      return {id:rule.binding,label:rule.sourceName};
+    })}])):null;
+  return {sets,captures};
 }
 
 // Module entry and replayed local scopes describe the same selection
@@ -49,7 +65,7 @@ export function sourceNotationInventory(registry,env) {
     });
 }
 
-export function resolveBindingModule(ast,text,{table,source,imports=new Map(),notations=null}) {
+export function resolveBindingModule(ast,text,{table,source,imports=new Map(),notations=null,simpSets=null}) {
   if(ast.imports.length||!(ast.items??ast.declarations).every(d=>d.kind==="def"))
     throw new TypeError("The binding module entry currently accepts ordinary declarations with explicit imports only.");
   const inputs=bindingInputs(table,imports,{reserved:reservedReferences(text),notations});
@@ -62,7 +78,7 @@ export function resolveBindingModule(ast,text,{table,source,imports=new Map(),no
     const conflict=ownership.reserve([declaration],declaration);
     const own=declaration.params.length?declaration.params:declaration.valueParameters??[];
     const self=recursionSite(declaration,own)?binding:null;
-    const syntax=resolveBindingSyntax(declaration,{table,owner,context,constructors:inputs.constructors,source,self});
+    const syntax=resolveBindingSyntax(declaration,{table,owner,context,constructors:inputs.constructors,source,self,simpSets});
     if(!conflict)context=context.bind(label,bindingResolution(binding.id));
     return {binding,syntax};
   });

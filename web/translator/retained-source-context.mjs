@@ -16,7 +16,7 @@ import {checkedNotationContext,notationContextEntry,SELECTION} from "./notation-
 export function enterSourceItem(t,module,declaration,env,owner) {
   const registry=t.compilationBindings,table=registry.table;
   const source={revision:registry.revision,module:module.moduleName};
-  const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences(module.source)});
+  const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences(module.source),simpRegistry:module.simpRegistry});
   const environment=new Map([...env,...inputs.env]);
   const prepared=activateSourceItem(t,new Scope(module,new Map(),environment),declaration,inputs,{owner,source});
   return {table,source,inputs,prepared,captures:withSourceCaptures(environment,prepared,inputs.adapter)};

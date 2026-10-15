@@ -89,13 +89,11 @@ const tactics = {
         unit.source.slice(item.value.start,item.value.end)).join(", ")}.`}));
   },
   simpOnly(t,first,rest,goal) {
-    const {scope}=goal,{unit,env}=scope;
+    const {scope}=goal,{unit}=scope;
     const rules=t.preparedRules(first,scope,goal);
     if(first.at) {
       if(!rest.length)throw Error("A simplified hypothesis copy must be followed by a proof statement.");
-      const source=env.get(first.at.text);
-      if(!source||!scope.localSources.has(first.at.text))
-        throw Error(`simp at requires a local hypothesis: ${first.at.text}.`);
+      const source=t.localReference(first.at,scope,label=>Error(`simp at requires a local hypothesis: ${label}.`));
       // The hypothesis's statement is simplified and its proof carried forward.
       const hypothesis=goal.with(scope.infer(source).type);
       const {transition}=t.simplifyEqualityGoal(hypothesis,rules);

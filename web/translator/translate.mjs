@@ -5,9 +5,9 @@ import {parse} from "../cubist/parser.mjs";
 import {qualifySource} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
-import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
+import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
-import {decidePatternSlot,BindingAdapter,resolutionError} from "../cubist/bindings.mjs";
+import {decidePatternSlot,BindingAdapter,resolutionError,sourceOrigin} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
@@ -826,22 +826,29 @@ export class Translator {
       simplificationRule(at,term);
       return boundedStateKey(term,at.unit.fuel,this.checker.kernel);
     });
-    return {term,identity,origin:module.moduleName,priority,sourceName:token.text};
+    const binding=this.compilationBindings.capture(term,token.origin??sourceOrigin({revision:this.sourceRevision,
+      module:module.moduleName,start:token.start,end:token.end}));
+    return {term,identity,binding:binding.id,origin:module.moduleName,priority,sourceName:token.text};
+  }
+  localReference(token,scope,missing) {
+    const expression=referenceSyntax(token),entered=this.expressionScope(expression,scope);
+    const {node,scope:at}=entered,key=node.kind==="name"?node.name:null;
+    const value=key&&at.env.get(key);
+    if(!value||!at.localSources.has(key))throw missing(sourceName(expression));
+    return value;
   }
   selectedSimpRules(items,scope,only,without=[],witnessNames=[]) {
     const {unit,env}=scope;
     const witnesses=witnessNames.map(token=>{
       try {
-        const proof=env.get(token.text);
-        if(!proof||!scope.localSources.has(token.text))
-          throw Error(`Simplification premise witness must be local: ${token.text}.`);
+        const proof=this.localReference(token,scope,label=>Error(`Simplification premise witness must be local: ${label}.`));
         scope.infer(proof);
         return proof;
       } catch(error) {propagateElaborationStop(error);throw unit.locate(error,token);}
     });
     const selected=only?[]:orderedDefaultRules(unit.simpRegistry);
     for(const item of items) {
-      const set=item.value.kind==="name"&&!item.reverse
+      const set=item.value.kind==="name"&&!item.value.resolution&&!item.reverse
         ? resolveSimpSet(unit.simpRegistry,item.value.name):null;
       if(set)selected.push(...set.map(rule=>({...rule,
         sourceStart:item.start,sourceEnd:item.end})));
@@ -856,11 +863,11 @@ export class Translator {
     }
     const excluded=new Set();
     for(const token of without) {
-      const set=resolveSimpSet(unit.simpRegistry,token.text);
+      const set=token.kind?null:resolveSimpSet(unit.simpRegistry,token.text);
       if(set)for(const rule of set)excluded.add(rule.identity);
       else {
         try {
-          const term=this.term({kind:"name",name:token.text,start:token.start,end:token.end},scope,null);
+          const term=this.term(referenceSyntax(token),scope,null);
           excluded.add(this.search(scope,"Excluding a simplification rule",at=>{
             const identity=boundedStateKey(term,at.unit.fuel,this.checker.kernel);
             simplificationRule(at,term);
@@ -993,8 +1000,8 @@ export class Translator {
     }
     const keyword=first.kind==="simpaOnly"?"simpa":"simp";
     let text=`${keyword} only [${frozen.map(rule=>`${rule.reverse?"<- ":""}${rule.sourceText}`).join(", ")}]`;
-    if(first.witnesses?.length)text+=` with [${first.witnesses.map(token=>token.text).join(", ")}]`;
-    if(first.at)text+=` at ${first.at.text} as ${first.as.text}`;
+    if(first.witnesses?.length)text+=` with [${first.witnesses.map(token=>sourceName(referenceSyntax(token))).join(", ")}]`;
+    if(first.at)text+=` at ${sourceName(referenceSyntax(first.at))} as ${bindingStem(first.as)}`;
     if(first.using)text+=` using ${unit.source.slice(first.using.start,first.using.end)}`;
     text+=";";
     return {start:first.start,end:first.end,
@@ -1105,10 +1112,11 @@ export class Translator {
         // is checked as a definition of its own.
         scope.spend("queries");
         for(const hint of n.hints) {
-          let value=env.get(hint.text);
+          const expression=referenceSyntax(hint),{node,scope:at}=this.expressionScope(expression,scope);
+          let value=node.kind==="name"?at.env.get(node.name):this.term(node,at,null);
           while(value?.tag==="App")value=value.fn;
-          if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${hint.text}`);
-          this.reference(scope,{...hint,name:hint.text},value,null);
+          if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${sourceName(expression)}`);
+          if(node.kind==="name")this.reference(at,node,value,null);
         }
         return this.checker.scopedUnfolding(()=>tr(n.body),scope.context,expected,
           scope.dimensions,scope.unit.names);

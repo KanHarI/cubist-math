@@ -16,7 +16,7 @@ const format = "cubist-bindings-1";
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
-  "trunc", "typed", "exact", "let", "intro", "ext", "obtain", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
+  "trunc", "typed", "exact", "let", "intro", "ext", "obtain", "simpOnly", "simpaOnly", "withUnfolding", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);
@@ -68,7 +68,7 @@ export function resolveBindingTemplate(tree,options,splices) {
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
   fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
-  notation=null,receiverNamespace=true,syntaxOperands=[]},splices=null) {
+  notation=null,receiverNamespace=true,syntaxOperands=[],simpSets=null},splices=null) {
   const selectedNotation=context.selectedNotation();
   if(selectedNotation) {
     const fallback={activation:selectedNotation};
@@ -120,9 +120,29 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     if(!value.receiver)throw new TypeError("A namespace notation receiver needs its explicit model interface.");
     return value.receiver;
   });
+  // A set is a source namespace, independent of term binders. Expand it
+  // once to exact checked member references; all later transforms then use
+  // the same syntax traversal as an explicitly written theorem expression.
+  const simpSet=(label,node)=>{
+    if(simpSets===null)throw new TypeError("Retained simplification names require the complete source set inventory.");
+    const set=simpSets.get(label);
+    if(!set)return null;
+    const fixed=(label,value)=>{
+      const name={kind:"name",name:label,start:node.start,end:node.end,origin:origin(node)};
+      fixedReferences.set(name,value);return name;
+    };
+    return set.failure?[fixed(label,resolvedAt(set.failure,node))]
+      :set.rules.map(({id,label})=>fixed(label,bindingResolution(id)));
+  };
   tree = scopeMapped(tree, {
     deferred: true,
     prepare(node,at) {
+      if(["simpOnly","simpaOnly"].includes(node.kind))return {...node,
+        rules:node.rules.flatMap(item=>{
+          const set=item.value.kind==="name"&&!item.reverse?simpSet(item.value.name,item.value):null;
+          return set?set.map(value=>({...item,value})): [item];
+        }),
+        without:(node.without??[]).flatMap(token=>simpSet(token.text,token)??[token])};
       if(!["select","use"].includes(node.kind))return node;
       if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
       let model=node.model,selector;
@@ -150,6 +170,10 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       return at;
     },
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
+    reference(token,_field,at) {
+      const {value,fields}=lookup(at,token.text,token);
+      return occurrence(token,memberResolution(value,fields),token.text,origin(token));
+    },
     enter(node, at, descend) {
       if(selectors.has(node))return occurrence(node,selectors.get(node),node.name,origin(node));
       // Only a lazy argument's root name can have two interpretations.
@@ -184,7 +208,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         }
         const receiver=resolveBindingReceiver(qualifier,{table,owner:[...owner,"qualifier",String(splice++)],
           context:at.lexical,source,constructors,evidenceTypes,fixedReferences,universeReferences,
-          namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands});
+          namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands,simpSets});
         owned.push(...receiver.owned);
         // Qualification selects only the operation. Its operands retain the
         // surrounding source notation; no operand recipe is applied here.
@@ -583,7 +607,7 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
   const tree = scopeMapped(syntax.tree, {
     deferred: true,
     enter: node => node.kind === "operandAlternatives" ? {...node}
-      :node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferMissing: true}) : node,
+      :node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferErrors: true}) : node,
     bind: token => token.bindingId && !["pattern","activation"].includes(token.bindingRole)
       ? {...token, text: adapter.key(token.bindingId), bindingLabel:binderName(token), label: token.label ?? binderName(token)} : token,
     extend: at => at,
@@ -599,7 +623,7 @@ export function lowerBindingReferences(tree,adapter,outcomes=new SlotOutcomes())
   return scopeMapped(tree,{
     deferred:true,
     enter:node=>node.kind==="operandAlternatives"?{...node}
-      :node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferMissing:true}):node,
+      :node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferErrors:true}):node,
     extend:at=>at,
   },null);
 }

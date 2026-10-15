@@ -1,7 +1,7 @@
 # CB3: deferred scopes
 
-Status: implementation in progress on `cb3-deferred-scopes`, based on the
-reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
+Status: implemented and entering external review on `cb3-deferred-scopes`,
+based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
 the arbitrary-context REPL is still the CB6 deliverable.
 
 ## Completion requirements
@@ -58,6 +58,37 @@ generation and unused failures. The focused run passes all 55 tests. The full
 run passes 1,195 of 1,208 tests, with 13 documented later-phase TODOs and zero
 failures; all four production mutations are killed.
 
+Proof-token references now enter the shared traversal as retained expressions.
+All existing cloning, remapping, substitution and dependency operations see
+them there. Simplification set names expand once to exact checked member IDs;
+local witnesses, hypothesis copies and unfolding hints keep their ordinary
+lexical identities. The set inventory is explicit, including known absence
+and ambiguity; default simplification remains a contextual search. Focused
+controls cover source/destination collisions, copies, pattern slots, inherited
+coherence proofs, wrong premises and missing checked receipts. Closing an
+unfolding helper preserves term versus universe binders in both abstraction
+and application. The first complete focused run passes all 64 tests. The
+consumer audit adds source-set preparation to isolated scratch queries through
+the same producer, including accepted-history replay and local shadowing.
+Known source failures remain inert during entry lowering and throw when
+consumed, so an ambiguous set cannot abort the generated declaration queue.
+The 45-test consumer/diagnostic run passes. Recursive and path combinations
+are restored in the bounded preservation generator; all 16 combinations pass.
+
+The production audit covers the ordinary-declaration adapter pilot, retained
+generated declarations/inductives, helper substitution and imported inheritance.
+Retained pattern probes use saved constructor inventories and enclosing
+resolutions; matched-type tables determine constructor roles. The unrelated
+destination-constructor control passes. The adapter validates every reserved
+late lookup against the language namespace. Original, uncopied source still
+resolves in its source environment; it is not a destination fallback for a
+retained reference. The old fixed-binder capture callbacks were removed with
+the superseded producers in #235.
+
+Generated/selected scope observation and notation expansion remain explicitly
+unavailable to the contextual UI until CB6. This does not block their CB3
+elaboration migration or authorize presenting them as selectable contexts.
+
 Checked model evidence now travels with `Scope`, using exact projection IDs
 and one scope-copy operation so transitions cannot omit it. Generalization
 and face restriction transform witness, type and model together. Snapshots and
@@ -83,3 +114,12 @@ above. Their obsolete exemptions are retired. The final full run passed
 1,193 of 1,206 tests, with 13 documented later-phase TODOs and zero failures;
 all 3,857 canonical checks passed. This is a partial checkpoint, not CB3
 completion or an external review verdict.
+
+Final implementation validation: `cb3-final-full.log` passes 1,199 of 1,212
+tests, with 13 documented CB4–CB6 TODOs and zero failures; all 3,857 canonical
+checks pass. All four production mutations are killed. Source and tests were
+frozen throughout both runs. The earlier proof-reference full run had one
+diagnostic-catalogue failure after extracting local lookup; the shared lookup
+now leaves the existing diagnostic constructors at their consumers, retaining
+their codes. External review begins from the committed implementation below;
+this validation does not substitute for its verdict.

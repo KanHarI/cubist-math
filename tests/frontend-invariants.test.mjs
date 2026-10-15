@@ -46,11 +46,11 @@ async function verify(config) {
 
 // Exercise imports, inheritance, renaming, helper depth, grouped/dependent
 // parameters, caller notation and initial/free clients on the current stage.
-// Recursive/path combinations remain in the generator and in G4/G8/G12's
-// individual witnesses; enabling them here requires their CB2/CB3 fixes.
+// CB3's recursive/path behavior participates in every combination as well
+// as G4/G8/G12's individual witnesses.
 for (let seed = 0; seed < count; seed++) for (const capture of [false, true]) {
   test(`CB0 preservation: ${capture ? "capture target" : "uncolliding parameter"}, seed ${seed}`, { timeout: 30000 }, async t => {
-    const config = { ...configuration(seed), recursive: false, paths: false, capture };
+    const config = { ...configuration(seed), capture };
     const stage = await verify(config), classification = classifyStage(stage);
     if (classification.kind === "regression") {
       const reduced = await minimize(config, async candidate => {
