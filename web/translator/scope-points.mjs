@@ -32,6 +32,7 @@ function describedValue(value) {
   if(value?.tag==="Inductive")return {tag:value.tag,binding:value.binding};
   if(value?.tag==="InductiveConstructor")return {tag:value.tag,binding:value.inductive.binding,index:value.index};
   if(value?.tag==="Untranslated")return {tag:value.tag,binding:value.binding,reason:value.reason??value.message??null};
+  if(value?.tag==="Notation"&&value.bindingId)return {tag:value.tag,bindingId:value.bindingId,modelBinding:value.modelBinding??null};
   // Permissions are mutable while the declaration is elaborated. Capture
   // them separately at each point; this part describes only the binding.
   if(value?.tag==="Recursive")return {tag:value.tag,source:value.source};
@@ -80,9 +81,19 @@ export class ScopePoints {
   // value mapping. Only the description is stored; the mapping is used by the
   // synchronous query callback and cannot leave its isolated session.
   bindings(scope) {
-    let lexical=new LexicalContext().withNotations(sourceNotationInventory(this.compilation,scope.env));
+    const inventory=sourceNotationInventory(this.compilation,scope.env),adapter=new BindingAdapter(this.table);
+    let lexical=new LexicalContext().withNotations(inventory);
     const values=new Map(),keys=new Map(),records=[],recursive=[];
+    // Named receipts occupy their own namespace. They are available to a
+    // query by exact ID, without becoming term bindings of the same label.
+    for(const entry of inventory)if(entry.notation) {
+      const record=this.table.get(entry.notation.id),key=adapter.key(record.id),value=scope.env.get(key);
+      if(value?.bindingId!==record.id)throw new TypeError("A scope's named notation needs its exact receipt.");
+      values.set(record.id,value);keys.set(key,record.id);
+      records.push({label:entry.name,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
+    }
     for(const [key,value] of scope.env) {
+      if(value?.tag==="Notation")continue;
       const local=scope.sourceBindings.get(key),identified=scope.unit.bindingAdapter?.bindingForKey(key);
       if(!local&&!identified&&!publicName.test(key))continue;
       const record=local??identified??this.#global(key,value,scope),label=local?.label??identified?.label??key;

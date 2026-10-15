@@ -668,7 +668,7 @@ export function resolveRecursive(translator, node, value, args, scope) {
     if (pi.tag !== "Pi") throw locate(Error(`${head.name} takes fewer arguments.`), arg);
     term = T.app(term, translator.term(arg, targetScope, pi.domain));
   }
-  for (const dimension of dimensions) term = T.at(term, translator.interval(dimension, targetScope.env));
+  for (const dimension of dimensions) term = T.at(term, translator.interval(dimension, targetScope));
   // A recursive result quantifies over the generalized parameters, in their
   // order: the call's values for them, each at its type there.
   if (value.generalized) args.forEach((arg, index) => {

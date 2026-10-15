@@ -146,8 +146,9 @@ test("unmigrated reference namespaces and new syntax families are refused at sou
     "def a(x : Unit) : Unit { simpa only [rules] using x; }",
   ])assert.throws(()=>resolveBindingSyntax(parse(source).declarations[0],setup),/family has not migrated: simpaOnly/);
   assert.throws(()=>resolveBindingSyntax({kind:"futureFamily"},setup),/family has not migrated: futureFamily/);
-  for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10","tt pl.(+) tt"])
+  for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10"])
     assert.throws(()=>resolveBindingSyntax(expression(source),setup),/family has not migrated/);
+  assert.throws(()=>resolveBindingSyntax(expression("tt pl.(+) tt"),setup),/complete source notation inventory/);
 });
 
 test("authored provenance is opaque to rewriting, relocation and structural comparison",()=>{

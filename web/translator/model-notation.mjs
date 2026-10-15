@@ -107,7 +107,8 @@ export function notationOperand(t,scope,node,recipe) {
     node:{...recipe,kind:"modelOperandReceiver",start:node.start,end:node.end},
     scope:scope.withUnit(scope.unit.with({bindingAdapter:null,references:null}))};
   else if(recipe.kind==="retainedOperandRecipe")model={kind:"scoped",node:recipe.syntax.tree,
-    scope:scope.withUnit(scope.unit.with({bindingAdapter:bindingSyntaxAdapter(recipe.syntax,t.compilationBindings.table),references:null}))};
+    scope:scope.withUnit(scope.unit.with({bindingAdapter:bindingSyntaxAdapter(recipe.syntax,t.compilationBindings.table),references:null}))
+      .aliases(recipe.aliases??[])};
   else throw new TypeError("Unknown operand recipe representation.");
   // The activation occurs at this operand, even when its receiver syntax
   // comes from another document. Keep that use site on the scope boundary.

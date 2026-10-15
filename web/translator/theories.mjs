@@ -14,6 +14,8 @@ import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
 import {modelNotations,modelOperandRecipes,modelOperandReceiver,recordOf,notationAlternative} from "./model-notation.mjs";
 export {recordOf} from "./model-notation.mjs";
 import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
+import {appliedRetainedRule,retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
+import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 export {operatorBinding,SELECTION} from "./notation-context.mjs";
 
 // The environment's key for a theory's record. The theory's name is its type
@@ -191,6 +193,20 @@ const NUMERAL_NAT="\u0000notation Nat";
 // reads template-returning arrows as messages.)
 export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
+  if(t.retainedNotations&&!d.retainedNotation) {
+    const entry=retainSourceNotation(t,module,d,env,{declared});
+    for(const [key,value] of entry.env)env.set(key,value);
+    d=entry.declaration;
+  }
+  if(d.retainedNotation) {
+    if(d.uses?.length||d.name.text!==d.retainedNotation.binding.label)
+      throw new TypeError("A retained notation entry needs its activated source artifact.");
+    const notation=retainedNotationReceipt(t,d.retainedNotation,new Scope(module,new Map(),env));
+    env.set(notationBinding(d.name.text),notation);
+    env.set(t.identityAdapter.key(notation.bindingId),notation);
+    registerRetainedNotationPrinting(t,d.retainedNotation,env);
+    return;
+  }
   const rules=new Map();
   // The rules are read in the selection where the notation is declared, a
   // file-level use's (L2.10j): their names, and their numerals and operators,
@@ -271,7 +287,8 @@ const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
 // scope that resolves its names. Each operand is elaborated where the rule
 // uses it, in the scope the operator is written in: no binder of the rule
 // captures a name of an operand.
-export function appliedRule(scope,rule,left,right,site=left) {
+export function appliedRule(t,scope,rule,left,right,site=left) {
+  if(rule.syntax)return appliedRetainedRule(t,scope,rule,left,right,site);
   // The rule's own names are read as where it was declared, in that
   // place's selection or none; its operands where they stand, in the use's
   // scope.
@@ -291,9 +308,26 @@ function notationSelected(scope,notation) {
   let inner=scope;
   const operators=[...notation.rules.keys()].filter(key=>!["numeral","literal"].includes(key));
   for(const operator of operators)inner=inner.alias(operatorBinding(operator),{tag:"NotationRule",rule:notation.rules.get(operator)});
-  return inner.alias(SELECTION,{name:notation.name,complete:true,operators:new Set(operators),
+  return inner.alias(SELECTION,{name:notation.name,identity:notation.bindingId??null,complete:true,operators:new Set(operators),
     recipes:Object.fromEntries(operators.map(key=>[key,notation.rules.get(key).recipe])),
     numeral:notation.rules.get("numeral")??null,literal:notation.rules.get("literal")??null});
+}
+
+function retainedReceiverNotation(t,scope,node) {
+  const reference=node.notation.kind==="bindingReference"
+    ?lowerBindingReference(node.notation,scope.unit.bindingAdapter,scope.slotOutcomes):node.notation;
+  const notation=scope.env.get(referenceKey(reference));
+  if(notation?.tag!=="Notation"||!notation.bindingId
+    ||referenceKey(reference)!==t.identityAdapter.key(notation.bindingId))
+    throw new TypeError("A retained named selection needs its exact source notation receipt.");
+  if(node.model?(!notation.modelBinding||referenceKey(node.model)!==t.identityAdapter.key(notation.modelBinding))
+    :notation.modelBinding)throw new TypeError("Retained attached rules need their exact source model identity.");
+  return notation;
+}
+
+function invalidModelSelection(t,scope,site,receiver) {
+  return scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
+    t.shown(scope.infer(receiver).type)}.`),site);
 }
 
 // The scope with the model `node` selected, by use m; or m.(e) (L2.4c):
@@ -312,6 +346,30 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   while(node.kind==="scoped"||node.kind==="modelOperandReceiver") {
     if(node.kind==="scoped") {receiverScope=node.scope;node=node.node;}
     else node=modelOperandReceiver(t,receiverScope,node);
+  }
+  if(node.kind==="bindingReference")
+    node=lowerBindingReference(node,receiverScope.unit.bindingAdapter,receiverScope.slotOutcomes,{deferMissing:true});
+  if(node.kind==="notationReceiver") {
+    const notation=retainedReceiverNotation(t,receiverScope,node);
+    if(node.model) {
+      const receiver=t.term(node.model,receiverScope,null);
+      let inner=opened(t,scope,node.model,{effects,receiver,receiverScope,activation});
+      if(!inner)throw invalidModelSelection(t,scope,site,receiver);
+      if(effects.notation) {
+        const selection=inner.env.get(SELECTION);
+        inner=inner.alias(SELECTION,{...selection,extension:notation.bindingId,
+          numeral:notation.rules.get("numeral")??selection.numeral??null,
+          literal:notation.rules.get("literal")??selection.literal??null});
+        if(activation)inner=bindNotationContext(inner,t.identityAdapter.key(activation.bindingId));
+      }
+      return inner;
+    }
+    let inner=effects.notation?notationSelected(scope,notation):scope;
+    if(activation) {
+      inner=inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[]));
+      if(effects.notation)inner=bindNotationContext(inner,t.identityAdapter.key(activation.bindingId));
+    }
+    return inner;
   }
   const selector=node.kind==="bindingReference"?receiverScope.unit.bindingAdapter.resolve(node.resolution,receiverScope.slotOutcomes):null;
   if(selector?.tag==="namespace-selector") {
@@ -332,12 +390,13 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   // name is still that model.
   if(effects.notation&&inner&&notation?.model&&receiverScope.env.get(key)===notation.model) {
     const selection=inner.env.get(SELECTION);
-    return inner.alias(SELECTION,{...selection,numeral:notation.rules.get("numeral")??selection.numeral??null,
+    const extended=inner.alias(SELECTION,{...selection,extension:notation.bindingId??null,
+      numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});
+    return activation?bindNotationContext(extended,t.identityAdapter.key(activation.bindingId)):extended;
   }
   if(inner)return inner;
-  throw scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
-    t.shown(scope.infer(receiver).type)}.`),site);
+  throw invalidModelSelection(t,scope,site,receiver);
 }
 
 // m.(+), a model's operation that its theory's notation binds + to: the
@@ -348,12 +407,15 @@ export function qualifiedOperator(t,scope,n) {
   // A named notation's operator: its rule, applied where it stands. A
   // model's notation, with the literal rules its module added, binds its
   // theory's operators, read from the model below.
-  const key=referenceKey(n.model),notation=key?scope.env.get(notationBinding(key)):null;
+  if(n.model.kind==="bindingReference")n={...n,model:lowerBindingReference(n.model,scope.unit.bindingAdapter,scope.slotOutcomes)};
+  const key=referenceKey(n.model),notation=n.model.kind==="notationReceiver"?retainedReceiverNotation(t,scope,n.model)
+    :key?scope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {
     const rule=notation.rules.get(n.operator);
     if(!rule)throw scope.unit.locate(Error(`${notation.name} binds no rule to ${n.operator}.`),at);
     return {kind:"notationRule",rule,start:n.start,end:n.end};
   }
+  if(n.model.kind==="notationReceiver")n={...n,model:n.model.model};
   const record=recordOf(t,scope,t.term(n.model,scope,null));
   if(!record)throw scope.unit.locate(Error(`${spelling}.(${n.operator}) takes a model of a theory; ${spelling} is not one.`),n.model);
   const field=modelNotations(record).get(n.operator);

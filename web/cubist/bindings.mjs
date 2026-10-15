@@ -89,6 +89,8 @@ export class BindingTable {
 // Resolutions contain only inert data. A deferred slot carries its original
 // enclosing resolution, including missing, independently for each occurrence.
 export const bindingResolution = id => Object.freeze({tag: "binding", id: string(id, "a binding identity")});
+export const notationResolution = (id,model=null) => Object.freeze({tag:"notation",id:string(id,"a named notation identity"),
+  ...(model?{model:resolution(model)}:{})});
 export const missingResolution = label => Object.freeze({tag: "missing", label: string(label, "a missing label")});
 export const reservedResolution = label => Object.freeze({tag: "reserved", label: string(label, "a reserved label")});
 export const slotResolution = (id, enclosing,fields=[]) => Object.freeze({tag: "slot", id: string(id, "a slot identity"), enclosing: resolution(enclosing),
@@ -111,8 +113,9 @@ const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:str
 // This records the source selection namespace even before named notation
 // rules migrate. A known named selection must hit its family gate instead
 // of falling through to a model with the same spelling.
-const notationInventory=entries=>Object.freeze({tag:"notation-inventory",entries:Object.freeze(entries.map(({name,model=null})=>
-  Object.freeze({name:string(name,"a notation label"),model:model?resolution(model):null})))});
+const notationInventory=entries=>Object.freeze({tag:"notation-inventory",entries:Object.freeze(entries.map(({name,model=null,notation=null})=>
+  Object.freeze({name:string(name,"a notation label"),model:model?resolution(model):null,
+    ...(notation?{notation:resolution(notation)}:{})})))});
 const notationContext=id=>Object.freeze({tag:"notation-context",id:string(id,"a selected notation identity")});
 const scopeMetadata=new Set(["notation-inventory","notation-context"]);
 // A qualified namespace closes its member table. Its bare label can keep
@@ -140,6 +143,7 @@ export function resolutionError(value) {
 export function resolution(value) {
   switch (value?.tag) {
     case "binding": return bindingResolution(value.id);
+    case "notation":return notationResolution(value.id,value.model);
     case "missing": return missingResolution(value.label);
     case "reserved": return reservedResolution(value.label);
     case "slot": return slotResolution(value.id, value.enclosing,value.fields);
@@ -165,10 +169,12 @@ export function mapResolution(value,identity=id=>id,project=value=>value) {
   let mapped;
   switch(value.tag) {
     case "binding":mapped={...value,id:identity(value.id,value.tag)};break;
+    case "notation":mapped={...value,id:identity(value.id,value.tag),...(value.model?{model:map(value.model)}:{})};break;
     case "notation-context":mapped={...value,id:identity(value.id,value.tag)};break;
     case "opening-frame":mapped={...value,id:identity(value.id,value.tag),
       ...(value.candidates?{candidates:value.candidates.map(([label,value])=>[label,map(value)])}:{})};break;
-    case "notation-inventory":mapped={...value,entries:value.entries.map(entry=>({...entry,model:entry.model?map(entry.model):null}))};break;
+    case "notation-inventory":mapped={...value,entries:value.entries.map(entry=>({...entry,model:entry.model?map(entry.model):null,
+      ...(entry.notation?{notation:map(entry.notation)}:{})}))};break;
     case "slot": case "opening":mapped={...value,id:identity(value.id,value.tag),enclosing:map(value.enclosing),
       ...(value.candidates?{candidates:value.candidates.map(map)}:{})};break;
     case "member":mapped={...value,receiver:map(value.receiver)};break;
@@ -214,7 +220,10 @@ export class LexicalContext {
     const inventory=this.notations();
     if(inventory===null)throw new TypeError("A retained selection requires the complete source notation inventory.");
     const notation=inventory.find(entry=>entry.name===name);
-    if(notation&&!notation.model)throw new TypeError("Retained named notation activation has not migrated.");
+    if(notation&&!notation.model) {
+      if(notation.notation)return {value:notationResolution(notation.notation.id),fields:[]};
+      throw new TypeError("Retained named notation activation has not migrated.");
+    }
     if(notation?.model) {
       // Only a selected model branch receives its attached rules. A parent
       // namespace may retain that model as its ordinary bare-value fallback,
@@ -222,7 +231,16 @@ export class LexicalContext {
       const matches=value=>value.tag==="binding"?value.id===notation.model.id
         :["slot","opening"].includes(value.tag)
           &&(matches(value.enclosing)||(value.candidates??[]).some(matches));
-      if(matches(found.value))throw new TypeError("Retained named notation activation has not migrated.");
+      if(matches(found.value)) {
+        if(!notation.notation)throw new TypeError("Retained named notation activation has not migrated.");
+        // Attach only on the branch that selects the declaring model. A
+        // pattern variable or opened different model keeps its own rules.
+        const attach=value=>value.tag==="binding"&&value.id===notation.model.id
+          ?notationResolution(notation.notation.id,value)
+          :["slot","opening"].includes(value.tag)?resolution({...value,enclosing:attach(value.enclosing),
+            ...(value.candidates?{candidates:value.candidates.map(attach)}:{})}):value;
+        return {...found,value:attach(found.value)};
+      }
     }
     return found;
   }
@@ -401,6 +419,7 @@ export class BindingAdapter {
     mapResolution(value,(id,kind)=>{
       const record=this.#table.get(id);
       if(kind==="slot"&&record.role!=="pattern")throw new TypeError("A slot must name a candidate pattern binding.");
+      if(kind==="notation"&&record.role!=="notation")throw new TypeError("A named selection must name a notation binding.");
       if(["opening","opening-frame"].includes(kind)&&record.role!=="activation")throw new TypeError("An opening must name a selection activation.");
       return id;
     });
@@ -408,7 +427,7 @@ export class BindingAdapter {
   }
   lower(value, outcomes = new SlotOutcomes(), {deferMissing = false} = {}) {
     value = this.resolve(value, outcomes);
-    if (["slot","opening","member","projected","application","namespace","namespace-selector"].includes(value.tag)) return null; // Resolution/selection owns these forms.
+    if (["slot","opening","member","projected","application","namespace","namespace-selector","notation"].includes(value.tag)) return null; // Resolution/selection owns these forms.
     if (value.tag === "missing" && deferMissing) return null;
     if (value.tag === "binding") return this.key(value.id);
     if(value.tag==="failure")throw resolutionError(value);

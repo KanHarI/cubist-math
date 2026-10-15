@@ -8,7 +8,7 @@ import {resolveBindingReceiver,lowerBindingSyntax} from "../cubist/binding-synta
 import {fileSelectionEffects} from "../cubist/scopes.mjs";
 import {freeNames,isTerm} from "./core.mjs";
 import {selected} from "./theories.mjs";
-import {checkedNotationContext,notationContextEntry} from "./notation-context.mjs";
+import {checkedNotationContext,notationContextEntry,SELECTION} from "./notation-context.mjs";
 
 export function activateSourceItem(t,scope,item,{context,constructors,adapter},{owner,source}) {
   if(scope.context.size||scope.dimensions.size)
@@ -25,13 +25,16 @@ export function activateSourceItem(t,scope,item,{context,constructors,adapter},{
       start:recipe.start,end:recipe.end};
     inner=selected(t,inner,lowerBindingSyntax(syntax,adapter),{effects,activation:token});
     const outcome=inner.slotOutcomes.activation(binding.id),value=inner.env.get(adapter.key(binding.id));
-    if(!outcome||!isTerm(value)||freeNames(value).size)
+    const selection=inner.env.get(SELECTION),named=selection?.identity;
+    if(!outcome||!named&&(!isTerm(value)||freeNames(value).size))
       throw new TypeError("A retained model activation needs its checked closed receiver and resolved interface.");
-    const capture=t.compilationBindings.capture(value,origin);
-    const notation=effects.notation?t.compilationBindings.captureModelNotation(capture,origin):null;
+    const capture=named?null:t.compilationBindings.capture(value,origin);
+    if(named&&outcome.members.length)throw new TypeError("A standalone notation cannot open term labels.");
+    const notation=effects.notation?(named?table.get(named)
+      :t.compilationBindings.captureModelNotation(capture,origin,selection?.extension??null)):null;
     const members=Object.freeze(outcome.members.map(([label,resolution])=>Object.freeze([label,
       mapResolution(resolution,id=>id===binding.id?capture.id:id)])));
-    inner=inner.alias(adapter.key(capture.id),value);
+    if(capture)inner=inner.alias(adapter.key(capture.id),value);
     // Binding all ready labels at this boundary preserves later-local
     // shadowing and hides conflicting qualified globals through their root.
     // Labels the interface does not provide keep the previous whole lookup.
@@ -44,7 +47,7 @@ export function activateSourceItem(t,scope,item,{context,constructors,adapter},{
       inner=inner.aliases([notationContextEntry(adapter.key(notation.id),value)]);
       notationValues.push(Object.freeze([notation.id,value]));
     }
-    captures.push(Object.freeze([capture.id,value]));
+    if(capture)captures.push(Object.freeze([capture.id,value]));
     activations.push(Object.freeze({binding,capture,notation,syntax,effects,members,
       consumer:sourceOrigin({...source,start:item.start,end:item.end})}));
   }

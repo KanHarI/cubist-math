@@ -69,12 +69,14 @@ export class CompilationBindings {
   }
   // A model's complete notation has the receiver's semantic identity, but
   // lives in a separate namespace from terms. Source activation occurrences
-  // keep their own histories. Named extensions need their own rule identity
-  // in this key before that source family can use this producer boundary.
-  captureModelNotation(receiver,origin) {
+  // keep their own histories. An attached extension contributes its rule
+  // identity: the same model with different readers is a different context.
+  captureModelNotation(receiver,origin,extension=null) {
     this.table.get(receiver.id);
-    if(!this.#modelNotations.has(receiver.id))this.#modelNotations.set(receiver.id,
+    if(extension&&this.table.get(extension).role!=="notation")throw new TypeError("A model extension needs a notation identity.");
+    const key=JSON.stringify([receiver.id,extension]);
+    if(!this.#modelNotations.has(key))this.#modelNotations.set(key,
       this.table.allocate(["model-notation-captures"],{role:"capture",label:"selected notation",origin}));
-    return this.#modelNotations.get(receiver.id);
+    return this.#modelNotations.get(key);
   }
 }

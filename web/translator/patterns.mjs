@@ -229,7 +229,7 @@ function bind(t, scope, token, target) {
   // a source occurrence to resolve in the destination environment.
   let point=T.constructor(constructor.index,instance,constructor.name);
   for(const index of constructor.order)point=T.app(point,scope.env.get(args[index].text));
-  for(const coordinate of coordinates)point=T.at(point,t.interval({kind:"name",name:coordinate.text},scope.env));
+  for(const coordinate of coordinates)point=T.at(point,t.interval({kind:"name",name:coordinate.text},scope));
   return t.sourceBinding(token,point,scope);
 }
 

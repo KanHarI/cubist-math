@@ -71,6 +71,9 @@ const SCOPES = {
   // An operator's operand receives a notation context, independently of its
   // already resolved term names. Its recipe supplies this parameter at use.
   notationArgument:n=>[{binders:[n.notation],keys:["body"],renamable:false,role:"notation"}],
+  // Named-rule parameters are lazy syntax arguments, not term telescope
+  // parameters. They bind only the rule body, never their operand recipes.
+  namedNotationRule:n=>[{binders:n.operands,keys:["value"],renamable:false,role:"parameter"}],
   pathLambda: n => [{ binders: present([n.dimension]), keys: ["body"], renamable: true, role: "dimension" }],
   // induction n as k return P(k) { zero => …; succ h => …; }: the index in
   // the motive and, as the predecessor, in the step; the hypothesis in the
@@ -121,7 +124,7 @@ export const UNBINDING = new Set([
   "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationScope", "boundNotation", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall", "templateHole",
+  "useScope", "notationScope", "notationReceiver", "notationRule", "boundNotation", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall", "templateHole",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",

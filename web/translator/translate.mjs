@@ -10,6 +10,7 @@ import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {decidePatternSlot,BindingAdapter} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {lowerBindingDeclaration} from "./binding-module.mjs";
+import {retainedRuleOperation} from "./named-notation.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -88,7 +89,8 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,
+    retainedNotations=false}={}) {
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??new CompilationBindings(globalThis.crypto.randomUUID());
     this.identityAdapter=new BindingAdapter(this.compilationBindings.table);
@@ -98,6 +100,7 @@ export class Translator {
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
     // scope. Only the migration verifier reads one (legacy-syntax.mjs).
     this.nameBased=nameBased;
+    this.retainedNotations=retainedNotations;
     // A declared type's signature as `print(inspect(T));` shows it, from the
     // program that admitted it (web/cubical-program.mjs).
     this.inspectSignature=inspectSignature;
@@ -148,7 +151,7 @@ export class Translator {
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
     return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,
-      moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
+      moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,retainedNotations:this.retainedNotations,
       normalize,searchFuel,declarationFuel});
   }
   reference(scope,node,term,env=scope.env) {
@@ -202,32 +205,40 @@ export class Translator {
     return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
-  interval(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
+  expressionScope(node,scope) {
+    let entered;
+    while((entered=enterExpressionScope(this,scope,node)))({node,scope}=entered);
+    return {node,scope};
+  }
+  interval(n,scope,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
     budget.tick();
+    ({node:n,scope}=this.expressionScope(n,scope));
+    const {env}=scope;
     if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?I.zero:I.one;
-    if(n.kind==="unary")return I.reverse(this.interval(n.operand,env,budget),budget);
+    if(n.kind==="unary")return I.reverse(this.interval(n.operand,scope,budget),budget);
     if(n.kind==="binary"&&["&","|"].includes(n.operator))
-      return (n.operator==="&"?I.meet:I.join)(this.interval(n.left,env,budget),this.interval(n.right,env,budget),budget);
+      return (n.operator==="&"?I.meet:I.join)(this.interval(n.left,scope,budget),this.interval(n.right,scope,budget),budget);
     // A coordinate on a face that fixes it is its endpoint there (Scope.onFace).
     if(n.kind==="name"&&env.get(n.name)?.tag==="Dimension") {
       const {name,endpoint}=env.get(n.name);
       return endpoint===undefined?I.variable(name,budget):endpoint?I.one:I.zero;
     }
     if(n.kind==="call"&&n.fn.kind==="name") {
-      const args=n.args.map(a=>this.interval(a,env,budget));
+      const args=n.args.map(a=>this.interval(a,scope,budget));
       if(n.fn.name==="flip"&&args.length===1)return I.reverse(args[0],budget);
       if(n.fn.name==="meet"&&args.length===2)return I.meet(args[0],args[1],budget);
       if(n.fn.name==="join"&&args.length===2)return I.join(args[0],args[1],budget);
     }
     throw Error("Expected an interval coordinate: 0, 1, a coordinate name, ~i, i & j or i | j (or flip, meet, join).");
   }
-  cofibration(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
+  cofibration(n,scope,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
     budget.tick();
+    ({node:n,scope}=this.expressionScope(n,scope));
     if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?F.bottom:F.top;
-    if(n.kind==="binary"&&["and","or"].includes(n.operator))return (n.operator==="and"?F.meet:F.join)(this.cofibration(n.left,env,budget),this.cofibration(n.right,env,budget),budget);
+    if(n.kind==="binary"&&["and","or"].includes(n.operator))return (n.operator==="and"?F.meet:F.join)(this.cofibration(n.left,scope,budget),this.cofibration(n.right,scope,budget),budget);
     if(n.kind==="call"&&n.fn.kind==="name"&&n.fn.name==="on"&&n.args.length===2) {
-      const endpoint=n.args[1];
-      if(endpoint.kind==="number"&&[0,1].includes(endpoint.value))return F.equalEndpoint(this.interval(n.args[0],env,budget),endpoint.value,budget);
+      const {node:endpoint}=this.expressionScope(n.args[1],scope);
+      if(endpoint.kind==="number"&&[0,1].includes(endpoint.value))return F.equalEndpoint(this.interval(n.args[0],scope,budget),endpoint.value,budget);
     }
     throw Error("Expected a face formula: on(i, 0 or 1), and/or, 0 or 1.");
   }
@@ -249,6 +260,7 @@ export class Translator {
     return universe.level;
   }
   dimensionBody(n,dim,scope,expected=null) {
+    ({node:n,scope}=this.expressionScope(n,scope));
     if(n.kind!=="lambda"||n.domain.kind!=="name"||n.domain.name!=="Interval")
       throw Error("Expected fun (i : Interval) => ... in a cubical binder.");
     return this.term(n.body,this.sourceDimension(n.name,dim,scope),expected);
@@ -304,7 +316,7 @@ export class Translator {
     if(!selection.literal) {
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
-      const applied=appliedRule(natural,selection.numeral,
+      const applied=appliedRule(this,natural,selection.numeral,
         {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
           start:n.start,end:n.end},null,n);
       return this.term(applied.node,applied.scope,expected);
@@ -322,7 +334,7 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRule(glyphs,rule,lexeme,null,n);
+    const applied=appliedRule(this,glyphs,rule,lexeme,null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
@@ -1024,6 +1036,10 @@ export class Translator {
       return lowered;
     };
     n=resolve(n);
+    if(n.kind==="name") {
+      const operand=enterExpressionScope(this,scope,n);
+      if(operand)return this.term(operand.node,operand.scope,expected);
+    }
     if(n.kind==="call")n={...n,fn:resolve(n.fn)};
     if(n.kind==="reference")n=elaborationSyntax(n);
     else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
@@ -1100,7 +1116,7 @@ export class Translator {
         const head=n.left.kind==="call"&&n.left.fn.kind==="name"?n.left.fn:n.left;
         const constructor=expected&&head.kind==="name"&&env.get(head.name)?.tag==="InductiveConstructor"&&env.get(head.name).dims>0;
         const path=tr(n.left,constructor?expected:null);
-        return T.at(path,this.interval(n.right,env));
+        return T.at(path,this.interval(n.right,scope));
       }
       case "pathLambda": {
         if(!expected)throw Error("path i => ... needs an expected Path or PathP type.");
@@ -1267,7 +1283,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.left,n.right,n);
+            const applied=appliedRule(this,scope,operation.rule,n.left,n.right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
@@ -1289,7 +1305,7 @@ export class Translator {
           const left=notationOperand(this,scope,n.left,recipe.left),right=notationOperand(this,scope,n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
-            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
+            const applied=appliedRule(this,scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           // A notation open binds means the model's operation (L2.4).
@@ -1319,7 +1335,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier,operator:"unary -"});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.operand,null,n);
+            const applied=appliedRule(this,scope,operation.rule,n.operand,null,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.operand],start:n.start,end:n.end},expected);
@@ -1331,7 +1347,7 @@ export class Translator {
         const operand=notationOperand(this,scope,n.operand,view);
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
-          const applied=appliedRule(scope,binding.rule,operand,null,n);
+          const applied=appliedRule(this,scope,binding.rule,operand,null,n);
           return this.term(applied.node,applied.scope,expected);
         }
         return tr({kind:"call",fn:{kind:"name",name:operatorBinding("unary -"),start:n.operatorStart,end:n.operatorEnd},
@@ -1365,6 +1381,11 @@ export class Translator {
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);
         if(operation.kind!=="notationRule")return tr(operation,expected);
+        if(operation.rule.syntax) {
+          const retained=retainedRuleOperation(this,scope,operation.rule);
+          if(!retained)throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
+          return this.term(retained.node,retained.scope,expected);
+        }
         // A named notation's operator alone: the function its rule applies
         // to the pattern's names, x + y := add(x, y).
         const {value,left,right,aliases}=operation.rule;

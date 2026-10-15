@@ -751,6 +751,13 @@ on failure.
 
 ## Verification and completion
 
+Before fixing review findings, compare them with earlier rounds and identify
+recurring design roots. Trace each affected contract across its producers and
+consumers, then fix the shared abstraction and verify distinguishing controls.
+The [review obligations](../reports/capture-bindings-review-roots.md) record the
+recurring CB2 roots and the required checks; isolated reproducer fixes do not
+close a repeated design issue.
+
 Each removed capture refusal needs a checked intended equation/computation.
 When the captured reading is well-typed, require a negative client and two
 explicit source controls: the intended reading accepts the positive client

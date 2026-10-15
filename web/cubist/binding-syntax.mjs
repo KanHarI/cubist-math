@@ -7,7 +7,7 @@ import {members} from "./references.mjs";
 import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution,
   failedResolution,resolutionError,UnknownNamespaceMember,namespaceSelectorResolution} from "./bindings.mjs";
 import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
-import {syntaxValue,expandedSource} from "./source-syntax.mjs";
+import {syntaxValue,expandedSource,qualifySource,sourceMetadata} from "./source-syntax.mjs";
 import {mapSyntax} from "../translator/syntax-graph.mjs";
 import {notationAlternative} from "./theory-notation.mjs";
 
@@ -17,7 +17,7 @@ const format = "cubist-bindings-1";
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
-  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use"]);
+  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);
@@ -69,7 +69,7 @@ export function resolveBindingTemplate(tree,options,splices) {
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
   fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
-  notation=null,receiverNamespace=true},splices=null) {
+  notation=null,receiverNamespace=true,syntaxOperands=[]},splices=null) {
   const selectedNotation=context.selectedNotation();
   if(selectedNotation) {
     const fallback={activation:selectedNotation};
@@ -91,6 +91,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       throw new TypeError("Structural self must be the identity of a retained declaration.");
   }
   const owned = [];
+  const lazyOperands=new Set(syntaxOperands);
   const selectors=new Map();
   let namespaces=false;
   let splice=0;
@@ -99,7 +100,14 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
   const lookup=(at,name,node,selector=false)=>{
     let found;
-    try {found=selector?at.lexical.selector(name,selector===true?{}:selector):at.lexical.qualified(name);}
+    try {
+      if(selector)mapResolution(at.lexical.qualified(name).value,id=>{
+        if(lazyOperands.has(id))
+          throw new TypeError("A retained syntax operand used as a selection receiver needs source selection alternatives.");
+        return id;
+      });
+      found=selector?at.lexical.selector(name,selector===true?{}:selector):at.lexical.qualified(name);
+    }
     catch(error) {
       if(!(error instanceof UnknownNamespaceMember))throw error;
       throw resolutionError(resolvedAt(failedResolution(error),node));
@@ -138,6 +146,19 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
     enter(node, at, descend) {
       if(selectors.has(node))return occurrence(node,selectors.get(node),node.name,origin(node));
+      const qualifier=node.kind==="operatorOf"?node.model
+        :["binary","negation"].includes(node.kind)?node.qualifier:null;
+      if(qualifier) {
+        const receiver=resolveBindingReceiver(qualifier,{table,owner:[...owner,"qualifier",String(splice++)],
+          context:at.lexical,source,constructors,evidenceTypes,fixedReferences,universeReferences,
+          namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands});
+        owned.push(...receiver.owned);
+        // Qualification selects only the operation. Its operands retain the
+        // surrounding source notation; no operand recipe is applied here.
+        if(node.kind==="operatorOf")return {...node,model:receiver.tree,origin:origin(node)};
+        return {...node,qualifier:receiver.tree,origin:origin(node),...(node.kind==="negation"
+          ?{operand:descend(node.operand)}:{left:descend(node.left),right:descend(node.right)})};
+      }
       if(fixedReferences.has(node)) {
         const fixed=fixedReferences.get(node);
         if(fixed.tag==="universe"&&fixed.label==="_")
@@ -244,6 +265,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       // Anonymous positions still need identities for forwarding, evidence,
       // cloning and generated applications. They introduce no lexical name.
       const record = table.allocate(owner, {role: bindingRole(node, scope, token), label: binderName(token), origin: origin(token)});
+      if(node.kind==="namedNotationRule")lazyOperands.add(record.id);
       if(record.role==="universe"&&record.label!=="_"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
       owned.push(record.id);
       return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
@@ -269,6 +291,11 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
     },
   }, {lexical:context,notation});
   if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
+  // Every source-bearing expression, including synthesized operator bodies,
+  // must retain its module before an expansion moves it to another unit.
+  // Copy first: retained splices can be frozen and source input is not ours
+  // to annotate. The DAG copy preserves shared grouped domains.
+  tree=qualifySource(mapSyntax(tree,value=>sourceMetadata("origin",value)?value:undefined),source);
   const syntax=freeze({format, tree, owned, inferred: canonical.inferred});
   if(!namespaces)return syntax;
   // A statically selected interface is a lexical scope, not a runtime model.
@@ -536,6 +563,9 @@ export function lowerBindingReference(node, adapter, outcomes = new SlotOutcomes
 // Keep substitutions attached until every opening/slot on the path resolves.
 function resolutionExpression(node,value) {
   const reference=resolution=>({...node,resolution});
+  if(value.tag==="notation")return {kind:"notationReceiver",notation:reference(bindingResolution(value.id)),
+    ...(value.model?{model:reference(value.model)}:{}),
+    start:node.start,end:node.end,origin:node.origin};
   if(value.tag==="member")return members(node,reference(value.receiver),value.fields);
   if(value.tag==="projected")return {kind:"call",fn:reference(bindingResolution(value.projection)),
     args:[reference(bindingResolution(value.receiver))],start:node.start,end:node.end,origin:node.origin};

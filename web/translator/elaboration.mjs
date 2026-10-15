@@ -122,6 +122,7 @@ export class Scope {
   }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {
+    pairs=[...pairs];
     if(!pairs.length)return this;
     const env=new Map(this.env);
     const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);

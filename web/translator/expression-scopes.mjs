@@ -9,6 +9,14 @@ import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 // at intervening source nodes are preserved.
 export function enterExpressionScope(translator,scope,node) {
   switch(node.kind) {
+    case "bindingReference": {
+      const lowered=lowerBindingReference(node,scope.unit.bindingAdapter,scope.slotOutcomes,{deferMissing:true});
+      return lowered===node?null:{node:lowered,scope};
+    }
+    case "name": {
+      const operand=scope.env.get(node.name);
+      return operand?.tag==="SourceOperand"?{node:operand.node,scope:operand.scope}:null;
+    }
     case "select":return {node:node.body,scope:selected(translator,scope,node.model,
       {effects:node.effects,activation:node.activation})};
     case "scoped":return {node:node.node,scope:node.scope};

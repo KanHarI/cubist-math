@@ -3,7 +3,7 @@
 // supplies it; neither live environments nor spelling lookups are serialized.
 export const operatorBinding = operator => "\u0000operator " + operator;
 export const SELECTION = "\u0000selection";
-const contextKey = key => "\u0000notation context " + key;
+export const notationContextKey = key => "\u0000notation context " + key;
 
 export function checkedNotationContext(scope) {
   const selection=scope.env.get(SELECTION);
@@ -13,11 +13,11 @@ export function checkedNotationContext(scope) {
   return Object.freeze(aliases.map(Object.freeze));
 }
 
-export const notationContextEntry=(key,aliases)=>Object.freeze([contextKey(key),aliases]);
+export const notationContextEntry=(key,aliases)=>Object.freeze([notationContextKey(key),aliases]);
 export const bindNotationContext=(scope,key)=>scope.aliases([notationContextEntry(key,checkedNotationContext(scope))]);
 
 export function selectNotationContext(scope,key) {
-  const aliases=scope.env.get(contextKey(key));
+  const aliases=scope.env.get(notationContextKey(key));
   if(!aliases)throw new TypeError("A retained notation use has no checked context for its identity.");
   return scope.aliases(aliases);
 }
