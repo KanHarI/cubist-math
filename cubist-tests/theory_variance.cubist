@@ -87,8 +87,8 @@ theory Sequences(U < UU0) {
 }
 
 // Output: forall U < UU0. forall V < UU0. forall A : Sequences(U). forall B : Sequences(V). forall
-//   f : Sequences.Hom{{U, V}}(A, B). forall s : Nat -> A.M. f.map(A.first(s)) = B.first(fun (v3_ :
-//   Nat) => f.map(s(v3_)))
+//   f : Sequences.Hom{{U, V}}(A, B). forall s : Nat -> A.M. f.map(A.first(s)) = B.first(fun (v2_ :
+//   Nat) => f.map(s(v2_)))
 print(typeof(Sequences.Hom.map_first));
 
 def sequences_compose := Sequences.Hom.compose;
@@ -101,8 +101,8 @@ theory Measure(U < UU0) {
 }
 
 // Output: forall U < UU0. forall V < UU0. forall A : Measure(U). forall B : Measure(V). forall f1_
-//   : Measure.Hom{{U, V}}(A, B). forall f : B.X -> Nat. A.integrate(fun (v3_ : A.X) =>
-//   f(f1_.map(v3_))) = B.integrate(f)
+//   : Measure.Hom{{U, V}}(A, B). forall f : B.X -> Nat. A.integrate(fun (v2_ : A.X) =>
+//   f(f1_.map(v2_))) = B.integrate(f)
 print(typeof(Measure.Hom.map_integrate));
 
 def at_zero : Measure(U0) := Measure.make(
