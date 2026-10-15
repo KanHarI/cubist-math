@@ -1,6 +1,6 @@
 # CB3: deferred scopes
 
-Status: implemented; external round-3 boundary fix validated on `cb3-deferred-scopes`,
+Status: implemented; external round-4 ownership fix validated on `cb3-deferred-scopes`,
 based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
 the arbitrary-context REPL is still the CB6 deliverable.
 
@@ -169,3 +169,18 @@ Round-3 fix validation: 76/76 focused tests; `cb3-r3-full.log` passes 1,204 of
 canonical checks pass, and all four production mutations are killed. Source
 and tests were frozen for both runs. A targeted fourth review will verify the
 ownership boundary before CB3 is marked reviewed.
+
+Round 4 exposed the same issue within one module: a child's default registry
+can validate an edit that is invalid at the parent's earlier statement. Source
+module equality is insufficient. The shared link-site factory now distinguishes
+authored syntax and ordinary generation from source-copy expansions using the
+existing provenance. Copied tactic/expression sites are synthetic observations,
+so they cannot offer source actions at the original statement. Tests register
+a rule between parent and child, apply every offered edit, and cover a failed
+parent with a verified child. No new ownership state or freeze-only guard is
+introduced.
+
+Round-4 fix validation: 77/77 focused tests; `cb3-r4-full.log` passes 1,205 of
+1,218 tests, with 13 later-phase TODOs and zero failures. All 3,857 canonical
+checks pass, and all four production mutations are killed. Source and tests
+were frozen for validation. Round 5 will review the context-ownership policy.

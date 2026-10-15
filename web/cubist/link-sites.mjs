@@ -12,10 +12,11 @@ const tactics = new Map([
   ["hlevel", ["hlevel", "h-level evidence"]],
 ]);
 
-// A keyword borrows its enclosing syntax's source ownership. Offsets alone
-// cannot distinguish a written client token from an imported helper's token.
+// A keyword borrows its enclosing syntax's source ownership. Generation can
+// lower authored syntax in place; a copy elaborated in another context cannot
+// own that source, even when inheritance stays within the same module.
 const ownedSite=(node,site)=>({...site,...(node.origin?{origin:node.origin}:{}),
-  ...(node.synthetic?{synthetic:true}:{})});
+  ...(node.synthetic||node.origin?.expansion.some(frame=>frame.kind!=="generation")?{synthetic:true}:{})});
 
 export function tacticSite(statement) {
   const tactic = tactics.get(statement.kind);

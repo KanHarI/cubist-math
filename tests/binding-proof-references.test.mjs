@@ -268,3 +268,33 @@ theory Parent(U < UU0) { M : set U; fe(n : Nat) : add(n, zero) = n;
     await run(local.slice(0,edit.start)+edit.text+local.slice(edit.end));
   }
 });
+
+test("an inherited proof cannot edit its parent's source using the child's later rules",async t=>{
+  for(const explicit of [true,false]) {
+    const source=`import nat; import hlevels;
+inductive Edge { lo; hi; edge : lo = hi; }
+theory Parent(U < UU0) { M : set U; fe(n : Nat) : add(n, zero) = n;
+  def derived_proof(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { ${explicit?"simp [fe];":"simp;"} };
+}
+def extra(n : Nat) : add(n, zero) = n := nat_add_zero(n);
+simp_rule extra;
+theory Child(U < UU0) extends Parent {}`;
+    const run=async source=>{
+      const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+      return program.check(source,"main");
+    };
+    const result=await run(source);
+    assert.deepEqual(result.gaps.map(g=>g.name),explicit?[]:["Parent.derived_proof"]);
+    assert.ok(result.outputs.find(d=>d.name==="Child.derived_proof").verified);
+    const links=result.links.filter(link=>link.role==="simplification witness");
+    assert.equal(links.length,explicit?1:0);
+    const edits=result.links.filter(link=>link.freeze).map(link=>link.freeze);
+    assert.equal(edits.length,explicit?1:0);
+    for(const edit of edits) {
+      assert.equal(edit.text,"simp only [fe];");
+      const checked=await run(source.slice(0,edit.start)+edit.text+source.slice(edit.end));
+      assert.deepEqual(checked.gaps,[]);
+    }
+  }
+});

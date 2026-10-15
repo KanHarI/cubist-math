@@ -324,3 +324,28 @@ short/long imported clients. Full validation passes 1,204 of 1,217 tests, with
 13 later-phase TODOs and zero failures; all 3,857 canonical checks pass and all
 four production mutations are killed. General generated-definition and match
 annotations still need CB5 provenance; they offer no source edits.
+
+## CB3 external review, round 4 — diagnosis before fixes
+
+Claude reviewed `cc4d6efd`: imported actions are fixed and local inspection is
+preserved, but a same-module inherited copy can offer an edit to its parent's
+statement using a rule registered only before the child. Applying that edit
+breaks the source; when only the child verifies, it is also the UI's sole edit.
+
+The root is stronger than module ownership: a copied elaboration does not own
+the written source context. Existing expansion frames identify that distinction.
+The shared site extraction must treat source copies as synthetic observations;
+ordinary generation lowering may still expose its authored source. Audit all
+expansion producers, not just inheritance: notation already suppresses its
+implementation recorder, lazy operands return to their own source scopes, and
+substitution inserts synthetic expressions. Use the existing provenance rather
+than add per-copy state, special freeze guards or a list of forbidden tactics.
+Tests will register a rule between parent and child, apply every offered edit,
+and cover a failed parent with a verified child, where UI deduplication cannot
+hide the destructive suggestion.
+
+The shared factory now marks source-copy expansions as synthetic observations;
+authored syntax and generation lowering remain eligible for local source links.
+All 77 focused tests pass. Full validation passes 1,205 of 1,218 tests, with
+13 later-phase TODOs and zero failures; all 3,857 canonical checks pass and all
+four production mutations are killed. Source/tests were frozen for these runs.
