@@ -1,6 +1,6 @@
 # CB3: deferred scopes
 
-Status: implemented; external round-2 fixes validated on `cb3-deferred-scopes`,
+Status: implemented; external round-3 boundary fix validated on `cb3-deferred-scopes`,
 based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
 the arbitrary-context REPL is still the CB6 deliverable.
 
@@ -153,3 +153,19 @@ Round-2 fix validation: 60/60 focused tests; `cb3-r2-full.log` passes 1,203 of
 1,216 tests, with 13 documented later-phase TODOs and zero failures. All 3,857
 canonical checks pass, and all four production mutations are killed. Source
 and tests were frozen for both runs. Round 3 will review this shared lookup.
+
+Round 3 called that delta clean, but its notes exposed an imported helper
+offering an edit at foreign offsets. The location defect predates CB3; the
+destructive edit is newly admitted, so it is a release finding. Link-site
+extraction now preserves the enclosing syntax's origin, including calc steps
+and traced rewrites. The existing source-ownership filter suppresses those
+foreign links without a new bounds guard or special case for freeze edits.
+Short/long imported clients retain checked helpers but no foreign tactic
+actions; genuine local edits still apply and recheck. General generated
+definition/match annotations and diagnostic spans remain CB5 work.
+
+Round-3 fix validation: 76/76 focused tests; `cb3-r3-full.log` passes 1,204 of
+1,217 tests, with 13 documented later-phase TODOs and zero failures. All 3,857
+canonical checks pass, and all four production mutations are killed. Source
+and tests were frozen for both runs. A targeted fourth review will verify the
+ownership boundary before CB3 is marked reviewed.

@@ -59,7 +59,7 @@ const tactics = {
         :t.term(step.proof.value,scope,target);
       const checked=scope.check(raw,target);
       const witness=scope.ascribe(checked,target);
-      t.reference(scope,{...calcStepSite(step,index),
+      t.reference(scope,{...calcStepSite(first,index),
         description:`Checked equality step ${index+1} of ${first.steps.length}.`},witness);
       proof=proof?composePaths(scope,proof,witness):witness;
       previous=right;

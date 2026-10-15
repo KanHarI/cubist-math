@@ -12,17 +12,23 @@ const tactics = new Map([
   ["hlevel", ["hlevel", "h-level evidence"]],
 ]);
 
+// A keyword borrows its enclosing syntax's source ownership. Offsets alone
+// cannot distinguish a written client token from an imported helper's token.
+const ownedSite=(node,site)=>({...site,...(node.origin?{origin:node.origin}:{}),
+  ...(node.synthetic?{synthetic:true}:{})});
+
 export function tacticSite(statement) {
   const tactic = tactics.get(statement.kind);
   if (!tactic) return null;
   const [name, role] = tactic;
-  return { name, start: statement.keyword.start, end: statement.keyword.end, role };
+  return ownedSite(statement,{ name, start: statement.keyword.start, end: statement.keyword.end, role });
 }
 
 // Each calc step's `by` keyword links to the step's checked path.
-export function calcStepSite(step, index) {
-  return { name: `calc step ${index + 1}`, start: step.by.start, end: step.by.end,
-    role: "calculation step", expansionIndex: index + 1 };
+export function calcStepSite(statement, index) {
+  const step=statement.steps[index];
+  return ownedSite(statement,{ name: `calc step ${index + 1}`, start: step.by.start, end: step.by.end,
+    role: "calculation step", expansionIndex: index + 1 });
 }
 
 // A logical or path operator or a binder keyword links to the checked expression, and
@@ -31,12 +37,12 @@ export function calcStepSite(step, index) {
 export function expressionSite(node) {
   if (node.synthetic) return null;
   if (node.kind === "projection")
-    return node.digit ? { name: `.${node.index}`, start: node.digit.start, end: node.digit.end } : null;
+    return node.digit ? ownedSite(node,{ name: `.${node.index}`, start: node.digit.start, end: node.digit.end }) : null;
   if ((node.kind === "binary" && ["=", "->", "and", "or", "++"].includes(node.operator)) || node.kind === "unary")
-    return { name: node.operator, start: node.operatorStart, end: node.operatorEnd };
+    return ownedSite(node,{ name: node.operator, start: node.operatorStart, end: node.operatorEnd });
   if (node.keyword && ["lambda", "forall", "exists", "binderGroup"].includes(node.kind)) {
     const binder = node.binderKind ?? node.kind;
-    return { name: binder === "lambda" ? "fun" : binder, start: node.keyword.start, end: node.keyword.end };
+    return ownedSite(node,{ name: binder === "lambda" ? "fun" : binder, start: node.keyword.start, end: node.keyword.end });
   }
   return null;
 }

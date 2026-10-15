@@ -1712,7 +1712,7 @@ export class Translator {
     this.reference(scope,{...site,...details},proof);
     for(const [index,step] of trace.entries()) {
       const rule=step.rule.displayName;
-      this.reference(scope,{name:`simp step ${index+1}`,start:site.start,end:site.end,
+      this.reference(scope,{...site,name:`simp step ${index+1}`,
         role:"simplification step",expansionIndex:index+1,
         traceParent:site.start,
         description:`${step.phase??"goal"} ${step.side}: checked rewrite ${index+1} using ${step.rule.reverse?"<- ":""}${rule}; ${step.visits} nodes visited.${step.premiseRules.length

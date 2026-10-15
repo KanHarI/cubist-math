@@ -295,3 +295,32 @@ views belong with CB5; no source edit is offered by that rewrite description.
 Final round-2 fix validation: 1,203 tests pass out of 1,216, with 13 documented
 later-phase TODOs and zero failures; all 3,857 canonical checks pass. All four
 production mutations are killed. Source/tests remained frozen during validation.
+
+## CB3 external review, round 3 — release boundary correction
+
+Claude called the delta at `260c1a7d` clean and verified the shared lookup,
+including compound references and imported binding labels. Its boundary notes
+nevertheless expose a CB3 release defect: imported inherited simplification
+links offer edits at the producer's offsets, and applying one can corrupt the
+client document. The placement bug predates CB3, but the edit was newly exposed
+by admitting theory simplification. We therefore treat it as actionable rather
+than postponing it with CB5's non-editing views.
+
+This is again source ownership, lost when link-site extraction retains a
+keyword's offsets but drops its enclosing syntax's origin. The existing
+publication filter already checks origin modules. Preserve that metadata at
+the shared tactic/expression/calc-site boundary and in traced step links,
+rather than adding bounds checks or a freeze-only exception. Validate imported
+short clients and long clients where foreign offsets happen to fit, and retain
+working local edits. No new ownership state is needed.
+
+The reviewer also confirmed that the existing `rw` source slice affects E452
+residual diagnostics as well as descriptions; both remain CB5 display work.
+
+The shared link-site factories now carry origin/synthetic metadata, and traced
+steps retain that same site. The existing publication predicate rejects foreign
+tactic links. Focused tests pass 76/76, including local edit application and
+short/long imported clients. Full validation passes 1,204 of 1,217 tests, with
+13 later-phase TODOs and zero failures; all 3,857 canonical checks pass and all
+four production mutations are killed. General generated-definition and match
+annotations still need CB5 provenance; they offer no source edits.

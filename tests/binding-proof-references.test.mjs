@@ -233,3 +233,38 @@ theory Child(U < UU0) extends Parent(fc := renamed_fc) {}`,
     }
   }
 });
+
+test("imported proof sites cannot offer edits or traced links in the client source",async t=>{
+  const parent=`import nat; import hlevels;
+inductive Edge { lo; hi; edge : lo = hi; }
+theory Parent(U < UU0) { M : set U; fe(n : Nat) : add(n, zero) = n;
+  def by_field(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { simp [fe]; };
+  def calculated(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+    obligations by { calc { add(n, zero) = n by fe(n); } };
+}`;
+  const library=sourceReader(),reader=name=>name==="parent"?parent:library(name);
+  const run=async source=>{
+    const program=new CubicalProgram(wasm,reader);t.after(()=>program.dispose());
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps,[]);
+    return result;
+  };
+  for(const padding of ["","// "+"x".repeat(parent.length)+"\n"]) {
+    const source=`import parent;\n${padding}theory Child(U < UU0) extends Parent(fe := gfe) {}`;
+    const result=await run(source);
+    assert.ok(result.outputs.find(d=>d.name==="Child.by_field").verified);
+    assert.ok(result.outputs.find(d=>d.name==="Child.calculated").verified);
+    assert.equal(result.links.some(link=>link.freeze||["simplification witness","simplification step",
+      "calculation witness","calculation step"].includes(link.role)),false);
+    // Generated definition/match annotations still await CB5. They offer
+    // no source edits; tactic witnesses and their traced steps must be owned.
+    const local=source+"\ndef local_proof(n : Nat) : add(n, zero) = n { simp [nat_add_zero]; }";
+    const checked=await run(local),edits=checked.links.filter(link=>link.freeze).map(link=>link.freeze);
+    assert.equal(edits.length,1);
+    const edit=edits[0];
+    assert.equal(edit.start,local.indexOf("simp [nat_add_zero]"));
+    assert.equal(edit.text,"simp only [nat_add_zero];");
+    await run(local.slice(0,edit.start)+edit.text+local.slice(edit.end));
+  }
+});
