@@ -349,3 +349,20 @@ authored syntax and generation lowering remain eligible for local source links.
 All 77 focused tests pass. Full validation passes 1,205 of 1,218 tests, with
 13 later-phase TODOs and zero failures; all 3,857 canonical checks pass and all
 four production mutations are killed. Source/tests were frozen for these runs.
+
+## CB3 external review, round 5 — clean
+
+Claude reviewed `b8823f65` against `cc4d6efd` and found no actionable defects.
+It audited all expansion-frame producers and swept plain, renamed, multilevel
+and diamond inheritance with intervening rule registration. All five published
+edits applied without new gaps; the previous head offered destructive child
+edits. Local inspection parity covered 110 source files, with only duplicate
+copy links removed in seven files. Imported notation operands keep their own
+inspection and working edits. Both reverting the fix and treating ordinary
+generation as a source copy fail the regression control.
+
+The context-ownership rule therefore closes the repeated source-edit findings
+without additional state or tactic-specific guards. Non-editing name annotations
+outside the site factories and shared-binding view collisions remain explicit
+CB5/CB6 work. CB3 review stops at round 5 of eight; no further round is needed
+without a new finding.

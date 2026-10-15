@@ -1,6 +1,6 @@
 # CB3: deferred scopes
 
-Status: implemented; external round-4 ownership fix validated on `cb3-deferred-scopes`,
+Status: implemented and reviewed; external round 5 is clean at `b8823f65`,
 based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
 the arbitrary-context REPL is still the CB6 deliverable.
 
@@ -183,4 +183,14 @@ introduced.
 Round-4 fix validation: 77/77 focused tests; `cb3-r4-full.log` passes 1,205 of
 1,218 tests, with 13 later-phase TODOs and zero failures. All 3,857 canonical
 checks pass, and all four production mutations are killed. Source and tests
-were frozen for validation. Round 5 will review the context-ownership policy.
+were frozen for validation.
+
+Round 5 found no actionable defects and closes CB3 review. The reviewer audited
+all expansion producers, checked plain/renamed/multilevel/diamond inheritance,
+and applied all five published edits in its sweep. Across 110 source files,
+local link sets and gaps matched the previous head; seven files lost only
+duplicate copy links. Imported notation operands retain their own links and
+working edits. Reverting the ownership fix or suppressing ordinary generation
+links each breaks the regression control. Remaining non-editing copied name
+annotations and view-instance collisions are recorded CB5/CB6 work. The review
+stops at round 5 of the allowed eight.
