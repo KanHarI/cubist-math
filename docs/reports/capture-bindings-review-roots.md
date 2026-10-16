@@ -511,3 +511,29 @@ source link reaches the authored definition. Full validation passes 1,251 of
 pass. All four production mutations are killed, and the display sweep renders
 2,919 declarations in 45 modules without failure. Source/tests remained frozen
 through validation. Round 3 reviews this delta; CB5 remains draft until clean.
+
+
+## CB5 external review, round 3 — diagnosis before fixes
+
+Claude reviewed `39a2a4f0` against `ff7bc7a9`. The grouping, overlapping-scope
+and qualified-navigation fixes hold, including adversarial binding round trips
+and the recorded validation. One cosmetic regression remains: `atom` wraps
+expressions that the renderer already parenthesizes, and wraps a transparent
+notation-argument wrapper even when its body is atomic. This adds visible noise
+to generated declarations without changing their binding structure.
+
+This finding is a local omission in the existing renderer's atom classification,
+not a recurrence of identity reconstruction or source ownership. Extend that
+classification to already-delimited forms and delegate transparent notation
+arguments to their body. Keep the binder grouping controls and check the exact
+nested-operand output. No precedence service, display mode or new registry is
+needed. The suggested alias-number separator is a nonblocking style preference;
+existing distinct, binding-faithful labels remain valid, so leave that policy alone.
+
+
+The small renderer change passes all 27 binding-display/generated-view tests,
+including the existing binder round trips and the exact nested-operand control.
+The display sweep again renders 2,919 declarations in 45 modules without
+failure. The last full suite, browser and mutation gates remain recorded at
+`39a2a4f0`; this follow-up changes only display grouping. Request a focused
+Claude delta verification, without reopening the already-clean CB5 audit.

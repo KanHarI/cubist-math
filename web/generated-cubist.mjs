@@ -129,8 +129,10 @@ export function generatedDeclaration(declaration, options = {}) {
   const {tree:d,displays,annotations,declarationName}=bindingDisplay(declaration,options);
   const name=value=>typeof value==="string"?value:value.text??(value.kind?expr(value):value.name);
   let budget = 50000;
-  const atom = node => ["name", "reference", "number", "literal", "binaryNumber", "call", "member", "projection"].includes(node.kind)
-    ? expr(node) : `(${expr(node)})`;
+  const atom = node => node.kind === "notationArgument" ? atom(node.body)
+    : ["name", "reference", "number", "literal", "binaryNumber", "call", "member", "projection",
+      "binary", "pathApply", "pair", "transport", "lift"].includes(node.kind) || node.kind === "negation" && !node.qualifier
+      ? expr(node) : `(${expr(node)})`;
   function parameters(params = []) {
     // Keep groups intact: a shared domain is outside all its binders.
     const groups = [];

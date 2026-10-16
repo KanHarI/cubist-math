@@ -130,6 +130,7 @@ test("CB5: disjoint scopes reuse their labels while overlapping scopes retain th
 test("CB5: operator operands preserve binder grouping through rendering and parsing",()=>{
   for(const text of [
     "def f(A : U0) : U0 := (forall y : A. A) -> A;",
+    "def f(A : U0, B : U0, x : A) : U0 := (x = x) -> B;",
     "def f(A : U0) : U0 := (forall x, y : A. A) -> A;",
     "def f(A : U0, B : U0) : U0 := (exists y : A. B) and B;",
     "def f(A : U0) : U0 := (fun (y : A) => y) = (fun (y : A) => y);",
@@ -139,6 +140,7 @@ test("CB5: operator operands preserve binder grouping through rendering and pars
   ]) {
     const f=fixture(text),syntax=f.resolve(text),printed=f.print(syntax);
     assert.equal(sameBindingSyntax(f.expression(syntax),f.expression(f.resolve(printed))),true,printed);
+    if(text.includes("(x = x) -> B"))assert.match(printed,/:= \(\(x = x\) -> B\);/);
   }
   const text="def f(A : U0) : (fun (x : A) => x) = (fun (x : A) => x) { calc { (fun (x : A) => x) = (fun (x : A) => x) by { rfl; } } }";
   const f=fixture(text),syntax=f.resolve(text),printed=f.print(syntax);

@@ -1,7 +1,7 @@
 # CB5: diagnostics and public views
 
 Status: implemented and validated in draft #238 on CB4 #237. CB4 is ready
-after a clean second Claude review. CB5 has addressed two external review rounds and is entering round 3;
+after a clean second Claude review. CB5 has addressed three external review rounds; the final cosmetic delta is awaiting verification;
 CB6 contextual sessions and CB7 retirement remain separate packages.
 
 ## Contract and implementation order
@@ -172,3 +172,13 @@ The browser suite covers name-only inherited deep links with aligned foreign
 and local offsets. It passes, as do the 45-module/2,919-declaration display
 sweep and all four production mutation controls. Source/tests stayed frozen
 through these gates. The PR remains draft for Claude round 3.
+
+
+## External review round 3
+
+The semantic and navigation fixes hold. Claude found one cosmetic regression:
+already-delimited operands received extra parentheses. The existing atom helper
+now recognizes these forms and delegates transparent notation arguments to
+their bodies. All 27 printer tests and the 45-module/2,919-declaration display
+sweep pass. Full validation remains recorded at `39a2a4f0`; this follow-up is
+limited to rendering. A focused fourth review verifies that delta.
