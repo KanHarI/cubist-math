@@ -1,6 +1,7 @@
 # Work plan: language features and their kernel support
 
-Status: reconciled on 2026-10-10 against main `cb525f07` (2026-10-08).
+Status: frontend/binding integration reconciled on 2026-10-17 against main
+`ee7fa35c`; other package entries retain their earlier dated evidence.
 Delivered means present on main. The current tables include L2.4c's six
 slices, notation L2.10a–e and i–k, h-level registration, evaluation patterns
 and closed truncation readout, squares, and EVAL0's recorded baseline.
@@ -8,13 +9,11 @@ The [historical work-plan record](historical/work-plan-history.md) retains the e
 revision notes and superseded first-action list; the
 [2026-09-28 audit](historical/audits/2026-09-28-audit.md) retains its dated findings.
 
-The initial/free construction prototype in
-[PR #215](https://github.com/KanHarI/cubist-math/pull/215) and frontend
-fixes in [#216–#223](https://github.com/KanHarI/cubist-math/pull/223) are
-on an unmerged stack. [#224](https://github.com/KanHarI/cubist-math/pull/224)
-adds a refactoring plan and reconciles that stack's evidence. They replace
-#188 and #204–#212, whose mistaken merges were undone on 2026-10-10. They are
-reported under [branch work](#branch-work), not counted as delivered here.
+Initial/free construction and fold behavior, CB0–CB7 and their separate cleanup
+are on main. The older frontend implementations are superseded. The
+[refactoring and source-test plan](refactoring-and-testing.md) owns the remaining
+#224 ideas; [branch work](#branch-work) records the current follow-ups. This does
+not complete L2.6's checked universal capabilities or resume paused mathematics.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
 the earlier plan are retained; their stage numbers do not impose dependencies.
@@ -618,13 +617,13 @@ presentation work remains deferred.
 
 ## Frontend generation track
 
-**2026-10-13 design update:** [CB0–CB7](capture-bindings.md#ordered-implementation-packages)
-propose a replacement for FG2's binding implementation and the binding-related
-RC4 work in #224. Preserve FG1 publication semantics; adopt later universe,
-evidence, provenance, testing and inspection solutions according to the
-[PR comparison](../reports/capture-bindings-pr-comparison.md). Contextual REPLs
-inside functions, lets and induction cases are required deliverables. No CB
-package is implemented; the dated FG schedule below records the earlier plan.
+**2026-10-17 integration update:** [CB0–CB7](capture-bindings.md#ordered-implementation-packages)
+and cleanup are complete and on main. They replace FG2's binding implementation
+and the binding-related RC4 work in #224, preserve FG1 publication semantics and
+adopt universe, evidence, provenance, testing and inspection behavior. Contextual
+REPLs inside functions, lets and induction cases are implemented. The
+[PR comparison](../reports/capture-bindings-pr-comparison.md) is the historical
+adoption decision; the dated FG schedule below records the earlier plan.
 
 **2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
 [frontend generation roadmap](frontend-generation.md) uses that PR's
@@ -763,21 +762,19 @@ where supplying them checks.
 
 ## Branch work
 
-Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
+Snapshot on 2026-10-17. The earlier #188/#204–#212 stack was replaced by
+#215 onward; CB0–CB7 subsequently integrated and replaced the frontend work.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
-| [L2.6 prototype, #215](https://github.com/KanHarI/cubist-math/pull/215) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
-| [Frontend generation, #216–#223](https://github.com/KanHarI/cubist-math/pull/223) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #217 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
-| [Refactoring/testing, #224](https://github.com/KanHarI/cubist-math/pull/224) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
-| [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
+| L2.6 construction behavior | Declared carriers, models and computing folds are integrated | Opt-ins, uniqueness, universal properties and additional laws |
+| [Capture/bindings](capture-bindings.md) | CB0–CB7 and cleanup integrated; #219–#223, #225 and #227 closed as superseded | Preserve semantic and resource gates when extending interfaces |
+| [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Existing mutation runner wired into CI; seven checks pass at `154c4e6b` | Merge independently of the cleanup stack |
+| [Refactoring/testing](refactoring-and-testing.md) | Current implementation plan replaces #224's stale compiler assumptions; RC0 underway | Complete the separately reviewable slices and their test migrations |
 
-The revised FG0 harness in #217 records 23 independent known-defect cases at
-its baseline. Its validation record gives the activation check against the
-fixing compiler, with every record removed. That is integration evidence, not
-a claim that its files have already been incorporated through every branch.
-The frontend roadmap remains active until the evidence follow-ups are disposed
-of. Historical test reports are not fresh validation of a later PR head.
+The earlier FG0 known-defect staging is retired: the integrated harness requires
+the desired semantic results directly. Historical reports retain their pinned
+revisions and are not fresh validation of a later PR head.
 
 ## Open decisions
 

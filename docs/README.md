@@ -8,7 +8,8 @@ Moving these documents does not change their recorded status or resume paused wo
 
 ## Plan
 
-Progress reconciled on 2026-10-10 against main `cb525f07`. The
+Frontend/binding progress reconciled on 2026-10-17 against main `ee7fa35c`;
+other package entries retain their dated evidence. The
 [roadmap overview](roadmaps/README.md#at-a-glance) separates delivered work
 from the [open branch stack](roadmaps/work-plan.md#branch-work).
 
@@ -68,14 +69,19 @@ finishing a language milestone does not automatically resume them.
 
 ## Language tooling roadmap
 
-- [Correct capture and bindings](roadmaps/capture-bindings.md): proposed
+- [Correct capture and bindings](roadmaps/capture-bindings.md): implemented
   binding identities, complete interfaces, frontend generation and REPLs
-  inside local scopes, with an [open-PR comparison](reports/capture-bindings-pr-comparison.md)
-  and migration sequence. Not implemented.
-- [Frontend generation](roadmaps/frontend-generation.md): design changes
+  inside local scopes. CB0–CB7 and their cleanup are complete; the
+  [PR comparison](reports/capture-bindings-pr-comparison.md) records the
+  historical adoption decisions.
+- [Refactoring and source-level tests](roadmaps/refactoring-and-testing.md):
+  the active follow-up stack for publication ownership, parsed test pragmas
+  and shared tooling.
+- [Frontend generation](roadmaps/frontend-generation.md): historical design changes
   motivated by PR #188's review failures, with phased implementation and
-  semantic acceptance criteria. The [current gap inventory](reports/frontend-generation-gaps.md)
-  records reproducible failures separately from planned functionality.
+  semantic acceptance criteria. The [gap inventory](reports/frontend-generation-gaps.md)
+  records failures at its pinned revision; the CB completion records describe
+  their resolution.
 - [Induction hypothesis syntax](roadmaps/induction-hypothesis-syntax.md):
   constructor fields and induction hypotheses separated by `with`,
   implemented on 2026-10-11 with the old spelling still read and a checked
@@ -105,7 +111,7 @@ finishing a language milestone does not automatically resume them.
     evaluation patterns and closed truncation readout, box notation and squares.
   - Remaining: checked initial/free capabilities, structure identity,
     advanced rewriting and declaration interfaces. The construction prototype
-    is in open #188, not main.
+    and computing folds are integrated; checked universal capabilities remain open.
   - The old [implementation sequence](roadmaps/historical/proof-ergonomics-implementation-plan.md)
     is historical; its [remaining contracts](roadmaps/proof-ergonomics-roadmap.md#remaining-implementation-contracts)
     have active owners. Keep the [checked/proposed examples](examples/proof-ergonomics/README.md).

@@ -69,14 +69,3 @@ test("both language references and keyword styling describe the scoped syntax", 
   assert.ok(keywords.has("with"));
   assert.ok(keywords.has("unfolding"));
 });
-
-test("migrated native proof scopes format without changing their expanded syntax", async () => {
-  for (const name of ["binomial_pascal", "embedded_composita", "f4_embedded_composita",
-    "f4_embedding_images", "group_univalence", "kernel_quotient_image", "permutations", "structured_sets"]) {
-    const source = await readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-    assert.doesNotMatch(source, /with_unfolding\(/, name);
-    const formatted = formatCubist(source);
-    assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)), name);
-    assert.equal(formatCubist(formatted), formatted, name);
-  }
-});

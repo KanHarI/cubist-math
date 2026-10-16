@@ -10,8 +10,3 @@ export function binaryLiteralSyntax(node) {
     positive = call(bit === "0" ? "binary_bit0" : "binary_bit1", positive);
   return call("binary_positive", positive);
 }
-
-export function binaryLiteralExpansion(node) {
-  const print = n => n.kind === "name" ? n.name : `${n.fn.name}(${print(n.args[0])})`;
-  return print(binaryLiteralSyntax(node));
-}

@@ -7,8 +7,9 @@ not resume when a language milestone ships.
 
 ## At a glance
 
-Reconciled on 2026-10-10 against main `cb525f07` (2026-10-08). Delivered
-means merged into main; the open PR stack is identified separately.
+Frontend/binding status reconciled on 2026-10-17 against main `ee7fa35c`.
+Other rows retain their earlier package evidence. Delivered means merged into
+main; open PR work is identified separately.
 
 | Track | Delivered on main | Still open |
 | --- | --- | --- |
@@ -22,14 +23,13 @@ means merged into main; the open PR stack is identified separately.
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
 
-**Branch work, not delivered on main:** [#188](https://github.com/KanHarI/cubist-math/pull/188)
-has the initial/free construction-and-fold prototype; [#204–#211](https://github.com/KanHarI/cubist-math/pull/211)
-have the frontend-generation roadmap and FG0–FG6 implementation;
-[#212](https://github.com/KanHarI/cubist-math/pull/212) proposes RC0–RC11
-refactoring and test migration. The homological-algebra proposal in
-[#198](https://github.com/KanHarI/cubist-math/pull/198) merged into that
-stack, not main. The [branch record](work-plan.md#branch-work) distinguishes
-implementation, integration evidence and unfinished obligations.
+**Frontend integration:** initial/free construction and fold behavior, CB0–CB7
+and the separate cleanup are on main. The older #219–#223, #225 and #227 PRs
+are closed as superseded. [#242](https://github.com/KanHarI/cubist-math/pull/242)
+adds the mutation CI hook. The remaining #224 ideas are tracked in the
+[refactoring and source-test stack](refactoring-and-testing.md); see the
+[branch record](work-plan.md#branch-work). Checked universal capabilities
+and their mathematical proofs remain separate unfinished work.
 
 Next language work: morphism opt-ins (L2.4d), general proposition laws
 (L2.11), implicit operation arguments (L2.12), then L2.6's checked
@@ -72,17 +72,20 @@ EVAL1 and NUM0/NUM1 can advance independently. See
 
 ## Language tooling
 
-- [Correct capture and bindings](capture-bindings.md): proposed replacement
+- [Correct capture and bindings](capture-bindings.md): completed replacement
   for capture repair, with binding identities, shared generation interfaces
   and contextual REPLs at arbitrary nesting depth. The
   [PR comparison](../reports/capture-bindings-pr-comparison.md) records which
-  current solutions to adopt or replace; no migration package is implemented.
-- [Frontend generation](frontend-generation.md): planned design work after
+  earlier solutions were adopted or replaced; CB0–CB7 and cleanup are complete.
+- [Refactoring and source-level tests](refactoring-and-testing.md): the active
+  follow-up stack for publication ownership, test pragmas and shared tooling.
+- [Frontend generation](frontend-generation.md): historical design work after
   PR #188, with its failures as evidence. Unifies declaration ownership,
   supported dependency analysis, universe calculation, contextual evidence
   and public provenance, with semantic preservation tests. The
   [gap inventory](../reports/frontend-generation-gaps.md) pins current
-  reproductions and separates them from fixed bugs and prototype limits.
+  reproductions at its pinned revision. Current status is in the CB completion
+  records, not those historical gap counts.
 - [Induction hypothesis syntax](induction-hypothesis-syntax.md):
   `constructor(fields) with hypotheses` clauses, implemented on 2026-10-11
   with the old spelling still read and a checked migration tool.

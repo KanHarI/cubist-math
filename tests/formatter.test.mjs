@@ -8,16 +8,21 @@ const semantic = value => JSON.parse(JSON.stringify(value, (key, v) =>
   ["start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd", "tupleStart", "tupleEnd", "open", "close"].includes(key) ? undefined : v));
 test("formatting every bundled source preserves tokens, comments, syntax and is idempotent", async () => {
   const directory = new URL("../archive/first-library/", import.meta.url);
+  const options = { printWidth: 40 };
+  let changed = 0;
   for (const name of (await readdir(directory)).filter(n => n.endsWith(".cubist"))) {
     const source = await readFile(new URL(name, directory), "utf8");
-    const formatted = formatCubist(source);
-    assert.equal(formatCubist(formatted), formatted, name + " idempotence");
+    assert.doesNotMatch(source, /with_unfolding\(/, name);
+    const formatted = formatCubist(source, options);
+    if (formatted !== source) changed++;
+    assert.equal(formatCubist(formatted, options), formatted, name + " idempotence");
     assert.deepEqual(tokenize(formatted).map(t => t.text), tokenize(source).map(t => t.text), name);
     assert.deepEqual(formatted.match(/\/\/[^\r\n]*/g), source.match(/\/\/[^\r\n]*/g), name + " comments");
     if (tokenize(source)[0].text !== "construction")
       assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)), name + " syntax tree");
     assert.doesNotMatch(formatted, /[ \t]+$/m, name + " trailing whitespace");
   }
+  assert.ok(changed > 0, "the archive preservation check must exercise changed source");
 });
 
 test("nested pairs, equality carriers and line comments keep their boundaries", () => {
