@@ -860,3 +860,14 @@ must be recorded at that semantic clause boundary, as binder entries are recorde
 at introduction; optional reference events still only consume existing points.
 Do not weaken exact Scope matching or choose a nearby point. Verify generated
 clause queries, observation parity and warm/cold text exhaustion before round 8.
+
+
+Round 8 is clean on `cb1cdc2c`. Claude independently verifies text cost against
+7,108 distinct receipts, cold/warm refusal, generated clause goals and exact
+locals, successful recovery attempt ownership, and reference-collection parity.
+The coherence entry may parent inner proof points; its breadcrumb correctly
+represents that enclosing goal. No new registry or budget service is needed.
+Final gates on the same clean revision pass 1,332 tests, all 3,857 corpus checks,
+both browser suites and all four production mutation kills. CB6 review stops
+clean at eight rounds. CB7 retirement/release follows; after CB7, the user's
+requested separate cleanup audits the entire CB0–CB7 stack.
