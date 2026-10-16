@@ -1,7 +1,7 @@
 # CB5: diagnostics and public views
 
-Status: implemented locally on CB4 #237, under full validation. CB4 is ready
-after a clean second Claude review. CB5 has not yet had its external review;
+Status: implemented and validated in draft #238 on CB4 #237. CB4 is ready
+after a clean second Claude review. CB5 is entering its first external review;
 CB6 contextual sessions and CB7 retirement remain separate packages.
 
 ## Contract and implementation order
@@ -122,6 +122,17 @@ locations. This closes the same source-ownership root recorded in earlier rounds
 Focused printer/provenance controls pass, including generated proof blocks,
 imported navigation, captured declarations under model openings and a poisoned
 environment lookup. The browser suite passes. A display sweep covers 45 source
-modules and all 2,919 retained declarations without display failure. Full
-regression/corpus and production mutation gates are running; external review
-will use the committed, validated implementation.
+modules and all 2,919 retained declarations without display failure.
+
+Final validation of source head `9b1a7bda`: 1,241 tests pass out of 1,251,
+with ten documented CB6 TODOs and zero failures. All 3,857 canonical checks
+pass, and all four production mutations are killed. Source/tests stayed frozen
+during validation. An older pilot test now asserts its exact qualified source
+site instead of publishing that foreign offset into the pilot module.
+
+Two intervening full/corpus runs hit five-minute wall-clock deadlines during
+confirmed macOS maintenance sleeps, in different declarations. The unchanged
+corpus passed in 22 seconds while awake; the final full run passed in 161
+seconds with temporary sleep prevention. Compiler budgets were unchanged.
+External review uses this validated implementation and stops on a clean round,
+with up to eight rounds when real findings warrant fixes.
