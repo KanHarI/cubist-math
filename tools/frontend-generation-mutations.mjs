@@ -32,7 +32,7 @@ const mutations=[
     "frontend-evidence","contextual model evidence remains checked"),
   mutation("synthetic-provenance","web/cubical-program.mjs",
     "!node.synthetic && ownsSource(node,name)", "ownsSource(node,name)",
-    "frontend-provenance","copied observations|imported generated observations"),
+    "initial-models","generated syntax has local positions"),
   mutation("lint-interface","web/cubist/lint.mjs",
     "&& !publicTelescopes.has(node)", "",
     "frontend-provenance","safe lint preserves"),

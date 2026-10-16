@@ -45,7 +45,7 @@ boundaries; terminal results are pending.
 | Refined evidence | Shared scope refinement; checked evidence and dimension restrictions |
 | Reservation | Shared declaration ownership; original value survives collision |
 | Failed publication | Native transaction boundary; fault-injected parent rollback |
-| Synthetic provenance | Written-source ownership; copied/imported generated observations |
+| Synthetic provenance | Written-source ownership; generated-header links |
 | Lint interface | Public telescope boundary; named constructors and generated clients |
 | Explicit path head | Pattern compiler; wrong explicit bodies cannot become automatic obligations |
 | Fallback eligibility | The old recursive-position restriction was intentionally replaced in CB3. Automatic path evidence is checked for every eligible implicit path. G8 now records the charged failed search and preserves the primary mismatch; explicit wrong-path controls still refuse. |
@@ -73,3 +73,12 @@ Final native/frontend/corpus, catalogue, publication fault injection, mutation,
 inspector/contextual/site browser results and measured release budgets are pending.
 The first retirement focus passes 36 tests; it precedes removal of the unreachable
 `recursiveCall` cases. Claude review starts after the implementation gates.
+
+
+The initial mutation run kills eleven of twelve candidates. The synthetic-node
+mutation survives the copied/imported-observation tests because `ownsSource`
+independently rejects those copies. The existing generated-header link test
+exercises synthetic syntax in its own module and kills that mutation. Correct
+the runner's selected witness, not the product predicate or the assertions.
+The targeted rerun passes; a final clean-revision mutation report follows.
+Native tests pass on `5a4f8cef`. Full frontend validation is still running.
