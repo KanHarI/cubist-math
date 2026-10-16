@@ -166,8 +166,10 @@ export class Translator {
     const key=node.bindingId?scope.unit.bindingAdapter.key(node.bindingId)
       :node.isBinding?node.text??node.name:node.name;
     const source=env?.get(key)===term?scope.localSources.get(key):null;
-    scope.unit.recordReference(source?{...node,name:source.name,localBindingKey:key}
-      :node.spelling?{...node,name:node.spelling}:node,term,scope,env);
+    const observed=source?{...node,name:source.name,localBindingKey:key}
+      :node.spelling?{...node,name:node.spelling}:node;
+    const contextScope=scope.unit.scopePoints?.current(scope);
+    scope.unit.recordReference(contextScope?{...observed,contextScope}:observed,term,scope,env);
   }
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
@@ -206,8 +208,11 @@ export class Translator {
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
       term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,
         ...(node.origin?{origin:node.origin}:{}),...(node.bindingId?{bindingId:node.bindingId}: {})});
-    this.reference(scope,{...node,name:label,isBinding:true},term);
-    return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
+    if(!["Var","U"].includes(term.tag))scope=scope.modelEvidence(term);
+    const record=()=>this.reference(scope,{...node,name:label,isBinding:true},term);
+    if(scope.unit.scopePoints)scope.unit.scopePoints.around(this,node,scope,{phase:"inspection"},record);
+    else record();
+    return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
   expressionScope(node,scope,options) {

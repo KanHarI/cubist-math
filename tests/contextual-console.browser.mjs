@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {spawn} from "node:child_process";
+import {readFile} from "node:fs/promises";
 import {chromium} from "playwright";
 import {assertFreshBuild} from "../tools/build-stamp.mjs";
 import {contextualScenarios} from "./fixtures/contextual-sessions.mjs";
@@ -24,9 +25,14 @@ try {
   const page=await browser.newPage({viewport:{width:1280,height:1000}});
   const errors=[];page.on("pageerror",error=>errors.push(error.message));
   const idle=()=>page.waitForFunction(()=>!document.querySelector("#check").disabled&&document.querySelector("#check-loader").hidden);
-  const open=async source=>{
+  const open=async(source,embedded=false)=>{
     await page.goto("about:blank");
-    await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(source).toString("base64url")}`);
+    await page.goto(`http://127.0.0.1:${port}/proof.html?example=1${embedded?"&embed=1":""}#source=${Buffer.from(source).toString("base64url")}`);
+    if(embedded) {
+      await page.waitForFunction(()=>document.querySelector("#check")?.disabled===false);
+      await page.evaluate(source=>window.postMessage({type:"cubist-inspect",source,offset:source.indexOf("ih(m.1)")},location.origin),source);
+      await page.waitForFunction(()=>document.querySelector("#inspect-name")?.textContent==="ih");
+    }
     await idle();
   };
   const collect=async()=>{await page.locator("#collect-contexts").check();await idle();};
@@ -156,11 +162,11 @@ def copied(x : Unit) : Unit := x;`);
     panel.removeAttribute("id");document.body.append(panel);
     const target=document.createElement("div");document.body.append(target);
     const row=()=>{const node=document.createElement("div");node.className="source-line";target.replaceChildren(node);};
-    const pending=[],listed=["a","b"].map(id=>({id,origin:{module:"main",start:0,end:1},
+    const pending=[],closed=[],listed=["a","b"].map(id=>({id,origin:{module:"main",start:0,end:1},
       phase:"expression",declaration:"f",declarationId:"f",available:true}));
     let holdIndex=false;
     const request=(command,args)=>{
-      if(command==="context-close")return Promise.resolve();
+      if(command==="context-close"){closed.push(args.session);return Promise.resolve();}
       if(command==="contexts"&&!holdIndex)return Promise.resolve({points:listed});
       return new Promise((resolve,reject)=>pending.push({command,args,resolve,reject}));
     };
@@ -199,8 +205,20 @@ def copied(x : Unit) : Unit := x;`);
     check();holdIndex=false;await decorate();
     index.reject(new Error("Late index error"));await oldIndex;
     const lateIndexIgnored=!target.querySelector("button").disabled;
+
+    check();holdIndex=true;
+    let inspected=true;
+    const oldInspection=controller.openInspection({module:"main",scope:"a"},()=>inspected);
+    const [inspectionIndex]=pending.splice(0);inspected=false;
+    inspectionIndex.resolve({points:listed});await oldInspection;
+    const changedInspectionIgnored=controls.disabled&&pending.length===0;
+    check();holdIndex=false;inspected=true;
+    const openingInspection=controller.openInspection({module:"main",scope:"b"},()=>inspected);
+    await flush();const [inspectionOpen]=pending.splice(0);inspected=false;
+    inspectionOpen.resolve({session:"old-inspection"});await openingInspection;
+    const changedInspectionClosed=controls.disabled&&closed.includes("old-inspection");
     panel.remove();target.remove();
-    return {lateOpenIgnored,lateQueryIgnored,restarting,failedRestartHandled,lateIndexIgnored};
+    return {lateOpenIgnored,lateQueryIgnored,restarting,failedRestartHandled,lateIndexIgnored,changedInspectionIgnored,changedInspectionClosed};
   });
   for(const [name,passed] of Object.entries(lifecycle))assert.equal(passed,true,name);
   console.log("PASS delayed opening/query/index responses and revoked restart remain isolated");
@@ -222,6 +240,39 @@ initial N : T(U0);`);
     "the header cannot see constructors; the later constructor scope can see the earlier one");
   assert.equal(constructorResults.find(([kind])=>kind.endsWith("repl-type"))[1],"N");
   console.log("PASS generated inductive contexts distinguish the header from earlier constructor availability");
+
+  await page.unroute("**/cubist-version");
+  const tree=(await readFile(new URL("../library/universe_smallness.cubist",import.meta.url),"utf8"))
+    .split("// No small family")[0].replace("import contractible_maps;","");
+  for(const embedded of [false,true]) {
+    await open(tree,embedded);
+    assert.equal(await page.locator("#collect-contexts").isChecked(),false);
+    if(!embedded)await page.locator('#read-source button[data-name="ih"]').last().click();
+    const button=page.getByRole("button",{name:"Open REPL in this context",exact:true});
+    await button.waitFor({state:"visible"});await idle();
+    assert.equal(await page.locator('#kernel-context-list .kernel-context-row[data-name="m"]').count(),1);
+    await button.click();
+    await page.waitForFunction(()=>!document.querySelector("#context-panel fieldset").disabled);
+    assert.equal(await page.locator("#inspect-name").textContent(),"ih","collection preserves the inspected occurrence");
+    assert.equal(await page.locator("#collect-contexts").isChecked(),true);
+    assert.equal((await options()).length,1,"inspection opens its exact instance directly");
+    await enter("typeof ih;","type",/member/);
+    await enter("typeof m;","type",/children/);
+    await enter("let saved := ih;","defined",/saved/);
+    await enter("typeof saved;","type",/member/);
+    await page.locator('#read-source button[data-name="ih"]').first().click();await idle();
+    assert.equal(await page.locator('#kernel-context-list .kernel-context-row[data-name="m"]').count(),0);
+    await button.click();
+    await page.waitForFunction(()=>!document.querySelector("#context-panel fieldset").disabled);
+    await enter("typeof m;","error",/m/);
+    await enter("typeof saved;","error",/saved/);
+    if(!embedded) {
+      await page.locator("#edit-mode").click();await page.locator("#editor").fill(tree+"\n// edited");
+      assert.equal(await button.isDisabled(),true);
+      assert.equal(await page.locator("#context-panel fieldset").evaluate(node=>node.disabled),true);
+    }
+  }
+  console.log("PASS inspector opens exact induction-hypothesis contexts on demand, including embedded views and dirty-source invalidation");
   assert.deepEqual(errors,[]);
 } finally {
   await browser?.close();server.kill();

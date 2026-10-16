@@ -787,3 +787,50 @@ then run that browser suite alone. Add no delay, retry policy or navigation-code
 change. Full compiler gates remain valid on the unchanged product code. Focused
 round 6 should verify this test-only correction and the exact terminal evidence,
 without reopening the product audit.
+
+
+Round 6 is clean on `fbd68711`, closing the inspector gate finding. Product code
+remains `3b9a0845`. The user then requests an inspector-context REPL entry point;
+that additional CB6 behavior remains pending before marking #239 ready.
+
+## Inspector entry request — diagnosis before implementation
+
+The inspector currently exposes a checked judgement without its replay scope.
+Source-line buttons cannot establish which elaborated occurrence produced that
+judgement, and a binder's introduction context can differ from a later use.
+Connect the existing reference observation to an exact scope point at production,
+including binder introductions, and transport its ID with the local inspection.
+Use the existing replay callback, attempt ownership, worker index and console.
+Do not reconstruct scope identity from label equality or nearest source ranges.
+Keep these inspection points out of generic line pickers to avoid duplicate
+choices there. Queries at an inspector entry may open its one exact instance.
+
+Collection remains optional: the inspector button can request a check with scopes
+on the unchanged source, preserve the inspected occurrence, and open its newly
+recorded point. An edit, changed selection or compiler replacement must prevent a
+late request from opening the old context. Embedded inspectors can reuse the same
+console and on-demand collection rather than a separate query path. Verify the
+reported Tree induction hypothesis, refined instances, source/query agreement,
+no-collection entry and stale navigation. Extra observation points must preserve
+source behavior and stay within existing resource limits.
+
+The first implementation made every reference observation a new replay point.
+Testing found two symptoms of the same design problem: optional reference
+records shifted semantic scope IDs, and redundant snapshots exhausted the default
+heap on the existing large notation fixture. Reference display events should
+consume semantic entry points, not define them. The final wiring looks up the
+actual Scope object in the active elaboration stack; binder introductions alone
+add a semantic entry after binding. The stack is unwound synchronously and no
+live scope enters a persisted description. Existing reference-on/off identity,
+historical-notation, and large notation tests now pass without changing their
+assertions or resource limits. Introduction/use and imported `ih` probes pass.
+
+The combined notation suite still exposed excessive retention with the added
+binder entries: each lexical frame copied receipts for all imported core values.
+Share those immutable binding receipts, while rebuilding lazy operand and mutable
+permission descriptions. A cache hit charges the same construction visits as a
+cold receipt; the existing per-environment graph budget is unchanged. This fixes
+the retained representation rather than adding a collection cutoff, raising a
+limit, or weakening the large-fixture test. Replayed descriptions must still
+match exactly. Binder entry follows model-evidence registration, so it denotes
+the completed introduction transition.

@@ -5,7 +5,7 @@ const element=(tag,text)=>{
   if(text!==undefined)node.textContent=text;
   return node;
 };
-const phases={expression:"Expression",before:"Before statement",after:"After statement"};
+const phases={expression:"Expression",before:"Before statement",after:"After statement",inspection:"Inspected occurrence"};
 
 // The UI holds descriptions and opaque worker session IDs only. Source edits
 // revoke the selection immediately; a late response can never re-enable it.
@@ -42,7 +42,7 @@ export function createContextualConsole(panel,{request}) {
     for(const point of result.points)points.set(point.id,point);
     return result.points;
   }
-  async function select(point) {
+  async function select(point,current=()=>true) {
     const token=epoch,chosen=++selection;
     release();controls.disabled=true;root.replaceChildren();
     const ancestors=[];
@@ -54,10 +54,10 @@ export function createContextualConsole(panel,{request}) {
     let opened;
     try {opened=await request("context-open",{scope:point.id});}
     catch(error) {
-      if(valid(token)&&selection===chosen)status.textContent=error.message;
+      if(valid(token)&&selection===chosen&&current())status.textContent=error.message;
       return;
     }
-    if(!valid(token)||selection!==chosen) {
+    if(!valid(token)||selection!==chosen||!current()) {
       request("context-close",{session:opened.session}).catch(()=>{});return;
     }
     active=opened;controls.disabled=false;
@@ -110,10 +110,20 @@ export function createContextualConsole(panel,{request}) {
   close.onclick=()=>{selection++;release();controls.disabled=true;panel.hidden=true;};
   return {
     invalidate,
+    get collecting() {return enabled;},
+    async openInspection({module,scope},current=()=>true) {
+      const token=epoch,listed=await index(module,token);
+      if(!valid(token)||!current())return;
+      const point=listed.find(point=>point.id===scope);
+      if(!point)throw new Error("The inspected context is unavailable. Check the source and inspect the occurrence again.");
+      choose([point],"Inspected context");
+      picker.value=point.id;
+      await select(point,current);
+    },
     checked(result,token,collect) {
       if(token!==epoch)return;
       snapshot=result;enabled=collect;
-      status.textContent=collect?"Select a REPL button beside the checked source or a generated declaration."
+      status.textContent=collect?"Open a context from the inspector, checked source or a generated declaration."
         :"Enable local context collection and check the source to select a context.";
     },
     async decorate(target,view,{module,generated=false}) {
@@ -138,7 +148,7 @@ export function createContextualConsole(panel,{request}) {
             :point.origin.module===range.origin.module&&point.origin.start>=range.origin.start+Math.max(start,range.start)-range.start
               &&point.origin.start<range.origin.start+Math.min(end,range.end)-range.start));
         } else candidates=listed.filter(point=>point.origin.module===module&&point.origin.start>=start&&point.origin.start<end);
-        candidates=candidates.filter(point=>point.origin.end>point.origin.start);
+        candidates=candidates.filter(point=>point.phase!=="inspection"&&point.origin.end>point.origin.start);
         if(candidates.length) {
           const button=element("button","REPL");button.className="context-entry";button.type="button";
           button.setAttribute("aria-label",`Open contexts at ${generated?"generated ":""}line ${line+1}`);

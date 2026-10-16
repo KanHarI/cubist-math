@@ -45,6 +45,7 @@ export class ScopePoints {
   #occurrences=new Map();
   #parents=[];
   #environments=new WeakMap();
+  #bindingDescriptions=new WeakMap();
   #contexts=new WeakMap();
   #dimensions=new WeakMap();
   #rules=new WeakMap();
@@ -172,12 +173,32 @@ export class ScopePoints {
     if(!owners)this.#environments.set(scope.env,owners=new WeakMap());
     const owner=scope.unit.contextOwner;
     if(!owners.has(owner)) {
-      const live=this.bindings(scope);
-      const description=freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),
+      const live=this.bindings(scope),budget=syntaxGraphBudget();
+      const description=freeze({lexical:live.lexical.snapshot(),bindings:live.records.map(record=>this.#bindingDescription(record,budget)),
         sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive,notations:[...live.contexts.keys()]});
       owners.set(owner,description);
     }
     return owners.get(owner);
+  }
+  #bindingDescription(record,budget) {
+    // Core syntax is immutable. Share its binding receipt across lexical
+    // frames instead of copying every imported declaration for each binder.
+    // Lazy operands and mutable compiler values still get fresh descriptions.
+    let entries;
+    if(isTerm(record.value)) {
+      entries=this.#bindingDescriptions.get(record.value);
+      if(!entries)this.#bindingDescriptions.set(record.value,entries=new Map());
+    }
+    const cached=entries?.get(record.id);
+    if(cached) {
+      // A warm cache must not change a description's construction limit.
+      for(let i=0;i<cached.visits;i++)budget.tick();
+      return cached.description;
+    }
+    let visits=0;
+    const description=snapshotSyntax(record,{budget:{tick(){budget.tick();visits++;}}});
+    entries?.set(record.id,{description,visits});
+    return description;
   }
   #mapDescription(cache,map) {
     if(!cache.has(map))cache.set(map,snapshotSyntax([...map]));
@@ -195,8 +216,11 @@ export class ScopePoints {
       snapshotSyntax(Object.fromEntries(Object.entries(registry).map(([kind,entries])=>[kind,[...entries]]))));
     return owners.get(unit.contextOwner);
   }
-  #inside(id,body) {
-    this.#parents.push(id);
+  // An inspection links to the actual enclosing elaboration scope, never a
+  // nearby source range. Binder introductions have their own entry point.
+  current(scope) {return this.#parents.findLast(entry=>entry.scope===scope)?.id;}
+  #inside(id,scope,body) {
+    this.#parents.push({id,scope});
     try {return body();}finally {this.#parents.pop();}
   }
   around(translator,node,scope,{phase="expression",goal=null,expected=null}={},body) {
@@ -212,9 +236,9 @@ export class ScopePoints {
     // Replay still performs every declaration, attempt and scope transition.
     // Only the requested description needs materialization. Identity owners
     // and declaration labels are independent of observing earlier points.
-    if(this.target&&id!==this.target)return this.#inside(id,body);
+    if(this.target&&id!==this.target)return this.#inside(id,scope,body);
     const origin=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
-    const basic={id,revision:this.revision,owner,attempt:path,occurrence,phase,origin,parent:this.#parents.at(-1)??null,
+    const basic={id,revision:this.revision,owner,attempt:path,occurrence,phase,origin,parent:this.#parents.at(-1)?.id??null,
       declaration:unit.declaring?.name??null,
       declarationId:this.compilation.declaration(`${unit.moduleName}__${unit.declaring?.name}`)?.binding.id??null};
     let description,live;
@@ -225,7 +249,7 @@ export class ScopePoints {
         throw new TypeError("This scope has no matching authored source range.");
       const environment=this.#environment(scope);
       description=freeze({...basic,available:true,lexical:environment.lexical,
-        state:{format:"cubist-scope-state-1",bindings:environment.bindings,sources:environment.sources,notations:environment.notations,
+        state:{format:"cubist-scope-state-2",bindings:environment.bindings,sources:environment.sources,notations:environment.notations,
           context:this.#mapDescription(this.#contexts,scope.context),dimensions:this.#mapDescription(this.#dimensions,scope.dimensions),
           slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
             bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))]),
@@ -239,7 +263,7 @@ export class ScopePoints {
       // It marks this exact entry unavailable, without choosing another one.
       description=freeze({...basic,available:false,reason:error.message});
     }
-    return this.#inside(id,()=>{
+    return this.#inside(id,scope,()=>{
       // Probe before the body, while this exact native context is live. A
       // probe is private to replay and validates against the selected registry.
       this.probe?.(description,{translator,scope,goal,expected,...(live??{})});

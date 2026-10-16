@@ -1,9 +1,8 @@
 # CB6: contextual REPL
 
-Status: round 5 finds no product issues in `3b9a0845`; all 1,326 tests and
-3,857 canonical checks pass. Its sole finding is a browser-harness navigation
-race. The test-only correction, isolated browser gate and focused round 6 close
-that evidence before CB6 #239 becomes ready. CB7 has not started.
+Status: external round 6 is clean on `fbd68711`; product code `3b9a0845`
+passes all final gates. The user's additional inspector-context REPL button is
+being implemented before #239 becomes ready. CB7 has not started.
 
 ## Required result
 
