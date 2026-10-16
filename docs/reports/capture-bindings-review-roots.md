@@ -590,3 +590,9 @@ identities when they enter the provisional signature telescope. Queries then
 use checked local variables and the existing uniform-parameter rules. Tests
 distinguish later constructors, changed parameters, failed final admission and
 initial/free generated instances; none publishes the unfinished signature.
+
+The implementation at `9187cadf` passes all 1,299 tests with no TODOs, all 3,857
+canonical checks, both browser suites and all four production mutation checks.
+Source and tests remained frozen through these gates. External round 1 reviews
+the complete CB6 delta against CB5; compare any findings with these ownership,
+visibility and introduction-boundary diagnoses before applying fixes.

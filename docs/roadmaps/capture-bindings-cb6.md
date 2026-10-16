@@ -1,7 +1,8 @@
 # CB6: contextual REPL
 
-Status: implementation in `cb6-contextual-repl`, stacked on ready CB5 #238
-(`4c2b4f3a`, clean fourth Claude review). CB6 and CB7 are not complete.
+Status: implementation and final gates pass in `cb6-contextual-repl`, stacked
+on ready CB5 #238 (`4c2b4f3a`, clean fourth Claude review). CB6 awaits external
+review; CB7 has not started.
 
 ## Required result
 
@@ -268,7 +269,11 @@ lightweight index. The source/replay input snapshot is 99 KB. A request retains
 no execution session after its callback. These measurements are not latency or
 memory guarantees for arbitrary modules.
 
-Focused gates pass 67 scope/replay/notation tests and 25 scope/worker/generated
-retention tests. Final full-suite, browser and mutation gates, followed by the
-first Claude review, are pending. The historical compatibility restriction above
-remains explicit; current-language contexts have no migration guard.
+Final gates at `9187cadf` pass all 1,299 Node tests, zero failures and zero TODOs,
+including all 3,857 canonical checks. Both browser suites pass: the contextual
+suite covers six groups, including provisional generated inductive contexts;
+the existing inspector suite preserves module browsing and editing. All four
+production mutations are killed. Source and tests remained frozen through these
+gates. The first Claude review is next; CB6 stays draft. The historical
+compatibility restriction above remains explicit; current-language contexts
+have no migration guard.
