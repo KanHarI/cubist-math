@@ -102,6 +102,24 @@ test("proof experiments use the ordinary goal-dependent binder resolver",async t
   assert.equal(session.accepted.length,0);
 });
 
+test("proof experiments can inspect shadowed evidence without making it available to hlevel",async t=>{
+  const source=`import hlevels;
+    def probe_(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) {
+      let h : IsProp(U0, A) { exact p(tt); }
+      let h := tt;
+      hlevel with [p(tt)];
+    }`;
+  const {program,session}=await setup(t,source,"hlevel with [p(tt)];");
+  const before={work:program.kernel.work(),definitions:[...program.kernel.definitions]};
+  const locals=await query(session,"/locals","locals");
+  assert.deepEqual(locals.bindings.filter(row=>row.label==="h").map(row=>[row.visible,row.type]),
+    [[false,"IsProp(U0, A)"],[true,"Unit"]]);
+  assert.match((await query(session,"/prove { hlevel; }","error")).text,/hlevel could not prove/);
+  await query(session,"/prove { hlevel with [p(tt)]; }","proof");
+  assert.equal(session.accepted.length,0);
+  assert.deepEqual({work:program.kernel.work(),definitions:[...program.kernel.definitions]},before);
+});
+
 test("expression contexts distinguish expected types from active proof goals",async t=>{
   const source=nat+"def f(k : Nat) : Nat := k;";
   const {session}=await setup(t,source,"k;",{phase:"expression",length:1});

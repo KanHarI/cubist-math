@@ -215,7 +215,8 @@ export class ScopePoints {
     if(this.target&&id!==this.target)return this.#inside(id,body);
     const origin=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
     const basic={id,revision:this.revision,owner,attempt:path,occurrence,phase,origin,parent:this.#parents.at(-1)??null,
-      declaration:unit.declaring,declarationId:this.compilation.declaration(`${unit.moduleName}__${unit.declaring}`)?.binding.id??null};
+      declaration:unit.declaring?.name??null,
+      declarationId:this.compilation.declaration(`${unit.moduleName}__${unit.declaring?.name}`)?.binding.id??null};
     let description,live;
     try {
       if(unit.scopeUnavailable)throw new TypeError(unit.scopeUnavailable);

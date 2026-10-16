@@ -2,7 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import create from "../web/dist/cubical.mjs";
-import {checkProgram} from "./check-program.mjs";
+import {checkProgram,checkTestModule} from "./check-program.mjs";
 import {ContextualSession} from "../web/contextual-session.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {Translator} from "../web/translator/translate.mjs";
@@ -77,6 +77,26 @@ test("nested notation operands replay their original caller without eager evalua
   await query(session,"a","error");
   await query(session,"let saved := x","defined");
   await query(session,"typed(saved = x, refl(saved))","value");
+});
+
+test("lazy dependent matches refine caller identities without a query scope collector",async t=>{
+  const source=nat+`notation eqn { x + y := typed(y = y, x); }
+    def f(n : Nat) : n = n := eqn.((match n {
+      zero => refl(zero); succ(k) => refl(succ(k));
+    }) + n);
+    def checked : f(zero) = refl(zero) := refl(refl(zero));`;
+  const program=await setup(t,source);
+  const session=selected(t,program,source,"typed(y = y, x)",{module:"main"});
+  const work=program.kernel.work(),definitions=[...program.kernel.definitions];
+  await query(session,"y","value","n");
+  await query(session,"typed(y = y, x)","value");
+  await query(session,"let saved := typed(y = y, x)","defined");
+  await query(session,"typed(y = y, saved)","value");
+  await query(session,"typed(y = succ(y), x)","error");
+  await query(session,"typed(y = y, saved)","value");
+  assert.equal(session.accepted.length,1);
+  assert.deepEqual(program.kernel.work(),work);
+  assert.deepEqual([...program.kernel.definitions],definitions);
 });
 
 test("lazy operand recipes retain their selected notation in copied scoped syntax",async t=>{
@@ -156,13 +176,26 @@ test("model-numeral implementation scopes preserve the selected receiver",async 
     def f(p : Nat) : Nat := raised.(2);`;
   const program=await setup(t,source);
   const points=[...program.scopePoints.values()].filter(point=>point.declaration==="f"
-    &&point.origin.start===source.indexOf("2)")&&point.origin.expansion.some(frame=>frame.kind==="notation"));
+    &&point.origin.module==="main"&&point.origin.start===source.indexOf("2)")&&point.origin.end===source.indexOf("2)")+1);
   assert.ok(points.length);
   for(const point of points) {
     assert.ok(point.available,point.reason);
     const session=new ContextualSession(program,point.id);t.after(()=>session.dispose());
     await query(session,"typed(2 = succ(succ(succ(zero))), refl(2))","value");
     await query(session,"typed(2 = succ(succ(zero)), refl(2))","error");
+  }
+});
+
+test("model numerals keep their authored definition and view links",async t=>{
+  for(const collectScopes of [false,true]) {
+    const {source,result}=await checkTestModule(t,"notation_literals",{module,options:{collectScopes}});
+    const start=source.indexOf("counting.(2 + 5)");
+    assert.ok(start>=0);
+    for(const offset of [start+10,start+14]) {
+      const links=result.links.filter(link=>link.start===offset&&link.end===offset+1);
+      assert.ok(links.some(link=>link.binding?.endsWith("__Rig.of_nat")),JSON.stringify(links));
+      assert.ok(links.some(link=>link.role==="local"&&link.binding.startsWith('["view",')),JSON.stringify(links));
+    }
   }
 });
 

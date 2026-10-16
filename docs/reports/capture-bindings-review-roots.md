@@ -596,3 +596,49 @@ canonical checks, both browser suites and all four production mutation checks.
 Source and tests remained frozen through these gates. External round 1 reviews
 the complete CB6 delta against CB5; compare any findings with these ownership,
 visibility and introduction-boundary diagnoses before applying fixes.
+
+## CB6 external review, round 1 — diagnosis before fixes
+
+Claude reviewed `5e469618` against CB5 `4c2b4f3a`. All 108 targeted tests
+pass, but independent probes expose four regressions. The review compares
+source collection on/off and the CB5 base; the full report and reproductions
+are retained with the local review artifacts.
+
+- Identity receipts acquired semantic visibility: `sourceBinding` registers
+  its private alias as a second `localSources` entry. Evidence enumeration
+  then counts a let twice and keeps using it after its public name is shadowed.
+  Collection can turn a refused source into an accepted one, and `/prove`
+  repeats the difference. This recurs the identity/availability root from CB2
+  and CB6's earlier notation diagnosis. Correct the producer: only the actual
+  introduced key is a semantic local. Keep private receipts for identity and
+  shadowed-value inspection; add no consumer filters or deduplication service.
+- Refinement derives identity keys from the optional scope collector. A copied
+  lazy caller retains its binding records but has an observation-free query
+  unit, so a dependent match crashes. This repeats the query ownership root.
+  Both introduction and refinement must use the existing compilation registry,
+  which already owns their table, without deleting caller binding records.
+- Model numeral production marks its authored token as a copied notation body,
+  suppressing its definition and view links. This repeats CB3/CB5's source
+  ownership root. Preserve the numeral's authored origin at its producer;
+  scope instances already have exact occurrence IDs. Do not relax copied-source
+  link filtering or add a second link path.
+- Inductive scope labels reuse definition-only self-reference metadata, so a
+  name in its own parameter domain receives a misleading recursion diagnostic.
+  Carry the declaration kind with its name in the existing unit metadata;
+  observation labels and definition-only diagnostic policy then consume the
+  appropriate part, without another registry or diagnostic classifier.
+
+Verify the two shadowed-evidence sources and proof queries, automatic obligations,
+canonical hlevel on/off results/fuel/work, lazy dependent matching with scratch
+history, authored numeral links and provisional inductive contexts. Keep the
+independent source controls, source-qualified link ownership and compiler limits.
+
+The fixes now follow those existing boundaries. Shadowed let/obtain evidence,
+automatic obligations and proof-query controls pass, including positive source
+controls with the shadow removed. Canonical hlevel and obligation fixtures have
+identical on/off outputs, diagnostics, links, fuel and kernel work. Lazy dependent
+matching and scratch-history replay pass. All 367 canonical `notation_literals`
+links equal CB5, and provisional inductive context labels remain intact. A new
+link assertion initially read a nonexistent `kind` field; after correcting it
+to the actual local-view identity, all 11 notation tests pass. Full gates and
+external delta verification remain pending.

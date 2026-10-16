@@ -2,7 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import create from "../web/dist/cubical.mjs";
-import {checkProgram} from "./check-program.mjs";
+import {checkProgram,checkTestModule} from "./check-program.mjs";
 import {contextualScenarios} from "./fixtures/contextual-sessions.mjs";
 import {ElaborationStop} from "../web/translator/control.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
@@ -103,10 +103,50 @@ def negative : Unit { let named := global; simpa with [global] using named; }`;
   assert.equal(result.links.find(link=>link.start===use&&link.name==="b").definitionStart,source.indexOf("b :="));
 });
 
+test("scope collection preserves hlevel evidence, diagnostics, fuel and kernel work",async t=>{
+  for(const name of ["hlevel_tactic","automatic_clauses"])await t.test(name,async t=>{
+    const off=await checkTestModule(t,name,{module});
+    const on=await checkTestModule(t,name,{module,options:{collectScopes:true}});
+    assert.deepEqual(on.result.outputs,off.result.outputs);
+    assert.deepEqual(on.result.gaps,off.result.gaps);
+    assert.deepEqual(on.result.links,off.result.links);
+    assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+  });
+});
+
+test("identity receipts do not expose shadowed evidence to tactics or automatic obligations",async t=>{
+  const cases={
+    let:`import hlevels;
+      def probe_(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) {
+        let h : IsProp(U0, A) { exact p(tt); } let h := tt; hlevel;
+      }`,
+    obtain:`import hlevels;
+      def probe_(A : U0, q : IsProp(U0, A) and Nat) : IsProp(U0, A) {
+        obtain (h, n) := q; let h := tt; hlevel;
+      }`,
+    obligation:`import hlevels;
+      inductive Q : set { point; }
+      def probe_(B : U0, p : Unit -> IsSet(U0, B), b : B, q : Q) : B {
+        let h := p(tt); let h := tt; exact match q { point => b; };
+      }`,
+  };
+  for(const [name,source] of Object.entries(cases))await t.test(name,async t=>{
+    for(const input of [source,source.replace("let h := tt;","")]) {
+      const off=await checkProgram(t,input,{module});
+      const on=await setup(t,input);
+      assert.deepEqual(off.result.gaps.map(gap=>gap.name),input===source?["probe_"]:[]);
+      assert.deepEqual(on.result.outputs,off.result.outputs);
+      assert.deepEqual(on.result.gaps,off.result.gaps);
+      assert.deepEqual(on.result.links,off.result.links);
+      assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+    }
+  });
+});
+
 test("shared lexical descriptions retain each point's mutable recursion permissions",()=>{
   const descriptions=[],recorder=new ScopePoints("permissions",{onPoint:point=>descriptions.push(point)});
   recorder.compilation.declare("main",{name:{text:"f",start:4,end:5}},"main__f");
-  const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",declaring:"f",scopePoints:recorder}).declaration();
+  const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",declaring:{name:"f",kind:"def"},scopePoints:recorder}).declaration();
   const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
   const scope=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
   const node={kind:"name",name:"f",start:20,end:21};
@@ -125,7 +165,7 @@ test("lazy caller permissions stay point-specific while nested operand descripti
   for(const mode of ["direct","nested","scoped"])await t.test(mode,()=>{
     const descriptions=[],recorder=new ScopePoints("lazy-permissions",{onPoint:point=>descriptions.push(point)});
     recorder.compilation.declare("main",{name:{text:"f",start:4,end:5}},"main__f");
-    const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",scopePoints:recorder}).declaration();
+    const unit=new SourceUnit({checker:{compilationBindings:recorder.compilation},source:" ".repeat(24),moduleName:"main",scopePoints:recorder}).declaration();
     const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
     const caller=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
     const base=new Scope(unit),node={kind:"name",name:"f",start:20,end:21};

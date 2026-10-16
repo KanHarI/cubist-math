@@ -1,8 +1,8 @@
 # CB6: contextual REPL
 
-Status: implementation and final gates pass in `cb6-contextual-repl`, stacked
-on ready CB5 #238 (`4c2b4f3a`, clean fourth Claude review). CB6 awaits external
-review; CB7 has not started.
+Status: external round 1 fixes are implemented in `cb6-contextual-repl`, stacked
+on ready CB5 #238 (`4c2b4f3a`, clean fourth Claude review). Final gates and round 2
+verification are pending; CB7 has not started.
 
 ## Required result
 
@@ -277,3 +277,25 @@ production mutations are killed. Source and tests remained frozen through these
 gates. The first Claude review is next; CB6 stays draft. The historical
 compatibility restriction above remains explicit; current-language contexts
 have no migration guard.
+
+## External round 1
+
+Claude's complete CB6 review found four issues despite the passing gates:
+private identity aliases counted as search locals, dependent matches in lazy
+query operands required an absent observer, model numerals lost authored links,
+and inductive labels triggered a definition-only diagnostic. The shared-root
+diagnosis precedes fixes in the review-roots report.
+
+Introduction now records only its actual key as a semantic local; private
+identity receipts still preserve shadowed values. Introduction and refinement
+derive keys from the compilation registry. Model numeral nodes retain their
+authored origin, while exact scope occurrence IDs still distinguish their
+contexts. Existing declaration metadata carries both name and kind, so only
+definitions receive the recursive-self diagnostic.
+
+Focused controls pass for shadowed let/obtain evidence, automatic obligations,
+conditional proof experiments, dependent lazy matches and scratch history,
+inductive header diagnostics and generated contexts. Hlevel and obligation
+fixtures preserve on/off outputs, diagnostics, links, fuel and kernel work.
+All 367 links in `notation_literals` match CB5 exactly. Final full/browser/
+mutation gates and a focused round 2 review follow on the committed fixes.

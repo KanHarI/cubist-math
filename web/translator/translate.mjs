@@ -7,7 +7,7 @@ import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
-import {decidePatternSlot,BindingAdapter,resolutionError,sourceOrigin,expandedOrigin} from "../cubist/bindings.mjs";
+import {decidePatternSlot,BindingAdapter,resolutionError,sourceOrigin} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
@@ -319,9 +319,9 @@ export class Translator {
     // declared, whatever the use's scope binds.
     if(!selection.literal) {
       if(selection.numeral.model) {
-        const natural=selection.numeral.natural,expanded={...at,origin:expandedOrigin(origin,{kind:"notation",site:origin})};
-        const reads={kind:"name",name:operatorBinding("numeral"),...expanded};
-        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...expanded}],...expanded}:reads;
+        const natural=selection.numeral.natural;
+        const reads={kind:"name",name:operatorBinding("numeral"),...at};
+        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
         return this.term(node,scope,expected);
       }
       let natural=scope.alias(SELECTION,null);
@@ -689,7 +689,7 @@ export class Translator {
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
-      const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text,
+      const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind},
         bindingAdapter:retained?.adapter??bindingAdapter});
       this.onDeclarationStart?.(d);
       try {
@@ -795,7 +795,7 @@ export class Translator {
   // its own transaction, as a definition is; it binds the type's name and
   // its constructors' names. A failed one binds each as untranslated.
   inductiveDeclaration(d,module,env,declarations) {
-    const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
+    const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind}});
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
     const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
@@ -1195,7 +1195,8 @@ export class Translator {
         if(builtin[n.name])return builtin[n.name];
         // The declaration's own name, where it is not a recursive reference:
         // recursion exists only with declared types, under their option.
-        if(scope.unit.declaring===n.name&&this.checker.kernel?.extensions?.h1)throw Error(selfReference(n.name));
+        if(scope.unit.declaring?.kind==="def"&&scope.unit.declaring.name===n.name&&this.checker.kernel?.extensions?.h1)
+          throw Error(selfReference(n.name));
         // m.f, for a model m of a theory, is the projection T.f(m) (L2.4).
         const projection=modelField(this,scope,n);
         if(projection)return tr(projection,expected);

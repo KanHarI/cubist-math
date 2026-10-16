@@ -32,6 +32,14 @@ async function query(session,source,kind,text) {
   return result;
 }
 
+test("inductive context labels preserve the header's ordinary missing-name diagnostic",async t=>{
+  for(const collectScopes of [false,true]) {
+    const {result}=await checkProgram(t,"inductive Foo(A : Foo) { mk; }",{module,options:{collectScopes}});
+    assert.equal(result.gaps.length,1);
+    assert.match(result.gaps[0].reason,/Untranslated name: Foo/);
+  }
+});
+
 test("model openings preserve their checked receiver in expression, statement and file contexts",async t=>{
   const cases=[
     {name:"expression",body:"def f : Nat := instance_.(c);",marker:"c);",length:1},
