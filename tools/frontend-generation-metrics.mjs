@@ -2,6 +2,7 @@
 // node tools/frontend-generation-metrics.mjs REPORT.json [REPEATS]
 // Search fuel is deterministic. Kernel work depends on cache state; timings
 // and memory are observations, not acceptance thresholds.
+import {serialize} from "node:v8";
 import {execFileSync} from "node:child_process";
 import {readFile, readdir, writeFile} from "node:fs/promises";
 import {cpus, platform, release} from "node:os";
@@ -35,14 +36,23 @@ def meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);`,
 free W(A : U0) : Monoid(U0) on A;
 def computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }`,
 };
-async function sample(name, collectReferences) {
+const modes={
+  "refs-off":{collectReferences:false,collectScopes:false,collectGeneration:false},
+  "refs-on":{collectReferences:true,collectScopes:false,collectGeneration:false},
+  "scopes-on":{collectReferences:true,collectScopes:true,collectGeneration:false},
+  "artifacts-on":{collectReferences:true,collectScopes:false,collectGeneration:true},
+  "both-on":{collectReferences:true,collectScopes:true,collectGeneration:true},
+};
+async function sample(name, mode) {
+  const options=modes[mode];
+  if(!options)throw Error(`Unknown collection mode ${mode}`);
   const source = sources[name];
   if (!source) throw Error(`Unknown workload ${name}`);
   global.gc();
   const before = process.memoryUsage();
   let peak = {nodes:0, bytes:0};
   const checkedTypes = new Map();
-  let program = new CubicalProgram(await create(),sourceReader(), {collectReferences,onDeclaration:(module,syntax,result) => {
+  let program = new CubicalProgram(await create(),sourceReader(), {...options,onDeclaration:(module,syntax,result) => {
     const arena = program.kernel.arena();
     peak = {nodes:Math.max(peak.nodes,arena.nodes), bytes:Math.max(peak.bytes,arena.bytes)};
     if (result.status === "checked-native-cubical") checkedTypes.set(`${module}__${result.name}`,result.type);
@@ -63,7 +73,17 @@ async function sample(name, collectReferences) {
       if (!type) throw Error(`Missing checked interface ${output.binding}`);
       return [output.binding, canonical(type), [...output.axioms].sort()];
     });
-    observation = {name,source,elapsedMs,collections:{references:collectReferences,scopePoints:"not implemented",artifacts:"not implemented"},
+    // Size only inert retained data, preserving sharing. Take process memory
+    // before this serialization, which allocates a separate temporary buffer.
+    const scopes=options.collectScopes?{points:program.scopePoints,replay:program.scopeReplay.snapshot()}:null;
+    const artifacts=options.collectGeneration?program.generation:null;
+    const retainedGraph={scopePoints:program.scopePoints.size,
+      availableScopePoints:[...program.scopePoints.values()].filter(point=>point.available).length,
+      generatedDeclarations:[...program.generation.values()].reduce((n,groups)=>n+groups.reduce((n,g)=>n+g.declarations.length,0),0),
+      scopeBytes:scopes?serialize(scopes).byteLength:0,artifactBytes:artifacts?serialize(artifacts).byteLength:0,
+      combinedBytes:serialize({scopes,artifacts}).byteLength};
+    observation = {name,source,elapsedMs,mode,collections:{references:options.collectReferences,
+      scopePoints:options.collectScopes,artifacts:options.collectGeneration},retainedGraph,
       work:program.kernel.work(),sourceDigest:hashEntries(Object.entries(program.sources)),
       declarations:result.declarationCount,verified:interfaces.length,
       generatedNames:generated.map(output => output.binding).sort(),
@@ -101,7 +121,7 @@ if (inventoryOnly) {
 }
 
 if (sampling) {
-  const observation = await sample(process.argv[3], process.argv[4] === "true");
+  const observation = await sample(process.argv[3], process.argv[4]);
   process.stdout.write(JSON.stringify(observation));
   process.exit(observation.gaps.length ? 1 : 0);
 }
@@ -122,16 +142,17 @@ async function frontendDigest() {
 }
 const revision = execFileSync("git", ["rev-parse","HEAD"], {cwd:root, encoding:"utf8"}).trim();
 const report = {
-  version:3, digestFormats, revision, dirty:!!execFileSync("git", ["status","--porcelain"], {cwd:root, encoding:"utf8"}).trim(),
+  version:4, digestFormats, revision, dirty:!!execFileSync("git", ["status","--porcelain"], {cwd:root, encoding:"utf8"}).trim(),
   frontendDigest:await frontendDigest(), runtime:process.version, cpu:cpus()[0].model,
   platform:`${platform()} ${release()}`, build:JSON.parse(await readFile(join(root,"web/dist/build-stamp.json"),"utf8")),
   limits:"default declaration/search fuel and kernel budgets",
   cacheConditions:"new process, WASM module and kernel session for every workload/mode/repeat",
   peakScope:"arena sampled after declarations; OS process maximum RSS includes startup; retained/released process memory after explicit GC; release drops the program reference",
+  retainedEncoding:"node:v8 serialize of inert scope points/replay inputs and generated artifacts; sharing preserved; bytes are not retained heap",
   samples:[],
 };
-for (const name of Object.keys(sources)) for (const collectReferences of [false,true]) for (let repeat=0; repeat<repeats; repeat++) {
-  const bytes = execFileSync(process.execPath,["--expose-gc",fileURLToPath(import.meta.url),"--sample",name,String(collectReferences)],
+for (const name of Object.keys(sources)) for (const mode of Object.keys(modes)) for (let repeat=0; repeat<repeats; repeat++) {
+  const bytes = execFileSync(process.execPath,["--expose-gc",fileURLToPath(import.meta.url),"--sample",name,mode],
     {cwd:root,encoding:"utf8",timeout:120000,maxBuffer:16*1024*1024});
   report.samples.push({...JSON.parse(bytes),repeat});
 }
@@ -140,4 +161,4 @@ report.corpus = JSON.parse(execFileSync(process.execPath,[fileURLToPath(import.m
   {cwd:root,encoding:"utf8",timeout:300000,maxBuffer:16*1024*1024}));
 if (await frontendDigest() !== report.frontendDigest) throw Error("Frontend sources changed during measurement.");
 await writeFile(resolve(destination),JSON.stringify(report,null,2)+"\n");
-console.log(JSON.stringify(report.samples.map(({name,elapsedMs,gaps})=>({name,elapsedMs,gaps})),null,2));
+console.log(JSON.stringify(report.samples.map(({name,mode,elapsedMs,retainedGraph})=>({name,mode,elapsedMs,retainedGraph})),null,2));

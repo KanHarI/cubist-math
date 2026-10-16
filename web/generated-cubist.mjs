@@ -134,7 +134,7 @@ export function generatedDeclaration(declaration, options = {}) {
   const name=value=>typeof value==="string"?value:value.text??(value.kind?expr(value):value.name);
   let budget = 50000;
   const atom = node => node.kind === "notationArgument" ? atom(node.body)
-    : ["name", "reference", "number", "literal", "binaryNumber", "call", "member", "projection",
+    : ["name", "number", "literal", "binaryNumber", "call", "member", "projection",
       "binary", "pathApply", "pair", "transport", "lift"].includes(node.kind) || node.kind === "negation" && !node.qualifier
       ? expr(node) : `(${expr(node)})`;
   function parameters(params = []) {
@@ -201,7 +201,7 @@ export function generatedDeclaration(declaration, options = {}) {
       case "number": return node.text ?? String(node.value);
       case "binaryNumber": return node.spelling ?? `0b${node.digits}`;
       case "literal": return node.text;
-      case "call": case "recursiveCall": return atom(node.fn) + (node.implicitArgs ? `{{${node.implicitArgs.map(expr).join(", ")}}}` : "")
+      case "call": return atom(node.fn) + (node.implicitArgs ? `{{${node.implicitArgs.map(expr).join(", ")}}}` : "")
         + (node.args.length ? `(${node.args.map(expr).join(", ")})` : "");
       case "namedArgument": return `${name(node.name)} := ${expr(node.value)}`;
       case "pair": return `(${expr(node.left)}, ${expr(node.right)})`;

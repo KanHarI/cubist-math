@@ -3,7 +3,7 @@
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {propagateElaborationStop} from "./control.mjs";
-import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/references.mjs";
+import {referenceKey, sourceName} from "../cubist/references.mjs";
 import {Scope} from "./elaboration.mjs";
 import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
@@ -79,7 +79,7 @@ export function modelField(t,scope,n) {
   return scope.declared({kind:"call",fn:projectionReference(t,known,n),args:[owner],start:n.start,end:n.end});
 }
 
-const projectionReference=(t,field,at)=>syntaxReference(t.identityAdapter.key(field.projectionId),field.projection,at);
+const projectionReference=(t,field,at)=>({...at,kind:"name",name:t.identityAdapter.key(field.projectionId),spelling:field.projection});
 
 // A field that two independent parents give under one name (L2.4c): the
 // error that names the qualified forms.
