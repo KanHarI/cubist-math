@@ -94,8 +94,6 @@ async function sample(name, mode) {
       memory:{before,retained,processMaxRSSBytes:process.resourceUsage().maxRSS*1024},
       peakDeclarationArena:peak,gaps:result.gaps};
   } finally { program.dispose(); program = null; checkedTypes.clear(); }
-  global.gc();
-  observation.memory.disposed = process.memoryUsage();
   return observation;
 }
 
@@ -122,6 +120,10 @@ if (inventoryOnly) {
 
 if (sampling) {
   const observation = await sample(process.argv[3], process.argv[4]);
+  // Sample after the measurement frame releases all local aliases, not only
+  // its program variable. Otherwise inert graphs remain rooted by the frame.
+  global.gc();
+  observation.memory.disposed = process.memoryUsage();
   process.stdout.write(JSON.stringify(observation));
   process.exit(observation.gaps.length ? 1 : 0);
 }
@@ -147,7 +149,7 @@ const report = {
   platform:`${platform()} ${release()}`, build:JSON.parse(await readFile(join(root,"web/dist/build-stamp.json"),"utf8")),
   limits:"default declaration/search fuel and kernel budgets",
   cacheConditions:"new process, WASM module and kernel session for every workload/mode/repeat",
-  peakScope:"arena sampled after declarations; OS process maximum RSS includes startup; retained/released process memory after explicit GC; release drops the program reference",
+  peakScope:"arena sampled after declarations; OS process maximum RSS includes startup; retained/released process memory after explicit GC; peak RSS includes graph serialization; release sampled after the measurement frame returns",
   retainedEncoding:"node:v8 serialize of inert scope points/replay inputs and generated artifacts; sharing preserved; bytes are not retained heap",
   samples:[],
 };

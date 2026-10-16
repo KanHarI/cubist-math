@@ -82,3 +82,15 @@ exercises synthetic syntax in its own module and kills that mutation. Correct
 the runner's selected witness, not the product predicate or the assertions.
 The targeted rerun passes; a final clean-revision mutation report follows.
 Native tests pass on `5a4f8cef`. Full frontend validation is still running.
+
+
+The first complete cost run preserves corpus inventory, current interfaces,
+assumptions, fuel and kernel work across all five collection modes. Its disposal
+sample exposes a measurement-lifetime flaw: clearing the program variable inside
+`sample` still leaves that function's local aliases to symbols and retained graphs
+alive during GC. This also affects the old tool's disposal readings. Move only
+the disposal sample to its caller, after `sample` returns inert measurements and
+releases the entire frame. Do not infer a runtime leak from these aliased samples
+or add a disposal/cache mechanism to the compiler. Re-run cost evidence after
+checking that the measurement now permits graph collection. The valid earlier
+check-time/retained-memory results and failed disposal interpretation are retained.
