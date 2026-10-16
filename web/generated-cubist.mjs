@@ -179,7 +179,7 @@ export function generatedDeclaration(declaration, options = {}) {
         + (node.without?.length?` without [${node.without.map(name).join(", ")}]`:"")
         + (node.witnesses?.length?` with [${node.witnesses.map(name).join(", ")}]`:"")
         + (node.at?` at ${name(node.at)} as ${name(node.as)}`:"")+(node.using?` using ${expr(node.using)}`:"")+";";
-      case "calc": return `calc {\n${node.steps.map(step=>`${expr(step.left)} = ${expr(step.right)} by `
+      case "calc": return `calc {\n${node.steps.map(step=>`${atom(step.left)} = ${expr(step.right)} by `
         +(step.proof.kind==="block"?block(step.proof.body):expr(step.proof.value)+";")).join("\n")}\n}`;
       case "matchStatement": return `${node.induction?"induction":"match"} ${(node.values??[node.value]).map(expr).join(", ")} {\n${clauses(node.clauses,true)}\n}${obligations(node,true)}`;
       default: throw new TypeError(`unsupported ${node.kind} statement`);
@@ -201,7 +201,7 @@ export function generatedDeclaration(declaration, options = {}) {
       case "pair": return `(${expr(node.left)}, ${expr(node.right)})`;
       case "projection": return `${atom(node.value)}.${node.index}`;
       case "member": return `${atom(node.value)}.${name(node.field)}`;
-      case "binary": case "pathApply": return `(${expr(node.left)} ${node.qualifier ? `${atom(node.qualifier)}.(${node.operator})` : node.operator} ${expr(node.right)})`;
+      case "binary": case "pathApply": return `(${atom(node.left)} ${node.qualifier ? `${atom(node.qualifier)}.(${node.operator})` : node.operator} ${expr(node.right)})`;
       case "negation": return node.qualifier ? `${atom(node.qualifier)}.-${atom(node.operand)}` : `(-${atom(node.operand)})`;
       case "unary": return `${node.operator}${atom(node.operand)}`;
       case "select": return `${atom(node.model)}.(${expr(node.body)})`;
@@ -215,7 +215,7 @@ export function generatedDeclaration(declaration, options = {}) {
         return kind === "lambda" ? `fun ${domain ? `(${binders}${domain})` : binders} => ${expr(node.body)}`
           : `${kind} ${binders}${domain}. ${expr(node.body)}`;
       }
-      case "pathLambda": return `<${name(node.dimension)}> ${expr(node.body)}`;
+      case "pathLambda": return `path ${name(node.dimension)} => ${expr(node.body)}`;
       // In parentheses: the family would otherwise run on into an operator.
       case "transport": case "lift": return `(${node.kind} ${atom(node.value)} along ${atom(node.path)} in ${atom(node.family)})`;
       case "withUnfolding": return `with unfolding [${node.hints.map(name).join(", ")}] { ${expr(node.body)} }`;

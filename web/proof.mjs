@@ -341,8 +341,8 @@ async function check() {
       else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
       // Embedded, the inspector is on top and the source below stays in place.
       if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
-        revealSource({ start: requestedOffset });
-      else if (info) revealSource(info);
+        revealSource({ module: proofId, start: requestedOffset });
+      else if (info) revealSource(definitionSite(info));
     }
     rememberDraft();
   } catch (e) {
@@ -413,9 +413,12 @@ function decorate(info) {
   }
   return value;
 }
-function revealSource(info) {
-  const start = info.definitionStart ?? info.start;
-  if (!Number.isInteger(start)) return;
+function definitionSite(info) {
+  return info.definitionSite ?? { module: info.sourceModule ?? proofId,
+    start: info.definitionStart, name: info.sourceName };
+}
+function revealSource({ module, start }) {
+  if (module !== proofId || !Number.isInteger(start)) return;
   const line = last.source.slice(0, start).split("\n").length;
   setMode("read");
   for (const row of document.querySelectorAll(".source-line.active"))
@@ -431,7 +434,7 @@ function sourceLink(info) {
   link.textContent = info.kind === "module" ? "View module source →" : "View source →";
   if (info.definitionSite || info.sourceModule || Number.isInteger(info.definitionStart)) {
     link.hidden = false;
-    sourceTarget(link, info.definitionSite ?? { module: info.sourceModule ?? proofId, start: info.definitionStart, name: info.sourceName });
+    sourceTarget(link, definitionSite(info));
   }
 }
 // Source navigation uses the qualified site, independent of its display label.
@@ -559,7 +562,7 @@ function renderResult() {
     const line = document.createElement("div"), at = document.createElement("button");
     line.className = "lint-warning";
     at.textContent = `line ${warning.line}`;
-    at.onclick = () => revealSource(warning);
+    at.onclick = () => revealSource({ ...warning, module: proofId });
     line.append("Warning ", ...codeLink(warning.code), "at ", at, `: ${warning.message}`);
     $("result").append(line);
   }

@@ -460,3 +460,54 @@ production mutations are killed. The browser suite passes, including inherited
 generated definition navigation. The display sweep covers all 2,919 retained
 declarations in 45 modules without failures. Source/tests stayed frozen through
 these gates. Round 2 reviews this delta; CB5 remains draft until review is clean.
+
+
+## CB5 external review, round 2 — diagnosis before fixes
+
+Claude reviewed `ff7bc7a9` against `791f5e9e`. The six previous fixes hold;
+alias annotations fall from 1,341 to 86 across the same 45-module sweep.
+Three actionable findings remain, including one regression in scoped alias
+allocation. Compare them with the earlier rounds before changing code:
+
+- Operand grouping is a distinct syntax-preservation obligation. Parentheses
+  around an entire binary expression do not delimit a left operand's binder
+  body. Reuse the renderer's existing `atom` boundary for infix/path operands
+  and calculation left sides, instead of adding a second precedence table or
+  special cases for individual quantifiers. Round-trip controls must include
+  forall, exists, grouped binders, lambdas and path lambdas, plus a checked
+  client that distinguishes the changed proposition.
+- Alias allocation repeats the incomplete-scope-description root: a traversal
+  callback's current scope is not the full set of binders sharing that node's
+  regions. Read every binder from the shared `scopesOf` schema before choosing
+  a label. This may add a few aliases between disjoint regions of one node;
+  it retains reuse across separate nodes without a second visibility model.
+  Cover induction index/hypothesis overlap and clause coordinates, as well as
+  the existing disjoint-scope and capture controls.
+- Source ownership remains incomplete at a UI consumer. The new definition
+  site fixed the source link, while deep-link highlighting still accepted bare
+  symbol offsets. Make highlighting consume only qualified sites and share
+  definition-site extraction with the link. Qualify local URL offsets, lint
+  and gap sites at their source boundary. A foreign definition can be inspected
+  without highlighting unrelated local text; its source link remains usable.
+
+Remove the unused recordModule text parameter, and describe hidden-local
+markers as hidden by another binder rather than specifically a public
+parameter. These changes need no new registry, resolver or printer framework.
+
+
+The broader grouping control also exposed an older spelling error before
+validation: the frontend renderer emits path lambdas as `<i> body`, while the
+current parser accepts `path i => body`. Correct that producer to the actual
+grammar and cover a checked generated path proof, alongside the path-operand
+round trip. This is the same source-syntax fidelity boundary, not a new mode.
+
+
+The fixes now use those existing boundaries. All 36 focused controls pass,
+including a checked client that distinguishes the original proposition from
+the previously misprinted one. The browser regression confirms that a name-only
+inherited deep link does not highlight a coincident local offset, while its
+source link reaches the authored definition. Full validation passes 1,251 of
+1,261 tests, with ten CB6 TODOs and zero failures; all 3,857 canonical checks
+pass. All four production mutations are killed, and the display sweep renders
+2,919 declarations in 45 modules without failure. Source/tests remained frozen
+through validation. Round 3 reviews this delta; CB5 remains draft until clean.

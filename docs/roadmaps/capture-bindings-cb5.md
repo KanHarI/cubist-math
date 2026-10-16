@@ -1,7 +1,7 @@
 # CB5: diagnostics and public views
 
 Status: implemented and validated in draft #238 on CB4 #237. CB4 is ready
-after a clean second Claude review. CB5 has addressed the first external review and is entering round 2;
+after a clean second Claude review. CB5 has addressed two external review rounds and is entering round 3;
 CB6 contextual sessions and CB7 retirement remain separate packages.
 
 ## Contract and implementation order
@@ -153,3 +153,22 @@ Validation passes 1,247 of 1,257 tests, with the same ten CB6 TODOs and no
 failures; all 3,857 canonical checks and all four mutation controls pass.
 The browser suite and 45-module/2,919-declaration display sweep pass. The PR
 remains draft for Claude round 2.
+
+
+## External review round 2
+
+The earlier fixes hold. Three findings exposed incomplete operand grouping,
+overlapping binder scopes and a remaining unqualified navigation consumer.
+The existing atom renderer now delimits left operands and calculation sides;
+the shared scope schema reserves labels for all binders of one node; highlighting
+accepts only qualified source sites. Broader controls also corrected path-lambda
+printing to the current source grammar. The unused recordModule text argument
+was removed. These changes reuse existing mechanisms without a new printer,
+visibility model or compatibility mode.
+
+All 36 focused controls pass. Full validation passes 1,251 of 1,261 tests,
+with ten CB6 TODOs and zero failures, including all 3,857 canonical checks.
+The browser suite covers name-only inherited deep links with aligned foreign
+and local offsets. It passes, as do the 45-module/2,919-declaration display
+sweep and all four production mutation controls. Source/tests stayed frozen
+through these gates. The PR remains draft for Claude round 3.

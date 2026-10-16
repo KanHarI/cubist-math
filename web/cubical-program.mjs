@@ -184,7 +184,7 @@ export class CubicalProgram {
   // A module's results: its simplification rules, its directives' fuel and
   // gaps, and each declaration's symbol, gap and, in the checked module, link.
   // `failure` adds a failed import's note to a reason.
-  recordModule(name, main, text, ast, result, failure) {
+  recordModule(name, main, ast, result, failure) {
     this.simpRegistries.set(name,result.simpRegistry);
     this.publications.set(name,result.publications??[]);
     if(this.collectGeneration)this.generation.set(name,result.generation??[]);
@@ -422,7 +422,7 @@ export class CubicalProgram {
         throw error;
       }
       this.checker.steps = checker.steps;
-      this.recordModule(name, main, text, ast, result, failure);
+      this.recordModule(name, main, ast, result, failure);
       this.moduleSteps.set(name, statements);
       this.modules.set(name, result.env); visiting.delete(name);
       return result.env;

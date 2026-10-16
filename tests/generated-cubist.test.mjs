@@ -259,3 +259,35 @@ theory Parent(U < UU0) {
     } else assert.equal(program.kernel.definitions.has("main__Child.twice"),false);
   }
 });
+
+
+test("generated induction preserves distinct index and hypothesis aliases",async t=>{
+  const source=`import hlevels; import nat;
+theory T(U < UU0) { M : set U; c : M;
+  def h(k : M, n : Nat) : Nat := induction n as k return Nat { zero => n; succ k1 => k; };
+}`;
+  const {program,result}=await checkProgram(t,source,{module,options});
+  assert.deepEqual(result.gaps,[]);
+  const view=generatedCubist(program);
+  const text=view.source.slice(view.source.indexOf("def T.h"),view.source.indexOf("// T:hom"));
+  assert.match(text,/as k1[\s\S]*succ k11 => k1/);
+  assert.doesNotMatch(text,/⟦|display unavailable/);
+});
+
+test("generated quantified domains preserve the checked proposition",async t=>{
+  const source=`theory T(U < UU0) { M : U;
+  def proposition : U0 := (forall y : Unit. Void) -> Void;
+  def constant(x : M) : x = x := path i => x;
+}`;
+  const {program,result}=await checkProgram(t,source,{module,options});
+  assert.deepEqual(result.gaps,[]);
+  const view=generatedCubist(program),body=view.source.match(/def T\.proposition[\s\S]*?: U0 := ([\s\S]*?);/)?.[1];
+  assert.ok(body,view.source);
+  assert.doesNotMatch(view.source,/display unavailable/);
+  assert.match(view.source,/path i => x/);
+  const intended="def client : P := fun (f : Unit -> Void) => f(tt);";
+  const checked=await checkProgram(t,`def P : U0 := ${body}; ${intended}`,{module});
+  assert.deepEqual(checked.result.gaps,[]);
+  const captured=await checkProgram(t,`def P : U0 := forall y : Unit. Void -> Void; ${intended}`,{module});
+  assert.deepEqual(captured.result.gaps.map(gap=>gap.name),["client"],"the control distinguishes the proposition with the arrow inside forall");
+});

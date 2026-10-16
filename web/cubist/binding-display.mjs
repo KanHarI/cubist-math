@@ -1,6 +1,6 @@
 // A display adapter for retained syntax. It assigns labels to exact IDs;
 // it never reads an elaboration environment or resolves a source spelling.
-import {scopeMapped,binderName} from "./scopes.mjs";
+import {scopeMapped,scopesOf,binderName} from "./scopes.mjs";
 import {mapResolution} from "./bindings.mjs";
 import {parameterLambdas} from "./telescopes.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
@@ -44,10 +44,13 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
   // Labels belong to scopes. Disjoint scopes can reuse a label; formatting
   // placeholders, on the other hand, must avoid every raw token in the graph.
   visitSyntax(tree,value=>{if(typeof value==="string")taken.add(value);});
-  const choose=(token,at,scope)=>{
+  const choose=(token,node,at,scope)=>{
     const id=token.bindingId,label=token.label??binderName(token);
     if(labels.has(id))return;
-    const siblings=new Set(scope.binders.filter(other=>other!==token).map(other=>labels.get(other.bindingId)));
+    // Several scopes of one node can overlap, while bind() sees their common
+    // outer context. Reserve their chosen labels through the shared schema.
+    const binders=node.kind?scopesOf(node,{deferred:true}).flatMap(scope=>scope.binders):scope.binders;
+    const siblings=new Set(binders.filter(other=>other!==token).map(other=>labels.get(other.bindingId)));
     const stem=/^[A-Za-z_][A-Za-z_0-9]*$/.test(label)&&label!=="_"?label:"value";
     let chosen=stem,index=0;
     while(reserved.has(chosen)||at.has(chosen)||siblings.has(chosen))chosen=`${stem}${++index}`;
@@ -82,7 +85,7 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
       return display(collision?marker(id,global.name,`captured declaration from ${global.module}`):global.name,
         {id,binding:global.binding});
     }
-    return display(marker(id,label,labels.has(id)?"reference to an outer binder hidden by a public parameter"
+    return display(marker(id,label,labels.has(id)?"reference to an outer binder hidden by another binder"
       :"captured identity has no source-expressible declaration"),{id,binding:locals.get(id)});
   };
   const nominal=name=>({kind:"name",name});
@@ -172,9 +175,9 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
       if(node.kind==="name"&&node.name!=="_")throw new TypeError("unresolved nominal generated reference");
       return node;
     },
-    bind(token,_node,scope,at) {
+    bind(token,node,scope,at) {
       if(!token.bindingId)throw new TypeError("generated binder has no identity");
-      choose(token,at,scope);
+      choose(token,node,at,scope);
       const id=token.bindingId,text=token.bindingRole==="pattern"&&binderName(token)!=="_"
         ?marker(id,binderName(token),"deferred constructor-or-variable pattern"):localName(id);
       return {...token,text:display(text,{id,binding:locals.get(id)}),displayLabel:labels.get(id)};

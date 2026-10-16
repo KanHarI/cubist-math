@@ -213,6 +213,21 @@ theory Parent(U < UU0) { M : U;
   await page.locator("#back").click(); await idle();
   assert.equal(await page.locator("#editor").inputValue(),consumer);
   await page.unroute("**/library/hlevels.cubist");
+  // A name-only deep link inspects an inherited declaration without treating
+  // its producer's offset as a position in the client document.
+  const inheritedProducer="// "+"p".repeat(100)+"\ntheory Parent(U < UU0) { M : U; def twice(x : M) : M := x; }";
+  const authoredStart=inheritedProducer.indexOf("twice(x"),header="import hlevels;\n",unrelated="// Unrelated client documentation.\n";
+  const inheritedConsumer=header+"\n".repeat(authoredStart-header.length-unrelated.length)+unrelated
+    +"def client_only : Unit := tt;\ntheory Child(U < UU0) extends Parent {}";
+  await page.route("**/library/hlevels.cubist",route=>route.fulfill({contentType:"text/plain",body:inheritedProducer}));
+  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1&name=Child.twice#source=${Buffer.from(inheritedConsumer).toString("base64url")}`);
+  await idle();await inspected("Child.twice");
+  assert.equal(await page.locator("#read-source .source-line.active").count(),0);
+  assert.ok((await page.locator("#view-source").getAttribute("href")).includes(`offset=${authoredStart}`));
+  await page.locator("#view-source").click();await idle();
+  assert.equal(new URL(page.url()).searchParams.get("proof"),"hlevels");
+  assert.match(await page.locator("#read-source .source-line.active").textContent(),/def twice/);
+  await page.unroute("**/library/hlevels.cubist");
   // An inductive header wrapped over lines keeps its h-level keyword, which
   // the highlighter finds in the whole source, not the line alone (H1).
   const wrapped = Buffer.from("inductive Wrapped(\n  A : U0\n) : prop {\n  point(a : A);\n}\n").toString("base64")

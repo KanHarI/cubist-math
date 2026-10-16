@@ -125,3 +125,30 @@ test("CB5: disjoint scopes reuse their labels while overlapping scopes retain th
     if(text.includes("), (fun"))assert.doesNotMatch(printed,/Display alias|x1|⟦/);
   }
 });
+
+
+test("CB5: operator operands preserve binder grouping through rendering and parsing",()=>{
+  for(const text of [
+    "def f(A : U0) : U0 := (forall y : A. A) -> A;",
+    "def f(A : U0) : U0 := (forall x, y : A. A) -> A;",
+    "def f(A : U0, B : U0) : U0 := (exists y : A. B) and B;",
+    "def f(A : U0) : U0 := (fun (y : A) => y) = (fun (y : A) => y);",
+    "def f(A : U0, a : A, j : Interval) : A := (path i => a) @ j;",
+    "def f(A : U0) : U0 := A -> forall y : A. A;",
+    "def f(A : U0) : U0 := forall x : (forall y : A. A). A;",
+  ]) {
+    const f=fixture(text),syntax=f.resolve(text),printed=f.print(syntax);
+    assert.equal(sameBindingSyntax(f.expression(syntax),f.expression(f.resolve(printed))),true,printed);
+  }
+  const text="def f(A : U0) : (fun (x : A) => x) = (fun (x : A) => x) { calc { (fun (x : A) => x) = (fun (x : A) => x) by { rfl; } } }";
+  const f=fixture(text),syntax=f.resolve(text),printed=f.print(syntax);
+  assert.equal(sameBindingSyntax(syntax,f.resolve(printed)),true,printed);
+});
+
+test("CB5: binders in separate scopes of one clause receive distinct labels",()=>{
+  const text="def f(A : U0, a : A, s : A) : A := (fun (i : A) => match s return A { sq @ i @ i1 => i1; })(a);";
+  const f=fixture(text),syntax=f.resolve(text),printed=f.print(syntax);
+  assert.match(printed,/sq @ i1 @ i11 => i11/);
+  assert.doesNotMatch(printed,/⟦/);
+  assert.equal(sameBindingSyntax(f.expression(syntax),f.expression(f.resolve(printed))),true,printed);
+});
