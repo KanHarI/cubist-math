@@ -871,3 +871,24 @@ Final gates on the same clean revision pass 1,332 tests, all 3,857 corpus checks
 both browser suites and all four production mutation kills. CB6 review stops
 clean at eight rounds. CB7 retirement/release follows; after CB7, the user's
 requested separate cleanup audits the entire CB0–CB7 stack.
+
+## CB7 external review, round 1 — diagnosis before fixes
+
+Claude verifies the production retirement, preserved semantic controls, twelve
+mutation kills and release gates at `0c27548a`. Its three findings repeat two
+existing roots. Removing the ordinary-module pilot left a module-wide adapter
+option that bypasses retained-declaration admission. Delete that unused option
+and its fallbacks: each retained declaration supplies its adapter at admission.
+No replacement entry abstraction or test framework is needed.
+
+The measurement tool also owns objects whose lifetime extends past the compiler's
+disposal. The exact sampling-path probe shows serialization retains the scope map
+through the first GC; yielding one event-loop turn did not fix it. An additional
+turn/GC or omitting serialization releases it. Correct the interpretation rather
+than adding GC machinery: the reported disposal sample includes measurement-owned
+graphs and is not release proof. Check-time and pre-serialization retained-memory
+measurements remain valid. Finally, one algebra peak-RSS sample exceeds the
+proposed allowance (338.2 versus 334.9 MiB), while retained heap is unchanged.
+Record this exception explicitly; do not report all allowances as satisfied or
+rerun until a favorable sample appears. These evidence corrections need no
+compiler resource-limit change.

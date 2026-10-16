@@ -1,7 +1,7 @@
 # CB7: retirement and release
 
-Status: implementation and release validation in progress, stacked on CB6 #239.
-The user-requested cleanup across CB0–CB7 follows in a separate PR.
+Status: release validation complete; review corrections in progress in #240,
+stacked on CB6 #239. The user-requested cleanup follows in a separate PR.
 
 ## Retired paths
 
@@ -57,71 +57,46 @@ fixture-precondition failures are not counted as kills.
 
 ## Release evidence
 
-The existing metrics runner now compares references off/on, scopes on, artifacts
-on, and both on. Each workload/mode/repeat uses a fresh process, WASM module and
-kernel handle. Semantic interfaces, generated names, assumptions and deterministic
-fuel must agree across collection modes. Kernel work is recorded with cache
-conditions; it is not treated as deterministic fuel.
+The [release report](../../tests/fixtures/capture-bindings-release-costs.json)
+contains all 45 samples at clean `0c27548a`: three repeats of three workloads
+with references off/on, scopes on, artifacts on and both on. Each sample starts
+a fresh process, WASM module and kernel handle. Node v24.13.0 on Apple M3 Pro,
+Darwin 25.5.0; build digests and unchanged limits are in the report. The
+[pre-retirement report](../../tests/fixtures/capture-bindings-pre-retirement-costs.json)
+is clean `3b9a0845`. Later adapter-option deletion affects no measured caller.
 
-Retained memory is sampled after GC and before serialization or queries. Inert
-scope/replay inputs and generated artifacts are also serialized with Node's V8
-encoding to preserve graph sharing; encoded byte sizes are not heap estimates.
-No live scope or kernel handle is serialized. Existing subprocess, checker and
-description limits remain unchanged. Replay timing uses the existing contextual
-pilot rather than another query backend.
+Every current workload inventory equals that checkpoint: interfaces, generated
+names, assumptions and deterministic fuel. Kernel work also agrees across modes
+and with the checkpoint in these runs; cache-sensitive work is not deterministic
+fuel. The complete 3,857-check corpus inventory equals the CB0 record.
+Against CB0 `7f9b4d28`, fuel changes by -144 algebra queries, +46 inheritance
+queries and -159 fold queries, with unchanged search counts. Six inheritance
+interfaces (P/Q/R `.make` and `.l`) have changed alpha-syntax hashes but native
+conversion checks confirm definitional equality: retained helper applications
+and ascriptions remain explicit. No cross-version fuel or syntax-hash equality
+is claimed.
 
-At product revision `5a4f8cef`, all 1,332 frontend tests and 3,857 corpus
-checks pass, with no skips or TODOs. This includes the catalogue and publication
-fault-injection controls. Native tests pass. At `07bb8c78` (only mutation-witness
-selection and documentation changed), all twelve mutations and all three browser
-suites pass: contextual console, inspector and the built static site
-`6a013d03e55c`. The 36-test retirement focus also passed before the final removal
-of producerless recursion cases; the full gate includes that removal.
+Retained process memory is sampled after GC, before serialization or queries.
+V8 encoding measures inert scope/replay inputs and generated artifacts with
+sharing preserved; encoded bytes are not heap estimates. Peak RSS includes
+temporary serialization buffers. No live scope or native handle is serialized.
 
-The subsequent changes affect measurement tools only. Final corrected memory
-measurements and Claude review are pending.
+The report's `memory.disposed` is **not proof of graph release**. In all twelve
+algebra/fold scope-enabled samples it includes a graph still held by the tool's
+serializer: about 450–461 MiB after disposal versus 485–497 MiB retained growth.
+An independent exact-path probe reproduced 449.6 MiB after disposal, with the
+program, recorder and replay object collected but the serialized scope map alive.
+One further turn/GC released it to 33.1 MiB; omitting serialization yielded
+33.4 MiB at the existing sample. Returning from the measurement frame and yielding
+one turn did not resolve that serializer lifetime. Earlier v1/v2 readings and
+the failed v3 interpretation remain in the review evidence; no runtime leak,
+async-turn explanation, or release guarantee is inferred from them. Release
+memory is not an acceptance threshold, so no extra GC protocol is added.
 
+## Measured allowances and exceptions
 
-The initial mutation run kills eleven of twelve candidates. The synthetic-node
-mutation survives the copied/imported-observation tests because `ownsSource`
-independently rejects those copies. The existing generated-header link test
-exercises synthetic syntax in its own module and kills that mutation. Correct
-the runner's selected witness, not the product predicate or the assertions.
-The targeted rerun passes; a final clean-revision mutation report follows.
-Native tests pass on `5a4f8cef`. Full frontend validation is still running.
-
-
-The first complete cost run preserves corpus inventory, current interfaces,
-assumptions, fuel and kernel work across all five collection modes. Its disposal
-sample exposes a measurement-lifetime flaw: clearing the program variable inside
-`sample` still leaves that function's local aliases to symbols and retained graphs
-alive during GC. This also affects the old tool's disposal readings. Move only
-the disposal sample to its caller, after `sample` returns inert measurements and
-releases the entire frame. Do not infer a runtime leak from these aliased samples
-or add a disposal/cache mechanism to the compiler. Re-run cost evidence after
-checking that the measurement now permits graph collection. The valid earlier
-check-time/retained-memory results and failed disposal interpretation are retained.
-
-
-## Measured release envelope
-
-All 45 initial samples at `07bb8c78` (three repeats, three workloads, five
-collection modes) preserve the full CB0 corpus inventory. Current interfaces,
-generated names, assumptions and deterministic fuel match the pre-retirement
-`3b9a0845` checkpoint exactly. Observed kernel work also agrees across modes in
-these fresh-process runs. No additional assumptions or unavailable points occur.
-
-Against CB0 `7f9b4d28`, deterministic fuel changes by -144 algebra queries,
-+46 inheritance queries and -159 fold queries, with unchanged search counts.
-Six inheritance interfaces (P/Q/R `.make` and `.l`) have changed alpha-syntax
-hashes but check definitionally equal in the native kernel: retained helper
-applications and ascriptions remain explicit. Every other inventory field agrees.
-The native-input build stamps match for that comparison. No cross-version fuel
-or syntax-hash equality is claimed.
-
-For normal checking, the release allowance is the pre-retirement maximum plus
-its observed max-minus-min spread, separately for each workload/mode. This derives
-headroom from measured variation rather than a new percentage or compiler limit:
+Normal-check allowances were derived from the pre-retirement maximum plus its
+observed max-minus-min spread, separately for each workload and collection mode:
 
 | Workload | References off: ms / peak RSS MiB | References on: ms / peak RSS MiB |
 | --- | ---: | ---: |
@@ -129,26 +104,48 @@ headroom from measured variation rather than a new percentage or compiler limit:
 | Inheritance | 572.2 / 204.7 | 646.1 / 267.2 |
 | Fold | 1,672.9 / 340.9 | 1,942.6 / 386.6 |
 
-The initial release samples fit all six envelopes. New optional collection has
-no CB0 equivalent. Its measured largest check is 3.68 s, retained heap growth
-498 MiB and sharing-preserved graph 150.1 MiB, for 19,778 available points.
-The release envelope for these three named fixtures is therefore 4 s per check,
-512 MiB retained heap growth and 160 MiB encoded graph. These are rounded bounds
-on the measured workload; they are not guarantees for arbitrary user modules.
-Scopes stay opt-in. Artifact-only collection adds at most about 2.1 MiB retained
-heap in these samples. Peak RSS includes temporary serialization buffers; the
-GC retained heap/RSS samples precede serialization.
+All six timing allowances and five RSS allowances hold. Algebra refs-off repeat 1
+peaks at **338.2 MiB versus 334.9 MiB allowed**; the checkpoint's repeats were
+331.4/333.1/331.2 MiB. This is an explicit release exception, not a passing sample.
+Retained heap remains 44.1/45.1/44.1 MiB versus the checkpoint's 45.1 MiB, and
+no measured checker work changed. Accept this small OS high-water variation
+without widening the allowance, rerunning for a favorable sample, or changing
+compiler/process limits. Three observations do not establish a universal bound.
 
-Replay on `733a59ce` runs five existing fixtures three times, with artifact
-collection both off and on. Every query's verdict/text agrees between modes;
-original kernel work is unchanged. The largest observed prefix is 299.2 ms,
-validation 1.21 ms, accepted-history replay 1.02 ms and new query 2.69 ms. For
-these fixtures the measured release envelope is 350 / 2 / 2 / 3 ms respectively.
-The section fixture retains about 129–133 MiB with scopes on, down from the CB6
-pre-review 206 MiB despite additional inspector entries. No limit was raised.
+New optional collection has no CB0 equivalent. The final sample maxima are
+3.595 s per check, 496.9 MiB retained heap growth and 150.1 MiB encoded graph,
+with all 19,778 points available on the largest fixture. These fit the named-
+fixture allowances of 5 s / 512 MiB / 160 MiB. The initial 4-second proposal was
+exceeded by a 4,057 ms sample in v2 (`d482c652`); it was explicitly superseded
+before v3 by 5 seconds, allowing the cross-run timing spread. That earlier sample
+is not reclassified as passing the original proposal. Scopes remain opt-in;
+these measurements do not guarantee costs for arbitrary modules.
 
-The corrected cost rerun must confirm the envelopes and measure disposal after
-the frame returns before this candidate is marked complete.
+[Replay evidence](../../tests/fixtures/capture-bindings-replay-costs.json)
+contains five existing fixtures, three sessions each, with artifacts off/on at
+`733a59ce`. Each query gets a fresh native handle in a shared WASM process, with
+no explicit JIT warm-up. Verdicts/text agree across modes and original kernel
+work is unchanged. Maximum prefix/validation/history/query times are
+299.2/1.21/1.02/2.69 ms, within the named-fixture allowances of 350/2/2/3 ms.
+The sections fixture retains 129–133 MiB with scopes on, versus the earlier CB6
+206 MiB observation despite added inspector entries. No resource limit changed.
+
+## Validation and review
+
+At product revision `5a4f8cef`, all **1,332 frontend tests** and **3,857 corpus
+checks** pass, with zero skips/TODOs; native tests pass. At `07bb8c78`, all twelve
+mutations and all three browser suites pass: contextual console, inspector and
+the built static site `6a013d03e55c`. Product code is the same at both revisions.
+The initial synthetic mutation survived because copied/imported observations
+were independently rejected by `ownsSource`; the existing generated-header test
+exercises synthetic syntax in its own module and kills it. The failed run remains
+preserved. No product predicate or assertion was weakened to obtain the kill.
+
+Claude round 1 verifies that retirement and coverage at `0c27548a`, finding the
+two measurement-claim errors above and the unused module-wide adapter option.
+The latter is removed: retained queue entries get an adapter only through
+`lowerBindingDeclaration`. All 137 focused admission, generation, opening and notation tests pass after
+that deletion. Focused round 2 is pending.
 
 ## Producer and consumer audit
 
@@ -166,22 +163,3 @@ The current-language retention boundaries were audited after the final removals:
 | Historical compatibility | legacy-syntax and migration readers; nameBased is requested only for old migration inputs. Current source does not retry through it. |
 
 rg audit: removed elaborationSyntax, resolveBindingModule, lowerBindingModule and recursiveCall have no production occurrence. The explicit old/mixed reference rejection in binding-syntax remains intentionally. E801/E860/E869/E871/E866 occur in web only as retired catalogue rows. Source syntax traversal and structural receiver helpers remain because current source and retained consumers still use them.
-
-
-The corrected full run confirms all normal-check envelopes and all semantic
-inventories. It also exposes two limitations of the first optional envelope:
-fold with both collections takes 4,057 ms in one sample, and the immediate
-post-return GC still sees async-turn roots for the larger graphs. A separate
-weak-reference probe of algebra (including serialization) yields one event-loop
-turn before GC: program, scope map and recorder are all collected, with heap
-falling to 34 MiB (then 18 MiB on later turns). The sampling boundary must include
-the completed async turn, not only return from `sample`. Add one `setImmediate`
-await before the disposal GC; no repeated-GC loop or runtime cache change.
-
-The initial four-second optional proposal is superseded by a five-second ceiling
-for the named fixtures: the two completed runs show up to about half a second
-of variation for scope collection, so the observed maximum plus that spread,
-rounded up to the next half-second, requires five seconds. Preserve the 4,057 ms
-sample; do not reclassify it as passing the original proposal. The heap/encoding
-envelopes and all compiler/process limits stay unchanged. Final evidence must
-use the completed-turn disposal measurement and report every sample.

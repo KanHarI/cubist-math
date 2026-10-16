@@ -442,10 +442,10 @@ export class Translator {
     }
   }
   // Prepared syntax enters the same declaration checking/admission path as
-  // parsed source. Binding-aware producers supply the one identity adapter;
+  // parsed source. Each retained declaration supplies its identity adapter;
   // no printing or second source-resolution pass occurs at this boundary.
-  translateSyntax(ast,source,imported=new Map(),{bindingAdapter=null}={}) {
-    const module=this.unit({source,bindingAdapter});
+  translateSyntax(ast,source,imported=new Map()) {
+    const module=this.unit({source});
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
     const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
@@ -692,13 +692,13 @@ export class Translator {
         continue;
       }
       if(d.kind==="inductive") {
-        this.inductiveDeclaration(d,module.with({bindingAdapter:retained?.adapter??bindingAdapter}),env,declarations);
+        this.inductiveDeclaration(d,module.with({bindingAdapter:retained?.adapter}),env,declarations);
         settle(queue);
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
       const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind},
-        bindingAdapter:retained?.adapter??bindingAdapter});
+        bindingAdapter:retained?.adapter});
       this.onDeclarationStart?.(d);
       try {
         // A theory's sorts need their evidence's definitions (L2.4).
