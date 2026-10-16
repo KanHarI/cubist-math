@@ -1,9 +1,9 @@
 # CB6: contextual REPL
 
-Status: external round 3 is clean on `280b4592`. Round 4 found two adapter
-fixture failures and a notation evidence regression in the subsequent visibility
-fix. Both are corrected; final gates and focused round 5 remain pending. CB6
-remains draft #239, stacked on ready CB5 #238; CB7 has not started.
+Status: round 5 finds no product issues in `3b9a0845`; all 1,326 tests and
+3,857 canonical checks pass. Its sole finding is a browser-harness navigation
+race. The test-only correction, isolated browser gate and focused round 6 close
+that evidence before CB6 #239 becomes ready. CB7 has not started.
 
 ## Required result
 
@@ -376,3 +376,21 @@ and face substitution. The fixture uses a minimal quotient and immediate disposa
 to keep the combined suite within existing limits; the heavy library test also
 passes alone. Final full/browser/mutation gates and focused Claude round 5 remain
 pending on the committed correction.
+
+
+## External round 5
+
+The complete frozen gates at `3b9a0845` pass all 1,326 tests, zero TODOs and all
+3,857 canonical checks. The contextual browser suite and four mutation controls
+pass. The inspector first fails during navigation because its predicate reads
+an absent DOM element; an unchanged rerun passes. Both logs are retained.
+
+Claude reports no product findings, with 189 targeted tests and nine independent
+probes. Colliding operands, ordinary and dimension binders, model openings,
+nested rules, lazy callers and obtain components preserve source/query agreement;
+missing and shadowed evidence remains refused. Scratch history and operator
+sections replay correctly. The bounded 120-application cost comparison is about
+2.1 seconds at both revisions. The review explicitly finds the shared abstraction
+minimal. Its sole finding uses the first inspector log, whose rerun was not named
+in the initial brief. The shared wait helper now awaits document availability;
+an isolated browser run and focused round 6 verify the test-only correction.

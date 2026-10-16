@@ -766,3 +766,24 @@ whole quotient-library fixture caused an aggregate test-process heap failure.
 A minimal quotient declaration and immediate program/session disposal keep the
 complete notation suite within the existing limits. The unchanged heavy library
 test also passes alone. Full gates and focused external round 5 remain pending.
+
+
+## CB6 external review, round 5 — diagnosis before fixes
+
+Claude finds no product issues in `3b9a0845`, passes 189 targeted tests and
+runs nine independent probes against both earlier revisions. It verifies
+source/query and collection parity, every reproduced collision, caller-shadowing
+refusals, inner-body scratch history, operator sections and branch refinement.
+A bounded 120-application comparison takes about 2.1 seconds at both revisions.
+The shared list/enumeration/entry transition is judged minimal.
+
+Its sole low-severity finding is the failed inspector browser log: the shared
+`inspected()` predicate dereferences static markup while navigation is replacing
+the document. An unchanged rerun had already passed, but that log was not named
+in the original review brief. Preserve both logs. This is an asynchronous test
+boundary, not another identity/visibility problem. Make the shared wait predicate
+tolerate absent elements, as the neighboring workbench predicate already does;
+then run that browser suite alone. Add no delay, retry policy or navigation-code
+change. Full compiler gates remain valid on the unchanged product code. Focused
+round 6 should verify this test-only correction and the exact terminal evidence,
+without reopening the product audit.
