@@ -1,27 +1,49 @@
 // Repeatable contract mutations in an isolated copy, never the working tree.
-// node tools/frontend-generation-mutations.mjs REPORT.json [--audit] [ID...]
+// node tools/frontend-generation-mutations.mjs REPORT.json [ID...]
 import {mkdtemp,cp,readFile,writeFile,rm,mkdir,readdir} from "node:fs/promises";
 import {tmpdir} from "node:os";
-import {join,resolve} from "node:path";
+import {join,resolve,relative} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync,execFileSync} from "node:child_process";
 import {createHash} from "node:crypto";
 import {testResults,mutationOutcome} from "./frontend-test-results.mjs";
 
 const root=fileURLToPath(new URL("../",import.meta.url));
-const args=process.argv.slice(2),destination=args.shift(),audit=args.includes("--audit");
-const selected=args.filter(arg=>arg!=="--audit");
-if(!destination)throw Error("Usage: node tools/frontend-generation-mutations.mjs REPORT.json [--audit] [ID...]");
-const mutation=(id,file,from,to,test,pattern,expected="killed")=>({id,file,from,to,test,pattern,expected});
-// These four sites exist on the CB0 base. Later-phase mutations from #223
-// are deferred with their distinguishing witnesses in the CB0 report; a
-// missing site never counts as a killed mutant.
-export const mutations=[
-  mutation("reference-spelling","web/cubist/references.mjs",
-    '? {...n, kind: "name", name: n.binding}', '? {...n, kind: "name", name: n.spelling}',
-    "references","lowering references"),
-  mutation("lexical-use","web/translator/theories.mjs",
-    "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};","if(true)return {env,notation:[[SELECTION,null]]};",
+const [destination,...selected]=process.argv.slice(2);
+if(!destination)throw Error("Usage: node tools/frontend-generation-mutations.mjs REPORT.json [ID...]");
+const mutation=(id,file,from,to,test,pattern)=>({id,file,from,to,test,pattern});
+// Mutate current production boundaries of the adopted contracts. A missing
+// site or a broken baseline never counts as a killed mutant.
+const mutations=[
+  mutation("binding-label","web/translator/translate.mjs",
+    "label=node.label??node.text??node.name", "label=name",
+    "frontend-provenance","freshened law and derived parameters"),
+  mutation("alpha-label","web/cubist/binding-syntax.mjs",
+    "label: token.label ?? binderName(token)", "label: adapter.key(token.bindingId)",
+    "frontend-provenance","freshened law and derived parameters"),
+  mutation("derived-telescope","web/cubist/retained-interfaces.mjs",
+    "const tree=interfaceTree(item);", "const tree=interfaceTree({...item,params:item.kind===\"derived\"?[]:item.params});",
+    "frontend-generation","^G11:"),
+  mutation("hom-universe","web/cubist/retained-morphism-artifacts.mjs",
+    "declare(hom,modelParams(),null,sigma", "declare(hom,modelParams(),builtin(\"U0\",origin),sigma",
+    "frontend-universes","generic fixed domains"),
+  mutation("refined-evidence","web/translator/elaboration.mjs",
+    "if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;", "return this;",
+    "frontend-evidence","contextual model evidence remains checked"),
+  mutation("synthetic-provenance","web/cubical-program.mjs",
+    "!node.synthetic && ownsSource(node,name)", "ownsSource(node,name)",
+    "initial-models","generated syntax has local positions"),
+  mutation("lint-interface","web/cubist/lint.mjs",
+    "&& !publicTelescopes.has(node)", "",
+    "frontend-provenance","safe lint preserves"),
+  mutation("explicit-head","web/translator/patterns.mjs",
+    "constructor.dims && fitting[0].head.kind === \"name\"", "constructor.dims",
+    "frontend-generation","explicit path bodies"),
+  mutation("reference-spelling","web/cubist/binding-syntax.mjs",
+    "const name = adapter.lower(node.resolution, outcomes, options);", "const name = node.spelling;",
+    "retained-production","ordinary source and imported inheritance"),
+  mutation("lexical-use","web/translator/retained-source-context.mjs",
+    "of (item.uses??[]).entries()", "of [].entries()",
     "frontend-invariants","uncolliding parameter, seed 2$"),
   mutation("reservation","web/translator/declarations.mjs",
     "conflict ??= entry;","conflict ??= null;","frontend-publication","definition then inductive"),
@@ -30,7 +52,7 @@ export const mutations=[
     "frontend-publication","G7:"),
 ];
 for(const id of selected)if(!mutations.some(m=>m.id===id))throw Error(`Unknown mutation ${id}`);
-const chosen=mutations.filter(m=>(audit||m.expected==="killed")&&(!selected.length||selected.includes(m.id)));
+const chosen=mutations.filter(m=>!selected.length||selected.includes(m.id));
 const directory=await mkdtemp(join(tmpdir(),"cubist-generation-mutations-"));
 const report={version:2,adoptedFrom:"49499aa1c56c1b345eb0021468123cec377fb4b8",dirty:!!execFileSync("git",["status","--porcelain"],{cwd:root,encoding:"utf8"}).trim(),revision:execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim(),
   limits:{processMs:60000,testMs:45000,maxBufferBytes:8*1024*1024,checker:"unchanged defaults",cases:8},mutations:[]};
@@ -44,7 +66,7 @@ const run=m=>{
 };
 try {
   for(const name of ["web","tests","tools","library","cubist-tests","archive","kernel","wasm","Makefile","cli","package.json"])
-    await cp(join(root,name),join(directory,name),{recursive:true,filter:source=>!/(?:^|\/)build(?:\/|$)/.test(source)});
+    await cp(join(root,name),join(directory,name),{recursive:true,filter:source=>!/(?:^|\/)build(?:\/|$)/.test(relative(root,source))});
   for(const m of chosen) {
     const path=join(directory,m.file),original=await readFile(path,"utf8");
     const occurrences=original.split(m.from).length-1;
@@ -61,12 +83,12 @@ try {
     const reducedCases=await Promise.all((await readdir(failures).catch(error=>{
       if(error.code==="ENOENT")return [];throw error;
     })).map(async name=>JSON.parse(await readFile(join(failures,name),"utf8"))));
-    const entry={...m,sourceDigest:hash(original),...classification,status:result.status,error:result.error,
+    const entry={...m,expected:"killed",sourceDigest:hash(original),...classification,status:result.status,error:result.error,
       distinguishingTests:originalTests.passed,reducedCases,events:testResults(result).events??[],stderr:result.stderr};
     report.mutations.push(entry);
     await rm(failures,{recursive:true,force:true});
-    console.log(`${m.id}: ${outcome} (expected ${m.expected})`);
-    if(outcome!==m.expected)process.exitCode=1;
+    console.log(`${m.id}: ${outcome} (expected killed)`);
+    if(outcome!=="killed")process.exitCode=1;
     await mkdir(resolve(destination,".."),{recursive:true});
     await writeFile(resolve(destination),JSON.stringify(report,null,2)+"\n");
   }

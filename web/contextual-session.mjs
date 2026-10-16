@@ -5,16 +5,16 @@ import {CubicalProgram} from "./cubical-program.mjs";
 import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayPolicy} from "./cubical-replay-inputs.mjs";
 import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
-import {bindingInputs} from "./translator/binding-module.mjs";
-import {resolveBindingSyntax,lowerBindingSyntax} from "./cubist/binding-syntax.mjs";
-import {Translator} from "./translator/translate.mjs";
-import {Scope} from "./translator/elaboration.mjs";
+import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
+import {resolveBindingSyntax,lowerBindingSyntax,lowerBindingReference} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
-import {syntaxNames} from "./translator/syntax-graph.mjs";
-import {copySimpRegistry} from "./translator/simp-registry.mjs";
+import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
+import {notationContextKey} from "./translator/notation-context.mjs";
 import {T} from "./translator/core.mjs";
+import {Goal} from "./translator/proof-goals.mjs";
+import {Scope} from "./translator/elaboration.mjs";
 import {replStatements} from "./repl-session.mjs";
 
 const limits=new Set(["fuel","budget","deadline"]);
@@ -29,9 +29,31 @@ const unavailable=text=>({kind:"unavailable",text,failure:"context"});
 const measure=kernel=>({time:performance.now(),work:kernel.work()});
 const spent=(kernel,start)=>({elapsedMs:performance.now()-start.time,work:Object.fromEntries(
   Object.entries(kernel.work()).map(([key,value])=>[key,value-start.work[key]]))});
+const help=[
+  "TERM;                 evaluate a term in the selected context",
+  "typeof TERM;          the checked type of a term",
+  "evaluate TERM;        normalize a term, which may remain symbolic",
+  "print(inspect(TERM)); inspect the checked term in kernel notation",
+  "witness TERM;         read a closed truncation's witness and type",
+  "let NAME := TERM;     add a checked scratch binding to this session",
+  "/locals               visible and shadowed local bindings, types and origins",
+  "/goal                 the active proof goal, or the expected expression type",
+  "/prove { ... }        check a proof block against a scratch copy of the goal",
+  "/clear                clear the console log",
+  "/restart              forget this session's scratch bindings",
+  "/help                 this list",
+].join("\n");
 
 function parsedEntry(entry) {
   const source=entry.replace(/^(\s*\/\/[^\n]*(\n|$))+/,"").trim().replace(/;\s*$/,"");
+  if(["/locals","/goal","/help","help"].includes(source))return {kind:source.replace(/^\//,""),text:source,tree:[]};
+  if(/^\/prove\s*\{/.test(source)) {
+    const text=`def contextual_entry : Unit ${source.replace(/^\/prove\s*/,"")}`,ast=parse(text);
+    if(ast.imports.length||ast.declarations.length!==1||(ast.items??ast.declarations).length!==1||!ast.declarations[0].body)
+      throw new TypeError("Expected one proof block: /prove { ... }");
+    return {kind:"prove",text,tree:ast.declarations[0].body};
+  }
+  if(source.startsWith("/"))throw new TypeError(`Unknown contextual command ${source.split(/\s/)[0]}. /help lists the commands.`);
   if(/^let\s/.test(source)) {
     // Parse the actual statement grammar, including annotations/local proofs.
     // A one-statement sequence gives its binder an identity without putting
@@ -45,38 +67,132 @@ function parsedEntry(entry) {
     if(statements.length!==2||statements[0].kind!=="let")throw new TypeError("Expected one scratch let.");
     return {kind:"let",text,tree:[statements[0]]};
   }
-  const command=/^(typeof|evaluate)\s+([\s\S]+)$/.exec(source);
-  const text=command?command[2]:source;
-  return {kind:command?.[1]??"evaluate",text,tree:parse(text,true)};
+  if(/^print\s*\(/.test(source)) {
+    const text=source+";",ast=parse(text),items=ast.items??ast.declarations;
+    if(ast.imports.length||items.length!==1||items[0].kind!=="print"||!["typeof","evaluate","inspect","witness"].includes(items[0].show))
+      throw new TypeError("Expected print(typeof(...)), print(evaluate(...)), print(inspect(...)) or print(witness(...)).");
+    return {kind:items[0].show,text,tree:items[0].value};
+  }
+  const termCommand=/^(typeof|evaluate|inspect|witness)\s+([\s\S]+)$/.exec(source);
+  const text=termCommand?termCommand[2]:source;
+  return {kind:termCommand?.[1]??"evaluate",text,tree:parse(text,true)};
 }
 
-function copiedScope(scope,unit) {
-  // Copy the maps and their mutable recursion/proof records together so
-  // fixed-argument correspondences keep their internal sharing. Native
-  // caches are outside these descriptions and must be re-derived.
-  const data=structuredClone({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions]});
-  return new Scope(unit,new Map(data.context),new Map(data.env),new Map(data.dimensions),scope.slotOutcomes,new Map(),new Map(scope.localSources));
+// List actual introductions, not every value retained for captures. Resolution
+// through the selected branch decides visibility; an older row remains an
+// inspectable identity but never becomes a new source alias.
+function localBindings(translator,scope,lexical,adapter,table) {
+  const candidates=[],seen=new Set(),localRoles=new Set(["local","parameter","universe","dimension","pattern"]);
+  for(const [label,resolution] of lexical.snapshot()) {
+    if(label&&resolution.tag==="binding") {
+      const binding=table.get(resolution.id);
+      if(localRoles.has(binding.role))candidates.push({label,resolution,binding});
+    } else if(resolution.tag==="opening-frame") {
+      const activation=scope.slotOutcomes.activation(resolution.id),binding=table.get(resolution.id);
+      for(const [label,resolution] of activation?.members??[])candidates.push({label,resolution,binding});
+    }
+  }
+  const rows=[];
+  for(const {label,resolution,binding} of candidates) {
+    const resolved=scope.slotOutcomes.resolve(resolution),identity=JSON.stringify([label,resolved]);
+    if(seen.has(identity))continue;
+    seen.add(identity);
+    const visible=JSON.stringify(scope.slotOutcomes.resolve(lexical.lookup(label)))===JSON.stringify(resolved);
+    const entry={label,resolution:resolved,origin:binding.origin,visible,type:null};
+    if(resolved.tag==="failure"||resolved.tag==="missing") {
+      rows.push({...entry,reason:resolved.message??"This binding is unavailable."});continue;
+    }
+    const node=lowerBindingReference({kind:"bindingReference",resolution:resolved},adapter,scope.slotOutcomes);
+    const value=node.kind==="name"?scope.env.get(node.name):null;
+    if(value?.tag==="SourceOperand") {
+      entry.deferred=true;entry.reason="Lazy notation operand; checked when used.";
+    } else if(value?.tag==="Dimension")entry.type="Interval";
+    else {
+      const term=translator.term(node,scope);
+      entry.type=translator.shownIn(scope.infer(term).type,scope);
+      entry.value=translator.shownIn(term,scope);
+    }
+    rows.push(entry);
+  }
+  const group=visible=>rows.filter(row=>row.visible===visible).map(row=>
+    `${row.label} : ${row.type??row.reason}${row.value&&row.value!==row.label?` := ${row.value}`:""}`
+    +` (${row.origin.module}:${row.origin.start}-${row.origin.end})`);
+  const visible=group(true),shadowed=group(false);
+  return {kind:"locals",bindings:rows,text:["Visible locals:",...(visible.length?visible:["(none)"]),
+    "Shadowed locals:",...(shadowed.length?shadowed:["(none)"])].join("\n")};
+}
+
+function copiedScope(scope,unit,names=null) {
+  // SourceOperand and scoped syntax form a DAG of caller scopes. Copy their
+  // values and recursion permissions together, but never their compiler units.
+  // Every lazy evaluation spends this query's fuel and uses its name supply.
+  // These copies exist only inside the synchronous isolated replay callback.
+  const copies=new WeakMap(),budget=syntaxGraphBudget({maxVisits:names?250000:500000,
+    checkDeadline:()=>unit.checker.kernel?.checkDeadline()});
+  const copy=value=>{
+    budget.tick();
+    if(typeof value==="string")names?.add(value.replace(/:[01]$/,""));
+    if(value===null||typeof value!=="object") {
+      if(typeof value==="function")throw new TypeError("A contextual query cannot copy a compiler callback.");
+      return value;
+    }
+    if(copies.has(value))return copies.get(value);
+    let result;
+    if(value instanceof Scope) {
+      const caller=value===scope?unit:unit.with({source:value.unit.source,moduleName:value.unit.moduleName,
+        bindingAdapter:value.unit.bindingAdapter,declaring:value.unit.declaring,blameSite:value.unit.blameSite});
+      result=value.with({unit:caller,context:copy(value.context),env:copy(value.env),dimensions:copy(value.dimensions),
+        sourceBindings:copy(value.sourceBindings),localSources:copy(value.localSources),evidence:copy(value.evidence),
+        inheritedDefinitions:copy(value.inheritedDefinitions)});
+      copies.set(value,result);return result;
+    }
+    if(value instanceof Map) {
+      result=new Map();copies.set(value,result);
+      for(const [key,entry] of value)result.set(copy(key),copy(entry));
+    } else if(value instanceof Set) {
+      result=new Set();copies.set(value,result);
+      for(const entry of value)result.add(copy(entry));
+    } else {
+      if(!Array.isArray(value)&&![Object.prototype,null].includes(Object.getPrototypeOf(value)))
+        throw new TypeError("A contextual query cannot copy an unknown live value.");
+      result=Array.isArray(value)?[]:{};copies.set(value,result);
+      for(const [key,entry] of Object.entries(value)) {
+        // Match continuation syntax is not a recursive-call permission.
+        if(value.tag==="Recursive"&&key==="site")continue;
+        result[key]=copy(entry);
+      }
+    }
+    return result;
+  };
+  return copy(scope);
 }
 
 function queryEnvironment(live,adapter,unit) {
-  const data=structuredClone({context:[...live.scope.context],env:[...live.scope.env],values:[...live.values],
-    dimensions:[...live.scope.dimensions]});
-  const original=new Map(data.env),values=new Map(data.values),env=new Map();
-  for(const [id,value] of values)env.set(adapter.key(id),value);
+  const env=new Map();
+  for(const [id,value] of live.values)env.set(adapter.key(id),value);
+  for(const [id,context] of live.contexts)env.set(notationContextKey(adapter.key(id)),context);
+  const selected=live.contexts.get(live.lexical.selectedNotation());
+  for(const [key,value] of selected??[])env.set(key,value);
   // These are translator permissions, never a destination spelling lookup.
-  for(const key of [RECURSIVE,"\u0000superseded"])if(original.has(key))env.set(key,original.get(key));
-  const recursive=env.get(RECURSIVE);
+  for(const key of [RECURSIVE,"\u0000superseded"])if(live.scope.env.has(key))env.set(key,live.scope.env.get(key));
+  const scope=copiedScope(live.scope.with({env,sourceBindings:new Map()}),unit);
+  const recursive=scope.env.get(RECURSIVE);
   if(recursive) {
     const key=live.keys.get(recursive.key??recursive.source);
     if(key)recursive.key=adapter.key(key);
     // Permissions refer to environment keys, not labels. Compiler-private
     // aliases are not callable from the query and carry no lexical binding.
-    if(recursive.destructed)recursive.destructed=new Map([...recursive.destructed].flatMap(([key,value])=>
-      live.keys.has(key)?[[adapter.key(live.keys.get(key)),value]]:[]));
+    if(recursive.destructed)recursive.destructed=new Map([...recursive.destructed].flatMap(([key,value])=>{
+      const id=live.keys.get(key),target=id&&adapter.key(id);
+      // Source calls require the permission's alias to be the current value.
+      // Several keys can name one ID; an obsolete alias must not overwrite
+      // the introduced key's valid permission when those keys collapse.
+      return target&&value.alias===scope.env.get(target)?[[target,value]]:[];
+    }));
   }
   const localSources=new Map([...live.scope.localSources].flatMap(([key,source])=>live.keys.has(key)
     ?[[adapter.key(live.keys.get(key)),{...source,key:adapter.key(live.keys.get(key)),bindingId:live.keys.get(key)}]]:[]));
-  return new Scope(unit,new Map(data.context),env,new Map(data.dimensions),live.scope.slotOutcomes,new Map(),localSources);
+  return scope.with({localSources});
 }
 
 export class ContextualSession {
@@ -130,14 +246,15 @@ export class ContextualSession {
         if(JSON.stringify(point)!==JSON.stringify(this.#point))
           throw new ElaborationStop(unavailable("The selected scope did not reproduce its recorded context."));
         const table=replay.scopeRecorder.table,adapter=new BindingAdapter(table);
-        const translator=new Translator({checker:live.scope.checker,normalize:false,
-          simpRegistry:copySimpRegistry(live.scope.unit.simpRegistry),nameBased:live.translator.nameBased,...inputs.fuelLimits});
+        const translator=live.translator.forkScope(live.scope,{normalize:false,...inputs.fuelLimits});
+        const {sets:simpSets,captures}=sourceSimpSets(table,live.scope.unit.simpRegistry);
         const selectedPolicy=kernelReplayPolicy(replay.kernel);
         let scope,lexical=live.lexical;
         const validation=measure(replay.kernel);
         try {
           applyKernelReplayPolicy(replay.kernel,selectedPolicy);
           scope=queryEnvironment(live,adapter,translator.unit().declaration(translator.declarationFuel));
+          scope=scope.aliases(structuredClone([...captures].map(([id,value])=>[adapter.key(id),value])));
           // Inferring even Unit derives every local type in order through
           // contextScope. A recorded lambda domain is not typing authority.
           scope.infer(T.unit);
@@ -152,16 +269,28 @@ export class ContextualSession {
           const parsed=parsedEntry(source),reserved=reservedReferences(parsed.text);
           const {adapter:entryAdapter,context,constructors}=bindingInputs(table,live.values,{reserved,lexical:lexical.snapshot()});
           const owner=["contextual-session",this.#serial,"entry",String(index)],moduleName=owner.join("/");
-          const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,
+          const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,simpSets,
             source:{revision:inputs.revision,module:moduleName}});
           const tree=lowerBindingSyntax(syntax,entryAdapter);
-          const used=syntaxNames({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions]});
+          const used=new Set();
           const names=new NameSupply({taken:name=>used.has(name)||scope.checker.assumptions.has(name)});
           const unit=translator.unit({source:parsed.text,moduleName,bindingAdapter:entryAdapter,names,
             declaring:live.scope.unit.declaring}).declaration(translator.declarationFuel);
-          let current=copiedScope(scope,unit),result,extension=null;
+          let current,result,extension=null;
           try {
-            if(parsed.kind==="let") {
+            current=copiedScope(scope,unit,used);
+            if(parsed.kind==="help")result={kind:"help",text:help};
+            else if(parsed.kind==="locals")result=localBindings(translator,current,lexical,entryAdapter,table);
+            else if(parsed.kind==="goal") {
+              const goal=live.goal?translator.shownIn(live.goal,current):null;
+              const expected=live.expected?translator.shownIn(live.expected,current):null;
+              result={kind:"goal",goal,expected,text:goal?`Goal: ${goal}`:expected?`Expected type: ${expected}\nNo active proof goal.`:"No active proof goal or expected type."};
+            } else if(parsed.kind==="prove") {
+              if(!live.goal)throw new TypeError("This expression context has no active proof goal.");
+              const proof=current.check(translator.block(tree,new Goal(live.goal,current)),live.goal);
+              result={kind:"proof",text:`Checked against ${translator.shownIn(live.goal,current)}. Source unchanged.`,
+                proof:translator.shownIn(proof,current),goal:translator.shownIn(live.goal,current)};
+            } else if(parsed.kind==="let") {
               current=translator.bindLet(tree[0],current);
               const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
               const type=current.infer(value).type;
@@ -169,7 +298,9 @@ export class ContextualSession {
               extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
               lexical=lexical.bind(record.label,bindingResolution(id));
               scope=current;
-            } else {
+            } else if(parsed.kind==="inspect")result={kind:"inspection",text:translator.printed({show:"inspect",value:tree},current)};
+            else if(parsed.kind==="witness")result={kind:"value",text:translator.printed({show:"witness",value:tree},current)};
+            else {
               const term=translator.term(tree,current),checked=current.infer(term);
               const value=current.nf(parsed.kind==="typeof"?checked.type:checked.term);
               result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current)};

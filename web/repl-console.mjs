@@ -46,7 +46,7 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
   const show = ({ kind, text }) => {
     const line = element("pre", `repl-result repl-${kind}`);
     // Results are Cubist and highlighted; messages are prose.
-    line.append(["error", "info", "help"].includes(kind) ? document.createTextNode(text) : highlighted(text));
+    line.append(["error", "unavailable", "info", "help"].includes(kind) ? document.createTextNode(text) : highlighted(text));
     log.append(line);
   };
   const scroll = () => { log.scrollTop = log.scrollHeight; };
@@ -97,23 +97,35 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
       history.push(text);
       recalled = history.length;
       if (text.startsWith("/clear")) log.replaceChildren();
-      else if (reset) await restart();
+      else if (reset) {
+        try { await restart(); } catch (error) { show({ kind: "error", text: error.message }); }
+      }
       else show({ kind: "error", text: "This console cannot restart." });
       return;
     }
     await execute(text);
   }
   async function restart() {
-    await reset();
-    log.replaceChildren();
-    show({ kind: "info", text: "Started a new session." });
+    if (busy) return;
+    busy = true;
+    form.classList.add("busy");
+    runButton.disabled = true;
+    try {
+      await reset();
+      log.replaceChildren();
+      show({ kind: "info", text: "Started a new session." });
+    } finally {
+      busy = false;
+      form.classList.remove("busy");
+      runButton.disabled = false;
+    }
   }
 
   form.onsubmit = event => { event.preventDefault(); submit(); };
   clearButton.onclick = () => { log.replaceChildren(); input.focus(); };
   restartButton.onclick = async () => {
     if (busy) return;
-    await restart();
+    try { await restart(); } catch (error) { show({ kind: "error", text: error.message }); }
     input.focus();
   };
   input.addEventListener("input", grow);

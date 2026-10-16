@@ -8,6 +8,7 @@ import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
 import { parse } from "./cubist/parser.mjs";
 import { lint } from "./cubist/lint.mjs";
+import {ownsSource} from "./cubist/link-sites.mjs";
 import { diagnosticCode } from "./diagnostics.mjs";
 import { leadingDocumentation } from "./cubist/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
@@ -15,6 +16,7 @@ import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notati
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { ScopePoints } from "./translator/scope-points.mjs";
+import {CompilationBindings} from "./translator/compilation-bindings.mjs";
 import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
 import naturalSource from "./translator/nat-source.mjs";
 
@@ -25,14 +27,12 @@ function whenRead(object, key, compute) {
     get() { const value = compute(); keep(this, value); return value; }, set(value) { keep(this, value); } });
 }
 
-const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${index}` : "";
-
 // Imports are source, loaded on demand. Every module has its own environment;
 // closed native definitions have qualified names so shadowing cannot retarget
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
-    const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,optimizations={},manageTransactions=true,
+    const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,collectGeneration=false,optimizations={},manageTransactions=true,
       searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
     this.options={...options};
     if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
@@ -61,6 +61,9 @@ export class CubicalProgram {
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.collectScopes = collectScopes;
+    this.collectGeneration = collectGeneration;
+    this.compilationBindings=new CompilationBindings(options.scopeRevision??globalThis.crypto.randomUUID());
+    this.checker.compilationBindings=this.compilationBindings;
     this.scopePoints = new Map();
     this.scopeRevision = null;
     this.scopeRecorder = null;
@@ -70,6 +73,7 @@ export class CubicalProgram {
     this.declarationReferences = new Map();
     this.modules = new Map(); this.symbols = {}; this.views = new Map();
     this.publications = new Map();
+    this.generation = new Map();
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
@@ -119,7 +123,8 @@ export class CubicalProgram {
   // bindings and their views, each name's binding, and, in the checked
   // module, its source links.
   recordReferences(name, main, declaration, result, pending) {
-    this.declarationBindings.set(`${name}__${result.name}`, pending.filter(item => item.node.isBinding));
+    const binders=[],locals=new Map(),localKey=alias=>JSON.stringify([alias.key,alias.start]);
+    this.declarationBindings.set(`${name}__${result.name}`,binders);
     const references = [];
     const declarationLinks = [];
     this.declarationReferences.set(`${name}__${result.name}`, references);
@@ -130,22 +135,30 @@ export class CubicalProgram {
     // written; synthetic syntax, as what a theory's expansion places at its
     // name, links nowhere.
     const generated = declaration.generated ? declaration.name : null;
-    const written = node => !node.synthetic && !(generated && node.start >= generated.start && node.start < generated.end);
-    for (const item of pending) {
+    const written = node => !node.synthetic && ownsSource(node,name) && !(generated && node.start >= generated.start && node.start < generated.end);
+    for (const [index,item] of pending.entries()) {
       if (!Number.isInteger(item.node.start)) continue;
       let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
       const source = item.aliases?.find(alias => alias.key === item.node.localBindingKey);
       const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
       const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
-      const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${
-        expansionSuffix(item.node.role,item.node.expansionIndex)}`;
-      references.push({ start: item.node.start, binding });
-      if (!definition && !this.views.has(binding)) this.views.set(binding, { ...item, module: name });
+      const binding = definition ? declared || head.name : JSON.stringify(["view",name,result.name,index]);
+      if(item.node.isBinding) {
+        binders.push({...item,binding});
+        if(source)locals.set(localKey(source),binding);
+      }
+      const aliases=item.aliases?.map(alias=>({...alias,binding:locals.get(localKey(alias))}));
+      const origin=source?.origin??item.node.origin,sourceModule=origin?.module??name;
+      references.push({start:item.node.start,end:item.node.end,name:item.node.name,binding,written:written(item.node)});
+      if (!definition) this.views.set(binding, { ...item,aliases,module:name,
+        sourceBinding:source?locals.get(localKey(source)):null });
       if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
         role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
         expansion: item.node.expansion, description: item.node.description,
         definitionStart: source?.start ?? item.node.start,
-        ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
+        ...(origin?{origin}:{}),
+        ...(sourceModule === main ? {} : { sourceModule,sourceName:this.sourceAsts.get(sourceModule)?.declarations
+          .find(d=>d.start<=(source?.start??item.node.start)&&(source?.start??item.node.start)<d.end)?.name.text }) };
       if (name === main && written(item.node)) {
         const link={ name: item.node.name, binding, start: item.node.start,
         end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
@@ -159,18 +172,30 @@ export class CubicalProgram {
         &&step.traceParent===link.start).map(step=>({name:step.name,binding:step.binding,
           role:step.role,description:step.description,start:step.start,end:step.end}));
   }
+  // Authored location is independent of the module publishing a declaration.
+  // Both checked symbols and blocked generated families use this target.
+  sourceSite(syntax,declaring) {
+    const module=syntax.origin?.module??syntax.name?.origin?.module??declaring;
+    const start=syntax.start,end=syntax.end;
+    const name=this.sourceAsts.get(module)?.declarations.find(d=>d.start<=start&&start<d.end)?.name.text;
+    return {definitionStart:start,definitionSite:{module,start,end,name},
+      description:leadingDocumentation(this.sources[module]??"",start)?.text??""};
+  }
   // A module's results: its simplification rules, its directives' fuel and
   // gaps, and each declaration's symbol, gap and, in the checked module, link.
   // `failure` adds a failed import's note to a reason.
-  recordModule(name, main, text, ast, result, failure) {
+  recordModule(name, main, ast, result, failure) {
     this.simpRegistries.set(name,result.simpRegistry);
     this.publications.set(name,result.publications??[]);
+    if(this.collectGeneration)this.generation.set(name,result.generation??[]);
     for(const directive of result.directives??[]) {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start,
-          ...(directive.failure?{failure:directive.failure}:{})});
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,
+          start:directive.errorStart??directive.start,end:directive.errorEnd,
+          ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
+          ...(directive.failure?{failure:directive.failure}:{}),...(directive.diagnostic?{diagnostic:directive.diagnostic}:{})});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
       else if(directive.kind==="print")
@@ -190,13 +215,14 @@ export class CubicalProgram {
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
         status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
+        ...(d.diagnostic?{diagnostic:d.diagnostic}:{}),
         ...(d.blockedBy?{blockedBy:d.blockedBy}:{}),...(d.failedMember?{failedMember:d.failedMember}:{}),...(d.cause?{cause:d.cause}:{}),
         axioms: d.native?.axioms ?? [],
         // Kernel extensions under review that the result relies on, shown
         // apart from assumptions; computable accepts them. None is under
         // review since H1's release, so this list is empty.
         extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
-        definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
+        ...this.sourceSite(syntax,name),
         ...(name === main ? {} : { sourceModule: name, sourceName: d.name }) };
       // The type's text, written when first read: the pages and the
       // inspector show it, a check does not. Its names are the program's
@@ -213,12 +239,13 @@ export class CubicalProgram {
       } else info.type = reason;
       this.symbols[binding] = info;
       if (!verified) this.gaps.push({ module: name, name: d.name,
-        reason, code: info.code, start: d.errorStart, end: d.errorEnd });
+        reason, code: info.code, start: d.errorStart, end: d.errorEnd,
+        ...(d.diagnostic?{diagnostic:d.diagnostic}:{}) });
       // A theory's name links to its models' type, a field's to its projection.
       // An initial/free name links to its declared type, whose generated
       // syntax this is. The generated definitions remain symbols, inspectable
       // by name and at their written uses.
-      if (name === main && syntax.generated?.role !== "make" && !(syntax.generated?.initial && syntax.kind !== "inductive"))
+      if (name === main && ownsSource(syntax.name,name) && syntax.generated?.role !== "make" && !(syntax.generated?.initial && syntax.kind !== "inductive"))
         this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }
@@ -254,12 +281,12 @@ export class CubicalProgram {
       onProgress({completed:0,total:discovery.total,current:main,phase:"loading",unit:"declarations",instructions:0});
     }
     if(collectScopes) {
-      this.scopeRevision=this.options.scopeRevision??globalThis.crypto.randomUUID();
+      this.scopeRevision=this.compilationBindings.revision;
       this.scopePoints=new Map();
       this.scopeSources=Object.freeze(Object.fromEntries([...prepared].filter(([,entry])=>typeof entry.text==="string")
         .map(([name,entry])=>[name,entry.text])));
       this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
-        probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null});
+        probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null,compilation:this.compilationBindings});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
         fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
     }
@@ -323,8 +350,8 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
-        scopePoints:scopeRecorder,
+      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+        scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
           this.scopeReplay.record("directive-start",name,directive,this.kernel);
@@ -355,7 +382,6 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
-          scopeRecorder?.declaration(name,declaration,checker.bindingName(declaration.name.text));
           if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);
@@ -396,7 +422,7 @@ export class CubicalProgram {
         throw error;
       }
       this.checker.steps = checker.steps;
-      this.recordModule(name, main, text, ast, result, failure);
+      this.recordModule(name, main, ast, result, failure);
       this.moduleSteps.set(name, statements);
       this.modules.set(name, result.env); visiting.delete(name);
       return result.env;
@@ -687,10 +713,10 @@ export class CubicalProgram {
     const extensions = this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type));
     if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
-    const aliases = (local?.aliases ?? []).map(alias => ({ ...alias, binding: `${local.referencePrefix ?? local.module}__local_${alias.start}` }));
+    const aliases = local?.aliases ?? [];
     const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };
     const variableNames = Object.fromEntries([
-      ...bindings.map(item => ({ term: item.term, name: item.node.name, binding: `${local?.referencePrefix ?? info?.sourceModule ?? this.main}__local_${item.node.start}` })),
+      ...bindings.map(item => ({ term: item.term, name: item.node.name, binding: item.binding })),
       ...aliases,
     // A universe variable's source name stands for the universe U(x), so it
     // names the level variable x.
@@ -707,7 +733,8 @@ export class CubicalProgram {
       checkingSteps: checked.checkingSteps, reductionSteps: checked.reductionSteps, axioms: [...assumptions.keys()],
       // The kernel extensions the inspected term relies on, apart from assumptions.
       extensions };
-    view.sourceBinding = aliases.find(alias => alias.term === local?.term)?.binding;
+    view.sourceBinding = local?.sourceBinding;
+    view.contextEntry = local ? {module:local.module,scope:local.node.contextScope??null} : null;
     const simplifiedType = simplifyTypeApplications(view.type);
     const presentation = simplifiedType === view.type ? view
       : checkReduction(this, view, "type", simplifiedType).view;

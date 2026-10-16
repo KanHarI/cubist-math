@@ -1,4 +1,5 @@
 // A small mathematical proof language. Parsing never evaluates JavaScript.
+import {parameterGroup} from "./telescopes.mjs";
 
 // The binary operators a notation can bind (theories.mjs, L2.10b); a
 // notation can bind unary -x too. x > y and x >= y are y < x and y <= x.
@@ -134,8 +135,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         if (bound && !universes)
           throw Object.assign(new Error("A constructor's arguments are terms; bind universes in the declaration's header."),
             { offset: names[0].start });
-        const group = params.length;
-        for (const p of names) params.push({ name: p, ...(bound ? { bound } : { type }), group });
+        params.push(...parameterGroup(names,bound?{bound}:{type},params.length));
         if (peek() !== ",") break;
         take(",");
       }
@@ -1385,7 +1385,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
           ...(keyword ? { keyword } : {}), start, end: take(";").end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "theory", name: n, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
+      declarations.push({ kind: "theory", name: n, header, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
         params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type, group: p.group })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;

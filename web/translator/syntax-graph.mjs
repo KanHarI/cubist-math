@@ -6,7 +6,7 @@
 export function syntaxGraphBudget({checkDeadline,maxVisits=500000}={}) {
   let visits=0;
   return {tick() {
-    if(++visits>maxVisits)throw Error('Cubical syntax construction term-size budget exceeded.');
+    if(++visits>maxVisits)throw Object.assign(Error('Cubical syntax construction term-size budget exceeded.'),{kind:"budget"});
     if((visits&255)===1)checkDeadline?.();
   }};
 }
@@ -19,7 +19,7 @@ export function dimensionContextKey(dimensions) {
     left<right?-1:left>right?1:0));
 }
 
-export function visitSyntax(root,visit,{budget=syntaxGraphBudget()}={}) {
+export function visitSyntax(root,visit,{budget=syntaxGraphBudget(),children=Object.values}={}) {
   const seen=new WeakSet(),pending=[root];
   while(pending.length) {
     const value=pending.pop();
@@ -30,7 +30,7 @@ export function visitSyntax(root,visit,{budget=syntaxGraphBudget()}={}) {
     }
     visit(value);
     if(value&&typeof value==='object')
-      for(const child of Object.values(value))pending.push(child);
+      for(const child of children(value))pending.push(child);
   }
 }
 
@@ -77,7 +77,8 @@ export function mapSyntax(root,replace,{budget=syntaxGraphBudget()}={}) {
 // Non-enumerable annotations (including checked PApp caches) confer no
 // authority here. Live maps, class instances, accessors and functions cannot
 // accidentally become persistent context state.
-export function snapshotSyntax(root,{budget=syntaxGraphBudget(),maxText=4000000}={}) {
+export const snapshotTextLimit=4000000;
+export function snapshotSyntax(root,{budget=syntaxGraphBudget(),maxText=snapshotTextLimit}={}) {
   const indices=new WeakMap(),pending=[],nodes=[];
   let text=0;
   const string=value=>{

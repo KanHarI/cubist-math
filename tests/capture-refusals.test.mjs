@@ -26,17 +26,11 @@ function checkedReading(t,c,edits,name = "main") {
     reader:(name,importer) => sources[name] ?? library(name,importer)});
 }
 
-test("capture-only refusals belong to known observations and have migration witnesses", async () => {
+test("retired capture-only refusals retain distinguishing migration witnesses", async () => {
   const root = new URL("../", import.meta.url);
   const codes = new Set(captureRefusals.map(item => item.code));
-  const fixtureBaseline = JSON.parse(await readFile(new URL("./fixtures/frontend-generation-baseline.json", import.meta.url), "utf8"));
-  const bindingBaseline = JSON.parse(await readFile(new URL("./fixtures/capture-bindings-baseline.json", import.meta.url), "utf8"));
   assert.deepEqual(Object.keys(captureControls).sort(), captureRefusals.flatMap(item => item.witnesses).sort());
-  for (const {code,phase,witnesses} of captureRefusals) for (const id of witnesses) {
-    const record = bindingBaseline.cases[id] ?? fixtureBaseline.cases[id];
-    assert.ok(record, `${code}: ${id} must have a known observation`);
-    assert.ok(record.phase.split("/").some(part => phase.split("/").includes(part)), `${id}: migration owner`);
-    assert.ok(JSON.stringify(record.observed).includes(code), `${id}: record observes its capture refusal`);
+  for (const {witnesses} of captureRefusals) for (const id of witnesses) {
     const witness = witnessCases.find(c => c.id === id), control = captureControls[id];
     assert.ok(witness, `${id}: witness exists`);
     validateMigrationWitness(witness,control,codes);

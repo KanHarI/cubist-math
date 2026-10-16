@@ -1,6 +1,22 @@
 # Correct capture and bindings
 
-Status: CB0 baseline and witnesses implemented, 2026-10-13; CB1–CB7 pending.
+Status: CB0–CB7 and the separate cleanup are complete, 2026-10-17.
+CB3 review is clean at round 5.
+CB4 is ready in #237 after a clean second Claude review. CB5 is ready in #238
+after a clean fourth Claude review at `57a1b9c9`. CB6 is ready in #239 after a
+clean eighth Claude review at `cb1cdc2c`; its [completion record](capture-bindings-cb6.md)
+covers exact inspector/source/generated contexts and validation. CB7 is ready
+in #240 after a clean second Claude review at `32bda0ee`; its
+[release record](capture-bindings-cb7.md) includes the measured allowances and
+explicit RSS exception. The separate [cleanup](../reports/capture-bindings-cleanup.md)
+is ready in #241 after a clean second Claude review at `1481d352`; it removes
+obsolete staging and unused summaries while preserving semantic coverage.
+The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
+evidence integration, remaining requirements and validation.
+The [CB2 evidence](capture-bindings-cb2.md) records production integration,
+validation and the remaining phase boundaries.
+The [CB1 evidence](capture-bindings-cb1.md) records its identity and replay
+pilots. PR #231 received a clean fourth external review at `5f2d645b`.
 The [baseline report](../reports/capture-bindings-baseline.md) records exact
 known defects, active controls and contextual-execution TODOs.
 The production baseline is `docs/frontend-generation-roadmap` at
@@ -92,6 +108,20 @@ The invariants are:
 2. Every local reference has a dominating binder or belongs to an explicit
    open interface. A group's domain precedes all of that group's binders;
    subsequent groups and the result/body see them.
+   Every binder position, including `_`, has an owned ID. Anonymous positions
+   introduce no lexical name: `_` in an expression remains a hole. Generated
+   forwarding and evidence use the position's ID. Parser and artifact builders
+   construct each group from one shared domain node; retention preserves
+   written groups instead of reconstructing them from flattened labels.
+   Anonymous parent header parameters correspond to anonymous child positions
+   within the same ordered class (universes or terms). Neither lexical nor
+   fixed universe namespaces admit `_`: `set _` and `prop _` are refused,
+   including in parameter domains. Anonymous universe positions may still be
+   passed and cloned by ID. Named header parameters retain the existing
+   correspondence by public label; singleton universe renaming applies only
+   when both universe positions are named.
+   Transitional templates give anonymous positions referable internal labels
+   and retain their public `_` labels separately.
 3. Cloning a declaration for a new instance freshens its bound IDs and all
    corresponding uses. External references remain shared. Merely revisiting
    immutable syntax does not allocate new identities.
@@ -166,6 +196,11 @@ introduces a binder ID; a constructor introduces no variable and the body
 uses its saved enclosing resolution. Constructor selection itself follows
 the matched type's constructor table. Preserve nested patterns, coordinates,
 induction hypotheses and existing shadowing behavior.
+For a qualified occurrence such as `p.x`, retain the whole enclosing lookup
+for the constructor branch and the member suffix for the variable branch.
+Restoring only the enclosing `p` could replace a qualified declaration or
+parent member with a projection of an unrelated value. A closed-namespace
+failure remains conditional until the candidate's role is decided.
 
 Deferred slots remain explicit into elaboration. Once the role is known,
 the shared adapter installs the selected binder/constructor mapping and
@@ -179,15 +214,41 @@ an explicit substitution environment. An inserted argument keeps its own
 references and is not retrospectively captured by a candidate binder.
 Do not rewrite opaque clause text and then re-resolve it in the caller.
 
-Statement targets get IDs as their binding effects become known. An
-initializer sees preceding statements; later statements see its new IDs.
-When a proof goal determines the effect of `intro`, `obtain`, `ext` or a
-related statement, retain the remaining block with explicit slots and its
-original lexical context until that effect is determined.
+Statement targets own IDs at source resolution through the shared scope
+schema. An initializer sees preceding statements; later statements see the
+new IDs. A proof goal determines the checked values/types of `intro`, `obtain`
+and `ext` at execution. Only successful execution enters the continuation.
+These fixed syntactic binder positions need no additional deferred-block
+representation; ambiguous pattern roles still use the slots described above.
+
+Proof-token references use the same retained syntax as term occurrences.
+Local witnesses and hypothesis targets keep their IDs through branch slot
+resolution; unfolding hints keep exact source definitions. Explicit named
+simplification sets expand to their checked member identities at source
+entry, independently of local term labels. Unknown set inventory is not an
+empty inventory. Default simplification remains a contextual search, while
+an explicit set name cannot select a same-spelled destination registry entry.
 
 Opening a model is another deferred lexical effect. Block/file `use`, section
 parameters and `m.(expression)` can introduce bare field and derived labels
 only after the receiver's type is known (`opened` in `translator/theories.mjs`).
+Explicit parent-label selections inside a theory have a separate source
+namespace: `p.(e)` reads free fields through the parent labelled `p`, preserving
+parameters and locals introduced within the current field or derived
+declaration. Its starting lexical context is an explicit boundary: theory
+header parameters and universes do not override the selected parent's fields.
+Inherited ambiguity is a failure in the ordered context, which an explicit
+namespace or a later local can shadow. Ordinary term lookup and block `use p` retain
+the label's bare-value fallback. A static parent selection resolves its body
+immediately and leaves no runtime receiver or unused-member dependencies.
+If a deferred binding can shadow the label, retain a namespace decision and
+the body occurrences' candidate member IDs until resolution. Do not copy
+the whole member table into the selector: unused members must not affect
+sharing, dependencies or substitution. Substitution records the
+arguments for those candidates in the affected body occurrences; a namespace
+decision opens exact interface targets without evaluating unused members.
+An immediate or deferred failed lookup carries the same source diagnostic
+and occurrence origin through cloning and inheritance.
 An activation retains the receiver occurrence and its activation
 context, separately from the authored recipe's origin. Block/section openings
 and explicit selections activate at their lexical source point. File-level
@@ -200,6 +261,22 @@ receivers, including E343 when a later declaration shadows a receiver root.
 It does not rebind an existing reference ID. Retained or compiler-generated
 copies inherit the resolved activation, never activate a source recipe again
 in the transformation's destination.
+
+The closed file-level activation boundary returns a retained source item,
+its lexical context and explicit receiver captures keyed by semantic receiver
+ID. Activation occurrences and receiver meaning are distinct: equal closed
+receiver syntax, up to alpha-renaming, shares one capture identity within the
+compilation, reusing a declaration ID when available. Every source consumer
+still performs its own activation and retains its own origin. A changed
+receiver has a different identity; interning is not definitional equality or
+permission to skip source checking. Structural interface comparisons therefore
+do not mistake two occurrences of the same capture for different types.
+These captures are external to each generated declaration's local telescope:
+inheritance and local freshening preserve them like source imports. Their
+values are checked, closed core descriptions carried in the module's private
+identity environment, never a live scope or a native handle. Missing capture
+values cannot fall back to destination labels. An item with no selection
+effects does not inspect or evaluate its recipes.
 
 Subsequent bare occurrences keep candidate opened-label slots and their saved
 enclosing resolution, including a missing lookup. Once checked, the receiver's
@@ -268,6 +345,97 @@ with notation's operand-hygiene contract. A structural member keeps its
 resolved receiver and public field label until the receiver's type selects
 the projection ID. Neither is treated as a dotted global string.
 
+Source selection contexts include the separate named-notation namespace;
+a term-only binding map cannot establish that a notation is absent. Resolve
+an explicit lexical parent namespace first, then standalone named notation
+before an ordinary model of the same spelling. Block `use` selects an
+ordinary model or named notation, not a parent interface namespace.
+Model-attached rules apply only to that model's identity, not to a later
+same-named binder or a parent namespace's unused bare-value fallback. Until
+named rule identities migrate, known named selections are explicitly refused
+at retention. A receiver already known to be missing also fails there.
+The source context builder and scope-point recorder must supply a complete
+notation inventory, even when empty, before retaining model-name selections.
+Unknown inventory is not an empty namespace. Replay carries that same inert
+inventory into contextual queries and preserves it across scratch bindings;
+it cannot silently turn a named selection into label opening by a model.
+File-level activation uses this same classifier after each earlier opening;
+it cannot gate attached rules by looking up the receiver's spelling in the
+original module environment. The ordinary-module entry accepts the explicit
+inventory alongside its import correspondence; omitting it leaves selection
+capability unknown, not an empty namespace.
+
+Within a retained theory, an earlier declared operator resolves to its exact
+operation ID independently of term binders bearing that operation's label.
+Resolve the original operands in their current lexical context, then combine
+them with that operation reference; never resolve the combined tree again.
+Explicit operand receivers are cloned from the rule's retained interface,
+and apply only a notation effect. Nested explicit selections and block uses
+replace the operator context, so the outer theory's rules cannot rewrite
+their bodies. Inherited rules use the same parent correspondence as ordinary
+field references, including inside helpers, laws and generated artifacts.
+A declaration reserves its own operation ID before resolving its body; its
+operand receivers are captured once outside the formal parameters. Resolved
+self references, including those introduced by notation, determine recursive
+helper status. Reserving an ID grants no checking or publication authority.
+Structural recursion enters an operand's actual expression scope before
+inspecting its constructor argument, checking any selected receiver and
+keeping that scope for fixed, structural and generalized arguments. It must
+not strip an operand wrapper or admit an argument outside the recursive
+constructor positions.
+
+A model-selected operator retains its activation identity. Each operand
+abstracts over a fresh notation parameter, separately from its resolved term
+names: the checked operation's recipe supplies that parameter, while an
+explicit selection inside the operand supersedes it. Canonical syntax holds
+these IDs and scopes; live checked notation effects stay in the elaboration
+environment. Cloning freshens operand parameters and activation IDs through
+the ordinary binding correspondence. A missing context cannot fall back to
+the destination selection. Numeric tokens retain the same context for term
+elaboration while remaining numeric endpoints for interval consumers.
+Numeral readers construct their input lazily from their own captured natural
+type, using the shared value elaborator for inductive descriptors; they do
+not look up `Nat` in the destination. This preserves failed-dependency and
+ignored-operand behavior. Named rules and static parent-namespace notation
+alternatives now retain their source identities. CB3 retains a lazy argument's
+term and selection interpretations separately when they differ. The consuming
+expression boundary chooses between those retained children without resolving
+the source label again; ignored operands do not force either interpretation.
+
+File-level model selection captures a separate notation identity alongside
+the closed receiver. The lexical context holds only that identity; an explicit
+capture environment carries the checked notation effect. Equal closed model
+receivers share a notation identity, so inherited headers compare consistently,
+while each source activation retains its own history. Ordered file-level uses
+can consume earlier captured notation, and generation never reactivates them.
+Theory operations declared so far take precedence over the captured module
+notation. A later complete selection replaces the earlier selection even when
+it lacks an operator. Named extensions must add their rule identity to this
+semantic key before their migration gate opens.
+
+Operand recipes retain their receiver syntax and source identities. Resolve
+those receivers only when an operand consumes its recipe, so an unused failed
+helper cannot prevent selecting healthy fields. Receiver elaboration uses its
+source binding environment without recording producer offsets as caller links;
+the operand keeps the caller's bindings and reference recorder. The selection
+boundary keeps the caller use site separate from the captured receiver.
+Shared notation validation preserves explicit operand views on family notation.
+
+Inheritance carries the operation ID and both operand recipes through the
+same parent-to-child correspondence. Sharing a notation requires all three
+to agree; one shared operation with different receiver recipes remains
+ambiguous. Preserve candidate identities and unambiguous parent paths across
+further inheritance instead of selecting a recipe by parent order. An
+explicit replacement notation in `extends` belongs to the resulting inherited
+child interface, after field renaming and before the child's own fields.
+Its receiver is captured there, independently of the parent's recipe.
+
+A parent label used as an operand receiver selects that parent's explicit
+model interface. Retain its typed constructor application over header and
+field IDs; do not use the label's ordinary bare-value fallback. Carrier
+classification may use the helper analysis view, while the complete checking
+view retains every helper domain, argument and result obligation.
+
 Allow late label lookup only in explicit namespaces: reserved builtins and
 universe syntax under their existing shadowing rules; constructor labels in
 the matched type's table or the saved source candidate inventory; named
@@ -290,12 +458,23 @@ Retain complete parameter groups directly instead of reconstructing them
 from equal-looking domain syntax. Generated evidence parameters are explicit
 dependent groups. Derived operations share the declaration interface, adding
 a body and call classification to their signature.
+Retain each carrier's universe as its result type. Evidence for a grouped
+set/prop parameter uses that group's already resolved domain and its own
+parameter ID; it cannot recapture a same-named universe or an outer evidence
+field. Evidence predicates retain their declaration IDs from source entry.
+Reject unmodelled interface properties rather than silently dropping them.
 
 `instantiate(expression, interfaceId -> expression)` substitutes by ID.
 It preserves the free identities of replacements; cloning freshens bound
 IDs and their uses consistently. Changing a label does not change identity.
 Named calls assign public labels to parameter IDs before substitution.
 There is no comparison between free spellings and forbidden local names.
+Open-interface remapping cannot change or target owned local binders; local
+renaming belongs to cloning with freshly allocated IDs. Inheritance validates
+the complete parent interface map and extends it with each admitted child.
+Inserted and inherited syntax, including its binder records, keeps authored
+origins and adds ordered call/extends frames. Dependency refusals report the
+written request, the helper path and the related definition origin.
 
 Inheritance uses an explicit parent-to-child field map. Child fields have
 their own IDs and retain origin IDs. Diamond sharing and independent-parent
@@ -306,6 +485,8 @@ Replace the `sameSyntax` comparisons in `theories.mjs`'s carrier preparation
 and field insertion with structural equivalence up to binding correspondence.
 First apply each parent's actual arguments and parent-to-child interface
 map; compare bound IDs up to alpha-renaming and external IDs exactly. This
+also compares reserved and missing resolutions by their semantic labels;
+those labels are not disposable reference spellings. This
 does not introduce general definitional equality. A shared origin identifies
 a diamond candidate, but its instantiated kind and type must still agree:
 the same ancestor at different arguments need not share. Independent-parent
@@ -315,12 +496,29 @@ it. Fresh clone IDs must neither prevent valid sharing nor hide conflicts.
 
 Expansion of nonrecursive helpers is separate from validation of the full
 expanded signature and its helper dependencies, with cycle detection.
+Conditional slot alternatives supply explicit dependency edges for expansion
+ordering and cycle checks. Support can be conditional when every captured
+alternative preserves admissibility; unresolved consumed openings and holes
+remain pending. Admission still checks the actual interpretation.
+Helper enumeration order cannot decide whether an alternative is expanded.
 Replacement subtrees cannot bypass validation because a generic visitor
 stops at replacement nodes.
 
+Inlining also preserves the helper's parameter-domain checks and declared
+result type. Keep the application and result ascription in the checked
+expression: an unused argument still has to inhabit its declared domain.
+A normalized view used by support analysis needs a checked correspondence
+to that expression; beta reduction must not erase an unchecked obligation.
+Named and implicit arguments use the same telescope assignment as ordinary
+calls before they are instantiated.
+
 Classify references/calls as nonrecursive helpers, earlier checked recursive
 values, or the current definition's structural self-calls. Preserve the
-private recursion mechanism for the last case. Field types/laws keep E845
+private recursion mechanism for the last case. Structural self is in scope
+only in the body, beneath the declaration's parameters: a parameter may
+shadow self, and parameter domains and result types still read the earlier
+source context, including an imported type with the same public label.
+Field types/laws keep E845
 for unsupported recursive dependencies, including bare references and calls
 hidden inside helpers. Ordinary derived values still call checked earlier
 recursive operations. Point refusal at the written request, with the
@@ -553,7 +751,7 @@ boundaries, not repeated approval checkpoints.
 | CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. |
 | CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. |
 | CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work. Multiple selected instances are labelled separately; discarded attempts cannot be opened. Sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
-| CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; remove retained nominal-syntax fallbacks. | Remove capture-only E801/E860/E869/E871 implementations and E866 workaround; retire catalogue entries without reusing codes. Record the isolated historical adapter and complete release evidence. |
+| CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; verify retirement of migrated paths. | Verify the cleanup’s removal of capture-only E801/E860/E869/E871 implementations and the E866 workaround; preserve retired codes without reuse. Record the isolated historical adapter and complete release evidence. |
 
 CB3's ambiguous pattern slot is the risk to prototype during CB1, before
 spreading the representation to every generator. Scope-point replay is the
@@ -567,6 +765,13 @@ eventually use one reference model, without falling back to an old resolver
 on failure.
 
 ## Verification and completion
+
+Before fixing review findings, compare them with earlier rounds and identify
+recurring design roots. Trace each affected contract across its producers and
+consumers, then fix the shared abstraction and verify distinguishing controls.
+The [review obligations](../reports/capture-bindings-review-roots.md) record the
+recurring CB2 roots and the required checks; isolated reproducer fixes do not
+close a repeated design issue.
 
 Each removed capture refusal needs a checked intended equation/computation.
 When the captured reading is well-typed, require a negative client and two

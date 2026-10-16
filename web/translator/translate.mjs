@@ -2,11 +2,15 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
-import {qualifySource} from "../cubist/source-syntax.mjs";
-import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
+import {qualifySource,substitutionFrame} from "../cubist/source-syntax.mjs";
+import {sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
+import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
-import {decidePatternSlot} from "../cubist/bindings.mjs";
+import {decidePatternSlot,BindingAdapter,resolutionError,sourceOrigin} from "../cubist/bindings.mjs";
+import {CompilationBindings} from "./compilation-bindings.mjs";
+import {lowerBindingDeclaration} from "./binding-module.mjs";
+import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -26,13 +30,15 @@ import {RECURSIVE,withRecursion,recursionSite,elaborateMatch,resolveRecursive,se
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem,bindingStem} from "./names.mjs";
-import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated} from "./declarations.mjs";
+import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
-import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {lexemeKey} from "./notation-context.mjs";
+import {notationOperand} from "./model-notation.mjs";
+import {enterExpressionScope} from "./expression-scopes.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -83,9 +89,17 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null,onDirectiveStart=null,onDirective=null}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
+    this.sources=sources;
+    this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
-    this.sourceRevision=scopePoints?.revision??globalThis.crypto.randomUUID();
+    this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
+    if(checker?.compilationBindings&&checker.compilationBindings!==this.compilationBindings
+      ||scopePoints&&scopePoints.compilation!==this.compilationBindings)
+      throw new TypeError("A translator and its observers must share the checker's compilation identities.");
+    if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
+    this.identityAdapter=new BindingAdapter(this.compilationBindings.table);
+    this.sourceRevision=this.compilationBindings.revision;
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
@@ -118,7 +132,10 @@ export class Translator {
     this.onPublicationStart=onPublicationStart;
     this.onPublicationEnd=onPublicationEnd;
     this.onDeclaration=onDeclaration;
-    this.onDeclarationStart=onDeclarationStart;
+    this.onDeclarationStart=declaration=>{
+      this.compilationBindings.declare(this.moduleName,declaration,this.checker.bindingName?.(declaration.name.text)??declaration.name.text);
+      onDeclarationStart?.(declaration);
+    };
     this.onDirectiveStart=onDirectiveStart;this.onDirective=onDirective;
     // The declarations to check changed by a number: a theory's expansion
     // adds the ones beyond itself, and a failed type of models takes the
@@ -129,8 +146,17 @@ export class Translator {
   }
   // A source unit of this translator. translate() makes one per module.
   unit(options={}) {
-    return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
+    return new SourceUnit({checker:this.checker,moduleName:this.moduleName,sources:this.sources,simpRegistry:this.simpRegistry,
       references:this.references,steps:this.onStep,scopePoints:this.scopePoints,freezeSuggestions:this.freezeSuggestions,...options});
+  }
+  // A subordinate elaborator in an existing scope shares that compilation's
+  // identity registry as well as its checker. Fresh observation/fuel state
+  // must not create a second meaning for IDs in the checker's model records.
+  forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
+    if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
+    return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+      moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
+      normalize,searchFuel,declarationFuel});
   }
   reference(scope,node,term,env=scope.env) {
     // A display label need not be the environment key (freshened generated
@@ -140,8 +166,10 @@ export class Translator {
     const key=node.bindingId?scope.unit.bindingAdapter.key(node.bindingId)
       :node.isBinding?node.text??node.name:node.name;
     const source=env?.get(key)===term?scope.localSources.get(key):null;
-    scope.unit.recordReference(source?{...node,name:source.name,localBindingKey:key}
-      :node.spelling?{...node,name:node.spelling}:node,term,scope,env);
+    const observed=source?{...node,name:source.name,localBindingKey:key}
+      :node.spelling?{...node,name:node.spelling}:node;
+    const contextScope=scope.unit.scopePoints?.current(scope);
+    scope.unit.recordReference(contextScope?{...observed,contextScope}:observed,term,scope,env);
   }
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
@@ -178,37 +206,49 @@ export class Translator {
     // losing the unchanged-argument permission carried by that value.
     const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
-      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,...(node.bindingId?{bindingId:node.bindingId}: {})});
-    this.reference(scope,{...node,name:label,isBinding:true},term);
+      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,
+        ...(node.origin?{origin:node.origin}:{}),...(node.bindingId?{bindingId:node.bindingId}: {})});
+    if(!["Var","U"].includes(term.tag))scope=scope.modelEvidence(term);
+    const record=()=>this.reference(scope,{...node,name:label,isBinding:true},term);
+    if(scope.unit.scopePoints)scope.unit.scopePoints.around(this,node,scope,{phase:"inspection"},record);
+    else record();
     return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
-  interval(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
+  expressionScope(node,scope,options) {
+    let entered;
+    while((entered=enterExpressionScope(this,scope,node,options)))({node,scope}=entered);
+    return {node,scope};
+  }
+  interval(n,scope,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
     budget.tick();
+    ({node:n,scope}=this.expressionScope(n,scope));
+    const {env}=scope;
     if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?I.zero:I.one;
-    if(n.kind==="unary")return I.reverse(this.interval(n.operand,env,budget),budget);
+    if(n.kind==="unary")return I.reverse(this.interval(n.operand,scope,budget),budget);
     if(n.kind==="binary"&&["&","|"].includes(n.operator))
-      return (n.operator==="&"?I.meet:I.join)(this.interval(n.left,env,budget),this.interval(n.right,env,budget),budget);
+      return (n.operator==="&"?I.meet:I.join)(this.interval(n.left,scope,budget),this.interval(n.right,scope,budget),budget);
     // A coordinate on a face that fixes it is its endpoint there (Scope.onFace).
     if(n.kind==="name"&&env.get(n.name)?.tag==="Dimension") {
       const {name,endpoint}=env.get(n.name);
       return endpoint===undefined?I.variable(name,budget):endpoint?I.one:I.zero;
     }
     if(n.kind==="call"&&n.fn.kind==="name") {
-      const args=n.args.map(a=>this.interval(a,env,budget));
+      const args=n.args.map(a=>this.interval(a,scope,budget));
       if(n.fn.name==="flip"&&args.length===1)return I.reverse(args[0],budget);
       if(n.fn.name==="meet"&&args.length===2)return I.meet(args[0],args[1],budget);
       if(n.fn.name==="join"&&args.length===2)return I.join(args[0],args[1],budget);
     }
     throw Error("Expected an interval coordinate: 0, 1, a coordinate name, ~i, i & j or i | j (or flip, meet, join).");
   }
-  cofibration(n,env,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
+  cofibration(n,scope,budget=latticeBudget(()=>this.checker.kernel?.checkDeadline())) {
     budget.tick();
+    ({node:n,scope}=this.expressionScope(n,scope));
     if(n.kind==="number"&&(n.value===0||n.value===1))return n.value===0?F.bottom:F.top;
-    if(n.kind==="binary"&&["and","or"].includes(n.operator))return (n.operator==="and"?F.meet:F.join)(this.cofibration(n.left,env,budget),this.cofibration(n.right,env,budget),budget);
+    if(n.kind==="binary"&&["and","or"].includes(n.operator))return (n.operator==="and"?F.meet:F.join)(this.cofibration(n.left,scope,budget),this.cofibration(n.right,scope,budget),budget);
     if(n.kind==="call"&&n.fn.kind==="name"&&n.fn.name==="on"&&n.args.length===2) {
-      const endpoint=n.args[1];
-      if(endpoint.kind==="number"&&[0,1].includes(endpoint.value))return F.equalEndpoint(this.interval(n.args[0],env,budget),endpoint.value,budget);
+      const {node:endpoint}=this.expressionScope(n.args[1],scope);
+      if(endpoint.kind==="number"&&[0,1].includes(endpoint.value))return F.equalEndpoint(this.interval(n.args[0],scope,budget),endpoint.value,budget);
     }
     throw Error("Expected a face formula: on(i, 0 or 1), and/or, 0 or 1.");
   }
@@ -230,6 +270,7 @@ export class Translator {
     return universe.level;
   }
   dimensionBody(n,dim,scope,expected=null) {
+    ({node:n,scope}=this.expressionScope(n,scope));
     if(n.kind!=="lambda"||n.domain.kind!=="name"||n.domain.name!=="Interval")
       throw Error("Expected fun (i : Interval) => ... in a cubical binder.");
     return this.term(n.body,this.sourceDimension(n.name,dim,scope),expected);
@@ -280,19 +321,28 @@ export class Translator {
     const selection=scope.env.get(SELECTION),plain=/^[0-9]+$/.test(n.text);
     if(!selection?.complete||!(selection.literal||plain&&selection.numeral))
       throw literalUnread(selection,n.text);
+    const origin=n.origin??sourceOrigin({revision:this.sourceRevision,module:scope.unit.moduleName,start:n.start,end:n.end});
+    const at={start:n.start,end:n.end,origin};
     // The natural number is built from the Nat the rule read where it was
     // declared, whatever the use's scope binds.
     if(!selection.literal) {
+      if(selection.numeral.model) {
+        const natural=selection.numeral.natural;
+        const reads={kind:"name",name:operatorBinding("numeral"),...at};
+        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
+        return this.term(node,scope,expected);
+      }
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
-      const applied=appliedRule(natural,selection.numeral,
-        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null,n);
+      const applied=appliedRetainedRule(this,natural,selection.numeral,
+        {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
+          ...at},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
     // A glyph's number is built from the library's Nat, as its glyphs are.
     const lexeme=[...n.text].reduceRight((tail,character)=>{
-      const raw=value=>({kind:"number",value,raw:true,natural:lexemeKey("Nat")});
+      const raw=value=>({kind:"rawNumeral",value,natural:rule.aliases.get(lexemeKey("Nat"))});
       const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[raw(Number(character))]}
         :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[raw(character.charCodeAt(0)-97)]}
         :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[raw(character.charCodeAt(0)-65)]}
@@ -302,18 +352,18 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRule(glyphs,rule,lexeme,null,n);
+    const applied=appliedRetainedRule(this,glyphs,rule,{...lexeme,...at},null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
     // The answer is read from its normal form, a numeral, not from its text.
     const normal=this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
-      args:[applied.node],start:n.start,end:n.end},applied.scope,null)).normal,answer=numeralValue(normal);
+      args:[applied.node],...at},applied.scope,null)).normal,answer=numeralValue(normal);
     if(answer===null)throw literalUnevaluated(selection,n.text,this.shown(normal));
     if(answer!==0)throw scope.unit.locate(literalRefused(selection,n.text,answer-1),
       {start:n.start+answer-1,end:n.start+answer});
     return this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parsed_value")},args:[applied.node,{kind:"name",name:"tt"}],
-      start:n.start,end:n.end},applied.scope,expected);
+      ...at},applied.scope,expected);
   }
   evaluate(d,scope) {
     scope.spend("queries");
@@ -379,17 +429,26 @@ export class Translator {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
   }
+  // Availability has one writer for public names and exact identities.
+  // Reservations carry no values; a failed/rolled-back family publishes the
+  // same refusal under every alias, never a previous imported value.
+  publishDeclaration(env,name,value) {
+    env.set(name,value);
+    const key=this.checker.bindingName?.(name)??name;
+    const declared=this.compilationBindings.declaration(key);
+    if(declared) {
+      this.compilationBindings.published(declared.binding,value);
+      env.set(this.identityAdapter.key(declared.binding.id),value);
+    }
+  }
   // Prepared syntax enters the same declaration checking/admission path as
-  // parsed source. Binding-aware producers supply the one identity adapter;
+  // parsed source. Each retained declaration supplies its identity adapter;
   // no printing or second source-resolution pass occurs at this boundary.
-  translateSyntax(ast,source,imported=new Map(),{bindingAdapter=null}={}) {
-    const module=this.unit({source,bindingAdapter});
+  translateSyntax(ast,source,imported=new Map()) {
+    const module=this.unit({source});
     const env=new Map(imported),declarations=[],directives=[];
-    const declarationKey=d=>d.name.bindingId?bindingAdapter.key(d.name.bindingId):null;
-    const publish=(d,value)=>{
-      env.set(d.name.text,value);
-      const key=declarationKey(d);if(key)env.set(key,value);
-    };
+    const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
+    const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
     // The models of the file-level uses refused where they stand.
     const refusedUses=new Set();
     const ownership=new DeclarationOwnership();
@@ -400,7 +459,7 @@ export class Translator {
     const unavailable=(group,via)=>{
       for(const declaration of group.members)for(const {name} of declaredNames(declaration)) {
         const value=untranslated(name,this.checker.bindingName?.(name)??name,`Untranslated dependency: ${via}`,group.cause);
-        env.set(name,value); env.set(lexicalBinding(value.binding),value);
+        this.publishDeclaration(env,name,value);
       }
     };
     const finishPublication=(accept,failed=null)=>{
@@ -437,11 +496,11 @@ export class Translator {
       const error=module.locate(duplicateDeclaration(conflict.name),conflict.at);
       this.onDeclarationStart?.(d);
       const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
-        reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd};
+        ...sourceFailure(error,module)};
       const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
       const bind=name=>{
         const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
-        env.set(name,value);env.set(lexicalBinding(value.binding),value);
+        this.publishDeclaration(env,name,value);
       };
       for(const member of members)for(const {name} of declaredNames(member))
         if(ownership.owns(name,d))bind(name);
@@ -472,7 +531,9 @@ export class Translator {
         continue;
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
-      const d=queued.generated?elaborationSyntax(queued):queued;
+      const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
+      const d=retained?.declaration??queued;
+      const effects=fileSelectionEffects(d.kind);
       const directiveStart=directives.length;
       const finishDirective=()=>this.onDirective?.(d,directives.length>directiveStart?directives.at(-1):{status:"checked"});
       if(directiveKinds.has(d.kind))this.onDirectiveStart?.(d);
@@ -488,6 +549,10 @@ export class Translator {
       if(d.kind==="theory"||d.kind==="initial"||d.kind==="free") {
         const before=new Map(env);
         const generated=(d.kind==="theory"?theoryDeclarations:initialDeclarations)(this,module,d,env,declarations);
+        // Reserve identities for every group, including optional groups
+        // later blocked before elaboration. This grants no availability.
+        for(const declaration of generated)this.compilationBindings.declare(this.moduleName,declaration,
+          this.checker.bindingName?.(declaration.name.text)??declaration.name.text);
         const conflict=ownership.reserve(generated,d);
         if(conflict) {
           env.clear(); for(const [key,value] of before)env.set(key,value);
@@ -513,15 +578,15 @@ export class Translator {
         try {
           let scope=new Scope(unit,new Map(),env);
           for(const model of d.uses??[]) {
-            try { scope=selected(this,scope,model); }
+            try { scope=selected(this,scope,model,{effects}); }
             catch(error) {propagateElaborationStop(error); if(!refusedUses.has(model))throw error; scope=null; break; }
           }
-          if(scope)selected(this,scope,d.model);
+          if(scope)selected(this,scope,d.model,{effects});
         } catch(error) {
           propagateElaborationStop(error);
           refusedUses.add(d.model);
           directives.push({kind:"use",name:`at line ${source.slice(0,d.start).split("\n").length}`,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error,module),start:d.start});
           directives.at(-1).searchFuel=this.fuelRecord(unit);
         }
         unit.fuel.close();
@@ -531,7 +596,7 @@ export class Translator {
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
-        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind}); }
+        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",...sourceFailure(error,module),start:d.start}); }
         finishDirective();
         continue;
       }
@@ -540,13 +605,13 @@ export class Translator {
         // An evaluation asks the kernel as a declaration does, with fuel of its own.
         const unit=module.declaration(this.declarationFuel);
         try {
-          const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
+          const scope=sourceItemScope(this,new Scope(unit,new Map(),env),d);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
             normalText:this.evaluate(d,scope)});
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -558,13 +623,13 @@ export class Translator {
         const unit=module.declaration(this.declarationFuel);
         try {
           // A file-level use selects for directives too, which print in it.
-          const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
+          const scope=sourceItemScope(this,new Scope(unit,new Map(),env),d);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
             text:this.printed(d,scope)});
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -593,7 +658,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:d.kind,name:d.rule?.text??d.name.text,status:"not-translated",
-            reason:error.message,start:d.start,failure:error.kind});
+            ...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -619,7 +684,7 @@ export class Translator {
           directives.push({kind:d.kind,name:d.rule.text,status:"checked",start:d.start});
         } catch(error) {
           propagateElaborationStop(error);
-          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind});
+          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -627,12 +692,13 @@ export class Translator {
         continue;
       }
       if(d.kind==="inductive") {
-        this.inductiveDeclaration(d,module,env,declarations);
+        this.inductiveDeclaration(d,module.with({bindingAdapter:retained?.adapter}),env,declarations);
         settle(queue);
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
-      const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
+      const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind},
+        bindingAdapter:retained?.adapter});
       this.onDeclarationStart?.(d);
       try {
         // A theory's sorts need their evidence's definitions (L2.4).
@@ -651,7 +717,7 @@ export class Translator {
         if(d.section)expression=lambdas(d.section.params,{kind:"sectionScope",section:d.section,body:expression,
           start:d.start,end:d.start});
         // The models a file-level use selected before it, outermost.
-        if(d.uses)expression={kind:"useScope",uses:d.uses,body:expression,start:d.start,end:d.start};
+        if(d.uses)expression={kind:"useScope",uses:d.uses,effects,body:expression,start:d.start,end:d.start};
         // A body that is, as a whole, a match on a declared type may call the
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
@@ -674,7 +740,9 @@ export class Translator {
         // The declaration's closing check, and its admission below, are
         // kernel questions like any other, on the declaration's fuel.
         unit.fuel.spend("queries");
-        const checked=this.normalize?this.checker.verify(term):this.checker.infer(term);
+        let checked;
+        try {checked=this.normalize?this.checker.verify(term):this.checker.infer(term);}
+        catch(error) {throw unit.locate(error,d.name);}
         const native=checked.native;
         if(native&&!native.ok)throw Error(`Native cubical check rejected: ${native.error}`);
         if(d.computable) {
@@ -702,8 +770,7 @@ export class Translator {
         publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
-        declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-          errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
+        declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
           syntax:d});
       }
       declarations.at(-1).rewriteWork={...unit.work};
@@ -717,10 +784,11 @@ export class Translator {
         const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
         publish(d,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
       }
-      if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
       settle(queue);
     }
-    return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
+    return {declarations,env,directives,
+      ...(this.collectGeneration?{generation:publications.map(group=>({id:group.id,declarations:group.members.map(({theory,generated,...syntax})=>syntax)}))}:{}),
+      publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
       members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,
       ...(group.failedMember?{failedMember:group.failedMember}:{}),cause:group.cause})),simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
@@ -735,17 +803,19 @@ export class Translator {
   // its own transaction, as a definition is; it binds the type's name and
   // its constructors' names. A failed one binds each as untranslated.
   inductiveDeclaration(d,module,env,declarations) {
-    const unit=module.declaration(this.declarationFuel);
+    const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind}});
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
     const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
     const unavailable=failure=>{
-      for(const name of names)env.set(name,untranslated(name,binding,failure.reason??failure.message,failureRoot(failure,binding)));
+      const root=failureRoot(failure,binding);
+      for(const name of names)this.publishDeclaration(env,name,untranslated(name,this.checker.bindingName?.(name)??name,
+        failure.reason??failure.message,root));
     };
     try {
-      const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
+      const scope=sourceItemScope(this,new Scope(unit,new Map(),env),d);
       const lowered=lowerInductive(this,d,scope);
-      for(const [name,value] of lowered.entries)env.set(name,value);
+      for(const [name,value] of lowered.entries)this.publishDeclaration(env,name,value);
       // An initial/free model's declared type brings its generated syntax,
       // so that it is recorded as the inductive it is.
       declarations.push({name:d.name.text,status:"checked-native-cubical",inductive:lowered.record,
@@ -757,8 +827,7 @@ export class Translator {
       // or generator type (initial-models.mjs).
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       unavailable(error);
-      declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-        errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
+      declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
         syntax:d});
     }
     declarations.at(-1).rewriteWork={...unit.work};
@@ -775,22 +844,41 @@ export class Translator {
       simplificationRule(at,term);
       return boundedStateKey(term,at.unit.fuel,this.checker.kernel);
     });
-    return {term,identity,origin:module.moduleName,priority,sourceName:token.text};
+    const binding=this.compilationBindings.capture(term,token.origin??sourceOrigin({revision:this.sourceRevision,
+      module:module.moduleName,start:token.start,end:token.end}));
+    return {term,identity,binding:binding.id,origin:module.moduleName,priority,sourceName:token.text};
+  }
+  // Substituted fields/helpers keep their written occurrence in an expansion
+  // frame. Diagnostics and source edits must read that occurrence together.
+  writtenReference(expression,unit) {
+    const frame=substitutionFrame(expression);
+    if(!frame)return null;
+    const site=frame.site.module===unit.moduleName?frame.site:null;
+    return {site,text:unit.text(frame.site)??this.compilationBindings.table.get(frame.binding).label};
+  }
+  localReference(token,scope,missing) {
+    const expression=referenceSyntax(token),entered=this.expressionScope(expression,scope);
+    const {node,scope:at}=entered,key=node.kind==="name"?node.name:null;
+    const value=key&&at.env.get(key);
+    if(!value||!at.localSources.has(key)) {
+      const written=this.writtenReference(expression,scope.unit);
+      const error=missing(sourceName(expression)??written?.text??null);
+      throw written?.site?scope.unit.locate(error,written.site):error;
+    }
+    return value;
   }
   selectedSimpRules(items,scope,only,without=[],witnessNames=[]) {
     const {unit,env}=scope;
     const witnesses=witnessNames.map(token=>{
       try {
-        const proof=env.get(token.text);
-        if(!proof||!scope.localSources.has(token.text))
-          throw Error(`Simplification premise witness must be local: ${token.text}.`);
+        const proof=this.localReference(token,scope,label=>Error(`Simplification premise witness must be local: ${label}.`));
         scope.infer(proof);
         return proof;
       } catch(error) {propagateElaborationStop(error);throw unit.locate(error,token);}
     });
     const selected=only?[]:orderedDefaultRules(unit.simpRegistry);
     for(const item of items) {
-      const set=item.value.kind==="name"&&!item.reverse
+      const set=item.value.kind==="name"&&!item.value.resolution&&!item.reverse
         ? resolveSimpSet(unit.simpRegistry,item.value.name):null;
       if(set)selected.push(...set.map(rule=>({...rule,
         sourceStart:item.start,sourceEnd:item.end})));
@@ -799,17 +887,17 @@ export class Translator {
         try {term=this.term(item.value,scope,null);}
         catch(error) {propagateElaborationStop(error);throw unit.locate(error,item);}
         selected.push({term,identity:boundedStateKey(term,null,this.checker.kernel),reverse:item.reverse,
-          sourceText:unit.source.slice(item.value.start,item.value.end),
+          sourceText:this.writtenReference(item.value,unit)?.text??unit.text(item.value),
           sourceStart:item.start,sourceEnd:item.end});
       }
     }
     const excluded=new Set();
     for(const token of without) {
-      const set=resolveSimpSet(unit.simpRegistry,token.text);
+      const set=token.kind?null:resolveSimpSet(unit.simpRegistry,token.text);
       if(set)for(const rule of set)excluded.add(rule.identity);
       else {
         try {
-          const term=this.term({kind:"name",name:token.text,start:token.start,end:token.end},scope,null);
+          const term=this.term(referenceSyntax(token),scope,null);
           excluded.add(this.search(scope,"Excluding a simplification rule",at=>{
             const identity=boundedStateKey(term,at.unit.fuel,this.checker.kernel);
             simplificationRule(at,term);
@@ -942,9 +1030,9 @@ export class Translator {
     }
     const keyword=first.kind==="simpaOnly"?"simpa":"simp";
     let text=`${keyword} only [${frozen.map(rule=>`${rule.reverse?"<- ":""}${rule.sourceText}`).join(", ")}]`;
-    if(first.witnesses?.length)text+=` with [${first.witnesses.map(token=>token.text).join(", ")}]`;
-    if(first.at)text+=` at ${first.at.text} as ${first.as.text}`;
-    if(first.using)text+=` using ${unit.source.slice(first.using.start,first.using.end)}`;
+    if(first.witnesses?.length)text+=` with [${first.witnesses.map(token=>sourceName(referenceSyntax(token))).join(", ")}]`;
+    if(first.at)text+=` at ${sourceName(referenceSyntax(first.at))} as ${bindingStem(first.as)}`;
+    if(first.using)text+=` using ${this.writtenReference(first.using,unit)?.text??unit.text(first.using)}`;
     text+=";";
     return {start:first.start,end:first.end,
       original:unit.source.slice(first.start,first.end),text};
@@ -989,10 +1077,11 @@ export class Translator {
       return lowered;
     };
     n=resolve(n);
+    if(n.kind==="name") {
+      const operand=enterExpressionScope(this,scope,n);
+      if(operand)return this.term(operand.node,operand.scope,expected);
+    }
     if(n.kind==="call")n={...n,fn:resolve(n.fn)};
-    if(n.kind==="reference")n=elaborationSyntax(n);
-    else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
-    if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
     const result=this.termBody(n,scope,expected);
     if(scope.unit.references) {
       const {env,unit}=scope;
@@ -1001,7 +1090,7 @@ export class Translator {
       else if(n.kind==="name" && !env.has(n.name)) site=n;
       else site=expressionSite(n);
       if(Number.isInteger(site?.start)) this.reference(scope,{...site,expressionSite:true,
-        role:"language expression",description:`Checked expression: ${unit.source.slice(n.start,n.end).trim()}`},
+        role:"language expression",description:`Checked expression: ${unit.text(n)?.trim()??sourceName(n)??"(generated)"}`},
         result);
     }
     return result;
@@ -1020,6 +1109,24 @@ export class Translator {
       throw Error("Numerals and induction require an imported Nat with zero and succ constructors.");
     return {type,zero:T.constructor(zero,type,"zero"),succ:T.constructor(succ,type,"succ")};
   }
+  // Both a source binding and a closed notation capture supply an elaboration
+  // value. Resolve descriptors through the same path, without looking their
+  // public label up again in the destination environment.
+  valueTerm(n,value,scope,expected=null) {
+    if(value.tag==="Untranslated") {
+      const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" ")
+        :n.name.startsWith("\u0000")?value.name:n.name)}`);
+      error.blockedBy=value.blockedBy??value.binding??value.name;
+      error.cause=value.cause??value.reason;
+      throw error;
+    }
+    if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+    if(value.tag==="Ambiguous")throw Error(value.message);
+    if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
+    if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
+    this.reference(scope,n,value);
+    return value;
+  }
   termBody(n,scope,expected=null) {
     scope.checkDeadline();
     if(!n) throw Error("Missing source expression.");
@@ -1033,10 +1140,11 @@ export class Translator {
         // is checked as a definition of its own.
         scope.spend("queries");
         for(const hint of n.hints) {
-          let value=env.get(hint.text);
+          const expression=referenceSyntax(hint),{node,scope:at}=this.expressionScope(expression,scope);
+          let value=node.kind==="name"?at.env.get(node.name):this.term(node,at,null);
           while(value?.tag==="App")value=value.fn;
-          if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${hint.text}`);
-          this.reference(scope,{...hint,name:hint.text},value,null);
+          if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${sourceName(expression)}`);
+          if(node.kind==="name")this.reference(at,node,value,null);
         }
         return this.checker.scopedUnfolding(()=>tr(n.body),scope.context,expected,
           scope.dimensions,scope.unit.names);
@@ -1047,7 +1155,7 @@ export class Translator {
         const head=n.left.kind==="call"&&n.left.fn.kind==="name"?n.left.fn:n.left;
         const constructor=expected&&head.kind==="name"&&env.get(head.name)?.tag==="InductiveConstructor"&&env.get(head.name).dims>0;
         const path=tr(n.left,constructor?expected:null);
-        return T.at(path,this.interval(n.right,env));
+        return T.at(path,this.interval(n.right,scope));
       }
       case "pathLambda": {
         if(!expected)throw Error("path i => ... needs an expected Path or PathP type.");
@@ -1085,26 +1193,7 @@ export class Translator {
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.
         if(isHole(n))throw Error("A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.");
-        if(env.has(n.name)) {
-          const value=env.get(n.name);
-          if(value.tag==="Untranslated") {
-            // A notation rule's name is read under its key: the message
-            // names it as the rule does. A model's operator or numeral is
-            // read under a key too: the message names its operation.
-            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" ")
-              :n.name.startsWith("\u0000")?value.name:n.name)}`);
-            error.blockedBy=value.blockedBy??value.binding??value.name;
-            error.cause=value.cause??value.reason;
-            throw error;
-          }
-          if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
-          if(value.tag==="Ambiguous")throw Error(value.message);
-          // A declared type or constructor (L2.1), or the declaration's own name.
-          if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
-          if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
-          this.reference(scope,n,value);
-          return value;
-        }
+        if(env.has(n.name))return this.valueTerm(n,env.get(n.name),scope,expected);
         const constant=universeConstant(n.name);
         if(constant!==null)return T.universe(constant);
         if(n.name==="Universe")throw Error("Universe was removed: bind a universe variable as U < UU0.");
@@ -1112,7 +1201,8 @@ export class Translator {
         if(builtin[n.name])return builtin[n.name];
         // The declaration's own name, where it is not a recursive reference:
         // recursion exists only with declared types, under their option.
-        if(scope.unit.declaring===n.name&&this.checker.kernel?.extensions?.h1)throw Error(selfReference(n.name));
+        if(scope.unit.declaring?.kind==="def"&&scope.unit.declaring.name===n.name&&this.checker.kernel?.extensions?.h1)
+          throw Error(selfReference(n.name));
         // m.f, for a model m of a theory, is the projection T.f(m) (L2.4).
         const projection=modelField(this,scope,n);
         if(projection)return tr(projection,expected);
@@ -1127,10 +1217,13 @@ export class Translator {
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
+        if(n.notationSelection)return tr({kind:"boundNotation",selection:n.notationSelection,
+          body:{...n,kind:"literal",text:n.text??String(n.value)},start:n.start,end:n.end});
         // Numeric nodes also occur as interval endpoints, consumed directly
-        // by interval()/face parsing. As terms they require an unmigrated
-        // notation recipe; legacy mode must not synthesize an ambient Nat.
-        if(scope.unit.bindingAdapter)throw new TypeError("Binding syntax family has not migrated: numeral");
+        // by interval()/face parsing. A term without a retained reader must
+        // not synthesize an ambient Nat, including in legacy mode.
+        if(scope.unit.bindingAdapter)throw scope.unit.locate(n.literalFailure?resolutionError(n.literalFailure)
+          :unselectedLiteral(n.text??String(n.value)),n);
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
         // reads none (L2.10c). A numeral rule's own natural number is raw
@@ -1143,6 +1236,18 @@ export class Translator {
         const natural=this.naturalConstructors(scope,n.natural??"Nat");
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
+      case "rawNumeral": {
+        // A reader's input is lazy data over its own checked Nat. Building it
+        // only when used preserves ignored-operand and refused-rule behavior.
+        // No source/destination name is consulted, even under a binding adapter.
+        if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
+        if(!n.natural)throw new TypeError("A numeral reader requires its captured natural-number type.");
+        // The implicit type is not another authored occurrence at the token.
+        const type=this.valueTerm({kind:"name",name:n.natural.source??"Nat"},n.natural,scope);
+        const natural=this.naturalSignature(scope,type);
+        let value=natural.zero;for(let i=0;i<n.value;i++)value=T.app(natural.succ,value);
+        this.reference(scope,{...n,name:String(n.value)},value);return value;
+      }
       case "binaryNumber": {
         // A binary literal is a selected notation's literal rule's, as any
         // numeric token is (L2.10c), as binary.(0b1101) (L2.10j).
@@ -1219,7 +1324,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.left,n.right,n);
+            const applied=appliedRetainedRule(this,scope,operation.rule,n.left,n.right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
@@ -1237,12 +1342,11 @@ export class Translator {
           const selection=bound?found:null;
           if(!selection&&!["+","*","<=","<"].includes(n.operator))throw unselectedOperator(n.operator);
           // An operand with a recipe is read in its notation (L2.10b).
-          const recipe=selection?.recipes?.[n.operator]??{},operand=(node,view)=>view
-            ?{kind:"select",model:{kind:"name",name:view,start:node.start,end:node.end},body:node,start:node.start,end:node.end}:node;
-          const left=operand(n.left,recipe.left),right=operand(n.right,recipe.right);
+          const recipe=selection?.recipes?.[n.operator]??{};
+          const left=notationOperand(this,scope,n.left,recipe.left),right=notationOperand(this,scope,n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
-            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
+            const applied=appliedRetainedRule(this,scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           // A notation open binds means the model's operation (L2.4).
@@ -1272,7 +1376,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier,operator:"unary -"});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.operand,null,n);
+            const applied=appliedRetainedRule(this,scope,operation.rule,n.operand,null,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.operand],start:n.start,end:n.end},expected);
@@ -1281,23 +1385,26 @@ export class Translator {
         if(!selection||!selection.complete&&!selection.operators.has("unary -"))throw unselectedNegation();
         if(!selection.operators.has("unary -"))throw unboundNegation(selection);
         const view=selection.recipes?.["unary -"]?.left;
-        const operand=view?{kind:"select",model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
+        const operand=notationOperand(this,scope,n.operand,view);
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
-          const applied=appliedRule(scope,binding.rule,operand,null,n);
+          const applied=appliedRetainedRule(this,scope,binding.rule,operand,null,n);
           return this.term(applied.node,applied.scope,expected);
         }
         return tr({kind:"call",fn:{kind:"name",name:operatorBinding("unary -"),start:n.operatorStart,end:n.operatorEnd},
           args:[operand],start:n.start,end:n.end},expected);
       }
       // use m; at a file's top level, and m.(e) for one expression (L2.4c).
-      case "useScope": return this.term(n.body,n.uses.reduce((inner,model)=>selected(this,inner,model),scope),expected);
-      // Copied theory syntax keeps its selected notation, while term and
-      // universe binders come from the generated declaration's current scope.
-      // It has no source links here, including syntax a captured rule expands.
-      case "notationScope": return this.term(n.body,scope.withUnit(scope.unit.with({references:null})).aliases(n.aliases),expected);
+      case "useScope": return this.term(n.body,usesScope(this,scope,n.uses,{effects:n.effects}),expected);
       // An operand of a notation's rule, read where it stood (L2.10a).
-      case "scoped": return this.term(n.node,n.scope,expected);
+      case "scoped":
+      case "boundNotation":
+      case "notationArgument":
+      case "operandAlternatives":
+      case "select": {
+        const entered=enterExpressionScope(this,scope,n);
+        return this.term(entered.node,entered.scope,expected);
+      }
       // An elaborated argument abstracted over a generated declaration's
       // parameters. Its arguments are syntax in the current scope; ordinary
       // substitution reconnects the checked value to those local bindings.
@@ -1309,25 +1416,12 @@ export class Translator {
       }
       // A literal, read by the selected notation's literal rule (L2.10c).
       case "literal": return this.literalTerm(n,scope,expected);
-      case "select": return this.term(n.body,selected(this,scope,n.model),expected);
       case "operatorOf": {
         const operation=qualifiedOperator(this,scope,n);
         if(operation.kind!=="notationRule")return tr(operation,expected);
-        // A named notation's operator alone: the function its rule applies
-        // to the pattern's names, x + y := add(x, y).
-        const {value,left,right,aliases}=operation.rule;
-        if(value.kind!=="call"||value.args.length!==2||value.args[0].name!==left||value.args[1].name!==right||value.fn.kind!=="name")
-          throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
-        let inner=scope;
-        for(const [key,alias] of aliases)inner=inner.alias(key,alias);
-        return this.term(value.fn,inner,expected);
-      }
-      // A generated recursive call names this declaration's recursion
-      // directly, independently of a source binder hiding its namespace.
-      case "recursiveCall": {
-        const recursive=env.get(RECURSIVE);
-        if(recursive?.source!==n.fn.name)throw Error(selfReference(n.fn.name));
-        return resolveRecursive(this,n.fn,recursive,n.args,scope);
+        const retained=retainedRuleOperation(this,scope,operation.rule,n);
+        if(!retained)throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
+        return this.term(retained.node,retained.scope,expected);
       }
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the
@@ -1345,7 +1439,7 @@ export class Translator {
         const result=T.pair(expected,first,tr(n.right,T.app(family,first)));
         if(scope.unit.references && Number.isInteger(n.tupleStart) && n.right.syntheticTuplePair) {
           const expand=node=>node.kind==="pair" ? `(${expand(node.left)}, ${expand(node.right)})`
-            : scope.unit.source.slice(node.start,node.end).trim();
+            : scope.unit.text(node)?.trim()??sourceName(node)??"(generated)";
           const expansion=expand(n);
           for(const [name,start] of [["(",n.tupleStart],[")",n.tupleEnd]])
             this.reference(scope,{...n,name,start,end:start+1,role:"tuple macro",expansion,
@@ -1425,7 +1519,7 @@ export class Translator {
       case "proof": {
         const type=tr(n.type,null);
         const term=this.block(n.statements,new Goal(type,scope));
-        const checked=scope.check(term,type);
+        const checked=scope.check(term,type,n.statements.at(-1));
         return scope.ascribe(checked,type);
       }
       default:throw Error(`Untranslated syntax: ${n.kind}`);
@@ -1516,7 +1610,7 @@ export class Translator {
       return made(right.found);
     });
     rewrites.push({side:target,rule:{displayName:`${item.reverse?"<- ":""}${
-      scope.unit.source.slice(item.value.start,item.value.end)||"a rule"}`}});
+      this.writtenReference(item.value,scope.unit)?.text??scope.unit.text(item.value)??"a rule"}`}});
     const next=T.path(scope.fresh("i"),path.family,
       target==="lhs"?changed.after:path.left,
       target==="rhs"?changed.after:path.right);
@@ -1588,8 +1682,7 @@ export class Translator {
   // which the search uses as a rule (L2.5b).
   hlevelLocals(scope) {
     const locals=[];
-    for(const [key,bound] of scope.env) {
-      if(!scope.localSources.has(key)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+    for(const bound of scope.localDefinitions()) {
       const type=scope.infer(bound).type;
       if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
     }
@@ -1628,7 +1721,7 @@ export class Translator {
     this.reference(scope,{...site,...details},proof);
     for(const [index,step] of trace.entries()) {
       const rule=step.rule.displayName;
-      this.reference(scope,{name:`simp step ${index+1}`,start:site.start,end:site.end,
+      this.reference(scope,{...site,name:`simp step ${index+1}`,
         role:"simplification step",expansionIndex:index+1,
         traceParent:site.start,
         description:`${step.phase??"goal"} ${step.side}: checked rewrite ${index+1} using ${step.rule.reverse?"<- ":""}${rule}; ${step.visits} nodes visited.${step.premiseRules.length

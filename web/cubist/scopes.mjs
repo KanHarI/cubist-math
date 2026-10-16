@@ -1,15 +1,35 @@
 // Where the source syntax binds names. For each kind of node: the names it
-// binds and the children they are in scope in. Every traversal that collects,
-// renames or substitutes free names reads its scopes here, so that a binding
-// form is described once and no substitution captures a name or misses an
-// occurrence (tests/scopes.test.mjs checks that every kind of node the parser
+// binds and the children they are in scope in. Source resolution and
+// free-name traversals read their scopes here, so each binding form is
+// described once without capturing a name or missing an occurrence (tests/scopes.test.mjs checks that every kind of node the parser
 // and the translator build is described here).
 import {parameterGroups,clauseTelescope} from "./telescopes.mjs";
 import {sourceMetadata,syntaxValue} from "./source-syntax.mjs";
 
 // A binder is a token, { text }, or, in a statement's pattern, a name node.
 export const binderName = binder => binder?.text ?? binder?.name ?? null;
+// Parsed reference tokens and retained expressions share their consumers.
+export const referenceSyntax = token => token.kind ? token : {...token,kind:"name",name:token.text};
 const present = binders => binders.filter(binder => binderName(binder) !== null);
+
+// Selection is two effects: opening model labels and selecting notation.
+// Compiler operand recipes request notation only; written selections request
+// both. File-level recipes activate according to the consuming source item,
+// before its parameters. A registration must not evaluate unused receivers.
+export const selectionEffects=Object.freeze({
+  all:Object.freeze({labels:true,notation:true}),
+  notation:Object.freeze({labels:false,notation:true}),
+  none:Object.freeze({labels:false,notation:false}),
+});
+const selectionConsumers=new Map([
+  ...["def","inductive","theory","initial","free","evaluate","print","notation","use"].map(kind=>[kind,selectionEffects.all]),
+  ...["simp_rule","simp_set","hlevel_rule"].map(kind=>[kind,selectionEffects.none]),
+]);
+export function fileSelectionEffects(kind) {
+  const effects=selectionConsumers.get(kind);
+  if(!effects)throw new TypeError(`A source consumer needs an explicit selection policy: ${kind}`);
+  return effects;
+}
 
 // A pattern's arguments, nested patterns included, and its alternatives'.
 // A bare argument may name a constructor, not a variable: it is in scope
@@ -22,7 +42,7 @@ function patternArguments(pattern) {
 const barePattern = pattern => !pattern.args && !pattern.binders?.length && !pattern.coordinates?.length;
 function patternScopes(pattern) {
   const groups=[];
-  const add=(binders,role)=>groups.push({binders:present(binders),role,keys:["body","obligation"],renamable:role!=="pattern"});
+  const add=(binders,role)=>groups.push({binders:present(binders),role,keys:["body","obligation"]});
   if(barePattern(pattern)&&pattern.kind!=="pattern")add([pattern.constructor],"pattern");
   for(const {tokens,role} of clauseTelescope(pattern))for(const token of tokens) {
     if(token.kind==="pattern")groups.push(...patternScopes(token));
@@ -35,38 +55,44 @@ function patternScopes(pattern) {
 // binders, and every subsequent group is inside them.
 const parameterScopes = (node, keys) => {
   return parameterGroups(node.params ?? []).map(({parameters, after, bound}) => ({
-    binders: present(parameters.map(p => p.name)), keys, paramsAfter: after, renamable: false,
+    binders: present(parameters.map(p => p.name)), keys, paramsAfter: after,
     role: bound ? "universe" : "parameter"}));
 };
 
-// The scopes a node opens, each { binders, keys, renamable }: the binders, in
-// scope in the children under `keys`; `renamable` when a substitution may
-// rename them apart.
+// The scopes a node opens: the binders in the children under `keys`.
 const SCOPES = {
-  lambda: n => [{ binders: present([n.name]), keys: ["body"], renamable: true }],
-  forall: n => [{ binders: present([n.name]), keys: ["body"], renamable: true }],
-  exists: n => [{ binders: present([n.name]), keys: ["body"], renamable: true }],
-  binderGroup: n => [{ binders: present(n.names), keys: ["body"], renamable: true }],
-  pathLambda: n => [{ binders: present([n.dimension]), keys: ["body"], renamable: true, role: "dimension" }],
+  lambda: n => [{ binders: present([n.name]), keys: ["body"] }],
+  forall: n => [{ binders: present([n.name]), keys: ["body"] }],
+  exists: n => [{ binders: present([n.name]), keys: ["body"] }],
+  binderGroup: n => [{ binders: present(n.names), keys: ["body"] }],
+  select:n=>n.activation?[{binders:[n.activation],keys:["body"],role:"activation",
+    effects:n.effects??selectionEffects.all}]:[],
+  // An operator's operand receives a notation context, independently of its
+  // already resolved term names. Its recipe supplies this parameter at use.
+  notationArgument:n=>[{binders:[n.notation],keys:["body"],role:"notation"}],
+  // Named-rule parameters are lazy syntax arguments, not term telescope
+  // parameters. They bind only the rule body, never their operand recipes.
+  namedNotationRule:n=>[{binders:n.operands,keys:["value"],role:"parameter"}],
+  pathLambda: n => [{ binders: present([n.dimension]), keys: ["body"], role: "dimension" }],
   // induction n as k return P(k) { zero => …; succ h => …; }: the index in
   // the motive and, as the predecessor, in the step; the hypothesis in the
   // step. A general induction's motive name is in its motive only, and its
   // clauses bind their own names.
-  induction: n => [{ binders: present([n.index]), keys: ["type", "step"], renamable: true },
-    { binders: present([n.motiveName]), keys: ["type"], renamable: true },
-    { binders: present([n.hypothesis]), keys: ["step"], renamable: true }],
+  induction: n => [{ binders: present([n.index]), keys: ["type", "step"] },
+    { binders: present([n.motiveName]), keys: ["type"] },
+    { binders: present([n.hypothesis]), keys: ["step"] }],
   // match s as k return P(k) { left x => …; right y => …; }, or clauses.
-  match: n => [{ binders: present([n.motiveName]), keys: ["type"], renamable: true },
-    { binders: present([n.left]), keys: ["leftBody"], renamable: true },
-    { binders: present([n.right]), keys: ["rightBody"], renamable: true }],
+  match: n => [{ binders: present([n.motiveName]), keys: ["type"] },
+    { binders: present([n.left]), keys: ["leftBody"] },
+    { binders: present([n.right]), keys: ["rightBody"] }],
   // A clause's own names, a sum's side and a path constructor's
   // coordinates, are variables; its patterns' arguments may be constructors.
   clause: n => [{ binders: present([...(n.binders ?? []), ...(n.coordinates ?? []), ...(n.hypotheses ?? [])]),
-    keys: ["body", "obligation"], renamable: true },
-    // `binders` is the nominal substitution contract until CB3 migrates its
-    // consumers. Identity resolution also retains a bare head's candidate.
-    { binders: patternArguments(n), keys: ["body", "obligation"], renamable: false, role: "pattern" }],
-  unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"], renamable: true }],
+    keys: ["body", "obligation"] },
+    // Undecided bare heads are candidates in identity resolution; ordinary
+    // free-name traversal sees only explicit pattern arguments.
+    { binders: patternArguments(n), keys: ["body", "obligation"], role: "pattern" }],
+  unpack: n => [{ binders: present([n.left, n.right]), keys: ["body"] }],
   // Declarations and a theory's items: their parameters.
   def: n => parameterScopes(n, ["type", "body", "value"]),
   derived: n => parameterScopes(n, ["type", "value"]),
@@ -76,11 +102,12 @@ const SCOPES = {
   constructor: n => parameterScopes(n, ["type"]),
   inductive: n => parameterScopes(n, ["result", "constructors"]),
   // A notation's numeral or literal rule: its parameter, in its value.
-  numeral: n => [{ binders: present([n.param]), keys: ["value"], renamable: false }],
-  literal: n => [{ binders: present([n.param]), keys: ["value"], renamable: false }],
+  numeral: n => [{ binders: present([n.param]), keys: ["value"] }],
+  literal: n => [{ binders: present([n.param]), keys: ["value"] }],
 };
 // Statements that bind names for the statements after them, in a block.
 const STATEMENTS = {
+  use:n=>n.activation?[n.activation]:[],
   let: n => targetNames(n.target),
   obtain: n => targetNames(n.target),
   intro: n => present([n.name]),
@@ -93,33 +120,24 @@ const targetNames = target => !target ? [] : target.kind === "name" ? [target]
 export const UNBINDING = new Set([
   "transport", "lift", "binary", "binaryNumber", "block", "calc", "call", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
   "initial", "matchStatement", "member", "name", "namedArgument", "negation", "notation", "number", "operatorOf", "over",
-  "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "select", "set", "simp_rule", "simp_set",
-  "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "use", "withUnfolding",
+  "pair", "pathApply", "pattern", "print", "projection", "prop", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
+  "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationScope", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall",
+  "useScope", "notationReceiver", "notationRule", "boundNotation", "operandAlternatives", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",
 ]);
 export const BINDING = new Set([...Object.keys(SCOPES), ...Object.keys(STATEMENTS)]);
 
-const sequenceScope = (node, index, binders) => ({binders, renamable: false,
-  // Most traversals need only the ordered boundary. Materialize the region
-  // keys only for clients which ask for them, such as nominal substitution.
-  after: index + 1, get keys() {return node.slice(index + 1).map((_, k) => index + 1 + k);}});
 export const scopesOf = (node,{deferred=false}={}) => {
-  // A sequence has scopes too: each statement binds in its later siblings,
-  // never in its own initializer. Until elaboration fixes tactic/pattern
-  // roles, these binders may not be renamed by syntax substitution.
-  if (Array.isArray(node)) return node.flatMap((item, index) => {
-    const binders = item?.kind ? statementBinders(item) : [];
-    return binders.length ? [sequenceScope(node, index, binders)] : [];
-  });
   if (!BINDING.has(node.kind) && !UNBINDING.has(node.kind))
     throw new TypeError("Unregistered syntax kind in scope traversal: " + node.kind);
-  return deferred&&node.kind==="clause"?patternScopes(node):SCOPES[node.kind]?.(node)??[];
+  const scopes=deferred&&node.kind==="clause"?patternScopes(node):SCOPES[node.kind]?.(node)??[];
+  return deferred?scopes:scopes.filter(scope=>scope.role!=="activation");
 };
-export const statementBinders = node => Object.hasOwn(STATEMENTS, node.kind) ? STATEMENTS[node.kind](node) : [];
+export const statementBinders = (node,{deferred=false}={}) => node.kind==="use"&&!deferred?[]
+  :Object.hasOwn(STATEMENTS, node.kind) ? STATEMENTS[node.kind](node) : [];
 // Binding roles follow the same schema as visibility. They describe syntax
 // ownership; a pattern role remains a candidate until elaboration decides.
 export function bindingRole(node, scope, binder) {
@@ -136,7 +154,7 @@ const isToken = value => typeof value?.text === "string" && !value.kind;
 // Captured elaboration values are not source syntax: neither core binders
 // nor a notation rule's closed aliases participate in syntax substitution.
 const captured = (node, key) => sourceMetadata(key,node[key]) || node.kind === "instantiated" && key === "value"
-  || node.kind === "notationScope" && key === "aliases"
+  || node.kind === "rawNumeral" && key === "natural"
   || node.kind === "scoped" && ["node", "scope"].includes(key)
   || node.kind === "bindingReference" && ["resolution", "origin", "substitutions"].includes(key);
 
@@ -159,7 +177,7 @@ export const referenceFields = Object.freeze({
 export function rewritten(node, rewrite, bound = new Set()) {
   return scopeMapped(node, {
     enter: rewrite,
-    extend: (outer, binders) => new Set([...outer, ...binders.map(binderName)]),
+    extend: (outer, binders,_node,scope) => scope.role==="activation"?outer:new Set([...outer, ...binders.map(binderName)]),
   }, bound);
 }
 
@@ -168,26 +186,33 @@ export function rewritten(node, rewrite, bound = new Set()) {
 // regions. Neither this walker nor its clients rediscover binding forms.
 // `bind` returns a binder token; `extend` adds a group's mapped binders to
 // an immutable context. A replacement returned by `enter` is not entered.
-export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n => n, extend, deferred = false}, context) {
-  const walk = (node, outer, replacements) => {
+// Its third argument can descend into original children in their current
+// context. This permits a resolved operation or splice around source operands
+// without resolving inserted syntax again or losing the enclosing binders.
+export function scopeMapped(node, {prepare=n=>n,enter = n => n, bind = n => n, reference = n => n,
+  region = at => at, parameter = n => n, extend, deferred = false}, context) {
+  const walk = (node, outer, replacements,prepared=false) => {
     if (!node || typeof node !== "object") return node;
     if (replacements.has(node)) return replacements.get(node);
     if (isToken(node)) return node;
+    if(!prepared)node=prepare(node,outer);
     if (node.kind || Array.isArray(node)) {
-      const replaced = enter(node, outer);
+      const replaced = enter(node, outer, (child,at=outer)=>walk(child,at,replacements));
       if (replaced !== node) return replaced;
     }
     if (Array.isArray(node)) {
       let inner = outer, tokens = replacements;
-      return node.map((item, index) => {
-        const binders = item?.kind ? statementBinders(item) : [];
-        const scope = sequenceScope(node, index, binders);
+      return node.map(item => {
+        if(item&&typeof item==="object")item=prepare(item,inner);
+        const binders = item?.kind ? statementBinders(item,{deferred}) : [];
+        const scope={binders,...(item?.kind==="use"&&item.activation
+          ?{role:"activation",effects:item.effects??selectionEffects.all}:{})};
         if (binders.length) tokens = new Map(tokens);
         const mapped = binders.map(binder => {
           if (!tokens.has(binder)) tokens.set(binder, bind(binder, node, scope, inner));
           return tokens.get(binder);
         });
-        const out = walk(item, inner, tokens);
+        const out = walk(item, inner, tokens,true);
         if (mapped.length) inner = extend(inner, mapped, node, scope);
         return out;
       });
@@ -198,13 +223,17 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
       if (!tokens.has(binder)) tokens.set(binder, bind(binder, node, scope, outer));
       return tokens.get(binder);
     })}));
-    const inside = predicate => regions.filter(predicate).reduce((at, scope) => extend(at, scope.binders, node, scope), outer);
+    // A declaration can supply a region-specific outer scope (structural
+    // self in its body, for example). Its ordinary telescope is then applied
+    // in the usual order, so parameters still shadow that outer binding.
+    const inside = (predicate,key) => regions.filter(predicate)
+      .reduce((at, scope) => extend(at, scope.binders, node, scope), region(outer,node,key));
     const copy = {};
     for (const [key, value] of Object.entries(node)) {
       if (captured(node, key)) {copy[key] = value; continue;}
       const namespace=Object.hasOwn(referenceFields,node.kind)?referenceFields[node.kind][key]:null;
       if(namespace) {
-        const use=token=>token?reference(token,{namespace,node,key},outer):token;
+        const use=token=>token?.kind?walk(token,outer,tokens):token?reference(token,{namespace,node,key},outer):token;
         copy[key]=Array.isArray(value)?value.map(use):use(value);
         continue;
       }
@@ -216,19 +245,19 @@ export function scopeMapped(node, {enter = n => n, bind = n => n, reference = n 
       }
       if (key === "params" && Array.isArray(value)) {
         copy[key] = parameterGroups(value).flatMap(({parameters,after,bound})=>{
-          const at=inside(scope=>scope.paramsAfter<=after-parameters.length);
+          const at=inside(scope=>scope.paramsAfter<=after-parameters.length,key);
           const field=bound?"bound":"type",first=parameters[0][field];
           if(parameters.some(param=>param[field]!==first&&syntaxValue(param[field])!==syntaxValue(first)))
             throw new TypeError("Grouped parameters must share one domain.");
           const domain=walk(first,at,tokens);
           return parameters.map(param=>{
             const rest={...param};delete rest[field];
-            return {...walk(rest,at,tokens),[field]:domain};
+            return parameter({...walk(rest,at,tokens),[field]:domain},param,node,at);
           });
         });
         continue;
       }
-      copy[key] = walk(value, inside(scope => scope.keys.includes(key)), tokens);
+      copy[key] = walk(value, inside(scope => scope.keys.includes(key),key), tokens);
     }
     return copy;
   };
@@ -245,86 +274,6 @@ export function freeNames(node, bound = new Set()) {
   return free;
 }
 
-// A copy with each free name that `rename` maps, by its root, renamed:
-// rename(root) gives the new root or null.
-export const renamedFree = (node, rename) => rewritten(node, (n, bound) => {
-  if (n.kind !== "name" || bound.has(root(n.name))) return n;
-  const renamed = rename(root(n.name));
-  return renamed ? { ...n, name: renamed + n.name.slice(root(n.name).length) } : n;
-});
-
-// `node` with each free name that `args` maps replaced by its syntax (a
-// qualified name's root too, as R.M becomes a member of R's argument), and a
-// binder that would capture a free name of an argument substituted under it
-// renamed first, apart from every name either mentions. A binder that may not
-// be renamed (a pattern's or a parameter's) and would capture one is refused
-// with the error `refuse(name)` gives.
-export function substituted(node, args, refuse) {
-  const freeIn = new Map([...args].map(([name, arg]) => [name, freeNames(arg)]));
-  const free = new Set([...freeIn.values()].flatMap(names => [...names]));
-  const taken = new Set([...free, ...allNames(node)]);
-  const fresh = stem => freshName(stem, taken);
-  const go = (tree, bound) => rewritten(tree, (n, inner) => {
-    if (n.kind === "name" && !inner.has(root(n.name))) {
-      if (args.has(n.name)) return args.get(n.name);
-      const [head, ...fields] = n.name.split(".");
-      if (args.has(head)) {
-        const dots = n.qualifiedDots ?? (n.qualifiedDot ? [n.qualifiedDot] : []);
-        let value = args.get(head), end = n.start + head.length;
-        for (const [index, text] of fields.entries()) {
-          const start = dots[index]?.end ?? end + 1;
-          end = start + text.length;
-          value = { kind: "member", value, field: { text, start, end }, start: n.start, end };
-        }
-        return value;
-      }
-    }
-    // A binder captures when an argument substituted under it names it.
-    const captures = (scope, binder) => [...args.keys()].some(name => freeIn.get(name).has(binderName(binder)) && occursFree(n, scope, name, inner));
-    const scopes = scopesOf(n), clashing = new Set(scopes.filter(scope => scope.binders.some(binder => captures(scope, binder))));
-    if (!clashing.size) return n;
-    for (const scope of clashing) if (!scope.renamable)
-      throw refuse(binderName(scope.binders.find(binder => captures(scope, binder))));
-    return go(apart(n, scopes, clashing, free, fresh), inner);
-  }, bound);
-  return go(node, new Set());
-}
-// Whether `name` occurs free in a scope's children, where a substitution
-// would put an argument under its binders.
-const occursFree = (node, scope, name, outer) => {
-  const scopes = scopesOf(node);
-  const inRegion = (value, enclosing) => freeNames(value,
-    new Set([...outer, ...enclosing.flatMap(s => s.binders.map(binderName))])).has(name);
-  return scope.keys.some(key => inRegion(node[key] ?? null, scopes.filter(s => s.keys.includes(key))))
-    || scope.paramsAfter !== undefined && node.params.some((param, index) => index >= scope.paramsAfter
-      && inRegion(param, scopes.filter(s => s.paramsAfter <= index)));
-};
-// The node with each scope's binders that `free` holds renamed fresh, in the
-// binder and in the children that scope covers only: a match's left side's
-// binder is renamed in its left branch, never in the right. A node's scopes
-// are listed outermost first, and in a child that a later scope also covers,
-// a name that scope binds again is that scope's, not an earlier one's: in
-// induction n as z … { succ z => z; }, the step's z is the hypothesis.
-function apart(node, scopes, clashing, free, fresh) {
-  const tokens = new Map(), copy = { ...node };
-  for (const [index, scope] of scopes.entries()) {
-    if (!clashing.has(scope)) continue;
-    const renaming = new Map();
-    for (const binder of scope.binders) if (free.has(binderName(binder))) {
-      const other = renaming.get(binderName(binder)) ?? fresh(binderName(binder));
-      renaming.set(binderName(binder), other);
-      tokens.set(binder, { ...binder, text: other, label: binder.label ?? binderName(binder) });
-    }
-    if (renaming.size) for (const key of scope.keys) if (key in copy) {
-      const inner = scopes.slice(index + 1).filter(later => later.keys.includes(key))
-        .flatMap(later => later.binders.map(binderName));
-      copy[key] = renamedFree(copy[key], name => inner.includes(name) ? null : renaming.get(name) ?? null);
-    }
-  }
-  const swap = value => tokens.get(value) ?? (Array.isArray(value) ? value.map(swap) : value);
-  for (const [key, value] of Object.entries(copy)) copy[key] = swap(value);
-  return copy;
-}
 // A name for generated syntax that `taken` does not hold, added to it: the
 // stem, or the stem numbered from 1. A stem of U's, or one ending in a
 // digit, takes a separator, U_1: U1 and UU0 spell universe constants, and a1
@@ -335,17 +284,6 @@ export function freshName(stem, taken) {
   for (let k = 1; taken.has(name); k++) name = numbered(k);
   taken.add(name);
   return name;
-}
-
-// The names a tree binds where a substitution may not rename them apart: a
-// pattern's arguments, a declaration's parameters, and a block's statements.
-export function fixedBinders(node) {
-  const names = new Set();
-  rewritten(node, n => {
-    for (const scope of scopesOf(n)) if (!scope.renamable) for (const binder of scope.binders) names.add(binderName(binder));
-    return n;
-  });
-  return names;
 }
 
 // Every name a tree uses, bound or free.

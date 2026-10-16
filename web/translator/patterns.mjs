@@ -58,7 +58,9 @@ const wildcard = { kind: "name", token: { text: "_" } };
 // numbered within the match, so that an elaboration names alike every time.
 // Its stem names what it binds in the kernel, where a dimension's name is an
 // identifier (match.mjs).
-const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, stem, start: at.start, end: at.end });
+const site = at => ({start:at?.start,end:at?.end,...(at?.origin?{origin:at.origin}:{}),...(at?.synthetic?{synthetic:true}:{})});
+const generatedSite = at => ({...site(at),synthetic:true});
+const generatedToken = (names, stem, at) => ({ text: `${stem}'${++names.next}`, stem, ...generatedSite(at) });
 
 // Compile and elaborate the match `n`: an expression at its expected type,
 // or a statement for its goal. `typeOf(value, scope)` gives the declared
@@ -84,8 +86,8 @@ export function compileMatch(t, n, scope, {statement, expected, goal, typeOf}) {
   const names = { next: 0 };
   const columns = values.map((node, k) => {
     const name = `\u0000value'${k}`;
-    at = at.alias(name, node.kind === "name" && at.env.has(node.name) ? at.env.get(node.name) : t.term(node, at, null));
-    return { node: { kind: "name", name, start: node.start, end: node.end }, describe: scope.unit.source.slice(node.start, node.end).trim() };
+    at = at.alias(name,t.term(node,at,null));
+    return { node: {kind:"name",name,...generatedSite(node)}, describe:scope.unit.text(node)?.trim()??"the matched value" };
   });
   // A return type is the match's type at its values. Where no clause takes
   // a value apart, no match checks the clause against it, so the clause is
@@ -193,20 +195,24 @@ function compile(t, scope, columns, rows, context) {
       return next;
     });
     // A generated argument is described by the constructor's name for it.
-    const argumentColumns = args.map((arg, k) => ({ node: { kind: "name", name: arg.text, start: arg.start, end: arg.end },
+    const argumentColumns = args.map((arg, k) => ({ node: {kind:"name",name:arg.text,...generatedSite(arg)},
       describe: arg.text.includes("'") ? `the ${constructor.fields?.[k] ?? `argument ${k + 1}`} of ${column.describe}` : arg.text }));
     const rest = { kind: statement ? "patternMatchStatement" : "patternMatch", columns: [...argumentColumns, ...others],
-      rows: specialized, context: { ...context, top: false }, start: column.node.start, end: column.node.end };
-    clauses.push({ kind: "clause", constructor: { text: constructor.name, start: at.start, end: at.end }, args, binders: [], coordinates,
+      rows: specialized, context: { ...context, top: false }, ...generatedSite(column.node) };
+    const written=fitting[0].row.origin.clause.body;
+    const implicitPathSite=Array.isArray(written)
+      ?{...site(written[0]),end:written.at(-1)?.end}:site(written);
+    clauses.push({ kind: "clause", constructor: {text:constructor.name,...(first?site(at):generatedSite(at))}, args, binders: [], coordinates,
       body: statement ? [rest] : rest,
-      ...(constructor.dims && fitting[0].head.kind === "name" ? {implicitPath: true} : {}), start: at.start, end: at.end });
+      ...(constructor.dims && fitting[0].head.kind === "name" ? {implicitPath: true,implicitPathSite} : {}), ...generatedSite(at) });
   }
   // The first value taken apart is matched by the declaration's own match,
-  // so recursion follows it (match.mjs, recursionSite).
+  // so recursion follows it (match.mjs, recursionSite). It also owns that
+  // match's source observations; only the additional matches are synthetic.
   const top = context.top ? context.n : null;
   const node = { kind: statement ? "matchStatement" : "match", value: column.node, clauses,
     ...(top?.type ? { type: top.type } : {}), ...(top?.motiveName ? { motiveName: top.motiveName } : {}),
-    ...(top ? obligationsOf(top) : {}), start: column.node.start, end: column.node.end };
+    ...(top ? obligationsOf(top) : {}), ...(top ? site(top) : generatedSite(column.node)) };
   const recursive = scope.env.get(RECURSIVE), at = top && recursive?.site === top ? withRecursion(scope, { ...recursive, site: node }) : scope;
   return statement ? t.block([node], context.goal.at(at)) : t.term(node, at, context.expected);
 }
@@ -229,7 +235,7 @@ function bind(t, scope, token, target) {
   // a source occurrence to resolve in the destination environment.
   let point=T.constructor(constructor.index,instance,constructor.name);
   for(const index of constructor.order)point=T.app(point,scope.env.get(args[index].text));
-  for(const coordinate of coordinates)point=T.at(point,t.interval({kind:"name",name:coordinate.text},scope.env));
+  for(const coordinate of coordinates)point=T.at(point,t.interval({kind:"name",name:coordinate.text},scope));
   return t.sourceBinding(token,point,scope);
 }
 

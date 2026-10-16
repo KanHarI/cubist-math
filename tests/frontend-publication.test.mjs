@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
+import {BindingAdapter} from "../web/cubist/bindings.mjs";
 
 const module = await createCubical();
 const check = (t, source, fixtures = {}, options = {}) => {
@@ -226,15 +227,18 @@ def client : N := N.c;`);
 });
 
 test("FG1: model notation extensions are separate from ownership and a refused extension preserves the model", async t => {
-  const {result, get} = await check(t, `import hlevels; import nat;
+  const source=`import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M; }
 def n := T.make(Nat, nat_is_set, zero);
 notation n { numeral(k : Nat) := zero; }
 def selected : n.M := n.(7);
 notation n { x + y := add(x, y); }
-def after : n.M := n.(8);`);
+def after : n.M := n.(8);`;
+  const {result,get}=await check(t,source);
   assert.equal(result.gaps.length, 1);
   assert.equal(result.gaps[0].directive, true);
+  assert.equal(result.gaps[0].code,"E843");
+  assert.equal(source.slice(result.gaps[0].start,result.gaps[0].end),"x + y := add(x, y);");
   assert.match(result.gaps[0].reason, /adds only a numeral or a literal rule/);
   assert.equal(result.complete, false);
   for(const name of ["n","selected","after"])assert.equal(get(name).verified,true);
@@ -302,6 +306,21 @@ const absentNative = (program, prefix) => {
     assert.ok(link.binding !== prefix && !link.binding?.startsWith(prefix + "."), "no checked link may survive rollback");
 };
 
+const exactAvailability=(program,result)=>{
+  const registry=program.compilationBindings,adapter=new BindingAdapter(registry.table),env=program.modules.get("main");
+  for(const group of result.publications.main)for(const name of group.members) {
+    const record=registry.declaration(`main__${name}`);
+    assert.ok(record,`reservation for ${name}, including unvisited blocked members`);
+    const value=env.get(adapter.key(record.binding.id));
+    assert.equal(value,env.get(name),`${name}'s exact ID has the same availability as its public name`);
+    if(group.state!=="checked") {
+      assert.equal(value.tag,"Untranslated",name);
+      assert.equal(value.blockedBy,group.cause.binding,name);
+      assert.equal(value.cause,group.cause.reason,name);
+    }
+  }
+};
+
 test("G7: an injected parent projection failure rolls back its base group and blocks descendants once", async t => {
   let sawCheckedPredecessor = false;
   const {program, result, get} = await check(t, `import hlevels;
@@ -318,6 +337,7 @@ def independent(S : P(U0)) : S.M := S.c;`, {}, injected("Q.p", checker => {
   absentNative(program, "main__Q");
   assert.equal(result.publications.main.find(g => g.id === "Q:base").state, "failed");
   assert.equal(result.publications.main.find(g => g.id === "Q:hom").state, "blocked");
+  exactAvailability(program,result);
 });
 
 test("FG1: a late Hom failure preserves the base and removes its complete Hom/Iso interface", async t => {
@@ -342,6 +362,7 @@ def independent : Unit := tt;`, {}, injected("T.Hom.compose", checker => {
   // The injected failure is a root of its own.
   assert.deepEqual(failed.cause, {binding: "main__T.Hom.compose", reason: "Untranslated name: injected_failure"});
   assert.equal(result.publications.main.find(g => g.id === "T:base").state, "checked");
+  exactAvailability(program,result);
 });
 
 test("FG1: a failed fold rolls back an already admitted signature, model and fold map", async t => {
@@ -360,6 +381,7 @@ def independent : Unit := tt;`, {}, injected("N.fold", checker => {
   assert.equal(get("independent").verified, true);
   absentNative(program, "main__N");
   assert.equal(program.kernel.signature(signature.index).constructors.length, 0, "the native signature was actually removed");
+  exactAvailability(program,result);
 });
 
 test("FG1: editing an imported theory invalidates old generated artifacts and rechecks dependents", async t => {
@@ -422,6 +444,7 @@ def identity(S : T(U0)) := T.Hom.id(S);`, {}, injected("T.helper"));
   assert.equal(get("client").verified,true);
   assert.equal(get("identity").verified,true);
   absentNative(program,"main__T.helper");
+  exactAvailability(program,result);
 });
 
 test("FG1: an operator or numeral whose derived operation failed reports that operation's failure", async t => {

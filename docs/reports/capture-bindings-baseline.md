@@ -5,6 +5,13 @@ compiler at `f0417ee0ee5f824f030069be0e6d1666696de0d1`. It does not implement
 binding identities or contextual execution. Those remain CB1–CB7 in the
 [architecture](../roadmaps/capture-bindings.md).
 
+The counts and staging protocol below describe the historical CB0 checkpoint.
+CB0–CB7 are now complete; current semantic tests assert desired behavior directly.
+The original [generation observations](https://github.com/KanHarI/cubist-math/blob/7f9b4d28cb94556500c7e4acab076a1b11496df9/tests/fixtures/frontend-generation-baseline.json)
+and [binding observations](https://github.com/KanHarI/cubist-math/blob/7f9b4d28cb94556500c7e4acab076a1b11496df9/tests/fixtures/capture-bindings-baseline.json)
+remain pinned to CB0. The [post-CBx cleanup](capture-bindings-cleanup.md) removes
+the now-empty maps and unused staging protocol while preserving semantic clients.
+
 ## Adopted work and retained expectations
 
 The [pinned comparison](capture-bindings-pr-comparison.md#stack-and-disposition) records
@@ -21,6 +28,18 @@ Only an exact observation can mark a test TODO; new symptoms, missing outputs,
 unexpected fixes and import/infrastructure failures fail normally. Strict
 mode (`CUBIST_GENERATION_STRICT=1`) requires the desired behavior without
 TODOs. There is no automatic expectation-update command.
+
+During CB2 implementation, the `operand-local` observation was retired:
+synthesized operand selections now request notation without opening model
+labels, so the caller's variable retains its meaning. The original semantic
+witness now passes as a required test. Additional selection tests cover caller
+globals, unbound names, explicit written openings, one receiver elaboration,
+and failed activation before generation. On 2026-10-15, the model producer's
+operand recipes also began retaining source receivers and explicit model
+interfaces. The `operand-receiver-local` and `operand-receiver-global`
+observations were retired: both original witnesses now accept the intended
+client and reject the captured reading as required tests. Counts below
+describe the CB0 snapshot.
 
 The [case manifest](../../tests/fixtures/frontend-generation.md) explains the
 36 inherited fixtures: 18 pass and 18 remain known defects. The old suite
@@ -187,3 +206,19 @@ node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations
 node tools/frontend-generation-metrics.mjs build/frontend-generation-metrics.json 3
 node tools/capture-bindings-history.mjs build/capture-bindings-history.json
 ```
+
+## CB2 production completion, 2026-10-15
+
+All capture-binding witness observations now match their intended contracts,
+and their known-defect map is empty. Eleven frontend-generation observations
+(G3, G10, the G11 variants and the G12 variants including its diagnostic range)
+were also retired. The bounded production preservation configurations require
+their intended results; their old observation generator remains only as input
+to the shrinker contract tests. Independent incorrect clients and migration
+controls are unchanged.
+
+The mutation runner now changes the default binding-aware reference lowering
+and source file-activation boundary. Reservation and failed-publication mutants
+remain active. All four are killed. The original CB0 numbers above remain
+historical; current validation and phase boundaries are in the
+[CB2 evidence](../roadmaps/capture-bindings-cb2.md).

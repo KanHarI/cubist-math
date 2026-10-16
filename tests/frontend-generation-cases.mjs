@@ -21,8 +21,7 @@ import { normal } from "../web/cubist/stated-comments.mjs";
 import { reported, stated } from "../tools/inline-errors.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { precondition } from "./known-defect.mjs";
-import { observeModule, outputStatus } from "./module-observation.mjs";
+import { precondition, observeModule, outputStatus } from "./module-observation.mjs";
 
 const directory = new URL("./fixtures/frontend-generation/", import.meta.url);
 export const cases = readdirSync(directory).filter(file => file.endsWith(".cubist")).sort().map(file => {
@@ -83,7 +82,10 @@ const obligations = declaration => (source, result, program, name) => program.st
 export const extras = {
   "G1-initial": { published: [published("N.model", "N.fold_map", "N.fold"), []] },
   G3: { published: [published("T.Hom", "T.Iso"), []] },
-  G8: { range: [range("h"), [{ line: "_ => t1;", before: "_ => ", covers: "t1" }]], searches: [searches("h"), [0]] },
+  // CB1 requires checked implicit-path recovery even without recursive
+  // fields (the S1/Two witness). Failed recovery preserves the written
+  // mismatch and its range, but still spends the one attempted search.
+  G8: { range: [range("h"), [{ line: "_ => t1;", before: "_ => ", covers: "t1" }]], searches: [searches("h"), [1]] },
   G9: { links: [links("law l(c : M) : k(c) = op(c, c);", "c"), Array(4).fill([{ name: "c", target: 0, start: 0, end: 0 }])] },
   "G12-range": { range: [range("T"), [{ line: "law nope(n : Nat) : iter(n) = c;", before: "law nope(n : Nat) : ",
     covers: "iter(n)" }]] },

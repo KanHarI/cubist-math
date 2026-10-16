@@ -9,11 +9,10 @@ import {parse} from "../web/cubist/parser.mjs";
 import {rewritten,relocated} from "../web/cubist/scopes.mjs";
 import {qualifySource,syntaxValue} from "../web/cubist/source-syntax.mjs";
 import {BindingTable, BindingAdapter, LexicalContext, SlotOutcomes, sourceOrigin, bindingResolution, reservedResolution} from "../web/cubist/bindings.mjs";
-import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax,sameBindingSyntax,remapBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const reserved = ["U0", "UU0", "Unit", "tt", "typed", "Interval"];
-const prepare = () => {
-  const table = new BindingTable("compilation");
+const prepare = (table = new BindingTable("compilation")) => {
   const context = new LexicalContext(reserved.map(name => [name, reservedResolution(name)]));
   return {table, context, adapter: new BindingAdapter(table, {reserved}), source: {revision: "source-1", module: "main"}, owner: ["declaration", "0"]};
 };
@@ -23,6 +22,50 @@ const uses = tree => {
   rewritten(tree, n => {if (n.kind === "bindingReference") found.push(n); return n;});
   return found;
 };
+
+test("binding comparison uses local alpha-equivalence and explicit external correspondence",()=>{
+  const setup=prepare(),resolve=(text,owner)=>resolveBindingSyntax(expression(text),{...setup,owner:[owner]});
+  const left=resolve("fun (A : U0) => fun (x : A) => x","left");
+  const right=resolve("fun (B : U0) => fun (y : B) => y","right");
+  assert.equal(sameBindingSyntax(left,right),true);
+  assert.equal(sameBindingSyntax(left,cloneBindingSyntax(left,setup.table,["clone"]).syntax),true);
+  assert.equal(sameBindingSyntax(left,resolve("fun (A : U0) => fun (x : A) => A","different")),false);
+  const origin=sourceOrigin({...setup.source,start:0,end:1});
+  const a=setup.table.allocate(["parent-a"],{role:"field",label:"M",origin});
+  const b=setup.table.allocate(["parent-b"],{role:"field",label:"M",origin});
+  const field=record=>resolveBindingSyntax(expression("fun (x : M) => x"),{...setup,
+    owner:[record.id],context:setup.context.bind("M",bindingResolution(record.id))});
+  assert.equal(sameBindingSyntax(field(a),field(b)),false,"same labels cannot merge different fields");
+  assert.equal(sameBindingSyntax(field(a),field(b),new Map([[a.id,b.id]])),true);
+  assert.equal(sameBindingSyntax(left,JSON.parse(JSON.stringify(right))),true);
+});
+
+test("binding comparison retains reserved, missing and pending-constructor identities",()=>{
+  const setup=prepare();
+  const context=new LexicalContext(["Unit","Void","tt","refl","U0","U1"].map(label=>[label,reservedResolution(label)]));
+  let serial=0;
+  const resolve=text=>resolveBindingSyntax(expression(text),{...setup,context,owner:[String(serial++)]});
+  for(const [a,b] of [["Unit","Void"],["U0","U1"],["tt = tt","refl = refl"],
+    ["fun (x : Unit) => x","fun (y : U0) => y"],["missing_a","missing_b"]])
+    assert.equal(sameBindingSyntax(resolve(a),resolve(b)),false,`${a} versus ${b}`);
+  const a=resolve("match tt { x => x; }");
+  const b=resolveBindingSyntax(expression("match tt { x => x; }"),{...setup,
+    context:context.bind("x",reservedResolution("Unit")),owner:["other"]});
+  assert.equal(sameBindingSyntax(a,b),false,"a pending slot's enclosing resolution is semantic");
+});
+
+test("open ID remapping cannot capture a local in either direction",()=>{
+  const setup=prepare(),origin=sourceOrigin({...setup.source,start:0,end:1});
+  const c=setup.table.allocate(["field"],{role:"field",label:"c",origin});
+  const syntax=resolveBindingSyntax(expression("fun (x : Unit) => c"),{...setup,
+    context:setup.context.bind("c",bindingResolution(c.id))});
+  const local=syntax.tree.name.bindingId;
+  for(const pair of [[c.id,local],[local,c.id]])
+    assert.throws(()=>remapBindingSyntax(syntax,setup.table,new Map([pair])),/local binders/);
+  const clone=cloneBindingSyntax(syntax,setup.table,["fresh"]).syntax;
+  assert.notEqual(clone.tree.name.bindingId,local);
+  assert.equal(clone.tree.body.resolution.id,c.id);
+});
 
 test("grouped domains precede every own binder and subsequent groups use the complete telescope", () => {
   const setup = prepare();
@@ -58,6 +101,27 @@ test("inferred headers and parameter lambdas share identities and retain named a
   assert.deepEqual(lowered.valueParameters.map(p => !!p.implicit), [true, true, false, false]);
 });
 
+test("anonymous binder positions have distinct owned IDs without binding source holes",()=>{
+  const setup=prepare();
+  const syntax=resolveBindingSyntax(parse("def f(_, _ : Unit, x : Unit) : Unit := _;").declarations[0],setup);
+  const ids=syntax.tree.params.map(p=>p.name.bindingId);
+  assert.equal(new Set(ids).size,3);
+  for(const id of ids)assert.ok(syntax.owned.includes(id));
+  assert.deepEqual(ids.map(id=>setup.table.get(id).label),["_","_","x"]);
+  assert.equal(syntax.tree.body[0].value.kind,"name");
+  assert.equal(syntax.tree.body[0].value.name,"_");
+  const lowered=lowerBindingSyntax(syntax,setup.adapter);
+  assert.notEqual(lowered.params[0].name.text,lowered.params[1].name.text);
+  assert.equal(lowered.params[0].name.label,"_");
+  assert.equal(lowered.body[0].value.name,"_");
+  const cloned=cloneBindingSyntax(syntax,setup.table,["anonymous-clone"]).syntax;
+  assert.ok(cloned.owned.every(id=>!syntax.owned.includes(id)));
+  assert.equal(sameBindingSyntax(syntax,cloned),true);
+  assert.equal(sameBindingSyntax(
+    resolveBindingSyntax(expression("fun (_ : Unit) => tt"),{...setup,owner:["anonymous"]}),
+    resolveBindingSyntax(expression("fun (x : Unit) => tt"),{...setup,owner:["unused"]})),true);
+});
+
 test("a grouped domain is one scoped region even when it contains binders",()=>{
   const setup=prepare();
   const syntax=resolveBindingSyntax(parse("def f(a, b : (fun (n : Unit) => Unit)(tt)) : Unit := a;").declarations[0],setup);
@@ -73,16 +137,25 @@ test("a grouped domain is one scoped region even when it contains binders",()=>{
   assert.throws(()=>resolveBindingSyntax(malformed,prepare()),/Grouped parameters must share one domain/);
 });
 
-test("unmigrated reference namespaces and new syntax families are refused at source resolution",()=>{
+test("proof references require a known set inventory and new syntax families remain gated",()=>{
   const setup=prepare();
+  const local=resolveBindingSyntax(parse("def a(x : Unit) : Unit { simpa with [x] using x; }").declarations[0],setup);
+  assert.equal(local.tree.body[0].witnesses[0].resolution.id,local.tree.params[0].name.bindingId);
+  assert.equal(sameBindingSyntax(local,cloneBindingSyntax(local,setup.table,["proof-copy"]).syntax),true);
   for(const source of [
-    "def a(x : Unit) : Unit { simpa with [x] using x; }",
     "def a(x : Unit) : Unit { simpa without [r] using x; }",
     "def a(x : Unit) : Unit { simpa only [rules] using x; }",
-  ])assert.throws(()=>resolveBindingSyntax(parse(source).declarations[0],setup),/family has not migrated: simpaOnly/);
+  ]) {
+    const declaration=parse(source).declarations[0];
+    assert.throws(()=>resolveBindingSyntax(declaration,setup),/complete source set inventory/);
+    const syntax=resolveBindingSyntax(declaration,{...setup,simpSets:new Map()});
+    const copy=cloneBindingSyntax(syntax,setup.table,["known-empty-sets"]).syntax;
+    assert.equal(sameBindingSyntax(syntax,copy),true);
+  }
   assert.throws(()=>resolveBindingSyntax({kind:"futureFamily"},setup),/family has not migrated: futureFamily/);
-  for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10","tt pl.(+) tt"])
-    assert.throws(()=>resolveBindingSyntax(expression(source),setup),/family has not migrated/);
+  for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10"])
+    assert.throws(()=>resolveBindingSyntax(expression(source),setup),error=>/selected notation/.test(error.message)&&Number.isInteger(error.offset)&&error.sourceEnd>error.offset);
+  assert.throws(()=>resolveBindingSyntax(expression("tt pl.(+) tt"),setup),/complete source notation inventory/);
 });
 
 test("authored provenance is opaque to rewriting, relocation and structural comparison",()=>{
@@ -154,7 +227,7 @@ test("ordinary term, universe and dimension binders elaborate and kernel-check t
     "fun (U < UU0) => fun (A : U) => fun (x, y : A) => x",
     "fun (p : tt = tt) => typed(tt = tt, path i => p @ i)",
   ].entries()) {
-    const setup = prepare();
+    const setup = prepare(program.compilationBindings.table);
     const syntax = resolveBindingSyntax(expression(source), {...setup, owner: ["expression", String(index)]});
     const scope = new Scope(translator.unit({source,bindingAdapter:setup.adapter}));
     const term = translator.term(lowerBindingSyntax(syntax, setup.adapter), scope);
@@ -171,12 +244,12 @@ test("the pattern compiler resolves slots at the matched type, including nested 
   t.after(() => program.dispose());
   const result = await program.check("inductive Two { left_; right_; }\ninductive Box { box(value : Two); }\ndef first : Two := left_;\ninductive Unrelated { late_; }", "base");
   assert.deepEqual(result.gaps, []);
-  const globals = program.modules.get("base"), setup = prepare(), env = new Map(globals);
+  const globals = program.modules.get("base"), setup = prepare(program.compilationBindings.table), env = new Map(globals);
   setup.constructors = [];
   for (const [label, value] of globals) {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(label) || ["Unrelated", "late_"].includes(label)) continue;
-    const record = setup.table.allocate(["import"], {role: "declaration", label,
-      origin: sourceOrigin({revision: "base-1", module: "base", start: 0, end: 1})});
+    const record = program.compilationBindings.ofValue(value);
+    assert.ok(record,`missing imported declaration identity: ${label}`);
     setup.context = setup.context.bind(label, bindingResolution(record.id));
     env.set(setup.adapter.key(record.id), value);
     if (value.tag === "InductiveConstructor") setup.constructors.push({id: record.id, label, nullary: !value.arity && !value.dims});
@@ -194,7 +267,7 @@ test("the pattern compiler resolves slots at the matched type, including nested 
   // Historical mode cannot turn literal data into an invented destination
   // reference. Interval endpoints still bypass term elaboration normally.
   translator.nameBased=true;
-  assert.throws(()=>elaborate("1"),/family has not migrated: numeral/);
+  assert.throws(()=>elaborate("1"),/selected notation that reads it/);
   translator.nameBased=false;
   const left = elaborate("left_").term, right = elaborate("right_").term;
   for (const [source, expected, refused] of [
@@ -236,4 +309,29 @@ test("the pattern compiler resolves slots at the matched type, including nested 
     assert.equal(value.scope.equal(value.term, expected), true);
     assert.equal(value.scope.equal(value.term, refused), false);
   }
+});
+
+test("source resolution preserves overlapping scopes and disjoint branches",()=>{
+  const setup=prepare(),resolve=source=>resolveBindingSyntax(expression(source),setup).tree;
+  const induction=resolve("induction n as z return Unit { zero => a; succ z => z; }");
+  assert.notEqual(induction.index.bindingId,induction.hypothesis.bindingId);
+  assert.equal(induction.step.resolution.id,induction.hypothesis.bindingId);
+  const match=resolve("match s return Unit { left x => x; right y => x; }");
+  assert.equal(match.leftBody.resolution.id,match.left.bindingId);
+  assert.deepEqual(match.rightBody.resolution,{tag:"missing",label:"x"});
+  const unpack=resolve("unpack x as (x, y) return Unit { x; }");
+  assert.deepEqual(unpack.value.resolution,{tag:"missing",label:"x"});
+  assert.equal(unpack.body.resolution.id,unpack.left.bindingId);
+  const path=resolve("path i => p @ i");
+  assert.equal(path.body.right.resolution.id,path.dimension.bindingId);
+  const clauses=resolve("match c { base => p @ i; loop @ i => p @ i; }");
+  assert.deepEqual(clauses.clauses[0].body.right.resolution,{tag:"missing",label:"i"});
+  assert.equal(clauses.clauses[1].body.right.resolution.id,clauses.clauses[1].coordinates[0].bindingId);
+});
+
+test("unread numeral diagnostics do not change interval binding structure",()=>{
+  const setup=prepare(),context=setup.context.withNotations([]).namespace("p",[],"P").namespace("q",[],"P");
+  const resolve=label=>resolveBindingSyntax(expression(`${label}.(path i => r @ 0)`),
+    {...setup,context,owner:[label]});
+  assert.ok(sameBindingSyntax(resolve("p"),resolve("q")));
 });

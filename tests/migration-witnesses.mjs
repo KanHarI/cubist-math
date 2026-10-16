@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { parse } from "../web/cubist/parser.mjs";
 import { stated } from "../web/cubist/stated-comments.mjs";
-import { precondition } from "./known-defect.mjs";
+import { precondition } from "./module-observation.mjs";
 
 // A fixture's comments are its contract, including for migration controls.
 // Never keep a second manually written client verdict beside that source.

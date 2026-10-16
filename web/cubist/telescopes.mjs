@@ -11,16 +11,72 @@ export function parameterGroups(params) {
   return groups;
 }
 
-export function parameterLambdas(params, body) {
+// Construct one telescope group from one domain node. Authored and generated
+// groups use the same shape, so traversals resolve the domain exactly once
+// before introducing any member of the group.
+export const parameterGroup=(names,domain,group)=>names.map(name=>({name,...domain,group}));
+
+// Header correspondence has two ordered classes: universes and terms. An
+// anonymous position has no public name in either class. Preserve the
+// language's singleton universe renaming only between named positions.
+export function correspondingHeaderParameters(parent,child) {
+  const label=p=>p.label??p.name.label??p.name.text;
+  const classes=params=>[params.filter(p=>p.bound),params.filter(p=>!p.bound)];
+  const own=classes(child);
+  return classes(parent).flatMap((parameters,kind)=>parameters.map((parameter,index)=>{
+    const candidates=own[kind],name=label(parameter);
+    let matched;
+    if(name==="_")matched=candidates[index]&&label(candidates[index])==="_"?candidates[index]:null;
+    else if(kind===0&&parameters.length===1&&candidates.length===1&&label(candidates[0])!=="_")matched=candidates[0];
+    else matched=candidates.find(p=>label(p)===name);
+    return [parameter,matched??null];
+  }));
+}
+
+// The public argument convention interleaves each leveled parameter and
+// its evidence. Both telescope construction and implicit call completion
+// consume this layout, rather than deriving separate argument orders.
+export const evidenceLayout=params=>params.flatMap((p,index)=>[
+  {index,kind:"argument"},...(p.level?[{index,kind:"evidence",level:p.level}]:[])]);
+
+// Resolve a written group's shared domain before any of its binders. Only
+// after resolution, reorder its explicit evidence into the public layout;
+// the shared domain then carries IDs and cannot be captured by that order.
+export function evidenceTelescope(tree) {
+  const evidence=new Map();
+  if(!tree.params?.some(p=>p.level))return {tree,evidence};
+  const params=[],order=[];
+  for(const {parameters} of parameterGroups(tree.params)) {
+    const group=params.length;
+    const originals=parameters.map(p=>({...p,group})),witnesses=new Map();
+    params.push(...originals);
+    for(const [index,p] of originals.entries())if(p.level) {
+      if(!["set","prop"].includes(p.level)||p.bound)
+        throw new TypeError("A leveled parameter needs a type and set or prop evidence.");
+      const type={kind:"call"}; // private marker, consumed before traversal
+      evidence.set(type,{parameter:p,builtin:p.level==="set"?"IsSet":"IsProp"});
+      const witness={name:{...p.name,text:p.name.text==="_"?"_":`${p.name.text}_is_${p.level}`,synthetic:true},type,group:params.length};
+      witnesses.set(index,witness);params.push(witness);
+    }
+    const first=order.length;
+    for(const {index,kind} of evidenceLayout(originals))order.push({parameter:kind==="argument"?originals[index]:witnesses.get(index),
+      group:witnesses.size?order.length:first});
+  }
+  return {tree:{...tree,params},evidence,order};
+}
+
+function parameterBinders(kind,params,body) {
   for (const group of parameterGroups(params).reverse()) {
     const {parameters, bound, domain} = group;
     const binder = bound ? {bound} : {domain};
     body = parameters.length === 1
-      ? {kind: "lambda", name: parameters[0].name, ...binder, body}
-      : {kind: "binderGroup", binderKind: "lambda", names: parameters.map(p => p.name), ...binder, body};
+      ? {kind, name: parameters[0].name, ...binder, body}
+      : {kind: "binderGroup", binderKind: kind, names: parameters.map(p => p.name), ...binder, body};
   }
   return body;
 }
+export const parameterLambdas=(params,body)=>parameterBinders("lambda",params,body);
+export const parameterForalls=(params,body)=>parameterBinders("forall",params,body);
 
 // The native clause telescope introduces fields, recursive hypotheses and
 // then dimensions. Fields and dimensions name distinct variables; hypotheses

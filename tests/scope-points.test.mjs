@@ -2,12 +2,13 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import create from "../web/dist/cubical.mjs";
-import {checkProgram} from "./check-program.mjs";
+import {checkProgram,checkTestModule} from "./check-program.mjs";
 import {contextualScenarios} from "./fixtures/contextual-sessions.mjs";
 import {ElaborationStop} from "../web/translator/control.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
 import {Scope,SourceUnit} from "../web/translator/elaboration.mjs";
 import {T} from "../web/translator/core.mjs";
+import {LexicalContext} from "../web/cubist/bindings.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 
 const module=await create();
@@ -16,7 +17,7 @@ const points=(program,name="main")=>[...program.scopePoints.values()].filter(poi
 const at=(program,source,marker,phase="expression")=>points(program).filter(point=>
   point.origin.start===source.indexOf(marker)&&point.phase===phase
     &&(phase!=="expression"||point.origin.end===source.indexOf(marker)+marker.length));
-const binding=(point,label)=>point.lexical.find(([key])=>key===label)?.[1].id;
+const binding=(point,label)=>new LexicalContext(point.lexical).lookup(label).id;
 const setup=(t,source,options={})=>checkProgram(t,source,{module,options:{collectScopes:true,...options}});
 
 test("nested function scope descriptions preserve identity, visibility, origins and parent instances",async t=>{
@@ -102,10 +103,50 @@ def negative : Unit { let named := global; simpa with [global] using named; }`;
   assert.equal(result.links.find(link=>link.start===use&&link.name==="b").definitionStart,source.indexOf("b :="));
 });
 
+test("scope collection preserves hlevel evidence, diagnostics, fuel and kernel work",async t=>{
+  for(const name of ["hlevel_tactic","automatic_clauses"])await t.test(name,async t=>{
+    const off=await checkTestModule(t,name,{module});
+    const on=await checkTestModule(t,name,{module,options:{collectScopes:true}});
+    assert.deepEqual(on.result.outputs,off.result.outputs);
+    assert.deepEqual(on.result.gaps,off.result.gaps);
+    assert.deepEqual(on.result.links,off.result.links);
+    assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+  });
+});
+
+test("identity receipts do not expose shadowed evidence to tactics or automatic obligations",async t=>{
+  const cases={
+    let:`import hlevels;
+      def probe_(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) {
+        let h : IsProp(U0, A) { exact p(tt); } let h := tt; hlevel;
+      }`,
+    obtain:`import hlevels;
+      def probe_(A : U0, q : IsProp(U0, A) and Nat) : IsProp(U0, A) {
+        obtain (h, n) := q; let h := tt; hlevel;
+      }`,
+    obligation:`import hlevels;
+      inductive Q : set { point; }
+      def probe_(B : U0, p : Unit -> IsSet(U0, B), b : B, q : Q) : B {
+        let h := p(tt); let h := tt; exact match q { point => b; };
+      }`,
+  };
+  for(const [name,source] of Object.entries(cases))await t.test(name,async t=>{
+    for(const input of [source,source.replace("let h := tt;","")]) {
+      const off=await checkProgram(t,input,{module});
+      const on=await setup(t,input);
+      assert.deepEqual(off.result.gaps.map(gap=>gap.name),input===source?["probe_"]:[]);
+      assert.deepEqual(on.result.outputs,off.result.outputs);
+      assert.deepEqual(on.result.gaps,off.result.gaps);
+      assert.deepEqual(on.result.links,off.result.links);
+      assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+    }
+  });
+});
+
 test("shared lexical descriptions retain each point's mutable recursion permissions",()=>{
   const descriptions=[],recorder=new ScopePoints("permissions",{onPoint:point=>descriptions.push(point)});
-  recorder.declaration("main",{name:{text:"f",start:4,end:5}},"main__f");
-  const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",declaring:"f",scopePoints:recorder}).declaration();
+  recorder.compilation.declare("main",{name:{text:"f",start:4,end:5}},"main__f");
+  const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",declaring:{name:"f",kind:"def"},scopePoints:recorder}).declaration();
   const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
   const scope=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
   const node={kind:"name",name:"f",start:20,end:21};
@@ -118,6 +159,48 @@ test("shared lexical descriptions retain each point's mutable recursion permissi
   assert.equal(descriptions[0].state.bindings,descriptions[1].state.bindings);
   assert.notDeepEqual(descriptions[0].state.recursion,descriptions[1].state.recursion);
   assert.equal(JSON.stringify(descriptions[0]),saved);
+});
+
+test("binding descriptions preserve the aggregate text limit with cold and warm receipts",()=>{
+  for(const warm of [false,true]) {
+    const points=[],recorder=new ScopePoints("text-limit",{onPoint:point=>points.push(point)});
+    const unit=new SourceUnit({checker:{compilationBindings:recorder.compilation},source:"xx",moduleName:"main",scopePoints:recorder}).declaration();
+    const base=new Scope(unit),node={kind:"name",name:"x",start:0,end:1};
+    // Each inert receipt fits, but the combined environment exceeds the cap.
+    const entries=["first","second"].map((label,index)=>({label,
+      value:T.variable(String(index).repeat(2100000)),binding:recorder.bind({...node,text:label},base)}));
+    const bind=(scope,{label,value,binding})=>scope.sourceBinding(label,value,binding);
+    const observe=scope=>{recorder.around(null,node,scope,{},()=>{});return points.at(-1);};
+    if(warm)for(const entry of entries)assert.equal(observe(bind(base,entry)).available,true);
+    const combined=observe(entries.reduce(bind,base));
+    assert.equal(combined.available,false);
+    assert.match(combined.reason,/Syntax snapshot text budget exceeded/);
+  }
+});
+
+test("lazy caller permissions stay point-specific while nested operand descriptions share data",async t=>{
+  for(const mode of ["direct","nested","scoped"])await t.test(mode,()=>{
+    const descriptions=[],recorder=new ScopePoints("lazy-permissions",{onPoint:point=>descriptions.push(point)});
+    recorder.compilation.declare("main",{name:{text:"f",start:4,end:5}},"main__f");
+    const unit=new SourceUnit({checker:{compilationBindings:recorder.compilation},source:" ".repeat(24),moduleName:"main",scopePoints:recorder}).declaration();
+    const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
+    const caller=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
+    const base=new Scope(unit),node={kind:"name",name:"f",start:20,end:21};
+    const bind=(scope,label,value)=>scope.sourceBinding(label,value,recorder.bind({text:label,start:10,end:11},scope));
+    let operand={tag:"SourceOperand",node,scope:caller};
+    if(mode==="nested")operand={tag:"SourceOperand",node:{...node,name:"outer"},scope:bind(base,"outer",operand)};
+    if(mode==="scoped")operand={tag:"SourceOperand",node:{kind:"scoped",node,scope:caller},scope:base};
+    const scope=bind(base,"x",operand);
+    recorder.around(null,node,scope,{},()=>{});
+    const saved=JSON.stringify(descriptions[0]);
+    recursive.state="selected";recursive.bindings.set("n",T.unit);
+    recorder.around(null,node,scope,{},()=>{});
+    assert.ok(descriptions.every(point=>point.available),JSON.stringify(descriptions));
+    assert.equal(descriptions[0].state.bindings,descriptions[1].state.bindings);
+    assert.notDeepEqual(descriptions[0].state.recursion,descriptions[1].state.recursion);
+    assert.equal(JSON.stringify(descriptions[0]),saved);
+    assert.deepEqual(JSON.parse(saved),descriptions[0]);
+  });
 });
 
 test("a declaration shares registered-rule descriptions and later registrations get a new snapshot",()=>{
@@ -137,7 +220,7 @@ test("a declaration shares registered-rule descriptions and later registrations 
   assert.equal(JSON.stringify(points[0].state.rules),saved);
 });
 
-test("imported notation preserves authored origins and marks its unmigrated expansion unavailable",async t=>{
+test("imported notation retains available scopes with authored and caller origins",async t=>{
   const dep="inductive N { zero; succ(n : N); } def add(a, b : N) : N := a; notation pl { x + y := add(x, y); }";
   const source="import dep; def t(p : N) : N := pl.(p + p);";
   const {program,result}=await checkProgram(t,source,{module,reader:async()=>dep,options:{collectScopes:true}});
@@ -146,8 +229,8 @@ test("imported notation preserves authored origins and marks its unmigrated expa
   assert.ok(expanded.length);
   for(const point of expanded) {
     assert.equal(point.origin.module,"dep");
-    assert.equal(point.available,false);
-    assert.match(point.reason,/Notation expansion/);
+    assert.ok(point.available,point.reason);
+    assert.deepEqual(JSON.parse(JSON.stringify(point)),point);
     const frame=point.origin.expansion.at(-1);
     assert.equal(frame.kind,"notation");
     assert.equal(frame.site.module,"main");

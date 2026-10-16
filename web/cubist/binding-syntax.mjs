@@ -1,11 +1,14 @@
-// Explicit migration boundary for ordinary binding-aware syntax. Later
-// packages move retained theories and goal-dependent blocks through this
-// same representation; an unmigrated family is rejected here, not retried
-// through nominal capture on failure.
-import {scopeMapped, binderName, bindingRole} from "./scopes.mjs";
+// Source entry for binding-aware syntax. Unmigrated namespaces are rejected
+// here, never retried through nominal capture on failure.
+import {scopeMapped, binderName, bindingRole,selectionEffects} from "./scopes.mjs";
 import {members} from "./references.mjs";
-import {sourceOrigin, bindingResolution, SlotOutcomes} from "./bindings.mjs";
-import {declarationTelescope, parameterLambdas} from "./telescopes.mjs";
+import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution,
+  failedResolution,resolutionError,UnknownNamespaceMember,namespaceSelectorResolution} from "./bindings.mjs";
+import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./telescopes.mjs";
+import {syntaxValue,expandedSource,qualifySource,sourceMetadata} from "./source-syntax.mjs";
+import {mapSyntax} from "../translator/syntax-graph.mjs";
+import {notationAlternative} from "./theory-notation.mjs";
+import {unselectedOperator,unselectedNegation,unboundOperator,unboundNegation,literalUnread} from "../translator/notations.mjs";
 
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
@@ -13,85 +16,543 @@ const format = "cubist-bindings-1";
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
-  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel"]);
+  "trunc", "typed", "exact", "let", "intro", "ext", "obtain", "simpOnly", "simpaOnly", "withUnfolding", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);
   return Object.freeze(value);
 };
 const occurrence = (at, value, spelling, origin) => ({kind: "bindingReference", resolution: value, spelling, origin,
-  start: at.start, end: at.end});
+  start: at.start, end: at.end,...(at.synthetic?{synthetic:true}:{})});
 
-export function resolveBindingSyntax(tree, {table, owner, context, source, constructors = []}) {
+// Parent-interface selections reinterpret free field labels, preserving
+// lexical binders. Model openings are different: they shadow preceding
+// locals. A pending pattern keeps its variable alternative and replaces only
+// the constructor branch's enclosing interpretation with the selected field.
+function namespaceSelector(value,context,table,boundary) {
+  const localRoles=new Set(["parameter","universe","local","dimension","pattern"]);
+  const localBinding=id=>localRoles.has(table.get(id).role)&&(!boundary||context.introducedAfter(id,boundary));
+  const protect=(local,target)=>local.tag==="binding"&&localBinding(local.id)?local
+    :local.tag==="slot"&&localBinding(local.id)?slotResolution(local.id,protect(local.enclosing,target))
+    :local.tag==="opening"?protect(local.enclosing,target)
+    :local.tag==="namespace"?protect(local.fallback,target):target;
+  if(value.tag==="namespace")return namespaceResolution(value.members.map(([label,target])=>
+    [label,protect(context.lookup(label),target)]),value.fallback,value.description,value.receiver);
+  if(["slot","opening"].includes(value.tag))return {...value,enclosing:namespaceSelector(value.enclosing,context,table,boundary)};
+  return value;
+}
+const namespaceCandidates=value=>value?.tag==="namespace"?value.members
+  :["slot","opening"].includes(value?.tag)?namespaceCandidates(value.enclosing):[];
+
+export function resolveBindingSyntax(tree, options) {
+  return resolveBindings(tree,options);
+}
+
+// A selected receiver uses the selection namespace at its root. A parent's
+// abstract model is explicit syntax over its interface, never its bare-name
+// fallback to an unrelated declaration. Operand recipes use this entry.
+export function resolveBindingReceiver(tree,options,{namespace=true}={}) {
+  if(options.context.notations()===null)
+    throw new TypeError("A retained selection receiver requires the complete source notation inventory.");
+  return resolveBindings(tree,{...options,selectionReceiver:true,receiverNamespace:namespace});
+}
+
+function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
+  evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
+  fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
+  notation=null,receiverNamespace=true,syntaxOperands=[],simpSets=null}) {
+  const selectedNotation=context.selectedNotation();
+  if(selectedNotation) {
+    const fallback={activation:selectedNotation};
+    notation=notation?{...notation,fallback}:fallback;
+  }
+  const universes=new Map(universeReferences);
   constructors = Object.freeze(constructors.map(({id, label, nullary}) => {
     table.get(id);
     if (typeof label !== "string" || typeof nullary !== "boolean") throw new TypeError("Invalid source constructor inventory.");
     return Object.freeze({id, label, nullary});
   }));
   const canonical = tree.kind === "def" ? declarationTelescope(tree) : {tree, inferred: false};
-  tree = canonical.tree;
+  const telescope=evidenceTelescope(canonical.tree),resolvedParameters=new Map();
+  tree = telescope.tree;
+  const declaration=tree;
+  if(self) {
+    self=table.get(self.id);
+    if(tree.kind!=="def"||!["declaration","helper"].includes(self.role))
+      throw new TypeError("Structural self must be the identity of a retained declaration.");
+  }
   const owned = [];
-  const origin = at => sourceOrigin({...source, start: at.start, end: at.end});
+  const lazyOperands=new Set(syntaxOperands);
+  const selectors=new Map(),namespaceNotations=new Map();
+  let namespaces=false;
+  let nested=0;
+  const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
+  const resolvedAt=(value,node)=>mapResolution(value,undefined,value=>value.tag==="failure"?failedResolution({...value,
+    ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
+  const lookup=(at,name,node,selector=false,{deferFailure=false}={})=>{
+    let found;
+    try {
+      const term=at.lexical.qualified(name);
+      let operand=false;
+      if(selector)mapResolution(term.value,id=>{operand||=lazyOperands.has(id);return id;});
+      // Syntax parameters stand for the caller's expression in every
+      // consuming namespace. The caller supplies its saved selector meaning.
+      found=selector&&!operand?at.lexical.selector(name,selector===true?{}:selector):term;
+    }
+    catch(error) {
+      if(!(error instanceof UnknownNamespaceMember))throw error;
+      found={value:failedResolution(error),fields:[]};
+    }
+    const value=resolvedAt(found.value,node);
+    if(value.tag==="failure"&&!deferFailure)throw resolutionError(value);
+    return {...found,value};
+  };
+  const receiverValue=value=>mapResolution(value,undefined,value=>{
+    if(value.tag!=="namespace")return value;
+    if(!value.receiver)throw new TypeError("A namespace notation receiver needs its explicit model interface.");
+    return value.receiver;
+  });
+  // A set is a source namespace, independent of term binders. Expand it
+  // once to exact checked member references; all later transforms then use
+  // the same syntax traversal as an explicitly written theorem expression.
+  const simpSet=(label,node)=>{
+    if(simpSets===null)throw new TypeError("Retained simplification names require the complete source set inventory.");
+    const set=simpSets.get(label);
+    if(!set)return null;
+    const fixed=(label,value)=>{
+      const name={kind:"name",name:label,start:node.start,end:node.end,origin:origin(node)};
+      fixedReferences.set(name,value);return name;
+    };
+    return set.failure?[fixed(label,resolvedAt(set.failure,node))]
+      :set.rules.map(({id,label})=>fixed(label,bindingResolution(id)));
+  };
   tree = scopeMapped(tree, {
     deferred: true,
-    enter(node, at) {
+    prepare(node,at) {
+      if(["simpOnly","simpaOnly"].includes(node.kind))return {...node,
+        rules:node.rules.flatMap(item=>{
+          const set=item.value.kind==="name"&&!item.reverse?simpSet(item.value.name,item.value):null;
+          return set?set.map(value=>({...item,value})): [item];
+        }),
+        without:(node.without??[]).flatMap(token=>simpSet(token.text,token)??[token])};
+      if(!["select","use"].includes(node.kind))return node;
+      if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
+      let model=node.model,selector;
+      if(model.kind==="name") {
+        const found=lookup(at,model.name,model,{namespace:node.kind==="select"});
+        if(model.name!=="_"||found.value.tag==="namespace") {
+          selector=memberResolution(namespaceSelector(found.value,at.lexical,table,namespaceBoundary),found.fields);
+          if(selector.tag==="namespace"||namespaceCandidates(selector).length)namespaces=true;
+          model={...model};selectors.set(model,selector);
+          if(selector.tag==="namespace")namespaceNotations.set(model,
+            {...notation?.namespaces?.[model.name],name:model.name,complete:true});
+        }
+      }
+      return {...node,model,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model),
+        ...(selector?.tag==="namespace"?{activationMode:"namespace"}
+          :namespaceCandidates(selector).length?{activationMode:"conditional-namespace"}:{})}};
+    },
+    region(at,node,key) {
+      if(self&&node===declaration&&["body","value"].includes(key))
+        at={...at,lexical:at.lexical.bind(self.label,bindingResolution(self.id))};
+      // The activation's notation context is installed by extend below;
+      // the surrounding theory's operator table cannot rewrite this body.
+      if(node.kind==="select"&&key==="body"&&(node.effects??selectionEffects.all).notation)
+        at={...at,notation:null};
+      return at;
+    },
+    parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
+    reference(token,_field,at) {
+      const {value,fields}=lookup(at,token.text,token);
+      return occurrence(token,memberResolution(value,fields),token.text,origin(token));
+    },
+    enter(node, at, descend) {
+      if(selectors.has(node))return occurrence(node,selectors.get(node),node.name,origin(node));
+      // Only a lazy argument's root name can have two interpretations.
+      // Both are resolved here; neither a rule nor its destination may ask
+      // what that spelling means later. Composite expressions are terms.
+      const operand=child=>descend(child,{...at,operand:child});
+      if(at.operand===node&&node.kind==="name"&&node.name!=="_") {
+        const term=lookup(at,node.name,node,false,{deferFailure:true});
+        const selected=lookup(at,node.name,node,true,{deferFailure:true});
+        const value=memberResolution(term.value,term.fields);
+        const receiver=memberResolution(receiverValue(selected.value),selected.fields);
+        if(value.tag==="failure"||receiver.tag==="failure"||JSON.stringify(value)!==JSON.stringify(receiver))return {kind:"operandAlternatives",
+          value:occurrence(node,value,node.name,origin(node)),receiver:occurrence(node,receiver,node.name,origin(node)),
+          origin:origin(node),start:node.start,end:node.end};
+      }
+      const qualifier=node.kind==="operatorOf"?node.model
+        :["binary","negation"].includes(node.kind)?node.qualifier:null;
+      if(qualifier) {
+        const selected=qualifier.kind==="name"?lookup(at,qualifier.name,qualifier,true):null;
+        if(selected?.value.tag==="namespace"&&!selected.fields.length) {
+          const namespace=notation?.namespaces?.[qualifier.name];
+          const key=node.kind==="negation"?"unary -":node.operator===">"?"<":node.operator===">="?"<=":node.operator;
+          const rule=namespace?.bindings[key];
+          if(rule) {
+            const site={...node,start:node.operatorStart??node.start,end:node.operatorEnd??node.end};
+            const fn=occurrence(site,bindingResolution(rule.field),table.get(rule.field).label,origin(site));
+            if(node.kind==="operatorOf")return fn;
+            return {kind:"call",fn,args:node.kind==="negation"?[descend(node.operand)]
+              :(node.operator===">"||node.operator===">=")?[descend(node.right),descend(node.left)]
+              :[descend(node.left),descend(node.right)],origin:origin(node),start:node.start,end:node.end};
+          }
+        }
+        const receiver=resolveBindingReceiver(qualifier,{table,owner:[...owner,"qualifier",String(nested++)],
+          context:at.lexical,source,constructors,evidenceTypes,fixedReferences,universeReferences,
+          namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands,simpSets});
+        owned.push(...receiver.owned);
+        // Qualification selects only the operation. Its operands retain the
+        // surrounding source notation; no operand recipe is applied here.
+        if(node.kind==="operatorOf")return {...node,model:receiver.tree,origin:origin(node)};
+        return {...node,qualifier:receiver.tree,origin:origin(node),...(node.kind==="negation"
+          ?{operand:operand(node.operand)}:{left:operand(node.left),right:operand(node.right)})};
+      }
+      if(fixedReferences.has(node)) {
+        const fixed=fixedReferences.get(node);
+        if(fixed.tag==="universe"&&fixed.label==="_")
+          throw Object.assign(Error("An anonymous universe has no name: name the header universe to refer to it here."),
+            {offset:node.start,sourceEnd:node.end});
+        const value=fixed.tag==="universe"?universes.get(fixed.label):fixed;
+        if(!value)throw new TypeError(`A fixed universe position has no header universe: ${fixed.label}`);
+        return occurrence(node,value,node.name,origin(node));
+      }
+      if(telescope.evidence.has(node)) {
+        const {parameter,builtin}=telescope.evidence.get(node),mapped=resolvedParameters.get(parameter);
+        if(!mapped?.name.bindingId)throw new TypeError("Parameter evidence precedes its retained parameter.");
+        const token=mapped.name,at=origin(token);
+        if(!evidenceTypes.has(builtin))throw new TypeError(`A leveled parameter needs a source resolution for ${builtin}.`);
+        return {kind:"call",fn:occurrence(token,evidenceTypes.get(builtin),builtin,at),
+          args:[mapped.type,occurrence(token,bindingResolution(token.bindingId),token.text,at)],origin:at};
+      }
+      const dynamic=at.notation?.activation??at.notation?.fallback?.activation;
+      if(dynamic&&["number","binaryNumber","literal"].includes(node.kind)
+        &&!(node.kind==="number"&&at.notation?.bindings?.numeral)) {
+        const selection=occurrence(node,bindingResolution(dynamic),"notation",origin(node));
+        // Interval/face consumers still need the numeric node itself. Only
+        // term elaboration invokes its reader through the retained context.
+        if(node.kind==="number")return {...node,notationSelection:selection,origin:origin(node)};
+        return {kind:"boundNotation",selection,body:{kind:"literal",
+          text:node.kind==="binaryNumber"?node.spelling??`0b${node.digits}`:node.text,
+          origin:origin(node),start:node.start,end:node.end},origin:origin(node),start:node.start,end:node.end};
+      }
+      const key=node.kind==="negation"&&!node.qualifier?"unary -":node.kind==="binary"&&!node.qualifier
+        ?node.operator===">"?"<":node.operator===">="?"<=":node.operator:null;
+      if(key&&at.notation) {
+        if(dynamic&&!at.notation.bindings?.[key]&&!at.notation.ambiguous?.[key]
+          &&["+","-","*","/","^","<","<=","unary -"].includes(key)) {
+          // Each operand abstracts over its notation, while its term names
+          // resolve here. At use, the operator's checked recipe supplies that
+          // parameter; an explicit selection inside the operand supersedes it.
+          const operand=child=>{
+            const record=table.allocate(owner,{role:"notation",label:"operand notation",origin:origin(child)});
+            owned.push(record.id);
+            return {kind:"notationArgument",notation:{text:record.label,bindingId:record.id,bindingRole:record.role,
+              origin:record.origin,start:child.start,end:child.end},
+              body:descend(child,{...at,notation:{activation:record.id},operand:child}),origin:origin(child),start:child.start,end:child.end};
+          };
+          const body=node.kind==="negation"?{...node,operand:operand(node.operand)}
+            :{...node,left:operand(node.left),right:operand(node.right)};
+          return {kind:"boundNotation",selection:occurrence(node,bindingResolution(dynamic),"notation",origin(node)),
+            body,origin:origin(node),start:node.start,end:node.end};
+        }
+        const ambiguous=at.notation.ambiguous?.[key];
+        if(ambiguous)throw Object.assign(Error(`${key} is ambiguous in ${at.notation.name}: it is ${
+          ambiguous.map(e=>`${e.label}'s ${e.parentField}`).join(" and ")}. Write ${
+          ambiguous.map(e=>notationAlternative("",key,e)).join(" or ")}, or give one another notation in extends.`),
+          {offset:node.start,sourceEnd:node.end,origin:origin(node)});
+        const rule=at.notation.bindings?.[key];
+        if(rule) {
+          const operand=(child,recipe)=>{
+            if(!recipe)return descend(child);
+            const {syntax}=cloneBindingSyntax(recipe,table,[...owner,"operand",String(nested++)],
+              {expansion:{kind:"notation",site:origin(child)}});
+            owned.push(...syntax.owned);
+            const activation=table.allocate(owner,{role:"activation",label:"selection",origin:origin(child)});
+            owned.push(activation.id);
+            return {kind:"select",effects:selectionEffects.notation,model:syntax.tree,
+              activation:{text:activation.label,bindingId:activation.id,bindingRole:activation.role,origin:activation.origin,
+                start:child.start,end:child.end},
+              body:descend(child,{...at,notation:{activation:activation.id}}),origin:origin(child),start:child.start,end:child.end};
+          };
+          const reverse=node.operator===">"||node.operator===">=";
+          const args=key==="unary -"?[operand(node.operand,rule.recipe.left)]
+            :[operand(reverse?node.right:node.left,rule.recipe.left),operand(reverse?node.left:node.right,rule.recipe.right)];
+          const site={...node,start:node.operatorStart??node.start,end:node.operatorEnd??node.end};
+          return {kind:"call",fn:occurrence(site,bindingResolution(rule.field),table.get(rule.field).label,origin(site)),
+            args,origin:origin(node),start:node.start,end:node.end};
+        }
+      }
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
+      const selection=at.notation?.complete?at.notation:null;
+      // Decimal nodes can also be interval endpoints. Keep the source's
+      // missing-reader decision inert until term elaboration consumes it.
+      if(selection&&node.kind==="number"&&!selection.bindings?.numeral)
+        return {...node,literalFailure:failedResolution(literalUnread(selection,node.text??String(node.value))),origin:origin(node)};
+      const failure=!node.qualifier&&(node.kind==="negation"?(selection?unboundNegation(selection):unselectedNegation())
+        :node.kind==="binary"&&["+","-","*","/","^","<","<=",">",">="].includes(node.operator)
+          ?(selection?unboundOperator(selection,node.operator):unselectedOperator(node.operator))
+        :["binaryNumber","literal"].includes(node.kind)?literalUnread(selection,node.spelling??node.text??`0b${node.digits}`):null);
+      if(failure)throw Object.assign(failure,{offset:node.start,sourceEnd:node.end});
       if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
       if(node.kind==="binary"&&(node.qualifier||!["=","->","and","or","++","&","|"].includes(node.operator)))
         throw new TypeError("Binding syntax family has not migrated: notation operator");
-      if (node.kind !== "name" || node.name === "_") return node;
-      const {value, fields} = at.qualified(node.name);
+      if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
+      if (node.kind !== "name") return node;
+      let {value, fields,shadowed} = lookup(at,node.name,node,selectionReceiver&&node===declaration?{namespace:receiverNamespace}:false);
+      if(selectionReceiver&&node===declaration)value=receiverValue(value);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));
-      return fields.length ? members(node, {...ref, end: node.start + spelling.length}, fields) : ref;
+      return fields.length ? {...members(node, {...ref, end: node.start + spelling.length}, fields),
+        ...(shadowed?{shadowedDeclaration:shadowed}:{})} : ref;
     },
     bind(token, node, scope, at) {
       if (token.bindingId) throw new TypeError("Source resolution cannot allocate an existing binder twice.");
-      if (binderName(token) === "_") return token;
+      // Anonymous positions still need identities for forwarding, evidence,
+      // cloning and generated applications. They introduce no lexical name.
       const record = table.allocate(owner, {role: bindingRole(node, scope, token), label: binderName(token), origin: origin(token)});
+      if(node.kind==="namedNotationRule")lazyOperands.add(record.id);
+      if(record.role==="universe"&&record.label!=="_"&&node===declaration)universes.set(record.label,bindingResolution(record.id));
       owned.push(record.id);
-      return {...token, bindingId: record.id, bindingRole: record.role,
-        ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lookup(binderName(token))} : {})};
+      return {...token, bindingId: record.id, bindingRole: record.role,origin:record.origin,
+        ...(record.role === "pattern" ? {constructorInventory: constructors, patternEnclosing: at.lexical.lookup(binderName(token))} : {})};
     },
-    extend(at, binders) {
+    extend(at, binders,node,scope) {
+      if(scope.role==="activation") {
+        if(scope.effects.notation)at={...at,notation:binders[0].activationMode
+          ?namespaceNotations.get(node.model)??null:{activation:binders[0].bindingId}};
+        if(!scope.effects.labels)return at;
+        const selector=selectors.get(node.model),candidates=namespaceCandidates(selector);
+        if(selector?.tag==="namespace") {
+          for(const [label,value] of selector.members)at={...at,lexical:at.lexical.bind(label,value)};
+          return at;
+        }
+        return {...at,lexical:at.lexical.open(binders[0].bindingId,{candidates})};
+      }
       for (const token of binders) {
-        if (!token.bindingId) continue;
-        at = token.bindingRole === "pattern" ? at.defer(binderName(token), token.bindingId)
-          : at.bind(binderName(token), bindingResolution(token.bindingId));
+        if (!token.bindingId||binderName(token)==="_") continue;
+        at={...at,lexical:token.bindingRole==="pattern"?at.lexical.defer(binderName(token),token.bindingId)
+          :at.lexical.bind(binderName(token),bindingResolution(token.bindingId))};
       }
       return at;
     },
-  }, context);
-  return freeze({format, tree, owned, inferred: canonical.inferred});
+  }, {lexical:context,notation});
+  if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
+  // Every source-bearing expression, including synthesized operator bodies,
+  // must retain its module before an expansion moves it to another unit.
+  // Copy first: retained fragments can be frozen and source input is not ours
+  // to annotate. The DAG copy preserves shared grouped domains.
+  tree=qualifySource(mapSyntax(tree,value=>sourceMetadata("origin",value)?value:undefined),source);
+  const syntax=freeze({format, tree, owned, inferred: canonical.inferred});
+  if(!namespaces)return syntax;
+  // A statically selected interface is a lexical scope, not a runtime model.
+  // Its body is now resolved, so discard that scope descriptor. Keeping its
+  // unused member table would invent dependencies and affect alpha equality.
+  const erase=tree=>mapSyntax(tree,node=>{
+    if(node.kind==="select"&&node.activation?.activationMode==="namespace")return erase(node.body);
+    // A deferred selector carries only the decision, not the entire source
+    // namespace. Each body occurrence already retained its needed candidate.
+    if(node.tag==="namespace")return namespaceSelectorResolution();
+  });
+  return bindingSyntaxView(syntax,erase(tree),{inferred:canonical.inferred});
 }
 
 const requireSyntax = syntax => {
   if (syntax?.format !== format || !Array.isArray(syntax.owned)) throw new TypeError("Expected binding-aware syntax.");
 };
-const mappedResolution = (value, ids) => value.tag === "binding" ? {...value, id: ids.get(value.id) ?? value.id}
-  : value.tag === "slot" ? {...value, id: ids.get(value.id) ?? value.id, enclosing: mappedResolution(value.enclosing, ids)} : value;
 
-export function cloneBindingSyntax(syntax, table, owner) {
+// A structural view/composition of already resolved trees. The subtree's
+// actual binders determine ownership: removing a telescope opens its IDs,
+// while wrapping its body closes exactly those same IDs. This never resolves
+// a source label or allocates a new identity.
+export function bindingSyntaxView(syntax,tree,{inferred=false}={}) {
   requireSyntax(syntax);
-  const correspondence = table.freshen(syntax.owned, owner);
+  const owned=new Set();
+  const visit=tree=>scopeMapped(tree,{
+    deferred:true,
+    enter(node) {
+      if(node.kind==="bindingReference")for(const [,value] of node.substitutions??[])visit(value);
+      return node;
+    },
+    bind(token) {if(token.bindingId)owned.add(token.bindingId);return token;},
+    extend:at=>at,
+  },null);
+  visit(tree);
+  return freeze({...syntax,tree,owned:[...owned],inferred});
+}
+
+// Dependency consumers see exact external IDs and explicit unresolved
+// decisions. A missing occurrence stays missing; a pending slot is never
+// mistaken for an independent term. This is a separate pass over the final
+// tree, including retained substitution arguments, not an inliner's callback.
+export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=false}={}) {
+  requireSyntax(syntax);
+  const owned=new Set(syntax.owned),uses=[];
+  const visit=(tree,conditions=[])=>scopeMapped(tree,{
+    deferred:true,
+    region(at,node,key) {
+      return node.kind==="call"&&key==="fn"?{application:at?.application??node.origin}:null;
+    },
+    enter(node,at) {
+      const origin=at?.application??node.origin;
+      if(node.kind==="operandAlternatives") {
+        uses.push({kind:"deferred-operand",origin});
+        if(conditional)for(const key of ["value","receiver"])
+          visit(node[key],[...conditions,{operand:node.origin,interpretation:key}]);
+        return null;
+      }
+      if(node.kind==="name"&&node.name==="_")uses.push({kind:"hole",origin:node.origin});
+      if(node.kind!=="bindingReference")return node;
+      const selected=outcomes.resolve(node.resolution);
+      const structural=resolutionExpression(node,selected);
+      if(structural!==node) {visit(structural,conditions);return node;}
+      if(selected.tag==="binding") {
+        const replacement=node.substitutions?.find(([id])=>id===selected.id)?.[1];
+        if(replacement)visit(replacement,conditions);
+        else if(!owned.has(selected.id))uses.push({kind:"binding",id:selected.id,spelling:node.spelling,origin,
+          ...(conditions.length?{conditions}:{})});
+      } else if(selected.tag==="slot"||selected.tag==="opening") {
+        uses.push({kind:selected.tag==="slot"?"deferred":"deferred-opening",slot:selected.id,resolution:selected,spelling:node.spelling,origin});
+        // The arguments remain conditional, rather than unconditional
+        // dependencies of whichever alternative a later type will select.
+        if(node.substitutions?.length)uses.at(-1).substitutions=node.substitutions;
+        if(conditional) {
+          let alternative=selected;
+          const required=[...conditions];
+          while(alternative.tag==="slot"||alternative.tag==="opening") {
+            for(const candidate of alternative.candidates??[])
+              visit({...node,resolution:candidate},[...required,{activation:alternative.id,label:alternative.label.split(".")[0],outcome:"provided"}]);
+            required.push(alternative.tag==="slot"?{slot:alternative.id,outcome:"constructor"}
+              :{activation:alternative.id,label:alternative.label.split(".")[0],outcome:"absent"});
+            alternative=outcomes.resolve(alternative.enclosing);
+          }
+          visit({...node,resolution:alternative},required);
+        }
+      } else if(!["namespace","namespace-selector"].includes(selected.tag))uses.push({kind:selected.tag,label:selected.label,origin,
+        ...(conditions.length?{conditions}:{})});
+      // A namespace selector describes alternatives; it evaluates no member.
+      // Its body carries the actual (possibly conditional) dependencies.
+      return node;
+    },
+    bind(token) {
+      if(token.bindingRole==="activation"&&token.activationMode!=="namespace"&&!outcomes.activation(token.bindingId))uses.push({kind:"deferred-activation",
+        activation:token.bindingId,origin:token.origin});
+      if(token.bindingRole==="pattern"&&binderName(token)!=="_"&&!outcomes.get(token.bindingId))uses.push({kind:"deferred-pattern",
+        slot:token.bindingId,spelling:token.label??binderName(token),origin:token.origin,
+        enclosing:token.patternEnclosing,constructors:token.constructorInventory});
+      return token;
+    },
+    extend:at=>at,
+  },null);
+  visit(syntax.tree);
+  return uses;
+}
+
+// Every unresolved interpretation is an obligation, including inferred
+// holes. Only an exact ID or an explicit reserved reference is decided.
+export const unresolvedBindingUse=use=>!["binding","reserved"].includes(use.kind);
+
+// Structural equality for retained interfaces, up to their local binders
+// and an explicit correspondence of external fields/parameters. Public
+// labels and authored locations cannot decide inheritance sharing. Pending
+// pattern spellings are different: they still select a constructor, so they
+// remain semantic until their slots have been resolved.
+export function sameBindingSyntax(left,right,correspondence=new Map()) {
+  requireSyntax(left);requireSyntax(right);
+  const canonical=(syntax,external)=>{
+    const locals=new Map();
+    const collect=tree=>scopeMapped(tree,{
+      deferred:true,
+      enter(node) {
+        if(node.kind==="bindingReference")for(const [,value] of node.substitutions??[])collect(value);
+        return node;
+      },
+      bind(token) {
+        if(token.bindingId&&!locals.has(token.bindingId))locals.set(token.bindingId,locals.size);
+        return token;
+      },
+      extend:at=>at,
+    },null);
+    collect(syntax.tree);
+    const identity=id=>locals.has(id)?["local",locals.get(id)]:["external",external.get(id)??id];
+    const resolution=value=>mapResolution(value,identity);
+    const map=tree=>scopeMapped(tree,{
+      deferred:true,
+      enter(node) {
+        if(node.kind!=="bindingReference")return node;
+        const {spelling,...reference}=node;
+        return {...reference,resolution:resolution(node.resolution),
+          ...(node.substitutions?{substitutions:node.substitutions.map(([id,value])=>[identity(id),map(value)])}:{})};
+      },
+      bind(token) {
+        if(!token.bindingId)return token;
+        const {text,name,label,...rest}=token;
+        return {...rest,bindingId:identity(token.bindingId),
+          ...(token.bindingRole==="pattern"?{patternLabel:label??text??name}:{}),
+          ...(token.patternEnclosing?{patternEnclosing:resolution(token.patternEnclosing)}:{}),
+          ...(token.constructorInventory?{constructorInventory:token.constructorInventory.map(entry=>({...entry,id:identity(entry.id)}))}:{})};
+      },
+      extend:at=>at,
+    },null);
+    return syntaxValue(map(syntax.tree),(key,value)=>{
+      if(key==="synthetic"
+        ||typeof value==="number"&&/^(start|end|group)$|Start$|End$/.test(key))return undefined;
+      // Serialization order of object properties carries no syntax meaning.
+      return value&&typeof value==="object"&&!Array.isArray(value)
+        ?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a<b?-1:a>b?1:0)):value;
+    });
+  };
+  return canonical(left,correspondence)===canonical(right,new Map());
+}
+const mappedResolution = (value, ids) => mapResolution(value,id=>ids.get(id)??id);
+
+// Apply an explicit interface correspondence without any source lookup.
+// Open parent fields may share a child identity. This public operation may
+// never change or target a local binder. Only cloning can rename locals,
+// using fresh identities allocated by the table itself.
+// Validate before a caller allocates fresh identities, without constructing
+// a remapped tree solely to check the correspondence.
+export function validateBindingCorrespondence(syntax,table,correspondence) {
+  requireSyntax(syntax);
+  const locals=new Set(syntax.owned);
+  for(const [before,after] of correspondence) {
+    table.get(before);table.get(after);
+    if(locals.has(before)||locals.has(after))throw new TypeError("An open interface correspondence cannot change or capture local binders.");
+  }
+}
+export function remapBindingSyntax(syntax,table,correspondence) {
+  validateBindingCorrespondence(syntax,table,correspondence);
+  return mappedBindingSyntax(syntax,correspondence);
+}
+function mappedBindingSyntax(syntax,correspondence) {
+  const owned=syntax.owned.map(id=>correspondence.get(id)??id);
+  if(new Set(owned).size!==owned.length)throw new TypeError("An interface correspondence cannot merge local binders.");
   const map = tree => scopeMapped(tree, {
     deferred: true,
     enter: node => node.kind === "bindingReference" ? {...node, resolution: mappedResolution(node.resolution, correspondence),
       ...(node.substitutions ? {substitutions: node.substitutions.map(([id, value]) => [correspondence.get(id) ?? id, map(value)])} : {})} : node,
     bind: token => token.bindingId ? {...token, bindingId: correspondence.get(token.bindingId) ?? token.bindingId,
-      ...(token.patternEnclosing ? {patternEnclosing: mappedResolution(token.patternEnclosing, correspondence)} : {})} : token,
+      ...(token.patternEnclosing ? {patternEnclosing: mappedResolution(token.patternEnclosing, correspondence)} : {}),
+      ...(token.constructorInventory?{constructorInventory:token.constructorInventory.map(entry=>({...entry,id:correspondence.get(entry.id)??entry.id}))}:{})} : token,
     extend: at => at,
   }, null);
   const tree = map(syntax.tree);
-  return {syntax: freeze({...syntax, tree, owned: [...correspondence.values()]}), correspondence};
+  return freeze({...syntax,tree,owned});
+}
+
+export function cloneBindingSyntax(syntax, table, owner, {expansion}={}) {
+  requireSyntax(syntax);
+  const correspondence = table.freshen(syntax.owned, owner,{expansion});
+  const copy=mappedBindingSyntax(syntax,correspondence);
+  return {syntax:expansion?freeze({...copy,tree:expandedSource(copy.tree,expansion)}):copy,correspondence};
 }
 
 // Simultaneous substitution for an explicit open interface. An inserted
 // argument keeps its own references; it never passes through source name
 // resolution again. Under a pending slot its enclosing alternative may need
 // substitution, so retain that argument until the slot's role is known.
-export function substituteBindingSyntax(syntax, replacements, table, owner) {
+export function substituteBindingSyntax(syntax, replacements, table, owner, {kind="substitution"}={}) {
   requireSyntax(syntax);
   const owned = [...syntax.owned];
   for (const [id, replacement] of replacements) {
@@ -99,8 +560,9 @@ export function substituteBindingSyntax(syntax, replacements, table, owner) {
     if (owned.includes(id)) throw new TypeError("Substitution requires an open binding, not an owned binder.");
   }
   let insertion = 0;
-  const insert = replacement => {
-    const {syntax: copy} = cloneBindingSyntax(replacement, table, [...owner, "argument", String(insertion++)]);
+  const insert = (replacement,node,id) => {
+    const {syntax: copy} = cloneBindingSyntax(replacement, table, [...owner, "argument", String(insertion++)],
+      {expansion:{kind,site:node.origin,binding:id}});
     owned.push(...copy.owned);
     return copy.tree;
   };
@@ -108,12 +570,13 @@ export function substituteBindingSyntax(syntax, replacements, table, owner) {
     deferred: true,
     enter(node) {
       if (node.kind !== "bindingReference") return node;
-      if (node.resolution.tag === "binding" && replacements.has(node.resolution.id)) return insert(replacements.get(node.resolution.id));
+      if (node.resolution.tag === "binding" && replacements.has(node.resolution.id))
+        return insert(replacements.get(node.resolution.id),node,node.resolution.id);
       const pending = new Map((node.substitutions ?? []).map(([id, value]) => [id, map(value)]));
-      for (let value = node.resolution; value; value = value.tag === "slot" ? value.enclosing : null) {
-        if (value.tag === "binding" && !pending.has(value.id) && replacements.has(value.id))
-          pending.set(value.id, insert(replacements.get(value.id)));
-      }
+      mapResolution(node.resolution,id=>{
+        if(!pending.has(id)&&replacements.has(id))pending.set(id,insert(replacements.get(id),node,id));
+        return id;
+      });
       return pending.size ? {...node, substitutions: [...pending]} : node;
     },
     extend: at => at,
@@ -128,9 +591,10 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
   requireSyntax(syntax);
   const tree = scopeMapped(syntax.tree, {
     deferred: true,
-    enter: node => node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferMissing: true}) : node,
-    bind: token => token.bindingId && token.bindingRole !== "pattern"
-      ? {...token, text: adapter.key(token.bindingId), label: token.label ?? binderName(token)} : token,
+    enter: node => node.kind === "operandAlternatives" ? {...node}
+      :node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferErrors: true}) : node,
+    bind: token => token.bindingId && !["pattern","activation"].includes(token.bindingRole)
+      ? {...token, text: adapter.key(token.bindingId), bindingLabel:binderName(token), label: token.label ?? binderName(token)} : token,
     extend: at => at,
   }, null);
   return syntax.inferred ? {...tree, value: parameterLambdas(tree.params, tree.value), valueParameters: tree.params, params: []} : tree;
@@ -143,17 +607,40 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
 export function lowerBindingReferences(tree,adapter,outcomes=new SlotOutcomes()) {
   return scopeMapped(tree,{
     deferred:true,
-    enter:node=>node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferMissing:true}):node,
+    enter:node=>node.kind==="operandAlternatives"?{...node}
+      :node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferErrors:true}):node,
     extend:at=>at,
   },null);
 }
 
 export function lowerBindingReference(node, adapter, outcomes = new SlotOutcomes(), options = {}) {
   const resolved = adapter.resolve(node.resolution, outcomes);
+  const structural=resolutionExpression(node,resolved);
+  if(structural!==node)return lowerBindingSyntax({format,tree:structural,owned:[]},adapter,outcomes);
   if (resolved.tag === "binding") {
     const replacement = node.substitutions?.find(([id]) => id === resolved.id)?.[1];
     if (replacement) return lowerBindingSyntax({format, tree: replacement, owned: []}, adapter, outcomes);
   }
-  const name = adapter.lower(node.resolution, outcomes, options);
-  return name === null ? node : {...node, kind: "name", name};
+  try {
+    const name = adapter.lower(node.resolution, outcomes, options);
+    return name === null ? node : {...node, kind: "name", name};
+  } catch(error) {
+    error.origin??=node.origin;
+    throw error;
+  }
+}
+
+// Structural targets are syntax over exact IDs, never a dotted global name.
+// Keep substitutions attached until every opening/slot on the path resolves.
+function resolutionExpression(node,value) {
+  const reference=resolution=>({...node,resolution});
+  if(value.tag==="notation")return {kind:"notationReceiver",notation:reference(bindingResolution(value.id)),
+    ...(value.model?{model:reference(value.model)}:{}),
+    start:node.start,end:node.end,origin:node.origin,...(node.synthetic?{synthetic:true}:{})};
+  if(value.tag==="member")return members(node,reference(value.receiver),value.fields);
+  if(value.tag==="projected")return {kind:"call",fn:reference(bindingResolution(value.projection)),
+    args:[reference(bindingResolution(value.receiver))],start:node.start,end:node.end,origin:node.origin,...(node.synthetic?{synthetic:true}:{})};
+  if(value.tag==="application")return {kind:"call",fn:reference(value.fn),args:value.args.map(reference),
+    start:node.start,end:node.end,origin:node.origin,...(node.synthetic?{synthetic:true}:{})};
+  return node;
 }

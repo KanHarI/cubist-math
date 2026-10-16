@@ -6,41 +6,107 @@ import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
-import {resolveBindingModule,lowerBindingModule} from "../web/translator/binding-module.mjs";
-import {parse} from "../web/cubist/parser.mjs";
-import {sourceOrigin} from "../web/cubist/bindings.mjs";
-import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {bindingInputs,bindingDeclaration,lowerBindingDeclaration} from "../web/translator/binding-module.mjs";
+import {parse,reservedReferences} from "../web/cubist/parser.mjs";
+import {cloneBindingSyntax,resolveBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {bindingResolution,sourceOrigin} from "../web/cubist/bindings.mjs";
+import {recursionSite} from "../web/translator/match.mjs";
+import {DeclarationOwnership} from "../web/translator/declarations.mjs";
+import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
 const module=await create();
-const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); }";
+const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); } def recurse_ : U0 := Unit;";
 
-// Exercise complete ordinary declarations through the real translator's
-// admission path. This pilot prepares the explicitly migrated family only;
-// the production module resolver moves with the retained families in CB2/3.
+// Prepare fixture artifacts with the syntax resolver; admission and lowering
+// use the same retained-declaration queue as production generators.
+function declarationsFromSource(text,table,imports,{clone=false}={}) {
+  const inputs=bindingInputs(table,imports,{reserved:reservedReferences(text)});
+  const source={revision:table.revision,module:"pilot"},ownership=new DeclarationOwnership(),artifacts=[];
+  let context=inputs.context;
+  const declarations=parse(text).declarations.map((declaration,index)=>{
+    const owner=["fixture",String(index)],label=declaration.name.text;
+    const binding=table.allocate(owner,{role:"declaration",label,
+      origin:sourceOrigin({...source,start:declaration.name.start,end:declaration.name.end})});
+    const parameters=declaration.params.length?declaration.params:declaration.valueParameters??[];
+    let syntax=resolveBindingSyntax(declaration,{table,owner,context,source,constructors:inputs.constructors,
+      self:recursionSite(declaration,parameters)?binding:null});
+    if(clone)syntax=cloneBindingSyntax(syntax,table,[...owner,"clone"]).syntax;
+    if(!ownership.reserve([declaration],declaration))context=context.bind(label,bindingResolution(binding.id));
+    artifacts.push(syntax);
+    return bindingDeclaration(binding,syntax);
+  });
+  return {...inputs,declarations,artifacts};
+}
+
 async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
   assert.deepEqual((await program.check(base,"base")).gaps,[]);
-  const points=[],recorder=new ScopePoints("module-pilot",{onPoint:point=>points.push(point)}),table=recorder.table;
+  const compilation=program.compilationBindings,points=[];
+  const recorder=new ScopePoints(compilation.revision,{compilation,onPoint:point=>points.push(point)}),table=recorder.table;
   const imports=new Map();
   for(const [label,value] of program.modules.get("base")) {
     if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(label))continue;
-    const start=base.indexOf(label),record=table.allocate(["import"],{role:"declaration",label,
-      origin:sourceOrigin({revision:"base-1",module:"base",start,end:start+label.length})});
+    const record=compilation.ofValue(value);
+    assert.ok(record,`missing imported declaration identity: ${label}`);
     imports.set(record.id,value);
   }
-  const prepared=resolveBindingModule(parse(source),source,{table,imports,source:{revision:"pilot-1",module:"pilot"}});
-  if(clone)prepared.declarations=prepared.declarations.map(({binding,syntax},index)=>({binding,
-    syntax:cloneBindingSyntax(syntax,table,["module","pilot","clone",String(index)]).syntax}));
-  const {adapter}=prepared,artifacts=prepared.declarations.map(d=>d.syntax);
+  const prepared=declarationsFromSource(source,table,imports,{clone});
+  const {adapter,artifacts}=prepared;
   const env=new Map([...destination,...prepared.env]);
   const checker=Object.create(program.checker);
   checker.bindingName=label=>`pilot__${label}`;
   checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"pilot",scopePoints:recorder,
-    onDeclarationStart:d=>recorder.declaration("pilot",d,checker.bindingName(d.name.text))});
-  const result=translator.translateSyntax(lowerBindingModule(prepared),source,env,{bindingAdapter:adapter});
+  const translator=new Translator({checker,normalize:false,moduleName:"pilot",scopePoints:recorder});
+  const result=translator.translateSyntax({declarations:prepared.declarations},source,env);
   return {program,translator,result,points,table,artifacts,adapter};
 }
+
+test("retained generated declarations enter a mixed source queue with exact references and shared refusals",async t=>{
+  const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
+  assert.deepEqual((await program.check(base+" notation digits { numeral(n : Nat) := n; }","base")).gaps,[]);
+  const registry=program.compilationBindings,table=registry.table,imports=new Map();
+  const env=program.modules.get("base");
+  for(const [label,value] of env)if(/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) {
+    const binding=registry.ofValue(value);if(binding)imports.set(binding.id,value);
+  }
+  const source="def saved(x : Two) : Two := left_; def broken : Unit := Two; def downstream : Unit := broken;";
+  const resolved=declarationsFromSource(source,table,imports);
+  const declarations=resolved.declarations.map(declaration=>({...declaration,generated:{theory:"T",family:"base",role:"make"}}));
+  assert.doesNotThrow(()=>snapshotSyntax(declarations),"the queue contains inert syntax, not adapters or handles");
+  const serialized=JSON.parse(JSON.stringify(declarations));
+  const before=parse("def left_ : Two := right_;").declarations;
+  const after=parse("def native : Nat := digits.(2);").declarations;
+  const checker=Object.create(program.checker);
+  checker.bindingName=label=>`pilot__${label}`;
+  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
+  const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+  const result=translator.translateSyntax({declarations:[...before,...serialized,...after]},source,env);
+  assert.deepEqual(result.declarations.filter(d=>d.status==="not-translated").map(d=>d.name),["broken","downstream"]);
+  assert.equal(result.env.get("downstream").blockedBy,"pilot__broken");
+  assert.equal(result.env.get(resolved.adapter.key(resolved.declarations[1].name.bindingId)),result.env.get("broken"));
+  const scope=new Scope(translator.unit(),new Map(),result.env);
+  const actual=translator.term(parse("saved(right_)",true),scope);
+  const originalScope=new Scope(translator.unit(),new Map(),env);
+  const intended=translator.term(parse("left_",true),originalScope);
+  const wrong=translator.term(parse("right_",true),originalScope);
+  assert.equal(scope.equal(actual,intended),true);
+  assert.equal(scope.equal(actual,wrong),false);
+  assert.equal(scope.equal(result.env.get("native"),translator.term(parse("succ(succ(zero))",true),originalScope)),true);
+  assert.equal(declarations[0].body[0].value.kind,"bindingReference","entry lowering does not mutate the retained artifact");
+  const invalid=structuredClone(declarations[0]);
+  invalid.body[0].value.resolution={tag:"reserved",label:"ambient_lookup"};
+  assert.throws(()=>lowerBindingDeclaration(invalid,table),/late lookup is not allowed/);
+});
+
+test("recursive bodies do not replace an earlier same-named declaration in their signature",async t=>{
+  const source=`def recurse_(n : Nat, x : recurse_) : recurse_ := match n {
+    zero => x; succ(k) => recurse_(k, x);
+  }; def client : Unit := recurse_(succ(zero), tt);`;
+  const {program,translator,result}=await prepared(t,source);
+  assert.deepEqual(result.declarations.filter(d=>d.status!=="checked-native-cubical").map(d=>[d.name,d.reason]),[]);
+  const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+  assert.equal(scope.equal(result.env.get("client"),translator.term(parse("tt",true),scope)),true);
+});
 
 test("complete ordinary modules preserve dependent telescopes, named labels, recursion and dimensions",async t=>{
   const source=`
@@ -111,6 +177,39 @@ test("prepared declaration failures never resolve through destination labels or 
   for(const declaration of result.declarations.slice(0,2)) {
     assert.equal(result.env.get(adapter.key(declaration.syntax.name.bindingId)).tag,"Untranslated");
     assert.equal(program.kernel.definitions.has(`pilot__${declaration.name}`),false);
+  }
+});
+
+test("retained proof statements bind goal-dependent values without capturing earlier scopes",async t=>{
+  const source=`
+def introduced(x : Two) : Two -> Two { let saved := x; intro x; exact saved; }
+def nested : forall U < UU0. forall A : U. A -> A { intro U; intro A; intro x; exact x; }
+def extensional : (fun (x : Two) => x) = (fun (y : Two) => y) { ext x; rfl; }
+def obtained(x : Two) : Two {
+  let p : exists y : Two. exists z : Two. y = y := (x, (right_, refl(x)));
+  obtain (x, (y, h)) := p;
+  exact y;
+}
+def shadowed(x : Two) : Two { obtain (x, y) := typed((exists z : Two. Two), (right_, x)); exact y; }
+def value_intro : Two := introduced(left_, right_);
+def value_nested : Two := nested(U0, Two, right_);
+def value_obtain : Two := obtained(left_);
+def value_shadow : Two := shadowed(left_);
+def too_early : Two { let saved := y; obtain (x, y) := typed((exists z : Two. Two), (left_, right_)); exact saved; }
+`;
+  for(const clone of [false,true]) {
+    const {result,program,translator}=await prepared(t,source,{clone});
+    const failures=result.declarations.filter(d=>d.status!=="checked-native-cubical");
+    assert.deepEqual(failures.map(d=>d.name),["too_early"],failures.map(d=>[d.name,d.reason]));
+    assert.match(failures[0].reason,/Untranslated name: y/);
+    const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+    for(const [label,intended,captured] of [["value_intro","left_","right_"],["value_nested","right_","left_"],
+      ["value_obtain","right_","left_"],["value_shadow","left_","right_"]]) {
+      assert.equal(scope.equal(result.env.get(label),translator.term(parse(intended,true),scope)),true,label);
+      assert.equal(scope.equal(result.env.get(label),translator.term(parse(captured,true),scope)),false,label);
+    }
+    for(const declaration of result.declarations.filter(d=>d.term))
+      assert.doesNotMatch(JSON.stringify(declaration.term),/\\u0000id/,declaration.name);
   }
 });
 

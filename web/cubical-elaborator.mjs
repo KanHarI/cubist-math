@@ -734,7 +734,11 @@ export class NativeCubicalElaborator {
     // type may itself depend on a coordinate. The helper is then checked as
     // an ordinary closed definition, not installed as an unchecked promise.
     for (const [name, domain] of [...context].reverse()) {
-      term = T.lam(name, domain, term); type = T.pi(name, domain, type);
+      if(domain.tag==="LBound") {
+        term=T.levelLambda(name,term);type=T.levelPi(name,type);
+      } else {
+        term = T.lam(name, domain, term); type = T.pi(name, domain, type);
+      }
     }
     for (const dim of [...dimensions.keys()].reverse()) {
       term = T.line(dim, type, term);
@@ -745,7 +749,7 @@ export class NativeCubicalElaborator {
     let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type, supply), type);
     this.scopeDefinitions.add(name);
     for (const dim of dimensions.keys()) result = T.at(result, I.variable(dim));
-    for (const name of context.keys()) result = T.app(result, T.variable(name));
+    for (const [name,domain] of context) result = (domain.tag==="LBound"?T.levelApply:T.app)(result, T.variable(name));
     return result;
   }
 

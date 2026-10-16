@@ -1,23 +1,20 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import create from "../web/dist/cubical.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { assertStage } from "./known-defect.mjs";
 import { bindingCases } from "./fixtures/capture-bindings.mjs";
 import { observeModule } from "./module-observation.mjs";
 
 const module = await create(), library = sourceReader();
-const baseline = JSON.parse(await readFile(new URL("./fixtures/capture-bindings-baseline.json", import.meta.url), "utf8"));
 
 for (const c of bindingCases) test(`CB0: [${c.id}] ${c.contract}`, async t => {
   const { program, result } = await checkProgram(t, c.source, {
     module, reader: (name, importer) => c.fixtures?.[name] ?? library(name, importer),
   });
-  // Imports and source ownership are active invariants even for a known
-  // semantic defect. In particular, an imported binder's offset must never
+  // Imports and source ownership are checked before local observations.
+  // In particular, an imported binder's offset must never
   // be interpreted against the caller source, as happened in #219.
   const observed = observeModule(result, {clients:c.clients});
   for (const gap of result.gaps) {
@@ -31,13 +28,12 @@ for (const c of bindingCases) test(`CB0: [${c.id}] ${c.contract}`, async t => {
   if (c.publication) observed.published = Object.values(program.symbols)
     .filter(output => output.verified && c.publication.some(name => output.name === name || output.name.startsWith(`${name}.`)))
     .map(output => output.name);
-  assertStage(t, { observed, desired: c.desired, known: baseline.cases[c.id], id: c.id });
+  assert.deepEqual(observed, c.desired, c.id);
 });
 
-test("capture witness IDs are unique and known-defect records still name executable cases", () => {
+test("capture witness IDs are unique", () => {
   const ids = bindingCases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const id of Object.keys(baseline.cases)) assert.ok(ids.includes(id), id);
 });
 
 const ruleModel = `import hlevels; import nat;

@@ -32,6 +32,7 @@ const sourceFiles = directory => readdirSync(join(root, directory)).filter(name 
 const fileGroups = [
   [/^web\/cubist\/lint\.mjs$/, "W7"],
   [/^web\/(cubist|translator)\/theories\.mjs$/, "E8"],
+  [/^web\/cubist\/retained-(theories|parents)\.mjs$/, "E8"],
   [/^web\/translator\/(initial-models|declarations)\.mjs$/, "E8"],
   [/^web\/cubist\//, "E1"],
   [/^web\/translator\/(builtins|tactics|proof-rewrite|proof-goals|motives|simp-registry|fuel|evaluation)\.mjs$/, "E4"],

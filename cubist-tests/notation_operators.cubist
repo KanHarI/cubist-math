@@ -108,8 +108,8 @@ theory Sided(U < UU0) {
 }
 
 // Output: forall U < UU0. forall m : Sided(U). forall x : m.M. forall y : m.M. forall s : m.M or
-//   m.M. (match s return m.M { left x1_ => x; right y1_ => y; }) = (match s return m.M { left x1_
-//   => x; right y1_ => y; })
+//   m.M. (match s return m.M { left x1 => x; right y1 => y; }) = (match s return m.M { left x1
+//   => x; right y1 => y; })
 print(typeof(Sided.picked));
 
 // An induction's index and hypothesis may share a name: in the step it is

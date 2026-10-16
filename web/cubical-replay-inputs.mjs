@@ -36,7 +36,8 @@ export class ReplayInputs {
   }
   snapshot() {
     return Object.freeze({revision:this.revision,main:this.main,modules:this.modules,fuelLimits:this.fuelLimits,
-      initialPolicy:this.initialPolicy,collectReferences:this.collectReferences,events:Object.freeze([...this.#events])});
+      initialPolicy:this.initialPolicy,collectReferences:this.collectReferences,
+      events:Object.freeze([...this.#events])});
   }
 }
 

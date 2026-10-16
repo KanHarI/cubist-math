@@ -2,7 +2,7 @@
 // Repeated heartbeats do not extend a stalled request's deadline.
 export function proofRequestWatchdog(command, onTimeout, clock = globalThis) {
   // A REPL entry is checked like a small file, and may evaluate at length.
-  const duration = command === "check" || command === "repl" ? 300000 : 30000;
+  const duration = ["check", "repl", "context-run"].includes(command) ? 300000 : 30000;
   let timer;
   let instructions = 0;
   let completed = 0;

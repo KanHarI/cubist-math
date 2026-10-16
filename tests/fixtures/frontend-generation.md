@@ -3,27 +3,22 @@
 These source fixtures and the observer are selectively adopted from #224 at
 `1fdc68a5e7da198f2b538dfbaa95e4bad40c97ca`, on the CB0 compiler base
 `f0417ee0ee5f824f030069be0e6d1666696de0d1`. Adoption does not implement the
-later fixing PRs. Eighteen cases pass; eighteen retain exact known defects
-in [frontend-generation-baseline.json](frontend-generation-baseline.json).
-These observations were measured at `d70c07ae` (the same production code).
+later fixing PRs. All executable cases now require their intended contracts.
+The original [CB0 observations](https://github.com/KanHarI/cubist-math/blob/7f9b4d28cb94556500c7e4acab076a1b11496df9/tests/fixtures/frontend-generation-baseline.json)
+remain historical evidence; the completed stack has no known-defect exemptions.
 
 Each case is a Cubist module in [frontend-generation/](frontend-generation/),
 headed `// ID (phase): contract.`. Its source comments and extra observations
-state the desired behavior independently of the baseline.
+state the desired behavior independently of those historical observations.
 [frontend-generation.test.mjs](../frontend-generation.test.mjs) runs every
-case against the checkout's fresh WASM build. Imports and observation errors
-must pass before known-defect classification. A TODO requires an exact match
-to its recorded observation and a difference from its desired behavior. A
-changed failure or an unexpected fix fails normally, before marking TODO;
-retire the known-defect record when its responsible CB package lands. There
-is no automatic baseline rewrite command. `CUBIST_GENERATION_STRICT=1`
-requires all desired contracts to pass without TODOs.
+case against the checkout's fresh WASM build and compares observations directly
+with the desired result. Imported-fixture failures retain their separate
+precondition classification for the mutation gate. No strict-mode switch or
+expectation-update command is needed.
 
 Run with `npm test -- tests/frontend-generation.test.mjs`; select a case
-with `--test-name-pattern`, for example `\[G12-inherited\]`. The expanded
-cases replace the old twelve coarse TODO tests, so the TODO count alone is
-not a measure of new defects. The original `00d4ecce` inventory remains
-historical evidence, not a runtime pin.
+with `--test-name-pattern`, for example `\[G12-inherited\]`. The original
+`00d4ecce` inventory remains historical evidence, not a runtime pin.
 
 ## Desired outcomes
 
@@ -100,8 +95,11 @@ changes the case's comment, and the new wording needs the same review.
   reports its failed dependency once (E340 naming `P`); an unrelated client
   checks.
 - **G8** refuses the wildcard with ordered endpoints
-  (`found t1 = t1, expected t0 = t1`) over the wildcard's body `t1`, without
-  starting a coherence search at its nonrecursive boundary.
+  (`found t1 = t1, expected t0 = t1`) over the wildcard's body `t1`.
+  CB3 reconciles the original zero-search expectation with CB1's required
+  nonrecursive S1 wildcard recovery: the attempted recovery keeps its one
+  search charge, and failure preserves the original mismatch. Skipping all
+  nonrecursive recovery would reject that existing checked S1 client.
 - **G9** freshens a law binder; every written `c` keeps its label, links to
   the binder and spans exactly the label, and `meaning` fixes the law's
   meaning. CB1's lexical-entry observation metadata fulfills this control;
@@ -112,7 +110,7 @@ changes the case's comment, and the new wording needs the same review.
   intended client requires `S.c = S.c` directly from `S.l(x)`; the rejected
   client asks for `x = S.c` directly from that law. This semantic fixture
   compares diagnostic codes, since the mismatch may print an alpha-renamed
-  binder. The current E871 refusal is a known observation only.
+  binder. The earlier E871 capture refusal is retired.
 - **G11** requires the intended `op(x, S.c)` equation to check and the
   captured `op(x, x)` equation to be refused, directly, through a helper
   chain with grouped/dependent parameters, through inheritance and through an
@@ -149,7 +147,7 @@ canonical corpus also checks `Constant`, `K`, `idem_at`, `Named` and
 
 | Coverage ID | Test file | Executable test name |
 | --- | --- | --- |
-| H1 | [references.test.mjs](../references.test.mjs) | `declaration identities survive every syntax transformation independently of spelling` |
+| H1 | [references.test.mjs](../references.test.mjs) | `declaration references survive traversals, relocation and serialization` |
 | H2 | [theory-resolution.test.mjs](../theory-resolution.test.mjs) | `initial and free models retain imported global types and law constants` |
 | H3 | [theory-resolution.test.mjs](../theory-resolution.test.mjs) | `family indices carry captured syntax through generated homomorphisms and isomorphisms` |
 | H4 | [theory-hygiene.test.mjs](../theory-hygiene.test.mjs) | `theory capture uses opened fields before globals and retains them across imports and selections` |
@@ -181,7 +179,7 @@ capture example as evidence of an open bug.
 | `G5` | G5 | Grouped operation binder; supported call, Hom and initial-model (`model`, `fold`) clients |
 | `G5-single` | G5 | Single operation binder with the same interface checks |
 | `G6` | G6 | Parent cause, child dependency and unrelated recovery |
-| `G8` | G8 | Wildcard diagnostic endpoints, exact body range and no coherence search |
+| `G8` | G8 | Wildcard diagnostic endpoints, exact body range and one charged failed recovery |
 | `G9` | G9 | Freshened binder and every use: public labels and navigation |
 | `G10` | G10 | Pattern/helper collision: intended law and rejected captured equation |
 | `G11` | G11 | Direct intended and captured equations |
