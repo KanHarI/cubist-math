@@ -11,11 +11,12 @@ test("shrinking compares candidates with their own contract and preserves an inh
       accepted: Object.fromEntries(spec.accepted.map(name => [name, true])) };
     const observed = structuredClone(desired);
     if (candidate.inherited) observed.accepted.child_selection = false;
+    else observed.accepted.intended = false;
     return observationDifferences(observed, desired);
   };
   const original = differences(config);
   assert.deepEqual(original, [{path:["accepted","child_selection"],actual:false,expected:true}]);
-  assert.deepEqual(differences({ ...config, inherited: false }), []);
+  assert.deepEqual(differences({ ...config, inherited: false }), [{path:["accepted","intended"],actual:false,expected:true}]);
   const reduced = await minimize(config, async candidate => {
     return isDeepStrictEqual(differences(candidate), original);
   });

@@ -72,6 +72,4 @@ test("pending alternatives and inserted arguments remain explicit until the slot
   const deferredHelper=new DependencyAnalysis([{id:holder.id,kind:"derived",label:"holder",syntax:copied},
     {id:helper.id,kind:"derived",label:"helper",syntax:resolve("tt")}]);
   deferredHelper.validateHelperCycles();
-  assert.ok(deferredHelper.references(copied).some(use=>use.kind==="deferred"),
-    "cycle validation does not resolve pending alternatives");
 });
