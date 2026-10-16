@@ -54,8 +54,8 @@ function contextual(id) {
   if (!context) throw new Error("This contextual session is stale or closed. Select a context from the current check.");
   return context;
 }
-// Every request observes submission order. A recheck cannot replace the
-// program beneath a query, and older checks cannot publish after newer ones.
+// Checking and queries observe submission order. Capability revocation is
+// immediate and does not touch a live kernel handle.
 let queue = Promise.resolve();
 async function handle({ data: { id, command, args } }, epoch) {
   try {
@@ -79,10 +79,6 @@ async function handle({ data: { id, command, args } }, epoch) {
       } finally { scratch.dispose(); }
     } else if (command === "repl" || command === "repl-reset") {
       result = await (command === "repl" ? repl(args) : resetRepl());
-    } else if (command === "context-invalidate") {
-      // Invalidation already happened on receipt, before queued work can run.
-    } else if (command === "context-close") {
-      contexts.get(args.session)?.dispose(); contexts.delete(args.session);
     } else if (command === "context-run") {
       result = await contextual(args.session).run(args.input);
     } else if (!program) throw new Error("Check a proof first.");
@@ -109,7 +105,14 @@ async function handle({ data: { id, command, args } }, epoch) {
 self.onmessage = event => {
   // This revokes only contextual capabilities, never a live kernel handle.
   // Queries loading asynchronously notice disposal before returning a result.
-  if (["check","context-invalidate"].includes(event.data.command)) invalidateContexts();
+  const {id,command,args}=event.data;
+  if (["check","context-invalidate"].includes(command)) invalidateContexts();
+  if (command === "context-close") {
+    contexts.get(args.session)?.dispose(); contexts.delete(args.session);
+  }
+  if (["context-invalidate","context-close"].includes(command)) {
+    self.postMessage({id,result:undefined});return;
+  }
   const epoch = contextEpoch;
   const run = queue.then(() => handle(event,epoch));
   queue = run.catch(() => {});

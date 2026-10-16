@@ -12,6 +12,7 @@ import { numeralAt, tokenStyle, tokenPattern } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
+import { createContextualConsole } from "./contextual-console.mjs";
 import { withCode } from "./diagnostics.mjs";
 import { showExplorer } from "./proof-explorer.mjs";
 
@@ -128,6 +129,7 @@ const pending = new Map(),
   history = [];
 let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
 const generatedSources = new Map();
+let contextual=null;
 $("editor").value = example;
 for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
@@ -240,6 +242,7 @@ function compilerOptimizations() {
 }
 function refreshStatus() {
   $("check").disabled = !ready || pending.size > 0;
+  $("collect-contexts").disabled = !ready || pending.size > 0;
   for (const id of ["share-syntax", "reuse-checks", "compact-paths"])
     $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
   $("export").disabled = !last || pending.size > 0;
@@ -257,11 +260,13 @@ function refreshStatus() {
         : "Loading kernel…";
 }
 function request(command, args = {}) {
+  if (!ready) return Promise.reject(new Error("The checking worker is unavailable. Reload the page to restart it."));
   const id = ++serial;
   return new Promise((resolve, reject) => {
     const watchdog = proofRequestWatchdog(command, () => {
       worker.terminate();
       ready = false;
+      contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
       for (const p of pending.values()) {
         p.watchdog.stop();
         p.reject(
@@ -295,13 +300,16 @@ if (embedded) addEventListener("message", ({ data, origin }) => {
 async function check() {
   showChecking(true);
   if (await refreshCompiler()) return;
+  const contextVersion=contextual?.invalidate("Checking the source. Select a new context when checking finishes.");
   $("diagnostic").hidden = true;
   const source = $("editor").value;
+  const collectScopes=!embedded&&$("collect-contexts").checked;
   try {
     // Where the source came from decides where its imports are found
     // (module-resolution.mjs): an archive proof imports only from the archive.
-    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
+    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations(),collectScopes });
     last = result;
+    contextual?.checked(result,contextVersion,collectScopes);
     generationSerial++;
     generatedSources.clear();
     $("generated-source").replaceChildren();
@@ -346,6 +354,7 @@ async function check() {
     }
     rememberDraft();
   } catch (e) {
+    contextual?.invalidate("The source could not be checked. Fix it and check again to select a new context.");
     diagnostic(e);
     setMode("edit");
     if (Number.isInteger(e.offset)) {
@@ -670,6 +679,7 @@ function renderSource(target = $("read-source"), snapshot = last) {
     target.append(row);
     offset += line.length + 1;
   }
+  contextual?.decorate(target,snapshot,{module:generated?snapshot.module:proofId,generated});
 }
 function renderWitnessDetails(info) {
   $("inspect-description").textContent = info.description ?? "";
@@ -1022,7 +1032,10 @@ $("read-mode").onclick = () => setMode("read");
 $("edit-mode").onclick = () => setMode("edit");
 $("generated-mode").onclick = () => setMode("generated");
 $("generated-module").onchange = showGeneration;
+$("collect-contexts").onchange=check;
 $("editor").oninput = () => {
+  contextual?.invalidate();
+  if(ready)request("context-invalidate").catch(()=>{});
   refreshStatus();
   rememberDraft();
 };
@@ -1111,6 +1124,7 @@ async function refreshCompiler() {
   ready = false;
   showChecking(true, "Updating proof checker…");
   worker.terminate();
+  contextual?.invalidate("The compiler changed. Check the source and select a new context.");
   last = null;
   $("result").hidden = true;
   $("source-notice").hidden = false;
@@ -1152,6 +1166,7 @@ async function startWorker(version = undefined) {
   worker.onerror = (e) => {
     ready = false;
     worker.terminate();
+    contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
     for (const p of pending.values()) {
       p.watchdog.stop();
       p.reject(new Error(e.message || "Unable to load the checking worker."));
@@ -1173,6 +1188,8 @@ addEventListener("pageshow", (event) => {
   if (event.persisted) refreshCompiler().catch(diagnostic);
 });
 enableTokenTips();
+$("context-option").hidden=embedded;
+if(!embedded)contextual=createContextualConsole($("context-panel"),{request});
 // The console runs over the last checked version of this file.
 if (!embedded) createReplConsole($("repl"), {
   label: "Console input: a Cubist term or declaration",

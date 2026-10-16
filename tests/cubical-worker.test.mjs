@@ -118,10 +118,12 @@ test("an edit arriving during import loading cannot publish selectable old conte
   const worker=await workerFor(t),held=worker.hold("hlevels");
   const check=worker.request("check",{source:"import hlevels; def f(x : Unit) : Unit := x;",module:"main",collectScopes:true});
   await held;
-  const invalidated=worker.request("context-invalidate");
+  // Revocation must be acknowledged while the check is still loading. A
+  // queued acknowledgement would trip the UI's shorter control watchdog.
+  await worker.request("context-invalidate");
+  assert.deepEqual(worker.replies,[2]);
   worker.release("hlevels");
   assert.deepEqual((await check).gaps,[]);
-  await invalidated;
   await assert.rejects(worker.request("contexts"),/contextual scopes enabled/);
 });
 

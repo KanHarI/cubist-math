@@ -383,10 +383,13 @@ test("overlapping wildcard instances retain different refinements through query 
   const selected=[...program.scopePoints.values()].filter(point=>point.origin.module==="main"
     &&point.origin.start===start&&point.origin.end===start+4&&point.phase==="expression");
   assert.equal(selected.length,2);
-  const verdicts=[];
+  const verdicts=[],refinements=[];
   for(const point of selected) {
     const session=new ContextualSession(program,point.id);
     t.after(()=>session.dispose());
+    const [locals]=await session.run("/locals");
+    assert.equal(locals.kind,"locals",JSON.stringify(locals));
+    refinements.push(locals.bindings.filter(row=>row.visible).map(({label,value})=>[label,value]));
     await query(session,"typeof (fun (x : Nat) => x)","type","Nat -> Nat");
     await query(session,"let identity := fun (x : Nat) => x","defined");
     await query(session,"typeof identity(a)","type","Nat");
@@ -397,4 +400,5 @@ test("overlapping wildcard instances retain different refinements through query 
     verdicts.push(answer.kind);
   }
   assert.deepEqual(verdicts.sort(),["error","value"],"the written wildcard denotes two distinct semantic contexts");
+  assert.notDeepEqual(refinements[0],refinements[1],"the picker can expose the distinct checked refinements");
 });

@@ -104,11 +104,16 @@ function localBindings(translator,scope,lexical,adapter,table) {
     const node=lowerBindingReference({kind:"bindingReference",resolution:resolved},adapter,scope.slotOutcomes);
     const value=node.kind==="name"?scope.env.get(node.name):null;
     if(value?.tag==="Dimension")entry.type="Interval";
-    else entry.type=translator.shownIn(scope.infer(translator.term(node,scope)).type,scope);
+    else {
+      const term=translator.term(node,scope);
+      entry.type=translator.shownIn(scope.infer(term).type,scope);
+      entry.value=translator.shownIn(term,scope);
+    }
     rows.push(entry);
   }
   const group=visible=>rows.filter(row=>row.visible===visible).map(row=>
-    `${row.label} : ${row.type??row.reason} (${row.origin.module}:${row.origin.start}-${row.origin.end})`);
+    `${row.label} : ${row.type??row.reason}${row.value&&row.value!==row.label?` := ${row.value}`:""}`
+    +` (${row.origin.module}:${row.origin.start}-${row.origin.end})`);
   const visible=group(true),shadowed=group(false);
   return {kind:"locals",bindings:rows,text:["Visible locals:",...(visible.length?visible:["(none)"]),
     "Shadowed locals:",...(shadowed.length?shadowed:["(none)"])].join("\n")};
