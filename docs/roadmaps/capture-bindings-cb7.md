@@ -31,8 +31,9 @@ notation semantics; incomplete historical contexts explicitly refuse replay.
 ## Adopted mutation contracts
 
 The existing runner and its limits are reused. No historical baseline is changed.
-The current candidate set ports twelve contracts to their actual production
-boundaries; terminal results are pending.
+All twelve contracts are killed at clean revision `07bb8c78`; each has a
+passing baseline and a distinguishing assertion failure. Process, syntax and
+fixture-precondition failures are not counted as kills.
 
 | Historical contract | Current boundary or retirement evidence |
 | --- | --- |
@@ -69,10 +70,16 @@ No live scope or kernel handle is serialized. Existing subprocess, checker and
 description limits remain unchanged. Replay timing uses the existing contextual
 pilot rather than another query backend.
 
-Final native/frontend/corpus, catalogue, publication fault injection, mutation,
-inspector/contextual/site browser results and measured release budgets are pending.
-The first retirement focus passes 36 tests; it precedes removal of the unreachable
-`recursiveCall` cases. Claude review starts after the implementation gates.
+At product revision `5a4f8cef`, all 1,332 frontend tests and 3,857 corpus
+checks pass, with no skips or TODOs. This includes the catalogue and publication
+fault-injection controls. Native tests pass. At `07bb8c78` (only mutation-witness
+selection and documentation changed), all twelve mutations and all three browser
+suites pass: contextual console, inspector and the built static site
+`6a013d03e55c`. The 36-test retirement focus also passed before the final removal
+of producerless recursion cases; the full gate includes that removal.
+
+The subsequent changes affect measurement tools only. Final corrected memory
+measurements and Claude review are pending.
 
 
 The initial mutation run kills eleven of twelve candidates. The synthetic-node
@@ -94,3 +101,68 @@ releases the entire frame. Do not infer a runtime leak from these aliased sample
 or add a disposal/cache mechanism to the compiler. Re-run cost evidence after
 checking that the measurement now permits graph collection. The valid earlier
 check-time/retained-memory results and failed disposal interpretation are retained.
+
+
+## Measured release envelope
+
+All 45 initial samples at `07bb8c78` (three repeats, three workloads, five
+collection modes) preserve the full CB0 corpus inventory. Current interfaces,
+generated names, assumptions and deterministic fuel match the pre-retirement
+`3b9a0845` checkpoint exactly. Observed kernel work also agrees across modes in
+these fresh-process runs. No additional assumptions or unavailable points occur.
+
+Against CB0 `7f9b4d28`, deterministic fuel changes by -144 algebra queries,
++46 inheritance queries and -159 fold queries, with unchanged search counts.
+Six inheritance interfaces (P/Q/R `.make` and `.l`) have changed alpha-syntax
+hashes but check definitionally equal in the native kernel: retained helper
+applications and ascriptions remain explicit. Every other inventory field agrees.
+The native-input build stamps match for that comparison. No cross-version fuel
+or syntax-hash equality is claimed.
+
+For normal checking, the release allowance is the pre-retirement maximum plus
+its observed max-minus-min spread, separately for each workload/mode. This derives
+headroom from measured variation rather than a new percentage or compiler limit:
+
+| Workload | References off: ms / peak RSS MiB | References on: ms / peak RSS MiB |
+| --- | ---: | ---: |
+| Algebra | 1,541.2 / 334.9 | 1,842.9 / 386.4 |
+| Inheritance | 572.2 / 204.7 | 646.1 / 267.2 |
+| Fold | 1,672.9 / 340.9 | 1,942.6 / 386.6 |
+
+The initial release samples fit all six envelopes. New optional collection has
+no CB0 equivalent. Its measured largest check is 3.68 s, retained heap growth
+498 MiB and sharing-preserved graph 150.1 MiB, for 19,778 available points.
+The release envelope for these three named fixtures is therefore 4 s per check,
+512 MiB retained heap growth and 160 MiB encoded graph. These are rounded bounds
+on the measured workload; they are not guarantees for arbitrary user modules.
+Scopes stay opt-in. Artifact-only collection adds at most about 2.1 MiB retained
+heap in these samples. Peak RSS includes temporary serialization buffers; the
+GC retained heap/RSS samples precede serialization.
+
+Replay on `733a59ce` runs five existing fixtures three times, with artifact
+collection both off and on. Every query's verdict/text agrees between modes;
+original kernel work is unchanged. The largest observed prefix is 299.2 ms,
+validation 1.21 ms, accepted-history replay 1.02 ms and new query 2.69 ms. For
+these fixtures the measured release envelope is 350 / 2 / 2 / 3 ms respectively.
+The section fixture retains about 129–133 MiB with scopes on, down from the CB6
+pre-review 206 MiB despite additional inspector entries. No limit was raised.
+
+The corrected cost rerun must confirm the envelopes and measure disposal after
+the frame returns before this candidate is marked complete.
+
+## Producer and consumer audit
+
+The current-language retention boundaries were audited after the final removals:
+
+| Boundary | Current path |
+| --- | --- |
+| Theory headers, fields, helpers and inheritance | retained-theories -> RetainedInterfaces -> bindingSyntax; sameBindingSyntax aligns identities for sharing; byName is only public duplicate/label indexing. |
+| Deferred patterns, proof references and openings | binding-syntax owns slots; lowering preserves unresolved slots until actual scope transitions; retained unknown-type probes use constructorInventory/enclosing IDs. Ordinary source and matched-type constructor lookup remain allowed. |
+| Named notation and lazy operands | retained named rules and checked notation-context receipts; operand caller contexts preserve lexical identity. |
+| Base/Hom/Iso/initial/free generation | ArtifactBuilder and retained-*-artifacts emit bindingDeclaration; lowerBindingDeclaration is now the only retained queue adapter. No source-text generator or old reference/recursiveCall producer remains. |
+| Publication and availability | existing groups/native transactions publish the checked env; CompilationBindings records identity independently of availability. Twelve mutation checks include refusal and rollback. |
+| Diagnostics and views | source-syntax/link-sites carry origins; bindingDisplay renders binding-aware artifacts; captured identity is not looked up by destination spelling. |
+| Context queries | ScopePoints receipts + full ordered ReplayInputs + isolated ContextualSession, with attempt ownership and explicit unavailable historical contexts. |
+| Historical compatibility | legacy-syntax and migration readers; nameBased is requested only for old migration inputs. Current source does not retry through it. |
+
+rg audit: removed elaborationSyntax, resolveBindingModule, lowerBindingModule and recursiveCall have no production occurrence. The explicit old/mixed reference rejection in binding-syntax remains intentionally. E801/E860/E869/E871/E866 occur in web only as retired catalogue rows. Source syntax traversal and structural receiver helpers remain because current source and retained consumers still use them.
