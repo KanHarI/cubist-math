@@ -1,0 +1,22 @@
+// G5 (CB5): grouped-binder advice preserves supported calls and generated interfaces.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  op : forall x, y : M. M;
+}
+
+def identity(S : T(U0)) := T.Hom.id(S);
+
+def applied(S : T(U0), a : S.M) : S.M := S.op(a, a);
+
+def named(S : T(U0), a : S.M) :
+  S.M := T.Hom.make(S, S, map := fun (x : S.M) => x, map_op := fun (x, y : S.M) => refl(S.op(x, y))).map(
+    a
+  );
+
+initial N : T(U0);
+
+def initial_model : T(U0) := N.model;
+
+def folded(S : T(U0)) : T.Hom(N.model, S) := N.fold(S);

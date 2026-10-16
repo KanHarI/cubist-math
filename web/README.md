@@ -11,6 +11,30 @@ option; raw syntax and native opcode assembly remain available. Beta and delta
 buttons highlight applicable occurrences, and every selected reduction is
 checked for definitional equality. **Un-highlight** clears visual selection.
 
+In `proof.html`, **Generated Cubist** beside Read and Edit shows a read-only
+frontend expansion from the last check. Select the current file or an imported
+module to see its generated theory, initial and free-model declarations in
+Cubist syntax, with the same highlighting and line layout as Read. Click a
+generated declaration or linked reference to open its checked term, type or
+signature in the inspector; failed declarations show their diagnostic.
+Original comments and unchanged declarations remain in source order. Replaced
+theories and initial/free declarations appear commented out, with their
+generated declarations immediately below them.
+Each family is labeled checked, failed or blocked. Editing keeps
+the previous expansion until **Check proof** runs again; a parse failure keeps
+the previous snapshot. Modules without expansions say so explicitly.
+
+The view retains the frontend's syntax before reference lowering, including
+families that did not publish. Internal binders receive unambiguous display
+aliases; public parameter labels stay intact. Identity markers such as
+`c⟦1⟧`, explained above their declaration, identify captures or deferred
+interpretations that ordinary source cannot express faithfully. Generated
+dotted names and these annotations make this an inspection view, not a
+standalone module or an alternative to **Export checked proof**.
+A syntax form beyond the display's coverage or budget is identified
+by declaration name instead of silently omitted. Rendering runs on demand in
+the worker and does not recheck or regenerate the source.
+
 `npm run build:site` creates a static artifact in `build/site`. GitHub Pages
 publishes it at https://cubist.kanhar.art. `npm run test:site` exercises that
 artifact, including workers, imports, WASM, source links, and the workbench.

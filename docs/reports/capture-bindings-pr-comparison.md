@@ -208,8 +208,9 @@ rule lookup and avoiding checks of unused opening receivers. The fifth
 review identified a swallowed activation failure in current theory capture.
 The shared activation contract now has a checked outcome: failed required
 activations refuse the consumer and every dependent generated group, without
-unopened-environment fallback. This last correction was checked against the
-current capture/publication paths; it has not had a sixth external review.
-Implementation packages allow up to five review
-rounds when there are substantive findings; design findings change the shared
-abstraction and its acceptance controls before implementation continues.
+unopened-environment fallback. This correction was checked against the
+current capture/publication paths and reproduced with a carrier-bearing
+theory: E343, no published family, and an earlier unrelated declaration
+preserved. Implementation PRs allow up to eight review rounds when there are
+substantive findings; design findings change the shared abstraction and its
+acceptance controls before implementation continues.

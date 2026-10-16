@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "revision": "d3d8f21eb3a2e8e64fbf5ec89ce2fb4b192aaa13",
+  "witnessesRevision": "729b25b1ad89b281b2d0269f31ff4acf4b4bebde",
+  "dirty": false,
+  "digestFormats": {
+    "entries": "SHA-256 of sorted UTF-8 name NUL bytes NUL entries; UTF-16 code-unit name order",
+    "json": "SHA-256 of UTF-8 JSON.stringify(value), without whitespace or trailing newline",
+    "sourceDigest": "entries over every loaded module name and exact source",
+    "interfacesDigest": "entries over binding and JSON.stringify({type,axioms}); type is canonicalHasher SHA-1; axioms sorted",
+    "declarationFuelDigest": "json of [binding,searchFuel] pairs sorted by binding; object key order is checker serialization order",
+    "generatedNamesDigest": "json of sorted generated binding names",
+    "assumptionsDigest": "json of sorted assumption labels",
+    "assumptionDependenciesDigest": "json of [binding,sorted axioms] pairs sorted by binding",
+    "typeDigest": "canonicalHasher SHA-1 (tools/canonical-hash.mjs), alpha-invariant for bound terms and dimensions"
+  },
+  "witnessDigest": "d64dc6acb3aa53429a7eaf89a4945ab6ee78c3addc127ab49a2b409e4707998b",
+  "build": {
+    "runtime": {
+      "sources": "247d7ff10f0a92a2846a2d4a37dbed8a7a325a6e52aac19c84fc17208493dfa8",
+      "outputs": "2ea69eeb5f665465efb9fa1bd38486b67bb1fed10460f2fb804b057b6284c254"
+    },
+    "kernel": {
+      "sources": "56d99ac4e3806287a564f1586ed36c2f41cafd13e9616d5db59d5baed0381d29",
+      "configuration": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.9 (4e4223852a0835923411059a3929907d7df1232e)\n.tools/emsdk/upstream/emscripten/emcc -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -Ikernel/include -Ikernel/src --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=[\"_cb_abi_version\",\"_cb_new\",\"_cb_optimizations\",\"_cb_step_budget\",\"_cb_work\",\"_cb_deadline_ms\",\"_cb_checkpoint\",\"_cb_rollback\",\"_cb_commit_checkpoint\",\"_cb_relocated\",\"_cb_free\",\"_cb_error\",\"_cb_error_kind\",\"_cb_mismatch\",\"_cb_term\",\"_cb_formula_begin\",\"_cb_formula_clause\",\"_cb_formula_end\",\"_cb_normalize\",\"_cb_node\",\"_cb_formula_view\",\"_cb_definition\",\"_cb_head\",\"_cb_position_clear\",\"_cb_position_push\",\"_cb_position_set\",\"_cb_subterm\",\"_cb_clear_error\",\"_cb_instr\",\"_cb_judgement_count\",\"_cb_judgement\",\"_cb_judgement_context\",\"_cb_entry_count\",\"_cb_entry\",\"_cb_rename\",\"_cb_equiv_type\",\"_cb_fresh_symbol\",\"_cb_endpoint_term\",\"_cb_arena\",\"_cb_extensions\",\"_cb_signature\",\"_cb_signature_constructor\"] -sEXPORTED_RUNTIME_METHODS=[\"UTF8ToString\"]",
+      "outputs": "e59eea474843a1f7217ae93554155d935b0389e506fb70ae1f7c717efe84aa65"
+    }
+  },
+  "observations": [
+    {
+      "id": "recursive-wrapper-same-module",
+      "sourceDigest": "259a3021d02c3071ef1204f84a87cd0562a249a05866684ded333f23af7f6f2c",
+      "clients": {
+        "captured": true,
+        "independent": true
+      },
+      "gaps": []
+    },
+    {
+      "id": "ordered-header",
+      "sourceDigest": "2310e59e71c4576fe12689030a3034079f560bce302ae3259d7d634283334dc8",
+      "clients": {
+        "identity": false,
+        "param": true,
+        "captured_param": false,
+        "N": false,
+        "generated": false,
+        "captured": false
+      },
+      "gaps": [
+        {
+          "module": "main",
+          "name": "identity",
+          "code": "E817",
+          "rangeInPrimarySource": true
+        },
+        {
+          "module": "main",
+          "name": "captured_param",
+          "code": "E606",
+          "rangeInPrimarySource": true
+        },
+        {
+          "module": "main",
+          "name": "N",
+          "code": "E854",
+          "start": 319,
+          "end": 336,
+          "rangeInPrimarySource": true
+        },
+        {
+          "module": "main",
+          "name": "generated",
+          "code": "E340",
+          "rangeInPrimarySource": true
+        },
+        {
+          "module": "main",
+          "name": "captured",
+          "code": "E340",
+          "rangeInPrimarySource": true
+        }
+      ]
+    },
+    {
+      "id": "imported-pattern-rename",
+      "sourceDigest": "0d9b57ff31814ed533d5386c77de1c5f5ba2c9a5d6bf6ed44395d93c03f5876d",
+      "clients": {
+        "meaning": false,
+        "independent": true
+      },
+      "gaps": [
+        {
+          "module": "main",
+          "name": "C",
+          "code": "E801",
+          "start": 714,
+          "end": 715,
+          "rangeInPrimarySource": false
+        },
+        {
+          "module": "main",
+          "name": "meaning",
+          "code": "E340",
+          "rangeInPrimarySource": true
+        }
+      ]
+    },
+    {
+      "id": "recursive-bare-same-module",
+      "sourceDigest": "002873370c8457b3f580f54fb577cb899cabe14e7f0a389bf0f9f9e9a175c59a",
+      "clients": {
+        "captured": true,
+        "independent": true
+      },
+      "gaps": []
+    },
+    {
+      "id": "family-domain-helper-absent",
+      "sourceDigest": "f09f9acf7e8a9178ceb3f3838716fb424a2d198f1db89d9f2b4f8e79332efe5f",
+      "clients": {
+        "member": false,
+        "captured": false,
+        "independent": true
+      },
+      "gaps": [
+        {
+          "module": "main",
+          "name": "T",
+          "code": "E343",
+          "start": 36,
+          "end": 37,
+          "rangeInPrimarySource": true
+        },
+        {
+          "module": "main",
+          "name": "member",
+          "code": "E340",
+          "rangeInPrimarySource": true
+        },
+        {
+          "module": "main",
+          "name": "captured",
+          "code": "E340",
+          "rangeInPrimarySource": true
+        }
+      ]
+    }
+  ]
+}

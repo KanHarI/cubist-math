@@ -1,0 +1,34 @@
+// G12-inherited (CB2/CB3): inherited calls to earlier recursive values check and compute.
+
+import hlevels;
+import nat;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def iter(n : Nat) : M := match n {
+    zero => c;
+    succ(k) => op(iter(k));
+  };
+  def twice(n : Nat) : M := op(iter(n));
+}
+
+theory Child(U < UU0) extends T {}
+
+def computation(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) {
+  rfl;
+}
+
+def computation2(S : Child(U0)) : S.twice(succ(succ(zero))) = S.op(S.op(S.op(S.c))) {
+  rfl;
+}
+
+def base(S : Child(U0)) : S.twice(zero) = S.op(S.c) {
+  rfl;
+}
+
+// Error: E606: Type mismatch: found Child.twice{{U0}}(S, nat.(1)) = Child.twice{{U0}}(S, nat.(1)),
+//   expected Child.twice{{U0}}(S, nat.(1)) = S.op(S.c).
+def wrong(S : Child(U0)) : S.twice(succ(zero)) = S.op(S.c) {
+  rfl;
+}

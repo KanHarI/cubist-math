@@ -24,6 +24,7 @@
 // against its parameter's type, as in a call without holes, so an unsolved
 // hole never reaches the kernel. Nothing is searched for: a hole is never
 // filled because some inhabitant of its type exists.
+import {propagateElaborationStop} from "./control.mjs";
 import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames} from "./core.mjs";
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -31,6 +32,9 @@ import {freeDimensions} from "./dimension-slots.mjs";
 import {statement as hlevelStatement} from "./hlevel.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
 import {stem} from "./names.mjs";
+
+import {assignArguments} from "../cubist/call-arguments.mjs";
+export {assignArguments} from "../cubist/call-arguments.mjs";
 
 export const isHole = node => node?.kind === "name" && node.name === "_";
 // Whether a call needs this elaboration: it has a hole, a named argument or
@@ -74,63 +78,6 @@ function sourceParameters(t, head) {
   if (!view?.parameters) return null;
   const consumed = applied - (view.assumptions?.size ?? 0);
   return consumed > 0 ? view.parameters.slice(consumed) : view.parameters;
-}
-
-// What a call's arguments give, parameter by parameter: a written argument,
-// a hole, an omitted parameter (before the last one given), or nothing more.
-// A named argument gives the parameter it names: an implicit one in double
-// braces, f{{A := Nat}}(x), an explicit one in parentheses. The others in
-// double braces fill the implicit parameters no name gives, in order; those
-// in parentheses fill the explicit parameters no name gives, in order, and
-// then whatever the result takes.
-export function assignArguments(n, parameters, unit, called) {
-  const positional = [], named = new Map(), names = parameters?.map(parameter => parameter.name);
-  const name = (arg, braced) => {
-    const name = arg.name.text;
-    if (!parameters)
-      throw unit.locate(Error(`${called} has no named parameters: a named argument gives a parameter that a definition declares.`), arg.name);
-    // A generated constructor may label an implicit parameter and an
-    // explicit one alike: the braces say which is meant.
-    const matching = parameters.findIndex(parameter => parameter.name === name && !!parameter.implicit === braced);
-    const index = matching >= 0 ? matching : names.indexOf(name);
-    if (index < 0)
-      throw unit.locate(Error(`${called} has no parameter ${name}; its parameters are ${names.join(", ")}.`), arg.name);
-    if (named.has(index)) throw unit.locate(Error(`The argument ${name} is given twice.`), arg.name);
-    if (!!parameters[index].implicit !== braced)
-      throw unit.locate(Error(braced ? `${name} is not an implicit parameter of ${called}: give it in parentheses, as ${called}(${name} := …).`
-        : `${name} is an implicit parameter of ${called}: give it in double braces, as ${called}{{${name} := …}}(…).`), arg.name);
-    named.set(index, arg.value);
-  };
-  for (const arg of n.args) {
-    if (arg.kind === "namedArgument") name(arg, false);
-    else positional.push(arg);
-  }
-  const braced = new Map();
-  if (n.implicitArgs) {
-    const implicit = parameters?.flatMap((parameter, index) => parameter.implicit ? [index] : []) ?? [];
-    if (!implicit.length)
-      throw unit.locate(Error(`${called} has no implicit parameters: give its arguments in parentheses, as ${called}(…).`), n.implicitArgs[0]);
-    const unnamed = [];
-    for (const arg of n.implicitArgs) {
-      if (arg.kind === "namedArgument") name(arg, true);
-      else unnamed.push(arg);
-    }
-    const open = implicit.filter(index => !named.has(index));
-    if (unnamed.length > open.length)
-      throw unit.locate(Error(`${called} has ${implicit.length} implicit parameter${implicit.length === 1 ? "" : "s"}, ${
-        implicit.map(index => names[index]).join(", ")}; the double braces give ${n.implicitArgs.length}.`), unnamed[open.length]);
-    unnamed.forEach((arg, k) => braced.set(open[k], arg));
-  }
-  const given = new Map(), count = parameters?.length ?? 0;
-  let next = 0;
-  for (let index = 0; index < count; index++) {
-    if (named.has(index)) given.set(index, named.get(index));
-    else if (braced.has(index)) given.set(index, braced.get(index));
-    else if (!parameters[index].implicit && next < positional.length) given.set(index, positional[next++]);
-  }
-  for (let index = count; next < positional.length; index++) given.set(index, positional[next++]);
-  const last = Math.max(-1, ...given.keys());
-  return index => given.has(index) ? given.get(index) : index < last ? null : undefined;
 }
 
 // Elaborate a call of a definition or a function: its written arguments,
@@ -341,8 +288,12 @@ class ArgumentSolver {
           // parameter's type, so that a wrong solution is reported here;
           // otherwise the call's own check compares the two, at no extra
           // kernel work.
-          try { this.solution.set(slot.variable, this.determined ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
-          catch (error) { throw this.scope.unit.locate(error, slot.node); }
+          // A generator's checked application validates each argument here
+          // before extracting solved values, including fully positional calls.
+          // This policy is independent of whether source arguments had labels.
+          try { this.solution.set(slot.variable, this.determined||this.call.checkArguments
+            ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
+          catch (error) {propagateElaborationStop(error); throw this.scope.unit.locate(error, slot.node); }
           progress = true;
         } else if (!slot.tried) {
           // Its type, to solve the holes its parameter's type mentions; the
@@ -418,15 +369,15 @@ class ArgumentSolver {
   // An argument's type with no expected type, or null when it needs one. The
   // attempt records no inspector references and no proof steps.
   infer(node) {
-    const {t, scope} = this, quiet = scope.withUnit(scope.unit.with({references: null}));
-    const onStep = t.onStep;
-    t.onStep = null;
+    const {t, scope} = this, observations = scope.unit.observations.fork("argument-inference",{visible:false});
+    const quiet = scope.withUnit(scope.unit.with({references:null,steps:null,observations}));
     try { return quiet.infer(t.term(node, quiet, null)).type; }
     catch (error) {
+      propagateElaborationStop(error);
       if (isLimit(error)) throw error;
       return null;
     }
-    finally { t.onStep = onStep; }
+    finally { observations.discard(); }
   }
   // One constraint between two terms: "done", "stuck" (for now) or "clash",
   // when they cannot agree. `polarity` is "covariant" where a larger
@@ -477,6 +428,7 @@ class ArgumentSolver {
     let leftHead, rightHead;
     try { leftHead = at.nf(left); rightHead = at.nf(right); }
     catch (error) {
+      propagateElaborationStop(error);
       if (isLimit(error)) throw error;
       return "stuck";
     }
@@ -636,7 +588,8 @@ class ArgumentSolver {
       else omitted.push(`${slot.parameter} := ${shown}`);
     }
     if (omitted.length && Number.isInteger(n.end))
-      t.reference(scope, {name: ")", start: n.end - 1, end: n.end, expressionSite: true, role: "inferred arguments",
+      t.reference(scope, {name: ")", start: n.end - 1, end: n.end,
+        ...(n.origin?{origin:n.origin}:{}),...(n.synthetic?{synthetic:true}:{}), expressionSite: true, role: "inferred arguments",
         description: `Arguments of ${this.called} inferred: ${omitted.join(", ")}.`}, term);
   }
 }

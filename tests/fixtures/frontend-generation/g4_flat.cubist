@@ -1,0 +1,36 @@
+// G4-flat (CB3): derived matches retain checked carrier evidence (flat clauses).
+
+import hlevels;
+inductive Bit : set U0 {
+  off;
+  yes;
+}
+
+inductive Bits : set U0 {
+  nil;
+  cons(b : Bit, rest : Bits);
+}
+
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def value(n : Bits) : M := match n {
+    nil => c;
+    cons(b, rest) => op(op(c));
+  };
+}
+
+def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {
+  rfl;
+}
+
+def empty_computation(S : T(U0)) : S.value(nil) = S.c {
+  rfl;
+}
+
+// Error: E606: Type mismatch: found T.value{{U0}}(S, cons(yes, nil)) = T.value{{U0}}(S, cons(yes,
+//   nil)), expected T.value{{U0}}(S, cons(yes, nil)) = S.c.
+def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {
+  rfl;
+}

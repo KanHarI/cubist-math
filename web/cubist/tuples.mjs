@@ -1,8 +1,9 @@
 import { parse, tokenize } from "./parser.mjs";
+import {syntaxValue} from "./source-syntax.mjs";
 
 // Source coordinates and notation do not belong to the expanded syntax tree.
 export function expandedSyntax(tree) {
-  return JSON.stringify(tree, (key, value) => [
+  return syntaxValue(tree, (key, value) => [
     "start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd",
     "tupleStart", "tupleEnd", "syntheticTuplePair", "opens", "closes", "bodyStart", "qualifiedDots", "open", "close",
   ].includes(key) ? undefined : value);

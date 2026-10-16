@@ -1,0 +1,368 @@
+{
+  "version": 2,
+  "adoptedFrom": "49499aa1c56c1b345eb0021468123cec377fb4b8",
+  "dirty": false,
+  "revision": "729b25b1ad89b281b2d0269f31ff4acf4b4bebde",
+  "limits": {
+    "processMs": 60000,
+    "testMs": 45000,
+    "maxBufferBytes": 8388608,
+    "checker": "unchanged defaults",
+    "cases": 8
+  },
+  "mutations": [
+    {
+      "id": "reference-spelling",
+      "file": "web/cubist/references.mjs",
+      "from": "? {...n, kind: \"name\", name: n.binding}",
+      "to": "? {...n, kind: \"name\", name: n.spelling}",
+      "test": "references",
+      "pattern": "lowering references",
+      "expected": "killed",
+      "sourceDigest": "75577b9aa4774c26c76229224b0daab0e674990c9d4f38f3a26945d92d7e1481",
+      "outcome": "killed",
+      "failedTests": [
+        "lowering references for elaboration leaves the retained theory closure resolved"
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "lowering references for elaboration leaves the retained theory closure resolved"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "lowering references for elaboration leaves the retained theory closure resolved",
+          "file": "tests/references.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "Expected values to be strictly equal:",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "Expected values to be strictly equal:",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/references.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "id": "lexical-use",
+      "file": "web/translator/theories.mjs",
+      "from": "if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};",
+      "to": "if(true)return {env,notation:[[SELECTION,null]]};",
+      "test": "frontend-invariants",
+      "pattern": "uncolliding parameter, seed 2$",
+      "expected": "killed",
+      "sourceDigest": "65a3c458d481fb6d90f862ab1b8904761b5afcf6bd3f62488dee25cafc4bb84f",
+      "outcome": "killed",
+      "failedTests": [
+        "CB0 preservation: uncolliding parameter, seed 2"
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "CB0 preservation: uncolliding parameter, seed 2"
+      ],
+      "reducedCases": [
+        {
+          "seed": 2,
+          "classification": {
+            "kind": "regression",
+            "expected": {
+              "gaps": [
+                [
+                  "main",
+                  "captured",
+                  "E606"
+                ]
+              ],
+              "accepted": {
+                "intended": true,
+                "named": true,
+                "law_meaning": true,
+                "identity": true,
+                "generated": true,
+                "forgotten": true,
+                "fold_computes": true,
+                "child_selection": true
+              },
+              "assumes": [],
+              "fields": [
+                "M",
+                "c",
+                "op"
+              ],
+              "artifacts": {
+                "Hom": true,
+                "Hom.id": true,
+                "Hom.compose": true,
+                "Iso": true,
+                "Iso.id": true
+              }
+            },
+            "signature": "[{\"path\":[\"accepted\",\"child_selection\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"fold_computes\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"forgotten\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"generated\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"identity\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"intended\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"law_meaning\"],\"actual\":false,\"expected\":true},{\"path\":[\"accepted\",\"named\"],\"actual\":false,\"expected\":true},{\"path\":[\"artifacts\",\"Hom\"],\"actual\":false,\"expected\":true},{\"path\":[\"artifacts\",\"Hom.compose\"],\"actual\":false,\"expected\":true},{\"path\":[\"artifacts\",\"Hom.id\"],\"actual\":false,\"expected\":true},{\"path\":[\"artifacts\",\"Iso\"],\"actual\":false,\"expected\":true},{\"path\":[\"artifacts\",\"Iso.id\"],\"actual\":false,\"expected\":true},{\"path\":[\"fields\",\"0\"],\"actual\":{\"absent\":true},\"expected\":\"M\"},{\"path\":[\"fields\",\"1\"],\"actual\":{\"absent\":true},\"expected\":\"c\"},{\"path\":[\"fields\",\"2\"],\"actual\":{\"absent\":true},\"expected\":\"op\"},{\"path\":[\"gaps\",\"0\",\"1\"],\"actual\":\"T\",\"expected\":\"captured\"},{\"path\":[\"gaps\",\"0\",\"2\"],\"actual\":\"E911\",\"expected\":\"E606\"},{\"path\":[\"gaps\",\"1\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"1\",\"1\"],\"actual\":\"Child\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"1\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"1\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"10\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"10\",\"1\"],\"actual\":\"forget\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"10\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"10\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"11\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"11\",\"1\"],\"actual\":\"forgotten\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"11\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"11\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"12\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"12\",\"1\"],\"actual\":\"W\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"12\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"12\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"13\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"13\",\"1\"],\"actual\":\"fold_computes\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"13\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"13\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"2\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"2\",\"1\"],\"actual\":\"intended\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"2\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"2\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"3\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"3\",\"1\"],\"actual\":\"named\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"3\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"3\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"4\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"4\",\"1\"],\"actual\":\"captured\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"4\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"4\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"5\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"5\",\"1\"],\"actual\":\"law_meaning\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"5\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"5\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"6\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"6\",\"1\"],\"actual\":\"identity\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"6\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"6\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"7\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"7\",\"1\"],\"actual\":\"child_selection\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"7\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"7\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"8\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"8\",\"1\"],\"actual\":\"N\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"8\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"8\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true},{\"path\":[\"gaps\",\"9\",\"0\"],\"actual\":\"main\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"9\",\"1\"],\"actual\":\"generated\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"9\",\"2\"],\"actual\":\"E340\",\"expected\":{\"absent\":true}},{\"path\":[\"gaps\",\"9\",\"absent\"],\"actual\":{\"absent\":true},\"expected\":true}]"
+          },
+          "config": {
+            "seed": 2,
+            "imported": false,
+            "inherited": true,
+            "renamed": false,
+            "depth": 1,
+            "binder": "x",
+            "noise": false,
+            "recursive": false,
+            "paths": false,
+            "capture": false
+          },
+          "attempts": 2,
+          "errors": [],
+          "source": "import hlevels; import nat;\nnotation lexical { numeral(n : Nat) := n; }\nuse lexical;\n\ntheory T(U < UU0) { M : set U; c : M; op(n : Nat, x, y : M) : M;\n  def helper0(x : M) : M := op(0,x,c);\n  def wrapped(value_ : M, proof_ : value_ = value_) : M := (fun (x : M) => helper0(x))(value_);\n  law same(c : M) : helper0(c) = op(0,c,c);\n  \n}\nnotation shifted { numeral(n : Nat) := succ(n); }\nuse shifted;\ntheory Child(U < UU0) extends T {\n  def fresh(x : M) : M := op(0,x,c);\n}\ndef intended(S : Child(U0), x : S.M) : S.wrapped(x,refl(x)) = S.op(zero,x,S.c) := refl(S.op(zero,x,S.c));\ndef named(S : Child(U0), x : S.M) : S.M := Child.wrapped(S,value_ := x,proof_ := refl(x));\ndef captured(S : Child(U0), x : S.M) : S.wrapped(x,refl(x)) = S.op(zero,x,x) := refl(S.op(zero,x,x));\ndef law_meaning(S : Child(U0), x : S.M) : S.op(zero,x,S.c) = S.op(zero,x,x) := S.same(x);\ndef identity(S : Child(U0), x : S.M) : Child.Hom.compose(Child.Hom.id(S),Child.Hom.id(S)).map(x) = x { rfl; }\ndef child_selection(S : Child(U0), x : S.M) : S.fresh(x) = S.op(succ(zero),x,S.c) { rfl; }\n\ninitial N : Child(U0);\ndef generated(x : N) : N.model.wrapped(x,refl(x)) = N.op(zero,x,N.c) { rfl; }\ndef forget(x : N) : Unit := match x { N.c => tt; _ => tt; };\ndef forgotten : forget(N.op(zero,N.c,N.c)) = tt { rfl; }\nfree W(A : U0) : Child(U0) on A;\ndef fold_computes(S : Child(U0), x : S.M) : W.fold(S.M,S,fun (a : S.M) => a).map(W.gen(x)) = x { rfl; }\ndef ordinary : U0 := forall unused : Unit. Unit;\n",
+          "fixtures": {},
+          "parent": "import hlevels; import nat;\nnotation lexical { numeral(n : Nat) := n; }\nuse lexical;\n\ntheory T(U < UU0) { M : set U; c : M; op(n : Nat, x, y : M) : M;\n  def helper0(x : M) : M := op(0,x,c);\n  def wrapped(value_ : M, proof_ : value_ = value_) : M := (fun (x : M) => helper0(x))(value_);\n  law same(c : M) : helper0(c) = op(0,c,c);\n  \n}",
+          "model": "Child",
+          "names": {
+            "M": "M",
+            "c": "c",
+            "op": "op"
+          },
+          "accepted": [
+            "intended",
+            "named",
+            "law_meaning",
+            "identity",
+            "generated",
+            "forgotten",
+            "fold_computes",
+            "child_selection"
+          ],
+          "expectedGaps": [
+            "captured"
+          ],
+          "labelScope": "law same(c : M) : helper0(c) = op(0,c,c);"
+        }
+      ],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "CB0 preservation: uncolliding parameter, seed 2",
+          "file": "tests/frontend-invariants.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "preservation-2-false: changed semantic observation",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "preservation-2-false: changed semantic observation",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/frontend-invariants.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "id": "reservation",
+      "file": "web/translator/declarations.mjs",
+      "from": "conflict ??= entry;",
+      "to": "conflict ??= null;",
+      "test": "frontend-publication",
+      "pattern": "definition then inductive",
+      "expected": "killed",
+      "sourceDigest": "71ac7a9ae15e7f5c2fc3817c7629ad06c579fcf7f4d3012f2fa2884b9423f3b0",
+      "outcome": "killed",
+      "failedTests": [
+        "FG1 ownership: definition then inductive keeps the original binding and source"
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "FG1 ownership: definition then inductive keeps the original binding and source"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "FG1 ownership: definition then inductive keeps the original binding and source",
+          "file": "tests/frontend-publication.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "[{\"module\":\"main\",\"name\":\"client\",\"reason\":\"Type mismatch: found U0, expected Unit.\",\"code\":\"E606\"}]",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "[{\"module\":\"main\",\"name\":\"client\",\"reason\":\"Type mismatch: found U0, expected Unit.\",\"code\":\"E606\"}]",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/frontend-publication.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
+    },
+    {
+      "id": "failed-publication",
+      "file": "web/cubical-program.mjs",
+      "from": "transaction?.finish(accept); transaction=null;",
+      "to": "transaction?.finish(true); transaction=null;",
+      "test": "frontend-publication",
+      "pattern": "G7:",
+      "expected": "killed",
+      "sourceDigest": "02470b3389625ab19f73d562407522113811a55316241aad1748b12f70467406",
+      "outcome": "killed",
+      "failedTests": [
+        "G7: an injected parent projection failure rolls back its base group and blocks descendants once"
+      ],
+      "status": 1,
+      "distinguishingTests": [
+        "G7: an injected parent projection failure rolls back its base group and blocks descendants once"
+      ],
+      "reducedCases": [],
+      "events": [
+        {
+          "type": "test:fail",
+          "name": "G7: an injected parent projection failure rolls back its base group and blocks descendants once",
+          "file": "tests/frontend-publication.test.mjs",
+          "nesting": 0,
+          "error": {
+            "name": "Error",
+            "code": "ERR_TEST_FAILURE",
+            "message": "main__Q",
+            "failureType": "testCodeFailure",
+            "cause": {
+              "name": "AssertionError",
+              "code": "ERR_ASSERTION",
+              "message": "main__Q",
+              "cause": null
+            }
+          }
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          },
+          "file": "tests/frontend-publication.test.mjs"
+        },
+        {
+          "type": "test:summary",
+          "success": false,
+          "counts": {
+            "tests": 1,
+            "failed": 1,
+            "passed": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0,
+            "topLevel": 1,
+            "suites": 0
+          }
+        }
+      ],
+      "stderr": ""
+    }
+  ]
+}

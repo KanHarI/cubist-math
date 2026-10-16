@@ -1,0 +1,24 @@
+// G12-shadowed (CB2/CB3): a local parameter shadows an earlier recursive operation.
+
+import hlevels;
+import nat;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def iter(n : Nat) : M := match n {
+    zero => c;
+    succ(k) => op(iter(k));
+  };
+  def twice(iter : Nat -> M, n : Nat) : M := op(iter(n));
+}
+
+def intended(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(f(zero)) {
+  rfl;
+}
+
+// Error: E606: Type mismatch: found T.twice{{U0}}(S, f, nat.(0)) = T.twice{{U0}}(S, f, nat.(0)),
+//   expected T.twice{{U0}}(S, f, nat.(0)) = S.op(S.c).
+def captured(S : T(U0), f : Nat -> S.M) : S.twice(f, zero) = S.op(S.c) {
+  rfl;
+}

@@ -117,6 +117,8 @@ export class CubicalKernel {
   }
   setDeadline(milliseconds = 0) {
     this.assertOpen();
+    this.deadlineDuration = milliseconds > 0 ? milliseconds : 0;
+    this.deadlineGeneration = (this.deadlineGeneration ?? 0) + 1;
     this.deadline = milliseconds > 0 ? performance.now() + milliseconds : 0;
     this.module._cb_deadline_ms(this.handle, milliseconds);
   }

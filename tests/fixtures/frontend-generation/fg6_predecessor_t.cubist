@@ -1,0 +1,20 @@
+// FG6-predecessor-T (FG6): generated recursive calls retain a predecessor named T after a nested match destructs it.
+
+import hlevels;
+import nat;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def iter(n : Nat) : M := match n {
+    zero => c;
+    succ(T) => match T {
+      zero => op(iter(T));
+      succ(j) => op(iter(T));
+    };
+  };
+}
+
+def computes(S : T(U0)) : S.iter(succ(succ(zero))) = S.op(S.op(S.c)) {
+  rfl;
+}

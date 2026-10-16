@@ -1,0 +1,16 @@
+// G8 (CB3): a wildcard mismatch retains its endpoints and written body range.
+
+import hlevels;
+inductive T : set U0 {
+  t0;
+  t1;
+  seg : t0 = t1;
+}
+
+// Error: E606: Type mismatch: found t1 = t1, expected t0 = t1.
+def h(x : T) : T := match x {
+    t0 => t0;
+    _ => t1;
+  };
+
+def later : Unit := tt;

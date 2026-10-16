@@ -26,6 +26,11 @@ export class NameSupply {
   }
 }
 
+// Binding-aware tokens carry an opaque environment key in text. Only their
+// public label can seed a core name. Nominal syntax retains its existing
+// elaboration stem until that family migrates to identity-bearing tokens.
+export const bindingStem = token => token?.bindingId ? token.label ?? token.text : token?.text;
+
 // How the display shows a kernel name (web/cubical-elaborator.mjs,
 // web/cubical-source-text.mjs). These rules are defined here once: the
 // printer applies them, and code that must predict what it prints, such as
@@ -57,5 +62,12 @@ export const printsAsItself = name => stem(name) === name && localName(name) ===
 // names none.
 export const repeatedName = params => {
   const seen = new Set();
-  return params.find(p => p.name.text !== "_" && seen.size === seen.add(p.name.text).size) ?? null;
+  return params.find(p => {
+    // Identity lowering replaces a written name with a private key. Nominal
+    // generated tokens still use text for their argument interface; their
+    // optional display label is not that interface's identity. Lowering keeps
+    // the binding label separately when a generated telescope is flattened.
+    const label=p.name.bindingId?p.name.bindingLabel??p.name.label??p.name.text:p.name.text;
+    return label!=="_"&&seen.size===seen.add(label).size;
+  })??null;
 };

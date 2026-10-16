@@ -1,18 +1,9 @@
-// Resolved syntax separates a declaration's identity from its source spelling.
-// A reference is not a name: renaming, substitution and source generation must
-// preserve it as syntax, never look it up again or print its binding as source.
-import {rewritten} from "./scopes.mjs";
-
-export function reference(binding, spelling, at = {}) {
-  const {kind: _, name: __, ...site} = at;
-  return {...site, kind: "reference", binding, spelling};
-}
-
-export const referenceKey = node => node.kind === "reference" ? node.binding : node.kind === "name" ? node.name : null;
+export const referenceKey = node => node.kind === "name" ? node.name : null;
 
 // Display provenance is independent of resolution. A structural selection
 // can still name its written receiver in diagnostics after it is moved.
-export const sourceName = node => node.spelling ?? (node.kind === "name" ? node.name
+export const sourceName = node => node.spelling ?? (node.kind === "notationReceiver" ? sourceName(node.notation)
+  : node.kind === "name" ? node.name
   : node.kind === "member" && sourceName(node.value) ? `${sourceName(node.value)}.${node.field.text}` : null);
 
 // A field selection keeps its receiver as syntax. In particular, a local
@@ -23,17 +14,10 @@ export function members(node, receiver, fields) {
   for (const [index, text] of fields.entries()) {
     const start = dots[index]?.end ?? end + 1;
     end = start + text.length;
-    value = {kind: "member", value, field: {text, start, end}, start: node.start, end,
+    value = {kind: "member", value, field: {text, start, end,...(node.origin?{origin:{...node.origin,start,end}}:{}),
+      ...(node.synthetic?{synthetic:true}:{})}, start: node.start, end,
+      ...(node.origin?{origin:node.origin}:{}),
       ...(node.synthetic ? {synthetic: true} : {})};
   }
   return value;
-}
-
-// The elaborator still has one environment for lexical aliases and source
-// names. Lower identities only at its entry, after syntax transformation.
-// Theory records remain resolved syntax for subsequent derivations.
-export function elaborationSyntax(node) {
-  const {theory, ...syntax} = node;
-  return {...rewritten(syntax, n => n.kind === "reference"
-    ? {...n, kind: "name", name: n.binding} : n), ...(theory ? {theory} : {})};
 }

@@ -1,0 +1,18 @@
+// G1-initial (FG1): an initial-model duplicate preserves the first definition.
+
+import hlevels;
+import algebra;
+def N : Unit := tt;
+
+// Error: E872: Duplicate declaration N: a declaration in this module already owns that name.
+initial N : Monoid(U0);
+
+// Error: E343: Untranslated name: N.one
+def leaked_one := N.one;
+
+// Error: E343: Untranslated name: N.mul
+def leaked_mul := N.mul;
+
+def original : Unit := N;
+
+def independent : Unit := tt;

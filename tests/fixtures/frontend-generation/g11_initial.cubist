@@ -1,0 +1,18 @@
+// G11-initial (CB2): initial-model client.
+
+import hlevels;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x, y : M) : M;
+  def k(x : M) : M := op(x, c);
+  def kk(c : M) : M := k(c);
+}
+
+initial N : T(U0);
+
+def intended(x : N) : N.model.kk(x) = N.op(x, N.c) := refl(N.op(x, N.c));
+
+// Error: E606: Type mismatch: found N.op(x, x) = N.op(x, x), expected T.kk{{U0}}(N.model, x) =
+//   N.op(x, x).
+def captured(x : N) : N.model.kk(x) = N.op(x, x) := refl(N.op(x, x));

@@ -50,7 +50,7 @@ def apply(S : T(U0), p : P(U0)) : S.M := S.op(p, p.x);
   }
 });
 
-test("template holes cannot capture a user's parameter or family-index names", async t => {
+test("former template marker spellings remain ordinary parameter and family-index names", async t => {
   for (const binder of ["__theory_type_0", "__theory_parameter_0", "__theory_reference"]) {
     await checked(t, `import hlevels;
 import nat;

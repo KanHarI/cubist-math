@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parse } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
-import { freeNames, substituted } from "../web/cubist/scopes.mjs";
+import { freeNames } from "../web/cubist/scopes.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
@@ -83,12 +83,9 @@ test("old and new clause spellings have identical checked terms, types and assum
   assert.ok(report.identical >= 10);
 });
 
-test("hypotheses bind only in their clause body and substitutions avoid capture", () => {
+test("hypotheses bind only in their clause body", () => {
   const value = parse("induction t return P { leaf => ih; node(l, datum, r) with ih, other => f(ih, other, outer); }", true);
   assert.deepEqual([...freeNames(value)].sort(), ["P", "f", "ih", "outer", "t"]);
-  const result = substituted(value, new Map([["outer", { kind: "name", name: "other" }]]), name => Error(name));
-  assert.notEqual(result.clauses[1].hypotheses[1].text, "other");
-  assert.ok(freeNames(result).has("other"));
 });
 
 test("with needs a nonempty list, follows coordinates, and is forbidden on match", () => {

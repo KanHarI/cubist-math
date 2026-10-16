@@ -280,7 +280,7 @@ test("arithmetic groups as L2.10b says, with the cubical operators tightest", ()
   }
 });
 
-test("a refused use belongs to its theory and children report that failed dependency", async t => {
+test("each consuming source item reports its own failed selection activation", async t => {
   const source = `import hlevels;
 use Nat;
 theory T(U < UU0) { M : set U; c : M; }
@@ -288,11 +288,24 @@ theory C extends T {}
 initial N : T(U0);`;
   const { result } = await checkProgram(t, source, { module });
   const failures = result.outputs.filter(o => !o.verified);
-  assert.deepEqual(failures.map(o => [o.name, o.code]), [["T", "E834"], ["C", "E340"], ["N", "E340"]]);
-  assert.equal(failures.find(o => o.name === "T").errorStart, source.indexOf("Nat"));
-  const child = failures.find(o => o.name === "C");
-  assert.match(child.reason, /Untranslated dependency: T/);
-  assert.equal(child.errorStart, source.indexOf("extends T") + "extends ".length);
+  assert.deepEqual(failures.map(o => [o.name, o.code]), [["T", "E834"], ["C", "E834"], ["N", "E834"]]);
+  for(const failure of failures)assert.equal(failure.errorStart,source.indexOf("Nat"));
+});
+
+test("a child with a valid selection reports its refused theory dependency",async t=>{
+  const dependency=`import hlevels; use Nat;
+theory T(U < UU0) { M : set U; c : M; }`;
+  const source=`import refused_theory;
+theory C extends T {}
+initial N : T(U0);`;
+  const library=sourceReader();
+  const {result}=await checkProgram(t,source,{module,
+    reader:(name,importer)=>name==="refused_theory"?dependency:library(name,importer)});
+  const failures=result.outputs.filter(o=>!o.verified);
+  assert.deepEqual(failures.map(o=>[o.name,o.code]),[["C","E340"],["N","E340"]]);
+  const child=failures.find(o=>o.name==="C");
+  assert.match(child.reason,/Untranslated dependency: T/);
+  assert.equal(child.errorStart,source.indexOf("extends T")+"extends ".length);
 });
 
 test("a theory's name links to its declarations, its type of models first, and its generated syntax nowhere", async t => {

@@ -11,20 +11,38 @@
 // comes from its goal, through motive abstraction (motives.mjs), and each of
 // its clauses is a proof block.
 // Untrusted: the kernel checks every clause at its clause type.
+import {propagateElaborationStop} from "./control.mjs";
 import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {abstractMotive} from "./motives.mjs";
 import {Goal} from "./proof-goals.mjs";
 import {SearchFuel} from "./fuel.mjs";
+import {SearchLimit} from "./proof-rewrite.mjs";
+import {bindingStem} from "./names.mjs";
 import {HLevelSearch,HLevelUnproved,pathEvidence} from "./hlevel.mjs";
 import {orderedHLevelRules} from "./simp-registry.mjs";
+import {lowerBindingReferences} from "../cubist/binding-syntax.mjs";
+import {decidePatternSlot} from "../cubist/bindings.mjs";
+import {clauseTelescope,bindClauseName} from "../cubist/telescopes.mjs";
+import {enterExpressionScope} from "./expression-scopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
+const resourceFailure=error=>["fuel","budget","deadline"].includes(error?.kind)||error instanceof SearchLimit;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
 export const RECURSIVE = "\u0000recursive";
+
+// All scope transitions update the permission record and its callable alias
+// together. A source binder may shadow the callable alias without changing
+// the enclosing match's permissions.
+export function withRecursion(scope,record,{introduce=false}={}) {
+  const key=record.key??record.source;
+  if(introduce)scope=scope.sourceBinding(key,record,scope.unit.scopePoints?.compilation.ofValue(record,scope.unit));
+  else if(scope.env.get(key)?.tag==="Recursive")scope=scope.refine(key,record);
+  return scope.alias(RECURSIVE,record);
+}
 
 // The declared type a signature was registered as: from the checker's
 // registry, whatever names are in scope, or from the names in scope.
@@ -95,10 +113,14 @@ function recursively(translator, scope, recursion, elaborate) {
   if (!recursion?.generalizable.some(Boolean))
     return elaborate(scope, recursion && { ...recursion, state: { varied: false, called: false } }, []);
   const first = attempt(translator, scope, recursion, [], elaborate);
+  if(resourceFailure(first.failure))return first.keep();
   if (!first.state.varied && !first.failure) return first.keep();
   const second = attempt(translator, scope, recursion,
     recursion.fixed.filter((_, i) => recursion.generalizable[i]).map(binding => binding.name), elaborate);
-  return (first.state.varied || first.failure && !second.failure ? second : first).keep();
+  if(resourceFailure(second.failure)) {first.discard();return second.keep();}
+  const selected = first.state.varied || first.failure && !second.failure ? second : first;
+  (selected === first ? second : first).discard();
+  return selected.keep();
 }
 
 // One elaboration of a recursive match, apart: its fuel starts where the
@@ -108,23 +130,20 @@ function recursively(translator, scope, recursion, elaborate) {
 // declaration's; keep() returns its term or throws its error.
 function attempt(translator, scope, recursion, generalizing, elaborate) {
   const unit = scope.unit, state = { varied: false, called: false };
-  const references = [], steps = [], sink = unit.references, onStep = translator.onStep;
+  const observations = unit.observations.fork(generalizing.length ? "recursive-generalized" : "recursive-fixed");
   const fuel = unit.fuel && new SearchFuel(unit.fuel.search, unit.fuel.limits, { declaration: unit.fuel.declaration });
   if (fuel) fuel.used = { ...unit.fuel.used };
   const searches = { searches: unit.searches.searches, most: { ...unit.searches.most } }, work = { ...unit.work };
-  const apart = scope.withUnit(unit.with({ fuel, searches, work, references: sink && ((...record) => references.push(record)) }));
+  const apart = scope.withUnit(unit.with({ fuel, searches, work, observations }));
   let result, failure;
-  translator.onStep = onStep && (record => steps.push(record));
-  try { result = elaborate(apart, { ...recursion, state }, generalizing); } catch (error) { failure = error; }
-  finally { translator.onStep = onStep; }
-  return { state, failure, keep() {
+  try { result = elaborate(apart, { ...recursion, state }, generalizing); } catch (error) {propagateElaborationStop(error); failure = error; }
+  return { state, failure, discard() { observations.discard(); }, keep() {
     if (fuel) for (const [kind, used] of Object.entries(fuel.used))
       if (used > unit.fuel.used[kind]) unit.fuel.spend(kind, used - unit.fuel.used[kind]);
     Object.assign(unit.work, work);
     unit.searches.searches = searches.searches;
     Object.assign(unit.searches.most, searches.most);
-    for (const record of references) sink(...record);
-    for (const record of steps) onStep(record);
+    observations.select();
     if (failure) throw failure;
     return result;
   } };
@@ -136,15 +155,6 @@ const generalizedParameters = (recursion, motive) => {
   return recursion.fixed.map(binding => binding?.tag === "Var" && names.has(binding.name));
 };
 
-// A source name bound again to `term`, as the binding it replaces was: an
-// alias of its own, recorded as that local source, so that a tactic that
-// needs a local hypothesis, and a nested match, see it as one.
-function rebind(translator, previous, term) {
-  const alias = { ...term }, source = translator.localSources.get(previous);
-  if (source) translator.localSources.set(alias, source);
-  return alias;
-}
-
 // The declared type of a value, as the pattern compiler (patterns.mjs) reads
 // it: its source name, its instance and its constructors but the generated
 // one, or null for a value of another type.
@@ -155,7 +165,7 @@ export function matchedType(translator, scope, value) {
   if (!inductive) return null;
   const info = translator.checker.kernel.signature(inductive.record.index);
   return { source: inductive.source, instance, constructors: inductive.record.constructors
-    .map((name, k) => ({ name, ...inductive.constructors[k] }))
+    .map((name, k) => ({ name, index:k, ...inductive.constructors[k] }))
     .filter((_, k) => k < inductive.constructors.length && !info.constructors[k]?.generated) };
 }
 
@@ -217,7 +227,7 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
   // recursive match the motive is over the matched parameter itself, so that
   // a recursive result has the type of the call it stands for.
   let body;
-  const z = scope.fresh(n.motiveName?.text ?? "z");
+  const z = scope.fresh(bindingStem(n.motiveName) ?? "z");
   if (n.type) {
     const inner = n.motiveName ? translator.sourceBinding(n.motiveName, T.variable(z), scope.bind(z, instance)) : scope.bind(z, instance);
     body = translator.term(n.type, inner, null);
@@ -310,7 +320,7 @@ function sumStatement(translator, n, goal, scope, value, type, sum) {
   const motive = abstractMotive(goal.at(scope), [value], { contracted: true });
   const clause = side => {
     const { clause, token } = sides.get(side);
-    const name = scope.fresh(token.text), domain = sum[side];
+    const name = scope.fresh(bindingStem(token)), domain = sum[side];
     const inner = translator.sourceBinding(token, T.variable(name), scope.bind(name, domain));
     const injected = (side === "left" ? T.inl : T.inr)(type, T.variable(name));
     const { transition, goal: at } = branch(translator, motive, value, scope, inner, injected);
@@ -329,7 +339,7 @@ function branch(translator, motive, value, scope, inner, built) {
   const {transition, renamed} = motive.introduce(motive.instance([built], inner));
   const values = new Map(renamed);
   if (value.tag === "Var") values.set(value.name, built);
-  let at = transition.next.scope.supersede(renamed.keys());
+  let at = transition.next.scope.supersede(renamed.keys()).refineEvidence(values);
   // An enclosing recursive match's calls, and the names matches took apart
   // for them.
   const enclosing = scope.env.get(RECURSIVE), current = enclosing && at.env.get(RECURSIVE);
@@ -337,18 +347,20 @@ function branch(translator, motive, value, scope, inner, built) {
   for (const [name, bound] of transition.next.scope.env) {
     if (bound?.tag === "Var") {
       if (!values.has(bound.name)) continue;
-      const alias = rebind(translator, bound, values.get(bound.name));
-      at = at.alias(name, alias);
+      const alias = values.get(bound.name);
+      at = at.refine(name, alias);
       if (bound.name === value.name) destructed.set(name, { alias, variable: value.name });
       continue;
     }
-    if (!bound || !translator.localSources.has(bound)) continue;
+    // Hidden receipts refine like their original local introduction, without
+    // making them visible to proof search. Opened members are not such locals.
+    if (!bound || !(at.localSources.has(name) || at.sourceBindings.get(name)?.local)) continue;
     const free = freeNames(bound);
     const again = [...values].reduce((term, [variable, replacement]) =>
       free.has(variable) ? substituteTerm(term, variable, replacement) : term, bound);
     if (again === bound) continue;
-    const alias = rebind(translator, bound, again);
-    at = at.alias(name, alias);
+    const alias = again;
+    at = at.refine(name, alias);
     // A name an enclosing match took apart, made again here, still names the
     // variable it named, for recursion.
     const taken = current?.destructed?.get(name);
@@ -361,8 +373,7 @@ function branch(translator, motive, value, scope, inner, built) {
     const now = variable => values.get(variable)?.tag === "Var" ? values.get(variable).name : variable;
     const results = new Map([...current.results].map(([position, entry]) => [now(position), { ...entry, result: now(entry.result) }]));
     const updated = { ...current, results, destructed: new Map([...(current.destructed ?? []), ...destructed]) };
-    if (at.env.get(enclosing.source)?.tag === "Recursive") at = at.alias(enclosing.source, updated);
-    at = at.alias(RECURSIVE, updated);
+    at = withRecursion(at,updated);
   }
   return { transition, goal: transition.next.at(at) };
 }
@@ -374,6 +385,43 @@ function branch(translator, motive, value, scope, inner, built) {
 // induction hypotheses. `body` elaborates the clause's body at its scope and
 // type, given the constructor there.
 function clause(translator, scope, { source, name, index, constructor, shape, obligationProof, node, induction }, instance, clauseType, recursion, body) {
+  const description = {source,name,index,constructor,shape,obligationProof,node,induction};
+  const written = at => writtenClause(translator,at,description,instance,clauseType,recursion,body);
+  if (!source?.implicitPath) return written(scope);
+  // Trying the written wildcard spends the declaration's ordinary fuel and
+  // work, even if automatic coherence replaces it. Only its observations are
+  // speculative; no native checkpoint or resource counter is reset here.
+  const observations = scope.unit.observations.fork("implicit-path-body");
+  let term, primary;
+  try {
+    term = written(scope.withUnit(scope.unit.with({observations})));
+  } catch (error) {
+    propagateElaborationStop(error);
+    // Without a fallback, a successfully elaborated prefix remains selected
+    // even when the rest of this written clause fails.
+    observations.select();
+    throw error;
+  }
+  try {scope.check(term,clauseType);}
+  catch(error) {
+    propagateElaborationStop(error);
+    if(error.kind!=="mismatch") {observations.select();throw error;}
+    primary=scope.unit.locate(error,source.implicitPathSite??source.body);
+  }
+  if (!primary) { observations.select(); return term; }
+  const recovery=scope.unit.observations.fork("implicit-path-coherence");
+  try {
+    const coherence=automaticClause(translator,scope.withUnit(scope.unit.with({observations:recovery})),
+      clauseType,name,node,obligationProof,index);
+    observations.discard();recovery.select();return coherence;
+  } catch(error) {
+    propagateElaborationStop(error);
+    if(resourceFailure(error)) {observations.discard();recovery.select();throw error;}
+    recovery.discard();observations.select();throw primary;
+  }
+}
+
+function writtenClause(translator, scope, { source, name, index, constructor, shape, obligationProof, node, induction }, instance, clauseType, recursion, body) {
   if (!source) return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   const locate = (error, node = source.constructor) => scope.unit.locate(error, node);
   const named = source.args ?? [];
@@ -402,49 +450,66 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   if (source.coordinates.length !== constructor.dims)
     throw locate(Error(constructor.dims ? `${name} is a path constructor: name its ${constructor.dims} dimension${constructor.dims === 1 ? "" : "s"} after its arguments, as in ${spelled}.`
       : `${name} has no dimensions to name.`));
-  let type = clauseType, inner = scope;
+  const telescope=clauseTelescope(source,{args,hypotheses});
+  let bound=new Set();
+  for(const group of telescope)if(group.distinct)
+    for(const token of group.tokens)bound=bindClauseName(bound,token,locate);
+  let type = clauseType, inner = scope.withSlotOutcomes(decidePatternSlot(scope.slotOutcomes,source.constructor,"constructor"));
   const binders = [], results = new Map();
   // The declaration's own name first, so that an argument or a dimension of
   // the same name shadows it; the results are filled in as they are bound.
   // A parameter that already shadows the name keeps it.
   if (recursion) {
     const current = { ...recursion, results };
-    inner = inner.alias(RECURSIVE, current);
-    if (scope.env.get(recursion.source)?.tag === "Recursive") inner = inner.alias(recursion.source, current);
+    inner = withRecursion(inner,current);
   }
-  const bind = (token, stem) => {
+  const bind = (token, recursiveOf=null) => {
     if (type?.tag !== "Pi") throw locate(Error(`The clause type of ${name} has fewer arguments than expected.`));
+    // Derive core names here from source tokens, never from caller-supplied
+    // key strings. Unwritten hypotheses use their field's public stem.
+    const stem=token?token.stem??bindingStem(token):`${bindingStem(recursiveOf)}_rec`;
     const variable = inner.fresh(stem), domain = type.domain;
-    inner = token ? translator.sourceBinding(token, T.variable(variable), inner.bind(variable, domain)) : inner.bind(variable, domain);
+    inner = inner.bind(variable, domain);
     type = substituteTerm(type.body, type.name, T.variable(variable));
     binders.push([variable, domain]);
     return variable;
   };
   // The data and positions, in the kernel's order: data first.
-  const positions = [];
-  constructor.order.forEach((sourceIndex, kernelIndex) => {
-    // A position's arity, the arguments it takes before its cube, and its
-    // cube's depth: 0 for an element, 1 for a path, and so on.
-    let arity = 0, depth = 0, t = type?.domain;
-    for (; t?.tag === "Pi"; t = t.body) arity++;
-    for (; t?.tag === "Path"; t = t.family) depth++;
-    const token = args[sourceIndex], variable = bind(token, token.text);
-    if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
-  });
-  // Each position's recursive result, named by its induction hypothesis
-  // when the clause gives one.
-  for (const [k, { variable, token, arity, depth }] of positions.entries())
-    results.set(variable, { result: bind(hypotheses[k] ? { ...hypotheses[k], role: "induction hypothesis" } : null,
-      hypotheses[k]?.text ?? `${token.text}_rec`), arity, depth });
-  // The dimensions, each a path of the result.
-  const lines = [];
-  for (const token of source.coordinates) {
-    if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
-    const dim = inner.fresh(token.stem ?? token.text);
-    inner = inner.bindDimension(dim).alias(token.text, { tag: "Dimension", name: dim });
-    const family = substituteDimension(type.family, type.dim, I.variable(dim));
-    lines.push({ dim, family });
-    type = family;
+  const positions = [],lines=[];
+  for(const group of telescope) {
+    if(group.field==="args") {
+      const variables=[];
+      constructor.order.forEach((sourceIndex, kernelIndex) => {
+        // A position's arity, the arguments it takes before its cube, and its
+        // cube's depth: 0 for an element, 1 for a path, and so on.
+        let arity = 0, depth = 0, t = type?.domain;
+        for (; t?.tag === "Pi"; t = t.body) arity++;
+        for (; t?.tag === "Path"; t = t.family) depth++;
+        const token = group.tokens[sourceIndex], variable = bind(token);
+        variables[sourceIndex]=variable;
+        if (kernelIndex >= shape.data) positions.push({ variable, token, arity, depth });
+      });
+      // Core domains follow kernel field order; lexical entries follow the
+      // shared source telescope after those domains have been instantiated.
+      group.tokens.forEach((token,k)=>{inner=translator.sourceBinding(token,T.variable(variables[k]),inner);});
+    }
+    // Each position's recursive result, named by its induction hypothesis
+    // when the clause gives one.
+    if(group.field==="hypotheses")for (const [k, { variable, token, arity, depth }] of positions.entries()) {
+      const hypothesis=group.tokens[k]?{...group.tokens[k],role:"induction hypothesis"}:null;
+      const result=bind(hypothesis,token);
+      if(hypothesis)inner=translator.sourceBinding(hypothesis,T.variable(result),inner);
+      results.set(variable,{result,arity,depth});
+    }
+    // The dimensions, each a path of the result.
+    if(group.field==="coordinates")for (const token of group.tokens) {
+      if (type?.tag !== "Path") throw locate(Error(`The clause type of ${name} has fewer dimensions than expected.`), token);
+      const dim = inner.fresh(token.stem ?? bindingStem(token));
+      inner = translator.sourceDimension(token,dim,inner);
+      const family = substituteDimension(type.family, type.dim, I.variable(dim));
+      lines.push({ dim, family });
+      type = family;
+    }
   }
   // The constructor here, at the clause's arguments and dimensions.
   let built = T.constructor(index, instance, name);
@@ -455,19 +520,12 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
   // first value must not be captured. A clause name of its own shadows it.
   if (recursion) {
     const parameter = recursion.params[recursion.index];
-    if (![...args, ...hypotheses, ...source.coordinates].some(token => token.text === parameter))
-      inner = inner.alias(parameter, rebind(translator, scope.env.get(parameter), built));
+    if (![...args, ...hypotheses, ...source.coordinates].some(token => translator.sourceKey(token,inner) === parameter))
+      inner = inner.refine(parameter, built);
   }
   let term = body(inner, type, built);
   for (const { dim, family } of lines.reverse()) term = T.line(dim, family, term);
   for (const [variable, domain] of binders.reverse()) term = T.lam(variable, domain, term);
-  // A wildcard does not specify a path's coherence. With recursive
-  // positions, its boundaries are recursive results, not fresh evaluations
-  // of the wildcard body. Keep the written body when it fits; otherwise
-  // construct the coherence from checked h-level evidence, as for an
-  // omitted squash. Explicit path clauses never take this route.
-  if (source.implicitPath && !scope.accepts(term, clauseType))
-    return automaticClause(translator, scope, clauseType, name, node, obligationProof, index);
   return term;
 }
 
@@ -476,11 +534,16 @@ function clause(translator, scope, { source, name, index, constructor, shape, ob
 // solve its top path from checked h-level evidence. Explicit obligations
 // use the same goal and may instead supply a proof block or a whole clause.
 function automaticClause(translator, scope, type, name, node, proof, index) {
+  const run=()=>automaticClauseAt(translator,scope,type,name,node,proof,index);
+  return scope.unit.scopePoints
+    ?scope.unit.scopePoints.around(translator,node,scope,{phase:"inspection",goal:type},run):run();
+}
+function automaticClauseAt(translator, scope, type, name, node, proof, index) {
   const finish = term => {
-    scope.check(term, type);
-    const statement = {kind:"obligation",name,start:node.start,end:node.end,keyword:node};
-    translator.onStep?.({statement,next:null,goal:new Goal(type,scope),proof:term});
-    translator.reference(scope,{name,start:node.start,end:node.end,role:"coherence obligation",expansionIndex:index+1,
+    scope.check(term, type,proof?.body?.at(-1)??proof?.value??node);
+    const statement = {...node,kind:"obligation",name,keyword:node};
+    scope.unit.recordStep({statement,next:null,goal:new Goal(type,scope),proof:term});
+    translator.reference(scope,{...node,name,role:"coherence obligation",expansionIndex:index+1,
       description:`Checked clause for ${name}${proof ? " from the explicit obligation" : " from h-level evidence"}.`},term);
     return term;
   };
@@ -513,9 +576,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
       throw scope.unit.locate(Error(`Cannot generate ${name}: import hlevels and supply h-level evidence for the motive, or give the clause explicitly.`), node);
     const path = at.nf(target);
     if (path.tag !== "Path") throw Error(`The obligation ${name} is not a path clause.`);
-    const locals = [];
-    for (const bound of at.env.values()) if (translator.localSources.has(bound)
-      && !(bound.tag === "Var" && at.context.has(bound.name))) locals.push({term:bound,type:at.infer(bound).type});
+    const locals = at.localDefinitions().map(term=>({term,type:at.infer(term).type}));
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};
     });
@@ -523,6 +584,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
       {instantiate:true, rules:orderedHLevelRules(translator.simpRegistry)});
     try { return pathEvidence(search, path, at); }
     catch (error) {
+      propagateElaborationStop(error);
       if (!(error instanceof HLevelUnproved)) throw error;
       throw scope.unit.locate(Error(`Cannot generate ${name}: ${translator.shown(error.chain.at(-1).type)} must be ${error.chain.at(-1).level === 0 ? "a proposition" : `of h-level ${error.chain.at(-1).level}`}; ${error.reason}. Give checked h-level evidence, or an explicit obligation.`), node);
     }
@@ -538,11 +600,12 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
 export const selfReference = name => `${name} is being defined: it can call itself only on an argument of a constructor that `
   + `its match takes apart, as ${name}(m) in succ(m) => …, when that match on one of its parameters is its whole body.`;
 export function resolveRecursive(translator, node, value, args, scope) {
+  const parameter=index=>value.labels?.[index]??value.params[index];
   const locate = (error, at = node) => scope.unit.locate(error, at);
   // A name that a match statement took apart names its constructor there,
   // but a recursive call means the variable it named.
-  const resolve = name => {
-    const bound = scope.env.get(name), taken = value.destructed?.get(name);
+  const resolve = (name,at) => {
+    const bound = at.env.get(name), taken = value.destructed?.get(name);
     return taken && bound === taken.alias ? T.variable(taken.variable) : bound;
   };
   const example = `as ${value.source}(m) in succ(m) => …`;
@@ -560,6 +623,17 @@ export function resolveRecursive(translator, node, value, args, scope) {
   }
   if (!args || args.length !== value.params.length)
     throw locate(Error(`${value.source} takes ${value.params.length} argument${value.params.length === 1 ? "" : "s"}.`));
+  // A recipe can change the notation or scope of a structural argument.
+  // Enter it once, checking the receiver, and retain that scope for the
+  // fixed-argument test, structural spine and generalized arguments alike.
+  const scoped=args.map(node=>{
+    let current=scope,entered;
+    while((entered=enterExpressionScope(translator,current,node)))({node,scope:current}=entered);
+    if(current.unit.bindingAdapter&&node.kind!=="passedParameter")
+      node=lowerBindingReferences(node,current.unit.bindingAdapter,current.slotOutcomes);
+    return {node,scope:current};
+  });
+  args=scoped.map(argument=>argument.node);
   args.forEach((arg, index) => {
     // A generalized parameter takes the call's own value.
     if (index === value.index || value.generalized?.[index]) return;
@@ -569,34 +643,34 @@ export function resolveRecursive(translator, node, value, args, scope) {
     if (arg.kind === "passedParameter") {
       if (value.generalizable[index] && value.dependent[index]) {
         value.state.varied = true;
-        throw locate(Error(`A recursive call of ${value.source} changes ${value.params[index]}: the match needs its motive over its other parameters.`), arg);
+        throw locate(Error(`A recursive call of ${value.source} changes ${parameter(index)}: the match needs its motive over its other parameters.`), arg);
       }
       return;
     }
-    const current = arg.kind === "name" ? scope.env.get(arg.name) : undefined, taken = arg.kind === "name" ? value.destructed?.get(arg.name) : undefined;
+    const current = arg.kind === "name" ? scoped[index].scope.env.get(arg.name) : undefined, taken = arg.kind === "name" ? value.destructed?.get(arg.name) : undefined;
     const unchanged = current !== undefined && (current === value.fixed[index]
       || taken && current === taken.alias && value.fixed[index]?.tag === "Var" && value.fixed[index].name === taken.variable);
     // One the motive may quantify over, changed, or whose type mentions the
     // matched parameter, sends the match to its motive over the others.
     if (value.generalizable[index] && (!unchanged || value.dependent[index])) {
       value.state.varied = true;
-      throw locate(Error(`A recursive call of ${value.source} changes ${value.params[index]}: the match needs its motive over its other parameters.`), arg);
+      throw locate(Error(`A recursive call of ${value.source} changes ${parameter(index)}: the match needs its motive over its other parameters.`), arg);
     }
     if (!unchanged)
       throw locate(Error(value.fixed[index]?.tag === "Var"
-        ? `A recursive call of ${value.source} passes ${value.params[index]} unchanged: the type of the matched ${value.params[value.index]} depends on it.`
-        : `A recursive call of ${value.source} passes the universe parameter ${value.params[index]} unchanged.`), arg);
+        ? `A recursive call of ${value.source} passes ${parameter(index)} unchanged: the type of the matched ${parameter(value.index)} depends on it.`
+        : `A recursive call of ${value.source} passes the universe parameter ${parameter(index)} unchanged.`), arg);
   });
   // The argument: a position, applied to its arity's arguments, and a path
   // position at each of its dimensions, f(q(y) @ i): that is an element.
-  const target = args[value.index], dimensions = [];
+  const target = args[value.index],targetScope=scoped[value.index].scope, dimensions = [];
   let element = target;
   while (element.kind === "pathApply") { dimensions.unshift(element.right); element = element.left; }
   // Its application spine, curried or not: p(0, 0) and p(0)(0) alike.
   const applied = [];
   let head = element;
   while (head.kind === "call") { applied.unshift(...head.args); head = head.fn; }
-  const bound = head.kind === "name" ? resolve(head.name) : null;
+  const bound = head.kind === "name" ? resolve(head.name,targetScope) : null;
   const position = bound?.tag === "Var" ? value.results.get(bound.name) : undefined;
   if (!position)
     throw locate(Error(`The recursive call of ${value.source} is not on an argument of the matched constructor: only structural recursion, ${example}.`), target);
@@ -614,16 +688,16 @@ export function resolveRecursive(translator, node, value, args, scope) {
   for (const arg of applied) {
     const pi = scope.nf(scope.infer(term).type);
     if (pi.tag !== "Pi") throw locate(Error(`${head.name} takes fewer arguments.`), arg);
-    term = T.app(term, translator.term(arg, scope, pi.domain));
+    term = T.app(term, translator.term(arg, targetScope, pi.domain));
   }
-  for (const dimension of dimensions) term = T.at(term, translator.interval(dimension, scope.env));
+  for (const dimension of dimensions) term = T.at(term, translator.interval(dimension, targetScope));
   // A recursive result quantifies over the generalized parameters, in their
   // order: the call's values for them, each at its type there.
   if (value.generalized) args.forEach((arg, index) => {
     if (!value.generalized[index]) return;
     const pi = scope.nf(scope.infer(term).type);
     if (pi.tag !== "Pi") throw locate(Error(`Internal elaboration error: the recursive result of ${value.source} takes fewer hypotheses.`), arg);
-    term = T.app(term, arg.kind === "passedParameter" ? value.fixed[index] : translator.term(arg, scope, pi.domain));
+    term = T.app(term, arg.kind === "passedParameter" ? value.fixed[index] : translator.term(arg, scoped[index].scope, pi.domain));
   });
   value.state.called = true;
   translator.reference(scope, node, term);

@@ -3,9 +3,14 @@
 // a lexical position in it. Both are immutable: binding returns a new scope,
 // and a freeze replay elaborates in a derived unit. Neither grants
 // authority: every term they help build is checked.
+import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
-import {freeNames,onFace} from "./core.mjs";
+import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
+import {ObservationFrame} from "./observations.mjs";
+import {BindingAdapter,SlotOutcomes,bindingResolution} from "../cubist/bindings.mjs";
+import {substitutionFrame} from "../cubist/source-syntax.mjs";
+import {diagnosticCode} from "../diagnostics.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -16,26 +21,54 @@ export const emptyRewriteWork = () => ({
 // collects none. `work` counts one declaration's rewriting search. `fuel`
 // (fuel.mjs) is spent by every kernel query at a scope of this unit: a
 // declaration's fuel, or a tactic search's, which counts toward it too.
-// `searches` records what the declaration's searches spent. `declaring` names
-// the declaration being elaborated, for a message about its own name.
+// `searches` records what the declaration's searches spent. `declaring` holds
+// the declaration's name and kind, for scope labels and self-reference policy.
 export class SourceUnit {
-  constructor({checker,source="",moduleName="source",simpRegistry,references=null,
+  constructor({checker,source="",sources=null,moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
-    names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null}) {
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,freezeSuggestions,work,fuel,searches,names,declaring});
+    names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null,bindingAdapter=null,
+    scopePoints=null,contextOwner=null,scopeUnavailable=null,blameSite=null}) {
+    observations ??= new ObservationFrame({reference:references,step:steps});
+    Object.assign(this,{checker,source,sources,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable,blameSite});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
   declaration(limits=DECLARATION_FUEL) {
-    return this.with({work:emptyRewriteWork(),searches:emptySearchRecord(),
+    return this.with({work:emptyRewriteWork(),searches:emptySearchRecord(),observations:this.observations.declaration(),
+      contextOwner:this.scopePoints?.owner(this.moduleName)??null,
       fuel:new SearchFuel("The declaration's elaboration",limits,{declaration:true})});
   }
   with(changes) {return new SourceUnit({...this,...changes});}
-  // Report an error at a source node of this unit, unless it has a position.
+  recordReference(...record) {this.observations.recordTo("reference",this.references,...record);}
+  recordStep(record) {this.observations.recordTo("step",this.steps,record);}
+  text(node) {
+    const site=substitutionFrame(node)?.site??node;
+    const module=site.origin?.module??site.module??this.moduleName;
+    const source=module===this.moduleName?this.source:this.sources?.[module];
+    return source!==undefined&&Number.isInteger(site.start)&&Number.isInteger(site.end)
+      ?source.slice(site.start,site.end):null;
+  }
+  // Locate once in a source-qualified context. A copied expression reports
+  // at its caller and retains the authored span as a related location; no
+  // catch may interpret a producer's offsets in the consumer's source.
   locate(error,node) {
-    if(Number.isInteger(error.offset)||!Number.isInteger(node?.start))return error;
-    error.offset=node.start;
-    error.sourceEnd=node.end;
+    propagateElaborationStop(error);
+    if(error.diagnostic)return error;
+    const origin=error.origin??node?.origin;
+    const span=site=>site&&Number.isInteger(site.start)?{module:site.module??site.origin?.module??this.moduleName,
+      start:site.start,end:site.end}:null;
+    const copied=origin?.expansion?.findLast(frame=>frame.kind!=="generation"&&frame.site.module===this.moduleName);
+    const authored=span(error.origin??(Number.isInteger(error.offset)?{start:error.offset,end:error.sourceEnd}:node));
+    const primary=span(this.blameSite??copied?.site)??authored;
+    if(!primary)return error;
+    const related=[authored,...(origin?.expansion??[]).map(frame=>frame.site)].map(span)
+      .filter(site=>site&&(site.module!==primary.module||site.start!==primary.start||site.end!==primary.end));
+    error.diagnostic={code:diagnosticCode(error.message),parameters:error.parameters??{},
+      kind:error.kind??"elaboration",primary,related:[...new Map(related.map(site=>[JSON.stringify(site),site])).values()]};
+    const located=Number.isInteger(error.offset);
+    error.offset=primary.module===this.moduleName?primary.start:undefined;
+    error.sourceEnd=primary.module===this.moduleName?primary.end:undefined;
+    if(located||!Number.isInteger(error.offset))return error;
     const before=this.source.slice(0,error.offset);
     const line=before.split("\n").length;
     const column=error.offset-(before.lastIndexOf("\n")+1)+1;
@@ -71,13 +104,90 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map()) {
-    Object.assign(this,{unit,context,env,dimensions});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=undefined,inheritedDefinitions=[]) {
+    if(lexical===undefined) {
+      lexical=null;
+      if(unit.scopePoints)try {lexical=unit.scopePoints.sourceContext(env);}
+      catch(error) {unit=unit.with({scopeUnavailable:error.message});}
+    }
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical,inheritedDefinitions});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
-  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions);}
-  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions);}
+  with({unit=this.unit,context=this.context,env=this.env,dimensions=this.dimensions,
+    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence,lexical=this.lexical,
+    inheritedDefinitions=this.inheritedDefinitions}) {
+    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical,inheritedDefinitions);
+  }
+  withUnit(unit) {return this.with({unit});}
+  withEnv(env) {return this.with({env});}
+  withSlotOutcomes(slotOutcomes) {return this.with({slotOutcomes});}
+  // Definition evidence is inferred only when a search requests it. Context
+  // variables are already enumerated by that search and must not be repeated.
+  localDefinitions() {
+    if(!this.localSources.size)return this.inheritedDefinitions;
+    return [...this.inheritedDefinitions,...[...this.env].flatMap(([key,value])=>
+      this.localSources.has(key)&&!(value.tag==="Var"&&this.context.has(value.name))?[value]:[])];
+  }
+  // A foreign rule inherits the proof context, not the caller's lexical
+  // names. Its binders and openings cannot hide caller definition evidence.
+  enterLexicalBody() {
+    return this.with({inheritedDefinitions:this.localDefinitions(),localSources:new Map()});
+  }
+  // Evidence belongs to the checked model, independently of aliases used
+  // to display or open it. A reserved or refused projection grants nothing.
+  modelEvidence(model,type=null) {
+    if(!isTerm(model))return this;
+    if(!this.checker.theories?.size)return this;
+    if(this.evidence.some(e=>e.model===model||model.tag==="Var"&&e.model.tag==="Var"&&e.model.name===model.name))return this;
+    let head=type??this.infer(model).type;
+    const arguments_=[];
+    while(head?.tag==="App"||head?.tag==="LApp") {arguments_.unshift(head);head=head.fn;}
+    const record=head?.tag==="DefRef"?this.checker.theories.get(head.name):null;
+    if(!record)return this;
+    const adapter=new BindingAdapter(this.checker.compilationBindings.table),added=[];
+    for(const field of record.fields.filter(field=>field.kind==="evidence")) {
+      const projection=this.env.get(adapter.key(field.projectionId));
+      if(projection?.tag!=="DefRef")continue;
+      let term=projection;
+      for(const argument of arguments_)term=argument.tag==="LApp"?T.levelApply(term,argument.level):T.app(term,argument.arg);
+      const checked=this.infer(T.app(term,model));
+      added.push({term:checked.term,type:checked.type,model,dependencies:[record.modelId,field.projectionId]});
+    }
+    return added.length?this.with({evidence:[...this.evidence,...added]}):this;
+  }
+  refineEvidence(values) {
+    if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;
+    const replace=term=>[...values].reduce((term,[name,value])=>substituteTerm(term,name,value),term);
+    return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)})),
+      inheritedDefinitions:this.inheritedDefinitions.map(replace)});
+  }
+  sourceBinding(name,value,record,source=null) {
+    // Retained/query introductions already own an ID without an observer.
+    record??=this.unit.bindingAdapter?.bindingForKey(name);
+    // Keep an exact value for an outer binding even after its public label
+    // is shadowed. These private aliases never introduce source visibility.
+    const key=record?new BindingAdapter(this.checker.compilationBindings.table).key(record.id):name;
+    const scope=this.aliases(key===name?[[name,value]]:[[name,value],[key,value]]);
+    if(!record&&!source)return scope;
+    const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
+    const label=record?.label??source?.name??name;
+    // Execution keys may differ even when a source label is shadowed.
+    // Keep the old receipt for refinement, but revoke its search visibility.
+    for(const [key,entry] of localSources)if(entry.name===label)localSources.delete(key);
+    if(record) {
+      // Remember the introduction's refinement behavior even after shadowing.
+      // Opened-member receipts have no source-local metadata and stay distinct.
+      const receipt=Object.freeze({binding:record,local:!!source});
+      for(const at of new Set([name,key]))sourceBindings.set(at,receipt);
+    }
+    // Only the introduced key is a semantic local. An identity receipt must
+    // not add evidence or keep a shadowed let visible to proof search.
+    if(source)localSources.set(name,Object.freeze({...source,key:name}));
+    const lexical=record&&record.label!=="_"&&scope.lexical
+      ?scope.lexical.bind(record.label,bindingResolution(record.id)):scope.lexical;
+    return scope.with({sourceBindings,localSources,lexical});
+  }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
   // source as in the types of the context. On a face of more than one
@@ -87,19 +197,33 @@ export class Scope {
     const ends=new Map(face[0].map(literal=>[literal.slice(0,literal.lastIndexOf(":")),literal.endsWith(":1")?1:0]));
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
-    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions);
+    return this.with({context:new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,
+      inheritedDefinitions:this.inheritedDefinitions.map(term=>onFace(term,face)),
+      evidence:this.evidence.map(e=>({...e,term:onFace(e.term,face),type:onFace(e.type,face),model:onFace(e.model,face)}))});
   }
   alias(name,value) {
-    const env=new Map(this.env);
-    hide(env,name);
-    return this.withEnv(env.set(name,value));
+    return this.aliases([[name,value]]);
+  }
+  // Refinement changes a value at the same lexical binding. Introduction
+  // (alias/sourceBinding) must never inherit a shadowed binder's identity.
+  refine(name,value) {
+    if(!this.env.has(name))throw new TypeError("Cannot refine an absent binding.");
+    const env=new Map(this.env).set(name,value),record=this.sourceBindings.get(name)?.binding;
+    if(record)env.set(new BindingAdapter(this.checker.compilationBindings.table).key(record.id),value);
+    return this.withEnv(env);
   }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {
+    pairs=[...pairs];
     if(!pairs.length)return this;
     const env=new Map(this.env);
-    for(const [name,value] of pairs){hide(env,name);env.set(name,value);}
-    return this.withEnv(env);
+    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
+    for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);localSources.delete(name);}
+    // Public aliases (including model openings) also shadow retained locals
+    // whose execution keys are private identities.
+    const labels=new Set(pairs.map(([name])=>name));
+    for(const [key,entry] of localSources)if(labels.has(entry.name))localSources.delete(key);
+    return this.with({env,sourceBindings,localSources});
   }
   // The source name bound here that hides the declaration `name`, or null.
   hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}
@@ -118,14 +242,14 @@ export class Scope {
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
-    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions);
+    return this.with({context:new Map(this.context).set(name,type)}).modelEvidence(T.variable(name),type);
   }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
     if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
-    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index));
+    return this.with({dimensions:new Map(dimensions).set(name,index)});
   }
   // A name from the unit's supply that nothing here binds: a scope built
   // apart from elaboration may bind names another supply gave.
@@ -138,7 +262,11 @@ export class Scope {
   // Each kernel query spends a query of this unit's fuel before it is asked.
   spend(kind,amount=1) {this.unit.fuel?.spend(kind,amount);}
   infer(term) {this.spend("queries");return this.checker.infer(term,this.context,this.dimensions);}
-  check(term,type) {this.spend("queries");return this.checker.check(term,type,this.context,this.dimensions);}
+  check(term,type,site=null) {
+    this.spend("queries");
+    try {return this.checker.check(term,type,this.context,this.dimensions);}
+    catch(error) {throw site?this.unit.locate(error,site):error;}
+  }
   // A speculative check: {ok:true,term}, or {ok:false,failure,error} with
   // failure "mismatch", "budget" or "deadline". No caller reads the message.
   attempt(term,type) {this.spend("queries");return this.checker.attempt(term,type,this.context,this.dimensions);}

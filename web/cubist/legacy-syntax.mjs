@@ -1,5 +1,4 @@
 import { tokenize, parse, languageKeywords, generatedNames } from "./parser.mjs";
-import { snake } from "./theories.mjs";
 import { currentTransportSyntax } from "./legacy-transport.mjs";
 import { currentLiftSyntax } from "./legacy-lift.mjs";
 
@@ -118,7 +117,7 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     if (!constructorOwners.has(constructor.name.text)) constructorOwners.set(constructor.name.text, type);
   const aliases = new Map(declarations.filter(item => item.kind === "def")
     .map(item => [item.name.text, item.value ?? (item.body?.length === 1 ? item.body[0].value : null)]));
-  const parentLabel = parent => parent.label?.text ?? snake(parent.name.text);
+  const parentLabel = parent => parent.label?.text ?? parent.name.text.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
   const declarationType = item => (item.params ?? []).reduceRight((body, param) =>
     ({ kind: "forall", name: param.name, domain: param.type ?? param.bound, body, implicit: param.implicit }), item.type);
   const fieldCache = new Map();

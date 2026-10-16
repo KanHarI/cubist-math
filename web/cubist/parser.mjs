@@ -1,4 +1,5 @@
 // A small mathematical proof language. Parsing never evaluates JavaScript.
+import {parameterGroup} from "./telescopes.mjs";
 
 // The binary operators a notation can bind (theories.mjs, L2.10b); a
 // notation can bind unary -x too. x > y and x >= y are y < x and y <= x.
@@ -64,6 +65,14 @@ export const languageKeywords = new Set([
 // Universe constants are refused separately by name().
 export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]);
 
+// The explicit late-lookup allowlist for resolved source expressions. Other
+// keywords and generated member labels are not expression-level builtins.
+// Universe spellings are still validated by the translator when consumed.
+export function reservedReferences(source) {
+  return [...new Set([...builtinNames,"Unit","Void","tt","typed","left","right","path","fill","at","on",
+    ...tokenize(source).map(token=>token.text).filter(name=>/^U+[0-9]+$/.test(name))])];
+}
+
 // `bindable` lists reserved words a historical source may still bind
 // (web/cubist/legacy-syntax.mjs).
 export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false, historicalOver = false } = {}) {
@@ -126,8 +135,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         if (bound && !universes)
           throw Object.assign(new Error("A constructor's arguments are terms; bind universes in the declaration's header."),
             { offset: names[0].start });
-        const group = params.length;
-        for (const p of names) params.push({ name: p, ...(bound ? { bound } : { type }), group });
+        params.push(...parameterGroup(names,bound?{bound}:{type},params.length));
         if (peek() !== ",") break;
         take(",");
       }
@@ -1377,7 +1385,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
           ...(keyword ? { keyword } : {}), start, end: take(";").end });
       }
       const end = take("}").end;
-      declarations.push({ kind: "theory", name: n, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
+      declarations.push({ kind: "theory", name: n, header, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
         params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type, group: p.group })), parents, fields, start: t.start, end });
       items.push(declarations.at(-1));
       continue;

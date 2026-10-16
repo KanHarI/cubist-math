@@ -1,0 +1,25 @@
+// control-recursion (control): inherited recursive operations and initial-model clients compute.
+
+import hlevels;
+import nat;
+theory T(U < UU0) {
+  M : set U;
+  c : M;
+  op(x : M) : M;
+  def iter(n : Nat) : M := match n {
+    zero => c;
+    succ(k) => op(iter(k));
+  };
+}
+
+theory Child(U < UU0) extends T {}
+
+initial N : Child(U0);
+
+def inherited(S : Child(U0)) : S.iter(zero) = S.c {
+  rfl;
+}
+
+def initial_computation : N.model.iter(zero) = N.c {
+  rfl;
+}
