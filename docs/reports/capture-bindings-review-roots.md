@@ -537,3 +537,19 @@ The display sweep again renders 2,919 declarations in 45 modules without
 failure. The last full suite, browser and mutation gates remain recorded at
 `39a2a4f0`; this follow-up changes only display grouping. Request a focused
 Claude delta verification, without reopening the already-clean CB5 audit.
+
+
+## CB5 external review, round 4 — clean
+
+Claude reviewed `57a1b9c9` against `39a2a4f0` and found no actionable issues.
+The extra parentheses are gone and the required grouping remains. All 40
+changed corpus-view lines differ only in parentheses; existing atom callers
+also pass the reviewer's binding round trips. A fresh 45-module view dump has
+no errors. The standalone negation fixture lacks its notation inventory, so
+that probe was inconclusive; negation output in the corpus matches the earlier
+base. The 10 binding-display tests pass independently.
+
+Stop at round 4. Full-suite/browser/mutation validation remains the recorded
+run at `39a2a4f0`; the rendering-only follow-up has 27 passing printer tests,
+the complete display sweep and clean external verification. CB5 is ready;
+CB6 contextual sessions and CB7 retirement continue in separate PRs.
