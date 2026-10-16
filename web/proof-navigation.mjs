@@ -17,7 +17,8 @@ export function proofReturnURL(key) {
   if (!saved?.proof) return null;
   const url = new URL("proof.html", location.href);
   // A source opened by its path returns there.
-  if (saved.file) url.searchParams.set("file", saved.file);
+  if (saved.example) url.searchParams.set("example", "1");
+  else if (saved.file) url.searchParams.set("file", saved.file);
   else url.searchParams.set("proof", saved.proof);
   url.searchParams.set("restore", key);
   return url.href;

@@ -410,3 +410,146 @@ internal equal-label binders retain distinct IDs and print without capturing
 globals. A 24-file before/after comparison preserves verdicts, types and
 output modulo the intended internal-label changes. The source head and full
 validation remain unchanged. Stop at round 2; no speculative fixes follow.
+
+
+## CB5 external review, round 1 — diagnosis before fixes
+
+Claude reviewed `791f5e9e` against `1670411c`. Six actionable findings repeat
+identity reconstruction and source ownership defects from earlier rounds.
+The existing full suite, corpus, browser and mutation gates pass, but do not
+cover these display and navigation cases. Before edits, the fixes are grouped
+by the missing contracts:
+
+- Formatting tokens must be fresh against every raw spelling in the retained
+  graph, not only binder labels. Member and named-argument labels cannot be
+  mistaken for an identity placeholder. Deferred references must use their
+  slot ID's marker, including references with member paths. Display aliases
+  belong to lexical scopes; disjoint scopes need not rename each other's
+  binders. Reuse the existing bounded traversal, scope mapper and ID maps.
+- Publication ownership and authored location are different facts. Interleave
+  families by the existing publication owner, without a member-offset test.
+  Keep the declaring module used for outputs/imports separate from a qualified
+  definition site used for navigation and documentation. Checked and blocked
+  generated symbols must consume the same site helper. Do not repurpose
+  sourceModule: that would hide locally declared inherited symbols.
+- A closing kernel check must carry its source site just as a closing proof
+  check does. Synthesized exact statements must retain their value's origin.
+  Locate at these boundaries, without changing unrelated import-failure
+  messages through a blanket declaration-catch fallback. Share the existing
+  substitution-frame lookup used by source text and written references.
+
+Controls will cover real field/placeholder collisions, disjoint and overlapping
+scopes, nested slot correspondence, local/imported derived-family ordering,
+short and aligned long clients, blocked inherited symbols, and local/imported
+closing-check diagnostics. No new resolver, registry or compatibility mode is
+needed. The reviewer's scratch prototypes are evidence, not patches to copy.
+
+
+The fixes now use those contracts. Formatting freshness scans the retained
+syntax graph once; aliases use the existing lexical context and simultaneous
+binders. Slot references and binders share markers by ID. Family placement no
+longer compares offsets. Checked and blocked symbols share a qualified
+`definitionSite`, leaving declaring-module classification intact. Helper
+statements retain the value origin; inferred closing checks retain a fallback
+site without changing the declaration catch. The substitution-frame lookup
+has one implementation.
+
+All 32 focused controls pass. Final validation passes 1,247 of 1,257 tests,
+with ten CB6 TODOs and zero failures; all 3,857 canonical checks pass. All four
+production mutations are killed. The browser suite passes, including inherited
+generated definition navigation. The display sweep covers all 2,919 retained
+declarations in 45 modules without failures. Source/tests stayed frozen through
+these gates. Round 2 reviews this delta; CB5 remains draft until review is clean.
+
+
+## CB5 external review, round 2 — diagnosis before fixes
+
+Claude reviewed `ff7bc7a9` against `791f5e9e`. The six previous fixes hold;
+alias annotations fall from 1,341 to 86 across the same 45-module sweep.
+Three actionable findings remain, including one regression in scoped alias
+allocation. Compare them with the earlier rounds before changing code:
+
+- Operand grouping is a distinct syntax-preservation obligation. Parentheses
+  around an entire binary expression do not delimit a left operand's binder
+  body. Reuse the renderer's existing `atom` boundary for infix/path operands
+  and calculation left sides, instead of adding a second precedence table or
+  special cases for individual quantifiers. Round-trip controls must include
+  forall, exists, grouped binders, lambdas and path lambdas, plus a checked
+  client that distinguishes the changed proposition.
+- Alias allocation repeats the incomplete-scope-description root: a traversal
+  callback's current scope is not the full set of binders sharing that node's
+  regions. Read every binder from the shared `scopesOf` schema before choosing
+  a label. This may add a few aliases between disjoint regions of one node;
+  it retains reuse across separate nodes without a second visibility model.
+  Cover induction index/hypothesis overlap and clause coordinates, as well as
+  the existing disjoint-scope and capture controls.
+- Source ownership remains incomplete at a UI consumer. The new definition
+  site fixed the source link, while deep-link highlighting still accepted bare
+  symbol offsets. Make highlighting consume only qualified sites and share
+  definition-site extraction with the link. Qualify local URL offsets, lint
+  and gap sites at their source boundary. A foreign definition can be inspected
+  without highlighting unrelated local text; its source link remains usable.
+
+Remove the unused recordModule text parameter, and describe hidden-local
+markers as hidden by another binder rather than specifically a public
+parameter. These changes need no new registry, resolver or printer framework.
+
+
+The broader grouping control also exposed an older spelling error before
+validation: the frontend renderer emits path lambdas as `<i> body`, while the
+current parser accepts `path i => body`. Correct that producer to the actual
+grammar and cover a checked generated path proof, alongside the path-operand
+round trip. This is the same source-syntax fidelity boundary, not a new mode.
+
+
+The fixes now use those existing boundaries. All 36 focused controls pass,
+including a checked client that distinguishes the original proposition from
+the previously misprinted one. The browser regression confirms that a name-only
+inherited deep link does not highlight a coincident local offset, while its
+source link reaches the authored definition. Full validation passes 1,251 of
+1,261 tests, with ten CB6 TODOs and zero failures; all 3,857 canonical checks
+pass. All four production mutations are killed, and the display sweep renders
+2,919 declarations in 45 modules without failure. Source/tests remained frozen
+through validation. Round 3 reviews this delta; CB5 remains draft until clean.
+
+
+## CB5 external review, round 3 — diagnosis before fixes
+
+Claude reviewed `39a2a4f0` against `ff7bc7a9`. The grouping, overlapping-scope
+and qualified-navigation fixes hold, including adversarial binding round trips
+and the recorded validation. One cosmetic regression remains: `atom` wraps
+expressions that the renderer already parenthesizes, and wraps a transparent
+notation-argument wrapper even when its body is atomic. This adds visible noise
+to generated declarations without changing their binding structure.
+
+This finding is a local omission in the existing renderer's atom classification,
+not a recurrence of identity reconstruction or source ownership. Extend that
+classification to already-delimited forms and delegate transparent notation
+arguments to their body. Keep the binder grouping controls and check the exact
+nested-operand output. No precedence service, display mode or new registry is
+needed. The suggested alias-number separator is a nonblocking style preference;
+existing distinct, binding-faithful labels remain valid, so leave that policy alone.
+
+
+The small renderer change passes all 27 binding-display/generated-view tests,
+including the existing binder round trips and the exact nested-operand control.
+The display sweep again renders 2,919 declarations in 45 modules without
+failure. The last full suite, browser and mutation gates remain recorded at
+`39a2a4f0`; this follow-up changes only display grouping. Request a focused
+Claude delta verification, without reopening the already-clean CB5 audit.
+
+
+## CB5 external review, round 4 — clean
+
+Claude reviewed `57a1b9c9` against `39a2a4f0` and found no actionable issues.
+The extra parentheses are gone and the required grouping remains. All 40
+changed corpus-view lines differ only in parentheses; existing atom callers
+also pass the reviewer's binding round trips. A fresh 45-module view dump has
+no errors. The standalone negation fixture lacks its notation inventory, so
+that probe was inconclusive; negation output in the corpus matches the earlier
+base. The 10 binding-display tests pass independently.
+
+Stop at round 4. Full-suite/browser/mutation validation remains the recorded
+run at `39a2a4f0`; the rendering-only follow-up has 27 passing printer tests,
+the complete display sweep and clean external verification. CB5 is ready;
+CB6 contextual sessions and CB7 retirement continue in separate PRs.

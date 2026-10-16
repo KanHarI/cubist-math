@@ -952,8 +952,9 @@ test("deferred namespace failures keep the same source diagnostic as immediate l
   for(const [index,error] of errors.entries()) {
     assert.equal(error.reason,"Parent, C's parent left_, has no field unknown.");
     const offset=index===0?text.indexOf("left_.unknown"):text.lastIndexOf("left_.unknown");
-    assert.equal(error.errorStart,offset);
-    assert.equal(error.errorEnd,offset+"left_.unknown".length);
+    assert.deepEqual(error.diagnostic.primary,{module:"source",start:offset,end:offset+"left_.unknown".length});
+    assert.equal(error.errorStart,undefined,"a source offset cannot address the pilot module");
+    assert.equal(error.errorEnd,undefined);
   }
 });
 

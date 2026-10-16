@@ -9,6 +9,8 @@ import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
 import {BindingAdapter,SlotOutcomes} from "../cubist/bindings.mjs";
+import {substitutionFrame} from "../cubist/source-syntax.mjs";
+import {diagnosticCode} from "../diagnostics.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -22,12 +24,12 @@ export const emptyRewriteWork = () => ({
 // `searches` records what the declaration's searches spent. `declaring` names
 // the declaration being elaborated, for a message about its own name.
 export class SourceUnit {
-  constructor({checker,source="",moduleName="source",simpRegistry,references=null,steps=null,observations=null,
+  constructor({checker,source="",sources=null,moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
     names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null,bindingAdapter=null,
     scopePoints=null,contextOwner=null,scopeUnavailable=null,blameSite=null}) {
     observations ??= new ObservationFrame({reference:references,step:steps});
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable,blameSite});
+    Object.assign(this,{checker,source,sources,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable,blameSite});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
@@ -39,15 +41,34 @@ export class SourceUnit {
   with(changes) {return new SourceUnit({...this,...changes});}
   recordReference(...record) {this.observations.recordTo("reference",this.references,...record);}
   recordStep(record) {this.observations.recordTo("step",this.steps,record);}
-  // An imported expansion owns its blame site in this unit. Operand scopes
-  // retain their own locations; already located errors keep those positions.
+  text(node) {
+    const site=substitutionFrame(node)?.site??node;
+    const module=site.origin?.module??site.module??this.moduleName;
+    const source=module===this.moduleName?this.source:this.sources?.[module];
+    return source!==undefined&&Number.isInteger(site.start)&&Number.isInteger(site.end)
+      ?source.slice(site.start,site.end):null;
+  }
+  // Locate once in a source-qualified context. A copied expression reports
+  // at its caller and retains the authored span as a related location; no
+  // catch may interpret a producer's offsets in the consumer's source.
   locate(error,node) {
     propagateElaborationStop(error);
-    if(Number.isInteger(error.offset))return error;
-    node=this.blameSite??node;
-    if(!Number.isInteger(node?.start))return error;
-    error.offset=node.start;
-    error.sourceEnd=node.end;
+    if(error.diagnostic)return error;
+    const origin=error.origin??node?.origin;
+    const span=site=>site&&Number.isInteger(site.start)?{module:site.module??site.origin?.module??this.moduleName,
+      start:site.start,end:site.end}:null;
+    const copied=origin?.expansion?.findLast(frame=>frame.kind!=="generation"&&frame.site.module===this.moduleName);
+    const authored=span(error.origin??(Number.isInteger(error.offset)?{start:error.offset,end:error.sourceEnd}:node));
+    const primary=span(this.blameSite??copied?.site)??authored;
+    if(!primary)return error;
+    const related=[authored,...(origin?.expansion??[]).map(frame=>frame.site)].map(span)
+      .filter(site=>site&&(site.module!==primary.module||site.start!==primary.start||site.end!==primary.end));
+    error.diagnostic={code:diagnosticCode(error.message),parameters:error.parameters??{},
+      kind:error.kind??"elaboration",primary,related:[...new Map(related.map(site=>[JSON.stringify(site),site])).values()]};
+    const located=Number.isInteger(error.offset);
+    error.offset=primary.module===this.moduleName?primary.start:undefined;
+    error.sourceEnd=primary.module===this.moduleName?primary.end:undefined;
+    if(located||!Number.isInteger(error.offset))return error;
     const before=this.source.slice(0,error.offset);
     const line=before.split("\n").length;
     const column=error.offset-(before.lastIndexOf("\n")+1)+1;
@@ -201,7 +222,11 @@ export class Scope {
   // Each kernel query spends a query of this unit's fuel before it is asked.
   spend(kind,amount=1) {this.unit.fuel?.spend(kind,amount);}
   infer(term) {this.spend("queries");return this.checker.infer(term,this.context,this.dimensions);}
-  check(term,type) {this.spend("queries");return this.checker.check(term,type,this.context,this.dimensions);}
+  check(term,type,site=null) {
+    this.spend("queries");
+    try {return this.checker.check(term,type,this.context,this.dimensions);}
+    catch(error) {throw site?this.unit.locate(error,site):error;}
+  }
   // A speculative check: {ok:true,term}, or {ok:false,failure,error} with
   // failure "mismatch", "budget" or "deadline". No caller reads the message.
   attempt(term,type) {this.spend("queries");return this.checker.attempt(term,type,this.context,this.dimensions);}

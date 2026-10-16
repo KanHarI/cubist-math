@@ -137,6 +137,8 @@ export function resolutionError(value) {
   const error=value.namespace===undefined?Error(value.message)
     :new UnknownNamespaceMember(value.namespace,value.member,value.description,value.message);
   if(value.origin)Object.assign(error,{origin:value.origin,offset:value.origin.start,sourceEnd:value.origin.end});
+  Object.assign(error,{kind:"binding",parameters:value.namespace===undefined?{}
+    :{namespace:value.namespace,member:value.member,description:value.description}});
   return error;
 }
 export function resolution(value) {
@@ -434,7 +436,8 @@ export class BindingAdapter {
     if (value.tag === "binding") return this.key(value.id);
     if(value.tag==="failure")throw resolutionError(value);
     if (value.tag === "reserved" && this.#reserved.has(value.label)) return value.label;
-    if (value.tag === "missing") throw Error(`Untranslated name: ${value.label}`);
+    if (value.tag === "missing") throw Object.assign(Error(`Untranslated name: ${value.label}`),
+      {kind:"binding",parameters:{label:value.label}});
     throw new TypeError(`A late lookup is not allowed: ${value.label}`);
   }
 }

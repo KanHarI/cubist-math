@@ -533,10 +533,10 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
 // use the same goal and may instead supply a proof block or a whole clause.
 function automaticClause(translator, scope, type, name, node, proof, index) {
   const finish = term => {
-    scope.check(term, type);
-    const statement = {kind:"obligation",name,start:node.start,end:node.end,keyword:node};
+    scope.check(term, type,proof?.body?.at(-1)??proof?.value??node);
+    const statement = {...node,kind:"obligation",name,keyword:node};
     scope.unit.recordStep({statement,next:null,goal:new Goal(type,scope),proof:term});
-    translator.reference(scope,{name,start:node.start,end:node.end,role:"coherence obligation",expansionIndex:index+1,
+    translator.reference(scope,{...node,name,role:"coherence obligation",expansionIndex:index+1,
       description:`Checked clause for ${name}${proof ? " from the explicit obligation" : " from h-level evidence"}.`},term);
     return term;
   };

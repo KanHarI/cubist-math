@@ -2,7 +2,7 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
-import {qualifySource} from "../cubist/source-syntax.mjs";
+import {qualifySource,substitutionFrame} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
@@ -89,7 +89,9 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
+    this.sources=sources;
+    this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
     if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
@@ -141,7 +143,7 @@ export class Translator {
   }
   // A source unit of this translator. translate() makes one per module.
   unit(options={}) {
-    return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
+    return new SourceUnit({checker:this.checker,moduleName:this.moduleName,sources:this.sources,simpRegistry:this.simpRegistry,
       references:this.references,steps:this.onStep,scopePoints:this.scopePoints,freezeSuggestions:this.freezeSuggestions,...options});
   }
   // A subordinate elaborator in an existing scope shares that compilation's
@@ -149,7 +151,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,
+    return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -199,7 +201,8 @@ export class Translator {
     // losing the unchanged-argument permission carried by that value.
     const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
-      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,...(node.bindingId?{bindingId:node.bindingId}: {})});
+      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,
+        ...(node.origin?{origin:node.origin}:{}),...(node.bindingId?{bindingId:node.bindingId}: {})});
     this.reference(scope,{...node,name:label,isBinding:true},term);
     return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
   }
@@ -482,7 +485,7 @@ export class Translator {
       const error=module.locate(duplicateDeclaration(conflict.name),conflict.at);
       this.onDeclarationStart?.(d);
       const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
-        ...sourceFailure(error)};
+        ...sourceFailure(error,module)};
       const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
       const bind=name=>{
         const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
@@ -572,7 +575,7 @@ export class Translator {
           propagateElaborationStop(error);
           refusedUses.add(d.model);
           directives.push({kind:"use",name:`at line ${source.slice(0,d.start).split("\n").length}`,status:"not-translated",
-            ...sourceFailure(error),start:d.start});
+            ...sourceFailure(error,module),start:d.start});
           directives.at(-1).searchFuel=this.fuelRecord(unit);
         }
         unit.fuel.close();
@@ -582,7 +585,7 @@ export class Translator {
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
-        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",...sourceFailure(error),start:d.start}); }
+        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",...sourceFailure(error,module),start:d.start}); }
         finishDirective();
         continue;
       }
@@ -597,7 +600,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
-            ...sourceFailure(error),start:d.start});
+            ...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -615,7 +618,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
-            ...sourceFailure(error),start:d.start});
+            ...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -644,7 +647,7 @@ export class Translator {
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:d.kind,name:d.rule?.text??d.name.text,status:"not-translated",
-            ...sourceFailure(error),start:d.start});
+            ...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -670,7 +673,7 @@ export class Translator {
           directives.push({kind:d.kind,name:d.rule.text,status:"checked",start:d.start});
         } catch(error) {
           propagateElaborationStop(error);
-          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",...sourceFailure(error),start:d.start});
+          directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",...sourceFailure(error,module),start:d.start});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
@@ -726,7 +729,9 @@ export class Translator {
         // The declaration's closing check, and its admission below, are
         // kernel questions like any other, on the declaration's fuel.
         unit.fuel.spend("queries");
-        const checked=this.normalize?this.checker.verify(term):this.checker.infer(term);
+        let checked;
+        try {checked=this.normalize?this.checker.verify(term):this.checker.infer(term);}
+        catch(error) {throw unit.locate(error,d.name);}
         const native=checked.native;
         if(native&&!native.ok)throw Error(`Native cubical check rejected: ${native.error}`);
         if(d.computable) {
@@ -754,7 +759,7 @@ export class Translator {
         publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
-        declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error),
+        declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
           syntax:d});
       }
       declarations.at(-1).rewriteWork={...unit.work};
@@ -770,7 +775,9 @@ export class Translator {
       }
       settle(queue);
     }
-    return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
+    return {declarations,env,directives,
+      ...(this.collectGeneration?{generation:publications.map(group=>({id:group.id,declarations:group.members.map(({theory,generated,...syntax})=>syntax)}))}:{}),
+      publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
       members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,
       ...(group.failedMember?{failedMember:group.failedMember}:{}),cause:group.cause})),simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
@@ -809,7 +816,7 @@ export class Translator {
       // or generator type (initial-models.mjs).
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       unavailable(error);
-      declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error),
+      declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
         syntax:d});
     }
     declarations.at(-1).rewriteWork={...unit.work};
@@ -833,10 +840,10 @@ export class Translator {
   // Substituted fields/helpers keep their written occurrence in an expansion
   // frame. Diagnostics and source edits must read that occurrence together.
   writtenReference(expression,unit) {
-    const frame=expression.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding);
+    const frame=substitutionFrame(expression);
     if(!frame)return null;
     const site=frame.site.module===unit.moduleName?frame.site:null;
-    return {site,text:site?unit.source.slice(site.start,site.end):this.compilationBindings.table.get(frame.binding).label};
+    return {site,text:unit.text(frame.site)??this.compilationBindings.table.get(frame.binding).label};
   }
   localReference(token,scope,missing) {
     const expression=referenceSyntax(token),entered=this.expressionScope(expression,scope);
@@ -869,7 +876,7 @@ export class Translator {
         try {term=this.term(item.value,scope,null);}
         catch(error) {propagateElaborationStop(error);throw unit.locate(error,item);}
         selected.push({term,identity:boundedStateKey(term,null,this.checker.kernel),reverse:item.reverse,
-          sourceText:this.writtenReference(item.value,unit)?.text??unit.source.slice(item.value.start,item.value.end),
+          sourceText:this.writtenReference(item.value,unit)?.text??unit.text(item.value),
           sourceStart:item.start,sourceEnd:item.end});
       }
     }
@@ -1014,7 +1021,7 @@ export class Translator {
     let text=`${keyword} only [${frozen.map(rule=>`${rule.reverse?"<- ":""}${rule.sourceText}`).join(", ")}]`;
     if(first.witnesses?.length)text+=` with [${first.witnesses.map(token=>sourceName(referenceSyntax(token))).join(", ")}]`;
     if(first.at)text+=` at ${sourceName(referenceSyntax(first.at))} as ${bindingStem(first.as)}`;
-    if(first.using)text+=` using ${this.writtenReference(first.using,unit)?.text??unit.source.slice(first.using.start,first.using.end)}`;
+    if(first.using)text+=` using ${this.writtenReference(first.using,unit)?.text??unit.text(first.using)}`;
     text+=";";
     return {start:first.start,end:first.end,
       original:unit.source.slice(first.start,first.end),text};
@@ -1074,7 +1081,7 @@ export class Translator {
       else if(n.kind==="name" && !env.has(n.name)) site=n;
       else site=expressionSite(n);
       if(Number.isInteger(site?.start)) this.reference(scope,{...site,expressionSite:true,
-        role:"language expression",description:`Checked expression: ${unit.source.slice(n.start,n.end).trim()}`},
+        role:"language expression",description:`Checked expression: ${unit.text(n)?.trim()??sourceName(n)??"(generated)"}`},
         result);
     }
     return result;
@@ -1429,7 +1436,7 @@ export class Translator {
         const result=T.pair(expected,first,tr(n.right,T.app(family,first)));
         if(scope.unit.references && Number.isInteger(n.tupleStart) && n.right.syntheticTuplePair) {
           const expand=node=>node.kind==="pair" ? `(${expand(node.left)}, ${expand(node.right)})`
-            : scope.unit.source.slice(node.start,node.end).trim();
+            : scope.unit.text(node)?.trim()??sourceName(node)??"(generated)";
           const expansion=expand(n);
           for(const [name,start] of [["(",n.tupleStart],[")",n.tupleEnd]])
             this.reference(scope,{...n,name,start,end:start+1,role:"tuple macro",expansion,
@@ -1509,7 +1516,7 @@ export class Translator {
       case "proof": {
         const type=tr(n.type,null);
         const term=this.block(n.statements,new Goal(type,scope));
-        const checked=scope.check(term,type);
+        const checked=scope.check(term,type,n.statements.at(-1));
         return scope.ascribe(checked,type);
       }
       default:throw Error(`Untranslated syntax: ${n.kind}`);
@@ -1600,7 +1607,7 @@ export class Translator {
       return made(right.found);
     });
     rewrites.push({side:target,rule:{displayName:`${item.reverse?"<- ":""}${
-      scope.unit.source.slice(item.value.start,item.value.end)||"a rule"}`}});
+      this.writtenReference(item.value,scope.unit)?.text??scope.unit.text(item.value)??"a rule"}`}});
     const next=T.path(scope.fresh("i"),path.family,
       target==="lhs"?changed.after:path.left,
       target==="rhs"?changed.after:path.right);

@@ -15,8 +15,10 @@ const tactics = new Map([
 // A keyword borrows its enclosing syntax's source ownership. Generation can
 // lower authored syntax in place; a copy elaborated in another context cannot
 // own that source, even when inheritance stays within the same module.
+export const ownsSource=(node,module)=>!node.origin||node.origin.module===module
+  &&node.origin.expansion.every(frame=>frame.kind==="generation");
 const ownedSite=(node,site)=>({...site,...(node.origin?{origin:node.origin}:{}),
-  ...(node.synthetic||node.origin?.expansion.some(frame=>frame.kind!=="generation")?{synthetic:true}:{})});
+  ...(node.synthetic||!ownsSource(node,node.origin?.module)?{synthetic:true}:{})});
 
 export function tacticSite(statement) {
   const tactic = tactics.get(statement.kind);

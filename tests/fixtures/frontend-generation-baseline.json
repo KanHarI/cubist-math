@@ -2,39 +2,5 @@
   "observedAt": "d70c07ae01b729804d7422c4b01d0cba0d3a479c",
   "compilerBase": "f0417ee0ee5f824f030069be0e6d1666696de0d1",
   "adoptedFixtures": "1fdc68a5e7da198f2b538dfbaa95e4bad40c97ca",
-  "cases": {
-    "G5": {
-      "phase": "CB5",
-      "observed": {
-        "diagnostics": [
-          {
-            "at": "op : forall x, y : M. M;",
-            "label": "Warning",
-            "text": "W706: x is unused in the body: take it out of the group and write M -> \u2026 for it."
-          },
-          {
-            "at": "op : forall x, y : M. M;",
-            "label": "Warning",
-            "text": "W706: y is unused in the body: take it out of the group and write M -> \u2026 for it."
-          }
-        ],
-        "missing": [],
-        "assumes": []
-      }
-    },
-    "G5-single": {
-      "phase": "CB5",
-      "observed": {
-        "diagnostics": [
-          {
-            "at": "op : forall x : M. M;",
-            "label": "Warning",
-            "text": "W705: x is unused in the body: write M -> \u2026 instead of forall x : M. \u2026."
-          }
-        ],
-        "missing": [],
-        "assumes": []
-      }
-    }
-  }
+  "cases": {}
 }
