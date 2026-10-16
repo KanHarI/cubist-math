@@ -1,14 +1,4 @@
-// Resolved syntax separates a declaration's identity from its source spelling.
-// A reference is not a name: renaming, substitution and source generation must
-// preserve it as syntax, never look it up again or print its binding as source.
-import {rewritten} from "./scopes.mjs";
-
-export function reference(binding, spelling, at = {}) {
-  const {kind: _, name: __, ...site} = at;
-  return {...site, kind: "reference", binding, spelling};
-}
-
-export const referenceKey = node => node.kind === "reference" ? node.binding : node.kind === "name" ? node.name : null;
+export const referenceKey = node => node.kind === "name" ? node.name : null;
 
 // Display provenance is independent of resolution. A structural selection
 // can still name its written receiver in diagnostics after it is moved.
@@ -30,13 +20,4 @@ export function members(node, receiver, fields) {
       ...(node.synthetic ? {synthetic: true} : {})};
   }
   return value;
-}
-
-// The elaborator still has one environment for lexical aliases and source
-// names. Lower identities only at its entry, after syntax transformation.
-// Theory records remain resolved syntax for subsequent derivations.
-export function elaborationSyntax(node) {
-  const {theory, ...syntax} = node;
-  return {...rewritten(syntax, n => n.kind === "reference"
-    ? {...n, kind: "name", name: n.binding} : n), ...(theory ? {theory} : {})};
 }

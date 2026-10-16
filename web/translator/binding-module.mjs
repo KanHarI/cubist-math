@@ -1,11 +1,7 @@
-// The explicit ordinary-module migration entry. Parsing, ordered source
-// resolution and elaboration remain separate; neither admission nor replay
-// may reconstruct a retained declaration's references from destination names.
+// Binding inputs and the single retained-declaration elaboration boundary.
 import {reservedReferences} from "../cubist/parser.mjs";
-import {BindingAdapter,LexicalContext,bindingResolution,reservedResolution,sourceOrigin,failedResolution} from "../cubist/bindings.mjs";
-import {resolveBindingSyntax,lowerBindingSyntax,bindingUses,bindingSyntaxView} from "../cubist/binding-syntax.mjs";
-import {recursionSite} from "./match.mjs";
-import {DeclarationOwnership} from "./declarations.mjs";
+import {BindingAdapter,LexicalContext,bindingResolution,reservedResolution,failedResolution} from "../cubist/bindings.mjs";
+import {lowerBindingSyntax,bindingUses,bindingSyntaxView} from "../cubist/binding-syntax.mjs";
 
 // A source context and its constructor inventory come from one explicit
 // identity-to-value correspondence. The lexical projection may include
@@ -63,34 +59,6 @@ export function sourceNotationInventory(registry,env) {
       return {name:label.slice("\u0000notation ".length),model:model?bindingResolution(model.id):null,
         notation:bindingResolution(value.bindingId)};
     });
-}
-
-export function resolveBindingModule(ast,text,{table,source,imports=new Map(),notations=null,simpSets=null}) {
-  if(ast.imports.length||!(ast.items??ast.declarations).every(d=>d.kind==="def"))
-    throw new TypeError("The binding module entry currently accepts ordinary declarations with explicit imports only.");
-  const inputs=bindingInputs(table,imports,{reserved:reservedReferences(text),notations});
-  let context=inputs.context;
-  const ownership=new DeclarationOwnership();
-  const declarations=ast.declarations.map((declaration,index)=>{
-    const owner=["module",source.module,"declaration",String(index)],label=declaration.name.text;
-    const binding=table.allocate([...owner,"header"],{role:"declaration",label,
-      origin:sourceOrigin({...source,start:declaration.name.start,end:declaration.name.end})});
-    const conflict=ownership.reserve([declaration],declaration);
-    const own=declaration.params.length?declaration.params:declaration.valueParameters??[];
-    const self=recursionSite(declaration,own)?binding:null;
-    const syntax=resolveBindingSyntax(declaration,{table,owner,context,constructors:inputs.constructors,source,self,simpSets});
-    if(!conflict)context=context.bind(label,bindingResolution(binding.id));
-    return {binding,syntax};
-  });
-  return {...inputs,ast,declarations,context};
-}
-
-export function lowerBindingModule(prepared) {
-  const declarations=prepared.declarations.map(({binding,syntax})=>{
-    const tree=lowerBindingSyntax(syntax,prepared.adapter);
-    return {...tree,name:{...tree.name,bindingId:binding.id}};
-  });
-  return {...prepared.ast,items:declarations,declarations};
 }
 
 // A retained declaration is inert syntax plus ownership metadata. It may

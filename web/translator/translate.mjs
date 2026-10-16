@@ -3,7 +3,7 @@
 import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
 import {qualifySource,substitutionFrame} from "../cubist/source-syntax.mjs";
-import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
+import {sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
@@ -442,10 +442,10 @@ export class Translator {
     }
   }
   // Prepared syntax enters the same declaration checking/admission path as
-  // parsed source. Binding-aware producers supply the one identity adapter;
+  // parsed source. Each retained declaration supplies its identity adapter;
   // no printing or second source-resolution pass occurs at this boundary.
-  translateSyntax(ast,source,imported=new Map(),{bindingAdapter=null}={}) {
-    const module=this.unit({source,bindingAdapter});
+  translateSyntax(ast,source,imported=new Map()) {
+    const module=this.unit({source});
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
     const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
@@ -532,7 +532,7 @@ export class Translator {
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
-      const d=retained?.declaration??(queued.generated?elaborationSyntax(queued):queued);
+      const d=retained?.declaration??queued;
       const effects=fileSelectionEffects(d.kind);
       const directiveStart=directives.length;
       const finishDirective=()=>this.onDirective?.(d,directives.length>directiveStart?directives.at(-1):{status:"checked"});
@@ -692,13 +692,13 @@ export class Translator {
         continue;
       }
       if(d.kind==="inductive") {
-        this.inductiveDeclaration(d,module.with({bindingAdapter:retained?.adapter??bindingAdapter}),env,declarations);
+        this.inductiveDeclaration(d,module.with({bindingAdapter:retained?.adapter}),env,declarations);
         settle(queue);
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
       const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind},
-        bindingAdapter:retained?.adapter??bindingAdapter});
+        bindingAdapter:retained?.adapter});
       this.onDeclarationStart?.(d);
       try {
         // A theory's sorts need their evidence's definitions (L2.4).
@@ -1082,8 +1082,6 @@ export class Translator {
       if(operand)return this.term(operand.node,operand.scope,expected);
     }
     if(n.kind==="call")n={...n,fn:resolve(n.fn)};
-    if(n.kind==="reference")n=elaborationSyntax(n);
-    else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
     const result=this.termBody(n,scope,expected);
     if(scope.unit.references) {
       const {env,unit}=scope;
@@ -1424,13 +1422,6 @@ export class Translator {
         const retained=retainedRuleOperation(this,scope,operation.rule,n);
         if(!retained)throw Error(`${sourceName(n.model)??"this value"}.(${n.operator}) is an operation when its rule applies one to its operands, as x ${n.operator} y := f(x, y).`);
         return this.term(retained.node,retained.scope,expected);
-      }
-      // A generated recursive call names this declaration's recursion
-      // directly, independently of a source binder hiding its namespace.
-      case "recursiveCall": {
-        const recursive=env.get(RECURSIVE);
-        if(recursive?.source!==n.fn.name)throw Error(selfReference(n.fn.name));
-        return resolveRecursive(this,n.fn,recursive,n.args,scope);
       }
       case "projection": {
         // p.1 and p.2 are the kernel's projections; the family comes from the

@@ -120,10 +120,10 @@ const targetNames = target => !target ? [] : target.kind === "name" ? [target]
 export const UNBINDING = new Set([
   "transport", "lift", "binary", "binaryNumber", "block", "calc", "call", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
   "initial", "matchStatement", "member", "name", "namedArgument", "negation", "notation", "number", "operatorOf", "over",
-  "pair", "pathApply", "pattern", "print", "projection", "prop", "reference", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
+  "pair", "pathApply", "pattern", "print", "projection", "prop", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "withUnfolding",
   // Built by the translator and the theory expansion.
-  "useScope", "notationReceiver", "notationRule", "boundNotation", "operandAlternatives", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed", "recursiveCall",
+  "useScope", "notationReceiver", "notationRule", "boundNotation", "operandAlternatives", "rawNumeral", "sectionScope", "scoped", "instantiated", "typed",
   // Not syntax: a theory's field records and the shapes of a homomorphism's
   // types, which carry syntax but are never walked as it.
   "evidence", "morphism", "fixed", "carrier", "arrow", "other",

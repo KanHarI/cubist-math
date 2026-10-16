@@ -12,9 +12,33 @@ const root=fileURLToPath(new URL("../",import.meta.url));
 const [destination,...selected]=process.argv.slice(2);
 if(!destination)throw Error("Usage: node tools/frontend-generation-mutations.mjs REPORT.json [ID...]");
 const mutation=(id,file,from,to,test,pattern)=>({id,file,from,to,test,pattern});
-// Mutate the production boundaries of four shared contracts. A missing
+// Mutate current production boundaries of the adopted contracts. A missing
 // site or a broken baseline never counts as a killed mutant.
 const mutations=[
+  mutation("binding-label","web/translator/translate.mjs",
+    "label=node.label??node.text??node.name", "label=name",
+    "frontend-provenance","freshened law and derived parameters"),
+  mutation("alpha-label","web/cubist/binding-syntax.mjs",
+    "label: token.label ?? binderName(token)", "label: adapter.key(token.bindingId)",
+    "frontend-provenance","freshened law and derived parameters"),
+  mutation("derived-telescope","web/cubist/retained-interfaces.mjs",
+    "const tree=interfaceTree(item);", "const tree=interfaceTree({...item,params:item.kind===\"derived\"?[]:item.params});",
+    "frontend-generation","^G11:"),
+  mutation("hom-universe","web/cubist/retained-morphism-artifacts.mjs",
+    "declare(hom,modelParams(),null,sigma", "declare(hom,modelParams(),builtin(\"U0\",origin),sigma",
+    "frontend-universes","generic fixed domains"),
+  mutation("refined-evidence","web/translator/elaboration.mjs",
+    "if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;", "return this;",
+    "frontend-evidence","contextual model evidence remains checked"),
+  mutation("synthetic-provenance","web/cubical-program.mjs",
+    "!node.synthetic && ownsSource(node,name)", "ownsSource(node,name)",
+    "initial-models","generated syntax has local positions"),
+  mutation("lint-interface","web/cubist/lint.mjs",
+    "&& !publicTelescopes.has(node)", "",
+    "frontend-provenance","safe lint preserves"),
+  mutation("explicit-head","web/translator/patterns.mjs",
+    "constructor.dims && fitting[0].head.kind === \"name\"", "constructor.dims",
+    "frontend-generation","explicit path bodies"),
   mutation("reference-spelling","web/cubist/binding-syntax.mjs",
     "const name = adapter.lower(node.resolution, outcomes, options);", "const name = node.spelling;",
     "retained-production","ordinary source and imported inheritance"),

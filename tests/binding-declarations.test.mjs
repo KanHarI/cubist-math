@@ -6,17 +6,38 @@ import {CubicalProgram} from "../web/cubical-program.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
-import {resolveBindingModule,lowerBindingModule,bindingDeclaration,lowerBindingDeclaration} from "../web/translator/binding-module.mjs";
-import {parse} from "../web/cubist/parser.mjs";
-import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {bindingInputs,bindingDeclaration,lowerBindingDeclaration} from "../web/translator/binding-module.mjs";
+import {parse,reservedReferences} from "../web/cubist/parser.mjs";
+import {cloneBindingSyntax,resolveBindingSyntax} from "../web/cubist/binding-syntax.mjs";
+import {bindingResolution,sourceOrigin} from "../web/cubist/bindings.mjs";
+import {recursionSite} from "../web/translator/match.mjs";
+import {DeclarationOwnership} from "../web/translator/declarations.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
 const module=await create();
 const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); } def recurse_ : U0 := Unit;";
 
-// Exercise complete ordinary declarations through the real translator's
-// admission path. This pilot prepares the explicitly migrated family only;
-// the production module resolver moves with the retained families in CB2/3.
+// Prepare fixture artifacts with the syntax resolver; admission and lowering
+// use the same retained-declaration queue as production generators.
+function declarationsFromSource(text,table,imports,{clone=false}={}) {
+  const inputs=bindingInputs(table,imports,{reserved:reservedReferences(text)});
+  const source={revision:table.revision,module:"pilot"},ownership=new DeclarationOwnership(),artifacts=[];
+  let context=inputs.context;
+  const declarations=parse(text).declarations.map((declaration,index)=>{
+    const owner=["fixture",String(index)],label=declaration.name.text;
+    const binding=table.allocate(owner,{role:"declaration",label,
+      origin:sourceOrigin({...source,start:declaration.name.start,end:declaration.name.end})});
+    const parameters=declaration.params.length?declaration.params:declaration.valueParameters??[];
+    let syntax=resolveBindingSyntax(declaration,{table,owner,context,source,constructors:inputs.constructors,
+      self:recursionSite(declaration,parameters)?binding:null});
+    if(clone)syntax=cloneBindingSyntax(syntax,table,[...owner,"clone"]).syntax;
+    if(!ownership.reserve([declaration],declaration))context=context.bind(label,bindingResolution(binding.id));
+    artifacts.push(syntax);
+    return bindingDeclaration(binding,syntax);
+  });
+  return {...inputs,declarations,artifacts};
+}
+
 async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
   assert.deepEqual((await program.check(base,"base")).gaps,[]);
@@ -29,16 +50,14 @@ async function prepared(t,source,{clone=false,destination=new Map()}={}) {
     assert.ok(record,`missing imported declaration identity: ${label}`);
     imports.set(record.id,value);
   }
-  const prepared=resolveBindingModule(parse(source),source,{table,imports,source:{revision:"pilot-1",module:"pilot"}});
-  if(clone)prepared.declarations=prepared.declarations.map(({binding,syntax},index)=>({binding,
-    syntax:cloneBindingSyntax(syntax,table,["module","pilot","clone",String(index)]).syntax}));
-  const {adapter}=prepared,artifacts=prepared.declarations.map(d=>d.syntax);
+  const prepared=declarationsFromSource(source,table,imports,{clone});
+  const {adapter,artifacts}=prepared;
   const env=new Map([...destination,...prepared.env]);
   const checker=Object.create(program.checker);
   checker.bindingName=label=>`pilot__${label}`;
   checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
   const translator=new Translator({checker,normalize:false,moduleName:"pilot",scopePoints:recorder});
-  const result=translator.translateSyntax(lowerBindingModule(prepared),source,env,{bindingAdapter:adapter});
+  const result=translator.translateSyntax({declarations:prepared.declarations},source,env);
   return {program,translator,result,points,table,artifacts,adapter};
 }
 
@@ -51,9 +70,8 @@ test("retained generated declarations enter a mixed source queue with exact refe
     const binding=registry.ofValue(value);if(binding)imports.set(binding.id,value);
   }
   const source="def saved(x : Two) : Two := left_; def broken : Unit := Two; def downstream : Unit := broken;";
-  const resolved=resolveBindingModule(parse(source),source,{table,imports,source:{revision:"generated",module:"pilot"}});
-  const declarations=resolved.declarations.map(({binding,syntax})=>bindingDeclaration(binding,syntax,
-    {generated:{theory:"T",family:"base",role:"make"}}));
+  const resolved=declarationsFromSource(source,table,imports);
+  const declarations=resolved.declarations.map(declaration=>({...declaration,generated:{theory:"T",family:"base",role:"make"}}));
   assert.doesNotThrow(()=>snapshotSyntax(declarations),"the queue contains inert syntax, not adapters or handles");
   const serialized=JSON.parse(JSON.stringify(declarations));
   const before=parse("def left_ : Two := right_;").declarations;
@@ -65,7 +83,7 @@ test("retained generated declarations enter a mixed source queue with exact refe
   const result=translator.translateSyntax({declarations:[...before,...serialized,...after]},source,env);
   assert.deepEqual(result.declarations.filter(d=>d.status==="not-translated").map(d=>d.name),["broken","downstream"]);
   assert.equal(result.env.get("downstream").blockedBy,"pilot__broken");
-  assert.equal(result.env.get(resolved.adapter.key(resolved.declarations[1].binding.id)),result.env.get("broken"));
+  assert.equal(result.env.get(resolved.adapter.key(resolved.declarations[1].name.bindingId)),result.env.get("broken"));
   const scope=new Scope(translator.unit(),new Map(),result.env);
   const actual=translator.term(parse("saved(right_)",true),scope);
   const originalScope=new Scope(translator.unit(),new Map(),env);
