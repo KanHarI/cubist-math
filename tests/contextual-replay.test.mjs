@@ -71,7 +71,12 @@ test("replayed recursive calls keep structural permissions and cannot change a s
   await query(session,"typeof f(k, m)","type","Nat");
   await query(session,"f(n, m)","error");
   await query(session,"f(k, zero)","error");
+  await query(session,"typeof (fun (x : Nat) => x)","type","Nat -> Nat");
+  await query(session,"let identity := fun (x : Nat) => x","defined");
+  await query(session,"typeof identity(f(k, m))","type","Nat");
+  await query(session,"let invalid : Unit := f(k, m)","error");
   await query(session,"typeof f(k, m)","type","Nat");
+  assert.equal(session.accepted.length,1);
 });
 
 test("universe parameters and interval coordinates remain available by identity",async t=>{
@@ -358,4 +363,38 @@ def f(n : N) : N {
   assert.deepEqual(result.gaps,[]);
   await query(at(program,source,"f(k)"),"typeof f(k)","type","N");
   await query(at(program,source,"f(k)"),"typeof f(n)","error");
+});
+
+
+test("nested induction queries distinguish the inner and outer hypotheses",async t=>{
+  const fixture=scenario("nested-induction"),{program,result}=await setup(t,fixture.source);
+  assert.deepEqual(result.gaps,[]);
+  const session=at(program,fixture.source,fixture.marker);
+  await query(session,fixture.sessions[0].entry,"value");
+  await query(session,fixture.sessions[1].entry,"error");
+  await query(session,"let sum := add(ih, inner_ih)","defined");
+  await query(session,"typeof sum","type","Nat");
+});
+
+test("overlapping wildcard instances retain different refinements through query history",async t=>{
+  const fixture=scenario("branch-instance-set"),{program,result}=await setup(t,fixture.source);
+  assert.deepEqual(result.gaps,[]);
+  const start=fixture.source.indexOf(fixture.marker)+fixture.marker.indexOf("zero;");
+  const selected=[...program.scopePoints.values()].filter(point=>point.origin.module==="main"
+    &&point.origin.start===start&&point.origin.end===start+4&&point.phase==="expression");
+  assert.equal(selected.length,2);
+  const verdicts=[];
+  for(const point of selected) {
+    const session=new ContextualSession(program,point.id);
+    t.after(()=>session.dispose());
+    await query(session,"typeof (fun (x : Nat) => x)","type","Nat -> Nat");
+    await query(session,"let identity := fun (x : Nat) => x","defined");
+    await query(session,"typeof identity(a)","type","Nat");
+    await query(session,"let invalid : Unit := a","error");
+    await query(session,"typeof identity(a)","type","Nat");
+    assert.equal(session.accepted.length,1);
+    const [answer]=await session.run("typed(a = zero, refl(a))");
+    verdicts.push(answer.kind);
+  }
+  assert.deepEqual(verdicts.sort(),["error","value"],"the written wildcard denotes two distinct semantic contexts");
 });

@@ -21,5 +21,6 @@ export const bindNotationContext=(scope,key)=>scope.aliases([notationContextEntr
 export function selectNotationContext(scope,key) {
   const aliases=scope.env.get(notationContextKey(key));
   if(!aliases)throw new TypeError("A retained notation use has no checked context for its identity.");
-  return scope.aliases(aliases);
+  const inner=scope.aliases(aliases),binding=scope.unit.bindingAdapter?.bindingForKey(key);
+  return inner.lexical&&binding?inner.with({lexical:inner.lexical.withSelectedNotation(binding.id)}):inner;
 }

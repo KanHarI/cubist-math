@@ -8,7 +8,7 @@ import {NameSupply} from "./names.mjs";
 import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
-import {BindingAdapter,SlotOutcomes} from "../cubist/bindings.mjs";
+import {BindingAdapter,SlotOutcomes,LexicalContext,bindingResolution} from "../cubist/bindings.mjs";
 import {substitutionFrame} from "../cubist/source-syntax.mjs";
 import {diagnosticCode} from "../diagnostics.mjs";
 
@@ -104,14 +104,14 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[]) {
-    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=unit.scopePoints?new LexicalContext():null) {
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
   with({unit=this.unit,context=this.context,env=this.env,dimensions=this.dimensions,
-    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence}) {
-    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence);
+    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence,lexical=this.lexical}) {
+    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical);
   }
   withUnit(unit) {return this.with({unit});}
   withEnv(env) {return this.with({env});}
@@ -144,12 +144,17 @@ export class Scope {
     return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)}))});
   }
   sourceBinding(name,value,record,source=null) {
-    const scope=this.alias(name,value);
+    // Keep an exact value for an outer binding even after its public label
+    // is shadowed. These private aliases never introduce source visibility.
+    const key=record?new BindingAdapter(this.unit.scopePoints.table).key(record.id):name;
+    const scope=this.aliases(key===name?[[name,value]]:[[name,value],[key,value]]);
     if(!record&&!source)return scope;
     const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
-    if(record)sourceBindings.set(name,record);
-    if(source)localSources.set(name,Object.freeze(source));
-    return scope.with({sourceBindings,localSources});
+    if(record)for(const at of new Set([name,key]))sourceBindings.set(at,record);
+    if(source)for(const at of new Set([name,key]))localSources.set(at,Object.freeze({...source,key:at}));
+    const lexical=record&&record.label!=="_"&&scope.lexical
+      ?scope.lexical.bind(record.label,bindingResolution(record.id)):scope.lexical;
+    return scope.with({sourceBindings,localSources,lexical});
   }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
@@ -174,7 +179,9 @@ export class Scope {
   // (alias/sourceBinding) must never inherit a shadowed binder's identity.
   refine(name,value) {
     if(!this.env.has(name))throw new TypeError("Cannot refine an absent binding.");
-    return this.withEnv(new Map(this.env).set(name,value));
+    const env=new Map(this.env).set(name,value),record=this.sourceBindings.get(name);
+    if(record)env.set(new BindingAdapter(this.unit.scopePoints.table).key(record.id),value);
+    return this.withEnv(env);
   }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {

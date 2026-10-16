@@ -39,26 +39,18 @@ function resetRepl() {
   sessionProgram = null;
   session = null;
 }
-// REPL entries run one at a time, after any check in progress; a check
-// waits for the entries already running before it disposes their program.
-let checking = Promise.resolve(), replQueue = Promise.resolve();
-self.onmessage = async ({ data: { id, command, args } }) => {
+// Every request observes submission order. A recheck cannot replace the
+// program beneath a query, and older checks cannot publish after newer ones.
+let queue = Promise.resolve();
+async function handle({ data: { id, command, args } }) {
   try {
     let result;
     if (command === "check") {
-      const replBefore = replQueue;
-      const run = (async () => {
-        const next = new CubicalProgram(module, readSource(args.module, args.place),
-          { optimizations: args.optimizations, collectGeneration: true });
-        let checked;
-        try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
-        catch (error) { next.dispose(); throw error; }
-        await replBefore;
-        program?.dispose(); program = next; programMain = args.module ?? "current";
-        return checked;
-      })();
-      checking = run.catch(() => {});
-      result = await run;
+      const next = new CubicalProgram(module, readSource(args.module, args.place),
+        { optimizations: args.optimizations, collectGeneration: true });
+      try { result = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
+      catch (error) { next.dispose(); throw error; }
+      program?.dispose(); program = next; programMain = args.module ?? "current";
     } else if (command === "elaborate") {
       // A source of its own, checked apart from the proof: every declaration's
       // steps, terms and native opcode trees.
@@ -68,12 +60,7 @@ self.onmessage = async ({ data: { id, command, args } }) => {
         result = elaboration(scratch, args.module ?? "current");
       } finally { scratch.dispose(); }
     } else if (command === "repl" || command === "repl-reset") {
-      const run = replQueue.then(async () => {
-        await checking;
-        return command === "repl" ? repl(args) : resetRepl();
-      });
-      replQueue = run.catch(() => {});
-      result = await run;
+      result = await (command === "repl" ? repl(args) : resetRepl());
     } else if (!program) throw new Error("Check a proof first.");
     else if (command === "inspect") result = program.inspect(args.binding, args);
     else if (command === "generation") result = generatedCubist(program, args.module ?? programMain);
@@ -84,4 +71,9 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     else throw new Error("Unsupported cubical command.");
     self.postMessage({ id, result });
   } catch (error) { self.postMessage({ id, error: { message: error.message, offset: error.offset } }); }
+}
+self.onmessage = event => {
+  const run = queue.then(() => handle(event));
+  queue = run.catch(() => {});
+  return run;
 };

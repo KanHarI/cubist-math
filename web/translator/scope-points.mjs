@@ -1,16 +1,15 @@
 // Selected source entry points contain immutable descriptions, never a live
 // Scope or native handle. Execution is reconstructed by full-prefix replay.
-// The nominal frontend bridge is explicit here while retained families move
-// to the identity representation in CB2/CB3; it does not resolve moved syntax.
-import {BindingAdapter,LexicalContext,bindingResolution,sourceOrigin} from "../cubist/bindings.mjs";
+import {BindingAdapter,LexicalContext,bindingResolution,sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
 import {snapshotSyntax} from "./syntax-graph.mjs";
 import {expandedSource} from "../cubist/source-syntax.mjs";
 import {sourceNotationInventory} from "./binding-module.mjs";
+import {notationContextKey} from "./notation-context.mjs";
 
 const publicName=/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
-const RECURSIVE="\u0000recursive",SELECTION="\u0000selection";
+const RECURSIVE="\u0000recursive";
 const freeze=value=>{
   if(value&&typeof value==="object"&&!Object.isFrozen(value)) {
     Object.values(value).forEach(freeze);Object.freeze(value);
@@ -69,38 +68,58 @@ export class ScopePoints {
     return this.table.allocate([...unit.contextOwner,"locals"],{role,label:node.label??node.text??node.name,
       origin:node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end})});
   }
-  #global(label,value,scope) {
-    const record=this.compilation.ofValue(value,scope.unit);
-    if(!record)throw new TypeError(`Scope entry has no declaration identity: ${label}`);
-    return record;
+  activation(node,scope) {
+    const record=this.bind({...node,text:"selection"},scope,"activation");
+    return record?{text:record.label,bindingId:record.id,bindingRole:record.role,
+      origin:record.origin,start:node.start,end:node.end}:null;
   }
-  // Reconstruct an immutable lexical description and a separate live ID to
-  // value mapping. Only the description is stored; the mapping is used by the
-  // synchronous query callback and cannot leave its isolated session.
+  selected(scope,activation,effects) {
+    if(!scope.lexical||!activation)return scope;
+    let lexical=scope.lexical;
+    if(effects.labels)lexical=lexical.open(activation.bindingId);
+    if(effects.notation)lexical=lexical.withSelectedNotation(activation.bindingId);
+    return scope.with({lexical});
+  }
+  // Source globals come from the current declaration environment. Locals and
+  // effects retain their actual introduction order; private keys supply values
+  // only, so an outer capture cannot become visible merely by being stored.
   bindings(scope) {
     const inventory=sourceNotationInventory(this.compilation,scope.env),adapter=new BindingAdapter(this.table);
     let lexical=new LexicalContext().withNotations(inventory);
-    const values=new Map(),keys=new Map(),records=[],recursive=[];
-    // Named receipts occupy their own namespace. They are available to a
-    // query by exact ID, without becoming term bindings of the same label.
+    const values=new Map(),keys=new Map(),records=new Map(),recursive=[],contexts=new Map();
+    const add=(record,key,value)=>{
+      values.set(record.id,value);keys.set(key,record.id);
+      records.set(record.id,{label:record.label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
+      if(value?.tag==="Recursive")recursive.push([key,record.id]);
+    };
     for(const entry of inventory)if(entry.notation) {
       const record=this.table.get(entry.notation.id),key=adapter.key(record.id),value=scope.env.get(key);
       if(value?.bindingId!==record.id)throw new TypeError("A scope's named notation needs its exact receipt.");
-      values.set(record.id,value);keys.set(key,record.id);
-      records.push({label:entry.name,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
+      add(record,key,value);
     }
     for(const [key,value] of scope.env) {
       if(value?.tag==="Notation")continue;
-      const local=scope.sourceBindings.get(key),identified=scope.unit.bindingAdapter?.bindingForKey(key);
-      if(!local&&!identified&&!publicName.test(key))continue;
-      const record=local??identified??this.#global(key,value,scope),label=local?.label??identified?.label??key;
-      if(record.role!=="activation")lexical=lexical.bind(label,bindingResolution(record.id));
-      values.set(record.id,value);
-      keys.set(key,record.id);
-      records.push({label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
-      if(value?.tag==="Recursive")recursive.push([key,record.id]);
+      const local=scope.sourceBindings.get(key),identified=adapter.bindingForKey(key),named=publicName.test(key);
+      if(!local&&!identified&&!named)continue;
+      const record=local??identified??this.compilation.ofValue(value,scope.unit);
+      if(!record) {
+        // An opened member is described by its activation/projection, not by
+        // inventing a declaration identity for the resulting core value.
+        const resolved=scope.slotOutcomes.resolve(scope.lexical?.qualified(key).value);
+        if(!resolved||resolved.tag==="missing")throw new TypeError(`Scope entry has no declaration identity: ${key}`);
+        continue;
+      }
+      if(!local&&!identified)lexical=lexical.bind(key,bindingResolution(record.id));
+      add(record,key,value);
     }
-    return {lexical,values,keys,records,recursive};
+    lexical=new LexicalContext([...lexical.snapshot(),...scope.lexical?.snapshot()??[]]);
+    const ids=new Set(values.keys());
+    for(const [,resolution] of lexical.snapshot())mapResolution(resolution,id=>{ids.add(id);return id;});
+    for(const id of ids) {
+      const context=scope.env.get(notationContextKey(adapter.key(id)));
+      if(context)contexts.set(id,context);
+    }
+    return {lexical,values,keys,records:[...records.values()],recursive,contexts};
   }
   #environment(scope) {
     // Scope operations copy their maps. The module's top-level environment
@@ -112,7 +131,7 @@ export class ScopePoints {
     if(!owners.has(owner)) {
       const live=this.bindings(scope);
       owners.set(owner,freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),
-        sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive}));
+        sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive,notations:[...live.contexts.keys()]}));
     }
     return owners.get(owner);
   }
@@ -155,14 +174,13 @@ export class ScopePoints {
       declaration:unit.declaring};
     let description,live;
     try {
-      const declaration=this.compilation.declaration(`${unit.moduleName}__${unit.declaring}`);
       if(unit.scopeUnavailable)throw new TypeError(unit.scopeUnavailable);
-      if(origin.module!==unit.moduleName||origin.end>unit.source.length)
-        throw new TypeError("This scope's syntax is not owned by the current source unit.");
-      if(declaration?.generated||scope.env.get(SELECTION))throw new TypeError("This generated or selected scope awaits its binding-family migration.");
+      const authored=origin.module===unit.moduleName?unit.source:unit.sources?.[origin.module];
+      if(authored===undefined||origin.start<0||origin.end>authored.length)
+        throw new TypeError("This scope has no matching authored source range.");
       const environment=this.#environment(scope);
       description=freeze({...basic,available:true,lexical:environment.lexical,
-        state:{format:"cubist-scope-state-1",bindings:environment.bindings,sources:environment.sources,
+        state:{format:"cubist-scope-state-1",bindings:environment.bindings,sources:environment.sources,notations:environment.notations,
           context:this.#mapDescription(this.#contexts,scope.context),dimensions:this.#mapDescription(this.#dimensions,scope.dimensions),
           slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
             bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}),

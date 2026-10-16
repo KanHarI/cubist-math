@@ -39,7 +39,7 @@ export const RECURSIVE = "\u0000recursive";
 // the enclosing match's permissions.
 export function withRecursion(scope,record,{introduce=false}={}) {
   const key=record.key??record.source;
-  if(introduce)scope=scope.alias(key,record);
+  if(introduce)scope=scope.sourceBinding(key,record,scope.unit.scopePoints?.compilation.ofValue(record,scope.unit));
   else if(scope.env.get(key)?.tag==="Recursive")scope=scope.refine(key,record);
   return scope.alias(RECURSIVE,record);
 }

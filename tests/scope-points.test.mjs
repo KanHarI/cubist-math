@@ -8,6 +8,7 @@ import {ElaborationStop} from "../web/translator/control.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
 import {Scope,SourceUnit} from "../web/translator/elaboration.mjs";
 import {T} from "../web/translator/core.mjs";
+import {LexicalContext} from "../web/cubist/bindings.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 
 const module=await create();
@@ -16,7 +17,7 @@ const points=(program,name="main")=>[...program.scopePoints.values()].filter(poi
 const at=(program,source,marker,phase="expression")=>points(program).filter(point=>
   point.origin.start===source.indexOf(marker)&&point.phase===phase
     &&(phase!=="expression"||point.origin.end===source.indexOf(marker)+marker.length));
-const binding=(point,label)=>point.lexical.find(([key])=>key===label)?.[1].id;
+const binding=(point,label)=>new LexicalContext(point.lexical).lookup(label).id;
 const setup=(t,source,options={})=>checkProgram(t,source,{module,options:{collectScopes:true,...options}});
 
 test("nested function scope descriptions preserve identity, visibility, origins and parent instances",async t=>{

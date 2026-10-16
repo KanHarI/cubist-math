@@ -11,6 +11,7 @@ import {NameSupply} from "./translator/names.mjs";
 import {syntaxNames} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
+import {notationContextKey} from "./translator/notation-context.mjs";
 import {T} from "./translator/core.mjs";
 import {replStatements} from "./repl-session.mjs";
 
@@ -57,10 +58,28 @@ function copiedScope(scope,unit) {
 }
 
 function queryEnvironment(live,adapter,unit) {
-  const data=structuredClone({context:[...live.scope.context],env:[...live.scope.env],values:[...live.values],
+  // A declaration's match site is compiler continuation syntax, not a query
+  // permission. Keep shared recursive records and parameter tokens together;
+  // newly parsed query tokens cannot become owners of those parameters.
+  const recursiveCopies=new Map();
+  const queryValue=value=>{
+    if(value?.tag!=="Recursive")return value;
+    if(!recursiveCopies.has(value)) {
+      const {site,...permissions}=value;
+      recursiveCopies.set(value,permissions);
+    }
+    return recursiveCopies.get(value);
+  };
+  const permissions=[RECURSIVE,"\u0000superseded"].filter(key=>live.scope.env.has(key))
+    .map(key=>[key,queryValue(live.scope.env.get(key))]);
+  const data=structuredClone({context:[...live.scope.context],env:permissions,
+    values:[...live.values].map(([id,value])=>[id,queryValue(value)]),contexts:[...live.contexts],
     dimensions:[...live.scope.dimensions],evidence:live.scope.evidence});
   const original=new Map(data.env),values=new Map(data.values),env=new Map();
   for(const [id,value] of values)env.set(adapter.key(id),value);
+  for(const [id,context] of data.contexts)env.set(notationContextKey(adapter.key(id)),context);
+  const selected=new Map(data.contexts).get(live.lexical.selectedNotation());
+  for(const [key,value] of selected??[])env.set(key,value);
   // These are translator permissions, never a destination spelling lookup.
   for(const key of [RECURSIVE,"\u0000superseded"])if(original.has(key))env.set(key,original.get(key));
   const recursive=env.get(RECURSIVE);
