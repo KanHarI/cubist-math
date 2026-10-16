@@ -1,6 +1,7 @@
 # Cleanup after CB0–CB7
 
-Status: implementation and validation in progress, separately stacked on #240.
+Status: complete in #241, separately stacked on #240. Claude round 2 is clean
+at `1481d352`; final documentation only records completion.
 
 The audit follows the recurring review root: obsolete producers and descriptive
 state should disappear once their responsibilities have moved. It found two
@@ -45,4 +46,8 @@ reference check. Production code and semantic witnesses remain unchanged.
 The corrected two-line fixture passes all six affected shrinker/dependency tests.
 A temporary copy with the predicate weakened to accept any failure now fails
 with `ERR_ASSERTION` at the inheritance-preservation check; the unchanged
-candidate-error control still passes. Focused round 2 is pending.
+candidate-error control still passes. Claude round 2 is clean at `1481d352`.
+Its independent probe also rejects comparisons based only on difference count
+or values without paths, and its focused run passes all six tests. No production,
+semantic-harness or source-witness changes followed the full gate. Review stops
+clean after two rounds, with no new modes, helpers or frameworks.

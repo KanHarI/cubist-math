@@ -1,7 +1,7 @@
 # CB7: retirement and release
 
 Status: complete in #240, stacked on CB6 #239; Claude round 2 is clean at
-`32bda0ee`. The user-requested cleanup follows in a separate PR.
+`32bda0ee`. The user-requested separate cleanup is complete in #241.
 
 ## Retired paths
 
