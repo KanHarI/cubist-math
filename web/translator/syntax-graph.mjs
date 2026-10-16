@@ -77,7 +77,8 @@ export function mapSyntax(root,replace,{budget=syntaxGraphBudget()}={}) {
 // Non-enumerable annotations (including checked PApp caches) confer no
 // authority here. Live maps, class instances, accessors and functions cannot
 // accidentally become persistent context state.
-export function snapshotSyntax(root,{budget=syntaxGraphBudget(),maxText=4000000}={}) {
+export const snapshotTextLimit=4000000;
+export function snapshotSyntax(root,{budget=syntaxGraphBudget(),maxText=snapshotTextLimit}={}) {
   const indices=new WeakMap(),pending=[],nodes=[];
   let text=0;
   const string=value=>{

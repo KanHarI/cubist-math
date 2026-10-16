@@ -841,3 +841,22 @@ check did not render a kernel inspection. Move that refresh into the existing
 `finally`, alongside the checking indicator. Every completed check now updates
 controls regardless of its return path. Preserve the failing browser log; rerun
 the gate on the corrected UI rather than adding a special generated-view fix.
+
+## CB6 external review, round 7 — diagnosis before fixes
+
+Claude finds one gate failure on `d48fa919`: the new inspector-unavailable message
+was not registered. Use the existing diagnostic catalogue tool; this requires no
+new abstraction. Its scope/cache/lifecycle audit otherwise passes, and it judges
+the implementation proportionate. Five library probes link 11,321 of 11,322 local
+views to available points; every linked entry appears in its module's index.
+
+Two observations deserve completion before the final round. Splitting binding
+snapshots preserved the aggregate visit limit but made the text cap per receipt.
+Preserve both aggregate limits when sharing descriptions, counting cached text
+alongside cached visits. This is representation accounting, not a reason to raise
+limits or add a separate budget service. The unlinked quotient view is an
+automatically checked coherence clause in its own observation attempt. Its entry
+must be recorded at that semantic clause boundary, as binder entries are recorded
+at introduction; optional reference events still only consume existing points.
+Do not weaken exact Scope matching or choose a nearby point. Verify generated
+clause queries, observation parity and warm/cold text exhaustion before round 8.

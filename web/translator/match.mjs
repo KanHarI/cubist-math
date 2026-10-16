@@ -534,6 +534,11 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
 // solve its top path from checked h-level evidence. Explicit obligations
 // use the same goal and may instead supply a proof block or a whole clause.
 function automaticClause(translator, scope, type, name, node, proof, index) {
+  const run=()=>automaticClauseAt(translator,scope,type,name,node,proof,index);
+  return scope.unit.scopePoints
+    ?scope.unit.scopePoints.around(translator,node,scope,{phase:"inspection",goal:type},run):run();
+}
+function automaticClauseAt(translator, scope, type, name, node, proof, index) {
   const finish = term => {
     scope.check(term, type,proof?.body?.at(-1)??proof?.value??node);
     const statement = {...node,kind:"obligation",name,keyword:node};

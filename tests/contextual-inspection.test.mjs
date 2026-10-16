@@ -69,3 +69,29 @@ def f(a, b : Nat) : Nat := match a, b {
   assert.equal(scopes.size,uses.length,"each elaborated occurrence keeps its own context");
   assert.deepEqual([...answers].sort(),["error","value"]);
 });
+
+test("an inspected generated coherence clause has its own replayable goal context",async t=>{
+  const source=(await readFile(new URL("../library/quotients.cubist",import.meta.url),"utf8"))
+    .split("// Its values at classes")[0];
+  const off=await checkProgram(t,source,{module});
+  const on=await checkProgram(t,source,{module,options:{collectScopes:true,scopeRevision:"coherence"}});
+  assert.deepEqual(on.result.gaps,[]);
+  assert.deepEqual(on.result.outputs,off.result.outputs);
+  assert.deepEqual(on.result.links,off.result.links);
+  assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+  const uses=[...on.program.views].filter(([,view])=>view.module==="main"&&view.node.role==="coherence obligation"
+    &&view.node.name==="Quotient.squash");
+  assert.equal(uses.length,1);
+  const entry=on.program.inspect(uses[0][0]).contextEntry,point=on.program.scopePoints.get(entry.scope);
+  assert.ok(point?.available,point?.reason);
+  const session=new ContextualSession(on.program,point.id);
+  try {
+    for(const [input,kind] of [["/goal","goal"],["typeof f","type"],["typeof q","type"],["typeof r","error"],
+      ["let saved := q","defined"],["typed(saved = q, refl(q))","value"]]) {
+      const [answer]=await session.run(input);assert.equal(answer.kind,kind,JSON.stringify(answer));
+    }
+  } finally {session.dispose();}
+  const noReferences=await checkProgram(t,source,{module,options:{collectScopes:true,collectReferences:false,scopeRevision:"coherence"}});
+  assert.equal(noReferences.program.scopePoints.size,on.program.scopePoints.size);
+  for(const id of on.program.scopePoints.keys())assert.ok(noReferences.program.scopePoints.has(id),id);
+});

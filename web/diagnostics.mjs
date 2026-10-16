@@ -174,6 +174,7 @@ export const diagnostics = [
   ["E246", "This contextual session is stale or closed. Select a context from the current check."],
   ["E247", "Check the current source with contextual scopes enabled."],
   ["E248", "The checking worker is unavailable. Reload the page to restart it."],
+  ["E249", "The inspected context is unavailable. Check the source and inspect the occurrence again."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

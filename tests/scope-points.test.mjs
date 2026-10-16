@@ -161,6 +161,23 @@ test("shared lexical descriptions retain each point's mutable recursion permissi
   assert.equal(JSON.stringify(descriptions[0]),saved);
 });
 
+test("binding descriptions preserve the aggregate text limit with cold and warm receipts",()=>{
+  for(const warm of [false,true]) {
+    const points=[],recorder=new ScopePoints("text-limit",{onPoint:point=>points.push(point)});
+    const unit=new SourceUnit({checker:{compilationBindings:recorder.compilation},source:"xx",moduleName:"main",scopePoints:recorder}).declaration();
+    const base=new Scope(unit),node={kind:"name",name:"x",start:0,end:1};
+    // Each inert receipt fits, but the combined environment exceeds the cap.
+    const entries=["first","second"].map((label,index)=>({label,
+      value:T.variable(String(index).repeat(2100000)),binding:recorder.bind({...node,text:label},base)}));
+    const bind=(scope,{label,value,binding})=>scope.sourceBinding(label,value,binding);
+    const observe=scope=>{recorder.around(null,node,scope,{},()=>{});return points.at(-1);};
+    if(warm)for(const entry of entries)assert.equal(observe(bind(base,entry)).available,true);
+    const combined=observe(entries.reduce(bind,base));
+    assert.equal(combined.available,false);
+    assert.match(combined.reason,/Syntax snapshot text budget exceeded/);
+  }
+});
+
 test("lazy caller permissions stay point-specific while nested operand descriptions share data",async t=>{
   for(const mode of ["direct","nested","scoped"])await t.test(mode,()=>{
     const descriptions=[],recorder=new ScopePoints("lazy-permissions",{onPoint:point=>descriptions.push(point)});

@@ -3,7 +3,7 @@
 import {BindingAdapter,LexicalContext,sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
-import {snapshotSyntax,mapSyntax,visitSyntax,syntaxGraphBudget} from "./syntax-graph.mjs";
+import {snapshotSyntax,snapshotTextLimit,mapSyntax,visitSyntax,syntaxGraphBudget} from "./syntax-graph.mjs";
 import {sourceBindingInputs} from "./binding-module.mjs";
 import {notationContextKey} from "./notation-context.mjs";
 
@@ -174,7 +174,14 @@ export class ScopePoints {
     const owner=scope.unit.contextOwner;
     if(!owners.has(owner)) {
       const live=this.bindings(scope),budget=syntaxGraphBudget();
-      const description=freeze({lexical:live.lexical.snapshot(),bindings:live.records.map(record=>this.#bindingDescription(record,budget)),
+      let text=0;
+      const bindings=live.records.map(record=>{
+        const receipt=this.#bindingDescription(record,budget);
+        text+=receipt.text;
+        if(text>snapshotTextLimit)throw new TypeError("Syntax snapshot text budget exceeded.");
+        return receipt.description;
+      });
+      const description=freeze({lexical:live.lexical.snapshot(),bindings,
         sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive,notations:[...live.contexts.keys()]});
       owners.set(owner,description);
     }
@@ -193,12 +200,15 @@ export class ScopePoints {
     if(cached) {
       // A warm cache must not change a description's construction limit.
       for(let i=0;i<cached.visits;i++)budget.tick();
-      return cached.description;
+      return cached;
     }
     let visits=0;
     const description=snapshotSyntax(record,{budget:{tick(){budget.tick();visits++;}}});
-    entries?.set(record.id,{description,visits});
-    return description;
+    const text=description.nodes.reduce((sum,node)=>sum+node.fields.reduce((sum,[key,value])=>
+      sum+key.length+(typeof value==="string"?value.length:0),0),0);
+    const receipt={description,visits,text};
+    entries?.set(record.id,receipt);
+    return receipt;
   }
   #mapDescription(cache,map) {
     if(!cache.has(map))cache.set(map,snapshotSyntax([...map]));
