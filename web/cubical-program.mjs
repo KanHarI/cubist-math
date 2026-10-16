@@ -734,6 +734,7 @@ export class CubicalProgram {
       // The kernel extensions the inspected term relies on, apart from assumptions.
       extensions };
     view.sourceBinding = local?.sourceBinding;
+    view.contextEntry = local ? {module:local.module,scope:local.node.contextScope??null} : null;
     const simplifiedType = simplifyTypeApplications(view.type);
     const presentation = simplifiedType === view.type ? view
       : checkReduction(this, view, "type", simplifiedType).view;

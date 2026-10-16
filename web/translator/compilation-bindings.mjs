@@ -13,6 +13,7 @@ export class CompilationBindings {
   #owners=new Map();
   #captures=new Map();
   #modelNotations=new Map();
+  #published=new WeakMap();
   constructor(revision,{table=new BindingTable(revision)}={}) {
     if(table.revision!==revision)throw new TypeError("Compilation binding revision mismatch.");
     this.revision=revision;this.table=table;
@@ -50,8 +51,19 @@ export class CompilationBindings {
     return binding;
   }
   ofValue(value,{moduleName}={}) {
+    const published=value&&typeof value==="object"?this.#published.get(value):null;
+    if(published)return published;
     const key=declarationIdentity(value)??(value?.tag==="Recursive"&&moduleName?`${moduleName}__${value.source}`:null);
     return key?this.declaration(key)?.binding??null:null;
+  }
+  // Publication knows the exact declaration even when its checked reference
+  // applies implicit logical assumptions. This receipt is not structural term
+  // equality and grants no availability outside the current environment.
+  published(binding,value) {
+    this.table.get(binding.id);
+    const previous=this.#published.get(value);
+    if(previous&&previous.id!==binding.id)throw new TypeError("A published value has conflicting declaration identities.");
+    this.#published.set(value,binding);
   }
   // A checked closed receiver has one semantic identity in this compilation.
   // Source activations remain separate occurrences with their own origins.

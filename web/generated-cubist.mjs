@@ -38,7 +38,7 @@ export function generatedCubist(program, module = program.main) {
       slots:inductive.slots.map(slot=>slot.level===undefined?"parameter":inductive.levels[slot.level].recorded?"recorded":"erased")};
     else if(symbols[key])global.printing={implicit:symbols[key].implicit,assumed:symbols[key].assumed};
   }
-  const links = [];
+  const links = [], contextRanges = [];
   let source = ["// Frontend generation · " + module,
     "// Read-only expansion from the last check. Identity markers ⟦…⟧ denote annotated display syntax.",
     "// This view is not a standalone module or a checked-proof export.", "", ""].join("\n");
@@ -46,6 +46,7 @@ export function generatedCubist(program, module = program.main) {
   const originalLinks = module === program.main ? program.links ?? [] : importedSourceLinks(program, module, original, ast);
   function copy(start, end) {
     const offset = source.length - start;
+    if(end>start)contextRanges.push({start:source.length,end:source.length+end-start,origin:{module,start,end}});
     links.push(...originalLinks.filter(link => link.start >= start && link.end <= end)
       .map(link => ({ ...link, start: offset + link.start, end: offset + link.end })));
     source += original.slice(start, end);
@@ -75,6 +76,9 @@ export function generatedCubist(program, module = program.main) {
         const offset = source.length;
         links.push(...localLinks.map(link => ({ ...symbols[link.binding], ...program.localSymbols[link.binding], ...link, generated: true,
           start: offset + link.start, end: offset + link.end })));
+        const declarationId=declaration.name.bindingId;
+        const header=localLinks.find(link=>link.bindingId===declarationId);
+        if(declarationId)contextRanges.push({start:offset,end:offset+text.length,entry:offset+(header?.start??0),declarationId});
         source += text;
       } catch (error) {
         // A display limitation must neither hide a declaration nor change its
@@ -103,7 +107,7 @@ export function generatedCubist(program, module = program.main) {
   // diagnostic fixture). Never silently drop an unmatched generated family.
   for (const group of groups) if (!shown.has(group)) expansion(group);
   if (!groups.length) source += "\n// No frontend-generated declarations in this module.\n";
-  return { module, count, source, links };
+  return { module, count, source, links, contextRanges };
 }
 
 const comment = text => String(text).split(/\r?\n/).map(line => `// ${line}`).join("\n");

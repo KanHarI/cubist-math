@@ -39,7 +39,7 @@
 .repl-log .repl-info { color: #5f7066; font-family: ui-sans-serif, system-ui, sans-serif; }
 .repl-help { color: #5f7066; }
 .repl-log pre code { overflow-wrap: anywhere; }
-.repl-error { padding-left: 1.4em !important; color: #a3322b; }
+.repl-error, .repl-unavailable { padding-left: 1.4em !important; color: #a3322b; }
 .repl .keyword { color: #735689; font-weight: 600; }
 .repl .macro { color: #98531c; font-weight: 600; }
 .repl .comment { color: #7c8d80; }

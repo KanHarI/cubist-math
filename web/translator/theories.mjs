@@ -127,6 +127,15 @@ export function memberField(t,scope,n) {
 // theory as m's operation. A later binding of a name or operator shadows it.
 export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,receiverScope=scope,
   receiver=t.term(node,receiverScope,null),activation=null}={}) {
+  const checked=checkedOpening(t,scope,node,{complete,effects,receiverScope,receiver});
+  return checked?openingScope(t,checked,node,activation):null;
+}
+
+// Cache the checked effect, before assigning this occurrence's identities.
+// A section can reuse projection work while entering fresh bindings in each
+// declaration. Observation metadata is never part of the cached aliases.
+function checkedOpening(t,scope,node,{complete=true,effects=selectionEffects.all,receiverScope=scope,
+  receiver=t.term(node,receiverScope,null)}={}) {
   const record=recordOf(t,receiverScope,receiver);
   if(!record)return null;
   scope=scope.modelEvidence(receiver);
@@ -165,7 +174,18 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   // L2.10j, whose sections read one by name (sectionScope).
   if(effects.notation)added.push([SELECTION,{name:spelling??"this model",recipes:modelOperandRecipes(t,receiverScope,receiver,record),complete,numeral,literal:null,
     operators:new Set([...notations.keys(),...Object.keys(record.ambiguousNotations??{})])}]);
+  return {scope,added,record,receiver,effects};
+}
+
+function openingScope(t,{scope,added,record,receiver,effects},node,activation=null) {
+  const spelling=sourceName(node);
   let inner=scope.aliases(added);
+  // Historical name-based sections deliberately have an incomplete selection.
+  // Optional observation cannot impose retained syntax's stronger contract on
+  // their checking, or advertise a context with different query semantics.
+  if(!activation&&scope.unit.scopePoints&&effects.notation&&!inner.env.get(SELECTION)?.complete)
+    return inner.withUnit(inner.unit.with({scopeUnavailable:"Historical name-based notation has no retained contextual selection."}));
+  activation??=scope.unit.scopePoints?.activation(node,scope)??null;
   if(activation) {
     const members=new Map(effects.labels?[...record.fields,...record.derived??[]].map(field=>{
       if(!field.projectionId)throw new TypeError("A retained opening needs an exact projection identity.");
@@ -177,7 +197,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
       .withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,members));
     if(effects.notation)inner=bindNotationContext(inner,t.identityAdapter.key(activation.bindingId));
   }
-  return inner;
+  return scope.unit.scopePoints?.selected(inner,activation,effects)??inner;
 }
 
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
@@ -228,6 +248,7 @@ function invalidModelSelection(t,scope,site,receiver) {
 export const selectionName=uses=>{const model=uses?.at(-1);return model?.kind==="name"?model.name:null;};
 export function selected(t,scope,node,{effects=selectionEffects.all,activation=null}={}) {
   const site=node;
+  activation??=scope.unit.scopePoints?.activation(node,scope)??null;
   if(!effects.labels&&!effects.notation)return activation
     ?scope.withSlotOutcomes(scope.slotOutcomes.activate(activation.bindingId,[])):scope;
   // Synthesized operand selection owns only its receiver environment. Apply
@@ -255,7 +276,7 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
       inner=inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[]));
       if(effects.notation)inner=bindNotationContext(inner,t.identityAdapter.key(activation.bindingId));
     }
-    return inner;
+    return scope.unit.scopePoints?.selected(inner,activation,effects)??inner;
   }
   const selector=node.kind==="bindingReference"?receiverScope.unit.bindingAdapter.resolve(node.resolution,receiverScope.slotOutcomes):null;
   if(selector?.tag==="namespace-selector") {
@@ -269,7 +290,10 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   const key=referenceKey(node),notation=key?receiverScope.env.get(notationBinding(key)):null;
   if(notation?.tag==="Notation"&&!notation.model) {
     const inner=effects.notation?notationSelected(scope,notation):scope;
-    return activation?inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[])):inner;
+    if(!activation)return inner;
+    let activated=inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[]));
+    if(effects.notation)activated=bindNotationContext(activated,t.identityAdapter.key(activation.bindingId));
+    return scope.unit.scopePoints?.selected(activated,activation,effects)??activated;
   }
   const receiver=t.term(node,receiverScope,null),inner=opened(t,scope,node,{effects,receiver,receiverScope,activation});
   // A model's notation with the literal rules its module added, where the
@@ -414,19 +438,38 @@ export function sectionScope(t,scope,n) {
         ...(implicit.length?{implicitArgs:implicit.map(p=>name(p.name.text))}:{}),...at},scope,null);
       if(parameters!==null)kept.set(declared,{translator:t,entry,parameters,own,term});
     }
-    applied.push([declared,term]);
+    const original=scope.unit.scopePoints?.compilation.ofValue(entry,scope.unit);
+    const binding=original?scope.unit.scopePoints.bind({text:declared,start:n.start,end:n.end,origin:original.origin},scope):null;
+    applied.push({declared,term,binding});
   }
-  let inner=scope.aliases(applied);
-  // The parameters' models opened: what that puts in scope is kept too, by
-  // the same parameters, its terms renamed, the rest as it is.
+  let inner=scope.aliases(applied.map(({declared,term})=>[declared,term]));
+  for(const {declared,term,binding} of applied)if(binding)inner=inner.sourceBinding(declared,term,binding);
+  // Cache checked projections and evidence, then assign the implicit opening
+  // a fresh activation in this declaration. Reusing a past scope would retain
+  // its binder identities, while rechecking would change prefix work.
   const opening=kept.get(OPENED);
-  if(parameters!==null&&opening?.translator===t&&opening.parameters===parameters)
-    return inner.aliases(opening.added.map(([key,value])=>[key,isTerm(value)?rename(opening.own,value):value]));
-  const before=inner.env;
+  if(parameters!==null&&opening?.translator===t&&opening.parameters===parameters) {
+    for(const checked of opening.models) {
+      const {record,effects,node}=checked;
+      const evidence=checked.evidence.map(e=>({...e,term:rename(opening.own,e.term),type:rename(opening.own,e.type),model:rename(opening.own,e.model)}));
+      inner=openingScope(t,{scope:inner.with({evidence:[...inner.evidence,...evidence]}),record,effects,
+        receiver:rename(opening.own,checked.receiver),
+        added:checked.added.map(([key,value])=>[key,isTerm(value)?rename(opening.own,value):value])},node);
+    }
+    return inner;
+  }
+  const models=[];
   // A section's selection is complete, as any other (L2.10j); a module of a
   // revision before then reads what its model's notation does not bind by
   // name.
-  for(const p of n.section.params)if(p.type)inner=opened(t,inner,name(p.name.text),{complete:!t.nameBased})??inner;
-  if(parameters!==null)kept.set(OPENED,{translator:t,parameters,own,added:[...inner.env].filter(([key,value])=>before.get(key)!==value)});
+  for(const p of n.section.params)if(p.type) {
+    const node={...p.name,kind:"name",name:p.name.text};
+    const checked=checkedOpening(t,inner,name(p.name.text),{complete:!t.nameBased});
+    if(!checked)continue;
+    const {scope:checkedScope,...effect}=checked;
+    models.push({...effect,node,evidence:checkedScope.evidence.slice(inner.evidence.length)});
+    inner=openingScope(t,checked,node);
+  }
+  if(parameters!==null)kept.set(OPENED,{translator:t,parameters,own,models});
   return inner;
 }

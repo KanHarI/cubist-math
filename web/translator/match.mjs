@@ -39,7 +39,7 @@ export const RECURSIVE = "\u0000recursive";
 // the enclosing match's permissions.
 export function withRecursion(scope,record,{introduce=false}={}) {
   const key=record.key??record.source;
-  if(introduce)scope=scope.alias(key,record);
+  if(introduce)scope=scope.sourceBinding(key,record,scope.unit.scopePoints?.compilation.ofValue(record,scope.unit));
   else if(scope.env.get(key)?.tag==="Recursive")scope=scope.refine(key,record);
   return scope.alias(RECURSIVE,record);
 }
@@ -352,7 +352,9 @@ function branch(translator, motive, value, scope, inner, built) {
       if (bound.name === value.name) destructed.set(name, { alias, variable: value.name });
       continue;
     }
-    if (!bound || !at.localSources.has(name)) continue;
+    // Hidden receipts refine like their original local introduction, without
+    // making them visible to proof search. Opened members are not such locals.
+    if (!bound || !(at.localSources.has(name) || at.sourceBindings.get(name)?.local)) continue;
     const free = freeNames(bound);
     const again = [...values].reduce((term, [variable, replacement]) =>
       free.has(variable) ? substituteTerm(term, variable, replacement) : term, bound);
@@ -532,6 +534,11 @@ function writtenClause(translator, scope, { source, name, index, constructor, sh
 // solve its top path from checked h-level evidence. Explicit obligations
 // use the same goal and may instead supply a proof block or a whole clause.
 function automaticClause(translator, scope, type, name, node, proof, index) {
+  const run=()=>automaticClauseAt(translator,scope,type,name,node,proof,index);
+  return scope.unit.scopePoints
+    ?scope.unit.scopePoints.around(translator,node,scope,{phase:"inspection",goal:type},run):run();
+}
+function automaticClauseAt(translator, scope, type, name, node, proof, index) {
   const finish = term => {
     scope.check(term, type,proof?.body?.at(-1)??proof?.value??node);
     const statement = {...node,kind:"obligation",name,keyword:node};
@@ -569,9 +576,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
       throw scope.unit.locate(Error(`Cannot generate ${name}: import hlevels and supply h-level evidence for the motive, or give the clause explicitly.`), node);
     const path = at.nf(target);
     if (path.tag !== "Path") throw Error(`The obligation ${name} is not a path clause.`);
-    const locals = [];
-    for (const [key,bound] of at.env) if (at.localSources.has(key)
-      && !(bound.tag === "Var" && at.context.has(bound.name))) locals.push({term:bound,type:at.infer(bound).type});
+    const locals = at.localDefinitions().map(term=>({term,type:at.infer(term).type}));
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};
     });

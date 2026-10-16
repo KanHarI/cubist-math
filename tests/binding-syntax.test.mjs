@@ -12,8 +12,7 @@ import {BindingTable, BindingAdapter, LexicalContext, SlotOutcomes, sourceOrigin
 import {resolveBindingSyntax, cloneBindingSyntax, substituteBindingSyntax, lowerBindingSyntax,sameBindingSyntax,remapBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 
 const reserved = ["U0", "UU0", "Unit", "tt", "typed", "Interval"];
-const prepare = () => {
-  const table = new BindingTable("compilation");
+const prepare = (table = new BindingTable("compilation")) => {
   const context = new LexicalContext(reserved.map(name => [name, reservedResolution(name)]));
   return {table, context, adapter: new BindingAdapter(table, {reserved}), source: {revision: "source-1", module: "main"}, owner: ["declaration", "0"]};
 };
@@ -228,7 +227,7 @@ test("ordinary term, universe and dimension binders elaborate and kernel-check t
     "fun (U < UU0) => fun (A : U) => fun (x, y : A) => x",
     "fun (p : tt = tt) => typed(tt = tt, path i => p @ i)",
   ].entries()) {
-    const setup = prepare();
+    const setup = prepare(program.compilationBindings.table);
     const syntax = resolveBindingSyntax(expression(source), {...setup, owner: ["expression", String(index)]});
     const scope = new Scope(translator.unit({source,bindingAdapter:setup.adapter}));
     const term = translator.term(lowerBindingSyntax(syntax, setup.adapter), scope);
@@ -245,12 +244,12 @@ test("the pattern compiler resolves slots at the matched type, including nested 
   t.after(() => program.dispose());
   const result = await program.check("inductive Two { left_; right_; }\ninductive Box { box(value : Two); }\ndef first : Two := left_;\ninductive Unrelated { late_; }", "base");
   assert.deepEqual(result.gaps, []);
-  const globals = program.modules.get("base"), setup = prepare(), env = new Map(globals);
+  const globals = program.modules.get("base"), setup = prepare(program.compilationBindings.table), env = new Map(globals);
   setup.constructors = [];
   for (const [label, value] of globals) {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(label) || ["Unrelated", "late_"].includes(label)) continue;
-    const record = setup.table.allocate(["import"], {role: "declaration", label,
-      origin: sourceOrigin({revision: "base-1", module: "base", start: 0, end: 1})});
+    const record = program.compilationBindings.ofValue(value);
+    assert.ok(record,`missing imported declaration identity: ${label}`);
     setup.context = setup.context.bind(label, bindingResolution(record.id));
     env.set(setup.adapter.key(record.id), value);
     if (value.tag === "InductiveConstructor") setup.constructors.push({id: record.id, label, nullary: !value.arity && !value.dims});

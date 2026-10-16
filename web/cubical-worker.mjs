@@ -3,6 +3,7 @@ import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
 import { ReplSession } from "./repl-session.mjs";
+import { ContextualSession } from "./contextual-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
 import { generatedCubist } from "./generated-cubist.mjs";
 const module = await createCubical();
@@ -39,26 +40,35 @@ function resetRepl() {
   sessionProgram = null;
   session = null;
 }
-// REPL entries run one at a time, after any check in progress; a check
-// waits for the entries already running before it disposes their program.
-let checking = Promise.resolve(), replQueue = Promise.resolve();
-self.onmessage = async ({ data: { id, command, args } }) => {
+const contexts = new Map();
+let contextSerial = 0, contextEpoch = 0;
+const contextDescription = ({state,lexical,...point}) => point;
+function invalidateContexts() {
+  contextEpoch++;
+  for (const context of contexts.values()) context.dispose();
+  contexts.clear();
+  if (program) program.scopeReady = false;
+}
+function contextual(id) {
+  const context = contexts.get(id);
+  if (!context) throw new Error("This contextual session is stale or closed. Select a context from the current check.");
+  return context;
+}
+// Checking and queries observe submission order. Capability revocation is
+// immediate and does not touch a live kernel handle.
+let queue = Promise.resolve();
+async function handle({ data: { id, command, args } }, epoch) {
   try {
     let result;
     if (command === "check") {
-      const replBefore = replQueue;
-      const run = (async () => {
-        const next = new CubicalProgram(module, readSource(args.module, args.place),
-          { optimizations: args.optimizations, collectGeneration: true });
-        let checked;
-        try { checked = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
-        catch (error) { next.dispose(); throw error; }
-        await replBefore;
-        program?.dispose(); program = next; programMain = args.module ?? "current";
-        return checked;
-      })();
-      checking = run.catch(() => {});
-      result = await run;
+      const next = new CubicalProgram(module, readSource(args.module, args.place),
+        { optimizations: args.optimizations, collectGeneration: true, collectScopes: !!args.collectScopes });
+      try { result = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
+      catch (error) { next.dispose(); throw error; }
+      program?.dispose(); program = next; programMain = args.module ?? "current";
+      // An edit or a newer submitted check invalidates these contexts even
+      // when it arrived while this check was loading an import.
+      if (epoch !== contextEpoch) program.scopeReady = false;
     } else if (command === "elaborate") {
       // A source of its own, checked apart from the proof: every declaration's
       // steps, terms and native opcode trees.
@@ -68,13 +78,20 @@ self.onmessage = async ({ data: { id, command, args } }) => {
         result = elaboration(scratch, args.module ?? "current");
       } finally { scratch.dispose(); }
     } else if (command === "repl" || command === "repl-reset") {
-      const run = replQueue.then(async () => {
-        await checking;
-        return command === "repl" ? repl(args) : resetRepl();
-      });
-      replQueue = run.catch(() => {});
-      result = await run;
+      result = await (command === "repl" ? repl(args) : resetRepl());
+    } else if (command === "context-run") {
+      result = await contextual(args.session).run(args.input);
     } else if (!program) throw new Error("Check a proof first.");
+    else if (command === "contexts") {
+      if (!program.scopeReady) throw new Error("Check the current source with contextual scopes enabled.");
+      const module = args.module ?? programMain;
+      result = {revision:program.scopeRevision,points:[...program.scopePoints.values()]
+        .filter(point=>point.owner[1]===module||point.origin.module===module).map(contextDescription)};
+    } else if (command === "context-open") {
+      const context = new ContextualSession(program,args.scope),session = `context-${++contextSerial}`;
+      contexts.set(session,context);
+      result = {session,point:contextDescription(context.point)};
+    }
     else if (command === "inspect") result = program.inspect(args.binding, args);
     else if (command === "generation") result = generatedCubist(program, args.module ?? programMain);
     // A declared type has no checked definition: its signature and eliminator.
@@ -84,4 +101,20 @@ self.onmessage = async ({ data: { id, command, args } }) => {
     else throw new Error("Unsupported cubical command.");
     self.postMessage({ id, result });
   } catch (error) { self.postMessage({ id, error: { message: error.message, offset: error.offset } }); }
+}
+self.onmessage = event => {
+  // This revokes only contextual capabilities, never a live kernel handle.
+  // Queries loading asynchronously notice disposal before returning a result.
+  const {id,command,args}=event.data;
+  if (["check","context-invalidate"].includes(command)) invalidateContexts();
+  if (command === "context-close") {
+    contexts.get(args.session)?.dispose(); contexts.delete(args.session);
+  }
+  if (["context-invalidate","context-close"].includes(command)) {
+    self.postMessage({id,result:undefined});return;
+  }
+  const epoch = contextEpoch;
+  const run = queue.then(() => handle(event,epoch));
+  queue = run.catch(() => {});
+  return run;
 };

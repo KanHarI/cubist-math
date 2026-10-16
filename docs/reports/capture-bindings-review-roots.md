@@ -553,3 +553,321 @@ Stop at round 4. Full-suite/browser/mutation validation remains the recorded
 run at `39a2a4f0`; the rendering-only follow-up has 27 passing printer tests,
 the complete display sweep and clean external verification. CB5 is ready;
 CB6 contextual sessions and CB7 retirement continue in separate PRs.
+
+## CB6 notation and cost audit — diagnosis before further fixes
+
+The shadowed-notation query exposed the recurring visibility/availability
+confusion. Its lexical source context names the correct ID, but the query's
+value inventory was rebuilt through the caller's public notation labels.
+Consume the private checked receipts already present in the environment;
+the retained lexical context alone decides visibility. The distinguishing
+test passes different source and caller notations under the same label.
+
+The cost probe also exposes a recurrence of CB1's mutable-permission ownership
+issue. Lazy caller descriptions embed recursion permissions, so their entire
+environment description is rebuilt at every observed point. The nested-function
+fixture now has 1,625 available points and roughly 1.30 million objects under
+its binding descriptions. The larger sections fixture adds about 274 MB of
+heap during collection. These counts include newly supported contexts and are
+not comparable to CB1's mostly-unavailable pilot as marginal overhead figures.
+
+Before optimizing, separate point-specific mutable permissions from shared
+immutable environment descriptions, as CB1 already does for the immediate
+scope. Cover nested and explicitly scoped lazy operands, and verify that a
+permission change alters replay validation without mutating an earlier point.
+Do not add another cache of live scopes or a second serialization framework.
+The correction now follows that boundary: mutable caller permissions join the
+per-point recursion description, while immutable operand/environment data are
+shared. Direct, nested and explicitly scoped caller controls preserve earlier
+descriptions and distinguish changed permissions. The same cost fixtures now
+measure 63.58 MB and 206.17 MB heap growth, respectively. Collection remains
+optional and expensive; the full measurements and qualifications are in the CB6
+roadmap. No CB6 Claude review has run yet.
+
+The remaining inductive-self gap was another missing introduction boundary,
+not a missing final-module lookup. Record the exact reserved type/constructor
+identities when they enter the provisional signature telescope. Queries then
+use checked local variables and the existing uniform-parameter rules. Tests
+distinguish later constructors, changed parameters, failed final admission and
+initial/free generated instances; none publishes the unfinished signature.
+
+The implementation at `9187cadf` passes all 1,299 tests with no TODOs, all 3,857
+canonical checks, both browser suites and all four production mutation checks.
+Source and tests remained frozen through these gates. External round 1 reviews
+the complete CB6 delta against CB5; compare any findings with these ownership,
+visibility and introduction-boundary diagnoses before applying fixes.
+
+## CB6 external review, round 1 — diagnosis before fixes
+
+Claude reviewed `5e469618` against CB5 `4c2b4f3a`. All 108 targeted tests
+pass, but independent probes expose four regressions. The review compares
+source collection on/off and the CB5 base; the full report and reproductions
+are retained with the local review artifacts.
+
+- Identity receipts acquired semantic visibility: `sourceBinding` registers
+  its private alias as a second `localSources` entry. Evidence enumeration
+  then counts a let twice and keeps using it after its public name is shadowed.
+  Collection can turn a refused source into an accepted one, and `/prove`
+  repeats the difference. This recurs the identity/availability root from CB2
+  and CB6's earlier notation diagnosis. Correct the producer: only the actual
+  introduced key is a semantic local. Keep private receipts for identity and
+  shadowed-value inspection; add no consumer filters or deduplication service.
+- Refinement derives identity keys from the optional scope collector. A copied
+  lazy caller retains its binding records but has an observation-free query
+  unit, so a dependent match crashes. This repeats the query ownership root.
+  Both introduction and refinement must use the existing compilation registry,
+  which already owns their table, without deleting caller binding records.
+- Model numeral production marks its authored token as a copied notation body,
+  suppressing its definition and view links. This repeats CB3/CB5's source
+  ownership root. Preserve the numeral's authored origin at its producer;
+  scope instances already have exact occurrence IDs. Do not relax copied-source
+  link filtering or add a second link path.
+- Inductive scope labels reuse definition-only self-reference metadata, so a
+  name in its own parameter domain receives a misleading recursion diagnostic.
+  Carry the declaration kind with its name in the existing unit metadata;
+  observation labels and definition-only diagnostic policy then consume the
+  appropriate part, without another registry or diagnostic classifier.
+
+Verify the two shadowed-evidence sources and proof queries, automatic obligations,
+canonical hlevel on/off results/fuel/work, lazy dependent matching with scratch
+history, authored numeral links and provisional inductive contexts. Keep the
+independent source controls, source-qualified link ownership and compiler limits.
+
+The fixes now follow those existing boundaries. Shadowed let/obtain evidence,
+automatic obligations and proof-query controls pass, including positive source
+controls with the shadow removed. Canonical hlevel and obligation fixtures have
+identical on/off outputs, diagnostics, links, fuel and kernel work. Lazy dependent
+matching and scratch-history replay pass. All 367 canonical `notation_literals`
+links equal CB5, and provisional inductive context labels remain intact. A new
+link assertion initially read a nonexistent `kind` field; after correcting it
+to the actual local-view identity, all 11 notation tests pass. Full gates and
+external delta verification remain pending.
+
+The first full run of these fixes passes 1,302/1,310 tests and all 3,857 corpus
+checks, but reveals three follow-ups before external verification. Six failures
+come from a pilot harness using a scope registry distinct from its checker's
+registry; it must use the shared production registry, and translator construction
+must reject contradictory identity owners. A resource-injection hook still reads
+the old declaration-name shape and must follow the metadata change.
+
+The remaining failure is real: recursion permissions contain entries for both
+an introduced key and its observational alias. After nested refinement, the
+alias's older entry is no longer callable, but query key remapping collapses both
+keys to one ID and lets the stale entry overwrite the valid one. This is the
+same receipt-versus-permission root, not a reason to restore search visibility.
+Apply the source recursive-call consumer's existing alias/value validity check
+before collapsing keys. Preserve the valid source permission and reject stale
+ones; add no new recursion eligibility rule or spelling fallback.
+
+The follow-up implements that contract at the existing key-remapping boundary.
+All 37 declaration/compilation/replay tests pass, including the eight failures;
+source-call permissions and negative recursion controls are unchanged. No
+observer-derived local visibility was restored. Final gates rerun before round 2.
+
+## CB6 external review, round 2 — diagnosis before fixes
+
+Claude verified all four round-1 corrections and the registry/permission
+follow-up at `8ec414c9`; all 133 targeted tests pass. It found one low-severity
+inspection regression: shadowed variable-valued lets still refine in branches,
+but shadowed compound values and their types do not. `branch` used the visible
+`localSources` inventory to decide which stored definitions need refinement.
+
+This is the same identity/availability conflation in the other direction.
+A private receipt does not grant search visibility, but it must retain the
+refinement behavior of the source introduction it records. Record that fact
+alongside the binding in the existing `sourceBindings` receipt, where the
+presence of source-local metadata is known. Branch refinement consumes this
+fact for shadowed receipts as well as current locals. Do not infer it from a
+binding role or label: opened model members have local-role identities but
+were never semantic locals, and must retain their existing checking behavior.
+No second visibility map, query-only renderer fix or role-based fallback is
+needed. Verify visible/shadowed rows for compound lets and dependent proofs
+through match/induction, and preserve model-opening on/off behavior.
+
+The fix stores the introduction fact on each existing receipt and consumes it
+at the shared branch transition. All 76 focused command, notation, replay and
+scope-point tests pass. New controls compare visible and shadowed compound lets,
+dependent proofs and obtain components in both match and induction branches;
+opened-member behavior and collection on/off kernel work remain identical.
+The first test fixture lacked its pair's required expected type; adding that
+explicit type corrected the fixture without changing the implementation.
+
+## Independent audit during CB6 round 3 — diagnosis before fixes
+
+At frozen 280b4592, `/prove { let h := p(tt); let h := tt; hlevel; }` succeeds in a context `A : U0, p : Unit -> IsProp(U0,A)` with goal `IsSet(U0,A and A)`, where the equivalent authored block fails. Separate scratch entries `let h := p(tt)` then `let h := tt` likewise leave the old h available to `/prove { hlevel; }`. The no-h query fails and the unshadowed h query succeeds. Probes are cb6-visibility-audit.log and cb6-visibility-opening-audit.log. This is an additional finding, not a failure of the narrow round-2 receipt refinement fix.
+
+Shared root across rounds: identity is distinct from lexical visibility. Round 1 removed observation aliases from localSources, but actual retained/scratch introductions have unique private keys; replacing the visible spelling does not overwrite that key. localSources therefore still lists the old semantic local. Proof search consumes that inventory, while `/locals` derives visibility from the lexical context and correctly calls the same row hidden. This is a source/query behavior mismatch, not kernel unsoundness.
+
+Trace all introduction forms before changes: ordinary and retained locals, scratch lets, proof-block binders, obtain, patterns, dimensions and model openings. Maintain one semantic-local inventory at introduction/alias transitions, keyed for execution but shadowed by source label. Preserve binding receipts and their refinement facts independently; binding-aware introductions already have registered IDs even without an observation collector. Do not add an hlevel-only blacklist, a query-only scope rewrite, another registry or a second resolver. Compare source controls, retained declarations and scratch history, retaining both positive and negative results. The pending Claude round-3 report must remain pinned to unchanged `280b4592`; fold the isolated fix into the reviewed branch only after that review finishes, then request focused verification of this shared-boundary correction.
+
+The reviewed worktree remains unchanged while an isolated worktree holds the
+follow-up. Scope introduction reads existing retained identities without an
+observer and removes shadowed semantic locals by their source label; public
+alias introduction does the same for model openings. Receipts stay available
+for refinement. Single-alias introduction delegates to the multi-alias method,
+removing duplicated transition logic. All 18 command tests and 71 other focused
+checks pass. The first fixture matrix exhausted the unchanged kernel-session
+limit by retaining every control until test completion; immediate disposal of
+each completed control corrects the harness. The independent source controls
+show the intended positive and negative verdicts for let, obtain, intro and
+model opening. A saved alias remains usable after the original label shadows.
+
+The full run at `ab68362d` passes 1,315 of 1,317 tests and all 3,857 corpus
+checks. Both failures are older binding-syntax pilot fixtures that use an
+independent adapter table with a production checker. This repeats the round-1
+declaration-pilot ownership problem: making receipt metadata independent of
+observation exposes inconsistent fixture ownership. Production entry points
+already share the registry. Before changing the fixtures, the adapter-call-site
+audit confirms these are the two remaining independent-table cases. Reuse the
+compilation's table and imported value identities in that shared test helper;
+do not permit cross-registry fallback in the implementation.
+
+## CB6 external review, round 4 — diagnosis before fixes
+
+Claude finds the two adapter-fixture failures at `ab68362d` and a new notation
+regression. The fixture correction `bcbf6849` is now on the PR branch; its full
+run passes all 1,317 tests and all 3,857 canonical checks. The compiler code is
+unchanged from the reviewed commit. The earlier full log remains a failed run.
+
+The product finding repeats identity versus lexical visibility across a new
+boundary: a notation body has its own source names but inherits the caller's
+proof context. Comparing its operand labels to caller-local labels deletes
+unrelated evidence. An independent extension of the review's probe, giving the
+rule's inner lambda an explicit result type, reproduces the same regression for
+ordinary binders inside the rule. An operand-only exception would miss that
+case. Dimension binders also shadow and cannot be excluded just because they
+lack source-local metadata.
+
+The shared abstraction must distinguish lexical local definitions from the
+definitions inherited as implicit proof evidence when entering a foreign rule
+body. Preserve those inherited core terms independently of the rule's names;
+start its lexical-local inventory empty. Nested rules inherit the evidence,
+and lazy operands retain their original caller scope. Keep evidence untyped
+until the existing search boundary so entering a lazy rule adds no inference,
+fuel charge or eager operand evaluation. Use one definition enumeration for
+both tactic search and generated obligations. Refine inherited definitions at
+the same branch/face transitions as the other proof context, and include them
+in isolated copying and inert replay descriptions. This needs one list of core
+terms in the existing Scope, not another resolver, identity registry, label
+blacklist, or new namespace framework.
+
+The correction follows that boundary with one inherited-definition list on
+Scope and one enumeration shared by both proof-search consumers. Rule entry
+captures definitions without inference; refinement, faces, isolated copying and
+replay descriptions preserve them. The 20-test notation suite passes, including
+eight new source/query controls for operands, ordinary rule binders, model
+openings, nested rules, lazy operands, missing evidence and caller shadowing.
+Both elaborated instances of the inner lambda support queries and scratch
+history. Native checks also validate inherited terms after refinement and faces.
+
+Fixture debugging did not justify compiler changes: a direct-call opening was
+invalid syntax, the lambda has two valid elaborated instances, and retaining the
+whole quotient-library fixture caused an aggregate test-process heap failure.
+A minimal quotient declaration and immediate program/session disposal keep the
+complete notation suite within the existing limits. The unchanged heavy library
+test also passes alone. Full gates and focused external round 5 remain pending.
+
+
+## CB6 external review, round 5 — diagnosis before fixes
+
+Claude finds no product issues in `3b9a0845`, passes 189 targeted tests and
+runs nine independent probes against both earlier revisions. It verifies
+source/query and collection parity, every reproduced collision, caller-shadowing
+refusals, inner-body scratch history, operator sections and branch refinement.
+A bounded 120-application comparison takes about 2.1 seconds at both revisions.
+The shared list/enumeration/entry transition is judged minimal.
+
+Its sole low-severity finding is the failed inspector browser log: the shared
+`inspected()` predicate dereferences static markup while navigation is replacing
+the document. An unchanged rerun had already passed, but that log was not named
+in the original review brief. Preserve both logs. This is an asynchronous test
+boundary, not another identity/visibility problem. Make the shared wait predicate
+tolerate absent elements, as the neighboring workbench predicate already does;
+then run that browser suite alone. Add no delay, retry policy or navigation-code
+change. Full compiler gates remain valid on the unchanged product code. Focused
+round 6 should verify this test-only correction and the exact terminal evidence,
+without reopening the product audit.
+
+
+Round 6 is clean on `fbd68711`, closing the inspector gate finding. Product code
+remains `3b9a0845`. The user then requests an inspector-context REPL entry point;
+that additional CB6 behavior remains pending before marking #239 ready.
+
+## Inspector entry request — diagnosis before implementation
+
+The inspector currently exposes a checked judgement without its replay scope.
+Source-line buttons cannot establish which elaborated occurrence produced that
+judgement, and a binder's introduction context can differ from a later use.
+Connect the existing reference observation to an exact scope point at production,
+including binder introductions, and transport its ID with the local inspection.
+Use the existing replay callback, attempt ownership, worker index and console.
+Do not reconstruct scope identity from label equality or nearest source ranges.
+Keep these inspection points out of generic line pickers to avoid duplicate
+choices there. Queries at an inspector entry may open its one exact instance.
+
+Collection remains optional: the inspector button can request a check with scopes
+on the unchanged source, preserve the inspected occurrence, and open its newly
+recorded point. An edit, changed selection or compiler replacement must prevent a
+late request from opening the old context. Embedded inspectors can reuse the same
+console and on-demand collection rather than a separate query path. Verify the
+reported Tree induction hypothesis, refined instances, source/query agreement,
+no-collection entry and stale navigation. Extra observation points must preserve
+source behavior and stay within existing resource limits.
+
+The first implementation made every reference observation a new replay point.
+Testing found two symptoms of the same design problem: optional reference
+records shifted semantic scope IDs, and redundant snapshots exhausted the default
+heap on the existing large notation fixture. Reference display events should
+consume semantic entry points, not define them. The final wiring looks up the
+actual Scope object in the active elaboration stack; binder introductions alone
+add a semantic entry after binding. The stack is unwound synchronously and no
+live scope enters a persisted description. Existing reference-on/off identity,
+historical-notation, and large notation tests now pass without changing their
+assertions or resource limits. Introduction/use and imported `ih` probes pass.
+
+The combined notation suite still exposed excessive retention with the added
+binder entries: each lexical frame copied receipts for all imported core values.
+Share those immutable binding receipts, while rebuilding lazy operand and mutable
+permission descriptions. A cache hit charges the same construction visits as a
+cold receipt; the existing per-environment graph budget is unchanged. This fixes
+the retained representation rather than adding a collection cutoff, raising a
+limit, or weakening the large-fixture test. Replayed descriptions must still
+match exactly. Binder entry follows model-evidence registration, so it denotes
+the completed introduction transition.
+
+The existing inspector browser gate caught a completion-path regression: returning
+the check result for on-demand entry skipped the trailing status refresh when a
+check did not render a kernel inspection. Move that refresh into the existing
+`finally`, alongside the checking indicator. Every completed check now updates
+controls regardless of its return path. Preserve the failing browser log; rerun
+the gate on the corrected UI rather than adding a special generated-view fix.
+
+## CB6 external review, round 7 — diagnosis before fixes
+
+Claude finds one gate failure on `d48fa919`: the new inspector-unavailable message
+was not registered. Use the existing diagnostic catalogue tool; this requires no
+new abstraction. Its scope/cache/lifecycle audit otherwise passes, and it judges
+the implementation proportionate. Five library probes link 11,321 of 11,322 local
+views to available points; every linked entry appears in its module's index.
+
+Two observations deserve completion before the final round. Splitting binding
+snapshots preserved the aggregate visit limit but made the text cap per receipt.
+Preserve both aggregate limits when sharing descriptions, counting cached text
+alongside cached visits. This is representation accounting, not a reason to raise
+limits or add a separate budget service. The unlinked quotient view is an
+automatically checked coherence clause in its own observation attempt. Its entry
+must be recorded at that semantic clause boundary, as binder entries are recorded
+at introduction; optional reference events still only consume existing points.
+Do not weaken exact Scope matching or choose a nearby point. Verify generated
+clause queries, observation parity and warm/cold text exhaustion before round 8.
+
+
+Round 8 is clean on `cb1cdc2c`. Claude independently verifies text cost against
+7,108 distinct receipts, cold/warm refusal, generated clause goals and exact
+locals, successful recovery attempt ownership, and reference-collection parity.
+The coherence entry may parent inner proof points; its breadcrumb correctly
+represents that enclosing goal. No new registry or budget service is needed.
+Final gates on the same clean revision pass 1,332 tests, all 3,857 corpus checks,
+both browser suites and all four production mutation kills. CB6 review stops
+clean at eight rounds. CB7 retirement/release follows; after CB7, the user's
+requested separate cleanup audits the entire CB0–CB7 stack.

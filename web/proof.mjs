@@ -12,6 +12,7 @@ import { numeralAt, tokenStyle, tokenPattern } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
+import { createContextualConsole } from "./contextual-console.mjs";
 import { withCode } from "./diagnostics.mjs";
 import { showExplorer } from "./proof-explorer.mjs";
 
@@ -128,6 +129,7 @@ const pending = new Map(),
   history = [];
 let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
 const generatedSources = new Map();
+let contextual=null;
 $("editor").value = example;
 for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
@@ -240,6 +242,8 @@ function compilerOptimizations() {
 }
 function refreshStatus() {
   $("check").disabled = !ready || pending.size > 0;
+  $("collect-contexts").disabled = !ready || pending.size > 0;
+  $("open-context-repl").disabled = !ready || pending.size > 0 || dirty() || !checkedKernelView?.contextEntry;
   for (const id of ["share-syntax", "reuse-checks", "compact-paths"])
     $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
   $("export").disabled = !last || pending.size > 0;
@@ -257,11 +261,13 @@ function refreshStatus() {
         : "Loading kernel…";
 }
 function request(command, args = {}) {
+  if (!ready) return Promise.reject(new Error("The checking worker is unavailable. Reload the page to restart it."));
   const id = ++serial;
   return new Promise((resolve, reject) => {
     const watchdog = proofRequestWatchdog(command, () => {
       worker.terminate();
       ready = false;
+      contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
       for (const p of pending.values()) {
         p.watchdog.stop();
         p.reject(
@@ -292,16 +298,19 @@ if (embedded) addEventListener("message", ({ data, origin }) => {
   if (origin !== location.origin || data?.type !== "cubist-inspect" || typeof data.source !== "string") return;
   runExample(data);
 });
-async function check() {
+async function check({keepInspection=false}={}) {
   showChecking(true);
   if (await refreshCompiler()) return;
+  const contextVersion=contextual?.invalidate("Checking the source. Select a new context when checking finishes.");
   $("diagnostic").hidden = true;
   const source = $("editor").value;
+  const collectScopes=$("collect-contexts").checked;
   try {
     // Where the source came from decides where its imports are found
     // (module-resolution.mjs): an archive proof imports only from the archive.
-    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations() });
+    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations(),collectScopes });
     last = result;
+    contextual?.checked(result,contextVersion,collectScopes);
     generationSerial++;
     generatedSources.clear();
     $("generated-source").replaceChildren();
@@ -312,40 +321,44 @@ async function check() {
       return option;
     }));
     $("generated-module").value = Object.hasOwn(result.sources, previousModule) ? previousModule : proofId;
-    history.length = 0;
+    if(!keepInspection)history.length = 0;
     renderSource();
     renderResult();
     await setMode(sourceMode === "generated" ? "generated" : "read");
-    const target = query.get("name");
-    const info =
-      target &&
-      [...(result.declarations ?? []), ...result.outputs].find(
-        (d) => d.binding === target || (backend === "cubical" && d.name === target),
-      );
-    if (restoring) {
-      const saved = restoring;
-      restoring = null;
-      history.push(...saved.history);
-      await inspect(saved.selected ?? decorate(result.outputs.at(-1)), false);
-      $("read-source").scrollTop = saved.sourceScroll ?? 0;
-      $("generated-source").scrollTop = saved.generatedScroll ?? 0;
-      window.scrollTo(0, saved.scroll ?? 0);
-    } else {
-      const fallback = result.outputs.at(-1);
-      // An embedding page asks for the name at a source offset.
-      const focus = focusOffset === null ? null : [...result.links].filter(link => link.start === focusOffset)
-        .sort((a, b) => a.end - a.start - (b.end - b.start))[0];
-      const requestedOffset = focusOffset;
-      focusOffset = null;
-      if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
-      else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
-      // Embedded, the inspector is on top and the source below stays in place.
-      if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
-        revealSource({ module: proofId, start: requestedOffset });
-      else if (info) revealSource(definitionSite(info));
+    if(!keepInspection) {
+      const target = query.get("name");
+      const info =
+        target &&
+        [...(result.declarations ?? []), ...result.outputs].find(
+          (d) => d.binding === target || (backend === "cubical" && d.name === target),
+        );
+      if (restoring) {
+        const saved = restoring;
+        restoring = null;
+        history.push(...saved.history);
+        await inspect(saved.selected ?? decorate(result.outputs.at(-1)), false);
+        $("read-source").scrollTop = saved.sourceScroll ?? 0;
+        $("generated-source").scrollTop = saved.generatedScroll ?? 0;
+        window.scrollTo(0, saved.scroll ?? 0);
+      } else {
+        const fallback = result.outputs.at(-1);
+        // An embedding page asks for the name at a source offset.
+        const focus = focusOffset === null ? null : [...result.links].filter(link => link.start === focusOffset)
+          .sort((a, b) => a.end - a.start - (b.end - b.start))[0];
+        const requestedOffset = focusOffset;
+        focusOffset = null;
+        if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
+        else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
+        // Embedded, the inspector is on top and the source below stays in place.
+        if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
+          revealSource({ module: proofId, start: requestedOffset });
+        else if (info) revealSource(definitionSite(info));
+      }
     }
     rememberDraft();
+    return result;
   } catch (e) {
+    contextual?.invalidate("The source could not be checked. Fix it and check again to select a new context.");
     diagnostic(e);
     setMode("edit");
     if (Number.isInteger(e.offset)) {
@@ -354,8 +367,8 @@ async function check() {
     }
   } finally {
     showChecking(false);
+    refreshStatus();
   }
-  refreshStatus();
 }
 function setMode(mode) {
   sourceMode = mode;
@@ -670,6 +683,7 @@ function renderSource(target = $("read-source"), snapshot = last) {
     target.append(row);
     offset += line.length + 1;
   }
+  contextual?.decorate(target,snapshot,{module:generated?snapshot.module:proofId,generated});
 }
 function renderWitnessDetails(info) {
   $("inspect-description").textContent = info.description ?? "";
@@ -738,6 +752,7 @@ async function inspect(info, remember = true) {
   $("kernel-inference").textContent = "";
   $("kernel-context-list").replaceChildren();
   $("kernel-context-note").textContent = "";
+  $("open-context-repl").hidden = true;
   $("kernel-axioms-list").replaceChildren();
   $("kernel-axioms").hidden = true;
   checkedKernelView = null; showKernelBody = false; kernelDisplayLimit = 1200;
@@ -897,7 +912,9 @@ function renderType(text, extraSymbols = []) {
 let checkedKernelView = null, showKernelBody = false, kernelDisplayLimit = 1200;
 function renderKernel(view) {
   checkedKernelView = view;
+  $("open-context-repl").hidden = !view.contextEntry;
   renderCubicalKernel(view);
+  refreshStatus();
 }
 function renderCubicalKernel(view) {
   $("open-kernel-assembly").hidden = false;
@@ -972,6 +989,22 @@ function renderBoundary(boundary) {
   for (const [name, text] of [...Object.entries(boundary.corners), ...Object.entries(boundary.edges)])
     $(`square-${name}`).textContent = text;
 }
+$("open-context-repl").onclick = async () => {
+  if(!checkedKernelView?.contextEntry||dirty()||pending.size)return;
+  const info=selected,sequence=inspectSerial,source=last.source;
+  try {
+    if(!contextual.collecting) {
+      $("collect-contexts").checked=true;
+      const result=await check({keepInspection:true});
+      if(!result||last!==result||result.source!==source||dirty()||inspectSerial!==sequence)return;
+      await inspect(info,false);
+      if(inspectSerial!==sequence+1||selected.binding!==info.binding||dirty())return;
+    }
+    const view=checkedKernelView,snapshot=last,current=inspectSerial;
+    await contextual.openInspection(view.contextEntry,
+      ()=>inspectSerial===current&&checkedKernelView===view&&last===snapshot&&!dirty());
+  } catch(error) {diagnostic(error);}
+};
 $("toggle-kernel-body").onclick = () => { showKernelBody = !showKernelBody; renderKernel(checkedKernelView); };
 $("widen-inspector").onclick = () => {
   const wide = document.querySelector(".workspace").classList.toggle("inspector-wide");
@@ -1022,7 +1055,10 @@ $("read-mode").onclick = () => setMode("read");
 $("edit-mode").onclick = () => setMode("edit");
 $("generated-mode").onclick = () => setMode("generated");
 $("generated-module").onchange = showGeneration;
+$("collect-contexts").onchange=check;
 $("editor").oninput = () => {
+  contextual?.invalidate();
+  if(ready)request("context-invalidate").catch(()=>{});
   refreshStatus();
   rememberDraft();
 };
@@ -1111,6 +1147,7 @@ async function refreshCompiler() {
   ready = false;
   showChecking(true, "Updating proof checker…");
   worker.terminate();
+  contextual?.invalidate("The compiler changed. Check the source and select a new context.");
   last = null;
   $("result").hidden = true;
   $("source-notice").hidden = false;
@@ -1152,6 +1189,7 @@ async function startWorker(version = undefined) {
   worker.onerror = (e) => {
     ready = false;
     worker.terminate();
+    contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
     for (const p of pending.values()) {
       p.watchdog.stop();
       p.reject(new Error(e.message || "Unable to load the checking worker."));
@@ -1173,6 +1211,8 @@ addEventListener("pageshow", (event) => {
   if (event.persisted) refreshCompiler().catch(diagnostic);
 });
 enableTokenTips();
+$("context-option").hidden=embedded;
+contextual=createContextualConsole($("context-panel"),{request});
 // The console runs over the last checked version of this file.
 if (!embedded) createReplConsole($("repl"), {
   label: "Console input: a Cubist term or declaration",

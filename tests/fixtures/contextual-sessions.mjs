@@ -1,5 +1,5 @@
 // Source controls and query scripts for the CB1/CB6 replay backend. These
-// describe desired sessions; the current module REPL does not implement them.
+// run through ContextualSession; the separate module REPL has no local context.
 // Each marker is a unique substring. Scopes are selected by occurrence and
 // instance, never by whichever binding happens to have the same spelling.
 import { editedFixture } from "../fixture-edits.mjs";
@@ -154,12 +154,3 @@ export function probeSource(scenario, probe) {
   if (probe.edit === null) return scenario.source;
   return editedFixture(scenario.source, probe.edit, `${scenario.id}/${probe.id}`);
 }
-
-export const sessionLifecycle = [
-  "two sessions at one scope keep scratch bindings isolated",
-  "source/import revision changes invalidate sessions without matching labels",
-  "full ordered prefix replay preserves selected-only recursive accounting and cumulative kernel work",
-  "fuel, kernel budget and deadline exhaustion each report context unavailable",
-  "failed scratch-history replay preserves history and reports the failed entry",
-  "worker cancellation/disposal prevents old requests from using invalid handles",
-];

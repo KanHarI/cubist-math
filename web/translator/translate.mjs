@@ -94,6 +94,9 @@ export class Translator {
     this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
+    if(checker?.compilationBindings&&checker.compilationBindings!==this.compilationBindings
+      ||scopePoints&&scopePoints.compilation!==this.compilationBindings)
+      throw new TypeError("A translator and its observers must share the checker's compilation identities.");
     if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
     this.identityAdapter=new BindingAdapter(this.compilationBindings.table);
     this.sourceRevision=this.compilationBindings.revision;
@@ -163,8 +166,10 @@ export class Translator {
     const key=node.bindingId?scope.unit.bindingAdapter.key(node.bindingId)
       :node.isBinding?node.text??node.name:node.name;
     const source=env?.get(key)===term?scope.localSources.get(key):null;
-    scope.unit.recordReference(source?{...node,name:source.name,localBindingKey:key}
-      :node.spelling?{...node,name:node.spelling}:node,term,scope,env);
+    const observed=source?{...node,name:source.name,localBindingKey:key}
+      :node.spelling?{...node,name:node.spelling}:node;
+    const contextScope=scope.unit.scopePoints?.current(scope);
+    scope.unit.recordReference(contextScope?{...observed,contextScope}:observed,term,scope,env);
   }
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
@@ -203,8 +208,11 @@ export class Translator {
     scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
       term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,
         ...(node.origin?{origin:node.origin}:{}),...(node.bindingId?{bindingId:node.bindingId}: {})});
-    this.reference(scope,{...node,name:label,isBinding:true},term);
-    return ["Var","U"].includes(term.tag)?scope:scope.modelEvidence(term);
+    if(!["Var","U"].includes(term.tag))scope=scope.modelEvidence(term);
+    const record=()=>this.reference(scope,{...node,name:label,isBinding:true},term);
+    if(scope.unit.scopePoints)scope.unit.scopePoints.around(this,node,scope,{phase:"inspection"},record);
+    else record();
+    return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
   expressionScope(node,scope,options) {
@@ -313,22 +321,22 @@ export class Translator {
     const selection=scope.env.get(SELECTION),plain=/^[0-9]+$/.test(n.text);
     if(!selection?.complete||!(selection.literal||plain&&selection.numeral))
       throw literalUnread(selection,n.text);
+    const origin=n.origin??sourceOrigin({revision:this.sourceRevision,module:scope.unit.moduleName,start:n.start,end:n.end});
+    const at={start:n.start,end:n.end,origin};
     // The natural number is built from the Nat the rule read where it was
     // declared, whatever the use's scope binds.
     if(!selection.literal) {
       if(selection.numeral.model) {
-        const natural=selection.numeral.natural,at={start:n.start,end:n.end};
+        const natural=selection.numeral.natural;
         const reads={kind:"name",name:operatorBinding("numeral"),...at};
-        const value=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
-        const node=scope.unit.scopePoints?.expansion(value,"notation",n,scope.unit)??value;
-        const inner=scope.withUnit(scope.unit.with({scopeUnavailable:"Model numeral expansion awaits its contextual observation migration."}));
-        return this.term(node,inner,expected);
+        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
+        return this.term(node,scope,expected);
       }
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRetainedRule(this,natural,selection.numeral,
         {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
-          start:n.start,end:n.end},null,n);
+          ...at},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
@@ -344,18 +352,18 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRetainedRule(this,glyphs,rule,lexeme,null,n);
+    const applied=appliedRetainedRule(this,glyphs,rule,{...lexeme,...at},null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
     // The answer is read from its normal form, a numeral, not from its text.
     const normal=this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
-      args:[applied.node],start:n.start,end:n.end},applied.scope,null)).normal,answer=numeralValue(normal);
+      args:[applied.node],...at},applied.scope,null)).normal,answer=numeralValue(normal);
     if(answer===null)throw literalUnevaluated(selection,n.text,this.shown(normal));
     if(answer!==0)throw scope.unit.locate(literalRefused(selection,n.text,answer-1),
       {start:n.start+answer-1,end:n.start+answer});
     return this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parsed_value")},args:[applied.node,{kind:"name",name:"tt"}],
-      start:n.start,end:n.end},applied.scope,expected);
+      ...at},applied.scope,expected);
   }
   evaluate(d,scope) {
     scope.spend("queries");
@@ -428,7 +436,10 @@ export class Translator {
     env.set(name,value);
     const key=this.checker.bindingName?.(name)??name;
     const declared=this.compilationBindings.declaration(key);
-    if(declared)env.set(this.identityAdapter.key(declared.binding.id),value);
+    if(declared) {
+      this.compilationBindings.published(declared.binding,value);
+      env.set(this.identityAdapter.key(declared.binding.id),value);
+    }
   }
   // Prepared syntax enters the same declaration checking/admission path as
   // parsed source. Binding-aware producers supply the one identity adapter;
@@ -686,7 +697,7 @@ export class Translator {
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
-      const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text,
+      const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind},
         bindingAdapter:retained?.adapter??bindingAdapter});
       this.onDeclarationStart?.(d);
       try {
@@ -792,7 +803,7 @@ export class Translator {
   // its own transaction, as a definition is; it binds the type's name and
   // its constructors' names. A failed one binds each as untranslated.
   inductiveDeclaration(d,module,env,declarations) {
-    const unit=module.declaration(this.declarationFuel);
+    const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind}});
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
     const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
@@ -1192,7 +1203,8 @@ export class Translator {
         if(builtin[n.name])return builtin[n.name];
         // The declaration's own name, where it is not a recursive reference:
         // recursion exists only with declared types, under their option.
-        if(scope.unit.declaring===n.name&&this.checker.kernel?.extensions?.h1)throw Error(selfReference(n.name));
+        if(scope.unit.declaring?.kind==="def"&&scope.unit.declaring.name===n.name&&this.checker.kernel?.extensions?.h1)
+          throw Error(selfReference(n.name));
         // m.f, for a model m of a theory, is the projection T.f(m) (L2.4).
         const projection=modelField(this,scope,n);
         if(projection)return tr(projection,expected);
@@ -1679,8 +1691,7 @@ export class Translator {
   // which the search uses as a rule (L2.5b).
   hlevelLocals(scope) {
     const locals=[];
-    for(const [key,bound] of scope.env) {
-      if(!scope.localSources.has(key)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+    for(const bound of scope.localDefinitions()) {
       const type=scope.infer(bound).type;
       if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
     }

@@ -73,3 +73,16 @@ test("silent checks and other requests still time out", () => {
   clock.advance(270000);
   assert.equal(checks, 1);
 });
+
+test("module and contextual queries share the finite checking timeout", () => {
+  for (const command of ["repl", "context-run"]) {
+    const clock = fakeClock();
+    let expired = 0;
+    const request = proofRequestWatchdog(command, () => expired++, clock);
+    clock.advance(299999);
+    assert.equal(expired, 0, command);
+    request.progress({ instructions: 1000, completed: 1 });
+    clock.advance(1);
+    assert.equal(expired, 1, command);
+  }
+});

@@ -149,6 +149,7 @@
             ></textarea>
             <div class="source-options">
               <p id="source-count" class="hint"></p>
+              <label id="context-option"><input id="collect-contexts" type="checkbox" /> Collect local contexts for the REPL</label>
             </div>
             <div id="read-source" aria-label="Checked proof source"></div>
             <div id="generated-panel" hidden>
@@ -159,6 +160,14 @@
               </div>
               <div id="generated-source" aria-label="Generated Cubist source"></div>
             </div>
+          </section>
+          <section id="context-panel" class="panel repl-panel" aria-labelledby="context-title" hidden>
+            <div class="panel-head"><h2 id="context-title">Contextual console</h2><button class="context-close" type="button">Close</button></div>
+            <label for="context-instance">Scope instance</label>
+            <select id="context-instance" aria-describedby="context-status"><option value="">Choose a scope instance…</option></select>
+            <p class="context-path hint"></p>
+            <p id="context-status" role="status"></p>
+            <fieldset disabled><div class="context-console"></div></fieldset>
           </section>
           <section id="repl-panel" class="panel repl-panel" aria-labelledby="repl-title">
             <div class="panel-head">
@@ -186,7 +195,10 @@
           <p id="inspect-kind" class="eyebrow"></p>
           <section id="kernel-terms" aria-label="Checked kernel term">
             <section id="kernel-context" aria-labelledby="kernel-context-label">
-              <strong id="kernel-context-label">Context</strong>
+              <div class="kernel-term-label">
+                <strong id="kernel-context-label">Context</strong>
+                <button id="open-context-repl" hidden disabled>Open REPL in this context</button>
+              </div>
               <p id="kernel-context-note" class="hint"></p>
               <ol id="kernel-context-list"></ol>
             </section>

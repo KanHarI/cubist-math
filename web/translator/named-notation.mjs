@@ -20,6 +20,7 @@ export function retainSourceNotation(t,module,declaration,env,{declared=new Set(
   const {source,inputs,prepared,captures}=enterSourceItem(t,module,declaration,env,owner);
   const artifact=retainNamedNotation(prepared.item,{table:registry.table,owner,source,
     context:prepared.context,constructors:inputs.constructors,simpSets:inputs.simpSets,model});
+  t.scopePoints?.retainNotation(artifact.binding.id,prepared.context);
   return {artifact,prepared,env:captures,
     declaration:{...prepared.item,retainedNotation:artifact}};
 }
@@ -92,8 +93,8 @@ export function retainedNotationReceipt(t,artifact,scope) {
 function ruleScope(scope,rule,adapter,site) {
   const blameSite=scope.unit.blameSite??(rule.syntax.tree.origin.module!==scope.unit.moduleName
     ?{start:site.start,end:site.end}:null);
-  return scope.withUnit(scope.unit.with({bindingAdapter:adapter,references:null,blameSite,
-    scopeUnavailable:"Notation expansion awaits its contextual observation migration."}));
+  const inner=scope.enterLexicalBody().withUnit(scope.unit.with({bindingAdapter:adapter,references:null,blameSite}));
+  return scope.unit.scopePoints?inner.with({lexical:scope.unit.scopePoints.notationContext(rule.binding)}):inner;
 }
 
 // Each invocation owns fresh local/activation/pattern identities. Arguments
@@ -109,7 +110,8 @@ export function appliedRetainedRule(t,scope,rule,left,right,site=left) {
   for(const [index,operand] of syntax.tree.operands.entries()) {
     const node=[left,right][index];
     if(!node)throw new TypeError("A named notation rule needs every explicit operand argument.");
-    inner=inner.alias(adapter.key(operand.bindingId),{tag:"SourceOperand",node,scope});
+    const key=adapter.key(operand.bindingId),value={tag:"SourceOperand",node,scope};
+    inner=inner.sourceBinding(key,value,inner.unit.scopePoints?t.compilationBindings.table.get(operand.bindingId):null);
   }
   return {node:lowerBindingSyntax(syntax,adapter,inner.slotOutcomes).value,scope:inner};
 }

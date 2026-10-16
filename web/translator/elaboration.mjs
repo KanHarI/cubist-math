@@ -8,7 +8,7 @@ import {NameSupply} from "./names.mjs";
 import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
-import {BindingAdapter,SlotOutcomes} from "../cubist/bindings.mjs";
+import {BindingAdapter,SlotOutcomes,bindingResolution} from "../cubist/bindings.mjs";
 import {substitutionFrame} from "../cubist/source-syntax.mjs";
 import {diagnosticCode} from "../diagnostics.mjs";
 
@@ -21,8 +21,8 @@ export const emptyRewriteWork = () => ({
 // collects none. `work` counts one declaration's rewriting search. `fuel`
 // (fuel.mjs) is spent by every kernel query at a scope of this unit: a
 // declaration's fuel, or a tactic search's, which counts toward it too.
-// `searches` records what the declaration's searches spent. `declaring` names
-// the declaration being elaborated, for a message about its own name.
+// `searches` records what the declaration's searches spent. `declaring` holds
+// the declaration's name and kind, for scope labels and self-reference policy.
 export class SourceUnit {
   constructor({checker,source="",sources=null,moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
@@ -104,18 +104,36 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[]) {
-    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=undefined,inheritedDefinitions=[]) {
+    if(lexical===undefined) {
+      lexical=null;
+      if(unit.scopePoints)try {lexical=unit.scopePoints.sourceContext(env);}
+      catch(error) {unit=unit.with({scopeUnavailable:error.message});}
+    }
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical,inheritedDefinitions});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
   with({unit=this.unit,context=this.context,env=this.env,dimensions=this.dimensions,
-    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence}) {
-    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence);
+    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence,lexical=this.lexical,
+    inheritedDefinitions=this.inheritedDefinitions}) {
+    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical,inheritedDefinitions);
   }
   withUnit(unit) {return this.with({unit});}
   withEnv(env) {return this.with({env});}
   withSlotOutcomes(slotOutcomes) {return this.with({slotOutcomes});}
+  // Definition evidence is inferred only when a search requests it. Context
+  // variables are already enumerated by that search and must not be repeated.
+  localDefinitions() {
+    if(!this.localSources.size)return this.inheritedDefinitions;
+    return [...this.inheritedDefinitions,...[...this.env].flatMap(([key,value])=>
+      this.localSources.has(key)&&!(value.tag==="Var"&&this.context.has(value.name))?[value]:[])];
+  }
+  // A foreign rule inherits the proof context, not the caller's lexical
+  // names. Its binders and openings cannot hide caller definition evidence.
+  enterLexicalBody() {
+    return this.with({inheritedDefinitions:this.localDefinitions(),localSources:new Map()});
+  }
   // Evidence belongs to the checked model, independently of aliases used
   // to display or open it. A reserved or refused projection grants nothing.
   modelEvidence(model,type=null) {
@@ -139,17 +157,36 @@ export class Scope {
     return added.length?this.with({evidence:[...this.evidence,...added]}):this;
   }
   refineEvidence(values) {
-    if(!values.size||!this.evidence.length)return this;
+    if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;
     const replace=term=>[...values].reduce((term,[name,value])=>substituteTerm(term,name,value),term);
-    return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)}))});
+    return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)})),
+      inheritedDefinitions:this.inheritedDefinitions.map(replace)});
   }
   sourceBinding(name,value,record,source=null) {
-    const scope=this.alias(name,value);
+    // Retained/query introductions already own an ID without an observer.
+    record??=this.unit.bindingAdapter?.bindingForKey(name);
+    // Keep an exact value for an outer binding even after its public label
+    // is shadowed. These private aliases never introduce source visibility.
+    const key=record?new BindingAdapter(this.checker.compilationBindings.table).key(record.id):name;
+    const scope=this.aliases(key===name?[[name,value]]:[[name,value],[key,value]]);
     if(!record&&!source)return scope;
     const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
-    if(record)sourceBindings.set(name,record);
-    if(source)localSources.set(name,Object.freeze(source));
-    return scope.with({sourceBindings,localSources});
+    const label=record?.label??source?.name??name;
+    // Execution keys may differ even when a source label is shadowed.
+    // Keep the old receipt for refinement, but revoke its search visibility.
+    for(const [key,entry] of localSources)if(entry.name===label)localSources.delete(key);
+    if(record) {
+      // Remember the introduction's refinement behavior even after shadowing.
+      // Opened-member receipts have no source-local metadata and stay distinct.
+      const receipt=Object.freeze({binding:record,local:!!source});
+      for(const at of new Set([name,key]))sourceBindings.set(at,receipt);
+    }
+    // Only the introduced key is a semantic local. An identity receipt must
+    // not add evidence or keep a shadowed let visible to proof search.
+    if(source)localSources.set(name,Object.freeze({...source,key:name}));
+    const lexical=record&&record.label!=="_"&&scope.lexical
+      ?scope.lexical.bind(record.label,bindingResolution(record.id)):scope.lexical;
+    return scope.with({sourceBindings,localSources,lexical});
   }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
@@ -161,20 +198,19 @@ export class Scope {
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
     return this.with({context:new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,
+      inheritedDefinitions:this.inheritedDefinitions.map(term=>onFace(term,face)),
       evidence:this.evidence.map(e=>({...e,term:onFace(e.term,face),type:onFace(e.type,face),model:onFace(e.model,face)}))});
   }
   alias(name,value) {
-    const env=new Map(this.env);
-    hide(env,name);
-    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
-    sourceBindings.delete(name);localSources.delete(name);
-    return this.with({env:env.set(name,value),sourceBindings,localSources});
+    return this.aliases([[name,value]]);
   }
   // Refinement changes a value at the same lexical binding. Introduction
   // (alias/sourceBinding) must never inherit a shadowed binder's identity.
   refine(name,value) {
     if(!this.env.has(name))throw new TypeError("Cannot refine an absent binding.");
-    return this.withEnv(new Map(this.env).set(name,value));
+    const env=new Map(this.env).set(name,value),record=this.sourceBindings.get(name)?.binding;
+    if(record)env.set(new BindingAdapter(this.checker.compilationBindings.table).key(record.id),value);
+    return this.withEnv(env);
   }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {
@@ -183,6 +219,10 @@ export class Scope {
     const env=new Map(this.env);
     const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
     for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);localSources.delete(name);}
+    // Public aliases (including model openings) also shadow retained locals
+    // whose execution keys are private identities.
+    const labels=new Set(pairs.map(([name])=>name));
+    for(const [key,entry] of localSources)if(labels.has(entry.name))localSources.delete(key);
     return this.with({env,sourceBindings,localSources});
   }
   // The source name bound here that hides the declaration `name`, or null.

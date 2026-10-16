@@ -170,6 +170,11 @@ export const diagnostics = [
   ["E242", "The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source."],
   ["E243", "The benchmark area is library, archive or tests, not …."],
   ["E244", "No saved benchmark of the … yet. Run it in this browser, or run npm run benchmark:cubical -- --area=…."],
+  ["E245", "This binding is unavailable."],
+  ["E246", "This contextual session is stale or closed. Select a context from the current check."],
+  ["E247", "Check the current source with contextual scopes enabled."],
+  ["E248", "The checking worker is unavailable. Reload the page to restart it."],
+  ["E249", "The inspected context is unavailable. Check the source and inspect the occurrence again."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

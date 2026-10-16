@@ -34,8 +34,8 @@ try {
     }
   };
   const inspected = name => page.waitForFunction(name =>
-    document.querySelector("#inspect-name").textContent === name &&
-    !document.querySelector("#kernel-view").disabled, name);
+    document.querySelector("#inspect-name")?.textContent === name &&
+    document.querySelector("#kernel-view")?.disabled === false, name);
   const openProof = async (proof, name) => {
     await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);

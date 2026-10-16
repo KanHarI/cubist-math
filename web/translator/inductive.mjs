@@ -76,12 +76,17 @@ export function lowerInductive(translator, d, scope) {
   // no data type or arity mentions the sort, so none depends on its level.
   const sortName = at.fresh(d.name.text), sortVariable = T.variable(sortName);
   const placeholder = T.universe(declared ?? { tag: "LConst", tier: 1, value: 0 });
-  const declareLocal=(at,token,value)=>{
-    const named=at.alias(token.text,value);
-    return token.bindingId?named.alias(translator.identityAdapter.key(token.bindingId),value):named;
+  const declareLocal=(at,token,value,identity)=>{
+    // Before admission these are variables in the provisional signature's
+    // telescope. Record their introduction here, never from the final module.
+    const registry=translator.compilationBindings;
+    const record=at.unit.scopePoints?(token.bindingId?registry.table.get(token.bindingId)
+      :registry.declaration(identity).binding):null;
+    const named=at.sourceBinding(token.text,value,record);
+    return record||!token.bindingId?named:named.alias(translator.identityAdapter.key(token.bindingId),value);
   };
   let inner = declareLocal(at.bind(sortName, placeholder),d.name,
-    { tag: "InductiveSelf", source: d.name.text, binding, sort: sortVariable, slots });
+    { tag: "InductiveSelf", source: d.name.text, binding, sort: sortVariable, slots },binding);
   const constructors = [], sizes = [];
   for (const c of d.constructors) {
     if (constructors.some(k => k.source === c.name.text))
@@ -159,7 +164,8 @@ export function lowerInductive(translator, d, scope) {
     const name = inner.fresh(c.name.text), order = kernelOrder.map(a => args.indexOf(a));
     constructors.push({ source: c.name.text, name, type, order, arity: args.length, dims, fields: args.map(a => a.source) });
     inner = declareLocal(inner.bind(name, type),c.name,
-      { tag: "InductiveConstructor", source: c.name.text, head: T.variable(name), order, arity: args.length, dims });
+      { tag: "InductiveConstructor", source: c.name.text, head: T.variable(name), order, arity: args.length, dims },
+      `${binding}:constructor:${constructors.length-1}`);
   }
   // The sort's level: written, or the least one containing every data type
   // and arity (2.1); parameters count only through those.
