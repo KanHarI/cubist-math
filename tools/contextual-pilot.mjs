@@ -1,5 +1,5 @@
 // Reproducible contextual measurements. Run alone, preferably with
-// node --expose-gc tools/contextual-pilot.mjs [FIXTURE]. Each request has a fresh native
+// node --expose-gc tools/contextual-pilot.mjs [FIXTURE] [--artifacts]. Each request has a fresh native
 // handle, but the WASM module and JavaScript JIT stay warm in this process.
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
@@ -11,7 +11,7 @@ import {ContextualSession} from "../web/contextual-session.mjs";
 import {contextualScenarios} from "../tests/fixtures/contextual-sessions.mjs";
 
 assertFreshBuild();
-const name=process.argv[2]??"nested-function";
+const name=process.argv[2]??"nested-function",collectGeneration=process.argv.includes("--artifacts");
 const fixtures=[...contextualScenarios,
   {id:"lazy-notation",source:`inductive Nat { zero; succ(n : Nat); }
     notation first { x + y := x; }
@@ -31,14 +31,14 @@ assert.ok(fixture?.sessions,`Unknown fixture: ${name}`);
 for(const collectScopes of [false,true]) {
   globalThis.gc?.();
   const memoryBefore=process.memoryUsage();
-  const program=new CubicalProgram(module,sourceReader(),{collectScopes});
+  const program=new CubicalProgram(module,sourceReader(),{collectScopes,collectGeneration});
   try {
     const start=performance.now(),result=await program.check(fixture.source,"main");
     const checkMs=performance.now()-start;
     assert.deepEqual(result.gaps.map(({name,code})=>[name,code]),fixture.gaps??[]);
     globalThis.gc?.();
     const memoryAfter=process.memoryUsage();
-    const row={collectScopes,checkMs,memoryBefore,memoryAfter,kernelWork:program.kernel.work(),points:program.scopePoints.size};
+    const row={collectScopes,collectGeneration,checkMs,memoryBefore,memoryAfter,kernelWork:program.kernel.work(),points:program.scopePoints.size};
     if(collectScopes) {
       row.availablePoints=[...program.scopePoints.values()].filter(point=>point.available).length;
       row.unavailableReasons={};
