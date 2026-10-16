@@ -144,7 +144,6 @@ export function retainParents(theory,interfaces,{lookup,source,owner,constructor
     universeIds:parent.universes.map(p=>parent.correspondence.get(p.name.bindingId)),
     parameterIds:parent.parameters.map(p=>parent.correspondence.get(p.name.bindingId)),
     fieldIds:parent.record.fields.map(field=>parent.correspondence.get(field.id)),
-    fields:parent.record.fields.map(field=>table.get(parent.correspondence.get(field.id)).label),
     kinds:parent.record.fields.map(field=>field.kind)}));
   return {parents,ambiguous,...inheritNotations(prepared,{table,owner,source,constructors,context:interfaces.context,theory:T})};
 }

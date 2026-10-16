@@ -7,13 +7,13 @@ import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
 import {bindingInputs} from "../web/translator/binding-module.mjs";
 import {parse} from "../web/cubist/parser.mjs";
-import {rewritten} from "../web/cubist/scopes.mjs";
+import {ArtifactBuilder,at,token,reference,builtin} from "../web/cubist/artifact-builder.mjs";
 import {parameterLambdas} from "../web/cubist/telescopes.mjs";
 import {RetainedInterfaces} from "../web/cubist/retained-interfaces.mjs";
-import {resolveBindingSyntax,resolveBindingTemplate,bindingSyntaxView,substituteBindingSyntax,lowerBindingSyntax,bindingUses}
+import {resolveBindingSyntax,bindingSyntaxView,lowerBindingSyntax,bindingUses}
   from "../web/cubist/binding-syntax.mjs";
 
-test("generated template binders compose with retained syntax through explicit ID maps",async t=>{
+test("artifact binders compose with retained syntax through explicit ID maps",async t=>{
   const program=new CubicalProgram(await create(),async()=>"");t.after(()=>program.dispose());
   assert.deepEqual((await program.check("inductive Two { left_; right_; }","base")).gaps,[]);
   const registry=program.compilationBindings,table=registry.table,values=new Map();
@@ -28,23 +28,25 @@ test("generated template binders compose with retained syntax through explicit I
   const field=retained.retain(parse("def c : A := tt;").declarations[0],{kind:"operation"});
   const helper=retained.retain(parse("def get(x : A) : A := c;").declarations[0],{kind:"derived"});
   const value=bindingSyntaxView(helper.syntax,parameterLambdas(helper.syntax.tree.params,helper.syntax.tree.body[0].value));
-  const generated="fun (B : U0) => fun (c, x : B) => __body(x)";
-  const template=rewritten(parse(generated,true),n=>n.kind==="name"&&n.name==="__body"?{kind:"templateHole",hole:"body",start:n.start,end:n.end}:n);
-  const reference=(context,label)=>{
-    const resolution=context.lookup(label);
-    assert.equal(resolution.tag,"binding");
-    return bindingSyntaxView(value,{kind:"bindingReference",resolution,spelling:label,origin:field.binding.origin});
-  };
-  const splices=new Map([["body",context=>substituteBindingSyntax(value,new Map([
-    [h.tree.params[0].name.bindingId,reference(context,"B")],
-    [field.id,reference(context,"c")],
-  ]),table,["instantiate"])] ]);
-  const syntax=resolveBindingTemplate(template,{table,owner:["generated"],context:inputs.context,
-    source:{revision:"generated",module:"artifact"}},splices);
-  const own=syntax.tree.body.names;
-  assert.equal(syntax.tree.body.body.fn.body.resolution.id,own[0].bindingId);
-  assert.notEqual(syntax.tree.body.body.fn.name.bindingId,own[1].bindingId);
-  assert.ok(!bindingUses(syntax).some(use=>[field.id,h.tree.params[0].name.bindingId].includes(use.id)));
+  const origin=field.binding.origin,builder=new ArtifactBuilder(h,{table,owner:["generated"],origin});
+  const B=builder.local("B"),c=builder.local("c"),x=builder.local("x");
+  const inserted=builder.substitute(value,new Map([
+    [h.tree.params[0].name.bindingId,bindingSyntaxView(value,reference(B))],
+    [field.id,bindingSyntaxView(value,reference(c))],
+  ]));
+  const binding=builder.reserve("generated"),params=[
+    {name:token(B),type:builtin("U0",origin),group:0},
+    {name:token(c),type:reference(B),group:1},{name:token(x),type:reference(B),group:2},
+  ];
+  builder.emit(binding,{kind:"def",name:token(binding),params,type:reference(B),
+    body:[{kind:"exact",value:{kind:"call",fn:inserted.tree,args:[reference(x)],...at(origin)},...at(origin)}],
+    ...at(origin)},{role:"test"});
+  const emitted=builder.artifacts[0].syntax,tree=emitted.tree;
+  assert.equal(tree.body[0].value.fn.body.resolution.id,tree.params[1].name.bindingId);
+  assert.notEqual(tree.body[0].value.fn.name.bindingId,tree.params[2].name.bindingId);
+  assert.notEqual(tree.params[0].name.bindingId,B.id,"emission freshens owned identities");
+  assert.ok(!bindingUses(emitted).some(use=>[field.id,h.tree.params[0].name.bindingId].includes(use.id)));
+  const syntax=bindingSyntaxView(emitted,parameterLambdas(tree.params,tree.body[0].value));
   const translator=new Translator({checker:program.checker,compilationBindings:registry,normalize:false});
   const scope=new Scope(translator.unit({bindingAdapter:inputs.adapter}),new Map(),inputs.env);
   const args=resolveBindingSyntax(parse("f(Two, left_, right_)",true),{table,owner:["arguments"],context:inputs.context,source});
@@ -55,6 +57,4 @@ test("generated template binders compose with retained syntax through explicit I
     table,owner:["expected",label],context:inputs.context,source}),inputs.adapter),scope);
   assert.equal(scope.equal(actual,expected("left_")),true);
   assert.equal(scope.equal(actual,expected("right_")),false);
-  assert.throws(()=>resolveBindingSyntax(template,{table,owner:["source"],context:inputs.context,source}),/family has not migrated: templateHole/);
-  assert.throws(()=>resolveBindingTemplate(template,{table,owner:["missing"],context:inputs.context,source},new Map()),/Unknown template syntax hole/);
 });

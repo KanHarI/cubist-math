@@ -2,7 +2,7 @@
 // node tools/frontend-generation-mutations.mjs REPORT.json [ID...]
 import {mkdtemp,cp,readFile,writeFile,rm,mkdir,readdir} from "node:fs/promises";
 import {tmpdir} from "node:os";
-import {join,resolve} from "node:path";
+import {join,resolve,relative} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync,execFileSync} from "node:child_process";
 import {createHash} from "node:crypto";
@@ -42,7 +42,7 @@ const run=m=>{
 };
 try {
   for(const name of ["web","tests","tools","library","cubist-tests","archive","kernel","wasm","Makefile","cli","package.json"])
-    await cp(join(root,name),join(directory,name),{recursive:true,filter:source=>!/(?:^|\/)build(?:\/|$)/.test(source)});
+    await cp(join(root,name),join(directory,name),{recursive:true,filter:source=>!/(?:^|\/)build(?:\/|$)/.test(relative(root,source))});
   for(const m of chosen) {
     const path=join(directory,m.file),original=await readFile(path,"utf8");
     const occurrences=original.split(m.from).length-1;

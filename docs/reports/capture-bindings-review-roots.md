@@ -366,3 +366,47 @@ without additional state or tactic-specific guards. Non-editing name annotations
 outside the site factories and shared-binding view collisions remain explicit
 CB5/CB6 work. CB3 review stops at round 5 of eight; no further round is needed
 without a new finding.
+
+## CB4 external review, round 1 — diagnosis before fixes
+
+Claude reviewed `285f7223` against `3edc0d58` and found no semantic, identity,
+availability, universe or rollback defects. Two low-severity findings repeat
+the cleanup's source-decision root: representations used only by the removed
+text producer remain after identities replace textual resolution.
+
+The parent record's `fields` spelling list has no remaining consumer; the
+direct builder uses `fieldIds` and `kinds`. Delete that list. Generated local
+labels are still freshened across the entire Hom/Iso family, so unrelated
+earlier generation changes later printed names. Choose a display label once
+per stem, while allocating a fresh binding ID for every occurrence. Existing
+core printing already disambiguates nested binders with equal display labels.
+No new resolver, builder layer or compatibility path is needed.
+
+The review checked emitted reference scope over 128 theory builds and 11
+initial/free builds, including a mutation that reuses source input IDs. It
+also checked fixed/dependent indices, collisions, named arguments, multiple
+universes, parent inheritance, rollback and the strict G2 contract. Its notes
+about anonymous labels and generated diagnostic locations belong to CB5's
+recorded display work; generated spans are unchanged, while inferred bodies
+no longer have the old synthetic `exact` statement's location suffix.
+
+The first focused run rejected caching public parameter labels: a theory
+parameter named `A` collided with the generated model parameter. Public
+telescope labels are an API even though local references use IDs. Apply the
+per-stem reuse only to the existing `local` role; parameter/universe allocation
+keeps distinct public labels. The existing theory-resolution collision client
+detected the mistake before commit, without requiring a new exception or mode.
+
+Corrected validation: 133/133 focused tests; the full run passes 1,210 of
+1,222 tests with 12 later-package TODOs and zero failures. All 3,857 canonical
+checks pass and all four production mutations are killed. Source/tests were
+frozen throughout the final gates.
+
+## CB4 external review, round 2 — clean
+
+Claude reviewed `f2dd9212` against `285f7223`. Both cleanup findings are fixed,
+with no new actionable findings. Named public parameters remain unchanged;
+internal equal-label binders retain distinct IDs and print without capturing
+globals. A 24-file before/after comparison preserves verdicts, types and
+output modulo the intended internal-label changes. The source head and full
+validation remain unchanged. Stop at round 2; no speculative fixes follow.

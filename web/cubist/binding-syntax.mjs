@@ -57,18 +57,10 @@ export function resolveBindingReceiver(tree,options,{namespace=true}={}) {
   return resolveBindings(tree,{...options,selectionReceiver:true,receiverNamespace:namespace});
 }
 
-// Transitional generated templates own their binders and explicit holes.
-// Resolve those binders once; a hole supplies already retained syntax using
-// an explicit interface map. Its contents never enter source resolution.
-export function resolveBindingTemplate(tree,options,splices) {
-  if(!(splices instanceof Map))throw new TypeError("A binding template needs explicit syntax splices.");
-  return resolveBindings(tree,options,splices);
-}
-
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
   fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
-  notation=null,receiverNamespace=true,syntaxOperands=[],simpSets=null},splices=null) {
+  notation=null,receiverNamespace=true,syntaxOperands=[],simpSets=null}) {
   const selectedNotation=context.selectedNotation();
   if(selectedNotation) {
     const fallback={activation:selectedNotation};
@@ -93,7 +85,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   const lazyOperands=new Set(syntaxOperands);
   const selectors=new Map(),namespaceNotations=new Map();
   let namespaces=false;
-  let splice=0;
+  let nested=0;
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
   const resolvedAt=(value,node)=>mapResolution(value,undefined,value=>value.tag==="failure"?failedResolution({...value,
     ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
@@ -206,7 +198,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
               :[descend(node.left),descend(node.right)],origin:origin(node),start:node.start,end:node.end};
           }
         }
-        const receiver=resolveBindingReceiver(qualifier,{table,owner:[...owner,"qualifier",String(splice++)],
+        const receiver=resolveBindingReceiver(qualifier,{table,owner:[...owner,"qualifier",String(nested++)],
           context:at.lexical,source,constructors,evidenceTypes,fixedReferences,universeReferences,
           namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands,simpSets});
         owned.push(...receiver.owned);
@@ -232,13 +224,6 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         if(!evidenceTypes.has(builtin))throw new TypeError(`A leveled parameter needs a source resolution for ${builtin}.`);
         return {kind:"call",fn:occurrence(token,evidenceTypes.get(builtin),builtin,at),
           args:[mapped.type,occurrence(token,bindingResolution(token.bindingId),token.text,at)],origin:at};
-      }
-      if(node.kind==="templateHole"&&splices) {
-        const insert=splices.get(node.hole);
-        if(!insert)throw new TypeError(`Unknown template syntax hole: ${node.hole}`);
-        const {syntax}=cloneBindingSyntax(insert(at.lexical),table,[...owner,"splice",String(splice++)]);
-        owned.push(...syntax.owned);
-        return syntax.tree;
       }
       const dynamic=at.notation?.activation??at.notation?.fallback?.activation;
       if(dynamic&&["number","binaryNumber","literal"].includes(node.kind)
@@ -280,7 +265,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         if(rule) {
           const operand=(child,recipe)=>{
             if(!recipe)return descend(child);
-            const {syntax}=cloneBindingSyntax(recipe,table,[...owner,"operand",String(splice++)],
+            const {syntax}=cloneBindingSyntax(recipe,table,[...owner,"operand",String(nested++)],
               {expansion:{kind:"notation",site:origin(child)}});
             owned.push(...syntax.owned);
             const activation=table.allocate(owner,{role:"activation",label:"selection",origin:origin(child)});
@@ -356,7 +341,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   if(telescope.order)tree={...tree,params:telescope.order.map(({parameter,group})=>({...resolvedParameters.get(parameter),group}))};
   // Every source-bearing expression, including synthesized operator bodies,
   // must retain its module before an expansion moves it to another unit.
-  // Copy first: retained splices can be frozen and source input is not ours
+  // Copy first: retained fragments can be frozen and source input is not ours
   // to annotate. The DAG copy preserves shared grouped domains.
   tree=qualifySource(mapSyntax(tree,value=>sourceMetadata("origin",value)?value:undefined),source);
   const syntax=freeze({format, tree, owned, inferred: canonical.inferred});
