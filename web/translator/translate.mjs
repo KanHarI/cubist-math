@@ -7,7 +7,7 @@ import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
-import {decidePatternSlot,BindingAdapter,resolutionError,sourceOrigin} from "../cubist/bindings.mjs";
+import {decidePatternSlot,BindingAdapter,resolutionError,sourceOrigin,expandedOrigin} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
@@ -313,22 +313,22 @@ export class Translator {
     const selection=scope.env.get(SELECTION),plain=/^[0-9]+$/.test(n.text);
     if(!selection?.complete||!(selection.literal||plain&&selection.numeral))
       throw literalUnread(selection,n.text);
+    const origin=n.origin??sourceOrigin({revision:this.sourceRevision,module:scope.unit.moduleName,start:n.start,end:n.end});
+    const at={start:n.start,end:n.end,origin};
     // The natural number is built from the Nat the rule read where it was
     // declared, whatever the use's scope binds.
     if(!selection.literal) {
       if(selection.numeral.model) {
-        const natural=selection.numeral.natural,at={start:n.start,end:n.end};
-        const reads={kind:"name",name:operatorBinding("numeral"),...at};
-        const value=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
-        const node=scope.unit.scopePoints?.expansion(value,"notation",n,scope.unit)??value;
-        const inner=scope.withUnit(scope.unit.with({scopeUnavailable:"Model numeral expansion awaits its contextual observation migration."}));
-        return this.term(node,inner,expected);
+        const natural=selection.numeral.natural,expanded={...at,origin:expandedOrigin(origin,{kind:"notation",site:origin})};
+        const reads={kind:"name",name:operatorBinding("numeral"),...expanded};
+        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...expanded}],...expanded}:reads;
+        return this.term(node,scope,expected);
       }
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRetainedRule(this,natural,selection.numeral,
         {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
-          start:n.start,end:n.end},null,n);
+          ...at},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
@@ -344,18 +344,18 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRetainedRule(this,glyphs,rule,lexeme,null,n);
+    const applied=appliedRetainedRule(this,glyphs,rule,{...lexeme,...at},null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
     // The answer is read from its normal form, a numeral, not from its text.
     const normal=this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
-      args:[applied.node],start:n.start,end:n.end},applied.scope,null)).normal,answer=numeralValue(normal);
+      args:[applied.node],...at},applied.scope,null)).normal,answer=numeralValue(normal);
     if(answer===null)throw literalUnevaluated(selection,n.text,this.shown(normal));
     if(answer!==0)throw scope.unit.locate(literalRefused(selection,n.text,answer-1),
       {start:n.start+answer-1,end:n.start+answer});
     return this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parsed_value")},args:[applied.node,{kind:"name",name:"tt"}],
-      start:n.start,end:n.end},applied.scope,expected);
+      ...at},applied.scope,expected);
   }
   evaluate(d,scope) {
     scope.spend("queries");

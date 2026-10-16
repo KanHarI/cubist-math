@@ -553,3 +553,27 @@ Stop at round 4. Full-suite/browser/mutation validation remains the recorded
 run at `39a2a4f0`; the rendering-only follow-up has 27 passing printer tests,
 the complete display sweep and clean external verification. CB5 is ready;
 CB6 contextual sessions and CB7 retirement continue in separate PRs.
+
+## CB6 notation and cost audit — diagnosis before further fixes
+
+The shadowed-notation query exposed the recurring visibility/availability
+confusion. Its lexical source context names the correct ID, but the query's
+value inventory was rebuilt through the caller's public notation labels.
+Consume the private checked receipts already present in the environment;
+the retained lexical context alone decides visibility. The distinguishing
+test passes different source and caller notations under the same label.
+
+The cost probe also exposes a recurrence of CB1's mutable-permission ownership
+issue. Lazy caller descriptions embed recursion permissions, so their entire
+environment description is rebuilt at every observed point. The nested-function
+fixture now has 1,625 available points and roughly 1.30 million objects under
+its binding descriptions. The larger sections fixture adds about 274 MB of
+heap during collection. These counts include newly supported contexts and are
+not comparable to CB1's mostly-unavailable pilot as marginal overhead figures.
+
+Before optimizing, separate point-specific mutable permissions from shared
+immutable environment descriptions, as CB1 already does for the immediate
+scope. Cover nested and explicitly scoped lazy operands, and verify that a
+permission change alters replay validation without mutating an earlier point.
+Do not add another cache of live scopes or a second serialization framework.
+This cost correction is still pending; no CB6 Claude review has run.

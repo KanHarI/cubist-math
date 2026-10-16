@@ -8,12 +8,13 @@ import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax,lowerBindingReference} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
-import {syntaxNames} from "./translator/syntax-graph.mjs";
+import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
 import {notationContextKey} from "./translator/notation-context.mjs";
 import {T} from "./translator/core.mjs";
 import {Goal} from "./translator/proof-goals.mjs";
+import {Scope} from "./translator/elaboration.mjs";
 import {replStatements} from "./repl-session.mjs";
 
 const limits=new Set(["fuel","budget","deadline"]);
@@ -103,7 +104,9 @@ function localBindings(translator,scope,lexical,adapter,table) {
     }
     const node=lowerBindingReference({kind:"bindingReference",resolution:resolved},adapter,scope.slotOutcomes);
     const value=node.kind==="name"?scope.env.get(node.name):null;
-    if(value?.tag==="Dimension")entry.type="Interval";
+    if(value?.tag==="SourceOperand") {
+      entry.deferred=true;entry.reason="Lazy notation operand; checked when used.";
+    } else if(value?.tag==="Dimension")entry.type="Interval";
     else {
       const term=translator.term(node,scope);
       entry.type=translator.shownIn(scope.infer(term).type,scope);
@@ -119,41 +122,60 @@ function localBindings(translator,scope,lexical,adapter,table) {
     "Shadowed locals:",...(shadowed.length?shadowed:["(none)"])].join("\n")};
 }
 
-function copiedScope(scope,unit) {
-  // Copy the maps and their mutable recursion/proof records together so
-  // fixed-argument correspondences keep their internal sharing. Native
-  // caches are outside these descriptions and must be re-derived.
-  const data=structuredClone({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions],evidence:scope.evidence});
-  return scope.with({unit,context:new Map(data.context),env:new Map(data.env),dimensions:new Map(data.dimensions),
-    sourceBindings:new Map(),localSources:new Map(scope.localSources),evidence:data.evidence});
+function copiedScope(scope,unit,names=null) {
+  // SourceOperand and scoped syntax form a DAG of caller scopes. Copy their
+  // values and recursion permissions together, but never their compiler units.
+  // Every lazy evaluation spends this query's fuel and uses its name supply.
+  // These copies exist only inside the synchronous isolated replay callback.
+  const copies=new WeakMap(),budget=syntaxGraphBudget({maxVisits:names?250000:500000,
+    checkDeadline:()=>unit.checker.kernel?.checkDeadline()});
+  const copy=value=>{
+    budget.tick();
+    if(typeof value==="string")names?.add(value.replace(/:[01]$/,""));
+    if(value===null||typeof value!=="object") {
+      if(typeof value==="function")throw new TypeError("A contextual query cannot copy a compiler callback.");
+      return value;
+    }
+    if(copies.has(value))return copies.get(value);
+    let result;
+    if(value instanceof Scope) {
+      const caller=value===scope?unit:unit.with({source:value.unit.source,moduleName:value.unit.moduleName,
+        bindingAdapter:value.unit.bindingAdapter,declaring:value.unit.declaring,blameSite:value.unit.blameSite});
+      result=value.with({unit:caller,context:copy(value.context),env:copy(value.env),dimensions:copy(value.dimensions),
+        sourceBindings:copy(value.sourceBindings),localSources:copy(value.localSources),evidence:copy(value.evidence)});
+      copies.set(value,result);return result;
+    }
+    if(value instanceof Map) {
+      result=new Map();copies.set(value,result);
+      for(const [key,entry] of value)result.set(copy(key),copy(entry));
+    } else if(value instanceof Set) {
+      result=new Set();copies.set(value,result);
+      for(const entry of value)result.add(copy(entry));
+    } else {
+      if(!Array.isArray(value)&&![Object.prototype,null].includes(Object.getPrototypeOf(value)))
+        throw new TypeError("A contextual query cannot copy an unknown live value.");
+      result=Array.isArray(value)?[]:{};copies.set(value,result);
+      for(const [key,entry] of Object.entries(value)) {
+        // Match continuation syntax is not a recursive-call permission.
+        if(value.tag==="Recursive"&&key==="site")continue;
+        result[key]=copy(entry);
+      }
+    }
+    return result;
+  };
+  return copy(scope);
 }
 
 function queryEnvironment(live,adapter,unit) {
-  // A declaration's match site is compiler continuation syntax, not a query
-  // permission. Keep shared recursive records and parameter tokens together;
-  // newly parsed query tokens cannot become owners of those parameters.
-  const recursiveCopies=new Map();
-  const queryValue=value=>{
-    if(value?.tag!=="Recursive")return value;
-    if(!recursiveCopies.has(value)) {
-      const {site,...permissions}=value;
-      recursiveCopies.set(value,permissions);
-    }
-    return recursiveCopies.get(value);
-  };
-  const permissions=[RECURSIVE,"\u0000superseded"].filter(key=>live.scope.env.has(key))
-    .map(key=>[key,queryValue(live.scope.env.get(key))]);
-  const data=structuredClone({context:[...live.scope.context],env:permissions,
-    values:[...live.values].map(([id,value])=>[id,queryValue(value)]),contexts:[...live.contexts],
-    dimensions:[...live.scope.dimensions],evidence:live.scope.evidence});
-  const original=new Map(data.env),values=new Map(data.values),env=new Map();
-  for(const [id,value] of values)env.set(adapter.key(id),value);
-  for(const [id,context] of data.contexts)env.set(notationContextKey(adapter.key(id)),context);
-  const selected=new Map(data.contexts).get(live.lexical.selectedNotation());
+  const env=new Map();
+  for(const [id,value] of live.values)env.set(adapter.key(id),value);
+  for(const [id,context] of live.contexts)env.set(notationContextKey(adapter.key(id)),context);
+  const selected=live.contexts.get(live.lexical.selectedNotation());
   for(const [key,value] of selected??[])env.set(key,value);
   // These are translator permissions, never a destination spelling lookup.
-  for(const key of [RECURSIVE,"\u0000superseded"])if(original.has(key))env.set(key,original.get(key));
-  const recursive=env.get(RECURSIVE);
+  for(const key of [RECURSIVE,"\u0000superseded"])if(live.scope.env.has(key))env.set(key,live.scope.env.get(key));
+  const scope=copiedScope(live.scope.with({env,sourceBindings:new Map()}),unit);
+  const recursive=scope.env.get(RECURSIVE);
   if(recursive) {
     const key=live.keys.get(recursive.key??recursive.source);
     if(key)recursive.key=adapter.key(key);
@@ -164,8 +186,7 @@ function queryEnvironment(live,adapter,unit) {
   }
   const localSources=new Map([...live.scope.localSources].flatMap(([key,source])=>live.keys.has(key)
     ?[[adapter.key(live.keys.get(key)),{...source,key:adapter.key(live.keys.get(key)),bindingId:live.keys.get(key)}]]:[]));
-  return live.scope.with({unit,context:new Map(data.context),env,dimensions:new Map(data.dimensions),
-    sourceBindings:new Map(),localSources,evidence:data.evidence});
+  return scope.with({localSources});
 }
 
 export class ContextualSession {
@@ -245,12 +266,13 @@ export class ContextualSession {
           const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,simpSets,
             source:{revision:inputs.revision,module:moduleName}});
           const tree=lowerBindingSyntax(syntax,entryAdapter);
-          const used=syntaxNames({context:[...scope.context],env:[...scope.env],dimensions:[...scope.dimensions]});
+          const used=new Set();
           const names=new NameSupply({taken:name=>used.has(name)||scope.checker.assumptions.has(name)});
           const unit=translator.unit({source:parsed.text,moduleName,bindingAdapter:entryAdapter,names,
             declaring:live.scope.unit.declaring}).declaration(translator.declarationFuel);
-          let current=copiedScope(scope,unit),result,extension=null;
+          let current,result,extension=null;
           try {
+            current=copiedScope(scope,unit,used);
             if(parsed.kind==="help")result={kind:"help",text:help};
             else if(parsed.kind==="locals")result=localBindings(translator,current,lexical,entryAdapter,table);
             else if(parsed.kind==="goal") {

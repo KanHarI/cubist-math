@@ -158,3 +158,60 @@ Remaining: notation-expansion and model-numeral observation migration, lazy
 operand caller contexts, the historical notation limitation, cost measurements,
 retirement of the remaining contextual TODO contracts, and final suite/corpus/
 mutation/browser validation. Claude review has not started; CB6 stays draft.
+
+## Notation contexts and contract coverage
+
+Source entry now supplies a complete lexical context. Retained named rules use
+their source context; runtime values supply exact receipts without granting
+visibility. In particular, a caller's public notation can shadow a label without
+removing the source notation's private receipt. This removes a redundant lookup
+through the caller's notation namespace, following the earlier identity versus
+visibility diagnosis.
+
+Lazy operands retain inert descriptions of their caller contexts. During the
+isolated callback, the query copies the caller scope graph and its mutable
+permissions using the query's fuel and fresh-name supply. Native handles and
+compiler continuations never become retained descriptions. Listing operands does
+not force them: `/locals` marks them deferred, and a constructor expression still
+needs an expected type when used. Model numerals and literal readers receive
+source origins at syntax production, without an observer-only expansion helper.
+
+All nine notation tests pass: source/caller shadowing, unused invalid operands,
+nested rules, operand recipes, interval and universe arguments, structural
+recursion, query resource ownership, model numerals and literal-reader instances.
+Collection preserves their source results, reference links and kernel work.
+
+The ten original TODO placeholders now have executable coverage. Keep the
+independent source controls; remove only the placeholders and their unused list.
+
+| Original contract | Executable coverage |
+| --- | --- |
+| Nested induction | `contextual-replay`: distinct inner/outer hypotheses and scratch history |
+| Branch instance set | `contextual-replay`: different wildcard refinements/verdicts; contextual browser picker |
+| Discarded path body | `scope-points`: discarded body has no selectable instance |
+| Proof goal | `contextual-commands`: `/goal`, proof success/refusal, unchanged source/history |
+| Two-session isolation | `contextual-replay` and `cubical-worker`: concurrent sessions and separate scratch bindings |
+| Source/import revisions | `contextual-replay`, `scope-points`, worker and browser: pinned imports, new IDs, immediate revocation |
+| Ordered prefix/accounting | `contextual-replay`: full imported prefix, failed directives and original resource policy; observation tests retain attempt accounting |
+| Fuel/budget/deadline exhaustion | `contextual-replay`: each stopping reason, no nearby fallback or query execution |
+| Failed scratch-history replay | `contextual-replay`: failed entry reported, history preserved and later replay succeeds |
+| Cancellation/disposal | Worker and browser tests: revocation during import loading, closure, replacement and discarded late replies |
+
+Historical name-based sections remain explicitly unavailable for contextual
+queries. Their incomplete selections predate current-language resolution;
+observation cannot silently change their semantics. The compatibility boundary
+is covered by on/off source parity and unavailable-query tests, and remains part
+of CB7's historical-adapter audit.
+
+The measurement tool now accepts `nested-function`, `nested-induction`,
+`lazy-notation`, `generated-helper` and `theory-sections`. Initial measurements
+expose substantial retained-description cost; investigation and final gates are
+still pending. One inductive-self context remains unavailable in the measured
+corpus. CB6 is still draft and has not had its first Claude review.
+
+The notation checkpoint passes the full Node suite: 1,292 tests, zero failures,
+zero TODOs, including all 3,857 canonical checks. All five cost-tool fixtures
+complete their three session repetitions. The source/tests were frozen through
+the full run; the subsequent changes correct the benchmark's scope-phase field
+and a trailing blank line. The earlier browser gate remains at `66153e54`;
+browser and mutation gates still need to run on the completed implementation.

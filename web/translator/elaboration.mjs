@@ -8,7 +8,7 @@ import {NameSupply} from "./names.mjs";
 import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
-import {BindingAdapter,SlotOutcomes,LexicalContext,bindingResolution} from "../cubist/bindings.mjs";
+import {BindingAdapter,SlotOutcomes,bindingResolution} from "../cubist/bindings.mjs";
 import {substitutionFrame} from "../cubist/source-syntax.mjs";
 import {diagnosticCode} from "../diagnostics.mjs";
 
@@ -104,7 +104,12 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=unit.scopePoints?new LexicalContext():null) {
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=undefined) {
+    if(lexical===undefined) {
+      lexical=null;
+      if(unit.scopePoints)try {lexical=unit.scopePoints.sourceContext(env);}
+      catch(error) {unit=unit.with({scopeUnavailable:error.message});}
+    }
     Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical});
     Object.freeze(this);
   }

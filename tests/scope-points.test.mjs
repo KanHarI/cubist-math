@@ -138,7 +138,7 @@ test("a declaration shares registered-rule descriptions and later registrations 
   assert.equal(JSON.stringify(points[0].state.rules),saved);
 });
 
-test("imported notation preserves authored origins and marks its unmigrated expansion unavailable",async t=>{
+test("imported notation retains available scopes with authored and caller origins",async t=>{
   const dep="inductive N { zero; succ(n : N); } def add(a, b : N) : N := a; notation pl { x + y := add(x, y); }";
   const source="import dep; def t(p : N) : N := pl.(p + p);";
   const {program,result}=await checkProgram(t,source,{module,reader:async()=>dep,options:{collectScopes:true}});
@@ -147,8 +147,8 @@ test("imported notation preserves authored origins and marks its unmigrated expa
   assert.ok(expanded.length);
   for(const point of expanded) {
     assert.equal(point.origin.module,"dep");
-    assert.equal(point.available,false);
-    assert.match(point.reason,/Notation expansion/);
+    assert.ok(point.available,point.reason);
+    assert.deepEqual(JSON.parse(JSON.stringify(point)),point);
     const frame=point.origin.expansion.at(-1);
     assert.equal(frame.kind,"notation");
     assert.equal(frame.site.module,"main");

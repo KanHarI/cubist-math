@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import create from "../web/dist/cubical.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { contextualScenarios, sessionLifecycle, probeSource } from "./fixtures/contextual-sessions.mjs";
+import { contextualScenarios, probeSource } from "./fixtures/contextual-sessions.mjs";
 
 const module = await create();
 for (const c of contextualScenarios) {
@@ -24,11 +24,10 @@ for (const c of contextualScenarios) {
       assert.deepEqual(get(name).axioms, [], name);
     }
   });
-  // The three CB1 scripts now execute through ContextualSession in
-  // contextual-replay.test.mjs. Broader CB6 contexts remain open contracts.
-  if(c.phase!=="CB1")test.todo(`${c.phase} contextual session: ${c.id}`);
 }
-for (const contract of sessionLifecycle) test.todo(`CB6 contextual lifetime: ${contract}`);
+// These remain independent source controls. Session execution, instance
+// selection and lifetime are covered by contextual-replay, contextual-commands,
+// scope-points and cubical-worker; the CB6 roadmap maps each former TODO.
 
 test("contextual probe edits reject missing, duplicated and unchanged anchors", () => {
   const probe = {id:"edited", edit:{anchor:"needle", replacement:"query"}};

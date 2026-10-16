@@ -1,11 +1,10 @@
 // Selected source entry points contain immutable descriptions, never a live
 // Scope or native handle. Execution is reconstructed by full-prefix replay.
-import {BindingAdapter,LexicalContext,bindingResolution,sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
+import {BindingAdapter,LexicalContext,sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
-import {snapshotSyntax} from "./syntax-graph.mjs";
-import {expandedSource} from "../cubist/source-syntax.mjs";
-import {sourceNotationInventory} from "./binding-module.mjs";
+import {snapshotSyntax,mapSyntax,syntaxGraphBudget} from "./syntax-graph.mjs";
+import {sourceBindingInputs} from "./binding-module.mjs";
 import {notationContextKey} from "./notation-context.mjs";
 
 const publicName=/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/;
@@ -25,7 +24,7 @@ function recursiveDescription(value) {
     "fixed","state","bindings","results","destructed"].filter(key=>value[key]!==undefined)
     .map(key=>[key,value[key] instanceof Map?[...value[key]]:value[key]]));
 }
-function describedValue(value) {
+function describedValue(value,operand) {
   if(isTerm(value))return value;
   if(value?.tag==="Dimension")return {tag:value.tag,name:value.name,...(value.endpoint===undefined?{}:{endpoint:value.endpoint})};
   if(value?.tag==="Inductive")return {tag:value.tag,binding:value.binding};
@@ -35,6 +34,7 @@ function describedValue(value) {
   // Permissions are mutable while the declaration is elaborated. Capture
   // them separately at each point; this part describes only the binding.
   if(value?.tag==="Recursive")return {tag:value.tag,source:value.source};
+  if(value?.tag==="SourceOperand")return operand(value);
   throw new TypeError(`Scope value has no persistent description: ${value?.tag??typeof value}`);
 }
 export class ScopePoints {
@@ -45,6 +45,7 @@ export class ScopePoints {
   #contexts=new WeakMap();
   #dimensions=new WeakMap();
   #rules=new WeakMap();
+  #notations=new Map();
   constructor(revision,{onPoint=()=>{},probe=null,target=null,compilation=new CompilationBindings(revision)}={}) {
     if(compilation.revision!==revision)throw new TypeError("Scope collection binding revision mismatch.");
     this.revision=revision;
@@ -57,9 +58,12 @@ export class ScopePoints {
     this.#owners.set(module,index+1);
     return Object.freeze(["module",module,"declaration",String(index)]);
   }
-  expansion(tree,kind,node,unit) {
-    const at=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
-    return expandedSource(tree,{kind,site:at});
+  sourceContext(env) {return sourceBindingInputs(this.compilation,env).context;}
+  retainNotation(id,context) {this.#notations.set(id,context);}
+  notationContext(id) {
+    const context=this.#notations.get(id);
+    if(!context)throw new TypeError("A notation scope has no retained source context.");
+    return context;
   }
   bind(node,scope,role="local") {
     if(node.bindingId)return this.table.get(node.bindingId);
@@ -80,26 +84,28 @@ export class ScopePoints {
     if(effects.notation)lexical=lexical.withSelectedNotation(activation.bindingId);
     return scope.with({lexical});
   }
-  // Source globals come from the current declaration environment. Locals and
-  // effects retain their actual introduction order; private keys supply values
-  // only, so an outer capture cannot become visible merely by being stored.
-  bindings(scope) {
-    const inventory=sourceNotationInventory(this.compilation,scope.env),adapter=new BindingAdapter(this.table);
-    let lexical=new LexicalContext().withNotations(inventory);
+  // Source entry supplies the complete lexical context. Runtime keys supply
+  // values only; neither a caller's public names nor its private captures can
+  // introduce visibility inside a retained notation body.
+  bindings(scope,descriptions={copies:new WeakMap(),budget:syntaxGraphBudget()}) {
+    const adapter=new BindingAdapter(this.table);
+    const lexical=scope.lexical??new LexicalContext();
     const values=new Map(),keys=new Map(),records=new Map(),recursive=[],contexts=new Map();
     const add=(record,key,value)=>{
       values.set(record.id,value);keys.set(key,record.id);
-      records.set(record.id,{label:record.label,id:record.id,origin:record.origin,role:record.role,value:describedValue(value)});
+      descriptions.budget.tick();
+      records.set(record.id,{label:record.label,id:record.id,origin:record.origin,role:record.role,
+        value:describedValue(value,value=>this.#operandDescription(value,descriptions))});
       if(value?.tag==="Recursive")recursive.push([key,record.id]);
     };
-    for(const entry of inventory)if(entry.notation) {
-      const record=this.table.get(entry.notation.id),key=adapter.key(record.id),value=scope.env.get(key);
-      if(value?.bindingId!==record.id)throw new TypeError("A scope's named notation needs its exact receipt.");
-      add(record,key,value);
-    }
     for(const [key,value] of scope.env) {
-      if(value?.tag==="Notation")continue;
       const local=scope.sourceBindings.get(key),identified=adapter.bindingForKey(key),named=publicName.test(key);
+      // Public notation labels may shadow a source notation. Its private
+      // receipt remains available; only the lexical context grants visibility.
+      if(value?.tag==="Notation") {
+        if(!identified)continue;
+        if(value.bindingId!==identified.id)throw new TypeError("A scope's named notation needs its exact receipt.");
+      }
       if(!local&&!identified&&!named)continue;
       const record=local??identified??this.compilation.ofValue(value,scope.unit);
       if(!record) {
@@ -109,17 +115,35 @@ export class ScopePoints {
         if(!resolved||resolved.tag==="missing")throw new TypeError(`Scope entry has no declaration identity: ${key}`);
         continue;
       }
-      if(!local&&!identified)lexical=lexical.bind(key,bindingResolution(record.id));
       add(record,key,value);
     }
-    lexical=new LexicalContext([...lexical.snapshot(),...scope.lexical?.snapshot()??[]]);
     const ids=new Set(values.keys());
     for(const [,resolution] of lexical.snapshot())mapResolution(resolution,id=>{ids.add(id);return id;});
     for(const id of ids) {
       const context=scope.env.get(notationContextKey(adapter.key(id)));
       if(context)contexts.set(id,context);
     }
-    return {lexical,values,keys,records:[...records.values()],recursive,contexts};
+    return {lexical,values,keys,records:[...records.values()],recursive,contexts,
+      lazy:[...values.values()].some(value=>value?.tag==="SourceOperand")};
+  }
+  #operandDescription(operand,descriptions) {
+    const {copies,budget}=descriptions;
+    if(copies.has(operand))return copies.get(operand);
+    const result={tag:"SourceOperand"};copies.set(operand,result);
+    const caller=scope=>{
+      if(copies.has(scope))return copies.get(scope);
+      budget.tick();
+      const data={module:scope.unit.moduleName,owner:scope.unit.contextOwner};copies.set(scope,data);
+      const live=this.bindings(scope,descriptions);
+      return Object.assign(data,{lexical:live.lexical.snapshot(),bindings:live.records,sources:[...scope.localSources],
+        context:[...scope.context],dimensions:[...scope.dimensions],evidence:scope.evidence,
+        slots:scope.slotOutcomes.snapshot(),notations:[...live.contexts.keys()],rules:this.#ruleDescription(scope.unit),
+        recursion:{active:recursiveDescription(scope.env.get(RECURSIVE)),
+          bindings:live.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}});
+    };
+    const syntax=node=>mapSyntax(node,value=>value.kind==="scoped"
+      ?{...value,node:syntax(value.node),scope:caller(value.scope)}:undefined,{budget});
+    return Object.assign(result,{node:syntax(operand.node),caller:caller(operand.scope)});
   }
   #environment(scope) {
     // Scope operations copy their maps. The module's top-level environment
@@ -130,8 +154,12 @@ export class ScopePoints {
     const owner=scope.unit.contextOwner;
     if(!owners.has(owner)) {
       const live=this.bindings(scope);
-      owners.set(owner,freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),
-        sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive,notations:[...live.contexts.keys()]}));
+      const description=freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),
+        sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive,notations:[...live.contexts.keys()]});
+      // Lazy caller permissions may change without replacing their env map.
+      // Describe them at this point; ordinary environments still share data.
+      if(live.lazy)return description;
+      owners.set(owner,description);
     }
     return owners.get(owner);
   }
