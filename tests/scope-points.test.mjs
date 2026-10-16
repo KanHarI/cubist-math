@@ -121,6 +121,31 @@ test("shared lexical descriptions retain each point's mutable recursion permissi
   assert.equal(JSON.stringify(descriptions[0]),saved);
 });
 
+test("lazy caller permissions stay point-specific while nested operand descriptions share data",async t=>{
+  for(const mode of ["direct","nested","scoped"])await t.test(mode,()=>{
+    const descriptions=[],recorder=new ScopePoints("lazy-permissions",{onPoint:point=>descriptions.push(point)});
+    recorder.compilation.declare("main",{name:{text:"f",start:4,end:5}},"main__f");
+    const unit=new SourceUnit({checker:{},source:" ".repeat(24),moduleName:"main",scopePoints:recorder}).declaration();
+    const recursive={tag:"Recursive",source:"f",state:"pending",bindings:new Map([["n",T.point]])};
+    const caller=new Scope(unit,new Map(),new Map([["f",recursive],["\u0000recursive",recursive]]));
+    const base=new Scope(unit),node={kind:"name",name:"f",start:20,end:21};
+    const bind=(scope,label,value)=>scope.sourceBinding(label,value,recorder.bind({text:label,start:10,end:11},scope));
+    let operand={tag:"SourceOperand",node,scope:caller};
+    if(mode==="nested")operand={tag:"SourceOperand",node:{...node,name:"outer"},scope:bind(base,"outer",operand)};
+    if(mode==="scoped")operand={tag:"SourceOperand",node:{kind:"scoped",node,scope:caller},scope:base};
+    const scope=bind(base,"x",operand);
+    recorder.around(null,node,scope,{},()=>{});
+    const saved=JSON.stringify(descriptions[0]);
+    recursive.state="selected";recursive.bindings.set("n",T.unit);
+    recorder.around(null,node,scope,{},()=>{});
+    assert.ok(descriptions.every(point=>point.available),JSON.stringify(descriptions));
+    assert.equal(descriptions[0].state.bindings,descriptions[1].state.bindings);
+    assert.notDeepEqual(descriptions[0].state.recursion,descriptions[1].state.recursion);
+    assert.equal(JSON.stringify(descriptions[0]),saved);
+    assert.deepEqual(JSON.parse(saved),descriptions[0]);
+  });
+});
+
 test("a declaration shares registered-rule descriptions and later registrations get a new snapshot",()=>{
   const points=[],recorder=new ScopePoints("rules",{onPoint:point=>points.push(point)});
   const rule={term:T.point,identity:"first",priority:0,origin:"main"};

@@ -19,7 +19,7 @@ export function dimensionContextKey(dimensions) {
     left<right?-1:left>right?1:0));
 }
 
-export function visitSyntax(root,visit,{budget=syntaxGraphBudget()}={}) {
+export function visitSyntax(root,visit,{budget=syntaxGraphBudget(),children=Object.values}={}) {
   const seen=new WeakSet(),pending=[root];
   while(pending.length) {
     const value=pending.pop();
@@ -30,7 +30,7 @@ export function visitSyntax(root,visit,{budget=syntaxGraphBudget()}={}) {
     }
     visit(value);
     if(value&&typeof value==='object')
-      for(const child of Object.values(value))pending.push(child);
+      for(const child of children(value))pending.push(child);
   }
 }
 

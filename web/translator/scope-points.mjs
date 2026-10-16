@@ -3,7 +3,7 @@
 import {BindingAdapter,LexicalContext,sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
 import {CompilationBindings} from "./compilation-bindings.mjs";
 import {isTerm} from "./core.mjs";
-import {snapshotSyntax,mapSyntax,syntaxGraphBudget} from "./syntax-graph.mjs";
+import {snapshotSyntax,mapSyntax,visitSyntax,syntaxGraphBudget} from "./syntax-graph.mjs";
 import {sourceBindingInputs} from "./binding-module.mjs";
 import {notationContextKey} from "./notation-context.mjs";
 
@@ -28,7 +28,10 @@ function describedValue(value,operand) {
   if(isTerm(value))return value;
   if(value?.tag==="Dimension")return {tag:value.tag,name:value.name,...(value.endpoint===undefined?{}:{endpoint:value.endpoint})};
   if(value?.tag==="Inductive")return {tag:value.tag,binding:value.binding};
-  if(value?.tag==="InductiveConstructor")return {tag:value.tag,binding:value.inductive.binding,index:value.index};
+  if(value?.tag==="InductiveSelf")return {tag:value.tag,binding:value.binding,sort:value.sort,slots:value.slots};
+  if(value?.tag==="InductiveConstructor")return value.head
+    ?{tag:value.tag,head:value.head,order:value.order,arity:value.arity,dims:value.dims}
+    :{tag:value.tag,binding:value.inductive.binding,index:value.index};
   if(value?.tag==="Untranslated")return {tag:value.tag,binding:value.binding,reason:value.reason??value.message??null};
   if(value?.tag==="Notation"&&value.bindingId)return {tag:value.tag,bindingId:value.bindingId,modelBinding:value.modelBinding??null};
   // Permissions are mutable while the declaration is elaborated. Capture
@@ -123,8 +126,7 @@ export class ScopePoints {
       const context=scope.env.get(notationContextKey(adapter.key(id)));
       if(context)contexts.set(id,context);
     }
-    return {lexical,values,keys,records:[...records.values()],recursive,contexts,
-      lazy:[...values.values()].some(value=>value?.tag==="SourceOperand")};
+    return {lexical,values,keys,records:[...records.values()],recursive,contexts};
   }
   #operandDescription(operand,descriptions) {
     const {copies,budget}=descriptions;
@@ -137,13 +139,30 @@ export class ScopePoints {
       const live=this.bindings(scope,descriptions);
       return Object.assign(data,{lexical:live.lexical.snapshot(),bindings:live.records,sources:[...scope.localSources],
         context:[...scope.context],dimensions:[...scope.dimensions],evidence:scope.evidence,
-        slots:scope.slotOutcomes.snapshot(),notations:[...live.contexts.keys()],rules:this.#ruleDescription(scope.unit),
-        recursion:{active:recursiveDescription(scope.env.get(RECURSIVE)),
-          bindings:live.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}});
+        slots:scope.slotOutcomes.snapshot(),notations:[...live.contexts.keys()],rules:this.#ruleDescription(scope.unit)});
     };
     const syntax=node=>mapSyntax(node,value=>value.kind==="scoped"
       ?{...value,node:syntax(value.node),scope:caller(value.scope)}:undefined,{budget});
     return Object.assign(result,{node:syntax(operand.node),caller:caller(operand.scope)});
+  }
+  #callerPermissions(scope) {
+    // A lazy caller's recursion permissions can change without replacing its
+    // environment. Snapshot them at this point, separately from shared values.
+    // The ordered traversal corresponds to the retained operand/caller graph;
+    // scopes exist only during this walk and never enter its returned data.
+    const scopes=[scope],seen=new Set(scopes),budget=syntaxGraphBudget();
+    const include=caller=>{if(!seen.has(caller)){seen.add(caller);scopes.push(caller);}};
+    for(const caller of scopes)for(const value of caller.env.values()) {
+      budget.tick();
+      if(value?.tag!=="SourceOperand")continue;
+      include(value.scope);
+      visitSyntax(value.node,node=>{if(node?.kind==="scoped")include(node.scope);},
+        {budget,children:node=>node.kind==="scoped"?[node.node]:Object.values(node)});
+    }
+    return scopes.slice(1).map(caller=>({module:caller.unit.moduleName,owner:caller.unit.contextOwner,
+      active:recursiveDescription(caller.env.get(RECURSIVE)),
+      bindings:[...caller.env].filter(([key,value])=>key!==RECURSIVE&&value?.tag==="Recursive")
+        .map(([key,value])=>[key,recursiveDescription(value)])}));
   }
   #environment(scope) {
     // Scope operations copy their maps. The module's top-level environment
@@ -156,9 +175,6 @@ export class ScopePoints {
       const live=this.bindings(scope);
       const description=freeze({lexical:live.lexical.snapshot(),bindings:snapshotSyntax(live.records),
         sources:snapshotSyntax([...scope.localSources]),recursive:live.recursive,notations:[...live.contexts.keys()]});
-      // Lazy caller permissions may change without replacing their env map.
-      // Describe them at this point; ordinary environments still share data.
-      if(live.lazy)return description;
       owners.set(owner,description);
     }
     return owners.get(owner);
@@ -211,7 +227,8 @@ export class ScopePoints {
         state:{format:"cubist-scope-state-1",bindings:environment.bindings,sources:environment.sources,notations:environment.notations,
           context:this.#mapDescription(this.#contexts,scope.context),dimensions:this.#mapDescription(this.#dimensions,scope.dimensions),
           slots:scope.slotOutcomes.snapshot(),recursion:snapshotSyntax({active:recursiveDescription(scope.env.get(RECURSIVE)),
-            bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))])}),
+            bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))]),
+            callers:this.#callerPermissions(scope)}),
           goal:snapshotSyntax(goal),expected:snapshotSyntax(expected),evidence:snapshotSyntax(scope.evidence),
           rules:this.#ruleDescription(unit)}});
       if(this.probe)live=this.bindings(scope);

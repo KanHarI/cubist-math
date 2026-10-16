@@ -215,3 +215,60 @@ complete their three session repetitions. The source/tests were frozen through
 the full run; the subsequent changes correct the benchmark's scope-phase field
 and a trailing blank line. The earlier browser gate remains at `66153e54`;
 browser and mutation gates still need to run on the completed implementation.
+
+## Complete context coverage and measured costs
+
+Lazy caller permissions now join the immediate scope's per-point recursion
+description. Immutable operand/environment descriptions are shared again.
+The traversal follows nested operands and explicit scoped syntax, with the
+existing syntax budget; its temporary scope references never enter retained
+data. Controls change permissions through all three paths and verify that the
+new point differs while the old description is unchanged. No cache of live
+scopes or additional serialization framework was introduced.
+
+Inductive declarations now describe their provisional self type and earlier
+constructors, introducing their reserved identities at the actual signature
+telescope transition. A query checks under those local variables, before native
+admission. It cannot use a later constructor or change uniform parameters.
+Constructor scopes also carry their declaration ID, including initial/free
+generated declarations. A later rejected signature does not erase its usable
+prefix. Source on/off parity, exact generated-instance queries and positive/
+negative uniform-parameter controls pass.
+
+Final cost probe before review, Node v24.13.0, separate processes per fixture:
+
+| Fixture | Check off/on (ms) | Heap growth off/on (MB) | Available/collected points |
+| --- | ---: | ---: | ---: |
+| Nested function | 263 / 405 | 9.98 / 63.58 | 1,626 / 1,626 |
+| Nested induction | 152 / 356 | 9.99 / 63.50 | 1,624 / 1,624 |
+| Nested lazy notation | 16.3 / 7.8 | 1.42 / 1.19 | 13 / 13 |
+| Inherited generated helper | 28.0 / 14.8 | 2.72 / 1.15 | 60 / 60 |
+| Theory sections | 396 / 1,009 | 24.64 / 206.17 | 5,182 / 5,182 |
+
+| Fixture | Median prefix / validation / history / query (ms) |
+| --- | ---: |
+| Nested function | 78.16 / 0.145 / 0.300 / 0.292 |
+| Nested induction | 95.03 / 0.287 / 0.002 / 0.713 |
+| Nested lazy notation | 2.174 / 0.256 / 0.136 / 0.390 |
+| Inherited generated helper | 5.531 / 0.123 / 0.106 / 0.260 |
+| Theory sections | 250.51 / 0.278 / 0.327 / 0.706 |
+
+Each fixture runs its session three times. Imports and every earlier declaration
+replay for each request in a new native handle. The WASM instance and process
+remain warm; there is no explicit JIT warm-up. Memory samples follow GC, before
+serialization or queries, and are process observations rather than estimates of
+marginal collection cost. Collection off/on has identical kernel work. Budget
+and deadline policies are unchanged.
+
+Separating permissions reduced nested-function heap growth from 129.51 MB to
+63.58 MB, and sections from 273.88 MB to 206.17 MB. Collection remains optional
+and substantially more expensive than normal checking. Naive JSON of the entire
+sections index repeats shared data (288 MB); the browser transports only its
+lightweight index. The source/replay input snapshot is 99 KB. A request retains
+no execution session after its callback. These measurements are not latency or
+memory guarantees for arbitrary modules.
+
+Focused gates pass 67 scope/replay/notation tests and 25 scope/worker/generated
+retention tests. Final full-suite, browser and mutation gates, followed by the
+first Claude review, are pending. The historical compatibility restriction above
+remains explicit; current-language contexts have no migration guard.

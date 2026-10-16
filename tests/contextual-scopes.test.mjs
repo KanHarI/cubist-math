@@ -159,6 +159,60 @@ test("cached section notation uses the current declaration's model parameter",as
   await query(session,"typed((x + x) = x, refl(x))","error");
 });
 
+test("inductive constructor contexts keep provisional self and earlier constructors local",async t=>{
+  const source="inductive List(U < UU0, A : U) { nil; cons(head : A, tail : List(U, A)); }";
+  const off=await setup(t,source,{options:{collectScopes:false}}),on=await setup(t,source);
+  assert.deepEqual(on.result.gaps,[]);
+  assert.deepEqual(on.result.outputs,off.result.outputs);
+  assert.deepEqual(on.result.links,off.result.links);
+  assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+  const session=select(t,on.program,source,"List(U, A)",{declaration:"List"});
+  const before=on.program.kernel.work();
+  await query(session,"typeof List(U, A)","type","UU0");
+  await query(session,"typed(List(U, A), nil)","value");
+  await query(session,"typeof head","type","A");
+  for(const input of ["cons","tail","List(U0, A)"])await query(session,input,"error");
+  await query(session,"let saved := nil","defined");
+  await query(session,"typed(saved = nil, refl(saved))","value");
+  assert.deepEqual(on.program.kernel.work(),before);
+  const invalid=await setup(t,source.replace("List(U, A)","List(U0, A)"));
+  assert.equal(invalid.result.gaps.length,1);
+  assert.match(invalid.result.gaps[0].reason,/applied to its own parameters/);
+});
+
+test("a later rejected inductive signature leaves its earlier provisional context queryable",async t=>{
+  const source="inductive Bad { zero; step(n : Bad); invalid : Unit; }";
+  const {program,result}=await setup(t,source);
+  assert.equal(result.gaps.length,1);
+  const session=select(t,program,source,"Bad);",{declaration:"Bad",length:3});
+  await query(session,"typed(Bad, zero)","value");
+  await query(session,"step","error");
+  await query(session,"invalid","error");
+  await query(session,"typeof Bad","type","UU0");
+});
+
+test("generated initial and free constructor scopes use their own provisional identities",async t=>{
+  const source=`import hlevels;
+    theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M; }
+    initial N : T(U0); free F(A : U0) : T(U0) on A;`;
+  const {program,result}=await setup(t,source,{options:{collectGeneration:true}});
+  assert.deepEqual(result.gaps,[]);
+  const declarations=program.generation.get("main").flatMap(group=>group.declarations);
+  const points=[...program.scopePoints.values()];
+  assert.ok(points.every(point=>point.available),JSON.stringify(points.filter(point=>!point.available)));
+  for(const name of ["N","F"]) {
+    const declaration=declarations.find(d=>d.kind==="inductive"&&d.name.text===name);
+    const candidates=points.filter(point=>point.declarationId===declaration.name.bindingId&&point.phase==="expression"
+      &&point.origin.expansion.some(frame=>frame.kind==="substitution"&&frame.site.module==="main"
+        &&frame.site.start===source.indexOf("M) :")));
+    assert.equal(candidates.length,1,JSON.stringify(candidates));
+    const session=new ContextualSession(program,candidates[0].id);t.after(()=>session.dispose());
+    await query(session,`typed(${name==="N"?"N":"F(A)"}, ${name}.c)`,"value");
+    await query(session,`${name}.op`,"error");
+    if(name==="F")await query(session,"F(Unit)","error");
+  }
+});
+
 test("observing historical name-based notation cannot change source checking",async t=>{
   const source=theory+"section (S : T(U0)) { def f : M := c; def g : M := c; }";
   const reader=sourceReader();reader.nameBased=()=>true;

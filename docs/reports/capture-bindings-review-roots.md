@@ -576,4 +576,17 @@ immutable environment descriptions, as CB1 already does for the immediate
 scope. Cover nested and explicitly scoped lazy operands, and verify that a
 permission change alters replay validation without mutating an earlier point.
 Do not add another cache of live scopes or a second serialization framework.
-This cost correction is still pending; no CB6 Claude review has run.
+The correction now follows that boundary: mutable caller permissions join the
+per-point recursion description, while immutable operand/environment data are
+shared. Direct, nested and explicitly scoped caller controls preserve earlier
+descriptions and distinguish changed permissions. The same cost fixtures now
+measure 63.58 MB and 206.17 MB heap growth, respectively. Collection remains
+optional and expensive; the full measurements and qualifications are in the CB6
+roadmap. No CB6 Claude review has run yet.
+
+The remaining inductive-self gap was another missing introduction boundary,
+not a missing final-module lookup. Record the exact reserved type/constructor
+identities when they enter the provisional signature telescope. Queries then
+use checked local variables and the existing uniform-parameter rules. Tests
+distinguish later constructors, changed parameters, failed final admission and
+initial/free generated instances; none publishes the unfinished signature.

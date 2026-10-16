@@ -795,7 +795,7 @@ export class Translator {
   // its own transaction, as a definition is; it binds the type's name and
   // its constructors' names. A failed one binds each as untranslated.
   inductiveDeclaration(d,module,env,declarations) {
-    const unit=module.declaration(this.declarationFuel);
+    const unit=module.declaration(this.declarationFuel).with({declaring:d.name.text});
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
     const binding=this.checker.bindingName?.(d.name.text)??d.name.text;

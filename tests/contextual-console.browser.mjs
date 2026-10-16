@@ -204,6 +204,24 @@ def copied(x : Unit) : Unit := x;`);
   });
   for(const [name,passed] of Object.entries(lifecycle))assert.equal(passed,true,name);
   console.log("PASS delayed opening/query/index responses and revoked restart remain isolated");
+
+  await open(`import hlevels;
+theory T(U < UU0) { M : set U; c : M; op(x, y : M) : M; }
+initial N : T(U0);`);
+  await collect();await page.locator("#generated-mode").click();await idle();
+  await chooseLine("inductive N",true);
+  const constructorContexts=await options();
+  assert.equal(constructorContexts.length,2);
+  const constructorResults=[];
+  for(const point of constructorContexts) {
+    await select(point.id);
+    const text=await enter("typeof N.c;","(?:type|error)");
+    constructorResults.push([await page.locator("#context-panel .repl-result").last().getAttribute("class"),text]);
+  }
+  assert.deepEqual(constructorResults.map(([kind])=>kind).sort(),["repl-result repl-error","repl-result repl-type"],
+    "the header cannot see constructors; the later constructor scope can see the earlier one");
+  assert.equal(constructorResults.find(([kind])=>kind.endsWith("repl-type"))[1],"N");
+  console.log("PASS generated inductive contexts distinguish the header from earlier constructor availability");
   assert.deepEqual(errors,[]);
 } finally {
   await browser?.close();server.kill();
