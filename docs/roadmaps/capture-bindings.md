@@ -1,14 +1,16 @@
 # Correct capture and bindings
 
-Status: CB0–CB3 implemented, 2026-10-15; CB3 review is clean at round 5.
+Status: CB0–CB7 and the separate cleanup are complete, 2026-10-17.
+CB3 review is clean at round 5.
 CB4 is ready in #237 after a clean second Claude review. CB5 is ready in #238
 after a clean fourth Claude review at `57a1b9c9`. CB6 is ready in #239 after a
 clean eighth Claude review at `cb1cdc2c`; its [completion record](capture-bindings-cb6.md)
 covers exact inspector/source/generated contexts and validation. CB7 is ready
 in #240 after a clean second Claude review at `32bda0ee`; its
 [release record](capture-bindings-cb7.md) includes the measured allowances and
-explicit RSS exception. All CB0–CB7 tasks are implemented. The separate cleanup
-PR across the completed stack remains.
+explicit RSS exception. The separate [cleanup](../reports/capture-bindings-cleanup.md)
+is ready in #241 after a clean second Claude review at `1481d352`; it removes
+obsolete staging and unused summaries while preserving semantic coverage.
 The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
 evidence integration, remaining requirements and validation.
 The [CB2 evidence](capture-bindings-cb2.md) records production integration,

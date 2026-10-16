@@ -21,8 +21,7 @@ import { normal } from "../web/cubist/stated-comments.mjs";
 import { reported, stated } from "../tools/inline-errors.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { precondition } from "./known-defect.mjs";
-import { observeModule, outputStatus } from "./module-observation.mjs";
+import { precondition, observeModule, outputStatus } from "./module-observation.mjs";
 
 const directory = new URL("./fixtures/frontend-generation/", import.meta.url);
 export const cases = readdirSync(directory).filter(file => file.endsWith(".cubist")).sort().map(file => {

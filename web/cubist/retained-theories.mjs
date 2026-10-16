@@ -100,9 +100,9 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const helpers=item.kind!=="derived"||notation?new HelperExpansion(interfaces.entries,
       {table:options.table,owner:[...options.owner,"validate",String(interfaces.entries.length)]}):null;
     if(item.kind!=="derived") {
-      const signature=helpers.signature(entry);
-      if(signature.recursive) {
-        const use=signature.recursive,label=byIdentity.get(use.id)?.label??use.spelling;
+      const use=helpers.recursiveDependency(entry);
+      if(use) {
+        const label=byIdentity.get(use.id)?.label??use.spelling;
         throw located(Error(`${label} is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.`),use.origin??item);
       }
     }

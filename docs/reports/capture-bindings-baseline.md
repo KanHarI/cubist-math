@@ -5,6 +5,13 @@ compiler at `f0417ee0ee5f824f030069be0e6d1666696de0d1`. It does not implement
 binding identities or contextual execution. Those remain CB1–CB7 in the
 [architecture](../roadmaps/capture-bindings.md).
 
+The counts and staging protocol below describe the historical CB0 checkpoint.
+CB0–CB7 are now complete; current semantic tests assert desired behavior directly.
+The original [generation observations](https://github.com/KanHarI/cubist-math/blob/7f9b4d28cb94556500c7e4acab076a1b11496df9/tests/fixtures/frontend-generation-baseline.json)
+and [binding observations](https://github.com/KanHarI/cubist-math/blob/7f9b4d28cb94556500c7e4acab076a1b11496df9/tests/fixtures/capture-bindings-baseline.json)
+remain pinned to CB0. The [post-CBx cleanup](capture-bindings-cleanup.md) removes
+the now-empty maps and unused staging protocol while preserving semantic clients.
+
 ## Adopted work and retained expectations
 
 The [pinned comparison](capture-bindings-pr-comparison.md#stack-and-disposition) records

@@ -6,9 +6,9 @@ import create from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { lint } from "../web/cubist/lint.mjs";
-import { assertStage, classifyStage } from "./known-defect.mjs";
+import { isDeepStrictEqual } from "node:util";
 import { observeModule } from "./module-observation.mjs";
-import { ciSeeds, caseLimit, configuration, generate, minimize } from "./fixtures/frontend-invariants.mjs";
+import { ciSeeds, caseLimit, configuration, generate, minimize, observationDifferences } from "./fixtures/frontend-invariants.mjs";
 
 const count = Number(process.env.CUBIST_GENERATION_CASES ?? ciSeeds.length);
 assert.ok(Number.isSafeInteger(count) && count >= 1 && count <= caseLimit, "1..64 bounded cases");
@@ -49,22 +49,22 @@ async function verify(config) {
 // CB3's recursive/path behavior participates in every combination as well
 // as G4/G8/G12's individual witnesses.
 for (let seed = 0; seed < count; seed++) for (const capture of [false, true]) {
-  test(`CB0 preservation: ${capture ? "capture target" : "uncolliding parameter"}, seed ${seed}`, { timeout: 30000 }, async t => {
+  test(`CB0 preservation: ${capture ? "capture target" : "uncolliding parameter"}, seed ${seed}`, { timeout: 30000 }, async () => {
     const config = { ...configuration(seed), capture };
-    const stage = await verify(config), classification = classifyStage(stage);
-    if (classification.kind === "regression") {
+    const { observed, desired } = await verify(config);
+    const differences = observationDifferences(observed, desired);
+    if (differences.length) {
       const reduced = await minimize(config, async candidate => {
-        // Rebuild both desired and known observations for the candidate.
-        // The shrinker records infrastructure errors as non-reproductions;
-        // the original classification remains the reported failure.
-        const next = classifyStage(await verify(candidate));
-        return next.kind === "regression" && next.signature === classification.signature;
+        // Each candidate has its own desired result. Infrastructure errors
+        // are non-reproductions; retain the original semantic difference.
+        const next = await verify(candidate);
+        return isDeepStrictEqual(observationDifferences(next.observed, next.desired), differences);
       });
       const directory = new URL("../build/frontend-generation-failures/", import.meta.url);
       await mkdir(directory, { recursive: true });
       const file = `seed-${seed}-${capture ? "capture" : "control"}.json`;
-      await writeFile(new URL(file, directory), JSON.stringify({ seed, classification, ...reduced, ...generate(reduced.config) }, null, 2) + "\n");
+      await writeFile(new URL(file, directory), JSON.stringify({ seed, differences, ...reduced, ...generate(reduced.config) }, null, 2) + "\n");
     }
-    assertStage(t, { ...stage, id: `preservation-${seed}-${capture}` });
+    assert.deepEqual(observed, desired, `preservation-${seed}-${capture}`);
   });
 }

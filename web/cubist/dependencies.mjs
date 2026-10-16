@@ -1,7 +1,7 @@
 // Retained interfaces supply already resolved occurrences. Display labels
 // are used in explanations only; an eventual field cannot retarget an
 // occurrence that resolved to an earlier parameter, helper or missing name.
-import {bindingUses,unresolvedBindingUse} from "./binding-syntax.mjs";
+import {bindingUses} from "./binding-syntax.mjs";
 
 // Pattern and activation tokens introduce decisions, not dependencies. Their
 // receiver expressions and body occurrences carry the actual uses. Patterns retain
@@ -63,8 +63,8 @@ export class DependencyAnalysis {
   }
   // Structural self-recursion is a separate elaborator mechanism. A cycle
   // among helpers which promise to inline must fail before expansion starts.
-  validateHelpers() {
-    const visiting=new Set(),done=new Set(),path=[],pending=[];
+  validateHelperCycles() {
+    const visiting=new Set(),done=new Set(),path=[];
     const visit=entry=>{
       if(category(entry)!=="helper"||done.has(entry.id))return;
       if(visiting.has(entry.id)) {
@@ -76,11 +76,9 @@ export class DependencyAnalysis {
         if(use.kind==="binding") {
           const dependency=this.byIdentity.get(use.id);
           if(dependency)visit(dependency);
-        } else if(unresolvedBindingUse(use))pending.push({owner:entry.id,...use});
+        }
       path.pop();visiting.delete(entry.id);done.add(entry.id);
     };
     for(const entry of this.byIdentity.values())visit(entry);
-    // An acyclic known graph is not a claim about unresolved alternatives.
-    return {pending};
   }
 }

@@ -163,7 +163,7 @@ def initial_boundary(x : N) : N.op(x, N.c) = N.op(x, x) := N.l(x);
 `);
 });
 
-// The colliding version is G10's known-defect witness, owned by CB3.
+// The colliding version is G10's required semantic witness.
 test("inlining preserves free fields under a distinct pattern binder", async t => {
   await verified(t, `import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M;

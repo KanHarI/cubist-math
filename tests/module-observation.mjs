@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
-import { precondition } from "./known-defect.mjs";
+
+// A failed fixture precondition blocks its semantic clients. Mutation
+// evidence must distinguish that from a client disproving the contract.
+export function precondition(check) {
+  try { return check(); }
+  catch (cause) {
+    if (cause.code !== "ERR_ASSERTION") throw cause;
+    throw Object.assign(new Error(cause.message, {cause}), {code:"ERR_TEST_PRECONDITION"});
+  }
+}
 
 // Missing local output is a semantic observation, just like a refused
 // declaration. A source-position predicate distinguishes repeated names.

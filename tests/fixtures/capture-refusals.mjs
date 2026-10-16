@@ -67,9 +67,7 @@ export const captureControls = {
     captured:{kind:"clients",negative:"captured",edits:[{module:"main",anchor:"box(c) => k(zero);",replacement:"box(c) => c;"}]},
   },
 };
-// Executable occurrences are confined to the registry and the configured
-// known-observation transformer. JSON snapshots are inert observations.
+// Executable occurrences are confined to this historical-code registry.
 export const captureObservationFiles = [
   "tests/fixtures/capture-refusals.mjs",
-  "tests/fixtures/frontend-invariants-baseline.mjs",
 ];

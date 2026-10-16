@@ -40,7 +40,6 @@ CubicalProgram.prototype.check = async function (...args) {
   const pattern = `^(?:${names.map(name => name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")})$`;
   const env = {...process.env,CUBIST_GENERATION_CASES:"3"};
   delete env.NODE_TEST_CONTEXT;
-  delete env.CUBIST_GENERATION_STRICT;
   const files = ["capture-bindings","frontend-invariants","frontend-generation","capture-refusals"]
     .map(name => fileURLToPath(new URL(`./${name}.test.mjs`,import.meta.url)));
   const run = fault => {
