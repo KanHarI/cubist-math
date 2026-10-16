@@ -892,3 +892,9 @@ proposed allowance (338.2 versus 334.9 MiB), while retained heap is unchanged.
 Record this exception explicitly; do not report all allowances as satisfied or
 rerun until a favorable sample appears. These evidence corrections need no
 compiler resource-limit change.
+
+Round 2 is clean at `32bda0ee`. Claude reproduces refusal of the removed bypass,
+checks all 18 queue callers against the 137 passing focused tests, and verifies
+the committed reports byte-for-byte and numerically. No additional code change
+is needed. The final wording distinguishes retained heap growth from absolute
+heap readings. CB7 is complete; the separate full-stack cleanup follows.

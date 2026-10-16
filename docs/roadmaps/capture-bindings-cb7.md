@@ -1,7 +1,7 @@
 # CB7: retirement and release
 
-Status: release validation complete; review corrections in progress in #240,
-stacked on CB6 #239. The user-requested cleanup follows in a separate PR.
+Status: complete in #240, stacked on CB6 #239; Claude round 2 is clean at
+`32bda0ee`. The user-requested cleanup follows in a separate PR.
 
 ## Retired paths
 
@@ -83,7 +83,7 @@ temporary serialization buffers. No live scope or native handle is serialized.
 
 The report's `memory.disposed` is **not proof of graph release**. In all twelve
 algebra/fold scope-enabled samples it includes a graph still held by the tool's
-serializer: about 450–461 MiB after disposal versus 485–497 MiB retained growth.
+serializer: about 450–461 MiB absolute heap after disposal versus 485–497 MiB retained growth.
 An independent exact-path probe reproduced 449.6 MiB after disposal, with the
 program, recorder and replay object collected but the serialized scope map alive.
 One further turn/GC released it to 33.1 MiB; omitting serialization yielded
@@ -107,7 +107,7 @@ observed max-minus-min spread, separately for each workload and collection mode:
 All six timing allowances and five RSS allowances hold. Algebra refs-off repeat 1
 peaks at **338.2 MiB versus 334.9 MiB allowed**; the checkpoint's repeats were
 331.4/333.1/331.2 MiB. This is an explicit release exception, not a passing sample.
-Retained heap remains 44.1/45.1/44.1 MiB versus the checkpoint's 45.1 MiB, and
+Retained heap growth remains 44.1/45.1/44.1 MiB versus the checkpoint's 45.1 MiB, and
 no measured checker work changed. Accept this small OS high-water variation
 without widening the allowance, rerunning for a favorable sample, or changing
 compiler/process limits. Three observations do not establish a universal bound.
@@ -145,7 +145,8 @@ Claude round 1 verifies that retirement and coverage at `0c27548a`, finding the
 two measurement-claim errors above and the unused module-wide adapter option.
 The latter is removed: retained queue entries get an adapter only through
 `lowerBindingDeclaration`. All 137 focused admission, generation, opening and notation tests pass after
-that deletion. Focused round 2 is pending.
+that deletion. Claude round 2 is clean at `32bda0ee`, independently confirming
+the deletion, numerical claims and committed evidence. Review stops at two rounds.
 
 ## Producer and consumer audit
 
