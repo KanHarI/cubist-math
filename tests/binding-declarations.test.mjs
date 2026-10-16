@@ -8,7 +8,6 @@ import {Scope} from "../web/translator/elaboration.mjs";
 import {ScopePoints} from "../web/translator/scope-points.mjs";
 import {resolveBindingModule,lowerBindingModule,bindingDeclaration,lowerBindingDeclaration} from "../web/translator/binding-module.mjs";
 import {parse} from "../web/cubist/parser.mjs";
-import {sourceOrigin} from "../web/cubist/bindings.mjs";
 import {cloneBindingSyntax} from "../web/cubist/binding-syntax.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
@@ -21,12 +20,13 @@ const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat)
 async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
   assert.deepEqual((await program.check(base,"base")).gaps,[]);
-  const points=[],recorder=new ScopePoints("module-pilot",{onPoint:point=>points.push(point)}),table=recorder.table;
+  const compilation=program.compilationBindings,points=[];
+  const recorder=new ScopePoints(compilation.revision,{compilation,onPoint:point=>points.push(point)}),table=recorder.table;
   const imports=new Map();
   for(const [label,value] of program.modules.get("base")) {
     if(!/^[A-Za-z_][A-Za-z0-9_]*$/.test(label))continue;
-    const start=base.indexOf(label),record=table.allocate(["import"],{role:"declaration",label,
-      origin:sourceOrigin({revision:"base-1",module:"base",start,end:start+label.length})});
+    const record=compilation.ofValue(value);
+    assert.ok(record,`missing imported declaration identity: ${label}`);
     imports.set(record.id,value);
   }
   const prepared=resolveBindingModule(parse(source),source,{table,imports,source:{revision:"pilot-1",module:"pilot"}});

@@ -181,8 +181,13 @@ function queryEnvironment(live,adapter,unit) {
     if(key)recursive.key=adapter.key(key);
     // Permissions refer to environment keys, not labels. Compiler-private
     // aliases are not callable from the query and carry no lexical binding.
-    if(recursive.destructed)recursive.destructed=new Map([...recursive.destructed].flatMap(([key,value])=>
-      live.keys.has(key)?[[adapter.key(live.keys.get(key)),value]]:[]));
+    if(recursive.destructed)recursive.destructed=new Map([...recursive.destructed].flatMap(([key,value])=>{
+      const id=live.keys.get(key),target=id&&adapter.key(id);
+      // Source calls require the permission's alias to be the current value.
+      // Several keys can name one ID; an obsolete alias must not overwrite
+      // the introduced key's valid permission when those keys collapse.
+      return target&&value.alias===scope.env.get(target)?[[target,value]]:[];
+    }));
   }
   const localSources=new Map([...live.scope.localSources].flatMap(([key,source])=>live.keys.has(key)
     ?[[adapter.key(live.keys.get(key)),{...source,key:adapter.key(live.keys.get(key)),bindingId:live.keys.get(key)}]]:[]));

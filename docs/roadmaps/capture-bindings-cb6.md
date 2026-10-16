@@ -299,3 +299,14 @@ inductive header diagnostics and generated contexts. Hlevel and obligation
 fixtures preserve on/off outputs, diagnostics, links, fuel and kernel work.
 All 367 links in `notation_literals` match CB5 exactly. Final full/browser/
 mutation gates and a focused round 2 review follow on the committed fixes.
+
+The first full run at `3919abc9` passes the corpus but exposes eight test
+failures: six pilot cases used a separate observer identity registry, one fault
+injection still read the old declaration-name field, and one recursive query
+lost a valid permission when an obsolete alias overwrote it during key remapping.
+The harness now shares the production registry; translator construction rejects
+contradictory registries. Query remapping applies the existing source call's
+alias/value validity check before collapsing equivalent keys. The fault injection
+uses the new metadata shape. All 37 declaration/compilation/replay tests pass,
+including all eight previously failing cases. The full gates rerun on this
+follow-up before round 2; the failed full log remains part of the review record.

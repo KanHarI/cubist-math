@@ -642,3 +642,24 @@ links equal CB5, and provisional inductive context labels remain intact. A new
 link assertion initially read a nonexistent `kind` field; after correcting it
 to the actual local-view identity, all 11 notation tests pass. Full gates and
 external delta verification remain pending.
+
+The first full run of these fixes passes 1,302/1,310 tests and all 3,857 corpus
+checks, but reveals three follow-ups before external verification. Six failures
+come from a pilot harness using a scope registry distinct from its checker's
+registry; it must use the shared production registry, and translator construction
+must reject contradictory identity owners. A resource-injection hook still reads
+the old declaration-name shape and must follow the metadata change.
+
+The remaining failure is real: recursion permissions contain entries for both
+an introduced key and its observational alias. After nested refinement, the
+alias's older entry is no longer callable, but query key remapping collapses both
+keys to one ID and lets the stale entry overwrite the valid one. This is the
+same receipt-versus-permission root, not a reason to restore search visibility.
+Apply the source recursive-call consumer's existing alias/value validity check
+before collapsing keys. Preserve the valid source permission and reject stale
+ones; add no new recursion eligibility rule or spelling fallback.
+
+The follow-up implements that contract at the existing key-remapping boundary.
+All 37 declaration/compilation/replay tests pass, including the eight failures;
+source-call permissions and negative recursion controls are unchanged. No
+observer-derived local visibility was restored. Final gates rerun before round 2.

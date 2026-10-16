@@ -94,6 +94,9 @@ export class Translator {
     this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
     this.compilationBindings=compilationBindings??scopePoints?.compilation??checker?.compilationBindings??new CompilationBindings(globalThis.crypto.randomUUID());
+    if(checker?.compilationBindings&&checker.compilationBindings!==this.compilationBindings
+      ||scopePoints&&scopePoints.compilation!==this.compilationBindings)
+      throw new TypeError("A translator and its observers must share the checker's compilation identities.");
     if(checker&&!checker.compilationBindings)checker.compilationBindings=this.compilationBindings;
     this.identityAdapter=new BindingAdapter(this.compilationBindings.table);
     this.sourceRevision=this.compilationBindings.revision;

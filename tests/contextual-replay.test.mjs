@@ -270,7 +270,7 @@ test("prefix resource exhaustion cannot select a nearby point or run a query",as
   for(const kind of ["fuel","budget","deadline"]) {
     const session=new ContextualSession(program,point.id),term=Translator.prototype.term;
     Translator.prototype.term=function(node,scope,expected) {
-      if(scope.checker.kernel.handle!==program.kernel.handle&&scope.unit.declaring==="selected")
+      if(scope.checker.kernel.handle!==program.kernel.handle&&scope.unit.declaring?.name==="selected")
         throw Object.assign(Error(`Injected ${kind} exhaustion.`),{kind});
       return term.call(this,node,scope,expected);
     };
