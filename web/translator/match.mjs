@@ -352,7 +352,9 @@ function branch(translator, motive, value, scope, inner, built) {
       if (bound.name === value.name) destructed.set(name, { alias, variable: value.name });
       continue;
     }
-    if (!bound || !at.localSources.has(name)) continue;
+    // Hidden receipts refine like their original local introduction, without
+    // making them visible to proof search. Opened members are not such locals.
+    if (!bound || !(at.localSources.has(name) || at.sourceBindings.get(name)?.local)) continue;
     const free = freeNames(bound);
     const again = [...values].reduce((term, [variable, replacement]) =>
       free.has(variable) ? substituteTerm(term, variable, replacement) : term, bound);

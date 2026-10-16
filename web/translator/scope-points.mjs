@@ -102,7 +102,7 @@ export class ScopePoints {
       if(value?.tag==="Recursive")recursive.push([key,record.id]);
     };
     for(const [key,value] of scope.env) {
-      const local=scope.sourceBindings.get(key),identified=adapter.bindingForKey(key),named=publicName.test(key);
+      const local=scope.sourceBindings.get(key)?.binding,identified=adapter.bindingForKey(key),named=publicName.test(key);
       // Public notation labels may shadow a source notation. Its private
       // receipt remains available; only the lexical context grants visibility.
       if(value?.tag==="Notation") {

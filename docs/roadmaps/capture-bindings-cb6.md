@@ -1,8 +1,8 @@
 # CB6: contextual REPL
 
-Status: external round 1 fixes are implemented in `cb6-contextual-repl`, stacked
-on ready CB5 #238 (`4c2b4f3a`, clean fourth Claude review). Final gates and round 2
-verification are pending; CB7 has not started.
+Status: external round 2's inspection fix is implemented in
+`cb6-contextual-repl`, stacked on ready CB5 #238 (`4c2b4f3a`, clean fourth Claude
+review). Final gates and round 3 verification are pending; CB7 has not started.
 
 ## Required result
 
@@ -310,3 +310,19 @@ alias/value validity check before collapsing equivalent keys. The fault injectio
 uses the new metadata shape. All 37 declaration/compilation/replay tests pass,
 including all eight previously failing cases. The full gates rerun on this
 follow-up before round 2; the failed full log remains part of the review record.
+
+## External round 2
+
+Final gates at `8ec414c9` pass all 1,310 tests, with zero failures and zero TODOs,
+all 3,857 canonical checks, both browser suites and all four production
+mutations. Claude verifies all four round-1 fixes and the follow-up, runs 133
+targeted tests and eight independent probes, and finds one low-severity issue:
+shadowed compound locals retain their pre-branch values and types in inspection.
+
+The shared cause is using visibility to decide whether a stored definition
+refines. Each existing binding receipt now remembers whether its introduction
+was a semantic local. Branch refinement uses that fact without restoring search
+visibility. Opened-member receipts retain their existing behavior. All 76
+focused checks pass, including visible/shadowed lets and obtain components in
+both match and induction branches, opened-member parity, hidden-evidence refusal
+and lazy replay. Full gates and focused Claude round 3 follow on this fix.

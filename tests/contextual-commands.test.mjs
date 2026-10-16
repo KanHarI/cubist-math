@@ -59,6 +59,54 @@ test("/locals follows model openings without treating the hidden parameter as vi
   await query(session,"typed(c = zero, refl(c))","value");
 });
 
+test("shadowed lets and obtain components retain the same branch refinements as visible locals",async t=>{
+  const labels=new Set(["v","m","p","a","b"]);
+  for(const kind of ["match","induction"])await t.test(kind,async t=>{
+    const collected=[];
+    for(const shadowed of [false,true]) {
+      const source=nat+`def f(n : Nat) : Nat {
+        let v := n; let m := succ(n); let p := refl(n);
+        obtain (a, b) := typed(Nat and (n = n), (succ(n), refl(n)));
+        ${shadowed?"let v := zero; let m := zero; let p := tt; let a := zero; let b := tt;":""}
+        ${kind} n {
+          zero => { exact m; }
+          succ(k) ${kind==="induction"?"with ih":""} => { exact k; }
+        }
+      }`;
+      const rows=[];
+      for(const marker of ["exact m;","exact k;"]) {
+        const {session}=await setup(t,source,marker);
+        const locals=await query(session,"/locals","locals");
+        rows.push(locals.bindings.filter(row=>labels.has(row.label)&&row.visible!==shadowed)
+          .map(({label,type,value})=>({label,type,value})));
+      }
+      collected.push(rows);
+    }
+    assert.deepEqual(collected[1],collected[0]);
+    assert.equal(collected[0][0].find(row=>row.label==="m").value,"succ(zero)");
+    assert.equal(collected[0][0].find(row=>row.label==="p").type,"zero = zero");
+    assert.equal(collected[0][1].find(row=>row.label==="m").value,"succ(succ(k))");
+    assert.equal(collected[0][1].find(row=>row.label==="p").type,"succ(k) = succ(k)");
+  });
+});
+
+test("opened-member receipts retain their source behavior through branch refinement",async t=>{
+  const source=nat+`theory T(U < UU0) { M : U; c : M; }
+    def f(n : Nat) : Nat {
+      use T.make(Nat, n);
+      match n { zero => { exact c; } succ(k) => { exact k; } }
+    }`;
+  const off=await checkProgram(t,source,{module});
+  const on=await checkProgram(t,source,{module,options:{collectScopes:true}});
+  assert.deepEqual(on.result.gaps,[]);
+  assert.deepEqual(on.result.outputs,off.result.outputs);
+  assert.deepEqual(on.result.links,off.result.links);
+  assert.deepEqual(on.program.kernel.work(),off.program.kernel.work());
+  const {session}=await setup(t,source,"exact c;");
+  assert.equal((await query(session,"n","value")).text,"zero");
+  assert.equal((await query(session,"c","value")).text,"n");
+});
+
 test("/locals describes universe variables and actual interval coordinates",async t=>{
   const poly="def poly{{U < UU0}}(A : U, x : A) : A := x;";
   const {session:universe}=await setup(t,poly,"x;",{phase:"expression",length:1});

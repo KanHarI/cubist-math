@@ -155,7 +155,12 @@ export class Scope {
     const scope=this.aliases(key===name?[[name,value]]:[[name,value],[key,value]]);
     if(!record&&!source)return scope;
     const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
-    if(record)for(const at of new Set([name,key]))sourceBindings.set(at,record);
+    if(record) {
+      // Remember the introduction's refinement behavior even after shadowing.
+      // Opened-member receipts have no source-local metadata and stay distinct.
+      const receipt=Object.freeze({binding:record,local:!!source});
+      for(const at of new Set([name,key]))sourceBindings.set(at,receipt);
+    }
     // Only the introduced key is a semantic local. An identity receipt must
     // not add evidence or keep a shadowed let visible to proof search.
     if(source)localSources.set(name,Object.freeze({...source,key:name}));
@@ -186,7 +191,7 @@ export class Scope {
   // (alias/sourceBinding) must never inherit a shadowed binder's identity.
   refine(name,value) {
     if(!this.env.has(name))throw new TypeError("Cannot refine an absent binding.");
-    const env=new Map(this.env).set(name,value),record=this.sourceBindings.get(name);
+    const env=new Map(this.env).set(name,value),record=this.sourceBindings.get(name)?.binding;
     if(record)env.set(new BindingAdapter(this.checker.compilationBindings.table).key(record.id),value);
     return this.withEnv(env);
   }

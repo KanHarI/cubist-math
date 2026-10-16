@@ -663,3 +663,31 @@ The follow-up implements that contract at the existing key-remapping boundary.
 All 37 declaration/compilation/replay tests pass, including the eight failures;
 source-call permissions and negative recursion controls are unchanged. No
 observer-derived local visibility was restored. Final gates rerun before round 2.
+
+## CB6 external review, round 2 — diagnosis before fixes
+
+Claude verified all four round-1 corrections and the registry/permission
+follow-up at `8ec414c9`; all 133 targeted tests pass. It found one low-severity
+inspection regression: shadowed variable-valued lets still refine in branches,
+but shadowed compound values and their types do not. `branch` used the visible
+`localSources` inventory to decide which stored definitions need refinement.
+
+This is the same identity/availability conflation in the other direction.
+A private receipt does not grant search visibility, but it must retain the
+refinement behavior of the source introduction it records. Record that fact
+alongside the binding in the existing `sourceBindings` receipt, where the
+presence of source-local metadata is known. Branch refinement consumes this
+fact for shadowed receipts as well as current locals. Do not infer it from a
+binding role or label: opened model members have local-role identities but
+were never semantic locals, and must retain their existing checking behavior.
+No second visibility map, query-only renderer fix or role-based fallback is
+needed. Verify visible/shadowed rows for compound lets and dependent proofs
+through match/induction, and preserve model-opening on/off behavior.
+
+The fix stores the introduction fact on each existing receipt and consumes it
+at the shared branch transition. All 76 focused command, notation, replay and
+scope-point tests pass. New controls compare visible and shadowed compound lets,
+dependent proofs and obtain components in both match and induction branches;
+opened-member behavior and collection on/off kernel work remain identical.
+The first test fixture lacked its pair's required expected type; adding that
+explicit type corrected the fixture without changing the implementation.
