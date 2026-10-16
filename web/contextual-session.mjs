@@ -6,13 +6,14 @@ import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayP
 import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
-import {resolveBindingSyntax,lowerBindingSyntax} from "./cubist/binding-syntax.mjs";
+import {resolveBindingSyntax,lowerBindingSyntax,lowerBindingReference} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxNames} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
 import {notationContextKey} from "./translator/notation-context.mjs";
 import {T} from "./translator/core.mjs";
+import {Goal} from "./translator/proof-goals.mjs";
 import {replStatements} from "./repl-session.mjs";
 
 const limits=new Set(["fuel","budget","deadline"]);
@@ -27,9 +28,31 @@ const unavailable=text=>({kind:"unavailable",text,failure:"context"});
 const measure=kernel=>({time:performance.now(),work:kernel.work()});
 const spent=(kernel,start)=>({elapsedMs:performance.now()-start.time,work:Object.fromEntries(
   Object.entries(kernel.work()).map(([key,value])=>[key,value-start.work[key]]))});
+const help=[
+  "TERM;                 evaluate a term in the selected context",
+  "typeof TERM;          the checked type of a term",
+  "evaluate TERM;        normalize a term, which may remain symbolic",
+  "print(inspect(TERM)); inspect the checked term in kernel notation",
+  "witness TERM;         read a closed truncation's witness and type",
+  "let NAME := TERM;     add a checked scratch binding to this session",
+  "/locals               visible and shadowed local bindings, types and origins",
+  "/goal                 the active proof goal, or the expected expression type",
+  "/prove { ... }        check a proof block against a scratch copy of the goal",
+  "/clear                clear the console log",
+  "/restart              forget this session's scratch bindings",
+  "/help                 this list",
+].join("\n");
 
 function parsedEntry(entry) {
   const source=entry.replace(/^(\s*\/\/[^\n]*(\n|$))+/,"").trim().replace(/;\s*$/,"");
+  if(["/locals","/goal","/help","help"].includes(source))return {kind:source.replace(/^\//,""),text:source,tree:[]};
+  if(/^\/prove\s*\{/.test(source)) {
+    const text=`def contextual_entry : Unit ${source.replace(/^\/prove\s*/,"")}`,ast=parse(text);
+    if(ast.imports.length||ast.declarations.length!==1||(ast.items??ast.declarations).length!==1||!ast.declarations[0].body)
+      throw new TypeError("Expected one proof block: /prove { ... }");
+    return {kind:"prove",text,tree:ast.declarations[0].body};
+  }
+  if(source.startsWith("/"))throw new TypeError(`Unknown contextual command ${source.split(/\s/)[0]}. /help lists the commands.`);
   if(/^let\s/.test(source)) {
     // Parse the actual statement grammar, including annotations/local proofs.
     // A one-statement sequence gives its binder an identity without putting
@@ -43,9 +66,52 @@ function parsedEntry(entry) {
     if(statements.length!==2||statements[0].kind!=="let")throw new TypeError("Expected one scratch let.");
     return {kind:"let",text,tree:[statements[0]]};
   }
-  const command=/^(typeof|evaluate)\s+([\s\S]+)$/.exec(source);
-  const text=command?command[2]:source;
-  return {kind:command?.[1]??"evaluate",text,tree:parse(text,true)};
+  if(/^print\s*\(/.test(source)) {
+    const text=source+";",ast=parse(text),items=ast.items??ast.declarations;
+    if(ast.imports.length||items.length!==1||items[0].kind!=="print"||!["typeof","evaluate","inspect","witness"].includes(items[0].show))
+      throw new TypeError("Expected print(typeof(...)), print(evaluate(...)), print(inspect(...)) or print(witness(...)).");
+    return {kind:items[0].show,text,tree:items[0].value};
+  }
+  const termCommand=/^(typeof|evaluate|inspect|witness)\s+([\s\S]+)$/.exec(source);
+  const text=termCommand?termCommand[2]:source;
+  return {kind:termCommand?.[1]??"evaluate",text,tree:parse(text,true)};
+}
+
+// List actual introductions, not every value retained for captures. Resolution
+// through the selected branch decides visibility; an older row remains an
+// inspectable identity but never becomes a new source alias.
+function localBindings(translator,scope,lexical,adapter,table) {
+  const candidates=[],seen=new Set(),localRoles=new Set(["local","parameter","universe","dimension","pattern"]);
+  for(const [label,resolution] of lexical.snapshot()) {
+    if(label&&resolution.tag==="binding") {
+      const binding=table.get(resolution.id);
+      if(localRoles.has(binding.role))candidates.push({label,resolution,binding});
+    } else if(resolution.tag==="opening-frame") {
+      const activation=scope.slotOutcomes.activation(resolution.id),binding=table.get(resolution.id);
+      for(const [label,resolution] of activation?.members??[])candidates.push({label,resolution,binding});
+    }
+  }
+  const rows=[];
+  for(const {label,resolution,binding} of candidates) {
+    const resolved=scope.slotOutcomes.resolve(resolution),identity=JSON.stringify([label,resolved]);
+    if(seen.has(identity))continue;
+    seen.add(identity);
+    const visible=JSON.stringify(scope.slotOutcomes.resolve(lexical.lookup(label)))===JSON.stringify(resolved);
+    const entry={label,resolution:resolved,origin:binding.origin,visible,type:null};
+    if(resolved.tag==="failure"||resolved.tag==="missing") {
+      rows.push({...entry,reason:resolved.message??"This binding is unavailable."});continue;
+    }
+    const node=lowerBindingReference({kind:"bindingReference",resolution:resolved},adapter,scope.slotOutcomes);
+    const value=node.kind==="name"?scope.env.get(node.name):null;
+    if(value?.tag==="Dimension")entry.type="Interval";
+    else entry.type=translator.shownIn(scope.infer(translator.term(node,scope)).type,scope);
+    rows.push(entry);
+  }
+  const group=visible=>rows.filter(row=>row.visible===visible).map(row=>
+    `${row.label} : ${row.type??row.reason} (${row.origin.module}:${row.origin.start}-${row.origin.end})`);
+  const visible=group(true),shadowed=group(false);
+  return {kind:"locals",bindings:rows,text:["Visible locals:",...(visible.length?visible:["(none)"]),
+    "Shadowed locals:",...(shadowed.length?shadowed:["(none)"])].join("\n")};
 }
 
 function copiedScope(scope,unit) {
@@ -180,7 +246,18 @@ export class ContextualSession {
             declaring:live.scope.unit.declaring}).declaration(translator.declarationFuel);
           let current=copiedScope(scope,unit),result,extension=null;
           try {
-            if(parsed.kind==="let") {
+            if(parsed.kind==="help")result={kind:"help",text:help};
+            else if(parsed.kind==="locals")result=localBindings(translator,current,lexical,entryAdapter,table);
+            else if(parsed.kind==="goal") {
+              const goal=live.goal?translator.shownIn(live.goal,current):null;
+              const expected=live.expected?translator.shownIn(live.expected,current):null;
+              result={kind:"goal",goal,expected,text:goal?`Goal: ${goal}`:expected?`Expected type: ${expected}\nNo active proof goal.`:"No active proof goal or expected type."};
+            } else if(parsed.kind==="prove") {
+              if(!live.goal)throw new TypeError("This expression context has no active proof goal.");
+              const proof=current.check(translator.block(tree,new Goal(live.goal,current)),live.goal);
+              result={kind:"proof",text:`Checked against ${translator.shownIn(live.goal,current)}. Source unchanged.`,
+                proof:translator.shownIn(proof,current),goal:translator.shownIn(live.goal,current)};
+            } else if(parsed.kind==="let") {
               current=translator.bindLet(tree[0],current);
               const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
               const type=current.infer(value).type;
@@ -188,7 +265,9 @@ export class ContextualSession {
               extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
               lexical=lexical.bind(record.label,bindingResolution(id));
               scope=current;
-            } else {
+            } else if(parsed.kind==="inspect")result={kind:"inspection",text:translator.printed({show:"inspect",value:tree},current)};
+            else if(parsed.kind==="witness")result={kind:"value",text:translator.printed({show:"witness",value:tree},current)};
+            else {
               const term=translator.term(tree,current),checked=current.infer(term);
               const value=current.nf(parsed.kind==="typeof"?checked.type:checked.term);
               result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current)};

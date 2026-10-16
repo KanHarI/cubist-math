@@ -428,7 +428,10 @@ export class Translator {
     env.set(name,value);
     const key=this.checker.bindingName?.(name)??name;
     const declared=this.compilationBindings.declaration(key);
-    if(declared)env.set(this.identityAdapter.key(declared.binding.id),value);
+    if(declared) {
+      this.compilationBindings.published(declared.binding,value);
+      env.set(this.identityAdapter.key(declared.binding.id),value);
+    }
   }
   // Prepared syntax enters the same declaration checking/admission path as
   // parsed source. Binding-aware producers supply the one identity adapter;

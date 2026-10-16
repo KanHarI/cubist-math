@@ -64,3 +64,76 @@ test("an older check cannot overwrite a newer submitted source",{timeout:6000},a
   assert.deepEqual(results.map(({kind,text})=>({kind,text})),[{kind:"type",text:"Unit"}]);
   assert.deepEqual(worker.replies,[1,2,3]);
 });
+
+test("worker contextual sessions use exact scope IDs and keep scratch histories separate",async t=>{
+  const worker=await workerFor(t),source="def f(x : Unit) : Unit { exact x; }";
+  await worker.request("check",{source,module:"main"});
+  await assert.rejects(worker.request("contexts"),/contextual scopes enabled/);
+  await worker.request("check",{source,module:"main",collectScopes:true});
+  const listed=await worker.request("contexts"),points=listed.points.filter(point=>point.phase==="before"
+    &&point.origin.start===source.indexOf("exact x;"));
+  assert.equal(points.length,1);
+  const [point]=points;
+  assert.equal(point.revision,listed.revision);
+  assert.ok(point.declarationId);
+  assert.ok(listed.points.every(point=>!Object.hasOwn(point,"state")&&!Object.hasOwn(point,"lexical")));
+  const first=await worker.request("context-open",{scope:point.id}),second=await worker.request("context-open",{scope:point.id});
+  const run=(session,input)=>worker.request("context-run",{session:session.session,input});
+  assert.equal((await run(first,"let scratch := x"))[0].kind,"defined");
+  const [one,two]=await Promise.all([run(first,"scratch"),run(second,"scratch")]);
+  assert.equal(one[0].kind,"value");
+  assert.equal(two[0].kind,"error");
+  assert.equal((await run(first,"/goal"))[0].goal,"Unit");
+  assert.equal((await run(first,"/prove { exact scratch; }"))[0].kind,"proof");
+  await worker.request("context-close",{session:first.session});
+  await assert.rejects(run(first,"x"),/stale or closed/);
+  assert.equal((await run(second,"x"))[0].kind,"value");
+});
+
+test("edits and failed rechecks revoke contextual sessions while preserving the module REPL",async t=>{
+  const worker=await workerFor(t),source="def f(x : Unit) : Unit := x;";
+  const checked=async()=>{
+    await worker.request("check",{source,module:"main",collectScopes:true});
+    const {points}=await worker.request("contexts");
+    const selected=points.filter(point=>point.phase==="expression"&&point.origin.start===source.indexOf("x;"));
+    assert.equal(selected.length,1);
+    return {scope:selected[0].id,...await worker.request("context-open",{scope:selected[0].id})};
+  };
+  const first=await checked();
+  await worker.request("context-invalidate");
+  await assert.rejects(worker.request("context-run",{session:first.session,input:"x"}),/stale or closed/);
+  await assert.rejects(worker.request("context-open",{scope:first.scope}),/completed source check/);
+  assert.equal((await worker.request("repl",{input:"typeof f;"}))[0].kind,"type");
+  const second=await checked();
+  await assert.rejects(worker.request("check",{source:"def",module:"main",collectScopes:true}));
+  await assert.rejects(worker.request("context-run",{session:second.session,input:"x"}),/stale or closed/);
+  await assert.rejects(worker.request("context-open",{scope:second.scope}),/completed source check/);
+  const third=await checked();
+  assert.notEqual(third.scope,second.scope);
+  await assert.rejects(worker.request("context-open",{scope:second.scope}),/completed source check/);
+  assert.equal((await worker.request("context-run",{session:third.session,input:"x"}))[0].kind,"value");
+});
+
+test("an edit arriving during import loading cannot publish selectable old contexts",{timeout:6000},async t=>{
+  const worker=await workerFor(t),held=worker.hold("hlevels");
+  const check=worker.request("check",{source:"import hlevels; def f(x : Unit) : Unit := x;",module:"main",collectScopes:true});
+  await held;
+  const invalidated=worker.request("context-invalidate");
+  worker.release("hlevels");
+  assert.deepEqual((await check).gaps,[]);
+  await invalidated;
+  await assert.rejects(worker.request("contexts"),/contextual scopes enabled/);
+});
+
+test("generated declaration links and contextual summaries share binding identities",async t=>{
+  const worker=await workerFor(t),source="theory T(U < UU0) { M : U; def get(x : M) : M := x; }";
+  await worker.request("check",{source,module:"main",collectScopes:true});
+  const generated=await worker.request("generation",{module:"main"}),{points}=await worker.request("contexts");
+  const headers=generated.links.filter(link=>link.binding==="main__T.get"&&link.name==="T.get");
+  assert.ok(headers.length);
+  const selected=points.filter(point=>point.declarationId===headers[0].bindingId&&point.phase==="expression"
+    &&point.origin.start===source.indexOf("x;"));
+  assert.equal(selected.length,1);
+  const {session}=await worker.request("context-open",{scope:selected[0].id});
+  assert.equal((await worker.request("context-run",{session,input:"x"}))[0].text,"x");
+});

@@ -77,9 +77,8 @@ and kernel work to CB5, with collection off and with 5,182 scopes collected.
 This checkpoint does not complete CB6. Notation-expansion and model-numeral
 observation guards still need migration; lazy source operands must preserve their
 caller context without retaining live scopes. Browser selection/lifetime wiring,
-inspection, `/locals`, `/goal`, proof experiments, cost measurements and retirement
-of all ten contextual contracts remain, followed by full validation and Claude
-review. No CB6 Claude review has run yet.
+cost measurements and retirement of all ten contextual contracts remain, followed
+by final validation and Claude review. No CB6 Claude review has run yet.
 
 Historical name-based sections deliberately have incomplete notation selections.
 They continue to check identically with observation enabled, but contextual
@@ -89,3 +88,34 @@ selection semantics silently. This compatibility limitation is still open.
 Checkpoint validation: 74 focused scope, replay, worker, build-harness and theory
 tests pass, with zero failures. This is not the final full-suite, corpus, mutation
 or browser gate for CB6.
+
+## Commands and worker lifetime
+
+The backend implements `/locals`, `/goal`, `/prove { ... }`, inspection and witness
+readout through the existing resolver, proof-block elaborator and checker.
+Local listings distinguish visible and shadowed identities with checked types and
+source-qualified origins. Expected expression types remain distinct from active
+proof goals. Successful or failed proof experiments do not extend scratch history
+or change the source program. Witness readout still requires a closed term.
+
+A query through archived declarations exposed another identity-consumer gap:
+published references with explicit logical assumptions are applications, not bare
+definition references. The existing publication writer now records the exact
+declaration receipt in the compilation registry. Structurally equal copies gain
+no identity, and the registry still grants no availability. This follows the
+earlier publication/identity design rather than inspecting application heads or
+adding a spelling fallback to contextual queries.
+
+The worker supports optional scope collection, lightweight context descriptions,
+exact-ID session opening, queries, closure and invalidation. Edits and submitted
+rechecks revoke contextual capabilities immediately without disposing a live
+query's kernel. A check that finishes after an edit cannot publish selectable old
+contexts. The module REPL retains its existing behavior. Generated-view links and
+scope descriptions carry the same declaration identity for later UI selection.
+
+Validation: 57 command, replay, scope, module-REPL and identity tests pass; all six
+actual-worker tests pass. A full Node run executed 1,292 tests: 1,281 passed, ten
+CB6 contracts remain TODO, and one catalogue check found three new messages
+without codes. All 3,857 canonical checks passed. After adding E245–E247 and their
+reference entries, all 25 focused command/worker/identity/catalogue tests pass.
+The full run has not been repeated after that catalogue-only correction.
