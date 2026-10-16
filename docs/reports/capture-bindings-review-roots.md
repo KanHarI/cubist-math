@@ -834,3 +834,10 @@ the retained representation rather than adding a collection cutoff, raising a
 limit, or weakening the large-fixture test. Replayed descriptions must still
 match exactly. Binder entry follows model-evidence registration, so it denotes
 the completed introduction transition.
+
+The existing inspector browser gate caught a completion-path regression: returning
+the check result for on-demand entry skipped the trailing status refresh when a
+check did not render a kernel inspection. Move that refresh into the existing
+`finally`, alongside the checking indicator. Every completed check now updates
+controls regardless of its return path. Preserve the failing browser log; rerun
+the gate on the corrected UI rather than adding a special generated-view fix.

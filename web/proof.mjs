@@ -367,8 +367,8 @@ async function check({keepInspection=false}={}) {
     }
   } finally {
     showChecking(false);
+    refreshStatus();
   }
-  refreshStatus();
 }
 function setMode(mode) {
   sourceMode = mode;
