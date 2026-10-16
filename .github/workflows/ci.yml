@@ -30,6 +30,17 @@ jobs:
       - run: npm ci && npx playwright install --with-deps chromium
       - run: make EMCC=.tools/emsdk/upstream/emscripten/emcc wasm-test
       - run: npm run test:browser
+      - name: Check frontend mutation contracts
+        run: node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations.json
+      - name: Preserve frontend generation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-generation-evidence
+          path: |
+            build/frontend-generation-mutations.json
+            build/frontend-generation-failures/
+          if-no-files-found: ignore
   lint:
     runs-on: ubuntu-latest
     steps:

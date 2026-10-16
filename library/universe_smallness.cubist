@@ -57,12 +57,14 @@ computable def universe_not_small(U < UU0) : IsUSmall(U, U) -> Void {
 // Nor is a universe equivalent to one of its own types: the equivalence is
 // itself a family over its domain, and the centers of its fibers reach every
 // type.
-computable def universe_not_equivalent_to_type(U < UU0, X : U, e : ContrEquiv(next(U), X, U)) :
-  Void {
-  exact no_small_universe_family(U, X, e.1, fun (Y : U) => (
-    e.2(Y).1.1,
-    transport id_contr_equiv(U, Y) along e.2(Y).1.2 in (fun (Z : U) => ContrEquiv(U, Z, Y))
-  ));
+computable def universe_not_equivalent_to_type(U < UU0, X : U, e : ContrEquiv(next(U), X, U)) : Void {
+  exact no_small_universe_family(
+    U, X, e.1,
+    fun (Y : U) => (
+      e.2(Y).1.1,
+      transport id_contr_equiv(U, Y) along e.2(Y).1.2 in (fun (Z : U) => ContrEquiv(U, Z, Y))
+    )
+  );
 }
 
 // Russell's paradox in the first universe: no small type is equivalent to it.
