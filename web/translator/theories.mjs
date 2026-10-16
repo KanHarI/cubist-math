@@ -2,6 +2,7 @@
 // declaration's expansion (web/cubist/theories.mjs) and the records it
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
+import {propagateElaborationStop} from "./control.mjs";
 import {expandTheory} from "../cubist/theories.mjs";
 import {capturedName, capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
 import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/references.mjs";
@@ -244,15 +245,16 @@ const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
 // scope that resolves its names. Each operand is elaborated where the rule
 // uses it, in the scope the operator is written in: no binder of the rule
 // captures a name of an operand.
-export function appliedRule(scope,rule,left,right) {
+export function appliedRule(scope,rule,left,right,site=left) {
   // The rule's own names are read as where it was declared, in that
   // place's selection or none; its operands where they stand, in the use's
   // scope.
-  let inner=scope.alias(SELECTION,null);
+  let inner=scope.withUnit(scope.unit.with({scopeUnavailable:"Notation expansion awaits its binding-family migration."})).alias(SELECTION,null);
   for(const [key,value] of [...rule.aliases,...rule.selection??[]])inner=inner.alias(key,value);
   const scoped=node=>node&&{kind:"scoped",node,scope,start:node.start,end:node.end};
   const operands=new Map([[rule.left,scoped(left)],...(rule.right?[[rule.right,scoped(right)]]:[])]);
-  const substituted=substitute(rule.value,operands);
+  const value=scope.unit.scopePoints?.expansion(rule.value,"notation",site,scope.unit)??rule.value;
+  const substituted=substitute(value,operands);
   return {node:substituted,scope:inner};
 }
 const substitute=(node,operands)=>rewritten(node,(n,bound)=>
@@ -359,6 +361,7 @@ export function theoryDeclarations(t,module,d,env,declarations) {
       notation});
     return generated;
   } catch(failure) {
+    propagateElaborationStop(failure);
     // The message says where, as an elaboration error does.
     return failedExpansion(t,d,env,declarations,module.locate(failure,{start:failure.offset,end:failure.sourceEnd??failure.offset}));
   }
@@ -399,7 +402,7 @@ function capturedScope(t,module,d,env) {
   if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};
   let scope;
   try { scope=usesScope(t,new Scope(module.with({references:null}),new Map(),env),d.uses); }
-  catch { return null; }
+  catch (control) {propagateElaborationStop(control); return null; }
   return {env:scope.env,notation:[[SELECTION,scope.env.get(SELECTION)??null],
     ...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))]};
 }

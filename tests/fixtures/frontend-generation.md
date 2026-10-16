@@ -104,7 +104,8 @@ changes the case's comment, and the new wording needs the same review.
   starting a coherence search at its nonrecursive boundary.
 - **G9** freshens a law binder; every written `c` keeps its label, links to
   the binder and spans exactly the label, and `meaning` fixes the law's
-  meaning.
+  meaning. CB1's lexical-entry observation metadata fulfills this control;
+  it now passes without a known-defect exemption.
 - **G10** requires the law to check despite a colliding `box(c)` binder
   of type `M`. The intended and captured laws are both well-typed and have
   opposite client verdicts, checked by independent source controls. The

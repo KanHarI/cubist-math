@@ -14,6 +14,8 @@ import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
+import { ScopePoints } from "./translator/scope-points.mjs";
+import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
 import naturalSource from "./translator/nat-source.mjs";
 
 // A property computed when first read, and then kept as a plain value.
@@ -30,9 +32,10 @@ const expansionSuffix = (role,index) => index ? `_${role.replaceAll(" ","_")}_${
 // an earlier checked reference. Unsupported declarations never become axioms.
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
-    const {onDeclarationStart,onDeclaration,collectReferences=true,optimizations={},manageTransactions=true,
+    const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,optimizations={},manageTransactions=true,
       searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
     this.options={...options};
+    if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     // The representation map τ to declared counterparts was the differential
     // fixtures' (H1 specification, 7.4), retired with them.
     if (representation !== undefined)
@@ -42,7 +45,9 @@ export class CubicalProgram {
     if (experimental !== undefined)
       throw Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
     // Fuel limits (web/translator/fuel.mjs), for a measurement or a test; the defaults otherwise.
-    this.fuelLimits = { searchFuel, declarationFuel };
+    this.fuelLimits = Object.freeze(Object.fromEntries(Object.entries({searchFuel,declarationFuel}).map(([kind,limits])=>
+      [kind,limits?Object.freeze({...limits}):undefined])));
+    Object.assign(this.options,this.fuelLimits);
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
@@ -55,6 +60,11 @@ export class CubicalProgram {
     this.bundledNat=bundledNat;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
+    this.collectScopes = collectScopes;
+    this.scopePoints = new Map();
+    this.scopeRevision = null;
+    this.scopeRecorder = null;
+    this.scopeReady = false;
     this.manageTransactions = manageTransactions;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
@@ -69,7 +79,7 @@ export class CubicalProgram {
     this.moduleSteps = new Map();
     this.failedImports = new Map();
   }
-  dispose() { this.kernel.dispose(); }
+  dispose() { this.scopeReady=false; this.kernel.dispose(); }
   assumptionSymbols() {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
@@ -124,7 +134,7 @@ export class CubicalProgram {
     for (const item of pending) {
       if (!Number.isInteger(item.node.start)) continue;
       let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
-      const source = item.aliases?.find(alias => alias.name === item.node.name && alias.term === item.term);
+      const source = item.aliases?.find(alias => alias.key === item.node.localBindingKey);
       const declared = !source && !item.node.expressionSite && item.node.declarationBinding;
       const definition = !!declared || head.tag === "DefRef" && !source && !item.node.expressionSite;
       const binding = definition ? declared || head.name : `${name}__local_${item.node.start}${
@@ -159,7 +169,8 @@ export class CubicalProgram {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start});
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start,
+          ...(directive.failure?{failure:directive.failure}:{})});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
       else if(directive.kind==="print")
@@ -215,6 +226,12 @@ export class CubicalProgram {
     // Discover the source graph before checking. This only reads and parses
     // source; it does not run the mathematical library or count repeated
     // imports twice.
+    // Scope instances describe a complete ordered source check. The module
+    // REPL's cached, in-memory extensions keep that source snapshot intact;
+    // their own entries do not publish source scope points.
+    const collectScopes=this.collectScopes&&!reuseModules;
+    if(collectScopes)this.scopeReady=false;
+    if(collectScopes&&!this.manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     this.readSource.beginCheck?.();
     const discovery = { prepared: new Map(), total: this.completed, reuseModules };
     await this.discover(discovery, main, source, null, onProgress);
@@ -222,18 +239,31 @@ export class CubicalProgram {
     // Rechecking an edited module invalidates every dependent artifact and
     // native handle. The discovered source graph, rather than aliases or a
     // cached successful module, determines whether the session is reusable.
-    const invalidated=[...prepared].some(([name,entry])=>{
+    const invalidated=(collectScopes&&this.modules.size>0)||[...prepared].some(([name,entry])=>{
       if(this.modules.has(name))return entry.error||entry.text!==this.sources[name];
       // A failed read must be retried through its importers. An interrupted
       // load may also have committed declarations before the active group.
       return !reuseModules&&(this.failedImports.has(name)||this.sources[name]!==undefined);
     });
     if(invalidated) {
+      const policy=kernelReplayPolicy(this.kernel);
       const replacement=new CubicalProgram(this.kernel.module,this.readSource,this.options);
       this.dispose(); Object.assign(this,replacement);
+      applyKernelReplayPolicy(this.kernel,policy);
       discovery.total=[...prepared.values()].reduce((sum,entry)=>sum+(entry.ast?.declarations.length??0),0);
       onProgress({completed:0,total:discovery.total,current:main,phase:"loading",unit:"declarations",instructions:0});
     }
+    if(collectScopes) {
+      this.scopeRevision=this.options.scopeRevision??globalThis.crypto.randomUUID();
+      this.scopePoints=new Map();
+      this.scopeSources=Object.freeze(Object.fromEntries([...prepared].filter(([,entry])=>typeof entry.text==="string")
+        .map(([name,entry])=>[name,entry.text])));
+      this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
+        probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null});
+      this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
+        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
+    }
+    const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
     // Imports that failed in this check, used or not: any makes it incomplete.
     const failedHere = new Set();
@@ -294,7 +324,16 @@ export class CubicalProgram {
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
-        nameBased: this.readSource.nameBased?.(name) ?? false,
+        scopePoints:scopeRecorder,
+        onDirectiveStart:collectScopes?directive=>{
+          this.onDirectiveStart?.(name,directive);
+          this.scopeReplay.record("directive-start",name,directive,this.kernel);
+        }:null,
+        onDirective:collectScopes?(directive,result)=>{
+          this.onDirective?.(name,directive,result);
+          this.scopeReplay.record("directive-end",name,directive,this.kernel,result);
+        }:null,
+        nameBased: collectScopes?this.scopeReplay.modules[name].nameBased:this.readSource.nameBased?.(name)??false,
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
         onStep: step => statements.push({ ...step, declaration: current }),
@@ -316,11 +355,13 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
+          scopeRecorder?.declaration(name,declaration,checker.bindingName(declaration.name.text));
           if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);
             onProgress({ completed: this.completed, total,
               current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
+            if(collectScopes)this.scopeReplay.record("start",name,declaration,this.kernel);
           } catch(error) {
             if(publication)finishPublication(false);
             else {transaction?.finish(false);transaction=null;}
@@ -344,6 +385,7 @@ export class CubicalProgram {
           pending = [];
           onProgress({ completed: this.completed, total,
             current: `${name}.${result.name}`, phase: "checked", unit: "declarations", instructions: checker.steps });
+          if(collectScopes)this.scopeReplay.record("end",name,declaration,this.kernel,result);
         },
       });
       let result;
@@ -360,6 +402,7 @@ export class CubicalProgram {
       return result.env;
     };
     await load(main, source);
+    if(collectScopes)this.scopeReady=true;
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     this.main = main;
     // Goals are shown on demand; posting the result to the page reads them.

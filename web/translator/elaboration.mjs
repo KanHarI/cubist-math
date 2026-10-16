@@ -3,9 +3,12 @@
 // a lexical position in it. Both are immutable: binding returns a new scope,
 // and a freeze replay elaborates in a derived unit. Neither grants
 // authority: every term they help build is checked.
+import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
 import {freeNames,onFace} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
+import {ObservationFrame} from "./observations.mjs";
+import {SlotOutcomes} from "../cubist/bindings.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -19,20 +22,26 @@ export const emptyRewriteWork = () => ({
 // `searches` records what the declaration's searches spent. `declaring` names
 // the declaration being elaborated, for a message about its own name.
 export class SourceUnit {
-  constructor({checker,source="",moduleName="source",simpRegistry,references=null,
+  constructor({checker,source="",moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
-    names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null}) {
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,freezeSuggestions,work,fuel,searches,names,declaring});
+    names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null,bindingAdapter=null,
+    scopePoints=null,contextOwner=null,scopeUnavailable=null}) {
+    observations ??= new ObservationFrame({reference:references,step:steps});
+    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
   declaration(limits=DECLARATION_FUEL) {
-    return this.with({work:emptyRewriteWork(),searches:emptySearchRecord(),
+    return this.with({work:emptyRewriteWork(),searches:emptySearchRecord(),observations:this.observations.declaration(),
+      contextOwner:this.scopePoints?.owner(this.moduleName)??null,
       fuel:new SearchFuel("The declaration's elaboration",limits,{declaration:true})});
   }
   with(changes) {return new SourceUnit({...this,...changes});}
+  recordReference(...record) {this.observations.recordTo("reference",this.references,...record);}
+  recordStep(record) {this.observations.recordTo("step",this.steps,record);}
   // Report an error at a source node of this unit, unless it has a position.
   locate(error,node) {
+    propagateElaborationStop(error);
     if(Number.isInteger(error.offset)||!Number.isInteger(node?.start))return error;
     error.offset=node.start;
     error.sourceEnd=node.end;
@@ -71,13 +80,22 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map()) {
-    Object.assign(this,{unit,context,env,dimensions});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map()) {
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
-  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions);}
-  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions);}
+  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);}
+  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);}
+  withSlotOutcomes(slotOutcomes) {return new Scope(this.unit,this.context,this.env,this.dimensions,slotOutcomes,this.sourceBindings,this.localSources);}
+  sourceBinding(name,value,record,source=null) {
+    const scope=this.alias(name,value);
+    if(!record&&!source)return scope;
+    const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
+    if(record)sourceBindings.set(name,record);
+    if(source)localSources.set(name,Object.freeze(source));
+    return new Scope(this.unit,this.context,scope.env,this.dimensions,this.slotOutcomes,sourceBindings,localSources);
+  }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
   // source as in the types of the context. On a face of more than one
@@ -87,19 +105,28 @@ export class Scope {
     const ends=new Map(face[0].map(literal=>[literal.slice(0,literal.lastIndexOf(":")),literal.endsWith(":1")?1:0]));
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
-    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions);
+    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);
   }
   alias(name,value) {
     const env=new Map(this.env);
     hide(env,name);
-    return this.withEnv(env.set(name,value));
+    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
+    sourceBindings.delete(name);localSources.delete(name);
+    return new Scope(this.unit,this.context,env.set(name,value),this.dimensions,this.slotOutcomes,sourceBindings,localSources);
+  }
+  // Refinement changes a value at the same lexical binding. Introduction
+  // (alias/sourceBinding) must never inherit a shadowed binder's identity.
+  refine(name,value) {
+    if(!this.env.has(name))throw new TypeError("Cannot refine an absent binding.");
+    return this.withEnv(new Map(this.env).set(name,value));
   }
   // Several names at once, with one copy of the names in scope.
   aliases(pairs) {
     if(!pairs.length)return this;
     const env=new Map(this.env);
-    for(const [name,value] of pairs){hide(env,name);env.set(name,value);}
-    return this.withEnv(env);
+    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
+    for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);localSources.delete(name);}
+    return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,sourceBindings,localSources);
   }
   // The source name bound here that hides the declaration `name`, or null.
   hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}
@@ -118,14 +145,14 @@ export class Scope {
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
-    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions);
+    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);
   }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
     if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
-    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index));
+    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index),this.slotOutcomes,this.sourceBindings,this.localSources);
   }
   // A name from the unit's supply that nothing here binds: a scope built
   // apart from elaboration may bind names another supply gave.

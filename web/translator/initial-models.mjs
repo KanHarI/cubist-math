@@ -1,6 +1,7 @@
 // L2.6's retained construction-and-fold prototype. This does not register
 // an initial/free capability: deriving and the universal proofs are pending.
 // The expansion is ordinary syntax, checked with no new kernel rule.
+import {propagateElaborationStop} from "./control.mjs";
 import {theoryBinding, usesScope, failedExpansion} from "./theories.mjs";
 import {universeAt, nodes} from "../cubist/theories.mjs";
 import {freeNames, substituted, renamedFree, allNames, relocated, unlinked, freshName, fixedBinders} from "../cubist/scopes.mjs";
@@ -15,7 +16,7 @@ import {reference} from "../cubist/references.mjs";
 export function initialDeclarations(t, module, d, env, declarations) {
   const unit = module.declaration(t.declarationFuel).with({references: null});
   try { return expand(t, unit, d, env); }
-  catch (failure) { return failedExpansion(t, d, env, declarations, unit.locate(failure, d.name)); }
+  catch (failure) {propagateElaborationStop(failure); return failedExpansion(t, d, env, declarations, unit.locate(failure, d.name)); }
   finally { unit.fuel.close(); }
 }
 

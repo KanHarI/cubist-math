@@ -2,6 +2,7 @@
 // hlevel, ext, let, open, obtain and match. tacticProof elaborates a
 // block's first statement into a proof of the goal, with the rest of the
 // block after it, or returns undefined when it is no statement here.
+import {propagateElaborationStop} from "./control.mjs";
 import {calcStepSite} from "../cubist/link-sites.mjs";
 import {T} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -78,9 +79,9 @@ const tactics = {
     const rewrites=[];
     for(const item of first.rules) {
       try {transition=t.rewriteGoal(transition,first,item,rewrites);}
-      catch(error) {throw unit.locate(t.stopped(error,transition.next,rewrites),item);}
+      catch(error) {propagateElaborationStop(error);throw unit.locate(t.stopped(error,transition.next,rewrites),item);}
     }
-    const proof=t.remaining(rest,transition.next,
+    const proof=t.remaining(first,rest,transition.next,
       ()=>Error(`rw left an unresolved equality goal; add a following proof statement.${
         t.residual(transition.next,rewrites)}`));
     return t.conclude(first,transition,proof,()=>({
@@ -93,7 +94,7 @@ const tactics = {
     if(first.at) {
       if(!rest.length)throw Error("A simplified hypothesis copy must be followed by a proof statement.");
       const source=env.get(first.at.text);
-      if(!source||!t.localSources.has(source))
+      if(!source||!scope.localSources.has(first.at.text))
         throw Error(`simp at requires a local hypothesis: ${first.at.text}.`);
       // The hypothesis's statement is simplified and its proof carried forward.
       const hypothesis=goal.with(scope.infer(source).type);
@@ -101,7 +102,7 @@ const tactics = {
       const simplified=transition.next.target;
       const checked=scope.check(transition.forward(source),simplified);
       const named=scope.ascribe(checked,simplified);
-      const final=t.block(rest,goal.at(t.sourceBinding(first.as,named,scope)));
+      const final=t.continueBlock(first,rest,goal.at(t.sourceBinding(first.as,named,scope)));
       if(unit.references)t.recordTactic(first,scope,named,{
         freeze:t.freezeSimplification(first,rules,transition.trace,scope,(subset,at)=>{
           const replay=t.simplifyEqualityGoal(hypothesis.at(at),subset).transition;
@@ -115,7 +116,7 @@ const tactics = {
       const {transition}=t.simplifyTypeTerm(goal,rules);
       if(!rest.length)throw Error(`simp left a type goal; add a following proof statement.${
         t.residual(transition.next,transition.trace)}`);
-      const proof=t.block(rest,transition.next);
+      const proof=t.continueBlock(first,rest,transition.next);
       return t.conclude(first,transition,proof,result=>({
         freeze:t.freezeSimplification(first,rules,transition.trace,scope,(subset,at)=>{
           const replay=t.simplifyTypeTerm(goal.at(at),subset).transition;
@@ -125,7 +126,7 @@ const tactics = {
         transition.trace.map(step=>({...step,phase:"goal"})));
     }
     const {transition,failures,dependent}=t.simplifyEqualityGoal(goal,rules);
-    const proof=t.remaining(rest,transition.next,()=>{
+    const proof=t.remaining(first,rest,transition.next,()=>{
       const blocked=failures[0];
       const detail=(blocked ? ` Rule ${blocked.rule.displayName} has an unproved premise at parameter ${blocked.parameter}; supply a local witness with simp with [name].${
         rules.premiseSearchExhausted?` Premise search stopped after ${PREMISE_ATTEMPT_LIMIT} attempts.`:""}` : "")
@@ -161,15 +162,16 @@ const tactics = {
     let supplied,target;
     try {
       try {supplied=simplify(goal.with(suppliedType),rules,fuel,false);}
-      catch(error) {throw t.simpaStopped(error,"Simplifying the supplied type",null);}
+      catch(error) {propagateElaborationStop(error);throw t.simpaStopped(error,"Simplifying the supplied type",null);}
       try {target=simplify(goal,rules,fuel,false);}
-      catch(error) {throw t.simpaStopped(error,"Simplifying the goal",supplied);}
+      catch(error) {propagateElaborationStop(error);throw t.simpaStopped(error,"Simplifying the goal",supplied);}
     } finally {fuel.close();}
     let checked;
     try {
       checked=t.checkSimplified(supplied.transition.forward(value),target.transition.next.target,
         scope,supplied.dependent||target.dependent);
     } catch(error) {
+      propagateElaborationStop(error);
       if(typeof error?.message==="string")error.message+=` Simplifying the supplied type: ${
         t.rewriteSummary(supplied.transition.trace)} Simplifying the goal: ${t.rewriteSummary(target.transition.trace)}`;
       throw error;
@@ -196,13 +198,13 @@ const tactics = {
       // A universe variable, from a goal forall U < UU0. B.
       const {name,inner}=t.universeBinder(first.name,{kind:"name",name:"UU0"},scope);
       const next=new Goal(T.levelApply(T.levelLambda(pi.name,pi.body),T.variable(name)),inner);
-      return new Transition(goal,next,[steps.abstraction(name,null)]).rebuild(t.block(rest,next));
+      return new Transition(goal,next,[steps.abstraction(name,null)]).rebuild(t.continueBlock(first,rest,next));
     }
     if(pi.tag!=="Pi")throw Error("intro requires a dependent function goal.");
     const name=scope.fresh(first.name.text),variable=T.variable(name);
     const inner=t.sourceBinding(first.name,variable,scope.bind(name,pi.domain));
     const next=new Goal(T.app(T.lam(pi.name,pi.domain,pi.body),variable),inner);
-    return new Transition(goal,next,[steps.abstraction(name,pi.domain)]).rebuild(t.block(rest,next));
+    return new Transition(goal,next,[steps.abstraction(name,pi.domain)]).rebuild(t.continueBlock(first,rest,next));
   },
   hlevel(t,first,rest,goal) {
     const {scope}=goal;
@@ -219,31 +221,17 @@ const tactics = {
     const inner=t.sourceBinding(first.variable,variable,scope.bind(name,pi.domain));
     const output=T.app(T.lam(pi.name,pi.domain,pi.body),variable);
     const next=new Goal(T.path(scope.fresh("i"),output,T.app(path.left,variable),T.app(path.right,variable)),inner);
-    return new Transition(goal,next,[steps.congruence(name,pi.domain,path.family)]).rebuild(t.block(rest,next));
+    return new Transition(goal,next,[steps.congruence(name,pi.domain,path.family)]).rebuild(t.continueBlock(first,rest,next));
   },
   let(t,first,rest,goal) {
-    const {scope}=goal,{unit}=scope;
     if(first.target.kind!=="name")return undefined;
-    // let name : T { … } proves a local lemma, and let name : T := term
-    // checks a term against T. Either keeps T as the name's signature, as a
-    // top-level proof does; the value stays visible to conversion.
-    if(first.type) {
-      const type=t.term(first.type,scope,null),sort=scope.infer(type).type;
-      if(scope.nf(sort).tag!=="U")
-        throw unit.locate(Error(`let states a type after the colon; found a value of type ${t.shown(sort)}.`),first.type);
-      const checked=first.body?scope.check(t.block(first.body,new Goal(type,scope)),type)
-        :scope.check(t.term(first.value,scope,type),type);
-      return t.block(rest,goal.at(t.sourceBinding(first.target,scope.ascribe(checked,type),scope)));
-    }
-    const value=t.term(first.value,scope,null);
-    scope.infer(value);
-    return t.block(rest,goal.at(t.sourceBinding(first.target,value,scope)));
+    return t.continueBlock(first,rest,goal.at(t.bindLet(first,goal.scope)));
   },
   // use m; puts the model m's fields and notation in scope for the rest of
   // the block (theories.mjs).
   use(t,first,rest,goal) {
     const {scope}=goal;
-    return t.block(rest,goal.at(selected(t,scope,first.model)));
+    return t.continueBlock(first,rest,goal.at(selected(t,scope,first.model)));
   },
   obtain(t,first,rest,goal) {
     const {scope}=goal;
@@ -256,7 +244,7 @@ const tactics = {
       bind(pattern.left,T.first(term));bind(pattern.right,T.second(term));
     };
     scope.infer(value);bind(first.target,value);
-    return t.block(rest,goal.at(inner));
+    return t.continueBlock(first,rest,goal.at(inner));
   },
   matchStatement(t,first,rest,goal) {
     const {scope}=goal;

@@ -24,9 +24,9 @@ for (const c of contextualScenarios) {
       assert.deepEqual(get(name).axioms, [], name);
     }
   });
-  // Intentionally no fake session or module-import substitute. Replace each
-  // TODO with the real scope-point API and execute its script in CB1/CB6.
-  test.todo(`${c.phase} contextual session: ${c.id}`);
+  // The three CB1 scripts now execute through ContextualSession in
+  // contextual-replay.test.mjs. Broader CB6 contexts remain open contracts.
+  if(c.phase!=="CB1")test.todo(`${c.phase} contextual session: ${c.id}`);
 }
 for (const contract of sessionLifecycle) test.todo(`CB6 contextual lifetime: ${contract}`);
 

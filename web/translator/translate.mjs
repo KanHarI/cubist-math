@@ -1,7 +1,12 @@
 // Partial source translator. Unsupported syntax/foundations are explicit errors;
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
+import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
+import {qualifySource} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
+import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
+import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
+import {decidePatternSlot} from "../cubist/bindings.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
@@ -17,10 +22,10 @@ import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
 import {Goal,Transition,steps,byConversion,composePaths} from "./proof-goals.mjs";
 import {INDUCTIVE_TAGS,lowerInductive,resolveInductive} from "./inductive.mjs";
-import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
+import {RECURSIVE,withRecursion,recursionSite,elaborateMatch,resolveRecursive,selfReference,matchedType} from "./match.mjs";
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
-import {repeatedName,stem} from "./names.mjs";
+import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
@@ -65,6 +70,7 @@ const universeConstant = name => {
   const tier = match[1].length - 1, value = Number(match[2]);
   return tier ? {tag:"LConst",tier,value} : value;
 };
+const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","simp_set","hlevel_rule"]);
 // A level below ω: every variable ranges over the natural numbers, and only a
 // constant of tier 1 or above is not finite.
 
@@ -74,22 +80,12 @@ const universeConstant = name => {
 // supply; nothing is swapped in translator fields for replays.
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
-function lambdas(params,body) {
-  for(let j=params.length-1;j>=0;) {
-    const group=params[j].group??j,members=[];
-    while(j>=0&&(params[j].group??j)===group)members.unshift(params[j--]);
-    const binder=members[0].bound?{bound:members[0].bound}:{domain:members[0].type};
-    body=members.length===1
-      ? {kind:"lambda",name:members[0].name,...binder,body}
-      : {kind:"binderGroup",binderKind:"lambda",names:members.map(p=>p.name),...binder,body};
-  }
-  return body;
-}
-
 export class Translator {
   constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
-    inspectSignature=null,nameBased=false}={}) {
+    inspectSignature=null,nameBased=false,scopePoints=null,onDirectiveStart=null,onDirective=null}={}) {
+    this.scopePoints=scopePoints;
+    this.sourceRevision=scopePoints?.revision??globalThis.crypto.randomUUID();
     // A module of a revision before L2.10j reads an operator or a numeral
     // outside any selection by name, as it did then: x + y as the add in
     // scope, 3 from the Nat in scope, 0b110 from the binary constructors in
@@ -112,18 +108,18 @@ export class Translator {
     if(!checker)throw Error("A translator needs a checker: the elaborator over a kernel.");
     this.checker=checker;
     this.normalize=normalize;
-    this.localSources=new WeakMap();
     // An inspector record carries the context and dimensions of its scope and
     // the source aliases in `env`.
     this.references=onReference ? (node,term,scope,env)=>onReference(node,term,new Map(scope.context),
       new Map(scope.dimensions),[...(env??[])].flatMap(([name,value])=>{
-        const source=this.localSources.get(value);
-        return source?.name===name ? [{...source,term:value}] : [];
+        const source=scope.localSources.get(name);
+        return (source?.key??source?.name)===name ? [{...source,term:value}] : [];
       })) : null;
     this.onPublicationStart=onPublicationStart;
     this.onPublicationEnd=onPublicationEnd;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
+    this.onDirectiveStart=onDirectiveStart;this.onDirective=onDirective;
     // The declarations to check changed by a number: a theory's expansion
     // adds the ones beyond itself, and a failed type of models takes the
     // rest of its theory off.
@@ -134,9 +130,19 @@ export class Translator {
   // A source unit of this translator. translate() makes one per module.
   unit(options={}) {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,simpRegistry:this.simpRegistry,
-      references:this.references,freezeSuggestions:this.freezeSuggestions,...options});
+      references:this.references,steps:this.onStep,scopePoints:this.scopePoints,freezeSuggestions:this.freezeSuggestions,...options});
   }
-  reference(scope,node,term,env=scope.env) {scope.unit.references?.(node.spelling?{...node,name:node.spelling}:node,term,scope,env);}
+  reference(scope,node,term,env=scope.env) {
+    // A display label need not be the environment key (freshened generated
+    // binders and identity lowering both separate them). Carry the lexical
+    // entry through observation; consumers must not rediscover it by label
+    // or by a shared core value.
+    const key=node.bindingId?scope.unit.bindingAdapter.key(node.bindingId)
+      :node.isBinding?node.text??node.name:node.name;
+    const source=env?.get(key)===term?scope.localSources.get(key):null;
+    scope.unit.recordReference(source?{...node,name:source.name,localBindingKey:key}
+      :node.spelling?{...node,name:node.spelling}:node,term,scope,env);
+  }
   // Run a tactic search at a scope whose unit carries the search's own fuel,
   // shared by everything it does, premise searches included; `name` names it
   // in a message. A search already running at the scope is joined instead.
@@ -160,13 +166,20 @@ export class Translator {
     return new SearchFuel(name,this.searchFuel,{parent:scope.unit.fuel,
       record:used=>recordSearch(scope.unit.searches,used)});
   }
+  sourceKey(node,scope) {return node.bindingId?scope.unit.bindingAdapter.key(node.bindingId):node.text??node.name;}
   sourceBinding(node,term,scope) {
-    const name=node.text??node.name;
-    // A source alias gets its own syntax object, even for `let y = x`.
-    // This keeps lexical labels from overwriting x or leaking into siblings.
-    term={...term};scope=scope.alias(name,term);
-    this.localSources.set(term,{name:node.label??name,start:node.start,end:node.end});
-    this.reference(scope,{...node,name:node.label??name,isBinding:true},term);
+    const name=this.sourceKey(node,scope),label=node.label??node.text??node.name;
+    // Every clause path, including induction and obligations, commits a
+    // candidate when it introduces the variable. Constructor alternatives
+    // are decided by the pattern compiler without introducing a binder.
+    scope=scope.withSlotOutcomes(decidePatternSlot(scope.slotOutcomes,node,"variable"));
+    // Source metadata belongs to the lexical entry, not its core value.
+    // Two aliases may share a parameter value without overwriting labels or
+    // losing the unchanged-argument permission carried by that value.
+    const role=node.bindingRole??(term.tag==="U"&&term.level?.tag==="Var"?"universe":"local");
+    scope=scope.sourceBinding(name,term,scope.unit.scopePoints?.bind(node,scope,role)??null,
+      term.tag==="Dimension"?null:{name:label,key:name,start:node.start,end:node.end,...(node.bindingId?{bindingId:node.bindingId}: {})});
+    this.reference(scope,{...node,name:label,isBinding:true},term);
     return scope;
   }
   // Interval names are cubical coordinates, never terms of a fabricated type.
@@ -219,7 +232,11 @@ export class Translator {
   dimensionBody(n,dim,scope,expected=null) {
     if(n.kind!=="lambda"||n.domain.kind!=="name"||n.domain.name!=="Interval")
       throw Error("Expected fun (i : Interval) => ... in a cubical binder.");
-    return this.term(n.body,scope.bindDimension(dim).alias(n.name.text,{tag:"Dimension",name:dim}),expected);
+    return this.term(n.body,this.sourceDimension(n.name,dim,scope),expected);
+  }
+  sourceDimension(token,dim,scope) {
+    return scope.bindDimension(dim).sourceBinding(this.sourceKey(token,scope),{tag:"Dimension",name:dim},
+      scope.unit.scopePoints?.bind(token,scope,"dimension")??null);
   }
   // A result computes only if it uses no assumption: every assumption is a
   // postulate without computation rules. Name one path of definitions from
@@ -269,7 +286,7 @@ export class Translator {
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRule(natural,selection.numeral,
-        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null);
+        {kind:"number",value:Number(n.text),raw:true,natural:selection.numeral.natural??"Nat",start:n.start,end:n.end},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
     const rule=selection.literal;
@@ -285,7 +302,7 @@ export class Translator {
     // The lexeme's glyphs are the rule's, read with no selection.
     let glyphs=scope.alias(SELECTION,null);
     for(const [key,value] of rule.aliases)glyphs=glyphs.alias(key,value);
-    const applied=appliedRule(glyphs,rule,lexeme,null);
+    const applied=appliedRule(glyphs,rule,lexeme,null,n);
     // The parse's answer, evaluated now: 0 when it succeeded, k + 1 when it
     // refused the character at position k.
     scope.spend("queries");
@@ -359,8 +376,20 @@ export class Translator {
   // terms share no variable, and are shown alone.
   shownTogether(terms) {return this.checker.displayTexts?.(terms,1000)??terms.map(term=>sourceText(term));}
   translate(source, imported=new Map()) {
-    const module=this.unit({source});
-    const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
+    const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
+    return this.translateSyntax(ast,source,imported);
+  }
+  // Prepared syntax enters the same declaration checking/admission path as
+  // parsed source. Binding-aware producers supply the one identity adapter;
+  // no printing or second source-resolution pass occurs at this boundary.
+  translateSyntax(ast,source,imported=new Map(),{bindingAdapter=null}={}) {
+    const module=this.unit({source,bindingAdapter});
+    const env=new Map(imported),declarations=[],directives=[];
+    const declarationKey=d=>d.name.bindingId?bindingAdapter.key(d.name.bindingId):null;
+    const publish=(d,value)=>{
+      env.set(d.name.text,value);
+      const key=declarationKey(d);if(key)env.set(key,value);
+    };
     // The models of the file-level uses refused where they stand.
     const refusedUses=new Set();
     const ownership=new DeclarationOwnership();
@@ -444,6 +473,9 @@ export class Translator {
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
       const d=queued.generated?elaborationSyntax(queued):queued;
+      const directiveStart=directives.length;
+      const finishDirective=()=>this.onDirective?.(d,directives.length>directiveStart?directives.at(-1):{status:"checked"});
+      if(directiveKinds.has(d.kind))this.onDirectiveStart?.(d);
       if(!d.generated&&["def","inductive","theory","initial","free"].includes(d.kind)) {
         const conflict=ownership.reserve([d],d);
         if(conflict) { rejectDuplicate(d,conflict); continue; }
@@ -482,22 +514,25 @@ export class Translator {
           let scope=new Scope(unit,new Map(),env);
           for(const model of d.uses??[]) {
             try { scope=selected(this,scope,model); }
-            catch(error) { if(!refusedUses.has(model))throw error; scope=null; break; }
+            catch(error) {propagateElaborationStop(error); if(!refusedUses.has(model))throw error; scope=null; break; }
           }
           if(scope)selected(this,scope,d.model);
         } catch(error) {
+          propagateElaborationStop(error);
           refusedUses.add(d.model);
           directives.push({kind:"use",name:`at line ${source.slice(0,d.start).split("\n").length}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
           directives.at(-1).searchFuel=this.fuelRecord(unit);
         }
         unit.fuel.close();
+        finishDirective();
         continue;
       }
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
-        catch(error) { directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start}); }
+        catch(error) {propagateElaborationStop(error); directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind}); }
+        finishDirective();
         continue;
       }
       if(d.kind==="evaluate") {
@@ -509,11 +544,13 @@ export class Translator {
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"checked",start:d.start,
             normalText:this.evaluate(d,scope)});
         } catch(error) {
+          propagateElaborationStop(error);
           directives.push({kind:"evaluate",name:`at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       if(d.kind==="print") {
@@ -525,11 +562,13 @@ export class Translator {
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
             text:this.printed(d,scope)});
         } catch(error) {
+          propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       if(d.kind==="simp_rule"||d.kind==="simp_set") {
@@ -552,11 +591,13 @@ export class Translator {
           }
           directives.push({kind:d.kind,name:d.rule?.text??d.name.text,status:"checked",start:d.start});
         } catch(error) {
+          propagateElaborationStop(error);
           directives.push({kind:d.kind,name:d.rule?.text??d.name.text,status:"not-translated",
             reason:error.message,start:d.start,failure:error.kind});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       // hlevel_rule lemma; registers a checked lemma whose type states an
@@ -577,10 +618,12 @@ export class Translator {
             this.simpRegistry.hlevel.set(identity,{term,shape,identity,origin:this.moduleName,priority:d.priority,sourceName:d.rule.text});
           directives.push({kind:d.kind,name:d.rule.text,status:"checked",start:d.start});
         } catch(error) {
+          propagateElaborationStop(error);
           directives.push({kind:d.kind,name:d.rule.text,status:"not-translated",reason:error.message,start:d.start,failure:error.kind});
         }
         unit.fuel.close();
         directives.at(-1).searchFuel=this.fuelRecord(unit);
+        finishDirective();
         continue;
       }
       if(d.kind==="inductive") {
@@ -596,7 +639,7 @@ export class Translator {
         const missing=missingEvidence(d,env);
         if(missing)throw unit.locate(missing,d.name);
         const repeated=repeatedName([...(d.section?.params??[]),...(d.params.length?d.params:d.valueParameters??[])]);
-        if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.text}: give each its own name.`),repeated.name);
+        if(repeated)throw unit.locate(Error(`${d.name.text} has two parameters named ${repeated.name.label??repeated.name.text}: give each its own name.`),repeated.name);
         // A section's definition takes the section's implicit parameters, which
         // come first, and none of its own (L2.4).
         const ownImplicit=d.section&&(d.params.length?d.params:d.valueParameters??[]).find(p=>p.implicit);
@@ -613,18 +656,19 @@ export class Translator {
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
         // declaration's value on it.
-        let bodyEnv=env;
+        let bodyScope=new Scope(unit,new Map(),env);
         const own=[...(d.section?.params??[]),...(d.params.length?d.params:d.valueParameters??[])],site=recursionSite(d,own);
         if(site) {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
           const sectional=d.section?.params.length??0;
-          const recursive={tag:"Recursive",source:d.name.text,params:own.map(p=>p.name.text),implicit:own.map(p=>!!p.implicit),
+          const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,
+            params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
-          bodyEnv=new Map(env).set(d.name.text,recursive).set(RECURSIVE,recursive);
+          bodyScope=withRecursion(bodyScope,recursive,{introduce:true});
         }
-        const term=this.term(expression,new Scope(unit,new Map(),bodyEnv));
+        const term=this.term(expression,bodyScope);
         // Normal forms are optional inspection output, not a prerequisite for
         // checking a declaration whose Nat value may have millions of successors.
         // The declaration's closing check, and its admission below, are
@@ -642,19 +686,20 @@ export class Translator {
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
         const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
-          own.length?own.map(p=>({name:p.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
+          own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
-        env.set(d.name.text,definition);
+        publish(d,definition);
         // A theory's type of models, by which m.f reads its fields, and its
         // projections, which print as m.f (L2.4).
         if(d.generated)registerTheoryDeclaration(this,d);
         declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native,
           syntax:d});
       } catch(error) {
+        propagateElaborationStop(error);
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
         const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
-        env.set(d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
+        publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
@@ -670,7 +715,7 @@ export class Translator {
       // result must not remain available to subsequent declarations.
       if (declarations.at(-1).status === "not-translated") {
         const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
-        env.set(d.name.text,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
+        publish(d,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
       }
       if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
       settle(queue);
@@ -707,6 +752,7 @@ export class Translator {
         term:lowered.former,type:lowered.former,native:{ok:true,axioms:[],extensions:lowered.extensions},
         syntax:d});
     } catch(failure) {
+      propagateElaborationStop(failure);
       // An expansion's constructor failure belongs to its written theory
       // or generator type (initial-models.mjs).
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
@@ -736,11 +782,11 @@ export class Translator {
     const witnesses=witnessNames.map(token=>{
       try {
         const proof=env.get(token.text);
-        if(!proof||!this.localSources.has(proof))
+        if(!proof||!scope.localSources.has(token.text))
           throw Error(`Simplification premise witness must be local: ${token.text}.`);
         scope.infer(proof);
         return proof;
-      } catch(error) {throw unit.locate(error,token);}
+      } catch(error) {propagateElaborationStop(error);throw unit.locate(error,token);}
     });
     const selected=only?[]:orderedDefaultRules(unit.simpRegistry);
     for(const item of items) {
@@ -751,7 +797,7 @@ export class Translator {
       else {
         let term;
         try {term=this.term(item.value,scope,null);}
-        catch(error) {throw unit.locate(error,item);}
+        catch(error) {propagateElaborationStop(error);throw unit.locate(error,item);}
         selected.push({term,identity:boundedStateKey(term,null,this.checker.kernel),reverse:item.reverse,
           sourceText:unit.source.slice(item.value.start,item.value.end),
           sourceStart:item.start,sourceEnd:item.end});
@@ -769,7 +815,7 @@ export class Translator {
             simplificationRule(at,term);
             return identity;
           }));
-        } catch(error) {throw unit.locate(error,token);}
+        } catch(error) {propagateElaborationStop(error);throw unit.locate(error,token);}
       }
     }
     let rules;
@@ -794,6 +840,7 @@ export class Translator {
         key=`${[...activePremises,owner].map(ruleNumber).join(",")}:${
           boundedStateKey(premise,at.unit.fuel,this.checker.kernel)}`;
       } catch(error) {
+        propagateElaborationStop(error);
         // A premise too large to remember is still searched, just not cached.
         if(!(error instanceof SearchLimit))throw error;
       }
@@ -820,6 +867,7 @@ export class Translator {
           outcome={term:witness,rules:transition.trace.flatMap(step=>[step.rule,...step.premiseRules])};
         }
       } catch(error) {
+        propagateElaborationStop(error);
         // A cycle or exhausted node, candidate or rewrite bound while proving
         // a premise leaves that premise unproved. Running out of the shared
         // search fuel, and kernel cancellation, still stop the whole
@@ -836,7 +884,7 @@ export class Translator {
         let compiled;
         try {compiled=simplificationRule(at,rule.term,rule.reverse,witnesses,
           (premise,where)=>solvePremise(premise,rule.identity,where));}
-        catch(error) {throw unit.locate(error,
+        catch(error) {propagateElaborationStop(error);throw unit.locate(error,
           {start:rule.sourceStart,end:rule.sourceEnd});}
         const available=rule.sourceName&&env.get(rule.sourceName);
         let sourceText=rule.sourceText??null;
@@ -845,6 +893,7 @@ export class Translator {
             if(boundedStateKey(available,null,this.checker.kernel)===rule.identity)
               sourceText=rule.sourceName;
           } catch(error) {
+            propagateElaborationStop(error);
             // A large shadowing term only disables a source edit suggestion.
             if(!(error instanceof SearchLimit))throw error;
           }
@@ -888,7 +937,7 @@ export class Translator {
       // rewrite. Replay must preserve the constructed proof as well as
       // its type: later statements may depend on that particular path.
       try {valid=rules.withSubset(frozen,()=>replay?.(frozen,replayScope)===true);}
-      catch {valid=false;}
+      catch (control) {propagateElaborationStop(control);valid=false;}
       if(!valid)return null;
     }
     const keyword=first.kind==="simpaOnly"?"simpa":"simp";
@@ -928,6 +977,19 @@ export class Translator {
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(j,pt.family,pt.left,qt.right)) : result;
   }
   term(n,scope,expected=null) {
+    const run=()=>this.termAt(n,scope,expected);
+    return scope.unit.scopePoints?scope.unit.scopePoints.around(this,n,scope,{expected},run):run();
+  }
+  termAt(n,scope,expected=null) {
+    const resolve=node=>{
+      if(node.kind!=="bindingReference")return node;
+      if(!scope.unit.bindingAdapter)throw new TypeError("Binding-aware syntax needs its identity adapter.");
+      const lowered=lowerBindingReference(node,scope.unit.bindingAdapter,scope.slotOutcomes);
+      if(lowered.kind==="bindingReference")throw new TypeError("An undecided binding slot reached term elaboration.");
+      return lowered;
+    };
+    n=resolve(n);
+    if(n.kind==="call")n={...n,fn:resolve(n.fn)};
     if(n.kind==="reference")n=elaborationSyntax(n);
     else if(n.kind==="call"&&n.fn.kind==="reference")n={...n,fn:elaborationSyntax(n.fn)};
     if(n.lexicalNotation)scope=scope.aliases(scope.env.get(n.lexicalNotation));
@@ -947,7 +1009,10 @@ export class Translator {
   // Numerals and the legacy induction syntax use the Nat in the source's
   // environment. Its declaration and admission belong to the imported module.
   naturalConstructors(scope,name="Nat") {
-    const type=scope.nf(this.term({kind:"name",name},scope,null));
+    return this.naturalSignature(scope,this.term({kind:"name",name},scope,null));
+  }
+  naturalSignature(scope,type) {
+    type=scope.nf(type);
     const natural=type.tag==="Sort"?this.checker.inductives?.get(type.signature):null;
     const zero=natural?.constructors.findIndex(c=>c.source==="zero"&&c.arity===0&&c.dims===0);
     const succ=natural?.constructors.findIndex(c=>c.source==="succ"&&c.arity===1&&c.dims===0);
@@ -988,9 +1053,9 @@ export class Translator {
         if(!expected)throw Error("path i => ... needs an expected Path or PathP type.");
         const goal=scope.nf(expected);
         if(goal.tag!=="Path")throw Error("path i => ... needs an expected Path or PathP type.");
-        const dim=scope.fresh(n.dimension.text),inner=scope.bindDimension(dim);
+        const dim=scope.fresh(bindingStem(n.dimension)),inner=this.sourceDimension(n.dimension,dim,scope);
         const family=substituteDimension(goal.family,goal.dim,I.variable(dim));
-        const body=this.term(n.body,inner.alias(n.dimension.text,{tag:"Dimension",name:dim}),family);
+        const body=this.term(n.body,inner,family);
         return T.line(dim,family,body);
       }
       case "transport": {
@@ -1062,6 +1127,10 @@ export class Translator {
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
+        // Numeric nodes also occur as interval endpoints, consumed directly
+        // by interval()/face parsing. As terms they require an unmigrated
+        // notation recipe; legacy mode must not synthesize an ambient Nat.
+        if(scope.unit.bindingAdapter)throw new TypeError("Binding syntax family has not migrated: numeral");
         // In a selected notation, a numeral is its numeral rule's, or its
         // literal rule's, read as it is written; a notation with neither
         // reads none (L2.10c). A numeral rule's own natural number is raw
@@ -1150,7 +1219,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.left,n.right);
+            const applied=appliedRule(scope,operation.rule,n.left,n.right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.left,n.right],start:n.start,end:n.end},expected);
@@ -1173,7 +1242,7 @@ export class Translator {
           const left=operand(n.left,recipe.left),right=operand(n.right,recipe.right);
           // A named notation's rule, applied to the operands.
           if(selection&&env.get(operatorBinding(n.operator))?.tag==="NotationRule") {
-            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right);
+            const applied=appliedRule(scope,env.get(operatorBinding(n.operator)).rule,left,right,n);
             return this.term(applied.node,applied.scope,expected);
           }
           // A notation open binds means the model's operation (L2.4).
@@ -1203,7 +1272,7 @@ export class Translator {
         if(n.qualifier) {
           const operation=qualifiedOperator(this,scope,{...n,model:n.qualifier,operator:"unary -"});
           if(operation.kind==="notationRule") {
-            const applied=appliedRule(scope,operation.rule,n.operand,null);
+            const applied=appliedRule(scope,operation.rule,n.operand,null,n);
             return this.term(applied.node,applied.scope,expected);
           }
           return tr({kind:"call",fn:operation,args:[n.operand],start:n.start,end:n.end},expected);
@@ -1215,7 +1284,7 @@ export class Translator {
         const operand=view?{kind:"select",model:{kind:"name",name:view,start:n.start,end:n.end},body:n.operand,start:n.start,end:n.end}:n.operand;
         const binding=env.get(operatorBinding("unary -"));
         if(binding?.tag==="NotationRule") {
-          const applied=appliedRule(scope,binding.rule,operand,null);
+          const applied=appliedRule(scope,binding.rule,operand,null,n);
           return this.term(applied.node,applied.scope,expected);
         }
         return tr({kind:"call",fn:{kind:"name",name:operatorBinding("unary -"),start:n.operatorStart,end:n.operatorEnd},
@@ -1307,8 +1376,8 @@ export class Translator {
           return elaborateMatch(this,n,value,sort,scope,expected);
         }
         // Binders keep their source names, so the checked term reads as written.
-        const natural=this.naturalConstructors(scope),type=natural.type;
-        const value=tr(n.value,type),k=scope.fresh(n.index?.text),ih=scope.fresh(n.hypothesis?.text);
+        const value=tr(n.value,null),natural=this.naturalSignature(scope,inferred(value).type),type=natural.type;
+        const k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
         // Without `as`, the motive is constant and the predecessor unnamed.
         const stepScope=n.index?this.sourceBinding(n.index,T.variable(k),scope.bind(k,type)):scope.bind(k,type);
         const motiveBody=this.term(n.type,stepScope,null),motive=T.lam(k,type,motiveBody);
@@ -1333,14 +1402,14 @@ export class Translator {
           ?"match requires a value of a declared type, or of a sum.":"match requires a sum type.");
         if(!n.leftBody||!n.type)throw Error("A match on a sum has a return type and the clauses left x => …; right y => ….");
         // Binders keep their source names, as induction's do.
-        const name=scope.fresh(n.motiveName?.text),inner=scope.bind(name,type);
+        const name=scope.fresh(bindingStem(n.motiveName)),inner=scope.bind(name,type);
         const motive=T.lam(name,type,this.term(n.type,
-          n.motiveName?inner.alias(n.motiveName.text,T.variable(name)):inner,null));
+          n.motiveName?this.sourceBinding(n.motiveName,T.variable(name),inner):inner,null));
         const branch=side=>{
-          const local=scope.fresh(n[side].text),domain=sum[side],variable=T.variable(local);
+          const local=scope.fresh(bindingStem(n[side])),domain=sum[side],variable=T.variable(local);
           const injection=(side==="left"?T.inl:T.inr)(type,variable);
           return T.lam(local,domain,this.term(n[side+"Body"],
-            scope.bind(local,domain).alias(n[side].text,variable),T.app(motive,injection)));
+            this.sourceBinding(n[side],variable,scope.bind(local,domain)),T.app(motive,injection)));
         };
         return T.sumrec(motive,branch("left"),branch("right"),value);
       }
@@ -1349,7 +1418,7 @@ export class Translator {
         if(sigma.tag!=="Sigma")throw Error("unpack requires a dependent pair.");
         const goal=tr(n.type,null);
         const body=this.term(n.body,
-          scope.alias(n.left.text,T.first(value)).alias(n.right.text,T.second(value)),goal);
+          this.sourceBinding(n.right,T.second(value),this.sourceBinding(n.left,T.first(value),scope)),goal);
         scope.check(body,goal);
         return body;
       }
@@ -1363,15 +1432,48 @@ export class Translator {
     }
   }
   block(statements,goal) {
+    const run=()=>this.blockAt(statements,goal);
+    return goal.scope.unit.scopePoints?goal.scope.unit.scopePoints.around(this,statements[0],goal.scope,{phase:"before",goal:goal.target},run):run();
+  }
+  blockAt(statements,goal) {
     try {
       const proof=this.blockBody(statements,goal);
       // The proof of the following statements is part of this one's proof.
-      this.onStep?.({statement:statements[0],next:statements[1]??null,goal,proof});
+      goal.scope.unit.recordStep({statement:statements[0],next:statements[1]??null,goal,proof});
       return proof;
     }
     catch(error) {
+      propagateElaborationStop(error);
       throw goal.scope.unit.locate(error,statements[0]);
     }
+  }
+  // A continuation runs in the checked context produced by this statement.
+  // Keeping that transition explicit distinguishes the initializer's scope
+  // from the scope after a let, even when their source ranges overlap.
+  afterStatement(statement,goal,continuation) {
+    const points=goal.scope.unit.scopePoints;
+    return points?points.around(this,statement,goal.scope,{phase:"after",goal:goal.target},continuation):continuation();
+  }
+  continueBlock(statement,rest,goal) {
+    return this.afterStatement(statement,goal,()=>this.block(rest,goal));
+  }
+  // The same local-binding operation serves proof statements and contextual
+  // scratch entries. In either case the initializer sees the old scope,
+  // and a checked annotation remains the binding's signature.
+  bindLet(statement,scope) {
+    const {unit}=scope;
+    if(statement.target.kind!=="name")throw new TypeError("A local let needs a name.");
+    if(statement.type) {
+      const type=this.term(statement.type,scope,null),sort=scope.infer(type).type;
+      if(scope.nf(sort).tag!=="U")
+        throw unit.locate(Error(`let states a type after the colon; found a value of type ${this.shown(sort)}.`),statement.type);
+      const checked=statement.body?scope.check(this.block(statement.body,new Goal(type,scope)),type)
+        :scope.check(this.term(statement.value,scope,type),type);
+      return this.sourceBinding(statement.target,scope.ascribe(checked,type),scope);
+    }
+    const value=this.term(statement.value,scope,null);
+    scope.infer(value);
+    return this.sourceBinding(statement.target,value,scope);
   }
   // A statement makes a transition from the goal (proof-goals.mjs), and the
   // statements after it prove the goal that remains.
@@ -1422,11 +1524,13 @@ export class Translator {
   }
   // The statements after a tactic prove the goal it leaves. At the end of a
   // block that goal must hold by conversion; `unresolved` makes the error.
-  remaining(rest,next,unresolved) {
-    if(rest.length)return this.block(rest,next);
-    const proof=byConversion(next);
-    if(!proof)throw unresolved();
-    return proof;
+  remaining(statement,rest,next,unresolved) {
+    return this.afterStatement(statement,next,()=>{
+      if(rest.length)return this.block(rest,next);
+      const proof=byConversion(next);
+      if(!proof)throw unresolved();
+      return proof;
+    });
   }
   // hlevel; closes a goal that states an h-level, IsContr, IsProp, IsSet or
   // HasLevel, or an equality in a proposition, from the lemmas
@@ -1437,6 +1541,7 @@ export class Translator {
   hlevel(first,goal,scope) {
     try {scope.infer(T.levelApply({tag:"DefRef",name:"hlevels__HasLevel"},0));}
     catch(error) {
+      propagateElaborationStop(error);
       if(!/^Unknown checked cubical definition/.test(error.message))throw error;
       throw Error("hlevel uses the library module hlevels: add import hlevels;");
     }
@@ -1463,6 +1568,7 @@ export class Translator {
         if(sort.tag!=="U")throw Error("hlevel needs the type of the equality's sides to be in a universe.");
         return T.app(T.app(search.prove(0,sort.level,path.family),path.left),path.right);
       } catch(error) {
+        propagateElaborationStop(error);
         if(!(error instanceof HLevelUnproved))throw error;
         // Each variable the search introduced for a binder is shown by that
         // binder's name.
@@ -1482,8 +1588,8 @@ export class Translator {
   // which the search uses as a rule (L2.5b).
   hlevelLocals(scope) {
     const locals=[];
-    for(const bound of scope.env.values()) {
-      if(!this.localSources.has(bound)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+    for(const [key,bound] of scope.env) {
+      if(!scope.localSources.has(key)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
       const type=scope.infer(bound).type;
       if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
     }
@@ -1502,6 +1608,7 @@ export class Translator {
         new HLevelSearch(at,[],term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)})
           .prove(stated.level,stated.universe,stated.type)),type);
     } catch(error) {
+      propagateElaborationStop(error);
       if(error instanceof HLevelUnproved)return null;
       throw error;
     }
@@ -1534,6 +1641,7 @@ export class Translator {
   checkSimplified(term,type,scope,dependent) {
     try {return scope.check(term,type);}
     catch(error) {
+      propagateElaborationStop(error);
       if(dependent&&typeof error?.message==="string")error.message+=dependentNote;
       throw error;
     }
@@ -1543,6 +1651,7 @@ export class Translator {
   findSimplification(root,carrier,rules,scope) {
     try {return findRewrite(scope,root,carrier,rules,1,"postorder");}
     catch(error) {
+      propagateElaborationStop(error);
       const rule=error.rewriteRule;
       throw scope.unit.locate(error,rule?.sourceStart===undefined?null:
         {start:rule.sourceStart,end:rule.sourceEnd});
@@ -1553,7 +1662,7 @@ export class Translator {
   goalText(goal,width=160) {
     try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.target,null,width,null,true,
       {selection:goal.scope.env.get(SELECTION)?.name??null}).goal??sourceText(goal.target);}
-    catch {return "(too large to show)";}
+    catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
   // Two goals one diagnostic shows, named together when they share a scope,
   // as displayGoal names a goal and the term built for it.
@@ -1563,7 +1672,7 @@ export class Translator {
       const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.target,other.target,width,null,true,
         {selection:goal.scope.env.get(SELECTION)?.name??null});
       return [shown.goal,shown.built];
-    } catch {return ["(too large to show)","(too large to show)"];}
+    } catch (control) {propagateElaborationStop(control);return ["(too large to show)","(too large to show)"];}
   }
   // What a search's rewrites did: the sides they changed and the rules that
   // fired, in order. A step is {side, rule}, as in a simplification's trace.
@@ -1581,12 +1690,12 @@ export class Translator {
   // A term for a diagnostic, in source syntax, bounded in length.
   termText(term,width=160) {
     try {return this.checker.displayText?.(term,width)??sourceText(term);}
-    catch {return "(too large to show)";}
+    catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
   // Terms one diagnostic shows, named together, each bounded in length.
   termTexts(terms,width=160) {
     try {return this.checker.displayTexts?.(terms,width)??terms.map(term=>sourceText(term));}
-    catch {return terms.map(()=>"(too large to show)");}
+    catch (control) {propagateElaborationStop(control);return terms.map(()=>"(too large to show)");}
   }
   // A search stopped by a limit or by its fuel says where it stopped, once:
   // an enclosing search does not add its own goal.
@@ -1609,7 +1718,7 @@ export class Translator {
   // which, stopped, stops the tactic with its goal unchanged.
   preparedRules(first,scope,goal) {
     try {return this.selectedSimpRules(first.rules,scope,first.only,first.without,first.witnesses);}
-    catch(error) {throw this.stopped(error,goal,[]);}
+    catch(error) {propagateElaborationStop(error);throw this.stopped(error,goal,[]);}
   }
   // simpa's search stopped in one of its two simplifications: say which, where
   // it stopped, and how far the supplied type got when the goal's stopped.
@@ -1663,7 +1772,7 @@ export class Translator {
           trace.push({side:"type",rule:found.rule,witness:found.witness,visits:found.visits,
             premiseRules:found.premiseRules});
         }
-      } catch(error) {throw own?this.stopped(error,goal.with(current),trace,describe):error;}
+      } catch(error) {propagateElaborationStop(error);throw own?this.stopped(error,goal.with(current),trace,describe):error;}
     },fuel);
     // Compose after the search, outside its fuel.
     let witness=null;
@@ -1715,7 +1824,7 @@ export class Translator {
           transition=transition.extend(steps.composition(at,side,result.witness),goal.with(next),
             {side,rule:result.rule,witness:result.witness,visits:result.visits,premiseRules:result.premiseRules});
         }
-      } catch(error) {throw own?this.stopped(error,transition.next,transition.trace,describe):error;}
+      } catch(error) {propagateElaborationStop(error);throw own?this.stopped(error,transition.next,transition.trace,describe):error;}
     },fuel);
     // `dependent` describes the final pass: a remaining match was skipped.
     return {transition,failures,dependent};
