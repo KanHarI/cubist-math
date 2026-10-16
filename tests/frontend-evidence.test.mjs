@@ -127,16 +127,21 @@ theory T(U < UU0) { M : set U; c : M; }`);
   }
   const scope=new Scope(unit,new Map(),env).bind("S",modelType).bind("R",modelType)
     .bind("p",T.path("j",modelType,T.variable("S"),T.variable("R"))).bindDimension("i");
-  const refined=scope.refineEvidence(new Map([["S",T.variable("R")]]));
+  const lexical=scope.sourceBinding("local",scope.evidence[0].term,null,{name:"local"}).enterLexicalBody();
+  const refined=lexical.refineEvidence(new Map([["S",T.variable("R")]]));
   assert.ok(scope.equal(scope.evidence[0].model,T.variable("S")));
   assert.ok(refined.equal(refined.evidence[0].model,T.variable("R")));
   refined.check(refined.evidence[0].term,refined.evidence[1].type);
-  const along=scope.modelEvidence(T.at(T.variable("p"),I.variable("i")),modelType);
+  refined.check(refined.inheritedDefinitions[0],refined.evidence[1].type);
+  const along=scope.modelEvidence(T.at(T.variable("p"),I.variable("i")),modelType)
+    .sourceBinding("local",T.at(T.variable("p"),I.variable("i")),null,{name:"local"}).enterLexicalBody();
   for(const [endpoint,model] of [[0,"S"],[1,"R"]]) {
     const face=along.onFace([[`i:${endpoint}`]]),witness=face.evidence.at(-1);
     assert.ok(face.equal(witness.model,T.variable(model)));
     const original=scope.evidence.find(e=>e.model.name===model);
     face.check(witness.term,original.type);
+    face.check(face.inheritedDefinitions[0],modelType);
+    assert.ok(face.equal(face.inheritedDefinitions[0],T.variable(model)));
     assert.deepEqual(witness.dependencies,[record.modelId,field.projectionId]);
   }
 });

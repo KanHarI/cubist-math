@@ -142,7 +142,8 @@ function copiedScope(scope,unit,names=null) {
       const caller=value===scope?unit:unit.with({source:value.unit.source,moduleName:value.unit.moduleName,
         bindingAdapter:value.unit.bindingAdapter,declaring:value.unit.declaring,blameSite:value.unit.blameSite});
       result=value.with({unit:caller,context:copy(value.context),env:copy(value.env),dimensions:copy(value.dimensions),
-        sourceBindings:copy(value.sourceBindings),localSources:copy(value.localSources),evidence:copy(value.evidence)});
+        sourceBindings:copy(value.sourceBindings),localSources:copy(value.localSources),evidence:copy(value.evidence),
+        inheritedDefinitions:copy(value.inheritedDefinitions)});
       copies.set(value,result);return result;
     }
     if(value instanceof Map) {

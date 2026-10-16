@@ -1,9 +1,9 @@
 # CB6: contextual REPL
 
-Status: external round 3 is verifying `280b4592`; its full gates pass. An
-independent audit found a related scratch-shadowing issue, now fixed in an
-isolated worktree pending full validation and external verification. CB6 remains
-stacked on ready CB5 #238; CB7 has not started.
+Status: external round 3 is clean on `280b4592`. Round 4 found two adapter
+fixture failures and a notation evidence regression in the subsequent visibility
+fix. Both are corrected; final gates and focused round 5 remain pending. CB6
+remains draft #239, stacked on ready CB5 #238; CB7 has not started.
 
 ## Required result
 
@@ -345,3 +345,34 @@ hidden inspection and explicitly saved aliases. The first combined run kept
 too many fixture kernels alive; disposing each source control immediately fixes
 the harness without changing kernel limits. Final gates and external review
 remain required for this follow-up.
+
+## External rounds 3 and 4
+
+Claude round 3 is clean on `280b4592`, with 137 targeted tests and nine independent
+probes. The independent visibility follow-up at `ab68362d` passes both browser
+suites and all four mutations, but its full run passes only 1,315 of 1,317 tests.
+Two older adapter-integration fixtures used a different identity table from their
+production checker. The test-only correction `bcbf6849` reuses the compilation
+table and imported value identities; all 1,317 tests, zero TODOs, and all 3,857
+canonical checks pass there. Compiler code is unchanged between those commits.
+
+Claude round 4 reviews `ab68362d` and reports those fixture failures plus a
+notation regression: a rule operand named like a caller-local definition hides
+that definition from implicit proof search. An extended independent probe shows
+ordinary binders inside the rule do the same. This repeats the identity versus
+visibility root at a foreign lexical boundary, so an operand-only exception
+would be inadequate.
+
+Rule entry now preserves caller definitions as implicit proof evidence while
+starting the rule's lexical-local inventory empty. Nested rules inherit those
+terms; lazy operands keep their actual caller scope. Both search consumers use
+the same definition enumeration, with inference remaining at the search boundary.
+Refinement, faces, isolated copies and inert replay descriptions preserve the
+inherited terms. This adds no resolver, registry or namespace framework.
+
+All 20 notation tests pass, including eight new source/query controls and query
+history at both inner-lambda instances. Native evidence tests check refinement
+and face substitution. The fixture uses a minimal quotient and immediate disposal
+to keep the combined suite within existing limits; the heavy library test also
+passes alone. Final full/browser/mutation gates and focused Claude round 5 remain
+pending on the committed correction.

@@ -698,7 +698,7 @@ At frozen 280b4592, `/prove { let h := p(tt); let h := tt; hlevel; }` succeeds i
 
 Shared root across rounds: identity is distinct from lexical visibility. Round 1 removed observation aliases from localSources, but actual retained/scratch introductions have unique private keys; replacing the visible spelling does not overwrite that key. localSources therefore still lists the old semantic local. Proof search consumes that inventory, while `/locals` derives visibility from the lexical context and correctly calls the same row hidden. This is a source/query behavior mismatch, not kernel unsoundness.
 
-Trace all introduction forms before changes: ordinary and retained locals, scratch lets, proof-block binders, obtain, patterns, dimensions and model openings. Maintain one semantic-local inventory at introduction/alias transitions, keyed for execution but shadowed by source label. Preserve binding receipts and their refinement facts independently; binding-aware introductions already have registered IDs even without an observation collector. Do not add an hlevel-only blacklist, a query-only scope rewrite, another registry or a second resolver. Compare source controls, retained declarations and scratch history, retaining both positive and negative results. The pending Claude round-3 report must remain pinned to unchanged280b4592; commit/fix only after that review finishes, then request focused verification of this shared-boundary correction.
+Trace all introduction forms before changes: ordinary and retained locals, scratch lets, proof-block binders, obtain, patterns, dimensions and model openings. Maintain one semantic-local inventory at introduction/alias transitions, keyed for execution but shadowed by source label. Preserve binding receipts and their refinement facts independently; binding-aware introductions already have registered IDs even without an observation collector. Do not add an hlevel-only blacklist, a query-only scope rewrite, another registry or a second resolver. Compare source controls, retained declarations and scratch history, retaining both positive and negative results. The pending Claude round-3 report must remain pinned to unchanged `280b4592`; fold the isolated fix into the reviewed branch only after that review finishes, then request focused verification of this shared-boundary correction.
 
 The reviewed worktree remains unchanged while an isolated worktree holds the
 follow-up. Scope introduction reads existing retained identities without an
@@ -721,3 +721,48 @@ already share the registry. Before changing the fixtures, the adapter-call-site
 audit confirms these are the two remaining independent-table cases. Reuse the
 compilation's table and imported value identities in that shared test helper;
 do not permit cross-registry fallback in the implementation.
+
+## CB6 external review, round 4 — diagnosis before fixes
+
+Claude finds the two adapter-fixture failures at `ab68362d` and a new notation
+regression. The fixture correction `bcbf6849` is now on the PR branch; its full
+run passes all 1,317 tests and all 3,857 canonical checks. The compiler code is
+unchanged from the reviewed commit. The earlier full log remains a failed run.
+
+The product finding repeats identity versus lexical visibility across a new
+boundary: a notation body has its own source names but inherits the caller's
+proof context. Comparing its operand labels to caller-local labels deletes
+unrelated evidence. An independent extension of the review's probe, giving the
+rule's inner lambda an explicit result type, reproduces the same regression for
+ordinary binders inside the rule. An operand-only exception would miss that
+case. Dimension binders also shadow and cannot be excluded just because they
+lack source-local metadata.
+
+The shared abstraction must distinguish lexical local definitions from the
+definitions inherited as implicit proof evidence when entering a foreign rule
+body. Preserve those inherited core terms independently of the rule's names;
+start its lexical-local inventory empty. Nested rules inherit the evidence,
+and lazy operands retain their original caller scope. Keep evidence untyped
+until the existing search boundary so entering a lazy rule adds no inference,
+fuel charge or eager operand evaluation. Use one definition enumeration for
+both tactic search and generated obligations. Refine inherited definitions at
+the same branch/face transitions as the other proof context, and include them
+in isolated copying and inert replay descriptions. This needs one list of core
+terms in the existing Scope, not another resolver, identity registry, label
+blacklist, or new namespace framework.
+
+The correction follows that boundary with one inherited-definition list on
+Scope and one enumeration shared by both proof-search consumers. Rule entry
+captures definitions without inference; refinement, faces, isolated copying and
+replay descriptions preserve them. The 20-test notation suite passes, including
+eight new source/query controls for operands, ordinary rule binders, model
+openings, nested rules, lazy operands, missing evidence and caller shadowing.
+Both elaborated instances of the inner lambda support queries and scratch
+history. Native checks also validate inherited terms after refinement and faces.
+
+Fixture debugging did not justify compiler changes: a direct-call opening was
+invalid syntax, the lambda has two valid elaborated instances, and retaining the
+whole quotient-library fixture caused an aggregate test-process heap failure.
+A minimal quotient declaration and immediate program/session disposal keep the
+complete notation suite within the existing limits. The unchanged heavy library
+test also passes alone. Full gates and focused external round 5 remain pending.

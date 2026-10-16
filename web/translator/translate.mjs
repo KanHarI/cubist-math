@@ -1686,8 +1686,7 @@ export class Translator {
   // which the search uses as a rule (L2.5b).
   hlevelLocals(scope) {
     const locals=[];
-    for(const [key,bound] of scope.env) {
-      if(!scope.localSources.has(key)||bound.tag==="Var"&&scope.context.has(bound.name))continue;
+    for(const bound of scope.localDefinitions()) {
       const type=scope.infer(bound).type;
       if(hlevelStatement(type)||!ruleShape(type).refusal)locals.push({term:bound,type});
     }

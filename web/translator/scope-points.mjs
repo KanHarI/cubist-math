@@ -138,7 +138,7 @@ export class ScopePoints {
       const data={module:scope.unit.moduleName,owner:scope.unit.contextOwner};copies.set(scope,data);
       const live=this.bindings(scope,descriptions);
       return Object.assign(data,{lexical:live.lexical.snapshot(),bindings:live.records,sources:[...scope.localSources],
-        context:[...scope.context],dimensions:[...scope.dimensions],evidence:scope.evidence,
+        context:[...scope.context],dimensions:[...scope.dimensions],evidence:scope.evidence,inheritedDefinitions:scope.inheritedDefinitions,
         slots:scope.slotOutcomes.snapshot(),notations:[...live.contexts.keys()],rules:this.#ruleDescription(scope.unit)});
     };
     const syntax=node=>mapSyntax(node,value=>value.kind==="scoped"
@@ -231,6 +231,7 @@ export class ScopePoints {
             bindings:environment.recursive.map(([key,id])=>[id,recursiveDescription(scope.env.get(key))]),
             callers:this.#callerPermissions(scope)}),
           goal:snapshotSyntax(goal),expected:snapshotSyntax(expected),evidence:snapshotSyntax(scope.evidence),
+          inheritedDefinitions:snapshotSyntax(scope.inheritedDefinitions),
           rules:this.#ruleDescription(unit)}});
       if(this.probe)live=this.bindings(scope);
     } catch(error) {

@@ -104,23 +104,36 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=undefined) {
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[],lexical=undefined,inheritedDefinitions=[]) {
     if(lexical===undefined) {
       lexical=null;
       if(unit.scopePoints)try {lexical=unit.scopePoints.sourceContext(env);}
       catch(error) {unit=unit.with({scopeUnavailable:error.message});}
     }
-    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical});
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical,inheritedDefinitions});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
   with({unit=this.unit,context=this.context,env=this.env,dimensions=this.dimensions,
-    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence,lexical=this.lexical}) {
-    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical);
+    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence,lexical=this.lexical,
+    inheritedDefinitions=this.inheritedDefinitions}) {
+    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence,lexical,inheritedDefinitions);
   }
   withUnit(unit) {return this.with({unit});}
   withEnv(env) {return this.with({env});}
   withSlotOutcomes(slotOutcomes) {return this.with({slotOutcomes});}
+  // Definition evidence is inferred only when a search requests it. Context
+  // variables are already enumerated by that search and must not be repeated.
+  localDefinitions() {
+    if(!this.localSources.size)return this.inheritedDefinitions;
+    return [...this.inheritedDefinitions,...[...this.env].flatMap(([key,value])=>
+      this.localSources.has(key)&&!(value.tag==="Var"&&this.context.has(value.name))?[value]:[])];
+  }
+  // A foreign rule inherits the proof context, not the caller's lexical
+  // names. Its binders and openings cannot hide caller definition evidence.
+  enterLexicalBody() {
+    return this.with({inheritedDefinitions:this.localDefinitions(),localSources:new Map()});
+  }
   // Evidence belongs to the checked model, independently of aliases used
   // to display or open it. A reserved or refused projection grants nothing.
   modelEvidence(model,type=null) {
@@ -144,9 +157,10 @@ export class Scope {
     return added.length?this.with({evidence:[...this.evidence,...added]}):this;
   }
   refineEvidence(values) {
-    if(!values.size||!this.evidence.length)return this;
+    if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;
     const replace=term=>[...values].reduce((term,[name,value])=>substituteTerm(term,name,value),term);
-    return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)}))});
+    return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)})),
+      inheritedDefinitions:this.inheritedDefinitions.map(replace)});
   }
   sourceBinding(name,value,record,source=null) {
     // Retained/query introductions already own an ID without an observer.
@@ -184,6 +198,7 @@ export class Scope {
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
     return this.with({context:new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,
+      inheritedDefinitions:this.inheritedDefinitions.map(term=>onFace(term,face)),
       evidence:this.evidence.map(e=>({...e,term:onFace(e.term,face),type:onFace(e.type,face),model:onFace(e.model,face)}))});
   }
   alias(name,value) {

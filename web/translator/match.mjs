@@ -571,9 +571,7 @@ function automaticClause(translator, scope, type, name, node, proof, index) {
       throw scope.unit.locate(Error(`Cannot generate ${name}: import hlevels and supply h-level evidence for the motive, or give the clause explicitly.`), node);
     const path = at.nf(target);
     if (path.tag !== "Path") throw Error(`The obligation ${name} is not a path clause.`);
-    const locals = [];
-    for (const [key,bound] of at.env) if (at.localSources.has(key)
-      && !(bound.tag === "Var" && at.context.has(bound.name))) locals.push({term:bound,type:at.infer(bound).type});
+    const locals = at.localDefinitions().map(term=>({term,type:at.infer(term).type}));
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};
     });

@@ -6,6 +6,7 @@ import {checkProgram,checkTestModule} from "./check-program.mjs";
 import {ContextualSession} from "../web/contextual-session.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import {Translator} from "../web/translator/translate.mjs";
+import {CubicalProgram} from "../web/cubical-program.mjs";
 
 const module=await create(),nat="inductive Nat { zero; succ(n : Nat); }\n";
 async function setup(t,source,dependency) {
@@ -24,7 +25,7 @@ function selected(t,program,source,marker,{module="fixture",length=marker.length
   assert.equal(source.split(marker).length,2);
   const start=source.indexOf(marker),points=[...program.scopePoints.values()].filter(point=>point.origin.module===module
     &&point.origin.start===start&&point.origin.end===start+length&&point.phase==="expression"&&point.origin.expansion.some(frame=>frame.kind==="notation"));
-  assert.equal(points.length,1,JSON.stringify(points));
+  assert.equal(points.length,1,JSON.stringify(points.map(({id,origin})=>({id,origin}))));
   assert.ok(points[0].available,points[0].reason);
   const session=new ContextualSession(program,points[0].id);
   t.after(()=>session.dispose());return session;
@@ -77,6 +78,65 @@ test("nested notation operands replay their original caller without eager evalua
   await query(session,"a","error");
   await query(session,"let saved := x","defined");
   await query(session,"typed(saved = x, refl(saved))","value");
+});
+
+test("foreign notation names cannot hide caller definition evidence",async t=>{
+  const dependency=`import nat; import hlevels;
+    inductive Quotient(A : U0, R : A -> A -> U0) : U0 {
+      class(a : A); relate(a, b : A, r : R(a, b)) : class(a) = class(b);
+    }
+    theory T(U < UU0) { M : U; ev : M; }
+    def chosen : T(U0) := T.make(Unit, tt);
+    notation qe { x + y := match x return Nat { class(a) => y; } obligations by hlevel; }
+    notation qf { x + y := (fun (ev : Unit) => match x return Nat { class(a) => y; } obligations by hlevel)(tt); }
+    notation qm { x + y := chosen.(match x return Nat { class(a) => y; } obligations by hlevel); }
+    notation outer { u * v := qe.(u + v); }
+    notation keep { x + y := x; }`;
+  const read=sourceReader(),reader=(name,...args)=>name==="fixture"?dependency:read(name,...args);
+  for(const [name,local,expression,accepts] of [
+    ["left operand", "let x := h(tt);", "qe.(q + b)",true],
+    ["right operand", "let y := h(tt);", "qe.(q + b)",true],
+    ["inner binder", "let ev := h(tt);", "qf.(q + b)",true],
+    ["inner opening", "let ev := h(tt);", "qm.(q + b)",true],
+    ["nested rule", "let u := h(tt);", "outer.(q * b)",true],
+    ["lazy operand", "let x := h(tt);", "keep.((match q return Nat { class(a) => b; } obligations by hlevel) + absent)",true],
+    ["no evidence", "", "qe.(q + b)",false],
+    ["caller shadowing", "let y := h(tt); let y := tt;", "qe.(q + b)",false],
+  ])await t.test(name,async()=>{
+    const source=`import nat; import hlevels; import fixture;
+      def probe_(A : U0, R : A -> A -> U0, h : Unit -> IsProp(U0, Nat), b : Nat, q : Quotient(A, R)) : Nat {
+        ${local} exact ${expression};
+      }`;
+    const off=new CubicalProgram(module,reader),on=new CubicalProgram(module,reader,{collectScopes:true});
+    try {
+      const offResult=await off.check(source,"main"),onResult=await on.check(source,"main");
+      assert.equal(onResult.gaps.length,accepts?0:1,JSON.stringify(onResult.gaps));
+      assert.deepEqual(onResult.outputs,offResult.outputs);
+      assert.deepEqual(onResult.links,offResult.links);
+      assert.deepEqual(on.kernel.work(),off.kernel.work());
+      const point=[...on.scopePoints.values()].find(point=>point.origin.module==="main"
+        &&point.phase==="before"&&point.origin.start===source.indexOf(`exact ${expression};`));
+      assert.ok(point?.available,point?.reason);
+      const session=new ContextualSession(on,point.id);
+      try {await query(session,`/prove { exact ${expression}; }`,accepts?"proof":"error");}
+      finally {session.dispose();}
+      if(name==="inner binder") {
+        const marker="match x return Nat { class(a) => y; } obligations by hlevel",start=dependency.indexOf(marker+")(tt)");
+        const instances=[...on.scopePoints.values()].filter(point=>point.origin.module==="fixture"
+          &&point.phase==="expression"&&point.origin.start===start&&point.origin.end===start+marker.length);
+        assert.equal(instances.length,2,"the lambda body is inferred and checked in distinct contexts");
+        for(const point of instances) {
+          assert.ok(point.available,point.reason);
+          const inside=new ContextualSession(on,point.id);
+          try {
+            await query(inside,"typed(Nat, qe.(x + y))","value");
+            await query(inside,"let saved := x","defined");
+            await query(inside,"typed(Nat, qe.(saved + y))","value");
+          } finally {inside.dispose();}
+        }
+      }
+    } finally {off.dispose();on.dispose();}
+  });
 });
 
 test("lazy dependent matches refine caller identities without a query scope collector",async t=>{

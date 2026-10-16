@@ -93,7 +93,7 @@ export function retainedNotationReceipt(t,artifact,scope) {
 function ruleScope(scope,rule,adapter,site) {
   const blameSite=scope.unit.blameSite??(rule.syntax.tree.origin.module!==scope.unit.moduleName
     ?{start:site.start,end:site.end}:null);
-  const inner=scope.withUnit(scope.unit.with({bindingAdapter:adapter,references:null,blameSite}));
+  const inner=scope.enterLexicalBody().withUnit(scope.unit.with({bindingAdapter:adapter,references:null,blameSite}));
   return scope.unit.scopePoints?inner.with({lexical:scope.unit.scopePoints.notationContext(rule.binding)}):inner;
 }
 
