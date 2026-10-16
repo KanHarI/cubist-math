@@ -1,7 +1,5 @@
-// Explicit migration boundary for ordinary binding-aware syntax. Later
-// packages move retained theories and goal-dependent blocks through this
-// same representation; an unmigrated family is rejected here, not retried
-// through nominal capture on failure.
+// Source entry for binding-aware syntax. Unmigrated namespaces are rejected
+// here, never retried through nominal capture on failure.
 import {scopeMapped, binderName, bindingRole,selectionEffects} from "./scopes.mjs";
 import {members} from "./references.mjs";
 import {sourceOrigin, bindingResolution, SlotOutcomes,mapResolution,memberResolution,namespaceResolution,slotResolution,
@@ -18,7 +16,7 @@ const format = "cubist-bindings-1";
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
   "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
-  "trunc", "typed", "exact", "let", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
+  "trunc", "typed", "exact", "let", "intro", "ext", "obtain", "simpOnly", "simpaOnly", "withUnfolding", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
 const freeze = value => {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const child of Object.values(value)) freeze(child);
@@ -70,7 +68,7 @@ export function resolveBindingTemplate(tree,options,splices) {
 function resolveBindings(tree, {table, owner, context, source, constructors = [], self = null,
   evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)])),
   fixedReferences=new Map(),universeReferences=new Map(),namespaceBoundary=null,namespaceFailure=null,selectionReceiver=false,
-  notation=null,receiverNamespace=true,syntaxOperands=[]},splices=null) {
+  notation=null,receiverNamespace=true,syntaxOperands=[],simpSets=null},splices=null) {
   const selectedNotation=context.selectedNotation();
   if(selectedNotation) {
     const fallback={activation:selectedNotation};
@@ -99,27 +97,52 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
   const origin = at => at.origin??sourceOrigin({...source, start: at.start, end: at.end});
   const resolvedAt=(value,node)=>mapResolution(value,undefined,value=>value.tag==="failure"?failedResolution({...value,
     ...(value.namespace!==undefined&&namespaceFailure?{message:namespaceFailure(value)}:{}),origin:origin(node)}):value);
-  const lookup=(at,name,node,selector=false)=>{
+  const lookup=(at,name,node,selector=false,{deferFailure=false}={})=>{
     let found;
     try {
-      if(selector)mapResolution(at.lexical.qualified(name).value,id=>{
-        if(lazyOperands.has(id))
-          throw new TypeError("A retained syntax operand used as a selection receiver needs source selection alternatives.");
-        return id;
-      });
-      found=selector?at.lexical.selector(name,selector===true?{}:selector):at.lexical.qualified(name);
+      const term=at.lexical.qualified(name);
+      let operand=false;
+      if(selector)mapResolution(term.value,id=>{operand||=lazyOperands.has(id);return id;});
+      // Syntax parameters stand for the caller's expression in every
+      // consuming namespace. The caller supplies its saved selector meaning.
+      found=selector&&!operand?at.lexical.selector(name,selector===true?{}:selector):term;
     }
     catch(error) {
       if(!(error instanceof UnknownNamespaceMember))throw error;
-      throw resolutionError(resolvedAt(failedResolution(error),node));
+      found={value:failedResolution(error),fields:[]};
     }
     const value=resolvedAt(found.value,node);
-    if(value.tag==="failure")throw resolutionError(value);
+    if(value.tag==="failure"&&!deferFailure)throw resolutionError(value);
     return {...found,value};
+  };
+  const receiverValue=value=>mapResolution(value,undefined,value=>{
+    if(value.tag!=="namespace")return value;
+    if(!value.receiver)throw new TypeError("A namespace notation receiver needs its explicit model interface.");
+    return value.receiver;
+  });
+  // A set is a source namespace, independent of term binders. Expand it
+  // once to exact checked member references; all later transforms then use
+  // the same syntax traversal as an explicitly written theorem expression.
+  const simpSet=(label,node)=>{
+    if(simpSets===null)throw new TypeError("Retained simplification names require the complete source set inventory.");
+    const set=simpSets.get(label);
+    if(!set)return null;
+    const fixed=(label,value)=>{
+      const name={kind:"name",name:label,start:node.start,end:node.end,origin:origin(node)};
+      fixedReferences.set(name,value);return name;
+    };
+    return set.failure?[fixed(label,resolvedAt(set.failure,node))]
+      :set.rules.map(({id,label})=>fixed(label,bindingResolution(id)));
   };
   tree = scopeMapped(tree, {
     deferred: true,
     prepare(node,at) {
+      if(["simpOnly","simpaOnly"].includes(node.kind))return {...node,
+        rules:node.rules.flatMap(item=>{
+          const set=item.value.kind==="name"&&!item.reverse?simpSet(item.value.name,item.value):null;
+          return set?set.map(value=>({...item,value})): [item];
+        }),
+        without:(node.without??[]).flatMap(token=>simpSet(token.text,token)??[token])};
       if(!["select","use"].includes(node.kind))return node;
       if(node.activation)throw new TypeError("Source resolution cannot allocate an existing activation twice.");
       let model=node.model,selector;
@@ -147,8 +170,25 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       return at;
     },
     parameter(mapped,original) {resolvedParameters.set(original,mapped);return mapped;},
+    reference(token,_field,at) {
+      const {value,fields}=lookup(at,token.text,token);
+      return occurrence(token,memberResolution(value,fields),token.text,origin(token));
+    },
     enter(node, at, descend) {
       if(selectors.has(node))return occurrence(node,selectors.get(node),node.name,origin(node));
+      // Only a lazy argument's root name can have two interpretations.
+      // Both are resolved here; neither a rule nor its destination may ask
+      // what that spelling means later. Composite expressions are terms.
+      const operand=child=>descend(child,{...at,operand:child});
+      if(at.operand===node&&node.kind==="name"&&node.name!=="_") {
+        const term=lookup(at,node.name,node,false,{deferFailure:true});
+        const selected=lookup(at,node.name,node,true,{deferFailure:true});
+        const value=memberResolution(term.value,term.fields);
+        const receiver=memberResolution(receiverValue(selected.value),selected.fields);
+        if(value.tag==="failure"||receiver.tag==="failure"||JSON.stringify(value)!==JSON.stringify(receiver))return {kind:"operandAlternatives",
+          value:occurrence(node,value,node.name,origin(node)),receiver:occurrence(node,receiver,node.name,origin(node)),
+          origin:origin(node),start:node.start,end:node.end};
+      }
       const qualifier=node.kind==="operatorOf"?node.model
         :["binary","negation"].includes(node.kind)?node.qualifier:null;
       if(qualifier) {
@@ -168,13 +208,13 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
         }
         const receiver=resolveBindingReceiver(qualifier,{table,owner:[...owner,"qualifier",String(splice++)],
           context:at.lexical,source,constructors,evidenceTypes,fixedReferences,universeReferences,
-          namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands});
+          namespaceBoundary,namespaceFailure,notation:at.notation,syntaxOperands:lazyOperands,simpSets});
         owned.push(...receiver.owned);
         // Qualification selects only the operation. Its operands retain the
         // surrounding source notation; no operand recipe is applied here.
         if(node.kind==="operatorOf")return {...node,model:receiver.tree,origin:origin(node)};
         return {...node,qualifier:receiver.tree,origin:origin(node),...(node.kind==="negation"
-          ?{operand:descend(node.operand)}:{left:descend(node.left),right:descend(node.right)})};
+          ?{operand:operand(node.operand)}:{left:operand(node.left),right:operand(node.right)})};
       }
       if(fixedReferences.has(node)) {
         const fixed=fixedReferences.get(node);
@@ -224,7 +264,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
             owned.push(record.id);
             return {kind:"notationArgument",notation:{text:record.label,bindingId:record.id,bindingRole:record.role,
               origin:record.origin,start:child.start,end:child.end},
-              body:descend(child,{...at,notation:{activation:record.id}}),origin:origin(child),start:child.start,end:child.end};
+              body:descend(child,{...at,notation:{activation:record.id},operand:child}),origin:origin(child),start:child.start,end:child.end};
           };
           const body=node.kind==="negation"?{...node,operand:operand(node.operand)}
             :{...node,left:operand(node.left),right:operand(node.right)};
@@ -276,11 +316,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       if(node.kind==="name"&&node.name==="_")return {...node,origin:origin(node)};
       if (node.kind !== "name") return node;
       let {value, fields,shadowed} = lookup(at,node.name,node,selectionReceiver&&node===declaration?{namespace:receiverNamespace}:false);
-      if(selectionReceiver&&node===declaration)value=mapResolution(value,undefined,value=>{
-        if(value.tag!=="namespace")return value;
-        if(!value.receiver)throw new TypeError("A namespace notation receiver needs its explicit model interface.");
-        return value.receiver;
-      });
+      if(selectionReceiver&&node===declaration)value=receiverValue(value);
       const spelling = fields.length ? node.name.slice(0, -(fields.join(".").length + 1)) : node.name;
       const ref = occurrence(node, value, spelling, origin(node));
       return fields.length ? {...members(node, {...ref, end: node.start + spelling.length}, fields),
@@ -375,6 +411,12 @@ export function bindingUses(syntax,{outcomes=new SlotOutcomes(),conditional=fals
     },
     enter(node,at) {
       const origin=at?.application??node.origin;
+      if(node.kind==="operandAlternatives") {
+        uses.push({kind:"deferred-operand",origin});
+        if(conditional)for(const key of ["value","receiver"])
+          visit(node[key],[...conditions,{operand:node.origin,interpretation:key}]);
+        return null;
+      }
       if(node.kind==="name"&&node.name==="_")uses.push({kind:"hole",origin:node.origin});
       if(node.kind!=="bindingReference")return node;
       const selected=outcomes.resolve(node.resolution);
@@ -564,7 +606,8 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
   requireSyntax(syntax);
   const tree = scopeMapped(syntax.tree, {
     deferred: true,
-    enter: node => node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferMissing: true}) : node,
+    enter: node => node.kind === "operandAlternatives" ? {...node}
+      :node.kind === "bindingReference" ? lowerBindingReference(node, adapter, outcomes, {deferErrors: true}) : node,
     bind: token => token.bindingId && !["pattern","activation"].includes(token.bindingRole)
       ? {...token, text: adapter.key(token.bindingId), bindingLabel:binderName(token), label: token.label ?? binderName(token)} : token,
     extend: at => at,
@@ -579,7 +622,8 @@ export function lowerBindingSyntax(syntax, adapter, outcomes = new SlotOutcomes(
 export function lowerBindingReferences(tree,adapter,outcomes=new SlotOutcomes()) {
   return scopeMapped(tree,{
     deferred:true,
-    enter:node=>node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferMissing:true}):node,
+    enter:node=>node.kind==="operandAlternatives"?{...node}
+      :node.kind==="bindingReference"?lowerBindingReference(node,adapter,outcomes,{deferErrors:true}):node,
     extend:at=>at,
   },null);
 }

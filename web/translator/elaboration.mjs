@@ -5,10 +5,10 @@
 // authority: every term they help build is checked.
 import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
-import {freeNames,onFace} from "./core.mjs";
+import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
-import {SlotOutcomes} from "../cubist/bindings.mjs";
+import {BindingAdapter,SlotOutcomes} from "../cubist/bindings.mjs";
 
 export const emptyRewriteWork = () => ({
   traversals:0,candidateVisits:0,eligibleMatches:0,successfulRewrites:0,
@@ -83,21 +83,52 @@ function hide(env,name) {
 // Checker queries at a scope pass its context, dimensions and name supply
 // explicitly.
 export class Scope {
-  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map()) {
-    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources});
+  constructor(unit,context=new Map(),env=new Map(),dimensions=new Map(),slotOutcomes=new SlotOutcomes(),sourceBindings=new Map(),localSources=new Map(),evidence=[]) {
+    Object.assign(this,{unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence});
     Object.freeze(this);
   }
   get checker() {return this.unit.checker;}
-  withUnit(unit) {return new Scope(unit,this.context,this.env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);}
-  withEnv(env) {return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);}
-  withSlotOutcomes(slotOutcomes) {return new Scope(this.unit,this.context,this.env,this.dimensions,slotOutcomes,this.sourceBindings,this.localSources);}
+  with({unit=this.unit,context=this.context,env=this.env,dimensions=this.dimensions,
+    slotOutcomes=this.slotOutcomes,sourceBindings=this.sourceBindings,localSources=this.localSources,evidence=this.evidence}) {
+    return new Scope(unit,context,env,dimensions,slotOutcomes,sourceBindings,localSources,evidence);
+  }
+  withUnit(unit) {return this.with({unit});}
+  withEnv(env) {return this.with({env});}
+  withSlotOutcomes(slotOutcomes) {return this.with({slotOutcomes});}
+  // Evidence belongs to the checked model, independently of aliases used
+  // to display or open it. A reserved or refused projection grants nothing.
+  modelEvidence(model,type=null) {
+    if(!isTerm(model))return this;
+    if(!this.checker.theories?.size)return this;
+    if(this.evidence.some(e=>e.model===model||model.tag==="Var"&&e.model.tag==="Var"&&e.model.name===model.name))return this;
+    let head=type??this.infer(model).type;
+    const arguments_=[];
+    while(head?.tag==="App"||head?.tag==="LApp") {arguments_.unshift(head);head=head.fn;}
+    const record=head?.tag==="DefRef"?this.checker.theories.get(head.name):null;
+    if(!record)return this;
+    const adapter=new BindingAdapter(this.checker.compilationBindings.table),added=[];
+    for(const field of record.fields.filter(field=>field.kind==="evidence")) {
+      const projection=this.env.get(adapter.key(field.projectionId));
+      if(projection?.tag!=="DefRef")continue;
+      let term=projection;
+      for(const argument of arguments_)term=argument.tag==="LApp"?T.levelApply(term,argument.level):T.app(term,argument.arg);
+      const checked=this.infer(T.app(term,model));
+      added.push({term:checked.term,type:checked.type,model,dependencies:[record.modelId,field.projectionId]});
+    }
+    return added.length?this.with({evidence:[...this.evidence,...added]}):this;
+  }
+  refineEvidence(values) {
+    if(!values.size||!this.evidence.length)return this;
+    const replace=term=>[...values].reduce((term,[name,value])=>substituteTerm(term,name,value),term);
+    return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)}))});
+  }
   sourceBinding(name,value,record,source=null) {
     const scope=this.alias(name,value);
     if(!record&&!source)return scope;
     const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
     if(record)sourceBindings.set(name,record);
     if(source)localSources.set(name,Object.freeze(source));
-    return new Scope(this.unit,this.context,scope.env,this.dimensions,this.slotOutcomes,sourceBindings,localSources);
+    return scope.with({sourceBindings,localSources});
   }
   // The scope on a face, Γ, φ: a part of a partial element is translated
   // there, where each of the face's coordinates is its endpoint, in the
@@ -108,14 +139,15 @@ export class Scope {
     const ends=new Map(face[0].map(literal=>[literal.slice(0,literal.lastIndexOf(":")),literal.endsWith(":1")?1:0]));
     const env=new Map([...this.env].map(([name,value])=>
       [name,value?.tag==="Dimension"&&ends.has(value.name)?{...value,endpoint:ends.get(value.name)}:value]));
-    return new Scope(this.unit,new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);
+    return this.with({context:new Map([...this.context].map(([name,type])=>[name,onFace(type,face)])),env,
+      evidence:this.evidence.map(e=>({...e,term:onFace(e.term,face),type:onFace(e.type,face),model:onFace(e.model,face)}))});
   }
   alias(name,value) {
     const env=new Map(this.env);
     hide(env,name);
     const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
     sourceBindings.delete(name);localSources.delete(name);
-    return new Scope(this.unit,this.context,env.set(name,value),this.dimensions,this.slotOutcomes,sourceBindings,localSources);
+    return this.with({env:env.set(name,value),sourceBindings,localSources});
   }
   // Refinement changes a value at the same lexical binding. Introduction
   // (alias/sourceBinding) must never inherit a shadowed binder's identity.
@@ -130,7 +162,7 @@ export class Scope {
     const env=new Map(this.env);
     const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
     for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);localSources.delete(name);}
-    return new Scope(this.unit,this.context,env,this.dimensions,this.slotOutcomes,sourceBindings,localSources);
+    return this.with({env,sourceBindings,localSources});
   }
   // The source name bound here that hides the declaration `name`, or null.
   hiding(name) {return this.env.get(HIDDEN)?.has(name)&&!this.env.has(name)?name.slice(0,name.indexOf(".")):null;}
@@ -149,14 +181,14 @@ export class Scope {
   // unique generated names this is an elaborator bug, never a user error.
   bind(name,type) {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
-    return new Scope(this.unit,new Map(this.context).set(name,type),this.env,this.dimensions,this.slotOutcomes,this.sourceBindings,this.localSources);
+    return this.with({context:new Map(this.context).set(name,type)}).modelEvidence(T.variable(name),type);
   }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
     if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
-    return new Scope(this.unit,this.context,this.env,new Map(dimensions).set(name,index),this.slotOutcomes,this.sourceBindings,this.localSources);
+    return this.with({dimensions:new Map(dimensions).set(name,index)});
   }
   // A name from the unit's supply that nothing here binds: a scope built
   // apart from elaboration may bind names another supply gave.

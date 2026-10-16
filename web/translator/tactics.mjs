@@ -59,7 +59,7 @@ const tactics = {
         :t.term(step.proof.value,scope,target);
       const checked=scope.check(raw,target);
       const witness=scope.ascribe(checked,target);
-      t.reference(scope,{...calcStepSite(step,index),
+      t.reference(scope,{...calcStepSite(first,index),
         description:`Checked equality step ${index+1} of ${first.steps.length}.`},witness);
       proof=proof?composePaths(scope,proof,witness):witness;
       previous=right;
@@ -89,13 +89,11 @@ const tactics = {
         unit.source.slice(item.value.start,item.value.end)).join(", ")}.`}));
   },
   simpOnly(t,first,rest,goal) {
-    const {scope}=goal,{unit,env}=scope;
+    const {scope}=goal,{unit}=scope;
     const rules=t.preparedRules(first,scope,goal);
     if(first.at) {
       if(!rest.length)throw Error("A simplified hypothesis copy must be followed by a proof statement.");
-      const source=env.get(first.at.text);
-      if(!source||!scope.localSources.has(first.at.text))
-        throw Error(`simp at requires a local hypothesis: ${first.at.text}.`);
+      const source=t.localReference(first.at,scope,label=>Error(`simp at requires a local hypothesis: ${label}.`));
       // The hypothesis's statement is simplified and its proof carried forward.
       const hypothesis=goal.with(scope.infer(source).type);
       const {transition}=t.simplifyEqualityGoal(hypothesis,rules);
@@ -201,7 +199,7 @@ const tactics = {
       return new Transition(goal,next,[steps.abstraction(name,null)]).rebuild(t.continueBlock(first,rest,next));
     }
     if(pi.tag!=="Pi")throw Error("intro requires a dependent function goal.");
-    const name=scope.fresh(first.name.text),variable=T.variable(name);
+    const name=scope.fresh(first.name.label??first.name.text),variable=T.variable(name);
     const inner=t.sourceBinding(first.name,variable,scope.bind(name,pi.domain));
     const next=new Goal(T.app(T.lam(pi.name,pi.domain,pi.body),variable),inner);
     return new Transition(goal,next,[steps.abstraction(name,pi.domain)]).rebuild(t.continueBlock(first,rest,next));
@@ -217,7 +215,7 @@ const tactics = {
     if(!path)throw Error("ext requires equality of functions with a fixed type.");
     const pi=scope.nf(path.family);
     if(pi.tag!=="Pi")throw Error("ext requires equality of functions.");
-    const name=scope.fresh(first.variable.text),variable=T.variable(name);
+    const name=scope.fresh(first.variable.label??first.variable.text),variable=T.variable(name);
     const inner=t.sourceBinding(first.variable,variable,scope.bind(name,pi.domain));
     const output=T.app(T.lam(pi.name,pi.domain,pi.body),variable);
     const next=new Goal(T.path(scope.fresh("i"),output,T.app(path.left,variable),T.app(path.right,variable)),inner);

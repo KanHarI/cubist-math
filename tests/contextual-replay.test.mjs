@@ -143,6 +143,26 @@ test("CB1 contextual session: let-before-after",async t=>{
   await query(after,fixture.sessions[2].entry,"value");
 });
 
+test("scratch proof blocks share source set identities through history and local shadowing",async t=>{
+  const source=`import nat;
+simp_set rules := [nat_add_zero];
+def focus(n : Nat) : Nat := n;
+simp_set later := [nat_add_zero];`;
+  const {program,result}=await setup(t,source);
+  assert.deepEqual(result.gaps,[]);
+  const session=at(program,source,"n;");
+  const before={work:program.kernel.work(),definitions:[...program.kernel.definitions]};
+  await query(session,"let h : add(n, zero) = n { simp only [rules]; }","defined");
+  await query(session,"let rules := tt","defined");
+  await query(session,"let copied : n = n { simp only [h] at h as h2; exact h2; }","defined");
+  await query(session,"let supplied : n = n { simpa only [rules] using h; }","defined");
+  assert.match((await query(session,"let bad : add(n, zero) = n { simp only [later]; }","error")).text,/Untranslated name: later/);
+  await query(session,"with unfolding [nat_add_zero] { n }","value","n");
+  await query(session,"typeof supplied","type","n = n");
+  assert.equal(session.accepted.length,4);
+  assert.deepEqual({work:program.kernel.work(),definitions:[...program.kernel.definitions]},before);
+});
+
 test("CB1 contextual session: selected-failing-prefix",async t=>{
   const fixture=scenario("selected-failing-prefix"),{program}=await setup(t,fixture.source);
   const session=at(program,fixture.source,fixture.marker,"before");

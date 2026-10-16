@@ -72,69 +72,6 @@
         "assumes": []
       }
     },
-    "G4": {
-      "phase": "CB3",
-      "observed": {
-        "diagnostics": [
-          {
-            "at": "def value(n : Bits) : M := match n {",
-            "label": "Error",
-            "text": "E546: Cannot generate Bit.squash: m.M must be of h-level 1; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."
-          },
-          {
-            "at": "def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          },
-          {
-            "at": "def off_computation(S : T(U0)) : S.value(cons(off, nil)) = S.op(S.c) {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          },
-          {
-            "at": "def empty_computation(S : T(U0)) : S.value(nil) = S.c {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          },
-          {
-            "at": "def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          }
-        ],
-        "missing": [],
-        "assumes": []
-      }
-    },
-    "G4-flat": {
-      "phase": "CB3",
-      "observed": {
-        "diagnostics": [
-          {
-            "at": "def value(n : Bits) : M := match n {",
-            "label": "Error",
-            "text": "E546: Cannot generate Bits.squash: m.M must be of h-level 1; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."
-          },
-          {
-            "at": "def computation(S : T(U0)) : S.value(cons(yes, nil)) = S.op(S.op(S.c)) {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          },
-          {
-            "at": "def empty_computation(S : T(U0)) : S.value(nil) = S.c {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          },
-          {
-            "at": "def wrong(S : T(U0)) : S.value(cons(yes, nil)) = S.c {",
-            "label": "Error",
-            "text": "E340: Untranslated dependency: T.value"
-          }
-        ],
-        "missing": [],
-        "assumes": []
-      }
-    },
     "G5": {
       "phase": "CB5",
       "observed": {
@@ -166,30 +103,6 @@
         ],
         "missing": [],
         "assumes": []
-      }
-    },
-    "G8": {
-      "phase": "CB3",
-      "observed": {
-        "diagnostics": [
-          {
-            "at": "def h(x : T) : T := match x {",
-            "label": "Error",
-            "text": "E546: Cannot generate seg: T must be a proposition; no local evidence, hint or rule gives that. Give checked h-level evidence, or an explicit obligation."
-          }
-        ],
-        "missing": [],
-        "assumes": [],
-        "range": [
-          {
-            "line": "def h(x : T) : T := match x {",
-            "before": "def h(x : T) : T := match ",
-            "covers": "x"
-          }
-        ],
-        "searches": [
-          1
-        ]
       }
     }
   }

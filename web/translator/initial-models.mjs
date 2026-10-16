@@ -107,7 +107,7 @@ function retainedInitialSource(t,module,declaration,env) {
     origin:sourceOrigin({...source,start:declaration.name.start,end:declaration.name.end})});
   const header=resolveBindingSyntax({kind:"def",name:declaration.name,params:declaration.params,
     type:declaration.theory,value:declaration.on??null},
-  {table,owner:[...owner,"header"],source,context:prepared.context,constructors:inputs.constructors,
+  {table,owner:[...owner,"header"],source,context:prepared.context,constructors:inputs.constructors,simpSets:inputs.simpSets,
     fixedReferences:new Map([[head,resolution]])});
   if(declaration.kind==="free"&&bindingUses(bindingSyntaxView(header,header.tree.value)).some(use=>
     use.kind==="missing"&&(use.label===declaration.name.text||use.label.startsWith(`${declaration.name.text}.`))))

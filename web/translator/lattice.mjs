@@ -4,7 +4,7 @@
 const subset = (a, b, budget) => a.every(x => {budget.tick();return b.includes(x);});
 const literal = x => typeof x === "string" && /^[A-Za-z_][A-Za-z_0-9]*:[01]$/.test(x);
 const MAX_CLAUSES = 4096, MAX_LITERALS = 256, MAX_WORK = 1000000;
-const tooLarge = () => { throw Error("Cubical lattice term-size budget exceeded."); };
+const tooLarge = () => { throw Object.assign(Error("Cubical lattice term-size budget exceeded."),{kind:"budget"}); };
 // Work is counted, never timed; `checkDeadline` polls the declaration's
 // safety timeout, when one is set.
 export function latticeBudget(checkDeadline = null) {

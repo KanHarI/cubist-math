@@ -7,10 +7,11 @@ import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 // the body; stripping a wrapper would skip receiver checks or capture names.
 // Ordinary term elaboration enters one boundary at a time so observations
 // at intervening source nodes are preserved.
-export function enterExpressionScope(translator,scope,node) {
+export function enterExpressionScope(translator,scope,node,{receiver=false}={}) {
   switch(node.kind) {
+    case "operandAlternatives":return {node:receiver?node.receiver:node.value,scope};
     case "bindingReference": {
-      const lowered=lowerBindingReference(node,scope.unit.bindingAdapter,scope.slotOutcomes,{deferMissing:true});
+      const lowered=lowerBindingReference(node,scope.unit.bindingAdapter,scope.slotOutcomes,{deferErrors:true});
       return lowered===node?null:{node:lowered,scope};
     }
     case "name": {

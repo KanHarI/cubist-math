@@ -197,9 +197,12 @@ function compile(t, scope, columns, rows, context) {
       describe: arg.text.includes("'") ? `the ${constructor.fields?.[k] ?? `argument ${k + 1}`} of ${column.describe}` : arg.text }));
     const rest = { kind: statement ? "patternMatchStatement" : "patternMatch", columns: [...argumentColumns, ...others],
       rows: specialized, context: { ...context, top: false }, start: column.node.start, end: column.node.end };
+    const written=fitting[0].row.origin.clause.body;
+    const implicitPathSite=Array.isArray(written)
+      ?{start:written[0]?.start,end:written.at(-1)?.end}:{start:written.start,end:written.end};
     clauses.push({ kind: "clause", constructor: { text: constructor.name, start: at.start, end: at.end }, args, binders: [], coordinates,
       body: statement ? [rest] : rest,
-      ...(constructor.dims && fitting[0].head.kind === "name" ? {implicitPath: true} : {}), start: at.start, end: at.end });
+      ...(constructor.dims && fitting[0].head.kind === "name" ? {implicitPath: true,implicitPathSite} : {}), start: at.start, end: at.end });
   }
   // The first value taken apart is matched by the declaration's own match,
   // so recursion follows it (match.mjs, recursionSite).

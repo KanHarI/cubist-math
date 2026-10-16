@@ -39,11 +39,12 @@ extra rules only when that branch selects the declaring model. A standalone
 notation opens no term labels. Model captures with different rule extensions
 are distinct semantic notation contexts even when their receiver is the same.
 
-Theory and named-rule source entry use retained producers. Lazy operands used as selection
-receivers still require a source description that preserves both their term
-and selection-namespace interpretations. Such rules are refused at retention
-until that contract is implemented; treating an already resolved term operand
-as a selector could silently choose a same-named model over a notation.
+Theory and named-rule source entry use retained producers. CB3's lazy operands
+preserve their term and selection-namespace interpretations as retained syntax
+children. The consuming expression boundary chooses the interpretation, while
+cloning, substitution and dependency capture use the existing syntax traversal.
+Treating an already resolved term operand as a selector could silently choose
+a same-named model over a notation; entry lowering must preserve the alternatives.
 
 The eight authorized external CB2 rounds are exhausted. Subsequent implementation
 checks are not an additional external round or evidence of a clean external
@@ -227,3 +228,141 @@ the final removal of unused sequence-region metadata.
 Round-2 final validation: `npm test` passed 1,181 of 1,197 tests, with
 16 existing later-phase TODOs and zero failures. All 3,857 canonical checks
 passed, and all four production mutations were killed.
+
+## CB3 external review, round 1 — diagnosis before fixes
+
+Claude Opus 5.5 at xhigh reviewed `1e40d0a4` against #235 at `790162dd`.
+It found two actionable issues and confirmed the CB3/later-package boundary.
+Before changing code, both findings were compared with the earlier rounds:
+
+- Evidence collection repeats the source-decision root (CB2 round 3): a shared
+  alias boundary carries dimensions, constructor descriptors and lazy operands
+  as well as terms. Its new evidence consumer independently classified inputs
+  with two excluded tags. The shared evidence operation must use the existing
+  core-term predicate before inference; callers must not grow separate lists.
+- Proof-reference errors repeat the source-ownership root (CB2 round 1 and
+  cleanup round 2): field substitution replaces the written occurrence with a
+  projection expression. The existing substitution frame still records the
+  occurrence's site and binding. Error reporting must consume that provenance,
+  rather than the generated projection's label and offsets. A foreign site
+  must never become offsets in the current module. General inherited error
+  spans remain the explicit CB5 work; the newly admitted proof references
+  must name their actual source occurrence now.
+
+The intended fixes reuse `isTerm` and the existing expansion frames, without
+new state, resolver modes or a diagnostic service. Controls cover each
+non-term alias with intended and wrong computations, plus local/inherited
+proof-field labels and precise same-module sites. The new diagnostic lookup
+ignores foreign substitution sites. The surrounding imported statement catch
+still has the pre-existing foreign-offset defect recorded by the reviewer;
+the inherited-label control does not claim to repair that CB5 boundary.
+
+Both fixes now use those existing contracts. The focused evidence,
+proof-reference and diagnostic-catalogue suites pass 18/18. No new resolver,
+state layer or compatibility mode was introduced.
+
+Final round-1 fix validation: 1,201 tests pass out of 1,214, with 13 documented
+later-phase TODOs and zero failures; all 3,857 canonical checks pass. All four
+production mutations are killed. Source/tests remained frozen during validation.
+
+## CB3 external review, round 2 — diagnosis before fixes
+
+Claude reviewed `2e483917`. The evidence guard is clean, including models
+passed through lazy notation operands. One actionable finding repeats the
+source-ownership root: the first fix repaired `localReference` but missed
+rule descriptions and freeze suggestions reading the same substituted nodes.
+They slice the projection's offsets, producing the theory name in place of a
+field or helper; applying the suggested edit breaks the proof. Renamed copies
+also pair a child's binding label with the parent's written token.
+
+The missing abstraction is one lookup of the existing written occurrence,
+shared by diagnostic labels, simplification rule text and `using` suggestions.
+When its source belongs to this unit, use that exact text and site together;
+otherwise retain the binding label without reading foreign offsets. No new
+frame data, state or resolver is needed. Before implementation, the consumers
+were traced through `displayName`, E456, step descriptions and freeze edits;
+local witness/target clauses cannot consume nonlocal substituted fields.
+Controls will apply the suggestions and recheck field/helper/using proofs,
+check E456 labels and test renamed inheritance against ordinary declarations.
+General imported statement locations remain the separately reproduced CB5 gap.
+
+The shared lookup now covers those consumers, and all 60 focused tests pass.
+The remaining source-slice audit also reproduced `rw [fe]` displaying
+"Checked rewrite using Parent" for a theory field, identically on this tree
+and base `790162dd`. That existing description and generic generated-expression
+views belong with CB5; no source edit is offered by that rewrite description.
+
+Final round-2 fix validation: 1,203 tests pass out of 1,216, with 13 documented
+later-phase TODOs and zero failures; all 3,857 canonical checks pass. All four
+production mutations are killed. Source/tests remained frozen during validation.
+
+## CB3 external review, round 3 — release boundary correction
+
+Claude called the delta at `260c1a7d` clean and verified the shared lookup,
+including compound references and imported binding labels. Its boundary notes
+nevertheless expose a CB3 release defect: imported inherited simplification
+links offer edits at the producer's offsets, and applying one can corrupt the
+client document. The placement bug predates CB3, but the edit was newly exposed
+by admitting theory simplification. We therefore treat it as actionable rather
+than postponing it with CB5's non-editing views.
+
+This is again source ownership, lost when link-site extraction retains a
+keyword's offsets but drops its enclosing syntax's origin. The existing
+publication filter already checks origin modules. Preserve that metadata at
+the shared tactic/expression/calc-site boundary and in traced step links,
+rather than adding bounds checks or a freeze-only exception. Validate imported
+short clients and long clients where foreign offsets happen to fit, and retain
+working local edits. No new ownership state is needed.
+
+The reviewer also confirmed that the existing `rw` source slice affects E452
+residual diagnostics as well as descriptions; both remain CB5 display work.
+
+The shared link-site factories now carry origin/synthetic metadata, and traced
+steps retain that same site. The existing publication predicate rejects foreign
+tactic links. Focused tests pass 76/76, including local edit application and
+short/long imported clients. Full validation passes 1,204 of 1,217 tests, with
+13 later-phase TODOs and zero failures; all 3,857 canonical checks pass and all
+four production mutations are killed. General generated-definition and match
+annotations still need CB5 provenance; they offer no source edits.
+
+## CB3 external review, round 4 — diagnosis before fixes
+
+Claude reviewed `cc4d6efd`: imported actions are fixed and local inspection is
+preserved, but a same-module inherited copy can offer an edit to its parent's
+statement using a rule registered only before the child. Applying that edit
+breaks the source; when only the child verifies, it is also the UI's sole edit.
+
+The root is stronger than module ownership: a copied elaboration does not own
+the written source context. Existing expansion frames identify that distinction.
+The shared site extraction must treat source copies as synthetic observations;
+ordinary generation lowering may still expose its authored source. Audit all
+expansion producers, not just inheritance: notation already suppresses its
+implementation recorder, lazy operands return to their own source scopes, and
+substitution inserts synthetic expressions. Use the existing provenance rather
+than add per-copy state, special freeze guards or a list of forbidden tactics.
+Tests will register a rule between parent and child, apply every offered edit,
+and cover a failed parent with a verified child, where UI deduplication cannot
+hide the destructive suggestion.
+
+The shared factory now marks source-copy expansions as synthetic observations;
+authored syntax and generation lowering remain eligible for local source links.
+All 77 focused tests pass. Full validation passes 1,205 of 1,218 tests, with
+13 later-phase TODOs and zero failures; all 3,857 canonical checks pass and all
+four production mutations are killed. Source/tests were frozen for these runs.
+
+## CB3 external review, round 5 — clean
+
+Claude reviewed `b8823f65` against `cc4d6efd` and found no actionable defects.
+It audited all expansion-frame producers and swept plain, renamed, multilevel
+and diamond inheritance with intervening rule registration. All five published
+edits applied without new gaps; the previous head offered destructive child
+edits. Local inspection parity covered 110 source files, with only duplicate
+copy links removed in seven files. Imported notation operands keep their own
+inspection and working edits. Both reverting the fix and treating ordinary
+generation as a source copy fail the regression control.
+
+The context-ownership rule therefore closes the repeated source-edit findings
+without additional state or tactic-specific guards. Non-editing name annotations
+outside the site factories and shared-binding view collisions remain explicit
+CB5/CB6 work. CB3 review stops at round 5 of eight; no further round is needed
+without a new finding.

@@ -162,6 +162,39 @@ test("prepared declaration failures never resolve through destination labels or 
   }
 });
 
+test("retained proof statements bind goal-dependent values without capturing earlier scopes",async t=>{
+  const source=`
+def introduced(x : Two) : Two -> Two { let saved := x; intro x; exact saved; }
+def nested : forall U < UU0. forall A : U. A -> A { intro U; intro A; intro x; exact x; }
+def extensional : (fun (x : Two) => x) = (fun (y : Two) => y) { ext x; rfl; }
+def obtained(x : Two) : Two {
+  let p : exists y : Two. exists z : Two. y = y := (x, (right_, refl(x)));
+  obtain (x, (y, h)) := p;
+  exact y;
+}
+def shadowed(x : Two) : Two { obtain (x, y) := typed((exists z : Two. Two), (right_, x)); exact y; }
+def value_intro : Two := introduced(left_, right_);
+def value_nested : Two := nested(U0, Two, right_);
+def value_obtain : Two := obtained(left_);
+def value_shadow : Two := shadowed(left_);
+def too_early : Two { let saved := y; obtain (x, y) := typed((exists z : Two. Two), (left_, right_)); exact saved; }
+`;
+  for(const clone of [false,true]) {
+    const {result,program,translator}=await prepared(t,source,{clone});
+    const failures=result.declarations.filter(d=>d.status!=="checked-native-cubical");
+    assert.deepEqual(failures.map(d=>d.name),["too_early"],failures.map(d=>[d.name,d.reason]));
+    assert.match(failures[0].reason,/Untranslated name: y/);
+    const scope=new Scope(translator.unit(),new Map(),program.modules.get("base"));
+    for(const [label,intended,captured] of [["value_intro","left_","right_"],["value_nested","right_","left_"],
+      ["value_obtain","right_","left_"],["value_shadow","left_","right_"]]) {
+      assert.equal(scope.equal(result.env.get(label),translator.term(parse(intended,true),scope)),true,label);
+      assert.equal(scope.equal(result.env.get(label),translator.term(parse(captured,true),scope)),false,label);
+    }
+    for(const declaration of result.declarations.filter(d=>d.term))
+      assert.doesNotMatch(JSON.stringify(declaration.term),/\\u0000id/,declaration.name);
+  }
+});
+
 test("fresh identities do not conceal repeated public parameter labels",async t=>{
   const {result}=await prepared(t,"def duplicate(x, x : Unit) : Unit := x; def independent : Unit := tt;");
   assert.match(result.declarations[0].reason,/two parameters named x/);

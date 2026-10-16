@@ -47,9 +47,9 @@ export function interfaceType(entry) {
 
 export class RetainedInterfaces {
   #next=0;
-  constructor({table,owner,context,source,constructors=[],
+  constructor({table,owner,context,source,constructors=[],simpSets=null,
     evidenceTypes=new Map(["IsSet","IsProp"].map(label=>[label,context.lookup(label)]))}) {
-    Object.assign(this,{table,owner,context,source,constructors,evidenceTypes});
+    Object.assign(this,{table,owner,context,source,constructors,simpSets,evidenceTypes});
     this.entries=[];this.header=null;
   }
   #resolve(tree,owner,{context=this.context,self=null,fixedReferences=new Map(),notation=null}={}) {
@@ -62,7 +62,7 @@ export class RetainedInterfaces {
       fixedReferences.set(parameter.type,/^U+[0-9]+$/.test(label)?reservedResolution(label):{tag:"universe",label});
     }
     return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors,
-      evidenceTypes:this.evidenceTypes,self,fixedReferences,universeReferences,namespaceBoundary:context,notation,
+      evidenceTypes:this.evidenceTypes,simpSets:this.simpSets,self,fixedReferences,universeReferences,namespaceBoundary:context,notation,
       namespaceFailure:error=>parentNamespaceFailure(this.header?.tree.name.text??tree.name.text,error)});
   }
   parameters(name,params,{fixedReferences=new Map()}={}) {

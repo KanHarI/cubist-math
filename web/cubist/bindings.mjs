@@ -427,10 +427,10 @@ export class BindingAdapter {
     });
     return outcomes.resolve(value);
   }
-  lower(value, outcomes = new SlotOutcomes(), {deferMissing = false} = {}) {
+  lower(value, outcomes = new SlotOutcomes(), {deferErrors = false} = {}) {
     value = this.resolve(value, outcomes);
     if (["slot","opening","member","projected","application","namespace","namespace-selector","notation"].includes(value.tag)) return null; // Resolution/selection owns these forms.
-    if (value.tag === "missing" && deferMissing) return null;
+    if (["missing","failure"].includes(value.tag) && deferErrors) return null;
     if (value.tag === "binding") return this.key(value.id);
     if(value.tag==="failure")throw resolutionError(value);
     if (value.tag === "reserved" && this.#reserved.has(value.label)) return value.label;

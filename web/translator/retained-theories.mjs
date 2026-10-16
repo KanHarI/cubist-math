@@ -13,7 +13,7 @@ export function retainedTheoryDeclarations(t,module,declaration,env,{lookup,isTh
     return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);
   };
   const retained=retainTheorySource(prepared.item,{table,owner,source,context:prepared.context,
-    constructors:inputs.constructors},{lookup,proposition});
+    constructors:inputs.constructors,simpSets:inputs.simpSets},{lookup,proposition});
   const built=retainedTheoryArtifacts(retained,{table,owner:[...owner,"base"]});
   const morphisms=retainedMorphismArtifacts(built.record,{table,owner:[...owner,"morphisms"],
     bindings:built.bindings,isTheory});
