@@ -564,6 +564,7 @@ export const diagnostics = [
   ["E869", "…'s … binds … in a pattern, under which the expansion names the model …: rename the initial or free model."],
   ["E870", "The generator type of … lives in a universe above its carrier's declared one: a free model cannot lower its generators. Choose a larger carrier universe or a smaller generator type."],
   ["E871", "Inlining … here would capture its field …: rename the enclosing pattern or statement binding."],
+  ["E872", "Duplicate declaration …: a declaration in this module already owns that name."],
   ["E873", "initial takes no parameters; use free for a parameterized model."],
   ["E874", "free takes explicit parameters in parentheses, as free W(A : U0) : T(U0) on A; implicit parameters are not supported."],
   // Notation and operators

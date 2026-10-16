@@ -12,7 +12,7 @@ inductive N {
 
 // Error: E606: Type mismatch: found U1, expected Nat.
 inductive Discarded {
-  c(x : (fun (n : Nat) => Nat)(U0));
+  discarded(x : (fun (n : Nat) => Nat)(U0));
 }
 
 inductive Level {

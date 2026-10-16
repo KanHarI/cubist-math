@@ -589,13 +589,15 @@ free W(A : U0) : T(U0) on A;`, {module});
   assert.ok(result.outputs.every(o => !/^(N|W)\./.test(o.name)));
 });
 
-test("a model name cannot hide a global required by its expansion", async t => {
-  for (const source of [
-    "theory T(U < UU0) { M : set U; c : M; } initial T : T(U0);",
-    "def N : U0 := Unit; theory T(U < UU0, A : U) { M : set U; c(x : A) : M; } initial N : T(U0, N);",
-    "def W : U0 := Unit; theory T(U < UU0) { M : set U; } free W(A : W) : T(U0) on Unit;",
+test("a model name cannot hide an imported global required by its expansion", async t => {
+  for (const [fixture, source] of [
+    ["theory T(U < UU0) { M : set U; c : M; }", "initial T : T(U0);"],
+    ["def N : U0 := Unit; theory T(U < UU0, A : U) { M : set U; c(x : A) : M; }", "initial N : T(U0, N);"],
+    ["def W : U0 := Unit; theory T(U < UU0) { M : set U; }", "free W(A : W) : T(U0) on Unit;"],
   ]) {
-    const {result} = await checkProgram(t, `import hlevels; ${source}`, {module});
+    const library = sourceReader();
+    const {result} = await checkProgram(t, `import fixture; ${source}`, {module,
+      reader: (name, importer) => name === "fixture" ? `import hlevels; ${fixture}` : library(name, importer)});
     const failures = result.outputs.filter(o => !o.verified);
     assert.deepEqual(failures.map(o => o.code), ["E866"]);
     assert.match(failures[0].reason, /hides a declaration used by its expansion: rename the initial or free model\./);
@@ -605,12 +607,15 @@ test("a model name cannot hide a global required by its expansion", async t => {
 theory T(U < UU0) { M : set U; c : M; }
 initial M : T(U0);
 free W(W : U0) : T(U0) on W;`);
-  // A field's global has a declaration identity before N is published.
-  await verified(t, `import hlevels;
-def N : U0 := Unit;
-theory T(U < UU0) { M : set U; c(x : N) : M; }
+  // Captured imported fields permit legal import shadowing; same-module
+  // replacement is refused by the shared declaration ownership policy.
+  const library = sourceReader();
+  const {result} = await checkProgram(t, `import fixture;
 initial N : T(U0);
-def use_it : N := N.c(tt);`);
+def use_it : N := N.c(tt);`, {module, reader: (name, importer) => name === "fixture"
+    ? "import hlevels; def N : U0 := Unit; theory T(U < UU0) { M : set U; c(x : N) : M; }"
+    : library(name, importer)});
+  assert.deepEqual(result.gaps, []);
 });
 
 test("an initial or free model's declared type is an inductive to the workbench and the migration verifier", async t => {

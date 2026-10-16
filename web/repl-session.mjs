@@ -181,7 +181,7 @@ export class ReplSession {
     return [
       ...result.declarations.filter(info => !info.verified)
         .map(info => ({ kind: "error", text: withCode(clean(info.reason), info.code) })),
-      ...result.gaps.filter(gap => gap.directive || !gap.name).map(gap => ({ kind: "error", text: withCode(clean(gap.reason), gap.code) })),
+      ...result.gaps.filter(gap => gap.directive || gap.duplicate || !gap.name).map(gap => ({ kind: "error", text: withCode(clean(gap.reason), gap.code) })),
     ];
   }
 

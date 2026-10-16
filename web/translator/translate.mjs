@@ -21,12 +21,13 @@ import {RECURSIVE,recursionSite,elaborateMatch,resolveRecursive,selfReference,ma
 import {needsCompiling,compileMatch,continueMatch} from "./patterns.mjs";
 import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleShape,noRule,ruleTwice} from "./hlevel.mjs";
 import {repeatedName,stem} from "./names.mjs";
+import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
 import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {lexicalBinding} from "./lexical.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,skipExpansion,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,qualifiedOperator,notationDeclaration,appliedRule,lexemeKey,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -86,7 +87,7 @@ function lambdas(params,body) {
 }
 
 export class Translator {
-  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,
+  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false}={}) {
     // A module of a revision before L2.10j reads an operator or a numeral
@@ -119,6 +120,8 @@ export class Translator {
         const source=this.localSources.get(value);
         return source?.name===name ? [{...source,term:value}] : [];
       })) : null;
+    this.onPublicationStart=onPublicationStart;
+    this.onPublicationEnd=onPublicationEnd;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=onDeclarationStart;
     // The declarations to check changed by a number: a theory's expansion
@@ -360,19 +363,110 @@ export class Translator {
     const ast=parse(source),env=new Map(imported),declarations=[],directives=[];
     // The models of the file-level uses refused where they stand.
     const refusedUses=new Set();
+    const ownership=new DeclarationOwnership();
+    const publications=[];
+    let active=null;
+    // A group that is not published leaves each of its names standing for
+    // the group's root cause; `via` is what the group itself waited on.
+    const unavailable=(group,via)=>{
+      for(const declaration of group.members)for(const {name} of declaredNames(declaration)) {
+        const value=untranslated(name,this.checker.bindingName?.(name)??name,`Untranslated dependency: ${via}`,group.cause);
+        env.set(name,value); env.set(lexicalBinding(value.binding),value);
+      }
+    };
+    const finishPublication=(accept,failed=null)=>{
+      const {group,before,start}=active;
+      this.onPublicationEnd?.(group,accept);
+      if(accept)group.state="checked";
+      else {
+        // Which member failed explains the rollback; the root explains
+        // every client, so a member that failed on a failed dependency
+        // passes that dependency's root on.
+        group.state="failed";group.failedMember=failed.name;
+        group.cause=failureRoot(failed,this.checker.bindingName?.(failed.name)??failed.name);
+        restoreMap(env,before);
+        unavailable(group,failed.name);
+        declarations.splice(start,declarations.length-start,{...failed,name:group.head.name.text,
+          syntax:group.head,failedMember:failed.name});
+      }
+      active=null;
+    };
+    const settle=queue=>{
+      const result=declarations.at(-1);
+      if(active&&result.status==="not-translated") {
+        finishPublication(false,result);
+        let skipped=0;
+        while(queue.length) {
+          const next=queue.shift();
+          if(next.kind==="publicationEnd")break;
+          skipped++;
+        }
+        if(skipped)this.onQueued?.(-skipped);
+      }
+    };
+    const rejectDuplicate=(d,conflict,members=[d])=>{
+      const error=module.locate(duplicateDeclaration(conflict.name),conflict.at);
+      this.onDeclarationStart?.(d);
+      const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
+        reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd};
+      const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
+      const bind=name=>{
+        const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
+        env.set(name,value);env.set(lexicalBinding(value.binding),value);
+      };
+      for(const member of members)for(const {name} of declaredNames(member))
+        if(ownership.owns(name,d))bind(name);
+      // An imported T.f is refused with a refused generator T. A local
+      // member keeps its value, and a name no environment entry spells, as
+      // the field T.f of an earlier model T, keeps its meaning.
+      if(["theory","initial","free"].includes(d.kind))
+        for(const name of [...env.keys()])if(name.startsWith(d.name.text+".")&&!ownership.entries.has(name))bind(name);
+      declarations.push(result);
+      this.onDeclaration?.(d,result);
+    };
     // A theory is checked as the declarations it expands to, in its place.
     const queue=[...(ast.items??ast.declarations)];
     while(queue.length) {
-      const queued=queue.shift(),d=queued.generated?elaborationSyntax(queued):queued;
+      const queued=queue.shift();
+      if(queued.kind==="publicationStart") {
+        const {group}=queued,dependency=group.dependencies.find(dependency=>dependency.state!=="checked");
+        if(dependency) {
+          group.state="blocked";group.cause=dependency.cause;
+          unavailable(group,dependency.head.name.text);
+          queue.splice(0,group.members.length+1);
+          this.onQueued?.(-group.members.length);
+        } else {
+          active={group,before:new Map(env),start:declarations.length};
+          group.state="checking";
+          this.onPublicationStart?.(group);
+        }
+        continue;
+      }
+      if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
+      const d=queued.generated?elaborationSyntax(queued):queued;
+      if(!d.generated&&["def","inductive","theory","initial","free"].includes(d.kind)) {
+        const conflict=ownership.reserve([d],d);
+        if(conflict) { rejectDuplicate(d,conflict); continue; }
+      }
       // Its messages print in what a file-level use selects for it (L2.10j).
       if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
       // A theory, or an initial or free model (L2.6), is checked as the
       // declarations it expands to: the ones beyond its own are declarations
       // to count too.
       if(d.kind==="theory"||d.kind==="initial"||d.kind==="free") {
+        const before=new Map(env);
         const generated=(d.kind==="theory"?theoryDeclarations:initialDeclarations)(this,module,d,env,declarations);
+        const conflict=ownership.reserve(generated,d);
+        if(conflict) {
+          env.clear(); for(const [key,value] of before)env.set(key,value);
+          rejectDuplicate(d,conflict,generated);
+          continue;
+        }
         if(generated.length)this.onQueued?.(generated.length-1);
-        queue.unshift(...generated); continue;
+        const groups=publicationGroups(d,generated);
+        publications.push(...groups);
+        queue.unshift(...groups.flatMap(group=>[{kind:"publicationStart",group},...group.members,{kind:"publicationEnd",group}]));
+        continue;
       }
       // A file-level use m; selects m for the definitions and directives
       // after it, which record it (L2.4c). It is checked where it stands, so
@@ -403,7 +497,7 @@ export class Translator {
       // A named notation's rules, read where it is declared (L2.10a).
       if(d.kind==="notation") {
         try { notationDeclaration(this,module,d,env,new Set(declarations.filter(e=>e.status!=="not-translated").map(e=>e.name))); }
-        catch(error) { declarations.push({name:d.name.text,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd}); }
+        catch(error) { directives.push({kind:"notation",name:d.name.text,status:"not-translated",reason:error.message,start:d.start}); }
         continue;
       }
       if(d.kind==="evaluate") {
@@ -491,7 +585,7 @@ export class Translator {
       }
       if(d.kind==="inductive") {
         this.inductiveDeclaration(d,module,env,declarations);
-        this.skipFailedExpansion(d,queue,env,declarations);
+        settle(queue);
         continue;
       }
       // Each declaration counts its own rewriting work and spends its own fuel.
@@ -555,16 +649,17 @@ export class Translator {
         // projections, which print as m.f (L2.4).
         if(d.generated)registerTheoryDeclaration(this,d);
         declarations.push({name:d.name.text,status:native?"checked-native-cubical":"checked-cubical-fragment",term:checked.term,type:checked.type,normal:checked.normal,native,
-          ...(d.generated?{syntax:d}:{})});
+          syntax:d});
       } catch(error) {
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
-        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:error.message});
+        const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+        env.set(d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-          errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind,
-          ...(d.generated?{syntax:d}:{})});
+          errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
+          syntax:d});
       }
       declarations.at(-1).rewriteWork={...unit.work};
       // What the declaration asked of the kernel, and what its searches spent.
@@ -573,20 +668,17 @@ export class Translator {
       this.onDeclaration?.(d,declarations.at(-1));
       // Diagnostic observers may reject a late result after cleanup. Such a
       // result must not remain available to subsequent declarations.
-      if (declarations.at(-1).status === "not-translated")
-        env.set(d.name.text,{tag:"Untranslated",name:d.name.text,binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason:declarations.at(-1).reason});
+      if (declarations.at(-1).status === "not-translated") {
+        const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+        env.set(d.name.text,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
+      }
       if(d.generated)env.set(lexicalBinding(this.checker.bindingName?.(d.name.text)??d.name.text),env.get(d.name.text));
-      this.skipFailedExpansion(d,queue,env,declarations);
+      settle(queue);
     }
-    return {declarations,env,directives,simpRegistry:this.simpRegistry,
+    return {declarations,env,directives,publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
+      members:group.members.flatMap(declaredNames).map(entry=>entry.name),dependencies:group.dependencies.map(d=>d.id),state:group.state,
+      ...(group.failedMember?{failedMember:group.failedMember}:{}),cause:group.cause})),simpRegistry:this.simpRegistry,
       normalizationVisits:this.checker.steps};
-  }
-  // After a failed declaration, the rest of its expansion (theories.mjs),
-  // taken off whether or not an observer counts it.
-  skipFailedExpansion(d,queue,env,declarations) {
-    if(declarations.at(-1).status!=="not-translated")return;
-    const skipped=skipExpansion(this,queue,env,d);
-    if(skipped)this.onQueued?.(-skipped);
   }
   // A binder of the declaration's own parameter, known by its token: the
   // binding it made, for recursion to recognize (match.mjs).
@@ -601,8 +693,10 @@ export class Translator {
     const unit=module.declaration(this.declarationFuel);
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
-    const untranslated=reason=>{for(const name of names)env.set(name,{tag:"Untranslated",name,
-      binding:this.checker.bindingName?.(d.name.text)??d.name.text,reason});};
+    const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+    const unavailable=failure=>{
+      for(const name of names)env.set(name,untranslated(name,binding,failure.reason??failure.message,failureRoot(failure,binding)));
+    };
     try {
       const scope=usesScope(this,new Scope(unit,new Map(),env),d.uses);
       const lowered=lowerInductive(this,d,scope);
@@ -611,21 +705,21 @@ export class Translator {
       // so that it is recorded as the inductive it is.
       declarations.push({name:d.name.text,status:"checked-native-cubical",inductive:lowered.record,
         term:lowered.former,type:lowered.former,native:{ok:true,axioms:[],extensions:lowered.extensions},
-        ...(d.generated?{syntax:d}:{})});
+        syntax:d});
     } catch(failure) {
       // An expansion's constructor failure belongs to its written theory
       // or generator type (initial-models.mjs).
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
-      untranslated(error.message);
+      unavailable(error);
       declarations.push({name:d.name.text,status:"not-translated",reason:error.message,
-        errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,failure:error.kind,
-        ...(d.generated?{syntax:d}:{})});
+        errorStart:error.offset,errorEnd:error.sourceEnd,blockedBy:error.blockedBy,cause:error.cause,failure:error.kind,
+        syntax:d});
     }
     declarations.at(-1).rewriteWork={...unit.work};
     unit.fuel.close();
     declarations.at(-1).searchFuel=this.fuelRecord(unit);
     this.onDeclaration?.(d,declarations.at(-1));
-    if(declarations.at(-1).status==="not-translated")untranslated(declarations.at(-1).reason);
+    if(declarations.at(-1).status==="not-translated")unavailable(declarations.at(-1));
   }
   // A registration names an already checked rule; it records no reference.
   registeredSimpRule(token,module,env,priority=0) {
@@ -930,9 +1024,12 @@ export class Translator {
           const value=env.get(n.name);
           if(value.tag==="Untranslated") {
             // A notation rule's name is read under its key: the message
-            // names it as the rule does.
-            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" "):n.name)}`);
-            error.blockedBy=value.binding??value.name;
+            // names it as the rule does. A model's operator or numeral is
+            // read under a key too: the message names its operation.
+            const error=Error(`Untranslated dependency: ${n.spelling??(n.name.startsWith("\u0000notation ")?n.name.split(" ").slice(2).join(" ")
+              :n.name.startsWith("\u0000")?value.name:n.name)}`);
+            error.blockedBy=value.blockedBy??value.binding??value.name;
+            error.cause=value.cause??value.reason;
             throw error;
           }
           if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");

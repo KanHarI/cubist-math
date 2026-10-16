@@ -4,6 +4,12 @@ Expansion must preserve binding, not spelling. Moving an expression,
 renaming a surrounding binder, or importing it into a different module must
 not change which declarations and local variables it refers to.
 
+The [frontend generation roadmap](frontend-generation.md) turns this
+contract and PR #188's failures into implementation slices for declaration
+ownership, dependency analysis, universes, evidence, provenance and semantic
+tests. Its [gap inventory](../reports/frontend-generation-gaps.md) separates
+remaining failures from the capture bugs already fixed here.
+
 The frontend uses nominal syntax. The JavaScript core has named `Var`, `Pi`,
 and `Lam` nodes; the C kernel uses symbols, capture-avoiding substitution,
 and alpha comparison. It does not use de Bruijn indices for all bindings.
@@ -40,11 +46,17 @@ statements, outside its own initializer. Substitution renames a binder when
 necessary; for pattern, statement, and parameter binders that cannot safely
 be renamed before elaboration, it refuses a capture. Unknown syntax kinds fail scope traversal
 rather than silently being treated as having no binders.
-Inlining substitutes the helper as a lambda through the caller's whole
-expression before reducing its application. This protects the helper's free
-fields from enclosing caller binders as well as protecting its arguments
-from the helper's binders. A fixed enclosing pattern or statement binding
-that would capture a field is refused with E871.
+At `00d4ecce`, inlining substitutes the helper as a lambda through a law's
+whole expression before reducing its application. This protects its free
+fields from law binders, including when the helper is inherited, as well as
+protecting arguments from helper binders. This is not yet a general
+declaration invariant: derived-operation bodies are still processed without
+their parameter telescope and can silently capture a helper field
+([G11](../reports/frontend-generation-gaps.md#g11-derived-bodies-are-transformed-outside-their-parameter-telescope)).
+FG2 requires the complete telescope, result type and body to participate in
+the transformation. A fixed enclosing pattern or statement binding that
+would capture a field is refused with E871; its empty source range is still
+open as [G10](../reports/frontend-generation-gaps.md#g10-the-capture-refusal-loses-the-conflicting-source-site).
 
 `scoped` is a closure: syntax paired with its original elaboration scope.
 Caller substitution and relocation cannot enter its contents. `instantiated`
@@ -63,6 +75,12 @@ inspection. Named structural selections preserve their receiver spelling
 for diagnostics while resolution continues to use its identity. Synthetic
 syntax, including relocated evidence and repeated header expressions, emits
 no source links.
+
+That label separation remains incomplete in source-alias recording:
+[G9](../reports/frontend-generation-gaps.md#g9-source-aliases-conflate-internal-keys-and-public-labels)
+shows a freshened law binder losing definition targets and exposing `c1`
+at its uses. The required contract separates resolution keys, public labels,
+binder origins and occurrence origins through every consumer.
 
 ## Generation boundary
 
@@ -93,6 +111,12 @@ resolves it against the current declaration's private recursion state;
 source parameters and pattern binders can hide a namespace without hiding
 the recursive results. Ordinary source calls still obey lexical shadowing
 and the same structural recursion checks.
+
+Calls to an earlier recursive derived operation are a separate case. They
+are still refused inside a later derived value with a field-type diagnostic
+([G12](../reports/frontend-generation-gaps.md#g12-value-calls-are-subjected-to-a-type-unfolding-restriction)).
+FG2 distinguishes value calls, structural self-calls and type unfolding;
+the private self-recursion mechanism alone does not solve all three.
 
 Homomorphism generation uses separate hole maps for declaration references,
 parameter types, and expressions. Holes cannot collide with source binders.
@@ -135,6 +159,15 @@ over recursive path constructors: a wildcard's coherence must either fit
 the recursive boundaries or be constructed from checked h-level evidence.
 Incompatible endpoints remain refused; explicit path clauses are not
 replaced by generated coherence.
+
+The fallback currently also runs for nonrecursive path constructors and
+overwrites useful mismatch diagnostics
+([G8](../reports/frontend-generation-gaps.md#g8-wildcard-fallback-replaces-an-endpoint-mismatch)).
+FG4 narrows eligibility and preserves the original error on failed fallback;
+FG0/FG6 require endpoint, source-range and code assertions. A gap merely
+named `bad` does not establish this contract. The follow-up mutation audit
+also requires direct source-label/link checks and a distinguishing test or
+removal for potentially redundant `notationScope` aliases.
 
 Extend these invariants for every new binder or derivation. A transformation
 must state which bindings it preserves and which explicit interface it
