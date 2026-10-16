@@ -179,10 +179,9 @@ def splitting_root_index(
         )
       )
     };
-  let rq :=
-    vector_scale_injective(
-      K, ScalarSpace(K), a, na, E(q), field_zero(K), trans(product, sym(scalar_mul_zero(K, a)))
-    );
+  let rq := vector_scale_injective(
+    K, ScalarSpace(K), a, na, E(q), field_zero(K), trans(product, sym(scalar_mul_zero(K, a)))
+  );
   exact linear_factor_product_root_index(K, n, roots, x, rq);
 }
 

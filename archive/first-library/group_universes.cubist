@@ -37,11 +37,10 @@ def group_carrier_at(U < UU0, G : GroupAt(U)) := unpack G as (A, structure) retu
     A;
   };
 
-def group_structure_at(U < UU0, G : GroupAt(U)) :=
-  pair_induction(
-    (fun (H : GroupAt(U)) => GroupStructureAt(U, group_carrier_at(U, H))),
-    (fun (A : U, structure : GroupStructureAt(U, A)) => structure), G
-  );
+def group_structure_at(U < UU0, G : GroupAt(U)) := pair_induction(
+  (fun (H : GroupAt(U)) => GroupStructureAt(U, group_carrier_at(U, H))),
+  (fun (A : U, structure : GroupStructureAt(U, A)) => structure), G
+);
 
 def group_unit_at(U < UU0, G : GroupAt(U)) : group_carrier_at(U, G) {
   obtain (unit, multiply, laws) := group_structure_at(U, G);
@@ -74,8 +73,8 @@ def GroupIsoAt(U < UU0, G, H : GroupAt(U)) :=
 
 // Package maps between explicit carriers before specializing to large quotient expressions.
 def group_iso_object_at(
-  U < UU0, A : U, oneA : A, mA : A -> A -> A, lawsA : GroupLawsAt(U, A, oneA, mA), B : U,
-  oneB : B, mB : B -> B -> B, lawsB : GroupLawsAt(U, B, oneB, mB), f : A -> B, g : B -> A,
+  U < UU0, A : U, oneA : A, mA : A -> A -> A, lawsA : GroupLawsAt(U, A, oneA, mA), B : U, oneB : B,
+  mB : B -> B -> B, lawsB : GroupLawsAt(U, B, oneB, mB), f : A -> B, g : B -> A,
   left_ : (forall x : A. g(f(x)) = x), right_ : (forall y : B. f(g(y)) = y),
   multiply : (forall x : A. forall y : A. f(mA(x, y)) = mB(f(x), f(y)))
 ) :

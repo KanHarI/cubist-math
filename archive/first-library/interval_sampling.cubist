@@ -19,9 +19,8 @@ def IntervalMeshBelow(
 
 def interval_tag_orders_endpoints(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0,
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  a, b, tag : FieldUnitInterval(F, zero, one, lt),
-  within : IntervalTagWithin(F, zero, one, lt, a, b, tag)
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), a, b,
+  tag : FieldUnitInterval(F, zero, one, lt), within : IntervalTagWithin(F, zero, one, lt, a, b, tag)
 ) :
   FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt, a),

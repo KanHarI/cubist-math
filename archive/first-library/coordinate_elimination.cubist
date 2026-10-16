@@ -134,11 +134,10 @@ def pivot_reduced_kernel(
       A, n, vector_add(K, T, h, vector_neg(K, T, cu)), vector_zero(K, T),
       pivot_corrected_head(K, m, n, f, b, inv, v), vanishes
     );
-  let image_equal : h = cu :=
-    group_cancel_right(
-      vector_group(K, T), h, cu, vector_neg(K, T, cu),
-      trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
-    );
+  let image_equal : h = cu := group_cancel_right(
+    vector_group(K, T), h, cu, vector_neg(K, T, cu),
+    trans(corrected_zero, sym(group_inverse_right(vector_group(K, T), cu)))
+  );
   let source_equal : coordinate_insert(K, m, v) = vector_scale(K, S, c, coordinate_first(K, m)) :=
     injective(
       coordinate_insert(K, m, v), vector_scale(K, S, c, coordinate_first(K, m)),

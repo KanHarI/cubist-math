@@ -78,11 +78,10 @@ def zorn_chain_complete(
   let Result := exists x : A. OrderMaximal(A, le, x);
   let contradiction : (FieldExists(Result) -> Void) -> Void {
     intro none;
-    let successors :=
-      Choice(
-        U1, A, StrictlyAbove(A, le), partial_order_is_set(A, le, laws),
-        strict_above_is_set(A, le, laws), no_maximal_strict_successor(A, le, laws, none)
-      );
+    let successors := Choice(
+      U1, A, StrictlyAbove(A, le), partial_order_is_set(A, le, laws),
+      strict_above_is_set(A, le, laws), no_maximal_strict_successor(A, le, laws, none)
+    );
     exact field_exists_elim(
       (forall x : A. StrictlyAbove(A, le, x)), Void,
       (fun (p, q : Void) => typed((p = q), absurd(p))),

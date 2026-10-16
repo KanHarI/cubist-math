@@ -33,16 +33,14 @@ def Parities : U0 := Quotient(U0, Nat, SameParity);
 
 // One and three have the same class, and so the same parity, read back
 // from the path between their classes.
-computable def one_three :
-  typed(Parities, class(1)) = typed(Parities, class(3)) := class_path(
-    U0, Nat, SameParity, 1, 3, refl(1)
-  );
+computable def one_three : typed(Parities, class(1)) = typed(Parities, class(3)) := class_path(
+  U0, Nat, SameParity, 1, 3, refl(1)
+);
 
-computable def one_three_related :
-  SameParity(1, 3) := quotient_effective(
-    U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
-    same_parity_transitive, 1, 3, one_three
-  );
+computable def one_three_related : SameParity(1, 3) := quotient_effective(
+  U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+  same_parity_transitive, 1, 3, one_three
+);
 
 // Output: refl(1)
 print(evaluate(one_three_related));
@@ -66,11 +64,9 @@ computable def zero_one_distinct(p : typed(Parities, class(0)) = typed(Parities,
   );
 
 // Relatedness to 0, as a proposition at each class.
-computable def related_to_zero :
-  Parities
-  -> Prop(U0) := related_to(
-    U0, Nat, SameParity, same_parity_props, same_parity_symmetric, same_parity_transitive, 0
-  );
+computable def related_to_zero : Parities -> Prop(U0) := related_to(
+  U0, Nat, SameParity, same_parity_props, same_parity_symmetric, same_parity_transitive, 0
+);
 
 // Output: 0 = 0
 print(evaluate(related_to_zero(class(2)).1));
@@ -78,16 +74,14 @@ print(evaluate(related_to_zero(class(2)).1));
 // Propositional extensionality: propositions that imply each other are
 // equal, as types and as propositions. Transport along the path is the map
 // given, and computes.
-computable def unit_to_unit_is_prop :
-  IsProp(U0, Unit -> Unit) := pi_is_prop(
-    U0, Unit, fun (u : Unit) => Unit, fun (u : Unit) => unit_is_prop
-  );
+computable def unit_to_unit_is_prop : IsProp(U0, Unit -> Unit) := pi_is_prop(
+  U0, Unit, fun (u : Unit) => Unit, fun (u : Unit) => unit_is_prop
+);
 
-computable def unit_paths :
-  Unit = (Unit -> Unit) := prop_ext(
-    U0, Unit, Unit -> Unit, unit_is_prop, unit_to_unit_is_prop,
-    fun (u : Unit) => fun (v : Unit) => v, fun (f : Unit -> Unit) => tt
-  );
+computable def unit_paths : Unit = (Unit -> Unit) := prop_ext(
+  U0, Unit, Unit -> Unit, unit_is_prop, unit_to_unit_is_prop, fun (u : Unit) => fun (v : Unit) => v,
+  fun (f : Unit -> Unit) => tt
+);
 
 // Output: tt
 print(evaluate(comp(fun (i : Interval) => unit_paths @ i, tt)(tt)));

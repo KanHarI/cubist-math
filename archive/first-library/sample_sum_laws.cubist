@@ -138,8 +138,8 @@ def sample_sum_cong(
 }
 
 def sample_sum_add(
-  C, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
-  edge, other : C -> C -> C -> G, n : Nat
+  C, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), edge,
+  other : C -> C -> C -> G, n : Nat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   sample_sum(
@@ -153,8 +153,8 @@ def sample_sum_add(
   exact induction n as k return (
     forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
     sample_sum(
-      C, G, zero, addG, (fun (a, b, tag : C) => addG(edge(a, b, tag), other(a, b, tag))), k, vertices,
-      tags
+      C, G, zero, addG, (fun (a, b, tag : C) => addG(edge(a, b, tag), other(a, b, tag))), k,
+      vertices, tags
     ) = addG(
       sample_sum(C, G, zero, addG, edge, k, vertices, tags),
       sample_sum(C, G, zero, addG, other, k, vertices, tags)

@@ -40,7 +40,9 @@ print(evaluate(equal_or_not(inverse_or_zero(rat(int(0, 2), 2)), rat(int(0, 3), 1
 // Output: 1
 print(
   evaluate(
-    equal_or_not(rationals.mul(rat(int(0, 2), 2), inverse_or_zero(rat(int(0, 2), 2))), rationals.one)
+    equal_or_not(
+      rationals.mul(rat(int(0, 2), 2), inverse_or_zero(rat(int(0, 2), 2))), rationals.one
+    )
   )
 );
 

@@ -69,11 +69,10 @@ def uniform_curve_tag_bounds(
       ), epsilon
     ) {
     intro a, b, x, y, small, withinX, withinY;
-    let closeParameters :=
-      interval_tags_close(
-        F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, y, x, withinY, withinX, mesh,
-        small
-      );
+    let closeParameters := interval_tags_close(
+      F, zero, one, addF, mulF, negF, lt, ring, arithmetic, a, b, y, x, withinY, withinX, mesh,
+      small
+    );
     exact complex_close_difference_bound(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, values(x), values(y), epsilon,
       closeValues(y, x, closeParameters)

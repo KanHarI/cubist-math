@@ -69,12 +69,11 @@ def subfield_preimage_composite(
   subfield_preimage(K, M, field_embedding_compose(K, L, M, e, d), S) =[Subfield(K)] subfield_preimage(
     K, L, e, subfield_preimage(L, M, d, S)
   ) {
-  let P :=
-    (
-      fun (x : af_carrier(K)) => subfield_members(
-        M, S, field_embedding_map(L, M, d, field_embedding_map(K, L, e, x))
-      )
-    );
+  let P := (
+    fun (x : af_carrier(K)) => subfield_members(
+      M, S, field_embedding_map(L, M, d, field_embedding_map(K, L, e, x))
+    )
+  );
   exact subfield_ext(
     K, subfield_preimage(K, M, field_embedding_compose(K, L, M, e, d), S),
     subfield_preimage(K, L, e, subfield_preimage(L, M, d, S)),

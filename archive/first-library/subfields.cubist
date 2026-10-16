@@ -111,111 +111,98 @@ def subfield_laws_prop(F : AlgebraicField, P : af_carrier(F) -> U0, p, q : Subfi
   let oneLaw := P(af_one(A, ops));
   let oneUnique := known(af_one(A, ops));
   let negationLaw := (forall x : A. (forall px : P(x). P(af_neg(A, ops, x))));
-  let negationUnique :=
-    forall_prop(
-      A, (fun (x : A) => (forall px : P(x). P(af_neg(A, ops, x)))),
-      (
-        fun (x : A) => forall_prop(
-          P(x), (fun (px : P(x)) => P(af_neg(A, ops, x))),
-          (fun (px : P(x)) => known(af_neg(A, ops, x)))
-        )
+  let negationUnique := forall_prop(
+    A, (fun (x : A) => (forall px : P(x). P(af_neg(A, ops, x)))),
+    (
+      fun (x : A) => forall_prop(
+        P(x), (fun (px : P(x)) => P(af_neg(A, ops, x))),
+        (fun (px : P(x)) => known(af_neg(A, ops, x)))
       )
-    );
+    )
+  );
   let additionLaw :=
     (forall x : A. (forall y : A. (forall px : P(x). (forall py : P(y). P(af_add(A, ops, x, y))))));
-  let additionUnique :=
-    forall_prop(
-      A,
-      (
-        fun (x : A) => (
-          forall y : A. (forall px : P(x). (forall py : P(y). P(af_add(A, ops, x, y))))
-        )
-      ),
-      (
-        fun (x : A) => forall_prop(
-          A, (fun (y : A) => (forall px : P(x). (forall py : P(y). P(af_add(A, ops, x, y))))),
-          (
-            fun (y : A) => forall_prop(
-              P(x), (fun (px : P(x)) => (forall py : P(y). P(af_add(A, ops, x, y)))),
-              (
-                fun (px : P(x)) => forall_prop(
-                  P(y), (fun (py : P(y)) => P(af_add(A, ops, x, y))),
-                  (fun (py : P(y)) => known(af_add(A, ops, x, y)))
-                )
+  let additionUnique := forall_prop(
+    A,
+    (fun (x : A) => (forall y : A. (forall px : P(x). (forall py : P(y). P(af_add(A, ops, x, y)))))),
+    (
+      fun (x : A) => forall_prop(
+        A, (fun (y : A) => (forall px : P(x). (forall py : P(y). P(af_add(A, ops, x, y))))),
+        (
+          fun (y : A) => forall_prop(
+            P(x), (fun (px : P(x)) => (forall py : P(y). P(af_add(A, ops, x, y)))),
+            (
+              fun (px : P(x)) => forall_prop(
+                P(y), (fun (py : P(y)) => P(af_add(A, ops, x, y))),
+                (fun (py : P(y)) => known(af_add(A, ops, x, y)))
               )
             )
           )
         )
       )
-    );
+    )
+  );
   let multiplicationLaw :=
     (forall x : A. (forall y : A. (forall px : P(x). (forall py : P(y). P(af_mul(A, ops, x, y))))));
-  let multiplicationUnique :=
-    forall_prop(
-      A,
-      (
-        fun (x : A) => (
-          forall y : A. (forall px : P(x). (forall py : P(y). P(af_mul(A, ops, x, y))))
-        )
-      ),
-      (
-        fun (x : A) => forall_prop(
-          A, (fun (y : A) => (forall px : P(x). (forall py : P(y). P(af_mul(A, ops, x, y))))),
-          (
-            fun (y : A) => forall_prop(
-              P(x), (fun (px : P(x)) => (forall py : P(y). P(af_mul(A, ops, x, y)))),
-              (
-                fun (px : P(x)) => forall_prop(
-                  P(y), (fun (py : P(y)) => P(af_mul(A, ops, x, y))),
-                  (fun (py : P(y)) => known(af_mul(A, ops, x, y)))
-                )
+  let multiplicationUnique := forall_prop(
+    A,
+    (fun (x : A) => (forall y : A. (forall px : P(x). (forall py : P(y). P(af_mul(A, ops, x, y)))))),
+    (
+      fun (x : A) => forall_prop(
+        A, (fun (y : A) => (forall px : P(x). (forall py : P(y). P(af_mul(A, ops, x, y))))),
+        (
+          fun (y : A) => forall_prop(
+            P(x), (fun (px : P(x)) => (forall py : P(y). P(af_mul(A, ops, x, y)))),
+            (
+              fun (px : P(x)) => forall_prop(
+                P(y), (fun (py : P(y)) => P(af_mul(A, ops, x, y))),
+                (fun (py : P(y)) => known(af_mul(A, ops, x, y)))
               )
             )
           )
         )
       )
-    );
-  let inversionLaw :=
+    )
+  );
+  let inversionLaw := (
+    forall x : A.
     (
-      forall x : A.
-      (
+      forall y : A.
+      (forall px : P(x). (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y)))
+    )
+  );
+  let inversionUnique := forall_prop(
+    A,
+    (
+      fun (x : A) => (
         forall y : A.
         (forall px : P(x). (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y)))
       )
-    );
-  let inversionUnique :=
-    forall_prop(
-      A,
-      (
-        fun (x : A) => (
-          forall y : A.
-          (forall px : P(x). (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y)))
-        )
-      ),
-      (
-        fun (x : A) => forall_prop(
-          A,
-          (
-            fun (y : A) => (
-              forall px : P(x). (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y))
-            )
-          ),
-          (
-            fun (y : A) => forall_prop(
-              P(x),
-              (fun (px : P(x)) => (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y))),
-              (
-                fun (px : P(x)) => forall_prop(
-                  af_mul(A, ops, x, y) = af_one(A, ops),
-                  (fun (inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => P(y)),
-                  (fun (inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => known(y))
-                )
+    ),
+    (
+      fun (x : A) => forall_prop(
+        A,
+        (
+          fun (y : A) => (
+            forall px : P(x). (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y))
+          )
+        ),
+        (
+          fun (y : A) => forall_prop(
+            P(x),
+            (fun (px : P(x)) => (forall inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops). P(y))),
+            (
+              fun (px : P(x)) => forall_prop(
+                af_mul(A, ops, x, y) = af_one(A, ops),
+                (fun (inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => P(y)),
+                (fun (inverseLaw : af_mul(A, ops, x, y) = af_one(A, ops)) => known(y))
               )
             )
           )
         )
       )
-    );
+    )
+  );
   let multiplicationTail := multiplicationLaw and inversionLaw;
   let multiplicationTailUnique :=
     product_prop(multiplicationLaw, inversionLaw, multiplicationUnique, inversionUnique);
@@ -245,11 +232,10 @@ def subfield_ext(
   S =[Subfield(F)] T {
   let P := subfield_members(F, S);
   let Q := subfield_members(F, T);
-  let membership : P = Q :=
-    field_predicate_ext(
-      af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
-      subfield_prop(F, Q, subfield_laws(F, T)), same
-    );
+  let membership : P = Q := field_predicate_ext(
+    af_carrier(F), P, Q, subfield_prop(F, P, subfield_laws(F, S)),
+    subfield_prop(F, Q, subfield_laws(F, T)), same
+  );
   exact field_subtype_ext(
     (af_carrier(F) -> U0), (fun (P : af_carrier(F) -> U0) => typed(U1, SubfieldLaws(F, P))),
     subfield_laws_prop(F), S, T, membership

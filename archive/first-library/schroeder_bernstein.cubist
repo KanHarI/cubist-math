@@ -47,11 +47,10 @@ def decide_gpoint(A, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g)
 def g_preimage(A, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x)) :=
   sigma_first(B, (fun (y : B) => g(y) = x), good(x, 0, refl(x)));
 
-def g_preimage_law(A, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x)) :=
-  typed(
-    (g(g_preimage(A, B, f, g, x, good)) = x),
-    sigma_second(B, (fun (y : B) => g(y) = x), good(x, 0, refl(x)))
-  );
+def g_preimage_law(A, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, x)) := typed(
+  (g(g_preimage(A, B, f, g, x, good)) = x),
+  sigma_second(B, (fun (y : B) => g(y) = x), good(x, 0, refl(x)))
+);
 
 def gpoint_backward(A, B : U0, f : A -> B, g : B -> A, x : A, good : GPoint(A, B, f, g, g(f(x)))) :
   GPoint(A, B, f, g, x) {
@@ -167,11 +166,10 @@ def csb_disjoint(
   same : csb_map(A, B, f, g, embedG, x) = csb_map(A, B, f, g, embedG, z)
 ) :
   Void {
-  let path_ :=
-    trans(
-      sym(csb_good(A, B, f, g, embedG, x, good)),
-      cong(g, trans(same, csb_bad(A, B, f, g, embedG, z, bad)))
-    );
+  let path_ := trans(
+    sym(csb_good(A, B, f, g, embedG, x, good)),
+    cong(g, trans(same, csb_bad(A, B, f, g, embedG, z, bad)))
+  );
   exact bad(gpoint_backward(A, B, f, g, z, transport good along path_ in GPoint(A, B, f, g)));
 }
 

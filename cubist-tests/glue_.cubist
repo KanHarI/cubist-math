@@ -8,16 +8,14 @@
 import contractible_maps;
 
 // A line of types: at each end the face holds, and Glue is the type glued there.
-def glued_line(A : U0) :
-  A = A := path i => Glue(
-    A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A))
-  );
+def glued_line(A : U0) : A = A := path i => Glue(
+  A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A))
+);
 
 // unglue of a glue term is its base, on the face and off it.
-def unglue_glue(A : U0, a : A) :
-  a = a := path i => unglue(
-    typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a)))
-  );
+def unglue_glue(A : U0, a : A) : a = a := path i => unglue(
+  typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a)))
+);
 
 // One piece on a face of two clauses, both ends at once.
 def glued_ends(A : U0) :
@@ -31,10 +29,9 @@ def not_an_equivalence(A : U0) :
 
 // Refused: on the face, the value's image is b, but the base is a.
 // Error: E604: Instruction kernel: A Glue value's image disagrees with the base.
-def misplaced_value(A : U0, a, b : A) :
-  a = a := path i => unglue(
-    typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, b)))
-  );
+def misplaced_value(A : U0, a, b : A) : a = a := path i => unglue(
+  typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, b)))
+);
 
 // Refused: glue has no Glue type to build an element of.
 // Error: E470: glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).

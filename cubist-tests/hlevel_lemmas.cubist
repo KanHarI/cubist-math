@@ -84,11 +84,10 @@ def paths_contractible(A : U0, c : IsContr(U0, A), x, y : A) :
   IsContr(U0, x = y) := path_is_contr(U0, A, c, x, y);
 
 // Warning: W705: x is unused in the body: write Unit and … instead of exists x : Unit. ….
-def empty_subtype_is_prop :
-  IsProp(U0, exists x : Unit. Void) := subtype_has_level(
-    U0, 0, Unit, fun (x : Unit) => Void, contr_has_level(U0, 0, Unit, unit_is_contr),
-    fun (x : Unit) => void_is_prop
-  );
+def empty_subtype_is_prop : IsProp(U0, exists x : Unit. Void) := subtype_has_level(
+  U0, 0, Unit, fun (x : Unit) => Void, contr_has_level(U0, 0, Unit, unit_is_contr),
+  fun (x : Unit) => void_is_prop
+);
 
 // Warning: W705: x is unused in the body: write Unit and … instead of exists x : Unit. ….
 def empty_subtype_not_contractible(c : IsContr(U0, exists x : Unit. Void)) : Void := c.1.2;

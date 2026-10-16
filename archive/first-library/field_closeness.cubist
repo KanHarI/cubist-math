@@ -56,10 +56,9 @@ def field_close_self(
   positive : lt(zero, epsilon)
 ) :
   FieldClose(F, addF, lt, x, x, epsilon) {
-  let shifted :=
-    order_lt_add_left(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, x, positive
-    );
+  let shifted := order_lt_add_left(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, epsilon, x, positive
+  );
   let bound :=
     transport shifted along ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x) in (
       (fun (v : F) => lt(v, addF(x, epsilon)))
@@ -139,19 +138,17 @@ def field_close_all_le(
   obtain (prop_, irreflexive, transitive, cotransitive, antisymmetric) := order;
   intro reversed;
   let gap := addF(x, negF(y));
-  let positive :=
-    order_difference_positive(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed
-    );
+  let positive := order_difference_positive(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, y, x, reversed
+  );
   obtain (upper, lower) := close(gap, positive);
-  let recovers : addF(y, gap) = x :=
+  let recovers : addF(y, gap) = x := trans(
+    ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
     trans(
-      ring_add_swap(F, zero, one, addF, mulF, negF, ring, y, x, negF(y)),
-      trans(
-        cong(addF(x), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)),
-        ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x)
-      )
-    );
+      cong(addF(x), ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, y)),
+      ring_add_zero_right(F, zero, one, addF, mulF, negF, ring, x)
+    )
+  );
   exact irreflexive(x, transport upper along recovers in lt(x));
 }
 

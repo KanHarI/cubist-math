@@ -5,8 +5,8 @@ import sample_tagged;
 // Combine a coarse-edge condition and a condition on its actual subdivision.
 // Both families have the same vertices and tags, so their heads correspond.
 def subdivision_tagged_zip_step(
-  C : U1, coarse : C -> C -> C -> U0,
-  fine, other : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1),
+  C : U1, coarse : C -> C -> C -> U0, fine,
+  other : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1),
   combine : (
     forall a : C. forall b : C. forall tag : C. forall piece : SampleSubdivision(C, a, b).
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)
@@ -31,7 +31,8 @@ def subdivision_tagged_zip_step(
   let tailPieces := field_snd(SampleSubdivision(C, a, b), SampleSubdivisions(C, n, tail), pieces);
   let coarseData : coarse(a, b, tag) and SampleTagged(C, coarse, n, tail, tailTags) := coarseValid;
   let fineData : fine(a, b, tag, headPiece)
-  and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) := fineValid;
+  and SubdivisionTagged(C, fine, n, tail, tailTags, tailPieces) :=
+    fineValid;
   obtain (headCoarse, tailCoarse) := coarseData;
   obtain (headFine, tailFine) := fineData;
   exact typed(
@@ -44,8 +45,8 @@ def subdivision_tagged_zip_step(
 }
 
 def subdivision_tagged_zip(
-  C : U1, coarse : C -> C -> C -> U0,
-  fine, other : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1),
+  C : U1, coarse : C -> C -> C -> U0, fine,
+  other : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1),
   combine : (
     forall a : C. forall b : C. forall tag : C. forall piece : SampleSubdivision(C, a, b).
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)

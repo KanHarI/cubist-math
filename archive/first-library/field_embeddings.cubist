@@ -135,11 +135,10 @@ def field_embedding_associative(
   );
 }
 
-def embedding_as_extension(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
-  structure_object(
-    ExtensionData(K), af_carrier(L),
-    typed(ExtensionData(K, af_carrier(L)), (structure_data(FieldData, L), e)), af_set(L)
-  );
+def embedding_as_extension(K, L : AlgebraicField, e : FieldEmbedding(K, L)) := structure_object(
+  ExtensionData(K), af_carrier(L),
+  typed(ExtensionData(K, af_carrier(L)), (structure_data(FieldData, L), e)), af_set(L)
+);
 
 def extension_inclusion_embedding(K : AlgebraicField, E : FieldExt(K)) :
   FieldEmbedding(K, extension_field(K, E)) {

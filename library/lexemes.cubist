@@ -50,14 +50,15 @@ computable def parse_answer{{U < UU0, A : U}}(p : Parsed(U, A)) : Nat := match p
 // A successful parse's value.
 computable def parsed_value{{U < UU0, A : U}}(p : Parsed(U, A), succeeded : Succeeded(p)) :
   A := (match p as q return Succeeded(q) -> A {
-    ok(a) => fun (s : Unit) => a;
-    error(k) => fun (s : Void) => typed(A, absurd(s));
-  })(succeeded);
+      ok(a) => fun (s : Unit) => a;
+      error(k) => fun (s : Void) => typed(A, absurd(s));
+    })(succeeded);
 
 // The digits at a lexeme's start, _ between them ignored: their value, how
 // many there were, and the rest of the lexeme. `value` and `count` hold
 // what was read before.
-computable def leading_digits(s : Lexeme, value, count : Nat) : (Nat and Nat) and Lexeme := match s {
+computable def leading_digits(s : Lexeme, value, count : Nat) :
+  (Nat and Nat) and Lexeme := match s {
     nil => ((value, count), nil);
     cons(g, rest) => match g {
       digit(d) => leading_digits(rest, add(mul(value, 10), d), succ(count));

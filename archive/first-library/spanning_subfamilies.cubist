@@ -172,10 +172,9 @@ def finite_spanning_subfamily_basis(
 ) :
   Mere(SubfamilyBasis(K, V, n, v)) {
   let empty := fun (i : Fin(0)) => typed(Fin(n), absurd(i));
-  let bound :=
-    coordinate_surjection_bound(
-      K, V, n, family_linear(K, V, n, v), family_linear_surjective(K, V, n, v, spanning)
-    );
+  let bound := coordinate_surjection_bound(
+    K, V, n, family_linear(K, V, n, v), family_linear_surjective(K, V, n, v, spanning)
+  );
   exact spanning_subfamily_search(
     K, V, n, v, spanning, succ(n), 0, empty,
     (fun (i, j : Fin(0), same : empty(i) = empty(j)) => typed((i = j), absurd(i))),

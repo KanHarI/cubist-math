@@ -13,7 +13,8 @@ def backtrack_tags(F : U1, forwardTag, reverseTag : F) : SampleTags(F, 2) {
 
 def contour_two_edge_sum(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a, b, forwardTag, reverseTag : F
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a, b, forwardTag,
+  reverseTag : F
 ) :
   contour_sum(
     F, zero, addF, mulF, negF, f, 2, backtrack_vertices(F, a, b),
@@ -59,7 +60,8 @@ def contour_backtrack_same_tag(
 
 def contour_backtrack_error(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a, b, forwardTag, reverseTag : F
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, a, b, forwardTag,
+  reverseTag : F
 ) :
   contour_sum(
     F, zero, addF, mulF, negF, f, 2, backtrack_vertices(F, a, b),
@@ -139,9 +141,8 @@ def identity_backtrack_sum_nonzero(
     ) = zero
   ) -> Void {
   intro vanishes;
-  let minusOneZero : negF(one) = zero := trans(
-    sym(identity_backtrack_sum(F, zero, one, addF, mulF, negF, ring)), vanishes
-  );
+  let minusOneZero : negF(one) = zero :=
+    trans(sym(identity_backtrack_sum(F, zero, one, addF, mulF, negF, ring)), vanishes);
   exact nontrivial(
     trans(
       sym(ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, one)),

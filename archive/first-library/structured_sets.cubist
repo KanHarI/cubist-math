@@ -272,8 +272,9 @@ def structure_total_same_carrier(
   structure_iso_center(S, R, identity, structure_object(S, A, a, setA)) = structure_iso_point(
     S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e
   ) {
-  let f :=
-    structure_iso_forward(S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e);
+  let f := structure_iso_forward(
+    S, R, structure_object(S, A, a, setA), structure_object(S, A, b, setB), e
+  );
   let id_ := fun (x : A) => x;
   let sameFunction := FunExt(U0, A, (fun (x : A) => A), id_, f, same);
   let preserves :=
@@ -356,13 +357,12 @@ def structure_objects_total(
   structure_iso_center(S, R, identity, structure_object(S, A, a, setA)) = structure_iso_point(
     S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB), e
   ) {
-  let equivalence :=
-    bijection_equiv(
-      A, B, setB,
-      structure_iso_bijection(
-        S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB), e
-      )
-    );
+  let equivalence := bijection_equiv(
+    A, B, setB,
+    structure_iso_bijection(
+      S, R, structure_object(S, A, a, setA), structure_object(S, B, b, setB), e
+    )
+  );
   let p := ua(U0, A, B, equivalence);
   exact structure_total_transport(
     S, R, prop_, identity, reflects, A, B, p, a, b, setA, setB, e,
@@ -455,23 +455,21 @@ def structure_iso_set(
       S, R, prop_, X, Y, e, d, q
     ) {
     intro e, d, p, q;
-    let sameData :=
-      FunExt(
-        U0, structure_carrier(S, X),
-        (
-          fun (x : structure_carrier(S, X)) => structure_iso_forward(S, R, X, Y, e, x) = structure_iso_forward(
-            S, R, X, Y, d, x
-          )
-        ), structure_iso_path_data(S, R, X, Y, e, d, p),
-        structure_iso_path_data(S, R, X, Y, e, d, q),
-        (
-          fun (x : structure_carrier(S, X)) => structure_set(S, Y)(
-            structure_iso_forward(S, R, X, Y, e, x), structure_iso_forward(S, R, X, Y, d, x),
-            structure_iso_path_data(S, R, X, Y, e, d, p, x),
-            structure_iso_path_data(S, R, X, Y, e, d, q, x)
-          )
+    let sameData := FunExt(
+      U0, structure_carrier(S, X),
+      (
+        fun (x : structure_carrier(S, X)) => structure_iso_forward(S, R, X, Y, e, x) = structure_iso_forward(
+          S, R, X, Y, d, x
         )
-      );
+      ), structure_iso_path_data(S, R, X, Y, e, d, p), structure_iso_path_data(S, R, X, Y, e, d, q),
+      (
+        fun (x : structure_carrier(S, X)) => structure_set(S, Y)(
+          structure_iso_forward(S, R, X, Y, e, x), structure_iso_forward(S, R, X, Y, d, x),
+          structure_iso_path_data(S, R, X, Y, e, d, p, x),
+          structure_iso_path_data(S, R, X, Y, e, d, q, x)
+        )
+      )
+    );
     exact cong(structure_iso_ext(S, R, prop_, X, Y, e, d), sameData);
   }
   exact constant_paths_are_set(

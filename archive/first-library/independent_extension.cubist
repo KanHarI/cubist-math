@@ -63,19 +63,17 @@ def independent_zero_omission(
   let X := vector_carrier(K, V);
   let omit := fin_omit(n, i);
   let rest := linear_remainder(K, V, succ(n), v, a, i);
-  let headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) :=
+  let headZero : vector_scale(K, V, a(i), v(i)) = vector_zero(K, V) := trans(
+    cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
+    vector_zero_scale(K, V, v(i))
+  );
+  let restZero : rest = vector_zero(K, V) := trans(
+    sym(group_unit_left(vector_group(K, V), rest)),
     trans(
-      cong((fun (b : af_carrier(K)) => vector_scale(K, V, b, v(i))), zero),
-      vector_zero_scale(K, V, v(i))
-    );
-  let restZero : rest = vector_zero(K, V) :=
-    trans(
-      sym(group_unit_left(vector_group(K, V), rest)),
-      trans(
-        cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
-        trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
-      )
-    );
+      cong((fun (z : X) => vector_add(K, V, z, rest)), sym(headZero)),
+      trans(sym(linear_combination_split(K, V, succ(n), v, a, i)), vanishes)
+    )
+  );
   let omittedV := fun (t : Fin(n)) => v(omit(t));
   let omittedA := fun (t : Fin(n)) => a(omit(t));
   let omittedZero : forall t : Fin(n).

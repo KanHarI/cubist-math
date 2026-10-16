@@ -56,8 +56,8 @@ def dyadic_samples_refine_below_mesh(
   leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, depth, extra : Nat,
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  -> FieldUnitInterval(F, zero, one, lt) -> G, depth, extra : Nat, a,
+  b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -79,11 +79,9 @@ def dyadic_samples_refine_below_mesh(
     )
   ) {
   let I := FieldUnitInterval(F, zero, one, lt);
-  let coarse :=
-    dyadic_piece(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
-      ordered
-    );
+  let coarse := dyadic_piece(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
+  );
   let n := subdivision_count(I, a, b, coarse);
   let vertices := subdivision_vertices(I, a, b, coarse);
   let tags := subdivision_tags(I, a, b, coarse);
@@ -91,16 +89,13 @@ def dyadic_samples_refine_below_mesh(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, G, zeroG, addG,
     leftUnit, rightUnit, assoc, edge, depth, extra, a, b, ordered
   );
-  let coarseValid :=
-    dyadic_piece_valid(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b,
-      ordered
-    );
-  let valid :=
-    interval_refinement_mesh(
-      F, zero, one, addF, mulF, negF, lt, arithmetic,
-      dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh,
-      small, n, vertices, tags, pieces, coarseValid, fineValid
-    );
+  let coarseValid := dyadic_piece_valid(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, depth, a, b, ordered
+  );
+  let valid := interval_refinement_mesh(
+    F, zero, one, addF, mulF, negF, lt, arithmetic,
+    dyadic_width(F, half, depth, interval_difference(F, zero, one, addF, negF, lt)(a, b)), mesh,
+    small, n, vertices, tags, pieces, coarseValid, fineValid
+  );
   exact (pieces, valid, computes);
 }

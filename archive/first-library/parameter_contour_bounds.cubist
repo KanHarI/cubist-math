@@ -318,16 +318,14 @@ def complex_parameter_tag_error_length_bound(
     ), mulF(delta, length)
   ) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
-  let totalWeight :=
-    sample_sum(
-      C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n,
-      vertices, oldTags
-    );
-  let bound :=
-    complex_parameter_tag_error_variation_bound(
-      C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
-      imagWeight, delta, n, vertices, oldTags, newTags, errors, increments
-    );
+  let totalWeight := sample_sum(
+    C, F, zero, addF, (fun (a, b, t : C) => addF(realWeight(a, b, t), imagWeight(a, b, t))), n,
+    vertices, oldTags
+  );
+  let bound := complex_parameter_tag_error_variation_bound(
+    C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, values, realWeight,
+    imagWeight, delta, n, vertices, oldTags, newTags, errors, increments
+  );
   let rightScaled := weakScale(totalWeight, length, delta, variation, nonnegativeDelta);
   let leftScaled :=
     transport rightScaled along ring_mul_comm(

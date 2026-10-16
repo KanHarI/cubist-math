@@ -8,8 +8,8 @@ def SubfieldImage(
   exists x : af_carrier(K). subfield_members(K, S, x) and (field_embedding_map(K, L, e, x) = y);
 
 def subfield_image_prop(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L),
-  p, q : SubfieldImage(K, L, e, S, y)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), S : Subfield(K), y : af_carrier(L), p,
+  q : SubfieldImage(K, L, e, S, y)
 ) :
   p = q {
   let A := af_carrier(K);

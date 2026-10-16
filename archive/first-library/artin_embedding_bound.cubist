@@ -2,7 +2,9 @@ import nat;
 import artin_degree;
 use nat;
 
-def embedding_evaluation_add_at(F : AlgebraicField, map_ : FieldEmbedding(F, F), x, y : af_carrier(F)) :
+def embedding_evaluation_add_at(
+  F : AlgebraicField, map_ : FieldEmbedding(F, F), x, y : af_carrier(F)
+) :
   field_embedding_map(F, F, map_, field_add(F, x, y)) = field_add(
     F, field_embedding_map(F, F, map_, x), field_embedding_map(F, F, map_, y)
   ) {
@@ -177,10 +179,11 @@ def finite_spanning_embeddings_upper_bound(
         let mapped := fun (j : Fin(n)) => field_embedding_map(R, F, e, b(j));
         let evalX : embedding_evaluation_vector(F, F, succ(n), maps, x) = linear_combination(
           F, C, n, rows, mapped
-        ) := trans(
-          sym(cong(embedding_evaluation_vector(F, F, succ(n), maps), same)),
-          embedding_evaluation_combination(R, F, e, succ(n), maps, over_, n, points, b)
-        );
+        ) :=
+          trans(
+            sym(cong(embedding_evaluation_vector(F, F, succ(n), maps), same)),
+            embedding_evaluation_combination(R, F, e, succ(n), maps, over_, n, points, b)
+          );
         let dotZero : embedding_evaluation_dot(F, F, succ(n), maps, a, x) = field_zero(F) := trans(
           cong(coordinate_dot(F, succ(n), a), evalX),
           coordinate_dot_rows_zero(F, succ(n), n, a, rows, mapped, allRows)

@@ -46,12 +46,14 @@ theory Rig(U < UU0) {
   zero : R;
   one : R;
   def of_nat(n : Nat) : R := match n {
-      zero => zero;
-      succ(k) => one + of_nat(k);
-    } notation numeral;
+    zero => zero;
+    succ(k) => one + of_nat(k);
+  }
+  notation numeral;
 }
 
-def counting : Rig(U0) := Rig.make(R := Nat, R_is_set := nat_is_set, add := add, zero := 0, one := 1);
+def counting :
+  Rig(U0) := Rig.make(R := Nat, R_is_set := nat_is_set, add := add, zero := 0, one := 1);
 
 // Output: 7
 print(evaluate(counting.(2 + 5)));

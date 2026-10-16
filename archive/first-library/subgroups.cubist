@@ -73,67 +73,55 @@ def subgroup_laws_prop(G : Group, H : group_carrier(G) -> U0, p, q : SubgroupLaw
   let unitUnique := known(unit);
   let multiplicationLaw :=
     (forall x : A. (forall y : A. (forall hx : H(x). (forall hy : H(y). H(multiplyLocal(x, y))))));
-  let multiplicationUnique :=
-    forall_prop(
-      A,
-      (
-        fun (x : A) => (
-          forall y : A. (forall hx : H(x). (forall hy : H(y). H(multiplyLocal(x, y))))
-        )
-      ),
-      (
-        fun (x : A) => forall_prop(
-          A, (fun (y : A) => (forall hx : H(x). (forall hy : H(y). H(multiplyLocal(x, y))))),
-          (
-            fun (y : A) => forall_prop(
-              H(x), (fun (hx : H(x)) => (forall hy : H(y). H(multiplyLocal(x, y)))),
-              (
-                fun (hx : H(x)) => forall_prop(
-                  H(y), (fun (hy : H(y)) => H(multiplyLocal(x, y))),
-                  (fun (hy : H(y)) => known(multiplyLocal(x, y)))
-                )
-              )
-            )
-          )
-        )
-      )
-    );
-  let inversionLaw :=
+  let multiplicationUnique := forall_prop(
+    A,
+    (fun (x : A) => (forall y : A. (forall hx : H(x). (forall hy : H(y). H(multiplyLocal(x, y)))))),
     (
-      forall x : A.
-      (forall y : A. (forall hx : H(x). (forall inverseLaw : multiplyLocal(y, x) = unit. H(y))))
-    );
-  let inversionUnique :=
-    forall_prop(
-      A,
-      (
-        fun (x : A) => (
-          forall y : A. (forall hx : H(x). (forall inverseLaw : multiplyLocal(y, x) = unit. H(y)))
-        )
-      ),
-      (
-        fun (x : A) => forall_prop(
-          A,
-          (
-            fun (y : A) => (
-              forall hx : H(x). (forall inverseLaw : multiplyLocal(y, x) = unit. H(y))
-            )
-          ),
-          (
-            fun (y : A) => forall_prop(
-              H(x), (fun (hx : H(x)) => (forall inverseLaw : multiplyLocal(y, x) = unit. H(y))),
-              (
-                fun (hx : H(x)) => forall_prop(
-                  multiplyLocal(y, x) = unit,
-                  (fun (inverseLaw : multiplyLocal(y, x) = unit) => H(y)),
-                  (fun (inverseLaw : multiplyLocal(y, x) = unit) => known(y))
-                )
+      fun (x : A) => forall_prop(
+        A, (fun (y : A) => (forall hx : H(x). (forall hy : H(y). H(multiplyLocal(x, y))))),
+        (
+          fun (y : A) => forall_prop(
+            H(x), (fun (hx : H(x)) => (forall hy : H(y). H(multiplyLocal(x, y)))),
+            (
+              fun (hx : H(x)) => forall_prop(
+                H(y), (fun (hy : H(y)) => H(multiplyLocal(x, y))),
+                (fun (hy : H(y)) => known(multiplyLocal(x, y)))
               )
             )
           )
         )
       )
-    );
+    )
+  );
+  let inversionLaw := (
+    forall x : A.
+    (forall y : A. (forall hx : H(x). (forall inverseLaw : multiplyLocal(y, x) = unit. H(y))))
+  );
+  let inversionUnique := forall_prop(
+    A,
+    (
+      fun (x : A) => (
+        forall y : A. (forall hx : H(x). (forall inverseLaw : multiplyLocal(y, x) = unit. H(y)))
+      )
+    ),
+    (
+      fun (x : A) => forall_prop(
+        A,
+        (fun (y : A) => (forall hx : H(x). (forall inverseLaw : multiplyLocal(y, x) = unit. H(y)))),
+        (
+          fun (y : A) => forall_prop(
+            H(x), (fun (hx : H(x)) => (forall inverseLaw : multiplyLocal(y, x) = unit. H(y))),
+            (
+              fun (hx : H(x)) => forall_prop(
+                multiplyLocal(y, x) = unit, (fun (inverseLaw : multiplyLocal(y, x) = unit) => H(y)),
+                (fun (inverseLaw : multiplyLocal(y, x) = unit) => known(y))
+              )
+            )
+          )
+        )
+      )
+    )
+  );
   let multiplicationTail := multiplicationLaw and inversionLaw;
   let multiplicationTailUnique :=
     product_prop(multiplicationLaw, inversionLaw, multiplicationUnique, inversionUnique);

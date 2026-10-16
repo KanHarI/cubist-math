@@ -63,13 +63,14 @@ def combine(x, y : Nat) : Nat := add(x, y);
 notation powers {
   x + y := mul(x, y);
   x * y := mul(x, y);
-  x ^ nat.(n) := combine(x, n);
+  x ^ nat. (n) := combine(x, n);
   numeral(n : Nat) := n;
 }
 
 use powers;
 
-def exponent(x, y : Nat) : combine(x, mul(y, y)) = combine(x, mul(y, y)) := refl(combine(x, mul(y, y)));
+def exponent(x, y : Nat) :
+  combine(x, mul(y, y)) = combine(x, mul(y, y)) := refl(combine(x, mul(y, y)));
 
 // Output: forall x : Nat. forall y : Nat. x ^ (y * y) = x ^ (y * y)
 print(typeof(exponent));
@@ -87,14 +88,16 @@ def tower : Powers(U0) := Powers.make(A := Nat, power := fun (x, y : Nat) => suc
 
 use tower;
 
-def nested(x, y, z : Nat) : tower.power(tower.power(x, y), z) = tower.power(tower.power(x, y), z) := refl(
-  tower.power(tower.power(x, y), z)
-);
+def nested(x, y, z : Nat) :
+  tower.power(tower.power(x, y), z) = tower.power(tower.power(x, y), z) := refl(
+    tower.power(tower.power(x, y), z)
+  );
 
 // Output: forall x : Nat. forall y : Nat. forall z : Nat. (x ^ y) ^ z = (x ^ y) ^ z
 print(typeof(nested));
 
-def nested_again : forall x : Nat. forall y : Nat. forall z : Nat. (x ^ y) ^ z = (x ^ y) ^ z := nested;
+def nested_again :
+  forall x : Nat. forall y : Nat. forall z : Nat. (x ^ y) ^ z = (x ^ y) ^ z := nested;
 
 // A numeral rule that takes its numeral twice prints as the numeral only
 // where both places hold the same one.

@@ -22,11 +22,10 @@ def box_unbox(A : U0, b : Box(A)) : typed(Box(A), box(unbox(A, b))) = b := match
     box(a) => refl(typed(Box(A), box(a)));
   };
 
-def box_is_set(A : U0, setA : IsSet(U0, A)) :
-  IsSet(U0, Box(A)) := retract_has_level(U0, 1)(
-    A, Box(A), fun (b : Box(A)) => unbox(A, b), fun (a : A) => box(a),
-    fun (b : Box(A)) => box_unbox(A, b), setA
-  );
+def box_is_set(A : U0, setA : IsSet(U0, A)) : IsSet(U0, Box(A)) := retract_has_level(U0, 1)(
+  A, Box(A), fun (b : Box(A)) => unbox(A, b), fun (a : A) => box(a),
+  fun (b : Box(A)) => box_unbox(A, b), setA
+);
 
 // Before it is registered, nothing gives a box's level.
 // Error: E366: hlevel could not prove IsSet(U0, Box(Nat)); no local evidence, hint or rule gives

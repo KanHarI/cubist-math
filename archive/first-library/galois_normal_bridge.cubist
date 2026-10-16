@@ -91,7 +91,8 @@ def normal_self_embedding_surjective(
 def normal_self_embedding_automorphism(
   K : AlgebraicField, E : FieldExt(K),
   normal : NormalEmbeddingLaw(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
-  h : FieldEmbedding(extension_field(K, E), extension_field(K, E)), over_ : forall a : af_carrier(K).
+  h : FieldEmbedding(extension_field(K, E), extension_field(K, E)),
+  over_ : forall a : af_carrier(K).
   field_embedding_map(extension_field(K, E), extension_field(K, E), h, extension_inclusion(K, E, a)) = extension_inclusion(
     K, E, a
   )
@@ -155,10 +156,9 @@ def normal_intermediate_embeddings_automorphisms(
   let A := EmbeddingsOver(R, F, i, F, i);
   let B := SubgroupCarrier(G, H);
   let forwardMap := normal_embedding_over_intermediate_automorphism(K, E, M, normal);
-  let backwardMap :=
-    fun (b : B) => fixing_automorphism_over_intermediate(
-      K, E, M, subgroup_value(G, H, b), subgroup_evidence(G, H, b)
-    );
+  let backwardMap := fun (b : B) => fixing_automorphism_over_intermediate(
+    K, E, M, subgroup_value(G, H, b), subgroup_evidence(G, H, b)
+  );
   let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
     intro d;
     let g := subgroup_value(G, H, forwardMap(d));

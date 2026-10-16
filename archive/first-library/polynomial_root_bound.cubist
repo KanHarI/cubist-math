@@ -59,16 +59,15 @@ def linear_factor_quotient_degree(
 ) :
   polynomial_cutoff(K, q) = succ(m) {
   obtain (k, dq) := polynomial_nonzero_degree(K, q, nonzero);
-  let same :=
+  let same := trans(
+    sym(degree),
     trans(
-      sym(degree),
-      trans(
-        cong(polynomial_cutoff(K), factor),
-        polynomial_product_degree(
-          K, polynomial_linear_factor(K, r), q, 1, k, linear_factor_degree(K, r), dq
-        )
+      cong(polynomial_cutoff(K), factor),
+      polynomial_product_degree(
+        K, polynomial_linear_factor(K, r), q, 1, k, linear_factor_degree(K, r), dq
       )
-    );
+    )
+  );
   let mk := nat_succ_injective(m, k, nat_succ_injective(succ(m), succ(k), same));
   exact trans(dq, cong((fun (n : Nat) => succ(n)), sym(mk)));
 }
@@ -80,10 +79,9 @@ def polynomial_constant_no_root_family(
   Void {
   obtain (roots, distinct, allRoots) := family;
   let r := roots(typed(Fin(1), left(tt)));
-  let support :=
-    transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(
-      K, polynomial_coefficients(K, p)
-    );
+  let support := transport polynomial_cutoff_support(K, p) along degree in SeriesSupport(
+    K, polynomial_coefficients(K, p)
+  );
   exact polynomial_leading_nonzero(
     K, p, 0, degree,
     trans(sym(support_one_eval(K, p, support, r)), allRoots(typed(Fin(1), left(tt))))
@@ -109,11 +107,10 @@ def polynomial_root_bound_step(
       sym(trans(sym(degree), trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))))
     );
   }
-  let dq :=
-    linear_factor_quotient_degree(
-      K, p, r, q, factor, m, degree,
-      factor_quotient_nonzero(K, p, polynomial_linear_factor(K, r), q, factor, pNonzero)
-    );
+  let dq := linear_factor_quotient_degree(
+    K, p, r, q, factor, m, degree,
+    factor_quotient_nonzero(K, p, polynomial_linear_factor(K, r), q, factor, pNonzero)
+  );
   let rest := finite_tail(af_carrier(K), succ(m), roots);
   let restDistinct : Injective(Fin(succ(m)), af_carrier(K), rest) {
     intro i, j, same;

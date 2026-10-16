@@ -86,17 +86,16 @@ def tower_induction_large(
   P(x) {
   let Q := fun (y : A) => FieldExists(P(y));
   let unwrap := fun (y : A) => field_exists_elim(P(y), P(y), prop_(y), (fun (p : P(y)) => p));
-  let laws : TowerLaws(A, le, complete, f, Q) :=
+  let laws : TowerLaws(A, le, complete, f, Q) := (
+    (fun (y : A) => field_exists_prop(P(y))),
+    (fun (y : A) => field_exists_map(P(y), P(f(y)), step(y))),
     (
-      (fun (y : A) => field_exists_prop(P(y))),
-      (fun (y : A) => field_exists_map(P(y), P(f(y)), step(y))),
-      (
-        fun (C : A -> U0, chain : OrderChain(A, le, C), members : (forall y : A. C(y) -> Q(y))) => field_exists_intro(
-          P(chain_sup(A, le, complete, C, chain)),
-          supremum(C, chain, (fun (y : A, cy : C(y)) => unwrap(y, members(y, cy))))
-        )
+      fun (C : A -> U0, chain : OrderChain(A, le, C), members : (forall y : A. C(y) -> Q(y))) => field_exists_intro(
+        P(chain_sup(A, le, complete, C, chain)),
+        supremum(C, chain, (fun (y : A, cy : C(y)) => unwrap(y, members(y, cy))))
       )
-    );
+    )
+  );
   exact unwrap(x, tower_contains(A, le, complete, f, Q, laws, x, member));
 }
 
@@ -131,8 +130,11 @@ def tower_relative_induction(
     T(x), P(x),
     tower_induction_large(
       A, le, complete, f, Q,
-      (fun (y : A) => field_and_prop(T(y), P(y), tower_member_prop(A, le, complete, f, y), prop_(y))),
-      next_, limit, x, member
+      (
+        fun (y : A) => field_and_prop(
+          T(y), P(y), tower_member_prop(A, le, complete, f, y), prop_(y)
+        )
+      ), next_, limit, x, member
     )
   );
 }

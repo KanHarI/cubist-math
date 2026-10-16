@@ -64,23 +64,19 @@ def separable_elements_enlarge_base(
   let mapped := polynomial_map(K, R, i, p);
   obtain (nzP, monicP, rootP, dividesP) := minimal_polynomial_spec(K, L, e, x, alg);
   obtain (nzQ, monicQ, rootQ, dividesQ) := minimal_polynomial_spec(R, L, h, x, algebraicR);
-  let rootMapped :=
-    trans(
-      polynomial_eval_base_change(K, R, L, i, h, p, x),
-      trans(
-        cong((fun (d : FieldEmbedding(K, L)) => polynomial_eval(K, L, d, p, x)), triangle), rootP
-      )
-    );
+  let rootMapped := trans(
+    polynomial_eval_base_change(K, R, L, i, h, p, x),
+    trans(cong((fun (d : FieldEmbedding(K, L)) => polynomial_eval(K, L, d, p, x)), triangle), rootP)
+  );
   let divides := polynomial_map_divides(R, T, j, q, mapped, dividesQ(mapped, rootMapped));
   let c := field_embedding_compose(K, R, T, i, j);
   let P := polynomial_map(R, T, j, mapped);
   let Q := polynomial_map(R, T, j, q);
   let n := polynomial_degree(K, p);
   let same := polynomial_map_composition(K, R, T, i, j, p);
-  let splitP :=
-    transport separable(c, x, alg) along sym(same) in (
-      (fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))
-    );
+  let splitP := transport separable(c, x, alg) along sym(same) in (
+    (fun (s : Polynomial(T)) => Mere(DistinctPolynomialSplitting(T, s, n)))
+  );
   let nonzeroP := polynomial_map_nonzero(R, T, j, mapped, polynomial_map_nonzero(K, R, i, p, nzP));
   let nonzeroQ := polynomial_map_nonzero(R, T, j, q, nzQ);
   let descend : DistinctPolynomialSplitting(T, P, n) -> SeparableIn(R, T, j, q) {

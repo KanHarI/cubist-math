@@ -8,8 +8,8 @@ def affine_integrand_add_uniform(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  inverses : FieldInverses(F, zero, one, mulF, lt), z, slope : Complex(F),
-  f, g : Complex(F) -> Complex(F),
+  inverses : FieldInverses(F, zero, one, mulF, lt), z, slope : Complex(F), f,
+  g : Complex(F) -> Complex(F),
   uniformF : ComplexUniformCurve(
     F, zero, one, addF, lt,
     (
@@ -117,53 +117,46 @@ def affine_dyadic_integral_add(
   ) {
   let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let combined := (fun (x : Complex(F)) => complex_add(F, addF, f(x), g(x)));
-  let uniformSum :=
-    affine_integrand_add_uniform(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z, slope, f, g,
-      uniformF, uniformG
-    );
-  let xs :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, f, a, b,
-      ordered
-    );
-  let ys :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, g, a, b,
-      ordered
-    );
+  let uniformSum := affine_integrand_add_uniform(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, z, slope, f, g, uniformF,
+    uniformG
+  );
+  let xs := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, f, a, b,
+    ordered
+  );
+  let ys := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, g, a, b,
+    ordered
+  );
   let summed := (fun (n : Nat) => complex_add(F, addF, xs(n), ys(n)));
-  let samples :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
-      combined, a, b, ordered
-    );
-  let leftValue :=
-    affine_dyadic_integral(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-      bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-    );
-  let rightValue :=
-    affine_dyadic_integral(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-      bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
-    );
+  let samples := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, combined,
+    a, b, ordered
+  );
+  let leftValue := affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+  );
+  let rightValue := affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
+  );
   let value := complex_add(F, addF, leftValue, rightValue);
   let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
-  let convergence :=
-    complex_converges_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, xs, ys, leftValue,
-      rightValue,
-      affine_dyadic_integral_converges(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-        bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-      ),
-      affine_dyadic_integral_converges(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-        bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
-      )
-    );
+  let convergence := complex_converges_add(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, xs, ys, leftValue,
+    rightValue,
+    affine_dyadic_integral_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+    ),
+    affine_dyadic_integral_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
+    )
+  );
   let computes : forall n : Nat. summed(n) = samples(n) {
     intro n;
     exact sym(
@@ -221,37 +214,32 @@ def affine_dyadic_integral_scale(
   ) {
   let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
   let scaled := (fun (x : Complex(F)) => complex_mul(F, addF, mulF, negF, f(x), coefficient));
-  let uniformScaled :=
-    affine_integrand_scale_uniform(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
-      coefficient, z, slope, f, uniformF
-    );
-  let original :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, f, a, b,
-      ordered
-    );
+  let uniformScaled := affine_integrand_scale_uniform(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
+    coefficient, z, slope, f, uniformF
+  );
+  let original := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, f, a, b,
+    ordered
+  );
   let products := (fun (n : Nat) => complex_mul(F, addF, mulF, negF, original(n), coefficient));
-  let samples :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, scaled,
-      a, b, ordered
-    );
-  let originalValue :=
-    affine_dyadic_integral(
+  let samples := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, scaled, a,
+    b, ordered
+  );
+  let originalValue := affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+  );
+  let value := complex_mul(F, addF, mulF, negF, originalValue, coefficient);
+  let convergence := complex_converges_scale(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
+    coefficient, original, originalValue,
+    affine_dyadic_integral_converges(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
       bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-    );
-  let value := complex_mul(F, addF, mulF, negF, originalValue, coefficient);
-  let convergence :=
-    complex_converges_scale(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, minF, maxF, lattice,
-      coefficient, original, originalValue,
-      affine_dyadic_integral_converges(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-        bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-      )
-    );
+    )
+  );
   let computes : forall n : Nat. products(n) = samples(n) {
     intro n;
     exact sym(
@@ -314,21 +302,18 @@ def affine_dyadic_integral_cong(
     bounds, half, halfSum, z, slope, g, uniformG, a, b, ordered, complete
   ) {
   let curve := complex_interval_deformation(F, zero, one, addF, mulF, lt, z, slope);
-  let xs :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, f, a, b,
-      ordered
-    );
-  let ys :=
-    affine_dyadic_sum(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, g, a, b,
-      ordered
-    );
-  let value :=
-    affine_dyadic_integral(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-      bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-    );
+  let xs := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, f, a, b,
+    ordered
+  );
+  let ys := affine_dyadic_sum(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, g, a, b,
+    ordered
+  );
+  let value := affine_dyadic_integral(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+    bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+  );
   let computes : forall n : Nat. xs(n) = ys(n) {
     intro n;
     exact curve_subdivision_samples_cong(
@@ -338,14 +323,13 @@ def affine_dyadic_integral_cong(
       )
     );
   }
-  let converges :=
-    complex_converges_pointwise(
-      F, zero, addF, lt, xs, ys, computes, value,
-      affine_dyadic_integral_converges(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
-        bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
-      )
-    );
+  let converges := complex_converges_pointwise(
+    F, zero, addF, lt, xs, ys, computes, value,
+    affine_dyadic_integral_converges(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
+      bounds, half, halfSum, z, slope, f, uniformF, a, b, ordered, complete
+    )
+  );
   exact sym(
     affine_dyadic_integral_unique(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,

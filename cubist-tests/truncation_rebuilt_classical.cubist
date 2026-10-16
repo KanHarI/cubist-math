@@ -18,9 +18,7 @@ inductive Other(U < UU0, A : U) : prop U {
 
 def other(P : U1, h : (P -> Void) -> Void) := LEM(Other, U1, P, h);
 
-inductive Empty(U < UU0, A : U) : prop U {
-
-}
+inductive Empty(U < UU0, A : U) : prop U {}
 
 // Error: E603: Rebuilt LEM and Choice require an admitted proposition truncation.
 def rejected(P : U1, h : (P -> Void) -> Void) := LEM(Empty, U1, P, h);

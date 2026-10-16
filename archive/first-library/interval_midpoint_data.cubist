@@ -3,8 +3,8 @@ import interval_bisection;
 // Named dependent projections expose the same constructed midpoint and laws.
 // They do not choose another midpoint or assume proof irrelevance.
 def IntervalMidpointLaws(
-  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F,
-  a, b, midpoint : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, half : F -> F, a, b,
+  midpoint : FieldUnitInterval(F, zero, one, lt)
 ) :=
   IntervalTagWithin(F, zero, one, lt, a, b, midpoint)
   and (
@@ -70,10 +70,9 @@ def interval_midpoint_within(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
     )
   ) {
-  let midpoint :=
-    interval_midpoint_point(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
-    );
+  let midpoint := interval_midpoint_point(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+  );
   exact field_fst(
     IntervalTagWithin(F, zero, one, lt, a, b, midpoint),
     (
@@ -183,10 +182,9 @@ def interval_midpoint_widths(
       ), b
     ) = half(interval_difference(F, zero, one, addF, negF, lt)(a, b))
   ) {
-  let midpoint :=
-    interval_midpoint_point(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
-    );
+  let midpoint := interval_midpoint_point(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, a, b, ordered
+  );
   exact field_snd(
     IntervalTagWithin(F, zero, one, lt, a, b, midpoint),
     (

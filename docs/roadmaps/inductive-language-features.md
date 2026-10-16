@@ -8,17 +8,20 @@ admits, with explicit `obligations` (L2.2b). Core theories, section 1's
 models, homomorphisms, isomorphisms, notation, sections and `extends`, were
 implemented on 2026-10-05 (work-plan L2.4, [core theories](core-theories.md)),
 and the library's algebraic hierarchy is written in them. Their syntax
-revision, L2.4c, was implemented in six slices on 2026-10-06
-([core theories](core-theories.md#revision-l24c)):
-carriers as fields, `M : set U`, the theory's name as its models' type,
-theory families, and relation fields as families of propositions.
-Initial/free construction and folds exist only in
-[open PR #188](https://github.com/KanHarI/cubist-math/pull/188), not main;
-the checked capability and universal proofs are still planned. L2.8's
-box notation, squares and square/composite conversions are implemented;
-the raw-`comp` archive migration remains. Generated identity, general cells,
-section 3's declared relations and bundles, proof-first h-levels, per-argument obligations, dependent matching, canonical
-quotients, presentations and derivations remain proposals. The [audit of 2026-09-28](historical/audits/2026-09-28-audit.md) corrected
+revision, L2.4c, was done on 2026-10-06
+([core theories](core-theories.md#revision-l24c)): carriers as fields,
+`M : set U`, the theory's name as its models' type, theory families,
+relation fields as families of propositions with notation, and `use`.
+Initial and free models have a construction prototype (L2.6, 2026-10-06):
+`initial N : T(…);`, `free W(A : U0) : T(…) on A;`, `N.model` and `N.fold`.
+The revised contract of 2026-10-07 requires explicit derivation opt-ins
+and checked universal properties; that capability interface is not yet
+implemented. Squares have the box notation and `library/squares.cubist`
+(L2.8, 2026-10-06). Uniqueness and `universal`, generated identity, the
+`cell` face syntax for constructors, relations on declared types and
+bundles, proof-first h-levels, per-argument obligations, dependent
+matching, canonical quotients, presentations and derivations remain
+proposals. Code blocks are proposed syntax unless they say they check. The [audit of 2026-09-28](historical/audits/2026-09-28-audit.md) corrected
 three promises here: the universal property of section 1, `Torus2` in
 section 2 and proof-first h-levels in section 4.
 G0 and the shared goal-layer core are delivered as of 2026-09-27. It builds on
@@ -65,7 +68,8 @@ available independently of optional derivations. The revised
 These requests may fail; arbitrary propositional laws remain valid theory
 fields and become proof obligations in generated models. The interfaces are:
 
-- **`T.Model`**, the record type of models. Fields are the carriers,
+- **`T(U)`**, the record type of models (named `T.Model` until L2.4c).
+  Fields are the carriers,
   operations, laws and h-level evidence. It elaborates to a Σ type with
   definitional eta, so it serves as the structure record of ergonomics
   milestone 6.
@@ -107,34 +111,46 @@ requires a proof in the candidate model. Unsupported construction or failed
 proof search reports the outstanding obligation, not mathematical
 nonexistence. `Field` can have morphisms while initial/free derivation fails.
 
+Generated types, terms, and functions follow the
+[scope and capture contract](syntax-hygiene.md), including artifacts reused
+by later derivations. The first free-model interface forgets to one carrier;
+several carriers need a generator assignment or dependent diagram, as
+specified in [L2.6](core-theories.md#initial-and-free-models-l26). The current
+`on A` prototype does not implement that generalization.
+
+This block uses the implemented syntax and construction prototype
+(L2.4, L2.4c and L2.6), before the proposed opt-in migration. It checks
+after importing `nat`, `hlevels` and `integers` and
+`use nat;`, with `IntAdd : Group(U0)` the integers under addition:
+
 ```
-theory Monoid deriving (morphisms, free) {
-  sort M : set;
+theory Monoid(U < UU0) {
+  M : set U;
   unit : M;
-  mul(x, y : M) : M                        notation x * y;
+  mul(x, y : M) : M notation x * y;
   law unit_left(x : M) : unit * x = x;
   law unit_right(x : M) : x * unit = x;
   law assoc(x, y, z : M) : (x * y) * z = x * (y * z);
 }
 
-theory Group extends Monoid deriving (morphisms, free) {
+theory Group(U < UU0) extends Monoid {
   inv(x : M) : M;
   law inv_left(x : M) : inv(x) * x = unit;
 }
 
-def square(G : Group.Model, x : G.M) : G.M = x * x;      // notation from G's theory
-def conjugate(G : Group.Model, g, x : G.M) : G.M { open G; exact g * x * inv(g); }
+def square(G : Group(U0), x : G.M) : G.M := G.(x * x);     // notation from G's theory
+def conjugate(G : Group(U0), g, x : G.M) : G.M { use G; exact g * x * inv(g); }
 
-inductive FreeGroup(A : U) = free Group on A;
-computable def exponent_sum(A : U) : Group.Hom(FreeGroup(A).model, IntAdd) =
-  FreeGroup(A).fold(IntAdd, fun a => 1);
+free FreeGroup(A : U0) : Group(U0) on A;
+computable def exponent_sum(A : U0) : Group.Hom(FreeGroup.model(A), IntAdd) :=
+  FreeGroup.fold(A, IntAdd, fun (a : A) => int_one);
 ```
 
 - **Shared construction machinery.** The H1 strategy builds a theory's
   free carrier using an ordinary inductive declaration. An ordinary
   `inductive` still supplies its own eliminator without requesting or
   establishing a categorical initial/free capability.
-- **The repetition disappears.** A ring lemma takes `(R : CommRing.Model)` and
+- **The repetition disappears.** A ring lemma takes `(R : CommRing(U))` and
   writes `x * (y + z)` in `R`'s notation, instead of seven arguments per
   lemma.
 - **Identity for free.** Structure identity is generated per theory, so
@@ -143,9 +159,15 @@ computable def exponent_sum(A : U) : Group.Hom(FreeGroup(A).model, IntAdd) =
   the recursion principle is folding into a model. The Cauchy reals' Lipschitz
   extension is exactly that: build a model on the target from `f`, then fold.
 - **Extension.** `extends` reuses sorts, operations and laws. Every model of
-  `Group` has an underlying `Monoid.Model`, with the forgetful map generated.
+  `Group` has an underlying model of `Monoid`, `G.monoid`, with the
+  forgetful map generated.
 
-The surrounding constructions compose in the same way:
+The surrounding constructions compose in the same way. The `Loop` theory
+and ordinary `Circle` declaration below use implemented syntax. The
+prototype refuses `initial Circle : Loop(U0)` (E853); the revised contract
+also requires checked morphisms and their coherences before categorical
+initiality. `CwF`'s derivation and `CwF.Hom` remain proposed: its models
+have no homomorphisms yet (E817), and several carriers need H3.
 
 ```
 theory Loop(U < UU0) { S : U; base : S; loop : base = base; }
@@ -153,6 +175,12 @@ theory Loop(U < UU0) { S : U; base : S; loop : base = base; }
 // Categorical initiality for Loop waits for checked morphism coherences.
 inductive Circle { base; loop : base = base; }
 
+```
+
+`CauchyStructure` remains schematic, including section 3's proposed
+relations and bundles and the revised derivation opt-in.
+
+```text
 theory CauchyStructure deriving (morphisms, initial) { // later strategy
   sort R : set;
   relation Close(ε : Pos) on R : prop     notation u ≈[ε] v;
@@ -166,18 +194,20 @@ theory CauchyStructure deriving (morphisms, initial) { // later strategy
   lim_lim(a, b : Approx, δ η θ : Pos, h : a.x(δ) ≈[θ] b.x(η)) : lim(a) ≈[δ + η + θ] lim(b);
 }
 inductive Real = initial CauchyStructure;                  // stage H3
+```
 
-theory CwF deriving (morphisms, initial) {                 // later H3 strategy
-  sort Con : set;  sort Ty(g : Con) : set;  sort Sub(d, g : Con) : set;
-  sort Tm(g : Con) : Ty(g) -> set;
+```
+theory CwF(U < UU0) deriving (morphisms, initial) { // later H3 strategy
+  Con : set U;  Ty(g : Con) : set U;  Sub(d, g : Con) : set U;
+  Tm(g : Con, a : Ty(g)) : set U;
   empty : Con;  extend(g : Con, a : Ty(g)) : Con;
   // substitution, weakening, variables, Π and their laws
 }
-inductive Syntax = initial CwF;
-computable def interpret : CwF.Hom(Syntax.model, SetModel) = Syntax.fold(SetModel);
+initial Syntax : CwF(U0);                                  // proposed: stage H3
+computable def interpret : CwF.Hom(Syntax.model, SetModel) := Syntax.fold(SetModel);
 ```
 
-**Elaboration.** `T.Model`, `T.Hom`, `T.Displayed` and the fold are generic
+**Elaboration.** `T(U)`, `T.Hom`, `T.Displayed` and the fold are generic
 constructions over the theory, which the elaborator computes and the kernel
 checks. In the first equational derivation strategy, `initial T` uses a
 kernel signature whose constructors are `T`'s operations and laws; `fold` is its eliminator with constant motives.
@@ -202,7 +232,9 @@ evaluator is a fold into the set model.
 
 Path and higher constructors, and their clauses, take any of these
 equivalent spellings. Each denotes a kernel boundary system, and the
-inspector draws its diagram.
+inspector draws its diagram. The block below is proposed syntax: the
+`cell` face syntax is L2.8's open part, while its box notation for
+compositions and `library/squares.cubist` are done.
 
 ```
 inductive Torus {
@@ -232,7 +264,10 @@ inductive Torus2 {                    // the same space, with an equation betwee
   `Torus2` with that diagnostic. `Torus` in the square form is admitted.
   The composite presentation needs a separately specified translation to
   the square form, with its equivalence, or a later fragment; the kernel is
-  not changed to accept it.
+  not changed to accept it. `library/squares.cubist` proves the
+  conversions between a square and an equation of composites
+  (`square_to_path`, `path_to_square`, 2026-10-06); a declaration with a
+  composite boundary still needs its own translation.
 - Clauses bind the cell's variables (`surf @ i @ j => …`). Their boundary
   obligations display the same diagram.
 
@@ -241,6 +276,11 @@ composite equations are a later, separately specified elaboration.
 **Computability:** path constructors compute on their faces by definition.
 
 ## 3. Relations and argument bundles
+
+Relations as fields of a theory are done (L2.4c, 2026-10-06):
+`le(x, y : M) : prop U notation x <= y` is a family of propositions with
+its evidence. The syntax below, relations on declared types and bundles,
+is proposed.
 
 **Relations** declare a proposition-valued family on a sort, with its
 notation:
@@ -294,20 +334,22 @@ and `set!` keeps the constructor form available.
 ## 5. Obligations separate from computational content
 
 The point clauses of a `match` define a function; its path clauses prove
-coherence. The two can be written apart:
+coherence. The two can be written apart. Explicit `obligations` were
+released with H1 (L2.2b); one respect proof per argument is proposed. In
+proposed syntax:
 
 ```
-def neg(x : Rat) : Rat = match x {
+def neg(x : Rat) : Rat := match x {
   class(a, b) => class(-a, b);
 } obligations {
   glue(a, b, c, d, cross) => glue(-a, b, -c, d, cross_neg(cross));
 };
 
-def add(x, y : Rat) : Rat = match x, y {
+def add(x, y : Rat) : Rat := match x, y {
   class(a, b), class(c, d) => class(a * d + c * b, b * d);
 } obligations by respects_each_argument {
-  left(…) => …;       // one respect proof per argument,
-  right(…) => …;      // not one per pair of constructors
+  first(…) => …;      // one respect proof per argument,
+  second(…) => …;     // not one per pair of constructors
 };
 ```
 
@@ -326,10 +368,10 @@ def add(x, y : Rat) : Rat = match x, y {
 ## 6. Dependent pattern matching on indexed families, without K
 
 Matching an element of an indexed family unifies the constructor's result
-indices with the scrutinee's:
+indices with the scrutinee's. In proposed syntax, at stage H2:
 
 ```
-def head(A : U, n : Nat, xs : Vec(A, succ(n))) : A = match xs {
+def head(A : U, n : Nat, xs : Vec(A, succ(n))) : A := match xs {
   cons(x, _, _) => x;                 // nil is impossible: 0 ≠ succ(n)
 };
 ```
@@ -351,7 +393,7 @@ non-propositional data, as HoTT invariant 4 requires.
 ## 7. Canonical quotients
 
 A quotient with a normalizing function is represented by its normal forms,
-while keeping the quotient's interface:
+while keeping the quotient's interface. In proposed syntax (L2.7):
 
 ```
 quotient Rat = Int and Pos by (a, b) ~ (c, d) := a * d = c * b
@@ -390,12 +432,12 @@ canonical forms.
 ## 8. Presentations: matching with another type's constructors
 
 When two types are equivalent, one can be matched using the other's
-constructors:
+constructors. In proposed syntax (L2.7):
 
 ```
 presentation Int as Successor.initial by int_successor_equivalence;
 
-def double(z : Int) : Int = match z using Successor {
+def double(z : Int) : Int := match z using Successor {
   zero => zero;
   succ(w) => succ(succ(double(w)));
   pred(w) => pred(pred(double(w)));
@@ -457,10 +499,10 @@ A law's propositionhood is separate from proving it in the constructed model.
   H3, and untruncated companions may need H4. Work-plan L4.3 first specifies
   an admissible lowering; any earlier H1 subset needs a one-sort translation
   and its own acceptance cases.
-- **Sections over models.** `section (R : CommRing.Model) { open R; … }`
+- **Sections over models.** `section {{U < UU0}}(R : CommRing(U)) { … }`
   shares the model and its notation across lemmas. This replaces milestone
   6's separate section feature. Implemented with L2.4 on 2026-10-05: a
-  section's models are opened in each of its definitions, as in
+  section's models are selected, as by `use`, in each of its definitions, as in
   `library/algebra.cubist`'s ring lemmas and `library/rationals.cubist`.
 - **Theory morphisms.** `interpret Group in Monoid by …` records a translation
   between theories. Forgetful maps and free-model adjunctions are generated
@@ -492,12 +534,16 @@ is required; particular instances depend on H1 or H3.
 | 2 | Canonical quotients; presentations; nested declarations; sections over models; monadic computation blocks | Computation and multi-presentation reasoning for numbers and algebra; shorter existence and substitution constructions |
 | 3 | Theory morphisms; reflecting signatures as data; arrow blocks and their capability extensions | Later, once the generic constructions exist; broader structured composition |
 
+Done since: models, homomorphisms and sections over models (L2.4, L2.4c),
+and the initial/free construction prototype (L2.6). Its revised
+checked-capability interface remains proposed.
+
 ## Effect on the other roadmaps
 
 - **Ergonomics milestone 6** (records, scoped notation, sections) merges into
   theories: models are the records, notation belongs to the theory, and
   sections range over models. Algebraic normalization then targets
-  `CommRing.Model` directly.
+  `CommRing(U)` directly.
 - **HoTT F1** (structure descriptions and identity) becomes the engine behind
   `T.equality`. **F2**'s transfer uses presentations and generated
   equivalences.

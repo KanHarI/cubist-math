@@ -35,17 +35,16 @@ def descent_data_prop(
   let second := field_first(G, family, v);
   let firstLaw : forall a : A. (present(a) = b) -> value(a) = first := field_second(G, family, u);
   let secondLaw : forall a : A. (present(a) = b) -> value(a) = second := field_second(G, family, v);
-  let same : first = second :=
-    field_exists_elim(
-      (exists a : A. present(a) = b), (first = second), setG(first, second),
-      (
-        fun (witness_ : (exists a : A. present(a) = b)) => unpack witness_ as (a, represents) return (
-          first = second
-        ) {
-          trans(sym(firstLaw(a, represents)), secondLaw(a, represents));
-        }
-      ), covered
-    );
+  let same : first = second := field_exists_elim(
+    (exists a : A. present(a) = b), (first = second), setG(first, second),
+    (
+      fun (witness_ : (exists a : A. present(a) = b)) => unpack witness_ as (a, represents) return (
+        first = second
+      ) {
+        trans(sym(firstLaw(a, represents)), secondLaw(a, represents));
+      }
+    ), covered
+  );
   exact field_subtype_ext(
     G, family, descent_value_prop(A, B, G, setG, present, value, b), u, v, same
   );

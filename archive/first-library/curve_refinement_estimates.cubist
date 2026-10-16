@@ -54,12 +54,11 @@ def curve_refinement_partition_estimate(
   let last := sample_last(I, n, vertices);
   obtain (pieces, valid, computes) := refinement;
   obtain (flat, flatComputes, bounded) := estimates(pieces, valid);
-  let mappedFine :=
-    parameter_contour_sum_is_mapped(
-      I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
-      complex_neg(F, negF), curve, integrand, subdivision_count(I, a, b, fine),
-      subdivision_vertices(I, a, b, fine), subdivision_tags(I, a, b, fine)
-    );
+  let mappedFine := parameter_contour_sum_is_mapped(
+    I, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
+    complex_neg(F, negF), curve, integrand, subdivision_count(I, a, b, fine),
+    subdivision_vertices(I, a, b, fine), subdivision_tags(I, a, b, fine)
+  );
   let identifies := trans(flatComputes, trans(sym(computes), mappedFine));
   exact transport bounded along identifies in (
     (
@@ -179,12 +178,11 @@ def affine_refinement_sum_estimate(
     let first := sample_first(I, n, vertices);
     let last := sample_last(I, n, vertices);
     let oldRadius := mulF(delta, mulF(width(first, last), length));
-    let bounded :=
-      curve_refinement_partition_estimate(
-        F, zero, one, addF, mulF, negF, lt, curve, integrand,
-        IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine, oldRadius,
-        refinement, estimates(n, vertices, tags)
-      );
+    let bounded := curve_refinement_partition_estimate(
+      F, zero, one, addF, mulF, negF, lt, curve, integrand,
+      IntervalSubdivisionFine(F, zero, one, addF, negF, lt, mesh), a, b, coarse, fine, oldRadius,
+      refinement, estimates(n, vertices, tags)
+    );
     let firstPath : first = a :=
       field_fst((first = a), (last = b), subdivision_endpoints(I, a, b, coarse));
     let lastPath : last = b :=

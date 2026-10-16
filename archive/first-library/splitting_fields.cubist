@@ -50,11 +50,10 @@ def root_generated_factorization(
   let b := field_embedding_map(K, T, d, polynomial_coefficients(K, p, n));
   let left_ := polynomial_map(K, T, d, p);
   let right_ := polynomial_mul(T, polynomial_constant(T, b), linear_factor_product(T, n, rs));
-  let mappedLeft : polynomial_map(T, L, j, left_) = polynomial_map(K, L, e, p) :=
-    trans(
-      polynomial_map_composition(K, T, L, d, j, p),
-      cong((fun (h : FieldEmbedding(K, L)) => polynomial_map(K, L, h, p)), triangle)
-    );
+  let mappedLeft : polynomial_map(T, L, j, left_) = polynomial_map(K, L, e, p) := trans(
+    polynomial_map_composition(K, T, L, d, j, p),
+    cong((fun (h : FieldEmbedding(K, L)) => polynomial_map(K, L, h, p)), triangle)
+  );
   let mappedRight :
     polynomial_map(T, L, j, right_) = polynomial_mul(
       L, polynomial_constant(L, a), linear_factor_product(L, n, roots)

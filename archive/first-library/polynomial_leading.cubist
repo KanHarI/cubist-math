@@ -200,10 +200,9 @@ def polynomial_product_nonzero(
   Void {
   obtain (m, dp) := polynomial_nonzero_degree(K, p, np);
   obtain (n, dq) := polynomial_nonzero_degree(K, q, nq);
-  let same :=
-    trans(
-      sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
-      trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))
-    );
+  let same := trans(
+    sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
+    trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))
+  );
   exact nat_zero_ne_succ(add_count(m, n), sym(same));
 }

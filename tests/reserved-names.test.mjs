@@ -72,3 +72,11 @@ test("generated members remain usable in calls, labels and constructor patterns"
   assert.equal(parseError("def f(t : T) := match t { gen(x) => x; squash(x, y, p, q) @ i @ j => p @ i; };"), null);
   assert.equal(parseError("def f(t : T) := match t { T.squash(x, y, p, q) @ i @ j => p @ i; };"), null);
 });
+
+test("initial and free headers diagnose unsupported parameter forms at the header", () => {
+  for (const [source, message, at] of [
+    ["initial N(A : U0) : Monoid(U0);", /initial takes no parameters; use free/, "("],
+    ["free W{{A : U0}} : Monoid(U0) on A;", /free takes explicit parameters in parentheses/, "{"],
+  ]) assert.throws(() => parse(source), error => message.test(error.message) && error.offset === source.indexOf(at));
+  assert.doesNotThrow(() => parse("free W(V < UU0, A : V) : Monoid(V) on A;"));
+});

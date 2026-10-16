@@ -91,14 +91,12 @@ def compositum_associate_inclusion(F : AlgebraicField, S, T, V : Subfield(F)) :
   SubfieldIncluded(F, compositum(F, compositum(F, S, T), V), compositum(F, S, compositum(F, T, V))) {
   let TV := compositum(F, T, V);
   let target := compositum(F, S, TV);
-  let includesT :=
-    subfield_inclusion_trans(
-      F, T, TV, target, compositum_contains_left(F, T, V), compositum_contains_right(F, S, TV)
-    );
-  let includesV :=
-    subfield_inclusion_trans(
-      F, V, TV, target, compositum_contains_right(F, T, V), compositum_contains_right(F, S, TV)
-    );
+  let includesT := subfield_inclusion_trans(
+    F, T, TV, target, compositum_contains_left(F, T, V), compositum_contains_right(F, S, TV)
+  );
+  let includesV := subfield_inclusion_trans(
+    F, V, TV, target, compositum_contains_right(F, T, V), compositum_contains_right(F, S, TV)
+  );
   exact compositum_least(
     F, compositum(F, S, T), V, target,
     compositum_least(F, S, T, target, compositum_contains_left(F, S, TV), includesT), includesV
@@ -109,14 +107,12 @@ def compositum_unassociate_inclusion(F : AlgebraicField, S, T, V : Subfield(F)) 
   SubfieldIncluded(F, compositum(F, S, compositum(F, T, V)), compositum(F, compositum(F, S, T), V)) {
   let ST := compositum(F, S, T);
   let target := compositum(F, ST, V);
-  let includesS :=
-    subfield_inclusion_trans(
-      F, S, ST, target, compositum_contains_left(F, S, T), compositum_contains_left(F, ST, V)
-    );
-  let includesT :=
-    subfield_inclusion_trans(
-      F, T, ST, target, compositum_contains_right(F, S, T), compositum_contains_left(F, ST, V)
-    );
+  let includesS := subfield_inclusion_trans(
+    F, S, ST, target, compositum_contains_left(F, S, T), compositum_contains_left(F, ST, V)
+  );
+  let includesT := subfield_inclusion_trans(
+    F, T, ST, target, compositum_contains_right(F, S, T), compositum_contains_left(F, ST, V)
+  );
   exact compositum_least(
     F, S, compositum(F, T, V), target, includesS,
     compositum_least(F, T, V, target, includesT, compositum_contains_right(F, ST, V))

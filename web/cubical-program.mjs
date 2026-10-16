@@ -110,6 +110,14 @@ export class CubicalProgram {
     const references = [];
     const declarationLinks = [];
     this.declarationReferences.set(`${name}__${result.name}`, references);
+    // Generated syntax stands at its declaration's name, a theory's or an
+    // initial/free model's, and its links, and the marks elaboration builds
+    // for it, would hide the name's own. Syntax written elsewhere, as an
+    // initial/free header's parameters, theory and generator type, links as
+    // written; synthetic syntax, as what a theory's expansion places at its
+    // name, links nowhere.
+    const generated = declaration.generated ? declaration.name : null;
+    const written = node => !node.synthetic && !(generated && node.start >= generated.start && node.start < generated.end);
     for (const item of pending) {
       if (!Number.isInteger(item.node.start)) continue;
       let head = item.term; while (head.tag === "App" || head.tag === "LApp") head = head.fn;
@@ -125,7 +133,7 @@ export class CubicalProgram {
         expansion: item.node.expansion, description: item.node.description,
         definitionStart: source?.start ?? item.node.start,
         ...(name === main ? {} : { sourceModule: name, sourceName: declaration.name.text }) };
-      if (name === main) {
+      if (name === main && written(item.node)) {
         const link={ name: item.node.name, binding, start: item.node.start,
         end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
         expansion: item.node.expansion, description: item.node.description,
@@ -186,7 +194,10 @@ export class CubicalProgram {
       if (!verified) this.gaps.push({ module: name, name: d.name,
         reason, code: info.code, start: d.errorStart, end: d.errorEnd });
       // A theory's name links to its models' type, a field's to its projection.
-      if (name === main && syntax.generated?.role !== "make")
+      // An initial/free name links to its declared type, whose generated
+      // syntax this is. The generated definitions remain symbols, inspectable
+      // by name and at their written uses.
+      if (name === main && syntax.generated?.role !== "make" && !(syntax.generated?.initial && syntax.kind !== "inductive"))
         this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }

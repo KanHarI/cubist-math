@@ -91,49 +91,41 @@ def normal_target_embeddings_automorphisms(
   let base := field_embedding_compose(K, F, T, e, j);
   let A := EmbeddingsOver(K, F, e, T, base);
   let B := Galois(K, E);
-  let factor :=
-    fun (d : A) => normal_target_automorphism_factor(
-      K, E, normal, T, j, embedding_over(K, F, e, T, base, d),
-      field_embedding_ext(
-        K, T, field_embedding_compose(K, F, T, e, embedding_over(K, F, e, T, base, d)), base,
-        embedding_over_law(K, F, e, T, base, d)
+  let factor := fun (d : A) => normal_target_automorphism_factor(
+    K, E, normal, T, j, embedding_over(K, F, e, T, base, d),
+    field_embedding_ext(
+      K, T, field_embedding_compose(K, F, T, e, embedding_over(K, F, e, T, base, d)), base,
+      embedding_over_law(K, F, e, T, base, d)
+    )
+  );
+  let forwardMap := fun (d : A) => sigma_first(
+    B,
+    (
+      fun (g : B) => forall x : extension_carrier(K, E).
+      field_embedding_map(F, T, j, extension_iso_forward(K, E, E, g, x)) = field_embedding_map(
+        F, T, embedding_over(K, F, e, T, base, d), x
       )
-    );
-  let forwardMap :=
-    fun (d : A) => sigma_first(
+    ), factor(d)
+  );
+  let backwardMap := fun (g : B) => typed(
+    A,
+    (
+      field_embedding_compose(F, F, T, galois_field_embedding(K, E, g), j),
+      (fun (a : af_carrier(K)) => cong(field_embedding_map(F, T, j), galois_fixes_base(K, E, g, a)))
+    )
+  );
+  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
+    intro d;
+    let h := embedding_over(K, F, e, T, base, d);
+    let triangle := sigma_second(
       B,
       (
         fun (g : B) => forall x : extension_carrier(K, E).
         field_embedding_map(F, T, j, extension_iso_forward(K, E, E, g, x)) = field_embedding_map(
-          F, T, embedding_over(K, F, e, T, base, d), x
+          F, T, h, x
         )
       ), factor(d)
     );
-  let backwardMap :=
-    fun (g : B) => typed(
-      A,
-      (
-        field_embedding_compose(F, F, T, galois_field_embedding(K, E, g), j),
-        (
-          fun (a : af_carrier(K)) => cong(
-            field_embedding_map(F, T, j), galois_fixes_base(K, E, g, a)
-          )
-        )
-      )
-    );
-  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
-    intro d;
-    let h := embedding_over(K, F, e, T, base, d);
-    let triangle :=
-      sigma_second(
-        B,
-        (
-          fun (g : B) => forall x : extension_carrier(K, E).
-          field_embedding_map(F, T, j, extension_iso_forward(K, E, E, g, x)) = field_embedding_map(
-            F, T, h, x
-          )
-        ), factor(d)
-      );
     exact embeddings_over_ext(
       K, F, e, T, base, backwardMap(forwardMap(d)), d,
       field_embedding_ext(
@@ -145,16 +137,15 @@ def normal_target_embeddings_automorphisms(
     intro g;
     let d := backwardMap(g);
     let h := embedding_over(K, F, e, T, base, d);
-    let triangle :=
-      sigma_second(
-        B,
-        (
-          fun (q : B) => forall x : extension_carrier(K, E).
-          field_embedding_map(F, T, j, extension_iso_forward(K, E, E, q, x)) = field_embedding_map(
-            F, T, h, x
-          )
-        ), factor(d)
-      );
+    let triangle := sigma_second(
+      B,
+      (
+        fun (q : B) => forall x : extension_carrier(K, E).
+        field_embedding_map(F, T, j, extension_iso_forward(K, E, E, q, x)) = field_embedding_map(
+          F, T, h, x
+        )
+      ), factor(d)
+    );
     exact structure_iso_ext(
       ExtensionData(K), ExtensionPreserved(K), extension_preserved_prop(K), E, E, forwardMap(d), g,
       (
@@ -259,82 +250,78 @@ def normal_target_embeddings_self(
   let base := field_embedding_compose(K, F, T, e, j);
   let A := EmbeddingsOver(K, F, e, T, base);
   let B := EmbeddingsOver(K, F, e, F, e);
-  let factor :=
-    fun (d : A) => normal_target_factor(
-      K, F, e, normal, T, j, embedding_over(K, F, e, T, base, d),
-      field_embedding_ext(
-        K, T, field_embedding_compose(K, F, T, e, embedding_over(K, F, e, T, base, d)), base,
-        embedding_over_law(K, F, e, T, base, d)
-      )
-    );
-  let forwardMap :=
-    fun (d : A) => typed(
-      B,
-      (
-        sigma_first(
-          FieldEmbedding(F, F),
-          (
-            fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
-            field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
-              F, T, embedding_over(K, F, e, T, base, d), x
-            )
-          ), factor(d)
-        ),
-        (
-          fun (a : af_carrier(K)) => field_embedding_injective(
-            F, T, j,
-            field_embedding_map(
-              F, F,
-              sigma_first(
-                FieldEmbedding(F, F),
-                (
-                  fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
-                  field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
-                    F, T, embedding_over(K, F, e, T, base, d), x
-                  )
-                ), factor(d)
-              ), field_embedding_map(K, F, e, a)
-            ), field_embedding_map(K, F, e, a),
-            trans(
-              sigma_second(
-                FieldEmbedding(F, F),
-                (
-                  fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
-                  field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
-                    F, T, embedding_over(K, F, e, T, base, d), x
-                  )
-                ), factor(d)
-              )(field_embedding_map(K, F, e, a)), embedding_over_law(K, F, e, T, base, d, a)
-            )
-          )
-        )
-      )
-    );
-  let backwardMap :=
-    fun (d : B) => typed(
-      A,
-      (
-        field_embedding_compose(F, F, T, embedding_over(K, F, e, F, e, d), j),
-        (
-          fun (a : af_carrier(K)) => cong(
-            field_embedding_map(F, T, j), embedding_over_law(K, F, e, F, e, d, a)
-          )
-        )
-      )
-    );
-  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
-    intro d;
-    let h := embedding_over(K, F, e, T, base, d);
-    let triangle :=
-      sigma_second(
+  let factor := fun (d : A) => normal_target_factor(
+    K, F, e, normal, T, j, embedding_over(K, F, e, T, base, d),
+    field_embedding_ext(
+      K, T, field_embedding_compose(K, F, T, e, embedding_over(K, F, e, T, base, d)), base,
+      embedding_over_law(K, F, e, T, base, d)
+    )
+  );
+  let forwardMap := fun (d : A) => typed(
+    B,
+    (
+      sigma_first(
         FieldEmbedding(F, F),
         (
           fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
           field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
-            F, T, h, x
+            F, T, embedding_over(K, F, e, T, base, d), x
           )
         ), factor(d)
-      );
+      ),
+      (
+        fun (a : af_carrier(K)) => field_embedding_injective(
+          F, T, j,
+          field_embedding_map(
+            F, F,
+            sigma_first(
+              FieldEmbedding(F, F),
+              (
+                fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
+                field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
+                  F, T, embedding_over(K, F, e, T, base, d), x
+                )
+              ), factor(d)
+            ), field_embedding_map(K, F, e, a)
+          ), field_embedding_map(K, F, e, a),
+          trans(
+            sigma_second(
+              FieldEmbedding(F, F),
+              (
+                fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
+                field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
+                  F, T, embedding_over(K, F, e, T, base, d), x
+                )
+              ), factor(d)
+            )(field_embedding_map(K, F, e, a)), embedding_over_law(K, F, e, T, base, d, a)
+          )
+        )
+      )
+    )
+  );
+  let backwardMap := fun (d : B) => typed(
+    A,
+    (
+      field_embedding_compose(F, F, T, embedding_over(K, F, e, F, e, d), j),
+      (
+        fun (a : af_carrier(K)) => cong(
+          field_embedding_map(F, T, j), embedding_over_law(K, F, e, F, e, d, a)
+        )
+      )
+    )
+  );
+  let leftInverse : forall d : A. backwardMap(forwardMap(d)) = d {
+    intro d;
+    let h := embedding_over(K, F, e, T, base, d);
+    let triangle := sigma_second(
+      FieldEmbedding(F, F),
+      (
+        fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
+        field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
+          F, T, h, x
+        )
+      ), factor(d)
+    );
     exact embeddings_over_ext(
       K, F, e, T, base, backwardMap(forwardMap(d)), d,
       field_embedding_ext(
@@ -346,16 +333,15 @@ def normal_target_embeddings_self(
     intro d;
     let mapped := backwardMap(d);
     let h := embedding_over(K, F, e, T, base, mapped);
-    let triangle :=
-      sigma_second(
-        FieldEmbedding(F, F),
-        (
-          fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
-          field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
-            F, T, h, x
-          )
-        ), factor(mapped)
-      );
+    let triangle := sigma_second(
+      FieldEmbedding(F, F),
+      (
+        fun (g : FieldEmbedding(F, F)) => forall x : af_carrier(F).
+        field_embedding_map(F, T, j, field_embedding_map(F, F, g, x)) = field_embedding_map(
+          F, T, h, x
+        )
+      ), factor(mapped)
+    );
     exact embeddings_over_ext(
       K, F, e, F, e, forwardMap(mapped), d,
       field_embedding_ext(
@@ -394,28 +380,25 @@ def finite_normal_separable_intermediate_automorphism_count(
   let e := extension_inclusion_embedding(K, E);
   let steps :=
     finite_extension_tower_converse(K, R, F, b, i, e, intermediate_tower(K, E, M), finite);
-  let upper :=
-    snd(
-      FiniteExtension(K, intermediate_as_extension(K, E, M)),
-      FiniteExtension(R, intermediate_overfield(K, E, M)), steps
-    );
+  let upper := snd(
+    FiniteExtension(K, intermediate_as_extension(K, E, M)),
+    FiniteExtension(R, intermediate_overfield(K, E, M)), steps
+  );
   let sepK := separable_extension_in_closed(K, F, e, separable, T, closed);
-  let sepR :=
-    separable_elements_enlarge_base(
-      K, R, F, b, i, e, intermediate_tower(K, E, M), finite_extension_algebraic(K, F, e, finite), T,
-      closed, sepK
-    );
+  let sepR := separable_elements_enlarge_base(
+    K, R, F, b, i, e, intermediate_tower(K, E, M), finite_extension_algebraic(K, F, e, finite), T,
+    closed, sepK
+  );
   let normalR := normal_embedding_intermediate_base_change(K, E, M, normal);
   let baseR := field_embedding_compose(R, F, T, i, j);
   let A := EmbeddingsOver(R, F, i, T, baseR);
   let B := EmbeddingsOver(R, F, i, F, i);
   let H := SubgroupCarrier(GaloisGroup(K, E), fixing_galois_subgroup(K, E, M));
   let count := finite_separable_elements_embedding_count(R, F, i, upper, T, closed, sepR, baseR);
-  let bijection :=
-    compose_bijection(
-      A, B, H, normal_target_embeddings_self(R, F, i, normalR, T, j),
-      normal_intermediate_embeddings_automorphisms(K, E, M, normal)
-    );
+  let bijection := compose_bijection(
+    A, B, H, normal_target_embeddings_self(R, F, i, normalR, T, j),
+    normal_intermediate_embeddings_automorphisms(K, E, M, normal)
+  );
   let d := extension_degree(R, intermediate_overfield(K, E, M), upper);
   exact (
     upper,

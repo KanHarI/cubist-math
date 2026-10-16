@@ -45,31 +45,27 @@ def field_asymptotic_limits_equal(
     let positiveQuarter := halfPositive(delta, positiveDelta);
     obtain (leftBound, leftClose) := toX(delta, positiveDelta);
     obtain (rightBound, rightClose) := toY(quarter, positiveQuarter);
-    let tails :=
-      exists bound : Nat. forall n : Nat. IndexLE(bound, n)
-      -> FieldClose(F, addF, lt, xs(n), ys(n), quarter);
+    let tails := exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(
+      F, addF, lt, xs(n), ys(n), quarter
+    );
     let useTail : tails -> FieldClose(F, addF, lt, x, y, epsilon) {
       intro tail;
       obtain (tailBound, tailClose) := tail;
       let convergenceBound := leftBound + rightBound;
       let bound := tailBound + convergenceBound;
       let largeConvergence := index_sum_right(tailBound, convergenceBound);
-      let largeLeft :=
-        nat_le_trans(
-          leftBound, convergenceBound, bound, index_sum_left(leftBound, rightBound),
-          largeConvergence
-        );
-      let largeRight :=
-        nat_le_trans(
-          rightBound, convergenceBound, bound, index_sum_right(leftBound, rightBound),
-          largeConvergence
-        );
-      let inner :=
-        field_close_halved_triangle(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, xs(bound),
-          ys(bound), y, delta, tailClose(bound, index_sum_left(tailBound, convergenceBound)),
-          rightClose(bound, largeRight)
-        );
+      let largeLeft := nat_le_trans(
+        leftBound, convergenceBound, bound, index_sum_left(leftBound, rightBound), largeConvergence
+      );
+      let largeRight := nat_le_trans(
+        rightBound, convergenceBound, bound, index_sum_right(leftBound, rightBound),
+        largeConvergence
+      );
+      let inner := field_close_halved_triangle(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, xs(bound),
+        ys(bound), y, delta, tailClose(bound, index_sum_left(tailBound, convergenceBound)),
+        rightClose(bound, largeRight)
+      );
       exact field_close_halved_triangle(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, x, xs(bound), y,
         epsilon,

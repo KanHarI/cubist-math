@@ -5,16 +5,15 @@ import radix_digit_laws;
 import primes;
 use nat;
 
-def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) :=
-  radix_positive_rec(
-    extra, Nat,
-    (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
-    (
-      fun (digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra), ih : Nat) => succ(
-        succ(extra)
-      ) * ih + radix_digit_value(succ(succ(extra)), digit)
-    ), p
-  );
+def radix_positive_to_nat(extra : Nat, p : RadixPositive(extra)) := radix_positive_rec(
+  extra, Nat,
+  (fun (first : RadixDigit(succ(extra))) => succ(radix_digit_value(succ(extra), first))),
+  (
+    fun (digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra), ih : Nat) => succ(
+      succ(extra)
+    ) * ih + radix_digit_value(succ(succ(extra)), digit)
+  ), p
+);
 
 def radix_to_nat(extra : Nat, n : RadixNat(extra)) := match n return Nat {
     radix_nat_zero => 0;

@@ -47,8 +47,8 @@ def contour_sum_scale(
 def curve_subdivision_samples_add(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
-  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f, g : Complex(F) -> Complex(F),
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f, g : Complex(F) -> Complex(F), a,
+  b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(
@@ -100,8 +100,8 @@ def curve_subdivision_samples_scale(
 def curve_subdivision_samples_cong(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), f, g : Complex(F) -> Complex(F),
-  same : (forall t : FieldUnitInterval(F, zero, one, lt). f(curve(t)) = g(curve(t))),
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  same : (forall t : FieldUnitInterval(F, zero, one, lt). f(curve(t)) = g(curve(t))), a,
+  b : FieldUnitInterval(F, zero, one, lt),
   piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b)
 ) :
   curve_subdivision_samples(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece) = curve_subdivision_samples(
@@ -126,11 +126,10 @@ def curve_subdivision_samples_cong(
       ), same(tag)
     );
   }
-  let sums :=
-    sample_sum_cong(
-      I, Complex(F), zeroC, addC, edgeF, edgeG, edges, subdivision_count(I, a, b, piece),
-      subdivision_vertices(I, a, b, piece), subdivision_tags(I, a, b, piece)
-    );
+  let sums := sample_sum_cong(
+    I, Complex(F), zeroC, addC, edgeF, edgeG, edges, subdivision_count(I, a, b, piece),
+    subdivision_vertices(I, a, b, piece), subdivision_tags(I, a, b, piece)
+  );
   exact trans(
     sym(curve_subdivision_sum_is_mapped(F, zero, one, addF, mulF, negF, lt, curve, f, a, b, piece)),
     trans(

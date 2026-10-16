@@ -103,11 +103,10 @@ def finite_normal_separable_fixed_fixing_intermediate(
   let d := extension_degree(R, intermediate_overfield(K, E, M), upperM);
   obtain (upperN, degreeN) := artin_fixed_field_degree(K, E, H, d, countH);
   let steps := finite_extension_tower_converse(R, Q, F, i, h, e, triangle, upperM);
-  let lower :=
-    fst(
-      FiniteExtension(R, embedding_as_extension(R, Q, i)),
-      FiniteExtension(Q, intermediate_overfield(K, E, N)), steps
-    );
+  let lower := fst(
+    FiniteExtension(R, embedding_as_extension(R, Q, i)),
+    FiniteExtension(Q, intermediate_overfield(K, E, N)), steps
+  );
   let m := extension_degree(R, embedding_as_extension(R, Q, i), lower);
   let towerDegree := tower_law(R, Q, F, i, h, e, triangle, lower, upperN, upperM);
   let product : multiply_count(d, m) = d :=
@@ -206,11 +205,10 @@ def finite_galois_cardinality_tower_law(
   let e := extension_inclusion_embedding(K, E);
   let steps :=
     finite_extension_tower_converse(K, R, F, b, i, e, intermediate_tower(K, E, M), finite);
-  let lower :=
-    fst(
-      FiniteExtension(K, intermediate_as_extension(K, E, M)),
-      FiniteExtension(R, intermediate_overfield(K, E, M)), steps
-    );
+  let lower := fst(
+    FiniteExtension(K, intermediate_as_extension(K, E, M)),
+    FiniteExtension(R, intermediate_overfield(K, E, M)), steps
+  );
   obtain (upper, countH) := finite_normal_separable_intermediate_automorphism_count(
     K, E, M, finite, normal, separable, T, closed, j
   );

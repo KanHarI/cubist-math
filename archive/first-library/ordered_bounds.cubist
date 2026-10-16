@@ -61,10 +61,9 @@ def order_le_add_nonnegative(
   FieldLe(F, lt, x, addF(x, y)) {
   let shifted :=
     order_le_translate(F, zero, one, addF, mulF, lt, arithmetic, zero, y, x, aboveZeroWeak);
-  let first :=
-    transport shifted along ring_add_zero(F, zero, one, addF, mulF, negF, ring, x) in (
-      (fun (a : F) => FieldLe(F, lt, a, addF(y, x)))
-    );
+  let first := transport shifted along ring_add_zero(F, zero, one, addF, mulF, negF, ring, x) in (
+    (fun (a : F) => FieldLe(F, lt, a, addF(y, x)))
+  );
   exact transport first along ring_add_comm(F, zero, one, addF, mulF, negF, ring, y, x) in FieldLe(
     F, lt, x
   );

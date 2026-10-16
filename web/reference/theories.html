@@ -56,6 +56,7 @@
             <li><a href="#sections">Sections</a></li>
             <li><a href="#extends">Extension: <code>extends</code></a></li>
             <li><a href="#morphisms">Homomorphisms and isomorphisms</a></li>
+            <li><a href="#initial-models">Initial and free models</a></li>
             <li><a href="#library-algebra">The library's algebra</a></li>
             <li><a href="#generated">What a theory declares</a></li>
             <li><a href="#theory-errors">What is refused</a></li>
@@ -152,6 +153,7 @@ def counting_point : counting.point = 0 {
   rfl;
 }</code></pre>
             <p>A parameter is not a carrier: a homomorphism maps the carriers and keeps the parameters, so <code>Pointed.Hom(A, B)</code> relates two models pointed over one <code>G</code>, in one universe. A child takes its parents' parameters by name, with the same types, <code>theory Fixed(U &lt; UU0, G : Magma(U)) extends Pointed</code>, and their universes: the one universe of each, or each by its name when there are several.</p>
+            <p>An inherited theory without a universe in its header still takes one universe argument. Its public label is <code>U</code>, as in <code>Child(U := U0)</code>; if a term parameter in that header already uses <code>U</code>, the label is the first available <code>U_1</code>, <code>U_2</code>, and so on. Renaming an operation's argument does not change this label. A child with several universes matches this public label in its header.</p>
           </section>
 
           <section id="families">
@@ -348,8 +350,7 @@ theory CommMonoid(U &lt; UU0) extends Monoid {
   law mul_comm(x, y : M) : x * y = y * x;
 }
 
-theory CommGroup(U &lt; UU0) extends Group, CommMonoid {
-}
+theory CommGroup(U &lt; UU0) extends Group, CommMonoid {}
 
 def forget(G : CommGroup(U0)) : Monoid(U0) := G.group.monoid;
 
@@ -465,6 +466,32 @@ theory Iterate(U &lt; UU0) {
 def no_homs(A, B : Iterate(U0)) := Iterate.Hom(A, B);  // Error: Iterate's models have no homomorphisms: its iterate's argument g mentions a carrier on both sides of an arrow, and such homomorphisms need not compose.</code></pre>
           </section>
 
+          <section id="initial-models">
+            <h2>Initial and free models: construction prototype</h2>
+            <p>This is the retained construction-and-fold prototype for L2.6's second slice. It registers no <code>initial</code> or <code>free</code> capability. The planned interface requires the theory to request <code>deriving (morphisms, initial)</code> or <code>deriving (morphisms, free)</code>; that opt-in, uniqueness and the universal-property proofs are not implemented yet. The prototype declarations below remain available as checked construction evidence.</p>
+            <p><code>initial N : T(…);</code> builds a declared type <code>N</code> with a constructor for each operation, such as <code>N.mul</code> and <code>N.one</code>, a path constructor for each equational law, and the squash of the carrier's level. It also defines <code>N.model : T(…)</code>, the recursion <code>N.fold_map</code>, and <code>N.fold(M) : T.Hom(N.model, M)</code>, whose map computes on constructors. <code>free W(A : U0) : T(…) on A;</code> adds <code>W.gen(a)</code>, and its fold takes the generators' images, <code>W.fold(A, M, g)</code>. Explicit universe parameters are supported, as in <code>free W(V &lt; UU0, A : V) : Monoid(V) on A;</code>; implicit parameters are not.</p>
+            <p>The equational strategy currently supports one carrier that is a set or a proposition, named operation arguments that are either the carrier or types independent of it, carrier-valued operations, and equational laws. Arguments must also be independent of the theory's law proofs and carrier evidence; law equations cannot refer to those proofs. Universe arguments belong in the theory's header, not in its operations or laws. A generator type must be independent of the newly declared model, and the model's name must not hide a declaration its expansion uses. Generated interface names such as <code>model</code>, <code>fold</code>, <code>fold_map</code>, <code>squash</code> and <code>gen</code> are reserved by the language at every naming site.</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+import algebra;
+use nat;
+
+free W(A : U0) : Monoid(U0) on A;
+
+// A word's length: each generator is 1 in Nat's additive monoid.
+def length{{A : U0}}(w : W(A)) : Nat := W.fold(A, nat_additive.monoid, fun (a : A) =&gt; 1).map(w);
+
+// Output: 3
+print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
+
+def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);</code></pre>
+            <p>The strategy refuses <code>Field</code> because its inverse law is truncated rather than equational. This is a limitation of the strategy, not a proof that an initial model does not exist. Untruncated carriers are also unsupported; the circle remains an ordinary <code>inductive</code> declaration.</p>
+            <p>The generator type must fit the carrier's universe. E870 marks the expression after <code>on</code> when it does not: choose a larger carrier universe or a smaller generator type.</p>
+            <pre><code data-check="reject">import hlevels;
+import algebra;
+
+initial F : Field(U0);  // Error: The law inverses is not an equation between operation terms: the equational strategy does not support this law.</code></pre>
+          </section>
           <section id="library-algebra">
             <h2>The library's algebra</h2>
             <p><code>import algebra;</code> declares the usual hierarchy as theories, each on one set, with its models, homomorphisms and isomorphisms:</p>

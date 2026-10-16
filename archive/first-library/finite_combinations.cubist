@@ -123,10 +123,9 @@ def combination_scale_step(
   let tailB := finite_tail(A, n, b);
   let headV := finite_head(X, n, v);
   let headB := finite_head(A, n, b);
-  let scaledTail :=
-    linear_combination(
-      K, V, n, tailV, (fun (i : Fin(n)) => af_mul(A, af_operations(K), a, tailB(i)))
-    );
+  let scaledTail := linear_combination(
+    K, V, n, tailV, (fun (i : Fin(n)) => af_mul(A, af_operations(K), a, tailB(i)))
+  );
   let tailSum := linear_combination(K, V, n, tailV, tailB);
   exact trans(
     cong(

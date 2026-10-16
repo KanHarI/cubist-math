@@ -59,11 +59,10 @@ def successor_triangle(z : Z) :=
     };
   };
 
-def successor_equivalence :=
-  typed(
-    Equiv(U0, Z, Z),
-    (successorZ, predecessorZ, predecessor_successor, successor_predecessor, successor_triangle)
-  );
+def successor_equivalence := typed(
+  Equiv(U0, Z, Z),
+  (successorZ, predecessorZ, predecessor_successor, successor_predecessor, successor_triangle)
+);
 
 // Ordinary integer addition: iterate successor or predecessor in the second argument.
 def add_nonnegative(n : Nat, z : Z) := induction n as k return Z {

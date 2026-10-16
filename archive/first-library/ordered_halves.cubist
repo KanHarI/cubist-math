@@ -12,21 +12,19 @@ def half_sum_from_inverse_two(
   inverseTwo : mulF(addF(one, one), reciprocal) = one, epsilon : F
 ) :
   addF(mulF(epsilon, reciprocal), mulF(epsilon, reciprocal)) = epsilon {
-  let twiceReciprocal : addF(reciprocal, reciprocal) = one :=
-    trans(
-      sym(
+  let twiceReciprocal : addF(reciprocal, reciprocal) = one := trans(
+    sym(
+      trans(
+        ring_distribute_left(F, zero, one, addF, mulF, negF, ring, one, one, reciprocal),
         trans(
-          ring_distribute_left(F, zero, one, addF, mulF, negF, ring, one, one, reciprocal),
-          trans(
-            cong(
-              (fun (x : F) => addF(x, mulF(one, reciprocal))),
-              ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal)
-            ),
-            cong(addF(reciprocal), ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal))
-          )
+          cong(
+            (fun (x : F) => addF(x, mulF(one, reciprocal))),
+            ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal)
+          ), cong(addF(reciprocal), ring_mul_one(F, zero, one, addF, mulF, negF, ring, reciprocal))
         )
-      ), inverseTwo
-    );
+      )
+    ), inverseTwo
+  );
   exact trans(
     sym(ring_distribute(F, zero, one, addF, mulF, negF, ring, epsilon, reciprocal, reciprocal)),
     trans(
@@ -63,22 +61,18 @@ def ordered_field_halving(
   Halving(F, zero, addF, lt) {
   obtain (positiveOne, translate, scale, weakScale, ltLe, leLt, splitPositive) := arithmetic;
   let two := addF(one, one);
-  let positiveTwo :=
-    ordered_positive_plus_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, one, one, positiveOne,
-      ordered_lt_implies_le(
-        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
-      )
-    );
+  let positiveTwo := ordered_positive_plus_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, one, one, positiveOne,
+    ordered_lt_implies_le(
+      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, one, positiveOne
+    )
+  );
   obtain (forward, backward) := inverses(two);
-  let actualInverse : exists reciprocal : F.
-  mulF(two, reciprocal) = one :=
-    forward(
-      field_exists_intro(
-        (lt(two, zero) or lt(zero, two)),
-        typed((lt(two, zero) or lt(zero, two)), right(positiveTwo))
-      )
-    );
+  let actualInverse : exists reciprocal : F. mulF(two, reciprocal) = one := forward(
+    field_exists_intro(
+      (lt(two, zero) or lt(zero, two)), typed((lt(two, zero) or lt(zero, two)), right(positiveTwo))
+    )
+  );
   obtain (reciprocal, inverseTwo) := actualInverse;
   let half := fun (epsilon : F) => mulF(epsilon, reciprocal);
   let sum :=

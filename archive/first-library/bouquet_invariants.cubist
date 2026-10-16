@@ -15,33 +15,30 @@ def bouquet_maps_determined_by_letters(
   ), p : BouquetLoops(A)
 ) :
   h(p) = k(p) {
-  let valuesH :=
-    fun (letter : Signed(A)) => h(
-      letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
-    );
-  let valuesK :=
-    fun (letter : Signed(A)) => k(
-      letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
-    );
+  let valuesH := fun (letter : Signed(A)) => h(
+    letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
+  );
+  let valuesK := fun (letter : Signed(A)) => k(
+    letter_path(A, Bouquet(A), bouquet_base(A), bouquet_generator(A), letter)
+  );
   let valuesEqual : valuesH = valuesK :=
     FunExt(U1, Signed(A), (fun (letter : Signed(A)) => G), valuesH, valuesK, same);
-  let wordEqual :=
-    fun (word : Word(A)) => trans(
-      loop_map_word(
-        A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, h, lawsH, word
+  let wordEqual := fun (word : Word(A)) => trans(
+    loop_map_word(
+      A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, h, lawsH, word
+    ),
+    trans(
+      cong(
+        (fun (values : Signed(A) -> G) => fold_word(A, G, unit, multiply, values, word)),
+        valuesEqual
       ),
-      trans(
-        cong(
-          (fun (values : Signed(A) -> G) => fold_word(A, G, unit, multiply, values, word)),
-          valuesEqual
-        ),
-        sym(
-          loop_map_word(
-            A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, k, lawsK, word
-          )
+      sym(
+        loop_map_word(
+          A, Bouquet(A), bouquet_base(A), bouquet_generator(A), G, unit, multiply, k, lawsK, word
         )
       )
-    );
+    )
+  );
   exact small_mere_eliminate(
     (
       exists word : Word(A).

@@ -57,15 +57,14 @@ def intermediate_inclusion_antisym(
   let Q := intermediate_members(K, E, N);
   obtain (closureM, baseM) := intermediate_laws(K, E, M);
   obtain (closureN, baseN) := intermediate_laws(K, E, N);
-  let same : P = Q :=
-    field_predicate_ext(
-      extension_carrier(K, E), P, Q, subfield_prop(F, P, closureM), subfield_prop(F, Q, closureN),
-      (
-        fun (x : extension_carrier(K, E)) => typed(
-          ((P(x) -> Q(x)) and (Q(x) -> P(x))), (mn(x), nm(x))
-        )
+  let same : P = Q := field_predicate_ext(
+    extension_carrier(K, E), P, Q, subfield_prop(F, P, closureM), subfield_prop(F, Q, closureN),
+    (
+      fun (x : extension_carrier(K, E)) => typed(
+        ((P(x) -> Q(x)) and (Q(x) -> P(x))), (mn(x), nm(x))
       )
-    );
+    )
+  );
   exact intermediate_ext(K, E, M, N, same);
 }
 

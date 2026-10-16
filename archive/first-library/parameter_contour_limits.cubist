@@ -45,11 +45,10 @@ def complex_parameter_tag_errors_converge(
       )
     ), complex_zero(F, zero)
   ) {
-  let scaledVanishes :=
-    field_nonnegative_scale_zero_converges(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
-      nonnegativeLength, delta, vanishes
-    );
+  let scaledVanishes := field_nonnegative_scale_zero_converges(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
+    nonnegativeLength, delta, vanishes
+  );
   exact complex_box_squeeze(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (
@@ -118,43 +117,37 @@ def complex_parameter_tag_independent_limit(
       )
     ), value
   ) {
-  let oldSums :=
-    (
-      fun (n : Nat) => complex_parameter_contour_sum(
-        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)
-      )
-    );
-  let newSums :=
-    (
-      fun (n : Nat) => complex_parameter_contour_sum(
-        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
-      )
-    );
-  let errorSums :=
-    (
-      fun (n : Nat) => complex_parameter_tag_error_sum(
-        C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n)
-      )
-    );
+  let oldSums := (
+    fun (n : Nat) => complex_parameter_contour_sum(
+      C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n)
+    )
+  );
+  let newSums := (
+    fun (n : Nat) => complex_parameter_contour_sum(
+      C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), newTags(n)
+    )
+  );
+  let errorSums := (
+    fun (n : Nat) => complex_parameter_tag_error_sum(
+      C, F, zero, addF, mulF, negF, curve, values, count(n), vertices(n), oldTags(n), newTags(n)
+    )
+  );
   let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
-  let errorConverges :=
-    complex_parameter_tag_errors_converge(
-      C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values,
-      realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength,
-      nonnegativeDelta, errors, increments, variation, vanishes
-    );
-  let added :=
-    complex_converges_add(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, oldSums, errorSums,
-      value, complex_zero(F, zero), oldConverges, errorConverges
-    );
+  let errorConverges := complex_parameter_tag_errors_converge(
+    C, F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, values,
+    realWeight, imagWeight, count, vertices, oldTags, newTags, delta, length, nonnegativeLength,
+    nonnegativeDelta, errors, increments, variation, vanishes
+  );
+  let added := complex_converges_add(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, oldSums, errorSums, value,
+    complex_zero(F, zero), oldConverges, errorConverges
+  );
   let ringC := complex_commutative_ring(F, zero, one, addF, mulF, negF, ring);
-  let unit :=
-    ring_add_zero_right(
-      Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
-      complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value
-    );
+  let unit := ring_add_zero_right(
+    Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
+    complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value
+  );
   let total := fun (n : Nat) => complex_add(F, addF, oldSums(n), errorSums(n));
   let sameLimit := transport added along unit in ComplexConverges(F, zero, addF, lt, total);
   let pointwise : forall n : Nat. total(n) = newSums(n) {

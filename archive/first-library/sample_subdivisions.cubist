@@ -24,37 +24,33 @@ def subdivision_count(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) :=
 def subdivision_samples(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) :=
   field_second(Nat, SubdivisionSamples(C, a, b), piece);
 
-def subdivision_vertices(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) :=
-  field_first(
-    SampleVertices(C, subdivision_count(C, a, b, piece)),
-    SubdivisionTags(C, a, b, subdivision_count(C, a, b, piece)), subdivision_samples(C, a, b, piece)
-  );
+def subdivision_vertices(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) := field_first(
+  SampleVertices(C, subdivision_count(C, a, b, piece)),
+  SubdivisionTags(C, a, b, subdivision_count(C, a, b, piece)), subdivision_samples(C, a, b, piece)
+);
 
-def subdivision_tag_data(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) :=
-  field_second(
-    SampleVertices(C, subdivision_count(C, a, b, piece)),
-    SubdivisionTags(C, a, b, subdivision_count(C, a, b, piece)), subdivision_samples(C, a, b, piece)
-  );
+def subdivision_tag_data(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) := field_second(
+  SampleVertices(C, subdivision_count(C, a, b, piece)),
+  SubdivisionTags(C, a, b, subdivision_count(C, a, b, piece)), subdivision_samples(C, a, b, piece)
+);
 
-def subdivision_tags(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) :=
-  field_first(
-    SampleTags(C, subdivision_count(C, a, b, piece)),
-    (
-      fun (tags : SampleTags(C, subdivision_count(C, a, b, piece))) => SubdivisionEndpoints(
-        C, a, b, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece)
-      )
-    ), subdivision_tag_data(C, a, b, piece)
-  );
+def subdivision_tags(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) := field_first(
+  SampleTags(C, subdivision_count(C, a, b, piece)),
+  (
+    fun (tags : SampleTags(C, subdivision_count(C, a, b, piece))) => SubdivisionEndpoints(
+      C, a, b, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece)
+    )
+  ), subdivision_tag_data(C, a, b, piece)
+);
 
-def subdivision_endpoints(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) :=
-  field_second(
-    SampleTags(C, subdivision_count(C, a, b, piece)),
-    (
-      fun (tags : SampleTags(C, subdivision_count(C, a, b, piece))) => SubdivisionEndpoints(
-        C, a, b, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece)
-      )
-    ), subdivision_tag_data(C, a, b, piece)
-  );
+def subdivision_endpoints(C : U1, a, b : C, piece : SampleSubdivision(C, a, b)) := field_second(
+  SampleTags(C, subdivision_count(C, a, b, piece)),
+  (
+    fun (tags : SampleTags(C, subdivision_count(C, a, b, piece))) => SubdivisionEndpoints(
+      C, a, b, subdivision_count(C, a, b, piece), subdivision_vertices(C, a, b, piece)
+    )
+  ), subdivision_tag_data(C, a, b, piece)
+);
 
 def subdivision_sum(
   C, G : U1, zero : G, addG : G -> G -> G, edge : C -> C -> C -> G, a, b : C,
@@ -79,26 +75,22 @@ def join_subdivisions(
   let m := subdivision_count(C, b, c, right_);
   let rightVertices := subdivision_vertices(C, b, c, right_);
   let rightTags := subdivision_tags(C, b, c, right_);
-  let firstLeft : sample_first(C, n, vertices) = a :=
-    field_fst(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left_)
-    );
-  let lastLeft : sample_last(C, n, vertices) = b :=
-    field_snd(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left_)
-    );
-  let firstRight : sample_first(C, m, rightVertices) = b :=
-    field_fst(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right_)
-    );
-  let lastRight : sample_last(C, m, rightVertices) = c :=
-    field_snd(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right_)
-    );
+  let firstLeft : sample_first(C, n, vertices) = a := field_fst(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left_)
+  );
+  let lastLeft : sample_last(C, n, vertices) = b := field_snd(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left_)
+  );
+  let firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right_)
+  );
+  let lastRight : sample_last(C, m, rightVertices) = c := field_snd(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right_)
+  );
   let same := trans(lastLeft, sym(firstRight));
   exact (
     n + m, join_vertices(C, n, vertices, m, rightVertices), join_tags(C, n, tags, m, rightTags),
@@ -123,16 +115,14 @@ def subdivision_sum_join(
   let m := subdivision_count(C, b, c, right_);
   let rightVertices := subdivision_vertices(C, b, c, right_);
   let rightTags := subdivision_tags(C, b, c, right_);
-  let lastLeft : sample_last(C, n, vertices) = b :=
-    field_snd(
-      (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
-      subdivision_endpoints(C, a, b, left_)
-    );
-  let firstRight : sample_first(C, m, rightVertices) = b :=
-    field_fst(
-      (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
-      subdivision_endpoints(C, b, c, right_)
-    );
+  let lastLeft : sample_last(C, n, vertices) = b := field_snd(
+    (sample_first(C, n, vertices) = a), (sample_last(C, n, vertices) = b),
+    subdivision_endpoints(C, a, b, left_)
+  );
+  let firstRight : sample_first(C, m, rightVertices) = b := field_fst(
+    (sample_first(C, m, rightVertices) = b), (sample_last(C, m, rightVertices) = c),
+    subdivision_endpoints(C, b, c, right_)
+  );
   exact sample_sum_join(
     C, G, zero, addG, unitLaw, assoc, edge, n, vertices, tags, m, rightVertices, rightTags,
     trans(lastLeft, sym(firstRight))

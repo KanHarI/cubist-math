@@ -29,8 +29,9 @@ presentations of those carriers.
 
 The interface stays an **Archimedean ordered field with Cauchy completeness**,
 with Dedekind completeness as a separate property. It becomes the theory
-`CompleteOrderedField` (ergonomics milestone 6), so analysis is written
-against its models and does not depend on which construction supplies them.
+`CompleteOrderedField` (L2.4, which absorbed ergonomics milestone 6), so
+analysis is written against its models and does not depend on which
+construction supplies them.
 The constructive developments assume neither excluded middle nor choice.
 
 **An unproved compatibility obligation (corrected).** The archived interface
@@ -83,10 +84,11 @@ definitions are not claimed to fail to check; the obligation is the bridge.
   `PosRat` is positive NUM2 `Q` for precision. Numerical sequence indices
   and modulus bounds use `BNat`, whatever public spelling is adopted for
   the new default `Nat`.
-- **Readout.** There is no source-level selector `Trunc(A) -> A`; L2.9b is
-  a closed evaluation tool that needs a closed computable input and a
-  checked error certificate. Its later H3 extension must specify the
-  extracted witness's type: under heterogeneous transport a base witness
+- **Readout.** There is no source-level selector `Trunc(A) -> A`. L2.9b,
+  done on 2026-10-06, reads the witness off a closed, computable truncation
+  with `print(witness(t))`; an approximation also needs a checked error
+  certificate. Its later H3 extension must specify the extracted witness's
+  type: under heterogeneous transport a base witness
   has type `A(0)` while the requested result needs `A(1)`, so "read off the
   base" needs that case. H1's homogeneous `hcomp` and computing parameter
   transport show no such defect; L2.9b's tests include transported
@@ -113,6 +115,8 @@ definitions are not claimed to fail to check; the obligation is the bridge.
 
    **Historical completion:** the 2026-10-05 unary-backed carriers have
    arithmetic, setness, decidable equality and field laws, but no order.
+   Since 2026-10-06 their rational literals, such as `rationals.(1/2)`
+   and `rationals.(0.5)`, use L2.10c's notation.
    They remain compatibility clients. NUM2 and R1's new targets are
    planned, not implemented; neither requires comparison maps to the old
    carriers.
@@ -123,8 +127,11 @@ definitions are not claimed to fail to check; the obligation is the bridge.
    bounds; settle the modulus API and prove the bridge above before
    porting clients. It needs no H3 and can proceed with
    any model, even before a concrete reals construction exists. L2.4 was
-   delivered on 2026-10-05, and the library's `Field` is the starting
-   point; its inverse becomes partial with L2.10k.
+   delivered on 2026-10-05 and L2.4c on 2026-10-06; its relations state
+   `<` and `<=`. The library's `Field` is the starting point. Since L2.10k
+   (2026-10-06) it states invertibility as a truncated law and derives
+   `inv` by unique choice. The rationals supply that law with `merely`,
+   and their inverse computes.
 3. **R3. Cauchy reals** (B5), scheduled as separate obligations
    (corrected: "field operations by folding" hid most of them):
    - `CauchyStructure` and its initial model at H3;
@@ -155,7 +162,7 @@ complete ordered field.
 | --- | --- |
 | R1 integers | NUM2's new `Z`; scope decision before decidable order and ordered-ring laws. Later signed presentation: binary magnitudes, L2.7 and agreement with this `Z` |
 | R1 rationals | NUM2's new `Q`; R1 integer order and the scope decision before rational order laws, `PosRat` and Archimedean bounds in `BNat`. Later canonical presentation: L2.7, binary gcd, correctness, uniqueness and agreement with this `Q` |
-| R2 field interface | L2.4 core theories, L2.5a h-level fields and R1's ordered new `Q`/`PosRat` for rational precision; modulus API with binary bounds and the sequence/approximation bridge proved before clients are ported; no H3 |
+| R2 field interface | L2.4 and L2.4c core theories (including relations), L2.5a h-level fields and R1's ordered new `Q`/`PosRat` for rational precision; modulus API with binary bounds and the sequence/approximation bridge proved before clients are ported; no H3 |
 | R3 Cauchy reals | K5.1/K5.2/L5.1; L2.6 initial models and folds; R1 and R2; the construction proofs listed above; L2.9b for the closed approximation readout |
 | R4 Dedekind fallback | H1 truncation and the cut and field mathematics; canonical rationals in place of a generic quotient; L2.9b for readout |
 

@@ -91,7 +91,8 @@ computable def descend(
   respects : Respects(U, V, A, R, B, f), q : Quotient(U, A, R)
 ) :
   B := quotient_induction(
-    U, V, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set_, f, respects, q
+    U, V, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set_, f, respects,
+    q
   );
 
 computable def descend_class(

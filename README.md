@@ -64,8 +64,11 @@ tree's own stamp. So does a test file run on its own, with `node` or
 
 The independent optimization switches are `--[no-]share-syntax`,
 `--[no-]reuse-checks`, and `--[no-]compact-paths`; all default on.
-`npm run format:cubist` formats sources and flattens right-associated tuples
-while checking that the expanded AST is unchanged. Add `-- --check` for a dry run.
+`npm run format:cubist` formats every `.cubist` source git does not ignore, or
+the files named, and flattens right-associated tuples while checking that the
+expanded AST is unchanged. Add `-- --check` for a dry run. Every source is kept
+formatted: `tests/formatting.test.mjs` fails, in `npm test` and CI, on one that
+is not.
 `npm run lint:cubist` reports bindings that are never used and can be removed,
 such as an `as` name no motive mentions; checking reports the same warnings.
 

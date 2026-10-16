@@ -159,10 +159,9 @@ def adjoined_embeddings_upper_bound(
   let n := succ(modulus_degree(K, M));
   let H := AdjoinedEmbeddings(K, M, irreducible, L, e);
   let R := PolynomialRoots(K, L, e, p);
-  let roots :=
-    transport family along adjoined_embeddings_are_roots(K, M, irreducible, L, e) in (
-      (fun (A : U0) => DistinctFamily(A, n))
-    );
+  let roots := transport family along adjoined_embeddings_are_roots(K, M, irreducible, L, e) in (
+    (fun (A : U0) => DistinctFamily(A, n))
+  );
   let degree :=
     cong((fun (d : Nat) => succ(natural_predecessor(d))), modulus_degree_equality(K, M));
   exact polynomial_root_family_upper_bound(

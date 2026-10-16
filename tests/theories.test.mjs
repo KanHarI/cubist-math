@@ -11,9 +11,10 @@ import { formatCubist } from "../web/cubist/formatter.mjs";
 import { currentSyntax, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
-import { testModule } from "./check-program.mjs";
+import { checkProgram, testModule } from "./check-program.mjs";
 
-const theories = testModule("theories", { module: await createCubical() });
+const module = await createCubical();
+const theories = testModule("theories", { module });
 
 test("theory constructors keep header parameters apart from generated field binders", async () => {
   const { get } = await testModule("theory_headers")();
@@ -45,6 +46,74 @@ test("a theory checks as its model type, constructor, projections, parents' mode
     "Semiring.add", "Semiring.add_assoc", "Semiring.zero", "Semiring.zero_add", "Semiring.add_zero", "Semiring.add_comm",
     "Semiring.mul", "Semiring.mul_assoc"]);
   assert.ok(semiring.includes("Semiring.additive_") && semiring.includes("Semiring.multiplicative"));
+});
+
+// Here rather than in theory_morphisms.cubist: the linter (W706) would have
+// pair written M -> M -> M, whose carrier on both sides of an arrow has no
+// homomorphisms.
+test("an operation whose arguments share one domain has homomorphisms, preserving it and computing", async t => {
+  const { result } = await checkProgram(t, `import nat;
+import hlevels;
+use nat;
+
+theory Pair(U < UU0) {
+  M : set U;
+  pair : forall x, y : M. M;
+}
+
+def nat_pair : Pair(U0) := Pair.make(Nat, nat_is_set, add);
+
+def preserved(A, B : Pair(U0), f : Pair.Hom(A, B), x, y : A.M) :
+  f.map(A.pair(x, y)) = B.pair(f.map(x), f.map(y)) := f.map_pair(x, y);
+
+def composite : Pair.Hom.compose(Pair.Hom.id(nat_pair), Pair.Hom.id(nat_pair)).map(5) = 5 {
+  rfl;
+}
+`, { module, name: "grouped" });
+  assert.deepEqual(result.gaps, []);
+  assert.equal(result.complete, true);
+});
+
+// A group that repeats a name still takes an argument for each occurrence;
+// the body reads the last.
+test("an operation whose group repeats a name has homomorphisms for each argument", async t => {
+  const { result } = await checkProgram(t, `import nat;
+import hlevels;
+use nat;
+
+theory T(U < UU0) {
+  M : set U;
+  op : forall x, x : M. M;
+}
+
+def second : T(U0) := T.make(Nat, nat_is_set, fun x => fun y => y);
+
+def preserved(A, B : T(U0), f : T.Hom(A, B), x, y : A.M) :
+  f.map(A.op(x, y)) = B.op(f.map(x), f.map(y)) := f.map_op(x, y);
+
+def composite : T.Hom.compose(T.Hom.id(second), T.Hom.id(second)).map(second.op(3, 5)) = 5 {
+  rfl;
+}
+`, { module, name: "repeated" });
+  assert.deepEqual(result.gaps, []);
+  assert.equal(result.complete, true);
+});
+
+test("fresh operation binders avoid theory parameters absent from the field type", async t => {
+  const { result } = await checkProgram(t, `import hlevels;
+theory T(U < UU0, M_1 : Unit) {
+  M : set U;
+  op(M : M) : Unit;
+}
+def preserved(A, B : T(U0, tt), f : T.Hom(A, B), x : A.M) :
+  A.op(x) = B.op(f.map(x)) := f.map_op(x);
+def composite(S : T(U0, tt), x : S.M) :
+  T.Hom.compose(T.Hom.id(S), T.Hom.id(S)).map(x) = x { rfl; }
+def iso_composite(S : T(U0, tt), x : S.M) :
+  T.Iso.compose(T.Iso.id(S), T.Iso.id(S)).to.map(x) = x { rfl; }
+`, { module, name: "fresh_parameters" });
+  assert.deepEqual(result.gaps, []);
+  assert.equal(result.complete, true);
 });
 
 test("theory syntax parses with its parents, renamings and notations, and formats stably", () => {
@@ -209,4 +278,32 @@ test("arithmetic groups as L2.10b says, with the cubical operators tightest", ()
     const formatted = formatCubist(`def f := ${source}\n`);
     assert.equal(formatCubist(formatted), formatted);
   }
+});
+
+test("a use refused before a theory fails the theory and its children once, at the use", async t => {
+  const source = `import hlevels;
+use Nat;
+theory T(U < UU0) { M : set U; c : M; }
+theory C extends T {}
+initial N : T(U0);`;
+  const { result } = await checkProgram(t, source, { module });
+  const failures = result.outputs.filter(o => !o.verified);
+  assert.deepEqual(failures.map(o => [o.name, o.code]), [["T", "E834"], ["C", "E834"], ["N", "E340"]]);
+  for (const name of ["T", "C"]) {
+    const failure = failures.find(o => o.name === name);
+    assert.equal(failure.reason.match(/ at \d+:\d+/g).length, 1, failure.reason);
+    assert.equal(failure.errorStart, source.indexOf("Nat"));
+  }
+});
+
+test("a theory's name links to its declarations, its type of models first, and its generated syntax nowhere", async t => {
+  const source = `import hlevels;
+theory Things(U < UU0) { M : set U; op(x, y : M) : M; }`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.gaps, []);
+  const name = source.indexOf("Things");
+  assert.deepEqual(result.links.filter(link => link.start === name + "Things".length || link.start >= source.length), []);
+  const atName = result.links.filter(link => link.start >= name && link.start < name + "Things".length);
+  assert.deepEqual([...new Set(atName.map(link => link.role))], ["def"]);
+  assert.equal(atName[0].name, "Things");
 });

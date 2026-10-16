@@ -53,10 +53,9 @@ def extra_embedding_fixes_fixed_base(
   let G := GaloisGroup(K, E);
   let M := fixed_intermediate_field(K, E, H);
   let F := extension_field(K, E);
-  let value :=
-    field_embedding_map(
-      intermediate_as_field(K, E, M), F, intermediate_ambient_embedding(K, E, M), a
-    );
+  let value := field_embedding_map(
+    intermediate_as_field(K, E, M), F, intermediate_ambient_embedding(K, E, M), a
+  );
   let member := subfield_evidence(F, intermediate_subfield(K, E, M), a);
   exact match t as index return (
     field_embedding_map(
@@ -104,11 +103,10 @@ def artin_fixed_field_automorphism_classification(
     let reject : Basis -> Void {
       intro witness_;
       obtain (enumeration, points, basis) := witness_;
-      let maps :=
-        fin_prepend(
-          FieldEmbedding(F, F), n, galois_field_embedding(K, E, g),
-          subgroup_evaluation_maps(K, E, H, n, enumeration)
-        );
+      let maps := fin_prepend(
+        FieldEmbedding(F, F), n, galois_field_embedding(K, E, g),
+        subgroup_evaluation_maps(K, E, H, n, enumeration)
+      );
       let spanning := subgroup_evaluation_spans_fixed_field(K, E, H, n, enumeration, points, basis);
       exact finite_spanning_embeddings_upper_bound(
         R, F, i, n, points, spanning, maps,
@@ -142,24 +140,23 @@ def artin_fixing_fixed_subgroup(
   let G := GaloisGroup(K, E);
   let members := galois_subgroup_members(K, E, H);
   let closed := GaloisFixing(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)));
-  let same : closed = members :=
-    field_predicate_ext(
-      Galois(K, E), closed, members,
-      galois_fixing_prop(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H))),
-      subgroup_prop(G, members, subgroup_laws(G, H)),
-      (
-        fun (g : Galois(K, E)) => typed(
-          (closed(g) -> members(g)) and (members(g) -> closed(g)),
+  let same : closed = members := field_predicate_ext(
+    Galois(K, E), closed, members,
+    galois_fixing_prop(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H))),
+    subgroup_prop(G, members, subgroup_laws(G, H)),
+    (
+      fun (g : Galois(K, E)) => typed(
+        (closed(g) -> members(g)) and (members(g) -> closed(g)),
+        (
           (
-            (
-              fun (fixes : closed(g)) => artin_fixed_field_automorphism_classification(
-                K, E, H, n, finite, g, fixes
-              )
-            ), galois_fixing_fixed_contains(K, E, members, g)
-          )
+            fun (fixes : closed(g)) => artin_fixed_field_automorphism_classification(
+              K, E, H, n, finite, g, fixes
+            )
+          ), galois_fixing_fixed_contains(K, E, members, g)
         )
       )
-    );
+    )
+  );
   exact subgroup_ext(G, fixing_galois_subgroup(K, E, fixed_intermediate_field(K, E, H)), H, same);
 }
 

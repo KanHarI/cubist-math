@@ -16,11 +16,9 @@ def generated_algebraic_finite_zero : GeneratedAlgebraicFinite(0) {
   intro K, L, e, generators, algebraic, generates;
   let V := field_vector_space(K, L, e);
   let onto := field_generated_empty_surjective(K, L, e, generators, generates);
-  let iso :=
-    linear_bijective_iso(
-      K, ScalarSpace(K), V, field_embedding_linear(K, L, e), field_embedding_injective(K, L, e),
-      onto
-    );
+  let iso := linear_bijective_iso(
+    K, ScalarSpace(K), V, field_embedding_linear(K, L, e), field_embedding_injective(K, L, e), onto
+  );
   exact finite_extension_basis(
     K, embedding_as_extension(K, L, e), 1,
     linear_iso_compose(K, CoordinateSpace(K, 1), ScalarSpace(K), V, scalar_space_basis(K), iso)
@@ -41,17 +39,15 @@ def generated_algebraic_finite_step(n : Nat, previous : GeneratedAlgebraicFinite
   let triangle := residue_evaluate_constant(K, M, L, e, x, root);
   let tower := field_embedding_ext(K, L, field_embedding_compose(K, R, L, i, h), e, triangle);
   let tail := finite_tail(af_carrier(L), n, generators);
-  let algR :=
-    (
-      fun (index : Fin(n)) => algebraic_element_enlarge_base(
-        K, R, L, i, h, e, tower, tail(index), algebraic(typed(Fin(succ(n)), right(index)))
-      )
-    );
-  let genR :=
-    field_generated_adjoin_tail(
-      K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
-      residue_evaluate_generator(K, M, L, e, x, root)
-    );
+  let algR := (
+    fun (index : Fin(n)) => algebraic_element_enlarge_base(
+      K, R, L, i, h, e, tower, tail(index), algebraic(typed(Fin(succ(n)), right(index)))
+    )
+  );
+  let genR := field_generated_adjoin_tail(
+    K, R, L, i, h, e, triangle, n, generators, generates, adjoined_root(K, M),
+    residue_evaluate_generator(K, M, L, e, x, root)
+  );
   exact finite_extension_tower(
     K, R, L, i, h, e, tower, adjoined_extension_finite(K, M, irr),
     previous(R, L, h, tail, algR, genR)

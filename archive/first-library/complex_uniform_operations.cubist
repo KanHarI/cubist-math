@@ -64,22 +64,18 @@ def complex_uniform_curve_add(
     intro a, b, nearby;
     let x := field_interval_coordinate(F, zero, one, lt)(a);
     let y := field_interval_coordinate(F, zero, one, lt)(b);
-    let first :=
-      closeF(
-        a, b,
-        field_close_enlarge(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, r, belowR,
-          nearby
-        )
-      );
-    let second :=
-      closeG(
-        a, b,
-        field_close_enlarge(
-          F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS,
-          nearby
-        )
-      );
+    let first := closeF(
+      a, b,
+      field_close_enlarge(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, r, belowR, nearby
+      )
+    );
+    let second := closeG(
+      a, b,
+      field_close_enlarge(
+        F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, x, y, delta, s, belowS, nearby
+      )
+    );
     exact transport complex_close_add(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f(a), f(b), g(a), g(b), smaller,
       smaller, first, second

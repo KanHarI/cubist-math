@@ -225,10 +225,9 @@ def complex_inverse_from_norm(
   normLaw : mulF(complex_norm_squared(F, addF, mulF, z), reciprocal) = one
 ) :
   exists w : Complex(F). complex_mul(F, addF, mulF, negF, z, w) = complex_one(F, zero, one) {
-  let w :=
-    typed(
-      Complex(F), (mulF(complex_real(F, z), reciprocal), negF(mulF(complex_imag(F, z), reciprocal)))
-    );
+  let w := typed(
+    Complex(F), (mulF(complex_real(F, z), reciprocal), negF(mulF(complex_imag(F, z), reciprocal)))
+  );
   exact (
     w,
     field_pair_path(

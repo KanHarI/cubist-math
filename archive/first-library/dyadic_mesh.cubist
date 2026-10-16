@@ -15,8 +15,7 @@ def interval_tagged_width_admissible(
   let I := FieldUnitInterval(F, zero, one, lt);
   let condition := IntervalTaggedWidth(F, zero, one, addF, negF, lt, radius);
   let other := IntervalTagWithin(F, zero, one, lt);
-  let mapping :
-    forall a : I. forall b : I. forall tag : I. condition(a, b, tag) -> other(a, b, tag) {
+  let mapping : forall a : I. forall b : I. forall tag : I. condition(a, b, tag) -> other(a, b, tag) {
     intro a, b, tag, data;
     exact field_fst(
       other(a, b, tag),
@@ -58,8 +57,8 @@ def dyadic_interval_samples_fine(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat,
-  a, b : FieldUnitInterval(F, zero, one, lt),
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat, a,
+  b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)

@@ -22,8 +22,8 @@ def fiber_is_set(A, B : U0, setA : IsSet(U0, A), setB : IsSet(U0, B), f : A -> B
 }
 
 def EverySurjectionHasRightInverse :=
-  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B. Surjective(A, B, f)
-  -> Mere(RightInverse(A, B, f));
+  forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B.
+  Surjective(A, B, f) -> Mere(RightInverse(A, B, f));
 
 // Apply the existing set-level axiom of choice to the fibers over B.
 // Its conclusion is mere existence; truncation is eliminated only into the

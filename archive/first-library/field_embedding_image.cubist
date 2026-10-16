@@ -27,11 +27,9 @@ def embedding_image_inverse(
 ) :
   af_carrier(K) {
   let S := subfield_image(K, L, e, subfield_top(K));
-  let fiber :=
-    (
-      fun (x : af_carrier(K)) => Unit
-      and (field_embedding_map(K, L, e, x) = subfield_value(L, S, y))
-    );
+  let fiber := (
+    fun (x : af_carrier(K)) => Unit and (field_embedding_map(K, L, e, x) = subfield_value(L, S, y))
+  );
   exact sigma_first(af_carrier(K), fiber, subfield_evidence(L, S, y));
 }
 

@@ -47,10 +47,9 @@ def curve_contour_uniform_tag_stability(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
     nonnegativeLength, epsilon, positive
   );
-  let nonnegativeDelta :=
-    ordered_lt_implies_le(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, delta, positiveDelta
-    );
+  let nonnegativeDelta := ordered_lt_implies_le(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero, delta, positiveDelta
+  );
   obtain (mesh, positiveMesh, bounds) := uniform_curve_tag_bounds(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (fun (t : I) => integrand(curve(t))), uniform, delta, positiveDelta
@@ -58,10 +57,9 @@ def curve_contour_uniform_tag_stability(
   let stable :
     CurveFineTagsClose(F, zero, one, addF, mulF, negF, lt, curve, integrand, epsilon, mesh) {
     intro n, vertices, oldTags, newTags, fine, oldValid, newValid;
-    let ordered :=
-      interval_admissible_samples_ordered(
-        F, zero, one, addF, mulF, lt, arithmetic, n, vertices, oldTags, oldValid
-      );
+    let ordered := interval_admissible_samples_ordered(
+      F, zero, one, addF, mulF, lt, arithmetic, n, vertices, oldTags, oldValid
+    );
     exact curve_contour_tag_change_close(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, curve, integrand, realWeight,
       imagWeight, length, variation, delta, nonnegativeDelta, n, vertices, oldTags, newTags,
@@ -99,20 +97,17 @@ def affine_contour_uniform_tag_stability(
     field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_real(F, error));
   let boundImag :=
     field_lattice_magnitude(F, negF, lt, minF, maxF, lattice, complex_imag(F, error));
-  let nonnegativeR :=
-    field_magnitude_radius_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r,
-      boundReal
-    );
-  let nonnegativeS :=
-    field_magnitude_radius_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s,
-      boundImag
-    );
-  let nonnegativeLength :=
-    ordered_sum_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, nonnegativeR, nonnegativeS
-    );
+  let nonnegativeR := field_magnitude_radius_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_real(F, error), r,
+    boundReal
+  );
+  let nonnegativeS := field_magnitude_radius_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, complex_imag(F, error), s,
+    boundImag
+  );
+  let nonnegativeLength := ordered_sum_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, r, s, nonnegativeR, nonnegativeS
+  );
   exact curve_contour_uniform_tag_stability(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, curve, integrand,
     uniform, interval_weight(F, zero, one, addF, mulF, negF, lt, r),

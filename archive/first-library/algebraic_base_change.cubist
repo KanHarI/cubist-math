@@ -61,11 +61,10 @@ def algebraic_element_enlarge_base(
     intro witness_;
     obtain (p, nonzero, root) := witness_;
     let q := polynomial_map(K, R, i, p);
-    let same :=
-      trans(
-        polynomial_eval_base_change(K, R, L, i, h, p, x),
-        cong((fun (j : FieldEmbedding(K, L)) => polynomial_eval(K, L, j, p, x)), triangle)
-      );
+    let same := trans(
+      polynomial_eval_base_change(K, R, L, i, h, p, x),
+      cong((fun (j : FieldEmbedding(K, L)) => polynomial_eval(K, L, j, p, x)), triangle)
+    );
     exact merely(
       (exists q : Polynomial(R). PolynomialNonzero(R, q) and PolynomialRoot(R, L, h, q, x)),
       typed(
@@ -87,13 +86,12 @@ def polynomial_map_reflects_unit(
   nonzero : PolynomialNonzero(K, p), unit : PolynomialUnit(L, polynomial_map(K, L, e, p))
 ) :
   PolynomialUnit(K, p) {
-  let degree :=
-    trans(
-      sym(polynomial_map_cutoff(K, L, e, p)),
-      polynomial_unit_cutoff(
-        L, polynomial_map(K, L, e, p), polynomial_map_nonzero(K, L, e, p, nonzero), unit
-      )
-    );
+  let degree := trans(
+    sym(polynomial_map_cutoff(K, L, e, p)),
+    polynomial_unit_cutoff(
+      L, polynomial_map(K, L, e, p), polynomial_map_nonzero(K, L, e, p, nonzero), unit
+    )
+  );
   exact polynomial_degree_zero_unit(K, p, degree);
 }
 
@@ -137,11 +135,10 @@ def polynomial_root_reflect(
   PolynomialRoot(K, R, i, p, x) {
   let f := field_embedding_map(R, L, h);
   obtain (zero, one, neg, add, mul) := field_embedding_preserves(R, L, h);
-  let same :=
-    trans(
-      polynomial_eval_embedding(K, R, L, i, h, p, x),
-      cong((fun (j : FieldEmbedding(K, L)) => polynomial_eval(K, L, j, p, f(x))), triangle)
-    );
+  let same := trans(
+    polynomial_eval_embedding(K, R, L, i, h, p, x),
+    cong((fun (j : FieldEmbedding(K, L)) => polynomial_eval(K, L, j, p, f(x))), triangle)
+  );
   exact field_embedding_injective(
     R, L, h, polynomial_eval(K, R, i, p, x), field_zero(R), trans(same, trans(root, sym(zero)))
   );

@@ -109,7 +109,8 @@ def fin_omit_injective(n : Nat) :=
   };
 
 // Every index is either the removed one or is reached by the omission map.
-def OmitCover(n : Nat, i, j : Fin(succ(n))) := (j = i) or (exists t : Fin(n). fin_omit(n, i, t) = j);
+def OmitCover(n : Nat, i, j : Fin(succ(n))) :=
+  (j = i) or (exists t : Fin(n). fin_omit(n, i, t) = j);
 
 def fin_omit_cover(n : Nat) :=
   induction n as k return (forall i : Fin(succ(k)). forall j : Fin(succ(k)). OmitCover(k, i, j)) {

@@ -56,10 +56,9 @@ def parameter_refinement_identity(
     )
   ) {
   let oldTags := sample_repeat_tags(C, n, coarseTag);
-  let error :=
-    parameter_contour_tag_error_sum(
-      C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
-    );
+  let error := parameter_contour_tag_error_sum(
+    C, F, zero, addF, mulF, negF, curve, values, n, vertices, oldTags, tags
+  );
   exact trans(
     parameter_contour_sum_change_tags(
       C, F, zero, one, addF, mulF, negF, ring, curve, values, n, vertices, oldTags, tags

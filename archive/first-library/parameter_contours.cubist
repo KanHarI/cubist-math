@@ -10,7 +10,8 @@ def parameter_contour_edge(
   contour_edge(F, addF, mulF, negF, (fun (x : F) => x), curve(a), curve(b), values(tag));
 
 def parameter_contour_tag_error(
-  C, F : U1, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> F, a, b, oldTag, newTag : C
+  C, F : U1, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> F, a, b, oldTag,
+  newTag : C
 ) :=
   contour_tag_error(
     F, addF, mulF, negF, (fun (x : F) => x), curve(a), curve(b), values(oldTag), values(newTag)
@@ -23,8 +24,8 @@ def parameter_contour_sum(
 
 def parameter_contour_edge_change_tag(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F,
-  a, b, oldTag, newTag : C
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F, a, b, oldTag,
+  newTag : C
 ) :
   parameter_contour_edge(C, F, addF, mulF, negF, curve, values, a, b, newTag) = addF(
     parameter_contour_edge(C, F, addF, mulF, negF, curve, values, a, b, oldTag),

@@ -4,22 +4,21 @@ import paths_;
 use nat;
 
 // The carry cases use structural finite-digit increment, at any radix >= 2.
-def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) :=
-  radix_positive_rec(
-    extra, RadixPositive(extra),
-    fun (first : RadixDigit(succ(extra))) => match radix_digit_succ(succ(extra), first) return RadixPositive(
-      extra
-    ) {
-      left next_ => radix_leading(extra, next_);
-      right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
-    },
-    fun (digit : RadixDigit(succ(succ(extra))), child, ih : RadixPositive(extra)) => match radix_digit_succ(
-      succ(succ(extra)), digit
-    ) return RadixPositive(extra) {
-      left next_ => radix_append(extra, next_, child);
-      right carry => radix_append(extra, radix_digit_zero(succ(extra)), ih);
-    }, p
-  );
+def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) := radix_positive_rec(
+  extra, RadixPositive(extra),
+  fun (first : RadixDigit(succ(extra))) => match radix_digit_succ(succ(extra), first) return RadixPositive(
+    extra
+  ) {
+    left next_ => radix_leading(extra, next_);
+    right carry => radix_append(extra, radix_digit_zero(succ(extra)), radix_one(extra));
+  },
+  fun (digit : RadixDigit(succ(succ(extra))), child, ih : RadixPositive(extra)) => match radix_digit_succ(
+    succ(succ(extra)), digit
+  ) return RadixPositive(extra) {
+    left next_ => radix_append(extra, next_, child);
+    right carry => radix_append(extra, radix_digit_zero(succ(extra)), ih);
+  }, p
+);
 
 def radix_succ(extra : Nat, n : RadixNat(extra)) := match n return RadixNat(extra) {
     radix_nat_zero => radix_positive(extra, radix_one(extra));

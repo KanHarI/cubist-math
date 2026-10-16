@@ -29,6 +29,7 @@ export function calcStepSite(step, index) {
 // a projection's index to the projection. Syntax a theory generates
 // (theories.mjs) has no tokens of its own, and links nothing.
 export function expressionSite(node) {
+  if (node.synthetic) return null;
   if (node.kind === "projection")
     return node.digit ? { name: `.${node.index}`, start: node.digit.start, end: node.digit.end } : null;
   if ((node.kind === "binary" && ["=", "->", "and", "or", "++"].includes(node.operator)) || node.kind === "unary")

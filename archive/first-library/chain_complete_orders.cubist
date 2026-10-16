@@ -149,8 +149,9 @@ def partial_order_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(
     order_path_collapse(A, le, laws, x, y, p) = order_path_collapse(A, le, laws, x, y, q) {
     intro x, y, p, q;
     let forward := fun (r : x = y) => transport order_refl(A, le, laws, x) along r in le(x);
-    let backward :=
-      fun (r : x = y) => transport order_refl(A, le, laws, x) along r in ((fun (z : A) => le(z, x)));
+    let backward := fun (r : x = y) => transport order_refl(A, le, laws, x) along r in (
+      (fun (z : A) => le(z, x))
+    );
     exact trans(
       cong(
         (fun (a : le(x, y)) => order_antisym(A, le, laws, x, y, a, backward(p))),

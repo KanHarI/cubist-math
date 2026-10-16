@@ -16,12 +16,17 @@ computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
 }
 
 // General induction names recursive results separately from stored fields.
-computable def closed_induction_double :
-  (induction 3 return Nat { zero => 0; succ(k) with ih => succ(succ(ih)); }) = 6 {
+computable def closed_induction_double : (induction 3 return Nat {
+      zero => 0;
+      succ(k) with ih => succ(succ(ih));
+    }) = 6 {
   rfl;
 }
 
-evaluate (induction 3 return Nat { zero => 0; succ(k) with ih => succ(succ(ih)); }) expecting 6;
+evaluate (induction 3 return Nat {
+    zero => 0;
+    succ(k) with ih => succ(succ(ih));
+  }) expecting 6;
 
 // Derived path induction along a closed path that is not refl.
 computable def closed_path_induction :
@@ -80,16 +85,18 @@ computable def unit_square_computes :
 }
 
 computable def retract_path_computes :
-  retract_has_level(U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
-    unit_is_prop, tt, tt) = refl(tt) {
+  retract_has_level(
+    U0, 0, Unit, Unit, fun (u : Unit) => u, fun (u : Unit) => u, fun (u : Unit) => refl(u),
+    unit_is_prop, tt, tt
+  ) = refl(tt) {
   rfl;
 }
 
-computable def nat_decision_computes :
-  match nat_decide(2, 3) return Nat {
+computable def nat_decision_computes : match nat_decide(2, 3) return Nat {
     left p => 1;
     right n => 0;
-  } = 0 {
+  }
+= 0{
   rfl;
 }
 
@@ -106,8 +113,9 @@ computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, 
 // univalence's Glue types.
 computable def effective_class_computes :
   quotient_effective(
-    U0, Nat, fun (m, n : Nat) => m = n, fun (m, n : Nat) => nat_is_set(m, n), fun (n : Nat) => refl(n),
-    fun (m, n : Nat, r : m = n) => sym(r), fun (k, m, n : Nat, r : k = m, s : m = n) => trans(r, s), 2, 2,
+    U0, Nat, fun (m, n : Nat) => m = n, fun (m, n : Nat) => nat_is_set(m, n),
+    fun (n : Nat) => refl(n), fun (m, n : Nat, r : m = n) => sym(r),
+    fun (k, m, n : Nat, r : k = m, s : m = n) => trans(r, s), 2, 2,
     class_path(U0, Nat, fun (m, n : Nat) => m = n, 2, 2, refl(2))
   ) = refl(2) {
   rfl;

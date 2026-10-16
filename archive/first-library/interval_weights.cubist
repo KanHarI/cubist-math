@@ -82,16 +82,15 @@ def interval_weight_sum(
   let coordinate := field_interval_coordinate(F, zero, one, lt);
   let delta := interval_difference(F, zero, one, addF, negF, lt);
   let edge := (fun (s, t, tag : I) => delta(s, t));
-  let telescope :=
-    sample_sum_telescopes(
-      I, F, zero, addF, delta,
-      (fun (s : I) => ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, coordinate(s))),
-      (
-        fun (s, t, u : I) => difference_compose(
-          F, zero, one, addF, mulF, negF, ring, coordinate(s), coordinate(t), coordinate(u)
-        )
-      ), n, vertices, tags
-    );
+  let telescope := sample_sum_telescopes(
+    I, F, zero, addF, delta,
+    (fun (s : I) => ring_add_inverse_right(F, zero, one, addF, mulF, negF, ring, coordinate(s))),
+    (
+      fun (s, t, u : I) => difference_compose(
+        F, zero, one, addF, mulF, negF, ring, coordinate(s), coordinate(t), coordinate(u)
+      )
+    ), n, vertices, tags
+  );
   let mapping := (fun (v : F) => mulF(v, length));
   exact trans(
     sym(
@@ -125,12 +124,11 @@ def interval_weight_sum_bound(
   let first := sample_first(I, n, vertices);
   let last := sample_last(I, n, vertices);
   let delta := interval_difference(F, zero, one, addF, negF, lt, first, last);
-  let bounded :=
-    weakScale(
-      delta, one, length,
-      interval_difference_le_one(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, first, last),
-      nonnegativeLength
-    );
+  let bounded := weakScale(
+    delta, one, length,
+    interval_difference_le_one(F, zero, one, addF, mulF, negF, lt, ring, arithmetic, first, last),
+    nonnegativeLength
+  );
   let removeOne :=
     transport bounded along ring_mul_one(F, zero, one, addF, mulF, negF, ring, length) in FieldLe(
       F, lt, mulF(delta, length)

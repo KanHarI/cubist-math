@@ -27,8 +27,8 @@ def field_mul_left_cancel_nonzero(
 // Dedekind independence, in the two-map case. The coefficient relation is
 // pointwise on the source field; no vector-space presentation is assumed.
 def distinct_embeddings_two_independent(
-  K, L : AlgebraicField, f, g : FieldEmbedding(K, L), different : (f = g) -> Void,
-  a, b : af_carrier(L), relation : forall x : af_carrier(K).
+  K, L : AlgebraicField, f, g : FieldEmbedding(K, L), different : (f = g) -> Void, a,
+  b : af_carrier(L), relation : forall x : af_carrier(K).
   field_add(
     L, field_mul(L, a, field_embedding_map(K, L, f, x)),
     field_mul(L, b, field_embedding_map(K, L, g, x))
@@ -80,11 +80,10 @@ def distinct_embeddings_two_independent(
           cong((fun (z : af_carrier(L)) => field_mul(L, z, gx)), sumZero), scalar_zero_mul(L, gx)
         )
       );
-      let equalProducts :=
-        group_cancel_right(
-          FieldAdditiveGroup(L), field_mul(L, a, fx), field_mul(L, a, gx), c,
-          trans(relation(x), sym(alternate))
-        );
+      let equalProducts := group_cancel_right(
+        FieldAdditiveGroup(L), field_mul(L, a, fx), field_mul(L, a, gx), c,
+        trans(relation(x), sym(alternate))
+      );
       exact field_mul_left_cancel_nonzero(L, a, fx, gx, nonzero, equalProducts);
     }
     exact field_embedding_ext(K, L, f, g, equalPointwise);

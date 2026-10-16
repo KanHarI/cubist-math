@@ -23,16 +23,17 @@ print(typeof(Monad.pure));
 
 // The identity monad is a model: F(A) is A, whose setness is A's own.
 def identity : Monad(U0) := Monad.make(
-  F := fun (A : U0, h : IsSet(U0, A)) => A,
-  F_is_set := fun (A : U0, h : IsSet(U0, A)) => h,
+  F := fun (A : U0, h : IsSet(U0, A)) => A, F_is_set := fun (A : U0, h : IsSet(U0, A)) => h,
   pure := fun (A : U0, h : IsSet(U0, A), a : A) => a,
   bind := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), m : A, f : A -> B) => f(m),
-  left_unit := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), a : A, f : A -> B) => refl(f(a)),
-  right_unit := fun (A : U0, h : IsSet(U0, A), m : A) => refl(m)
+  left_unit := fun (A : U0, h : IsSet(U0, A), B : U0, k : IsSet(U0, B), a : A, f : A -> B) => refl(
+    f(a)
+  ), right_unit := fun (A : U0, h : IsSet(U0, A), m : A) => refl(m)
 );
 
 // Outside the theory, an index's evidence is written.
-def three : identity.bind(Nat, nat_is_set, Nat, nat_is_set, identity.pure(Nat, nat_is_set, 2), succ) = 3 {
+def three :
+  identity.bind(Nat, nat_is_set, Nat, nat_is_set, identity.pure(Nat, nat_is_set, 2), succ) = 3 {
   rfl;
 }
 
@@ -43,12 +44,16 @@ def three : identity.bind(Nat, nat_is_set, Nat, nat_is_set, identity.pure(Nat, n
 //   A_is_set, A1_.pure(A, A_is_set, a)) = B1_.pure(A, A_is_set, a)
 print(typeof(Monad.Hom.map_pure));
 
-def identity_twice : Monad.Hom(identity, identity) := Monad.Hom.compose(Monad.Hom.id(identity), Monad.Hom.id(identity));
+def identity_twice : Monad.Hom(identity, identity) := Monad.Hom.compose(
+  Monad.Hom.id(identity), Monad.Hom.id(identity)
+);
 
 // Output: 7
 print(evaluate(identity_twice.map(Nat, nat_is_set, 7)));
 
-def identity_iso : Monad.Iso(identity, identity) := Monad.Iso.compose(Monad.Iso.id(identity), Monad.Iso.id(identity));
+def identity_iso : Monad.Iso(identity, identity) := Monad.Iso.compose(
+  Monad.Iso.id(identity), Monad.Iso.id(identity)
+);
 
 // A preorder: le is a family of propositions on M, written x <= y. Its laws
 // are propositions, and its homomorphisms are the monotone maps.
@@ -95,8 +100,9 @@ print(typeof(Shifted.Hom.map_shift));
 def shifted_iso := Shifted.Iso.compose;
 
 // The constructors still take each field by its name.
-def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(A, A, map := fun (x : A.M) => x,
-  map_shift := fun (a, b : A.M) => refl(A.shift(a, b)));
+def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(
+  A, A, map := fun (x : A.M) => x, map_shift := fun (a, b : A.M) => refl(A.shift(a, b))
+);
 
 theory Lifted(U < UU0) {
   F(to_ : Nat) : set U;
@@ -107,9 +113,10 @@ def lifted_compose := Lifted.Hom.compose;
 
 def lifted_iso := Lifted.Iso.compose;
 
-def lifted_by_name(A : Lifted(U0)) : Lifted.Iso(A, A) := Lifted.Iso.make(A, A, to := Lifted.Hom.id(A),
-  from := Lifted.Hom.id(A), from_to := fun (n : Nat, x : A.F(n)) => refl(x),
-  to_from := fun (n : Nat, y : A.F(n)) => refl(y));
+def lifted_by_name(A : Lifted(U0)) : Lifted.Iso(A, A) := Lifted.Iso.make(
+  A, A, to := Lifted.Hom.id(A), from := Lifted.Hom.id(A),
+  from_to := fun (n : Nat, x : A.F(n)) => refl(x), to_from := fun (n : Nat, y : A.F(n)) => refl(y)
+);
 
 // A family of sets indexed by a carrier has homomorphisms, but no
 // isomorphisms: its round trips would need a transport.

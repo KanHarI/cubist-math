@@ -1,0 +1,122 @@
+// Initial and free models (L2.6, retained prototype): initial N : T(…) declares a
+// type with a constructor for each of T's operations and a path constructor
+// for each law, its model N.model, and N.fold(M) : T.Hom(N.model, M), whose
+// map computes on constructors. free W(A) : T(…) on A adds the generators.
+import nat;
+import hlevels;
+import algebra;
+use nat;
+
+initial N : Monoid(U0);
+
+free W(A : U0) : Monoid(U0) on A;
+
+// Output: forall target : Monoid(U0). Monoid.Hom{{U0, U0}}(N.model, target)
+print(typeof(N.fold));
+
+// The fold computes on constructors: the unit goes to the unit.
+def unit_to_unit(M : Monoid(U0)) : N.fold(M).map(N.one) = M.one {
+  rfl;
+}
+
+// And on generators: a word's length, folding each generator to 1 in Nat's
+// additive monoid.
+def length{{A : U0}}(w : W(A)) : Nat := W.fold(A, nat_additive.monoid, fun (a : A) => 1).map(w);
+
+// Output: 3
+print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
+
+// Its laws are paths: one * x is x in the free monoid.
+def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);
+
+// A carrier alone has an initial model, the squash of no constructors, and a
+// free one, the generators' squash; each model's evidence is the squash's,
+// and its fold has no operation to preserve.
+theory Bare(U < UU0) {
+  M : set U;
+}
+
+initial Nothing : Bare(U0);
+
+free Gens(A : U0) : Bare(U0) on A;
+
+def bare_is_set : IsSet(U0, Nothing) := Bare.M_is_set(Nothing.model);
+
+def bare_generators{{A : U0}}(S : Bare(U0), g : A -> S.M, a : A) :
+  Gens.fold(A, S, g).map(Gens.gen(a)) = g(a) {
+  rfl;
+}
+
+// A law's binder holds in the law: idem's c is its argument, not the
+// constant c.
+theory Constant(U < UU0) {
+  M : set U;
+  c : M;
+  law idem(c : M) : c = c;
+}
+
+initial K : Constant(U0);
+
+def idem_at(x : K) : x = x := K.idem(x);
+
+// The generated binders, as fold's target and its recursion's variables,
+// are apart from the declaration's parameters, and a field's binders from
+// the names put in its type: act's A is not AW(A)'s A.
+free Named(target, evidence, g, x, x0, i : U0) : Monoid(U0) on x0;
+
+def named_fold :=
+  Named.fold(Unit, Unit, Unit, Unit, Nat, Unit, nat_additive.monoid, fun (n : Nat) => n);
+
+// Output: 2
+print(evaluate(named_fold.map(Named.gen(2))));
+
+theory Act(U < UU0) {
+  M : set U;
+  act(A, y : M) : M;
+}
+
+free AW(A : U0) : Act(U0) on A;
+
+def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
+  AW.fold(A, S, g).map(AW.act(AW.gen(a), AW.gen(a))) = S.act(g(a), g(a)) {
+  rfl;
+}
+
+// The equational strategy does not support a truncated inverse law; this
+// refusal does not establish whether an initial model exists.
+// Error: E856: The law inverses is not an equation between operation terms: the equational strategy
+//   does not support this law.
+initial F : Field(U0);
+
+// An argument containing the carrier under an arrow is unsupported too.
+theory Iterated(U < UU0) {
+  M : set U;
+  iterate(g : M -> M, x : M) : M;
+}
+
+// Error: E854: iterate takes g with a type depending on the carrier M: the equational strategy
+//   supports carrier arguments or types independent of the carrier.
+initial I : Iterated(U0);
+
+// Error: E850: initial takes a theory at its universes and parameters, as initial N : Monoid(U0);
+//   Nat is none.
+initial X : Nat;
+
+// Local models still own their dotted fields when a declared initial model
+// has the same name. A catch-all likewise follows the checked scrutinee type.
+initial B : Monoid(U0);
+
+def local_model(B : Monoid(U0)) : B.M := B.one;
+
+initial A : Monoid(U0);
+
+theory HasOne(U < UU0) {
+  M : set U;
+  one : M;
+}
+
+def has_one_identity(S : HasOne(U0)) : HasOne.Hom(S, S) := HasOne.Hom.id(S);
+
+def local_catch_all(A : A) : Unit := match A {
+    _ => tt;
+  };

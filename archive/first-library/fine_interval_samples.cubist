@@ -5,8 +5,8 @@ import dyadic_decay;
 // Ordinary data for one sufficiently fine dyadic subdivision. The existence
 // theorem below deliberately keeps the Archimedean witness truncated.
 def FineIntervalSamples(
-  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F,
-  a, b : FieldUnitInterval(F, zero, one, lt)
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F, a,
+  b : FieldUnitInterval(F, zero, one, lt)
 ) :=
   exists depth : Nat. exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
@@ -37,20 +37,18 @@ def archimedean_interval_fine_samples(
 ) :
   FieldExists(FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b)) {
   let width := interval_difference(F, zero, one, addF, negF, lt, a, b);
-  let nonnegativeWidth :=
-    field_difference_nonnegative(
-      F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
-      field_interval_coordinate(F, zero, one, lt)(a),
-      field_interval_coordinate(F, zero, one, lt)(b), ordered
-    );
+  let nonnegativeWidth := field_difference_nonnegative(
+    F, zero, one, addF, mulF, negF, lt, ring, arithmetic,
+    field_interval_coordinate(F, zero, one, lt)(a), field_interval_coordinate(F, zero, one, lt)(b),
+    ordered
+  );
   obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  let smallWidth :=
-    dyadic_width_arbitrarily_small(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
-      archimedean, width, nonnegativeWidth, mesh, positiveMesh
-    );
+  let smallWidth := dyadic_width_arbitrarily_small(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
+    archimedean, width, nonnegativeWidth, mesh, positiveMesh
+  );
   let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), mesh));
   let B := FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
   let mapping : A -> B {

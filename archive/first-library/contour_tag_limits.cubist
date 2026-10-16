@@ -22,11 +22,10 @@ def contour_tag_change_close(
     contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags), epsilon
   ) {
   let error := contour_tag_error_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags, newTags);
-  let bound :=
-    contour_tag_error_length_bound(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, delta, length,
-      nonnegativeDelta, n, vertices, oldTags, newTags, errors, increments, variation
-    );
+  let bound := contour_tag_error_length_bound(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, delta, length,
+    nonnegativeDelta, n, vertices, oldTags, newTags, errors, increments, variation
+  );
   exact field_magnitude_perturbation_close(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     contour_sum(F, zero, addF, mulF, negF, f, n, vertices, oldTags),
@@ -43,8 +42,8 @@ def contour_tag_errors_converge(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : F -> F, weight : F -> F -> F
-  -> F, count : Nat -> Nat, vertices : (forall n : Nat. SampleVertices(F, count(n))),
-  oldTags, newTags : (forall n : Nat. SampleTags(F, count(n))), delta : Nat -> F, length : F,
+  -> F, count : Nat -> Nat, vertices : (forall n : Nat. SampleVertices(F, count(n))), oldTags,
+  newTags : (forall n : Nat. SampleTags(F, count(n))), delta : Nat -> F, length : F,
   nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
   errors : (
     forall n : Nat.
@@ -93,8 +92,8 @@ def contour_tag_errors_from_vanishing_values(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), f : F -> F, weight : F -> F -> F -> F,
-  count : Nat -> Nat, vertices : (forall n : Nat. SampleVertices(F, count(n))),
-  oldTags, newTags : (forall n : Nat. SampleTags(F, count(n))), delta : Nat -> F, length : F,
+  count : Nat -> Nat, vertices : (forall n : Nat. SampleVertices(F, count(n))), oldTags,
+  newTags : (forall n : Nat. SampleTags(F, count(n))), delta : Nat -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
   nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
   errors : (
@@ -121,11 +120,10 @@ def contour_tag_errors_from_vanishing_values(
       )
     ), zero
   ) {
-  let scaled :=
-    field_nonnegative_scale_zero_converges(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
-      nonnegativeLength, delta, vanishes
-    );
+  let scaled := field_nonnegative_scale_zero_converges(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length,
+    nonnegativeLength, delta, vanishes
+  );
   exact contour_tag_errors_converge(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, weight, count, vertices,
     oldTags, newTags, delta, length, nonnegativeDelta, errors, increments, variation, scaled

@@ -74,6 +74,24 @@ test("a block's statements bind names for the statements after them", () => {
   assert.deepEqual([...freeNames(declaration.body)].sort(), ["A", "a", "f", "r", "y"]);
 });
 
+test("substitution follows a qualified name's receiver and preserves its scope", () => {
+  const argument = expression("make(S)");
+  const args = new Map([["R", argument]]);
+  const refuse = name => Error(`refused ${name}`);
+  const result = substituted(expression("R.monoid.M"), args, refuse);
+  assert.equal(result.kind, "member");
+  assert.equal(result.field.text, "M");
+  assert.equal(result.value.field.text, "monoid");
+  assert.equal(result.value.value, argument);
+  // A local receiver shadows the parameter, while a binder named S must
+  // move aside for the free S of the replacement.
+  const shadowed = expression("forall R : T. R.M");
+  assert.deepEqual(substituted(shadowed, args, refuse), shadowed);
+  const capture = substituted(expression("forall S : T. R.M"), args, refuse);
+  assert.notEqual(capture.name.text, "S");
+  assert.deepEqual([...freeNames(capture)].sort(), ["S", "T", "make"]);
+});
+
 test("substitution renames a binder that would capture an argument's name, in every renamable form", () => {
   const argument = new Map([["y", { kind: "name", name: "x" }]]);
   const refuse = name => Object.assign(new Error(`refused ${name}`), { refused: name });
@@ -107,4 +125,9 @@ test("substitution renames a binder that would capture an argument's name, in ev
   assert.deepEqual([shadowed.base.name, shadowed.step.args[0].name], ["z", "z"]);
   // A pattern's argument may be a constructor: it is refused, never renamed.
   assert.throws(() => substituted(expression("match n { zero => y; succ(x) => f(x, y); }"), argument, refuse), /refused x/);
+  // It captures only an argument substituted under it: one naming x at the
+  // scrutinee is no capture, though another is substituted under x.
+  const outside = substituted(expression("match n { zero => y; succ(x) => f(x, y); }"),
+    new Map([["n", { kind: "name", name: "x" }], ["y", { kind: "name", name: "w" }]]), refuse);
+  assert.deepEqual([...freeNames(outside)].sort(), ["f", "w", "x"]);
 });

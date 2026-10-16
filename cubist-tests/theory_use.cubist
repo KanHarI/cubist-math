@@ -83,9 +83,11 @@ theory Both(U < UU0) extends Magma, Action {
 //   m.act(x, y)
 print(typeof(Both.nested));
 
-def both_nat : Both(U0) := Both.make(M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x,
-  act := fun (x, y : Nat) => x, mixed := fun (x : Nat) => refl(x), qualified := fun (x, y : Nat) => refl(x),
-  nested := fun (x, y : Nat) => refl(x));
+def both_nat : Both(U0) := Both.make(
+  M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x, act := fun (x, y : Nat) => x,
+  mixed := fun (x : Nat) => refl(x), qualified := fun (x, y : Nat) => refl(x),
+  nested := fun (x, y : Nat) => refl(x)
+);
 
 def first(x, y : Nat) : Nat := x both_nat.magma.(*) y;
 

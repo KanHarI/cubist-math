@@ -8,8 +8,9 @@ def residue_one_not_zero(
 ) :
   Void {
   let D := modulus_polynomial(K, M);
-  let divides :=
-    polynomial_remainder_zero_divides(K, M, polynomial_one(K), cong(residue_polynomial(K, M), same));
+  let divides := polynomial_remainder_zero_divides(
+    K, M, polynomial_one(K), cong(residue_polynomial(K, M), same)
+  );
   let invert :
     (exists q : Polynomial(K). polynomial_one(K) = polynomial_mul(K, D, q))
     -> (exists q : Polynomial(K). polynomial_mul(K, D, q) = polynomial_one(K)) {

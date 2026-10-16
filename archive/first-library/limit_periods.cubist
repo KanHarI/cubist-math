@@ -39,17 +39,15 @@ def cauchy_approximation_period_laws(
   let halving :=
     ordered_field_halving(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses);
   let period := limit_period(F, zero, addF, lt, complete, X, point, approximations, cauchy);
-  let convergence :=
-    fun (p : point = point) => field_sequence_limit_converges(
-      F, zero, addF, lt, complete, approximations(p), cauchy(p)
-    );
-  let constantLaw : period(refl(point)) = zero :=
-    field_asymptotic_limits_equal(
-      F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
-      approximations(refl(point)), (fun (n : Nat) => zero), constantApproximation,
-      period(refl(point)), zero, convergence(refl(point)),
-      field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
-    );
+  let convergence := fun (p : point = point) => field_sequence_limit_converges(
+    F, zero, addF, lt, complete, approximations(p), cauchy(p)
+  );
+  let constantLaw : period(refl(point)) = zero := field_asymptotic_limits_equal(
+    F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
+    approximations(refl(point)), (fun (n : Nat) => zero), constantApproximation,
+    period(refl(point)), zero, convergence(refl(point)),
+    field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
+  );
   let appendLaw :
     forall p : point = point. forall q : point = point.
     period(trans(p, q)) = addF(period(p), period(q)) {

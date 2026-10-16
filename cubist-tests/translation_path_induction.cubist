@@ -4,8 +4,9 @@
 import nat;
 use nat;
 
-def transport_nat(A : U0, x : A, y : A, p : x = y, n : Nat) :=
-  path_induction(A, fun (a : A) => fun (b : A) => fun (q : a = b) => Nat, fun (a : A) => n, x, y, p);
+def transport_nat(A : U0, x : A, y : A, p : x = y, n : Nat) := path_induction(
+  A, fun (a : A) => fun (b : A) => fun (q : a = b) => Nat, fun (a : A) => n, x, y, p
+);
 
 def example : transport_nat(Nat, 0, 0, refl(0), 2) = 2 {
   exact refl(2);

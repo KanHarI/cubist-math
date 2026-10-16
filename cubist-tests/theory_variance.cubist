@@ -42,7 +42,8 @@ theory Acted(U < UU0, G : Magma(U)) {
 //   B.act(g, f.map(v))
 print(typeof(Acted.Hom.map_act));
 
-def shifting : Acted(U0, nat_magma) := Acted.make(nat_magma, V := Nat, V_is_set := nat_is_set, act := add);
+def shifting :
+  Acted(U0, nat_magma) := Acted.make(nat_magma, V := Nat, V_is_set := nat_is_set, act := add);
 
 // Output: 5
 print(evaluate(Acted.Hom.compose(Acted.Hom.id(shifting), Acted.Hom.id(shifting)).map(5)));
@@ -61,8 +62,9 @@ theory Labelled(U < UU0, x : Nat) {
 //   n)) = B.relabel(f.map(a), n)
 print(typeof(Labelled.Hom.map_relabel));
 
-def labelled_iso(m : Labelled(U0, zero)) : Labelled.Iso(m, m) := Labelled.Iso.compose(Labelled.Iso.id(m),
-  Labelled.Iso.inverse(Labelled.Iso.id(m)));
+def labelled_iso(m : Labelled(U0, zero)) : Labelled.Iso(m, m) := Labelled.Iso.compose(
+  Labelled.Iso.id(m), Labelled.Iso.inverse(Labelled.Iso.id(m))
+);
 
 // A fixed type may name a global map too: the constructor still takes the
 // field map by its name.
@@ -73,8 +75,9 @@ theory Mapped(U < UU0) {
   tag(a : M, n : map_(zero)) : M;
 }
 
-def mapped_identity(A : Mapped(U0)) : Mapped.Hom(A, A) := Mapped.Hom.make(A, A, map := fun (x : A.M) => x,
-  map_tag := fun (a : A.M, n : map_(zero)) => refl(A.tag(a, n)));
+def mapped_identity(A : Mapped(U0)) : Mapped.Hom(A, A) := Mapped.Hom.make(
+  A, A, map := fun (x : A.M) => x, map_tag := fun (a : A.M, n : map_(zero)) => refl(A.tag(a, n))
+);
 
 // Covariant: a family of elements, and a pair of them, pushed forward.
 theory Sequences(U < UU0) {
@@ -102,9 +105,13 @@ theory Measure(U < UU0) {
 //   f(f1_.map(v3_))) = B.integrate(f)
 print(typeof(Measure.Hom.map_integrate));
 
-def at_zero : Measure(U0) := Measure.make(X := Nat, X_is_set := nat_is_set, integrate := fun (k : Nat -> Nat) => k(0));
+def at_zero : Measure(U0) := Measure.make(
+  X := Nat, X_is_set := nat_is_set, integrate := fun (k : Nat -> Nat) => k(0)
+);
 
-def at_zero_twice : Measure.Hom(at_zero, at_zero) := Measure.Hom.compose(Measure.Hom.id(at_zero), Measure.Hom.id(at_zero));
+def at_zero_twice : Measure.Hom(at_zero, at_zero) := Measure.Hom.compose(
+  Measure.Hom.id(at_zero), Measure.Hom.id(at_zero)
+);
 
 // Output: 2
 print(evaluate(at_zero_twice.map(2)));

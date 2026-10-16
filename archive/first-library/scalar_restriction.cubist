@@ -54,7 +54,9 @@ def restrict_linear_iso(
 ) :
   LinearIso(K, RestrictScalars(K, L, e, V), RestrictScalars(K, L, e, W)) {
   obtain (f, g, left_, right_) := iso;
-  exact (restrict_linear_map(K, L, e, V, W, f), restrict_linear_map(K, L, e, W, V, g), left_, right_);
+  exact (
+    restrict_linear_map(K, L, e, V, W, f), restrict_linear_map(K, L, e, W, V, g), left_, right_
+  );
 }
 
 // These identity isomorphisms compare operations, not the particular proofs
@@ -66,16 +68,16 @@ def restrict_coordinate_iso(K, L : AlgebraicField, e : FieldEmbedding(K, L), n :
   ) {
   let X := Fin(n) -> af_carrier(L);
   let f := fun (x : X) => x;
-  let add :=
-    fun (x, y : X) => refl((fun (i : Fin(n)) => af_add(af_carrier(L), af_operations(L), x(i), y(i))));
-  let scale :=
-    fun (a : af_carrier(K), x : X) => refl(
-      (
-        fun (i : Fin(n)) => af_mul(
-          af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x(i)
-        )
+  let add := fun (x, y : X) => refl(
+    (fun (i : Fin(n)) => af_add(af_carrier(L), af_operations(L), x(i), y(i)))
+  );
+  let scale := fun (a : af_carrier(K), x : X) => refl(
+    (
+      fun (i : Fin(n)) => af_mul(
+        af_carrier(L), af_operations(L), field_embedding_map(K, L, e, a), x(i)
       )
-    );
+    )
+  );
   exact ((f, add, scale), (f, add, scale), (fun (x : X) => refl(x)), (fun (x : X) => refl(x)));
 }
 
@@ -89,10 +91,9 @@ def restrict_field_tower_iso(
   let X := af_carrier(M);
   let f := fun (x : X) => x;
   let add := fun (x, y : X) => refl(af_add(X, af_operations(M), x, y));
-  let scale :=
-    fun (a : af_carrier(K), x : X) => refl(
-      af_mul(X, af_operations(M), field_embedding_map(L, M, d, field_embedding_map(K, L, e, a)), x)
-    );
+  let scale := fun (a : af_carrier(K), x : X) => refl(
+    af_mul(X, af_operations(M), field_embedding_map(L, M, d, field_embedding_map(K, L, e, a)), x)
+  );
   exact ((f, add, scale), (f, add, scale), (fun (x : X) => refl(x)), (fun (x : X) => refl(x)));
 }
 
@@ -112,20 +113,17 @@ def field_tower_basis(
   let RestrictedCoordinates := RestrictScalars(K, L, e, CoordinateSpace(L, n));
   let RestrictedM := RestrictScalars(K, L, e, field_vector_space(L, M, d));
   let BottomM := field_vector_space(K, M, field_embedding_compose(K, L, M, e, d));
-  let expandLower :=
-    linear_iso_compose(
-      K, Coordinates, Nested, OverL, coordinate_product_iso(K, n, m),
-      function_linear_iso(K, Fin(n), CoordinateSpace(K, m), field_vector_space(K, L, e), lower)
-    );
-  let restrictCoordinates :=
-    linear_iso_compose(
-      K, Coordinates, OverL, RestrictedCoordinates, expandLower, restrict_coordinate_iso(K, L, e, n)
-    );
-  let expandUpper :=
-    linear_iso_compose(
-      K, Coordinates, RestrictedCoordinates, RestrictedM, restrictCoordinates,
-      restrict_linear_iso(K, L, e, CoordinateSpace(L, n), field_vector_space(L, M, d), upper)
-    );
+  let expandLower := linear_iso_compose(
+    K, Coordinates, Nested, OverL, coordinate_product_iso(K, n, m),
+    function_linear_iso(K, Fin(n), CoordinateSpace(K, m), field_vector_space(K, L, e), lower)
+  );
+  let restrictCoordinates := linear_iso_compose(
+    K, Coordinates, OverL, RestrictedCoordinates, expandLower, restrict_coordinate_iso(K, L, e, n)
+  );
+  let expandUpper := linear_iso_compose(
+    K, Coordinates, RestrictedCoordinates, RestrictedM, restrictCoordinates,
+    restrict_linear_iso(K, L, e, CoordinateSpace(L, n), field_vector_space(L, M, d), upper)
+  );
   exact linear_iso_compose(
     K, Coordinates, RestrictedM, BottomM, expandUpper, restrict_field_tower_iso(K, L, M, e, d)
   );

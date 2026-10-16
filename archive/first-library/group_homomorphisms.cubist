@@ -11,7 +11,8 @@ def group_hom_map(G, H : Group, h : GroupHom(G, H)) : group_carrier(G) -> group_
   exact sigma_first((group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), h);
 }
 
-def group_hom_multiply(G, H : Group, h : GroupHom(G, H)) : GroupHomLaws(G, H, group_hom_map(G, H, h)) {
+def group_hom_multiply(G, H : Group, h : GroupHom(G, H)) :
+  GroupHomLaws(G, H, group_hom_map(G, H, h)) {
   exact sigma_second((group_carrier(G) -> group_carrier(H)), GroupHomLaws(G, H), h);
 }
 
@@ -158,12 +159,10 @@ def group_hom_associative(
 def group_iso_multiply(G, H : Group, iso : GroupIso(G, H)) :
   GroupHomLaws(G, H, group_iso_forward(G, H, iso)) {
   let f := group_iso_forward(G, H, iso);
-  let evidence :=
-    sigma_second(
-      (group_carrier(G) -> group_carrier(H)),
-      GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)),
-      iso
-    );
+  let evidence := sigma_second(
+    (group_carrier(G) -> group_carrier(H)),
+    GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H)), iso
+  );
   obtain (g, leftLaw, rightLaw, multiplicative) := typed(
     GroupMapEvidence(group_carrier(G), group_multiply(G), group_carrier(H), group_multiply(H), f),
     evidence

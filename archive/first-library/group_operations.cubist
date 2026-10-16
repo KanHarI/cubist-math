@@ -2,11 +2,10 @@ import group_identity;
 
 // The inverse function projects the uniquely determined witness already in
 // the group laws. It does not select from a merely inhabited family.
-def group_inverse(G : Group, x : group_carrier(G)) :=
-  sigma_first(
-    group_carrier(G), GroupInverseLaws(group_carrier(G), group_unit(G), group_multiply(G), x),
-    group_inverses_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), x)
-  );
+def group_inverse(G : Group, x : group_carrier(G)) := sigma_first(
+  group_carrier(G), GroupInverseLaws(group_carrier(G), group_unit(G), group_multiply(G), x),
+  group_inverses_law(group_carrier(G), group_unit(G), group_multiply(G), group_laws(G), x)
+);
 
 def group_inverse_laws(G : Group, x : group_carrier(G)) :
   GroupInverseLaws(group_carrier(G), group_unit(G), group_multiply(G), x, group_inverse(G, x)) {
@@ -97,11 +96,10 @@ def group_conjugate_multiply(G : Group, g, x, y : group_carrier(G)) :
   ) {
   let m := group_multiply(G);
   let gi := group_inverse(G, g);
-  let cancel : m(gi, m(m(g, y), gi)) = m(y, gi) :=
-    trans(
-      sym(group_associative(G, gi, m(g, y), gi)),
-      cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, y))
-    );
+  let cancel : m(gi, m(m(g, y), gi)) = m(y, gi) := trans(
+    sym(group_associative(G, gi, m(g, y), gi)),
+    cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, y))
+  );
   exact sym(
     trans(
       group_associative(G, m(g, x), gi, m(m(g, y), gi)),
@@ -120,11 +118,10 @@ def group_conjugate_undo(G : Group, g, x : group_carrier(G)) :
   group_conjugate(G, group_inverse(G, g), group_conjugate(G, g, x)) = x {
   let m := group_multiply(G);
   let gi := group_inverse(G, g);
-  let cancel : m(gi, m(m(g, x), gi)) = m(x, gi) :=
-    trans(
-      sym(group_associative(G, gi, m(g, x), gi)),
-      cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, x))
-    );
+  let cancel : m(gi, m(m(g, x), gi)) = m(x, gi) := trans(
+    sym(group_associative(G, gi, m(g, x), gi)),
+    cong((fun (z : group_carrier(G)) => m(z, gi)), group_cancel_left_value(G, g, x))
+  );
   exact trans(
     cong((fun (z : group_carrier(G)) => m(z, group_inverse(G, gi))), cancel),
     group_cancel_right_value(G, x, gi)

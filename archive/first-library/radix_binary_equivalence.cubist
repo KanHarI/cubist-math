@@ -6,21 +6,20 @@ use nat;
 
 // Direct digit conversion computes in binary. It does not first construct a
 // unary natural number; unary evaluation is used only in the correctness proof.
-def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) :=
-  radix_positive_rec(
-    extra, BinaryNat,
-    (
-      fun (first : RadixDigit(succ(extra))) => binary_of_nat(
-        succ(radix_digit_value(succ(extra), first))
-      )
-    ),
-    (
-      fun (digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra), ih : BinaryNat) => binary_add(
-        binary_mul(binary_of_nat(succ(succ(extra))), ih),
-        binary_of_nat(radix_digit_value(succ(succ(extra)), digit))
-      )
-    ), p
-  );
+def radix_positive_to_binary(extra : Nat, p : RadixPositive(extra)) := radix_positive_rec(
+  extra, BinaryNat,
+  (
+    fun (first : RadixDigit(succ(extra))) => binary_of_nat(
+      succ(radix_digit_value(succ(extra), first))
+    )
+  ),
+  (
+    fun (digit : RadixDigit(succ(succ(extra))), child : RadixPositive(extra), ih : BinaryNat) => binary_add(
+      binary_mul(binary_of_nat(succ(succ(extra))), ih),
+      binary_of_nat(radix_digit_value(succ(succ(extra)), digit))
+    )
+  ), p
+);
 
 def radix_to_binary(extra : Nat, n : RadixNat(extra)) := match n return BinaryNat {
     radix_nat_zero => binary_zero;
@@ -86,16 +85,15 @@ def radix_binary_correct(extra : Nat, n : RadixNat(extra)) :
 }
 
 // Conversion in the other direction doubles/adds digits in the target radix.
-def binary_positive_to_radix(extra : Nat, p : BinaryPositive) :=
-  binary_positive_rec(
-    RadixNat(extra), radix_positive(extra, radix_one(extra)),
-    (fun (child : BinaryPositive, ih : RadixNat(extra)) => radix_add(extra, ih, ih)),
-    (
-      fun (child : BinaryPositive, ih : RadixNat(extra)) => radix_succ(
-        extra, radix_add(extra, ih, ih)
-      )
-    ), p
-  );
+def binary_positive_to_radix(extra : Nat, p : BinaryPositive) := binary_positive_rec(
+  RadixNat(extra), radix_positive(extra, radix_one(extra)),
+  (fun (child : BinaryPositive, ih : RadixNat(extra)) => radix_add(extra, ih, ih)),
+  (
+    fun (child : BinaryPositive, ih : RadixNat(extra)) => radix_succ(
+      extra, radix_add(extra, ih, ih)
+    )
+  ), p
+);
 
 def binary_to_radix(extra : Nat, n : BinaryNat) := match n return RadixNat(extra) {
     binary_zero => radix_zero(extra);
@@ -177,17 +175,15 @@ def binary_radix_roundtrip(extra : Nat, n : BinaryNat) :
   );
 }
 
-def radix_binary_equiv(extra : Nat) :=
-  equiv_from_inverse(
-    U0, RadixNat(extra), BinaryNat, radix_to_binary(extra), binary_to_radix(extra),
-    radix_binary_roundtrip(extra), binary_radix_roundtrip(extra)
-  );
+def radix_binary_equiv(extra : Nat) := equiv_from_inverse(
+  U0, RadixNat(extra), BinaryNat, radix_to_binary(extra), binary_to_radix(extra),
+  radix_binary_roundtrip(extra), binary_radix_roundtrip(extra)
+);
 
-def binary_radix_equiv(extra : Nat) :=
-  equiv_from_inverse(
-    U0, BinaryNat, RadixNat(extra), binary_to_radix(extra), radix_to_binary(extra),
-    binary_radix_roundtrip(extra), radix_binary_roundtrip(extra)
-  );
+def binary_radix_equiv(extra : Nat) := equiv_from_inverse(
+  U0, BinaryNat, RadixNat(extra), binary_to_radix(extra), radix_to_binary(extra),
+  binary_radix_roundtrip(extra), radix_binary_roundtrip(extra)
+);
 
 // Small conversion certificates permit evaluation one digit at a time.
 // The checked evaluator need never expand all recursive calls simultaneously.

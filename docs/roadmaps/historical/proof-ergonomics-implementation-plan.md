@@ -9,7 +9,7 @@ below. The [work plan](../work-plan.md#first-actions) owns scheduling.
 Dated status, code descriptions and suggested ordering below are retained
 as historical context, not instructions to restart completed work.
 
-Implementation checkpoint reviewed 2026-09-27. This refines the
+Implementation checkpoint reviewed 2026-10-07. This refines the
 [roadmap](../proof-ergonomics-roadmap.md). The [example directory](../../examples/proof-ergonomics/README.md)
 pairs explicit current programs with native-checked new syntax. The remaining
 scoped algebra fixture ends in `.cubist.proposed` and is exploratory. Read the
@@ -31,24 +31,26 @@ PR 2's declaration transactions and core single-goal transitions are delivered
 through the [HoTT roadmap](../hott-automation-roadmap.md)'s goal layer (A5).
 PR 8 is delivered
 except general proposition premises, deferred to HoTT D1. PR 10 moved to the
-HoTT roadmap (A5, B1, E1). PR 9 remains open and follows the delivered A5
-core. PR 11 is superseded by theories; its core follows projections (A8),
-while generated identity follows
-structure descriptions (F1). These
+HoTT roadmap (A5, B1, E1). PR 9 was delivered as L4.1a and L4.1b on
+2026-10-04. PR 11 is superseded by theories, whose core was delivered as
+L2.4 on 2026-10-05; generated identity follows structure descriptions
+(F1). These
 are dependency-sized work packages, not estimates of elapsed development time.
 
 Update, 2026-09-25: the roadmap adopted milestones 6–8, summarized below. The
-[work plan](../work-plan.md) sequences their work packages. The notation and
-record sections below remain design input for theories.
+[work plan](../work-plan.md) sequences their work packages. Theories (L2.4, L2.4c) and named notations
+(L2.10) have since delivered what the notation and record sections below
+proposed; those sections are design history.
 - **Milestone 6, theories:** these supersede PR 11's notation packs,
   records and sections.
 - **Milestone 7:** inductive declarations and pattern matching; its one-sort
-  declarations and explicit `match` are experimental since 2026-09-28
-  (work-plan L2.1 and L2.2a).
+  declarations and explicit `match` were released with H1 on 2026-10-02,
+  on by default (work-plan L2.1 and L2.2a).
 - **Milestone 8:** computability checking.
-Milestone 8's core computability checking and G0's universe-generic definitions
-are delivered. The first library is archived; `library/naturals` begins the
-new library. The handoff records the original proof-ergonomics release;
+Milestone 8 is delivered: its core on 2026-09-25, expected-value patterns
+(L2.9a) and truncation readout (L2.9b) on 2026-10-06. G0's universe-generic
+definitions are delivered. The first library is archived; the new library has
+sixteen modules, and `library/nat.cubist` holds the natural numbers. The handoff records the original proof-ergonomics release;
 the roadmaps and work plan track subsequent deliveries and remaining work.
 
 PR 9 is split into L4.1a (scoped holes and named arguments, an input to the
@@ -62,7 +64,7 @@ equivalences and transfer maps.
 
 | Existing seam | Consequence for implementation |
 | --- | --- |
-| [`Translator.block`](../../../web/translator/translate.mjs) recursively translates the remaining statements, wrapping introductions in lambdas and checking local `have` proofs | Preserve this continuation model for one residual goal. A multi-goal scheduler is unnecessary for the first `rw` and `simp`. |
+| [`Translator.block`](../../../web/translator/translate.mjs) recursively translates the remaining statements, wrapping introductions in lambdas and checking local `let` proofs | Preserve this continuation model for one residual goal. A multi-goal scheduler is unnecessary for the first `rw` and `simp`. |
 | [`NativeCubicalElaborator`](../../../web/cubical-elaborator.mjs) supplies `infer`, `check`, `nf`, `equal`, `expect`, and `ascribe` | `nf` exposes the native **head**, not a full normal form. `equal` tests conversion; `expect` permits directed cumulative typing. Use each deliberately. |
 | `sym`, `trans`, and `cong` preserve compact signatures using a checked identity application; [`path-algebra.mjs`](../../../web/translator/path-algebra.mjs) supplies inert path builders | Factor shared builders and checked signature wrappers; do not independently reimplement their semantics for tactics. |
 | Ordinary application propagates argument types, but eagerly infers its growing application spine | Add application-spine elaboration with a known signature before adding broad inference. Repeated native inference may otherwise consume any savings from shorter source. |
@@ -79,7 +81,7 @@ particularly `finite_uniform_fiber_count`, for its finite-counting baseline.
 
 | PR | Depends on | Concrete change | Acceptance evidence |
 | --- | --- | --- | --- |
-| 1. Baselines and syntax conveniences | — | Preserve selected statements/assumptions; grouped `intro`, grouped typed binders, typed multi-binder lambdas, `have h := e;`, and `have h : T := e;`. Expected-type untyped lambdas only with a known Pi. | Current/future paired examples; AST-equivalent explicit expansions; binder shadowing, comments and inspector spans. A pair without an inferable type still needs an annotation. |
+| 1. Baselines and syntax conveniences | — | Preserve selected statements/assumptions; grouped `intro`, grouped typed binders, typed multi-binder lambdas, `have h := e;`, and `have h : T := e;` (since 2026-09-30, `let h := e;` and `let h : T := e;`). Expected-type untyped lambdas only with a known Pi. | Current/future paired examples; AST-equivalent explicit expansions; binder shadowing, comments and inspector spans. A pair without an inferable type still needs an annotation. |
 | 2. Reconstruction and transactions | 1 | Add single-goal transitions, shared checked path constructors, and reusable declaration transactions. Initially exercise transitions through internal APIs. | A checked proof of the new goal reconstructs a checked proof of the old one; failed declarations discard generated helpers and rules; previously accepted declarations remain usable. |
 | 3. `calc` and `rfl` | 2 | Terminal homogeneous `calc` statement; subsequent `_` means previous right endpoint; step justification is a term or nested proof block. `rfl;` emits a constant path and asks the kernel to check it. | Arithmetic chain fixture checks. Wrong intermediate endpoint/carrier fails at that step; nested `by { ... }` supports the following PR. |
 | 4. Explicit `rw` | 3 | Fully instantiated homogeneous paths; ordered rules, reverse direction, `at lhs`/`at rhs`, one-based `occurrence n`; root and fixed-codomain application contexts. | Forward/reverse/congruence fixtures; occurrence order and dependent-context rejection; complete witness visible from the source selection. |
@@ -361,18 +363,19 @@ This states the two-dimensional object directly rather than first picking a
 concatenation equation. The sample includes its full current-language expansion.
 
 Use the expected nested PathP to display all four edges and corner checks in
-the inspector. A later `square` notation can name those edges, but should be a
-view of this type, not a new square solver. Four arbitrarily supplied boundary
+the inspector. `Square` in `library/squares.cubist` names those edges by their
+corners (L2.8, 2026-10-06); it is this nested PathP, not a square solver, and
+the inspector shows its edges and corners. Four arbitrarily supplied boundary
 paths need not have a filler; boundary compatibility at corners alone is not
-proof of filling. Conversion between a square and a concatenated-path equation
-needs a checked construction.
+proof of filling. `square_to_path` and `path_to_square` are the checked
+conversions between a square and an equation of composites.
 
-### 4. Boundary-oriented box notation — useful after PR 6
+### 4. Boundary-oriented box notation — done (L2.8, 2026-10-06)
 
 Replace deeply nested `face(..., fun (...) => ...)` only with an explicit box:
 
 ```text
-// Proposed syntax, checked under an outer live coordinate i.
+// Checked syntax (L2.8), under an outer live coordinate i.
 compose j in A from p @ i {
   on i = 0 => x;
   on i = 1 => q @ j;
@@ -384,22 +387,23 @@ and two faces. The composition direction binds the family and tube bodies,
 not the faces or base. Generalize `A` to an explicitly written varying family
 only with the same scoping rule. No missing walls are silently guessed. Native
 checking must validate face overlaps and base agreement, including restricted
-local-variable types. A separate `fill` form can expose the existing derived
-filler at a specified coordinate. Do not generalize from boxes to arbitrary
+local-variable types. `fill j in A from b at k { … }` exposes the derived
+filler at the coordinate k (`cubist-tests/box_notation.cubist`). Do not generalize from boxes to arbitrary
 closed boundary filling.
 
 ### 5. Mathematical structure scopes and named Sigma views
 
 Before new record representations, support lexical notation packs backed by
 ordinary terms. The proposed field example fixes its structure once and
-binds `+`, `*`, `zero`, and `one` to known field operations. The translator
-already resolves natural-number `+` through the lexical `add` binding; make
-this mechanism explicit and inspectable instead of adding typeclass search.
+binds `+`, `*`, `zero`, and `one` to known field operations. Named notations
+(L2.10) now do this without typeclass search: `+` on natural numbers means
+what the selected `nat` notation binds it to (`use nat;`), and an operator
+or numeral outside any selection is an error.
 
 Keep the structure scope around the **statement and proof**, and expand its
 operation bindings at declaration boundaries. Do not create implicit coercions
-between fields or overload numerals until a particular interpretation has been
-specified. A qualified pack identity and its expansions belong in the inspector.
+between fields. Numerals are read only through a selected notation's
+`numeral` rule (L2.10c). A qualified pack identity and its expansions belong in the inspector.
 
 Named views can map existing structures to their checked projections (for
 example `F.carrier`, `F.add`, `F.add_assoc`) without changing public Sigma
@@ -410,6 +414,9 @@ not discard those fields.
 
 ### 6. Goal-derived induction and coherent structure equality — later
 
+The closing `match` statement (L2.2a) now abstracts the goal over the
+matched value and generalizes the hypotheses about it; clauses for path
+constructors bind interval variables. The rest of this section is open.
 An induction statement can abstract the target over its selected scrutinee,
 provided dependencies are generalized explicitly and uniquely. Present the
 resulting motive before checking branches. For pushout/suspension elimination,

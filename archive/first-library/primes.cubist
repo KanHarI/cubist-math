@@ -527,14 +527,13 @@ def bounded_divisor_of_factorial(d, n : Nat) :=
 // Prime number.
 // Prime(p) means exists i : Nat. (p = 2 + i) and forall j : Nat. j < i -> Divides(2 + j, p) ->
 // Void.
-def Prime(p : Nat) :=
+def Prime(p : Nat) := (
+  exists i : Nat.
   (
-    exists i : Nat.
-    (
-      (p = succ(succ(i)))
-      and (forall j : Nat. ((succ(j) <= i) -> (Divides(succ(succ(j)), p) -> Void)))
-    )
-  );
+    (p = succ(succ(i)))
+    and (forall j : Nat. ((succ(j) <= i) -> (Divides(succ(succ(j)), p) -> Void)))
+  )
+);
 
 // Prime divisor.
 // A least divisor of m greater than one is prime. The returned i names p = 2+i.
@@ -620,4 +619,3 @@ def prime_divisor_exists(n : Nat) :=
       );
     };
   };
-

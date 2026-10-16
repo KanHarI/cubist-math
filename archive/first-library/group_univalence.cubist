@@ -36,11 +36,10 @@ def group_iso_is_set(G, H : Group) : IsSet(U0, GroupIso(G, H)) {
   exact constant_paths_are_set(GroupIso(G, H), group_iso_choose_path(G, H), constant);
 }
 
-def group_total_contraction(G : Group, z : GroupIsoTotal(G)) :=
-  pair_induction(
-    (fun (z : GroupIsoTotal(G)) => group_iso_center(G) = z),
-    group_isomorphism_total_contractible(G), z
-  );
+def group_total_contraction(G : Group, z : GroupIsoTotal(G)) := pair_induction(
+  (fun (z : GroupIsoTotal(G)) => group_iso_center(G) = z), group_isomorphism_total_contractible(G),
+  z
+);
 
 def group_identity_family(G, H : Group) := typed(U1, GroupIso(G, H));
 

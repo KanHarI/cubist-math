@@ -192,10 +192,9 @@ def evaluation_coefficients_relation(
   let iso := family_basis_coordinates(F, C, n, rows, basis);
   let c := evaluation_coefficients(F, n, maps, points, basis, y);
   let v := embedding_evaluation_vector(F, F, n, maps, y);
-  let expansion : linear_combination(F, C, n, rows, c) = v :=
-    trans(
-      sym(family_linear_evaluation(F, C, n, rows, c)), basis_expansion_coordinates(F, C, n, iso, v)
-    );
+  let expansion : linear_combination(F, C, n, rows, c) = v := trans(
+    sym(family_linear_evaluation(F, C, n, rows, c)), basis_expansion_coordinates(F, C, n, iso, v)
+  );
   exact trans(
     sym(coordinate_combination_component(F, n, i, n, rows, c)),
     cong((fun (w : Fin(n) -> af_carrier(F)) => w(i)), expansion)
@@ -233,11 +232,10 @@ def subgroup_cancel_action(
   let sv := subgroup_value(G, H, s);
   let inverse_ := subgroup_carrier_inverse(G, H, s);
   let shifted := subgroup_carrier_multiply(G, H, h, inverse_);
-  let canceled : group_multiply(G, subgroup_value(G, H, shifted), sv) = hv :=
-    trans(
-      group_associative(G, hv, group_inverse(G, sv), sv),
-      trans(cong(group_multiply(G, hv), group_inverse_left(G, sv)), group_unit_right(G, hv))
-    );
+  let canceled : group_multiply(G, subgroup_value(G, H, shifted), sv) = hv := trans(
+    group_associative(G, hv, group_inverse(G, sv), sv),
+    trans(cong(group_multiply(G, hv), group_inverse_left(G, sv)), group_unit_right(G, hv))
+  );
   exact cong((fun (g : Galois(K, E)) => extension_iso_forward(K, E, E, g, x)), canceled);
 }
 
@@ -318,23 +316,21 @@ def subgroup_relation_transform(
   let F := extension_field(K, E);
   let sv := subgroup_value(G, H, s);
   let shifted := subgroup_carrier_multiply(G, H, h, subgroup_carrier_inverse(G, H, s));
-  let act :=
-    fun (u : SubgroupCarrier(G, H), x : extension_carrier(K, E)) => extension_iso_forward(
-      K, E, E, subgroup_value(G, H, u), x
-    );
+  let act := fun (u : SubgroupCarrier(G, H), x : extension_carrier(K, E)) => extension_iso_forward(
+    K, E, E, subgroup_value(G, H, u), x
+  );
   let e := galois_field_embedding(K, E, sv);
   let values := fun (j : Fin(n)) => act(shifted, points(j));
   let transformed := fun (j : Fin(n)) => field_mul(F, act(s, coefficients(j)), act(h, points(j)));
   let mapped := fun (j : Fin(n)) => field_mul(F, act(s, coefficients(j)), act(s, values(j)));
-  let sameSum : field_sum(F, n, mapped) = field_sum(F, n, transformed) :=
-    field_sum_cong(
-      F, n, mapped, transformed,
-      (
-        fun (j : Fin(n)) => cong(
-          field_mul(F, act(s, coefficients(j))), subgroup_cancel_action(K, E, H, h, s, points(j))
-        )
+  let sameSum : field_sum(F, n, mapped) = field_sum(F, n, transformed) := field_sum_cong(
+    F, n, mapped, transformed,
+    (
+      fun (j : Fin(n)) => cong(
+        field_mul(F, act(s, coefficients(j))), subgroup_cancel_action(K, E, H, h, s, points(j))
       )
-    );
+    )
+  );
   exact trans(
     sym(sameSum),
     trans(
@@ -539,16 +535,14 @@ def subgroup_evaluation_spans_fixed_field(
   let maps := subgroup_evaluation_maps(K, E, H, n, enumeration);
   intro y;
   let c := evaluation_coefficients(F, n, maps, points, basis, y);
-  let inside :=
-    fun (j : Fin(n)) => typed(
-      af_carrier(R),
-      (c(j), subgroup_evaluation_coefficient_member(K, E, H, n, enumeration, points, basis, y, j))
-    );
-  let sum : linear_combination(R, V, n, points, inside) = y :=
-    trans(
-      field_vector_combination_sum(R, F, i, n, points, inside),
-      subgroup_evaluation_at_identity(K, E, H, n, enumeration, points, basis, y)
-    );
+  let inside := fun (j : Fin(n)) => typed(
+    af_carrier(R),
+    (c(j), subgroup_evaluation_coefficient_member(K, E, H, n, enumeration, points, basis, y, j))
+  );
+  let sum : linear_combination(R, V, n, points, inside) = y := trans(
+    field_vector_combination_sum(R, F, i, n, points, inside),
+    subgroup_evaluation_at_identity(K, E, H, n, enumeration, points, basis, y)
+  );
   exact merely(
     (
       exists coefficients : Fin(n) -> af_carrier(R).

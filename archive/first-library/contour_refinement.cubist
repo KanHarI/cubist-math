@@ -54,8 +54,8 @@ def contour_edge_subdivide(
 
 def contour_edge_refinement(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F,
-  x, middle, y, coarseTag, leftTag, rightTag : F
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, x, middle, y, coarseTag,
+  leftTag, rightTag : F
 ) :
   addF(
     contour_edge(F, addF, mulF, negF, f, x, middle, leftTag),

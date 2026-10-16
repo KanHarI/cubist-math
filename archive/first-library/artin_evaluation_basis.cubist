@@ -98,16 +98,14 @@ def distinct_embeddings_evaluation_basis(
     )
   ) {
   let Frame := fun (m : Nat) => EmbeddingEvaluationFrame(K, L, n, m, maps);
-  let atSum :=
-    embedding_evaluation_frame_build(
-      n, K, L, n, 0, maps, distinct, sym(nat_add_zero(n)),
-      embedding_evaluation_frame_zero(K, L, n, maps)
-    );
-  let atN :=
-    mere_map(
-      Frame(add_count(n, 0)), Frame(n),
-      (fun (f : Frame(add_count(n, 0))) => transport f along nat_add_zero(n) in Frame), atSum
-    );
+  let atSum := embedding_evaluation_frame_build(
+    n, K, L, n, 0, maps, distinct, sym(nat_add_zero(n)),
+    embedding_evaluation_frame_zero(K, L, n, maps)
+  );
+  let atN := mere_map(
+    Frame(add_count(n, 0)), Frame(n),
+    (fun (f : Frame(add_count(n, 0))) => transport f along nat_add_zero(n) in Frame), atSum
+  );
   let make_ :
     Frame(n)
     -> (
@@ -166,29 +164,26 @@ def distinct_extension_loops_evaluation_basis(
     intro i, j, same;
     exact distinct(i, j, extension_loop_embedding_injective(K, E, loops(i), loops(j), same));
   }
-  let Source :=
-    exists points : Fin(n) -> extension_carrier(K, E).
-    FamilyBasis(
-      F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
-    );
-  let Target :=
-    exists points : Fin(n) -> extension_carrier(K, E).
-    FamilyBasis(F, C, n, (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j))));
+  let Source := exists points : Fin(n) -> extension_carrier(K, E). FamilyBasis(
+    F, C, n, (fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j)))
+  );
+  let Target := exists points : Fin(n) -> extension_carrier(K, E). FamilyBasis(
+    F, C, n, (fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j)))
+  );
   let convert : Source -> Target {
     intro witness_;
     obtain (points, basis) := witness_;
     let embeddingRows := fun (j : Fin(n)) => embedding_evaluation_vector(F, F, n, maps, points(j));
     let loopRows := fun (j : Fin(n)) => loop_evaluation_vector(K, E, n, loops, points(j));
-    let sameRows : embeddingRows = loopRows :=
-      FunExt(
-        U0, Fin(n), (fun (j : Fin(n)) => Fin(n) -> af_carrier(F)), embeddingRows, loopRows,
-        (
-          fun (j : Fin(n)) => FunExt(
-            U0, Fin(n), (fun (i : Fin(n)) => af_carrier(F)), embeddingRows(j), loopRows(j),
-            (fun (i : Fin(n)) => extension_loop_embedding_action(K, E, loops(i), points(j)))
-          )
+    let sameRows : embeddingRows = loopRows := FunExt(
+      U0, Fin(n), (fun (j : Fin(n)) => Fin(n) -> af_carrier(F)), embeddingRows, loopRows,
+      (
+        fun (j : Fin(n)) => FunExt(
+          U0, Fin(n), (fun (i : Fin(n)) => af_carrier(F)), embeddingRows(j), loopRows(j),
+          (fun (i : Fin(n)) => extension_loop_embedding_action(K, E, loops(i), points(j)))
         )
-      );
+      )
+    );
     exact (
       points,
       transport basis along sameRows in (

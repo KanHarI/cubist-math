@@ -21,12 +21,11 @@ def quotient_product_respects(G : Group, S : Subgroup(G), normal : IsNormal(G, S
   );
 }
 
-def quotient_multiply(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :=
-  quotient_binary_rec(
-    group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), LeftCosets(G, S),
-    left_cosets_are_set(G, S), quotient_product_on_representatives(G, S),
-    quotient_product_respects(G, S, normal)
-  );
+def quotient_multiply(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) := quotient_binary_rec(
+  group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), LeftCosets(G, S),
+  left_cosets_are_set(G, S), quotient_product_on_representatives(G, S),
+  quotient_product_respects(G, S, normal)
+);
 
 def quotient_multiply_beta(
   G : Group, S : Subgroup(G), normal : IsNormal(G, S), x, y : group_carrier(G)
@@ -57,12 +56,11 @@ def quotient_inverse_respects(G : Group, S : Subgroup(G), normal : IsNormal(G, S
   );
 }
 
-def quotient_inverse(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) :=
-  quotient_rec(
-    group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), LeftCosets(G, S),
-    left_cosets_are_set(G, S), quotient_inverse_on_representatives(G, S),
-    quotient_inverse_respects(G, S, normal)
-  );
+def quotient_inverse(G : Group, S : Subgroup(G), normal : IsNormal(G, S)) := quotient_rec(
+  group_carrier(G), SameLeftCoset(G, S), same_coset_equivalence(G, S), LeftCosets(G, S),
+  left_cosets_are_set(G, S), quotient_inverse_on_representatives(G, S),
+  quotient_inverse_respects(G, S, normal)
+);
 
 def quotient_inverse_beta(G : Group, S : Subgroup(G), normal : IsNormal(G, S), x : group_carrier(G)) :
   quotient_inverse(G, S, normal, left_coset(G, S, x)) = left_coset(G, S, group_inverse(G, x)) {

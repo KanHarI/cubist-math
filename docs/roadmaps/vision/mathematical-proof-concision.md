@@ -55,7 +55,8 @@ the `sumZero` block at lines 42–69 takes 28 lines. Its argument is:
 > preserve one, and simplify multiplication by one.
 
 The archive constructs this equality with nested `trans`, `sym` and `cong`.
-The following four-line replacement uses current syntax:
+The following four-line replacement used the syntax of 2026-09-28. Today
+it starts with `let` in place of `have`:
 
 ```text
 have sumZero : field_add(L, a, b) = field_zero(L) {
@@ -93,9 +94,9 @@ In
 motive and parameter types; its step helper repeats the induction
 hypothesis's signature. The recursive call at line 49 changes another
 argument to `succ(m)`. An adequate induction interface must therefore
-support explicit generalization and changing arguments. The experimental
-H1 recursion fragment, which keeps other arguments fixed, does not yet
-cover this pattern.
+support explicit generalization and changing arguments. H1's recursion,
+released on 2026-10-02, covers this pattern: a recursive call may change
+another argument (L2.2a's third slice).
 
 ### Contour integration: additivity
 
@@ -155,16 +156,17 @@ Allow the same proof facilities inside induction and match branches, tuple
 components, function arguments and local definitions. A short argument
 should be expressible at the place where its result is needed.
 
-`have`, `calc`, `simp`, goal-directed application and local witness handling
+`let`, `calc`, `simp`, goal-directed application and local witness handling
 should share scope, goal reconstruction and diagnostics. Nested use must
 preserve dependent variables and cubical face information. Requiring an
 extra named helper solely to access a proof facility is avoidable overhead.
 
 ### 2. Construct routine arguments from the expected goal
 
-Provide `apply` and `refine`, argument inference from known signatures and
-expected conclusions, goal-derived induction, and extensionality using
-selected checked lemmas.
+Infer arguments from known signatures and expected conclusions (L4.1a/b,
+done on 2026-10-04), and provide goal-derived induction and extensionality
+using selected checked lemmas. `apply` and `refine` were withdrawn on
+2026-10-05: `let` and `exact` with holes express them.
 
 Authors must be able to name the variables generalized during induction
 and inspect the resulting hypothesis. Parameters determined by a selected
@@ -247,11 +249,11 @@ proof examples and fill the remaining contracts:
 | Requirement | Existing work and proposed addition |
 | --- | --- |
 | Composable proof blocks | Extend the shared goal layer, HoTT A5 / work-plan L1.2r, with an explicit contract for proofs inside arbitrary supported expression positions. |
-| Application and argument inference | Ergonomics milestone 5 and L4.1a/b, L4.4; require representative theorem compositions with explicit structure selection. |
-| Induction with generalization | Ergonomics milestone 7 and L2.2a; exercise a recursive call whose other argument changes, as in evaluation-frame construction. Indexed and companion motives retain their H2/H3 dependencies. |
+| Application and argument inference | Ergonomics milestone 5 and L4.1a/b, done on 2026-10-04; L4.4 withdrawn on 2026-10-05. Require representative theorem compositions with explicit structure selection. |
+| Induction with generalization | Ergonomics milestone 7 and L2.2a, whose released third slice lets other arguments vary; exercise a recursive call whose other argument changes, as in evaluation-frame construction. Indexed and companion motives retain their H2/H3 dependencies. |
 | Witness elimination and routine side conditions | HoTT D0a/D1 and the h-level work; connect checked propositionhood evidence to scoped proof-language elimination. |
 | Rewriting and extensionality | Build on HoTT A1/A2, B3, E1 and the ergonomics implementation plan. Add explicit contracts for rewriting under binders and through operators such as finite sums: A2 excludes binder bodies, and E1 does not supply general binder rewriting. |
-| Shared environments and reusable laws | Theories in ergonomics milestone 6, the language feature proposal, and HoTT F1; require compact use of the resulting interfaces. |
+| Shared environments and reusable laws | Theories (L2.4, L2.4c, done), sections and `use`, the language feature proposal, and HoTT F1; require compact use of the resulting interfaces. |
 | Domain proof methods | Specify supported algebraic/logical methods and a library extension mechanism; the planned path-algebra normalizers address a different class of goals. |
 
 The [proof ergonomics roadmap](../proof-ergonomics-roadmap.md), its
