@@ -1,8 +1,9 @@
 # CB6: contextual REPL
 
-Status: external round 2's inspection fix is implemented in
-`cb6-contextual-repl`, stacked on ready CB5 #238 (`4c2b4f3a`, clean fourth Claude
-review). Final gates and round 3 verification are pending; CB7 has not started.
+Status: external round 3 is verifying `280b4592`; its full gates pass. An
+independent audit found a related scratch-shadowing issue, now fixed in an
+isolated worktree pending full validation and external verification. CB6 remains
+stacked on ready CB5 #238; CB7 has not started.
 
 ## Required result
 
@@ -326,3 +327,21 @@ visibility. Opened-member receipts retain their existing behavior. All 76
 focused checks pass, including visible/shadowed lets and obtain components in
 both match and induction branches, opened-member parity, hidden-evidence refusal
 and lazy replay. Full gates and focused Claude round 3 follow on this fix.
+
+At `280b4592`, all 1,314 tests pass, zero failures and zero TODOs, with all 3,857
+canonical checks, both browser suites and all four mutations. During round 3,
+an independent audit finds that distinct retained execution keys still keep
+shadowed scratch locals in the semantic-local inventory. Proof queries then
+accept hidden let evidence that the equivalent authored source refuses.
+
+The follow-up updates the existing introduction and public-alias transitions
+to revoke visibility by source label, while retaining identity receipts for
+refinement. Retained/query introductions read their already registered binding
+without requiring an observer. Single-alias introduction delegates to the same
+multi-alias transition. There is no query-specific or hlevel-specific filter.
+The 71 other focused checks and all 18 command checks pass, including source
+controls for let, obtain, model opening and intro, scratch-history shadowing,
+hidden inspection and explicitly saved aliases. The first combined run kept
+too many fixture kernels alive; disposing each source control immediately fixes
+the harness without changing kernel limits. Final gates and external review
+remain required for this follow-up.

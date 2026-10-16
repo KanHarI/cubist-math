@@ -149,12 +149,18 @@ export class Scope {
     return this.with({evidence:this.evidence.map(e=>({...e,term:replace(e.term),type:replace(e.type),model:replace(e.model)}))});
   }
   sourceBinding(name,value,record,source=null) {
+    // Retained/query introductions already own an ID without an observer.
+    record??=this.unit.bindingAdapter?.bindingForKey(name);
     // Keep an exact value for an outer binding even after its public label
     // is shadowed. These private aliases never introduce source visibility.
     const key=record?new BindingAdapter(this.checker.compilationBindings.table).key(record.id):name;
     const scope=this.aliases(key===name?[[name,value]]:[[name,value],[key,value]]);
     if(!record&&!source)return scope;
     const sourceBindings=new Map(scope.sourceBindings),localSources=new Map(scope.localSources);
+    const label=record?.label??source?.name??name;
+    // Execution keys may differ even when a source label is shadowed.
+    // Keep the old receipt for refinement, but revoke its search visibility.
+    for(const [key,entry] of localSources)if(entry.name===label)localSources.delete(key);
     if(record) {
       // Remember the introduction's refinement behavior even after shadowing.
       // Opened-member receipts have no source-local metadata and stay distinct.
@@ -181,11 +187,7 @@ export class Scope {
       evidence:this.evidence.map(e=>({...e,term:onFace(e.term,face),type:onFace(e.type,face),model:onFace(e.model,face)}))});
   }
   alias(name,value) {
-    const env=new Map(this.env);
-    hide(env,name);
-    const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
-    sourceBindings.delete(name);localSources.delete(name);
-    return this.with({env:env.set(name,value),sourceBindings,localSources});
+    return this.aliases([[name,value]]);
   }
   // Refinement changes a value at the same lexical binding. Introduction
   // (alias/sourceBinding) must never inherit a shadowed binder's identity.
@@ -202,6 +204,10 @@ export class Scope {
     const env=new Map(this.env);
     const sourceBindings=new Map(this.sourceBindings),localSources=new Map(this.localSources);
     for(const [name,value] of pairs){hide(env,name);env.set(name,value);sourceBindings.delete(name);localSources.delete(name);}
+    // Public aliases (including model openings) also shadow retained locals
+    // whose execution keys are private identities.
+    const labels=new Set(pairs.map(([name])=>name));
+    for(const [key,entry] of localSources)if(labels.has(entry.name))localSources.delete(key);
     return this.with({env,sourceBindings,localSources});
   }
   // The source name bound here that hides the declaration `name`, or null.

@@ -691,3 +691,23 @@ dependent proofs and obtain components in both match and induction branches;
 opened-member behavior and collection on/off kernel work remain identical.
 The first test fixture lacked its pair's required expected type; adding that
 explicit type corrected the fixture without changing the implementation.
+
+## Independent audit during CB6 round 3 — diagnosis before fixes
+
+At frozen 280b4592, `/prove { let h := p(tt); let h := tt; hlevel; }` succeeds in a context `A : U0, p : Unit -> IsProp(U0,A)` with goal `IsSet(U0,A and A)`, where the equivalent authored block fails. Separate scratch entries `let h := p(tt)` then `let h := tt` likewise leave the old h available to `/prove { hlevel; }`. The no-h query fails and the unshadowed h query succeeds. Probes are cb6-visibility-audit.log and cb6-visibility-opening-audit.log. This is an additional finding, not a failure of the narrow round-2 receipt refinement fix.
+
+Shared root across rounds: identity is distinct from lexical visibility. Round 1 removed observation aliases from localSources, but actual retained/scratch introductions have unique private keys; replacing the visible spelling does not overwrite that key. localSources therefore still lists the old semantic local. Proof search consumes that inventory, while `/locals` derives visibility from the lexical context and correctly calls the same row hidden. This is a source/query behavior mismatch, not kernel unsoundness.
+
+Trace all introduction forms before changes: ordinary and retained locals, scratch lets, proof-block binders, obtain, patterns, dimensions and model openings. Maintain one semantic-local inventory at introduction/alias transitions, keyed for execution but shadowed by source label. Preserve binding receipts and their refinement facts independently; binding-aware introductions already have registered IDs even without an observation collector. Do not add an hlevel-only blacklist, a query-only scope rewrite, another registry or a second resolver. Compare source controls, retained declarations and scratch history, retaining both positive and negative results. The pending Claude round-3 report must remain pinned to unchanged280b4592; commit/fix only after that review finishes, then request focused verification of this shared-boundary correction.
+
+The reviewed worktree remains unchanged while an isolated worktree holds the
+follow-up. Scope introduction reads existing retained identities without an
+observer and removes shadowed semantic locals by their source label; public
+alias introduction does the same for model openings. Receipts stay available
+for refinement. Single-alias introduction delegates to the multi-alias method,
+removing duplicated transition logic. All 18 command tests and 71 other focused
+checks pass. The first fixture matrix exhausted the unchanged kernel-session
+limit by retaining every control until test completion; immediate disposal of
+each completed control corrects the harness. The independent source controls
+show the intended positive and negative verdicts for let, obtain, intro and
+model opening. A saved alias remains usable after the original label shadows.

@@ -168,6 +168,57 @@ test("proof experiments can inspect shadowed evidence without making it availabl
   assert.deepEqual({work:program.kernel.work(),definitions:[...program.kernel.definitions]},before);
 });
 
+test("retained proof queries shadow evidence like the same authored block",async t=>{
+  const prelude="import hlevels; theory T(U < UU0) { M : U; h : M; } ";
+  const declaration=body=>`def probe_(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) { ${body} }`;
+  const {session}=await setup(t,prelude+declaration("hlevel with [p(tt)];"),"hlevel with [p(tt)];");
+  for(const shadow of ["", "let h := tt;", "obtain (h, other) := typed(Unit and Unit, (tt, tt));", "use T.make(Unit, tt);"]) {
+    const body=`let h := p(tt); ${shadow} hlevel;`,source=prelude+declaration(body);
+    for(const collectScopes of [false,true]) {
+      const checked=await checkProgram(t,source,{module,options:{collectScopes}});
+      try {
+        assert.equal(checked.result.gaps.length,shadow?1:0,JSON.stringify(checked.result.gaps));
+        if(shadow)assert.match(checked.result.gaps[0].reason,/hlevel could not prove/);
+      } finally {checked.program.dispose();}
+    }
+    const result=await query(session,`/prove { ${body} }`,shadow?"error":"proof");
+    if(shadow)assert.match(result.text,/hlevel could not prove/);
+  }
+  assert.equal(session.accepted.length,0);
+});
+
+test("scratch shadowing hides search evidence while preserving its inspected identity and explicit aliases",async t=>{
+  const source=`import hlevels;
+    def probe_(A : U0, p : Unit -> IsProp(U0, A)) : IsSet(U0, A and A) { hlevel with [p(tt)]; }`;
+  const {session}=await setup(t,source,"hlevel with [p(tt)];");
+  await query(session,"/prove { hlevel; }","error");
+  await query(session,"let h := p(tt)","defined");
+  await query(session,"/prove { hlevel; }","proof");
+  await query(session,"let h := tt","defined");
+  assert.match((await query(session,"/prove { hlevel; }","error")).text,/hlevel could not prove/);
+  const locals=await query(session,"/locals","locals");
+  assert.deepEqual(locals.bindings.filter(row=>row.label==="h").map(row=>[row.visible,row.type]),
+    [[false,"IsProp(U0, A)"],[true,"Unit"]]);
+  await query(session,"/prove { hlevel with [p(tt)]; }","proof");
+  await query(session,"let h := p(tt)","defined");
+  await query(session,"let saved := h","defined");
+  await query(session,"let h := tt","defined");
+  await query(session,"/prove { hlevel; }","proof");
+  assert.equal(session.accepted.length,5);
+});
+
+test("proof introductions shadow retained let evidence without dropping an unshadowed proof",async t=>{
+  const declaration=body=>`import hlevels;
+    def probe_(A : U0, p : Unit -> IsProp(U0, A)) : Unit -> IsSet(U0, A and A) { ${body} }`;
+  const {session}=await setup(t,declaration("intro x; hlevel with [p(tt)];"),"intro x;");
+  for(const name of ["x","h"]) {
+    const body=`let h := p(tt); intro ${name}; hlevel;`;
+    const checked=await checkProgram(t,declaration(body),{module});
+    assert.equal(checked.result.gaps.length,name==="h"?1:0,JSON.stringify(checked.result.gaps));
+    await query(session,`/prove { ${body} }`,name==="h"?"error":"proof");
+  }
+});
+
 test("expression contexts distinguish expected types from active proof goals",async t=>{
   const source=nat+"def f(k : Nat) : Nat := k;";
   const {session}=await setup(t,source,"k;",{phase:"expression",length:1});
