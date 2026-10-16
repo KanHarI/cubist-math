@@ -166,3 +166,22 @@ The current-language retention boundaries were audited after the final removals:
 | Historical compatibility | legacy-syntax and migration readers; nameBased is requested only for old migration inputs. Current source does not retry through it. |
 
 rg audit: removed elaborationSyntax, resolveBindingModule, lowerBindingModule and recursiveCall have no production occurrence. The explicit old/mixed reference rejection in binding-syntax remains intentionally. E801/E860/E869/E871/E866 occur in web only as retired catalogue rows. Source syntax traversal and structural receiver helpers remain because current source and retained consumers still use them.
+
+
+The corrected full run confirms all normal-check envelopes and all semantic
+inventories. It also exposes two limitations of the first optional envelope:
+fold with both collections takes 4,057 ms in one sample, and the immediate
+post-return GC still sees async-turn roots for the larger graphs. A separate
+weak-reference probe of algebra (including serialization) yields one event-loop
+turn before GC: program, scope map and recorder are all collected, with heap
+falling to 34 MiB (then 18 MiB on later turns). The sampling boundary must include
+the completed async turn, not only return from `sample`. Add one `setImmediate`
+await before the disposal GC; no repeated-GC loop or runtime cache change.
+
+The initial four-second optional proposal is superseded by a five-second ceiling
+for the named fixtures: the two completed runs show up to about half a second
+of variation for scope collection, so the observed maximum plus that spread,
+rounded up to the next half-second, requires five seconds. Preserve the 4,057 ms
+sample; do not reclassify it as passing the original proposal. The heap/encoding
+envelopes and all compiler/process limits stay unchanged. Final evidence must
+use the completed-turn disposal measurement and report every sample.

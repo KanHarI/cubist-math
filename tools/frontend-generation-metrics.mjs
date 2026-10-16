@@ -3,6 +3,7 @@
 // Search fuel is deterministic. Kernel work depends on cache state; timings
 // and memory are observations, not acceptance thresholds.
 import {serialize} from "node:v8";
+import {setImmediate} from "node:timers/promises";
 import {execFileSync} from "node:child_process";
 import {readFile, readdir, writeFile} from "node:fs/promises";
 import {cpus, platform, release} from "node:os";
@@ -121,7 +122,9 @@ if (inventoryOnly) {
 if (sampling) {
   const observation = await sample(process.argv[3], process.argv[4]);
   // Sample after the measurement frame releases all local aliases, not only
-  // its program variable. Otherwise inert graphs remain rooted by the frame.
+  // its program variable. Let the completed async stack leave the current
+  // turn too, so its last check result cannot still root the program.
+  await setImmediate();
   global.gc();
   observation.memory.disposed = process.memoryUsage();
   process.stdout.write(JSON.stringify(observation));
@@ -149,7 +152,7 @@ const report = {
   platform:`${platform()} ${release()}`, build:JSON.parse(await readFile(join(root,"web/dist/build-stamp.json"),"utf8")),
   limits:"default declaration/search fuel and kernel budgets",
   cacheConditions:"new process, WASM module and kernel session for every workload/mode/repeat",
-  peakScope:"arena sampled after declarations; OS process maximum RSS includes startup; retained/released process memory after explicit GC; peak RSS includes graph serialization; release sampled after the measurement frame returns",
+  peakScope:"arena sampled after declarations; OS process maximum RSS includes startup; retained/released process memory after explicit GC; peak RSS includes graph serialization; release sampled after the measurement frame returns and the event-loop turn completes",
   retainedEncoding:"node:v8 serialize of inert scope points/replay inputs and generated artifacts; sharing preserved; bytes are not retained heap",
   samples:[],
 };
