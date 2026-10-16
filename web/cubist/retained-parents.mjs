@@ -125,8 +125,8 @@ export function retainParents(theory,interfaces,{lookup,source,owner,constructor
   // Ambiguity participates in ordered lookup. A later local or an explicit
   // parent selection can shadow it without a separate spelling pre-pass.
   for(const [name,candidates] of ambiguous)if(!headerLabels.has(name))
-    interfaces.context=interfaces.context.bind(name,failedResolution({message:
-      `${name} is ambiguous in ${T}: ${candidates.map(e=>`${e.label}'s`).join(" and ")}. Write ${candidates.map(e=>`${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`}));
+    interfaces.context=interfaces.context.bind(name,failedResolution(Error(
+      `${name} is ambiguous in ${T}: ${candidates.map(e=>`${e.label}'s`).join(" and ")}. Write ${candidates.map(e=>`${e.label}.${e.parentField}`).join(" or ")}, or rename one in extends.`)));
   for(const parent of prepared)if(!headerLabels.has(parent.label)) {
     const argumentsOf=entries=>entries.map(entry=>bindingResolution(parent.correspondence.get(entry)));
     const type=applicationResolution(bindingResolution(parent.record.modelId),argumentsOf(

@@ -147,7 +147,7 @@ test("unmigrated reference namespaces and new syntax families are refused at sou
   ])assert.throws(()=>resolveBindingSyntax(parse(source).declarations[0],setup),/family has not migrated: simpaOnly/);
   assert.throws(()=>resolveBindingSyntax({kind:"futureFamily"},setup),/family has not migrated: futureFamily/);
   for(const source of ["tt + tt","tt * tt","tt < tt","tt <= tt","-tt","0b10"])
-    assert.throws(()=>resolveBindingSyntax(expression(source),setup),/family has not migrated/);
+    assert.throws(()=>resolveBindingSyntax(expression(source),setup),error=>/selected notation/.test(error.message)&&Number.isInteger(error.offset)&&error.sourceEnd>error.offset);
   assert.throws(()=>resolveBindingSyntax(expression("tt pl.(+) tt"),setup),/complete source notation inventory/);
 });
 
@@ -260,7 +260,7 @@ test("the pattern compiler resolves slots at the matched type, including nested 
   // Historical mode cannot turn literal data into an invented destination
   // reference. Interval endpoints still bypass term elaboration normally.
   translator.nameBased=true;
-  assert.throws(()=>elaborate("1"),/family has not migrated: numeral/);
+  assert.throws(()=>elaborate("1"),/selected notation that reads it/);
   translator.nameBased=false;
   const left = elaborate("left_").term, right = elaborate("right_").term;
   for (const [source, expected, refused] of [
@@ -302,4 +302,29 @@ test("the pattern compiler resolves slots at the matched type, including nested 
     assert.equal(value.scope.equal(value.term, expected), true);
     assert.equal(value.scope.equal(value.term, refused), false);
   }
+});
+
+test("source resolution preserves overlapping scopes and disjoint branches",()=>{
+  const setup=prepare(),resolve=source=>resolveBindingSyntax(expression(source),setup).tree;
+  const induction=resolve("induction n as z return Unit { zero => a; succ z => z; }");
+  assert.notEqual(induction.index.bindingId,induction.hypothesis.bindingId);
+  assert.equal(induction.step.resolution.id,induction.hypothesis.bindingId);
+  const match=resolve("match s return Unit { left x => x; right y => x; }");
+  assert.equal(match.leftBody.resolution.id,match.left.bindingId);
+  assert.deepEqual(match.rightBody.resolution,{tag:"missing",label:"x"});
+  const unpack=resolve("unpack x as (x, y) return Unit { x; }");
+  assert.deepEqual(unpack.value.resolution,{tag:"missing",label:"x"});
+  assert.equal(unpack.body.resolution.id,unpack.left.bindingId);
+  const path=resolve("path i => p @ i");
+  assert.equal(path.body.right.resolution.id,path.dimension.bindingId);
+  const clauses=resolve("match c { base => p @ i; loop @ i => p @ i; }");
+  assert.deepEqual(clauses.clauses[0].body.right.resolution,{tag:"missing",label:"i"});
+  assert.equal(clauses.clauses[1].body.right.resolution.id,clauses.clauses[1].coordinates[0].bindingId);
+});
+
+test("unread numeral diagnostics do not change interval binding structure",()=>{
+  const setup=prepare(),context=setup.context.withNotations([]).namespace("p",[],"P").namespace("q",[],"P");
+  const resolve=label=>resolveBindingSyntax(expression(`${label}.(path i => r @ 0)`),
+    {...setup,context,owner:[label]});
+  assert.ok(sameBindingSyntax(resolve("p"),resolve("q")));
 });

@@ -1,6 +1,7 @@
 // Homomorphisms and isomorphisms of a theory's models (L2.4, the fourth
 // slice of docs/roadmaps/core-theories.md): the source of their
-// declarations, from the theory's record (theories.mjs), which parses it.
+// declarations, from the retained interface. The artifact builder parses
+// template-owned text and splices source expressions by binding identity.
 //
 //   T.Hom(A, B)            a map for each carrier, map_S : A.S -> B.S (map
 //                          when there is one), for a family at each index,
@@ -37,27 +38,12 @@
 // argument that is the same on both sides or pushed forward, as a monad's
 // m : F(A) names A.
 
-// The names a type mentions free, a qualified name R.R by its root, by
-// every binding form (scopes.mjs).
-import { freeNames, allNames, renamedFree, freshName } from "./scopes.mjs";
+import { allNames, freshName } from "./scopes.mjs";
 import { reservedNames } from "./parser.mjs";
 import {bindingSyntaxView,bindingUses,unresolvedBindingUse} from "./binding-syntax.mjs";
 import {DependencyAnalysis,dependencyUses} from "./dependencies.mjs";
 
-// The old record entry remains explicit until theory retention is migrated.
-// Resolved interfaces never consult that spelling-based interpretation.
-const nominalSymbols={
-  field:field=>field.name, reference:node=>node?.kind==="name"?node.name:null,
-  binder:token=>token.text, references:freeNames,
-};
-const retainedSymbols=syntax=>({
-  field:field=>field.id,
-  reference:node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null,
-  binder:token=>token.bindingId,
-  references:tree=>new Set(dependencyUses(bindingSyntaxView(syntax,tree)).filter(use=>use.kind==="binding").map(use=>use.id)),
-  retained:true,
-});
-
+const reference=node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null;
 
 // How a type is mapped: "fixed" when it mentions no carrier; a carrier, or
 // a family's member, whose index that is an element of a carrier is a name
@@ -65,17 +51,17 @@ const retainedSymbols=syntax=>({
 // arguments, as V(m + n); an arrow or a pair of shapes; or another form,
 // which the maps do not follow.
 function shapeOf(type, context) {
-  const { carriers, families, fields, symbols, fieldLabels } = context;
-  const reference=node=>fieldLabels.get(symbols.reference(node));
-  if (![...symbols.references(type)].some(id => carriers.has(id))) return { kind: "fixed", type };
-  if (carriers.has(symbols.reference(type)) && !families.has(reference(type))) return { kind: "carrier", sort: reference(type), type };
-  const indices = type.kind === "call" ? families.get(reference(type.fn)) : null;
+  const { carriers, families, fields, identities, fieldLabels } = context;
+  const fieldName=node=>fieldLabels.get(reference(node));
+  if (![...identities(type)].some(id => carriers.has(id))) return { kind: "fixed", type };
+  if (carriers.has(reference(type)) && !families.has(fieldName(type))) return { kind: "carrier", sort: fieldName(type), type };
+  const indices = type.kind === "call" ? families.get(fieldName(type.fn)) : null;
   if (indices && type.args.length === indices.length && type.args.every((arg, k) => indices[k].shape.kind === "carrier"
-    ? symbols.reference(arg)!==null && !fields.has(symbols.reference(arg)) : ![...symbols.references(arg)].some(id => fields.has(id))))
-    return { kind: "carrier", sort: reference(type.fn), args: type.args, type };
+    ? reference(arg)!==null && !fields.has(reference(arg)) : ![...identities(arg)].some(id => fields.has(id))))
+    return { kind: "carrier", sort: fieldName(type.fn), args: type.args, type };
   if (type.kind === "binary" && type.operator === "->")
     return { kind: "arrow", from: shapeOf(type.left, context), to: shapeOf(type.right, context), type };
-  if (type.kind === "forall" && !symbols.references(type.body).has(symbols.binder(type.name)))
+  if (type.kind === "forall" && !identities(type.body).has(type.name.bindingId))
     return { kind: "arrow", from: shapeOf(type.domain, context), to: shapeOf(type.body, context), type };
   if (type.kind === "binary" && type.operator === "and")
     return { kind: "pair", left: shapeOf(type.left, context), right: shapeOf(type.right, context), type };
@@ -91,46 +77,24 @@ function occurrences(shape, positive = true, out = new Set()) {
   return out;
 }
 // A field's binders, from its type's foralls, and the type under them.
-function binders(type, parameters, symbols=nominalSymbols, locals=new Map()) {
-  if(symbols.retained) {
-    const list=[],taken=new Set([...allNames(type),...parameters]),bound=new Set(parameters);
-    while(type.kind==="forall"||type.kind==="binderGroup"&&type.binderKind==="forall") {
-      for(const token of type.kind==="forall"?[type.name]:type.names) {
-        const label=token.label??token.text;
-        const name=label==="_"||bound.has(label)?freshName(label,taken):label;
-        const id=symbols.binder(token);
-        if(!id)throw new TypeError("A retained morphism telescope needs binding identities.");
-        list.push({name,label,id,type:type.domain});bound.add(name);locals.set(id,name);
-      }
-      type=type.body;
+function binders(type, parameters, locals) {
+  const list=[],taken=new Set([...allNames(type),...parameters]),bound=new Set(parameters);
+  while(type.kind==="forall"||type.kind==="binderGroup"&&type.binderKind==="forall") {
+    for(const token of type.kind==="forall"?[type.name]:type.names) {
+      const label=token.label??token.text;
+      const name=label==="_"||bound.has(label)?freshName(label,taken):label;
+      const id=token.bindingId;
+      if(!id)throw new TypeError("A retained morphism telescope needs binding identities.");
+      list.push({name,label,id,type:type.domain});bound.add(name);locals.set(id,name);
     }
-    return {list,body:type};
+    type=type.body;
   }
-  const list = [], bound = new Set([...freeNames(type), ...parameters]), taken = new Set([...allNames(type), ...parameters]);
-  const fresh = stem => freshName(stem, taken);
-  while (type.kind === "forall" || type.kind === "binderGroup" && type.binderKind === "forall") {
-    const names = type.kind === "forall" ? [type.name] : type.names;
-    // Each grouped domain is read before any of the names binds. Splitting
-    // it into generated foralls must not let a binder capture that domain,
-    // or a theory parameter passed by generated calls, even when this field
-    // does not mention it. A name the group repeats, as in forall x, x : M,
-    // is still an argument; its last occurrence is the one the body reads.
-    const renaming = new Map();
-    for (const [k, n] of names.entries()) {
-      const shadowed = names.slice(k + 1).some(later => later.text === n.text);
-      const name = bound.has(n.text) || shadowed ? fresh(n.text) : n.text;
-      list.push({ name, id:name, label: n.label ?? n.text, type: type.domain }); bound.add(name);
-      if (!shadowed) renaming.set(n.text, name);
-    }
-    type = [...renaming].some(([before, after]) => before !== after)
-      ? renamedFree(type.body, name => renaming.get(name)) : type.body;
-  }
-  return { list, body: type };
+  return {list,body:type};
 }
 // An operation's inputs and result, each with its shape and way, "fixed",
 // "push" or "pull"; or, as `why`, why its homomorphisms are not generated.
 function operationShape(field, context) {
-  const { list: inputs, body: type } = binders(field.type, context.parameters,context.symbols,context.locals);
+  const { list: inputs, body: type } = binders(field.type, context.parameters,context.locals);
   for(const [tree,place] of [...inputs.map(input=>[input.type,`argument ${input.label}`]),[type,"result"]]) {
     const refusal=transportRefusal(field,tree,place,context);
     if(refusal)return refusal;
@@ -167,20 +131,19 @@ function operationShape(field, context) {
   };
   const pushed = new Set(inputs.filter(input => input.way === "push").map(input => input.id));
   for (const part of [...inputs, result].flatMap(item => fixedParts(item.shape)))
-    if ([...context.symbols.references(part)].some(id => pushed.has(id)))
+    if ([...context.identities(part)].some(id => pushed.has(id)))
       return { why: `a type in its ${field.name} names an argument that is pushed forward, on B's side another value` };
   // A pulled input is B's: no type may name it, and its own names none.
   for (const [k, input] of inputs.entries()) {
     const later = [...inputs.slice(k + 1).map(other => other.type), type];
-    if (input.way === "pull" && (later.some(t => context.symbols.references(t).has(input.id))
-      || inputs.slice(0, k).some(earlier => context.symbols.references(input.type).has(earlier.id))))
+    if (input.way === "pull" && (later.some(t => context.identities(t).has(input.id))
+      || inputs.slice(0, k).some(earlier => context.identities(input.type).has(earlier.id))))
       return { why: `its ${field.name}'s argument ${input.label} is pulled back and depends on, or is named by, another argument` };
   }
   return { inputs, result };
 }
 
 function transportRefusal(field,type,place,context) {
-  if(!context.dependencies)return null;
   const dependency=context.dependencies.first(bindingSyntaxView(context.bindingSyntax,type),
     ["law","evidence","operation","helper","recursive-helper"],{conditional:true});
   if(!dependency)return null;
@@ -194,8 +157,8 @@ function transportRefusal(field,type,place,context) {
 // says whether a name is a theory in scope. `universes` are the models'
 // universes, or the first model's, in which a parameter's type is written.
 export function morphismSource(record, isTheory = () => false) {
+  if(!record.bindingSyntax)throw new TypeError("Morphism planning needs retained binding interfaces.");
   const result=planMorphisms(record,isTheory);
-  if(!record.bindingSyntax)return result;
   const origin=record.fields[0]?.binding?.origin;
   result.support=result.pending?{status:"pending",obligations:result.pending}
     :result.missing?{status:"unsupported",reason:result.missing,at:result.refusal?.at??origin,...result.refusal}
@@ -210,24 +173,23 @@ export function morphismSource(record, isTheory = () => false) {
 
 function planMorphisms(record,isTheory) {
   const T = record.name, hom = `${T}.Hom`, iso = `${T}.Iso`;
-  const symbols=record.bindingSyntax?retainedSymbols(record.bindingSyntax):nominalSymbols,locals=new Map();
-  const dependencies=record.bindingSyntax?new DependencyAnalysis([...record.fields,...record.derived??[]]):null;
-  if(record.bindingSyntax) {
-    // A parent projection is part of this Hom family. Its support is a
-    // prerequisite of planning, not an exception while filling templates.
-    // An existing conditional identity will be checked by publication;
-    // an absent identity remains pending until that family is available.
-    for(const parent of record.parents??[]) {
-      const support=parent.homSupport;
-      if(support?.status==="unsupported")return {missing:`its parent ${parent.theory} has no homomorphisms: ${support.reason}`,
-        refusal:{parent:parent.theory,at:support.at,cause:support}};
-      if(support?.status==="pending"||!parent.homId||!parent.homMakeId)
-        return {pending:[{kind:"parent-Hom",theory:parent.theory,obligations:support?.obligations??[]}]};
-    }
-    const pending=record.fields.flatMap(field=>dependencyUses(bindingSyntaxView(record.bindingSyntax,field.type))
-      .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
-    if(pending.length)return {pending};
+  const locals=new Map(),dependencies=new DependencyAnalysis([...record.fields,...record.derived??[]]);
+  const identities=tree=>new Set(dependencyUses(bindingSyntaxView(record.bindingSyntax,tree))
+    .filter(use=>use.kind==="binding").map(use=>use.id));
+  // A parent projection is part of this Hom family. Its support is a
+  // prerequisite of planning, not an exception while filling templates.
+  // An existing conditional identity will be checked by publication;
+  // an absent identity remains pending until that family is available.
+  for(const parent of record.parents??[]) {
+    const support=parent.homSupport;
+    if(support?.status==="unsupported")return {missing:`its parent ${parent.theory} has no homomorphisms: ${support.reason}`,
+      refusal:{parent:parent.theory,at:support.at,cause:support}};
+    if(support?.status==="pending"||!parent.homId||!parent.homMakeId)
+      return {pending:[{kind:"parent-Hom",theory:parent.theory,obligations:support?.obligations??[]}]};
   }
+  const pending=record.fields.flatMap(field=>dependencyUses(bindingSyntaxView(record.bindingSyntax,field.type))
+    .filter(unresolvedBindingUse).map(use=>({field:field.id,...use})));
+  if(pending.length)return {pending};
   // The source's models, A, B and C, and homomorphisms, f and g. A theory's
   // name begins its qualified names, as A.M, which a binder of that name
   // would not shadow, so each avoids every theory in scope, T included, and
@@ -239,18 +201,16 @@ function planMorphisms(record,isTheory) {
     ...record.fields.flatMap(field=>[...allNames(field.type)])]);
   // Template variables must be referable. An anonymous public parameter
   // still has a position/ID, but '_' in an expression is always a hole.
-  const params=(record.params??[]).map(p=>symbols.retained&&p.name==="_"
+  const params=(record.params??[]).map(p=>p.name==="_"
     ?{...p,label:p.name,name:freshName("argument",headerNames)}:p);
-  const count = Math.max(1, record.universes?.length ?? 0);
+  const count = Math.max(1, record.universeLabels?.length ?? 0);
   const parameters = params.map(p => p.name);
   // Every binder the source introduces is fresh: none captures a parameter
   // or a name that a field's type mentions free, which the source writes as
   // it is (apart from the carriers, which it writes as A.M); and none is a
   // universe constant, so a taken U is followed by U_1, not U1.
-  const carrierNames = new Set(record.fields.filter(field => field.kind === "sort").map(field => field.name));
-  const taken = new Set([...reservedNames, ...parameters, ...record.fields.flatMap(field => binders(field.type, parameters,symbols,locals).list.map(b => b.name)),
-    ...record.fields.flatMap(field => [...allNames(field.type)]),
-    ...record.fields.flatMap(field => [...freeNames(field.type)]).filter(name => !carrierNames.has(name))]);
+  const taken = new Set([...reservedNames, ...parameters, ...record.fields.flatMap(field => binders(field.type, parameters,locals).list.map(b => b.name)),
+    ...record.fields.flatMap(field => [...allNames(field.type)])]);
   const avoided = { has: name => name === T || isTheory(name) || taken.has(name), add: name => taken.add(name) };
   const own = stem => freshName(stem, avoided);
   // Template holes have fresh names and typed payloads. Declaration references
@@ -273,23 +233,23 @@ function planMorphisms(record,isTheory) {
   if (!sorts.length) return { missing: `${T} has no sorts` };
   // A carrier with no h-level has paths that are data: its homomorphisms
   // would need coherence fields, which are not specified (L2.4c).
-  const carrierIds=new Map(carrierFields.map(field=>[field.name,symbols.field(field)]));
+  const carrierIds=new Map(carrierFields.map(field=>[field.name,field.id]));
   const levelOf = sort => record.fields.find(field => field.kind === "evidence" && field.of === carrierIds.get(sort))?.evidence ?? null;
   const untruncated = sorts.find(sort => !levelOf(sort));
   if (untruncated) return { missing: `its carrier ${untruncated} has no h-level, and homomorphisms of such a carrier need coherences that are not generated` };
-  const carriers = new Set(carrierFields.map(symbols.field)), fields = new Set(record.fields.map(symbols.field));
-  const fieldLabels=new Map(record.fields.map(field=>[symbols.field(field),field.name]));
+  const carriers = new Set(carrierFields.map(field=>field.id)), fields = new Set(record.fields.map(field=>field.id));
+  const fieldLabels=new Map(record.fields.map(field=>[field.id,field.name]));
   // A family's indices, each the same on both sides or an element of a
   // carrier, pushed forward.
   const families = new Map();
-  const context = { carriers, families, fields, parameters, symbols, fieldLabels, locals,
+  const context = { carriers, families, fields, parameters, identities, fieldLabels, locals,
     dependencies,bindingSyntax:record.bindingSyntax };
   for (const field of carrierFields.filter(field => field.family)) {
-    const indices = binders(field.type, parameters,symbols,locals).list;
+    const indices = binders(field.type, parameters,locals).list;
     for (const index of indices) {
       const refusal=transportRefusal(field,index.type,`index ${index.label}`,context);
       if(refusal)return {missing:refusal.why,refusal};
-      index.shape = shapeOf(index.type, { carriers, families, fields, symbols, fieldLabels });
+      index.shape = shapeOf(index.type, { carriers, families, fields, identities, fieldLabels });
       if (!["fixed", "carrier"].includes(index.shape.kind) || index.shape.args)
         return { missing: `its family ${field.name}'s index ${index.name} is neither the same on both sides nor an element of a carrier` };
     }
@@ -301,16 +261,16 @@ function planMorphisms(record,isTheory) {
     if (shape.why) return { missing: shape.why,refusal:shape };
     operations.set(field.name, { name: field.name, ...shape });
   }
-  const supportMapping=symbols.retained?{carriers:carrierFields.map(field=>({id:field.id,name:field.name})),
+  const supportMapping={carriers:carrierFields.map(field=>({id:field.id,name:field.name})),
     operations:record.fields.filter(field=>field.kind==="operation").map(field=>({id:field.id,...operations.get(field.name)})),
-    families:carrierFields.filter(field=>field.family).map(field=>({id:field.id,indices:families.get(field.name)}))}:null;
+    families:carrierFields.filter(field=>field.family).map(field=>({id:field.id,indices:families.get(field.name)}))};
   // A type that names the theory's universe, as an index A : U does, is
   // the same on both sides only in one universe: such a theory's
   // homomorphisms relate models in the same universes, as a parameter's
   // do, and lie one universe up.
   const universal = [...[...operations.values()].flatMap(op => [...op.inputs.map(i => i.type), op.result.type]),
     ...[...families.values()].flat().map(index => index.type)]
-    .some(type => [...symbols.references(type)].some(id => symbols.retained ? record.universeIds.includes(id) : id.startsWith("\u0000universe")));
+    .some(type => [...identities(type)].some(id => record.universeIds.includes(id)));
   // Each model's universes: U, V and W, or U_1, U_2, … when there are
   // several (U1 is a universe constant); the shared ones are U's.
   const universesOf = letter => count === 1 ? [own(letter)] : Array.from({ length: count }, (_, k) => own(`${letter}_${k + 1}`));
@@ -329,7 +289,7 @@ function planMorphisms(record,isTheory) {
   const typeIn = (type, model) => {
     const marker = own(`__theory_type_${typeMarkers.size}`);
     typeMarkers.set(marker, { type, model, universes: model === A ? uA : model === B ? uB : uC,
-      ...(symbols.retained?{locals:new Map([...symbols.references(type)].filter(id=>locals.has(id)).map(id=>[id,locals.get(id)]))}:{}) });
+      locals:new Map([...identities(type)].filter(id=>locals.has(id)).map(id=>[id,locals.get(id)])) });
     return marker;
   };
   // A side of a homomorphism, or of a composite: its model, and how an
@@ -454,7 +414,7 @@ function planMorphisms(record,isTheory) {
   });
   const record_ = (name, fields, parents = []) => ({ name, model: name, make: `${name}.make`,
     fields: fields.map(field => ({ name: field.name, kind: "morphism", projection: `${name}.${field.name}` })),
-    notations: {}, parents: parents.map(label => ({ label, projection: `${name}.${label}` })) });
+    parents: parents.map(label => ({ label, projection: `${name}.${label}` })) });
   // A carrier's or a family's values, bound at a side: (x : A.M), or a
   // family's indices and then its member.
   const memberBinders = (sort, at, x) => families.has(sort)

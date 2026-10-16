@@ -37,6 +37,11 @@ export class DeclarationOwnership {
 
 export const duplicateDeclaration = name => Error(`Duplicate declaration ${name}: a declaration in this module already owns that name.`);
 
+// Declarations and directives preserve the same source span and dependency
+// cause when converting an exception into a compilation result.
+export const sourceFailure=error=>({reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd,
+  blockedBy:error.blockedBy,cause:error.cause,failure:error.kind});
+
 // A failure's root: the declaration that failed on its own, and its reason.
 // A failure caused by a failed dependency carries that dependency's root
 // (blockedBy, cause), which passes on unchanged; otherwise `binding` is it.

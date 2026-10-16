@@ -115,13 +115,13 @@ test("interface namespaces survive snapshots and close members while later local
 
 test("model notation inventories classify selected branches without following namespace fallbacks",()=>{
   const table=new BindingTable("compilation"),model=allocate(table,"p","declaration"),local=allocate(table,"p"),
-    slot=allocate(table,"p","pattern"),field=allocate(table,"field","field");
+    slot=allocate(table,"p","pattern"),field=allocate(table,"field","field"),notation=allocate(table,"p","notation");
   const context=new LexicalContext().bind("p",bindingResolution(model.id))
-    .withNotations([{name:"p",model:bindingResolution(model.id)}]);
+    .withNotations([{name:"p",model:bindingResolution(model.id),notation:bindingResolution(notation.id)}]);
   for(const restored of [context,new LexicalContext(roundtrip(context.snapshot()))]) {
     assert.equal(restored.lookup("p").id,model.id);
-    assert.throws(()=>restored.selector("p"),/named notation activation/);
-    assert.throws(()=>restored.defer("p",slot.id).selector("p"),/named notation activation/);
+    assert.deepEqual(restored.selector("p").value,{tag:"notation",id:notation.id,model:bindingResolution(model.id)});
+    assert.deepEqual(restored.defer("p",slot.id).selector("p").value.enclosing,restored.selector("p").value);
     assert.equal(restored.bind("p",bindingResolution(local.id)).selector("p").value.id,local.id);
     const namespace=restored.namespace("p",[["field",bindingResolution(field.id)]],"Parent");
     assert.equal(namespace.lookup("p").id,model.id);
@@ -131,11 +131,11 @@ test("model notation inventories classify selected branches without following na
 });
 
 test("selection requires a known namespace and distinguishes parent scope selection from ordinary use",()=>{
-  const table=new BindingTable("compilation"),model=allocate(table,"p","declaration"),field=allocate(table,"field","field");
+  const table=new BindingTable("compilation"),model=allocate(table,"p","declaration"),field=allocate(table,"field","field"),notation=allocate(table,"p","notation");
   const context=new LexicalContext().bind("p",bindingResolution(model.id));
   assert.throws(()=>context.selector("p"),/complete source notation inventory/);
-  const named=context.withNotations([{name:"p"}]).namespace("p",[["field",bindingResolution(field.id)]],"Parent");
+  const named=context.withNotations([{name:"p",notation:bindingResolution(notation.id)}]).namespace("p",[["field",bindingResolution(field.id)]],"Parent");
   assert.equal(named.selector("p").value.tag,"namespace");
-  assert.throws(()=>named.selector("p",{namespace:false}),/named notation activation/);
+  assert.deepEqual(named.selector("p",{namespace:false}).value,{tag:"notation",id:notation.id});
   assert.equal(context.withNotations([]).selector("p").value.id,model.id);
 });

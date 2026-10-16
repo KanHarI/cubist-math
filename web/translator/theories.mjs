@@ -1,20 +1,18 @@
 // Theories in elaboration (L2.4, docs/roadmaps/core-theories.md): a theory
-// declaration's expansion (web/cubist/theories.mjs) and the records it
+// declaration's retained expansion and the records it
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.
 import {propagateElaborationStop} from "./control.mjs";
-import {expandTheory} from "../cubist/theories.mjs";
-import {capturedName, capturedNames, lexicalBinding, lexicalNotation} from "./lexical.mjs";
 import {reference as syntaxReference, referenceKey, sourceName} from "../cubist/references.mjs";
 import {Scope} from "./elaboration.mjs";
-import {rewritten,selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
+import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
-import {failureRoot,untranslated} from "./declarations.mjs";
+import {failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
-import {modelNotations,modelOperandRecipes,modelOperandReceiver,recordOf,notationAlternative} from "./model-notation.mjs";
+import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe} from "./model-notation.mjs";
 export {recordOf} from "./model-notation.mjs";
 import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
-import {appliedRetainedRule,retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
+import {retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {retainedTheoryDeclarations} from "./retained-theories.mjs";
 export {operatorBinding,SELECTION} from "./notation-context.mjs";
@@ -51,10 +49,13 @@ export function registerTheoryDeclaration(t,d) {
   if(d.generated?.role==="projection")(t.checker.theoryProjections??=new Map()).set(binding,d.generated.field);
   // A projection whose field a notation names prints with that operator
   // where its model is selected (L2.10d), each operand in its view.
-  if(d.theory)for(const [operator,field] of Object.entries(d.theory.notations??{}))
-    if(!["unary -","numeral"].includes(operator))
-      (t.checker.notationPrinting??=new Map()).set(t.checker.bindingName?.(`${d.theory.name}.${field}`)??`${d.theory.name}.${field}`,
-        [{operator,model:true,recipe:d.theory.recipes?.[operator]??{}}]);
+  if(d.theory)for(const [operator,rule] of Object.entries(d.theory.notationBindings??{}))
+    if(!["unary -","numeral"].includes(operator)) {
+      const record=t.checker.theories.get(binding),field=[...record.fields,...record.derived].find(field=>field.id===rule.field);
+      const projection=t.compilationBindings.table.get(field.projectionId).label;
+      (t.checker.notationPrinting??=new Map()).set(t.checker.bindingName?.(projection)??projection,
+        [{operator,model:true,recipe:notationPrintingRecipe(rule.recipe)}]);
+    }
 }
 
 // n.name is m.f: when m is a model of a theory, the node of the call T.f(m),
@@ -78,9 +79,7 @@ export function modelField(t,scope,n) {
   return scope.declared({kind:"call",fn:projectionReference(t,known,n),args:[owner],start:n.start,end:n.end});
 }
 
-const projectionReference=(t,field,at)=>field.projectionId?syntaxReference(t.identityAdapter.key(field.projectionId),field.projection,at)
-  :field.reference?syntaxReference(field.reference,field.projection,at)
-  :{...at,kind:"name",name:field.projection};
+const projectionReference=(t,field,at)=>syntaxReference(t.identityAdapter.key(field.projectionId),field.projection,at);
 
 // A field that two independent parents give under one name (L2.4c): the
 // error that names the qualified forms.
@@ -137,7 +136,7 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   const value={kind:"instantiated",value:receiver,args:[],...at};
   const notations=modelNotations(record),notationFields=new Set(notations.values());
   const values=new Map([...record.fields,...record.derived??[]].filter(field=>effects.labels||effects.notation&&notationFields.has(field)).map(field=>{
-    const key=field.projectionId?t.identityAdapter.key(field.projectionId):field.reference;
+    const key=t.identityAdapter.key(field.projectionId);
     const unavailable=key&&receiverScope.env.get(key);
     // A refused optional operation is still a refused dependency when named;
     // opening the model must not eagerly call it and hide the checked fields.
@@ -158,11 +157,8 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   // operation keeps the rule, which reads the operation alone: a numeral
   // reports that failed dependency.
   const operation=values.get(notations.get("numeral"));
-  const reads={kind:"name",name:operatorBinding("numeral"),...at};
-  const numeral=!operation?null:operation.tag==="Untranslated"?{left:"n",right:null,recipe:{},aliases:new Map(),value:reads}
-    :{left:"n",right:null,recipe:{},natural:NUMERAL_NAT,
-      aliases:new Map([[NUMERAL_NAT,receiverScope.nf(receiverScope.infer(operation).type).domain]]),
-      value:{kind:"call",fn:reads,args:[{kind:"name",name:"n",...at}],...at}};
+  const numeral=!operation?null:{model:true,natural:operation.tag==="Untranslated"?null
+    :receiverScope.nf(receiverScope.infer(operation).type).domain};
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).
@@ -183,129 +179,19 @@ export function opened(t,scope,node,{complete=true,effects=selectionEffects.all,
   return inner;
 }
 
-// A named notation (L2.10a): each rule's right side, its free names read
-// where the notation is declared, under keys no source name can spell, so
-// that no later binding changes what a rule means. A qualified name, m.f,
-// is read by its root where only the root is bound, so a later local m
-// does not take its place.
-// The library's names a literal's lexeme is built from (lexemes.cubist).
-const LEXEME_NAMES=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer","Nat"];
-// The key of the Nat a numeral rule builds its natural number from.
-const NUMERAL_NAT="\u0000notation Nat";
-// The key of a lexeme's glyph in a literal rule's scope, which no source
-// name can spell. (A function, not a template: the diagnostics catalogue
-// reads template-returning arrows as messages.)
-export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export function notationDeclaration(t,module,d,env,declared=new Set()) {
-  if(t.retainedNotations&&!d.retainedNotation) {
+  if(!d.retainedNotation) {
     const entry=retainSourceNotation(t,module,d,env,{declared});
     for(const [key,value] of entry.env)env.set(key,value);
     d=entry.declaration;
   }
-  if(d.retainedNotation) {
-    if(d.uses?.length||d.name.text!==d.retainedNotation.binding.label)
-      throw new TypeError("A retained notation entry needs its activated source artifact.");
-    const notation=retainedNotationReceipt(t,d.retainedNotation,new Scope(module,new Map(),env));
-    env.set(notationBinding(d.name.text),notation);
-    env.set(t.identityAdapter.key(notation.bindingId),notation);
-    registerRetainedNotationPrinting(t,d.retainedNotation,env);
-    return;
-  }
-  const rules=new Map();
-  // The rules are read in the selection where the notation is declared, a
-  // file-level use's (L2.10j): their names, and their numerals and operators,
-  // wherever they are applied.
-  const at=sourceItemScope(t,new Scope(module,new Map(),env),d).env;
-  const selection=[...at].filter(([key,value])=>(key===SELECTION||key.startsWith(operatorBinding("")))&&env.get(key)!==value);
-  // A notation named after a model of this module adds literal rules to
-  // that model's notation (L2.10c); no other module can. They are that
-  // binding's: a later binding of the name, a parameter's, has none.
-  const model=env.has(d.name.text)&&env.get(d.name.text)?.tag!=="Untranslated"?env.get(d.name.text):null;
-  if(model&&!declared.has(d.name.text))
-    throw module.locate(Error(`${d.name.text} is declared in another module: only the module that declares a model adds rules to its notation.`),d.name);
-  for(const rule of d.rules) {
-    if(model&&!["numeral","literal"].includes(rule.kind))
-      throw module.locate(Error(`A model's notation is its theory's; ${d.name.text}'s adds only a numeral or a literal rule.`),rule.keyword??rule.operatorToken??d.name);
-    const aliases=new Map(),pattern=new Set([rule.left?.text,rule.right?.text,rule.param?.text].filter(Boolean));
-    const alias=name=>{
-      const key=`\u0000notation ${d.name.text} ${name}`;
-      aliases.set(key,at.get(name));
-      return key;
-    };
-    // Its numerals too are natural numbers of the Nat read here.
-    const natural=at.has("Nat")?alias("Nat"):null;
-    const value=rewritten(renameFree(rule.value,name=>{
-      if(pattern.has(name))return null;
-      if(at.has(name))return alias(name);
-      const dot=name.indexOf("."),root=dot>0?name.slice(0,dot):null;
-      return root&&at.has(root)?`${alias(root)}${name.slice(dot)}`:null;
-    }),n=>n.kind==="number"&&natural?{...n,natural}:n);
-    // A literal rule builds its lexeme from the library's glyphs, read here.
-    if(rule.kind==="literal")for(const name of LEXEME_NAMES) {
-      if(!env.has(name))throw module.locate(Error(`A literal rule reads a Lexeme: import lexemes, which defines ${name}.`),rule.keyword);
-      aliases.set(lexemeKey(name),env.get(name));
-    }
-    // A numeral rule's natural number is built from the Nat read here.
-    if(rule.kind==="numeral") {
-      if(!env.has("Nat"))throw module.locate(Error("A numeral rule reads a natural number: import nat."),rule.keyword);
-      aliases.set(NUMERAL_NAT,env.get("Nat"));
-    }
-    const key=rule.kind??(rule.unary?"unary -":rule.operator);
-    rules.set(key,{left:rule.left?.text??rule.param?.text,right:rule.right?.text??null,value,aliases,selection,source:rule.value,
-      ...(rule.kind==="numeral"?{natural:NUMERAL_NAT}:{}),
-      recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
-  }
-  env.set(notationBinding(d.name.text),{tag:"Notation",name:d.name.text,rules,model});
-  // How its rules print (L2.10d): an operator whose rule applies a function
-  // to its operands in order, x + y := add(x, y); a literal rule's parser,
-  // literal(s) := parse(s); and a numeral rule's function of the numeral,
-  // numeral(n) := int(n, 0), with its other arguments fixed numerals.
-  const binding=name=>{const value=env.get(name);return value?.tag==="DefRef"?value.name:null;};
-  for(const rule of d.rules) {
-    const v=rule.value;
-    if(v.kind!=="call"||v.fn.kind!=="name")continue;
-    const f=binding(v.fn.name),printing=t.checker.notationPrinting??=new Map();
-    if(!f)continue;
-    // A function several notations use keeps each, the first declared
-    // printing it where none of them is selected.
-    const add=entry=>printing.set(f,[...(printing.get(f)??[]),entry]);
-    if(rule.kind==="literal"&&v.args.length===1&&v.args[0].name===rule.param.text)
-      add({notation:d.name.text,literal:true});
-    else if(rule.kind==="numeral"&&v.args.some(arg=>arg.name===rule.param.text)
-        &&v.args.every(arg=>arg.name===rule.param.text||arg.kind==="number"))
-      add({notation:d.name.text,numeral:v.args.map(arg=>arg.kind==="number"?arg.value:null)});
-    else if(!rule.kind&&!rule.unary&&v.args.length===2&&v.args[0].name===rule.left.text&&v.args[1].name===rule.right.text)
-      add({notation:d.name.text,operator:rule.operator,recipe:{left:rule.leftView?.text??null,right:rule.rightView?.text??null}});
-  }
+  if(d.uses?.length||d.name.text!==d.retainedNotation.binding.label)
+    throw new TypeError("A retained notation entry needs its activated source artifact.");
+  const notation=retainedNotationReceipt(t,d.retainedNotation,new Scope(module,new Map(),env));
+  env.set(notationBinding(d.name.text),notation);
+  env.set(t.identityAdapter.key(notation.bindingId),notation);
+  registerRetainedNotationPrinting(t,d.retainedNotation,env);
 }
-
-// A copy of a syntax tree with each free name that `rename` maps renamed,
-// whatever binds it (scopes.mjs).
-const renameFree=(node,rename)=>rewritten(node,(n,bound)=>{
-  if(n.kind!=="name"||bound.has(n.name.split(".")[0]))return n;
-  const renamed=rename(n.name);
-  return renamed?{...n,name:renamed}:n;
-});
-
-// A named notation's rule applied to two operands: its right side, and the
-// scope that resolves its names. Each operand is elaborated where the rule
-// uses it, in the scope the operator is written in: no binder of the rule
-// captures a name of an operand.
-export function appliedRule(t,scope,rule,left,right,site=left) {
-  if(rule.syntax)return appliedRetainedRule(t,scope,rule,left,right,site);
-  // The rule's own names are read as where it was declared, in that
-  // place's selection or none; its operands where they stand, in the use's
-  // scope.
-  let inner=scope.withUnit(scope.unit.with({scopeUnavailable:"Notation expansion awaits its binding-family migration."})).alias(SELECTION,null);
-  for(const [key,value] of [...rule.aliases,...rule.selection??[]])inner=inner.alias(key,value);
-  const scoped=node=>node&&{kind:"scoped",node,scope,start:node.start,end:node.end};
-  const operands=new Map([[rule.left,scoped(left)],...(rule.right?[[rule.right,scoped(right)]]:[])]);
-  const value=scope.unit.scopePoints?.expansion(rule.value,"notation",site,scope.unit)??rule.value;
-  const substituted=substitute(value,operands);
-  return {node:substituted,scope:inner};
-}
-const substitute=(node,operands)=>rewritten(node,(n,bound)=>
-  n.kind==="name"&&operands.has(n.name)&&!bound.has(n.name)?operands.get(n.name):n);
 
 // The scope with a named notation selected: its rules for its operators.
 function notationSelected(scope,notation) {
@@ -347,10 +233,7 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   // the resulting effects in the caller, preserving its names and reference
   // observations even when the receiver is a captured named notation.
   let receiverScope=scope;
-  while(node.kind==="scoped"||node.kind==="modelOperandReceiver") {
-    if(node.kind==="scoped") {receiverScope=node.scope;node=node.node;}
-    else node=modelOperandReceiver(t,receiverScope,node);
-  }
+  while(node.kind==="scoped") {receiverScope=node.scope;node=node.node;}
   if(node.kind==="bindingReference")
     node=lowerBindingReference(node,receiverScope.unit.bindingAdapter,receiverScope.slotOutcomes,{deferMissing:true});
   if(node.kind==="notationReceiver") {
@@ -438,16 +321,6 @@ export function qualifiedOperator(t,scope,n) {
 export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
   const module=sourceUnit.declaration(t.declarationFuel).with({references:null});
   try {
-    // A declared type whose header says it is a proposition, as Trunc's
-    // : prop U does, states a law (L2.10k).
-    const proposition=name=>{const entry=env.get(name);
-      return entry?.tag==="Inductive"&&(entry.modifier==="prop"||entry.modifier?.trunc===-1);};
-    const reference=name=>lexicalBinding(t.checker.bindingName?.(name)??name);
-    const generatedReference=(node,scope)=>{
-      if(scope==="generated")return syntaxReference(reference(node.name),node.name,node);
-      if(scope==="outer")return capturedName(node,env,[notationBinding,theoryBinding]);
-      throw new TypeError("Unknown declaration reference scope: "+scope);
-    };
     const lookup=name=>{
       const binding=env.get(name);
       if(binding?.tag==="Untranslated") {
@@ -457,75 +330,13 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
       }
       return env.get(theoryBinding(name))?.record??null;
     };
-    if(t.retainedTheories) {
-      const built=retainedTheoryDeclarations(t,module,d,env,{lookup,isTheory:name=>env.has(theoryBinding(name))});
-      env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:built.record});
-      return built.declarations;
-    }
-    const selected=capturedScope(t,module,d,env),notation=selected.notation;
-    const capture=capturedTheorySyntax(t,env,notation,selected.env);
-    // Avoiding a theory's spelling while choosing an internal binder is a
-    // name query, not an inheritance dependency. An unrelated failed value
-    // must not block generation merely because it is named x, f or A.
-    const generated=expandTheory(d,lookup,proposition,capture,generatedReference,
-      name=>env.has(theoryBinding(name)));
-    for(const declaration of generated)if(declaration.theory) {
-      const record=declaration.theory;
-      record.reference=reference(record.model);
-      record.makeReference=reference(record.make);
-      record.homReference=reference(`${record.name}.Hom`);
-      record.homMakeReference=reference(`${record.name}.Hom.make`);
-      for(const field of [...record.fields,...record.derived??[],...record.parents])
-        field.reference=reference(field.projection);
-    }
-    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:generated[0].theory,
-      notation});
-    return generated;
+    const built=retainedTheoryDeclarations(t,module,d,env,{lookup,isTheory:name=>env.has(theoryBinding(name))});
+    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:built.record});
+    return built.declarations;
   } catch(failure) {
     propagateElaborationStop(failure);
-    // The message says where, as an elaboration error does.
-    return failedExpansion(t,d,env,declarations,module.locate(failure,{start:failure.offset,end:failure.sourceEnd??failure.offset}));
+    return failedExpansion(t,d,env,declarations,failure);
   } finally {module.fuel.close();}
-}
-
-// Resolve source globals before retaining or inlining a field. Notation is
-// attached at the expression that uses it, so inherited fields from several
-// parents retain their own selections without hiding the child's binders.
-function capturedTheorySyntax(t,env,notation,lexical) {
-  const binding=notation&&lexicalNotation(t.checker,notation);
-  if(notation)env.set(binding,notation);
-  return (node,bound,{selection=false}={})=>{
-    const rule=selection&&node.kind==="name"?lexical.get(notationBinding(node.name)):null;
-    if(rule?.tag==="Notation"&&!rule.model)
-      return capturedName(node,lexical,[notationBinding],env);
-    const named=capturedNames(node,lexical,bound,[notationBinding,theoryBinding],env);
-    return rewritten(named,n=>{
-      if(n.kind==="select")return {...n};
-      // A captured operator owns its operands' selection too. Returning a
-      // copy stops traversal, so a child cannot recapture those operands.
-      if(n.lexicalNotation)return {...n};
-      const operator=n.kind==="binary"&&!n.qualifier&&notationOperators.includes(n.operator)
-        ||n.kind==="negation"&&!n.qualifier;
-      return notation&&(operator||["number","binaryNumber","literal"].includes(n.kind))
-        ?{...n,lexicalNotation:binding}:n;
-    });
-  };
-}
-
-// The lexical scope a theory's fields are read in, for its initial and free
-// models, which copy field syntax after the module's notation may have
-// changed (initial-models.mjs): its file-level uses' selected rules and
-// model fields, resolved here, so that no later binding captures their
-// names. Retained references are published in the module's environment;
-// source names are resolved in this selected scope. Without a use there is
-// no selection, and the module's environment binds no operator. A refused
-// use refuses retention itself: there is no valid unopened context to use
-// instead, and no generated family may depend on that failed activation.
-function capturedScope(t,module,d,env) {
-  if(!d.uses?.length)return {env,notation:[[SELECTION,null]]};
-  const scope=sourceItemScope(t,new Scope(module.with({references:null}),new Map(),env),d);
-  return {env:scope.env,notation:[[SELECTION,scope.env.get(SELECTION)??null],
-    ...[...scope.env].filter(([key])=>key.startsWith(operatorBinding("")))]};
 }
 
 // `scope` with a declaration's file-level uses selected (L2.10j), in order.
@@ -538,8 +349,7 @@ export const sourceItemScope=(t,scope,item)=>usesScope(t,scope,item.uses,{effect
 // to nothing.
 export function failedExpansion(t,d,env,declarations,error) {
   t.onDeclarationStart?.(d);
-  declarations.push({name:d.name.text,syntax:d,status:"not-translated",reason:error.message,errorStart:error.offset,errorEnd:error.sourceEnd,
-    ...(error.blockedBy?{blockedBy:error.blockedBy}:{}),...(error.cause?{cause:error.cause}:{})});
+  declarations.push({name:d.name.text,syntax:d,status:"not-translated",...sourceFailure(error)});
   const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
   t.publishDeclaration(env,d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
   t.onDeclaration?.(d,declarations.at(-1));

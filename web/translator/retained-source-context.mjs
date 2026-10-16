@@ -6,9 +6,21 @@
 import {sourceOrigin,mapResolution} from "../cubist/bindings.mjs";
 import {resolveBindingReceiver,lowerBindingSyntax} from "../cubist/binding-syntax.mjs";
 import {fileSelectionEffects} from "../cubist/scopes.mjs";
+import {reservedReferences} from "../cubist/parser.mjs";
+import {sourceBindingInputs} from "./binding-module.mjs";
+import {Scope} from "./elaboration.mjs";
 import {freeNames,isTerm} from "./core.mjs";
 import {selected} from "./theories.mjs";
 import {checkedNotationContext,notationContextEntry,SELECTION} from "./notation-context.mjs";
+
+export function enterSourceItem(t,module,declaration,env,owner) {
+  const registry=t.compilationBindings,table=registry.table;
+  const source={revision:registry.revision,module:module.moduleName};
+  const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences(module.source)});
+  const environment=new Map([...env,...inputs.env]);
+  const prepared=activateSourceItem(t,new Scope(module,new Map(),environment),declaration,inputs,{owner,source});
+  return {table,source,inputs,prepared,captures:withSourceCaptures(environment,prepared,inputs.adapter)};
+}
 
 export function activateSourceItem(t,scope,item,{context,constructors,adapter},{owner,source}) {
   if(scope.context.size||scope.dimensions.size)

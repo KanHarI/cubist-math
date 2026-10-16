@@ -172,7 +172,9 @@ export class CubicalProgram {
       this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
-          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,start:directive.start,
+          reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,
+          start:directive.errorStart??directive.start,end:directive.errorEnd,
+          ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
           ...(directive.failure?{failure:directive.failure}:{})});
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
@@ -264,8 +266,7 @@ export class CubicalProgram {
       this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
         probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null,compilation:this.compilationBindings});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
-        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences,
-        retainedNotations:this.options.retainedNotations??true,retainedTheories:this.options.retainedTheories??true});
+        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
     }
     const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
@@ -329,8 +330,6 @@ export class CubicalProgram {
       // one, keeps its name-based operators and numerals (translate.mjs).
       const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
-        retainedNotations:this.options.retainedNotations??true,
-        retainedTheories:this.options.retainedTheories??true,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
           this.scopeReplay.record("directive-start",name,directive,this.kernel);
@@ -361,7 +360,6 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
-          scopeRecorder?.declaration(name,declaration,checker.bindingName(declaration.name.text));
           if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
           try {
             this.onDeclarationStart?.(name, declaration, checker);

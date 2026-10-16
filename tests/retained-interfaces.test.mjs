@@ -140,7 +140,7 @@ test("a common helper origin cannot hide different instantiated values behind an
   assert.equal(shared.syntax.tree.body[0].value.resolution.id,unified.id);
 });
 
-test("inheritance refuses incomplete parent interfaces before allocating or admitting a field",()=>{
+test("inheritance refuses incomplete or invalid correspondences before allocating or admitting a field",()=>{
   const options=setup(),parent=new RetainedInterfaces(options),child=new RetainedInterfaces({...options,owner:["child"]});
   const h=declaration("def T(U < UU0) : Unit := tt;"),header=parent.parameters(h.name,h.params);
   const carrier=parent.retain(declaration("def M : U := Unit;"),{kind:"sort"});
@@ -148,6 +148,10 @@ test("inheritance refuses incomplete parent interfaces before allocating or admi
   const before=options.table.snapshot().bindings.length;
   for(const map of [new Map(),new Map([[header.tree.params[0].name.bindingId,header.tree.params[0].name.bindingId]])])
     assert.throws(()=>child.inherit(operation,map),/missing a correspondence/);
+  const complete=()=>new Map(operation.interface.map(id=>[id,id])),local=operation.syntax.tree.params[0].name.bindingId;
+  for(const map of [complete().set(carrier.id,local),complete().set(local,carrier.id)])
+    assert.throws(()=>child.inherit(operation,map),/cannot change or capture local binders/);
+  assert.throws(()=>child.inherit(operation,complete().set(carrier.id,"missing")),/Unknown binding identity/);
   assert.equal(options.table.snapshot().bindings.length,before);
   assert.equal(child.entries.length,0);
   assert.ok(carrier.id);

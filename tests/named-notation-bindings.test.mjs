@@ -290,17 +290,16 @@ test("lazy rule operands enter caller scope for interval and universe consumers"
   assert.equal(equal("universe_value","Reader(U0)"),true);
 });
 
-test("the named-rule producer and isolated replay use the same migration policy and receipts",async t=>{
+test("named-rule receipts survive isolated replay",async t=>{
   const library=sourceReader();
   const source=`import nat;
     notation increment { numeral(n : Nat) := succ(n); }
     def source_value : Nat := increment.(0);
     def anchor(x : Nat) : Nat := x;`;
-  const program=new CubicalProgram(wasm,library,{retainedNotations:true,collectScopes:true});
+  const program=new CubicalProgram(wasm,library,{collectScopes:true});
   t.after(()=>program.dispose());
   const result=await program.check(source,"main");
   assert.deepEqual(result.gaps,[],JSON.stringify(result.gaps));
-  assert.equal(program.scopeReplay.snapshot().retainedNotations,true);
   const points=[...program.scopePoints.values()].filter(point=>point.origin.module==="main"
     &&point.origin.start===source.lastIndexOf("x;")&&point.phase==="expression");
   assert.equal(points.length,1);
@@ -336,4 +335,97 @@ test("nested rule expansion preserves both producer sites and the outer caller",
     [inner.artifact.binding.id,"recipe_source"],[outer.artifact.binding.id,"client"]]);
   assert.equal(source.slice(origin.expansion.at(-1).site.start,origin.expansion.at(-1).site.end),"left_ * right_");
   assert.ok(origin.expansion.every(frame=>frame.site.expansion.length===0));
+});
+
+
+test("missing notation readers keep their source diagnostics",async t=>{
+  for(const [rule,code,advice] of [
+    ["numeral(n : Nat) := n;","E847","import nat"],
+    ["literal(s : Lexeme) := s;","E844","import lexemes"],
+  ]) {
+    const program=new CubicalProgram(wasm,async()=>"");t.after(()=>program.dispose());
+    const source=`notation incomplete { ${rule} }
+def independent : Unit := tt;`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
+    assert.ok(result.gaps[0].reason.includes(advice));
+    assert.equal(source.slice(result.gaps[0].start,result.gaps[0].end),rule);
+    assert.ok(result.outputs.find(output=>output.name==="independent").verified);
+  }
+});
+
+test("unselected retained notation reports source errors and preserves later declarations",async t=>{
+  for(const [expression,code] of [["x * x","E912"],["-x","E901"],["f(0)","E911"],["f(0b101)","E909"]]) {
+    const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+    const source=`import hlevels; import nat;
+theory T(U < UU0) { M : set U; f(n : Nat) : M; law l(x : M) : ${expression} = x; }
+def independent : Unit := tt;`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
+    const gap=result.gaps[0];
+    assert.ok(gap.start>=source.indexOf(expression)&&gap.end<=source.indexOf(expression)+expression.length,JSON.stringify(gap));
+    assert.ok(result.outputs.find(output=>output.name==="independent").verified);
+  }
+  const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+  const source="import nat;\nnotation n { x + y := x * y; }\ndef independent : Unit := tt;";
+  const result=await program.check(source,"main"),[gap]=result.gaps;
+  assert.deepEqual(result.gaps.map(gap=>gap.code),["E912"]);
+  assert.equal(source.slice(gap.start,gap.end),"x * y");
+  assert.ok(result.outputs.find(output=>output.name==="independent").verified);
+});
+
+test("theory notation printing uses its retained operand views",async t=>{
+  const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+  const result=await program.check(`import nat; import hlevels;
+theory Ring(U < UU0) { R : set U; mul(x, y : R) : R notation x * y; pow(x : R, n : Nat) : R notation x ^ nat.(n); }
+def Z : Ring(U0) := Ring.make(Nat, nat_is_set, mul, fun (x, n : Nat) => x);
+def p(x, n : Nat) : Z.pow(x, nat.(n + 1)) = Z.pow(x, nat.(n + 1)) := refl(Z.pow(x, nat.(n + 1)));
+use Z;
+print(typeof(p));`,"main");
+  assert.deepEqual(result.gaps,[]);
+  assert.match(program.prints[0].text,/x \^ \(n \+ 1\)/);
+  assert.doesNotMatch(program.prints[0].text,/nat\.\(/);
+});
+
+test("imported rule failures belong to the caller while operand errors keep their own spans",async t=>{
+  const library=sourceReader();
+  for(const [body,operand,code,nested,expected] of [
+    ["add(x, 1)","zero","E911",false,["zero + zero","a + a"]],
+    ["add(x.1, y)","zero","E349",false,["zero + zero","a + a"]],
+    ["add(x.1, y)","zero","E349",true,["zero + zero","a + a"]],
+    ["add(x, y)","zero.1","E349",false,[".1",".1"]],
+  ]) {
+    const lib=`import nat;\n// ${"source padding ".repeat(20)}\nnotation bad { x + y := ${body}; }`;
+    const middle="import lib; notation wrapper { x + y := bad.(x + y); }";
+    const program=new CubicalProgram(wasm,async(name,importer)=>({lib,middle})[name]??library(name,importer));
+    t.after(()=>program.dispose());
+    const rule=nested?"wrapper":"bad",arg=operand==="zero.1"?"a.1":"a";
+    const source=`import ${nested?"middle":"lib"}; import nat;
+print(evaluate(${rule}.(${operand} + zero)));
+def f(a : Nat) : Nat := ${rule}.(${arg} + a);
+def after : Unit := tt;`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(gap=>gap.code),[code,code],JSON.stringify(result.gaps));
+    assert.deepEqual(result.gaps.map(gap=>source.slice(gap.start,gap.end)),expected);
+    assert.ok(result.gaps.every(gap=>gap.module==="main"&&gap.start>=0&&gap.end<=source.length));
+    assert.ok(result.outputs.find(output=>output.name==="after").verified);
+  }
+});
+
+test("explicit parent notation keeps missing-operation diagnostics and interval endpoints",async t=>{
+  const header=`import hlevels; import nat;
+theory P(U < UU0) { M : set U; c : M; op(x, y : M) : M notation x + y; f(n : Nat) : M; }\n`;
+  for(const [expression,code] of [["x * x","E397"],["-x","E902"],["f(0b1)","E910"],["f(0)","E907"]]) {
+    const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+    const source=header+`theory T(U < UU0) extends p : P { law l(x : M) : p.(${expression}) = x; }`;
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
+    assert.match(result.gaps[0].reason,/p's notation/);
+  }
+  const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
+  const result=await program.check(header+`theory T(U < UU0) extends p : P {
+    law at_zero(q : c = c) : p.(q @ 0) = c;
+    law at_one(q : c = c) : p.(q @ 1) = c;
+  }`,"main");
+  assert.deepEqual(result.gaps,[]);
 });

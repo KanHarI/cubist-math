@@ -25,9 +25,9 @@ export class SourceUnit {
   constructor({checker,source="",moduleName="source",simpRegistry,references=null,steps=null,observations=null,
     freezeSuggestions=true,work=emptyRewriteWork(),fuel=null,searches=emptySearchRecord(),
     names=new NameSupply({taken:name=>checker.assumptions?.has(name)}),declaring=null,bindingAdapter=null,
-    scopePoints=null,contextOwner=null,scopeUnavailable=null}) {
+    scopePoints=null,contextOwner=null,scopeUnavailable=null,blameSite=null}) {
     observations ??= new ObservationFrame({reference:references,step:steps});
-    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable});
+    Object.assign(this,{checker,source,moduleName,simpRegistry,references,steps,observations,freezeSuggestions,work,fuel,searches,names,declaring,bindingAdapter,scopePoints,contextOwner,scopeUnavailable,blameSite});
     Object.freeze(this);
   }
   // A declaration's unit: its own work counters, fuel and record of searches.
@@ -39,10 +39,13 @@ export class SourceUnit {
   with(changes) {return new SourceUnit({...this,...changes});}
   recordReference(...record) {this.observations.recordTo("reference",this.references,...record);}
   recordStep(record) {this.observations.recordTo("step",this.steps,record);}
-  // Report an error at a source node of this unit, unless it has a position.
+  // An imported expansion owns its blame site in this unit. Operand scopes
+  // retain their own locations; already located errors keep those positions.
   locate(error,node) {
     propagateElaborationStop(error);
-    if(Number.isInteger(error.offset)||!Number.isInteger(node?.start))return error;
+    if(Number.isInteger(error.offset))return error;
+    node=this.blameSite??node;
+    if(!Number.isInteger(node?.start))return error;
     error.offset=node.start;
     error.sourceEnd=node.end;
     const before=this.source.slice(0,error.offset);

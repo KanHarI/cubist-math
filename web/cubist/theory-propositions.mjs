@@ -1,21 +1,10 @@
-// The theory-law predicate is independent of representation. The nominal
-// source path and retained interfaces supply different reference operations;
-// the predicate itself never reconstructs a binding from a display label.
-export const nominalPropositionSymbols={
-  reference:node=>node?.kind==="name"?node.name:null,
-  binder:token=>token.text,
-  builtin:(node,label)=>node.kind==="name"&&node.name===label,
-  declaration:node=>node.kind==="reference"?node.binding:node.kind==="name"?node.name:null,
-};
-export const retainedPropositionSymbols={
-  reference:node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null,
-  binder:token=>token.bindingId,
-  builtin:(node,label)=>node.kind==="bindingReference"&&node.resolution.tag==="reserved"&&node.resolution.label===label,
-  declaration:node=>node.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null,
-};
+// Classify laws over retained field identities and their carrier evidence.
+// Display labels are used only to explain a refusal.
+const reference=node=>node?.kind==="bindingReference"&&node.resolution.tag==="binding"?node.resolution.id:null;
+const builtin=(node,label)=>node.kind==="bindingReference"&&node.resolution.tag==="reserved"&&node.resolution.label===label;
 
-export function notAProposition(statement,fields,proposition=()=>false,header=[],symbols=nominalPropositionSymbols) {
-  const key=symbols.reference;
+export function notAProposition(statement,fields,proposition=()=>false,header=[]) {
+  const key=reference;
   const sortNamed=(node,bound)=>{
     const id=key(node?.kind==="call"?node.fn:node);
     return id!==null&&!bound.has(id)&&fields.get(id)?.kind==="sort"?id:null;
@@ -36,7 +25,7 @@ export function notAProposition(statement,fields,proposition=()=>false,header=[]
   const check=(node,bound)=>{
     if(node.kind==="forall"||node.kind==="binderGroup"&&node.binderKind==="forall") {
       const sort=sortNamed(node.domain,bound),inner=new Map(bound);
-      for(const binder of node.kind==="forall"?[node.name]:node.names)inner.set(symbols.binder(binder),sort);
+      for(const binder of node.kind==="forall"?[node.name]:node.names)inner.set(binder.bindingId,sort);
       return check(node.body,inner);
     }
     if(node.kind==="binary"&&node.operator==="->")return check(node.right,bound);
@@ -48,9 +37,9 @@ export function notAProposition(statement,fields,proposition=()=>false,header=[]
         :{node,why:`${fields.get(sort).name} has no h-level, so an equation between its elements is not a proposition`};
     }
     const id=key(node);
-    if(!bound.has(id)&&(["Void","Unit"].some(label=>symbols.builtin(node,label))&&!fields.has(id)||propositionSort(id)))return null;
+    if(!bound.has(id)&&(["Void","Unit"].some(label=>builtin(node,label))&&!fields.has(id)||propositionSort(id)))return null;
     if(node.kind==="call"&&sortNamed(node,bound)!==null&&propositionSort(key(node.fn)))return null;
-    const head=node.kind==="call"?node.fn:node,declaration=symbols.declaration(head);
+    const head=node.kind==="call"?node.fn:node,declaration=reference(head);
     if(declaration!==null&&!bound.has(declaration)&&!fields.has(declaration)&&proposition(declaration))return null;
     return {node,why:fields.get(id)?.kind==="sort"?`${fields.get(id).name} is a sort, whose elements are data`:"its statement is none of these"};
   };

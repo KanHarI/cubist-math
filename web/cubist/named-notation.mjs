@@ -15,7 +15,8 @@ export function retainNamedNotation(declaration,options) {
   const binding=table.allocate([...owner,"notation"],{role:"notation",label:name,origin});
   const rules=declaration.rules.map((rule,index)=>{
     if(model&&!["numeral","literal"].includes(rule.kind))
-      throw new TypeError(`A model's notation is its theory's; ${name}'s adds only a numeral or a literal rule.`);
+      throw Object.assign(Error(`A model's notation is its theory's; ${name}'s adds only a numeral or a literal rule.`),
+        {offset:rule.start,sourceEnd:rule.end});
     const key=rule.kind??(rule.unary?"unary -":rule.operator),ruleOwner=[...owner,"rules",String(index)];
     const operands=rule.kind?[rule.param]:[rule.left,...rule.right?[rule.right]:[]];
     const syntax=resolveBindingSyntax({kind:"namedNotationRule",operands,value:rule.value,
@@ -23,7 +24,9 @@ export function retainNamedNotation(declaration,options) {
     const recipe=retainOperandRecipe({left:rule.leftView??null,right:rule.rightView??null},options.context,
       {...options,owner:[...ruleOwner,"recipes"],theory:name});
     const readers=(key==="literal"?lexemeBindings:key==="numeral"?["Nat"]:[]).map(label=>{
-      if(options.context.lookup(label).tag==="missing")throw new TypeError(`A retained ${key} rule needs its source ${label} binding.`);
+      if(options.context.lookup(label).tag==="missing")throw Object.assign(key==="literal"
+        ?Error(`A literal rule reads a Lexeme: import lexemes, which defines ${label}.`)
+        :Error("A numeral rule reads a natural number: import nat."),{offset:rule.start,sourceEnd:rule.end});
       return Object.freeze([label,resolveBindingSyntax({kind:"name",name:label,start:rule.start,end:rule.start},
         {...options,owner:[...ruleOwner,"reader",label]})]);
     });

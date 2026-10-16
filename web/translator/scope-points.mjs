@@ -62,9 +62,6 @@ export class ScopePoints {
     const at=node.origin??sourceOrigin({revision:this.revision,module:unit.moduleName,start:node.start,end:node.end});
     return expandedSource(tree,{kind,site:at});
   }
-  declaration(module,declaration,binding) {
-    return this.compilation.declare(module,declaration,binding);
-  }
   bind(node,scope,role="local") {
     if(node.bindingId)return this.table.get(node.bindingId);
     const {unit}=scope;
@@ -185,5 +182,4 @@ export class ScopePoints {
       return body();
     });
   }
-  adapter(reserved=[]) {return new BindingAdapter(this.table,{reserved});}
 }

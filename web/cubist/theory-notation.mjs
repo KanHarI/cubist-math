@@ -32,5 +32,4 @@ export function validateFieldNotation(item,{theory:T,isCarrier}) {
       if(!view&&!isCarrier(k))
         throw located(Error(`The notation of ${item.name.text} reads ${token.text} in the notation selected where it is used, which is ${T}'s; ${token.text} is no carrier's element: name the notation it is read in, as ${token.text===left?.text&&!unary?`nat.(${token.text}) ^ y`:`x ^ nat.(${token.text})`}.`),token);
   }
-  return Object.freeze({key:notationKey(item.notation),views:notationViews(item.notation)});
 }

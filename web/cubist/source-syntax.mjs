@@ -4,6 +4,7 @@ import {sourceOrigin,expandedOrigin} from "./bindings.mjs";
 import {visitSyntax,mapSyntax} from "../translator/syntax-graph.mjs";
 
 export const sourceMetadata = (key,value) => key==="shadowedDeclaration"&&typeof value==="string"
+  ||key==="literalFailure"&&value?.tag==="failure"
   ||key==="origin"&&value&&typeof value==="object"
   &&typeof value.revision==="string"&&typeof value.module==="string"&&Array.isArray(value.expansion);
 

@@ -110,12 +110,11 @@ export const failedResolution=({message,namespace,member,description,origin})=>O
 const openingFrame=(id,candidates=[])=>Object.freeze({tag:"opening-frame",id:string(id,"an activation identity"),
   ...(candidates.length?{candidates:Object.freeze(candidates.map(([label,value])=>
     Object.freeze([string(label,"an interface candidate"),resolution(value)])))}:{})});
-// This records the source selection namespace even before named notation
-// rules migrate. A known named selection must hit its family gate instead
-// of falling through to a model with the same spelling.
-const notationInventory=entries=>Object.freeze({tag:"notation-inventory",entries:Object.freeze(entries.map(({name,model=null,notation=null})=>
+// The separate source notation namespace always carries the exact identity,
+// including when its attached model is shadowed in the term namespace.
+const notationInventory=entries=>Object.freeze({tag:"notation-inventory",entries:Object.freeze(entries.map(({name,model=null,notation})=>
   Object.freeze({name:string(name,"a notation label"),model:model?resolution(model):null,
-    ...(notation?{notation:resolution(notation)}:{})})))});
+    notation:resolution(notation)})))});
 const notationContext=id=>Object.freeze({tag:"notation-context",id:string(id,"a selected notation identity")});
 const scopeMetadata=new Set(["notation-inventory","notation-context"]);
 // A qualified namespace closes its member table. Its bare label can keep
@@ -220,10 +219,7 @@ export class LexicalContext {
     const inventory=this.notations();
     if(inventory===null)throw new TypeError("A retained selection requires the complete source notation inventory.");
     const notation=inventory.find(entry=>entry.name===name);
-    if(notation&&!notation.model) {
-      if(notation.notation)return {value:notationResolution(notation.notation.id),fields:[]};
-      throw new TypeError("Retained named notation activation has not migrated.");
-    }
+    if(notation&&!notation.model)return {value:notationResolution(notation.notation.id),fields:[]};
     if(notation?.model) {
       // Only a selected model branch receives its attached rules. A parent
       // namespace may retain that model as its ordinary bare-value fallback,
@@ -232,7 +228,6 @@ export class LexicalContext {
         :["slot","opening"].includes(value.tag)
           &&(matches(value.enclosing)||(value.candidates??[]).some(matches));
       if(matches(found.value)) {
-        if(!notation.notation)throw new TypeError("Retained named notation activation has not migrated.");
         // Attach only on the branch that selects the declaring model. A
         // pattern variable or opened different model keeps its own rules.
         const attach=value=>value.tag==="binding"&&value.id===notation.model.id

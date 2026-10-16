@@ -8,10 +8,10 @@ import {bindingSyntaxView} from "./binding-syntax.mjs";
 import {bindingResolution,reservedResolution,sourceOrigin} from "./bindings.mjs";
 import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped} from "./scopes.mjs";
-import {notAProposition,retainedPropositionSymbols} from "./theory-propositions.mjs";
+import {notAProposition} from "./theory-propositions.mjs";
 import {retainParents} from "./retained-parents.mjs";
-import {retainFieldNotation,retainOperandRecipe} from "./retained-notation.mjs";
-import {notationKey,notationViews} from "./theory-notation.mjs";
+import {retainOperandRecipe} from "./retained-notation.mjs";
+import {notationKey,notationViews,validateFieldNotation} from "./theory-notation.mjs";
 
 const located=(error,node)=>Object.assign(error,{offset:node.start,sourceEnd:node.end});
 const reference=token=>({kind:"bindingReference",resolution:bindingResolution(token.bindingId),
@@ -107,8 +107,14 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
       }
     }
     const views=helpers?.type(entry);
-    const retainedNotation=retainFieldNotation(item,entry,fields,{...options,theory:T,domains:views?.parameters,recipe:ownNotation?.recipe});
-    if(retainedNotation) {
+    if(ownNotation) {
+      const parameters=entry.syntax.tree.params.filter(p=>!p.name.synthetic);
+      validateFieldNotation(item,{theory:T,isCarrier:k=>{
+        const type=views?.parameters.get(parameters[k]?.name.bindingId)??parameters[k]?.type;
+        return type?.kind==="bindingReference"&&type.resolution.tag==="binding"
+          &&fields.some(field=>field.id===type.resolution.id&&field.kind==="sort");
+      }});
+      const retainedNotation=Object.freeze({...ownNotation,field:entry.id});
       const conflicts=ambiguousNotations[retainedNotation.key];
       if(conflicts)throw located(Error(`${retainedNotation.key} would stand for ${entry.label} in ${T}, and its parents bind it to ${conflicts.map(e=>e.field).join(" and ")}: a notation means one operation; rename one's notation.`),notation);
       const previous=notationBindings[retainedNotation.key];
@@ -123,7 +129,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     byIdentity.set(entry.id,{...full,type:views.analysis.tree});
     if(item.kind==="law") {
       const data=notAProposition(views.analysis.tree,byIdentity,proposition,
-        header.tree.params.map(p=>p.name.bindingId),retainedPropositionSymbols);
+        header.tree.params.map(p=>p.name.bindingId));
       if(data)throw located(Error(`The law ${item.name.text} must state a proposition: an equation between elements of a sort, Void, a type declared at prop, or forall, -> or and over those; ${data.why}. A law holds no data, and homomorphisms ignore laws: declare data as an operation or a constant.`),data.node.origin??data.node);
     }
     if(item.kind==="sort") {
@@ -135,7 +141,6 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     throw located(Error(`${T}'s parent ${parent.theory} is labelled ${parent.label}, which names a field of ${T} too: label it apart, as in base : ${parent.theory}.`),theory.name);
   return {name:T,origin,bindingSyntax:header,entries:interfaces.entries.map(entry=>byName.get(entry.label)),fields,derived,parents,
     notationBindings:Object.freeze(notationBindings),
-    notations:Object.fromEntries(Object.entries(notationBindings).map(([key,value])=>[key,options.table.get(value.field).label])),
     ambiguousNotationBindings,ambiguousNotations,
     ambiguous:Object.fromEntries(ambiguous),
     ...(generatedUniverse?{generatedUniverse:true}:{})};

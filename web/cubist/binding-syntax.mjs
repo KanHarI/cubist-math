@@ -10,6 +10,7 @@ import {declarationTelescope, evidenceTelescope, parameterLambdas} from "./teles
 import {syntaxValue,expandedSource,qualifySource,sourceMetadata} from "./source-syntax.mjs";
 import {mapSyntax} from "../translator/syntax-graph.mjs";
 import {notationAlternative} from "./theory-notation.mjs";
+import {unselectedOperator,unselectedNegation,unboundOperator,unboundNegation,literalUnread} from "../translator/notations.mjs";
 
 const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
@@ -129,7 +130,7 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
           if(selector.tag==="namespace"||namespaceCandidates(selector).length)namespaces=true;
           model={...model};selectors.set(model,selector);
           if(selector.tag==="namespace")namespaceNotations.set(model,
-            notation?.namespaces?.[model.name]??{name:model.name,bindings:{},ambiguous:{}});
+            {...notation?.namespaces?.[model.name],name:model.name,complete:true});
         }
       }
       return {...node,model,activation:{text:"selection",start:node.model.start,end:node.model.end,origin:origin(node.model),
@@ -259,6 +260,16 @@ function resolveBindings(tree, {table, owner, context, source, constructors = []
       }
       if (node.kind === "reference" || node.kind === "bindingReference")
         throw new TypeError("Source resolution cannot accept already resolved syntax.");
+      const selection=at.notation?.complete?at.notation:null;
+      // Decimal nodes can also be interval endpoints. Keep the source's
+      // missing-reader decision inert until term elaboration consumes it.
+      if(selection&&node.kind==="number"&&!selection.bindings?.numeral)
+        return {...node,literalFailure:failedResolution(literalUnread(selection,node.text??String(node.value))),origin:origin(node)};
+      const failure=!node.qualifier&&(node.kind==="negation"?(selection?unboundNegation(selection):unselectedNegation())
+        :node.kind==="binary"&&["+","-","*","/","^","<","<=",">",">="].includes(node.operator)
+          ?(selection?unboundOperator(selection,node.operator):unselectedOperator(node.operator))
+        :["binaryNumber","literal"].includes(node.kind)?literalUnread(selection,node.spelling??node.text??`0b${node.digits}`):null);
+      if(failure)throw Object.assign(failure,{offset:node.start,sourceEnd:node.end});
       if (node.kind && !migrated.has(node.kind)) throw new TypeError(`Binding syntax family has not migrated: ${node.kind}`);
       if(node.kind==="binary"&&(node.qualifier||!["=","->","and","or","++","&","|"].includes(node.operator)))
         throw new TypeError("Binding syntax family has not migrated: notation operator");
@@ -473,13 +484,18 @@ const mappedResolution = (value, ids) => mapResolution(value,id=>ids.get(id)??id
 // Open parent fields may share a child identity. This public operation may
 // never change or target a local binder. Only cloning can rename locals,
 // using fresh identities allocated by the table itself.
-export function remapBindingSyntax(syntax,table,correspondence) {
+// Validate before a caller allocates fresh identities, without constructing
+// a remapped tree solely to check the correspondence.
+export function validateBindingCorrespondence(syntax,table,correspondence) {
   requireSyntax(syntax);
   const locals=new Set(syntax.owned);
   for(const [before,after] of correspondence) {
     table.get(before);table.get(after);
     if(locals.has(before)||locals.has(after))throw new TypeError("An open interface correspondence cannot change or capture local binders.");
   }
+}
+export function remapBindingSyntax(syntax,table,correspondence) {
+  validateBindingCorrespondence(syntax,table,correspondence);
   return mappedBindingSyntax(syntax,correspondence);
 }
 function mappedBindingSyntax(syntax,correspondence) {

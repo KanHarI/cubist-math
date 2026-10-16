@@ -227,15 +227,18 @@ def client : N := N.c;`);
 });
 
 test("FG1: model notation extensions are separate from ownership and a refused extension preserves the model", async t => {
-  const {result, get} = await check(t, `import hlevels; import nat;
+  const source=`import hlevels; import nat;
 theory T(U < UU0) { M : set U; c : M; }
 def n := T.make(Nat, nat_is_set, zero);
 notation n { numeral(k : Nat) := zero; }
 def selected : n.M := n.(7);
 notation n { x + y := add(x, y); }
-def after : n.M := n.(8);`);
+def after : n.M := n.(8);`;
+  const {result,get}=await check(t,source);
   assert.equal(result.gaps.length, 1);
   assert.equal(result.gaps[0].directive, true);
+  assert.equal(result.gaps[0].code,"E843");
+  assert.equal(source.slice(result.gaps[0].start,result.gaps[0].end),"x + y := add(x, y);");
   assert.match(result.gaps[0].reason, /adds only a numeral or a literal rule/);
   assert.equal(result.complete, false);
   for(const name of ["n","selected","after"])assert.equal(get(name).verified,true);

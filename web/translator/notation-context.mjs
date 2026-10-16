@@ -3,6 +3,8 @@
 // supplies it; neither live environments nor spelling lookups are serialized.
 export const operatorBinding = operator => "\u0000operator " + operator;
 export const SELECTION = "\u0000selection";
+export const NUMERAL_NAT="\u0000notation Nat";
+export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export const notationContextKey = key => "\u0000notation context " + key;
 
 export function checkedNotationContext(scope) {
