@@ -1,0 +1,29 @@
+# Cleanup after CB0–CB7
+
+Status: implementation and validation in progress, separately stacked on #240.
+
+The audit follows the recurring review root: obsolete producers and descriptive
+state should disappear once their responsibilities have moved. It found two
+remaining cases after CB7, not a reason for a new general abstraction.
+
+- Every semantic contract now requires its desired result. Both old defect maps
+  are empty, but strict/fixed/known-defect classification and a historical
+  observation transformer still surround those assertions. Replace that staging
+  protocol with direct assertions. Preserve fixture-precondition classification,
+  independent intended/captured clients, and bounded shrinking that compares each
+  candidate against its own desired result and preserves the structural difference.
+- Helper cycle validation constructs an unused pending list, and expanded-signature
+  analysis returns a wrapper whose sole production consumer reads one recursive
+  dependency. Remove those unused summaries. Keep the existing complete expansion
+  and dependency walk, unresolved alternatives, diagnostic origins, and separate
+  checking/analysis types used by admission and support planning.
+
+The audit also checked scope/replay ownership, inert snapshots, binding receipts,
+slot decisions and generated-artifact views. These preserve distinct tested
+contracts; collapsing them would lose behavior. Historical cost and mutation
+reports remain unchanged. Empty staging maps can be removed while the original
+CB0 observations remain linked to their exact historical revision.
+
+Four tests of the retired staging protocol are removed. The two meaningful
+shrinker controls remain, as do all product positive/negative witnesses and
+observation-fault tests. Full validation and Claude review are pending.

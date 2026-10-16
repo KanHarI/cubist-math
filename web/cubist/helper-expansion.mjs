@@ -2,7 +2,7 @@
 // their references and freshens local identities; it does not reinterpret a
 // label at the use site. Keep applications intact for the checker, including
 // unused arguments whose domains must still be checked.
-import {bindingSyntaxView,substituteBindingSyntax,unresolvedBindingUse} from "./binding-syntax.mjs";
+import {bindingSyntaxView,substituteBindingSyntax} from "./binding-syntax.mjs";
 import {parameterLambdas} from "./telescopes.mjs";
 import {DependencyAnalysis} from "./dependencies.mjs";
 import {interfaceSignature,interfaceType} from "./retained-interfaces.mjs";
@@ -31,7 +31,7 @@ export class HelperExpansion {
     // Validate the complete dependency graph before recursively expanding
     // any value. A structural recursive helper is a checked value, not an
     // inline definition. Pending alternatives stay in the resulting trees.
-    this.analysis.validateHelpers();
+    this.analysis.validateHelperCycles();
     const value=entry=>{
       if(this.#values.has(entry.id))return this.#values.get(entry.id);
       const replacements=new Map();
@@ -86,13 +86,10 @@ export class HelperExpansion {
   expand(syntax) {
     return substituteBindingSyntax(this.#calls(syntax),this.#values,this.table,[...this.owner,"use",String(this.#serial++)],{kind:"helper"});
   }
-  signature(entry) {
-    const syntax=this.expand(interfaceSignature(entry));
+  recursiveDependency(entry) {
     // This separate complete walk sees replacement trees as well as the
     // original interface. Both bare and applied recursive values are facts.
-    const dependencies=this.analysis.dependencies(syntax);
-    return {syntax,dependencies,recursive:dependencies.find(use=>use.category==="recursive-helper")??null,
-      pending:dependencies.filter(unresolvedBindingUse)};
+    return this.analysis.first(this.expand(interfaceSignature(entry)),["recursive-helper"]);
   }
   // A support planner needs the beta-expanded shape; admission needs every
   // application, domain and result annotation. The analysis view is valid

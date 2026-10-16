@@ -38,17 +38,17 @@ test("complete expansion dependencies retain bare recursive references and their
   const hidden=analysis.first(resolve("wrapper = wrapper"),["recursive-helper"]);
   assert.equal(hidden.id,recursive.id);assert.deepEqual(hidden.via,[wrapper.id]);
   assert.equal(analysis.first(resolve("loop"),["recursive-helper"]).id,recursive.id);
-  assert.deepEqual(analysis.validateHelpers(),{pending:[]});
+  analysis.validateHelperCycles();
 });
 
 test("helper cycle validation distinguishes structural recursion from inlining cycles",()=>{
   const {allocate,bind,resolve}=setup(),a=allocate("a"),b=allocate("b");bind(a);bind(b);
   const entries=[{id:a.id,kind:"derived",label:"a",syntax:resolve("b")},
     {id:b.id,kind:"derived",label:"b",syntax:resolve("a")}];
-  assert.throws(()=>new DependencyAnalysis(entries).validateHelpers(),/Cycle among nonrecursive helpers: a -> b -> a/);
-  assert.deepEqual(new DependencyAnalysis([{...entries[0],recursive:true},entries[1]]).validateHelpers(),{pending:[]});
+  assert.throws(()=>new DependencyAnalysis(entries).validateHelperCycles(),/Cycle among nonrecursive helpers: a -> b -> a/);
+  new DependencyAnalysis([{...entries[0],recursive:true},entries[1]]).validateHelperCycles();
   const conditional=[{...entries[0],syntax:resolve("match tt { b => b; }")},entries[1]];
-  assert.throws(()=>new DependencyAnalysis(conditional).validateHelpers(),/Cycle among nonrecursive helpers/);
+  assert.throws(()=>new DependencyAnalysis(conditional).validateHelperCycles(),/Cycle among nonrecursive helpers/);
 });
 
 test("pending alternatives and inserted arguments remain explicit until the slot decision",()=>{
@@ -71,5 +71,7 @@ test("pending alternatives and inserted arguments remain explicit until the slot
   const holder=allocate("holder");
   const deferredHelper=new DependencyAnalysis([{id:holder.id,kind:"derived",label:"holder",syntax:copied},
     {id:helper.id,kind:"derived",label:"helper",syntax:resolve("tt")}]);
-  assert.ok(deferredHelper.validateHelpers().pending.length>0,"unresolved roles cannot certify expansion readiness");
+  deferredHelper.validateHelperCycles();
+  assert.ok(deferredHelper.references(copied).some(use=>use.kind==="deferred"),
+    "cycle validation does not resolve pending alternatives");
 });

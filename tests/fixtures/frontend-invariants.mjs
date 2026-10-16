@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 // Bounded source generation, independent client equations and shrink steps.
 // No expected term is obtained from the compiler's theory generator.
 export const ciSeeds=[0,1,2,3,4,5,6,7];
@@ -68,4 +70,16 @@ export async function minimize(config,fails,maxAttempts=12) {
     catch(error) { errors.push({config:next,error:{name:error.name,code:error.code,message:error.message}}); }
   }
   return {config:current,attempts,errors};
+}
+
+// Differences, rather than a fixed assertion message, identify a regression
+// during shrinking. Matching them may conservatively reject a smaller case;
+// it must never accept a different failure merely because both assertions fail.
+export function observationDifferences(actual, expected, path = []) {
+  if (isDeepStrictEqual(actual, expected)) return [];
+  if (actual && expected && typeof actual === "object" && typeof expected === "object")
+    return [...new Set([...Object.keys(actual), ...Object.keys(expected)])].sort().flatMap(key =>
+      observationDifferences(Object.hasOwn(actual, key) ? actual[key] : { absent: true },
+        Object.hasOwn(expected, key) ? expected[key] : { absent: true }, [...path, key]));
+  return [{ path, actual, expected }];
 }

@@ -6,25 +6,21 @@ import createCubical from "../web/dist/cubical.mjs";
 import { lint } from "../web/cubist/lint.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { cases, extras, observe } from "./frontend-generation-cases.mjs";
-import { assertStage } from "./known-defect.mjs";
 import { observeModule } from "./module-observation.mjs";
-
-const baseline = JSON.parse(await readFile(new URL("./fixtures/frontend-generation-baseline.json", import.meta.url), "utf8"));
 
 const module = await createCubical();
 
-// Semantic expectations stay in the source fixtures. Baseline observations
-// can mark only the exact known defect as TODO; any changed symptom fails.
+// Semantic expectations stay in the independently written source fixtures.
 // Group prefixes remain selectable by the mutation gate.
 for (const c of cases) test(`${c.group}: [${c.id}] ${c.contract}`, async t => {
   const { observed, desired } = await observe(t, c, module);
-  assertStage(t, { observed, desired, known: baseline.cases[c.id], id: c.id });
+  assert.deepEqual(observed, desired, c.id);
 });
 
 test("case IDs are unique, extras name cases, and the manifest lists every case", async () => {
   const ids = cases.map(c => c.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const id of [...Object.keys(extras), ...Object.keys(baseline.cases)]) assert.ok(ids.includes(id), id);
+  for (const id of Object.keys(extras)) assert.ok(ids.includes(id), id);
   const manifest = await readFile(new URL("./fixtures/frontend-generation.md", import.meta.url), "utf8");
   const listed = [...manifest.matchAll(/^\| `([\w-]+)` \|/gm)].map(match => match[1]);
   assert.deepEqual(listed.sort(), [...ids].sort());

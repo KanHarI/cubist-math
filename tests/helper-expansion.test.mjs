@@ -7,7 +7,7 @@ import {Translator} from "../web/translator/translate.mjs";
 import {Scope} from "../web/translator/elaboration.mjs";
 import {bindingInputs} from "../web/translator/binding-module.mjs";
 import {parse} from "../web/cubist/parser.mjs";
-import {RetainedInterfaces} from "../web/cubist/retained-interfaces.mjs";
+import {RetainedInterfaces,interfaceSignature} from "../web/cubist/retained-interfaces.mjs";
 import {HelperExpansion} from "../web/cubist/helper-expansion.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax,bindingUses} from "../web/cubist/binding-syntax.mjs";
 
@@ -102,9 +102,9 @@ test("family domains expand the helper captured at source entry despite an ambie
   retain("def Index : U0 := Two;");
   const family=retain("def F(index : Index) : Unit := tt;",{kind:"sort"});
   const expansion=new HelperExpansion(interfaces.entries,{table,owner:["expand"]});
-  const signature=expansion.signature(family);
-  const domain=signature.syntax.tree.params[0].type;
-  const actual=elaborate({...signature.syntax,tree:domain,owned:[]});
+  const signature=expansion.expand(interfaceSignature(family));
+  const domain=signature.tree.params[0].type;
+  const actual=elaborate({...signature,tree:domain,owned:[]});
   assert.equal(scope.equal(actual,elaborate(resolve("Two"))),true);
   assert.equal(scope.equal(actual,elaborate(resolve("Unit"))),false);
 });
@@ -118,13 +118,12 @@ test("expanded signature validation finds recursive dependencies inside helper r
   const bare=retain("def bare : loop = loop := refl(loop);",{kind:"law"});
   const expansion=new HelperExpansion(interfaces.entries,{table,owner:["expand"]});
   for(const entry of [hidden,bare]) {
-    const result=expansion.signature(entry);
-    assert.equal(result.recursive.id,recursive.id);
-    assert.deepEqual(result.pending,[]);
+    const result=expansion.recursiveDependency(entry);
+    assert.equal(result.id,recursive.id);
     const request=entry.syntax.tree.type.left;
-    assert.equal(result.recursive.origin.start,(request.fn??request).origin.start);
-    assert.deepEqual(result.recursive.via,entry===hidden?[again.id,wrap.id]:[]);
-    if(entry===hidden)assert.equal(result.recursive.definitionOrigin.start,wrap.syntax.tree.body[0].value.fn.origin.start);
+    assert.equal(result.origin.start,(request.fn??request).origin.start);
+    assert.deepEqual(result.via,entry===hidden?[again.id,wrap.id]:[]);
+    if(entry===hidden)assert.equal(result.definitionOrigin.start,wrap.syntax.tree.body[0].value.fn.origin.start);
   }
 });
 
