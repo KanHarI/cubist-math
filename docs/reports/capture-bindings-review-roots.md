@@ -711,3 +711,13 @@ limit by retaining every control until test completion; immediate disposal of
 each completed control corrects the harness. The independent source controls
 show the intended positive and negative verdicts for let, obtain, intro and
 model opening. A saved alias remains usable after the original label shadows.
+
+The full run at `ab68362d` passes 1,315 of 1,317 tests and all 3,857 corpus
+checks. Both failures are older binding-syntax pilot fixtures that use an
+independent adapter table with a production checker. This repeats the round-1
+declaration-pilot ownership problem: making receipt metadata independent of
+observation exposes inconsistent fixture ownership. Production entry points
+already share the registry. Before changing the fixtures, the adapter-call-site
+audit confirms these are the two remaining independent-table cases. Reuse the
+compilation's table and imported value identities in that shared test helper;
+do not permit cross-registry fallback in the implementation.
