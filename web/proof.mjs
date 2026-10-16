@@ -429,9 +429,9 @@ function sourceLink(info) {
   link.hidden = true;
   link.onclick = null;
   link.textContent = info.kind === "module" ? "View module source →" : "View source →";
-  if (info.sourceModule || Number.isInteger(info.definitionStart)) {
+  if (info.definitionSite || info.sourceModule || Number.isInteger(info.definitionStart)) {
     link.hidden = false;
-    sourceTarget(link, { module: info.sourceModule ?? proofId, start: info.definitionStart, name: info.sourceName });
+    sourceTarget(link, info.definitionSite ?? { module: info.sourceModule ?? proofId, start: info.definitionStart, name: info.sourceName });
   }
 }
 // Source navigation uses the qualified site, independent of its display label.

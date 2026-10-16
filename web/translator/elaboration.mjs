@@ -9,6 +9,7 @@ import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
 import {BindingAdapter,SlotOutcomes} from "../cubist/bindings.mjs";
+import {substitutionFrame} from "../cubist/source-syntax.mjs";
 import {diagnosticCode} from "../diagnostics.mjs";
 
 export const emptyRewriteWork = () => ({
@@ -41,7 +42,7 @@ export class SourceUnit {
   recordReference(...record) {this.observations.recordTo("reference",this.references,...record);}
   recordStep(record) {this.observations.recordTo("step",this.steps,record);}
   text(node) {
-    const site=node.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding)?.site??node;
+    const site=substitutionFrame(node)?.site??node;
     const module=site.origin?.module??site.module??this.moduleName;
     const source=module===this.moduleName?this.source:this.sources?.[module];
     return source!==undefined&&Number.isInteger(site.start)&&Number.isInteger(site.end)

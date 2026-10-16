@@ -22,7 +22,7 @@ export function generatedCubist(program, module = program.main) {
       if (symbols[binding]) continue;
       const reason = publication.cause?.reason ?? `Generated family ${group.id} is ${publication.state}.`;
       const info = { name, binding, role: declaration.kind, verified: false,
-        status: publication.state, reason, code: diagnosticCode(reason), definitionStart: declaration.start,
+        status: publication.state, reason, code: diagnosticCode(reason), ...program.sourceSite(declaration,module),
         ...(module === program.main ? {} : { sourceModule: module, sourceName: name }) };
       symbols[binding] = info;
     }
@@ -86,8 +86,7 @@ export function generatedCubist(program, module = program.main) {
   let cursor = 0;
   for (const declaration of ast?.declarations ?? []) {
     const replacements = groups.filter(group => !shown.has(group)
-      && publications.find(item => item.id === group.id)?.owner === declaration.name.text
-      && group.declarations[0]?.name.start === declaration.name.start);
+      && publications.find(item => item.id === group.id)?.owner === declaration.name.text);
     if (!replacements.length) continue;
     copy(cursor, declaration.start);
     // Keep the replaced source visible as comments. Existing comments inside

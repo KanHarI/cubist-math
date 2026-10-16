@@ -2,7 +2,7 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
-import {qualifySource} from "../cubist/source-syntax.mjs";
+import {qualifySource,substitutionFrame} from "../cubist/source-syntax.mjs";
 import {elaborationSyntax,sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
 import {selectionEffects,fileSelectionEffects,referenceSyntax} from "../cubist/scopes.mjs";
@@ -729,7 +729,9 @@ export class Translator {
         // The declaration's closing check, and its admission below, are
         // kernel questions like any other, on the declaration's fuel.
         unit.fuel.spend("queries");
-        const checked=this.normalize?this.checker.verify(term):this.checker.infer(term);
+        let checked;
+        try {checked=this.normalize?this.checker.verify(term):this.checker.infer(term);}
+        catch(error) {throw unit.locate(error,d.name);}
         const native=checked.native;
         if(native&&!native.ok)throw Error(`Native cubical check rejected: ${native.error}`);
         if(d.computable) {
@@ -838,7 +840,7 @@ export class Translator {
   // Substituted fields/helpers keep their written occurrence in an expansion
   // frame. Diagnostics and source edits must read that occurrence together.
   writtenReference(expression,unit) {
-    const frame=expression.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding);
+    const frame=substitutionFrame(expression);
     if(!frame)return null;
     const site=frame.site.module===unit.moduleName?frame.site:null;
     return {site,text:unit.text(frame.site)??this.compilationBindings.table.get(frame.binding).label};

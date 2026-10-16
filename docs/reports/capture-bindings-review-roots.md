@@ -410,3 +410,53 @@ internal equal-label binders retain distinct IDs and print without capturing
 globals. A 24-file before/after comparison preserves verdicts, types and
 output modulo the intended internal-label changes. The source head and full
 validation remain unchanged. Stop at round 2; no speculative fixes follow.
+
+
+## CB5 external review, round 1 — diagnosis before fixes
+
+Claude reviewed `791f5e9e` against `1670411c`. Six actionable findings repeat
+identity reconstruction and source ownership defects from earlier rounds.
+The existing full suite, corpus, browser and mutation gates pass, but do not
+cover these display and navigation cases. Before edits, the fixes are grouped
+by the missing contracts:
+
+- Formatting tokens must be fresh against every raw spelling in the retained
+  graph, not only binder labels. Member and named-argument labels cannot be
+  mistaken for an identity placeholder. Deferred references must use their
+  slot ID's marker, including references with member paths. Display aliases
+  belong to lexical scopes; disjoint scopes need not rename each other's
+  binders. Reuse the existing bounded traversal, scope mapper and ID maps.
+- Publication ownership and authored location are different facts. Interleave
+  families by the existing publication owner, without a member-offset test.
+  Keep the declaring module used for outputs/imports separate from a qualified
+  definition site used for navigation and documentation. Checked and blocked
+  generated symbols must consume the same site helper. Do not repurpose
+  sourceModule: that would hide locally declared inherited symbols.
+- A closing kernel check must carry its source site just as a closing proof
+  check does. Synthesized exact statements must retain their value's origin.
+  Locate at these boundaries, without changing unrelated import-failure
+  messages through a blanket declaration-catch fallback. Share the existing
+  substitution-frame lookup used by source text and written references.
+
+Controls will cover real field/placeholder collisions, disjoint and overlapping
+scopes, nested slot correspondence, local/imported derived-family ordering,
+short and aligned long clients, blocked inherited symbols, and local/imported
+closing-check diagnostics. No new resolver, registry or compatibility mode is
+needed. The reviewer's scratch prototypes are evidence, not patches to copy.
+
+
+The fixes now use those contracts. Formatting freshness scans the retained
+syntax graph once; aliases use the existing lexical context and simultaneous
+binders. Slot references and binders share markers by ID. Family placement no
+longer compares offsets. Checked and blocked symbols share a qualified
+`definitionSite`, leaving declaring-module classification intact. Helper
+statements retain the value origin; inferred closing checks retain a fallback
+site without changing the declaration catch. The substitution-frame lookup
+has one implementation.
+
+All 32 focused controls pass. Final validation passes 1,247 of 1,257 tests,
+with ten CB6 TODOs and zero failures; all 3,857 canonical checks pass. All four
+production mutations are killed. The browser suite passes, including inherited
+generated definition navigation. The display sweep covers all 2,919 retained
+declarations in 45 modules without failures. Source/tests stayed frozen through
+these gates. Round 2 reviews this delta; CB5 remains draft until review is clean.

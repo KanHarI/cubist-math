@@ -186,3 +186,76 @@ theory Parent(U < UU0) { M : U;
   assert.deepEqual(generatedCubist(program),expected);
 });
 
+
+
+test("generated member spellings and nested deferred slots preserve their identities",async t=>{
+  const source=`import nat; import hlevels;
+theory P(U < UU0) { M : set U; z0 : M; z1 : M; }
+theory Q(U < UU0) { M : set U; c : M;
+  def pick(S : P(U0)) : S.M := S.z1;
+  def again(S : P(U0)) : S.M := S.z0;
+  def nested(n, p : Nat) : Nat := match n {
+    zero => p; succ(k) => match p { zero => k; succ(k) => k; };
+  };
+}`;
+  const {program,result}=await checkProgram(t,source,{module,options});
+  assert.deepEqual(result.gaps,[]);
+  const view=generatedCubist(program);
+  assert.doesNotMatch(view.source,/display unavailable/);
+  for(const field of ["z0","z1"]) {
+    const at=view.source.indexOf(`S.${field}`,view.source.indexOf("def Q.pick"));
+    assert.ok(at>=0);
+    assert.ok(view.links.every(link=>link.start!==at+2),"the field must not link to a parameter");
+  }
+  const start=view.source.indexOf("def Q.nested"),end=view.source.indexOf("// Q:hom",start);
+  const uses=view.links.filter(link=>link.start>=start&&link.end<end&&/^k⟦/.test(link.name));
+  assert.equal(uses.length,4,"both binders and their uses are inspectable");
+  assert.equal(new Set(uses.map(link=>link.bindingId)).size,2,"the nested slots remain distinct");
+  for(const id of new Set(uses.map(link=>link.bindingId))) {
+    const same=uses.filter(link=>link.bindingId===id);
+    assert.equal(same.length,2);assert.equal(new Set(same.map(link=>link.name)).size,1);
+    assert.equal(new Set(same.map(link=>link.binding)).size,1);
+  }
+});
+
+test("derived families stay with their publication owner in local and imported inheritance",async t=>{
+  const fixture=`import hlevels; theory Parent(U < UU0) { M : set U; c : M; def twice(x : M) : M := x; }`;
+  for(const imported of [false,true]) {
+    const source=(imported?"import fixture;":fixture)+
+      "\ntheory Child(U < UU0) extends Parent {}\ndef tail : Unit := tt;";
+    const read=sourceReader();
+    const {program,result}=await checkProgram(t,source,{module,options,reader:(name,...args)=>name==="fixture"?fixture:read(name,...args)});
+    assert.deepEqual(result.gaps,[]);
+    for(const name of imported?["main","fixture"]:["main"]) {
+      const view=generatedCubist(program,name);
+      for(const owner of name==="fixture"?["Parent"]:imported?["Child"]:["Parent","Child"])
+        assert.ok(view.source.indexOf(`def ${owner}.twice`)<view.source.indexOf(`// ${owner}:hom`));
+      if(name==="main")assert.ok(view.source.indexOf("def Child.twice")<view.source.indexOf("def tail"));
+    }
+  }
+});
+
+test("inherited checked and blocked symbols navigate to authored source without changing module ownership",async t=>{
+  const fixture=`import hlevels;
+theory Parent(U < UU0) {
+  M : set U; c : M; op(x, y : M) : M;
+  def twice(x : M) : M := op(x, op(x, c));
+}`;
+  const start=fixture.indexOf("twice(x"),prefix="import fixture;\n",doc="// Unrelated client documentation.\n";
+  const read=sourceReader();
+  for(const blocked of [false,true])for(const padding of ["", "\n".repeat(start-prefix.length-doc.length)+doc+"def client_only : Unit := tt;\n"]) {
+    const source=prefix+padding+`theory Child(U < UU0) extends Parent { ${blocked?"law bad : c = tt;":""} }`;
+    const {program,result}=await checkProgram(t,source,{module,options,
+      reader:(name,...args)=>name==="fixture"?fixture:read(name,...args)});
+    const view=generatedCubist(program),link=view.links.find(link=>link.name==="Child.twice");
+    assert.ok(link);assert.equal(link.verified,!blocked);
+    assert.equal(link.definitionSite.module,"fixture");assert.equal(link.definitionSite.start,start);
+    assert.equal(link.definitionSite.name,"Parent");
+    assert.doesNotMatch(link.description,/Unrelated client/);
+    if(!blocked) {
+      assert.deepEqual(result.gaps,[]);
+      assert.ok(result.outputs.some(output=>output.name==="Child.twice"));
+      assert.ok(result.imports.every(output=>output.name!=="Child.twice"));
+    } else assert.equal(program.kernel.definitions.has("main__Child.twice"),false);
+  }
+});

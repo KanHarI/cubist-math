@@ -1,7 +1,7 @@
 # CB5: diagnostics and public views
 
 Status: implemented and validated in draft #238 on CB4 #237. CB4 is ready
-after a clean second Claude review. CB5 is entering its first external review;
+after a clean second Claude review. CB5 has addressed the first external review and is entering round 2;
 CB6 contextual sessions and CB7 retirement remain separate packages.
 
 ## Contract and implementation order
@@ -136,3 +136,20 @@ corpus passed in 22 seconds while awake; the final full run passed in 161
 seconds with temporary sleep prevention. Compiler budgets were unchanged.
 External review uses this validated implementation and stops on a clean round,
 with up to eight rounds when real findings warrant fixes.
+
+
+## External review round 1
+
+Six display/location findings were grouped against prior review roots before
+fixes; see the [review record](../reports/capture-bindings-review-roots.md).
+Formatting placeholders now avoid every retained raw spelling, deferred uses
+share their slot's marker, and disjoint scopes reuse display labels. Families
+are placed by publication owner. Definition navigation carries its own qualified
+site, distinct from declaring-module ownership, for checked and blocked symbols.
+Synthesized helper statements retain their value origin and final inferred
+checks locate rejections at their declaration. No resolver or registry was added.
+
+Validation passes 1,247 of 1,257 tests, with the same ten CB6 TODOs and no
+failures; all 3,857 canonical checks and all four mutation controls pass.
+The browser suite and 45-module/2,919-declaration display sweep pass. The PR
+remains draft for Claude round 2.

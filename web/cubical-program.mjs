@@ -172,6 +172,15 @@ export class CubicalProgram {
         &&step.traceParent===link.start).map(step=>({name:step.name,binding:step.binding,
           role:step.role,description:step.description,start:step.start,end:step.end}));
   }
+  // Authored location is independent of the module publishing a declaration.
+  // Both checked symbols and blocked generated families use this target.
+  sourceSite(syntax,declaring) {
+    const module=syntax.origin?.module??syntax.name?.origin?.module??declaring;
+    const start=syntax.start,end=syntax.end;
+    const name=this.sourceAsts.get(module)?.declarations.find(d=>d.start<=start&&start<d.end)?.name.text;
+    return {definitionStart:start,definitionSite:{module,start,end,name},
+      description:leadingDocumentation(this.sources[module]??"",start)?.text??""};
+  }
   // A module's results: its simplification rules, its directives' fuel and
   // gaps, and each declaration's symbol, gap and, in the checked module, link.
   // `failure` adds a failed import's note to a reason.
@@ -213,7 +222,7 @@ export class CubicalProgram {
         // apart from assumptions; computable accepts them. None is under
         // review since H1's release, so this list is empty.
         extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
-        definitionStart: syntax.start, description: leadingDocumentation(text, syntax.start)?.text ?? "",
+        ...this.sourceSite(syntax,name),
         ...(name === main ? {} : { sourceModule: name, sourceName: d.name }) };
       // The type's text, written when first read: the pages and the
       // inspector show it, a check does not. Its names are the program's

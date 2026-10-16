@@ -201,6 +201,17 @@ theory Parent(U < UU0) { M : U;
   assert.match(await page.locator("#read-source .source-line.active").textContent(),/rw \[nat_add_zero\]/);
   await page.locator("#back").click(); await idle();
   assert.equal(await page.locator("#editor").inputValue(),consumer);
+  await page.locator("#generated-mode").click(); await idle();
+  await generatedSource.locator('button[data-name="Child.bad"]').first().click();
+  await page.waitForFunction(()=>document.querySelector("#inspect-name").textContent==="Child.bad"
+    && !document.querySelector("#view-source").hidden);
+  const inheritedSource=await page.locator("#view-source").getAttribute("href");
+  assert.match(inheritedSource,/proof=hlevels&name=Parent/);
+  assert.ok(inheritedSource.includes(`offset=${producer.indexOf("bad(n")}`));
+  await page.locator("#view-source").click(); await idle();
+  assert.match(await page.locator("#read-source .source-line.active").textContent(),/def bad\(n/);
+  await page.locator("#back").click(); await idle();
+  assert.equal(await page.locator("#editor").inputValue(),consumer);
   await page.unroute("**/library/hlevels.cubist");
   // An inductive header wrapped over lines keeps its h-level keyword, which
   // the highlighter finds in the whole source, not the line alone (H1).

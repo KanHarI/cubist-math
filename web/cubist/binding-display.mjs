@@ -35,17 +35,25 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
   },bind(token) {if(token.bindingId)tokens.set(token.bindingId,token);return token;},extend:at=>at},null);
   scan(tree);
   for(const id of used)if(globals.has(id))taken.add(globals.get(id).name.split(".")[0]);
-  for(const label of publicLabels.values())taken.add(label);
+  const reserved=new Set(taken);
   for(const [id,token] of tokens) {
     const label=publicLabels.get(id)??token.label??binderName(token);
     if(publicLabels.has(id)||token.bindingRole==="pattern") {labels.set(id,label);taken.add(label);continue;}
     if(label==="_"&&!used.has(id)) {labels.set(id,label);continue;}
+  }
+  // Labels belong to scopes. Disjoint scopes can reuse a label; formatting
+  // placeholders, on the other hand, must avoid every raw token in the graph.
+  visitSyntax(tree,value=>{if(typeof value==="string")taken.add(value);});
+  const choose=(token,at,scope)=>{
+    const id=token.bindingId,label=token.label??binderName(token);
+    if(labels.has(id))return;
+    const siblings=new Set(scope.binders.filter(other=>other!==token).map(other=>labels.get(other.bindingId)));
     const stem=/^[A-Za-z_][A-Za-z_0-9]*$/.test(label)&&label!=="_"?label:"value";
     let chosen=stem,index=0;
-    while(taken.has(chosen))chosen=`${stem}${++index}`;
+    while(reserved.has(chosen)||at.has(chosen)||siblings.has(chosen))chosen=`${stem}${++index}`;
     taken.add(chosen);labels.set(id,chosen);
     if(chosen!==label)annotations.push(`Display alias ${chosen} denotes local binder ${label}.`);
-  }
+  };
   const markers=new Map();
   const marker=(key,label,reason)=>{
     if(!markers.has(key)) {
@@ -142,6 +150,9 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
       case "reserved": return nominal(display(at.has(value.label)||at.has(opening)
         ?marker(`reserved:${value.label}`,value.label,"reserved language reference retained across a binder or model opening"):value.label));
       case "member": return value.fields.reduce((receiver,field)=>({kind:"member",value:receiver,field:{text:field}}),again(value.receiver));
+      case "slot": return (value.fields??[]).reduce((receiver,field)=>({kind:"member",value:receiver,field:{text:field}}),
+        nominal(display(marker(value.id,table.get(value.id).label,"deferred constructor-or-variable pattern"),
+          {id:value.id,binding:locals.get(value.id)})));
       case "application": return {kind:"call",fn:again(value.fn),args:value.args.map(again)};
       case "projected": return {kind:"call",fn:nominal(identity(value.projection,at)),args:[nominal(identity(value.receiver,at))]};
       default: return nominal(display(marker(value,node.spelling??value.label??value.tag,
@@ -161,8 +172,9 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
       if(node.kind==="name"&&node.name!=="_")throw new TypeError("unresolved nominal generated reference");
       return node;
     },
-    bind(token) {
+    bind(token,_node,scope,at) {
       if(!token.bindingId)throw new TypeError("generated binder has no identity");
+      choose(token,at,scope);
       const id=token.bindingId,text=token.bindingRole==="pattern"&&binderName(token)!=="_"
         ?marker(id,binderName(token),"deferred constructor-or-variable pattern"):localName(id);
       return {...token,text:display(text,{id,binding:locals.get(id)}),displayLabel:labels.get(id)};

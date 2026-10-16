@@ -101,7 +101,7 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
     const params=tree.params.map(p=>({...p,group:nextGroup+1+(p.group??0)}));
     emit(`${record.name}.${entry.label}`,[...headerParameters("all"),modelParameter,...params],tree.type,tree.value,
       {role:"derived",field:entry.label},{inferred:syntax.inferred,computable:tree.computable,
-        body:tree.body??(tree.value===undefined?null:[{kind:"exact",value:tree.value,...at(origin)}])});
+        body:tree.body??(tree.value===undefined?null:[{kind:"exact",value:tree.value,...at(tree.value.origin??origin)}])});
   }
   for(const parent of parents) {
     const headerIds=new Set(header.tree.params.map(p=>p.name.bindingId));

@@ -99,3 +99,29 @@ test("CB5: printing a model opening cannot rebind an already captured declaratio
   const link=links.find(link=>link.binding==="producer__c");
   assert.equal(printed.slice(link.start,link.end),link.name);
 });
+
+
+test("CB5: formatting placeholders cannot replace member or named-argument labels",()=>{
+  for(const text of [
+    "def f(A : U0, S : A) : A := S.z0(S.z1);",
+    "def f(A : U0, S : A) : A := S(z0 := S, z1 := S);",
+  ]) {
+    const f=fixture(text),syntax=f.resolve(text),links=[];
+    const printed=generatedDeclaration(bindingDeclaration(f.binding,syntax),{table:f.table,links});
+    assert.equal(sameBindingSyntax(f.expression(syntax),f.expression(f.resolve(printed))),true,printed);
+    assert.match(printed,/z0/);assert.match(printed,/z1/);
+    assert.ok(links.every(link=>!/^z[01]$/.test(link.name)),"raw field labels cannot acquire a binder link");
+  }
+});
+
+test("CB5: disjoint scopes reuse their labels while overlapping scopes retain their bindings",()=>{
+  for(const text of [
+    "def f(A : U0, a : A) : A := ((fun (x : A) => x)(a), (fun (x : A) => x)(a));",
+    "def f(A : U0, a : A) : A := (fun (x : A) => (fun (x : A) => x)(x))(a);",
+    "def f(A : U0) : U0 := forall x, x1 : A. forall x : A. x1;",
+  ]) {
+    const f=fixture(text),syntax=f.resolve(text),printed=f.print(syntax);
+    assert.equal(sameBindingSyntax(f.expression(syntax),f.expression(f.resolve(printed))),true,printed);
+    if(text.includes("), (fun"))assert.doesNotMatch(printed,/Display alias|x1|⟦/);
+  }
+});

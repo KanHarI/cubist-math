@@ -188,3 +188,25 @@ theory Parent(U < UU0) { M : set U;
     assert.ok(checked.program.inspect(reference.binding));
   }
 });
+
+
+test("CB5: closing inferred checks have qualified sites and helper checks retain their value origin",async t=>{
+  for(const field of ["law bad : c = tt;","d : c;"]) {
+    const fixture=`import hlevels; theory Parent(U < UU0) { M : set U; c : M; ${field} }`;
+    for(const imported of [false,true]) {
+      const checked=await check(t,imported?"import fixture; def tail : Unit := tt;":fixture,{fixture});
+      const gap=checked.result.gaps.find(gap=>gap.name==="Parent");
+      assert.ok(gap?.diagnostic);assert.equal(gap.diagnostic.primary.module,imported?"fixture":"main");
+      assert.equal(fixture.slice(gap.diagnostic.primary.start,gap.diagnostic.primary.end),"Parent");
+    }
+  }
+  const fixture=`import hlevels; theory Parent(U < UU0) { M : set U; c : M; def bad : M := tt; }`;
+  for(const imported of [false,true]) {
+    const checked=await check(t,imported?"import fixture; theory Child(U < UU0) extends Parent {}":fixture,{fixture});
+    const gap=checked.result.gaps.find(gap=>gap.name===(imported?"Child.bad":"Parent.bad"));
+    const sites=[gap.diagnostic.primary,...gap.diagnostic.related];
+    assert.ok(sites.some(site=>site.module===(imported?"fixture":"main")&&fixture.slice(site.start,site.end)==="tt"));
+    if(imported)assert.equal(gap.diagnostic.primary.module,"main");
+    else assert.equal(fixture.slice(gap.start,gap.end),"tt");
+  }
+});

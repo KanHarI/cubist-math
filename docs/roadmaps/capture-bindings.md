@@ -2,7 +2,7 @@
 
 Status: CB0–CB3 implemented, 2026-10-15; CB3 review is clean at round 5.
 CB4 is ready in #237 after a clean second Claude review. CB5 is implemented
-and validated in draft #238, entering review; CB6–CB7 remain pending.
+and validated in draft #238, with round-1 fixes entering review round 2; CB6–CB7 remain pending.
 The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
 evidence integration, remaining requirements and validation.
 The [CB2 evidence](capture-bindings-cb2.md) records production integration,

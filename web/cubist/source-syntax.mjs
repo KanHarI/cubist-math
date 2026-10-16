@@ -3,6 +3,8 @@
 import {sourceOrigin,expandedOrigin} from "./bindings.mjs";
 import {visitSyntax,mapSyntax} from "../translator/syntax-graph.mjs";
 
+export const substitutionFrame = node => node.origin?.expansion.findLast(frame=>frame.kind==="substitution"&&frame.binding);
+
 export const sourceMetadata = (key,value) => key==="shadowedDeclaration"&&typeof value==="string"
   ||key==="literalFailure"&&value?.tag==="failure"
   ||key==="origin"&&value&&typeof value==="object"
