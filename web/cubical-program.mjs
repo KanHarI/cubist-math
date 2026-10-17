@@ -1,6 +1,7 @@
 import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
+import {SourceUnit} from "./translator/elaboration.mjs";
 import { Translator } from "./translator/translate.mjs";
 import { selectionName } from "./translator/theories.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
@@ -111,8 +112,12 @@ export class CubicalProgram {
         // can still load nat's bundled source.
         if(name==="nat"&&this.bundledNat&&!text)text=naturalSource;
       }
-      const ast = parse(text);
-      requireTestMode(ast,this.options.testMode&&!discovery.reuseModules);
+      let ast;
+      try {ast=parse(text);requireTestMode(ast,this.options.testMode&&!discovery.reuseModules);}
+      catch(error) {
+        error.kind??="parse";
+        throw new SourceUnit({checker:this.checker,source:text,moduleName:name}).locate(error,null);
+      }
       prepared.set(name, { text, ast });
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
@@ -214,7 +219,8 @@ export class CubicalProgram {
     for (const d of result.declarations) {
       if (d.duplicate) {
         this.gaps.push({module:name,name:d.name,duplicate:true,reason:d.reason,code:diagnosticCode(d.reason),
-          start:d.errorStart,end:d.errorEnd,declarationStart:d.syntax.start,declarationEnd:d.syntax.end});
+          start:d.errorStart,end:d.errorEnd,declarationStart:d.syntax.start,declarationEnd:d.syntax.end,
+          ...(d.diagnostic?{diagnostic:d.diagnostic}:{})});
         continue; // The original symbol and its inspection data still own the name.
       }
       // A theory's declarations bring their generated syntax (theories.mjs).
@@ -322,7 +328,9 @@ export class CubicalProgram {
       }
       catch (error) {
         if (name === main) throw error;
-        this.gaps.push({ module: name, reason: error.message, code: diagnosticCode(error.message) });
+        this.gaps.push({ module: name, reason: error.message, code: diagnosticCode(error.message),
+          ...(Number.isInteger(error.offset)?{start:error.offset,end:error.sourceEnd}:{}),
+          ...(error.diagnostic?{diagnostic:error.diagnostic}:{}) });
         this.failedImports.set(name, error.message);
         failedHere.add(name);
         visiting.delete(name); return new Map();
