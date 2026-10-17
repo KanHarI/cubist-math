@@ -1,0 +1,394 @@
+{
+  "version": 2,
+  "generatedAt": "2026-10-17T16:07:33.152Z",
+  "revision": "fc0362d30b2fafef4b8d5f0b75a1f56a89f148b6",
+  "modified": false,
+  "build": {
+    "kernelSources": "5a75eeb5ba3dd7051da13bc33f8509be1f504868b30723eee00fb1a38163969e",
+    "kernelOutputs": "e59eea474843a1f7217ae93554155d935b0389e506fb70ae1f7c717efe84aa65"
+  },
+  "machine": {"node":"v24.13.0","platform":"darwin arm64","cpu":"Apple M3 Pro","cpus":12},
+  "settings": {"samples":3,"warm":3,"depth":true,"optimizations":"the CLI's defaults","stack":"Node's default"},
+  "method": "Each sample is a new Node process that loads the kernel, runs the workload's setup entries in a new REPL session (web/repl-session.mjs, as the CLI does) and its entry once cold, then the warm runs in the same session. A further process times the cold entry with no phase observed, for the observation's cost. An outcome's text is a preview past 160 characters, with the whole text's length and hash; the REPL displays at most 1000 characters of a value, so a kernel outcome also digests the whole normal form evaluated, its bound variables and dimensions numbered by binding depth. Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the phases nested in it. Counters are the kernel's cumulative work and the arena's net growth, compared across the cold samples; times are medians over samples on this machine, and include the observation's wrappers. Failed entries count the work and time spent before they failed. The depth sample repeats the cold entry, measuring the syntax depth of the nodes each normalization, comparison and check allocated, its times discarded.",
+  "contracts": {
+    "repl": "REPL evaluate: the full normal form, checked equal to itself (evaluate e expecting e)",
+    "print": "print(evaluate(e)): the full normal form, printed",
+    "expected": "evaluate e expecting v: the full normal form, compared with v's",
+    "pattern": "evaluate e expecting p, p with holes: the full normal form, matched part by part",
+    "scratch": "closure experiment: the demanded natural only; untrusted, certifies nothing"
+  },
+  "phases": {
+    "elaborate": "Translator.term: elaborating source terms, with the kernel queries elaboration asks",
+    "check": "checker.checkSyntax, inside verify: checking the elaborated term",
+    "normalize": "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
+    "decode": "checker.syntax.decode of a normal form, inside verify: kernel syntax into terms",
+    "inventory": "checker.verify's own work: the closedness, assumption and kernel-extension inventory",
+    "compare": "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
+    "render": "checker.displayText, outside other phases: printing a value or message",
+    "other": "the rest of the entry: parsing, module and session bookkeeping, transactions",
+    "execute": "scratch: forcing the definition to a pair",
+    "readback": "scratch: forcing the pair's first component to a number; laziness defers most computation here"
+  },
+  "workloads": [
+    {
+      "id": "euclid-3",
+      "series": "kernel",
+      "contract": "repl",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate euclid(3);",
+      "outcome": {
+        "status": "value",
+        "text": "(7, (5, refl(7), fun (j611 : Nat, smaller : (fun (n : Nat) => induction n return Nat -> U0 { zero => fun (y27 : Nat) => Unit; succ a_rec => fun (n : Nat) => in…",
+        "length": 1000,
+        "sha256": "27d5f916b8316009",
+        "normal": "b76e837ef72221c2"
+      },
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":266.8,"min":264.675,"max":269.287,"samples":3}
+      },
+      "total": {
+        "instructions": 258730,
+        "rejected": 174,
+        "instructionSteps": 363692,
+        "queries": 2759,
+        "querySteps": 773268,
+        "nodes": 95592,
+        "peakNodes": 99279,
+        "peakBytes": 8520448
+      },
+      "ms": {
+        "cold": {"median":416.476,"min":413.257,"max":423.137,"samples":3},
+        "unobserved": 399.406,
+        "warm": {"median":45.379,"min":39.112,"max":46.528,"samples":9}
+      },
+      "phases": {
+        "elaborate": {"calls":2,"instructions":10,"instructionSteps":31,"nodes":9,"coldMs":0.722,"warmMs":0.429},
+        "check": {"calls":2,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.059,"warmMs":0.016},
+        "normalize": {"calls":2,"queries":2,"querySteps":762339,"nodes":54769,"coldMs":15.346,"warmMs":6.891},
+        "decode": {"calls":2,"coldMs":3.805,"warmMs":0.006},
+        "inventory": {"calls":2,"coldMs":0.173,"warmMs":0.075},
+        "compare": {
+          "calls": 2,
+          "instructions": 258718,
+          "rejected": 174,
+          "instructionSteps": 363644,
+          "queries": 2757,
+          "querySteps": 10929,
+          "nodes": 40809,
+          "coldMs": 386.249,
+          "warmMs": 29.191
+        },
+        "render": {"calls":1,"coldMs":9.894,"warmMs":7.712},
+        "other": {"calls":1,"coldMs":0.758,"warmMs":0.557}
+      },
+      "depth": {
+        "check": {"depth":9,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "normalize": {
+          "depth": 152,
+          "allocated": 54769,
+          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
+          "kinds": {"App":20815,"Lam":9162,"Pi":4837,"Var":3406,"Path":3016,"Sum":2735,"PApp":2012,"PLam":1424}
+        },
+        "compare": {
+          "depth": 85,
+          "allocated": 40803,
+          "chain": [
+            "PLam.1",
+            "Pair.2",
+            "Pair.1",
+            "Pair.2 ×2",
+            "Lam.1 ×3",
+            "SumRec.1",
+            "Lam.1",
+            "SumRec.1",
+            "Lam.1",
+            "SumRec.1",
+            "Lam.1",
+            "SumRec.2",
+            "Lam.1",
+            "SumRec.1",
+            "Lam.1",
+            "SumRec.1"
+          ],
+          "kinds": {"Var":18323,"App":14328,"Pi":4605,"Comp":807,"Tube":569,"Lam":563,"Inl":312,"Inr":312}
+        }
+      },
+      "maxRssMiB": {"median":324.1,"min":320.3,"max":324.7,"samples":3}
+    },
+    {
+      "id": "euclid-3-print",
+      "series": "kernel",
+      "contract": "print",
+      "setup": "import euclid; use nat;",
+      "entry": "print(evaluate(euclid(3)));",
+      "outcome": {
+        "status": "value",
+        "text": "(7, (5, refl(7), fun (j611 : Nat, smaller : (fun (n : Nat) => induction n return Nat -> U0 { zero => fun (y27 : Nat) => Unit; succ a_rec => fun (n : Nat) => in…",
+        "length": 1000,
+        "sha256": "27d5f916b8316009",
+        "normal": "b76e837ef72221c2"
+      },
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":258.474,"min":257.012,"max":258.918,"samples":3}
+      },
+      "total": {"instructions":12,"instructionSteps":48,"queries":1,"querySteps":478867,"nodes":54783,"peakNodes":58470,"peakBytes":5112576},
+      "ms": {
+        "cold": {"median":28.204,"min":27.744,"max":29.073,"samples":3},
+        "unobserved": 25.797,
+        "warm": {"median":13.245,"min":11.47,"max":16.079,"samples":9}
+      },
+      "phases": {
+        "elaborate": {"calls":1,"instructions":10,"instructionSteps":31,"nodes":9,"coldMs":0.497,"warmMs":0.283},
+        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.046,"warmMs":0.009},
+        "normalize": {"calls":1,"queries":1,"querySteps":478867,"nodes":54769,"coldMs":12.199,"warmMs":3.534},
+        "decode": {"calls":1,"coldMs":3.81,"warmMs":0.002},
+        "inventory": {"calls":1,"coldMs":0.133,"warmMs":0.035},
+        "render": {"calls":1,"coldMs":10.918,"warmMs":8.66},
+        "other": {"calls":1,"coldMs":0.611,"warmMs":0.479}
+      },
+      "depth": {
+        "check": {"depth":9,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "normalize": {
+          "depth": 152,
+          "allocated": 54769,
+          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
+          "kinds": {"App":20815,"Lam":9162,"Pi":4837,"Var":3406,"Path":3016,"Sum":2735,"PApp":2012,"PLam":1424}
+        }
+      },
+      "maxRssMiB": {"median":212,"min":212,"max":213.2,"samples":3}
+    },
+    {
+      "id": "euclid-3-prime-expected",
+      "series": "kernel",
+      "contract": "expected",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate euclid(3).1 expecting 7;",
+      "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"5a83a1253c7d7b8f"},
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":265.576,"min":259.314,"max":266.825,"samples":3}
+      },
+      "total": {"instructions":42,"instructionSteps":117,"queries":3,"querySteps":130741,"nodes":38513,"peakNodes":42200,"peakBytes":5112576},
+      "ms": {"cold":{"median":7.791,"min":7.538,"max":8.157,"samples":3},"unobserved":6.731,"warm":{"median":0.586,"min":0.553,"max":1.116,"samples":9}},
+      "phases": {
+        "elaborate": {"calls":2,"instructions":12,"instructionSteps":48,"queries":1,"querySteps":1,"nodes":14,"coldMs":0.733,"warmMs":0.198},
+        "check": {"calls":2,"instructions":5,"instructionSteps":13,"nodes":1,"coldMs":0.085,"warmMs":0.019},
+        "normalize": {"calls":2,"queries":2,"querySteps":130740,"nodes":38493,"coldMs":5.727,"warmMs":0.007},
+        "decode": {"calls":2,"coldMs":0.034,"warmMs":0.004},
+        "inventory": {"calls":2,"coldMs":0.172,"warmMs":0.049},
+        "compare": {"calls":2,"instructions":25,"instructionSteps":56,"nodes":5,"coldMs":0.192,"warmMs":0.037},
+        "render": {"calls":1,"coldMs":0.095,"warmMs":0.058},
+        "other": {"calls":1,"coldMs":0.715,"warmMs":0.224}
+      },
+      "depth": {
+        "check": {"depth":7,"allocated":1,"chain":["Fst.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 152,
+          "allocated": 38493,
+          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
+          "kinds": {"App":13147,"Lam":6706,"Pi":4593,"Var":2906,"Sum":2665,"Path":2001,"Sigma":1337,"Inr":922}
+        },
+        "compare": {"depth":10,"allocated":2,"chain":["PLam.1","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"PLam":1,"Path":1}}
+      },
+      "maxRssMiB": {"median":178.3,"min":178.1,"max":178.3,"samples":3}
+    },
+    {
+      "id": "multiply-2-255",
+      "series": "kernel",
+      "contract": "repl",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate 2 * 255;",
+      "outcome": {
+        "status": "error",
+        "code": "K344",
+        "text": "K344: Native prototype syntax depth exceeds 512.",
+        "length": 48,
+        "sha256": "5e7e4ab653bb0f92",
+        "normal": "6a08ee128f084174"
+      },
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":273.662,"min":272.807,"max":289.156,"samples":3}
+      },
+      "total": {"instructions":529,"instructionSteps":1582,"queries":2,"querySteps":21377,"nodes":7972,"peakNodes":11659,"peakBytes":1770240},
+      "ms": {"cold":{"median":7.685,"min":7.255,"max":8.306,"samples":3},"unobserved":5.804,"warm":{"median":2.373,"min":1.554,"max":2.889,"samples":9}},
+      "phases": {
+        "elaborate": {"calls":2,"instructions":262,"instructionSteps":787,"nodes":261,"coldMs":3.175,"warmMs":1.27},
+        "check": {"calls":2,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.063,"warmMs":0.018},
+        "normalize": {"calls":2,"queries":2,"querySteps":21377,"nodes":7706,"coldMs":1.145,"warmMs":0.112},
+        "decode": {"calls":2,"coldMs":0.469,"warmMs":0.003},
+        "inventory": {"calls":2,"coldMs":0.276,"warmMs":0.121},
+        "compare": {"calls":2,"failures":1,"instructions":265,"instructionSteps":789,"nodes":3,"coldMs":1.482,"warmMs":0.133},
+        "other": {"calls":1,"coldMs":1.006,"warmMs":0.494}
+      },
+      "depth": {
+        "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}},
+        "normalize": {
+          "depth": 512,
+          "allocated": 7706,
+          "chain": ["App.1 ×509","App.0","Con.0","Sort"],
+          "kinds": {"App":4875,"Var":2051,"Pi":512,"Lam":261,"List":4,"Elim":3}
+        },
+        "compare": {"depth":3,"allocated":3,"chain":["PLam.0","U.0","LConst"],"kinds":{"PLam":1,"Path":1,"Var":1}}
+      },
+      "maxRssMiB": {"median":176.7,"min":176.6,"max":176.9,"samples":3}
+    },
+    {
+      "id": "multiply-2-255-print",
+      "series": "kernel",
+      "contract": "print",
+      "setup": "import euclid; use nat;",
+      "entry": "print(evaluate(2 * 255));",
+      "outcome": {"status":"value","text":"510","length":3,"sha256":"5e5c743a015ff8d8","normal":"6a08ee128f084174"},
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":304.18,"min":297.825,"max":490.5,"samples":3}
+      },
+      "total": {"instructions":264,"instructionSteps":793,"queries":1,"querySteps":18313,"nodes":7969,"peakNodes":11656,"peakBytes":1770240},
+      "ms": {"cold":{"median":9.182,"min":7.867,"max":9.862,"samples":3},"unobserved":5.94,"warm":{"median":3.686,"min":2.058,"max":4.179,"samples":9}},
+      "phases": {
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":787,"nodes":261,"coldMs":2.878,"warmMs":0.665},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.079,"warmMs":0.013},
+        "normalize": {"calls":1,"queries":1,"querySteps":18313,"nodes":7706,"coldMs":1.125,"warmMs":0.135},
+        "decode": {"calls":1,"coldMs":0.482,"warmMs":0.002},
+        "inventory": {"calls":1,"coldMs":0.192,"warmMs":0.071},
+        "render": {"calls":1,"coldMs":2.974,"warmMs":2.271},
+        "other": {"calls":1,"coldMs":0.715,"warmMs":0.436}
+      },
+      "depth": {
+        "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}},
+        "normalize": {
+          "depth": 512,
+          "allocated": 7706,
+          "chain": ["App.1 ×509","App.0","Con.0","Sort"],
+          "kinds": {"App":4875,"Var":2051,"Pi":512,"Lam":261,"List":4,"Elim":3}
+        }
+      },
+      "maxRssMiB": {"median":176.6,"min":176.4,"max":177.2,"samples":3}
+    },
+    {
+      "id": "euclid-4",
+      "series": "kernel",
+      "contract": "repl",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate euclid(4);",
+      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":269.686,"min":268.669,"max":298.942,"samples":3}
+      },
+      "total": {
+        "instructions": 13,
+        "instructionSteps": 51,
+        "queries": 1,
+        "failedQueries": 1,
+        "querySteps": 603548,
+        "nodes": 136441,
+        "peakNodes": 140128,
+        "peakBytes": 18481920
+      },
+      "ms": {"cold":{"median":25.069,"min":24.822,"max":28.694,"samples":3},"unobserved":25.899,"warm":{"median":1.067,"min":0.689,"max":2.742,"samples":9}},
+      "phases": {
+        "elaborate": {"calls":1,"instructions":11,"instructionSteps":34,"nodes":10,"coldMs":0.53,"warmMs":0.266},
+        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.059,"warmMs":0.009},
+        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":603548,"nodes":136426,"coldMs":23.39,"warmMs":0.132},
+        "inventory": {"calls":1,"failures":1,"coldMs":0.091,"warmMs":0.023},
+        "other": {"calls":1,"coldMs":1.127,"warmMs":0.571}
+      },
+      "depth": {
+        "check": {"depth":10,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "normalize": {
+          "depth": 512,
+          "allocated": 136426,
+          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
+          "kinds": {"App":47823,"Lam":23228,"Pi":15611,"Sum":11002,"Var":10540,"Path":8424,"Inr":4102,"SumRec":2935}
+        }
+      },
+      "maxRssMiB": {"median":192.4,"min":192.3,"max":192.7,"samples":3}
+    },
+    {
+      "id": "euclid-4-prime",
+      "series": "kernel",
+      "contract": "repl",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate euclid(4).1;",
+      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "deterministic": true,
+      "import": {
+        "instructions": 29466,
+        "rejected": 19,
+        "instructionSteps": 59277,
+        "queries": 1960,
+        "querySteps": 14332,
+        "nodes": 3687,
+        "ms": {"median":284.181,"min":282.134,"max":286.048,"samples":3}
+      },
+      "total": {
+        "instructions": 14,
+        "instructionSteps": 52,
+        "queries": 2,
+        "failedQueries": 1,
+        "querySteps": 595615,
+        "nodes": 136150,
+        "peakNodes": 139837,
+        "peakBytes": 18481920
+      },
+      "ms": {"cold":{"median":25.821,"min":25.381,"max":28.594,"samples":3},"unobserved":24.213,"warm":{"median":1.253,"min":0.904,"max":3.192,"samples":9}},
+      "phases": {
+        "elaborate": {"calls":1,"instructions":13,"instructionSteps":51,"queries":1,"querySteps":1,"nodes":15,"coldMs":0.676,"warmMs":0.353},
+        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.023,"warmMs":0.01},
+        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":595614,"nodes":136134,"coldMs":23.678,"warmMs":0.134},
+        "inventory": {"calls":1,"failures":1,"coldMs":0.087,"warmMs":0.025},
+        "other": {"calls":1,"coldMs":1.237,"warmMs":0.698}
+      },
+      "depth": {
+        "check": {"depth":8,"allocated":1,"chain":["Fst.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 512,
+          "allocated": 136134,
+          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
+          "kinds": {"App":47695,"Lam":23175,"Pi":15597,"Sum":11002,"Var":10507,"Path":8420,"Inr":4102,"SumRec":2935}
+        }
+      },
+      "maxRssMiB": {"median":192.1,"min":190.7,"max":192.7,"samples":3}
+    }
+  ]
+}

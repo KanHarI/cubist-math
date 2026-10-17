@@ -14,9 +14,12 @@ remaining packages; the [branch record](roadmaps/work-plan.md#branch-work)
 distinguishes the merged CB/RC stacks from the unmerged Hydra draft.
 
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
-  language, its kernel support and the language reference. Categories, monads,
-  algebraic homology and synthetic cohomology are the selected language
-  testbed; broad mathematical rebuilding is deferred.
+  language, its kernel support and the language reference. Runtime optimization
+  and naturals/integers/rationals come first, with binary `Nat` made the default
+  when ready and ordered-ring/field definitions included. Reals stay paused.
+  After performance work, return to language development through categories,
+  monads, algebraic homology and synthetic cohomology; broad mathematical
+  rebuilding is deferred.
 - [Work-plan audit of 2026-09-28](roadmaps/historical/audits/2026-09-28-audit.md): the
   baseline revision and findings behind the current statuses.
 - [Historical plans and specifications](roadmaps/historical/README.md):

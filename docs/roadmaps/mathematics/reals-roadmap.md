@@ -1,5 +1,12 @@
 # Real-number roadmap
 
+**Scope decision, 2026-10-17:** this roadmap remains paused during the runtime
+phase and the subsequent return to language work. That phase owns only
+naturals, integers, rationals and the definitions of ordered rings/fields.
+Those definitions do not resume R1's order models, `PosRat`, Archimedean
+bounds, completeness or any real-number construction. R3's planned Cauchy
+construction requires H3; the algebraic ordered interfaces do not.
+
 Status: unchanged at main `e729c2d5` on 2026-10-17: paused during language
 development, but for R1's integers and
 rationals, built on 2026-10-05; corrected on 2026-09-28 after

@@ -41,14 +41,14 @@ const root = new URL("../", import.meta.url);
 export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Bumped when a workload, a phase or the report's meaning changes: a
 // recorded baseline of another version is not comparable.
-export const version = 2;
+export const version = 3;
 
 const euclid = "import euclid; use nat;", circle = "import circle; use nat;";
 // The archived Euclid construction and its prerequisites stay fixed for
 // evaluator comparisons (archive/first-library/euclid.cubist, primes.cubist):
 // a change to their algorithm starts a separate series.
 export const workloads = [
-  // Full results: the REPL checks the normal form against itself, print does not.
+  // Full results: plain REPL evaluation and print both normalize once (EVAL1).
   { id: "euclid-3", setup: euclid, entry: "evaluate euclid(3);" },
   { id: "euclid-3-print", setup: euclid, entry: "print(evaluate(euclid(3)));" },
   { id: "euclid-4", setup: euclid, entry: "evaluate euclid(4);" },
@@ -86,7 +86,7 @@ export const workloads = [
 
 // What each workload's result is, and what it promises.
 export const contracts = {
-  repl: "REPL evaluate: the full normal form, checked equal to itself (evaluate e expecting e)",
+  repl: "REPL evaluate: one checked normalization, printed without a redundant self-comparison",
   print: "print(evaluate(e)): the full normal form, printed",
   expected: "evaluate e expecting v: the full normal form, compared with v's",
   pattern: "evaluate e expecting p, p with holes: the full normal form, matched part by part",

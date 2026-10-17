@@ -5,7 +5,13 @@ These describe current contracts, unfinished work and its limits. The
 theorem parameter is not an already proved result. Paused mathematics does
 not resume when a language milestone ships.
 
-**Direction selected on 2026-10-17:** develop the language through categories,
+**Current priority, directed on 2026-10-17:** runtime optimization and the
+natural/integer/rational foundations, including ordered-ring/field definitions.
+Switch to binary `Nat` when its correctness and compatibility gates pass.
+The reals roadmap stays paused. After this phase, resume the language
+direction below; see the [runtime roadmap](runtime/runtime-evaluation-roadmap.md).
+
+**Language direction selected on 2026-10-17:** develop the language through categories,
 monads, algebraic homology and synthetic cohomology as a sustained testbed.
 Both algebraic and HoTT constructions are central. Success includes reusable
 theory interfaces, proof automation, notation, inference, inspection and
@@ -45,7 +51,7 @@ which remains an unmerged draft. Site publication succeeded; the
 [RC verification record](historical/refactoring-and-testing.md#verification-record) records
 the unresolved termination of the final CI mutation probe.
 
-Next language work pairs morphism opt-ins (L2.4d), general proposition laws
+After the runtime phase, language work pairs morphism opt-ins (L2.4d), general proposition laws
 (L2.11) and implicit operation arguments (L2.12) with categorical examples,
 and path/induction tooling with low-degree synthetic examples. N0/N1's
 monadic interfaces can start from their existing prerequisites. Categories,
