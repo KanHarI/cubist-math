@@ -149,7 +149,8 @@ computable def bnat_total_same_index(
     trans(
       cong(
         fun (p : n = n) => comp(fun (i : Interval) => P(p @ i), x), bnat_is_set(n, n, refl(n), r)
-      ), path_to_transport(
+      ),
+      path_to_transport(
         fun (i : Interval) => P(r @ i), x, y, apd_path(fun (z : BNatFamilyTotal(U, P)) => z.2, q)
       )
     )
