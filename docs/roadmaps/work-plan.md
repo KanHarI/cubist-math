@@ -89,7 +89,7 @@ between columns.
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08 | EVAL1–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
-| Computation notation | Design only. N1's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5 |
+| Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library now has seventeen self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226). The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
@@ -699,8 +699,8 @@ they are normative.
 ## Deferred library backlog
 
 The [results catalog](../library-results.md) and mathematical roadmaps retain
-the long-term targets. These packages are not active dependencies or language
-release gates:
+the long-term targets. These broad packages remain deferred except for the
+specific slices scheduled below; they are not blanket language release gates:
 
 | Retained IDs | Deferred work |
 | --- | --- |
@@ -714,7 +714,11 @@ Resumed and done on 2026-10-05 ([first actions](#first-actions)): the natural nu
 arithmetic, quotients, the integers, the rationals as a quotient, and the
 algebraic hierarchy from semigroups to fields. The rest of B3 and B4 stays
 deferred, except for the new binary foundations explicitly scheduled as
-NUM0–NUM2 in the [runtime evaluation track](#runtime-evaluation-track).
+NUM0–NUM2 in the [runtime evaluation track](#runtime-evaluation-track) and
+the categorical, algebraic and synthetic testbed slices scheduled in
+[first actions](#first-actions) and HA0–HA6. Those slices can develop the
+required homotopy, group and linear-algebra results without resuming all of
+B3/B4; unrelated analysis, Galois and RH targets remain deferred.
 
 Small h-level/equivalence definitions and language acceptance fixtures are
 part of their owning language packages. They do not commit to proving all
@@ -777,9 +781,9 @@ prerequisites for every earlier language release.
 Every stage tests the complete user path: stating and proving the example,
 inference and notation, diagnostics for rejected examples, inspecting generated
 terms, querying local contexts, and evaluating appropriate closed examples.
-Use the source-test and preservation gates already installed. Measure proof
-size, explicit annotations, checking work and evaluation costs against the
-explicit baseline; a theorem proved by bypassing the intended language feature
+Use the source-test and preservation gates already installed. Where relevant,
+measure proof size, explicit annotations, checking work and evaluation costs
+against the explicit baseline; a theorem proved by bypassing the intended language feature
 does not close that feature's acceptance gate. A concrete limitation feeds the
 responsible language package, with a reusable design and a regression example.
 

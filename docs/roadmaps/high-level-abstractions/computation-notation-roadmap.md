@@ -195,11 +195,14 @@ maps and the same Kleisli composition. General categorical monads remain
 library structures; `do` uses the supported operations interface, not arbitrary
 arrows treated as functions.
 
-Free-algebra substitution then connects L2.6 to both interfaces: prove its
-functoriality and monad laws from the checked universal property and relate
-the unit to generators and multiplication to substitution. This is N3b's
-free-algebra instance. The identity and native-truncation instances do not
-wait for it. The categorical bridge does not delay the first N1/N2 release,
+N3b's free-algebra instance connects L2.6 to the `pure`/`bind` interface:
+prove its functoriality and monad laws from the checked universal property,
+with `pure` supplied by generators and `bind` by substitution. It does not
+depend on L3.4. The generic N1 bridge later transfers this instance to the
+categorical form, where multiplication is substitution of expressions for
+generators; no second instance-specific categorical proof is required.
+The identity and native-truncation instances do not wait for the free
+construction. The categorical bridge does not delay the first N1/N2 release,
 and it is not supplied merely by generating homomorphisms of a theory named
 `Monad`. No higher-coherence or all-universe claim follows from the set case.
 

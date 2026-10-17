@@ -443,7 +443,7 @@ NUM2 owns these new carriers, arithmetic, algebraic laws and default APIs.
 The [reals roadmap's R1](../mathematics/reals-roadmap.md#milestones) consumes them: it owns
 their decidable orders and ordered-ring/field laws, `PosRat`, the
 Archimedean property and later canonical presentations. R1's order
-work remains proposed under [first action 8](../work-plan.md#first-actions);
+work remains proposed under the [number-order decision](../work-plan.md#open-decisions);
 NUM2 does not wait for it. R2 and the later real constructions target the
 new `Q`, with positive-rational precision and binary natural bounds. The
 older unary-backed carriers remain compatibility clients, rather than a
