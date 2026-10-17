@@ -33,7 +33,7 @@ path in the same PR as its replacement; do not retain parallel frameworks.
 | RC11a | Shared source scanner and lexical rules | Parser/highlighter token boundaries agree, including comments, incomplete input, numerals and operators | Implemented; Opus 5.5 round 3 clean |
 | RC11b | Shared term child/binder metadata and free-name traversal where semantics agree | Preserve binder scope, substitution and display-only terms; keep native codec independent unless parity is verified | Planned |
 | RC11c | Builtin dispatch and reserved-name correspondence | Every reserved builtin has an intentional handler; existing argument errors and elaboration results survive | Planned |
-| RC11d | WASM enum parity and step-budget wrapper | Compare C/JS encodings; preserve exact 64-bit budgets and independent native admission checks | Planned |
+| RC11d | WASM enum parity and step-budget wrapper | Compare C/JS encodings; preserve exact 64-bit budgets and independent native admission checks | Implemented; Opus 5.5 round 1 clean |
 | RC11e | Development/published-site layout agreement | Published roots and versioned imports agree under both servers; existing browser/site scenarios | Implemented; Opus 5.5 round 3 clean |
 | Final cleanup | Review the completed stack for redundant state, wrappers and superseded documentation | All agreed slices accounted for; independent semantic controls retained | Planned |
 
