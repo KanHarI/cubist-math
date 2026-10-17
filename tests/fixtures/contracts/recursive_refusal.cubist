@@ -2,6 +2,9 @@
 
 import hlevels;
 import nat;
+# test(generation.G12_range.refusal)
+# expect_error(E845)
+# expect_error_at(iter(n))
 // Error: E845: iter is recursive, and a field's type cannot unfold it: state the law over a model,
 //   outside the theory.
 theory T(U < UU0) {

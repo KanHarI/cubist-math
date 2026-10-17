@@ -402,3 +402,14 @@ test("overlapping wildcard instances retain different refinements through query 
   assert.deepEqual(verdicts.sort(),["error","value"],"the written wildcard denotes two distinct semantic contexts");
   assert.notDeepEqual(refinements[0],refinements[1],"the picker can expose the distinct checked refinements");
 });
+
+
+test("test-mode source can replay an arbitrary scope without granting query contracts",async t=>{
+  const source="# test(identity) # expect_axioms([]) def identity(x : Unit) : Unit := x;";
+  const {program,result}=await setup(t,source,{options:{testMode:true}});
+  assert.deepEqual(result.gaps,[]);
+  const session=at(program,source,"x;");
+  await query(session,"typeof x","type","Unit");
+  const refused=await query(session,"# test(query) def y := x;","error");
+  assert.match(refused.text,/Expected an expression, found '#'/);
+});

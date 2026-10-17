@@ -34,9 +34,8 @@ async function setup(t,theory) {
   const record=morphisms.record;
   built.artifacts.push(...morphisms.artifacts);built.artifacts[0].theory=record;
   const check=(declarations,text="",imports=env)=>{
-    const checker=Object.create(program.checker);checker.bindingName=label=>`pilot__${label}`;
-    checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-    const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+    const checker=program.checker,definitionModule="pilot";
+    const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",compilationBindings:registry});
     const result=translator.translateSyntax({declarations:[...declarations,...parse(text).declarations]},text,imports);
     const scope=new Scope(translator.unit(),new Map(),result.env);
     return {result,translator,equal:(actual,expected)=>scope.equal(translator.term(parse(actual,true),scope),translator.term(parse(expected,true),scope))};

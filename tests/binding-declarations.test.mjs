@@ -53,10 +53,8 @@ async function prepared(t,source,{clone=false,destination=new Map()}={}) {
   const prepared=declarationsFromSource(source,table,imports,{clone});
   const {adapter,artifacts}=prepared;
   const env=new Map([...destination,...prepared.env]);
-  const checker=Object.create(program.checker);
-  checker.bindingName=label=>`pilot__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"pilot",scopePoints:recorder});
+  const checker=program.checker,definitionModule="pilot";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",scopePoints:recorder});
   const result=translator.translateSyntax({declarations:prepared.declarations},source,env);
   return {program,translator,result,points,table,artifacts,adapter};
 }
@@ -76,10 +74,8 @@ test("retained generated declarations enter a mixed source queue with exact refe
   const serialized=JSON.parse(JSON.stringify(declarations));
   const before=parse("def left_ : Two := right_;").declarations;
   const after=parse("def native : Nat := digits.(2);").declarations;
-  const checker=Object.create(program.checker);
-  checker.bindingName=label=>`pilot__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+  const checker=program.checker,definitionModule="pilot";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",compilationBindings:registry});
   const result=translator.translateSyntax({declarations:[...before,...serialized,...after]},source,env);
   assert.deepEqual(result.declarations.filter(d=>d.status==="not-translated").map(d=>d.name),["broken","downstream"]);
   assert.equal(result.env.get("downstream").blockedBy,"pilot__broken");

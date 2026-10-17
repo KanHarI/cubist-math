@@ -1,0 +1,32 @@
+// Migrated from tests/initial-models.test.mjs:
+// initial and free models resolve named and mixed theory arguments by parameter name.
+import hlevels;
+import algebra;
+# test(initial_named_arguments.N)
+initial N : Monoid(U := U0);
+
+# test(initial_named_arguments.Pointed)
+theory Pointed(U < UU0, A : U) {
+  M : set U;
+  point(a : A) : M;
+}
+
+# test(initial_named_arguments.P)
+initial P : Pointed(A := Unit, U := U0);
+
+# test(initial_named_arguments.Mixed)
+initial Mixed : Pointed(A := Unit, U0);
+
+# test(initial_named_arguments.W)
+free W(B : U0) : Pointed(A := B, U := U0) on B;
+
+# test(initial_named_arguments.point_fold)
+def point_fold(B : U0, S : Pointed(U0, B), g : B -> S.M, b : B) :
+  W.fold(B, S, g).map(W.point(b)) = S.point(b) {
+  rfl;
+}
+
+# test(initial_named_arguments.unit_fold)
+def unit_fold(S : Monoid(U0)) : N.fold(S).map(N.one) = S.one {
+  rfl;
+}
