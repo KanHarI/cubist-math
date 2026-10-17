@@ -7,8 +7,9 @@ foundation is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q`
 and later numerical constructions. At the main `fc0362d3` starting point,
 none of the NUM packages or other EVAL packages was implemented. The
 [#266](https://github.com/KanHarI/cubist-math/pull/266) implementation includes
-EVAL1's one-pass REPL path and a version-3 baseline. EVAL2 now caches completed
-full normalizations by exact syntax identity. NUM0–NUM2 and
+EVAL1's one-pass REPL path and a version-3 baseline.
+[#269](https://github.com/KanHarI/cubist-math/pull/269) implements EVAL2, caching
+completed full normalizations by exact syntax identity. NUM0–NUM2 and
 EVAL3–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
 evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
@@ -591,6 +592,9 @@ includes an additional 262,144 bytes for 65,536 cache slots. These are
 deterministic work measurements, not a wall-clock speedup claim. K344 still
 limits the larger Euclid inputs. The version-3 fixture remains the regression
 reference: its allowed counter decreases cover this optimization.
+The negative polynomial-root fixture now reaches its intended E606 type
+mismatch instead of exhausting the K338 reduction budget; its expected
+diagnostic is updated accordingly.
 
 **Acceptance:** shared graphs and repeated normalization avoid redundant
 traversal; typed normal forms, eta behavior, failure recovery and instruction

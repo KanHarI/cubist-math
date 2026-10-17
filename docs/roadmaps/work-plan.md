@@ -622,7 +622,8 @@ done (2026-10-08): `tools/evaluation-baseline.mjs` records the
 [#266](https://github.com/KanHarI/cubist-math/pull/266): one checked
 normalization for plain REPL evaluation, with explicit expectations retained.
 The version-3 baseline records its outcomes and work; see the runtime
-roadmap's EVAL1 measurements. EVAL2 now caches completed full normalizations
+roadmap's EVAL1 measurements. EVAL2 in
+[#269](https://github.com/KanHarI/cubist-math/pull/269) caches completed full normalizations
 by exact syntax handle, with rollback/compaction invalidation and resource
 accounting. NUM0–NUM2 and EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation

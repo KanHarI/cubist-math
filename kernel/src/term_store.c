@@ -248,7 +248,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         k->weak_cache = cache;
         cache = realloc(k->normal_cache, capacity * sizeof *cache);
         if (!cache)
-            return ck_fail(k, "Full normal cache allocation failed."), 0;
+            return ck_fail(k, "Normal cache allocation failed."), 0;
         memset(cache + k->capacity, 0, (capacity - k->capacity) * sizeof *cache);
         k->normal_cache = cache;
         k->capacity = capacity;
