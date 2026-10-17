@@ -769,7 +769,7 @@ Snapshot on 2026-10-17. The earlier #188/#204–#212 stack was replaced by
 | --- | --- | --- |
 | L2.6 construction behavior | Declared carriers, models and computing folds are integrated | Opt-ins, uniqueness, universal properties and additional laws |
 | [Capture/bindings](capture-bindings.md) | CB0–CB7 and cleanup integrated; #219–#223, #225 and #227 closed as superseded | Preserve semantic and resource gates when extending interfaces |
-| [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Existing mutation runner wired into CI; seven checks pass at `154c4e6b` | Merge independently of the cleanup stack |
+| [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Merged as `165ac956`; existing mutation runner wired into CI; seven checks passed at `154c4e6b` | Preserve this gate through the cleanup stack |
 | [Refactoring/testing](refactoring-and-testing.md) | Current implementation plan replaces #224's stale compiler assumptions; RC0 underway | Complete the separately reviewable slices and their test migrations |
 
 The earlier FG0 known-defect staging is retired: the integrated harness requires

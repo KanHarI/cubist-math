@@ -7,9 +7,9 @@ This is the current implementation plan for the remaining ideas from
 [binding roadmap](capture-bindings.md) and its completion records own the
 implemented binding, generation, inspection and contextual REPL contracts.
 
-The stack starts on [#242](https://github.com/KanHarI/cubist-math/pull/242),
-which adds the existing frontend mutation runner to CI and preserves its
-evidence. It is separate from this cleanup. No PR in this plan is merged by
+The stack follows [#242](https://github.com/KanHarI/cubist-math/pull/242),
+merged as `165ac956`, which adds the existing frontend mutation runner to CI
+and preserves its evidence. It is separate from this cleanup. No PR in this plan is merged by
 recording its completion here.
 
 ## Scope and order
@@ -20,7 +20,7 @@ path in the same PR as its replacement; do not retain parallel frameworks.
 
 | Slice | Work | Dependencies and evidence | Status |
 | --- | --- | --- | --- |
-| RC0 | Nontrivial archive formatter round trips; redundant test and dead-code removal; documentation reconciliation | Preserve tokens, comments and syntax after actual reformatting; kill a meaning-changing formatter mutation; existing suite | Implemented; final review |
+| RC0 | Nontrivial archive formatter round trips; redundant test and dead-code removal; documentation reconciliation | Preserve tokens, comments and syntax after actual reformatting; kill a meaning-changing formatter mutation; existing suite | Implemented; Opus 5.5 round 2 clean |
 | RC8 | Complete development-version inputs and compilation-local inference placeholders | Editing worker dependencies changes the version; repeated compilation is deterministic | Planned |
 | RC7 | One worker request transport for proof, standalone REPL and reference examples | Preserve independent program/session ownership, cancellation and stale-response rejection; worker startup errors settle pending requests | Planned |
 | RC9 | Shared diagnostic-comment reader and test-host helpers | Preserve own-line/end-of-line comments and continuation rules; remove migrated copies before adding pragma readers | Planned |
