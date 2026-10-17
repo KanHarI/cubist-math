@@ -611,7 +611,8 @@ normal forms when no outer term or dimension renaming is needed. Its query
 does no reduction, produces no judgement, and distinguishes failure from
 inequality. The driver remembers the answer in its existing empty-scope memo;
 the eventual instruction still validates equality. Scoped comparisons retain
-the existing JavaScript implementation. This avoids rebuilding free-symbol
+the existing JavaScript implementation, which is also the fallback if the
+native query cannot answer. Deadlines end the comparison. This avoids rebuilding free-symbol
 sets for the large normalized graph, without introducing a second scope
 analysis or changing proof search.
 

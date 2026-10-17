@@ -19,7 +19,9 @@ The computation that instructions call, such as `Step`'s reductions,
 composition and transport, is trusted with them.
 
 The queries (`cc_kernel_whnf`, `cc_kernel_normalize`, `cc_kernel_rename`,
-`cc_kernel_endpoint_term`) compute on syntax and certify nothing. The
+`cc_kernel_endpoint_term`, `cc_kernel_alpha_equal`) compute on syntax and certify nothing.
+The equality query reuses the instructions' syntactic comparison without
+reducing or unfolding; a failed query is distinct from an unequal answer. The
 untrusted driver (`web/cubical-instruction-driver.mjs`) uses them to pick
 the instructions it issues, and each instruction checks its premises as any
 other. Until 2026-10-02 the kernel also held a term checker and a
@@ -61,7 +63,7 @@ of these regressions.
 | `src/glue_compute.c` | Glue composition and derived universe composition |
 | `src/equivalence_terms.c` | Derived contractible-fiber types and the identity equivalence |
 | `src/definitions.c` | The definitions Define admitted |
-| `src/queries.c` | Weak heads and normal forms on request; the arena's size |
+| `src/queries.c` | Weak heads, normal forms and syntactic comparison on request; the arena's size |
 | `src/checkpoint.c` | Checkpoints, rollback and compaction of the arena |
 | `src/deadline.c` | A wall-clock deadline that only rejects work |
 | `tests/lattice_cli.c` | Inert test input, separate from the trusted algebra |

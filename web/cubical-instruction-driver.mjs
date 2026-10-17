@@ -1237,7 +1237,11 @@ export class InstructionDriver {
     for (const focus of [a, b]) {
       const term = this.subterm(focus);
       try { this.graph.within(NORMAL_FORM_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
-      catch { this.unnormalizable.add(term); return false; }
+      catch (error) {
+        if (!(error instanceof KernelError) || error.kind === "deadline") throw error;
+        this.unnormalizable.add(term);
+        return false;
+      }
     }
     // With no outer renaming, reuse the kernel's syntactic comparison. The
     // Step instructions already produced both normal forms; this query only
@@ -1249,7 +1253,11 @@ export class InstructionDriver {
         this.alphaMemo.set(`${x},${y},1,1`, equal);
         return equal;
       }
-      catch { return false; }
+      catch (error) {
+        if (!(error instanceof KernelError) || error.kind === "deadline") throw error;
+        // No native answer: keep the original comparison path. In
+        // particular exhaustion is not an inequality to memoize.
+      }
     }
     return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
   }

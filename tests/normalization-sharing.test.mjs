@@ -2,7 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalKernel } from "../web/cubical-kernel.mjs";
+import { CubicalKernel, KernelError } from "../web/cubical-kernel.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 
 async function setup(t) {
@@ -97,10 +97,32 @@ test("normal-form comparison preserves outer renamings and recovers from query e
   assert.ok(driver.normalizeBoth(left, right, { left: graph.entry(a).symbol, right: graph.entry(b).symbol, next: null }, null));
   assert.ok(!driver.normalizeBoth(left, right, null, null), "free names differ without the outer renaming");
 
+  const i = graph.dimension(0), j = graph.dimension(1), point = graph.point();
+  const p = graph.variable(graph.extend(graph.path(i, unit, point, point), "p"));
+  const atI = focus(graph.pathApply(p, i)), atJ = focus(graph.pathApply(p, j));
+  assert.ok(driver.normalizeBoth(atI, atJ, null, { left: 0, right: 1, next: null }));
+  assert.ok(!driver.normalizeBoth(atI, atJ, null, null), "free dimensions differ without the outer renaming");
+
   const x = focus(graph.pi(a, unit)), y = focus(graph.pi(b, unit));
   const query = kernel.alphaEqual.bind(kernel);
   kernel.alphaEqual = (left, right) => { kernel.setStepBudget(1n); return query(left, right); };
-  assert.ok(!driver.normalizeBoth(x, y, null, null));
+  assert.ok(driver.normalizeBoth(x, y, null, null), "exhaustion falls back to the existing comparison");
+  assert.ok(driver.alpha(driver.subterm(x), driver.subterm(y)), "no false answer was cached");
   kernel.alphaEqual = query;
-  assert.ok(driver.normalizeBoth(x, y, null, null), "exhaustion did not cache a false answer");
+  assert.ok(driver.normalizeBoth(x, y, null, null));
+});
+
+test("normalization and comparison propagate deadlines and programming errors", async t => {
+  const { driver, kernel } = await setup(t), graph = driver.graph, unit = graph.unit();
+  const left = driver.focus(graph.refl(unit), "other"), right = driver.focus(graph.refl(unit), "other");
+  const reduce = driver.reduce.bind(driver), query = kernel.alphaEqual.bind(kernel);
+  for (const error of [new KernelError("Declaration time limit exceeded.", "deadline"), new TypeError("probe")]) {
+    driver.reduce = () => { throw error; };
+    assert.throws(() => driver.normalizeBoth(left, right, null, null), caught => caught === error);
+    assert.equal(driver.unnormalizable.size, 0, "a deadline is not a deterministic normalization failure");
+    driver.reduce = reduce;
+    kernel.alphaEqual = () => { throw error; };
+    assert.throws(() => driver.normalizeBoth(left, right, null, null), caught => caught === error);
+    kernel.alphaEqual = query;
+  }
 });
