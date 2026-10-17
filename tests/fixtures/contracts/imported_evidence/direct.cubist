@@ -1,0 +1,47 @@
+// The same evidence path with definitions authored locally.
+import hlevels;
+# test(imported_evidence.direct.Bit)
+# expect_axioms([])
+inductive Bit : set U0 {
+  off;
+  yes;
+}
+
+# test(imported_evidence.direct.Bits)
+# expect_axioms([])
+inductive Bits : set U0 {
+  nil;
+  cons(b : Bit, rest : Bits);
+}
+
+# test(imported_evidence.direct.P)
+# expect_axioms([])
+theory P(U < UU0) {
+  M : set U;
+  c : M;
+  def value(m : Bits) : M := match m {
+    nil => c;
+    cons(off, m) => c;
+    cons(yes, m) => c;
+  };
+}
+
+# test(imported_evidence.direct.Child)
+# expect_axioms([])
+theory Child(U < UU0) extends P(c := point) {}
+
+# test(imported_evidence.direct.computation)
+# expect_axioms([])
+def computation(S : Child(U0)) : S.value(cons(yes, nil)) = S.point {
+  rfl;
+}
+
+# test(imported_evidence.direct.N)
+# expect_axioms([])
+initial N : Child(U0);
+
+# test(imported_evidence.direct.generated)
+# expect_axioms([])
+def generated : N.model.value(cons(off, nil)) = N.point {
+  rfl;
+}

@@ -51,23 +51,6 @@ def wrong_operand : operand = succ(zero) { rfl; }`;
   }
 });
 
-test("CB3: nested matches retain model evidence through imported renamed inheritance and shadowing",async t=>{
-  const fixture=`import hlevels;
-inductive Bit : set U0 { off; yes; }
-inductive Bits : set U0 { nil; cons(b : Bit, rest : Bits); }
-theory P(U < UU0) { M : set U; c : M;
-  def value(m : Bits) : M := match m { nil => c; cons(off,m) => c; cons(yes,m) => c; };
-}`;
-  for(const imported of [false,true]) {
-    const {result,get}=await check(t,`${imported?"import fixture;":fixture}
-theory Child(U < UU0) extends P(c := point) {}
-def computation(S : Child(U0)) : S.value(cons(yes,nil)) = S.point { rfl; }
-initial N : Child(U0);
-def generated : N.model.value(cons(off,nil)) = N.point { rfl; }`,{fixture});
-    accepts(result,get,["computation","generated"]);
-  }
-});
-
 test("CB3: dependent motives rebuild evidence for generalized model parameters",async t=>{
   const {result,get}=await check(t,`import hlevels; import nat;
 inductive Bit : set U0 { off; yes; }
