@@ -1,8 +1,9 @@
-// The library's algebraic hierarchy at work: the natural numbers as two
-// commutative monoids, and powers of two a homomorphism from the additive
-// one to the multiplicative one, which computes.
+// The library's algebra lattice: shared inheritance, one group inverse
+// implementing both divisions, computing monoid maps on naturals, and
+// constructive ordered-ring/field interfaces.
 import nat;
 import algebra;
+import ordered_algebra;
 use nat;
 
 computable def two_to(n : Nat) : Nat := match n {
@@ -46,3 +47,191 @@ print(
 // The section lemmas, at a model: inverses in a group are unique.
 // Output: forall U < UU0. forall G : Group(U). forall x : G.M. G.inv(G.inv(x)) = x
 print(typeof(inv_inv));
+
+// The lattice's three paths to Group retain one copy of each ancestor.
+computable def group_division_shared(G : Group(U0)) :
+  G.loop.quasigroup = G.associative_quasigroup.quasigroup {
+  rfl;
+}
+
+computable def group_unit_shared(G : Group(U0)) : G.loop.unital_magma = G.monoid.unital_magma {
+  rfl;
+}
+
+computable def group_association_shared(G : Group(U0)) :
+  G.associative_quasigroup.semigroup = G.monoid.semigroup {
+  rfl;
+}
+
+computable def group_magma_shared(G : Group(U0)) :
+  G.loop.quasigroup.magma = G.monoid.semigroup.magma {
+  rfl;
+}
+
+// Both parent divisions compute from the same inverse, without extra data.
+computable def group_left_division(G : Group(U0), x, y : G.M) :
+  G.loop.quasigroup.left_div(x, y) = G.mul(G.inv(x), y) {
+  rfl;
+}
+
+computable def group_right_division(G : Group(U0), x, y : G.M) :
+  G.associative_quasigroup.quasigroup.right_div(x, y) = G.mul(x, G.inv(y)) {
+  rfl;
+}
+
+computable def comm_ring_addition_shared(A : CommRing(U0)) : A.additive_ = A.ring.additive_ {
+  rfl;
+}
+
+computable def comm_ring_multiplication_shared(A : CommRing(U0)) :
+  A.multiplicative.monoid = A.ring.multiplicative {
+  rfl;
+}
+
+// The traditional positional group constructor still needs only one inverse.
+computable def original_group_constructor(G : Group(U0)) : Group(U0) := Group.make(
+  G.M, G.M_is_set, G.mul, G.mul_assoc, G.one, G.one_mul, G.mul_one, G.inv, G.inv_mul, G.mul_inv
+);
+
+computable def original_comm_ring_constructor(A : CommRing(U0)) : CommRing(U0) := CommRing.make(
+  A.R, A.R_is_set, A.add, A.add_assoc, A.zero, A.zero_add, A.add_zero, A.neg, A.neg_add, A.add_neg,
+  A.add_comm, A.mul, A.mul_assoc, A.one, A.one_mul, A.mul_one, A.mul_comm, A.mul_add
+);
+
+computable def original_field_constructor(A : Field(U0)) : Field(U0) := Field.make(
+  A.R, A.R_is_set, A.add, A.add_assoc, A.zero, A.zero_add, A.add_zero, A.neg, A.neg_add, A.add_neg,
+  A.add_comm, A.mul, A.mul_assoc, A.one, A.one_mul, A.mul_one, A.mul_comm, A.mul_add, A.inverses,
+  A.zero_ne_one
+);
+
+// Homomorphisms explicitly preserve implemented operations in this slice.
+computable def comm_ring_identity(A : CommRing(U0)) : CommRing.Hom(A, A) := CommRing.Hom.make(
+  A, A, map := fun (x : A.R) => x, map_add := fun (x, y : A.R) => refl(A.add(x, y)),
+  map_zero := refl(A.zero), map_neg := fun (x : A.R) => refl(A.neg(x)),
+  map_mul := fun (x, y : A.R) => refl(A.mul(x, y)), map_one := refl(A.one),
+  map_add_left_div := fun (x, y : A.R) => refl(A.add_left_div(x, y)),
+  map_add_right_div := fun (x, y : A.R) => refl(A.add_right_div(x, y))
+);
+
+computable def comm_ring_hom_addition_shared(A, B : CommRing(U0), f : CommRing.Hom(A, B)) :
+  f.additive_ = Ring.Hom.additive_{{U0, U0, A.ring, B.ring}}(f.ring) {
+  rfl;
+}
+
+computable def comm_ring_hom_multiplication_shared(A, B : CommRing(U0), f : CommRing.Hom(A, B)) :
+  CommMonoid.Hom.monoid{{U0, U0, A.multiplicative, B.multiplicative}}(f.multiplicative) = Ring.Hom.multiplicative{{
+    U0, U0, A.ring, B.ring
+  }}(f.ring) {
+  rfl;
+}
+
+// Ordered rings need no multiplicative commutativity. Both routes from
+// an ordered commutative ring forget to exactly the same ring.
+computable def ordered_ring_shared(A : OrderedCommRing(U0)) : A.ordered_ring.ring = A.comm_ring.ring {
+  rfl;
+}
+
+computable def ordered_field_shared(F : OrderedField(U0)) :
+  F.ordered_comm_ring.ordered_ring.ring = F.ordered_comm_ring.comm_ring.ring {
+  rfl;
+}
+
+computable def ordered_map(
+  A, B : OrderedRing(U0), f : OrderedRing.Hom(A, B), x, y : A.R, p : A.lt(x, y)
+) :
+  B.lt(f.map_R(x), f.map_R(y)) := f.map_lt(x, y, p);
+
+computable def ordered_ring_hom_shared(A, B : OrderedCommRing(U0), f : OrderedCommRing.Hom(A, B)) :
+  OrderedRing.Hom.ring{{U0, U0, A.ordered_ring, B.ordered_ring}}(f.ordered_ring) = CommRing.Hom.ring{{
+    U0, U0, A.comm_ring, B.comm_ring
+  }}(f.comm_ring) {
+  rfl;
+}
+
+// Both factor-reflection laws are available without commutativity.
+computable def ordered_right_factor_apart(
+  A : OrderedRing(U0), x, y : A.R, p : A.lt(A.zero, A.mul(x, y))
+) :
+  Trunc(U0, A.lt(A.zero, y) or A.lt(y, A.zero)) := A.mul_pos_apart_right(x, y, p);
+
+// The multiplicative reflection law supplies constructive positive-factor
+// cancellation. In particular, a positive element's inverse is positive.
+section {{U < UU0}}(A : OrderedCommRing(U)) {
+  computable def negative_of_positive(x : R, p : zero < x) : neg(x) < zero {
+    let shifted := add_lt_add_right(zero, x, neg(x), p);
+    exact transport (transport shifted along zero_add(neg(x)) in (fun (w : R) => lt(w, x + neg(x)))) along add_neg(
+      x
+    ) in (fun (w : R) => lt(neg(x), w));
+  }
+
+  computable def positive_of_negative(x : R, p : x < zero) : zero < neg(x) {
+    let shifted := add_lt_add_right(x, zero, neg(x), p);
+    exact transport (transport shifted along add_neg(x) in (fun (w : R) => lt(w, zero + neg(x)))) along zero_add(
+      neg(x)
+    ) in (fun (w : R) => lt(zero, w));
+  }
+
+  computable def positive_factor(x, y : R, product : zero < x * y, factor : zero < y) :
+    zero < x := mere_eliminate(
+      U, U, (zero < x) or (x < zero), zero < x, lt_is_prop(zero, x),
+      fun (sign : (zero < x) or (x < zero)) => match sign return zero < x {
+        left positive => positive;
+        right negative => absurd(
+          lt_irrefl(
+            zero,
+            lt_trans(
+              zero, neg(x * y), zero,
+              transport mul_pos(neg(x), y, positive_of_negative(x, negative), factor) along neg_mul(
+                A.comm_ring, x, y
+              ) in (fun (w : R) => lt(zero, w)), negative_of_positive(x * y, product)
+            )
+          )
+        );
+      }, mul_pos_apart_left(x, y, product)
+    );
+}
+
+computable def ordered_inverse_positive(
+  F : OrderedField(U0), x : F.R, apart : Trunc(U0, F.lt(F.zero, x) or F.lt(x, F.zero)),
+  positive : F.lt(F.zero, x)
+) :
+  F.lt(F.zero, ordered_inv(F, x, apart)) {
+  use F;
+  let inverse_product : ordered_inv(F, x, apart) * x = one :=
+    trans(mul_comm(ordered_inv(F, x, apart), x), ordered_mul_inv(F, x, apart));
+  exact positive_factor(
+    F.ordered_comm_ring, ordered_inv(F, x, apart), x,
+    transport zero_lt_one along sym(inverse_product) in (fun (w : R) => lt(zero, w)), positive
+  );
+}
+
+// Multiplicative commutativity must be requested via OrderedCommRing.
+// Error: E815: A is a model of OrderedRing, which has no field mul_comm: it has R, R_is_set, add,
+//   add_assoc, zero, zero_add, add_zero, neg, neg_add, add_neg, add_comm, mul, mul_assoc, one,
+//   one_mul, mul_one, mul_add, distrib_right, lt, lt_is_prop, lt_irrefl, lt_trans, lt_cotrans,
+//   lt_tight, zero_lt_one, add_lt_add_right, mul_pos, mul_pos_apart_left, mul_pos_apart_right, and
+//   the parents ring.
+def unavailable_commutativity(A : OrderedRing(U0), x, y : A.R) :
+  A.mul(x, y) = A.mul(y, x) := A.mul_comm(x, y);
+
+// The weaker lattice nodes must not silently acquire stronger laws.
+// Error: E815: Q is a model of Quasigroup, which has no field mul_assoc: it has M, M_is_set, mul,
+//   left_div, right_div, mul_left_div, left_div_mul, right_div_mul, mul_right_div, and the parents
+//   magma.
+def unavailable_quasigroup_associativity(Q : Quasigroup(U0), x, y, z : Q.M) :
+  Q.mul(Q.mul(x, y), z) = Q.mul(x, Q.mul(y, z)) := Q.mul_assoc(x, y, z);
+
+// Error: E815: L is a model of Loop, which has no field mul_assoc: it has M, M_is_set, mul,
+//   left_div, right_div, mul_left_div, left_div_mul, right_div_mul, mul_right_div, one, one_mul,
+//   mul_one, and the parents quasigroup, unital_magma.
+def unavailable_loop_associativity(L : Loop(U0), x, y, z : L.M) :
+  L.mul(L.mul(x, y), z) = L.mul(x, L.mul(y, z)) := L.mul_assoc(x, y, z);
+
+// Error: E815: A is a model of UnitalMagma, which has no field mul_assoc: it has M, M_is_set, mul,
+//   one, one_mul, mul_one, and the parents magma.
+def unavailable_unital_associativity(A : UnitalMagma(U0), x, y, z : A.M) :
+  A.mul(A.mul(x, y), z) = A.mul(x, A.mul(y, z)) := A.mul_assoc(x, y, z);
+
+// Error: E815: A is a model of Monoid, which has no field left_div: it has M, M_is_set, mul,
+//   mul_assoc, one, one_mul, mul_one, and the parents semigroup, unital_magma.
+def unavailable_monoid_division(A : Monoid(U0), x, y : A.M) : A.M := A.left_div(x, y);

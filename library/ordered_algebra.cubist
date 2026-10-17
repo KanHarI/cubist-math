@@ -1,0 +1,66 @@
+import algebra;
+
+// Ordered rings, commutative rings and fields, without completeness or real-number
+// constructions. The strict order is proposition-valued, cotransitive and
+// tight. Cotransitivity supplies mere disjunction, not decidable trichotomy.
+// Non-strict order is the absence of the reverse strict inequality.
+theory OrderedRing(U < UU0) extends Ring {
+  lt(x, y : R) : prop U notation x < y;
+  def le(x, y : R) : U := lt(y, x) -> Void notation x <= y;
+  law lt_irrefl(x : R) : x < x -> Void;
+  law lt_trans(x, y, z : R) : x < y -> y < z -> x < z;
+  law lt_cotrans(x, y, z : R) : x < y -> Trunc(U, (x < z) or (z < y));
+  law lt_tight(x, y : R) : (lt(y, x) -> Void) -> (lt(x, y) -> Void) -> x = y;
+  law zero_lt_one : zero < one;
+  law add_lt_add_right(x, y, z : R) : x < y -> x + z < y + z;
+  law mul_pos(x, y : R) : zero < x -> zero < y -> zero < x * y;
+  // Constructive reflection: a positive product makes each factor apart
+  // from zero. Without commutativity these are separate requirements.
+  law mul_pos_apart_left(x, y : R) : zero < x * y -> Trunc(U, (zero < x) or (x < zero));
+  law mul_pos_apart_right(x, y : R) : zero < x * y -> Trunc(U, (zero < y) or (y < zero));
+}
+
+// Both parents share Ring, including its carrier, operations and laws.
+theory OrderedCommRing(U < UU0) extends OrderedRing, CommRing {
+  def mul_pos_apart_right(x, y : R) : zero < x * y
+  -> Trunc(U, (zero < y) or (y < zero)) := fun (product : zero < x * y) => mul_pos_apart_left(
+    y, x, transport product along mul_comm(x, y) in (fun (w : R) => lt(zero, w))
+  );
+}
+
+// Constructive inversion needs apartness from zero, rather than its mere
+// inequality. No order decision procedure or completeness is assumed.
+theory OrderedField(U < UU0) extends OrderedCommRing {
+  law inverses(x : R, apart : Trunc(U, (zero < x) or (x < zero))) : Trunc(
+    U, exists y : R. x * y = one
+  );
+}
+
+section {{U < UU0}}(A : OrderedRing(U)) {
+  computable def order_le_refl(x : R) : x <= x := lt_irrefl(x);
+
+  computable def order_le_antisymm(x, y : R, xy : x <= y, yx : y <= x) :
+    x = y := lt_tight(x, y, xy, yx);
+
+  computable def order_zero_ne_one : zero = one -> Void {
+    intro same;
+    exact lt_irrefl(zero, transport zero_lt_one along sym(same) in (fun (x : R) => lt(zero, x)));
+  }
+}
+
+// The inverse is unique, so the truncated law supplies it without choice.
+section {{U < UU0}}(F : OrderedField(U)) {
+  computable def ordered_inverse_(x : R, apart : Trunc(U, (zero < x) or (x < zero))) :
+    exists y : R.
+    x * y = one := mere_eliminate(
+      U, U, exists y : R. x * y = one, exists y : R. x * y = one,
+      inverse_is_prop(F.ordered_comm_ring.comm_ring, x), fun (w : exists y : R. x * y = one) => w,
+      inverses(x, apart)
+    );
+
+  computable def ordered_inv(x : R, apart : Trunc(U, (zero < x) or (x < zero))) :
+    R := ordered_inverse_(x, apart).1;
+
+  computable def ordered_mul_inv(x : R, apart : Trunc(U, (zero < x) or (x < zero))) :
+    x * ordered_inv(x, apart) = one := ordered_inverse_(x, apart).2;
+}

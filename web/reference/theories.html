@@ -509,12 +509,21 @@ def length{{A : U0}}(w : W(A)) : Nat := W.fold(A, nat_additive.monoid, fun (a : 
 print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
 
 def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);</code></pre>
-            <p>The strategy refuses <code>Field</code> because its inverse law is truncated rather than equational. This is a limitation of the strategy, not a proof that an initial model does not exist. Untruncated carriers are also unsupported; the circle remains an ordinary <code>inductive</code> declaration.</p>
+            <p>The library's <code>Group</code>, <code>AbelianGroup</code>, <code>Ring</code>, <code>CommRing</code> and their extensions currently refuse <code>initial</code>/<code>free</code> with E881: their inherited division implementations need fold preservation proofs that the strategy does not yet generate. This temporarily removes support for earlier group and commutative-ring presentations. The monoid examples above remain supported.</p>
+            <p>The strategy refuses <code>Field</code> first because it inherits the additive group's implemented divisions and division laws, whose fold proofs are not generated yet (E881). It also has laws outside the equational fragment. This is a limitation of the strategy, not a proof that an initial model does not exist. Untruncated carriers are also unsupported; the circle remains an ordinary <code>inductive</code> declaration.</p>
             <p>The generator type must fit the carrier's universe. E870 marks the expression after <code>on</code> when it does not: choose a larger carrier universe or a smaller generator type.</p>
             <pre><code data-check="reject">import hlevels;
 import algebra;
 
-initial F : Field(U0);  // Error: The law inverses is not an equation between operation terms: the equational strategy does not support this law.</code></pre>
+free FG(A : U0) : Group(U0) on A;  // Error: The equational strategy does not yet generate folds for Group's implemented inherited members.
+initial F : Field(U0);  // Error: The equational strategy does not yet generate folds for Field's implemented inherited members.
+
+// A truncated law also fails without any implemented members.
+theory Inhabited(U &lt; UU0) {
+  M : set U;
+  law nonempty : Trunc(U, M);
+}
+initial I : Inhabited(U0);  // Error: The law nonempty is not an equation between operation terms: the equational strategy does not support this law.</code></pre>
           </section>
           <section id="library-algebra">
             <h2>The library's algebra</h2>
@@ -522,17 +531,27 @@ initial F : Field(U0);  // Error: The law inverses is not an equation between op
             <div class="table-scroll"><table>
               <thead><tr><th>Theory</th><th>Extends</th><th>Adds</th></tr></thead>
               <tbody>
-                <tr><td><code>Semigroup</code></td><td></td><td><code>M : set U</code>, <code>mul</code> written <code>x * y</code>, <code>mul_assoc</code></td></tr>
-                <tr><td><code>Monoid</code></td><td><code>Semigroup</code></td><td><code>one</code>, <code>one_mul</code>, <code>mul_one</code></td></tr>
+                <tr><td><code>Magma</code></td><td></td><td><code>M : set U</code>, <code>mul</code> written <code>x * y</code></td></tr>
+                <tr><td><code>UnitalMagma</code></td><td><code>Magma</code></td><td><code>one</code>, <code>one_mul</code>, <code>mul_one</code></td></tr>
+                <tr><td><code>Semigroup</code></td><td><code>Magma</code></td><td><code>mul_assoc</code></td></tr>
+                <tr><td><code>Quasigroup</code></td><td><code>Magma</code></td><td><code>left_div</code> and <code>right_div</code>, with both cancellation laws for each</td></tr>
+                <tr><td><code>Loop</code></td><td><code>Quasigroup</code>, <code>UnitalMagma</code></td><td>Nothing: division and a unit on the shared magma</td></tr>
+                <tr><td><code>AssociativeQuasigroup</code></td><td><code>Quasigroup</code>, <code>Semigroup</code></td><td>Nothing: division and associativity on the shared magma</td></tr>
+                <tr><td><code>Monoid</code></td><td><code>Semigroup</code>, <code>UnitalMagma</code></td><td>Nothing: associativity and a unit on the shared magma</td></tr>
                 <tr><td><code>CommMonoid</code></td><td><code>Monoid</code></td><td><code>mul_comm</code></td></tr>
-                <tr><td><code>Group</code></td><td><code>Monoid</code></td><td><code>inv</code>, <code>inv_mul</code>, <code>mul_inv</code></td></tr>
+                <tr><td><code>Group</code></td><td><code>Monoid</code>, <code>Loop</code>, <code>AssociativeQuasigroup</code></td><td><code>inv</code>, <code>inv_mul</code>, <code>mul_inv</code>; implements both divisions and their laws</td></tr>
                 <tr><td><code>AbelianGroup</code></td><td><code>Group</code>, <code>CommMonoid</code></td><td>Nothing: the two parents share their monoid</td></tr>
-                <tr><td><code>CommRing</code></td><td><code>additive : AbelianGroup</code>, renamed to <code>R</code>, <code>add</code> written <code>x + y</code>, <code>zero</code>, <code>neg</code> written <code>-x</code>, <code>add_assoc</code>, <code>zero_add</code>, <code>add_zero</code>, <code>neg_add</code>, <code>add_neg</code>, <code>add_comm</code>; and <code>multiplicative : CommMonoid</code> on <code>R</code></td><td><code>mul_add</code>: <code>x * (y + z) = x * y + x * z</code>; derived, <code>sub</code>, written <code>x - y</code></td></tr>
+                <tr><td><code>Ring</code></td><td><code>additive_ : AbelianGroup</code>, renamed for addition on <code>R</code>; <code>multiplicative : Monoid</code> on the same carrier</td><td><code>mul_add</code> and <code>distrib_right</code>, the two distributive laws; derived subtraction and natural numerals</td></tr>
+                <tr><td><code>CommRing</code></td><td><code>Ring</code> and <code>multiplicative : CommMonoid</code>, with the shared additive group also accessible as <code>additive_</code></td><td>Commutativity of multiplication; implements right distributivity from it and <code>mul_add</code></td></tr>
                 <tr><td><code>Field</code></td><td><code>CommRing</code></td><td><code>inverses</code>, <code>Trunc(U, exists y : R. x * y = one)</code> for <code>x</code> other than <code>zero</code>, and <code>zero_ne_one</code>: laws, so being a field is a property of a ring, and a field's homomorphisms are its ring's</td></tr>
               </tbody>
             </table></div>
+            <p><code>Group.make</code> takes one inverse operation and its left and right inverse laws. Checked definitions implement <code>left_div(x, y) = inv(x) * y</code>, <code>right_div(x, y) = x * inv(y)</code>, and all four division laws. Models supply no separate division operations or proofs. Every path through the lattice shares these definitions, the multiplication and the unit. <code>group_from_associative_loop</code> constructs a group from a loop and associativity; <code>inv_as_left_div</code> and <code>inv_as_right_div</code> identify its inverse with division of the unit.</p>
+            <p>The additive ring fields are <code>add</code>, <code>add_assoc</code>, <code>zero</code>, <code>zero_add</code>, <code>add_zero</code>, <code>neg</code>, <code>neg_add</code>, <code>add_neg</code> and <code>add_comm</code>. Inherited <code>add_left_div(x, y)</code> computes to <code>-x + y</code>, and <code>add_right_div(x, y)</code> to <code>x + -y</code>, also named <code>sub(x, y)</code>. Their equations are <code>add_neg_cancel_left</code>, <code>neg_add_cancel_left</code>, <code>neg_add_cancel_right</code> and <code>add_neg_cancel_right</code>. The division operations and equations are derived, so model constructors do not request them. Homomorphism constructors still request preservation proofs: <code>map_left_div</code> and <code>map_right_div</code> for groups, and <code>map_add_left_div</code> and <code>map_add_right_div</code> for rings. This slice does not automatically derive these proofs from multiplication and inverse preservation.</p>
+            <p><code>ordered_algebra</code> adds <code>OrderedRing</code> over <code>Ring</code>, <code>OrderedCommRing</code> over both <code>OrderedRing</code> and <code>CommRing</code>, and <code>OrderedField</code> over <code>OrderedCommRing</code>. Their proposition-valued strict order is cotransitive and tight, preserves addition and positive products, and reflects a positive product to each factor being apart from zero. Non-strict order negates the reverse strict inequality. These interfaces assume neither decidable trichotomy nor completeness. <code>OrderedField.inverses</code> requires apartness from zero, <code>Trunc(U, (zero &lt; x) or (x &lt; zero))</code>; <code>ordered_inv</code> extracts the unique inverse and <code>ordered_mul_inv</code> proves its product law. Mere inequality with zero need not supply apartness constructively, so this interface does not inherit <code>Field</code>'s stronger inverse law. <code>OrderedCommRing</code> derives right-factor apartness from the left-factor law by commutativity.</p>
             <p>A field's inverse is partial: <code>inv(F, x, nonzero)</code> takes evidence that <code>x</code> is not <code>zero</code>, with <code>mul_inv(F, x, nonzero) : x * inv(F, x, nonzero) = one</code>. It is derived by unique choice: in a commutative ring an element has at most one inverse (<code>inverse_unique</code>), so having one is a proposition (<code>inverse_is_prop</code>), into which the truncated law eliminates. A model that supplies the law as <code>merely</code> of an inverse, as the rationals do, computes its inverse. The module's sections prove general lemmas, which take a model first:</p>
             <ul>
+              <li>in any quasigroup, <code>quasigroup_left_cancel</code> and <code>quasigroup_right_cancel</code>;</li>
               <li>in any commutative monoid, <code>mul_left_comm</code>, <code>mul_right_comm</code> and <code>mul_interchange</code>, <code>(w * x) * (y * z) = (w * y) * (x * z)</code>;</li>
               <li>in any group, <code>left_cancel</code>, <code>right_cancel</code>, <code>inv_unique</code>, <code>inv_inv</code> and <code>inv_one</code>;</li>
               <li>in any commutative ring, <code>mul_zero</code>, <code>zero_mul</code>, <code>add_mul</code> and <code>neg_mul</code>, <code>neg(x) * y = neg(x * y)</code>, and <code>inverse_unique</code> and <code>inverse_is_prop</code>;</li>

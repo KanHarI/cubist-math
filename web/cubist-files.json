@@ -1500,7 +1500,7 @@
   },
   {
    "path": "cubist-tests/algebra_models.cubist",
-   "summary": "The library's `algebra` at work: powers of two a homomorphism from the natural numbers' additive monoid to their multiplicative one, evaluated, with its monoid homomorphism and a composite, and a group lemma's statement outside its section."
+   "summary": "The algebra lattice's shared parent views and divisions computed from one group inverse; computing monoid maps on naturals; ordered ring/field coherence and constructive positivity; refusal of laws absent from weaker structures."
   },
   {
    "path": "cubist-tests/algebraic_extensions_invalid_embedding_claims.cubist",
@@ -2388,7 +2388,7 @@
   },
   {
    "path": "library/algebra.cubist",
-   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `CommRing` (an abelian group written `+`, with `zero` and `neg`, and a commutative monoid on one set, with distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
+   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
    "path": "library/classical_axioms.cubist",
@@ -2425,6 +2425,10 @@
   {
    "path": "library/nat.cubist",
    "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity; the predecessor, the injectivity of `succ`, that 0 is no successor, cancellation of addition and of multiplication by a successor, and trichotomy. Numerals and `+`, `*`, `<` and `<=` need it."
+  },
+  {
+   "path": "library/ordered_algebra.cubist",
+   "summary": "`OrderedRing` extends `Ring` with a proposition-valued, cotransitive, tight strict order compatible with addition and positive multiplication, including constructive reflection of positive products to apartness of each factor from zero. `OrderedCommRing` extends both `OrderedRing` and `CommRing`; `OrderedField` extends `OrderedCommRing` with inverses of elements apart from zero. Non-strict order is the negation of reverse strict order. `ordered_inv` extracts the unique inverse from its truncated law. Apartness is a truncated positive-or-negative sign, stronger constructively than mere inequality with zero. No decidable order or completeness is assumed; ordered integer/rational models are not yet provided."
   },
   {
    "path": "library/propositions.cubist",
