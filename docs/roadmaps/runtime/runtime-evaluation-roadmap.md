@@ -426,7 +426,8 @@ induction. Before the authorized default switch, move the unary declaration
 and its implementation into `unat`, update the frontend's current
 `nat__Nat` encoding/inspection hooks, separate lexical data from the public
 natural-number facade as needed, and migrate unary clients to explicit
-imports. Preserve their induction API and recheck the archive. The switch
+imports. Update numeral-limit diagnostic hints to the new library notation.
+Preserve their induction API and recheck the archive. The switch
 also requires decimal numeral input and decimal/binary printing that operate
 directly on binary magnitudes, without an intermediate unary numeral. It
 waits for NUM1's semiring/transport laws, correctness of comparison,
@@ -568,16 +569,17 @@ integer-to-rational embeddings preserve the relevant operations. These
 are embeddings within the new numerical hierarchy.
 
 Make ordinary numerical APIs, integer magnitudes, rational components and
-future number-system constructions use `BNat` by default. Implement
-decimal/binary literal parsing, printing, numerical casts and numeral
-interpretation directly over binary values. In particular, a large numeral
+future number-system constructions use `BNat` by default. Extend the direct
+decimal/binary input and printing established for the natural-number
+migration above to integers and rationals, including numerical casts and
+numeral interpretation over binary values. In particular, a large numeral
 must not first become a unary `Nat` merely to enter a binary-backed ring.
 Adapt the current numeral-rule and `CommRing.of_nat` paths with a binary
 entry point and checked agreement; use repeated doubling/bit operations
 where appropriate. Retain explicit `UNat` conversions for compatibility
-and structural arguments. Specify the `Nat` name and notation migration
-before switching aliases; the binary storage of `Z` and `Q`
-does not depend on that spelling decision.
+and structural arguments. Carry the earlier `Nat` name and notation
+migration through these APIs; the binary storage of `Z` and `Q` does not
+depend on that spelling decision.
 
 **Acceptance:** the default `Z` representatives contain `BNat` components,
 and default `Q` fractions contain the resulting `Z`; the ring/domain/field

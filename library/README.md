@@ -24,8 +24,8 @@ follows.
 Public `Nat` remains unary during the binary migration. Import `unat` for
 the explicit unary name, `bnat` for binary arithmetic, or `bnat_notation`
 and `use bnat;` for binary literals such as `0b101`. Conversion between the
-two carriers is explicit and requires `bnat_unary`. Their inverse laws are in `bnat_unary`;
-semiring agreement and numerical strong recursion are the next NUM1 work.
+two carriers is explicit: `bnat_unary` supplies the maps and their inverse
+laws. Semiring agreement and numerical strong recursion remain NUM1 work.
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |

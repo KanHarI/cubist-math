@@ -15,7 +15,7 @@ computable def bnat_literal(s : Lexeme) : Parsed(U0, BNat) := match s {
     cons(digit(zero), cons(lower(succ(zero)), cons(g, rest))) => bnat_digits(
       cons(g, rest), b_zero, succ(succ(zero))
     );
-    cons(digit(zero), cons(lower(succ(zero)), nil)) => error(succ(succ(zero)));
+    cons(digit(zero), cons(lower(succ(zero)), nil)) => error(succ(zero));
     cons(digit(zero), nil) => error(zero);
     cons(digit(zero), _) => error(succ(zero));
     _ => error(zero);

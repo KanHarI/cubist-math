@@ -89,7 +89,7 @@ def bnat_wide_product :
 }
 
 // Refused: this notation requires at least one binary digit after 0b.
-// Error: E905: bnat's literal rule refuses 0b at its character 3.
+// Error: E905: bnat's literal rule refuses 0b at its character 2.
 def missing_binary_digits := 0b;
 
 // Refused: 2 is not a binary digit, at the sixth character.
