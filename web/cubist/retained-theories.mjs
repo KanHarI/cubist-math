@@ -163,6 +163,24 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
       const [entry]=remaining.splice(index,1);ordered.push(entry);done.add(entry.id);
     }
     fields.splice(0,fields.length,...ordered);
+    // An inherited helper, or an earlier implementation, may call a member
+    // that used to be a field. Its derived projection must publish first.
+    // Structural self-recursion stays within its own publication group.
+    const helperEntries=new Map(derived.map(entry=>[entry.id,entry])),helperOrder=[],visiting=[];
+    const published=new Set();
+    const orderHelper=entry=>{
+      if(published.has(entry.id))return;
+      if(visiting.includes(entry.id))throw located(Error(`Cycle among nonrecursive helpers: ${visiting.slice(visiting.indexOf(entry.id))
+        .concat(entry.id).map(id=>helperEntries.get(id).label).join(" -> ")}`),entry.binding.origin);
+      visiting.push(entry.id);
+      for(const use of helpers.analysis.references(entry.syntax,{conditional:true})) {
+        const dependency=use.kind==="binding"?helperEntries.get(use.id):null;
+        if(dependency&&!(dependency.id===entry.id&&entry.recursive))orderHelper(dependency);
+      }
+      visiting.pop();published.add(entry.id);helperOrder.push(entry);
+    };
+    for(const entry of derived)orderHelper(entry);
+    derived.splice(0,derived.length,...helperOrder);
   }
   for(const parent of parents)if(byName.has(parent.label))
     throw located(Error(`${T}'s parent ${parent.theory} is labelled ${parent.label}, which names a field of ${T} too: label it apart, as in base : ${parent.theory}.`),theory.name);

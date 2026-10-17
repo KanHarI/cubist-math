@@ -55,6 +55,58 @@ test("implemented operations keep inherited laws as constructor obligations in d
   `);
 });
 
+test("inherited helpers and earlier implementations publish after their dependencies",async t=>{
+  const {result,get}=await checked(t,`import nat; import hlevels; use nat;
+    theory Base(U < UU0) {
+      M : set U;
+      op(x : M) : M;
+      twice_op(x : M) : M;
+      law self(x : M) : op(x) = op(x);
+      def twice(x : M) : M := op(op(x));
+      def repeat(x : M, n : Nat) : M := match n {
+        zero => x;
+        succ(k) => op(repeat(x, k));
+      };
+    }
+    theory Implemented(U < UU0) extends Base {
+      step(x : M) : M;
+      def self(x : M) : op(x) = op(x) := refl(op(x));
+      def twice_op(x : M) : M := op(op(x));
+      def own(x : M) : M := twice_op(x);
+      def op(x : M) : M := step(x);
+    }
+    def sample : Implemented(U0) := Implemented.make(M := Nat, M_is_set := nat_is_set, step := succ);
+    print(evaluate(sample.twice(3)));
+    print(evaluate(sample.repeat(3, 2)));
+    print(evaluate(sample.own(3)));
+    def self_proof(x : Nat) : succ(x) = succ(x) := sample.self(x);
+    def identity := Implemented.Hom.id(sample);
+    def composed := Implemented.Hom.compose(identity, identity);
+    def preserved(x : Nat) : composed.base.map(sample.twice_op(x)) = sample.twice_op(composed.base.map(x)) := composed.base.map_twice_op(x);
+    def iso := Implemented.Iso.compose(Implemented.Iso.id(sample), Implemented.Iso.id(sample));
+    def unchanged : iso.to.base.map(3) = 3 { rfl; }
+  `);
+  assert.deepEqual(result.prints.map(print=>print.text),["5","5","5"]);
+  for(const name of ["Implemented.twice","Implemented.repeat","Implemented.self","Implemented.twice_op","Implemented.own","Implemented.op","Implemented.Hom","Implemented.Iso","preserved"])
+    assert.equal(get(name).verified,true,name);
+});
+
+test("implementations cannot create mutual cycles through recursive parent helpers",async t=>{
+  const {get,program}=await checkProgram(t,`import nat; import hlevels; use nat;
+    theory Base(U < UU0) {
+      M : set U;
+      op(x : M) : M;
+      def repeat(x : M, n : Nat) : M := match n { zero => op(x); succ(k) => repeat(x, k); };
+    }
+    theory Bad(U < UU0) extends Base { def op(x : M) : M := repeat(x, 0); }
+    def healthy : Unit := tt;
+  `,{module});
+  assert.equal(get("Bad").verified,false);
+  assert.equal(get("Bad").code,"E878");
+  assert.ok(!Object.values(program.symbols).some(symbol=>symbol.name==="Bad.make"));
+  assert.equal(get("healthy").verified,true);
+});
+
 test("one group inverse implements both quasigroup divisions and all their laws",async t=>{
   await checked(t,await readFile(new URL("fixtures/theory-group-lattice.cubist",import.meta.url),"utf8"));
 });
