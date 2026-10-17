@@ -1535,6 +1535,10 @@
    "summary": "For `tests/automatic-clauses.test.mjs`: the generated set squash (E4) of the library's quotients, explicit obligations, missing h-level evidence, automatic clauses in the match statement, trailing proofs, ambiguous whole-clause proofs and hlevel hints."
   },
   {
+   "path": "cubist-tests/binary_equality.cubist",
+   "summary": "Computed/path equality agreement, bitwise decisions on large values, and a forced 64-bit model-law certificate that avoids unary proof evaluation."
+  },
+  {
    "path": "cubist-tests/binary_natural_foundation.cubist",
    "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, and arithmetic beyond 64 bits."
   },
@@ -2407,8 +2411,16 @@
    "summary": "Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits."
   },
   {
+   "path": "library/bnat_equality.cubist",
+   "summary": "Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion."
+  },
+  {
    "path": "library/bnat_notation.cubist",
    "summary": "Binary literal parsing and the `bnat` notation for `0b` literals, arithmetic and order. Parsing builds the binary magnitude directly; unary offsets count characters only."
+  },
+  {
+   "path": "library/bnat_order.cubist",
+   "summary": "Proofs connecting the high-bit binary comparison and its computed non-strict/strict predicates to unary numerical order; both predicates are propositions."
   },
   {
    "path": "library/bnat_semiring.cubist",
@@ -2420,7 +2432,7 @@
   },
   {
    "path": "library/bnat_unary.cubist",
-   "summary": "Explicit unary/binary conversions and their round trips, compatibility with successor and doubling, and that `BNat` is a set."
+   "summary": "Explicit unary/binary conversions and their round trips, and compatibility with successor and doubling."
   },
   {
    "path": "library/bnat.cubist",

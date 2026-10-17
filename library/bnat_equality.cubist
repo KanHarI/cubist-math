@@ -1,0 +1,86 @@
+import bnat;
+import hlevels;
+
+// The equality predicate is the core observation of bnat_compare.
+// All proofs below follow the bits.
+computable def bnat_even_odd_not_equal(
+  order : BOrdering, e : BOrderingEqual(bnat_even_odd_order(order))
+) :
+  Void := match order {
+    b_less => e;
+    b_equal => e;
+    b_greater => e;
+  };
+
+computable def bnat_odd_even_not_equal(
+  order : BOrdering, e : BOrderingEqual(bnat_odd_even_order(order))
+) :
+  Void := match order {
+    b_less => e;
+    b_equal => e;
+    b_greater => e;
+  };
+
+computable def bpositive_equal_refl(p : BPositive) :
+  BOrderingEqual(bpositive_compare(p, p)) := match p {
+    bp_one => tt;
+    bp_even(q) => bpositive_equal_refl(q);
+    bp_odd(q) => bpositive_equal_refl(q);
+  };
+
+// An equal comparison gives a path. Different bit constructors cannot
+// compare equal, while matching constructors reduce to their children.
+computable def bpositive_equal_path(a, b : BPositive, e : BOrderingEqual(bpositive_compare(a, b))) :
+  a = b := match a {
+    bp_one => match b {
+      bp_one => refl(bp_one);
+      bp_even(q) => absurd(e);
+      bp_odd(q) => absurd(e);
+    };
+    bp_even(x) => match b {
+      bp_one => absurd(e);
+      bp_even(y) => cong(bp_even, bpositive_equal_path(x, y, e));
+      bp_odd(y) => absurd(bnat_even_odd_not_equal(bpositive_compare(x, y), e));
+    };
+    bp_odd(x) => match b {
+      bp_one => absurd(e);
+      bp_even(y) => absurd(bnat_odd_even_not_equal(bpositive_compare(x, y), e));
+      bp_odd(y) => cong(bp_odd, bpositive_equal_path(x, y, e));
+    };
+  };
+
+computable def bnat_equal_refl(n : BNat) : bnat_equal(n, n) := match n {
+    b_zero => tt;
+    b_positive(p) => bpositive_equal_refl(p);
+  };
+
+computable def bnat_equal_path(a, b : BNat, e : bnat_equal(a, b)) : a = b := match a, b {
+    b_zero, b_zero => refl(b_zero);
+    b_zero, b_positive(q) => absurd(e);
+    b_positive(p), b_zero => absurd(e);
+    b_positive(p), b_positive(q) => cong(b_positive, bpositive_equal_path(p, q, e));
+  };
+
+computable def bnat_path_equal(a, b : BNat, p : a = b) :
+  bnat_equal(a, b) := comp(fun (i : Interval) => bnat_equal(a, p @ i), bnat_equal_refl(a));
+
+computable def bordering_equal_decide(order : BOrdering) :
+  Decidable(U0, BOrderingEqual(order)) := match order {
+    b_less => right(fun (v : Void) => v);
+    b_equal => left(tt);
+    b_greater => right(fun (v : Void) => v);
+  };
+
+// The decision and its certificate use the same bitwise comparison. A
+// negative result refutes equality because paths preserve its predicate.
+computable def bnat_decide(a, b : BNat) :
+  Decidable(U0, a = b) := match bordering_equal_decide(bnat_compare(a, b)) return Decidable(
+    U0, a = b
+  ) {
+    left e => left(bnat_equal_path(a, b, e));
+    right no => right(fun (p : a = b) => no(bnat_path_equal(a, b, p)));
+  };
+
+// Setness uses only the bitwise decision. Quotient computations can force
+// this proof without building a unary value of the represented magnitude.
+computable def bnat_is_set : IsSet(U0, BNat) := hedberg(U0, BNat, bnat_decide);

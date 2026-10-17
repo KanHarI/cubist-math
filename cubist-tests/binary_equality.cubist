@@ -1,0 +1,51 @@
+import bnat_equality;
+import bnat_semiring;
+import bnat_notation;
+use bnat;
+
+// Computed equality and paths imply each other for arbitrary binary values.
+def computed_to_path(a, b : BNat, e : bnat_equal(a, b)) : a = b := bnat_equal_path(a, b, e);
+
+def path_to_computed(a, b : BNat, p : a = b) : bnat_equal(a, b) := bnat_path_equal(a, b, p);
+
+def binary_set : IsSet(U0, BNat) := bnat_is_set;
+
+computable def decided_equal(a, b : BNat) : U0 := match bnat_decide(a, b) return U0 {
+    left same => Unit;
+    right no => Void;
+  };
+
+def unequal_zero : decided_equal(0b0, 0b1) = Void {
+  rfl;
+}
+
+def unequal_bits : decided_equal(0b101, 0b110) = Void {
+  rfl;
+}
+
+def wide_equal :
+  decided_equal(
+    0b1111111111111111111111111111111111111111111111111111111111111111,
+    0b1111111111111111111111111111111111111111111111111111111111111111
+  ) = Unit {
+  rfl;
+}
+
+def wide_unequal :
+  decided_equal(
+    0b1111111111111111111111111111111111111111111111111111111111111111,
+    0b1111111111111111111111111111111111111111111111111111111111111110
+  ) = Void {
+  rfl;
+}
+
+// This forces the model law's certificate on large binary magnitudes.
+// The shared injection proof returns the bitwise path without evaluating
+// its unary algebra argument.
+def wide_model_commutativity :
+  bnat_semiring.add_comm(
+    0b1111111111111111111111111111111111111111111111111111111111111111,
+    0b1000000000000000000000000000000000000000000000000000000000000000
+  ) = refl(0b10111111111111111111111111111111111111111111111111111111111111111) {
+  rfl;
+}

@@ -46,9 +46,12 @@ test("the complete binary core loads without unary naturals", async t => {
   assert.ok(result.complete, JSON.stringify(result.gaps));
   assert.ok(program.kernel.signatures.has("bnat__BNat"), "the binary carrier was loaded");
   assert.ok(!program.kernel.signatures.has("nat__Nat"), "the binary core must not import unary naturals");
-  // The explicit comparison module is the boundary: importing it really does
-  // load the unary carrier, so this guard observes the dependency it forbids.
+  const equality = await program.check("import bnat_equality; def probe := bnat_decide;", "binary_equality_dependencies");
+  assert.ok(equality.complete, JSON.stringify(equality.gaps));
+  assert.ok(!program.kernel.definitions.has("bnat_unary__bnat_to_unat"), "bitwise equality and setness must not load unary conversion");
+  // The explicit conversion module supplies a positive control for the
+  // forbidden magnitude conversion, even though hlevels uses unary levels.
   const conversions = await program.check("import bnat_unary; def probe := bnat_to_unat;", "binary_conversions");
   assert.ok(conversions.complete, JSON.stringify(conversions.gaps));
-  assert.ok(program.kernel.signatures.has("nat__Nat"), "explicit unary conversions load the unary carrier");
+  assert.ok(program.kernel.definitions.has("bnat_unary__bnat_to_unat"), "explicit conversion import is observed");
 });

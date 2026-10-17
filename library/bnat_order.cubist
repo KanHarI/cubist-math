@@ -1,0 +1,166 @@
+import bnat_unary;
+use unat;
+
+// Unary comparison is a proof reference. The public binary comparison
+// remains the direct bit algorithm in bnat, with no unary conversion.
+computable def unat_compare(a, b : UNat) : BOrdering := match a, b {
+    zero, zero => b_equal;
+    zero, succ(y) => b_less;
+    succ(x), zero => b_greater;
+    succ(x), succ(y) => unat_compare(x, y);
+  };
+
+computable def unat_compare_even_even(a, b : UNat) :
+  unat_compare(a + a, b + b) = unat_compare(a, b) := match a, b {
+    zero, zero => refl(b_equal);
+    zero, succ(y) => refl(b_less);
+    succ(x), zero => refl(b_greater);
+    succ(x),
+    succ(y) => trans(
+      cong(fun (n : UNat) => unat_compare(succ(n), succ(y) + succ(y)), nat_add_succ(x, x)),
+      trans(
+        cong(fun (n : UNat) => unat_compare(succ(succ(x + x)), succ(n)), nat_add_succ(y, y)),
+        unat_compare_even_even(x, y)
+      )
+    );
+  };
+
+computable def unat_compare_even_odd(a, b : UNat) :
+  unat_compare(a + a, succ(b + b)) = bnat_even_odd_order(unat_compare(a, b)) := match a, b {
+    zero, zero => refl(b_less);
+    zero, succ(y) => refl(b_less);
+    succ(x), zero => cong(fun (n : UNat) => unat_compare(succ(n), succ(zero)), nat_add_succ(x, x));
+    succ(x),
+    succ(y) => trans(
+      cong(fun (n : UNat) => unat_compare(succ(n), succ(succ(y) + succ(y))), nat_add_succ(x, x)),
+      trans(
+        cong(fun (n : UNat) => unat_compare(succ(succ(x + x)), succ(succ(n))), nat_add_succ(y, y)),
+        unat_compare_even_odd(x, y)
+      )
+    );
+  };
+
+computable def unat_compare_odd_even(a, b : UNat) :
+  unat_compare(succ(a + a), b + b) = bnat_odd_even_order(unat_compare(a, b)) := match a, b {
+    zero, zero => refl(b_greater);
+    zero, succ(y) => cong(fun (n : UNat) => unat_compare(succ(zero), succ(n)), nat_add_succ(y, y));
+    succ(x), zero => refl(b_greater);
+    succ(x),
+    succ(y) => trans(
+      cong(fun (n : UNat) => unat_compare(succ(succ(n)), succ(y) + succ(y)), nat_add_succ(x, x)),
+      trans(
+        cong(fun (n : UNat) => unat_compare(succ(succ(succ(x + x))), succ(n)), nat_add_succ(y, y)),
+        unat_compare_odd_even(x, y)
+      )
+    );
+  };
+
+computable def unat_compare_odd_odd(a, b : UNat) :
+  unat_compare(succ(a + a), succ(b + b)) = unat_compare(a, b) := unat_compare_even_even(a, b);
+
+computable def bpositive_decode_positive(p : BPositive) :
+  bpositive_to_unat(p) = succ(bnat_to_unat(bpositive_pred(p))) := trans(
+    sym(cong(bnat_to_unat, bpositive_succ_pred(p))), bnat_decode_succ(bpositive_pred(p))
+  );
+
+// The high-bit decision agrees with numerical order. Equal high parts
+// leave exactly the low-bit tie-break performed by the binary algorithm.
+computable def bpositive_compare_correct(a, b : BPositive) :
+  unat_compare(bpositive_to_unat(a), bpositive_to_unat(b)) = bpositive_compare(a, b) := match a {
+    bp_one => match b {
+      bp_one => refl(b_equal);
+      bp_even(q) => trans(
+        cong(fun (n : UNat) => unat_compare(1, n + n), bpositive_decode_positive(q)),
+        unat_compare_odd_even(0, succ(bnat_to_unat(bpositive_pred(q))))
+      );
+      bp_odd(q) => trans(
+        cong(fun (n : UNat) => unat_compare(1, succ(n + n)), bpositive_decode_positive(q)),
+        unat_compare_odd_odd(0, succ(bnat_to_unat(bpositive_pred(q))))
+      );
+    };
+    bp_even(p) => match b {
+      bp_one => trans(
+        cong(fun (n : UNat) => unat_compare(n + n, 1), bpositive_decode_positive(p)),
+        unat_compare_even_odd(succ(bnat_to_unat(bpositive_pred(p))), 0)
+      );
+      bp_even(q) => trans(
+        unat_compare_even_even(bpositive_to_unat(p), bpositive_to_unat(q)),
+        bpositive_compare_correct(p, q)
+      );
+      bp_odd(q) => trans(
+        unat_compare_even_odd(bpositive_to_unat(p), bpositive_to_unat(q)),
+        cong(bnat_even_odd_order, bpositive_compare_correct(p, q))
+      );
+    };
+    bp_odd(p) => match b {
+      bp_one => trans(
+        cong(fun (n : UNat) => unat_compare(succ(n + n), 1), bpositive_decode_positive(p)),
+        unat_compare_odd_odd(succ(bnat_to_unat(bpositive_pred(p))), 0)
+      );
+      bp_even(q) => trans(
+        unat_compare_odd_even(bpositive_to_unat(p), bpositive_to_unat(q)),
+        cong(bnat_odd_even_order, bpositive_compare_correct(p, q))
+      );
+      bp_odd(q) => trans(
+        unat_compare_odd_odd(bpositive_to_unat(p), bpositive_to_unat(q)),
+        bpositive_compare_correct(p, q)
+      );
+    };
+  };
+
+computable def bnat_compare_correct(a, b : BNat) :
+  unat_compare(bnat_to_unat(a), bnat_to_unat(b)) = bnat_compare(a, b) := match a, b {
+    b_zero, b_zero => refl(b_equal);
+    b_zero, b_positive(q) => cong(unat_compare(0), bpositive_decode_positive(q));
+    b_positive(p),
+    b_zero => cong(fun (n : UNat) => unat_compare(n, 0), bpositive_decode_positive(p));
+    b_positive(p), b_positive(q) => bpositive_compare_correct(p, q);
+  };
+
+computable def unat_compare_le(a, b : UNat) :
+  BOrderingLe(unat_compare(a, b)) =[U0] le(a, b) := match a, b {
+    zero, zero => refl(Unit);
+    zero, succ(y) => refl(Unit);
+    succ(x), zero => refl(Void);
+    succ(x), succ(y) => unat_compare_le(x, y);
+  };
+
+computable def unat_compare_lt(a, b : UNat) :
+  BOrderingLt(unat_compare(a, b)) =[U0] isLt(a, b) := match a, b {
+    zero, zero => refl(Void);
+    zero, succ(y) => refl(Unit);
+    succ(x), zero => refl(Void);
+    succ(x), succ(y) => unat_compare_lt(x, y);
+  };
+
+computable def bnat_le_correct(a, b : BNat) :
+  bnat_le(a, b) =[U0] le(bnat_to_unat(a), bnat_to_unat(b)) := trans(
+    cong(BOrderingLe, sym(bnat_compare_correct(a, b))),
+    unat_compare_le(bnat_to_unat(a), bnat_to_unat(b))
+  );
+
+computable def bnat_lt_correct(a, b : BNat) :
+  bnat_lt(a, b) =[U0] isLt(bnat_to_unat(a), bnat_to_unat(b)) := trans(
+    cong(BOrderingLt, sym(bnat_compare_correct(a, b))),
+    unat_compare_lt(bnat_to_unat(a), bnat_to_unat(b))
+  );
+
+computable def bordering_le_prop(order : BOrdering) :
+  IsProp(U0, BOrderingLe(order)) := match order {
+    b_less => unit_is_prop;
+    b_equal => unit_is_prop;
+    b_greater => void_is_prop;
+  };
+
+computable def bordering_lt_prop(order : BOrdering) :
+  IsProp(U0, BOrderingLt(order)) := match order {
+    b_less => unit_is_prop;
+    b_equal => void_is_prop;
+    b_greater => void_is_prop;
+  };
+
+computable def bnat_le_is_prop(a, b : BNat) :
+  IsProp(U0, bnat_le(a, b)) := bordering_le_prop(bnat_compare(a, b));
+
+computable def bnat_lt_is_prop(a, b : BNat) :
+  IsProp(U0, bnat_lt(a, b)) := bordering_lt_prop(bnat_compare(a, b));
