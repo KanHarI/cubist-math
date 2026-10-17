@@ -58,7 +58,7 @@ void cc_kernel_free(cc_kernel *);
 /* Resource budget per operation; zero leaves it unchanged.
  * Raising it never bypasses a rule or certifies a previously rejected term. */
 void cc_kernel_set_step_budget(cc_kernel *, uint64_t steps);
-/* Kernel work, for measuring what a search costs (docs/roadmaps/
+/* Kernel work, for measuring what a search costs (docs/roadmaps/kernel/
  * learned-search.md; the work plan's L1.3 fuel).
  *
  * The budget. Every operation starts with the step budget set above. The
@@ -309,7 +309,7 @@ cc_judgement_id cc_instr_unglue(cc_kernel *, cc_judgement_id value);
  * rules state it. */
 cc_term cc_kernel_equiv_type(cc_kernel *, cc_term a, cc_term b);
 /* Declared types (H1), admitted one constructor at a time: the family F1 of
- * docs/roadmaps/h1-signature-specification.md, section 5.2, whose sections
+ * docs/roadmaps/hott/h1-signature-specification.md, section 5.2, whose sections
  * 1.1-1.6 give the normal form checked here.
  * SignatureBegin opens a signature from a closed judgement ⊢ F : U(…), where
  * F is Π (xs < ω). Π (ps : Ps). U(ℓ): a LevelPi for each universe parameter,

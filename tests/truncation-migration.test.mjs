@@ -47,7 +47,7 @@ test("G7: no_maximal_strict_successor applies double negation at U1 and retains 
 });
 
 test("G4: the checked migration ledger has exact pins and defers the H2 tower declarations",async()=>{
-  const ledger=JSON.parse(await readFile(new URL("../docs/roadmaps/h1-truncation-ledger.json",import.meta.url),"utf8"));
+  const ledger=JSON.parse(await readFile(new URL("../docs/roadmaps/hott/h1-truncation-ledger.json",import.meta.url),"utf8"));
   assert.equal(validateLedger(ledger).size,17);
   assert.deepEqual(ledger.deferred,["tower_induction_large","tower_relative_induction"]);
 });
@@ -57,11 +57,11 @@ test("G4: the CLI uses a pinned library baseline and refuses a new module withou
     "--edited-file","library/h1_classical.cubist"];
   const report=execFileSync(process.execPath,[...args,"--declarations",
     "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
-    "--ledger","docs/roadmaps/h1-truncation-ledger.json","classical_axioms"],{encoding:"utf8"});
+    "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json","classical_axioms"],{encoding:"utf8"});
   assert.match(report,/4 exact ledger changes/); assert.match(report,/0 failures/);
   assert.throws(()=>execFileSync(process.execPath,[...args.slice(0,2),"cc6b50f",...args.slice(3),"--declarations",
     "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
-    "--ledger","docs/roadmaps/h1-truncation-ledger.json","classical_axioms"],{stdio:"pipe"}),
+    "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json","classical_axioms"],{stdio:"pipe"}),
     error=>error.status===1 && /Ledger baseline is f4d1961.*different revision/.test(String(error.stderr)));
   assert.throws(()=>execFileSync(process.execPath,[...args,"migration_no_baseline_fixture"],{stdio:"pipe"}),
     error=>error.status===1 && /No baseline for compared module migration_no_baseline_fixture/.test(String(error.stderr)));
@@ -83,7 +83,7 @@ test("all four documented ledger comparisons verify their pinned changes and loc
   ];
   for (const [module,file,scope,count] of cases) {
     const args=["tools/verify-proof-migration.mjs","--no-dependents","--edited-file",file,
-      "--ledger","docs/roadmaps/h1-truncation-ledger.json",...(scope ? ["--declarations",scope] : []),module];
+      "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json",...(scope ? ["--declarations",scope] : []),module];
     const report=execFileSync(process.execPath,args,{encoding:"utf8"});
     assert.match(report,new RegExp(`${count} exact ledger changes`)); assert.match(report,/0 failures/);
   }

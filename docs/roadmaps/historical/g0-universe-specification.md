@@ -3,7 +3,7 @@
 Status: implemented and archived on 2026-09-27. Written on 2026-09-25 as
 work-plan item K1.1 and revised with the decisions on tiered universes.
 This remains the normative specification of completed
-[kernel roadmap](../cubical-kernel-roadmap.md) item G0. Later extensions
+[kernel roadmap](../kernel/cubical-kernel-roadmap.md) item G0. Later extensions
 belong to the active [work plan](../work-plan.md) and proposals; historical
 implementation instructions below are not outstanding tasks.
 K1.2 (the instruction kernel), K1.3 (the driver and bridges) and L1.1
@@ -42,7 +42,7 @@ universe. This revision applies four decisions:
 
 Q2 and Q3 are resolved by these decisions. The remaining questions were
 answered on 2026-09-25: Q1, Q4, Q5, Q6, Q8 and Q9 as recommended. Q7 and Q10
-are deferred as [language enhancement proposals](../language-enhancement-proposals.md)
+are deferred as [language enhancement proposals](../kernel/language-enhancement-proposals.md)
 E1 and E2 (section 6).
 
 Revised again on 2026-09-26: the instruction kernel is the trusted kernel
@@ -1327,15 +1327,15 @@ This was the migration checklist for sources that used `U : Universe`,
 updated the executable language and reference. Dated historical notes retain
 their original terminology; the list is retained as implementation history.
 
-- `docs/roadmaps/cubical-kernel-roadmap.md`: the G2 item
+- `docs/roadmaps/kernel/cubical-kernel-roadmap.md`: the G2 item
   (`Trunc : ∀ U : Uω, U → U`).
 - `docs/roadmaps/README.md`: the G0 summary line.
 - `docs/roadmaps/work-plan.md`: the K1.3 and L1.1 text (`Uω` as a binder
   type, large types, `U : Universe`).
-- `docs/roadmaps/proof-ergonomics-roadmap.md`: consecutive `Universe`
+- `docs/roadmaps/high-level-abstractions/proof-ergonomics-roadmap.md`: consecutive `Universe`
   parameters, and the specialization of universe parameters.
-- `docs/roadmaps/higher-inductive-types-design.md` and
-  `docs/roadmaps/inductive-language-features.md`: examples with an unbound
+- `docs/roadmaps/hott/higher-inductive-types-design.md` and
+  `docs/roadmaps/high-level-abstractions/inductive-language-features.md`: examples with an unbound
   `A : U` (1.4), and the H design's "parameters" clause (Q6).
 - `docs/guides/mathscript.md`, `docs/guides/cli.md` and
   `docs/tactical/univalence.md`: `U : Universe` parameters and templates.
@@ -1615,7 +1615,7 @@ should drop "parameters" when H is next edited. Read literally, it puts
 **Q7. Level constraints.** Should declarations be able to state constraints
 between level variables, such as `x < y`, as Coq allows? A binder's bound is
 not such a constraint. *Deferred:* not in G0; recorded as proposal E1 in
-the [language enhancement proposals](../language-enhancement-proposals.md).
+the [language enhancement proposals](../kernel/language-enhancement-proposals.md).
 Unconstrained variables with `max` and successor express every signature we
 know of, as in
 `Group(U) : next(U)` and quotients at `max(U, V)`. Constraints would bring in
@@ -1644,6 +1644,6 @@ copy at a constant level. Cumulativity limits the cost: a definition at
 `UU0` also accepts every type in `U(n)`. *Deferred:* not in this version.
 No result needs it yet, so a universe argument of tier 1 or above is
 rejected, including by the computing builtins. Proposal E2 in the
-[language enhancement proposals](../language-enhancement-proposals.md) records
+[language enhancement proposals](../kernel/language-enhancement-proposals.md) records
 both the extension of 1.5 and building builtin bodies at a UU-tier constant,
 to be taken up when a library result needs them.

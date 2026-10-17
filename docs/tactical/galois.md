@@ -5,7 +5,7 @@ checked for every merely finite subgroup of extension automorphisms. The core
 finite correspondence is checked for finite normal separable extensions with
 a supplied algebraically closed target and an embedding into it. The
 [active checkpoint](galois-handoff.md#active-checkpoint-2026-09-23) records exact
-assumptions and validation; the [roadmap](../roadmaps/galois-roadmap.md) records
+assumptions and validation; the [roadmap](../roadmaps/mathematics/galois-roadmap.md) records
 the remaining index, normal-subgroup, quotient, and bundled lattice results.
 
 [Inspect Artin's degree theorem](../../web/proof.html?proof=artin_degree&name=artin_fixed_field_degree).
@@ -243,7 +243,7 @@ maps. `extension_class_iso_iff` proves isomorphism invariance by transporting
 membership along an equality of extensions; no separate invariance axiom is
 required. These definitions do **not** yet prove that finite, algebraic or
 separable extensions form distinguished classes. Those instances depend on
-the later algebra in the [roadmap](../roadmaps/galois-roadmap.md).
+the later algebra in the [roadmap](../roadmaps/mathematics/galois-roadmap.md).
 
 The concrete example proves that the compositum of two copies of F2 in F4 is
 equal to F2 as a structured field. Regression checks reject identifying it

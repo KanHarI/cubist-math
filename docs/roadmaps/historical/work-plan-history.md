@@ -20,7 +20,7 @@ The dates and instructions below record earlier decisions, not new work.
 **Revision of 2026-10-05:** withdraw L4.4, `apply` and `refine`, which
 `let` and `exact` express; resume the library's foundations, with the
 archive kept as a reference that loses each part the library implements;
-specify L2.4 in [core theories](../core-theories.md) and schedule it before the
+specify L2.4 in [core theories](../high-level-abstractions/core-theories.md) and schedule it before the
 algebraic hierarchy, whose structures are its theories and whose notation is
 its scoped notation, since `+` and `*` otherwise mean one `add` and one `mul`
 per scope.
@@ -133,7 +133,7 @@ Suggested next, in order:
    tests and the reference's `cubical.html` and `paths.html` moved with
    it.
 2. **L2.4c, the theory syntax revision (M).** As
-   [decided](../core-theories.md#revision-l24c): carriers as fields with an
+   [decided](../high-level-abstractions/core-theories.md#revision-l24c): carriers as fields with an
    h-level, the universe named in the header, `Monoid(U)` as the type of
    models, theory families, the combination of independent theories, and
    qualified operators. First, because L2.10k needs the named universe and
@@ -145,7 +145,7 @@ Suggested next, in order:
    the rationals supply the law with `merely`, and `Field.Hom` becomes
    `CommRing`'s. It does not depend on views.
 4. **The views' pilots, L2.10a–e (L).** Settle the
-   [notation roadmap](../notation.md)'s remaining grammar and elaboration
+   [notation roadmap](../high-level-abstractions/notation.md)'s remaining grammar and elaboration
    contracts first, then pilot them on the library: two models on one
    carrier, `Nat`'s two monoids; `integers.(x + y = y + x)`; literals read
    from their `Lexeme` by the library's parsers and checked by evaluation,
@@ -172,7 +172,7 @@ Suggested next, in order:
    commutative rings and fields as theories with `<` and `<=`; the
    NUM2 integers' and rationals' orders, decidable; positive rationals
    `PosRat`; and the Archimedean property with binary natural bounds.
-   The [reals roadmap](../reals-roadmap.md)'s R1 owns this work, and its R2
+   The [reals roadmap](../mathematics/reals-roadmap.md)'s R1 owns this work, and its R2
    interface needs them; no language package does. Rationals in lowest
    terms, which print reduced, wait for L2.7's canonical quotients.
 9. **Runtime evaluation and binary numerical foundations.** The

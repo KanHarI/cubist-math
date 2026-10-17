@@ -1,4 +1,4 @@
-// Admission of declared types (H1; docs/roadmaps/h1-signature-specification.md,
+// Admission of declared types (H1; docs/roadmaps/hott/h1-signature-specification.md,
 // section 6.1). A signature in normal form, as the `inductive` declaration
 // lowers it (section 9), is derived one instruction at a time: its universe
 // parameters and parameters as context entries, its former, the sort as an

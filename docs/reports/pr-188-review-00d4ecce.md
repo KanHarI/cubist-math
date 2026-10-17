@@ -4,7 +4,7 @@ Reviewer report supplied by the repository owner on 2026-10-09, preserved
 from `pr188-review-00d4ecce.md`. Results, mutation classifications and timings
 below are the reviewer's observations at the named commits, not a new test
 run by this documentation PR. The [gap inventory](frontend-generation-gaps.md)
-records independent reproduction checks and the [roadmap](../roadmaps/frontend-generation.md)
+records independent reproduction checks and the [roadmap](../roadmaps/historical/frontend-generation.md)
 assigns fixes and prevention work. Line numbers refer to the reviewed head.
 
 ## Review of `00d4ecce`

@@ -5,11 +5,21 @@ These describe current contracts, unfinished work and its limits. The
 theorem parameter is not an already proved result. Paused mathematics does
 not resume when a language milestone ships.
 
+**Direction selected on 2026-10-17:** develop the language through categories,
+monads, algebraic homology and synthetic cohomology as a sustained testbed.
+Both algebraic and HoTT constructions are central. Success includes reusable
+theory interfaces, proof automation, notation, inference, inspection and
+computation, with mathematical proofs validating those features. The
+[progression](work-plan.md#first-actions) prioritizes that development rather
+than the shortest route to a homology or cohomology theorem. The packages
+below remain unfinished until their own acceptance evidence is delivered.
+
 ## At a glance
 
-Frontend/binding status reconciled on 2026-10-17 against main `ee7fa35c`.
-Other rows retain their earlier package evidence. Delivered means merged into
-main; open PR work is identified separately.
+Roadmap status reconciled on 2026-10-17 against main `e729c2d5`, including
+the merged CB and refactoring stacks. Delivered means present on main.
+The linked specifications, mathematical approvals and dated measurements retain
+their original evidence; this status audit does not rerun those reviews.
 
 | Track | Delivered on main | Still open |
 | --- | --- | --- |
@@ -19,106 +29,126 @@ main; open PR work is identified separately.
 | Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
 | Evaluation/numbers | EVAL0 measurement harness and recorded outcomes | EVAL1–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
-| Library/reference | Sixteen self-contained foundation modules; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
+| Library/reference | Seventeen self-contained foundation modules, including the universe-smallness proofs; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
+| [Frontend/bindings](historical/capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs | No CB packages remain; preserve the semantic and resource gates |
+| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed implementation slices remain; verify the #264 assertion-reporting fix in remote mutation CI. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
 
-**Frontend integration:** initial/free construction and fold behavior, CB0–CB7
-and the separate cleanup are on main. The older #219–#223, #225 and #227 PRs
-are closed as superseded. [#242](https://github.com/KanHarI/cubist-math/pull/242)
-adds the mutation CI hook. The remaining #224 ideas are tracked in the
-[refactoring and source-test stack](refactoring-and-testing.md); see the
-[branch record](work-plan.md#branch-work). Checked universal capabilities
-and their mathematical proofs remain separate unfinished work.
+**Frontend integration is complete:** initial/free construction and fold
+behavior, CB0–CB7, cleanup and the agreed #224 refactoring ideas are on main.
+The older #219–#225 and #227 proposals are closed as superseded;
+[#242](https://github.com/KanHarI/cubist-math/pull/242) supplies the mutation CI hook.
+Checked universal capabilities and their mathematical proofs remain unfinished.
+The [branch record](work-plan.md#branch-work) separately tracks Hydra #233,
+which remains an unmerged draft. Site publication succeeded; the
+[RC verification record](historical/refactoring-and-testing.md#verification-record) records
+the unresolved termination of the final CI mutation probe.
 
-Next language work: morphism opt-ins (L2.4d), general proposition laws
-(L2.11), implicit operation arguments (L2.12), then L2.6's checked
-capabilities and universal proofs. Squares/h-level remainders, derivations,
-equivalences, structure identity and categories follow their dependencies.
-EVAL1 and NUM0/NUM1 can advance independently. See
+Next language work pairs morphism opt-ins (L2.4d), general proposition laws
+(L2.11) and implicit operation arguments (L2.12) with categorical examples,
+and path/induction tooling with low-degree synthetic examples. N0/N1's
+monadic interfaces can start from their existing prerequisites. Categories,
+equivalences, structure identity, checked free constructions and computation
+notation then deepen both strands; full algebraic and synthetic developments
+retain their individual dependencies. EVAL1 and NUM0/NUM1 can advance
+alongside them. See
 [first actions](work-plan.md#first-actions) and
 [open decisions](work-plan.md#open-decisions).
 
-## Plan and designs
+## HoTT
 
-- [Work plan](work-plan.md): active package status, dependencies and decisions.
-- [Historical index](historical/README.md): completed G0, closed H1 history,
-  release/review and differential evidence, the dated work-plan audit,
-  and superseded scheduling/ergonomics sequences. Historical commands and
-  timings describe their recorded revisions.
-- [Higher inductive-inductive types](higher-inductive-types-design.md):
-  adopted H1–H4 design. H1 is released; H2–H4 remain unimplemented.
-- [H1 specification](h1-signature-specification.md),
-  [model](h1-model.md), [canonicity](h1-canonicity.md) and
-  [critical pairs](h1-critical-pairs.md): current rules and approved
-  mathematical arguments. Release does not make these contracts obsolete.
-- [Source-defined Nat, W and pushouts](h1-program-types.md): current source
-  API and the migration's limits; sums remain native.
-- [Truncation migrations](h1-truncation-migration.md): implemented ledger
-  verifier and 17 pinned changes; the rest of K2.5 remains unfinished.
-- [Language features](inductive-language-features.md): theories,
-  declarations, relations, bundles, presentations and derived interfaces.
-- [Core theories](core-theories.md): implemented L2.4/L2.4c contract and
-  the unfinished checked initial/free capability contract.
-- [Notation](notation.md): delivered explicit notation/literal slices,
-  remaining tooling details and deferred extensions.
-- [Categories](categories.md): proposed morphism opt-ins, general laws,
-  categorical library, universal constructions and the abelian tower.
-- [Kernel instructions](kernel-instructions.md): current trusted checker,
-  driver boundary and remaining performance/certificate work. Its dated
-  migration stages record earlier APIs.
-- [Learned search](learned-search.md): delivered instrumentation and optional
-  learning/deployment phases.
+[hott/](hott/) contains proof automation and type-theoretic foundations:
 
-## Language tooling
+- [HoTT automation](hott/hott-automation-roadmap.md): remaining path, induction,
+  equivalence, transport, h-level and structure-identity work.
+- [Higher inductive-inductive types](hott/higher-inductive-types-design.md):
+  H1 delivered; H2 indexed families, H3 companion sorts and H4 remain planned.
+- [H1 specification](hott/h1-signature-specification.md),
+  [model](hott/h1-model.md), [canonicity](hott/h1-canonicity.md) and
+  [critical pairs](hott/h1-critical-pairs.md): current normative rules and
+  approved mathematical arguments. These remain active references after release.
+- [Truncation migrations](hott/h1-truncation-migration.md) and their
+  [ledger](hott/h1-truncation-ledger.json): 17 pinned changes and an implemented
+  verifier; the rest of K2.5 remains unfinished.
 
-- [Correct capture and bindings](capture-bindings.md): completed replacement
-  for capture repair, with binding identities, shared generation interfaces
-  and contextual REPLs at arbitrary nesting depth. The
-  [PR comparison](../reports/capture-bindings-pr-comparison.md) records which
-  earlier solutions were adopted or replaced; CB0–CB7 and cleanup are complete.
-- [Refactoring and source-level tests](refactoring-and-testing.md): the implementation
-  stack for publication ownership, test pragmas and shared tooling, with its final
-  cleanup and verification record.
-- [Frontend generation](frontend-generation.md): current contracts motivated by
-  PR #188, with its FG schedule superseded by CB0–CB7. Unifies declaration ownership,
-  supported dependency analysis, universe calculation, contextual evidence
-  and public provenance, with semantic preservation tests. The
-  [gap inventory](../reports/frontend-generation-gaps.md) pins historical
-  reproductions at its pinned revision. Current status is in the CB completion
-  records, not those historical gap counts.
-- [Induction hypothesis syntax](induction-hypothesis-syntax.md):
-  `constructor(fields) with hypotheses` clauses, implemented on 2026-10-11
-  with the old spelling still read and a checked migration tool.
-- [Proof ergonomics](proof-ergonomics-roadmap.md): shipped proof tools and
-  remaining theory/declaration/automation work. Its
-  [remaining implementation contracts](proof-ergonomics-roadmap.md#remaining-implementation-contracts)
-  own the unfinished work from the archived implementation sequence.
-- [HoTT automation](hott-automation-roadmap.md): remaining goals, paths,
-  induction, equivalences, transport, h-levels and structure identity.
-  [Checkpoint](../tactical/hott-automation-handoff.md).
-- [Runtime evaluation and binary foundations](runtime-evaluation-roadmap.md):
-  EVAL0 is complete; EVAL1–EVAL8 and NUM0–NUM2 remain planned.
-- [Computation notation](computation-notation-roadmap.md): N0–N5, no
-  implementation yet; its core theory/inference prerequisites are available.
-- [Kernel extensions](cubical-kernel-roadmap.md): G0 and H1 delivered;
-  H2–H4, remaining resizing migrations and optional computation extensions.
-- [Language proposals](language-enhancement-proposals.md): deferred E1/E2,
-  each requiring a concrete use case.
-- [Proof-concision vision](vision/mathematical-proof-concision.md): eventual
-  goals and acceptance evidence, not a list of implemented features.
+## High-level abstractions
+
+[high-level-abstractions/](high-level-abstractions/) owns the language above
+those foundations:
+
+- [Language features](high-level-abstractions/inductive-language-features.md):
+  theories, declarations, relations, bundles, presentations and derived interfaces.
+- [Core theories](high-level-abstractions/core-theories.md): L2.4/L2.4c's current
+  contract and unfinished checked initial/free capabilities.
+- [Categories](high-level-abstractions/categories.md): morphism opt-ins, general
+  laws, categorical library, universal constructions and the abelian tower.
+- [Proof ergonomics](high-level-abstractions/proof-ergonomics-roadmap.md): shipped
+  proof tools and the remaining theory/declaration/automation contracts.
+- [Notation](high-level-abstractions/notation.md): delivered notation/literal
+  slices, remaining tooling and deferred extensions.
+- [Computation notation](high-level-abstractions/computation-notation-roadmap.md):
+  N0–N5, checked interfaces, monadic `do` and arrows; not yet implemented.
+
+## Kernel
+
+[kernel/](kernel/) covers trusted instructions and their untrusted driver:
+
+- [Kernel instructions](kernel/kernel-instructions.md): current checker/driver
+  boundary and remaining performance/certificate work.
+- [Kernel extensions](kernel/cubical-kernel-roadmap.md): G0/H1 delivered;
+  H2–H4, resizing migrations and optional computation extensions.
+- [Language proposals](kernel/language-enhancement-proposals.md): deferred
+  universe proposals E1/E2, each requiring a concrete use case.
+- [Learned search](kernel/learned-search.md): phases 1–2 delivered; optional
+  learning and deployment phases 3–5 remain.
+
+## Frontend
+
+[frontend/](frontend/README.md) indexes the continuing binding, generation,
+publication, inspection and contextual-REPL contracts. The CB/FG/RC migrations
+are complete; their plans and checkpoint records are in [historical/](historical/README.md).
+The [work plan](work-plan.md#first-actions) retains the unresolved remote CI
+mutation check as a validation follow-up.
+
+## Runtime
+
+[runtime/](runtime/) contains [evaluation and binary foundations](runtime/runtime-evaluation-roadmap.md):
+EVAL0 is complete; EVAL1–EVAL8 and NUM0–NUM2 remain planned.
 
 ## Mathematics
 
+[mathematics/](mathematics/) contains the library-development tracks.
 The first library is archived. Its checked results remain regression
 evidence, not a claim that the new library has rebuilt those areas.
 
 | Roadmap | Checked progress | Remaining scope |
 | --- | --- | --- |
-| [Galois](galois-roadmap.md) | Finite linear algebra, Artin's theorem and the core finite correspondence with a supplied algebraically closed target | Finite index/normality/quotient theorems and the full target; paused. [Checkpoint](../tactical/galois-handoff.md) |
-| [Reals](reals-roadmap.md) | Current quotient integers/rationals | NUM owns binary replacements; this plan owns order, presentations, completeness interfaces and real constructions. Cauchy reals need H3; paused beyond existing foundations |
-| [Complex analysis](complex-analysis-roadmap.md) | Algebra, limits, contour estimates and affine dyadic integral laws over supplied scalars | Topology and general integration bridges; FTA, residue theorem and Great Picard unproved; paused. [Checkpoint](../tactical/complex_analysis_handoff.md) |
-| [RH and prime counting](rh-prime-counting-roadmap.md) | Statement and dependency plan only | All analytic-number-theory milestones; not started |
+| [Galois](mathematics/galois-roadmap.md) | Finite linear algebra, Artin's theorem and the core finite correspondence with a supplied algebraically closed target | Finite index/normality/quotient theorems and the full target; paused. [Checkpoint](../tactical/galois-handoff.md) |
+| [Reals](mathematics/reals-roadmap.md) | Current quotient integers/rationals | NUM owns binary replacements; this plan owns order, presentations, completeness interfaces and real constructions. Cauchy reals need H3; paused beyond existing foundations |
+| [Complex analysis](mathematics/complex-analysis-roadmap.md) | Algebra, limits, contour estimates and affine dyadic integral laws over supplied scalars | Topology and general integration bridges; FTA, residue theorem and Great Picard unproved; paused. [Checkpoint](../tactical/complex_analysis_handoff.md) |
+| [RH and prime counting](mathematics/rh-prime-counting-roadmap.md) | Statement and dependency plan only | All analytic-number-theory milestones; not started |
+| [Homological algebra](mathematics/homological-algebra.md) | Proposal and dependency plan only; selected as the language testbed | HA0–HA6 remain unimplemented. Algebraic homology and synthetic cohomology advance through the language-development progression |
 
 See the [results catalog](../library-results.md) and
 [documentation index](../README.md) for supporting evidence and guides.
+
+## Vision
+
+[vision/](vision/) contains [mathematical proof concision](vision/mathematical-proof-concision.md):
+long-term goals and proposed acceptance evidence, not a list of delivered features.
+
+## Historical
+
+[historical/](historical/README.md) holds exhausted implementation plans,
+completed migration records, superseded sequences and dated validation:
+
+- CB0–CB7 and their completion records; the FG generation plan, its earlier
+  syntax-hygiene approach, and the completed RC refactoring/source-test plan.
+- The completed induction-hypothesis syntax change and Nat/W/pushout migrations.
+- G0's completed specification, H1 release/review history, retired differential
+  evidence, older scheduling/ergonomics sequences and the dated work-plan audit.
+
+Archiving a completed plan preserves its linked contracts, regression tests and
+resource limits. Unfinished or paused work stays in its subject folder. Dated
+measurements and review decisions retain their original revisions.

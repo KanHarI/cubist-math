@@ -19,7 +19,7 @@ terms, but cannot publish unchecked definitions in the native registry.
 
 The untrusted [instruction driver](../../web/cubical-instruction-driver.mjs)
 chooses the derivation; each native instruction validates its own premises.
-The former term-checker files were retired. The [instruction-kernel contract](../roadmaps/kernel-instructions.md)
+The former term-checker files were retired. The [instruction-kernel contract](../roadmaps/kernel/kernel-instructions.md)
 explains the trust boundary.
 
 The [kernel overview](../../kernel/README.md) maps the remaining files to their

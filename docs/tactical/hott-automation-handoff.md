@@ -17,7 +17,7 @@ A6 are delivered as work-plan L1.3). The dated handoff below records the A7
 release only.
 
 Date: 2026-09-25. This is the implementation handoff for the
-[HoTT and cubical automation roadmap](../roadmaps/hott-automation-roadmap.md).
+[HoTT and cubical automation roadmap](../roadmaps/hott/hott-automation-roadmap.md).
 A7, the baseline and regressions, is complete. Every other milestone is still
 planned. No kernel rule, elaborator rule or tactic changed; three library
 proofs now hold by conversion.

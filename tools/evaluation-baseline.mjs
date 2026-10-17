@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The runtime evaluation baseline (EVAL0 of
-// docs/roadmaps/runtime-evaluation-roadmap.md): what evaluating the fixed
+// docs/roadmaps/runtime/runtime-evaluation-roadmap.md): what evaluating the fixed
 // archive workloads costs today, phase by phase, with failures counted as
 // well as successes.
 //   node tools/evaluation-baseline.mjs [--samples=N] [--warm=N] [--only=ID,…] [--no-depth] [--write]

@@ -1,6 +1,6 @@
 # HoTT automation examples
 
-These accompany the [HoTT and cubical automation roadmap](../../roadmaps/hott-automation-roadmap.md).
+These accompany the [HoTT and cubical automation roadmap](../../roadmaps/hott/hott-automation-roadmap.md).
 [conversion-laws.cubist](conversion-laws.cubist) records the evidence for its
 library-first milestones. Every declaration checks by conversion or by one
 existing lemma:

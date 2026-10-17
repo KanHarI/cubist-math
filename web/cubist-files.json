@@ -1852,7 +1852,7 @@
   },
   {
    "path": "cubist-tests/h1_cauchy_quotient.cubist",
-   "summary": "The H1 migration of the archive's `cauchy_quotient` (see [`docs/roadmaps/h1-truncation-migration.md`](../docs/roadmaps/h1-truncation-migration.md)): Cauchy sequences with moduli and their equivalence relation over the declared truncation, still on the archive's fields and predicate quotient."
+   "summary": "The H1 migration of the archive's `cauchy_quotient` (see [`docs/roadmaps/hott/h1-truncation-migration.md`](../docs/roadmaps/hott/h1-truncation-migration.md)): Cauchy sequences with moduli and their equivalence relation over the declared truncation, still on the archive's fields and predicate quotient."
   },
   {
    "path": "cubist-tests/h1_zorn_step.cubist",
@@ -2328,7 +2328,7 @@
   },
   {
    "path": "docs/examples/h1/winding.cubist",
-   "summary": "The H1 release fixture (docs/roadmaps/h1-signature-specification.md, 10.8; the work plan's stage 2): the circle as a declared higher inductive type, the integers as a declared data type, and the loop…"
+   "summary": "The H1 release fixture (docs/roadmaps/hott/h1-signature-specification.md, 10.8; the work plan's stage 2): the circle as a declared higher inductive type, the integers as a declared data type, and the…"
   },
   {
    "path": "docs/examples/hott-automation/canonicity.cubist",

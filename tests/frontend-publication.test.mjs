@@ -1,6 +1,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import {isDeepStrictEqual} from "node:util";
 import createCubical from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
@@ -528,7 +529,8 @@ def after : Unit := before(tt);`;
     assert.equal(program.scopeReady,false);
     assert.equal(program.kernel.definitions.has("main__before"),true,"earlier publication survives");
     absentNative(program,`main__${root}`);
-    assert.deepEqual(frontend(),before,"no prepared inspection record survives interruption");
+    // Keep live inspection graphs out of the assertion error's serialized payload.
+    assert.equal(isDeepStrictEqual(frontend(),before),true,"no prepared inspection record survives interruption");
     const recovered=await program.check(source,"main");
     assert.deepEqual(recovered.gaps,[]);
     assert.equal(recovered.complete,true);

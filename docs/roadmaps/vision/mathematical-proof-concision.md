@@ -4,7 +4,9 @@ Status: design direction and proposed acceptance criteria, recorded on
 2026-09-28. Archive evidence was inspected on `h1-signatures` at `e7bdae5`;
 the implementation baseline is the one reviewed in the
 [work-plan audit](../historical/audits/2026-09-28-audit.md). The
-[work plan](../work-plan.md) remains the scheduling authority.
+[work plan](../work-plan.md) remains the scheduling authority. At main
+`e729c2d5` on 2026-10-17 this remains a vision with proposed acceptance criteria;
+completed CB/RC tooling does not establish the full concision target.
 
 ## Goal
 
@@ -175,7 +177,7 @@ left underdetermined by that information should produce local obligations.
 
 Scoped witness elimination should use the h-level solver to establish its
 side conditions. This is useful directly in the proof language, alongside
-the more general [computation notation](../computation-notation-roadmap.md).
+the more general [computation notation](../high-level-abstractions/computation-notation-roadmap.md).
 
 ### 3. Rewrite through mathematical expressions
 
@@ -256,9 +258,9 @@ proof examples and fill the remaining contracts:
 | Shared environments and reusable laws | Theories (L2.4, L2.4c, done), sections and `use`, the language feature proposal, and HoTT F1; require compact use of the resulting interfaces. |
 | Domain proof methods | Specify supported algebraic/logical methods and a library extension mechanism; the planned path-algebra normalizers address a different class of goals. |
 
-The [proof ergonomics roadmap](../proof-ergonomics-roadmap.md), its
+The [proof ergonomics roadmap](../high-level-abstractions/proof-ergonomics-roadmap.md), its
 [implementation plan](../historical/proof-ergonomics-implementation-plan.md), and the
-[HoTT automation roadmap](../hott-automation-roadmap.md) remain the homes of
+[HoTT automation roadmap](../hott/hott-automation-roadmap.md) remain the homes of
 their implementation details. This document proposes a common success
 criterion for their eventual result. Focused archive fixtures fit the
 current language work; broad mathematical development remains scheduled

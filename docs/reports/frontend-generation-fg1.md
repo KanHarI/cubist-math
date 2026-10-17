@@ -1,7 +1,7 @@
 # FG1 declaration ownership and publication
 
 This implements the ownership and publication contracts in the
-[frontend generation roadmap](../roadmaps/frontend-generation.md#fg1-unify-declaration-ownership-and-publication).
+[frontend generation roadmap](../roadmaps/historical/frontend-generation.md#fg1-unify-declaration-ownership-and-publication).
 The pinned historical inventory remains evidence about `00d4ecce`.
 G1 and G6 are active regressions in `tests/frontend-generation.test.mjs`;
 G7 now has controlled failure injection in `tests/frontend-publication.test.mjs`.

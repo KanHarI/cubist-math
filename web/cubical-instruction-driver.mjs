@@ -89,7 +89,7 @@ const joinScopes = (...scopes) => {
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
 
-// The search's decisions (docs/roadmaps/learned-search.md, "The decision
+// The search's decisions (docs/roadmaps/kernel/learned-search.md, "The decision
 // problem"). `agree` rewrites two focused subterms until they are
 // alpha-equal; each time round, it stops at a branch point, lists the moves
 // open there, and asks a policy which to make. A move is a plain object:

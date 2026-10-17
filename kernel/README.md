@@ -11,7 +11,7 @@ WebAssembly (`wasm/cubical_bridge.c`).
 ## Trust boundary
 
 The kernel is the instruction kernel
-([design](../docs/roadmaps/kernel-instructions.md)): each typing rule is an
+([design](../docs/roadmaps/kernel/kernel-instructions.md)): each typing rule is an
 instruction (`cc_instr_*`, `src/instructions.c`, with declared types in
 `src/signatures.c` and `src/eliminators.c`) whose side conditions are
 syntactic, and a definition is admitted only by the `Define` instruction.

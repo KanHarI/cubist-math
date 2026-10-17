@@ -1,5 +1,5 @@
 // The H1 acceptance cases that go through the elaborator and the driver
-// (docs/roadmaps/h1-signature-specification.md, section 10), where no other
+// (docs/roadmaps/hott/h1-signature-specification.md, section 10), where no other
 // test names them. Each test names its cases by ID, as 10.10 traces them;
 // the kernel's cases are in kernel/tests/test_signatures.c, and those whose
 // verdicts are the test are Cubist modules, cubist-tests/h1_acceptance_*.cubist,

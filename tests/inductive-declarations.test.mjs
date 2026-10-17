@@ -1,4 +1,4 @@
-// `inductive` declarations, work-plan L2.1 (docs/roadmaps/h1-signature-
+// `inductive` declarations, work-plan L2.1 (docs/roadmaps/hott/h1-signature-
 // specification.md, section 9): the header's result position, lowering to
 // the normal form with data before positions, universe classification, the
 // least level, uses of the type and its constructors, the kernel's H1 switch

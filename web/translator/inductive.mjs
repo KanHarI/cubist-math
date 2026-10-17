@@ -1,4 +1,4 @@
-// `inductive` declarations (work plan L2.1; docs/roadmaps/h1-signature-
+// `inductive` declarations (work plan L2.1; docs/roadmaps/hott/h1-signature-
 // specification.md, section 9): a declaration is lowered to a signature in
 // normal form, admitted through the checker, and then used by name. This is
 // untrusted elaboration: the kernel checks the normal form, positivity and

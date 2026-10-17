@@ -1,5 +1,5 @@
 // Homomorphisms and isomorphisms of a theory's models (L2.4, the fourth
-// slice of docs/roadmaps/core-theories.md): mapping and support plans
+// slice of docs/roadmaps/high-level-abstractions/core-theories.md): mapping and support plans
 // from the retained interface. Artifact construction consumes these IDs
 // directly; labels are only public names and diagnostic text.
 //
