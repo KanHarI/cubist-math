@@ -19,7 +19,8 @@ The computation that instructions call, such as `Step`'s reductions,
 composition and transport, is trusted with them.
 
 The queries (`cc_kernel_whnf`, `cc_kernel_normalize`, `cc_kernel_rename`,
-`cc_kernel_endpoint_term`, `cc_kernel_alpha_equal`) compute on syntax and certify nothing.
+`cc_kernel_endpoint_term`, `cc_kernel_alpha_equal`) compute on syntax and
+certify nothing.
 The equality query reuses the instructions' syntactic comparison without
 reducing or unfolding; a failed query is distinct from an unequal answer. The
 untrusted driver (`web/cubical-instruction-driver.mjs`) uses them to pick

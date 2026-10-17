@@ -119,7 +119,7 @@ test("normalization and comparison propagate deadlines and programming errors", 
   for (const error of [new KernelError("Declaration time limit exceeded.", "deadline"), new TypeError("probe")]) {
     driver.reduce = () => { throw error; };
     assert.throws(() => driver.normalizeBoth(left, right, null, null), caught => caught === error);
-    assert.equal(driver.unnormalizable.size, 0, "a deadline is not a deterministic normalization failure");
+    assert.equal(driver.unnormalizable.size, 0, "interrupted work is not a deterministic normalization failure");
     driver.reduce = reduce;
     kernel.alphaEqual = () => { throw error; };
     assert.throws(() => driver.normalizeBoth(left, right, null, null), caught => caught === error);
