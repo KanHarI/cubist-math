@@ -1,0 +1,29 @@
+// Migrated from tests/frontend-evidence.test.mjs: nested matches retain model
+// evidence through imported renamed inheritance and shadowing.
+// Shared imported definitions.
+import hlevels;
+# test(imported_evidence.fixture.Bit)
+# expect_axioms([])
+inductive Bit : set U0 {
+  off;
+  yes;
+}
+
+# test(imported_evidence.fixture.Bits)
+# expect_axioms([])
+inductive Bits : set U0 {
+  nil;
+  cons(b : Bit, rest : Bits);
+}
+
+# test(imported_evidence.fixture.P)
+# expect_axioms([])
+theory P(U < UU0) {
+  M : set U;
+  c : M;
+  def value(m : Bits) : M := match m {
+    nil => c;
+    cons(off, m) => c;
+    cons(yes, m) => c;
+  };
+}

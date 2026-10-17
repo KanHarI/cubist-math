@@ -1,12 +1,14 @@
 import { sourceStatement } from "./cubical-statement.mjs";
 import { CubicalKernel } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
+import {SourceUnit} from "./translator/elaboration.mjs";
 import { Translator } from "./translator/translate.mjs";
 import { selectionName } from "./translator/theories.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
 import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
 import { parse } from "./cubist/parser.mjs";
+import {requireTestMode} from "./cubist/test-pragmas.mjs";
 import { lint } from "./cubist/lint.mjs";
 import {ownsSource} from "./cubist/link-sites.mjs";
 import { diagnosticCode } from "./diagnostics.mjs";
@@ -110,7 +112,12 @@ export class CubicalProgram {
         // can still load nat's bundled source.
         if(name==="nat"&&this.bundledNat&&!text)text=naturalSource;
       }
-      const ast = parse(text);
+      let ast;
+      try {ast=parse(text);requireTestMode(ast,this.options.testMode&&!discovery.reuseModules);}
+      catch(error) {
+        error.kind??="parse";
+        throw new SourceUnit({checker:this.checker,source:text,moduleName:name}).locate(error,null);
+      }
       prepared.set(name, { text, ast });
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
@@ -196,11 +203,11 @@ export class CubicalProgram {
     this.publications.set(name,result.publications??[]);
     if(this.collectGeneration)this.generation.set(name,result.generation??[]);
     for(const directive of result.directives??[]) {
-      this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, searchFuel: directive.searchFuel ?? null });
+      this.directiveFuel.push({ module: name, kind: directive.kind, name: directive.name, start:directive.start, searchFuel: directive.searchFuel ?? null });
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
           reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,
-          start:directive.errorStart??directive.start,end:directive.errorEnd,
+          start:directive.errorStart??directive.start,end:directive.errorEnd,declarationStart:directive.start,
           ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
           ...(directive.failure?{failure:directive.failure}:{}),...(directive.diagnostic?{diagnostic:directive.diagnostic}:{})});
       else if(directive.kind==="evaluate")
@@ -212,7 +219,8 @@ export class CubicalProgram {
     for (const d of result.declarations) {
       if (d.duplicate) {
         this.gaps.push({module:name,name:d.name,duplicate:true,reason:d.reason,code:diagnosticCode(d.reason),
-          start:d.errorStart,end:d.errorEnd,declarationStart:d.syntax.start,declarationEnd:d.syntax.end});
+          start:d.errorStart,end:d.errorEnd,declarationStart:d.syntax.start,declarationEnd:d.syntax.end,
+          ...(d.diagnostic?{diagnostic:d.diagnostic}:{})});
         continue; // The original symbol and its inspection data still own the name.
       }
       // A theory's declarations bring their generated syntax (theories.mjs).
@@ -300,7 +308,7 @@ export class CubicalProgram {
       this.scopeRecorder=new ScopePoints(this.scopeRevision,{onPoint:point=>this.scopePoints.set(point.id,point),
         probe:this.options.scopeProbe??null,target:this.options.scopeTarget??null,compilation:this.compilationBindings});
       this.scopeReplay=new ReplayInputs({revision:this.scopeRevision,main,prepared,readSource:this.readSource,
-        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences});
+        fuelLimits:this.fuelLimits,kernel:this.kernel,collectReferences:this.collectReferences,testMode:!!this.options.testMode});
     }
     const scopeRecorder=collectScopes?this.scopeRecorder:null;
     let total = discovery.total;
@@ -320,7 +328,9 @@ export class CubicalProgram {
       }
       catch (error) {
         if (name === main) throw error;
-        this.gaps.push({ module: name, reason: error.message, code: diagnosticCode(error.message) });
+        this.gaps.push({ module: name, reason: error.message, code: diagnosticCode(error.message),
+          ...(Number.isInteger(error.offset)?{start:error.offset,end:error.sourceEnd}:{}),
+          ...(error.diagnostic?{diagnostic:error.diagnostic}:{}) });
         this.failedImports.set(name, error.message);
         failedHere.add(name);
         visiting.delete(name); return new Map();
@@ -345,7 +355,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,definitionModule:name,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);

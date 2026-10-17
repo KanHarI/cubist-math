@@ -77,8 +77,9 @@ EVAL1 and NUM0/NUM1 can advance independently. See
   and contextual REPLs at arbitrary nesting depth. The
   [PR comparison](../reports/capture-bindings-pr-comparison.md) records which
   earlier solutions were adopted or replaced; CB0–CB7 and cleanup are complete.
-- [Refactoring and source-level tests](refactoring-and-testing.md): the active
-  follow-up stack for publication ownership, test pragmas and shared tooling.
+- [Refactoring and source-level tests](refactoring-and-testing.md): the implementation
+  stack for publication ownership, test pragmas and shared tooling, with its final
+  cleanup and verification record.
 - [Frontend generation](frontend-generation.md): current contracts motivated by
   PR #188, with its FG schedule superseded by CB0–CB7. Unifies declaration ownership,
   supported dependency analysis, universe calculation, contextual evidence

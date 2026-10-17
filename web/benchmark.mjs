@@ -36,7 +36,7 @@ function renderRows() {
     cells[3].textContent = kernelMs == null ? "—" : ms(Math.max(0, row.elapsedMs - kernelMs));
     cells[4].textContent = kernelMs == null ? "—" : ms(kernelMs);
     cells[5].textContent = judgements?.toLocaleString() ?? "—";
-    cells[6].textContent = row.category === "intended" ? `As its comment states: ${row.reason}` : row.reason ?? (row.instructionJudgements != null
+    cells[6].textContent = row.category === "intended" ? `Expected failure: ${row.reason}` : row.reason ?? (row.instructionJudgements != null
       ? "Checked, and derived by the instruction kernel." : "Native kernel check passed.");
     const root = bindings.get(row.rootBlocker);
     if (root) { const small = document.createElement("small"); small.append("Root blocker: ", link(root)); cells[6].append(small); }
@@ -58,6 +58,14 @@ function renderReport() {
       button.onclick = () => { $("category").value = key; renderRows(); }; return button;
     }));
     $("comparison").textContent = report.baseline && (report.baseline.area ?? "archive") === (report.area ?? "archive") && report.baseline.limitMs === report.limitMs && JSON.stringify(report.baseline.optimizations) === JSON.stringify(report.optimizations) ? `Checked since baseline: ${counts.checked - report.baseline.counts.checked >= 0 ? "+" : ""}${counts.checked - report.baseline.counts.checked}. Baseline recorded ${new Date(report.baseline.generatedAt).toLocaleString()}.` : `Deadline: ${report.limitMs ?? 1000} ms. Comparisons require the same area, deadline and optimization settings.`;
+    if(report.importErrors?.length) {
+      $("status").textContent+=` · ${report.importErrors.length} import failures`;
+      $("comparison").textContent+=` Imports: ${report.importErrors.map(gap=>`${gap.module}: ${gap.reason}`).join("; ")}`;
+    }
+    if(report.testFailures?.length) {
+      $("status").textContent+=` · ${report.testFailures.length} test contract failures`;
+      $("comparison").textContent+=` Test contracts: ${report.testFailures.join("; ")}`;
+    }
     renderRows();
     $("download").disabled = false;
 }

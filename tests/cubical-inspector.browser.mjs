@@ -38,6 +38,20 @@ await browserTest(async ({ browser, base }) => {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // Structured parse locations survive the real worker request boundary.
+  const parseFailure=await page.evaluate(async()=>{
+    const {WorkerRequests}=await import("./worker-requests.mjs");
+    const requests=new WorkerRequests(new Worker("./cubical-worker.mjs",{type:"module"}));
+    try {
+      await requests.request("check",{source:"def broken := ;",module:"diagnostic_probe"});
+      return null;
+    } catch(error) {return {offset:error.offset,diagnostic:error.diagnostic};}
+    finally {requests.terminate();}
+  });
+  assert.ok(parseFailure,"malformed source must return a worker error");
+  assert.equal(parseFailure.diagnostic.primary.module,"diagnostic_probe");
+  assert.equal(parseFailure.diagnostic.primary.start,parseFailure.offset);
+  assert.equal(parseFailure.diagnostic.kind,"parse");
   // Frontend generation is a read-only snapshot of the last check, including
   // imported modules. Editing never changes that snapshot until a recheck.
   const generatedExample = `import hlevels;
