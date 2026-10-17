@@ -3,7 +3,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
-import {sourceReader} from "../tools/module-sources.mjs";
 import {Scope,SourceUnit} from "../web/translator/elaboration.mjs";
 import {T} from "../web/translator/core.mjs";
 import {BindingAdapter} from "../web/cubist/bindings.mjs";
@@ -11,10 +10,7 @@ import {ContextualSession} from "../web/contextual-session.mjs";
 import {interval as I} from "../web/translator/lattice.mjs";
 
 const module=await createCubical();
-const check=(t,source,fixtures={},options={})=>{
-  const library=sourceReader();
-  return checkProgram(t,source,{module,reader:(name,importer)=>fixtures[name]??library(name,importer),options});
-};
+const check=(t,source,options={})=>checkProgram(t,source,{module,options});
 const accepts=(result,get,names)=>{
   assert.deepEqual(result.gaps,[]);
   for(const name of names) {
@@ -133,7 +129,7 @@ test("CB3: isolated query replay carries checked model evidence across scratch e
   const source=`import hlevels;
 theory T(U < UU0) { M : set U; c : M; }
 def f(S : T(U0)) : Unit := tt;`;
-  const {program,result}=await check(t,source,{}, {collectScopes:true});
+  const {program,result}=await check(t,source,{collectScopes:true});
   assert.deepEqual(result.gaps,[]);
   const points=[...program.scopePoints.values()].filter(p=>p.origin.module==="main"&&p.phase==="expression"
     &&p.origin.start===source.lastIndexOf("tt;"));
@@ -162,7 +158,7 @@ def bad(x : L) : L := match x { nil => nil; _ => cons(nil); };`;
   assert.ok(get("bad").searchFuel.searches>0);
   assert.ok(get("bad").searchFuel.queries>=get("bad").searchFuel.most.queries);
   assert.ok(!program.steps("main").some(step=>step.declaration==="bad"&&step.kind==="obligation"));
-  const limited=await check(t,source,{}, {searchFuel:{queries:1}});
+  const limited=await check(t,source,{searchFuel:{queries:1}});
   assert.equal(limited.get("bad").failure,"fuel");
   assert.match(limited.get("bad").reason,/ran out of search fuel/);
 });

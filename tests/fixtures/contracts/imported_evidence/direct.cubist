@@ -1,4 +1,6 @@
-// The same evidence path with definitions authored locally.
+// Migrated from tests/frontend-evidence.test.mjs: nested matches retain model
+// evidence through imported renamed inheritance and shadowing.
+// Direct scenario.
 import hlevels;
 # test(imported_evidence.direct.Bit)
 # expect_axioms([])

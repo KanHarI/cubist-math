@@ -1,5 +1,6 @@
 // Migrated from tests/theories.test.mjs:
 // an operation whose group repeats a name has homomorphisms for each argument.
+// The group still takes both arguments; its body reads the last.
 import nat;
 import hlevels;
 use nat;

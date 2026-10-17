@@ -1,4 +1,6 @@
-// A separate file exercises the production import resolver.
+// Migrated from tests/frontend-evidence.test.mjs: nested matches retain model
+// evidence through imported renamed inheritance and shadowing.
+// Inherited scenario.
 import fixture;
 # test(imported_evidence.inherited.Child)
 # expect_axioms([])
