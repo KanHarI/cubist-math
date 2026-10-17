@@ -1111,11 +1111,25 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   };
   const testPragma=()=>{
     const start=take("#").start,at=ts[i],pragma=testName(),qualifiedDots=[];
-    if(!["test","expect_error","expect_warning","expect_axioms"].includes(pragma))
+    if(!["test","expect_error","expect_warning","expect_axioms","expect_error_at","expect_searches"].includes(pragma))
       throw testFailure(`Unknown test pragma ${pragma}.`,at);
     take("(");
     let value;
-    if(pragma==="expect_axioms") {
+    if(pragma==="expect_error_at") {
+      value=[];const closes=[];
+      while(peek()!=="EOF"&&(peek()!==")"||closes.length)) {
+        const token=take(),closing={"(":")","[":"]","{":"}"}[token.text];
+        if(closing)closes.push(closing);
+        else if([")","]","}"].includes(token.text)&&closes.pop()!==token.text)
+          throw testFailure("Unbalanced source anchor.",token);
+        value.push(token.text);
+      }
+      if(!value.length||closes.length)throw testFailure("A source anchor needs nonempty balanced tokens.",at);
+    } else if(pragma==="expect_searches") {
+      const token=take();value=Number(token.text);
+      if(!/^\d+$/.test(token.text)||!Number.isSafeInteger(value))
+        throw testFailure("A search count needs a nonnegative safe integer.",token);
+    } else if(pragma==="expect_axioms") {
       take("[");value=[];
       if(peek()!=="]")while(true) {
         let assumption=testName();
@@ -1151,6 +1165,10 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         throw testFailure("A refused test cannot also expect assumptions of a checked result.",pendingTests[0]);
       if(["evaluate","print"].includes(d.kind)&&pendingTests.some(item=>item.pragma==="expect_axioms"))
         throw testFailure("Assumption expectations need a declaration.",pendingTests[0]);
+      if(pendingTests.some(item=>item.pragma==="expect_error_at")&&!pendingTests.some(item=>item.pragma==="expect_error"))
+        throw testFailure("A source error anchor needs an expected error.",pendingTests[0]);
+      if(pendingTests.some(item=>item.pragma==="expect_searches")&&d.kind!=="def")
+        throw testFailure("Search counts need an ordinary definition.",pendingTests[0]);
       testIds.add(named.value);
       d.testPragmas=pendingTests;pendingTests=[];
     }

@@ -1,0 +1,23 @@
+// Migrated from tests/frontend-evidence.test.mjs: nested matches retain model
+// evidence through imported renamed inheritance and shadowing.
+// Inherited scenario.
+import fixture;
+# test(imported_evidence.inherited.Child)
+# expect_axioms([])
+theory Child(U < UU0) extends P(c := point) {}
+
+# test(imported_evidence.inherited.computation)
+# expect_axioms([])
+def computation(S : Child(U0)) : S.value(cons(yes, nil)) = S.point {
+  rfl;
+}
+
+# test(imported_evidence.inherited.N)
+# expect_axioms([])
+initial N : Child(U0);
+
+# test(imported_evidence.inherited.generated)
+# expect_axioms([])
+def generated : N.model.value(cons(off, nil)) = N.point {
+  rfl;
+}

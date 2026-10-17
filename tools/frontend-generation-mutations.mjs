@@ -15,6 +15,12 @@ const mutation=(id,file,from,to,test,pattern)=>({id,file,from,to,test,pattern});
 // Mutate current production boundaries of the adopted contracts. A missing
 // site or a broken baseline never counts as a killed mutant.
 const mutations=[
+  mutation("search-charge","web/translator/fuel.mjs",
+    "record.searches++;", "record.searches += 0;",
+    "cubist-contracts","^generation\\.G8\\.refusal$"),
+  mutation("diagnostic-span","web/translator/elaboration.mjs",
+    "start:site.start,end:site.end", "start:site.start,end:site.start",
+    "cubist-contracts","^generation\\.(G8|G12_range)\\.refusal$"),
   mutation("binding-label","web/translator/translate.mjs",
     "label=node.label??node.text??node.name", "label=name",
     "frontend-provenance","freshened law and derived parameters"),
