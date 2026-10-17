@@ -562,12 +562,25 @@ section {{U < UU0}}(
     )(y);
 
   // The field of fractions.
+  computable def q_add_mul(x, y, z : Frac) : q_mul(q_add(x, y), z) = q_add(q_mul(x, z), q_mul(y, z)) {
+    calc {
+      q_mul(q_add(x, y), z) = q_mul(z, q_add(x, y)) by q_mul_comm(q_add(x, y), z);
+      _ = q_add(q_mul(z, x), q_mul(z, y)) by q_mul_add(z, x, y);
+      _ = q_add(q_mul(x, z), q_mul(z, y)) by cong(
+        fun (w : Frac) => q_add(w, q_mul(z, y)), q_mul_comm(z, x)
+      );
+      _ = q_add(q_mul(x, z), q_mul(y, z)) by cong(
+        fun (w : Frac) => q_add(q_mul(x, z), w), q_mul_comm(z, y)
+      );
+    }
+  }
+
   def fraction_field : Field(U) := Field.make(
     R := Frac, R_is_set := frac_is_set, add := q_add, add_assoc := q_add_assoc, zero := q_zero,
     zero_add := q_zero_add, add_zero := q_add_zero, neg := q_neg, neg_add := q_neg_add,
     add_neg := q_add_neg, add_comm := q_add_comm, mul := q_mul, mul_assoc := q_mul_assoc,
     one := q_one, one_mul := q_one_mul, mul_one := q_mul_one, mul_comm := q_mul_comm,
-    mul_add := q_mul_add,
+    mul_add := q_mul_add, distrib_right := q_add_mul,
     inverses := fun (x : Frac, nonzero : x = q_zero -> Void) => merely(
       U, exists y : Frac. q_mul(x, y) = q_one, (q_inv(x), q_mul_inv(x, nonzero))
     ), zero_ne_one := q_zero_ne_one

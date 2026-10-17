@@ -3,6 +3,7 @@
 // one to the multiplicative one, which computes.
 import nat;
 import algebra;
+import ordered_algebra;
 use nat;
 
 computable def two_to(n : Nat) : Nat := match n {
@@ -46,3 +47,78 @@ print(
 // The section lemmas, at a model: inverses in a group are unique.
 // Output: forall U < UU0. forall G : Group(U). forall x : G.M. G.inv(G.inv(x)) = x
 print(typeof(inv_inv));
+
+// Ordered rings need no multiplicative commutativity. Both routes from
+// an ordered commutative ring forget to exactly the same ring.
+computable def ordered_ring_shared(A : OrderedCommRing(U0)) : A.ordered_ring.ring = A.comm_ring.ring {
+  rfl;
+}
+
+computable def ordered_field_shared(F : OrderedField(U0)) :
+  F.ordered_comm_ring.comm_ring = F.field.comm_ring {
+  rfl;
+}
+
+computable def ordered_map(
+  A, B : OrderedRing(U0), f : OrderedRing.Hom(A, B), x, y : A.R, p : A.lt(x, y)
+) :
+  B.lt(f.map_R(x), f.map_R(y)) := f.map_lt(x, y, p);
+
+// The multiplicative reflection law supplies constructive positive-factor
+// cancellation. In particular, a positive element's inverse is positive.
+section {{U < UU0}}(A : OrderedCommRing(U)) {
+  computable def negative_of_positive(x : R, p : zero < x) : neg(x) < zero {
+    let shifted := add_lt_add_right(zero, x, neg(x), p);
+    exact transport (transport shifted along zero_add(neg(x)) in (fun (w : R) => lt(w, x + neg(x)))) along add_neg(
+      x
+    ) in (fun (w : R) => lt(neg(x), w));
+  }
+
+  computable def positive_of_negative(x : R, p : x < zero) : zero < neg(x) {
+    let shifted := add_lt_add_right(x, zero, neg(x), p);
+    exact transport (transport shifted along add_neg(x) in (fun (w : R) => lt(w, zero + neg(x)))) along zero_add(
+      neg(x)
+    ) in (fun (w : R) => lt(zero, w));
+  }
+
+  computable def positive_factor(x, y : R, product : zero < x * y, factor : zero < y) :
+    zero < x := mere_eliminate(
+      U, U, (zero < x) or (x < zero), zero < x, lt_is_prop(zero, x),
+      fun (sign : (zero < x) or (x < zero)) => match sign return zero < x {
+        left positive => positive;
+        right negative => absurd(
+          lt_irrefl(
+            zero,
+            lt_trans(
+              zero, neg(x * y), zero,
+              transport mul_pos(neg(x), y, positive_of_negative(x, negative), factor) along neg_mul(
+                A.comm_ring, x, y
+              ) in (fun (w : R) => lt(zero, w)), negative_of_positive(x * y, product)
+            )
+          )
+        );
+      }, mul_pos_apart_left(x, y, product)
+    );
+}
+
+computable def ordered_inverse_positive(
+  F : OrderedField(U0), x : F.R, nonzero : x = F.zero -> Void, positive : F.lt(F.zero, x)
+) :
+  F.lt(F.zero, inv(F.field, x, nonzero)) {
+  use F;
+  let inverse_product : inv(F.field, x, nonzero) * x = one :=
+    trans(mul_comm(inv(F.field, x, nonzero), x), mul_inv(F.field, x, nonzero));
+  exact positive_factor(
+    F.ordered_comm_ring, inv(F.field, x, nonzero), x,
+    transport zero_lt_one along sym(inverse_product) in (fun (w : R) => lt(zero, w)), positive
+  );
+}
+
+// Multiplicative commutativity must be requested via OrderedCommRing.
+// Error: E815: A is a model of OrderedRing, which has no field mul_comm: it has R, R_is_set, add,
+//   add_assoc, zero, zero_add, add_zero, neg, neg_add, add_neg, add_comm, mul, mul_assoc, one,
+//   one_mul, mul_one, mul_add, distrib_right, lt, lt_is_prop, lt_irrefl, lt_trans, lt_cotrans,
+//   lt_tight, zero_lt_one, add_lt_add_right, mul_pos, mul_pos_apart_left, mul_pos_apart_right, and
+//   the parents ring.
+def unavailable_commutativity(A : OrderedRing(U0), x, y : A.R) :
+  A.mul(x, y) = A.mul(y, x) := A.mul_comm(x, y);

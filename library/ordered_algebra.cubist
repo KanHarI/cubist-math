@@ -1,10 +1,10 @@
 import algebra;
 
-// Ordered commutative rings and fields, without completeness or real-number
+// Ordered rings, commutative rings and fields, without completeness or real-number
 // constructions. The strict order is proposition-valued, cotransitive and
 // tight. Cotransitivity supplies mere disjunction, not decidable trichotomy.
 // Non-strict order is the absence of the reverse strict inequality.
-theory OrderedRing(U < UU0) extends CommRing {
+theory OrderedRing(U < UU0) extends Ring {
   lt(x, y : R) : prop U notation x < y;
   def le(x, y : R) : U := lt(y, x) -> Void notation x <= y;
   law lt_irrefl(x : R) : x < x -> Void;
@@ -14,11 +14,18 @@ theory OrderedRing(U < UU0) extends CommRing {
   law zero_lt_one : zero < one;
   law add_lt_add_right(x, y, z : R) : x < y -> x + z < y + z;
   law mul_pos(x, y : R) : zero < x -> zero < y -> zero < x * y;
+  // Constructive reflection: a positive product makes each factor apart
+  // from zero. Without commutativity these are separate requirements.
+  law mul_pos_apart_left(x, y : R) : zero < x * y -> Trunc(U, (zero < x) or (x < zero));
+  law mul_pos_apart_right(x, y : R) : zero < x * y -> Trunc(U, (zero < y) or (y < zero));
 }
+
+// Both parents share Ring, including its carrier, operations and laws.
+theory OrderedCommRing(U < UU0) extends OrderedRing, CommRing {}
 
 // Both parents share the same commutative ring. Inverses remain the checked
 // Field interface; no order decision procedure is assumed or generated.
-theory OrderedField(U < UU0) extends OrderedRing, Field {}
+theory OrderedField(U < UU0) extends OrderedCommRing, Field {}
 
 section {{U < UU0}}(A : OrderedRing(U)) {
   computable def order_le_refl(x : R) : x <= x := lt_irrefl(x);

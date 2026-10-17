@@ -4,7 +4,7 @@ import h1_truncation;
 use nat;
 
 // The algebraic hierarchy as theories (L2.4): semigroups, monoids, groups,
-// their commutative kinds, commutative rings and fields, each a theory of
+// their commutative kinds, rings, commutative rings and fields, each a theory of
 // one set with its operations and laws. A model of a theory is a structure
 // of its kind, Monoid(U), and a theory's homomorphisms and
 // isomorphisms come with it. The natural numbers are a commutative monoid
@@ -36,16 +36,16 @@ theory Group(U < UU0) extends Monoid {
 // through both parents.
 theory AbelianGroup(U < UU0) extends Group, CommMonoid {}
 
-// A commutative ring: an abelian group for addition, written +, with zero
-// and neg, written -x, and a commutative monoid for multiplication on the
-// same set, over which multiplication distributes. Subtraction, x - y, is
-// derived: x + -y.
-theory CommRing(U < UU0) extends additive_ : AbelianGroup(
+// A ring: an abelian group for addition and a monoid for multiplication
+// on the same set. Both distributive laws are needed without commutativity.
+// Subtraction, x - y, is derived: x + -y.
+theory Ring(U < UU0) extends additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
   mul_comm := add_comm
-), multiplicative : CommMonoid(M := R) {
+), multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
+  law distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z;
   def sub(x, y : R) : R := x + -y notation x - y;
   // A natural number in the ring, which reads plain numerals in its
   // notation: one added to itself n times (L2.10c).
@@ -55,6 +55,16 @@ theory CommRing(U < UU0) extends additive_ : AbelianGroup(
   }
   notation numeral;
 }
+
+// A commutative ring shares Ring's operations and adds commutativity of
+// multiplication. The direct additive parent retains A.additive_; its
+// fields are the same ancestor's fields already inherited through Ring.
+theory CommRing(U < UU0) extends Ring,
+additive_ : AbelianGroup(
+  M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
+  mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
+  mul_comm := add_comm
+), multiplicative : CommMonoid(M := R) {}
 
 // A field: a commutative ring in which zero is not one and every element
 // but zero merely has a multiplicative inverse (L2.10k). Being a field is a
@@ -158,15 +168,8 @@ section {{U < UU0}}(A : CommRing(U)) {
 
   computable def zero_mul(x : R) : zero * x = zero := trans(mul_comm(zero, x), mul_zero(x));
 
-  // Multiplication distributes over addition on the right too.
-  computable def add_mul(x, y, z : R) : (x + y) * z = x * z + y * z {
-    calc {
-      (x + y) * z = z * (x + y) by mul_comm(x + y, z);
-      _ = z * x + z * y by mul_add(z, x, y);
-      _ = x * z + z * y by cong(fun (w : R) => w + z * y, mul_comm(z, x));
-      _ = x * z + y * z by cong(fun (w : R) => x * z + w, mul_comm(z, y));
-    }
-  }
+  // Keep the existing section lemma at a commutative ring.
+  computable def add_mul(x, y, z : R) : (x + y) * z = x * z + y * z := distrib_right(x, y, z);
 
   // neg(x) * y is the additive inverse of x * y.
   computable def neg_mul(x, y : R) : neg(x) * y = neg(x * y) {

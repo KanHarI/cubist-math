@@ -2388,7 +2388,7 @@
   },
   {
    "path": "library/algebra.cubist",
-   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `CommRing` (an abelian group written `+`, with `zero` and `neg`, and a commutative monoid on one set, with distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
+   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Semigroup`, `Monoid`, `CommMonoid`, `Group`, `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
    "path": "library/classical_axioms.cubist",
@@ -2428,7 +2428,7 @@
   },
   {
    "path": "library/ordered_algebra.cubist",
-   "summary": "`OrderedRing` and `OrderedField`, extending the commutative ring and field theories with a proposition-valued, cotransitive, tight strict order compatible with addition and positive multiplication. Non-strict order is the negation of reverse strict order. No decidable order, completeness or ordered integer/rational model is assumed."
+   "summary": "`OrderedRing` extends `Ring` with a proposition-valued, cotransitive, tight strict order compatible with addition and positive multiplication, including constructive reflection of positive products to apartness of each factor from zero. `OrderedCommRing` extends both `OrderedRing` and `CommRing`; `OrderedField` extends it and `Field`, sharing their commutative ring. Non-strict order is the negation of reverse strict order. Inverses retain `Field`'s nonzero criterion. No decidable order, completeness or ordered integer/rational model is assumed."
   },
   {
    "path": "library/propositions.cubist",
