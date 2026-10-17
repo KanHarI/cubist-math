@@ -13,7 +13,14 @@
     "lint:cubist": "node tools/lint-cubist.mjs",
     "inline-errors": "node tools/inline-errors.mjs --write",
     "files:index": "node tools/cubist-files.mjs",
-    "linearize:cubist": "node tools/linearize-cubist.mjs"
+    "linearize:cubist": "node tools/linearize-cubist.mjs",
+    "test:generation:mutations": "node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations.json",
+    "test:coverage": "node tools/instruction-coverage.mjs",
+    "test:browser:contextual": "node tests/contextual-console.browser.mjs",
+    "test:browser:cubical": "node tests/cubical.browser.mjs",
+    "test:browser:statement": "node tests/statement.browser.mjs",
+    "test:browser:proof-navigation": "node tests/proof-navigation.browser.mjs",
+    "test:browser:landing": "node tests/landing.browser.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"

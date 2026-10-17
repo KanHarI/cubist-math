@@ -42,7 +42,7 @@ export function lowerInductive(translator, d, scope) {
     if (assumption) throw locate(Error(`${what} uses the assumption ${checker.assumptionLabels?.get(assumption) ?? assumption}: `
       + "a declared type's parameters and constructors cannot use assumptions, since its signature is closed."), node);
   };
-  const binding = checker.bindingName?.(d.name.text) ?? d.name.text;
+  const binding = translator.bindingName(d.name.text);
   // The header's parameters: universes as level parameters, then terms.
   const repeated = repeatedName(d.params);
   if (repeated) throw locate(Error(`${d.name.text} has two parameters named ${bindingStem(repeated.name)}: give each its own name.`), repeated.name);

@@ -4,6 +4,7 @@
 // dispatched on that commit, of ci.yml; and its verdict fails on any failed
 // check, a changed checkout, or no passing run.
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { cell, checkRevision, ciRuns, localChecks, outcome, render, revision, verdict } from "../tools/release-evidence.mjs";
 
@@ -74,15 +75,32 @@ test("a check's outcome: it passes only when it ran and exited with 0", () => {
   assert.deepEqual(outcome(pages, { status: 1, output: "", seconds: 1 }).summary, []);
 });
 
-test("the local checks are the commands CI and the project's verification run", () => {
+test("mutation evidence includes a survivor before the final kill and baseline failures", () => {
+  const check = localChecks().find(check => check.name === "Frontend mutations");
+  const lines = ["first: killed (expected killed)", "middle: survived (expected killed)", "last: killed (expected killed)"];
+  const result = outcome(check, { status: 1, output: `> npm banner\n${lines.join("\n")}\n`, seconds: 1 });
+  assert.equal(result.passed, false);
+  assert.deepEqual(result.summary, lines);
+  for (const message of ["Error: first: baseline failed", "TypeError: x is not a function", "Error [ERR_MODULE_NOT_FOUND]: missing input"])
+    assert.deepEqual(outcome(check, { status: 1, output: `${lines[0]}\n${message}\n    at run (tool.mjs:1)\nNode.js v24.0.0\n`, seconds: 1 }).summary,
+      [lines[0], message]);
+});
+
+test("release and workflows share package scripts, with deliberate native and extended-test differences", () => {
+  const checks = localChecks(), scripts = JSON.parse(readFileSync(new URL("../package.json", import.meta.url))).scripts;
+  for (const { command } of checks) if (command[0] === "npm")
+    assert.ok(scripts[command[1] === "run" ? command[2] : command[1]], command.join(" "));
+  for (const workflow of ["ci", "pages"]) {
+    const source = readFileSync(new URL(`../.github/workflows/${workflow}.yml`, import.meta.url), "utf8");
+    // These workflows use single-line run steps for their npm checks. A move
+    // to a block must update this check rather than silently lose coverage.
+    const actual = [...source.matchAll(/^\s*(?:-\s*)?run: (npm (?:test|run [\w:-]+))\s*$/gm)].map(match => match[1]);
+    const expected = checks.filter(check => check.workflows?.includes(workflow)).map(check => check.command.join(" "));
+    assert.deepEqual(actual.sort(), expected.sort(), `${workflow}: declared shared checks match actual workflow steps`);
+  }
   const command = (name, platform) => localChecks(platform).find(check => check.name === name)?.command.join(" ");
   assert.equal(command("Sanitizers", "darwin"), "make sanitize SANITIZERS=undefined");
   assert.equal(command("Sanitizers", "linux"), "make sanitize");
-  assert.equal(command("Instruction coverage"), "node tools/instruction-coverage.mjs");
-  assert.deepEqual(localChecks().map(check => check.command.join(" ")).filter(text => !text.startsWith("node tests/")), [
-    "make -C kernel test", "make lint", localChecks()[2].command.join(" "), "make wasm", "node tools/build-stamp.mjs check",
-    "node tools/instruction-coverage.mjs", "npm test", "npm run test:browser",
-    "node tools/build-site.mjs"]);
 });
 
 test("the local checks run in a checkout of the revision, which must end as it began", () => {

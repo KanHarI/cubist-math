@@ -13,7 +13,7 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { archiveModules } from "../web/cubist/modules.mjs";
+import { archiveModules, libraryModules } from "../web/cubist/modules.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 import { archiveReader, sourceReader } from "./module-sources.mjs";
@@ -64,7 +64,8 @@ async function measure(name, source, readSource) {
 const workloads = [];
 const modules = archiveModules;
 workloads.push(await measure("archive", modules.map(module => `import ${module};`).join("\n"), archiveReader("archive")));
-const rebuilt = (await readdir(new URL("library/", root))).filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -7));
+// Preserve this workload's alphabetical import order and tie attribution.
+const rebuilt = [...libraryModules].sort();
 workloads.push(await measure("library", rebuilt.map(module => `import ${module};`).join("\n"), sourceReader()));
 const examples = [
   ...["conversion-laws", "cubical-probes", "canonicity"].map(file => `docs/examples/hott-automation/${file}.cubist`)

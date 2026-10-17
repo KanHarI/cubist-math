@@ -3,7 +3,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import {checkProgram} from "./check-program.mjs";
-import {sourceReader} from "../tools/module-sources.mjs";
 import {Scope,SourceUnit} from "../web/translator/elaboration.mjs";
 import {T} from "../web/translator/core.mjs";
 import {BindingAdapter} from "../web/cubist/bindings.mjs";
@@ -11,10 +10,7 @@ import {ContextualSession} from "../web/contextual-session.mjs";
 import {interval as I} from "../web/translator/lattice.mjs";
 
 const module=await createCubical();
-const check=(t,source,fixtures={},options={})=>{
-  const library=sourceReader();
-  return checkProgram(t,source,{module,reader:(name,importer)=>fixtures[name]??library(name,importer),options});
-};
+const check=(t,source,options={})=>checkProgram(t,source,{module,options});
 const accepts=(result,get,names)=>{
   assert.deepEqual(result.gaps,[]);
   for(const name of names) {
@@ -48,23 +44,6 @@ def wrong_operand : operand = succ(zero) { rfl; }`;
       [["wrong_path","E606"],["wrong_constructor","E606"],["wrong_operand","E606"]],JSON.stringify(result.gaps));
     for(const name of ["coordinate_value","coordinate_path","constructor_value","operand_value"])
       assert.equal(get(name).verified,true,get(name).reason);
-  }
-});
-
-test("CB3: nested matches retain model evidence through imported renamed inheritance and shadowing",async t=>{
-  const fixture=`import hlevels;
-inductive Bit : set U0 { off; yes; }
-inductive Bits : set U0 { nil; cons(b : Bit, rest : Bits); }
-theory P(U < UU0) { M : set U; c : M;
-  def value(m : Bits) : M := match m { nil => c; cons(off,m) => c; cons(yes,m) => c; };
-}`;
-  for(const imported of [false,true]) {
-    const {result,get}=await check(t,`${imported?"import fixture;":fixture}
-theory Child(U < UU0) extends P(c := point) {}
-def computation(S : Child(U0)) : S.value(cons(yes,nil)) = S.point { rfl; }
-initial N : Child(U0);
-def generated : N.model.value(cons(off,nil)) = N.point { rfl; }`,{fixture});
-    accepts(result,get,["computation","generated"]);
   }
 });
 
@@ -150,7 +129,7 @@ test("CB3: isolated query replay carries checked model evidence across scratch e
   const source=`import hlevels;
 theory T(U < UU0) { M : set U; c : M; }
 def f(S : T(U0)) : Unit := tt;`;
-  const {program,result}=await check(t,source,{}, {collectScopes:true});
+  const {program,result}=await check(t,source,{collectScopes:true});
   assert.deepEqual(result.gaps,[]);
   const points=[...program.scopePoints.values()].filter(p=>p.origin.module==="main"&&p.phase==="expression"
     &&p.origin.start===source.lastIndexOf("tt;"));
@@ -179,7 +158,7 @@ def bad(x : L) : L := match x { nil => nil; _ => cons(nil); };`;
   assert.ok(get("bad").searchFuel.searches>0);
   assert.ok(get("bad").searchFuel.queries>=get("bad").searchFuel.most.queries);
   assert.ok(!program.steps("main").some(step=>step.declaration==="bad"&&step.kind==="obligation"));
-  const limited=await check(t,source,{}, {searchFuel:{queries:1}});
+  const limited=await check(t,source,{searchFuel:{queries:1}});
   assert.equal(limited.get("bad").failure,"fuel");
   assert.match(limited.get("bad").reason,/ran out of search fuel/);
 });

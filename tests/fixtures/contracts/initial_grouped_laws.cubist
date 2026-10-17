@@ -1,0 +1,26 @@
+// Migrated from tests/initial-models.test.mjs:
+// grouped equational law binders keep their shared domain and avoid capturing free-model parameters.
+import hlevels;
+# test(initial_grouped_laws.Equal)
+theory Equal(U < UU0) {
+  M : set U;
+  c : M;
+  law all : forall x, y : M. x = y;
+  law shared : forall M, y : M. M = y;
+  law capture : forall A, y : M. A = y;
+}
+
+# test(initial_grouped_laws.N)
+initial N : Equal(U0);
+
+# test(initial_grouped_laws.W)
+free W(A : U0) : Equal(U0) on A;
+
+# test(initial_grouped_laws.all_path)
+def all_path(x, y : N) : x = y := N.all(x, y);
+
+# test(initial_grouped_laws.shared_path)
+def shared_path(x, y : N) : x = y := N.shared(x, y);
+
+# test(initial_grouped_laws.capture_path)
+def capture_path(A : U0, x, y : W(A)) : x = y := W.capture(x, y);

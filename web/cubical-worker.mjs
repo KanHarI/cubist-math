@@ -100,7 +100,7 @@ async function handle({ data: { id, command, args } }, epoch) {
     else if (command === "export") result = program.export();
     else throw new Error("Unsupported cubical command.");
     self.postMessage({ id, result });
-  } catch (error) { self.postMessage({ id, error: { message: error.message, offset: error.offset } }); }
+  } catch (error) { self.postMessage({ id, error: { message: error.message, offset: error.offset, diagnostic:error.diagnostic } }); }
 }
 self.onmessage = event => {
   // This revokes only contextual capabilities, never a live kernel handle.

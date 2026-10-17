@@ -10,7 +10,7 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 // 42, 1_000, 1/2, 2.3, 6.02e23, 2.5e-3 and 5i. Right after a tight dot a
 // digit is a projection's index, as in p.2.1, never a literal's start.
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
-const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
 // The source scanner also serves incomplete editor input. It retains every
 // character, including comments and whitespace; tokenize enforces parser limits
 // and rejects invalid characters after discarding trivia.
@@ -26,7 +26,7 @@ export function tokenize(source) {
     const { text, start } = token;
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|[#\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: start,
@@ -1096,6 +1096,84 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     return result;
   }
   const declarations = [],items=[],directives=[];
+  let pendingTests=[];
+  const testIds=new Set();
+  const testFailure=(message,at)=>Object.assign(new Error(`Invalid test pragma: ${message}`),{offset:at.start});
+  const testName=()=>{
+    const token=take();
+    if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(token.text))throw testFailure("Expected a test pragma name.",token);
+    return token.text;
+  };
+  const testReference=dots=>{
+    let value=testName();
+    while(peek()===".") {dots.push(take("."));value+="."+testName();}
+    return value;
+  };
+  const testPragma=()=>{
+    const start=take("#").start,at=ts[i],pragma=testName(),qualifiedDots=[];
+    if(!["test","expect_error","expect_warning","expect_axioms","expect_error_at","expect_searches"].includes(pragma))
+      throw testFailure(`Unknown test pragma ${pragma}.`,at);
+    take("(");
+    let value;
+    if(pragma==="expect_error_at") {
+      value=[];const closes=[];
+      while(peek()!=="EOF"&&(peek()!==")"||closes.length)) {
+        const token=take(),closing={"(":")","[":"]","{":"}"}[token.text];
+        if(closing)closes.push(closing);
+        else if([")","]","}"].includes(token.text)&&closes.pop()!==token.text)
+          throw testFailure("Unbalanced source anchor.",token);
+        value.push(token.text);
+      }
+      if(!value.length||closes.length)throw testFailure("A source anchor needs nonempty balanced tokens.",at);
+    } else if(pragma==="expect_searches") {
+      const token=take();value=Number(token.text);
+      if(!/^\d+$/.test(token.text)||!Number.isSafeInteger(value))
+        throw testFailure("A search count needs a nonnegative safe integer.",token);
+    } else if(pragma==="expect_axioms") {
+      take("[");value=[];
+      if(peek()!=="]")while(true) {
+        let assumption=testName();
+        if(peek()==="[") {
+          take("[");const signature=testReference(qualifiedDots).split(".");take("]");
+          if(signature.length<2)throw testFailure("An assumption signature needs a qualified module.name.",at);
+          assumption+=`:${signature.shift()}__${signature.join(".")}`;
+        }
+        value.push(assumption);
+        if(peek()!==",")break;
+        take(",");
+      }
+      take("]");
+      if(new Set(value).size!==value.length)throw testFailure("An assumption expectation repeats a name.",at);
+    } else {
+      value=pragma==="test"?testReference(qualifiedDots):testName();
+      if(pragma!=="test"&&!(pragma==="expect_error"?/^E\d{3}$/:/^W\d{3}$/).test(value))
+        throw testFailure("A diagnostic expectation needs an E or W code of the appropriate kind.",at);
+    }
+    const end=take(")").end;
+    if(pragma!=="expect_warning"&&pendingTests.some(item=>item.pragma===pragma))
+      throw testFailure(`Repeated test pragma ${pragma}.`,at);
+    pendingTests.push({pragma,value,start,end,...(qualifiedDots.length?{qualifiedDots}:{})});
+  };
+  const placeItem=d=>{
+    if(pendingTests.length) {
+      if(!["def","inductive","theory","initial","free","evaluate","print"].includes(d.kind))
+        throw testFailure(`Test pragmas cannot target ${d.kind}.`,pendingTests[0]);
+      const named=pendingTests.find(item=>item.pragma==="test");
+      if(!named)throw testFailure("Test expectations need a named # test case.",pendingTests[0]);
+      if(testIds.has(named.value))throw testFailure(`Duplicate test case ${named.value}.`,named);
+      if(pendingTests.some(item=>item.pragma==="expect_error")&&pendingTests.some(item=>item.pragma==="expect_axioms"))
+        throw testFailure("A refused test cannot also expect assumptions of a checked result.",pendingTests[0]);
+      if(["evaluate","print"].includes(d.kind)&&pendingTests.some(item=>item.pragma==="expect_axioms"))
+        throw testFailure("Assumption expectations need a declaration.",pendingTests[0]);
+      if(pendingTests.some(item=>item.pragma==="expect_error_at")&&!pendingTests.some(item=>item.pragma==="expect_error"))
+        throw testFailure("A source error anchor needs an expected error.",pendingTests[0]);
+      if(pendingTests.some(item=>item.pragma==="expect_searches")&&d.kind!=="def")
+        throw testFailure("Search counts need an ordinary definition.",pendingTests[0]);
+      testIds.add(named.value);
+      d.testPragmas=pendingTests;pendingTests=[];
+    }
+    items.push(d);
+  };
   let module = null;
   const imports = [];
   while (peek() === "import") {
@@ -1119,10 +1197,13 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       d.section = { ...section, declared: [...section.declared] };
       section.declared.push(d.name.text);
     }
-    items.push(d);
+    placeItem(d);
   };
   while (peek() !== "EOF") {
+    if(peek()==="#") {testPragma();continue;}
     let t = take();
+    if(pendingTests.length&&["section","import","}"].includes(t.text))
+      throw testFailure(`Test pragmas cannot target ${t.text}.`,pendingTests[0]);
     if (section && t.text === "}") { section = null; continue; }
     // `section {{U < UU0}}(G : Group(U)) { definitions }`.
     if (t.text === "section") {
@@ -1159,7 +1240,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const model = expr(), end = take(";").end;
       const directive = { kind: "use", model, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       uses = [...uses, model];
-      items.push(directive);
+      placeItem(directive);
       continue;
     }
     if (section && t.text !== "def" && !(t.text === "computable" && peek() === "def"))
@@ -1178,7 +1259,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       }
       const end=take(";").end;
       const directive={kind:"hlevel_rule",rule,priority,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
-      directives.push(directive);items.push(directive);continue;
+      directives.push(directive);placeItem(directive);continue;
     }
     if(t.text==="simp_rule") {
       const rule=name();
@@ -1192,7 +1273,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       }
       const end=take(";").end;
       const directive={kind:"simp_rule",rule,priority,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
-      directives.push(directive);items.push(directive);continue;
+      directives.push(directive);placeItem(directive);continue;
     }
     if(t.text==="simp_set") {
       const set=name();define("simp_set name := [rules];");take("[");
@@ -1205,7 +1286,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       take("]");
       const end=take(";").end;
       const directive={kind:"simp_set",name:set,rules,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
-      directives.push(directive);items.push(directive);continue;
+      directives.push(directive);placeItem(directive);continue;
     }
     // `evaluate term expecting value;` is a checked computation test.
     if (t.text === "evaluate") {
@@ -1214,7 +1295,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const expected = expr();
       const end = take(";").end;
       const directive = { kind: "evaluate", value, expected, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
-      directives.push(directive); items.push(directive); continue;
+      directives.push(directive); placeItem(directive); continue;
     }
     // `print(evaluate(term));`, `print(typeof(term));` and
     // `print(inspect(term));` show what a closed term computes to, its type,
@@ -1230,7 +1311,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       take(")");
       const end = take(";").end;
       const directive = { kind: "print", show: show.text, value, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
-      directives.push(directive); items.push(directive); continue;
+      directives.push(directive); placeItem(directive); continue;
     }
     // `theory T(U < UU0) [extends P, label : Q(f := g notation x + y)] {
     // fields }` declares a theory (L2.4): the universes of its carriers and
@@ -1272,7 +1353,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         rules.push({ ...pattern, value, start, end: take(";").end });
       }
       const end = take("}").end;
-      items.push({ kind: "notation", name: n, rules, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
+      placeItem({ kind: "notation", name: n, rules, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
       continue;
     }
     if (t.text === "theory") {
@@ -1396,7 +1477,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const end = take("}").end;
       declarations.push({ kind: "theory", name: n, header, ...(uses.length ? { uses: [...uses] } : {}), universes: header.filter(p => p.bound).map(p => p.name),
         params: header.filter(p => !p.bound).map(p => ({ name: p.name, type: p.type, group: p.group })), parents, fields, start: t.start, end });
-      items.push(declarations.at(-1));
+      placeItem(declarations.at(-1));
       continue;
     }
     // `inductive T(params) : R { constructors }` declares a type (H1; the
@@ -1418,7 +1499,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const end = take("}").end;
       declarations.push({ kind: "inductive", name: n, params, result, constructors,
         ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
-      items.push(declarations.at(-1));
+      placeItem(declarations.at(-1));
       continue;
     }
     // `initial N : T(…);` declares a theory's initial model, and
@@ -1438,7 +1519,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const end = take(";").end;
       declarations.push({ kind: t.text, name: n, params, theory, ...(on ? { on } : {}),
         ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end });
-      items.push(declarations.at(-1));
+      placeItem(declarations.at(-1));
       continue;
     }
     // `computable def` asserts that the checked result uses no assumption.
@@ -1556,6 +1637,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       end: ts[i - 1].end,
     });placed(declarations.at(-1));
   }
+  if(pendingTests.length)throw testFailure("Test pragmas have no following target.",pendingTests[0]);
   if (section) throw Object.assign(new Error("Expected '}' to close the section."), { offset: ts[i].start });
   // Items in order, when any is no declaration: a directive, a notation or
   // a file-level use.

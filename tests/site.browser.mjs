@@ -1,31 +1,10 @@
+import { browserTest } from "./browser-test.mjs";
 // Exercise the published static artifact (or a live URL), without serve.py's
 // development-only import rewriting and version endpoint.
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { chromium } from "playwright";
 
-let base = process.argv[2];
-let server;
-let browser;
-try {
-  if (!base) {
-    server = spawn("python3", ["-u", "-m", "http.server", "0", "--bind", "127.0.0.1", "--directory", "build/site"],
-      { stdio: ["ignore", "pipe", "pipe"] });
-    server.stderr.resume();
-    base = await new Promise((resolve, reject) => {
-      let output = "";
-      const timeout = setTimeout(() => reject(new Error("Static test server did not start")), 10000);
-      server.once("error", reject);
-      server.once("exit", code => { clearTimeout(timeout); reject(new Error(`Server exited: ${code}`)); });
-      server.stdout.on("data", data => {
-        output += data;
-        const match = output.match(/port (\d+)/);
-        if (match) { clearTimeout(timeout); resolve(`http://127.0.0.1:${match[1]}/`); }
-      });
-    });
-  }
+await browserTest(async ({ browser, base }) => {
   if (!base.endsWith("/")) base += "/";
-  browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(180000);
   const errors = [];
@@ -47,6 +26,22 @@ try {
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");
+  const contracts=await page.evaluate(async()=>{
+    const {benchmark}=await import("./benchmark-runner.mjs");
+    return benchmark({area:"tests",modules:["contracts","absent"],limitMs:10000,readSource:async name=>name==="contracts"?`
+# test(expected) # expect_error(E606) def expected : Void := tt;
+# test(broken_contract) # expect_error(E343) def unexpected : Void := tt;`:null});
+  });
+  assert.deepEqual(contracts.declarations.map(row=>row.category),["intended","failed"]);
+  await page.route("**/benchmark-results-tests.json",route=>route.fulfill({json:{...contracts,complete:true}}));
+  await page.goto(new URL("benchmark.html?area=tests",base).href);
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("1 test contract failures"));
+  assert.match(await page.locator("#comparison").textContent(),/broken_contract/);
+  assert.match(await page.locator("#status").textContent(),/1 import failures/);
+  assert.match(await page.locator("#comparison").textContent(),/Imports: absent:/);
+  assert.match(await page.locator("#entries").textContent(),/Expected failure:/);
+  await page.unroute("**/benchmark-results-tests.json");
+  console.log("PASS static benchmark shares test contracts and displays contract failures");
   for (const [proof, name, backend] of [["euclid", "euclid", "cubical"], ["cubical_paths", "reverse_twice", "cubical"], ["f4_galois_correspondence", "f4_galois_correspondence", "cubical"]]) {
     await page.goto(new URL(`proof.html?proof=${proof}&name=${name}&backend=${backend}`, base).href);
     await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
@@ -241,7 +236,4 @@ try {
   assert.deepEqual(failureErrors, [], "worker failures must not leave uncaught page errors");
   await unavailable.close();
   console.log("PASS worker startup failures settle in workspace, reference and REPL; a fresh worker recovers");
-} finally {
-  await browser?.close();
-  server?.kill();
-}
+}, { base: process.argv[2], site: true });

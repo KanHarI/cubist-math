@@ -7,11 +7,8 @@ import { inlined, stated, stripped } from "../tools/inline-errors.mjs";
 import { SHARDS } from "./cubist-tests-inlined.mjs";
 
 // The Cubist tests under cubist-tests/: every module is listed, so that the
-// workspace opens it, and the README's table names each one.
-test("every Cubist test module is listed, and the README names it", async () => {
-  const files = (await readdir(new URL("../cubist-tests/", import.meta.url))).filter(name => name.endsWith(".cubist"))
-    .map(name => name.slice(0, -".cubist".length)).sort();
-  assert.deepEqual(files, [...cubistTestModules].sort());
+// workspace opens it (module-resolution.test.mjs), and the README names each one.
+test("the README names every Cubist test module", async () => {
   const readme = await readFile(new URL("../cubist-tests/README.md", import.meta.url), "utf8");
   for (const name of cubistTestModules) assert.ok(readme.includes(`[\`${name}\`](${name}.cubist)`), name);
 });
