@@ -117,18 +117,6 @@ computable def bnat_compare_correct(a, b : BNat) :
     b_positive(p), b_positive(q) => bpositive_compare_correct(p, q);
   };
 
-computable def BOrderingLe(order : BOrdering) : U0 := match order {
-    b_less => Unit;
-    b_equal => Unit;
-    b_greater => Void;
-  };
-
-computable def BOrderingLt(order : BOrdering) : U0 := match order {
-    b_less => Unit;
-    b_equal => Void;
-    b_greater => Void;
-  };
-
 computable def unat_compare_le(a, b : UNat) :
   BOrderingLe(unat_compare(a, b)) =[U0] le(a, b) := match a, b {
     zero, zero => refl(Unit);

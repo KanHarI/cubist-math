@@ -1,14 +1,8 @@
 import bnat;
 import hlevels;
 
-// Equality evidence for the comparison result. The binary predicate is
-// this observation of bnat_compare; all proofs below follow the bits.
-computable def BOrderingEqual(order : BOrdering) : U0 := match order {
-    b_less => Void;
-    b_equal => Unit;
-    b_greater => Void;
-  };
-
+// The equality predicate is the core observation of bnat_compare.
+// All proofs below follow the bits.
 computable def bnat_even_odd_not_equal(
   order : BOrdering, e : BOrderingEqual(bnat_even_odd_order(order))
 ) :

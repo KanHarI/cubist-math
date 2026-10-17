@@ -1,5 +1,6 @@
 import bnat;
 import unat;
+// Re-export binary equality and setness for existing conversion clients.
 import bnat_equality;
 
 // Conversions are explicit. Only these functions cross representations.

@@ -26,8 +26,9 @@ the explicit unary name, `bnat` for binary arithmetic, or `bnat_notation`
 and `use bnat;` for binary literals such as `0b101`. Conversion between the
 two carriers is explicit: `bnat_unary` supplies the maps and their inverse
 laws. `bnat_semiring` proves their semiring agreement, and `bnat_transport`
-constructs the universe path and proves its transport laws. Order correctness, bitwise setness
-and numerical strong recursion remain NUM1 work.
+constructs the universe path and proves its transport laws. `bnat_equality`
+supplies bitwise equality and setness; `bnat_order` proves comparison
+correctness. The dependent Peano view and strong recursion remain NUM1 work.
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |
@@ -35,10 +36,10 @@ and numerical strong recursion remain NUM1 work.
 | [`unat`](unat.cubist) | The explicit unary name `UNat`, currently an alias of `Nat`, with `unat` notation for unary numerals, arithmetic and order. | None |
 | [`bnat`](bnat.cubist) | Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws. The binary core has no imports. | None |
 | [`bnat_equality`](bnat_equality.cubist) | Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion. | None |
-| [`bnat_order`](bnat_order.cubist) | Proofs connecting the high-bit binary comparison and its computed non-strict/strict predicates to unary numerical order; both predicates are propositions. | None |
 | [`bnat_notation`](bnat_notation.cubist) | Binary literal parsing and the `bnat` notation for `0b` literals, arithmetic and order. Parsing builds the binary magnitude directly; unary offsets count characters only. | None |
 | [`bnat_unary`](bnat_unary.cubist) | Explicit unary/binary conversions and their round trips, and compatibility with successor and doubling. | None |
 | [`bnat_arithmetic`](bnat_arithmetic.cubist) | Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits. | None |
+| [`bnat_order`](bnat_order.cubist) | Proofs connecting the high-bit binary comparison and its computed non-strict/strict predicates to unary numerical order; both predicates are propositions. | None |
 | [`semirings`](semirings.cubist) | The `CommSemiring` theory, with shared additive and multiplicative commutative monoids, distributivity and zero absorption. | None |
 | [`bnat_semiring`](bnat_semiring.cubist) | The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits. | None |
 | [`bnat_transport`](bnat_transport.cubist) | The checked universe path `UNat =[U0] BNat` from the semiring isomorphism's maps; forward/reverse transport equals explicit conversion, and transported zero, one, addition and multiplication agree with the binary operations. Transported unary functions evaluate through the conversions; these paths justify using the direct binary operations. | None |

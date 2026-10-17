@@ -84,6 +84,25 @@ inductive BOrdering : U0 {
   b_greater;
 }
 
+// Shared observations of an ordering, used by computation and its proofs.
+computable def BOrderingEqual(order : BOrdering) : U0 := match order {
+    b_less => Void;
+    b_equal => Unit;
+    b_greater => Void;
+  };
+
+computable def BOrderingLe(order : BOrdering) : U0 := match order {
+    b_less => Unit;
+    b_equal => Unit;
+    b_greater => Void;
+  };
+
+computable def BOrderingLt(order : BOrdering) : U0 := match order {
+    b_less => Unit;
+    b_equal => Void;
+    b_greater => Void;
+  };
+
 computable def bnat_even_odd_order(order : BOrdering) : BOrdering := match order {
     b_less => b_less;
     b_equal => b_less;
@@ -121,23 +140,11 @@ computable def bnat_compare(a, b : BNat) : BOrdering := match a, b {
     b_positive(p), b_positive(q) => bpositive_compare(p, q);
   };
 
-computable def bnat_equal(a, b : BNat) : U0 := match bnat_compare(a, b) {
-    b_less => Void;
-    b_equal => Unit;
-    b_greater => Void;
-  };
+computable def bnat_equal(a, b : BNat) : U0 := BOrderingEqual(bnat_compare(a, b));
 
-computable def bnat_le(a, b : BNat) : U0 := match bnat_compare(a, b) {
-    b_less => Unit;
-    b_equal => Unit;
-    b_greater => Void;
-  };
+computable def bnat_le(a, b : BNat) : U0 := BOrderingLe(bnat_compare(a, b));
 
-computable def bnat_lt(a, b : BNat) : U0 := match bnat_compare(a, b) {
-    b_less => Unit;
-    b_equal => Void;
-    b_greater => Void;
-  };
+computable def bnat_lt(a, b : BNat) : U0 := BOrderingLt(bnat_compare(a, b));
 
 // The numerical successor/predecessor view, before NUM1 supplies dependent
 // induction through it. These laws check for every bit pattern.

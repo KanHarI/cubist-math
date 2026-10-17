@@ -419,8 +419,9 @@ work before the default switch; NUM2 extends them to integers and rationals.
 Checked examples cover carries/borrows beyond 64 bits and a dense 128-bit
 product; the differential suite proves 712 closed identities against
 independent integer results. A dependency check confirms that the complete
-binary core loads without the unary carrier, while the explicit conversion
-module loads it. Parser refusal cases pin invalid prefixes, digits and
+binary core loads without the unary carrier and that equality/setness loads
+without magnitude conversion; explicitly importing `bnat_unary` loads that
+conversion as the positive control. Parser refusal cases pin invalid prefixes, digits and
 their character offsets. All new modules import only the foundational library.
 
 **NUM1 algebra implementation (2026-10-17).**
