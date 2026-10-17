@@ -24,6 +24,14 @@ test("formatting every bundled source preserves tokens, comments, syntax and is 
   assert.ok(changed > 0, "the archive preservation check must exercise changed source");
 });
 
+test("formatting normalizes CRLF without exposing code inside comments", () => {
+  const source = "// note\rdef hidden := 0;\r\r\ndef visible:=1; // trailing\r\n";
+  const formatted = formatCubist(source);
+  assert.equal(formatted, "// note\rdef hidden := 0;\ndef visible := 1; // trailing\n");
+  assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
+  assert.equal(formatCubist(formatted), formatted);
+});
+
 test("nested pairs, equality carriers and line comments keep their boundaries", () => {
   const source = `// Header
 def copy(A:U0,x:A):A and A{exact (x, // first component

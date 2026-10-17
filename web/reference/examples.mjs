@@ -2,7 +2,7 @@
 // the browser by the same worker as the proof workspace; every name the
 // checker links becomes clickable and opens the workspace's kernel inspector
 // in a side panel, checked and inspected in the same way as in a proof.
-import { tokenPattern, tokenStyle, numeralAt } from "../source-tokens.mjs";
+import { scan, tokenStyle, numeralAt } from "../source-tokens.mjs";
 import { enableTokenTips } from "../token-tips.mjs";
 import { archiveModules, libraryModules } from "../cubist/modules.mjs";
 import { replTranscript } from "../repl-session.mjs";
@@ -58,8 +58,8 @@ function render(code, source, links = [], inspect = start => openInspector(sourc
     if (!old || link.end - link.start < old.end - old.start) linkAt.set(link.start, link);
   }
   const parts = [];
-  for (const match of source.matchAll(tokenPattern)) {
-    const text = match[0], start = match.index;
+  for (const match of scan(source)) {
+    const { text, start } = match;
     if (text.startsWith("//")) {
       const span = document.createElement("span");
       span.className = "comment";

@@ -2,7 +2,7 @@
 // Enter runs the input, unless a bracket is still open; Shift+Enter adds a
 // line; ↑ and ↓ recall earlier entries. `run(text)` returns the results of
 // a ReplSession (see repl-session.mjs).
-import { tokenPattern, tokenStyle, numeralAt } from "./source-tokens.mjs";
+import { scan, tokenStyle, numeralAt } from "./source-tokens.mjs";
 import { replStatements, consoleCommands } from "./repl-session.mjs";
 
 const element = (tag, className, text) => {
@@ -15,8 +15,8 @@ const element = (tag, className, text) => {
 // Source highlighted as in the proof view.
 function highlighted(source) {
   const code = element("code");
-  for (const { 0: text, index } of source.matchAll(tokenPattern)) {
-    const style = text.startsWith("//") ? "comment" : text === "typeof" ? "keyword" : tokenStyle(text, numeralAt(source, index, text));
+  for (const { text, start } of scan(source)) {
+    const style = text.startsWith("//") ? "comment" : text === "typeof" ? "keyword" : tokenStyle(text, numeralAt(source, start, text));
     code.append(style ? element("span", style, text) : document.createTextNode(text));
   }
   return code;

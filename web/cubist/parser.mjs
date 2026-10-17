@@ -10,21 +10,28 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 // 42, 1_000, 1/2, 2.3, 6.02e23, 2.5e-3 and 5i. Right after a tight dot a
 // digit is a projection's index, as in p.2.1, never a literal's start.
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
+// The source scanner also serves incomplete editor input. It retains every
+// character, including comments and whitespace; tokenize enforces parser limits
+// and rejects invalid characters after discarding trivia.
+export function* scan(source) {
+  for (const match of source.matchAll(tokenPattern))
+    yield { text: match[0], start: match.index, end: match.index + match[0].length };
+}
 export function tokenize(source) {
   if (typeof source !== "string" || source.length > 1000000)
     throw new Error("Source exceeds 1 MB.");
   const tokens = [];
-  const re = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
-  for (const match of source.matchAll(re)) {
-    const text = match[0];
+  for (const token of scan(source)) {
+    const { text, start } = token;
     if (/^\s|^\/\//.test(text)) continue;
     if (
       !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|[\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
-        offset: match.index,
+        offset: start,
       });
-    tokens.push({ text, start: match.index, end: match.index + text.length });
+    tokens.push(token);
     if (tokens.length > 160000) throw new Error("Source has too many tokens.");
   }
   tokens.push({ text: "EOF", start: source.length, end: source.length });
@@ -63,14 +70,16 @@ export const languageKeywords = new Set([
 ]);
 // Unit, Void and tt have fixed meanings in law and literal checking.
 // Universe constants are refused separately by name().
-export const reservedNames = new Set([...languageKeywords, "Unit", "Void", "tt"]);
+const primitiveNames = ["Unit", "Void", "tt"];
+export const reservedNames = new Set([...languageKeywords, ...primitiveNames]);
+export const isUniverseConstant = name => /^U+[0-9]+$/.test(name);
 
 // The explicit late-lookup allowlist for resolved source expressions. Other
 // keywords and generated member labels are not expression-level builtins.
 // Universe spellings are still validated by the translator when consumed.
 export function reservedReferences(source) {
-  return [...new Set([...builtinNames,"Unit","Void","tt","typed","left","right","path","fill","at","on",
-    ...tokenize(source).map(token=>token.text).filter(name=>/^U+[0-9]+$/.test(name))])];
+  return [...new Set([...builtinNames,...primitiveNames,"typed","left","right","path","fill","at","on",
+    ...tokenize(source).map(token=>token.text).filter(isUniverseConstant)])];
 }
 
 // `bindable` lists reserved words a historical source may still bind
@@ -109,7 +118,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
     // U0, UU3 and the like name universes: they cannot be bound or declared.
-    if (/^U+[0-9]+$/.test(t.text))
+    if (isUniverseConstant(t.text))
       throw Object.assign(new Error(`${t.text} is a universe constant; pick another name.`), { offset: t.start });
     if (reservedNames.has(t.text) && !bindableNames.has(t.text) && !(generatedReference && generatedNames.has(t.text)))
       throw Object.assign(new Error(`${t.text} is reserved${generatedNames.has(t.text) ? " for the generated interface (docs/guides/keywords.md)" : ", as a keyword or a built-in type of the language"}; pick another name.`), { offset: t.start });

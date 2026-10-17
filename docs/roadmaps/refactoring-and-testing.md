@@ -30,7 +30,7 @@ path in the same PR as its replacement; do not retain parallel frameworks.
 | RC2 | Source/work observations and module scenarios needed by further test migrations | Extend RC1 only for concrete migrations; retain host fault injection, DOM and malformed-kernel tests | Planned |
 | RC3 | One publication lifecycle owner and explicit module context | Preserve partial-family publication, rollback, import repair, observer failures, rechecks and accounting on every exit | Planned |
 | RC6 | Shared browser setup, module inventories and corpus tools | Preserve curated order, membership, titles, scenarios and report contents; validate both file-to-list and list-to-file membership | Planned |
-| RC11a | Shared source scanner and lexical rules | Parser/highlighter token boundaries agree, including comments, incomplete input, numerals and operators | Planned |
+| RC11a | Shared source scanner and lexical rules | Parser/highlighter token boundaries agree, including comments, incomplete input, numerals and operators | Implemented; Opus 5.5 round 3 clean |
 | RC11b | Shared term child/binder metadata and free-name traversal where semantics agree | Preserve binder scope, substitution and display-only terms; keep native codec independent unless parity is verified | Planned |
 | RC11c | Builtin dispatch and reserved-name correspondence | Every reserved builtin has an intentional handler; existing argument errors and elaboration results survive | Planned |
 | RC11d | WASM enum parity and step-budget wrapper | Compare C/JS encodings; preserve exact 64-bit budgets and independent native admission checks | Planned |
@@ -50,9 +50,9 @@ or state coupling. Search budgets and independent C checks remain intact.
 
 Build prerequisites and native test discovery are **out of scope** by the
 2026-10-17 scope decision. The build stamp already hashes every kernel header,
-protecting `make wasm`. Argument inference still has a process-wide placeholder
-counter; move that state into compilation ownership while preserving the separate
-placeholder namespace and ordinary generated-name sequence. The retired lexical
+protecting `make wasm`. Argument inference now owns placeholder
+names per compilation, preserving the separate placeholder namespace and ordinary
+generated-name sequence. The retired lexical
 serial needs no replacement.
 
 ## Test pragmas

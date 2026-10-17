@@ -5,6 +5,7 @@
 import {bindingResolution,reservedResolution,sourceOrigin,expandedOrigin} from "./bindings.mjs";
 import {resolveBindingSyntax,cloneBindingSyntax,remapBindingSyntax,validateBindingCorrespondence,bindingSyntaxView,sameBindingSyntax,bindingUses} from "./binding-syntax.mjs";
 import {parameterForalls} from "./telescopes.mjs";
+import {isUniverseConstant} from "./parser.mjs";
 
 const retainedKeys=new Set(["kind","name","params","type","value","body","valueParameters","universe","level",
   "notation","uses","computable","keyword","levelToken","start","end","origin","typedValue","valueStart","valueEnd","modifierStart","implicitParameters"]);
@@ -59,7 +60,7 @@ export class RetainedInterfaces {
     // Their meaning does not change under a term parameter or helper U.
     for(const parameter of tree.params??[])if(parameter.level&&parameter.type?.kind==="name") {
       const label=parameter.type.name;
-      fixedReferences.set(parameter.type,/^U+[0-9]+$/.test(label)?reservedResolution(label):{tag:"universe",label});
+      fixedReferences.set(parameter.type,isUniverseConstant(label)?reservedResolution(label):{tag:"universe",label});
     }
     return resolveBindingSyntax(tree,{table:this.table,owner,context,source:this.source,constructors:this.constructors,
       evidenceTypes:this.evidenceTypes,simpSets:this.simpSets,self,fixedReferences,universeReferences,namespaceBoundary:context,notation,

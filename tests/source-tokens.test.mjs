@@ -1,6 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { numeralAt, numeralExpansion, projectionIndex, tokenStyle } from "../web/source-tokens.mjs";
+import { scan, numeralAt, numeralExpansion, projectionIndex, tokenStyle } from "../web/source-tokens.mjs";
+import { tokenize } from "../web/cubist/parser.mjs";
+
+test("parser and source views share complete operators, literals and projection boundaries", () => {
+  const source = "x >= 6.02e-3; y <- 1/2; z := 0b101; p.2.1; // keep 2.5\r\n  5i";
+  const scanned = [...scan(source)];
+  assert.equal(scanned.map(token => token.text).join(""), source);
+  for (const token of scanned) assert.equal(source.slice(token.start, token.end), token.text);
+  const code = scanned.filter(token => !/^\s|^\/\//.test(token.text));
+  assert.deepEqual(code.map(token => token.text),
+    ["x", ">=", "6.02e-3", ";", "y", "<-", "1/2", ";", "z", ":=", "0b101", ";", "p", ".", "2", ".", "1", ";", "5i"]);
+  assert.deepEqual(code, tokenize(source).slice(0, -1));
+});
+
+test("source scanning preserves incomplete or invalid input while parsing still rejects it", () => {
+  const source = "def incomplete := 0b; \u03bb\n";
+  assert.equal([...scan(source)].map(token => token.text).join(""), source);
+  assert.throws(() => tokenize(source), error => error.offset === source.indexOf("\u03bb"));
+});
+
+test("only a newline ends a line comment, including in CRLF source", () => {
+  const source = "// note\rdef hidden := 0;\r\ndef visible := 1;";
+  assert.equal([...scan(source)][0].text, "// note\rdef hidden := 0;\r");
+  assert.deepEqual(tokenize(source).map(token => token.text), ["def", "visible", ":=", "1", ";", "EOF"]);
+});
 
 test("numerals from 1 are notation for successors; 0 is the constructor itself", () => {
   assert.equal(numeralExpansion("3"), "succ(succ(succ(0)))");
