@@ -18,8 +18,7 @@ test("formatting every bundled source preserves tokens, comments, syntax and is 
     assert.equal(formatCubist(formatted, options), formatted, name + " idempotence");
     assert.deepEqual(tokenize(formatted).map(t => t.text), tokenize(source).map(t => t.text), name);
     assert.deepEqual(formatted.match(/\/\/[^\r\n]*/g), source.match(/\/\/[^\r\n]*/g), name + " comments");
-    if (tokenize(source)[0].text !== "construction")
-      assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)), name + " syntax tree");
+    assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)), name + " syntax tree");
     assert.doesNotMatch(formatted, /[ \t]+$/m, name + " trailing whitespace");
   }
   assert.ok(changed > 0, "the archive preservation check must exercise changed source");

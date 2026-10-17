@@ -79,11 +79,11 @@ EVAL1 and NUM0/NUM1 can advance independently. See
   earlier solutions were adopted or replaced; CB0–CB7 and cleanup are complete.
 - [Refactoring and source-level tests](refactoring-and-testing.md): the active
   follow-up stack for publication ownership, test pragmas and shared tooling.
-- [Frontend generation](frontend-generation.md): historical design work after
-  PR #188, with its failures as evidence. Unifies declaration ownership,
+- [Frontend generation](frontend-generation.md): current contracts motivated by
+  PR #188, with its FG schedule superseded by CB0–CB7. Unifies declaration ownership,
   supported dependency analysis, universe calculation, contextual evidence
   and public provenance, with semantic preservation tests. The
-  [gap inventory](../reports/frontend-generation-gaps.md) pins current
+  [gap inventory](../reports/frontend-generation-gaps.md) pins historical
   reproductions at its pinned revision. Current status is in the CB completion
   records, not those historical gap counts.
 - [Induction hypothesis syntax](induction-hypothesis-syntax.md):

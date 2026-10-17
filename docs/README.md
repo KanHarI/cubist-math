@@ -77,9 +77,9 @@ finishing a language milestone does not automatically resume them.
 - [Refactoring and source-level tests](roadmaps/refactoring-and-testing.md):
   the active follow-up stack for publication ownership, parsed test pragmas
   and shared tooling.
-- [Frontend generation](roadmaps/frontend-generation.md): historical design changes
-  motivated by PR #188's review failures, with phased implementation and
-  semantic acceptance criteria. The [gap inventory](reports/frontend-generation-gaps.md)
+- [Frontend generation](roadmaps/frontend-generation.md): current generation
+  contracts and semantic acceptance criteria, with the original FG schedule
+  superseded by CB0–CB7. The [gap inventory](reports/frontend-generation-gaps.md)
   records failures at its pinned revision; the CB completion records describe
   their resolution.
 - [Induction hypothesis syntax](roadmaps/induction-hypothesis-syntax.md):
