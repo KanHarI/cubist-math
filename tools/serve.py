@@ -9,14 +9,24 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parent.parent
-ROOT = REPOSITORY / "web"
-# Libraries live outside web/; the site serves them under /archive/ and
-# /library/, the Cubist tests under /cubist-tests/, and the documentation,
-# with its examples, under /docs/, as the published site does.
-ARCHIVE = REPOSITORY / "archive"
-LIBRARY = REPOSITORY / "library"
-TESTS = REPOSITORY / "cubist-tests"
-DOCS = REPOSITORY / "docs"
+LAYOUT = REPOSITORY / "tools/site-layout.json"
+ROOTS = json.loads(LAYOUT.read_text())
+ROOT = REPOSITORY / ROOTS[""]
+
+
+def site_version():
+    # Hash every published file, including all worker dependencies. Keeping a
+    # second list of compiler modules misses new imports outside cubist/.
+    paths = [LAYOUT, Path(__file__).resolve()]
+    for directory in ROOTS.values():
+        paths += sorted(path for path in (REPOSITORY / directory).rglob("*")
+                        if path.is_file() and path.name != ".DS_Store")
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(str(path.relative_to(REPOSITORY)).encode())
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -25,7 +35,10 @@ class Handler(SimpleHTTPRequestHandler):
 
     def translate_path(self, path):
         request = urlsplit(path).path
-        for prefix, root in (("/archive", ARCHIVE), ("/library", LIBRARY), ("/cubist-tests", TESTS), ("/docs", DOCS)):
+        for mount, directory in ROOTS.items():
+            if not mount:
+                continue
+            prefix, root = "/" + mount, REPOSITORY / directory
             if request == prefix or request.startswith(prefix + "/"):
                 candidate = (root / request[len(prefix):].lstrip("/")).resolve()
                 if candidate == root or root in candidate.parents:
@@ -39,17 +52,7 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.split("?")[0] == "/cubist-version":
-            paths = sorted((ROOT / "cubist").glob("*.mjs"))
-            paths += sorted(ARCHIVE.rglob("*.cubist")) + sorted(LIBRARY.rglob("*.cubist")) + sorted(TESTS.rglob("*.cubist"))
-            paths += sorted(DOCS.rglob("*.cubist"))
-            paths += [Path(__file__)]
-            paths += sorted(ROOT.glob("cubical-*.mjs"))
-            paths += sorted((ROOT / "translator").glob("*.mjs"))
-            paths += [path for path in (ROOT / "dist/cubical.mjs", ROOT / "dist/cubical.wasm") if path.is_file()]
-            digest = hashlib.sha256()
-            for path in paths:
-                digest.update(path.read_bytes())
-            body = json.dumps({"version": digest.hexdigest()}).encode()
+            body = json.dumps({"version": site_version()}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
