@@ -14,23 +14,6 @@ const verified = async (t, source) => {
   return checked;
 };
 
-test("initial and free models substitute a theory parameter in projections without capturing law binders", async t => {
-  await verified(t, `import hlevels;
-import algebra;
-import nat;
-theory Action(U < UU0, R : Monoid(U)) {
-  M : set U;
-  act(r : R.M, x : M) : M;
-  law unit(S : M) : act(R.one, S) = S;
-}
-initial N : Action(U0, nat_additive.monoid);
-free W(S : Monoid(U0), A : U0) : Action(U0, S) on A;
-def unit_path(S : Monoid(U0), A : U0, x : W(S, A)) : W.act(S.one, x) = x := W.unit(x);
-def folded(S : Monoid(U0), A : U0, T : Action(U0, S), g : A -> T.M, r : S.M, a : A) :
-  W.fold(S, A, T, g).map(W.act(r, W.gen(a))) = T.act(r, g(a)) { rfl; }
-`);
-});
-
 test("free folds preserve function and dependent pair generator types", async t => {
   await verified(t, `import hlevels;
 import algebra;

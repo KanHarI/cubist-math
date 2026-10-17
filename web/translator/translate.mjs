@@ -2,6 +2,7 @@
 // no fallback axiom, old-kernel handle, or unchecked term enters this checker.
 import {propagateElaborationStop} from "./control.mjs";
 import {parse} from "../cubist/parser.mjs";
+import {requireTestMode} from "../cubist/test-pragmas.mjs";
 import {qualifySource,substitutionFrame} from "../cubist/source-syntax.mjs";
 import {sourceName} from "../cubist/references.mjs";
 import {parameterLambdas as lambdas} from "../cubist/telescopes.mjs";
@@ -87,12 +88,13 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
 export class Translator {
-  constructor({checker,definitionModule=null,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
+  constructor({checker,definitionModule=null,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
     // Definition ownership is separate from source provenance. Raw translator
     // clients omit the namespace; program modules pass it explicitly.
     this.definitionModule=definitionModule;
+    this.testMode=testMode;
     this.sources=sources;
     this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
@@ -158,7 +160,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,definitionModule:this.definitionModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,testMode:this.testMode,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -449,6 +451,7 @@ export class Translator {
   // parsed source. Each retained declaration supplies its identity adapter;
   // no printing or second source-resolution pass occurs at this boundary.
   translateSyntax(ast,source,imported=new Map()) {
+    requireTestMode(ast,this.testMode);
     const notation=this.checker.notation;
     try { return this.translateModule(ast,source,imported); }
     finally { this.checker.notation=notation; }

@@ -1,0 +1,19 @@
+import hlevels;
+import algebra;
+import nat;
+# test(initial.parameter_substitution.theory)
+# expect_axioms([])
+theory Action(U < UU0, R : Monoid(U)) {
+  M : set U;
+  act(r : R.M, x : M) : M;
+  law unit(S : M) : act(R.one, S) = S;
+}
+# test(initial.parameter_substitution.initial)
+# expect_axioms([])
+initial N : Action(U0, nat_additive.monoid);
+# test(initial.parameter_substitution.free)
+# expect_axioms([])
+free W(S : Monoid(U0), A : U0) : Action(U0, S) on A;
+def unit_path(S : Monoid(U0), A : U0, x : W(S, A)) : W.act(S.one, x) = x := W.unit(x);
+def folded(S : Monoid(U0), A : U0, T : Action(U0, S), g : A -> T.M, r : S.M, a : A) :
+  W.fold(S, A, T, g).map(W.act(r, W.gen(a))) = T.act(r, g(a)) { rfl; }

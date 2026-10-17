@@ -26,7 +26,7 @@ const mutations=[
     "frontend-generation","^G11:"),
   mutation("hom-universe","web/cubist/retained-morphism-artifacts.mjs",
     "declare(hom,modelParams(),null,sigma", "declare(hom,modelParams(),builtin(\"U0\",origin),sigma",
-    "frontend-universes","generic fixed domains"),
+    "cubist-contracts","^generation\\.hom_universe\\."),
   mutation("refined-evidence","web/translator/elaboration.mjs",
     "if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;", "return this;",
     "frontend-evidence","contextual model evidence remains checked"),

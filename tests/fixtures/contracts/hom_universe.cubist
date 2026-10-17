@@ -1,0 +1,22 @@
+import hlevels;
+# test(generation.hom_universe.theory)
+# expect_axioms([])
+theory T(U < UU0) { M : set U; op(A : U, x : A) : M; }
+# test(generation.hom_universe.hom_level)
+# expect_axioms([])
+def hom_level(U < UU0, S : T(U)) : next(U) := T.Hom(S,S);
+# test(generation.hom_universe.iso_level)
+# expect_axioms([])
+def iso_level(U < UU0, S : T(U)) : next(U) := T.Iso(S,S);
+# test(generation.hom_universe.identity)
+# expect_axioms([])
+def identity(U < UU0, S : T(U)) : T.Hom(S,S) := T.Hom.id(S);
+# test(generation.hom_universe.composition)
+# expect_axioms([])
+def composition(U < UU0, S : T(U), x : S.M) : T.Hom.compose(identity(U,S),identity(U,S)).map(x) = x { rfl; }
+# test(generation.hom_universe.too_low)
+# expect_error(E606)
+def too_low(U < UU0, S : T(U)) : U := T.Hom(S,S);
+# test(generation.hom_universe.incompatible)
+# expect_error(E606)
+def incompatible(U, V < UU0, S : T(U), R : T(V)) := T.Hom(S,R);
