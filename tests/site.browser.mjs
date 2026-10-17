@@ -1,31 +1,10 @@
+import { browserTest } from "./browser-test.mjs";
 // Exercise the published static artifact (or a live URL), without serve.py's
 // development-only import rewriting and version endpoint.
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { chromium } from "playwright";
 
-let base = process.argv[2];
-let server;
-let browser;
-try {
-  if (!base) {
-    server = spawn("python3", ["-u", "-m", "http.server", "0", "--bind", "127.0.0.1", "--directory", "build/site"],
-      { stdio: ["ignore", "pipe", "pipe"] });
-    server.stderr.resume();
-    base = await new Promise((resolve, reject) => {
-      let output = "";
-      const timeout = setTimeout(() => reject(new Error("Static test server did not start")), 10000);
-      server.once("error", reject);
-      server.once("exit", code => { clearTimeout(timeout); reject(new Error(`Server exited: ${code}`)); });
-      server.stdout.on("data", data => {
-        output += data;
-        const match = output.match(/port (\d+)/);
-        if (match) { clearTimeout(timeout); resolve(`http://127.0.0.1:${match[1]}/`); }
-      });
-    });
-  }
+await browserTest(async ({ browser, base }) => {
   if (!base.endsWith("/")) base += "/";
-  browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(180000);
   const errors = [];
@@ -241,7 +220,4 @@ try {
   assert.deepEqual(failureErrors, [], "worker failures must not leave uncaught page errors");
   await unavailable.close();
   console.log("PASS worker startup failures settle in workspace, reference and REPL; a fresh worker recovers");
-} finally {
-  await browser?.close();
-  server?.kill();
-}
+}, { base: process.argv[2], site: true });
