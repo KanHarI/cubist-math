@@ -1311,7 +1311,7 @@ def use_ru(A : U1, x, y, z : A, p : x = y, q : y = z) :
 }
 ```
 
-Causes, in the current source:
+Causes at the original investigation (historical):
 
 1. `refl`, `sym`, `trans`, `cong`, `transport`, `path_induction` and
    `based_induction` lower directly to `PLam`, `PApp` and `Comp` syntax in
@@ -1324,6 +1324,10 @@ Causes, in the current source:
 2. `rewriteFirst` descends only through `App` nodes. `Succ`, pairs, injections
    and type formers are opaque to it.
 3. Neither error shows the residual goal.
+
+The current rewrite path uses `findRewrite` and `rewriteGoal`; the unused
+`rewriteFirst` wrapper has been removed, and refusals include the residual goal.
+The observations above explain the original proposal, not the current API.
 
 ### What cubical type theory provides directly
 

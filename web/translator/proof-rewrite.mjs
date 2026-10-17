@@ -278,11 +278,3 @@ export function findRewrite(scope, root, carrier, rule, occurrence = 1, order = 
   visit(root);
   return {found, eligible, unsupported};
 }
-
-// rw with an explicit endpoint: a missing occurrence is the user's error.
-export function rewriteFirst(scope, root, carrier, rule, occurrence = 1, order = "preorder") {
-  const {found, eligible, unsupported} = findRewrite(scope, root, carrier, rule, occurrence, order);
-  if (found) return found;
-  throw Error(unsupported ? "Rewrite match occurs in an unsupported dependent position."
-    : `Rewrite occurrence ${occurrence} was not found (${eligible} eligible matches).`);
-}

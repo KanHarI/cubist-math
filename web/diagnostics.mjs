@@ -32,7 +32,7 @@ export const diagnostics = [
   ["E102", "linearizeTuples must be Boolean."],
   ["E103", "Formatting changed source tokens."],
   ["E104", "Formatting changed the expanded syntax tree."],
-  ["E105", "No folded notation for …"],
+  ["E105", "No folded notation for …", "retired"],
   ["E106", "Unexpected character …"],
   ["E107", "Source has too many tokens."],
   ["E108", "Expected '…', found '…'."],

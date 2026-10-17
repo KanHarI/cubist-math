@@ -1,25 +1,32 @@
 # Frontend generation: design and implementation roadmap
 
-Status: planned on 2026-10-09, on top of PR #188 at
-[`00d4ecce`](https://github.com/KanHarI/cubist-math/commit/00d4ecce016f7e18d13eedeced07dc098a2277cb).
-The [gap inventory](../reports/frontend-generation-gaps.md) pins current
-reproductions and distinguishes remaining defects from fixed review
-failures. This document proposes implementation work; it does not mark
-those defects fixed. The [work plan](work-plan.md#frontend-generation-track)
-records its scheduling dependencies.
+Status: shared contracts and the semantic preservation gate remain current.
+CB0–CB7 and cleanup are complete and integrated on 2026-10-17. They implement
+or replace the FG schedule below. The gap fixtures now require their desired
+results directly, with no known-defect exemptions. The
+[refactoring stack](refactoring-and-testing.md) owns remaining cleanup and
+test migrations; it does not reopen completed FG/CB packages.
 
-**2026-10-13 design update:** the [capture and bindings proposal](capture-bindings.md)
-replaces FG2's nominal binding approach with the proposed CB0–CB7 migration,
+The original plan was written on 2026-10-09, on top of PR #188 at
+[`00d4ecce`](https://github.com/KanHarI/cubist-math/commit/00d4ecce016f7e18d13eedeced07dc098a2277cb).
+The [gap inventory](../reports/frontend-generation-gaps.md) pins reproductions
+at that earlier revision. Current completion evidence lives in the
+[CB records](capture-bindings.md); the
+[work plan](work-plan.md#frontend-generation-track) owns scheduling.
+
+**2026-10-13 design, implemented by 2026-10-17:** [capture and bindings](capture-bindings.md)
+replaces FG2's nominal binding approach with the CB0–CB7 migration,
 including contextual REPLs inside nested local scopes. It preserves these
 generation goals and FG1 publication boundaries, and selectively adopts later
 work as recorded in the [open-PR comparison](../reports/capture-bindings-pr-comparison.md).
-No CB package is implemented; the dated FG plan below remains its background.
+The dated FG implementation sequence below remains its background; the shared
+contracts and preservation requirements continue to govern extensions.
 
 FG0's evidence harness is implemented in
 [frontend-generation.test.mjs](../../tests/frontend-generation.test.mjs)
 with its [comparison manifest](../../tests/fixtures/frontend-generation.md).
-G1–G6 and G8–G12 remain explicit expected failures; FG1–FG6 implementation
-is still planned. G12's refusal range is tracked separately as `G12-range`.
+G1–G6 and G8–G12 now require their desired behavior. G12's refusal range is
+tracked separately as `G12-range`.
 
 The goal is to preserve the meaning and interface of a declaration through
 capture, inheritance, substitution, generation and elaboration. The
@@ -32,7 +39,7 @@ source the user wrote.
 
 The H identifiers below refer to the inventory's
 [fixed examples](../reports/frontend-generation-gaps.md#fixed-failures-that-motivate-the-design);
-the G identifiers are open findings. The [follow-up review at `00d4ecce`](../reports/pr-188-review-00d4ecce.md)
+the G identifiers were open findings at that revision. The [follow-up review at `00d4ecce`](../reports/pr-188-review-00d4ecce.md)
 shows that the earlier fixes did not establish the complete contracts.
 It supplies G8–G12 and the mutation/compatibility evidence below.
 
@@ -90,6 +97,11 @@ may use checked predecessors inside the staging context. A syntax-only
 planner must not claim to have inferred types or discharged obligations.
 
 ## FG0: establish evidence and semantic comparisons
+
+The implementation sequence in the FG sections is historical. Its TODO
+activation protocol was retired by CB cleanup; current tests assert desired
+results directly. The desired behavior and independent witness requirements
+remain current.
 
 Depends on the scope fixes of #215, which replaces #188. The initial
 harness is implemented by

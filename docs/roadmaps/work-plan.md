@@ -1,6 +1,7 @@
 # Work plan: language features and their kernel support
 
-Status: reconciled on 2026-10-10 against main `cb525f07` (2026-10-08).
+Status: frontend/binding integration reconciled on 2026-10-17 against main
+`ee7fa35c`; other package entries retain their earlier dated evidence.
 Delivered means present on main. The current tables include L2.4c's six
 slices, notation L2.10a–e and i–k, h-level registration, evaluation patterns
 and closed truncation readout, squares, and EVAL0's recorded baseline.
@@ -8,13 +9,11 @@ The [historical work-plan record](historical/work-plan-history.md) retains the e
 revision notes and superseded first-action list; the
 [2026-09-28 audit](historical/audits/2026-09-28-audit.md) retains its dated findings.
 
-The initial/free construction prototype in
-[PR #215](https://github.com/KanHarI/cubist-math/pull/215) and frontend
-fixes in [#216–#223](https://github.com/KanHarI/cubist-math/pull/223) are
-on an unmerged stack. [#224](https://github.com/KanHarI/cubist-math/pull/224)
-adds a refactoring plan and reconciles that stack's evidence. They replace
-#188 and #204–#212, whose mistaken merges were undone on 2026-10-10. They are
-reported under [branch work](#branch-work), not counted as delivered here.
+Initial/free construction and fold behavior, CB0–CB7 and their separate cleanup
+are on main. The older frontend implementations are superseded. The
+[refactoring and source-test plan](refactoring-and-testing.md) owns the remaining
+#224 ideas; [branch work](#branch-work) records the current follow-ups. This does
+not complete L2.6's checked universal capabilities or resume paused mathematics.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
 the earlier plan are retained; their stage numbers do not impose dependencies.
@@ -368,7 +367,7 @@ has an explicit spelling.
 | L2.4e | User-defined morphisms, `morphisms where …`, **proposed and deferred**: a proposition on maps of carriers closed under identities and composites, with the standardness obligation (HoTT book §9.8) that keeps `T.cat`'s invertible morphisms equal to `T.Iso`. Continuous, measurable and short maps; no current library client | L2.4d; a first metric or topological client | M |
 | L2.11 | Laws proved propositions, **proposed** on 2026-10-07: the law check accepts a statement the `hlevel` solver proves a proposition, equations in a parameter's carriers and `IsContrMap(…)` among them; the syntactic check stays the fast path. Universal properties (L3.5) and theories over parameters need it. Propositionhood does not prove the law in a generated model: initial/free derivation must discharge it separately | L2.5b | S |
 | L2.12 | Implicit arguments in theory operations and derived operations, **proposed** on 2026-10-07: `comp{{x, y, z : Ob}}(g : Arr(y, z), f : Arr(x, y)) : Arr(x, z) notation g ∘ f`, inferred as L4.1b infers a definition's, with notation over the explicit arguments (E810 and E170 refuse both today) | L4.1b | M |
-| L2.6 | Initial/free capabilities. **Specified, not delivered on main.** The [revised contract](core-theories.md#initial-and-free-models-l26) requires opt-ins, a checked construction, uniqueness, universal equivalence and additional-law obligations. [PR #188](https://github.com/KanHarI/cubist-math/pull/188) implements a construction-and-fold prototype on a branch; it registers no checked capability. Higher theories need a supported morphism/coherence interface | L2.4d; L2.11 for general propositional laws; H1 for the first strategy | L |
+| L2.6 | Initial/free capabilities. **Specified, not delivered on main.** The [revised contract](core-theories.md#initial-and-free-models-l26) requires opt-ins, a checked construction, uniqueness, universal equivalence and additional-law obligations. [PR #188](https://github.com/KanHarI/cubist-math/pull/188) introduced the construction-and-fold prototype now integrated on main; it registers no checked capability. Higher theories need a supported morphism/coherence interface | L2.4d; L2.11 for general propositional laws; H1 for the first strategy | L |
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2). **First slice** done on 2026-10-06: the implementation plan's box notation, `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and `fill j in A from b at k { … }`, lowers to `comp` and `fill`, faces being formulas of equations with `and` and `or`; a composition prints as its box. Evidence: `cubist-tests/box_notation.cubist`. **Second slice** done the same day: `library/squares.cubist` names a square's edges by its corners, `Square(a0_, a1_, a_0, a_1)`, and builds by conversion the reflexive and naturality squares, transposition and both flips, double composition and its filler (`trans` its case with a constant first edge), and horizontal and vertical composition; the inspector shows a square's edges and corners. Evidence: `cubist-tests/square_constructions.cubist`. **Third slice** done the same day: two squares on the same three sides have equal tops (`top_unique`), which gives the conversions between a square and an equation of composites both ways (`square_to_path`, `path_to_square`, through the diagonal and `retop`), and the library's `naturality_path` and `cong_trans`, the statements of the archive's `homotopy_naturality` and `map_concat`. Open: the archive's raw `comp` lemmas (`homotopy_natural`, `map_concat`, `transport_concat`) re-derived through them, a migration of archive proofs | L2.1; face/source metadata from L1.2r | M |
 | L2.9a | Expected-value patterns for `evaluate`. **Done** on 2026-10-06: an expected value with a hole `_` is a pattern, matched against the normal form part by part (`web/translator/evaluation.mjs`): a hole matches anything; a pair, an injection or a constructor of the part's declared type applied to patterns matches a value built so, in the kernel's argument order; `typed(T, p)` matches as `p` where `T` is the part's type; any other expression is elaborated at the part's type and compared by normal form. `left`, `right` and `typed` are the builtins only where the module does not bind them, and a builtin's or a constructor's arguments are written out as elaboration requires, a hole aside (E701, E378, E379). A mismatch names the differing part (E477), and a hole inside another function's arguments is refused (E478). Evidence: `cubist-tests/evaluate_patterns.cubist` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result. **Done** on 2026-10-06: `print(witness(t));`, and the REPL's `witness TERM;`, read the witness off a closed, computable truncation's normal form, `point(w)` under formal compositions, with its type (`web/translator/evaluation.mjs`). A witness under a composition whose type changes is refused (E481), so the witness has the truncated type's own parameter; transported along a path of types, it is of the type at the path's end. A certificate is part of the witness the kernel checked. Evidence: `cubist-tests/truncation_readout.cubist` | Native H1 `Trunc`, K2.5, L0.1 | M |
@@ -618,13 +617,13 @@ presentation work remains deferred.
 
 ## Frontend generation track
 
-**2026-10-13 design update:** [CB0–CB7](capture-bindings.md#ordered-implementation-packages)
-propose a replacement for FG2's binding implementation and the binding-related
-RC4 work in #224. Preserve FG1 publication semantics; adopt later universe,
-evidence, provenance, testing and inspection solutions according to the
-[PR comparison](../reports/capture-bindings-pr-comparison.md). Contextual REPLs
-inside functions, lets and induction cases are required deliverables. No CB
-package is implemented; the dated FG schedule below records the earlier plan.
+**2026-10-17 integration update:** [CB0–CB7](capture-bindings.md#ordered-implementation-packages)
+and cleanup are complete and on main. They replace FG2's binding implementation
+and the binding-related RC4 work in #224, preserve FG1 publication semantics and
+adopt universe, evidence, provenance, testing and inspection behavior. Contextual
+REPLs inside functions, lets and induction cases are implemented. The
+[PR comparison](../reports/capture-bindings-pr-comparison.md) is the historical
+adoption decision; the dated FG schedule below records the earlier plan.
 
 **2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
 [frontend generation roadmap](frontend-generation.md) uses that PR's
@@ -725,18 +724,18 @@ not implemented; no prototype-only result counts as the checked capability.
 
 ## First actions
 
-Reconciled against main on 2026-10-10. L2.4c, L2.10a–e and i–k,
+Frontend follow-ups reconciled against main on 2026-10-17. L2.4c, L2.10a–e and i–k,
 L2.5b's second slice, L2.9a/b and L2.8's first three slices are delivered.
 Do not repeat their implementation or the completed G0/H1 releases.
 
-Before extending the generators, start [FG0 and FG1](#frontend-generation-track)
-from #188's remaining failures. The shared contracts and semantic gate
-precede new deriving capabilities; L2.6's universal proofs remain separate.
+Preserve the integrated [frontend contracts and semantic gate](#frontend-generation-track)
+when extending generators. The [refactoring stack](refactoring-and-testing.md)
+owns the current implementation follow-up; L2.6's universal proofs remain separate.
 
 1. L2.4d: morphisms by explicit opt-in, with its two-commit migration.
 2. L2.11: laws proved propositions; L2.12: implicit theory-operation
    arguments, with composition notation decided before its acceptance.
-3. L2.6: review and integrate the branch prototype, migrate it to explicit
+3. L2.6: migrate the integrated construction and fold behavior to explicit
    capabilities, prove uniqueness and universal equivalence, and discharge
    additional laws before publishing a capability. Frontend preservation
    tests do not supply these proofs.
@@ -763,21 +762,19 @@ where supplying them checks.
 
 ## Branch work
 
-Snapshot on 2026-10-10; these are open PRs, not main's delivered packages.
+Snapshot on 2026-10-17. The earlier #188/#204–#212 stack was replaced by
+#215 onward; CB0–CB7 subsequently integrated and replaced the frontend work.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
-| [L2.6 prototype, #215](https://github.com/KanHarI/cubist-math/pull/215) | Declared carriers, models and computing folds; seven reported CI checks pass | Review/merge, opt-ins, uniqueness, universal properties and additional laws |
-| [Frontend generation, #216–#223](https://github.com/KanHarI/cubist-math/pull/223) | FG0–FG6 implementation present; the [inventory](https://github.com/KanHarI/cubist-math/blob/fd0bc11bcd657f9c113e952e360ab2971ed3ec02/docs/reports/frontend-generation-gaps.md) owns finding status | Integrate revised #217 cases through the stack; review/merge; recover the historical mutation manifest and justify a performance budget |
-| [Refactoring/testing, #224](https://github.com/KanHarI/cubist-math/pull/224) | RC0–RC11 roadmap and documentation reconciliation; no RC implementation package completed | RC0 cleanup, then the plan's independently scoped refactors and test migration |
-| [Homological algebra, #198](https://github.com/KanHarI/cubist-math/pull/198) | Proposal merged into the #188 stack; no HA implementation | Maintainer's start decision; HA4 can begin largely from H1/univalence/squares, while the algebraic route needs categories |
+| L2.6 construction behavior | Declared carriers, models and computing folds are integrated | Opt-ins, uniqueness, universal properties and additional laws |
+| [Capture/bindings](capture-bindings.md) | CB0–CB7 and cleanup integrated; #219–#223, #225 and #227 closed as superseded | Preserve semantic and resource gates when extending interfaces |
+| [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Merged as `165ac956`; existing mutation runner wired into CI; seven checks passed at `154c4e6b` | Preserve this gate through the cleanup stack |
+| [Refactoring/testing](refactoring-and-testing.md) | Current implementation plan replaces #224's stale compiler assumptions; RC0 underway | Complete the separately reviewable slices and their test migrations |
 
-The revised FG0 harness in #217 records 23 independent known-defect cases at
-its baseline. Its validation record gives the activation check against the
-fixing compiler, with every record removed. That is integration evidence, not
-a claim that its files have already been incorporated through every branch.
-The frontend roadmap remains active until the evidence follow-ups are disposed
-of. Historical test reports are not fresh validation of a later PR head.
+The earlier FG0 known-defect staging is retired: the integrated harness requires
+the desired semantic results directly. Historical reports retain their pinned
+revisions and are not fresh validation of a later PR head.
 
 ## Open decisions
 

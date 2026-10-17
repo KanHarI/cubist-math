@@ -1588,10 +1588,10 @@ export class Translator {
     // rule, the statements after rw, or rebuilding the proof afterwards.
     let target=first.target;
     // No such occurrence: the user's error, with the goal it was sought in.
-    const missing=(eligible,unsupported)=>Error(`${unsupported
+    const missing=(eligible,unsupported)=>Error((unsupported
       ? "Rewrite match occurs in an unsupported dependent position."
-      : `Rewrite occurrence ${first.occurrence} was not found (${eligible} eligible matches).`}${
-      this.residual(transition.next,rewrites)}`);
+      : `Rewrite occurrence ${first.occurrence} was not found (${eligible} eligible matches).`)
+      + this.residual(transition.next,rewrites));
     const changed=this.search(scope,"rw",at=>{
       const find=(side,occurrence)=>findRewrite(at,path[side==="lhs"?"left":"right"],path.family,rule,occurrence,"preorder");
       // The rewrite made, while the search's fuel is open.

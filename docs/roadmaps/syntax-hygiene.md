@@ -4,20 +4,20 @@ Expansion must preserve binding, not spelling. Moving an expression,
 renaming a surrounding binder, or importing it into a different module must
 not change which declarations and local variables it refers to.
 
-The 2026-10-13 [capture and bindings proposal](capture-bindings.md) replaces
+The [capture and bindings implementation](capture-bindings.md), complete on
+2026-10-17, replaces
 nominal capture repair for retained frontend syntax with binding identities,
-complete interfaces and explicit deferred scopes. It also requires contextual
-REPLs inside functions and induction cases. CB2 now uses retained identities
-for theory, initial/free and named-notation generation; the follow-up cleanup
-removes their nominal substitution machinery. Later binding families and the
-contextual REPL remain scheduled in that roadmap. The sections below record
+complete interfaces and explicit deferred scopes, including contextual
+REPLs inside functions and induction cases. CB2–CB5 use retained identities
+through generation and elaboration; cleanup removed the migrated nominal
+substitution machinery, and CB6 delivered contextual REPLs. The sections below record
 the earlier approach and its limitations, before this migration.
 
 The [frontend generation roadmap](frontend-generation.md) turns this
 contract and PR #188's failures into implementation slices for declaration
 ownership, dependency analysis, universes, evidence, provenance and semantic
-tests. Its [gap inventory](../reports/frontend-generation-gaps.md) separates
-remaining failures from the capture bugs already fixed here.
+tests. Its [gap inventory](../reports/frontend-generation-gaps.md) records
+failures at the earlier revision; the CB records own their completed migrations.
 
 The frontend uses nominal syntax. The JavaScript core has named `Var`, `Pi`,
 and `Lam` nodes; the C kernel uses symbols, capture-avoiding substitution,

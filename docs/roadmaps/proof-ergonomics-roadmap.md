@@ -690,7 +690,7 @@ Only the truncation readout extension needs H1.
 
 | Existing location | Planned work |
 | --- | --- |
-| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs), [notation](../../web/cubist/notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
+| [parser](../../web/cubist/parser.mjs), [formatter](../../web/cubist/formatter.mjs), [notation printer](../../web/cubical-notation.mjs) | Syntax, spans, roundtrips, and readable expansions. |
 | [translator](../../web/translator/translate.mjs) | Proof-block statements, reconstruction, expected types, and parameter elaboration. Extract new matching/rewrite modules to keep this manageable. |
 | [native elaborator](../../web/cubical-elaborator.mjs) | Native type/conversion queries, scoped contexts, checked witnesses, and dependency tracking. |
 | [program](../../web/cubical-program.mjs), [modules](../../web/cubist/modules.mjs) | Rule registration, import identity, invalidation, and source inspection records. |
