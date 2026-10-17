@@ -153,7 +153,9 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const helpers=new HelperExpansion([...fields,...derived],{table:options.table,owner:[...options.owner,"implemented-interface"]});
     const ids=new Set(fields.map(entry=>entry.id)),remaining=[...fields],ordered=[],done=new Set();
     const dependencies=new Map(fields.map(entry=>{
-      if(helpers.recursiveDependency(entry))throw located(Error("An implemented operation used in a field type must be nonrecursive."),entry.binding.origin);
+      const recursive=helpers.recursiveDependency(entry);
+      if(recursive)throw located(Error("An implemented operation used in a field type must be nonrecursive."),
+        recursive.origin?{...recursive.origin,origin:recursive.origin}:theory.name);
       return [entry.id,new Set(bindingUses(helpers.type(entry).checking,{conditional:true})
         .filter(use=>use.kind==="binding"&&ids.has(use.id)).map(use=>use.id))];
     }));
@@ -170,8 +172,12 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const published=new Set();
     const orderHelper=entry=>{
       if(published.has(entry.id))return;
-      if(visiting.includes(entry.id))throw located(Error(`Cycle among nonrecursive helpers: ${visiting.slice(visiting.indexOf(entry.id))
-        .concat(entry.id).map(id=>helperEntries.get(id).label).join(" -> ")}`),entry.binding.origin);
+      if(visiting.includes(entry.id)) {
+        const cycle=visiting.slice(visiting.indexOf(entry.id)).concat(entry.id).map(id=>helperEntries.get(id));
+        const implementation=cycle.find(member=>member.implementation&&implementable.has(member.id));
+        throw located(Error(`Cycle among helper definitions: ${cycle.map(member=>member.label).join(" -> ")}`),
+          implementation?.syntax.tree.name??theory.name);
+      }
       visiting.push(entry.id);
       for(const use of helpers.analysis.references(entry.syntax,{conditional:true})) {
         const dependency=use.kind==="binding"?helperEntries.get(use.id):null;

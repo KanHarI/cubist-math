@@ -75,6 +75,10 @@ test("inherited helpers and earlier implementations publish after their dependen
       def own(x : M) : M := twice_op(x);
       def op(x : M) : M := step(x);
     }
+    theory Grandchild(U < UU0) extends Implemented {}
+    def inherited_model : Grandchild(U0) := Grandchild.make(M := Nat, M_is_set := nat_is_set, step := succ);
+    def inherited_id := Grandchild.Hom.id(inherited_model);
+    print(evaluate(inherited_model.twice(3)));
     def sample : Implemented(U0) := Implemented.make(M := Nat, M_is_set := nat_is_set, step := succ);
     print(evaluate(sample.twice(3)));
     print(evaluate(sample.repeat(3, 2)));
@@ -86,25 +90,31 @@ test("inherited helpers and earlier implementations publish after their dependen
     def iso := Implemented.Iso.compose(Implemented.Iso.id(sample), Implemented.Iso.id(sample));
     def unchanged : iso.to.base.map(3) = 3 { rfl; }
   `);
-  assert.deepEqual(result.prints.map(print=>print.text),["5","5","5"]);
+  assert.deepEqual(result.prints.map(print=>print.text),["5","5","5","5"]);
   for(const name of ["Implemented.twice","Implemented.repeat","Implemented.self","Implemented.twice_op","Implemented.own","Implemented.op","Implemented.Hom","Implemented.Iso","preserved"])
     assert.equal(get(name).verified,true,name);
 });
 
-test("implementations cannot create mutual cycles through recursive parent helpers",async t=>{
-  const {get,program}=await checkProgram(t,`import nat; import hlevels; use nat;
+test("implementation cycles report the local definition even with an imported parent",async t=>{
+  const parent=`import nat; import hlevels; use nat;
     theory Base(U < UU0) {
       M : set U;
       op(x : M) : M;
       def repeat(x : M, n : Nat) : M := match n { zero => op(x); succ(k) => repeat(x, k); };
-    }
-    theory Bad(U < UU0) extends Base { def op(x : M) : M := repeat(x, 0); }
-    def healthy : Unit := tt;
-  `,{module});
-  assert.equal(get("Bad").verified,false);
-  assert.equal(get("Bad").code,"E878");
-  assert.ok(!Object.values(program.symbols).some(symbol=>symbol.name==="Bad.make"));
-  assert.equal(get("healthy").verified,true);
+    }`;
+  const child=`theory Bad(U < UU0) extends Base { def op(x : M) : M := repeat(x, 0); }
+    def healthy : Unit := tt;`;
+  for(const imported of [false,true]) {
+    const source=(imported?"import fixture; use nat;":parent)+child;
+    const library=sourceReader();
+    const {get,program}=await checkProgram(t,source,{module,
+      reader:(name,importer)=>name==="fixture"?parent:library(name,importer)});
+    assert.equal(get("Bad").verified,false);
+    assert.equal(get("Bad").code,"E878");
+    assert.equal(get("Bad").errorStart,source.indexOf("op(x : M) : M := repeat"));
+    assert.ok(!Object.values(program.symbols).some(symbol=>symbol.name==="Bad.make"));
+    assert.equal(get("healthy").verified,true);
+  }
 });
 
 test("one group inverse implements both quasigroup divisions and all their laws",async t=>{
@@ -148,8 +158,8 @@ test("incorrect bodies, law proofs, signatures and cycles cannot publish a theor
     ["def op(x : M) : M := tt;",/Type mismatch/],
     ["def self(x : M) : op(x) = op(x) := tt;",/Type mismatch/],
     ["def op(x : M) : Unit := tt;",/inherited parameter and result types/],
-    ["def op(x : M) : M := op(x);",/Cycle among nonrecursive helpers/],
-    ["def op(x : M) : M := base.op(x);",/Cycle among nonrecursive helpers/],
+    ["def op(x : M) : M := op(x);",/Cycle among helper definitions/],
+    ["def op(x : M) : M := base.op(x);",/Cycle among helper definitions/],
     ["def op(x : M) : M := later(x); def later(x : M) : M := op(x);",/Untranslated name/],
     ["def M : U := Unit;",/two fields named M/],
   ];
@@ -174,7 +184,7 @@ test("conflicting implementations and cycles across inherited operations are ref
       theory Second(U < UU0) extends Base { step(x : M) : M; def op(x : M) : M := step(x); }
       theory Bad(U < UU0) extends First, Second {}`,/field named op/],
     [`theory Pair(U < UU0) extends Base { other(x : M) : M; }
-      theory Bad(U < UU0) extends Pair { def op(x : M) : M := other(x); def other(x : M) : M := op(x); }`,/Cycle among nonrecursive helpers/],
+      theory Bad(U < UU0) extends Pair { def op(x : M) : M := other(x); def other(x : M) : M := op(x); }`,/Cycle among helper definitions/],
   ]) {
     const {get}=await checkProgram(t,`${base} ${source} def healthy : Unit := tt;`,{module});
     assert.equal(get("Bad").verified,false);

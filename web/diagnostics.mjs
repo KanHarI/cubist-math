@@ -580,7 +580,7 @@ export const diagnostics = [
   ["E875", "…'s inherited interfaces have cyclic dependencies after sharing."],
   ["E876", "The equational strategy needs resolved field interfaces."],
   ["E877", "…'s implementation must have its inherited parameter and result types."],
-  ["E878", "Cycle among nonrecursive helpers: …"],
+  ["E878", "Cycle among helper definitions: …"],
   ["E879", "…'s implemented operations create cyclic field dependencies."],
   ["E880", "An implemented operation used in a field type must be nonrecursive."],
   ["E881", "The equational strategy does not yet generate folds for …'s implemented inherited members."],

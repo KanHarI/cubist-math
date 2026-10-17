@@ -45,10 +45,10 @@ test("helper cycle validation distinguishes structural recursion from inlining c
   const {allocate,bind,resolve}=setup(),a=allocate("a"),b=allocate("b");bind(a);bind(b);
   const entries=[{id:a.id,kind:"derived",label:"a",syntax:resolve("b")},
     {id:b.id,kind:"derived",label:"b",syntax:resolve("a")}];
-  assert.throws(()=>new DependencyAnalysis(entries).validateHelperCycles(),/Cycle among nonrecursive helpers: a -> b -> a/);
+  assert.throws(()=>new DependencyAnalysis(entries).validateHelperCycles(),/Cycle among helper definitions: a -> b -> a/);
   new DependencyAnalysis([{...entries[0],recursive:true},entries[1]]).validateHelperCycles();
   const conditional=[{...entries[0],syntax:resolve("match tt { b => b; }")},entries[1]];
-  assert.throws(()=>new DependencyAnalysis(conditional).validateHelperCycles(),/Cycle among nonrecursive helpers/);
+  assert.throws(()=>new DependencyAnalysis(conditional).validateHelperCycles(),/Cycle among helper definitions/);
 });
 
 test("pending alternatives and inserted arguments remain explicit until the slot decision",()=>{
