@@ -1,7 +1,7 @@
 {
   "workload": "f4_galois_group__f4_galois_is_cyclic_two",
   "date": "2026-10-17",
-  "method": "Seven alternating sequential pairs, fresh Node processes. Each checks f4_galois_group, then re-derives the selected definition with a fresh driver and the default 5000ms deadline. No concurrent test or benchmark jobs were launched. Times are local observations; the reviewer CLI was active.",
+  "method": "Seven alternating sequential pairs, fresh Node processes, clean checkouts at the recorded revisions. Each checks f4_galois_group, then re-derives the selected definition with a fresh driver and the default 5000ms deadline. No concurrent review, test or benchmark jobs were running. Times are local observations.",
   "command": "node tools/instruction-coverage.mjs --modules=f4_galois_group --select=f4_galois_is_cyclic_two --report=REPORT.json",
   "before": {
     "environment": {
@@ -14,15 +14,15 @@
       "memoryGiB": 36
     },
     "samplesMs": [
+      16.7,
+      15.2,
+      17.6,
+      18.1,
       16.2,
-      17.5,
-      16.1,
-      18.9,
-      14.7,
-      17.2,
-      15.4
+      18.6,
+      16.5
     ],
-    "medianMs": 16.2,
+    "medianMs": 16.7,
     "work": {
       "instructions": 915,
       "rejected": 0,
@@ -37,8 +37,8 @@
   },
   "after": {
     "environment": {
-      "revision": "79d5cbf14354b5e0f608a248d6afb19e05497d73",
-      "modified": true,
+      "revision": "aad6c8b53fb818a5cd4737beb97f7b8dd60b0ab5",
+      "modified": false,
       "node": "v24.13.0",
       "platform": "darwin arm64",
       "cpu": "Apple M3 Pro",
@@ -46,15 +46,15 @@
       "memoryGiB": 36
     },
     "samplesMs": [
-      12.1,
-      15.9,
-      13.3,
-      12.2,
-      12.9,
-      11,
-      10.7
+      13.1,
+      12.8,
+      11.5,
+      13,
+      10.8,
+      11.8,
+      12.1
     ],
-    "medianMs": 12.2,
+    "medianMs": 12.1,
     "work": {
       "instructions": 915,
       "rejected": 0,
@@ -65,15 +65,7 @@
       "exhausted": 0,
       "deadlines": 0
     },
-    "allSuccessful": true,
-    "implementationFilesSha256": {
-      "Makefile": "33d78d82b8bf607480c6deb334394f2d37ac18b7cec3d2c45e56a93b3ceb5c3d",
-      "kernel/include/cubical_kernel.h": "291a0fb6f5205c134f2bf2823b50356c703a8689465fa3f1ba8e6f16b1ce7eb8",
-      "kernel/src/queries.c": "253cce11620f8229b6ee17a47b9cda1605a3f1be791a515c7d40205485fb651c",
-      "wasm/cubical_bridge.c": "70e185b19f6c2fdec2ce7aa975dbc00082bbf3449f9a38e20d51ad7dbf815e22",
-      "web/cubical-kernel.mjs": "f18d313b1e65ad913a4dc44ad964bef6356efe3e2719e7bb7d5bd5115937f7b8",
-      "web/cubical-instruction-driver.mjs": "38613a8d4e4c2135e2e317e8a4801a1170cea93defea0985ed897b8bc0dbf3b3"
-    }
+    "allSuccessful": true
   },
-  "note": "The after measurement used uncommitted changes on the stated base revision. The implementation file hashes identify the measured source. Total instruction plus query steps change from 200348 to 200349: comparison work moves from the eventual instruction into the new syntax-only query. This comparison measures the follow-up against EVAL2, not against pre-EVAL2."
+  "note": "Total instruction plus query steps change from 200348 to 200349: comparison work moves from the eventual instruction into the syntax-only query. This comparison measures the follow-up against EVAL2, not against pre-EVAL2."
 }

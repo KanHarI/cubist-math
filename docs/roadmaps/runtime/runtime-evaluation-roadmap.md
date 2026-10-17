@@ -617,7 +617,7 @@ sets for the large normalized graph, without introducing a second scope
 analysis or changing proof search.
 
 In [seven alternating fresh-process pairs](../../reports/eval2-f4-comparison.json),
-F4 re-derivation improves from a 16.2 ms median to 12.2 ms on the recorded
+F4 re-derivation improves from a 16.7 ms median to 12.1 ms on the recorded
 machine. Total kernel steps change from 200,348 to 200,349: the new query does
 the comparison work otherwise performed by the eventual instruction. These
 timings compare the follow-up against EVAL2, not against pre-EVAL2; they do
