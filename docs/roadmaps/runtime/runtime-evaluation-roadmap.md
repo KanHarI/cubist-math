@@ -7,8 +7,10 @@ foundation is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q`
 and later numerical constructions. At the main `fc0362d3` starting point,
 none of the NUM packages or other EVAL packages was implemented. The
 [#266](https://github.com/KanHarI/cubist-math/pull/266) implementation includes
-EVAL1's one-pass REPL path and a version-3 baseline. NUM0–NUM2 and
-EVAL2–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
+EVAL1's one-pass REPL path and a version-3 baseline.
+[#269](https://github.com/KanHarI/cubist-math/pull/269) implements EVAL2, caching
+completed full normalizations by exact syntax identity. NUM0–NUM2 and
+EVAL3–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
 evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -257,8 +259,10 @@ gates pass, expose it as the new default `Nat` as directed on 2026-10-17.
 The retained equivalence then becomes `UNat` ↔ `Nat`. Document the name and import
 transition for existing unary clients before switching the public name.
 
-The ordered-ring and ordered-field definitions are a separate small PR over
-the existing algebraic hierarchy. They do not supply ordered `Z`/`Q` models,
+The ordered-ring and ordered-field definitions landed in
+[#267](https://github.com/KanHarI/cubist-math/pull/267), alongside the algebra
+lattice refactor supported by #268's inherited operation implementations.
+They do not supply ordered `Z`/`Q` models,
 decidable order, completeness or real-number constructions.
 
 Naturals form commutative **semirings**, not rings: they have no additive
@@ -298,7 +302,8 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
 
-EVAL0 is done. EVAL1 is implemented in #266; the other rows are planned. Sizes are relative scope, as in
+EVAL0 is done. EVAL1 is implemented in #266 and EVAL2 is implemented below;
+the other rows are planned. Sizes are relative scope, as in
 the work plan.
 
 | Package | Deliverable | Dependencies | Size |
@@ -308,7 +313,7 @@ the work plan.
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
-| EVAL2 | Memoized full normalization | EVAL0; independent of EVAL1 | M |
+| EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback | EVAL3, EVAL4 | L |
@@ -548,12 +553,58 @@ evaluator gains.
 
 ### EVAL2: preserve sharing during full normalization
 
-[Weak heads](../../../kernel/src/term_normalize.c) are already cached, but
-`ck_normal` traverses every remaining child on each call. Cache completed
-normal forms by exact immutable syntax identity, with scope/state included
-where required. Never publish an in-progress or failed result. Account for
-memory and invalidation across rollback and compaction, including normal
-forms that create nodes before a later computation fails.
+Implemented on 2026-10-17. [Full normalization](../../../kernel/src/term_normalize.c)
+now caches completed results by exact immutable syntax handle, alongside the
+weak-head cache. There are no hash collisions. Reduction consults no local
+context or assumed face; substitution and restriction create distinct syntax,
+and referenced definitions and admitted signatures are immutable. Cache hits
+still charge a kernel step and check the deadline. In-progress and failed
+results are never published. Completed children can remain cached after a
+sibling fails; rollback and compaction clear every entry before handles are
+reused or relocated, including forward references created during failed work.
+
+The table costs four bytes per arena capacity slot, included in the reported
+arena memory. The [native regression](../../../kernel/tests/test_normalize.c)
+normalizes forty shared sums (2^40 expanded leaves) in 122 steps, with or
+without syntax interning; a repeated query takes one step. It also checks
+typed instruction use, budget/deadline failures, scope and dimension
+restriction, rollback, compaction and allocation before a later failure.
+The existing instruction-isolation and cubical eta regressions remain gates.
+
+Measured against the version-3 EVAL1 record with three cold samples and one
+warm run per sample (`node tools/evaluation-baseline.mjs --samples=3 --warm=1
+--only=euclid-3,euclid-3-prime,euclid-4-prime,factorial-5-print,multiply-12-12,transport-closed,winding-2`):
+
+| Workload | EVAL1 normalization steps | EVAL2 normalization steps |
+| --- | ---: | ---: |
+| Full `euclid(3)` | 478,867 | 200,615 |
+| `euclid(3).1` | 130,694 | 130,675 |
+| `euclid(4).1`, before K344 | 595,614 | 595,611 |
+| `factorial(5)` | 6,250 | 5,892 |
+| `12 * 12` | 5,271 | 4,841 |
+| Closed transport | 167 | 154 |
+| Winding number 2 | 241,297 | 241,291 |
+
+All seven outcomes, including full normal-form digests, match the existing
+record exactly, and each workload allocates the same number of syntax nodes.
+Full `euclid(3)` saves 58% of normalization steps; its reported peak arena
+includes an additional 262,144 bytes for 65,536 cache slots. These are
+deterministic work measurements, not a wall-clock speedup claim. K344 still
+limits the larger Euclid inputs. The version-3 fixture remains the regression
+reference: its allowed counter decreases cover this optimization.
+The negative polynomial-root fixture now reaches its intended E606 type
+mismatch instead of exhausting the K338 reduction budget; its expected
+diagnostic is updated accordingly.
+
+Finishing formerly budget-limited normal forms exposed a second sharing
+problem: the driver's alpha comparison retained irrelevant term-binder
+renamings, revisiting shared subterms under each enclosing scope. It now
+prunes those renamings using exact free-symbol sets, preserving shadowing,
+domains, annotations and level variables. A native-derived normal-form
+regression with 2^40 expanded leaves compares in fewer than 2,000 node reads.
+The archived `f4_galois_is_cyclic_two` re-derivation that exposed this took
+about 11 seconds with only the kernel cache, and 16 ms with the comparison
+fix (10 ms before EVAL2); the standard five-second deadline remains unchanged.
 
 **Acceptance:** shared graphs and repeated normalization avoid redundant
 traversal; typed normal forms, eta behavior, failure recovery and instruction

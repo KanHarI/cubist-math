@@ -136,6 +136,12 @@ struct cc_kernel {
     unsigned optimizations;
     cc_node *nodes;
     cc_term *weak_cache;
+    /* Completed full normalizations, indexed by exact syntax handle. Like
+     * weak heads these consult no local context or assumed face: restriction
+     * and substitution construct distinct syntax. Referenced definitions and
+     * admitted signatures are immutable. Rollback/compaction clear both
+     * caches before handles can be reused; zero means no completed result. */
+    cc_term *normal_cache;
     /* The syntax hash graph: with CC_SHARE_SYNTAX, identical syntax has one
      * handle. An index of live nodes, never a typing certificate. Discarded
      * handles act as tombstones until the table is rebuilt. */

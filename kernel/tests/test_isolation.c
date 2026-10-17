@@ -193,7 +193,8 @@ static void normal_forms_and_the_glue_step_keep_eta(void) {
  * but p's right endpoint a Glue term over t(40), where t(n + 1) is
  * f(t(n))(t(n)): 41 nodes, 2^40 paths. The Glue step reduces the piece and
  * b at i = 0, which is point, and never reaches the endpoint p's annotation
- * carries; Normalize walks it, path by path, and runs out of budget. The
+ * carries. Full normalization now memoizes the graph (EVAL2), but the Glue
+ * step must still avoid normalizing that unrelated endpoint. The
  * piece is restricted too, so glue [i = 0 ↦ b] (unglue b), which Whnf
  * leaves, is b; and a piece that is b's restriction as a weak head needs no
  * normal form, here t(40) itself, as p's left endpoint. */
@@ -218,8 +219,9 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
     ck_standalone(k);
     cc_kernel_work(k, &after);
     assert(after.instruction_steps - before.instruction_steps < 1000);
-    assert(!cc_kernel_normalize(k, glued) && strstr(cc_kernel_error(k), "budget"));
-    cc_kernel_clear_error(k);
+    assert(!k->normal_cache[t]);
+    assert(cc_kernel_normalize(k, glued) == b && !k->error[0]);
+    assert(k->normal_cache[t] == t);
 
     uint32_t at_zero = k->nodes[piece].payload;
     cc_term itself = ck_make(k, CC_GLUE_TERM, 0, over_i, ck_make(k, CC_UNGLUE, 0, over_i, b, 0, 0),

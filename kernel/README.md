@@ -122,6 +122,24 @@ So a head query can simplify `(<i> A) @ 1` without treating an unknown
 neutral path as having arbitrary endpoints; `tests/test_path_head.c` checks
 the distinction.
 
+### Sharing during full normalization
+
+Full normalization caches completed results by exact syntax handle, alongside
+the weak-head cache. A shared child is normalized once, and repeating a
+completed normalization costs one kernel step. Cache hits still check budgets
+and deadlines. No in-progress or failed result is stored; successfully
+completed children of a failed computation can be reused.
+
+Reduction consults no local context or assumed face. Term substitution,
+dimension substitution and face restriction produce their own syntax keys;
+definitions and admitted signatures are immutable. Rollback and checkpoint
+compaction clear the cache before handles can be reused or relocated,
+including forward references allocated during a computation that later failed.
+The table adds one `cc_term` (four bytes) per arena capacity slot, counted by
+`cc_kernel_arena`; it has no hash collisions and stores no typing judgements.
+`tests/test_normalize.c` covers shared graphs, repeated queries, resource limits,
+scope, restriction and checkpoint recovery. Substitution depth limits remain.
+
 ### Sharing during substitution
 
 Free-name analysis and capture-avoiding substitution memoize exact immutable

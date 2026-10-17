@@ -293,6 +293,12 @@ static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
 }
 
 cc_term ck_normal(cc_kernel *k, cc_term term) {
+    if (!term || term >= k->count)
+        return 0;
+    /* Charge hits too: a warm cache cannot bypass a budget or deadline.
+     * Misses take their entry step in ck_whnf, as before. */
+    if (k->normal_cache[term])
+        return ck_tick(k) ? k->normal_cache[term] : 0;
     cc_term head = ck_whnf(k, term);
     if (!head)
         return 0;
@@ -302,14 +308,24 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
     }
     cc_node n = k->nodes[head];
     for (unsigned i = 0; i < ck_arity(n.kind); ++i)
-        if (n.child[i])
+        if (n.child[i]) {
             n.child[i] = ck_normal(k, n.child[i]);
+            if (!n.child[i]) {
+                --k->recursion;
+                return 0;
+            }
+        }
     cc_term result = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
     if (result && n.kind == CC_GLUE_TERM)
         result = normal_glue_eta(k, result);
     if (result)
         result = ck_whnf(k, result);
     --k->recursion;
+    /* Recursive children can finish before a sibling fails. Their completed
+     * results remain usable, but never publish this node's partial result. */
+    if (!result || k->error[0])
+        return 0;
+    k->normal_cache[term] = result;
     return result;
 }
 
