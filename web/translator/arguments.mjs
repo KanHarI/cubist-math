@@ -60,9 +60,6 @@ export function writtenOut(n, scope, holes = false) {
     : `${spelling} is a declared type or a constructor, whose arguments are written out: a hole _ or a named argument is an argument of a definition or a function.`), n.fn);
 }
 
-// Placeholders for parameters' values, numbered apart from every name supply.
-let placeholders = 0;
-
 // Running out of fuel, steps or time ends the elaboration that asked.
 const isLimit = error => ["fuel", "budget", "deadline"].includes(error?.kind);
 
@@ -117,7 +114,7 @@ export function elaborateCall(t, n, scope, expected) {
     // universe to infer, a placeholder level until it is solved.
     if (type.tag === "LPi") {
       if (!node || isHole(node)) {
-        const variable = `${parameter ?? "universe"}?${++placeholders}`;
+        const variable = unit.names.placeholder(parameter ?? "universe");
         solver.add({index, parameter, node, variable, universe: true, kind: node === null ? "omitted" : "hole"});
         type = substituteTerm(type.body, type.name, {tag: "Var", name: variable});
         continue;
@@ -136,9 +133,9 @@ export function elaborateCall(t, n, scope, expected) {
         : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} in double braces, in order or by name, as ${called}{{…}}(…) or ${called}{{${implicit[0]} := …}}(…).`
         : `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`), site);
     }
-    // A name no source or name supply spells, so that a call without holes
+    // A name no source or ordinary fresh-name request spells, so a call without holes
     // leaves the declaration's generated names as they were.
-    const variable = `${parameter ?? "argument"}?${++placeholders}`;
+    const variable = unit.names.placeholder(parameter ?? "argument");
     solver.add({index, parameter, node, variable, domain: type.domain,
       kind: node === null ? "omitted" : isHole(node) ? "hole" : "argument"});
     type = substituteTerm(type.body, type.name, T.variable(variable));
