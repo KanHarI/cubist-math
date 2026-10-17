@@ -426,13 +426,13 @@ their character offsets. All new modules import only the foundational library.
 [bnat_arithmetic.cubist](../../../library/bnat_arithmetic.cubist) proves that
 decoding preserves addition and multiplication for arbitrary binary values.
 [semirings.cubist](../../../library/semirings.cubist) defines `CommSemiring`
-and its unary natural model.
-[bnat_semiring.cubist](../../../library/bnat_semiring.cubist) proves the binary
+as a general interface.
+[bnat_semiring.cubist](../../../library/bnat_semiring.cubist) contains both natural models and proves the binary
 laws, constructs both conversion homomorphisms and `unat_bnat_semiring_iso`,
 and supplies cancellation, nontriviality and no zero divisors. The proofs
 use the explicit conversion; the arithmetic operations still recurse on
 bits. These results check without assumptions. This completes the algebraic
-agreement portion only: comparison correctness, the universe path and its
+agreement portion only: comparison correctness, bitwise setness, the universe path and its
 transport laws, the dependent Peano view, strong recursion and factorial
 remain NUM1 work. Public `Nat` has not switched.
 
@@ -464,7 +464,10 @@ Prove or transfer cancellation, nontriviality and no-zero-divisors through
 the checked maps. Also prove comparison/order agreement for the algorithms
 that use it; a bare equivalence of carrier types is not enough. Derive
 setness from the bitwise equality decision before NUM2 quotient computations
-can force NUM0's unary-retraction proof. Conversions
+can force NUM0's unary-retraction proof. The semiring law fields also share
+`bnat_decode_injective`; use the bitwise equality decision there to return
+a binary path directly when possible, retaining the unary proof only to
+refute an impossible negative decision. Conversions
 remain explicit computational functions. From this same equivalence,
 construct `UNat =[U0] BNat` through computational univalence and prove its
 forward/reverse transport laws and agreement of transported semiring

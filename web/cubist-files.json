@@ -2408,7 +2408,7 @@
   },
   {
    "path": "library/bnat_semiring.cubist",
-   "summary": "The binary natural commutative semiring, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits."
+   "summary": "The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits."
   },
   {
    "path": "library/bnat_unary.cubist",
@@ -2472,7 +2472,7 @@
   },
   {
    "path": "library/semirings.cubist",
-   "summary": "The `CommSemiring` theory, with shared additive and multiplicative commutative monoids, distributivity and zero absorption; the unary natural model."
+   "summary": "The `CommSemiring` theory, with shared additive and multiplicative commutative monoids, distributivity and zero absorption."
   },
   {
    "path": "library/squares.cubist",
