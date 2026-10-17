@@ -10,7 +10,7 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 // 42, 1_000, 1/2, 2.3, 6.02e23, 2.5e-3 and 5i. Right after a tight dot a
 // digit is a projection's index, as in p.2.1, never a literal's start.
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
-const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\r\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
 // The source scanner also serves incomplete editor input. It retains every
 // character, including comments and whitespace; tokenize enforces parser limits
 // and rejects invalid characters after discarding trivia.

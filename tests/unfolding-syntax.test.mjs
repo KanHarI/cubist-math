@@ -65,7 +65,7 @@ test("both language references and keyword styling describe the scoped syntax", 
     assert.match(text, /with unfolding \[/);
     assert.doesNotMatch(text, /with_unfolding\(/);
   }
-  const { keywords } = await import("../web/source-tokens.mjs");
-  assert.ok(keywords.has("with"));
-  assert.ok(keywords.has("unfolding"));
+  const { tokenStyle } = await import("../web/source-tokens.mjs");
+  assert.equal(tokenStyle("with"), "keyword");
+  assert.equal(tokenStyle("unfolding"), "keyword");
 });

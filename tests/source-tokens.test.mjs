@@ -20,6 +20,12 @@ test("source scanning preserves incomplete or invalid input while parsing still 
   assert.throws(() => tokenize(source), error => error.offset === source.indexOf("\u03bb"));
 });
 
+test("only a newline ends a line comment, including in CRLF source", () => {
+  const source = "// note\rdef hidden := 0;\r\ndef visible := 1;";
+  assert.equal([...scan(source)][0].text, "// note\rdef hidden := 0;\r");
+  assert.deepEqual(tokenize(source).map(token => token.text), ["def", "visible", ":=", "1", ";", "EOF"]);
+});
+
 test("numerals from 1 are notation for successors; 0 is the constructor itself", () => {
   assert.equal(numeralExpansion("3"), "succ(succ(succ(0)))");
   assert.equal(numeralExpansion("0"), null);

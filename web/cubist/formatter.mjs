@@ -184,7 +184,8 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     }
   }
   visit(syntax);
-  const comments = [...scan(source)].filter(token => token.text.startsWith("//")).map(token => ({ ...token, comment: true }));
+  const comments = [...scan(source)].filter(token => token.text.startsWith("//"))
+    .map(token => ({ ...token, text: token.text.replace(/\r+$/, ""), comment: true }));
   const all = [...tokens, ...comments].sort((a, b) => a.start - b.start);
   let position = 0;
   // `items`: a sequence of declarations, as the source's and a section's are.
