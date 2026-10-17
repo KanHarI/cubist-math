@@ -6,8 +6,8 @@ Status: planned on 2026-10-07, following a local investigation at
 foundation is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q`
 and later numerical constructions. At the main `fc0362d3` starting point,
 none of the NUM packages or other EVAL packages was implemented. The
-`runtime-evaluation` implementation now includes EVAL1's one-pass REPL path
-and a version-3 baseline; integration remains pending. NUM0–NUM2 and
+[#266](https://github.com/KanHarI/cubist-math/pull/266) implementation includes
+EVAL1's one-pass REPL path and a version-3 baseline. NUM0–NUM2 and
 EVAL2–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
 evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
@@ -74,7 +74,9 @@ macOS/arm64, Apple M3 Pro, in the
 [original baseline record](https://github.com/KanHarI/cubist-math/blob/fc0362d30b2fafef4b8d5f0b75a1f56a89f148b6/tests/fixtures/evaluation-baseline.json). Its kernel
 work and arena counters are deterministic; every workload's five cold
 samples agree on them. Times are medians on that machine, not portable
-targets. Repeat it after `make wasm`:
+targets. To repeat this historical behavior, use an isolated checkout of
+`b5a261c8` (or the pre-EVAL1 `fc0362d3`) and rebuild there with `make wasm`.
+Running these commands on the current sources measures EVAL1 instead:
 
 ```sh
 npm run baseline:evaluation
@@ -148,7 +150,17 @@ version 3, records three cold samples and three warm runs per sample on
 Node 24.13.0, macOS/arm64, Apple M3 Pro. A seven-workload pre-change run
 from `fc0362d3` is retained in
 [eval1-before.json](../../reports/eval1-before.json). The after record is
-explicitly marked modified relative to that base revision.
+explicitly marked modified relative to that base revision. To reproduce the
+seven-workload before run, build an isolated checkout of `fc0362d3` with
+`make wasm`, then run:
+
+```sh
+node tools/evaluation-baseline.mjs --samples=3 --only=euclid-3,euclid-3-print,euclid-3-prime-expected,multiply-2-255,multiply-2-255-print,euclid-4,euclid-4-prime > build/eval1-before.json
+```
+
+The retained report is a copy of that output. On this implementation,
+`node tools/evaluation-baseline.mjs --samples=3 --write` records all 26
+workloads in the version-3 after baseline.
 
 | Workload | Before | After |
 | --- | --- | --- |
@@ -285,14 +297,13 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
 
-EVAL0 is done. EVAL1 is implemented in `runtime-evaluation`, pending
-integration; the other rows are planned. Sizes are relative scope, as in
+EVAL0 is done. EVAL1 is implemented in #266; the other rows are planned. Sizes are relative scope, as in
 the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
 | EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
-| EVAL1 | One-pass REPL evaluation; implemented, integration pending | EVAL0 | S |
+| EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
@@ -330,7 +341,7 @@ time thresholds.
 full Euclid results, their prime projections under the REPL, print,
 exact-value and pattern contracts, factorial, divisibility decisions, unary
 arithmetic at the depth limit, closed transport and winding numbers.
-Eight of them fail. It also runs the four scratch projections as a separate
+Eight failed in the original EVAL0 record; seven fail in the EVAL1 record. It also runs the four scratch projections as a separate
 series. Each sample is a new process; one more times the cold entry
 unobserved, and another measures syntax depth. The phases are elaboration,
 checking, normalization, normal-form decoding, the assumption inventory,
@@ -347,8 +358,9 @@ as about 340,000 characters.
 [Its test](../../../tests/evaluation-baseline.test.mjs) keeps the recorded
 outcomes, normal forms included, and normalization and comparison counts
 exact, and lets the deterministic counters fall but grow by at most a
-quarter. It asserts the REPL/print discrepancy and the K344 failures
-directly and compares no times. It runs the scratch series on `euclid(3)`
+quarter. The EVAL0 test asserted the REPL/print discrepancy. The current
+EVAL1 test asserts agreement, the successful `510` result and the remaining
+K344 failures, and compares no times. It runs the scratch series on `euclid(3)`
 and `euclid(4)` and reads the larger two from the record. A change past
 those bounds records the baseline again with `--write`, and its reason.
 
@@ -356,7 +368,12 @@ those bounds records the baseline again with `--write`, and its reason.
 
 Implemented on 2026-10-17 in `runtime-evaluation`: `ReplSession.evaluate`
 uses a scratch `print(evaluate(term))` entry. The existing print path checks
-closedness and assumptions and normalizes once, with the active notation.
+closedness and assumptions and normalizes once, displaying exactly as
+`print(evaluate(term))` does. This also adopts the print path's behavior after
+a call-form model selection, such as `use pick(0);`: it can display a
+natural as `3` where the earlier REPL displayed `nat.(3)`. A selected model
+without numeral notation still cannot read that bare numeral; use `nat.(3)`
+for input. This is an existing print limitation, now shared by plain evaluation.
 Explicit expected-value directives keep their independent comparisons.
 See the [measurements](#eval1-measurements-2026-10-17).
 
@@ -367,7 +384,7 @@ Preserve notation selection, assumption diagnostics, scratch-entry lifetime,
 failed-entry recovery and browser/CLI agreement.
 
 **Acceptance:** one normalization for a successful plain evaluation;
-the same displayed values and assumption refusals; the Euclid self-equality
+the same full normal forms and assumption refusals, with print-equivalent display; the Euclid self-equality
 instruction overhead disappears. In the baseline that comparison takes 400
 of the 435 ms of `evaluate euclid(3)`, and plain `evaluate 2 * 255` fails
 in it where printing shows `510`; both workloads measure the change. This
