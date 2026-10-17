@@ -1535,6 +1535,10 @@
    "summary": "For `tests/automatic-clauses.test.mjs`: the generated set squash (E4) of the library's quotients, explicit obligations, missing h-level evidence, automatic clauses in the match statement, trailing proofs, ambiguous whole-clause proofs and hlevel hints."
   },
   {
+   "path": "cubist-tests/binary_natural_foundation.cubist",
+   "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, and arithmetic beyond 64 bits."
+  },
+  {
    "path": "cubist-tests/box_notation.cubist",
    "summary": "The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula."
   },
@@ -2391,6 +2395,18 @@
    "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
+   "path": "library/bnat_notation.cubist",
+   "summary": "Binary literal parsing and the `bnat` notation for `0b` literals, arithmetic and order. Parsing builds the binary magnitude directly; unary offsets count characters only."
+  },
+  {
+   "path": "library/bnat_unary.cubist",
+   "summary": "Unary/binary conversion round trips, compatibility with successor and doubling, and that `BNat` is a set."
+  },
+  {
+   "path": "library/bnat.cubist",
+   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; explicit unary conversions and successor/predecessor laws."
+  },
+  {
    "path": "library/classical_axioms.cubist",
    "summary": "The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them."
   },
@@ -2445,6 +2461,10 @@
   {
    "path": "library/squares.cubist",
    "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
+  },
+  {
+   "path": "library/unat.cubist",
+   "summary": "The explicit unary name `UNat`, currently an alias of `Nat`, with `unat` notation for unary numerals, arithmetic and order."
   },
   {
    "path": "library/univalence.cubist",
