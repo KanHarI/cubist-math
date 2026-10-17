@@ -30,9 +30,26 @@ migrations not yet built. **Deferred**: not scheduled. A fifth,
 `kernel extension: H1`), ended with H1's release on 2026-10-02, when the
 option and the marker were removed.
 
-**Current scope.** Advance the language, elaborator, tooling and the kernel
-features they require. Use small checked programs as acceptance evidence. On
-2026-10-05 the library rebuild resumed for its foundations: the natural
+**Current scope, directed on 2026-10-17.** Develop the language through
+categories, monads, algebraic homology and synthetic cohomology as a sustained
+mathematical testbed. Progress includes expressive theories, reusable proofs,
+notation, inference, inspection and practical computation, as well as the
+resulting mathematics. Select examples that exercise these features together;
+reaching a homology or cohomology result quickly is not the scheduling
+objective. The [first actions](#first-actions) give this progression using
+the existing package IDs. HA0–HA6 remain unimplemented; this changes
+direction, not status.
+
+Each slice pairs a language capability with checked examples and its intended
+scope: an explicit reference construction, proofs, relevant negative cases, readable
+source/generated inspection, and measurements where cost matters. Repeated
+proof or elaboration friction should improve the shared abstraction rather
+than accumulate example-specific helpers. Start with bounded examples, then
+exercise the supported fragment on different instances before calling the
+feature general. Broader language development is the objective; speculative
+machinery without an identified testbed use remains deferred.
+
+On 2026-10-05 the library rebuild resumed for its foundations: the natural
 numbers' arithmetic, quotients, the integers and rationals, and the algebraic
 hierarchy through L2.4's theories, all done the same day
 ([first actions](#first-actions)). Real
@@ -529,7 +546,11 @@ The exact syntax remains proposed; none is delivered.
   carrier, so L2.4's law check refused them; L2.4c's theory families, done
   on 2026-10-06, admit them (the identity monad is a `Monad`), so N1 can
   start ([computation roadmap](high-level-abstractions/computation-notation-roadmap.md)). No initial
-  model or generated structure identity is required.
+  model or generated structure identity is required. After L3.4 supplies
+  functors and natural transformations, N1's categorical bridge identifies
+  this interface with unit/multiplication monads on the category of sets at
+  fixed universes, and relates the same Kleisli construction. That bridge
+  does not gate the first set-monad or notation slice.
 - **N2 and N4:** monadic `do` and basic `proc` after N1, the goal layer and
   L4.1a/b. They proceed independently; full mathematical instances do not
   gate the first notation releases.
@@ -537,7 +558,7 @@ The exact syntax remains proposed; none is delivered.
   Small pair/sum fixtures prove scope, rejection of refutable binds and
   absence of witness escape.
 - **N3b:** native truncation and free-algebra examples after H1/L2.6; rebuilt
-  span closure only when library development is resumed. These are separate
+  span closure only when its B4.1 prerequisites are explicitly scheduled. These are separate
   instance gates, not prerequisites for N3a or N4.
 - **N5:** explicit choice and dynamic application after N4 and checked
   capability laws. Probability and partiality instances remain deferred.
@@ -545,14 +566,20 @@ The exact syntax remains proposed; none is delivered.
 ## Homological algebra track
 
 The [homological algebra roadmap](mathematics/homological-algebra.md) owns HA0–HA6.
-It was proposed on 2026-10-07 at the maintainer's request. It is a new
-mathematical track, and when it starts is an
-[open decision](#open-decisions). It has two routes:
+Proposed on 2026-10-07 and selected on 2026-10-17 as the longer-term language
+testbed, it remains unimplemented. Categories and monads develop its algebraic
+interfaces while synthetic cohomology develops its HoTT interfaces. Both are
+central to the [first actions](#first-actions); neither is a fallback for the
+other. This direction authorizes staged testbed development without resuming
+the paused analysis, Galois or RH projects. Its two mathematical routes are:
 
 - **Synthetic (HA4).** Spheres and suspensions in the library, homotopy
   groups, `K(G, 1)` and `K(G, n)`, and cohomology as truncated maps into
-  them. It needs only H1, the library's univalence and squares, so it can
-  start first.
+  them. Bounded low-degree pilots can use H1, the library's univalence and
+  squares independently of HA0. Develop path algebra, induction, transport
+  and h-level tooling through these pilots alongside categorical work.
+  Variable-degree truncation and the full HA4 theorems retain their own
+  admission and proof obligations.
 - **Algebraic (HA1–HA3).**
   - Modules and exactness, up to the snake lemma with a computable
     connecting map.
@@ -604,8 +631,8 @@ presentation work remains deferred.
 - NUM2 owns the new carriers and algebraic APIs. The
   [reals roadmap's R1](mathematics/reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
-  property. That work targets the new `Z` and `Q` and still awaits first
-  action 8's scope decision; it is not a NUM2 prerequisite.
+  property. That work targets the new `Z` and `Q` and still awaits
+  the number-order scope decision below; it is not a NUM2 prerequisite.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
   EVAL5 specifies observation and typed readback; a successful
   `euclid(4).1` does not close the failure of full `euclid(4)`.
@@ -722,29 +749,49 @@ The remaining validation follow-up is the final mutation probe's repeated
 termination in CI; see the [RC verification record](historical/refactoring-and-testing.md#verification-record).
 The site publication run succeeded.
 
-1. L2.4d: morphisms by explicit opt-in, with its two-commit migration.
-2. L2.11: laws proved propositions; L2.12: implicit theory-operation
-   arguments, with composition notation decided before its acceptance.
-3. L2.6: migrate the integrated construction and fold behavior to explicit
-   capabilities, prove uniqueness and universal equivalence, and discharge
-   additional laws before publishing a capability. Frontend preservation
-   tests do not supply these proofs.
-4. L2.8's last item: re-derive the archive's raw `comp` lemmas through squares.
-5. L2.5b's remainder: registered decidable equality/Hedberg, controlled
-   unfolding, `Truncate`, conditional premises and truncation targets,
-   and inspection of chosen witnesses.
-6. L2.3/L2.3b: supported derivations and proof-first h-levels.
-7. L3.1/L3.2: finish equivalences and `ext` before structure identity
-   (L2.4b) and equivalence-based views/presentations (L2.7).
-8. L3.4–L3.6: categories, universal constructions and the abelian tower,
-   after their language dependencies and composition-notation decision.
+The progression below develops language breadth through increasingly demanding
+examples. Rows identify integration targets, not a requirement to finish every
+package in one row before starting the next. The algebraic and synthetic
+strands proceed alongside each other; their shared proof tools and interfaces
+are developed with their first consumers.
 
-Independent work: EVAL1 and NUM0/NUM1 follow the completed EVAL0 baseline;
-NUM2, the remaining evaluator work, N0–N5, worker cancellation, K2.5's
-archive remedies and the H2/H3 gates retain their package dependencies.
-No language milestone resumes paused mathematics. The proposed number-order
-extension and public `Nat` transition remain decisions below; neither
-blocks NUM0–NUM2's construction.
+| Integration target | Language work exercised | Mathematical acceptance examples |
+| --- | --- | --- |
+| Theory and HoTT interfaces | L2.4d's morphism opt-ins, L2.11's proposition laws, L2.12's implicit operation arguments and notation; L1.4's path vocabulary and constructor congruence | Algebraic models and explicit precategories; circle/suspension and square proofs as baselines for the synthetic strand |
+| Categories and structured equivalences | L3.4's functors, natural transformations and categorical reasoning; L3.1/L3.2's equivalences, extensionality and contractibility; L2.4b's supported structure identity | Identity/composition/opposite laws and naturality; compare isomorphic algebraic structures and equivalent spaces. A precategory is not claimed univalent before its proof |
+| Monads, free constructions and higher-inductive proofs | N0/N1's lawful interfaces, then N2/N3a and N4/N5's scoped notation; L2.6's complete equational capabilities; L2.5b and L2.3/L2.3b as their supported proof/derivation slices become available | Identity, native truncation and free-algebra monads with checked laws; substitution through a proved free construction; low-degree `K(G, 1)` admission and proofs using squares, induction and truncation |
+| Universal constructions and synthetic topology | L3.5/L3.6's universal interfaces, quotient lifting and abelian structures; L2.7's supported views, dependent rewriting and L2.8's square migrations | Products, pullbacks, kernels and cokernels; suspensions, pushouts, cofibers and maps out of them. Reuse extensionality, transport and universal-property proofs across these examples |
+| Algebraic homology and synthetic cohomology | HA1/HA2's indexed structures, chain-map interfaces and exactness reasoning; HA4's higher paths, truncations and computational equivalences | Complexes and homology alongside `K(G, n)` and cohomology as truncated mapping spaces, with the supported degrees explicit; long exact sequences and homotopy invariance as proved milestones |
+| Computation and comparison | EVAL/NUM improvements and closed evaluation; HA3/HA5/HA6's larger reusable proofs | Finite matrix homology, presented-group Ext/Tor, and comparison of cellular and synthetic cohomology on finite complexes, with their stated assumptions |
+
+Start with the first row and N0/N1's existing prerequisites. L2.12's
+composition-notation decision belongs to the categorical interface; it does
+not block the equational L2.6 proof slice. L2.6 must establish uniqueness,
+`T.Hom.ext`, universal equivalence and its inverse laws before publishing a
+capability. Develop the shared helpers those proofs need there; L2.11 gates
+its general-law extension, not the first equational case. The N1 categorical
+bridge follows L3.4, while the first set-monad and notation slices can proceed
+without it. Larger mathematical instances test integration without becoming
+prerequisites for every earlier language release.
+
+Every stage tests the complete user path: stating and proving the example,
+inference and notation, diagnostics for rejected examples, inspecting generated
+terms, querying local contexts, and evaluating appropriate closed examples.
+Use the source-test and preservation gates already installed. Measure proof
+size, explicit annotations, checking work and evaluation costs against the
+explicit baseline; a theorem proved by bypassing the intended language feature
+does not close that feature's acceptance gate. A concrete limitation feeds the
+responsible language package, with a reusable design and a regression example.
+
+EVAL1 and NUM0/NUM1 can advance from EVAL0 alongside these strands; larger
+computations use NUM2 and the remaining evaluator work as needed. H2/H3,
+variable-level truncation and universe extensions retain their independent
+design and soundness gates. Ordinary families or complex shapes do not by
+themselves require indexed or inductive-inductive kernel declarations. Worker
+cancellation, K2.5's archive remedies and the remaining HoTT packages stay
+visible; prioritize their slices when the testbed exercises them. Paused
+analysis, Galois and RH remain paused. The number-order extension and public
+`Nat` transition remain decisions below; neither blocks NUM0–NUM2.
 
 One recorded follow-up from #185 remains: `top_unique` with corners left to
 inference produces E604, "Unchecked path application reached reduction",
@@ -784,10 +831,12 @@ scheduled packages from advancing.
    `BNat` and the new `Z`/`Q` can be built before this naming decision.
 3. **Composition notation:** `∘` with an ASCII alias or diagrammatic
    `f >> g`; needed before L2.12's notation acceptance and L3.4.
-4. **Proposed homological track:** when to start it, and its complex-shape
-   versus integer-indexing choice before HA2. The
-   [proposal](mathematics/homological-algebra.md) is on main; its implementation has not
-   started, and mathematics remains paused.
+4. **Complex indexing:** confirm complex shapes versus a separate integer
+   representation before HA2. The [homological roadmap](mathematics/homological-algebra.md)
+   is selected as a language testbed, including synthetic cohomology; its
+   implementation has not started. Variable-degree truncation remains a
+   separate HA4 design question. Neither decision blocks the first
+   categorical, monadic or low-degree synthetic pilots.
 
 **Open, not blocking**
 

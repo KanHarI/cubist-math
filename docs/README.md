@@ -14,8 +14,9 @@ remaining packages; the [branch record](roadmaps/work-plan.md#branch-work)
 distinguishes the merged CB/RC stacks from the unmerged Hydra draft.
 
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
-  language, its kernel support and the language reference. Broad mathematical
-  rebuilding is deferred.
+  language, its kernel support and the language reference. Categories, monads,
+  algebraic homology and synthetic cohomology are the selected language
+  testbed; broad mathematical rebuilding is deferred.
 - [Work-plan audit of 2026-09-28](roadmaps/historical/audits/2026-09-28-audit.md): the
   baseline revision and findings behind the current statuses.
 - [Historical plans and specifications](roadmaps/historical/README.md):
@@ -64,7 +65,7 @@ finishing a language milestone does not automatically resume them.
 | Galois theory | [Finite Galois development](roadmaps/mathematics/galois-roadmap.md) | [Resumption checkpoint](tactical/galois-handoff.md), [symmetries as loops](tactical/galois.md), [polynomial algebra](tactical/polynomial-algebra.md), [finite dimension](tactical/finite-dimension.md) |
 | Complex analysis | [Algebraic closure, residues, and Picard](roadmaps/mathematics/complex-analysis-roadmap.md) | [Paused-development checkpoint](tactical/complex_analysis_handoff.md), [complex curves](tactical/complex_curves.md), [limits](tactical/analysis_limits.md) |
 | Real numbers | [Number systems for the rebuild](roadmaps/mathematics/reals-roadmap.md) | The library's integers and rationals, built on 2026-10-05 as quotients; their order, canonical rationals and the Cauchy reals (kernel H3) are open. The first library's constructions are described as archived. |
-| Homological algebra | [Synthetic and algebraic homological algebra](roadmaps/mathematics/homological-algebra.md) | Proposed on 2026-10-07, not started: Eilenberg–MacLane spaces and cohomology that computes, then modules, chain complexes, homology and Ext without the axiom of choice. |
+| Homological algebra | [Synthetic and algebraic homological algebra](roadmaps/mathematics/homological-algebra.md) | Selected on 2026-10-17 as a language testbed; HA0–HA6 remain unimplemented. Categories and monads, modules and complexes, and synthetic cohomology develop the language together, with checked proofs and explicit assumptions. |
 | Analytic number theory | [RH and prime-counting error](roadmaps/mathematics/rh-prime-counting-roadmap.md) | Planning only: precise conditional statement, analytic dependencies, and potential homotopy interpretations. No proof implementation or tactical checkpoint yet. |
 
 ## Language tooling roadmap

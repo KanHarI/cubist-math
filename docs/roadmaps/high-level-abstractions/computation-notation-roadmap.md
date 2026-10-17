@@ -16,7 +16,9 @@ with one family of computation blocks: monadic `do` and its generalization
 to arrows. Both elaborate to ordinary checked terms. This roadmap owns the
 notation and its supporting library interfaces; the
 [work plan](../work-plan.md#computation-notation-track) places it alongside the
-existing rebuild. It does not resume paused mathematical developments.
+selected language testbed. Categories, monads, algebraic homology and
+synthetic cohomology develop together under that plan; the paused analysis,
+Galois and RH projects remain separate.
 
 ## Purpose and scope
 
@@ -24,6 +26,12 @@ Let mathematical constructions name intermediate values while retaining the
 structure in which those values are used. The first targets are existence
 proofs and substitution in free algebras. Probability and structured
 composition supply later examples.
+
+The 2026-10-17 direction makes this a language-development track alongside
+categories and HoTT. Checked laws, implicit arguments, scope, pattern matching,
+notation, diagnostics and inspection are part of its outcome. Explicit
+versions remain the baseline against which the new language is tested;
+reaching a later homological theorem does not replace those acceptance gates.
 
 Arrows generalize monads: a monad `M` gives Kleisli arrows
 `Hom(A, B) = A -> M(B)`. General arrows need fewer operations than monads;
@@ -174,6 +182,26 @@ Laws are paths, with their actual proof dependencies. Neither law records
 nor the notation introduce proof irrelevance or claim to construct a fully
 coherent higher monad or higher category. Initial categorical theorems can
 use set-valued instances; higher coherence is separate library work.
+
+### Categorical bridge
+
+N1 first supplies the set-monad interface and its checked instances using
+today's prerequisites. Once L3.4 supplies functors and natural transformations,
+an N1 follow-up expresses a monad on a precategory as an endofunctor with unit
+and multiplication natural transformations and their laws. State the universe
+bounds explicitly. For the category of sets at the chosen levels, prove the
+agreement with the `pure`/`bind` interface, including the induced action on
+maps and the same Kleisli composition. General categorical monads remain
+library structures; `do` uses the supported operations interface, not arbitrary
+arrows treated as functions.
+
+Free-algebra substitution then connects L2.6 to both interfaces: prove its
+functoriality and monad laws from the checked universal property and relate
+the unit to generators and multiplication to substitution. This is N3b's
+free-algebra instance. The identity and native-truncation instances do not
+wait for it. The categorical bridge does not delay the first N1/N2 release,
+and it is not supplied merely by generating homomorphisms of a theory named
+`Monad`. No higher-coherence or all-universe claim follows from the set case.
 
 ## 3. Monadic blocks
 
@@ -357,11 +385,11 @@ features, using small checked fixtures and existing archive examples.
 | ID | Work | Dependencies | Acceptance |
 | --- | --- | --- | --- |
 | N0 | Record explicit mathematical baselines and proposed blocks | Existing archive; design only for new examples | Span closure, free substitution and an arrow example have stated types, assumptions and expected expansions; measure existing proofs without claiming unmeasured savings |
-| N1 | Checked operation/law records and Kleisli construction | N0; G0 (done); L2.4 core theories and L2.4c theory families (done) | Full universe-correct signatures and laws; function, identity-monad and Kleisli instances check; no reliance on generating an initial model of a monad theory |
-| N2 | Monadic `do` parser, elaboration, diagnostics, formatting and inspection | N1; L1.2 goal/scope core (done); L4.1a scoped holes/named application arguments and L4.1b implicit binders/level inference (done) | Variable binds, local definitions, final computations and `pure`; representative explicit expansions agree; selected dependencies remain visible |
+| N1 | Checked operation/law records and Kleisli construction; a later categorical bridge using the same interfaces | N0; G0 (done); L2.4 core theories and L2.4c theory families (done); L3.4 for the categorical bridge only | Full universe-correct signatures and laws; function, identity-monad and Kleisli instances check; bridge proves agreement with unit/multiplication monads on sets; no reliance on generating an initial model of a monad theory |
+| N2 | Monadic `do` parser, elaboration, diagnostics, formatting and inspection | N1's operation/law core; L1.2 goal/scope core (done); L4.1a scoped holes/named application arguments and L4.1b implicit binders/level inference (done) | Variable binds, local definitions, final computations and `pure`; representative explicit expansions agree; selected dependencies remain visible |
 | N3a | Exhaustive bind patterns | N2; L2.2 checked matching | Product and dependent-pair patterns preserve scope and dependencies; refutable binds and result-type escape fail; small computable examples pass `evaluate` |
 | N3b | Future mathematical monad instances | N2; N3a where patterns are used; H1 native truncation (released) and K2.5's archive remedies, L2.6's remaining free-construction slices and deferred B4.1 span prerequisites as needed | Rebuilt span closure and one free-algebra substitution example check; witness escape fails; closed computable examples pass `evaluate`; no language release waits for this milestone |
-| N4 | Basic `proc` and arrow environment lowering | N1; L1.2 goal/scope core (done); L4.1a and L4.1b (done) | Function and Kleisli comparisons check; a basic-arrow example works without `ArrowApply`; invalid local arrow selection fails; environments are inspectable |
+| N4 | Basic `proc` and arrow environment lowering | N1's operation/law core; L1.2 goal/scope core (done); L4.1a and L4.1b (done) | Function and Kleisli comparisons check; a basic-arrow example works without `ArrowApply`; invalid local arrow selection fails; environments are inspectable |
 | N5 | Explicit choice and dynamic application extensions | N4; N1's checked extension laws | Branching requests choice only when needed; dynamic application requests `app`; Kleisli examples agree with corresponding `do` blocks |
 
 N1 uses L2.4's core record and theory facilities. Automatic structure

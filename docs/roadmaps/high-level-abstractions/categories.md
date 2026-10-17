@@ -21,6 +21,23 @@ check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
 those of diagrams at `075ec73`. Their files are not fixtures. The
 [homological algebra roadmap](../mathematics/homological-algebra.md) builds on this one.
 
+The direction selected on 2026-10-17 uses categories, monads and both sides
+of that roadmap as a language testbed. The [work plan](../work-plan.md#first-actions)
+owns the progression. Categorical examples exercise proposition laws,
+implicit arguments, universe levels, notation, naturality proofs and
+extensionality; synthetic cohomology develops the shared HoTT tools alongside
+them. Ordinary precategories can be checked before their univalence proofs,
+but no univalent-category or structure-identity capability is advertised
+without those proofs. General functors remain library records where automatic
+theory morphisms do not apply.
+
+[N1](computation-notation-roadmap.md#categorical-bridge) owns the connection
+between monads on sets and categorical monads, using L3.4's functors and
+natural transformations. L2.6's universal proofs supply the free-algebra
+instances. This integration uses the same interfaces; it does not introduce
+a second monad implementation or make free constructions a prerequisite for
+the identity or truncation monad. All these extensions remain planned.
+
 ## Why
 
 **Every theory derives its morphisms, whether it uses them or not.** A

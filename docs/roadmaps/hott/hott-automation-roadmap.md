@@ -30,8 +30,8 @@ remaining argument inference also needs. See
 [changes to the ergonomics plan](#changes-to-the-ergonomics-plan). It covers
 language tooling and the library foundations that tooling needs. The
 kernel-extension investigation, G, now has its own
-[kernel roadmap](../kernel/cubical-kernel-roadmap.md). It does not resume the paused
-mathematical roadmaps.
+[kernel roadmap](../kernel/cubical-kernel-roadmap.md). The paused analysis, Galois
+and RH projects remain separate from the selected testbed below.
 
 **Restructured later on 2026-09-25.**
 - The first library is archived, and the new library starts with
@@ -51,7 +51,15 @@ Consequences here:
   the rebuild they become acceptance examples: the rebuilt counterpart must
   get the stated benefit.
 
-The [work plan](../work-plan.md) sequences this roadmap with the others.
+The [work plan](../work-plan.md#first-actions) sequences this roadmap with the
+others. Its 2026-10-17 direction makes synthetic cohomology a central language
+testbed alongside categories, monads and algebraic homology. Low-degree sphere,
+suspension and Eilenberg–MacLane pilots exercise path algebra, induction,
+transport, squares and h-levels while categorical examples exercise shared
+equivalence and extensionality tools. Develop those tools with their consumers;
+neither completing all automation first nor bypassing it with repeated manual
+proofs satisfies the progression. Existing package boundaries and mathematical
+review gates remain in force.
 
 **Terminology.** "Universe template" below means a universe-generic
 definition. G0 is delivered: these are level-generic kernel definitions

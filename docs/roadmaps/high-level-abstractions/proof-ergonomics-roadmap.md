@@ -48,8 +48,12 @@ Milestones 5–7 build on the HoTT roadmap's goal layer (A5).
 The [computation notation roadmap](computation-notation-roadmap.md) builds on
 their inference, structures and matching for monadic `do` and arrow blocks;
 it owns that planned extension and requires no new kernel rule.
-This document covers language tooling and does not resume any mathematical
-roadmap. Examples below not yet covered by the checked sample files remain
+The [work plan](../work-plan.md#first-actions) now develops these features through
+categories, monads, algebraic homology and synthetic cohomology. Proofs in
+that testbed must exercise the intended language interfaces, with explicit
+baselines and useful inspection; their existence alone does not complete an
+ergonomics milestone. The paused analysis, Galois and RH projects remain
+separate. Examples below not yet covered by the checked sample files remain
 proposals.
 
 **Restructured later on 2026-09-25.**

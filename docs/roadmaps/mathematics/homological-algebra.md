@@ -1,14 +1,26 @@
 # Homological algebra
 
 Status: proposal merged in #198; HA0–HA6 remain unimplemented at main
-`e729c2d5` on 2026-10-17. Proposed on 2026-10-07 at the maintainer's request. This is a new mathematical track. Mathematics beyond the
-library's foundations is paused, so when it starts is the maintainer's
-decision ([work plan](../work-plan.md#open-decisions)).
+`e729c2d5` on 2026-10-17. Proposed on 2026-10-07 at the maintainer's request.
+On 2026-10-17 the maintainer selected categories, monads, algebraic homology
+and synthetic cohomology as a sustained language-development testbed.
+The [work plan](../work-plan.md#first-actions) owns its staged progression.
+This selects the direction without claiming any HA milestone implemented;
+the paused analysis, Galois and RH projects remain separate.
 
 - **Algebraic side (HA1–HA3, HA5).** Builds on the
   [categories roadmap](../high-level-abstractions/categories.md).
 - **Synthetic side (HA4).** Builds on what H1 and the library already
-  provide.
+  provide, developing the path, induction, transport and h-level tools that
+  its larger constructions need.
+
+Both sides are central. The objective is to develop and test broad language
+capabilities through substantial mathematics, rather than minimize the path
+to a homology or cohomology result. A small explicit proof establishes a
+baseline; the corresponding language feature must also make its intended
+interface usable and support its stated fragment. Repeated boilerplate or
+failed inference feeds the shared language design instead of becoming a
+collection of theorem-specific workarounds.
 
 ## Why Cubist
 
@@ -171,8 +183,12 @@ spectral sequences (van Doorn and others) show the scale.
 
 ## Order
 
-HA4 can start first. It depends almost only on what exists, and it shows
-what is distinctive here: cohomology that computes. Its first slices:
+Follow the [work plan's language progression](../work-plan.md#first-actions).
+Categorical interfaces, monads and universal constructions develop alongside
+HoTT proof tools and low-degree synthetic examples. Readiness of a short
+synthetic route is not a reason to skip that language work; equally, synthetic
+cohomology does not wait for the full abelian tower or chain-complex library.
+Its first pilots retain the original mathematical targets:
 
 1. The circle, suspensions and spheres in `library/`. Today they are test
    declarations.
@@ -181,31 +197,46 @@ what is distinctive here: cohomology that computes. Its first slices:
    square.
 4. `H^1(X; G)` and `H^1(S^1; ℤ) ≅ ℤ` by evaluation.
 
-The algebraic side, HA1–HA3, follows the categories packages, and HA5 and
-HA6 follow both sides.
+Use those pilots to exercise higher-inductive admission and elimination,
+square boundaries, path induction, transport, truncation and computation.
+Admission of the proposed `K(G, 1)` presentation and its proofs are gates;
+the general `K(G, n)` construction keeps the open truncation question below.
+None of these theorems is recorded as delivered merely because the required
+kernel forms exist.
+
+The algebraic side, HA1–HA3, follows the categories packages and exercises
+theory families, derived maps, quotients and reusable diagram proofs. Monads
+and their notation are companion language work, not new mathematical
+prerequisites for HA1. HA5 follows HA1/HA3; HA6 compares the algebraic and
+synthetic strands after HA2/HA4. Each retains the table's acceptance gates.
 
 ## Language work it drives
 
-- Complex shapes, graphs whose edges are propositions, and families
-  indexed by their vertices (HA2).
-- Commutative-diagram reasoning: the `category` simp set (L3.4), `ext` into
-  limits (L3.5), and perhaps a diagram view in the inspector, like its
-  boundary panel for squares.
-- Notation for gradings and signs.
-- Performance of cubical computation on higher inductive types (kernel
-  stage 6), and binary numerals (L2.10f).
+| Testbed | Language capability to develop and validate |
+| --- | --- |
+| Categories, modules and chain maps | Proposition laws, implicit operation arguments, theory families and inheritance, explicit morphism capabilities, universe-correct interfaces and composition notation |
+| Monads and substitution | Lawful operation records, functors and natural transformations, L2.6's universal proofs, scoped `do`/arrow notation, exhaustive bind patterns and transparent dependencies |
+| Kernels, cokernels, exactness and complexes | Quotient lifting, extensionality, structure identity, reusable diagram reasoning and dependent rewriting; complex shapes avoid unnecessary arithmetic transports |
+| Spheres, `K(G, n)` and synthetic cohomology | Higher constructors and boundaries, induction motives, path algebra, transport, truncation, h-level automation and computational equivalences |
+| Computed homology/cohomology and their comparison | Binary foundations, evaluation and kernel performance with preserved proof meaning and measured resource costs |
+
+Every strand uses the existing source-test, inspection and contextual-REPL
+facilities. Compare the intended notation and inferred proofs with explicit
+checked versions, including meaningful refusals and dependency reports.
+Promote shared proof patterns to reusable language/library interfaces and test
+them on distinct instances. Proposed diagram views, grading notation or new
+kernel features need a concrete example and their own acceptance contract;
+the testbed does not automatically authorize every possible extension.
 
 ## Open questions
 
-1. **When the track starts.** HA4 can start independently of the
-   categories packages.
-2. **Shapes or ℤ.** Indexing by complex shapes, graphs whose edges are
+1. **Shapes or ℤ.** Indexing by complex shapes, graphs whose edges are
    propositions, is recommended. The alternative is a second, inductive
    integer type for indices, whose successor and predecessor are inverse
    by computation on canonical forms only.
-3. **`K(G, n)` for every `n`.** The hub-and-spoke truncation, if H1 admits
+2. **`K(G, n)` for every `n`.** The hub-and-spoke truncation, if H1 admits
    it, or fixed low degrees until a variable-level truncation exists.
-4. **Large categories.** The category of modules over `R : CommRing(U)` has
+3. **Large categories.** The category of modules over `R : CommRing(U)` has
    objects in `next(U)`. Generic definitions at tier 1 are refused today
    (E1 and E2, deferred), which may limit statements about categories of
    categories. For the same reason, limits at every size are not one

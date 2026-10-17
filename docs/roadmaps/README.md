@@ -5,6 +5,15 @@ These describe current contracts, unfinished work and its limits. The
 theorem parameter is not an already proved result. Paused mathematics does
 not resume when a language milestone ships.
 
+**Direction selected on 2026-10-17:** develop the language through categories,
+monads, algebraic homology and synthetic cohomology as a sustained testbed.
+Both algebraic and HoTT constructions are central. Success includes reusable
+theory interfaces, proof automation, notation, inference, inspection and
+computation, with mathematical proofs validating those features. The
+[progression](work-plan.md#first-actions) prioritizes that development rather
+than the shortest route to a homology or cohomology theorem. The packages
+below remain unfinished until their own acceptance evidence is delivered.
+
 ## At a glance
 
 Roadmap status reconciled on 2026-10-17 against main `e729c2d5`, including
@@ -36,11 +45,14 @@ which remains an unmerged draft. Site publication succeeded; the
 [RC verification record](historical/refactoring-and-testing.md#verification-record) records
 the unresolved termination of the final CI mutation probe.
 
-Next language work: morphism opt-ins (L2.4d), general proposition laws
-(L2.11), implicit operation arguments (L2.12), then L2.6's checked
-capabilities and universal proofs. Squares/h-level remainders, derivations,
-equivalences, structure identity and categories follow their dependencies.
-EVAL1 and NUM0/NUM1 can advance independently. See
+Next language work pairs morphism opt-ins (L2.4d), general proposition laws
+(L2.11) and implicit operation arguments (L2.12) with categorical examples,
+and path/induction tooling with low-degree synthetic examples. N0/N1's
+monadic interfaces can start from their existing prerequisites. Categories,
+equivalences, structure identity, checked free constructions and computation
+notation then deepen both strands; full algebraic and synthetic developments
+retain their individual dependencies. EVAL1 and NUM0/NUM1 can advance
+alongside them. See
 [first actions](work-plan.md#first-actions) and
 [open decisions](work-plan.md#open-decisions).
 
@@ -116,7 +128,7 @@ evidence, not a claim that the new library has rebuilt those areas.
 | [Reals](mathematics/reals-roadmap.md) | Current quotient integers/rationals | NUM owns binary replacements; this plan owns order, presentations, completeness interfaces and real constructions. Cauchy reals need H3; paused beyond existing foundations |
 | [Complex analysis](mathematics/complex-analysis-roadmap.md) | Algebra, limits, contour estimates and affine dyadic integral laws over supplied scalars | Topology and general integration bridges; FTA, residue theorem and Great Picard unproved; paused. [Checkpoint](../tactical/complex_analysis_handoff.md) |
 | [RH and prime counting](mathematics/rh-prime-counting-roadmap.md) | Statement and dependency plan only | All analytic-number-theory milestones; not started |
-| [Homological algebra](mathematics/homological-algebra.md) | Proposal and dependency plan only | HA0–HA6, synthetic and algebraic tracks; not started, awaiting an explicit start decision |
+| [Homological algebra](mathematics/homological-algebra.md) | Proposal and dependency plan only; selected as the language testbed | HA0–HA6 remain unimplemented. Algebraic homology and synthetic cohomology advance through the language-development progression |
 
 See the [results catalog](../library-results.md) and
 [documentation index](../README.md) for supporting evidence and guides.
