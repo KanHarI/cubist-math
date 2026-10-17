@@ -1,0 +1,26 @@
+import algebra;
+import unat;
+
+// Naturals have two commutative monoids, distributivity and an absorbing
+// zero. No additive inverse is required. Right laws follow by commutativity.
+theory CommSemiring(U < UU0) extends additive_ : CommMonoid(
+  M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero,
+  one_mul := zero_add, mul_one := add_zero, mul_comm := add_comm
+), multiplicative : CommMonoid(M := R) {
+  law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
+  law mul_zero(x : R) : x * zero = zero;
+  def zero_mul(x : R) : zero * x = zero := trans(mul_comm(zero, x), mul_zero(x));
+  def distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z := trans(
+    mul_comm(x + y, z), trans(mul_add(z, x, y), trans(
+      cong(fun (w : R) => w + z * y, mul_comm(z, x)),
+      cong(fun (w : R) => x * z + w, mul_comm(z, y))
+    ))
+  );
+}
+
+def unat_semiring : CommSemiring(U0) := CommSemiring.make(
+  R := UNat, R_is_set := nat_is_set, add := add, add_assoc := nat_add_assoc,
+  zero := zero, zero_add := nat_zero_add, add_zero := nat_add_zero, add_comm := nat_add_comm,
+  mul := mul, mul_assoc := nat_mul_assoc, one := succ(zero), one_mul := nat_one_mul,
+  mul_one := nat_mul_one, mul_comm := nat_mul_comm, mul_add := nat_mul_add, mul_zero := nat_mul_zero
+);

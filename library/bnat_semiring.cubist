@@ -1,0 +1,191 @@
+import bnat_arithmetic;
+import semirings;
+use unat;
+
+// The inverse conversion reflects equality, so unary algebra proves laws
+// about the independently implemented bit operations.
+computable def bnat_decode_injective(a, b : BNat, p : bnat_to_unat(a) = bnat_to_unat(b)) : a = b :=
+  trans(sym(bnat_roundtrip(a)), trans(cong(bnat_of_unat, p), bnat_roundtrip(b)));
+
+computable def bnat_zero_add(n : BNat) : bnat_add(b_zero, n) = n := refl(n);
+computable def bnat_add_zero(n : BNat) : bnat_add(n, b_zero) = n := match n {
+    b_zero => refl(b_zero);
+    b_positive(p) => refl(b_positive(p));
+  };
+
+computable def bnat_add_comm(a, b : BNat) : bnat_add(a, b) = bnat_add(b, a) := bnat_decode_injective(
+  bnat_add(a, b), bnat_add(b, a), trans(bnat_decode_add(a, b), trans(
+    nat_add_comm(bnat_to_unat(a), bnat_to_unat(b)), sym(bnat_decode_add(b, a))
+  ))
+);
+
+computable def bnat_add_assoc(a, b, c : BNat) :
+  bnat_add(bnat_add(a, b), c) = bnat_add(a, bnat_add(b, c)) {
+  let p : bnat_to_unat(bnat_add(bnat_add(a, b), c)) = bnat_to_unat(bnat_add(a, bnat_add(b, c))) {
+    calc {
+      bnat_to_unat(bnat_add(bnat_add(a, b), c)) = bnat_to_unat(bnat_add(a, b)) + bnat_to_unat(c)
+        by bnat_decode_add(bnat_add(a, b), c);
+      _ = (bnat_to_unat(a) + bnat_to_unat(b)) + bnat_to_unat(c)
+        by cong(fun (n : UNat) => n + bnat_to_unat(c), bnat_decode_add(a, b));
+      _ = bnat_to_unat(a) + (bnat_to_unat(b) + bnat_to_unat(c))
+        by nat_add_assoc(bnat_to_unat(a), bnat_to_unat(b), bnat_to_unat(c));
+      _ = bnat_to_unat(a) + bnat_to_unat(bnat_add(b, c))
+        by cong(add(bnat_to_unat(a)), sym(bnat_decode_add(b, c)));
+      _ = bnat_to_unat(bnat_add(a, bnat_add(b, c))) by sym(bnat_decode_add(a, bnat_add(b, c)));
+    }
+  }
+  exact bnat_decode_injective(bnat_add(bnat_add(a, b), c), bnat_add(a, bnat_add(b, c)), p);
+}
+
+computable def bnat_mul_zero(n : BNat) : bnat_mul(n, b_zero) = b_zero := match n {
+    b_zero => refl(b_zero);
+    b_positive(p) => refl(b_zero);
+  };
+
+computable def bnat_one_mul(n : BNat) : bnat_mul(b_positive(bp_one), n) = n := match n {
+    b_zero => refl(b_zero);
+    b_positive(p) => refl(b_positive(p));
+  };
+
+computable def bnat_mul_one(n : BNat) : bnat_mul(n, b_positive(bp_one)) = n := bnat_decode_injective(
+  bnat_mul(n, b_positive(bp_one)), n,
+  trans(bnat_decode_mul(n, b_positive(bp_one)), nat_mul_one(bnat_to_unat(n)))
+);
+
+computable def bnat_mul_comm(a, b : BNat) : bnat_mul(a, b) = bnat_mul(b, a) := bnat_decode_injective(
+  bnat_mul(a, b), bnat_mul(b, a), trans(bnat_decode_mul(a, b), trans(
+    nat_mul_comm(bnat_to_unat(a), bnat_to_unat(b)), sym(bnat_decode_mul(b, a))
+  ))
+);
+
+computable def bnat_mul_assoc(a, b, c : BNat) :
+  bnat_mul(bnat_mul(a, b), c) = bnat_mul(a, bnat_mul(b, c)) {
+  let p : bnat_to_unat(bnat_mul(bnat_mul(a, b), c)) = bnat_to_unat(bnat_mul(a, bnat_mul(b, c))) {
+    calc {
+      bnat_to_unat(bnat_mul(bnat_mul(a, b), c)) = bnat_to_unat(bnat_mul(a, b)) * bnat_to_unat(c)
+        by bnat_decode_mul(bnat_mul(a, b), c);
+      _ = (bnat_to_unat(a) * bnat_to_unat(b)) * bnat_to_unat(c)
+        by cong(fun (n : UNat) => n * bnat_to_unat(c), bnat_decode_mul(a, b));
+      _ = bnat_to_unat(a) * (bnat_to_unat(b) * bnat_to_unat(c))
+        by nat_mul_assoc(bnat_to_unat(a), bnat_to_unat(b), bnat_to_unat(c));
+      _ = bnat_to_unat(a) * bnat_to_unat(bnat_mul(b, c))
+        by cong(mul(bnat_to_unat(a)), sym(bnat_decode_mul(b, c)));
+      _ = bnat_to_unat(bnat_mul(a, bnat_mul(b, c))) by sym(bnat_decode_mul(a, bnat_mul(b, c)));
+    }
+  }
+  exact bnat_decode_injective(bnat_mul(bnat_mul(a, b), c), bnat_mul(a, bnat_mul(b, c)), p);
+}
+
+computable def bnat_mul_add(a, b, c : BNat) :
+  bnat_mul(a, bnat_add(b, c)) = bnat_add(bnat_mul(a, b), bnat_mul(a, c)) {
+  let p : bnat_to_unat(bnat_mul(a, bnat_add(b, c))) = bnat_to_unat(bnat_add(bnat_mul(a, b), bnat_mul(a, c))) {
+    calc {
+      bnat_to_unat(bnat_mul(a, bnat_add(b, c))) = bnat_to_unat(a) * bnat_to_unat(bnat_add(b, c))
+        by bnat_decode_mul(a, bnat_add(b, c));
+      _ = bnat_to_unat(a) * (bnat_to_unat(b) + bnat_to_unat(c))
+        by cong(mul(bnat_to_unat(a)), bnat_decode_add(b, c));
+      _ = bnat_to_unat(a) * bnat_to_unat(b) + bnat_to_unat(a) * bnat_to_unat(c)
+        by nat_mul_add(bnat_to_unat(a), bnat_to_unat(b), bnat_to_unat(c));
+      _ = bnat_to_unat(bnat_mul(a, b)) + bnat_to_unat(a) * bnat_to_unat(c)
+        by cong(fun (n : UNat) => n + bnat_to_unat(a) * bnat_to_unat(c), sym(bnat_decode_mul(a, b)));
+      _ = bnat_to_unat(bnat_mul(a, b)) + bnat_to_unat(bnat_mul(a, c))
+        by cong(add(bnat_to_unat(bnat_mul(a, b))), sym(bnat_decode_mul(a, c)));
+      _ = bnat_to_unat(bnat_add(bnat_mul(a, b), bnat_mul(a, c)))
+        by sym(bnat_decode_add(bnat_mul(a, b), bnat_mul(a, c)));
+    }
+  }
+  exact bnat_decode_injective(bnat_mul(a, bnat_add(b, c)), bnat_add(bnat_mul(a, b), bnat_mul(a, c)), p);
+}
+
+def bnat_semiring : CommSemiring(U0) := CommSemiring.make(
+  R := BNat, R_is_set := bnat_is_set, add := bnat_add, add_assoc := bnat_add_assoc,
+  zero := b_zero, zero_add := bnat_zero_add, add_zero := bnat_add_zero, add_comm := bnat_add_comm,
+  mul := bnat_mul, mul_assoc := bnat_mul_assoc, one := b_positive(bp_one), one_mul := bnat_one_mul,
+  mul_one := bnat_mul_one, mul_comm := bnat_mul_comm, mul_add := bnat_mul_add, mul_zero := bnat_mul_zero
+);
+
+// Both maps preserve the operations. The inverse map's preservation follows
+// from the checked round trips and decode preservation, without changing how
+// either binary operation computes.
+computable def bnat_encode_add(a, b : UNat) :
+  bnat_of_unat(a + b) = bnat_add(bnat_of_unat(a), bnat_of_unat(b)) := bnat_decode_injective(
+  bnat_of_unat(a + b), bnat_add(bnat_of_unat(a), bnat_of_unat(b)),
+  trans(bnat_unat_roundtrip(a + b), sym(trans(
+    bnat_decode_add(bnat_of_unat(a), bnat_of_unat(b)), trans(
+      cong(fun (n : UNat) => n + bnat_to_unat(bnat_of_unat(b)), bnat_unat_roundtrip(a)),
+      cong(add(a), bnat_unat_roundtrip(b))
+    )
+  )))
+);
+
+computable def bnat_encode_mul(a, b : UNat) :
+  bnat_of_unat(a * b) = bnat_mul(bnat_of_unat(a), bnat_of_unat(b)) := bnat_decode_injective(
+  bnat_of_unat(a * b), bnat_mul(bnat_of_unat(a), bnat_of_unat(b)),
+  trans(bnat_unat_roundtrip(a * b), sym(trans(
+    bnat_decode_mul(bnat_of_unat(a), bnat_of_unat(b)), trans(
+      cong(fun (n : UNat) => n * bnat_to_unat(bnat_of_unat(b)), bnat_unat_roundtrip(a)),
+      cong(mul(a), bnat_unat_roundtrip(b))
+    )
+  )))
+);
+
+def unat_to_bnat_hom : CommSemiring.Hom(unat_semiring, bnat_semiring) := CommSemiring.Hom.make(
+  unat_semiring, bnat_semiring, map := bnat_of_unat, map_add := bnat_encode_add,
+  map_zero := refl(b_zero), map_mul := bnat_encode_mul, map_one := refl(b_positive(bp_one))
+);
+
+def bnat_to_unat_hom : CommSemiring.Hom(bnat_semiring, unat_semiring) := CommSemiring.Hom.make(
+  bnat_semiring, unat_semiring, map := bnat_to_unat, map_add := bnat_decode_add,
+  map_zero := refl(zero), map_mul := bnat_decode_mul, map_one := refl(succ(zero))
+);
+
+def unat_bnat_semiring_iso : CommSemiring.Iso(unat_semiring, bnat_semiring) := CommSemiring.Iso.make(
+  unat_semiring, bnat_semiring, unat_to_bnat_hom, bnat_to_unat_hom,
+  bnat_unat_roundtrip, bnat_roundtrip
+);
+
+// Cancellation and nontriviality are properties of the binary operations.
+computable def bnat_add_cancel(k, a, b : BNat, p : bnat_add(k, a) = bnat_add(k, b)) :
+  a = b := bnat_decode_injective(a, b, nat_add_cancel(
+    bnat_to_unat(k), bnat_to_unat(a), bnat_to_unat(b),
+    trans(sym(bnat_decode_add(k, a)), trans(cong(bnat_to_unat, p), bnat_decode_add(k, b)))
+  ));
+
+computable def bnat_zero_ne_succ(n : BNat, p : b_zero = bnat_succ(n)) : Void := nat_zero_ne_succ(
+  bnat_to_unat(n), trans(cong(bnat_to_unat, p), bnat_decode_succ(n))
+);
+
+computable def bnat_zero_ne_one(p : b_zero = b_positive(bp_one)) :
+  Void := bnat_zero_ne_succ(b_zero, p);
+
+computable def bnat_succ_pred_nonzero(n : BNat, nz : n = b_zero -> Void) :
+  bnat_succ(bnat_pred(n)) = n := match n {
+    b_zero => absurd(nz(refl(b_zero)));
+    b_positive(p) => bpositive_succ_pred(p);
+  };
+
+computable def bnat_mul_succ_cancel(k, a, b : BNat,
+  p : bnat_mul(a, bnat_succ(k)) = bnat_mul(b, bnat_succ(k))) : a = b {
+  let q : bnat_to_unat(a) * succ(bnat_to_unat(k)) = bnat_to_unat(b) * succ(bnat_to_unat(k)) {
+    calc {
+      bnat_to_unat(a) * succ(bnat_to_unat(k)) = bnat_to_unat(a) * bnat_to_unat(bnat_succ(k))
+        by cong(mul(bnat_to_unat(a)), sym(bnat_decode_succ(k)));
+      _ = bnat_to_unat(bnat_mul(a, bnat_succ(k))) by sym(bnat_decode_mul(a, bnat_succ(k)));
+      _ = bnat_to_unat(bnat_mul(b, bnat_succ(k))) by cong(bnat_to_unat, p);
+      _ = bnat_to_unat(b) * bnat_to_unat(bnat_succ(k)) by bnat_decode_mul(b, bnat_succ(k));
+      _ = bnat_to_unat(b) * succ(bnat_to_unat(k)) by cong(mul(bnat_to_unat(b)), bnat_decode_succ(k));
+    }
+  }
+  exact bnat_decode_injective(a, b, nat_mul_cancel(bnat_to_unat(k), bnat_to_unat(a), bnat_to_unat(b), q));
+}
+
+computable def bnat_mul_cancel(k, a, b : BNat, nz : k = b_zero -> Void,
+  p : bnat_mul(a, k) = bnat_mul(b, k)) : a = b := bnat_mul_succ_cancel(
+  bnat_pred(k), a, b, trans(
+    cong(bnat_mul(a), bnat_succ_pred_nonzero(k, nz)),
+    trans(p, cong(bnat_mul(b), sym(bnat_succ_pred_nonzero(k, nz))))
+  )
+);
+
+computable def bnat_mul_nonzero(a, b : BNat, an : a = b_zero -> Void, bn : b = b_zero -> Void,
+  p : bnat_mul(a, b) = b_zero) : Void := an(bnat_mul_cancel(b, a, b_zero, bn, p));

@@ -380,7 +380,7 @@ export const archiveModules = [
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name. The first, nat, is the natural numbers,
 // which a module imports to use them.
-export const libraryModules = ["nat", "unat", "bnat", "bnat_notation", "bnat_unary", "classical_axioms", "universe_automorphisms", "hlevels",
+export const libraryModules = ["nat", "unat", "bnat", "bnat_notation", "bnat_unary", "bnat_arithmetic", "semirings", "bnat_semiring", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
   "lists", "lexemes", "quotients", "algebra", "ordered_algebra", "integers", "rationals", "squares"];
 
