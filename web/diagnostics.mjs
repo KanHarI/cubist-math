@@ -841,9 +841,10 @@ export const diagnostics = [
   ["W707", "… is unused: the return type does not mention it. Omit as …: induction … return …."],
 ];
 
-// A message's pattern: its text, where … matches any text, from the start
-// of the reported message.
-const patterns = diagnostics.filter(([, , status]) => status !== "retired").map(([code, message]) => ({
+// Legacy error producers still need message lookup. Warnings carry their code
+// at the source; their catalogue entries serve documentation, not classification.
+// A pattern's … matches any text from the start of the reported message.
+const patterns = diagnostics.filter(([code, , status]) => status !== "retired" && !code.startsWith("W")).map(([code, message]) => ({
   code, literal: message.replace(/…/g, "").length,
   pattern: new RegExp(`^${message.split("…").map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[\\s\\S]*?")}`),
 }));

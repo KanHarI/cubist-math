@@ -1,5 +1,4 @@
 import { parse, scan } from "./parser.mjs";
-import { diagnosticCode } from "../diagnostics.mjs";
 
 // Warnings for bindings that are never used and can simply be removed:
 //   induction v as k   when neither the return type nor the successor clause uses k;
@@ -47,7 +46,7 @@ export function lint(source, ast = parse(source)) {
   const used = (name, start, end) => (positions.get(name) ?? []).some(at => at >= start && at < end && !parameterNames.has(at));
   const text = node => source.slice(node.start, node.end);
   const warnings = [];
-  const warn = (at, message) => warnings.push({ start: at.start, end: at.end, message });
+  const warn = (at, code, message) => warnings.push({ start: at.start, end: at.end, code, message });
 
   // A block's statements: each let and obtain is in scope for the rest of the
   // block, nested blocks included.
@@ -63,8 +62,8 @@ export function lint(source, ast = parse(source)) {
       const name = token => token.text ?? token.name;
       if (names.some(token => used(name(token), start, end))) return;
       if (statement.kind === "obtain")
-        warn(statement.target, `None of ${names.map(name).join(", ")} is used after this obtain: remove it.`);
-      else warn(names[0], `${name(names[0])} is never used after this let: remove it.`);
+        warn(statement.target, "W701", `None of ${names.map(name).join(", ")} is used after this obtain: remove it.`);
+      else warn(names[0], "W702", `${name(names[0])} is never used after this let: remove it.`);
     });
   };
   const visit = node => {
@@ -75,16 +74,16 @@ export function lint(source, ast = parse(source)) {
     }
     if (!node || typeof node !== "object") return;
     if (node.kind === "induction" && node.motiveName && node.type && !used(node.motiveName.text, node.type.start, node.type.end))
-      warn(node.motiveName, `${node.motiveName.text} is unused: the return type does not mention it. `
+      warn(node.motiveName, "W707", `${node.motiveName.text} is unused: the return type does not mention it. `
         + `Omit as ${node.motiveName.text}: induction ${text(node.value)} return ….`);
     if (node.kind === "induction" && node.index) {
       const k = node.index.text;
       if (!used(k, node.type.start, node.type.end) && !used(k, node.step.start, node.step.end))
-        warn(node.index, `${k} is unused: the return type does not mention it and the successor clause does not use it. `
+        warn(node.index, "W703", `${k} is unused: the return type does not mention it and the successor clause does not use it. `
           + `Omit as ${k}: induction ${text(node.value)} return ….`);
     }
     if (node.kind === "match" && node.motiveName && node.type && !used(node.motiveName.text, node.type.start, node.type.end))
-      warn(node.motiveName, `${node.motiveName.text} is unused: the return type does not mention it. `
+      warn(node.motiveName, "W704", `${node.motiveName.text} is unused: the return type does not mention it. `
         + `Omit as ${node.motiveName.text}: match ${text(node.value)} return ….`);
     // A quantifier's variable the body does not mention; a universe variable
     // has no unnamed form.
@@ -93,7 +92,7 @@ export function lint(source, ast = parse(source)) {
       const names = node.names ?? [node.name], domain = text(node.domain);
       const plain = quantifier === "forall" ? `${domain} -> …` : `${domain} and …`;
       for (const token of names) if (!used(token.text, node.body.start, node.body.end))
-        warn(token, names.length === 1
+        warn(token, names.length === 1 ? "W705" : "W706", names.length === 1
           ? `${token.text} is unused in the body: write ${plain} instead of ${quantifier} ${token.text} : ${domain}. ….`
           : `${token.text} is unused in the body: take it out of the group and write ${plain} for it.`);
     }
@@ -106,7 +105,7 @@ export function lint(source, ast = parse(source)) {
   return warnings.sort((a, b) => a.start - b.start).map(warning => {
     let line = lineStarts.findLastIndex(start => start <= warning.start);
     const declaration = ast.declarations.find(d => d.start <= warning.start && warning.start < d.end);
-    return { ...warning, code: diagnosticCode(warning.message), line: line + 1, column: warning.start - lineStarts[line] + 1,
+    return { ...warning, line: line + 1, column: warning.start - lineStarts[line] + 1,
       ...(declaration?.name?.text ? { declaration: declaration.name.text } : {}) };
   });
 }

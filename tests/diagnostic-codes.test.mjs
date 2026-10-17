@@ -41,8 +41,9 @@ test("a message is shown with its code, the most specific that matches it", () =
 
 test("each warning carries its code", () => {
   const [warning] = lint("def copy(n : Nat) := induction n as k return Nat { zero => 0; succ h => succ(h); };");
-  assert.equal(warning.code, diagnosticCode(warning.message));
-  assert.match(warning.code, /^W7\d\d$/);
+  assert.equal(warning.code, "W703");
+  assert.equal(diagnosticCode(warning.message), null, "warning codes are not inferred from English");
+  assert.equal(withCode(warning.message, warning.code), `W703: ${warning.message}`);
 });
 
 test("the errors chapter has one entry for every code", () => {
