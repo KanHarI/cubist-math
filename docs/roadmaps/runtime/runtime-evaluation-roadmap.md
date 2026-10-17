@@ -155,10 +155,11 @@ seven-workload before run, build an isolated checkout of `fc0362d3` with
 `make wasm`, then run:
 
 ```sh
-node tools/evaluation-baseline.mjs --samples=3 --only=euclid-3,euclid-3-print,euclid-3-prime-expected,multiply-2-255,multiply-2-255-print,euclid-4,euclid-4-prime > build/eval1-before.json
+node tools/evaluation-baseline.mjs --samples=3 --only=euclid-3,euclid-3-print,euclid-3-prime-expected,multiply-2-255,multiply-2-255-print,euclid-4,euclid-4-prime
 ```
 
-The retained report is a copy of that output. On this implementation,
+The retained report is a copy of that checkout's `build/evaluation-baseline.json`
+(the tool writes JSON there; stdout is a text summary). On this implementation,
 `node tools/evaluation-baseline.mjs --samples=3 --write` records all 26
 workloads in the version-3 after baseline.
 
@@ -366,7 +367,7 @@ those bounds records the baseline again with `--write`, and its reason.
 
 ### EVAL1: remove redundant REPL work
 
-Implemented on 2026-10-17 in `runtime-evaluation`: `ReplSession.evaluate`
+Implemented on 2026-10-17 in #266: `ReplSession.evaluate`
 uses a scratch `print(evaluate(term))` entry. The existing print path checks
 closedness and assumptions and normalizes once, displaying exactly as
 `print(evaluate(term))` does. This also adopts the print path's behavior after
