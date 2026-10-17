@@ -82,10 +82,11 @@ def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
   rfl;
 }
 
-// The equational strategy does not support a truncated inverse law; this
-// refusal does not establish whether an initial model exists.
-// Error: E856: The law inverses is not an equation between operation terms: the equational strategy
-//   does not support this law.
+// The equational strategy cannot yet fold implemented inherited members.
+// Field also has a truncated inverse law, outside the equational fragment.
+// Refusal does not establish whether an initial model exists.
+// Error: E881: The equational strategy does not yet generate folds for Field's implemented
+//   inherited members.
 initial F : Field(U0);
 
 // An argument containing the carrier under an arrow is unsupported too.
