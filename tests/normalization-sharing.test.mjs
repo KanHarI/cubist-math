@@ -39,16 +39,23 @@ test("pruned term scopes preserve free names, shadowing and binder domains", asy
   const { driver, term } = await setup(t);
   const unit = term("Unit"), v = name => term("Var", name);
   const pi = (name, body, domain = unit) => term("Pi", name, domain, body);
+  const sum = name => term("Sum", 0, v(name), unit);
   assert.ok(driver.alpha(pi(10, v(10)), pi(20, v(20))));
   assert.ok(!driver.alpha(pi(10, v(10)), pi(20, v(10))), "bound versus free on the right");
   assert.ok(!driver.alpha(pi(10, v(11)), pi(11, v(11))), "free versus bound on the right");
+  // Non-leaf bodies reach scope pruning before the variable comparison.
+  assert.ok(!driver.alpha(pi(10, sum(11)), pi(11, sum(11))), "retain a binding used only on the right");
+  assert.ok(!driver.alpha(pi(11, sum(11)), pi(10, sum(11))), "retain a binding used only on the left");
   assert.ok(driver.alpha(pi(10, pi(10, v(10))), pi(20, pi(21, v(21)))), "nearest binder wins");
   assert.ok(!driver.alpha(pi(10, pi(10, v(10))), pi(20, pi(21, v(20)))), "outer and inner binders differ");
   assert.ok(!driver.alpha(pi(10, v(10), v(10)), pi(20, v(20), v(20))), "a binder does not scope its own domain");
   assert.ok(driver.alpha(pi(10, pi(11, v(11), v(10))), pi(20, pi(21, v(21), v(20)))), "outer binders scope inner domains");
   assert.ok(!driver.alpha(pi(10, pi(11, v(11), v(10))), pi(20, pi(21, v(21), v(10)))), "a free name in a domain stays free");
+  // The inner binder shadows the outer one in its body, but its own domain
+  // still uses the outer binding, even when their symbols are identical.
+  assert.ok(driver.alpha(pi(10, pi(10, unit, v(10))), pi(20, pi(20, unit, v(20)))), "shadowing leaves the domain under the outer binder");
+  assert.ok(!driver.alpha(pi(10, pi(10, unit, v(10))), pi(20, pi(20, unit, v(10)))), "a shadowing binder cannot capture its domain");
   // Populate and reuse comparison caches under distinct, explicit scopes.
-  const sum = name => term("Sum", 0, v(name), unit);
   assert.ok(driver.alpha(sum(10), sum(20), { left: 10, right: 20, next: null }));
   assert.ok(!driver.alpha(sum(10), sum(20), { left: 10, right: 21, next: null }));
   assert.ok(!driver.alpha(sum(10), sum(20)));
