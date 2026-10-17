@@ -154,6 +154,17 @@ for(const failure of ["deadline","budget","fuel"])
     assert.deepEqual(report.expectedErrors,[]);
   });
 
+test("a duplicate's observation never borrows the original declaration's failure state",async t=>{
+  const {program,result}=await checked(t,"def x := tt; # test(duplicate) # expect_error(E872) def x := tt;");
+  for(const state of [{failure:"fuel"},{failure:null,blockedBy:"main__missing"}]) {
+    Object.assign(program.symbols.main__x,state);
+    const report=observeTestCases(program,result);
+    assert.deepEqual(report.prerequisites,[]);
+    assert.deepEqual(report.cases[0].failures,[]);
+    assert.deepEqual(report.expectedErrors.map(error=>error.caseId),["duplicate"]);
+  }
+});
+
 test("owned expected errors remain observations when an unused import fails",async t=>{
   const {program,result}=await checkProgram(t,"import absent; # test(refusal) # expect_error(E606) def bad : Void := tt;",{module,
     reader:async()=>null,options:{testMode:true}});

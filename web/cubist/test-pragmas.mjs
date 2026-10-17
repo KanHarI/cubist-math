@@ -64,10 +64,11 @@ export function observeTestCases(program,result,{main=program.main}={}) {
     return false;
   };
   for(const gap of result.gaps.filter(gap=>dependencies.has(gap.module))) {
-    const symbol=program.symbols[`${gap.module}__${gap.name}`];
+    // A duplicate has its own refusal but never owns the earlier symbol.
+    const symbol=gap.duplicate?null:program.symbols[`${gap.module}__${gap.name}`];
     // Blame can point into retained source from a different declaration.
     // Only publication ownership and the declaring syntax locate the target.
-    const entry=(!gap.duplicate&&bindingOwners.get(symbol?.binding))
+    const entry=bindingOwners.get(symbol?.binding)
       ||entries.find(entry=>entry.module===gap.module&&inTarget(entry.item,gap.declarationStart??symbol?.start));
     const observation={...gap,failure:gap.failure??symbol?.failure,blockedBy:gap.blockedBy??symbol?.blockedBy};
     if(byCase.has(entry))byCase.get(entry).push(observation);
