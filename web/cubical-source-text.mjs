@@ -1,3 +1,4 @@
+import { displayFreeNames } from "./translator/display-names.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./translator/names.mjs";
@@ -62,13 +63,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const label = binding => symbols[binding]?.name
     ?? localName(binding);
   // Terms share subterms, so each scan visits a node once.
-  const mentions = (t, variable, seen = new Set()) => {
-    if (!t || typeof t !== "object" || seen.has(t)) return false;
-    seen.add(t);
-    if (t.tag === "Var") return t.name === variable;
-    if (["Pi", "Lam", "Sigma", "LPi", "LLam"].includes(t.tag) && t.name === variable) return mentions(t.domain, variable, seen);
-    return Object.values(t).some(child => mentions(child, variable, seen));
-  };
+  const free = displayFreeNames();
+  const mentions = (term, variable) => free(term).has(variable);
   const numeral = numeralValue;
   // A dimension occurs in a term through interval literals `i:1` and `i:0`.
   const varies = (t, dim, seen = new Set()) => {

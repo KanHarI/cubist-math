@@ -1,3 +1,5 @@
+import { termBinders } from "./translator/term-shape.mjs";
+import { displayFreeNames } from "./translator/display-names.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
@@ -15,7 +17,7 @@ const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
 // entry named apart from another x, taken back to their stems for display
 // wherever the stem occurs nowhere in the binder's body, so nothing in it
 // can tell the two apart. Syntax is shared, so each pass is memoized.
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
+
 class SourceNames {
   constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
   memo(table, key) {
@@ -38,7 +40,7 @@ class SourceNames {
       if (value.tag === "Var" && value.name === from) result = { ...value, name: to };
       else {
         // A binder of the same name hides the variable in its body.
-        const shadowed = TERM_BINDERS.has(value.tag) && value.name === from;
+        const shadowed = termBinders.has(value.tag) && value.name === from;
         const copy = Array.isArray(value) ? [] : {};
         let changed = false;
         for (const [key, field] of Object.entries(value)) {
@@ -55,7 +57,7 @@ class SourceNames {
     if (!value || typeof value !== "object") return value;
     if (!this.results.has(value)) {
       let current = value;
-      const stem = TERM_BINDERS.has(value.tag) && this.stems.get(value.name);
+      const stem = termBinders.has(value.tag) && this.stems.get(value.name);
       if (stem && !this.occurs(value.body, stem))
         current = { ...value, name: stem, body: this.rename(value.body, value.name, stem) };
       const copy = Array.isArray(current) ? [] : {};
@@ -69,7 +71,7 @@ class SourceNames {
     return this.results.get(value);
   }
 }
-const namedBinders = new Set(["Var", "Pi", "Lam", "Sigma", "LPi", "LLam"]);
+const namedBinders = new Set(["Var", ...termBinders]);
 
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
@@ -168,7 +170,7 @@ export function printedLabels(term) {
   visit(term);
   return labels;
 }
-const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
+
 
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
@@ -191,29 +193,14 @@ function apartFromLabels(shownAs, labels) {
 
 function scopedNames(term, names, limit = 2000) {
   let work = 0;
-  const freeMemo = new WeakMap();
-  const free = t => {
-    if (!t || typeof t !== "object") return new Set();
-    if (freeMemo.has(t)) return freeMemo.get(t);
-    let names;
-    if (t.tag === "Var") names = new Set([t.name]);
-    else {
-      names = new Set();
-      for (const [key, value] of Object.entries(t)) {
-        if (binders.has(t.tag) && key === "body") for (const name of free(value)) { if (name !== t.name) names.add(name); }
-        else for (const name of free(value)) names.add(name);
-      }
-    }
-    freeMemo.set(t, names);
-    return names;
-  };
+  const free = displayFreeNames();
   const go = (t, shownAs, inScope) => {
     if (++work > limit) throw scopedNames;
     if (!t || typeof t !== "object") return t;
     if (Array.isArray(t)) return t.map(item => go(item, shownAs, inScope));
     if (t.tag === "Var") return shownAs.has(t.name) ? { ...t, name: shownAs.get(t.name) } : t;
     const result = {};
-    if (binders.has(t.tag) && typeof t.name === "string") {
+    if (termBinders.has(t.tag) && typeof t.name === "string") {
       const others = new Set([...free(t.body)].filter(name => name !== t.name).map(name => shownAs.get(name) ?? name));
       const taken = candidate => inScope.has(candidate) || others.has(candidate);
       let name = stem(t.name);

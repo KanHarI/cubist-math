@@ -1,17 +1,7 @@
 // Alpha-renaming for inert syntax transport, not a typing rule. Dimension
 // slots belong to live names, not every syntactic ancestor binder. Native
 // checking separately accounts for dimensions hidden in local-variable types.
-const children={
-  U:[],Var:[],Ref:[],DefRef:[],Unit:[],Point:[],Void:[],LBound:[],LPi:['body'],LLam:['body'],LApp:['fn'],
-  Pi:['domain','body'],Lam:['domain','body'],Sigma:['domain','body'],
-  App:['fn','arg'],Pair:['as','first','second'],Fst:['pair'],Snd:['pair'],
-  Abort:['as','impossible'],Sum:['left','right'],Inl:['as','value'],Inr:['as','value'],
-  SumRec:['motive','left','right','value'],UnitRec:['motive','point','value'],
-  PApp:['path','pathType'],Unglue:['as','value'],
-  // Declared types (H1): an instance's parameters and an eliminator's
-  // clauses are lists. Levels mention no dimension.
-  Sort:['parameters'],Con:['sort'],Elim:['motive','clauses'],
-};
+import { termChildren, dimensionScope } from "./term-shape.mjs";
 const cache=new WeakMap();
 const add=(target,source)=>{for(const name of source)target.add(name);};
 function formulaNames(formula) {
@@ -26,43 +16,45 @@ function formulaNames(formula) {
 }
 function boundNames(term) {
   const result=new Set();
-  if(term.tag!=='HComp')add(result,freeDimensions(term.family));
-  if(term.tag==='PLam')add(result,freeDimensions(term.body));
-  if(['Comp','HComp'].includes(term.tag))for(const piece of term.system)
-    add(result,freeDimensions(piece.term));
+  for (const key of dimensionScope.get(term.tag)) {
+    if (key === "system") for (const piece of term.system) add(result,dimensionNames(piece.term));
+    else add(result,dimensionNames(term[key]));
+  }
   result.delete(term.dim);
   return result;
 }
-export function freeDimensions(term) {
+// The cached set is read-only to callers; the public liveness query copies it.
+export function dimensionNames(term) {
   if(!term||typeof term!=='object')throw Error('Expected cubical syntax.');
   const cached=cache.get(term);
-  if(cached)return new Set(cached);
+  if(cached)return cached;
   const result=new Set(),tag=term.tag;
-  if(['Path','PLam','Comp','HComp','Trans'].includes(tag)) {
+  if(dimensionScope.has(tag)) {
     add(result,boundNames(term));
     if(tag==='Path') {
-      add(result,freeDimensions(term.left));
-      add(result,freeDimensions(term.right));
+      add(result,dimensionNames(term.left));
+      add(result,dimensionNames(term.right));
     }
-    if(['Comp','HComp','Trans'].includes(tag))add(result,freeDimensions(term.base));
-    if(tag==='HComp')add(result,freeDimensions(term.family));
+    if(['Comp','HComp','Trans'].includes(tag))add(result,dimensionNames(term.base));
+    if(tag==='HComp')add(result,dimensionNames(term.family));
     if(['Comp','HComp'].includes(tag))for(const piece of term.system)add(result,formulaNames(piece.face));
     if(tag==='Trans')add(result,formulaNames(term.face));
   } else if(['Glue','GlueTerm'].includes(tag)) {
-    add(result,freeDimensions(term.base));
-    if(tag==='GlueTerm')add(result,freeDimensions(term.as));
+    add(result,dimensionNames(term.base));
+    if(tag==='GlueTerm')add(result,dimensionNames(term.as));
     for(const piece of term.system) {
       add(result,formulaNames(piece.face));
-      for(const key of tag==='Glue'?['type','equiv']:['term'])add(result,freeDimensions(piece[key]));
+      for(const key of tag==='Glue'?['type','equiv']:['term'])add(result,dimensionNames(piece[key]));
     }
   } else {
-    if(!children[tag])throw Error(`Unsupported cubical syntax: ${tag}`);
-    for(const key of children[tag]) {
+    const children = termChildren[tag] ?? (tag === "Ref" ? [] : null);
+    if(!children)throw Error(`Unsupported cubical syntax: ${tag}`);
+    for(const key of children) {
       const value=term[key];
       if(Array.isArray(value)) {
-        for(const item of value)add(result,freeDimensions(item));
+        for(const item of value)add(result,dimensionNames(item));
         Object.freeze(value);
-      } else if(value)add(result,freeDimensions(value));
+      } else if(value)add(result,dimensionNames(value));
     }
     if(tag==='PApp')add(result,formulaNames(term.arg));
   }
@@ -75,11 +67,13 @@ export function freeDimensions(term) {
   }
   Object.freeze(term);
   cache.set(term,result);
-  return new Set(result);
+  return result;
 }
 
+export function freeDimensions(term) { return new Set(dimensionNames(term)); }
+
 export function bindDimensions(term,dimensions=new Map()) {
-  if(!['Path','PLam','Comp','HComp','Trans'].includes(term.tag))throw Error('Expected a dimension binder.');
+  if(!dimensionScope.has(term.tag))throw Error('Expected a dimension binder.');
   const live=boundNames(term),inner=new Map();
   for(const [name,slot]of dimensions)if(live.has(name))inner.set(name,slot);
   const occupied=new Set(inner.values());
