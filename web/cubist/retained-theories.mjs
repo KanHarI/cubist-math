@@ -4,7 +4,7 @@
 // their own source-scope boundaries as those families migrate.
 import {RetainedInterfaces} from "./retained-interfaces.mjs";
 import {HelperExpansion} from "./helper-expansion.mjs";
-import {bindingSyntaxView} from "./binding-syntax.mjs";
+import {bindingSyntaxView,bindingUses} from "./binding-syntax.mjs";
 import {bindingResolution,reservedResolution,sourceOrigin} from "./bindings.mjs";
 import {evidenceLayout,parameterGroup} from "./telescopes.mjs";
 import {allNames,freeNames,freshName,scopeMapped} from "./scopes.mjs";
@@ -80,6 +80,7 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
   };
   const {parents,ambiguous,notationBindings,ambiguousNotationBindings,ambiguousNotations,namespaceNotations}
     =retainParents(theory,interfaces,{...options,lookup},admit);
+  const implementable=new Set(fields.filter(entry=>["operation","law"].includes(entry.kind)).map(entry=>entry.id));
   if(parents.length) {
     const helpers=new HelperExpansion(interfaces.entries,{table:options.table,owner:[...options.owner,"inherited-views"]});
     for(const entry of fields) {
@@ -92,11 +93,19 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     const {notation,...plain}=item;
     const ownNotation=notation?{key:notationKey(notation),recipe:retainOperandRecipe(notationViews(notation),interfaces.context,
       {...options,theory:T,owner:[...options.owner,"own-notation",String(interfaces.entries.length)]})}:null;
-    const entry=interfaces.retain(plain,{self,transform:syntax=>familyEvidence(syntax,families),
-      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations,namespaces:namespaceNotations},ownNotation});
+    const previous=byName.get(item.name.text);
+    const implementing=item.kind==="derived"&&previous&&implementable.has(previous.id)&&!previous.implementation;
+    const settings={self,transform:syntax=>familyEvidence(syntax,families),
+      notation:{name:T,bindings:notationBindings,ambiguous:ambiguousNotations,namespaces:namespaceNotations},ownNotation};
+    const entry=implementing?interfaces.implement(plain,previous,settings):interfaces.retain(plain,settings);
     const metadata={...(item.kind==="sort"&&item.params.length?{family:true}:{}),
       ...(item.params.some(p=>p.level)?{visible:item.params.map(p=>p.level??null)}:{})};
-    const full=admit(entry,metadata);
+    let full;
+    if(implementing) {
+      fields.splice(fields.indexOf(previous),1);
+      full=Object.freeze({...entry,name:entry.label,...metadata});
+      derived.push(full);byName.set(entry.label,full);byIdentity.set(entry.id,full);
+    } else full=admit(entry,metadata);
     const helpers=item.kind!=="derived"||notation?new HelperExpansion(interfaces.entries,
       {table:options.table,owner:[...options.owner,"validate",String(interfaces.entries.length)]}):null;
     if(item.kind!=="derived") {
@@ -137,6 +146,48 @@ export function retainTheorySource(theory,options,{proposition=()=>false,lookup=
     }
   }
   if(!fields.length)throw located(Error(`${T} has no fields: a theory declares sorts, operations and laws.`),theory.name);
+  // An inherited law may now mention a helper implemented in terms of a
+  // newly declared operation. Close the model in dependency order after
+  // checking the complete helper graph, rather than its source order.
+  if(derived.some(entry=>entry.implementation)) {
+    const helpers=new HelperExpansion([...fields,...derived],{table:options.table,owner:[...options.owner,"implemented-interface"]});
+    const ids=new Set(fields.map(entry=>entry.id)),remaining=[...fields],ordered=[],done=new Set();
+    const dependencies=new Map(fields.map(entry=>{
+      const recursive=helpers.recursiveDependency(entry);
+      if(recursive)throw located(Error("An implemented operation used in a field type must be nonrecursive."),
+        recursive.origin?{...recursive.origin,origin:recursive.origin}:theory.name);
+      return [entry.id,new Set(bindingUses(helpers.type(entry).checking,{conditional:true})
+        .filter(use=>use.kind==="binding"&&ids.has(use.id)).map(use=>use.id))];
+    }));
+    while(remaining.length) {
+      const index=remaining.findIndex(entry=>[...dependencies.get(entry.id)].every(id=>done.has(id)));
+      if(index<0)throw located(Error(`${T}'s implemented operations create cyclic field dependencies.`),theory.name);
+      const [entry]=remaining.splice(index,1);ordered.push(entry);done.add(entry.id);
+    }
+    fields.splice(0,fields.length,...ordered);
+    // An inherited helper, or an earlier implementation, may call a member
+    // that used to be a field. Its derived projection must publish first.
+    // Structural self-recursion stays within its own publication group.
+    const helperEntries=new Map(derived.map(entry=>[entry.id,entry])),helperOrder=[],visiting=[];
+    const published=new Set();
+    const orderHelper=entry=>{
+      if(published.has(entry.id))return;
+      if(visiting.includes(entry.id)) {
+        const cycle=visiting.slice(visiting.indexOf(entry.id)).concat(entry.id).map(id=>helperEntries.get(id));
+        const implementation=cycle.find(member=>member.implementation&&implementable.has(member.id));
+        throw located(Error(`Cycle among helper definitions: ${cycle.map(member=>member.label).join(" -> ")}`),
+          implementation?.syntax.tree.name??theory.name);
+      }
+      visiting.push(entry.id);
+      for(const use of helpers.analysis.references(entry.syntax,{conditional:true})) {
+        const dependency=use.kind==="binding"?helperEntries.get(use.id):null;
+        if(dependency&&!(dependency.id===entry.id&&entry.recursive))orderHelper(dependency);
+      }
+      visiting.pop();published.add(entry.id);helperOrder.push(entry);
+    };
+    for(const entry of derived)orderHelper(entry);
+    derived.splice(0,derived.length,...helperOrder);
+  }
   for(const parent of parents)if(byName.has(parent.label))
     throw located(Error(`${T}'s parent ${parent.theory} is labelled ${parent.label}, which names a field of ${T} too: label it apart, as in base : ${parent.theory}.`),theory.name);
   return {name:T,origin,bindingSyntax:header,entries:interfaces.entries.map(entry=>byName.get(entry.label)),fields,derived,parents,

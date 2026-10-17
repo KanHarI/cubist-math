@@ -579,6 +579,11 @@ export const diagnostics = [
   ["E874", "free takes explicit parameters in parentheses, as free W(A : U0) : T(U0) on A; implicit parameters are not supported."],
   ["E875", "…'s inherited interfaces have cyclic dependencies after sharing."],
   ["E876", "The equational strategy needs resolved field interfaces."],
+  ["E877", "…'s implementation must have its inherited parameter and result types."],
+  ["E878", "Cycle among helper definitions: …"],
+  ["E879", "…'s implemented operations create cyclic field dependencies."],
+  ["E880", "An implemented operation used in a field type must be nonrecursive."],
+  ["E881", "The equational strategy does not yet generate folds for …'s implemented inherited members."],
   // Notation and operators
   ["E901", "-x negates in a selected notation that binds it, as integers.(-x); a path's reversal is ~p."],
   ["E902", "-x is not in …'s notation, which is selected here: select a notation that binds it, as integers.(-x)."],

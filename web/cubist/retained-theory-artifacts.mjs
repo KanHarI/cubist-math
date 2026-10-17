@@ -43,7 +43,8 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
   const substitute=(syntax,map)=>builder.substitute(syntax,map);
   const artifacts=builder.artifacts;
   const emit=(label,params,type,value,generated,{inferred=false,body=null,computable=false}={})=>{
-    const binding=bindings.get(label),site=entries.find(entry=>entry.label===generated.field)?.binding.origin??origin;
+    const binding=bindings.get(label),entry=entries.find(entry=>entry.label===generated.field);
+    const site=(entry?.implementation?entry.syntax.tree.name.origin:entry?.binding.origin)??origin;
     const declaration={kind:"def",name:{...token(binding),...at(site)},params,type,...at(site),
       ...(inferred?{value}:{body:body??[{kind:"exact",value,...at(origin)}],typedValue:true}),
       ...(computable?{computable:true}:{}),
@@ -107,7 +108,7 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
     const headerIds=new Set(header.tree.params.map(p=>p.name.bindingId));
     if(!Array.isArray(parent.universeIds)||!Array.isArray(parent.parameterIds)||!Array.isArray(parent.fieldIds)
       ||[...parent.universeIds,...parent.parameterIds].some(id=>!headerIds.has(id))
-      ||parent.fieldIds.some(id=>!fieldTypes.has(id)))
+      ||parent.fieldIds.some(id=>!projected.has(id)))
       throw new TypeError("A parent projection needs a complete child header and field correspondence.");
     const parentModel=table.get(parent.modelId),parentMake=table.get(parent.makeId);
     if(parentModel.role!=="declaration"||parentMake.role!=="declaration")
@@ -115,7 +116,8 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
     const args=ids=>ids.map(id=>reference(table.get(id)));
     emit(`${record.name}.${parent.label}`,[...headerParameters("all"),modelParameter],
       call(reference(parentModel),args([...parent.universeIds,...parent.parameterIds]),origin),
-      call(reference(parentMake),[...args(parent.parameterIds),...parent.fieldIds.map(id=>projected.get(id).tree)],origin),
+      call(reference(parentMake),[...args(parent.parameterIds),...parent.fieldIds.map(id=>
+        substitute(helpers.expand(view(reference(table.get(id)))),projected).tree)],origin),
       {role:"projection",field:parent.label});
   }
   const retainedRecord={...record,model:record.name,make:`${record.name}.make`,
@@ -125,7 +127,8 @@ export function retainedTheoryArtifacts(record,{table,owner,bindings=new Map()})
     params:header.tree.params.filter(p=>!p.bound).map(p=>({id:p.name.bindingId,name:p.label??p.name.text,type:p.type,group:p.group})),
     fields:fields.map(field=>({...field,name:field.label,type:views.get(field.id).analysis.tree,
       projection:`${record.name}.${field.label}`,projectionId:bindings.get(`${record.name}.${field.label}`).id})),
-    derived:derived.map(entry=>({...entry,name:entry.label,projection:`${record.name}.${entry.label}`,
+    derived:derived.map(entry=>({...entry,name:entry.label,
+      ...(entry.implementation?{type:helpers.type(entry).analysis.tree}:{}),projection:`${record.name}.${entry.label}`,
       projectionId:bindings.get(`${record.name}.${entry.label}`).id})),
     parents:parents.map(parent=>({...parent,projection:`${record.name}.${parent.label}`,
       projectionId:bindings.get(`${record.name}.${parent.label}`).id}))};

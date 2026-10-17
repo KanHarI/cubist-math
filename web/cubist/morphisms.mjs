@@ -167,6 +167,10 @@ export function morphismPlan(record) {
 }
 
 function planMorphisms(record) {
+  // Implemented parent operations remain preservation obligations, even
+  // though their values are computed rather than stored in the model.
+  const operationFields=[...record.fields.filter(field=>field.kind==="operation"),
+    ...(record.derived??[]).filter(field=>field.implementedKind==="operation")];
   const dependencies=new DependencyAnalysis([...record.fields,...record.derived??[]]);
   const identities=tree=>new Set(dependencyUses(bindingSyntaxView(record.bindingSyntax,tree))
     .filter(use=>use.kind==="binding").map(use=>use.id));
@@ -200,7 +204,7 @@ function planMorphisms(record) {
     }
     families.set(field.id,indices);
   }
-  for(const field of record.fields.filter(field=>field.kind==="operation")) {
+  for(const field of operationFields) {
     const shape=operationShape(field,context);
     if(shape.why)return {missing:shape.why,refusal:shape};
     operations.set(field.id,{id:field.id,name:field.name,...shape});
@@ -210,9 +214,9 @@ function planMorphisms(record) {
   const universal=[...[...operations.values()].flatMap(op=>[...op.inputs.map(i=>i.type),op.result.type]),
     ...[...families.values()].flat().map(index=>index.type)]
     .some(type=>[...identities(type)].some(id=>record.universeIds.includes(id)));
-  const homFields=record.fields.flatMap(field=>field.kind==="sort"
+  const homFields=[...record.fields,...(record.derived??[]).filter(field=>field.implementedKind==="operation")].flatMap(field=>field.kind==="sort"
     ?[{name:carrierFields.length===1?"map":`map_${field.name}`,sort:field.id}]
-    :field.kind==="operation"?[{name:`map_${field.name}`,operation:operations.get(field.id)}]:[]);
+    :field.kind==="operation"||field.implementation?[{name:`map_${field.name}`,operation:operations.get(field.id)}]:[]);
   if(new Set(homFields.map(field=>field.name)).size!==homFields.length)
     return {missing:"two of its homomorphisms' fields would have one name"};
   const indexedSet=carrierFields.find(field=>families.has(field.id)&&levelOf(field.id)==="IsSet"

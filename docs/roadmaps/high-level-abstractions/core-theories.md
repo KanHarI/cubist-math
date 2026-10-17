@@ -621,6 +621,33 @@ child model has each parent's model: `T.p(m) : P(U)` for a parent `P` labelled `
 `m.p` writes it. An unlabelled parent's label is its name in snake case,
 `G.monoid` for `Group extends Monoid`.
 
+### Implementing inherited members
+
+The algebra-lattice stress test (2026-10-17) needs one group inverse to
+supply both quasigroup divisions. A child can now implement an inherited
+operation or law with `def` using the same parameter and result types.
+The supplied body is checked, parent projections use it, and the member
+is omitted from the child's model constructor. Remaining fields are
+ordered by their dependencies. A group can therefore define
+`left_div(x, y) := inv(x) * y` and `right_div(x, y) := x * inv(y)` and prove
+the four inherited division laws once from associativity and its inverse laws.
+
+Carriers and carrier evidence cannot be replaced. Implementations cannot
+change signatures, recurse, or introduce a dependency cycle. An abstract
+and implemented path to the same ancestor member share the implementation;
+conflicting implementations are refused. Derived members may be renamed.
+The retained binding identity is shared through every parent, including
+parent models and homomorphisms. Failed definitions/proofs do not publish
+a usable theory or constructor.
+
+Generated `Hom` constructors retain preservation obligations for implemented
+parent operations; they do not synthesize those proofs from the bodies.
+The equational initial/free strategy refuses implemented members (E881)
+until it can generate their fold preservation proofs. This is a narrow
+prerequisite of the numerical algebra work, not the start of the later
+category or homology packages. See the checked reference's extension example
+and `tests/fixtures/theory-group-lattice.cubist`.
+
 ## Homomorphisms and isomorphisms
 
 For a theory whose carriers are sets or propositions and whose operations'
