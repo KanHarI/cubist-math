@@ -1,0 +1,21 @@
+// Migrated from tests/theories.test.mjs:
+// fresh operation binders avoid theory parameters absent from the field type.
+import hlevels;
+# test(theory_operation_capture.T)
+theory T(U < UU0, M_1 : Unit) {
+  M : set U;
+  op(M : M) : Unit;
+}
+
+# test(theory_operation_capture.preserved)
+def preserved(A, B : T(U0, tt), f : T.Hom(A, B), x : A.M) : A.op(x) = B.op(f.map(x)) := f.map_op(x);
+
+# test(theory_operation_capture.composite)
+def composite(S : T(U0, tt), x : S.M) : T.Hom.compose(T.Hom.id(S), T.Hom.id(S)).map(x) = x {
+  rfl;
+}
+
+# test(theory_operation_capture.iso_composite)
+def iso_composite(S : T(U0, tt), x : S.M) : T.Iso.compose(T.Iso.id(S), T.Iso.id(S)).to.map(x) = x {
+  rfl;
+}

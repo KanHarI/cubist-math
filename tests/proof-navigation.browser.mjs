@@ -1,36 +1,14 @@
+import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "playwright";
-import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel from web/dist.
-assertFreshBuild();
 import { proofCatalog, proofTopics, proofsInTopic } from "../web/proof-library.mjs";
 import { selectProof } from "./proof-navigation.mjs";
 
-const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
-  { stdio: ["ignore", "pipe", "pipe"] });
-// Drain request logs: a full stderr pipe can block the local HTTP server.
-server.stderr.resume();
-let browser;
-try {
-  const port = await new Promise((resolve, reject) => {
-    let output = "";
-    const timer = setTimeout(() => reject(new Error("Test server did not start")), 10000);
-    server.once("error", reject);
-    server.once("exit", code => { clearTimeout(timer); reject(new Error(`Test server exited: ${code}`)); });
-    server.stdout.on("data", data => {
-      output += data;
-      const match = output.match(/127\.0\.0\.1:(\d+)\//);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
-  browser = await (process.env.THTH_BROWSER === "webkit" ? webkit : chromium).launch({ headless: true });
+await browserTest(async ({ browser, base }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const idle = () => page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
-  const base = `http://127.0.0.1:${port}`;
   await page.goto(`${base}/proof.html?proof=euclid`);
   await idle();
   assert.equal(await page.locator("#proof-topic").inputValue(), "arithmetic");
@@ -94,7 +72,4 @@ try {
   await page.screenshot({ path: "/private/tmp/thth-proof-topics.png", fullPage: false });
   assert.deepEqual(errors, []);
   console.log(`PASS proof topic navigation (${process.env.THTH_BROWSER ?? "chromium"}); ${proofCatalog.length} proofs reachable`);
-} finally {
-  await browser?.close();
-  server.kill();
-}
+}, { engine: process.env.THTH_BROWSER === "webkit" ? webkit : chromium });

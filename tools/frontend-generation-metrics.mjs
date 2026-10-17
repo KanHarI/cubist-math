@@ -101,7 +101,7 @@ async function sample(name, mode) {
 async function corpusInventory() {
   const program = new CubicalProgram(await create(), archiveReader("benchmark"), {collectReferences:false});
   try {
-    const result = await program.check(archiveModules.map(name => `import ${name};`).join("\n"), "benchmark");
+    const result = await program.checkModules(archiveModules, "benchmark");
     const symbols = Object.values(program.symbols), canonical = canonicalHasher();
     const assumptions = [...program.checker.assumptions].sort(byName).map(([binding,type]) =>
       ({binding, label:program.checker.assumptionLabels.get(binding) ?? binding, typeDigest:canonical(type)}));

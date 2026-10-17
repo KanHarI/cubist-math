@@ -23,11 +23,7 @@ import {T,betaReduce,substituteTerm} from "./core.mjs";
 import {syntaxGraphBudget,syntaxNames} from "./syntax-graph.mjs";
 import {Goal,Transition,steps} from "./proof-goals.mjs";
 import {stem} from "./names.mjs";
-
-const termBinders = new Set(["Pi","Lam","Sigma","LPi","LLam"]);
-// The children in which a node binds its dimension.
-const dimensionScope = new Map([["Path",["family"]],["PLam",["family","body"]],
-  ["Comp",["family","system"]],["HComp",["system"]],["Trans",["family"]]]);
+import {termBinders,dimensionScope} from "./term-shape.mjs";
 
 // A declared type's instance and its constructors compare by signature,
 // parameters and levels: each occurrence is elaborated on its own.

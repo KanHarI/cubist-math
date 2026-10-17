@@ -110,7 +110,7 @@ test("agree: a move that throws is reported to observers with its work, and the 
   driver.policy = recordingPolicy(heuristicPolicy, kernel, point => points.push(point));
   // One step of budget: the beta step's instruction takes it on entry and
   // runs out computing.
-  kernel.stepBudget = 1n; kernel.module._cb_step_budget(kernel.handle, 1, 0);
+  kernel.stepBudget = 1n; kernel.setStepBudget(1n);
   assert.throws(() => driver.agree(a, b), error => error.kind === "budget");
   const [made] = points[0].listings[0].made;
   assert.equal(made[0], "step:left:beta");
@@ -118,7 +118,7 @@ test("agree: a move that throws is reported to observers with its work, and the 
   assert.ok(made[2] >= 1, "the failed move's kernel steps are recorded");
   const counting = countingPolicy(heuristicPolicy);
   const again = await sides(t, counting);
-  again.kernel.stepBudget = 1n; again.kernel.module._cb_step_budget(again.kernel.handle, 1, 0);
+  again.kernel.stepBudget = 1n; again.kernel.setStepBudget(1n);
   assert.throws(() => again.driver.agree(again.a, again.b), error => error.kind === "budget");
   assert.deepEqual(counting.counts.moves, { "step:left:beta": { error: 1 } });
 });

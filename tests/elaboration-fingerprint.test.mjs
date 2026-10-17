@@ -38,3 +38,14 @@ test("a compiled match names its generated binders alike in every elaboration", 
   assert.equal(first.declarations.compiled_match__both.status, "checked-native-cubical");
   assert.deepEqual(compareFingerprints(first, second), []);
 });
+
+// An unavailable module is a failed experiment, not a smaller fingerprint.
+// Ordinary declaration refusals still belong in a comparison's observations.
+test("fingerprints refuse missing entry/transitive imports but retain declaration refusals", async () => {
+  await assert.rejects(elaborationFingerprint({ modules: ["missing"],
+    readSource: async () => { throw Error("entry unavailable"); } }), /incomplete import graph: missing: entry unavailable/);
+  await assert.rejects(fingerprint("import absent; def independent : Unit := tt;"), /incomplete import graph: absent:/);
+  const refused = await fingerprint("def wrong : Void := tt;");
+  assert.equal(refused.declarations.fingerprint_fixture__wrong.status, "not-translated");
+  assert.equal(refused.gaps[0].name, "wrong");
+});

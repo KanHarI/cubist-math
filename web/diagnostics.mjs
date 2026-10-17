@@ -12,6 +12,7 @@
 // The groups, by the first two characters of a code.
 export const groups = {
   E1: "Reading the source",
+  E0: "Reading the source (continued)",
   E2: "Files, modules and tools",
   E3: "Terms",
   E4: "Proof statements, rewriting and simplification",
@@ -125,6 +126,8 @@ export const diagnostics = [
   ["E197", "Induction hypotheses after with are only available in induction clauses."],
   ["E198", "An induction clause takes one constructor pattern."],
   ["E199", "An anonymous universe has no name: name the header universe to refer to it here."],
+  // Reading the source (continued)
+  ["E001", "Invalid test pragma: …"],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -151,7 +154,7 @@ export const diagnostics = [
   ["E223", "Recheck the current source before replacing this simplification."],
   ["E224", "Allow a new tab to open the kernel workbench."],
   ["E225", "Source exceeds 1 MB."],
-  ["E226", "Unable to load the checking worker."],
+  ["E226", "Unable to load the checking worker.", "retired"],
   ["E227", "Unable to load the checking worker. Build with make wasm."],
   ["E228", "This expression transfer is no longer available. Open it again from the proof inspector."],
   ["E229", "check requires a module or .cubist file."],
@@ -175,6 +178,7 @@ export const diagnostics = [
   ["E247", "Check the current source with contextual scopes enabled."],
   ["E248", "The checking worker is unavailable. Reload the page to restart it."],
   ["E249", "The inspected context is unavailable. Check the source and inspect the occurrence again."],
+  ["E250", "Test pragmas require explicit test mode."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

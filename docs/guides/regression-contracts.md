@@ -12,7 +12,71 @@ its subject, expected/actual types, dependency or proposed edit.
 
 ## State the case in Cubist
 
-Write the case as a Cubist module, with the outcome stated as the Cubist tests
+New semantic fixtures live under `tests/fixtures/contracts/`. Give each
+case a stable, globally unique ID and place its pragmas immediately before the
+declaration or supported directive:
+
+```cubist
+# test(identity.local_assumptions)
+# expect_axioms([])
+def identity(A : U0, x : A) : A := x;
+
+# test(refusal.wrong_type)
+# expect_error(E606)
+def impossible : Void := tt;
+```
+
+`# test` alone requires success and no warnings. `# expect_error(E###)` requires
+exactly one refusal owned by that target, excluding dependent cascades. Repeat
+`# expect_warning(W###)` for the exact warning multiset. `# expect_axioms([...])`
+requires every checked output owned by the target (including each generated
+family member) to have exactly those external transitive assumptions, including
+type dependencies and excluding bound hypotheses. It cannot accompany an
+expected refusal. Use an assumption name such as `Truncate`, or a signature
+identity such as `LEM[h1_truncation.Trunc]` for a rebuilt assumption. The latter
+names the defining module and signature, independently of source aliases.
+
+Pragmas can target definitions, inductives, theories, initial/free models,
+`evaluate` and `print`; assumption expectations require a declaration. Parser
+errors, missing imports, resource exhaustion and crashes never satisfy an
+expected refusal. All imports must succeed even if unused; all unannotated
+local declarations must succeed. Unknown pragmas, invalid combinations, duplicate
+IDs and missing targets fail. Ordinary compilation rejects pragmas; test hosts
+explicitly enable them. They never affect kernel admission.
+
+Run `node --test tests/cubist-contracts.test.mjs`, or set `CUBIST_TEST_CASES` to a
+JSON list of exact IDs. An explicit empty, duplicate or unknown selection fails.
+Each selected fixture compiles once; its selected cases share the observation,
+then its kernel is disposed. The full suite selects every case. Use existing
+`evaluate ... expecting ...` and `computable def` syntax for computation, and
+retain JavaScript for host failures, source links, message goldens, unmigrated
+work counters and DOM. Put checked `// Error:` comments after the pragmas and
+directly above the declaration so the comment reader attaches them to it.
+
+For exact diagnostic ranges, pair `# expect_error` with
+`# expect_error_at(iter(n))`. The balanced token sequence must occur exactly
+once in its target's written source; whitespace and comments are ignored.
+The diagnostic's primary site and the published gap's range must both cover
+that sequence exactly, in the same module. Missing or ambiguous anchors fail
+instead of choosing an occurrence.
+An anchor is source text, not an expression that the checker evaluates.
+
+`# expect_searches(1)` requires exactly one charged coherence search on an
+ordinary definition. Missing counters fail even for an expected zero. It does
+not assert cache-dependent kernel step counts or elapsed time. These two forms
+replace the G8 and G12 range/work wrappers; their exact message goldens remain
+in JavaScript. Further observations should be added only for actual migrations.
+
+Fixtures can import sibling Cubist modules through the ordinary source loader;
+use distinct stable case IDs throughout the bundle. Each fixture still runs
+with its own program and kernel. Host reset/failure injection remains in JavaScript.
+
+The test runner, comment tool and tests-area benchmark share the same observer.
+The benchmark keeps contract failures visible even when a declaration checks.
+`inline-errors --write` validates existing pragmas before writing comments and
+never creates or changes semantic expectations.
+
+Existing diagnostic presentation fixtures remain Cubist modules, with the outcome stated as the Cubist tests
 state theirs ([`cubist-tests/README.md`](../../cubist-tests/README.md)): an
 `// Error:` comment, with the exact message, above each declaration that must
 be refused, and nothing above one that must check.
@@ -27,9 +91,10 @@ The comment comparison sees local errors and warnings, at the line of their
 declaration. It does not see a declaration with no output,
 which reports nothing, or where in its line a refusal lies. Require each
 declaration without a comment to have an output of its own, and observe in
-JavaScript only what the comparison cannot see, such as a range within its
-line, a link or a published name, with its desired value beside the
-observation. Lint advice is a warning, which a comment states.
+JavaScript only what the comparison cannot see and no pragma expresses, such
+as a link or a published name, with its desired value beside the observation.
+State an exact source range in a contract fixture with `# expect_error_at`.
+Lint advice is a warning, which a comment states.
 
 Take a desired outcome from the specification, or from the fixing
 implementation once it exists, and review it against the specification. Never

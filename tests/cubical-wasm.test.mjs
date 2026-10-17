@@ -236,7 +236,7 @@ test("a query's growing budget stops at its declared limit and fails as the kern
   let term = left;
   for (let i = 0; i < 8; i++) term = T.app(swapping, term);
   const handle = syntax.encode(term);
-  k.stepBudget = 1n; module._cb_step_budget(k.handle, 1, 0);
+  k.stepBudget = 1n; k.setStepBudget(1n);
   k.maxQuerySteps = 4n;
   const before = k.work();
   assert.throws(() => k.head(handle), error => error.kind === "budget");

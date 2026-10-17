@@ -89,7 +89,7 @@ test("fuel, the kernel's steps and the time limit are three kinds of failure", a
   // The kernel's own budget per operation: every instruction of this
   // declaration may take one step.
   let program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false,
-    onDeclarationStart(module) { if (module === "fuel_example") { program.kernel.stepBudget = 1n; program.kernel.module._cb_step_budget(program.kernel.handle, 1, 0); } } });
+    onDeclarationStart(module) { if (module === "fuel_example") { program.kernel.stepBudget = 1n; program.kernel.setStepBudget(1n); } } });
   t.after(() => program.dispose());
   const steps = (await program.check(source, "fuel_example")).outputs[0];
   assert.equal(steps.failure, "budget");
@@ -258,7 +258,7 @@ test("the kernel's step budget is a safety bound outside the determinism guarant
   const session = async () => {
     const kernel = new CubicalKernel(await createCubical());
     t.after(() => kernel.dispose());
-    kernel.stepBudget = 1n; kernel.module._cb_step_budget(kernel.handle, 1, 0);
+    kernel.stepBudget = 1n; kernel.setStepBudget(1n);
     kernel.maxQuerySteps = 16n;
     return { kernel, syntax: new CubicalSyntax(kernel) };
   };

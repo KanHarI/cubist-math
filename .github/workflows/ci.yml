@@ -28,10 +28,12 @@ jobs:
       - run: .tools/emsdk/emsdk install 6.0.9 && .tools/emsdk/emsdk activate 6.0.9
       # Dependencies first: npm test runs the browser tests' entry points too.
       - run: npm ci && npx playwright install --with-deps chromium
-      - run: make EMCC=.tools/emsdk/upstream/emscripten/emcc wasm-test
+      - run: make EMCC=.tools/emsdk/upstream/emscripten/emcc wasm
+      - run: npm test
       - run: npm run test:browser
+      - run: npm run test:browser:contextual
       - name: Check frontend mutation contracts
-        run: node tools/frontend-generation-mutations.mjs build/frontend-generation-mutations.json
+        run: npm run test:generation:mutations
       - name: Preserve frontend generation evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,16 +1,24 @@
 // G8 (CB3): a wildcard mismatch retains its endpoints and written body range.
 
 import hlevels;
+# test(generation.G8.type)
+# expect_axioms([])
 inductive T : set U0 {
   t0;
   t1;
   seg : t0 = t1;
 }
 
+# test(generation.G8.refusal)
+# expect_error(E606)
+# expect_error_at(t1)
+# expect_searches(1)
 // Error: E606: Type mismatch: found t1 = t1, expected t0 = t1.
 def h(x : T) : T := match x {
     t0 => t0;
     _ => t1;
   };
 
+# test(generation.G8.recovery)
+# expect_axioms([])
 def later : Unit := tt;

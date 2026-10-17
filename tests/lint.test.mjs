@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
+import { moduleFiles } from "../tools/module-sources.mjs";
 import { lint } from "../web/cubist/lint.mjs";
 
 const messages = source => lint(source).map(warning => warning.message);
@@ -60,7 +61,6 @@ test("a warning names its declaration, line and column", () => {
 });
 
 test("the rebuilt library has no unused bindings", async () => {
-  const library = new URL("../library/", import.meta.url);
-  for (const file of (await readdir(library)).filter(name => name.endsWith(".cubist")))
-    assert.deepEqual(messages(await readFile(new URL(file, library), "utf8")), [], file);
+  for (const file of moduleFiles("library"))
+    assert.deepEqual(messages(await readFile(file, "utf8")), [], file);
 });
