@@ -1,5 +1,6 @@
 // Reading the code examples of the reference pages. Every example declares
 // how it is checked; see tests/reference-examples.test.mjs.
+import { readComment } from "../web/cubist/stated-comments.mjs";
 export const decode = text => text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'").replace(/&amp;/g, "&");
 const attributes = text => Object.fromEntries([...text.matchAll(/([a-z-]+)="([^"]*)"/g)].map(([, key, value]) => [key, decode(value)]));
 
@@ -22,12 +23,10 @@ export function referenceExamples(file, source) {
 const stated = label => text => {
   const messages = [], lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const start = lines[i].match(new RegExp(`// ${label}: (.*)$`));
-    if (!start) continue;
-    let message = start[1].trim();
-    const own = lines[i].match(new RegExp(`^(\\s*)// ${label}:`));
-    while (own && i + 1 < lines.length && lines[i + 1].startsWith(`${own[1]}//   `)) message += ` ${lines[++i].trim().slice(2).trim()}`;
-    messages.push(message);
+    const block = readComment(lines, i, { reference: true });
+    if (!block) continue;
+    i = block.end;
+    if (block.label === label) messages.push(block.text);
   }
   return messages;
 };

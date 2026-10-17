@@ -27,7 +27,7 @@ import { cubistTestModules } from "../web/cubist/modules.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 // The comments' syntax and what they state, which the benchmark reads too.
-import { comment, continued, normal, stated } from "../web/cubist/stated-comments.mjs";
+import { readComment, normal, stated } from "../web/cubist/stated-comments.mjs";
 
 export { stated };
 
@@ -40,8 +40,9 @@ const rank = { Output: 0, Error: 1, Warning: 2 };
 export function stripped(source) {
   const lines = source.split("\n"), kept = [];
   for (let i = 0; i < lines.length; i++) {
-    if (!comment.test(lines[i])) { kept.push(lines[i]); continue; }
-    while (i + 1 < lines.length && continued.test(lines[i + 1])) i++;
+    const block = readComment(lines, i);
+    if (!block) { kept.push(lines[i]); continue; }
+    i = block.end;
   }
   return kept.join("\n");
 }
