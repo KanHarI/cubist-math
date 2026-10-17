@@ -11,7 +11,7 @@ export function kernelReplayPolicy(kernel) {
 export function applyKernelReplayPolicy(kernel,policy,{resetDeadline=true}={}) {
   kernel.stepBudget=BigInt(policy.stepBudget);
   kernel.maxQuerySteps=BigInt(policy.maxQuerySteps);
-  kernel.module._cb_step_budget(kernel.handle,Number(kernel.stepBudget&0xffffffffn),Number(kernel.stepBudget>>32n));
+  kernel.setStepBudget(kernel.stepBudget);
   kernel.setOptimizations(policy.optimizations);
   kernel.setExtensions(policy.extensions);
   if(resetDeadline)kernel.setDeadline(policy.deadlineDuration);

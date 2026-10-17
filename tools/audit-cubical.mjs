@@ -17,7 +17,7 @@ const diagnosticBudget=budgetOption?BigInt(budgetOption.split('=')[1]):null;
 if(diagnosticBudget!==null) {
   if(diagnosticBudget<=0n || diagnosticBudget>((1n<<64n)-1n))throw Error('Invalid diagnostic budget.');
   program.kernel.stepBudget=diagnosticBudget;
-  program.kernel.module._cb_step_budget(program.kernel.handle,Number(diagnosticBudget&0xffffffffn),Number(diagnosticBudget>>32n));
+  program.kernel.setStepBudget(diagnosticBudget);
   // Diagnostic only: stop at the requested budget to locate slow declarations.
   // Production checking still grows its budget; rejection here is not a
   // mathematical counterexample or a claim that the ordinary checker fails.

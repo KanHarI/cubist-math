@@ -112,7 +112,7 @@ export class InstructionGraph {
   head(term, steps) {
     const k = this.kernel, m = this.module;
     k.checkDeadline();
-    m._cb_step_budget(k.handle, steps, 0);
+    k.setStepBudget(steps);
     try {
       const id = m._cb_head(k.handle, term) >>> 0, kind = k.errorKind();
       // A reduction may answer while a nested computation ran out, with the
@@ -123,16 +123,16 @@ export class InstructionGraph {
       if (kind === "deadline") throw new KernelError("Declaration time limit exceeded.", "deadline");
       return 0;
     } finally {
-      m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n));
+      k.setStepBudget(k.stepBudget);
     }
   }
   // An operation under a step budget of its own, as head's query has; the
   // session's budget is restored afterwards.
   within(steps, operation) {
-    const k = this.kernel, m = this.module;
-    m._cb_step_budget(k.handle, Number(BigInt(steps) & 0xffffffffn), Number(BigInt(steps) >> 32n));
+    const k = this.kernel;
+    k.setStepBudget(steps);
     try { return operation(); }
-    finally { m._cb_step_budget(k.handle, Number(k.stepBudget & 0xffffffffn), Number(k.stepBudget >> 32n)); }
+    finally { k.setStepBudget(k.stepBudget); }
   }
   levelPi(entry, body) { return this.issue("levelPi", entry, body); }
   levelLambda(entry, body) { return this.issue("levelLambda", entry, body); }
