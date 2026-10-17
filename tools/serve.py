@@ -9,23 +9,31 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parent.parent
+# URL prefix -> repository folder, shared with the static publisher.
 LAYOUT = REPOSITORY / "tools/site-layout.json"
 ROOTS = json.loads(LAYOUT.read_text())
 ROOT = REPOSITORY / ROOTS[""]
 
 
 def site_version():
-    # Hash every published file, including all worker dependencies. Keeping a
+    # Hash public inputs, including all worker dependencies. Keeping a
     # second list of compiler modules misses new imports outside cubist/.
     paths = [LAYOUT, Path(__file__).resolve()]
     for directory in ROOTS.values():
         paths += sorted(path for path in (REPOSITORY / directory).rglob("*")
-                        if path.is_file() and path.name != ".DS_Store")
+                        if path.is_file()
+                        and not any(part.startswith(".") for part in path.relative_to(REPOSITORY).parts)
+                        and (ROOT / "dist" not in path.parents
+                             or path.name in ("cubical.mjs", "cubical.wasm")))
     digest = hashlib.sha256()
     for path in paths:
+        try:
+            content = path.read_bytes()
+        except FileNotFoundError:
+            continue  # A source removed during this request is absent.
         digest.update(str(path.relative_to(REPOSITORY)).encode())
         digest.update(b"\0")
-        digest.update(path.read_bytes())
+        digest.update(content)
     return digest.hexdigest()
 
 

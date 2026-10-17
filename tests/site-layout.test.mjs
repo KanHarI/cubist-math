@@ -76,6 +76,10 @@ test("development versions cover worker dependencies, source files, renames and 
   }
   put("private.txt", "not published");
   assert.equal(server().version, original, "unpublished files do not restart workers");
+  for (const input of ["web/dist/.build-lock/owner", "web/dist/.build-lock-recovery/owner",
+    "web/dist/build-stamp.json.12345", "web/dist/build-stamp.json", "web/.diagnostics.mjs.swp"])
+    put(input, "temporary build or editor state");
+  assert.equal(server().version, original, "build bookkeeping and editor files do not restart workers");
   renameSync(join(root, "web/new/dependency.mjs"), join(root, "web/new/renamed.mjs"));
   const renamed = server().version;
   assert.notEqual(renamed, original, "same bytes at a different path");

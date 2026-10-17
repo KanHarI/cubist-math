@@ -1,5 +1,5 @@
 // Assemble the same static application used locally, without a runtime server.
-// Only web/, the libraries (library/ and archive/), the Cubist tests (cubist-tests/) and public documentation enter the Pages artifact.
+// tools/site-layout.json maps the public roots shared with the local server.
 import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
