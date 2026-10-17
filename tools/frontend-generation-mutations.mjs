@@ -15,6 +15,12 @@ const mutation=(id,file,from,to,test,pattern)=>({id,file,from,to,test,pattern});
 // Mutate current production boundaries of the adopted contracts. A missing
 // site or a broken baseline never counts as a killed mutant.
 const mutations=[
+  mutation("search-charge","web/translator/fuel.mjs",
+    "record.searches++;", "record.searches += 0;",
+    "cubist-contracts","^generation\\.G8\\.refusal$"),
+  mutation("diagnostic-span","web/translator/elaboration.mjs",
+    "start:site.start,end:site.end", "start:site.start,end:site.start",
+    "cubist-contracts","^generation\\.(G8|G12_range)\\.refusal$"),
   mutation("binding-label","web/translator/translate.mjs",
     "label=node.label??node.text??node.name", "label=name",
     "frontend-provenance","freshened law and derived parameters"),
@@ -26,7 +32,7 @@ const mutations=[
     "frontend-generation","^G11:"),
   mutation("hom-universe","web/cubist/retained-morphism-artifacts.mjs",
     "declare(hom,modelParams(),null,sigma", "declare(hom,modelParams(),builtin(\"U0\",origin),sigma",
-    "frontend-universes","generic fixed domains"),
+    "cubist-contracts","^generation\\.hom_universe\\."),
   mutation("refined-evidence","web/translator/elaboration.mjs",
     "if(!values.size||!this.evidence.length&&!this.inheritedDefinitions.length)return this;", "return this;",
     "frontend-evidence","contextual model evidence remains checked"),
@@ -47,9 +53,15 @@ const mutations=[
     "frontend-invariants","uncolliding parameter, seed 2$"),
   mutation("reservation","web/translator/declarations.mjs",
     "conflict ??= entry;","conflict ??= null;","frontend-publication","definition then inductive"),
-  mutation("failed-publication","web/cubical-program.mjs",
-    "transaction?.finish(accept); transaction=null;", "transaction?.finish(true); transaction=null;",
+  mutation("failed-publication","web/cubical-publication.mjs",
+    "transaction?.finish(accept);", "transaction?.finish(true);",
     "frontend-publication","G7:"),
+  mutation("interrupted-publication","web/cubical-publication.mjs",
+    "if(this.start!==null)this.finish(false);", "if(this.start!==null)this.finish(true);",
+    "frontend-publication","^publication interruption:"),
+  mutation("rolled-back-inspection","web/cubical-publication.mjs",
+    "if(accept)for(const record of records)", "for(const record of records)",
+    "frontend-publication","^publication interruption: progress in generated group"),
 ];
 for(const id of selected)if(!mutations.some(m=>m.id===id))throw Error(`Unknown mutation ${id}`);
 const chosen=mutations.filter(m=>!selected.length||selected.includes(m.id));

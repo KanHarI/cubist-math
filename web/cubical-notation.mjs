@@ -1,3 +1,4 @@
+import { displayFreeNames } from "./translator/display-names.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 // Display the native checked syntax itself. Definition references stay named;
@@ -8,18 +9,8 @@ import {numeralValue} from "./translator/numerals.mjs";
 // Definitions, sorts and eliminators keep the labels `symbols` gives.
 export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map() } = {}) {
   let remaining = limit;
-  const boundNames = new Map(), freeCache = new WeakMap();
-  const free = (term, variable) => {
-    if (!term || typeof term !== "object") return false;
-    let cache = freeCache.get(term);
-    if (!cache) { cache = new Map(); freeCache.set(term, cache); }
-    if (cache.has(variable)) return cache.get(variable);
-    const found = term.tag === "Var" ? term.name === variable
-      : ["Pi", "Sigma", "Lam", "LPi", "LLam"].includes(term.tag)
-        ? free(term.domain, variable) || (term.name !== variable && free(term.body, variable))
-        : Object.values(term).some(child => free(child, variable));
-    cache.set(variable, found); return found;
-  };
+  const boundNames = new Map(), namesIn = displayFreeNames();
+  const free = (term, variable) => namesIn(term).has(variable);
   const sourceNames = new Map();
   for (const [variable, symbol] of Object.entries(symbols)) {
     if (!symbol.local) continue;

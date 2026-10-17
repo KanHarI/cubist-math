@@ -1,33 +1,15 @@
+import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
-import {spawn} from "node:child_process";
 import {readFile} from "node:fs/promises";
-import {chromium} from "playwright";
-import {assertFreshBuild} from "../tools/build-stamp.mjs";
 import {contextualScenarios} from "./fixtures/contextual-sessions.mjs";
 
-assertFreshBuild();
-const server=spawn("python3",["tools/serve.py","--port","0"],{stdio:["ignore","pipe","pipe"]});
-server.stderr.resume();
-let browser;
-try {
-  const port=await new Promise((resolve,reject)=>{
-    let output="";
-    const timer=setTimeout(()=>reject(new Error("Server did not start")),10000);
-    server.once("error",reject);
-    server.once("exit",code=>{clearTimeout(timer);reject(new Error(`Server exited ${code}`));});
-    server.stdout.on("data",data=>{
-      output+=data;
-      const match=output.match(/127\.0\.0\.1:(\d+)\//);
-      if(match){clearTimeout(timer);resolve(match[1]);}
-    });
-  });
-  browser=await chromium.launch({headless:true});
+await browserTest(async ({ browser, base }) => {
   const page=await browser.newPage({viewport:{width:1280,height:1000}});
   const errors=[];page.on("pageerror",error=>errors.push(error.message));
   const idle=()=>page.waitForFunction(()=>!document.querySelector("#check").disabled&&document.querySelector("#check-loader").hidden);
   const open=async(source,embedded=false)=>{
     await page.goto("about:blank");
-    await page.goto(`http://127.0.0.1:${port}/proof.html?example=1${embedded?"&embed=1":""}#source=${Buffer.from(source).toString("base64url")}`);
+    await page.goto(`${base}/proof.html?example=1${embedded?"&embed=1":""}#source=${Buffer.from(source).toString("base64url")}`);
     if(embedded) {
       await page.waitForFunction(()=>document.querySelector("#check")?.disabled===false);
       await page.evaluate(source=>window.postMessage({type:"cubist-inspect",source,offset:source.indexOf("ih(m.1)")},location.origin),source);
@@ -274,6 +256,4 @@ initial N : T(U0);`);
   }
   console.log("PASS inspector opens exact induction-hypothesis contexts on demand, including embedded views and dirty-source invalidation");
   assert.deepEqual(errors,[]);
-} finally {
-  await browser?.close();server.kill();
-}
+});

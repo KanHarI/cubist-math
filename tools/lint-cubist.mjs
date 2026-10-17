@@ -1,6 +1,6 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { moduleFiles } from "./module-sources.mjs";
 import { lint } from "../web/cubist/lint.mjs";
 
 // Reports bindings that are never used and can be removed
@@ -10,9 +10,7 @@ if (args.includes("--help")) {
   console.log("Usage: npm run lint:cubist -- [file.cubist ...]\nWith no files, lint every library/*.cubist module; a Cubist test module may hold the cases the linter flags. Reports unused `as` names, quantified variables, let, have and obtain bindings that can be removed.");
 } else {
   if (args.some(a => a.startsWith("--"))) throw new Error("Unknown lint option.");
-  const roots = ["../library/"].map(root => fileURLToPath(new URL(root, import.meta.url)));
-  const files = args.length ? args.map(file => resolve(file)) : (await Promise.all(roots.map(async root =>
-    (await readdir(root)).filter(n => n.endsWith(".cubist")).sort().map(n => resolve(root, n))))).flat();
+  const files = args.length ? args.map(file => resolve(file)) : moduleFiles("library");
   let count = 0;
   for (const path of files)
     for (const warning of lint(await readFile(path, "utf8"))) {

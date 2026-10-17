@@ -8,7 +8,6 @@ import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { benchmark, benchmarkAreas, category } from "../web/benchmark-runner.mjs";
 import { areaLabels, savedReport } from "../web/benchmark-areas.mjs";
-import { moduleListing } from "../web/module-listing.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
@@ -103,10 +102,8 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
 });
 
 test("benchmark measures an area, the library, the archive or the Cubist tests, as its modules import", async () => {
-  // Each area's modules are those the workspace lists there, and the page
-  // names each and finds its saved report.
+  // The page names each area and finds its saved report.
   assert.deepEqual(Object.keys(benchmarkAreas), ["library", "archive", "tests"]);
-  for (const [area, modules] of Object.entries(benchmarkAreas)) assert.deepEqual([...modules], [...moduleListing[area]], area);
   assert.deepEqual(Object.keys(areaLabels), Object.keys(benchmarkAreas));
   // The benchmark imports each of an area's modules, so each has a name an
   // import can write: none is a keyword, as a test named induction was.
@@ -187,4 +184,30 @@ test("the instruction kernel admits each declaration the benchmark counts", asyn
     assert.match(failing.declarations.find(d=>d.name === "good").reason, /^Instruction kernel: No rule for this yet/);
     assert.equal(failing.declarations.find(d=>d.name === "uses").rootBlocker, "sample__good");
   } finally { InstructionDriver.prototype.check = check; }
+});
+
+
+test("benchmark shares source contracts without hiding invalid contracts or unrelated failures",async()=>{
+  const sources={valid:"# test(refusal) # expect_error(E606) def bad : Void := tt;",
+    invalid:"# test(wrong_contract) # expect_error(E343) def bad : Void := tt;",
+    assumption:"# test(assumption) # expect_axioms([]) def x := Truncate(U0,Unit);",
+    unrelated:"def bad : Void := tt;"};
+  const report=await benchmark({area:"tests",modules:Object.keys(sources),limitMs:budget(10000),readSource:async name=>sources[name]});
+  assert.deepEqual(report.declarations.map(row=>[row.module,row.category]),
+    [["valid","intended"],["invalid","failed"],["assumption","checked"],["unrelated","failed"]]);
+  assert.ok(report.testFailures.some(message=>message.startsWith("wrong_contract:")));
+  assert.ok(report.testFailures.some(message=>message.startsWith("assumption:")));
+  assert.ok(!report.testFailures.some(message=>message.startsWith("refusal:")));
+  const ordinary=await benchmark({area:"library",modules:["valid"],readSource:async()=>sources.valid});
+  assert.equal(ordinary.declarations.length,0);
+  assert.match(ordinary.importErrors[0].reason,/explicit test mode/);
+});
+
+
+test("benchmark resource failures cannot become expected refusals or semantic contract failures",async()=>{
+  const report=await benchmark({area:"tests",modules:["timed"],limitMs:0.000001,
+    readSource:async()=>"# test(timed) # expect_error(E629) def value : Unit := tt;"});
+  assert.equal(report.declarations[0].category,"optimize");
+  assert.equal(report.counts.intended,0);
+  assert.equal(report.testFailures,undefined);
 });

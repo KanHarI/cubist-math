@@ -15,6 +15,8 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { canonicalHasher } from "./canonical-hash.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
+import { sourceReader } from "./module-sources.mjs";
+import { archiveModules } from "../web/cubist/modules.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -29,7 +31,10 @@ const closed = (term, context = new Map(), dimensions = new Map()) => {
 export async function elaborationFingerprint({ modules, readSource }) {
   const program = new CubicalProgram(await createCubical(), readSource);
   try {
-    await program.check(modules.map(name => `import ${name};`).join("\n"), "fingerprint");
+    const result = await program.checkModules(modules, "fingerprint");
+    const missing = result.gaps.filter(gap => !gap.name);
+    if (missing.length) throw Error(`Cannot fingerprint an incomplete import graph: ${
+      missing.map(gap => `${gap.module}: ${gap.reason}`).join("; ")}`);
     const views = program.checker.definitionViews;
     // Generated unfolding helpers are named by a session serial; hash them
     // by their checked bodies instead.
@@ -98,24 +103,21 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const examples = args.includes("--examples");
   if (examples) args.splice(args.indexOf("--examples"), 1);
   if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
-  const sources = new Map(), add = async directory => {
-    for (const file of (await readdir(`${root}${directory}`)).filter(name => name.endsWith(".cubist")).sort())
-      sources.set(directory === "archive/first-library" ? file.slice(0, -".cubist".length)
-        : `${directory}/${file.slice(0, -".cubist".length)}`.replace(/\W/g, "_"), `${root}${directory}/${file}`);
-  };
-  await add("archive/first-library");
-  const modules = args.length ? args : [...sources.keys()];
+  const modules = args.length ? args : [...archiveModules].sort(), files = new Map();
   if (examples) for (const directory of ["docs/examples/hott-automation", "docs/examples/proof-ergonomics/current",
     "docs/examples/proof-ergonomics/implemented"]) {
-    const before = new Set(sources.keys());
-    await add(directory);
-    modules.push(...[...sources.keys()].filter(name => !before.has(name)));
+    for (const file of (await readdir(`${root}${directory}`)).filter(name => name.endsWith(".cubist")).sort()) {
+      const name = `${directory}/${file.slice(0, -".cubist".length)}`.replace(/\W/g, "_");
+      files.set(`archive/${name}`, `${root}${directory}/${file}`);
+      modules.push(name);
+    }
   }
+  // Keep the fingerprint corpus's archive-first policy, including examples,
+  // while imported library modules use the shared library-only contract.
+  const readSource = sourceReader({ files });
+  readSource.place("fingerprint", "archive");
   const started = performance.now();
-  const fingerprint = await elaborationFingerprint({ modules,
-    // A module the archive imports from the library, such as hlevels, is
-    // read there.
-    readSource: name => readFile(sources.get(name) ?? `${root}library/${name}.cubist`, "utf8") });
+  const fingerprint = await elaborationFingerprint({ modules, readSource });
   const seconds = ((performance.now() - started) / 1000).toFixed(1);
   const counts = Object.fromEntries(Object.entries(fingerprint).map(([key, value]) =>
     [key, Array.isArray(value) ? value.length : Object.keys(value).length]));

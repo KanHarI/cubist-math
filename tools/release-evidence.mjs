@@ -27,28 +27,31 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 // are any, so that pass and fail always add up to the tests.
 const nodeSummary = /^ℹ (?:(?:tests|pass|fail) \d+|(?:cancelled|skipped|todo) [1-9]\d*)$/gm, pageSummary = /^(PASS|FAIL) .*$/gm;
 const coverageSummary = /^.*(Archive checked|definitions derive|Coverage complete).*$/gm;
+const mutationSummary = /^(?:[\w-]+: \S+ \(expected killed\)|\w*Error(?: \[\w+\])?: .*)$/gm;
 
-// The local checks, in order: the kernel's tests and lint; the fatal
-// undefined-behaviour sanitizer, with the address sanitizer too where it runs
-// (not on macOS, whose Apple clang cannot start it; CI runs both); the WASM
-// build and its stamp; instruction coverage, which checks the archive and
-// re-derives every definition; the Node suite; and the browser and site
-// checks. A check's summary is the lines its pattern finds in its
-// output, or else its last line. The WASM build has none: its output is the
-// commands make runs, and the record's build stamp says what it built.
+// Local checks run in the order below. A summary uses its matching output
+// lines, or the final line when none match. The WASM build has no output
+// summary: the record's build stamp identifies its inputs and outputs.
+// Every JavaScript check except the build stamp uses a package.json script.
+// `workflows` names workflows using the same script; tests read their actual
+// run steps. Instruction coverage and four extended browser scenarios remain
+// outside CI's shorter workbench job. Native CI keeps its OS/compiler matrix
+// and Linux ASan; local evidence uses this host (UBSan only on macOS).
 export const localChecks = (platform = process.platform) => [
   { name: "Kernel tests", command: ["make", "-C", "kernel", "test"] },
   { name: "Lint", command: ["make", "lint"] },
   { name: "Sanitizers", command: ["make", "sanitize", ...(platform === "darwin" ? ["SANITIZERS=undefined"] : [])] },
   { name: "WASM build", command: ["make", "wasm"], summary: false },
   { name: "Build stamp", command: ["node", "tools/build-stamp.mjs", "check"] },
-  { name: "Instruction coverage", command: ["node", "tools/instruction-coverage.mjs"], summary: coverageSummary },
-  { name: "Node suite", command: ["npm", "test"], summary: nodeSummary },
-  { name: "Workbench browser tests", command: ["npm", "run", "test:browser"], summary: pageSummary },
+  { name: "Instruction coverage", command: ["npm", "run", "test:coverage"], summary: coverageSummary },
+  { name: "Node suite", command: ["npm", "test"], summary: nodeSummary, workflows: ["ci", "pages"] },
+  { name: "Workbench browser tests", command: ["npm", "run", "test:browser"], summary: pageSummary, workflows: ["ci"] },
+  { name: "Contextual console browser tests", command: ["npm", "run", "test:browser:contextual"], summary: pageSummary, workflows: ["ci"] },
+  { name: "Frontend mutations", command: ["npm", "run", "test:generation:mutations"], summary: mutationSummary, workflows: ["ci"] },
   ...["cubical", "statement", "proof-navigation", "landing"].map(page =>
-    ({ name: `Browser test ${page}`, command: ["node", `tests/${page}.browser.mjs`] })),
-  { name: "Site build", command: ["node", "tools/build-site.mjs"] },
-  { name: "Site browser test", command: ["node", "tests/site.browser.mjs"], summary: pageSummary },
+    ({ name: `Browser test ${page}`, command: ["npm", "run", `test:browser:${page}`], summary: pageSummary })),
+  { name: "Site build", command: ["npm", "run", "build:site"], workflows: ["pages"] },
+  { name: "Site browser test", command: ["npm", "run", "test:site"], summary: pageSummary, workflows: ["pages"] },
 ];
 
 // A command's outcome. It passed only when it ran and exited with 0: an

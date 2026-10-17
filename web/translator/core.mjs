@@ -2,6 +2,8 @@
 // filling. Terms are inert JSON; building one certifies nothing, and the
 // kernel checks every term elaboration produces.
 import { interval as I, face as F } from "./lattice.mjs";
+import { termChildren as children, termBinders, dimensionScope } from "./term-shape.mjs";
+import { dimensionNames } from "./dimension-slots.mjs";
 
 export const T = {
   universe: level => ({tag:"U",level}), variable: name => ({tag:"Var",name}),
@@ -40,23 +42,9 @@ export const T = {
   eliminator: (signature,motive,clauses) => ({tag:"Elim",signature,motive,clauses}),
 };
 const fail = message => { throw new Error(message); };
-const children = {
-  U:[], Var:[], DefRef:[], Unit:[], Point:[],
-  Pi:["domain","body"], Lam:["domain","body"], Sigma:["domain","body"],
-  App:["fn","arg"], Pair:["as","first","second"], Fst:["pair"], Snd:["pair"],
-  Path:["family","left","right"], PLam:["family","body"], PApp:["path","pathType"],
-  Comp:["family","base"], HComp:["family","base"], Trans:["family","base"], Void:[], Abort:["as","impossible"],
-  Sum:["left","right"], Inl:["as","value"], Inr:["as","value"],
-  SumRec:["motive","left","right","value"], UnitRec:["motive","point","value"],
-  Glue:["base"], GlueTerm:["as","base"], Unglue:["as","value"],
-  LPi:["body"], LLam:["body"], LApp:["fn"], LBound:[],
-  // Declared types (H1): an instance's parameters and an eliminator's
-  // clauses are lists; an instance's recorded levels are levels.
-  Sort:["parameters"], Con:["sort"], Elim:["motive","clauses"],
-};
 // The items of a child: one term, or a list of them.
 const items = value => Array.isArray(value) ? value : [value];
-const termBinder = t => ["Pi","Lam","Sigma","LPi","LLam"].includes(t.tag);
+const termBinder = t => termBinders.has(t.tag);
 // The variables of a level: universe variables, bound like term variables.
 export function levelNames(level, result = new Set()) {
   if (!level || typeof level !== "object") return result;
@@ -87,18 +75,21 @@ const levelShaped = value => typeof value === "number" || ["LConst","LSucc","LMa
 // A level such as 2 or next(x) is not a term: it has no dimensions, and its
 // variables are its names.
 const plainLevel = value => typeof value === "number" || ["LConst","LSucc","LMax"].includes(value?.tag);
-const dimBinder = t => ["Path","PLam","Comp","HComp","Trans"].includes(t.tag);
-// A term's free names, and its free dimensions, by the term: terms are
-// never changed once built (every operation copies), so what a term holds
+const dimBinder = t => dimensionScope.has(t.tag);
+// A term's free names, by the term: terms are never changed once built
+// (every operation copies), so what a term holds
 // free is computed once, however often unification asks. The set is the
 // cache's own: callers read it and never change it. So a part's set is the
 // term's own where it is the only part with names, as for most terms: a
 // set is made only where two parts' names meet, or a binder takes one off.
 // The names keep the order of a walk through the parts, as zonk reads them.
-const freeTerms = new WeakMap(), freeDimensions = new WeakMap(), noNames = new Set();
+// Dimension analysis is shared with the codec; it freezes the syntax it
+// inspects and owns its own cached sets.
+const freeTerms = new WeakMap(), noNames = new Set();
 function free(t, dimension = false) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
-  const memo = dimension ? freeDimensions : freeTerms, cached = memo.get(t);
+  if (dimension) return dimensionNames(t);
+  const cached = freeTerms.get(t);
   if (cached) return cached;
   let local = noNames, owned = false;
   const own = () => { if (!owned) { local = new Set(local); owned = true; } };
@@ -115,26 +106,17 @@ function free(t, dimension = false) {
     rest.delete(n);
     return rest;
   };
-  if (dimension && t.tag === "PApp") for (const n of I.names(t.arg)) name(n);
-  if (dimension && t.tag === "Trans") for (const n of I.names(t.face)) name(n);
-  if (!dimension && t.tag === "Var") name(t.name);
-  if (!dimension && (t.tag === "U" || t.tag === "LApp")) for (const n of levelNames(t.level)) name(n);
-  if (!dimension && t.tag === "Sort") for (const level of t.levels ?? []) for (const n of levelNames(level)) name(n);
-  if (t.tag === "Glue" || t.tag === "GlueTerm") for (const piece of t.system) {
-    for (const key of t.tag === "Glue" ? ["type", "equiv"] : ["term"]) union(free(piece[key], dimension));
-    if (dimension) for (const n of I.names(piece.face)) name(n);
-  }
-  if (t.tag === "Comp" || t.tag === "HComp") for (const piece of t.system) {
-    union(dimension ? without(free(piece.term, dimension), t.dim) : free(piece.term, dimension));
-    if (dimension) for (const n of I.names(piece.face)) name(n);
-  }
-  const termBound = !dimension && termBinder(t), dimensionBound = dimension && dimBinder(t) && t.tag !== "HComp";
+  if (t.tag === "Var") name(t.name);
+  if (t.tag === "U" || t.tag === "LApp") for (const n of levelNames(t.level)) name(n);
+  if (t.tag === "Sort") for (const level of t.levels ?? []) for (const n of levelNames(level)) name(n);
+  if (t.tag === "Glue" || t.tag === "GlueTerm") for (const piece of t.system)
+    for (const key of t.tag === "Glue" ? ["type", "equiv"] : ["term"]) union(free(piece[key]));
+  if (t.tag === "Comp" || t.tag === "HComp") for (const piece of t.system) union(free(piece.term));
   for (const key of children[t.tag]) if (t[key]) for (const item of items(t[key])) {
-    const names = free(item, dimension);
-    union(termBound && key === "body" ? without(names, t.name)
-      : dimensionBound && (key === "family" || key === "body") ? without(names, t.dim) : names);
+    const names = free(item);
+    union(termBinder(t) && key === "body" ? without(names, t.name) : names);
   }
-  memo.set(t, local);
+  freeTerms.set(t, local);
   return local;
 }
 function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
@@ -186,7 +168,7 @@ function substitute(t, n, value, dimension = false, memo = new WeakMap()) {
   const isBinder = dimension ? dimBinder(t) : termBinder(t);
   const binderKey = dimension ? "dim" : "name";
   let binder = t[binderKey];
-  const boundChildren = dimension ? (t.tag==="HComp"?[]:["family","body"]) : ["body"];
+  const boundChildren = dimension ? (dimensionScope.get(t.tag) ?? []).filter(key => key !== "system") : ["body"];
   const valueFree = new Set(dimension ? I.names(value) : plainLevel(value) ? levelNames(value) : free(value));
   if (isBinder && binder !== n && valueFree.has(binder)) {
     const replacement = fresh(binder, new Set([...free(t,dimension),...valueFree,n,binder]));

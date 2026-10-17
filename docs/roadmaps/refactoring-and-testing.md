@@ -1,6 +1,8 @@
 # Refactoring and source-level tests
 
-Status: implementation started on 2026-10-17, after CB0–CB7 and their cleanup.
+Status: agreed implementation is present in the PR stack, after CB0–CB7 and their cleanup.
+Claude Code Opus 5.5 review and local validation are complete.
+The stack remains unmerged.
 This is the current implementation plan for the remaining ideas from
 [#224](https://github.com/KanHarI/cubist-math/pull/224), whose pinned
 `1fdc68a5` roadmap describes the earlier compiler. The
@@ -23,19 +25,19 @@ path in the same PR as its replacement; do not retain parallel frameworks.
 | RC0 | Nontrivial archive formatter round trips; redundant test and dead-code removal; documentation reconciliation | Preserve tokens, comments and syntax after actual reformatting; kill a meaning-changing formatter mutation; existing suite | Implemented; Opus 5.5 round 2 clean |
 | RC8 | Complete development-version inputs and compilation-local inference placeholders | Editing worker dependencies changes the version; repeated compilation is deterministic | Names and development version implemented; Opus 5.5 reviews clean |
 | RC7 | One worker request transport for proof, standalone REPL and reference examples | Preserve independent program/session ownership, cancellation and stale-response rejection; worker startup errors settle pending requests | Implemented; Opus 5.5 round 6 clean |
-| RC9 | Shared diagnostic-comment reader and test-host helpers | Preserve own-line/end-of-line comments and continuation rules; remove migrated copies before adding pragma readers | Reader implemented, Opus 5.5 round 2 clean; host helpers planned |
-| RC5 | Producer-assigned lint codes and structured source positions | Preserve diagnostic codes, spans and selected message snapshots; remove corresponding English classifiers and position reparsing | Lint codes implemented, Opus 5.5 round 2 clean; source positions planned |
-| RC10 | Verification commands shared by CI and release evidence; additional partial-failure mutation probes | Record deliberate command differences; baseline passes and assertion failures distinguish semantic kills from infrastructure failures | Planned |
-| RC1 | Parsed test pragmas, one case observer and first actual Cubist test migrations | After RC9; reject malformed, ignored, missing and duplicate contracts; preserve mutation selectors and benchmark refusal accounting | Planned |
-| RC2 | Source/work observations and module scenarios needed by further test migrations | Extend RC1 only for concrete migrations; retain host fault injection, DOM and malformed-kernel tests | Planned |
-| RC3 | One publication lifecycle owner and explicit module context | Preserve partial-family publication, rollback, import repair, observer failures, rechecks and accounting on every exit | Planned |
-| RC6 | Shared browser setup, module inventories and corpus tools | Preserve curated order, membership, titles, scenarios and report contents; validate both file-to-list and list-to-file membership | Planned |
+| RC9 | Shared diagnostic-comment reader and test-host helpers | Preserve own-line/end-of-line comments and continuation rules; remove migrated copies before adding pragma readers | Reader and shared Node/browser hosts implemented; Opus 5.5 reviews clean |
+| RC5 | Producer-assigned lint codes and structured source positions | Preserve diagnostic codes, spans and selected message snapshots; remove corresponding English classifiers and position reparsing | Lint codes and source-qualified parse/duplicate/worker diagnostics implemented; Opus 5.5 reviews clean |
+| RC10 | Verification commands shared by CI and release evidence; additional partial-failure mutation probes | Record deliberate command differences; baseline passes and assertion failures distinguish semantic kills from infrastructure failures | Shared verification commands and 16 mutation probes implemented; Opus 5.5 reviews clean |
+| RC1 | Parsed test pragmas, one case observer and first actual Cubist test migrations | After RC9; reject malformed, ignored, missing and duplicate contracts; preserve mutation selectors and benchmark refusal accounting | Implemented; Opus 5.5 round 4 clean |
+| RC2 | Source/work observations and module scenarios needed by further test migrations | Extend RC1 only for concrete migrations; retain host fault injection, DOM and malformed-kernel tests | Implemented; module migration round 1 and source/work round 3 clean |
+| RC3 | One publication lifecycle owner and explicit module context | Preserve partial-family publication, rollback, import repair, observer failures, rechecks and accounting on every exit | Explicit definition context and publication owner implemented; Opus 5.5 context round 2 found no behavioral issue, publication round 3 clean |
+| RC6 | Shared browser setup, module inventories and corpus tools | Preserve curated order, membership, titles, scenarios and report contents; validate both file-to-list and list-to-file membership | Inventories, browser fixtures and corpus execution implemented; Opus 5.5 reviews clean |
 | RC11a | Shared source scanner and lexical rules | Parser/highlighter token boundaries agree, including comments, incomplete input, numerals and operators | Implemented; Opus 5.5 round 3 clean |
-| RC11b | Shared term child/binder metadata and free-name traversal where semantics agree | Preserve binder scope, substitution and display-only terms; keep native codec independent unless parity is verified | Planned |
-| RC11c | Builtin dispatch and reserved-name correspondence | Every reserved builtin has an intentional handler; existing argument errors and elaboration results survive | Planned |
+| RC11b | Shared term child/binder metadata and free-name traversal where semantics agree | Preserve binder scope, substitution and display-only terms; keep native codec independent unless parity is verified | Implemented; Opus 5.5 round 2 clean |
+| RC11c | Builtin dispatch and reserved-name correspondence | Every reserved builtin has an intentional handler; existing argument errors and elaboration results survive | Implemented; Opus 5.5 round 2 clean |
 | RC11d | WASM enum parity and step-budget wrapper | Compare C/JS encodings; preserve exact 64-bit budgets and independent native admission checks | Implemented; Opus 5.5 round 1 clean |
 | RC11e | Development/published-site layout agreement | Published roots and versioned imports agree under both servers; existing browser/site scenarios | Implemented; Opus 5.5 round 3 clean |
-| Final cleanup | Review the completed stack for redundant state, wrappers and superseded documentation | All agreed slices accounted for; independent semantic controls retained | Planned |
+| Final cleanup | Review the completed stack for redundant state, wrappers and superseded documentation | All agreed slices accounted for; independent semantic controls retained | Complete; Opus 5.5 round 2 clean |
 
 RC4's complete telescopes and artifact builder are already implemented by
 CB2/CB4. Binding-related RC5 work and #224's fixture/observer improvements
@@ -96,11 +98,16 @@ applies to each owned member, not their union. Use existing `computable def` and
 goldens for presentation and native tests for malformed inputs Cubist cannot
 express.
 
-RC1 must move real theory/initial-model cases into Cubist and delete their old
-JS wrappers together. Stable case IDs retain mutation selection and assertion
-failure classification. Later source anchors, ranges, links, work observations
-and explicit module/reset scenarios are added only for actual RC2 migrations.
-No general assertion-expression language or duplicate module loader is planned.
+The source fixtures now own theory/initial-model, imported-evidence, refusal-range
+and charged-search contracts; their replaced JavaScript wrappers are removed.
+Stable IDs retain mutation selection and assertion-failure classification.
+`# expect_error_at(...)` names a unique balanced token sequence in its target;
+`# expect_searches(...)` counts charged coherence searches on an ordinary
+definition. The [regression guide](../guides/regression-contracts.md) defines both.
+Module scenarios use sibling imports through the ordinary source loader, with
+an independent program/kernel per fixture. Host reset/failure injection, source
+links, exact diagnostic message goldens, unmigrated work counters and DOM behavior keep their existing
+JavaScript tests. There is no parallel module loader or general assertion language.
 
 ## Publication ownership
 
@@ -139,3 +146,62 @@ and the checks actually run. Performance claims require equivalent revision-pinn
 workloads; fewer JS test wrappers alone do not imply less work. Every PR receives
 Claude Code Opus 5.5 review, stopping when clean with at most eight rounds when
 there are real findings. Findings must be verified rather than accepted blindly.
+
+## Final cleanup audit
+
+The cleanup is distributed through the implementation boundaries: old paths
+are removed with their replacements. The closing pass checks those removals
+and reconciles the completion records rather than introducing more wrappers.
+
+- The initial cleanup removed unused notation/elaboration helpers and replaced
+  unchanged-source formatter checks with actual archive reformatting round trips.
+  Inference placeholders now use the existing compilation-local name supply.
+- `CubicalPublication` stages inspection records and owns commit/rollback;
+  the old full inspection-map snapshots and repeated transaction exits are gone.
+  Native checkpoints and speculative observation frames retain their separate jobs.
+- `Translator.definitionModule` supplies explicit names over one shared checker;
+  the prototype checker and copied mutable counters are gone.
+- One worker transport serves the workbench, standalone REPL and reference
+  examples. Program/session ownership remains with each caller.
+- The scanner, diagnostic-comment reader, term shape, display-name analysis,
+  module inventories and corpus check entry point each replace their old copies.
+  Ordered corpus inputs and the independent native codec remain explicit.
+- Lint producers own W701–W707; their English classifiers are removed.
+  Parse and duplicate failures reuse `SourceUnit.locate` through workers;
+  they add no position parser. The diagnostic slice is independently reviewed
+  in [#260](https://github.com/KanHarI/cubist-math/pull/260).
+- Builtins use one dispatch table with reserved-name correspondence checks.
+  C/JavaScript enum representations remain independent and have explicit parity
+  tests; the kernel budget wrapper replaces scattered 64-bit conversions.
+- Development and published pages read the same layout mapping. CI and release
+  evidence invoke the same npm commands; their intentional native/platform and
+  extended-browser differences remain explicit and tested.
+- Source-contract hosts share one observer. Declaration ownership comes from
+  publications and declaring syntax, not an error's blame span. Resource failures
+  follow the existing dependency chain; they cannot satisfy semantic contracts.
+- Actual source migrations remove their old wrappers and unused fixture-map
+  option. Range/search assertions move into Cubist; message presentation goldens
+  remain independent. Two added mutations exercise the new assertion boundaries.
+
+Build prerequisites/native test discovery and instruction-driver reorganization
+remain outside the agreed scope. No resource limits were raised for these changes.
+
+## Verification record
+
+The stack remains unmerged. Every PR has a separate Claude Code Opus 5.5 review;
+rounds stopped when clean, with a maximum of eight for real findings. The final
+source/work PR finished clean in round 3 and this cleanup in round 2.
+
+Final runtime revision `b99a320854fbf4b7d6766e34b63771143d6bf8d2` passes
+all **1,463 tests**, with zero failures, skips or TODOs. All **16 mutation probes**
+have passing baselines and semantic kills at that clean revision; crashes and
+timeouts do not count as kills.
+
+The 135 focused compiler/host checks and inspector, contextual REPL and published
+site browser scenarios passed at `c83b9785`. The only subsequent runtime change
+requires a structured diagnostic site for an exact source anchor; it passed 70
+source-contract checks and the full suite above.
+
+[CI run 39025607670](https://github.com/KanHarI/cubist-math/actions/runs/39025607670)
+checks that same final runtime revision. The four native compiler/OS jobs,
+sanitizer and lint passed; the workbench job is still running at this record.

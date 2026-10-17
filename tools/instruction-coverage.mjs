@@ -60,7 +60,7 @@ const checkPolicy = countingPolicy(heuristicPolicy);
 kernel.policy = checkPolicy;
 const modules = option("modules")?.split(",") ?? archiveModules;
 const checkStarted = performance.now(), checkWork = kernel.work();
-const checked = await program.check(modules.map(name => `import ${name};`).join("\n"), "coverage");
+const checked = await program.checkModules(modules, "coverage");
 const check = { seconds: Number(((performance.now() - checkStarted) / 1000).toFixed(1)),
   work: workSince(checkWork, kernel.work()), search: checkPolicy.counts };
 const budgets = { limitMs, stepBudget: Number(kernel.stepBudget), ...searchLimits };

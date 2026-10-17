@@ -4,6 +4,7 @@ import {scopeMapped,scopesOf,binderName} from "./scopes.mjs";
 import {mapResolution} from "./bindings.mjs";
 import {parameterLambdas} from "./telescopes.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
+import {termBinders} from "../translator/term-shape.mjs";
 import {substituteTerm,freeNames,T} from "../translator/core.mjs";
 import {visitSyntax,mapSyntax} from "../translator/syntax-graph.mjs";
 
@@ -121,7 +122,7 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
     visitSyntax(value,term=>{
       if(!term||typeof term!=="object")return;
       if(term.tag&&!allowed.has(term.tag))unsupported=true;
-      if(["Pi","Lam","Sigma","LPi","LLam"].includes(term.tag))binders.add(term.name);
+      if(termBinders.has(term.tag))binders.add(term.name);
       const intrinsic={Unit:"Unit",Void:"Void",Point:"tt"}[term.tag];
       if(intrinsic)references.add(intrinsic);
       if(intrinsic&&at.has(intrinsic))unsupported=true;

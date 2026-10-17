@@ -6,16 +6,16 @@
 // declaration needed, the elaborator's included: the kernel's share.
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
-import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
 import { normal, stated } from "./cubist/stated-comments.mjs";
+import {sourceTestCases,observeTestCases} from "./cubist/test-pragmas.mjs";
 import { diagnosticCode } from "./diagnostics.mjs";
 
 // The areas a benchmark can measure, each with its modules: the rebuilt
 // library, the archive, and the Cubist tests (cubist-tests/). A test module's
 // intended errors are its "Needs fixing" entries.
-export const benchmarkAreas = Object.freeze({ library: libraryModules, archive: archiveModules, tests: cubistTestModules });
+export const benchmarkAreas = moduleListing;
 function knownArea(area) {
   if (!Object.hasOwn(benchmarkAreas, area)) throw new Error(`The benchmark area is library, archive or tests, not ${area}.`);
   return area;
@@ -55,7 +55,7 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
   };
   let declarationStart, declarationStartSteps, kernelStart;
   const program = new CubicalProgram(await createCubical(), readSource, {
-    collectReferences: false, optimizations,
+    collectReferences: false, optimizations, testMode:area==="tests",
     onDeclarationStart(_module,_syntax,checker) {
       declarationStart = performance.now();
       declarationStartSteps = checker.steps;
@@ -72,10 +72,11 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
       // reported, is intended: a test's refusal, not something to fix.
       let rowCategory = category(result, elapsedMs, limitMs);
       const code = result.reason ? diagnosticCode(result.reason) : null;
-      if (["failed", "blocked"].includes(rowCategory)
+      if (!sourceTestCases(program.sourceAsts.get(module)).some(({item})=>item.start<=syntax.start&&syntax.start<item.end)
+        && ["failed", "blocked"].includes(rowCategory)
         && statedErrors(module).get(line - 1)?.includes(normal(code ? `${code}: ${result.reason}` : result.reason ?? "")))
         rowCategory = "intended";
-      const row = { binding, module, name: result.name,
+      const row = { binding, module, name: result.name, start:syntax.start,
         category: rowCategory, elapsedMs: +elapsedMs.toFixed(3),
         instructionMs: admission?.ms ?? null, instructionJudgements: admission?.judgements ?? null,
         // Every derivation the declaration needed, its admission's and the
@@ -88,13 +89,14 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
         reason: result.reason, blockedBy: result.blockedBy, line };
       if (row.category === "optimize") {
         result.status = "not-translated";
+        result.failure = "deadline";
         result.reason = "Declaration time limit exceeded.";
       }
       declarations.push(row); onResult(row);
     },
   });
   try {
-    await program.check([...new Set(modules)].map(name => `import ${name};`).join("\n"), "benchmark",
+    const result=await program.checkModules([...new Set(modules)], "benchmark",
       progress => { if (progress.phase === "checked") onSnapshot({ declarations, total: progress.total, current: progress.current, elapsedSeconds: (performance.now() - started) / 1000 }); });
     const byName = new Map(declarations.map(d => [d.binding, d]));
     // Work on an earlier member is real, but a later family failure means
@@ -105,6 +107,18 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
         if(row?.category==="checked")Object.assign(row,{category:"blocked",blockedBy:group.cause.binding,
           reason:`Untranslated dependency: ${group.failedMember}`});
       }
+    const testFailures=[];
+    for(const [name,ast] of program.sourceAsts)if(sourceTestCases(ast).length) {
+      const observation=observeTestCases(program,result,{main:name});
+      testFailures.push(...observation.failures,
+        ...observation.cases.filter(entry=>entry.module===name).flatMap(entry=>entry.failures.map(message=>`${entry.id}: ${message}`)));
+      for(const error of observation.expectedErrors) {
+        const target=observation.cases.find(entry=>entry.id===error.caseId);
+        const row=byName.get(`${error.module}__${error.name}`);
+        if(row?.category==="failed"&&target.start<=row.start&&row.start<target.end)
+          row.category="intended";
+      }
+    }
     for (const row of declarations) {
       const seen = new Set(); let next = row;
       while (next.blockedBy && !seen.has(next.blockedBy)) {
@@ -115,6 +129,7 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
     return { version: 1, area, generatedAt: new Date().toISOString(), limitMs, optimizations: program.kernel.optimizations,
       elapsedSeconds: +((performance.now() - started) / 1000).toFixed(2),
       modules: Object.keys(program.sources).length - 1, declarations,
+      ...(testFailures.length?{testFailures:[...new Set(testFailures)]}:{}),
       counts: Object.fromEntries(["checked", "optimize", "blocked", "failed", "intended"].map(c =>
         [c, declarations.filter(d => d.category === c).length])),
       importErrors: program.gaps.filter(g => !g.name) };
