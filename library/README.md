@@ -23,7 +23,9 @@ follows.
 
 Public `Nat` remains unary during the binary migration. Import `unat` for
 the explicit unary name, `bnat` for binary arithmetic, or `bnat_notation`
-and `use bnat;` for binary literals such as `0b101`. Conversion between the
+and `use bnat;` for decimal or binary literals, such as `5`, `1_000` or
+`0b101`. Computed values print in decimal directly from their bits;
+unreduced literals retain their original spelling. Conversion between the
 two carriers is explicit: `bnat_unary` supplies the maps and their inverse
 laws. `bnat_semiring` proves their semiring agreement, and `bnat_transport`
 constructs the universe path and proves its transport laws. `bnat_equality`
@@ -36,7 +38,7 @@ correctness. The dependent Peano view and strong recursion remain NUM1 work.
 | [`unat`](unat.cubist) | The explicit unary name `UNat`, currently an alias of `Nat`, with `unat` notation for unary numerals, arithmetic and order. | None |
 | [`bnat`](bnat.cubist) | Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws. The binary core has no imports. | None |
 | [`bnat_equality`](bnat_equality.cubist) | Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion. | None |
-| [`bnat_notation`](bnat_notation.cubist) | Binary literal parsing and the `bnat` notation for `0b` literals, arithmetic and order. Parsing builds the binary magnitude directly; unary offsets count characters only. | None |
+| [`bnat_notation`](bnat_notation.cubist) | Decimal and `0b` literal parsing and the `bnat` notation for arithmetic and order. Parsing builds the binary magnitude directly; unary glyph digits and character offsets never hold the magnitude. | None |
 | [`bnat_unary`](bnat_unary.cubist) | Explicit unary/binary conversions and their round trips, and compatibility with successor and doubling. | None |
 | [`bnat_arithmetic`](bnat_arithmetic.cubist) | Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits. | None |
 | [`bnat_order`](bnat_order.cubist) | Proofs connecting the high-bit binary comparison and its computed non-strict/strict predicates to unary numerical order; both predicates are propositions. | None |

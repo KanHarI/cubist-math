@@ -1540,7 +1540,7 @@
   },
   {
    "path": "cubist-tests/binary_natural_foundation.cubist",
-   "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, and arithmetic beyond 64 bits."
+   "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, decimal/binary input and printing, and arithmetic beyond 64 bits."
   },
   {
    "path": "cubist-tests/binary_semiring.cubist",
@@ -2416,7 +2416,7 @@
   },
   {
    "path": "library/bnat_notation.cubist",
-   "summary": "Binary literal parsing and the `bnat` notation for `0b` literals, arithmetic and order. Parsing builds the binary magnitude directly; unary offsets count characters only."
+   "summary": "Decimal and `0b` literal parsing and the `bnat` notation for arithmetic and order. Parsing builds the binary magnitude directly; unary glyph digits and character offsets never hold the magnitude."
   },
   {
    "path": "library/bnat_order.cubist",

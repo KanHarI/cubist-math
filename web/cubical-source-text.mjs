@@ -93,13 +93,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const head = t?.tag === "App" ? t.fn : t;
     return head?.tag === "Con" && head.sort?.tag === "Sort" && head.sort.signature === signature ? head.index : null;
   };
-  const binary = t => {
-    const natural = constructorOf(t, "binary_naturals__BinaryNat");
+  const binary = (t, naturalSignature = "binary_naturals__BinaryNat", positiveSignature = "binary_naturals__BinaryPositive") => {
+    const natural = constructorOf(t, naturalSignature);
     if (natural === 0 && t.tag === "Con") return "0b0";
     if (natural !== 1 || t.tag !== "App") return null;
     let digits = "", p = t.arg;
     for (;;) {
-      const index = constructorOf(p, "binary_naturals__BinaryPositive");
+      const index = constructorOf(p, positiveSignature);
       if (index === 0 && p.tag === "Con") return `0b1${digits}`;
       if ((index !== 1 && index !== 2) || p.tag !== "App") return null;
       digits = (index === 1 ? "0" : "1") + digits;
@@ -110,6 +110,20 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // where none is; a binary number, where binary is (L2.10j).
   const natural = n => atom(selection === null ? `nat.(${n})` : String(n));
   const bits = text => atom(selection === "binary" ? text : `binary.(${text})`);
+  // The rebuilt binary carrier prints decimal magnitudes directly from its
+  // bits. Use a notation known to read this exact parser, including aliases;
+  // without such a reader, retain the constructor spelling. BigInt here is
+  // display arithmetic only: the checked term remains ordinary constructors.
+  const binaryNatural = t => {
+    const readings = symbols.bnat_notation__bnat_literal?.printing;
+    const reading = readings?.find(entry => entry.literal && entry.notation === selection)
+      ?? readings?.find(entry => entry.literal);
+    if (!reading) return null;
+    const digits = binary(t, "bnat__BNat", "bnat__BPositive");
+    if (digits === null) return null;
+    const text = BigInt(digits).toString(10);
+    return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
+  };
   // A motive's variable shown under another name; a binder of the same name
   // inside shadows the renaming.
   const renames = new Map();
@@ -286,6 +300,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if(number!==null)return natural(number);
         const digits=binary(t);
         if(digits)return bits(digits);
+        const decimal=binaryNatural(t);
+        if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
         // spelling. Eta reduction may leave its successor clause curried.
         if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="nat__Nat"
@@ -405,7 +421,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           : [...universes, ...parameters];
         return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
       }
-      case "Con": {const n=numeral(t);return n!==null?natural(n):binary(t)?bits(binary(t)):t.name ? atom(t.name) : fallback(t);}
+      case "Con": {
+        const n=numeral(t);
+        if(n!==null)return natural(n);
+        const digits=binary(t);
+        if(digits)return bits(digits);
+        return binaryNatural(t) ?? (t.name ? atom(t.name) : fallback(t));
+      }
       case "Path":
         // An equality: a path whose type does not vary along it.
         if (!varies(t.family, t.dim))

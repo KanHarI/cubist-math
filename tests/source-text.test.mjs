@@ -91,6 +91,23 @@ test("binary numbers print as binary literals", () => {
   assert.match(sourceText(positive(bit(1, variable("p")))), /^binary_positive\(binary_bit1\(p\)\)$/);
 });
 
+test("binary-natural normal forms print only through a known reader", () => {
+  const constructor = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `bnat__${type}` } });
+  const zero = constructor("BNat", 0, "b_zero"), positive = p => app(constructor("BNat", 1, "b_positive"), p);
+  const one = constructor("BPositive", 0, "bp_one");
+  const odd = p => app(constructor("BPositive", 2, "bp_odd"), p);
+  const symbols = { bnat_notation__bnat_literal: { printing: [{ notation: "bnat", literal: true }] } };
+  assert.equal(sourceText(zero), "b_zero");
+  assert.equal(sourceText(positive(one), {}, 4000, { selection: "bnat" }), "b_positive(bp_one)");
+  assert.equal(sourceText(zero, symbols), "bnat.(0)");
+  assert.equal(sourceText(positive(one), symbols, 4000, { selection: "unat" }), "bnat.(1)");
+  assert.equal(sourceText(positive(odd(one)), symbols, 4000, { selection: "bnat" }), "3");
+  assert.equal(sourceText(positive(variable("p")), symbols), "b_positive(p)");
+  assert.equal(sourceText(positive(odd(variable("p"))), symbols), "b_positive(bp_odd(p))");
+  const unrelated = { other__parse: { printing: [{ notation: "bnat", literal: true }] } };
+  assert.equal(sourceText(zero, unrelated, 4000, { selection: "bnat" }), "b_zero");
+});
+
 test("recursion and case analysis print as induction and match", () => {
   const recursion = { motive: { tag: "Lam", name: "b", domain: nat, body: nat }, zero: variable("n"),
     step: { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "h", domain: nat, body: succ(variable("h")) } },

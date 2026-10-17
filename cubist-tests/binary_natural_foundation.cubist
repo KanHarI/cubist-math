@@ -100,10 +100,25 @@ def invalid_binary_digit := 0b1012;
 // Error: E905: bnat's literal rule refuses 0x1 at its character 2.
 def hexadecimal_literal := 0x1;
 
-// Refused: decimal numerals need their own future binary parser.
-// Error: E905: bnat's literal rule refuses 10 at its character 1.
-def decimal_literal := 10;
+def decimal_literal : 10 = 0b1010 {
+  rfl;
+}
 
-// Refused: the missing prefix is reported at the first character.
-// Error: E905: bnat's literal rule refuses 0 at its character 1.
-def bare_zero_literal := 0;
+def bare_zero_literal : 0 = 0b0 {
+  rfl;
+}
+
+def decimal_separators :
+  18_446_744_073_709_551_615 + 1 = 0b10000000000000000000000000000000000000000000000000000000000000000 {
+  rfl;
+}
+
+// Refused: diagnostic positions count underscores as source characters.
+// Error: E905: bnat's literal rule refuses 1_0x at its character 4.
+def invalid_decimal_digit := 1_0x;
+
+// Output: 18446744073709551616
+print(evaluate(bnat_succ(18446744073709551615)));
+
+// Output: 0b101 = 0b101
+print(typeof(refl(0b101)));

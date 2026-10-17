@@ -7,6 +7,47 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 const literal = n => `0b${n.toString(2)}`;
 
+test("decimal binary-natural input and computed printing preserve arbitrary precision", async t => {
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  const values = [0n, 1n, 9n, 10n, 99n, 100n, 1000n];
+  for (const bits of [31n, 32n, 53n, 63n, 64n, 65n, 127n, 128n])
+    values.push((1n << bits) - 1n, 1n << bits, (1n << bits) + 1n);
+  const source = values.map((n, i) => `
+    def decimal_${i} : ${n} = ${literal(n)} { rfl; }
+    print(evaluate(bnat_succ(${n})));
+  `).join("\n");
+  const result = await program.check(`import bnat_notation; use bnat;\n${source}`, "decimal_binary");
+  assert.ok(result.complete, JSON.stringify(result.gaps));
+  assert.ok(result.outputs.every(output => output.verified && !output.axioms.length));
+  const printed = result.directives.filter(d => d.kind === "print");
+  assert.deepEqual(printed.map(d => d.text), values.map(n => String(n + 1n)));
+  assert.ok(!program.kernel.definitions.has("bnat_unary__bnat_to_unat"), "decimal magnitudes need no unary conversion module");
+
+  // Re-read the actual computed output through the checked source parser.
+  const roundtrip = await program.check(`import bnat_notation; use bnat;\n${printed.map((d, i) =>
+    `def roundtrip_${i} : ${d.text} = ${literal(values[i] + 1n)} { rfl; }`).join("\n")}`, "decimal_roundtrip");
+  assert.ok(roundtrip.complete, JSON.stringify(roundtrip.gaps));
+});
+
+test("computed binary-natural printing follows the parser's declared notation", async t => {
+  const program = new CubicalProgram(await createCubical(), sourceReader());
+  t.after(() => program.dispose());
+  const result = await program.check(`import bnat_notation;
+    notation decimal { literal(s : Lexeme) := bnat_literal(s); }
+    print(evaluate(bnat.(0b0)));
+    use decimal;
+    print(evaluate(bnat.(0b101)));
+    print(typeof(refl(0b101)));
+    print(typeof(refl(1_000)));
+    use unat;
+    print(evaluate(bnat.(0b101)));
+  `, "binary_printing_views");
+  assert.ok(result.complete, JSON.stringify(result.gaps));
+  assert.deepEqual(result.directives.filter(d => d.kind === "print").map(d => d.text),
+    ["bnat.(0)", "5", "0b101 = 0b101", "1_000 = 1_000", "bnat.(5)"]);
+});
+
 test("binary arithmetic and comparison agree with independent integer results", async t => {
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());

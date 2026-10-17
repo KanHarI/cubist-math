@@ -412,10 +412,14 @@ binary setness from bitwise equality, as described below.
 The successor/predecessor laws also check for arbitrary inputs.
 
 [bnat_notation.cubist](../../../library/bnat_notation.cubist) supplies
-`import bnat_notation; use bnat;` and direct `0b…` literals, separately from
-the binary core. Its unary diagnostic offset counts source characters, not
-the represented number. Decimal input and numeral printing remain migration
-work before the default switch; NUM2 extends them to integers and rationals.
+`import bnat_notation; use bnat;` and direct decimal and `0b…` literals,
+separately from the binary core. Decimal parsing accumulates a binary value;
+only individual glyph digits and diagnostic character offsets are unary.
+Decimal underscores count toward diagnostic positions. Computed values print
+in decimal directly from their bits, using an available notation for the
+checked binary literal parser; unreduced literals retain decimal or binary
+spelling. Closed input/output round trips cover the 31/32-, 53-, 63/64/65-
+and 127/128-bit boundaries. NUM2 extends this to integers and rationals.
 Checked examples cover carries/borrows beyond 64 bits and a dense 128-bit
 product; the differential suite proves 712 closed identities against
 independent integer results. A dependency check confirms that the complete
