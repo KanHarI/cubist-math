@@ -2428,7 +2428,7 @@
   },
   {
    "path": "library/bnat_peano.cubist",
-   "summary": "Dependent advance over binary offsets and the Peano eliminator, with checked zero/successor equations for arbitrary dependent families. Homogeneous total-state iteration is used only in its coherence proof."
+   "summary": "Dependent advance over binary offsets and the Peano eliminator; its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families. Homogeneous total-state iteration is used only in the successor proof."
   },
   {
    "path": "library/bnat_recursion.cubist",
