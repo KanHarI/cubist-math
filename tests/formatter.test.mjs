@@ -1,17 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
+import { moduleFiles } from "../tools/module-sources.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { parse, tokenize } from "../web/cubist/parser.mjs";
 
 const semantic = value => JSON.parse(JSON.stringify(value, (key, v) =>
   ["start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd", "tupleStart", "tupleEnd", "open", "close"].includes(key) ? undefined : v));
 test("formatting every bundled source preserves tokens, comments, syntax and is idempotent", async () => {
-  const directory = new URL("../archive/first-library/", import.meta.url);
   const options = { printWidth: 40 };
   let changed = 0;
-  for (const name of (await readdir(directory)).filter(n => n.endsWith(".cubist"))) {
-    const source = await readFile(new URL(name, directory), "utf8");
+  for (const name of moduleFiles("archive")) {
+    const source = await readFile(name, "utf8");
     assert.doesNotMatch(source, /with_unfolding\(/, name);
     const formatted = formatCubist(source, options);
     if (formatted !== source) changed++;

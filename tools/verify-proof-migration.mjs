@@ -8,10 +8,11 @@
 // module, directly or not, is compared too, against the edited definitions;
 // --no-dependents skips them. See tools/proof-migration.mjs.
 import { existsSync } from "node:fs";
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
+import { archiveModules } from "../web/cubist/modules.mjs";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader, historicalModulePaths, historicalMigrationSources } from "./migration-sources.mjs";
@@ -66,8 +67,7 @@ readEdited.placeOf = name => editedPlaces.get(name);
 const changed = new Set(modules);
 if (!noDependents) {
   const importers = new Map();
-  for (const file of (await readdir(`${root}archive/first-library`)).filter(name => name.endsWith(".cubist"))) {
-    const name = file.slice(0, -".cubist".length);
+  for (const name of [...archiveModules].sort()) {
     for (const [, dependency] of (await readEdited(name)).matchAll(/^\s*import\s+([A-Za-z_][A-Za-z_0-9]*)\s*;/gm))
       importers.set(dependency, [...(importers.get(dependency) ?? []), name]);
   }

@@ -56,9 +56,8 @@ def absent_hint : Nat := with unfolding [later] { zero };
   });
   const captured=inputs.simpSets.get("saved").rules[0].id;
   assert.ok(bindingUses(records[0].syntax).some(use=>use.id===captured));
-  const checker=Object.create(program.checker);checker.bindingName=label=>`proofs__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"proofs",compilationBindings:registry,
+  const checker=program.checker,definitionModule="proofs";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"proofs",compilationBindings:registry,
     simpRegistry:program.simpRegistries.get("base")});
   const destination=parse(`simp_set saved := []; simp_set absent := [original];
     def original : Unit := tt; def later : Nat := zero; def h : Unit := tt;`);

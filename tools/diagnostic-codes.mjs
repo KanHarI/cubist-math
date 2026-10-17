@@ -31,6 +31,9 @@ const sourceFiles = directory => readdirSync(join(root, directory)).filter(name 
 
 // The group of a source file's messages, by what the file does.
 const fileGroups = [
+  // E1 is full; existing parser codes keep their numbers.
+  [/^web\/cubist\/parser\.mjs$/, "E0"],
+  [/^web\/cubist\/test-pragmas\.mjs$/, "E2"],
   [/^web\/cubist\/lint\.mjs$/, "W7"],
   [/^web\/(cubist|translator)\/theories\.mjs$/, "E8"],
   [/^web\/cubist\/retained-(theories|parents)\.mjs$/, "E8"],
