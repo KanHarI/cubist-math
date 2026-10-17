@@ -12,9 +12,16 @@ def unat_semiring : CommSemiring(U0) := CommSemiring.make(
 );
 
 // The inverse conversion reflects equality, so unary algebra proves laws
-// about the independently implemented bit operations.
+// about the independently implemented bit operations. A positive bitwise
+// decision supplies the path directly; only the impossible negative branch
+// uses the unary inverse laws. Closed law proofs avoid decoding magnitudes.
 computable def bnat_decode_injective(a, b : BNat, p : bnat_to_unat(a) = bnat_to_unat(b)) :
-  a = b := trans(sym(bnat_roundtrip(a)), trans(cong(bnat_of_unat, p), bnat_roundtrip(b)));
+  a = b := match bnat_decide(a, b) return (a = b) {
+    left same => same;
+    right no => absurd(
+      no(trans(sym(bnat_roundtrip(a)), trans(cong(bnat_of_unat, p), bnat_roundtrip(b))))
+    );
+  };
 
 computable def bnat_zero_add(n : BNat) : bnat_add(b_zero, n) = n := refl(n);
 
