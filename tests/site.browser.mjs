@@ -26,6 +26,22 @@ await browserTest(async ({ browser, base }) => {
   assert.equal(version.status(), 200);
   assert.match((await version.json()).version, /^[a-f0-9]{64}$/);
   console.log("PASS static landing, repository link, mobile layout, build version");
+  const contracts=await page.evaluate(async()=>{
+    const {benchmark}=await import("./benchmark-runner.mjs");
+    return benchmark({area:"tests",modules:["contracts","absent"],limitMs:10000,readSource:async name=>name==="contracts"?`
+# test(expected) # expect_error(E606) def expected : Void := tt;
+# test(broken_contract) # expect_error(E343) def unexpected : Void := tt;`:null});
+  });
+  assert.deepEqual(contracts.declarations.map(row=>row.category),["intended","failed"]);
+  await page.route("**/benchmark-results-tests.json",route=>route.fulfill({json:{...contracts,complete:true}}));
+  await page.goto(new URL("benchmark.html?area=tests",base).href);
+  await page.waitForFunction(()=>document.querySelector("#status")?.textContent.includes("1 test contract failures"));
+  assert.match(await page.locator("#comparison").textContent(),/broken_contract/);
+  assert.match(await page.locator("#status").textContent(),/1 import failures/);
+  assert.match(await page.locator("#comparison").textContent(),/Imports: absent:/);
+  assert.match(await page.locator("#entries").textContent(),/Expected failure:/);
+  await page.unroute("**/benchmark-results-tests.json");
+  console.log("PASS static benchmark shares test contracts and displays contract failures");
   for (const [proof, name, backend] of [["euclid", "euclid", "cubical"], ["cubical_paths", "reverse_twice", "cubical"], ["f4_galois_correspondence", "f4_galois_correspondence", "cubical"]]) {
     await page.goto(new URL(`proof.html?proof=${proof}&name=${name}&backend=${backend}`, base).href);
     await page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
