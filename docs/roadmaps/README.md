@@ -33,7 +33,7 @@ their original evidence; this status audit does not rerun those reviews.
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
 | [Frontend/bindings](historical/capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs | No CB packages remain; preserve the semantic and resource gates |
-| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed implementation slices remain; final remote mutation probe needs investigation. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
+| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed implementation slices remain; verify the #264 assertion-reporting fix in remote mutation CI. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
 
 **Frontend integration is complete:** initial/free construction and fold
 behavior, CB0–CB7, cleanup and the agreed #224 refactoring ideas are on main.

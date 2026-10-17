@@ -215,9 +215,22 @@ inspector and contextual browser checks, then recorded semantic kills for the
 first 15 mutation probes. Neither reported a result for the final
 `rolled-back-inspection` probe: attempt 1 exited with code 143; attempt 2's
 mutation step was cancelled, with the annotation "The operation was canceled."
-The run concluded **failure**. The logs do not establish the cause; investigate
-that termination and complete the remote mutation gate before treating CI as green.
-The passing local 16-probe evidence above remains separate.
+The run concluded **failure**. Those logs do not establish the cause of the
+termination. The passing local 16-probe evidence above remains separate.
+
+Follow-up on 2026-10-17 in [#264](https://github.com/KanHarI/cubist-math/pull/264):
+[run 39035547052](https://github.com/KanHarI/cubist-math/actions/runs/39035547052)
+again passed all 1,463 tests and both browser suites, then exited with code 143
+after the first 15 mutation kills. A Linux ARM64 reproduction using CI's Node
+24.21.0 passed the final probe's baseline, but its mutant reached a 7 GiB memory
+limit and timed out without reporting a test event. The failed deep-equality
+assertion included live inspection graphs in its error payload. Comparing the
+same snapshots with `isDeepStrictEqual` and asserting the boolean result avoids
+that payload while retaining the same strict comparison. With this change, all
+16 probes pass their baselines and report semantic kills in that Linux container;
+all 42 publication tests also pass locally. Resource limits and mutation failure
+classification are unchanged. The remote signal's sender remains unconfirmed;
+verify the fix in CI before marking the remote mutation gate green.
 
 [Publication run 39026745357](https://github.com/KanHarI/cubist-math/actions/runs/39026745357)
 completed successfully on 2026-10-17 at main `e729c2d5`, including its build,

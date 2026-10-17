@@ -749,8 +749,9 @@ Preserve the integrated [frontend contracts and semantic gate](#frontend-generat
 when extending generators. The [refactoring stack](historical/refactoring-and-testing.md)
 and its final cleanup are merged; there is no remaining CB/RC implementation
 prerequisite for the steps below. L2.6's universal proofs remain separate.
-The remaining validation follow-up is the final mutation probe's repeated
-termination in CI; see the [RC verification record](historical/refactoring-and-testing.md#verification-record).
+The remaining validation follow-up is to verify #264's assertion-reporting fix
+for the final mutation probe in CI; see the
+[RC verification record](historical/refactoring-and-testing.md#verification-record).
 The site publication run succeeded.
 
 The progression below develops language breadth through increasingly demanding
@@ -813,7 +814,7 @@ Hydra is the only remaining implementation draft and is excluded from this deliv
 | L2.6 construction behavior | Declared carriers, models and computing folds are integrated | Opt-ins, uniqueness, universal properties and additional laws |
 | [Capture/bindings](historical/capture-bindings.md) | CB0–CB7 and cleanup integrated; #219–#223, #225 and #227 closed as superseded | Preserve semantic and resource gates when extending interfaces |
 | [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Merged as `165ac956`; subsequent RC work extends the runner to 16 semantic probes | Preserve passing baselines and semantic kills; CI evidence is recorded in the RC verification record |
-| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and cleanup merged in #243–#263; #224 closed as superseded | Implementation complete; investigate the final CI mutation probe termination in the [verification record](historical/refactoring-and-testing.md#verification-record); keep excluded/deferred work separate |
+| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and cleanup merged in #243–#263; #224 closed as superseded | Implementation complete; verify #264's assertion-reporting fix in CI as described in the [verification record](historical/refactoring-and-testing.md#verification-record); keep excluded/deferred work separate |
 | [Hydra, #233](https://github.com/KanHarI/cubist-math/pull/233) | Open draft on `hydra-termination`, head `14c3e279`; absent from main | Finish and review separately; explicitly excluded from the stack merge |
 
 The earlier FG0 known-defect staging is retired: the integrated harness requires
