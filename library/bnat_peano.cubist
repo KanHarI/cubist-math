@@ -1,15 +1,5 @@
 import bnat_semiring;
 
-// Reindex a dependent value along a binary index path. A dependent path
-// supplies its transport equation, including in a neutral result family.
-computable def bnat_family_transport_path(
-  U < UU0, P : BNat -> U, a, b : BNat, p : a = b, x : P(a), y : P(b),
-  q : PathP(fun (i : Interval) => P(p @ i), x, y)
-) :
-  comp(fun (i : Interval) => P(p @ i), x) = y := path k => comp(
-    fun (i : Interval) => P(p @ (i | k)), q @ k, face(k, 1, fun (i : Interval) => y)
-  );
-
 computable def bnat_succ_add(a, b : BNat) :
   bnat_succ(bnat_add(a, b)) = bnat_add(a, bnat_succ(b)) := bnat_decode_injective(
     bnat_succ(bnat_add(a, b)), bnat_add(a, bnat_succ(b)),
@@ -77,18 +67,13 @@ computable def bpositive_advance(
     );
   };
 
-computable def bnat_advance(
-  U < UU0, P : BNat -> U, step : (forall n : BNat. P(n) -> P(bnat_succ(n))), k, a : BNat, x : P(a)
-) :
-  P(bnat_add(a, k)) := match k {
-    b_zero => comp(fun (i : Interval) => P(bnat_add_zero(a) @ ~i), x);
-    b_positive(p) => bpositive_advance(U, P, step, p, a, x);
-  };
-
 computable def bnat_peano(
   U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
 ) :
-  P(n) := bnat_advance(U, P, step, n, b_zero, z);
+  P(n) := match n {
+    b_zero => z;
+    b_positive(p) => bpositive_advance(U, P, step, p, b_zero, z);
+  };
 
 // Homogeneous iteration is used only to prove the equations of advance.
 // The executable dependent iterator above keeps its known binary offsets.
@@ -160,11 +145,13 @@ computable def bnat_total_same_index(
   x = y {
   let r := cong(fun (z : BNatFamilyTotal(U, P)) => z.1, q);
   exact trans(
-    sym(bnat_family_transport_path(U, P, n, n, refl(n), x, x, refl(x))),
+    sym(path_to_transport(fun (i : Interval) => P(n), x, x, refl(x))),
     trans(
       cong(
         fun (p : n = n) => comp(fun (i : Interval) => P(p @ i), x), bnat_is_set(n, n, refl(n), r)
-      ), bnat_family_transport_path(U, P, n, n, r, x, y, path i => (q @ i).2)
+      ), path_to_transport(
+        fun (i : Interval) => P(r @ i), x, y, apd_path(fun (z : BNatFamilyTotal(U, P)) => z.2, q)
+      )
     )
   );
 }
@@ -229,24 +216,22 @@ computable def bpositive_advance_total(
     );
   };
 
-computable def bnat_advance_total(
-  U < UU0, P : BNat -> U, step : (forall n : BNat. P(n) -> P(bnat_succ(n))), k, a : BNat, x : P(a)
+computable def bnat_peano_total(
+  U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
 ) :
-  typed(BNatFamilyTotal(U, P), (bnat_add(a, k), bnat_advance(U, P, step, k, a, x))) = bnat_iterate(
-    U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), k, (a, x)
-  ) := match k {
-    b_zero => sym(bnat_total_reindex(U, P, a, bnat_add(a, b_zero), sym(bnat_add_zero(a)), x));
-    b_positive(p) => bpositive_advance_total(U, P, step, p, a, x);
+  typed(BNatFamilyTotal(U, P), (n, bnat_peano(U, P, z, step, n))) = bnat_iterate(
+    U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), n, (b_zero, z)
+  ) := match n {
+    b_zero => refl(typed(BNatFamilyTotal(U, P), (b_zero, z)));
+    b_positive(p) => bpositive_advance_total(U, P, step, p, b_zero, z);
   };
 
-// The bit clauses compute directly. These public Peano equations are
-// checked paths, valid for arbitrary dependent P in every finite universe.
+// Zero and the bit clauses compute directly. The successor equation is a
+// checked path, valid for arbitrary dependent P in every finite universe.
 computable def bnat_peano_zero(
   U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n)))
 ) :
-  bnat_peano(U, P, z, step, b_zero) = z := bnat_family_transport_path(
-    U, P, b_zero, b_zero, refl(b_zero), z, z, refl(z)
-  );
+  bnat_peano(U, P, z, step, b_zero) = z := refl(z);
 
 computable def bnat_peano_succ(
   U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
@@ -255,10 +240,10 @@ computable def bnat_peano_succ(
     U, P, bnat_succ(n), bnat_peano(U, P, z, step, bnat_succ(n)),
     step(n, bnat_peano(U, P, z, step, n)),
     trans(
-      bnat_advance_total(U, P, step, bnat_succ(n), b_zero, z),
+      bnat_peano_total(U, P, z, step, bnat_succ(n)),
       trans(
         bnat_iterate_succ(U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), n, (b_zero, z)),
-        cong(bnat_total_step(U, P, step), sym(bnat_advance_total(U, P, step, n, b_zero, z)))
+        cong(bnat_total_step(U, P, step), sym(bnat_peano_total(U, P, z, step, n)))
       )
     )
   );

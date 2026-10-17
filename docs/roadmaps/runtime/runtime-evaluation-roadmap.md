@@ -466,9 +466,10 @@ These proofs add no assumptions or kernel rules.
 
 **NUM1 recursion implementation (2026-10-18).**
 [bnat_peano.cubist](../../../library/bnat_peano.cubist) defines dependent
-`advance(k, a)` by bit recursion, with known binary offsets and checked
-reindexing paths. Starting at zero gives `bnat_peano`, whose zero/successor
-equations hold for arbitrary dependent families in every finite universe.
+`advance(p, a)` over positive offsets by bit recursion, with known binary
+offsets and checked reindexing paths. Starting at zero gives `bnat_peano`,
+whose zero/successor equations hold for arbitrary dependent families in
+every finite universe.
 The proof compares total dependent values with homogeneous iteration and
 uses setness only for the binary index. That total-state iterator is proof
 machinery; the executable dependent iterator uses its known binary offsets.
@@ -553,7 +554,7 @@ as ordinary definitions, with the following proof obligations:
    restricting it to propositions or assuming the computation law.
 
 This H1 construction is implemented in `bnat_peano` and `bnat_recursion`;
-H2 and archived `W` are not dependencies. The
+H2 and archived `W` are not dependencies. The zero and
 bit-constructor clauses unfold by H1 computation; the public successor
 and strong-recursion equations require checked path proofs, including
 their transports and coherence. No new definitional computation rule is

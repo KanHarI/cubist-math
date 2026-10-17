@@ -1544,7 +1544,7 @@
   },
   {
    "path": "cubist-tests/binary_recursion.cubist",
-   "summary": "Dependent Peano/strong recursion computes factorial, a dependent witness and digit counts via halving; a huge unused bound stays unevaluated, and a self-call without strict decrease is refused."
+   "summary": "Dependent Peano/strong recursion computes factorial, a dependent witness and digit counts via halving; a step ignoring smaller results computes at a 64-bit bound without enumerating them, and a self-call without strict decrease is refused."
   },
   {
    "path": "cubist-tests/binary_semiring.cubist",

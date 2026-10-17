@@ -58,8 +58,7 @@ def dependent_value : dependent_identity(0b101).1 = 0b101 {
 
 def dependent_certificate : dependent_identity(0b101).1 = 0b101 := dependent_identity(0b101).2;
 
-// Count binary digits by requesting the result at half the input. At five,
-// this asks for two, not the immediate predecessor four.
+// Reference lemmas supply evidence only for an impossible decision branch.
 computable def reference_le_add(a, b : UNat) : le(a, add(a, b)) := match a {
     zero => tt;
     succ(k) => reference_le_add(k, b);
@@ -69,6 +68,8 @@ computable def reference_lt_add_succ(a, b : UNat) : isLt(a, add(a, succ(b))) := 
   fun (i : Interval) => isLt(a, nat_add_succ(a, b) @ ~i), reference_le_add(a, b)
 );
 
+// Count binary digits by requesting the result at half the input. At five,
+// this asks for two, not the immediate predecessor four.
 computable def positive_half(p : BPositive) : BNat := match p {
     bp_one => b_zero;
     bp_even(q) => b_positive(q);

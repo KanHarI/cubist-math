@@ -64,9 +64,9 @@ computable def bnat_below_zero(U < UU0, P : BNat -> U) :
 
 computable def bnat_below_case(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
-  below : BNatBelow(U, P, n), m : BNat, choice : bnat_lt(m, n) or (m = n)
+  below : BNatBelow(U, P, n), m : BNat, split : bnat_lt(m, n) or (m = n)
 ) :
-  P(m) := match choice return P(m) {
+  P(m) := match split return P(m) {
     left smaller => below(m, smaller);
     right same => comp(fun (i : Interval) => P(same @ ~i), step(n, below));
   };
@@ -100,24 +100,21 @@ computable def bnat_below_succ(
 
 computable def bnat_below_case_coherent(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n, m : BNat,
-  choice : bnat_lt(m, n) or (m = n),
+  split : bnat_lt(m, n) or (m = n),
   ih : (
     forall k : BNat. forall smaller : bnat_lt(k, n).
     bnat_below(U, P, step, n)(k, smaller) = bnat_strong_recursion(U, P, step, k)
   )
 ) :
-  bnat_below_case(U, P, step, n, bnat_below(U, P, step, n), m, choice) = bnat_strong_recursion(
+  bnat_below_case(U, P, step, n, bnat_below(U, P, step, n), m, split) = bnat_strong_recursion(
     U, P, step, m
   ) {
-  match choice {
+  match split {
     left(smaller) => {
       exact ih(m, smaller);
     }
     right(same) => {
-      exact bnat_family_transport_path(
-        U, P, n, m, sym(same), bnat_strong_recursion(U, P, step, n),
-        bnat_strong_recursion(U, P, step, m), path i => bnat_strong_recursion(U, P, step, same @ ~i)
-      );
+      exact apd(fun (k : BNat) => bnat_strong_recursion(U, P, step, k), n, m, sym(same));
     }
   }
 }
