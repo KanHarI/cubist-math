@@ -1,3 +1,4 @@
+import {tokenize} from "./parser.mjs";
 import {lint} from "./lint.mjs";
 
 // Parsed test metadata is inert syntax. Ordinary compilation rejects it;
@@ -87,6 +88,23 @@ export function observeTestCases(program,result,{main=program.main}={}) {
     const outputs=owned.get(entry);
     const observed=outputs.length||errors.length||result.directiveFuel.some(directive=>directive.module===module&&directive.start===item.start);
     if(!observed)entry.failures.push("The annotated target was not observed.");
+    const anchor=pragmas.find(pragma=>pragma.pragma==="expect_error_at");
+    if(anchor) {
+      const tokens=tokenize(program.sources[module].slice(item.start,item.end)).slice(0,-1);
+      const matches=tokens.flatMap((token,index)=>anchor.value.every((text,part)=>tokens[index+part]?.text===text)
+        ?[{module,start:item.start+token.start,end:item.start+tokens[index+anchor.value.length-1].end}]:[]);
+      if(matches.length!==1)entry.failures.push(`Expected one source anchor [${anchor.value.join(" ")}]; found ${matches.length}.`);
+      else if(errors.length===1) {
+        const actual=errors[0].diagnostic?.primary??{module,start:errors[0].start,end:errors[0].end};
+        if(actual.module!==module||actual.start!==matches[0].start||actual.end!==matches[0].end)
+          entry.failures.push(`The refusal must cover exactly [${anchor.value.join(" ")}] in ${module}.`);
+      }
+    }
+    const searches=pragmas.find(pragma=>pragma.pragma==="expect_searches");
+    if(searches) {
+      const actual=outputs.find(output=>output.name===item.name.text)?.searchFuel?.searches;
+      if(actual!==searches.value)entry.failures.push(`Expected ${searches.value} charged searches; observed ${actual??"no counter"}.`);
+    }
     const axioms=pragmas.find(pragma=>pragma.pragma==="expect_axioms");
     if(axioms) {
       const resolved=[];

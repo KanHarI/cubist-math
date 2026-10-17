@@ -46,14 +46,6 @@ const missing = (source, result) => {
       && outputStatus(result, name, output => lineOf(source, output.start) === line) === null)
     .map(({ line }) => lines[line].trim());
 };
-// A declaration's refusals, each as the line where it starts, that line's
-// text before it and the source it covers; an unlocated refusal is null.
-const range = name => (source, result) => result.gaps.filter(gap => gap.name === name).map(({ start, end }) => {
-  if (!Number.isInteger(start) || !Number.isInteger(end)) return null;
-  const from = source.lastIndexOf("\n", start - 1) + 1, to = source.indexOf("\n", start);
-  return { line: source.slice(from, to === -1 ? undefined : to).trim(), before: source.slice(from, start).trimStart(),
-    covers: source.slice(start, end) };
-});
 // The distinct links at each written occurrence of `label` in `line`: the
 // span relative to the occurrence and the target relative to the first
 // occurrence, its binder.
@@ -71,9 +63,6 @@ const links = (line, label) => (source, result) => {
 // The published outputs named by or under these names.
 const published = (...names) => (source, result) => result.outputs.map(output => output.name)
   .filter(name => names.some(prefix => name === prefix || name.startsWith(`${prefix}.`)));
-// The coherence searches a declaration started.
-const searches = name => (source, result) => result.outputs.filter(output => output.name === name)
-  .map(output => output.searchFuel?.searches);
 // The coherence obligations elaborated for a declaration.
 const obligations = declaration => (source, result, program, name) => program.steps(name)
   .filter(step => step.declaration === declaration && step.kind === "obligation").length;
@@ -82,13 +71,7 @@ const obligations = declaration => (source, result, program, name) => program.st
 export const extras = {
   "G1-initial": { published: [published("N.model", "N.fold_map", "N.fold"), []] },
   G3: { published: [published("T.Hom", "T.Iso"), []] },
-  // CB1 requires checked implicit-path recovery even without recursive
-  // fields (the S1/Two witness). Failed recovery preserves the written
-  // mismatch and its range, but still spends the one attempted search.
-  G8: { range: [range("h"), [{ line: "_ => t1;", before: "_ => ", covers: "t1" }]], searches: [searches("h"), [1]] },
   G9: { links: [links("law l(c : M) : k(c) = op(c, c);", "c"), Array(4).fill([{ name: "c", target: 0, start: 0, end: 0 }])] },
-  "G12-range": { range: [range("T"), [{ line: "law nope(n : Nat) : iter(n) = c;", before: "law nope(n : Nat) : ",
-    covers: "iter(n)" }]] },
   "control-paths-wrong": { obligations: [obligations("bad"), 0] },
   "control-paths-wrong-multi": { obligations: [obligations("bad"), 0] },
 };

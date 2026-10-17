@@ -179,7 +179,6 @@ capture example as evidence of an open bug.
 | `G5` | G5 | Grouped operation binder; supported call, Hom and initial-model (`model`, `fold`) clients |
 | `G5-single` | G5 | Single operation binder with the same interface checks |
 | `G6` | G6 | Parent cause, child dependency and unrelated recovery |
-| `G8` | G8 | Wildcard diagnostic endpoints, exact body range and one charged failed recovery |
 | `G9` | G9 | Freshened binder and every use: public labels and navigation |
 | `G10` | G10 | Pattern/helper collision: intended law and rejected captured equation |
 | `G11` | G11 | Direct intended and captured equations |
@@ -190,7 +189,6 @@ capture example as evidence of an open bug.
 | `G12-inherited` | G12 | Inherited `twice` zero/one/two-step computations and refused base-only result |
 | `G12-initial` | G12 | Initial-model `twice` zero/one/two-step computations and refused base-only result |
 | `G12-shadowed` | G12 | Local recursive-name shadowing; intended/captured equations |
-| `G12-range` | G12 | Legitimate type-unfolding refusal over the original reference |
 | `FG6-predecessor-k` | FG6 | A recursive call's predecessor named `k` survives a nested match |
 | `FG6-predecessor-T` | FG6 | The same with the predecessor named `T` |
 | `B1` | control | File-level `use` precedence over later globals in one file |
@@ -215,3 +213,15 @@ npm run test:browser
 
 The mutation gate selects these cases by their group prefixes and the control
 names it lists. Commit-specific results belong in the PR record.
+
+
+### Cases migrated to parsed source contracts
+
+The range and work observations below now live with their Cubist source. They
+run through `tests/cubist-contracts.test.mjs`; the JavaScript range/search-count
+assertions and their original wrapper cases are removed.
+
+| Stable case | Source | Contract |
+| --- | --- | --- |
+| `generation.G8.refusal` | [wildcard_refusal.cubist](contracts/wildcard_refusal.cubist) | E606 covers `t1`, and failed implicit recovery charges one search |
+| `generation.G12_range.refusal` | [recursive_refusal.cubist](contracts/recursive_refusal.cubist) | E845 covers the original `iter(n)` reference |
