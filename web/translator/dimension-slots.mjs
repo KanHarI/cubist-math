@@ -1,7 +1,7 @@
 // Alpha-renaming for inert syntax transport, not a typing rule. Dimension
 // slots belong to live names, not every syntactic ancestor binder. Native
 // checking separately accounts for dimensions hidden in local-variable types.
-import { termChildren, dimensionScope } from "./term-shape.mjs";
+import {termChildren,dimensionScope} from './term-shape.mjs';
 const cache=new WeakMap();
 const add=(target,source)=>{for(const name of source)target.add(name);};
 function formulaNames(formula) {
@@ -16,8 +16,8 @@ function formulaNames(formula) {
 }
 function boundNames(term) {
   const result=new Set();
-  for (const key of dimensionScope.get(term.tag)) {
-    if (key === "system") for (const piece of term.system) add(result,dimensionNames(piece.term));
+  for(const key of dimensionScope.get(term.tag)) {
+    if(key==='system')for(const piece of term.system)add(result,dimensionNames(piece.term));
     else add(result,dimensionNames(term[key]));
   }
   result.delete(term.dim);
@@ -47,7 +47,7 @@ export function dimensionNames(term) {
       for(const key of tag==='Glue'?['type','equiv']:['term'])add(result,dimensionNames(piece[key]));
     }
   } else {
-    const children = termChildren[tag] ?? (tag === "Ref" ? [] : null);
+    const children=termChildren[tag]??(tag==='Ref'?[]:null);
     if(!children)throw Error(`Unsupported cubical syntax: ${tag}`);
     for(const key of children) {
       const value=term[key];

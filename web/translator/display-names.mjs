@@ -3,6 +3,7 @@ import { termBinders } from "./term-shape.mjs";
 // One display pass's free-variable analysis. Unlike the checker's strict
 // term analysis, it accepts display-only nodes and records containing terms.
 // Its cache lasts only for the pass; display records need not be immutable.
+// Returned sets belong to the cache and callers must not change them.
 export function displayFreeNames() {
   const memo = new WeakMap(), empty = new Set();
   const free = value => {

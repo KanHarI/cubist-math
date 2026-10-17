@@ -23,8 +23,7 @@ import {T,betaReduce,substituteTerm} from "./core.mjs";
 import {syntaxGraphBudget,syntaxNames} from "./syntax-graph.mjs";
 import {Goal,Transition,steps} from "./proof-goals.mjs";
 import {stem} from "./names.mjs";
-
-import { termBinders, dimensionScope } from "./term-shape.mjs";
+import {termBinders,dimensionScope} from "./term-shape.mjs";
 
 // A declared type's instance and its constructors compare by signature,
 // parameters and levels: each occurrence is elaborated on its own.

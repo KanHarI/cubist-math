@@ -13,7 +13,8 @@ import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 
-const TERM_BINDERS = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
+import { termBinders as TERM_BINDERS } from "./translator/term-shape.mjs";
+
 // Binders of a universe variable x < ω (G0): the level entry is found by its
 // symbol, which levels below name.
 const LEVEL_BINDERS = new Set(["LPi", "LLam"]);
