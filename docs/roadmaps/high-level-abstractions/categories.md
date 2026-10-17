@@ -19,7 +19,10 @@ remain unimplemented. The work plan's packages are:
 The probes quoted below were checked on 2026-10-07 with `node cli/repl.mjs
 check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
 those of diagrams at `075ec73`. Their files are not fixtures. The
-[homological algebra roadmap](../mathematics/homological-algebra.md) builds on this one.
+[homological algebra roadmap](../mathematics/homological-algebra.md) builds on this one,
+as does the [universal algebra roadmap](../mathematics/universal-algebra.md), whose
+UA5 is an acceptance example for L3.5's `IsPushout` and UA6 for L3.4's
+functors and equivalences of categories.
 
 The direction selected on 2026-10-17 uses categories, monads and both sides
 of that roadmap as a language testbed. The [work plan](../work-plan.md#first-actions)
