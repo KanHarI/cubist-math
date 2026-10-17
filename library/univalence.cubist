@@ -8,7 +8,8 @@ import contractible_maps;
 // is contractible. The equivalences are those of contractible_maps, the
 // kernel's own form; the `ua` builtin takes the Equiv of `import paths_;`,
 // with an inverse and its laws. Glue-path transport agrees with the maps,
-// and operation-preserving maps give paths between transported operations.
+// and an operation-preserving map identifies each transported operation
+// with its target operation.
 
 // The path of types an equivalence gives: A glued along it at 0, and B along
 // the identity at 1.
@@ -199,7 +200,7 @@ computable def univalence(U < UU0, A, B : U) :
   );
 
 // Function-type composition computes by reverse-transporting each input
-// and forward-transporting the output. A map-preserving binary operation
+// and forward-transporting the output. A binary operation the map preserves
 // therefore agrees with its target operation along the Glue path.
 computable def glue_path_operation(
   U < UU0, A, B : U, e : ContrEquiv(U, A, B), f : A -> A -> A, g : B -> B -> B, hom : forall a,
