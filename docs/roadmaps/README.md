@@ -24,7 +24,7 @@ their original evidence; this status audit does not rerun those reviews.
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
 | [Frontend/bindings](capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs | No CB packages remain; preserve the semantic and resource gates |
-| [Refactoring/testing](refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed slices remain; instruction-driver reorganization is deferred, build prerequisites/native discovery are excluded |
+| [Refactoring/testing](refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed implementation slices remain; final remote mutation probe needs investigation. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
 
 **Frontend integration is complete:** initial/free construction and fold
 behavior, CB0–CB7, cleanup and the agreed #224 refactoring ideas are on main.
@@ -32,7 +32,9 @@ The older #219–#225 and #227 proposals are closed as superseded;
 [#242](https://github.com/KanHarI/cubist-math/pull/242) supplies the mutation CI hook.
 Checked universal capabilities and their mathematical proofs remain unfinished.
 The [branch record](work-plan.md#branch-work) separately tracks Hydra #233,
-which remains an unmerged draft.
+which remains an unmerged draft. Site publication succeeded; the
+[RC verification record](refactoring-and-testing.md#verification-record) records
+the unresolved termination of the final CI mutation probe.
 
 Next language work: morphism opt-ins (L2.4d), general proposition laws
 (L2.11), implicit operation arguments (L2.12), then L2.6's checked

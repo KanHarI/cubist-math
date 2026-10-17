@@ -206,10 +206,15 @@ source-contract checks and the full suite above.
 
 [CI run 39025607670](https://github.com/KanHarI/cubist-math/actions/runs/39025607670)
 checks that same final runtime revision. The four native compiler/OS jobs,
-sanitizer and lint passed. Attempt 1 also passed the full test suite and inspector
-and contextual browser checks, then terminated during the last mutation probe
-with exit code 143 and no assertion failure reported. Only the failed workbench
-job was retried; attempt 2 is pending completion at this snapshot.
+sanitizer and lint passed. Both workbench attempts passed the full test suite,
+inspector and contextual browser checks, then recorded semantic kills for the
+first 15 mutation probes. Neither reported a result for the final
+`rolled-back-inspection` probe: attempt 1 exited with code 143; attempt 2's
+mutation step was cancelled, with the annotation "The operation was canceled."
+The run concluded **failure**. The logs do not establish the cause; investigate
+that termination and complete the remote mutation gate before treating CI as green.
+The passing local 16-probe evidence above remains separate.
+
 [Publication run 39026745357](https://github.com/KanHarI/cubist-math/actions/runs/39026745357)
-checks and publishes main `e729c2d5`; it is also pending completion. These are
-separate from the passing local evidence above.
+completed successfully on 2026-10-17 at main `e729c2d5`, including its build,
+full test suite, published-site browser checks and deployment.
