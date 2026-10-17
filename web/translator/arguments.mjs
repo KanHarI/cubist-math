@@ -133,7 +133,7 @@ export function elaborateCall(t, n, scope, expected) {
         : implicit.length ? `${called} takes ${explicit} argument${explicit === 1 ? "" : "s"} by position; give its implicit parameters ${implicit.join(", ")} in double braces, in order or by name, as ${called}{{…}}(…) or ${called}{{${implicit[0]} := …}}(…).`
         : `${called} takes ${index} argument${index === 1 ? "" : "s"}; this is one more.`), site);
     }
-    // A name no source or name supply spells, so that a call without holes
+    // A name no source or ordinary fresh-name request spells, so a call without holes
     // leaves the declaration's generated names as they were.
     const variable = unit.names.placeholder(parameter ?? "argument");
     solver.add({index, parameter, node, variable, domain: type.domain,
