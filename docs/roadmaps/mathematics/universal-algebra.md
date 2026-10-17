@@ -200,8 +200,9 @@ families.
 3. **Every equational theory gets a clone.** For a one-sorted theory whose
    laws are equations and whose `free` capability checks, `T.clone : Clone(U)`
    has `T(n)` the carrier of the free model on `Fin(n)` and substitution by
-   fold. Not every declared theory qualifies: `Field` has a law outside the
-   equational fragment and no free model, theory families and many-sorted
+   fold. Not every declared theory qualifies: `Field` has laws outside the
+   equational fragment (truncated inverses of nonzero elements, `zero ≠ one`)
+   and no free model, theory families and many-sorted
    theories are out of scope (open question 4), and L2.6's capability may
    fail. `T.clone` comes from L2.6's `free` capability and its universal
    equivalence, so it is a library function on L2.6's output rather than a
@@ -253,7 +254,10 @@ families.
    categories with L3.4's functors, not an `IsPullback` certificate.
 8. **Universes.** `Clone(U) : next(U)` and `Group(U) : next(U)`; the
    equivalence of probe 1 is in `ContrEquiv(next(U), …)`. Statement 2 is at
-   each fixed `U`. `T.clone` for a theory whose models are in `U` lives in
+   each fixed `U`. Decision 7's pullback precategory has objects in
+   `next(U)`, as `ModelPullback(U)` does, and hom-sets in `U`, as `T.cat`
+   does for these theories, so it is a `Precategory(next(U), U)`. `T.clone`
+   for a theory whose models are in `U` lives in
    `Clone(U)` when the free model's carrier does, which L2.6's strategy
    provides.
 
