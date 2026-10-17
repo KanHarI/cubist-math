@@ -35,7 +35,9 @@ test("let and obtain whose names nothing after them uses are reported", () => {
   warned("def f(n : Nat) : Nat { let unused := succ(n); exact n; }", /^unused is never used after this let: remove it\.$/);
   warned("def f(n : Nat) : Nat { let h : Nat := n; exact n; }", /^h is never used after this let: remove it\.$/);
   warned("def f(n : Nat) : Nat { let h : n = n { rfl; } exact n; }", /^h is never used after this let: remove it\.$/);
-  warned("def f(p : Nat and Nat) : Nat { obtain (a, b) := p; exact 0; }", /^None of a, b is used after this obtain: remove it\.$/);
+  const unusedObtain = "def f(p : Nat and Nat) : Nat { obtain (a, b) := p; exact 0; }";
+  warned(unusedObtain, /^None of a, b is used after this obtain: remove it\.$/);
+  assert.deepEqual(lint(unusedObtain).map(warning => warning.code), ["W701"]);
   clean("def f(n : Nat) : Nat { let m := succ(n); exact m; }");
   clean("def f(p : Nat and Nat) : Nat { obtain (a, b) := p; exact a; }");
   // Used inside a nested block.

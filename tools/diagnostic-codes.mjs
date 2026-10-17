@@ -9,6 +9,7 @@
 //                                            code of its group, write the
 //                                            registry, and write the index of
 //                                            codes in reference/errors.html
+// New lint warnings also need their assigned code at the warn(...) producer.
 //
 // A message is a string or template literal where the sources report one:
 // the argument of Error(…), of withCode(…) and of error classes such as
