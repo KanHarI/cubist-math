@@ -20,6 +20,7 @@ header {
 .brand span { font: 32px Georgia, serif; color: #36764e; }
 nav { display: flex; flex-wrap: wrap; gap: 10px 24px; font-size: 14px; }
 nav a { text-underline-offset: 4px; }
+nav a[aria-current] { font-weight: 600; text-decoration: none; }
 main { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
 .introduction { padding: 68px 0 48px; max-width: 740px; }
 .eyebrow { color: #526f5b; font-size: 11px; font-weight: 700; letter-spacing: 1.6px; }

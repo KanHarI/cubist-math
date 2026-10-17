@@ -40,6 +40,7 @@ async function select(path, remember) {
   $("file-details").hidden = false;
   $("file-path").textContent = path.split("/").slice(0, -1).join("/") + "/";
   $("file-name").textContent = path.split("/").at(-1);
+  document.title = `${path.split("/").at(-1)} · Cubist files`;
   $("file-summary").replaceChildren(...summaryNodes(tree.summaries.get(path) ?? ""));
   $("file-open").href = `proof.html?file=${encodeURIComponent(path)}`;
   $("file-raw").href = path;
@@ -60,3 +61,5 @@ addEventListener("popstate", () => {
 });
 const initial = new URLSearchParams(location.search).get("path");
 if (initial) select(initial, false);
+// With no file chosen, the first root is open, so the page shows files at once.
+else { const first = $("tree").querySelector("details.folder"); if (first) first.open = true; }

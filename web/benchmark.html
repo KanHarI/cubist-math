@@ -6,16 +6,27 @@
   <link rel="stylesheet" href="benchmark.css">
 </head>
 <body>
+  <header>
+    <a class="brand" href="index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+    <nav aria-label="Main navigation">
+      <a href="proof.html">Proof workspace</a>
+      <a href="files.html">Files</a>
+      <a href="workbench.html">Kernel workbench</a>
+      <a href="language.html">Language reference</a>
+      <a href="repl.html">REPL</a>
+      <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
+    </nav>
+  </header>
   <main>
-    <nav><a href="index.html">← Proof library</a></nav>
+    <p class="eyebrow">PERFORMANCE · EVERY DECLARATION TIMED</p>
     <h1>Declaration benchmark</h1>
     <p>The target is to check every concrete declaration within 100 ms. Select a longer deadline to explore slower dependencies, and the area to measure: the rebuilt library, the archive, or the Cubist tests.</p>
     <div class="actions">
       <label>Area <select id="area"><option value="library">Library</option><option value="archive" selected>Archive</option><option value="tests">Cubist tests</option></select></label>
       <label>Deadline <select id="limit-ms"><option value="100">100 ms</option><option value="1000">1 s</option><option value="10000">10 s</option></select></label>
-      <label><input id="share-syntax" type="checkbox" checked> Share identical syntax</label>
-      <label><input id="reuse-checks" type="checkbox" checked> Reuse checked terms</label>
-      <label><input id="compact-paths" type="checkbox" checked> Keep compact path types</label>
+      <label class="option"><input id="share-syntax" type="checkbox" checked> Share identical syntax</label>
+      <label class="option"><input id="reuse-checks" type="checkbox" checked> Reuse checked terms</label>
+      <label class="option"><input id="compact-paths" type="checkbox" checked> Keep compact path types</label>
       <button id="run">Run benchmark in this browser</button>
       <button id="cancel" disabled>Cancel</button>
       <button id="saved">Show saved benchmark</button>
