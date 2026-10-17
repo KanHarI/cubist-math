@@ -36,6 +36,9 @@ test("error anchors preserve token boundaries and target attachment through form
   result.gaps[0].end=end;
   result.gaps[0].diagnostic.primary.module="different_source";
   assert.ok(observeTestCases(program,result).cases[0].failures.some(message=>message.includes("cover exactly")));
+  delete result.gaps[0].diagnostic;
+  assert.ok(observeTestCases(program,result).cases[0].failures.some(message=>message.includes("cover exactly")),
+    "a missing structured site cannot satisfy an anchor");
 });
 
 for(const [anchor,body,count] of [["missing","tt",0],["tt","typed(tt = tt,refl(tt))",3]])

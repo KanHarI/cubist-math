@@ -91,9 +91,10 @@ The comment comparison sees local errors and warnings, at the line of their
 declaration. It does not see a declaration with no output,
 which reports nothing, or where in its line a refusal lies. Require each
 declaration without a comment to have an output of its own, and observe in
-JavaScript only what the comparison cannot see, such as a range within its
-line, a link or a published name, with its desired value beside the
-observation. Lint advice is a warning, which a comment states.
+JavaScript only what the comparison cannot see and no pragma expresses, such
+as a link or a published name, with its desired value beside the observation.
+State an exact source range in a contract fixture with `# expect_error_at`.
+Lint advice is a warning, which a comment states.
 
 Take a desired outcome from the specification, or from the fixing
 implementation once it exists, and review it against the specification. Never
