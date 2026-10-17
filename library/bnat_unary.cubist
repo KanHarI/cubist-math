@@ -1,0 +1,64 @@
+import bnat;
+import hlevels;
+
+// The conversions are inverse. Unary values are used only in these explicit
+// comparison maps and their proofs, not to implement binary arithmetic.
+computable def bpositive_decode_succ(p : BPositive) :
+  bpositive_to_unat(bpositive_succ(p)) = succ(bpositive_to_unat(p)) := match p {
+    bp_one => refl(succ(succ(zero)));
+    bp_even(q) => refl(succ(add(bpositive_to_unat(q), bpositive_to_unat(q))));
+    bp_odd(q) => trans(
+      cong(fun (n : UNat) => add(n, n), bpositive_decode_succ(q)),
+      cong(succ, nat_add_succ(bpositive_to_unat(q), bpositive_to_unat(q)))
+    );
+  };
+
+computable def bnat_decode_succ(n : BNat) :
+  bnat_to_unat(bnat_succ(n)) = succ(bnat_to_unat(n)) := match n {
+    b_zero => refl(succ(zero));
+    b_positive(p) => bpositive_decode_succ(p);
+  };
+
+computable def bnat_unat_roundtrip(n : UNat) : bnat_to_unat(bnat_of_unat(n)) = n := match n {
+    zero => refl(zero);
+    succ(k) => trans(bnat_decode_succ(bnat_of_unat(k)), cong(succ, bnat_unat_roundtrip(k)));
+  };
+
+computable def bnat_twice_succ_step(n : BNat) :
+  bnat_twice(bnat_succ(n)) = bnat_succ(bnat_succ(bnat_twice(n))) := match n {
+    b_zero => refl(b_positive(bp_even(bp_one)));
+    b_positive(p) => refl(b_positive(bp_even(bpositive_succ(p))));
+  };
+
+computable def bnat_encode_double(n : UNat) :
+  bnat_of_unat(add(n, n)) = bnat_twice(bnat_of_unat(n)) := match n {
+    zero => refl(b_zero);
+    succ(k) => trans(
+      cong(fun (m : UNat) => bnat_of_unat(succ(m)), nat_add_succ(k, k)),
+      trans(
+        cong(fun (m : BNat) => bnat_succ(bnat_succ(m)), bnat_encode_double(k)),
+        sym(bnat_twice_succ_step(bnat_of_unat(k)))
+      )
+    );
+  };
+
+computable def bpositive_roundtrip(p : BPositive) :
+  bnat_of_unat(bpositive_to_unat(p)) = b_positive(p) := match p {
+    bp_one => refl(b_positive(bp_one));
+    bp_even(q) => trans(
+      bnat_encode_double(bpositive_to_unat(q)), cong(bnat_twice, bpositive_roundtrip(q))
+    );
+    bp_odd(q) => cong(
+      bnat_succ,
+      trans(bnat_encode_double(bpositive_to_unat(q)), cong(bnat_twice, bpositive_roundtrip(q)))
+    );
+  };
+
+computable def bnat_roundtrip(n : BNat) : bnat_of_unat(bnat_to_unat(n)) = n := match n {
+    b_zero => refl(b_zero);
+    b_positive(p) => bpositive_roundtrip(p);
+  };
+
+computable def bnat_is_set : IsSet(U0, BNat) := retract_has_level(
+  U0, unat.(1), UNat, BNat, bnat_to_unat, bnat_of_unat, bnat_roundtrip, nat_is_set
+);

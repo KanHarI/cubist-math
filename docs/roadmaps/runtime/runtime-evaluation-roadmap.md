@@ -9,7 +9,8 @@ none of the NUM packages or other EVAL packages was implemented. The
 [#266](https://github.com/KanHarI/cubist-math/pull/266) implementation includes
 EVAL1's one-pass REPL path and a version-3 baseline.
 [#269](https://github.com/KanHarI/cubist-math/pull/269) implements EVAL2, caching
-completed full normalizations by exact syntax identity. NUM0–NUM2 and
+completed full normalizations by exact syntax identity. NUM0's source
+representations and bit arithmetic are implemented below; NUM1–NUM2 and
 EVAL3–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
 evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
@@ -302,7 +303,7 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
 
-EVAL0 is done. EVAL1 is implemented in #266 and EVAL2 is implemented below;
+EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below;
 the other rows are planned. Sizes are relative scope, as in
 the work plan.
 
@@ -310,7 +311,7 @@ the work plan.
 | --- | --- | --- | --- |
 | EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
-| NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
+| NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
@@ -397,6 +398,36 @@ in it where printing shows `510`; both workloads measure the change. This
 package does not claim to fix the syntax-depth failure.
 
 ### NUM0 and NUM1: representations, algebraic agreement and numerical induction
+
+**NUM0 implementation (2026-10-17).** [unat.cubist](../../../library/unat.cubist)
+exposes the existing unary carrier as `UNat` with an explicit `unat` notation.
+[bnat.cubist](../../../library/bnat.cubist) defines canonical positive bits,
+`BNat`, bitwise successor/predecessor, addition, multiplication, comparison
+and computed equality/order predicates. Its arithmetic never calls a unary
+conversion. Both conversions are explicit; their round trips and binary
+setness check in [bnat_unary.cubist](../../../library/bnat_unary.cubist).
+The successor/predecessor laws also check for arbitrary inputs.
+
+[bnat_notation.cubist](../../../library/bnat_notation.cubist) supplies
+`import bnat_notation; use bnat;` and direct `0b…` literals, separately from
+the binary core. Its unary diagnostic offset counts source characters, not
+the represented number. Decimal literal support remains with NUM2. Checked
+examples cover carries/borrows beyond 64 bits and an 81-bit product; the
+differential suite proves 632 closed identities against independent integer
+results, and inspects the checked arithmetic definitions for unary-carrier
+dependencies. All new modules import only the foundational library.
+
+**Migration boundary.** Public `Nat` is still unary. `UNat` currently aliases
+that exact carrier, retaining its `zero`/`succ` constructors and structural
+induction. Before the authorized default switch, move the unary declaration
+and its implementation into `unat`, update the frontend's current
+`nat__Nat` encoding/inspection hooks, separate lexical data from the public
+natural-number facade as needed, and migrate unary clients to explicit
+imports. Preserve their induction API and recheck the archive. The switch
+also waits for NUM1's semiring/transport laws, correctness of comparison,
+and dependent strong recursion with coherence. NUM0's computed predicates
+are not yet those proofs, and its two inverse functions are not yet the
+required semiring isomorphism or universe path.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one

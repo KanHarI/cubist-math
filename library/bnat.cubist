@@ -1,0 +1,188 @@
+import unat;
+
+// Canonical binary naturals. A positive value ends at one; its outermost
+// constructor is the least significant bit. Zero has exactly one form.
+inductive BPositive : U0 {
+  bp_one;
+  bp_even(p : BPositive);
+  bp_odd(p : BPositive);
+}
+
+inductive BNat : U0 {
+  b_zero;
+  b_positive(p : BPositive);
+}
+
+computable def bnat_twice(n : BNat) : BNat := match n {
+    b_zero => b_zero;
+    b_positive(p) => b_positive(bp_even(p));
+  };
+
+computable def bnat_twice_succ(n : BNat) : BNat := match n {
+    b_zero => b_positive(bp_one);
+    b_positive(p) => b_positive(bp_odd(p));
+  };
+
+computable def bpositive_succ(p : BPositive) : BPositive := match p {
+    bp_one => bp_even(bp_one);
+    bp_even(q) => bp_odd(q);
+    bp_odd(q) => bp_even(bpositive_succ(q));
+  };
+
+computable def bnat_succ(n : BNat) : BNat := match n {
+    b_zero => b_positive(bp_one);
+    b_positive(p) => b_positive(bpositive_succ(p));
+  };
+
+computable def bpositive_pred(p : BPositive) : BNat := match p {
+    bp_one => b_zero;
+    bp_even(q) => bnat_twice_succ(bpositive_pred(q));
+    bp_odd(q) => b_positive(bp_even(q));
+  };
+
+computable def bnat_pred(n : BNat) : BNat := match n {
+    b_zero => b_zero;
+    b_positive(p) => bpositive_pred(p);
+  };
+
+// Addition carries across bits; multiplication shifts and adds. Neither
+// arithmetic operation converts through the unary representation.
+computable def bpositive_add(a, b : BPositive) : BPositive := match a {
+    bp_one => bpositive_succ(b);
+    bp_even(p) => match b {
+      bp_one => bp_odd(p);
+      bp_even(q) => bp_even(bpositive_add(p, q));
+      bp_odd(q) => bp_odd(bpositive_add(p, q));
+    };
+    bp_odd(p) => match b {
+      bp_one => bp_even(bpositive_succ(p));
+      bp_even(q) => bp_odd(bpositive_add(p, q));
+      bp_odd(q) => bp_even(bpositive_succ(bpositive_add(p, q)));
+    };
+  };
+
+computable def bnat_add(a, b : BNat) : BNat := match a, b {
+    b_zero, _ => b;
+    b_positive(p), b_zero => a;
+    b_positive(p), b_positive(q) => b_positive(bpositive_add(p, q));
+  };
+
+computable def bpositive_mul(a, b : BPositive) : BPositive := match a {
+    bp_one => b;
+    bp_even(p) => bp_even(bpositive_mul(p, b));
+    bp_odd(p) => bpositive_add(b, bp_even(bpositive_mul(p, b)));
+  };
+
+computable def bnat_mul(a, b : BNat) : BNat := match a, b {
+    b_zero, _ => b_zero;
+    b_positive(p), b_zero => b_zero;
+    b_positive(p), b_positive(q) => b_positive(bpositive_mul(p, q));
+  };
+
+// Compare the high bits first, using the low bit only to break a tie.
+inductive BOrdering : U0 {
+  b_less;
+  b_equal;
+  b_greater;
+}
+
+computable def bnat_even_odd_order(order : BOrdering) : BOrdering := match order {
+    b_less => b_less;
+    b_equal => b_less;
+    b_greater => b_greater;
+  };
+
+computable def bnat_odd_even_order(order : BOrdering) : BOrdering := match order {
+    b_less => b_less;
+    b_equal => b_greater;
+    b_greater => b_greater;
+  };
+
+computable def bpositive_compare(a, b : BPositive) : BOrdering := match a {
+    bp_one => match b {
+      bp_one => b_equal;
+      bp_even(q) => b_less;
+      bp_odd(q) => b_less;
+    };
+    bp_even(p) => match b {
+      bp_one => b_greater;
+      bp_even(q) => bpositive_compare(p, q);
+      bp_odd(q) => bnat_even_odd_order(bpositive_compare(p, q));
+    };
+    bp_odd(p) => match b {
+      bp_one => b_greater;
+      bp_even(q) => bnat_odd_even_order(bpositive_compare(p, q));
+      bp_odd(q) => bpositive_compare(p, q);
+    };
+  };
+
+computable def bnat_compare(a, b : BNat) : BOrdering := match a, b {
+    b_zero, b_zero => b_equal;
+    b_zero, b_positive(q) => b_less;
+    b_positive(p), b_zero => b_greater;
+    b_positive(p), b_positive(q) => bpositive_compare(p, q);
+  };
+
+computable def bnat_equal(a, b : BNat) : U0 := match bnat_compare(a, b) {
+    b_less => Void;
+    b_equal => Unit;
+    b_greater => Void;
+  };
+
+computable def bnat_le(a, b : BNat) : U0 := match bnat_compare(a, b) {
+    b_less => Unit;
+    b_equal => Unit;
+    b_greater => Void;
+  };
+
+computable def bnat_lt(a, b : BNat) : U0 := match bnat_compare(a, b) {
+    b_less => Unit;
+    b_equal => Void;
+    b_greater => Void;
+  };
+
+// Conversions are explicit. Only these functions cross representations.
+computable def bnat_of_unat(n : UNat) : BNat := match n {
+    zero => b_zero;
+    succ(k) => bnat_succ(bnat_of_unat(k));
+  };
+
+computable def bpositive_to_unat(p : BPositive) : UNat := match p {
+    bp_one => succ(zero);
+    bp_even(q) => add(bpositive_to_unat(q), bpositive_to_unat(q));
+    bp_odd(q) => succ(add(bpositive_to_unat(q), bpositive_to_unat(q)));
+  };
+
+computable def bnat_to_unat(n : BNat) : UNat := match n {
+    b_zero => zero;
+    b_positive(p) => bpositive_to_unat(p);
+  };
+
+// The numerical successor/predecessor view, before NUM1 supplies dependent
+// induction through it. These laws check for every bit pattern.
+computable def bpositive_pred_succ(p : BPositive) :
+  bpositive_pred(bpositive_succ(p)) = b_positive(p) := match p {
+    bp_one => refl(b_positive(bp_one));
+    bp_even(q) => refl(b_positive(bp_even(q)));
+    bp_odd(q) => cong(bnat_twice_succ, bpositive_pred_succ(q));
+  };
+
+computable def bnat_pred_succ(n : BNat) : bnat_pred(bnat_succ(n)) = n := match n {
+    b_zero => refl(b_zero);
+    b_positive(p) => bpositive_pred_succ(p);
+  };
+
+computable def bnat_succ_twice_succ(n : BNat) :
+  bnat_succ(bnat_twice_succ(n)) = bnat_twice(bnat_succ(n)) := match n {
+    b_zero => refl(b_positive(bp_even(bp_one)));
+    b_positive(p) => refl(b_positive(bp_even(bpositive_succ(p))));
+  };
+
+computable def bpositive_succ_pred(p : BPositive) :
+  bnat_succ(bpositive_pred(p)) = b_positive(p) := match p {
+    bp_one => refl(b_positive(bp_one));
+    bp_even(q) => trans(
+      bnat_succ_twice_succ(bpositive_pred(q)), cong(bnat_twice, bpositive_succ_pred(q))
+    );
+    bp_odd(q) => refl(b_positive(bp_odd(q)));
+  };

@@ -1,0 +1,28 @@
+import bnat;
+import lexemes;
+
+// Read binary digits directly into the canonical carrier. The unary offset
+// counts source characters for diagnostics; it never holds the input value.
+computable def bnat_digits(s : Lexeme, value : BNat, at_ : UNat) : Parsed(U0, BNat) := match s {
+    nil => ok(value);
+    cons(digit(zero), rest) => bnat_digits(rest, bnat_twice(value), succ(at_));
+    cons(digit(succ(zero)), rest) => bnat_digits(rest, bnat_twice_succ(value), succ(at_));
+    cons(_, rest) => error(at_);
+  };
+
+computable def bnat_literal(s : Lexeme) : Parsed(U0, BNat) := match s {
+    cons(digit(zero), cons(lower(succ(zero)), cons(g, rest))) => bnat_digits(
+      cons(g, rest), b_zero, succ(succ(zero))
+    );
+    cons(digit(zero), cons(lower(succ(zero)), nil)) => error(succ(succ(zero)));
+    cons(digit(zero), _) => error(succ(zero));
+    _ => error(zero);
+  };
+
+notation bnat {
+  x + y := bnat_add(x, y);
+  x * y := bnat_mul(x, y);
+  x <= y := bnat_le(x, y);
+  x < y := bnat_lt(x, y);
+  literal(s : Lexeme) := bnat_literal(s);
+}
