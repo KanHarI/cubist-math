@@ -1,6 +1,6 @@
 import bnat;
 import unat;
-import hlevels;
+import bnat_equality;
 
 // Conversions are explicit. Only these functions cross representations.
 computable def bnat_of_unat(n : UNat) : BNat := match n {
@@ -76,7 +76,3 @@ computable def bnat_roundtrip(n : BNat) : bnat_of_unat(bnat_to_unat(n)) = n := m
     b_zero => refl(b_zero);
     b_positive(p) => bpositive_roundtrip(p);
   };
-
-computable def bnat_is_set : IsSet(U0, BNat) := retract_has_level(
-  U0, unat.(1), UNat, BNat, bnat_to_unat, bnat_of_unat, bnat_roundtrip, nat_is_set
-);
