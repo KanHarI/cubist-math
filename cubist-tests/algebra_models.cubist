@@ -1,6 +1,6 @@
-// The library's algebraic hierarchy at work: the natural numbers as two
-// commutative monoids, and powers of two a homomorphism from the additive
-// one to the multiplicative one, which computes.
+// The library's algebra lattice: shared inheritance, one group inverse
+// implementing both divisions, computing monoid maps on naturals, and
+// constructive ordered-ring/field interfaces.
 import nat;
 import algebra;
 import ordered_algebra;
@@ -47,6 +47,46 @@ print(
 // The section lemmas, at a model: inverses in a group are unique.
 // Output: forall U < UU0. forall G : Group(U). forall x : G.M. G.inv(G.inv(x)) = x
 print(typeof(inv_inv));
+
+// The lattice's three paths to Group retain one copy of each ancestor.
+computable def group_division_shared(G : Group(U0)) :
+  G.loop.quasigroup = G.associative_quasigroup.quasigroup {
+  rfl;
+}
+
+computable def group_unit_shared(G : Group(U0)) : G.loop.unital_magma = G.monoid.unital_magma {
+  rfl;
+}
+
+computable def group_association_shared(G : Group(U0)) :
+  G.associative_quasigroup.semigroup = G.monoid.semigroup {
+  rfl;
+}
+
+computable def group_magma_shared(G : Group(U0)) :
+  G.loop.quasigroup.magma = G.monoid.semigroup.magma {
+  rfl;
+}
+
+// Both parent divisions compute from the same inverse, without extra data.
+computable def group_left_division(G : Group(U0), x, y : G.M) :
+  G.loop.quasigroup.left_div(x, y) = G.mul(G.inv(x), y) {
+  rfl;
+}
+
+computable def group_right_division(G : Group(U0), x, y : G.M) :
+  G.associative_quasigroup.quasigroup.right_div(x, y) = G.mul(x, G.inv(y)) {
+  rfl;
+}
+
+computable def comm_ring_addition_shared(A : CommRing(U0)) : A.additive_ = A.ring.additive_ {
+  rfl;
+}
+
+computable def comm_ring_multiplication_shared(A : CommRing(U0)) :
+  A.multiplicative.monoid = A.ring.multiplicative {
+  rfl;
+}
 
 // Ordered rings need no multiplicative commutativity. Both routes from
 // an ordered commutative ring forget to exactly the same ring.
@@ -116,9 +156,31 @@ computable def ordered_inverse_positive(
 
 // Multiplicative commutativity must be requested via OrderedCommRing.
 // Error: E815: A is a model of OrderedRing, which has no field mul_comm: it has R, R_is_set, add,
-//   add_assoc, zero, zero_add, add_zero, neg, neg_add, add_neg, add_comm, mul, mul_assoc, one,
+//   zero, zero_add, add_zero, add_assoc, neg, neg_add, add_neg, add_comm, mul, mul_assoc, one,
 //   one_mul, mul_one, mul_add, distrib_right, lt, lt_is_prop, lt_irrefl, lt_trans, lt_cotrans,
 //   lt_tight, zero_lt_one, add_lt_add_right, mul_pos, mul_pos_apart_left, mul_pos_apart_right, and
 //   the parents ring.
 def unavailable_commutativity(A : OrderedRing(U0), x, y : A.R) :
   A.mul(x, y) = A.mul(y, x) := A.mul_comm(x, y);
+
+// The weaker lattice nodes must not silently acquire stronger laws.
+// Error: E815: Q is a model of Quasigroup, which has no field mul_assoc: it has M, M_is_set, mul,
+//   left_div, right_div, mul_left_div, left_div_mul, right_div_mul, mul_right_div, and the parents
+//   magma.
+def unavailable_quasigroup_associativity(Q : Quasigroup(U0), x, y, z : Q.M) :
+  Q.mul(Q.mul(x, y), z) = Q.mul(x, Q.mul(y, z)) := Q.mul_assoc(x, y, z);
+
+// Error: E815: L is a model of Loop, which has no field mul_assoc: it has M, M_is_set, mul,
+//   left_div, right_div, mul_left_div, left_div_mul, right_div_mul, mul_right_div, one, one_mul,
+//   mul_one, and the parents quasigroup, unital_magma.
+def unavailable_loop_associativity(L : Loop(U0), x, y, z : L.M) :
+  L.mul(L.mul(x, y), z) = L.mul(x, L.mul(y, z)) := L.mul_assoc(x, y, z);
+
+// Error: E815: A is a model of UnitalMagma, which has no field mul_assoc: it has M, M_is_set, mul,
+//   one, one_mul, mul_one, and the parents magma.
+def unavailable_unital_associativity(A : UnitalMagma(U0), x, y, z : A.M) :
+  A.mul(A.mul(x, y), z) = A.mul(x, A.mul(y, z)) := A.mul_assoc(x, y, z);
+
+// Error: E815: A is a model of Monoid, which has no field left_div: it has M, M_is_set, mul,
+//   mul_assoc, one, one_mul, mul_one, and the parents semigroup, unital_magma.
+def unavailable_monoid_division(A : Monoid(U0), x, y : A.M) : A.M := A.left_div(x, y);

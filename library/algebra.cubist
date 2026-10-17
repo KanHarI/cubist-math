@@ -48,13 +48,27 @@ theory CommMonoid(U < UU0) extends Monoid {
   law mul_comm(x, y : M) : x * y = y * x;
 }
 
-// The three routes share one multiplication, unit and division structure.
-// Keep the existing inverse interface; the division laws force it to agree
-// with division of the unit. No commutativity is required.
+// One inverse supplies both quasigroup divisions and all four division
+// laws. Every parent uses these same checked definitions; models supply
+// only the usual group operations and inverse laws.
 theory Group(U < UU0) extends Loop, AssociativeQuasigroup, Monoid {
   inv(x : M) : M;
   law inv_mul(x : M) : inv(x) * x = one;
   law mul_inv(x : M) : x * inv(x) = one;
+  def left_div(x, y : M) : M := inv(x) * y;
+  def right_div(x, y : M) : M := x * inv(y);
+  def mul_left_div(x, y : M) : x * left_div(x, y) = y := trans(
+    sym(mul_assoc(x, inv(x), y)), trans(cong(fun (w : M) => w * y, mul_inv(x)), one_mul(y))
+  );
+  def left_div_mul(x, y : M) : left_div(x, x * y) = y := trans(
+    sym(mul_assoc(inv(x), x, y)), trans(cong(fun (w : M) => w * y, inv_mul(x)), one_mul(y))
+  );
+  def right_div_mul(x, y : M) : right_div(x, y) * y = x := trans(
+    mul_assoc(x, inv(y), y), trans(cong(fun (w : M) => x * w, inv_mul(y)), mul_one(x))
+  );
+  def mul_right_div(x, y : M) : right_div(x * y, y) = x := trans(
+    mul_assoc(x, y, inv(y)), trans(cong(fun (w : M) => x * w, mul_inv(y)), mul_one(x))
+  );
 }
 
 section {{U < UU0}}(Q : Quasigroup(U)) {
@@ -84,42 +98,10 @@ computable def group_from_associative_loop{{U < UU0}}(
   );
   exact Group.make(
     M := M, M_is_set := M_is_set, mul := mul, mul_assoc := assoc, one := one, one_mul := one_mul,
-    mul_one := mul_one, left_div := left_div, right_div := right_div, mul_left_div := mul_left_div,
-    left_div_mul := left_div_mul, right_div_mul := right_div_mul, mul_right_div := mul_right_div,
-    inv := inverse_op, inv_mul := left_inverse, mul_inv := fun (x : M) => mul_left_div(x, one)
+    mul_one := mul_one, inv := inverse_op, inv_mul := left_inverse,
+    mul_inv := fun (x : M) => mul_left_div(x, one)
   );
 }
-
-// Construct the division structure from the usual group operations and
-// inverse laws. This keeps existing integer and rational operations intact.
-computable def group_from_inverse(
-  U < UU0, M : U, set_ : IsSet(U, M), op : M -> M -> M, assoc : forall x, y, z : M.
-  op(op(x, y), z) = op(x, op(y, z)), unit : M, left_unit : forall x : M. op(unit, x) = x,
-  right_unit : forall x : M. op(x, unit) = x, inverse_op : M -> M, left_inverse : forall x : M.
-  op(inverse_op(x), x) = unit, right_inverse : forall x : M. op(x, inverse_op(x)) = unit
-) :
-  Group(U) := Group.make(
-    M := M, M_is_set := set_, mul := op, mul_assoc := assoc, one := unit, one_mul := left_unit,
-    mul_one := right_unit, inv := inverse_op, inv_mul := left_inverse, mul_inv := right_inverse,
-    left_div := fun (x, y : M) => op(inverse_op(x), y),
-    right_div := fun (x, y : M) => op(x, inverse_op(y)),
-    mul_left_div := fun (x, y : M) => trans(
-      sym(assoc(x, inverse_op(x), y)),
-      trans(cong(fun (w : M) => op(w, y), right_inverse(x)), left_unit(y))
-    ),
-    left_div_mul := fun (x, y : M) => trans(
-      sym(assoc(inverse_op(x), x, y)),
-      trans(cong(fun (w : M) => op(w, y), left_inverse(x)), left_unit(y))
-    ),
-    right_div_mul := fun (x, y : M) => trans(
-      assoc(x, inverse_op(y), y),
-      trans(cong(fun (w : M) => op(x, w), left_inverse(y)), right_unit(x))
-    ),
-    mul_right_div := fun (x, y : M) => trans(
-      assoc(x, y, inverse_op(y)),
-      trans(cong(fun (w : M) => op(x, w), right_inverse(y)), right_unit(x))
-    )
-  );
 
 // An abelian group: a group whose monoid is commutative. Monoid comes once,
 // through both parents.
