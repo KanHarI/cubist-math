@@ -187,9 +187,8 @@ test("captured operand receivers keep caller references and defer refused depend
     def uses_broken : Nat := partial.(zero ^ zero);
     def uses_invalid : Nat := invalid_instance.(zero ^ zero);`;
   const references=[];let declaration;
-  const checker=Object.create(program.checker);checker.bindingName=name=>`client__${name}`;
-  checker.define=(name,...args)=>program.checker.define(checker.bindingName(name),...args);
-  const translator=new Translator({checker,moduleName:"client",compilationBindings:program.compilationBindings,
+  const checker=program.checker,definitionModule="client";
+  const translator=new Translator({checker,definitionModule,moduleName:"client",compilationBindings:program.compilationBindings,
     onDeclarationStart:node=>{declaration=node.name.text;},
     onReference:node=>{if(declaration==="value")references.push(node);}});
   const checked=translator.translateSyntax(parse(client),client,program.modules.get("main"));

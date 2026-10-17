@@ -332,10 +332,7 @@ export class CubicalProgram {
       // The note goes before a trailing source position, which stays last.
       const failure = reason => failedImport && reason ? reason.replace(/(?: at \d+:\d+)?$/,
         position => ` (import ${failedImport} failed: ${this.failedImports.get(failedImport)})${position}`) : reason;
-      const define = this.checker.define.bind(this.checker);
-      const checker = Object.create(this.checker);
-      checker.bindingName = local => `${name}__${local}`;
-      checker.define = (local, term, type, parameters) => define(`${name}__${local}`, term, type, parameters);
+      const checker = this.checker;
       let pending = [];
       let transaction = null,publication=null;
       const statements = [];
@@ -355,7 +352,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
@@ -426,7 +423,6 @@ export class CubicalProgram {
         else {transaction?.finish(false);transaction=null;}
         throw error;
       }
-      this.checker.steps = checker.steps;
       this.recordModule(name, main, ast, result, failure);
       this.moduleSteps.set(name, statements);
       this.modules.set(name, result.env); visiting.delete(name);

@@ -28,13 +28,13 @@ export const notationBinding = name => "\u0000notation " + name;
 // A theory's records, by the binding of its type of models, and its
 // projections, which print as m.f.
 export function registerTheoryDeclaration(t,d) {
-  const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
+  const binding=t.bindingName(d.name.text);
   if(d.theory) {
     // The queue reserved the whole family before admission. Record exact
     // projection identities once here, independently of their availability.
     const identify=field=>{
       if(field.projectionId)return field;
-      const key=t.checker.bindingName?.(field.projection)??field.projection;
+      const key=t.bindingName(field.projection);
       const identity=t.compilationBindings.declaration(key)?.binding;
       if(!identity)throw new TypeError("A model interface needs reserved projection identities.");
       return {...field,projectionId:identity.id};
@@ -50,7 +50,7 @@ export function registerTheoryDeclaration(t,d) {
     if(!["unary -","numeral"].includes(operator)) {
       const record=t.checker.theories.get(binding),field=[...record.fields,...record.derived].find(field=>field.id===rule.field);
       const projection=t.compilationBindings.table.get(field.projectionId).label;
-      (t.checker.notationPrinting??=new Map()).set(t.checker.bindingName?.(projection)??projection,
+      (t.checker.notationPrinting??=new Map()).set(t.bindingName(projection),
         [{operator,model:true,recipe:notationPrintingRecipe(rule.recipe)}]);
     }
 }
@@ -372,7 +372,7 @@ export const sourceItemScope=(t,scope,item)=>usesScope(t,scope,item.uses,{effect
 export function failedExpansion(t,d,env,declarations,error) {
   t.onDeclarationStart?.(d);
   declarations.push({name:d.name.text,syntax:d,status:"not-translated",...sourceFailure(error)});
-  const binding=t.checker.bindingName?.(d.name.text)??d.name.text;
+  const binding=t.bindingName(d.name.text);
   t.publishDeclaration(env,d.name.text,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
   t.onDeclaration?.(d,declarations.at(-1));
   return [];

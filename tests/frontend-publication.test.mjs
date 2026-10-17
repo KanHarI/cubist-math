@@ -486,3 +486,22 @@ test("FG1: observer exceptions roll back the active generated group and permit a
   assert.deepEqual(recovered.gaps, []);
   assert.equal(recovered.outputs.find(d=>d.name==="after").verified, true);
 });
+
+// Observers see the program checker; work spent before they interrupt a
+// module remains counted, and the module restores its printing selection.
+test("module observers share checker work and restore printing context on interruption", async t => {
+  const {CubicalProgram} = await import("../web/cubical-program.mjs");
+  let steps;
+  const program = new CubicalProgram(module, sourceReader(), {onDeclaration(name, declaration, result, checker) {
+    if(name !== "main")return;
+    assert.equal(checker,program.checker);
+    steps=checker.steps;
+    throw Error("stop after checking");
+  }});
+  t.after(()=>program.dispose());
+  const notation={selection:"before"};program.checker.notation=notation;
+  await assert.rejects(program.check("def point : Unit := tt;","main"),/stop after checking/);
+  assert.ok(steps>0);
+  assert.equal(program.checker.steps,steps);
+  assert.equal(program.checker.notation,notation);
+});

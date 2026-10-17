@@ -87,9 +87,12 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
 export class Translator {
-  constructor({normalize=true,checker,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
+  constructor({checker,definitionModule=null,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
+    // Definition ownership is separate from source provenance. Raw translator
+    // clients omit the namespace; program modules pass it explicitly.
+    this.definitionModule=definitionModule;
     this.sources=sources;
     this.collectGeneration=collectGeneration;
     this.scopePoints=scopePoints;
@@ -133,7 +136,7 @@ export class Translator {
     this.onPublicationEnd=onPublicationEnd;
     this.onDeclaration=onDeclaration;
     this.onDeclarationStart=declaration=>{
-      this.compilationBindings.declare(this.moduleName,declaration,this.checker.bindingName?.(declaration.name.text)??declaration.name.text);
+      this.compilationBindings.declare(this.moduleName,declaration,this.bindingName(declaration.name.text));
       onDeclarationStart?.(declaration);
     };
     this.onDirectiveStart=onDirectiveStart;this.onDirective=onDirective;
@@ -144,6 +147,7 @@ export class Translator {
     this.simpRegistry=copySimpRegistry(simpRegistry);
     this.moduleName=moduleName;
   }
+  bindingName(local) { return this.definitionModule===null?local:`${this.definitionModule}__${local}`; }
   // A source unit of this translator. translate() makes one per module.
   unit(options={}) {
     return new SourceUnit({checker:this.checker,moduleName:this.moduleName,sources:this.sources,simpRegistry:this.simpRegistry,
@@ -154,7 +158,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -434,7 +438,7 @@ export class Translator {
   // same refusal under every alias, never a previous imported value.
   publishDeclaration(env,name,value) {
     env.set(name,value);
-    const key=this.checker.bindingName?.(name)??name;
+    const key=this.bindingName(name);
     const declared=this.compilationBindings.declaration(key);
     if(declared) {
       this.compilationBindings.published(declared.binding,value);
@@ -445,6 +449,11 @@ export class Translator {
   // parsed source. Each retained declaration supplies its identity adapter;
   // no printing or second source-resolution pass occurs at this boundary.
   translateSyntax(ast,source,imported=new Map()) {
+    const notation=this.checker.notation;
+    try { return this.translateModule(ast,source,imported); }
+    finally { this.checker.notation=notation; }
+  }
+  translateModule(ast,source,imported) {
     const module=this.unit({source});
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
@@ -458,7 +467,7 @@ export class Translator {
     // the group's root cause; `via` is what the group itself waited on.
     const unavailable=(group,via)=>{
       for(const declaration of group.members)for(const {name} of declaredNames(declaration)) {
-        const value=untranslated(name,this.checker.bindingName?.(name)??name,`Untranslated dependency: ${via}`,group.cause);
+        const value=untranslated(name,this.bindingName(name),`Untranslated dependency: ${via}`,group.cause);
         this.publishDeclaration(env,name,value);
       }
     };
@@ -471,7 +480,7 @@ export class Translator {
         // every client, so a member that failed on a failed dependency
         // passes that dependency's root on.
         group.state="failed";group.failedMember=failed.name;
-        group.cause=failureRoot(failed,this.checker.bindingName?.(failed.name)??failed.name);
+        group.cause=failureRoot(failed,this.bindingName(failed.name));
         restoreMap(env,before);
         unavailable(group,failed.name);
         declarations.splice(start,declarations.length-start,{...failed,name:group.head.name.text,
@@ -497,9 +506,9 @@ export class Translator {
       this.onDeclarationStart?.(d);
       const result={name:d.name.text,syntax:d,status:"not-translated",duplicate:!ownership.owns(d.name.text,d),
         ...sourceFailure(error,module)};
-      const binding=this.checker.bindingName?.(d.name.text)??d.name.text,root=failureRoot(result,binding);
+      const binding=this.bindingName(d.name.text),root=failureRoot(result,binding);
       const bind=name=>{
-        const value=untranslated(name,this.checker.bindingName?.(name)??name,error.message,root);
+        const value=untranslated(name,this.bindingName(name),error.message,root);
         this.publishDeclaration(env,name,value);
       };
       for(const member of members)for(const {name} of declaredNames(member))
@@ -552,7 +561,7 @@ export class Translator {
         // Reserve identities for every group, including optional groups
         // later blocked before elaboration. This grants no availability.
         for(const declaration of generated)this.compilationBindings.declare(this.moduleName,declaration,
-          this.checker.bindingName?.(declaration.name.text)??declaration.name.text);
+          this.bindingName(declaration.name.text));
         const conflict=ownership.reserve(generated,d);
         if(conflict) {
           env.clear(); for(const [key,value] of before)env.set(key,value);
@@ -753,7 +762,7 @@ export class Translator {
         if(this.checker.define)unit.fuel.spend("queries");
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
-        const definition=this.checker.define?.(d.name.text,checked.term,checked.type,
+        const definition=this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
           own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         publish(d,definition);
@@ -766,7 +775,7 @@ export class Translator {
         propagateElaborationStop(error);
         // Remove a same-named imported symbol: a failed local declaration must
         // never silently refer to that other declaration in subsequent proofs.
-        const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+        const binding=this.bindingName(d.name.text);
         publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline" or "other"), so callers need not read the reason.
@@ -781,7 +790,7 @@ export class Translator {
       // Diagnostic observers may reject a late result after cleanup. Such a
       // result must not remain available to subsequent declarations.
       if (declarations.at(-1).status === "not-translated") {
-        const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+        const binding=this.bindingName(d.name.text);
         publish(d,untranslated(d.name.text,binding,declarations.at(-1).reason,failureRoot(declarations.at(-1),binding)));
       }
       settle(queue);
@@ -806,10 +815,10 @@ export class Translator {
     const unit=module.declaration(this.declarationFuel).with({declaring:{name:d.name.text,kind:d.kind}});
     this.onDeclarationStart?.(d);
     const names=[d.name.text,...d.constructors.map(c=>c.name.text),...(d.result?.modifier&&d.result.modifier.kind!=="type"?[`${d.name.text}.squash`]:[])];
-    const binding=this.checker.bindingName?.(d.name.text)??d.name.text;
+    const binding=this.bindingName(d.name.text);
     const unavailable=failure=>{
       const root=failureRoot(failure,binding);
-      for(const name of names)this.publishDeclaration(env,name,untranslated(name,this.checker.bindingName?.(name)??name,
+      for(const name of names)this.publishDeclaration(env,name,untranslated(name,this.bindingName(name),
         failure.reason??failure.message,root));
     };
     try {
@@ -1147,7 +1156,7 @@ export class Translator {
           if(node.kind==="name")this.reference(at,node,value,null);
         }
         return this.checker.scopedUnfolding(()=>tr(n.body),scope.context,expected,
-          scope.dimensions,scope.unit.names);
+          scope.dimensions,scope.unit.names,this.bindingName("unfolding"));
       }
       case "pathApply": {
         // A path constructor at a point builds an element of its sort, so the
