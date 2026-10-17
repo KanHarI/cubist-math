@@ -73,3 +73,34 @@ test("term-scope pruning retains level variables and annotation dependencies", a
   assert.ok(driver.alpha(lam(10, 10), lam(20, 20)));
   assert.ok(!driver.alpha(lam(10, 10), lam(20, 10)));
 });
+
+test("normalization compares closed graphs natively and reuses that answer", async t => {
+  const { driver } = await setup(t), graph = driver.graph, unit = graph.unit();
+  let a = unit, b = unit;
+  for (let i = 0; i < 40; i++) {
+    a = graph.sum(graph.pi(graph.extend(unit, `a${i}`), a), graph.pi(graph.extend(unit, `b${i}`), a));
+    b = graph.sum(graph.pi(graph.extend(unit, `c${i}`), b), graph.pi(graph.extend(unit, `d${i}`), b));
+  }
+  const left = driver.focus(graph.refl(a), "other"), right = driver.focus(graph.refl(b), "other");
+  driver.freeTermSymbols = () => { throw new Error("closed normal-form comparison rescanned the graph in JavaScript"); };
+  assert.ok(driver.normalizeBoth(left, right, null, null));
+  // A later conversion must reuse the answer instead of rebuilding free-name
+  // sets. Querying natively but forgetting this memo merely moves the cost.
+  assert.ok(driver.alpha(driver.subterm(left), driver.subterm(right)));
+});
+
+test("normal-form comparison preserves outer renamings and recovers from query exhaustion", async t => {
+  const { driver, kernel } = await setup(t), graph = driver.graph, unit = graph.unit();
+  const a = graph.extend(unit, "a"), b = graph.extend(unit, "b");
+  const focus = judgement => driver.focus(graph.refl(judgement), "other");
+  const left = focus(graph.variable(a)), right = focus(graph.variable(b));
+  assert.ok(driver.normalizeBoth(left, right, { left: graph.entry(a).symbol, right: graph.entry(b).symbol, next: null }, null));
+  assert.ok(!driver.normalizeBoth(left, right, null, null), "free names differ without the outer renaming");
+
+  const x = focus(graph.pi(a, unit)), y = focus(graph.pi(b, unit));
+  const query = kernel.alphaEqual.bind(kernel);
+  kernel.alphaEqual = (left, right) => { kernel.setStepBudget(1n); return query(left, right); };
+  assert.ok(!driver.normalizeBoth(x, y, null, null));
+  kernel.alphaEqual = query;
+  assert.ok(driver.normalizeBoth(x, y, null, null), "exhaustion did not cache a false answer");
+});

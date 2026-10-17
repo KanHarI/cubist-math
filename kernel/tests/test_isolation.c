@@ -60,7 +60,10 @@ static void queries_leave_acceptance_unchanged(void) {
     cc_judgement_id function = OK(cc_instr_lambda(k, y, OK(cc_instr_variable(k, y))));
     cc_term redex = term_of(beta_nat), plain = term_of(nat);
     rejects(cc_instr_apply(k, function, argument), "wrong type");
+    bool equal;
+    assert(cc_kernel_alpha_equal(k, redex, plain, &equal) && !equal);
     assert(cc_kernel_whnf(k, redex) == plain && cc_kernel_normalize(k, redex) == plain);
+    assert(cc_kernel_alpha_equal(k, redex, plain, &equal) && !equal);
     rejects(cc_instr_apply(k, function, argument), "wrong type");
 
     /* The derivation instructions accept: a Beta step converts x's type. */

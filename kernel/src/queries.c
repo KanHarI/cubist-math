@@ -43,3 +43,14 @@ cc_formula_id ck_clause_formula(cc_kernel *k, cc_clause clause) {
     cc_clear(&phi);
     return id;
 }
+
+bool cc_kernel_alpha_equal(cc_kernel *k, cc_term left, cc_term right, bool *out) {
+    if (!k || !left || !right || left >= k->count || right >= k->count || !out || k->error[0])
+        return false;
+    ck_operation(k, CC_WORK_QUERY);
+    k->recursion = 0;
+    bool equal = ck_alpha_equal(k, left, right);
+    if (k->error[0]) return false;
+    *out = equal;
+    return true;
+}

@@ -1239,6 +1239,18 @@ export class InstructionDriver {
       try { this.graph.within(NORMAL_FORM_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
       catch { this.unnormalizable.add(term); return false; }
     }
+    // With no outer renaming, reuse the kernel's syntactic comparison. The
+    // Step instructions already produced both normal forms; this query only
+    // guides search, and the eventual instruction still validates equality.
+    if (!terms && !dims) {
+      const x = this.subterm(a), y = this.subterm(b);
+      try {
+        const equal = this.graph.within(NORMAL_FORM_STEPS, () => this.kernel.alphaEqual(x, y));
+        this.alphaMemo.set(`${x},${y},1,1`, equal);
+        return equal;
+      }
+      catch { return false; }
+    }
     return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
   }
   // Whether two compositions' tubes are on the same faces, in order. Their

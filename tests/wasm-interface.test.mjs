@@ -38,6 +38,29 @@ test("JS term, instruction, step and error encodings agree with the C header", (
 });
 
 const module = await createCubical();
+test("syntactic comparison separates inequality from failure and does not reduce", t => {
+  const kernel = new CubicalKernel(module);
+  t.after(() => kernel.dispose());
+  const unit = kernel.term("Unit"), point = kernel.term("Point");
+  const x = kernel.term("Var", 10), y = kernel.term("Var", 20);
+  const a = kernel.term("Lam", 10, unit, x), b = kernel.term("Lam", 20, unit, y);
+  const applied = kernel.term("App", 0, a, point);
+  assert.ok(kernel.alphaEqual(a, b));
+  assert.ok(!kernel.alphaEqual(a, kernel.term("Lam", 20, unit, x)));
+  assert.ok(!kernel.alphaEqual(applied, point));
+  assert.ok(kernel.alphaEqual(kernel.head(applied), point));
+  assert.ok(!kernel.alphaEqual(applied, point), "normalization must not change syntactic equality");
+  for (const value of [-1, 1.5, 2 ** 32]) assert.throws(() => kernel.alphaEqual(value, point), TypeError);
+  assert.throws(() => kernel.alphaEqual(0, point), /Unknown cubical node/);
+  assert.equal(module._cb_alpha_equal(0, a, b), -1);
+  assert.equal(module._cb_alpha_equal(kernel.handle, a, 0xffffffff), -1);
+  const c = kernel.term("Lam", 30, unit, kernel.term("Var", 30));
+  kernel.setStepBudget(1n);
+  assert.throws(() => kernel.alphaEqual(a, c), error => error.kind === "budget");
+  kernel.setStepBudget(kernel.stepBudget);
+  assert.ok(kernel.alphaEqual(a, c), "failed queries are retryable");
+});
+
 test("budget writes retain both 32-bit halves and restore the session baseline on failure", t => {
   const writes = [];
   const kernel = new CubicalKernel({ ...module, _cb_step_budget: (...args) => {
