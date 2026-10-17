@@ -1,9 +1,9 @@
 # Universal algebra
 
-Status: proposed on 2026-10-17 at the maintainer's request, against main
-`3be74796`. Nothing below is in the library. The three probes quoted here were
-checked on 2026-10-17 with `node cli/repl.mjs check` against that revision;
-their files are not fixtures. UA0–UA6 remain unimplemented. This roadmap
+Status: proposed on 2026-10-17 at the maintainer's request. Nothing below is
+in the library. The three probes quoted here were checked on 2026-10-17 with
+`node cli/repl.mjs check` against main `3be74796`, and again at `79d5cbf1`
+during review; their files are not fixtures. UA0–UA6 remain unimplemented. This roadmap
 builds on [core theories](../high-level-abstractions/core-theories.md) (L2.4,
 L2.6) and the [categories roadmap](../high-level-abstractions/categories.md)
 (L2.4b, L3.4, L3.5); it adds acceptance examples to those packages and does
@@ -64,9 +64,11 @@ Declaration counts include the generated theory interfaces.
 
 ### Probe 1: the pushout presentation and the equivalence of models
 
-47 declarations. The pushout of two theories along a shared ancestor is a
-theory that extends both, since `extends` amalgamates fields once per
-ancestor ([extension](../high-level-abstractions/core-theories.md#extension)):
+47 declarations. The pushout of two theories along an ancestor that holds
+every member they share is a theory that extends both, since `extends`
+amalgamates fields once per ancestor
+([extension](../high-level-abstractions/core-theories.md#extension)). `Magma`
+is the only ancestor `Monoid` and `Quasigroup` have in common:
 
 ```text
 theory AssociativeLoop(U < UU0) extends Monoid, Quasigroup {}
@@ -170,49 +172,61 @@ def c3_round_trip : c3_back =[Group(U0)] c3_group := group_round_trip(c3_group);
 - For any concrete group the recipe is the same: build it with `Group.make`;
   the pushout model and the pullback element are projections, with the magma
   equality by `refl`.
-- Two language points: a `match` whose motive mentions the scrutinee must
-  alias it, `match x as z return … z …` (E533), and an implicit universe is
-  resolved from the expected type, not from a concrete argument's type
-  (E391), so a definition applying such a function states its type.
+- One language point: a `match` whose motive mentions the scrutinee must
+  alias it, `match x as z return … z …` (E533).
 
 What no probe reaches: the cyclic group as a model of the pushout *clone*.
 That clone does not exist as a value; its n-ary operations are the free
 associative loop on n generators, terms modulo equations. The free magma
-(binary trees) and the free monoid (lists) are plain inductive types, but the
-free quasigroup, the free group and the pushout need a quotient by an
-inductively generated congruence, which is L2.6's construction or H2's indexed
+(binary trees) and the free monoid (lists) are plain inductive types, and the
+free group on generators with decidable equality, which `Fin(n)` has, is the
+set of reduced words. The free quasigroup and the pushout presentation are
+not built from normal forms here; the generic route is a quotient by an
+inductively generated congruence: L2.6's construction, or H2's indexed
 families.
 
 ## Decisions
 
 1. **Clones are the objects.** `Clone(U)` enters the library as in probe 2,
    with `full_clone`, and `Clone.cat` is the category of universal algebras
-   once L3.4 exists. `Fin` stays a Σ type over `Nat` until H2; the clone
+   once L3.4 exists. Once L2.4d lands, `Clone`, `Algebra` and
+   `AssociativeLoop` declare `deriving (morphisms)`, which their `T.Hom` and
+   `T.cat` then require. `Fin` stays a Σ type over `Nat` until H2; the clone
    interface does not depend on which `Fin` is used.
 2. **Models of a clone are a parameterized theory.** `Algebra(U, C)` as in
    probe 2, with `free_algebra` and its universal property in the library.
    Its category is `Algebra.cat` at each `C`, a category parameterized by an
    object of another; L3.4's `T.cat` must accept theory parameters.
-3. **Every declared theory gets a clone.** `T.clone : Clone(U)` has `T(n)` the
-   carrier of the free model on `Fin(n)` and substitution by fold. It comes
-   from L2.6's `free` capability and its universal equivalence, so it is a
-   library function on L2.6's output rather than a new generator. L2.6's
-   equational strategy refuses implemented members (E881); `Group` has them,
-   so lifting that refusal, by generating the fold's preservation proofs for
-   implemented members, is a prerequisite. The syntactic alternative, terms
-   modulo Birkhoff consequence, needs H2 for the consequence relation and a
-   completeness proof; it is not the primary route.
-4. **Models in a clone.** For a declared theory `T` and a clone `C`, `T.In(C)`
+3. **Every equational theory gets a clone.** For a one-sorted theory whose
+   laws are equations and whose `free` capability checks, `T.clone : Clone(U)`
+   has `T(n)` the carrier of the free model on `Fin(n)` and substitution by
+   fold. Not every declared theory qualifies: `Field` has a law outside the
+   equational fragment and no free model, theory families and many-sorted
+   theories are out of scope (open question 4), and L2.6's capability may
+   fail. `T.clone` comes from L2.6's `free` capability and its universal
+   equivalence, so it is a library function on L2.6's output rather than a
+   new generator. As a fixed generated name, `clone` joins the
+   [reserved names](../../guides/keywords.md), with user bindings migrated
+   first. L2.6's equational strategy refuses implemented members (E881);
+   `Group` has them, so lifting that refusal, by generating the fold's
+   preservation proofs for implemented members, is a prerequisite. The
+   syntactic alternative, terms modulo Birkhoff consequence, needs H2 for the
+   consequence relation and a completeness proof; it is not the primary
+   route.
+4. **Models in a clone.** For an equational theory `T` and a clone `C`, `T.In(C)`
    is the record of an operation of `C` for each operation of `T`, with `T`'s
    laws as equations in `C`. Set models are the case `C = full_clone(A)`:
    `T(U) ≃ exists A : set U. T.In(full_clone(A))`. The universal property of
    `T.clone` then reads `Clone.Hom(T.clone, C) ≃ T.In(C)`, and in particular
    `Algebra(U, T.clone) ≃ T(U)`. Whether `T.In` is generated or written per
-   theory is open question 5; the four theories of statement 2 can be done by
-   hand first.
-5. **Pushouts of clones come from `extends`.** For `R extends P, Q` sharing an
-   ancestor `S`, an `R`-structure in any clone is a `P`-structure and a
-   `Q`-structure agreeing on `S`, by the record's amalgamation and pair eta.
+   theory is open question 3; the four theories of statement 2 can be done by
+   hand first, which also defers reserving `In` as a generated name.
+5. **Pushouts of clones come from `extends`.** For `R extends P, Q {}` with
+   an empty body, whose shared members are exactly those of an ancestor `S`
+   (as `Magma` is for `Monoid` and `Quasigroup`), an `R`-structure in any clone is a
+   `P`-structure and a `Q`-structure agreeing on `S`, by the record's
+   amalgamation and pair eta. When `P` and `Q` share members outside one
+   ancestor, the pushout is over the theory of all shared members instead.
    With decision 4 that is the universal property: `R.clone` with its four
    clone homomorphisms satisfies L3.5's `IsPushout` in `Clone.cat`.
 6. **The equality.** `Group.clone ≅ AssociativeLoop.clone` is given on
@@ -229,7 +243,14 @@ families.
    implemented divisions, so a group homomorphism is an associative-loop
    homomorphism and conversely, with `map_inv` derived from `map_left_div`
    and `map_one`. The pullback of categories is taken strictly, over the
-   forgetful functors to `Magma.cat`, since the carriers are literally shared.
+   forgetful functors to `Magma.cat`, since the carriers are literally shared,
+   and it is built as an explicit `Precategory` value: objects as probe 3's
+   `ModelPullback`, arrows pairs of homomorphisms with equal magma maps.
+   L3.5's `IsPullback` does not apply here, since it needs an ambient
+   precategory and L3.4's precategories have hom-sets, while functors between
+   univalent categories form no set (those from the terminal category into
+   `Group.cat` are the groups). UA6 therefore proves an equivalence of
+   categories with L3.4's functors, not an `IsPullback` certificate.
 8. **Universes.** `Clone(U) : next(U)` and `Group(U) : next(U)`; the
    equivalence of probe 1 is in `ContrEquiv(next(U), …)`. Statement 2 is at
    each fixed `U`. `T.clone` for a theory whose models are in `U` lives in
@@ -240,13 +261,13 @@ families.
 
 | Milestone | Content | Acceptance | Depends on |
 | --- | --- | --- | --- |
-| **UA0** Prerequisites | L2.4d morphism opt-ins; L3.4 `Precategory`, functors, `T.cat` with theory parameters; L3.5 `IsPushout` and `IsPullback`; L2.4b structure identity; L2.6 `free` with its universal equivalence, and E881 lifted for implemented members | Theirs | — |
-| **UA1** Clones and their models | Probe 2 in the library: `Clone`, `full_clone`, `Fin`, `Algebra(U, C)`, `free_algebra`, `extension` with its generator and uniqueness laws, `hom_ext` and the category laws; fixtures for each | The library's statements check; `Clone.cat` and `Algebra.cat` once UA0's L3.4 exists | None of UA0 for the statements; L3.4 for the categories |
+| **UA0** Prerequisites | L2.4d morphism opt-ins; L3.4 `Precategory`, functors, equivalences of categories, `T.cat` with theory parameters; L3.5 `IsPushout`; L2.4b structure identity; L2.6 `free` with its universal equivalence, and E881 lifted for implemented members | Theirs | — |
+| **UA1** Clones and their models | Probe 2 in the library: `Clone`, `full_clone`, `Fin`, `Algebra(U, C)`, `free_algebra`, `extension` with its generator and uniqueness laws, `hom_ext` and the category laws; fixtures for each; `deriving (morphisms)` on `Clone` and `Algebra` once L2.4d lands | The library's statements check; `Clone.cat` and `Algebra.cat` once UA0's L3.4 exists | None of UA0 for the statements; L2.4d and L3.4 for the categories |
 | **UA2** Groups as pullback models | Probe 1 and probe 3 in `library/algebra.cubist` and fixtures: `AssociativeLoop`, the equivalence with `Group(U)`, the `Hom` correspondence, the Σ-with-path pullback and its equivalence with `AssociativeLoop(U)`, the cyclic group as an element | `evaluate` of divisions and recovered inverses on the integers and on `C3`; the `Hom` correspondence composes with identities | None of UA0 |
-| **UA3** The clone of a theory | `T.clone` from L2.6's free models; `Algebra(U, T.clone) ≃ T(U)` for `Magma`, `Monoid`, `Quasigroup` and `Group`; the free magma (binary trees) and free monoid (lists) built by hand and shown equal to the generated clones | `Group.clone.T(1)` is the free group on one generator; `Monoid.clone.T(n)` is `List(Fin(n))` | UA1; L2.6 with E881 lifted |
+| **UA3** The clone of a theory | `T.clone` from L2.6's free models; `Algebra(U, T.clone) ≃ T(U)` for `Magma`, `Monoid`, `Quasigroup` and `Group`; the free magma (binary trees) and free monoid (lists) built by hand and shown equal to the generated clones | `Group.clone.T(1) ≃ Z`, the library's integers, as the free group on one generator; `Monoid.clone.T(n) ≃ List(Fin(n))` | UA1; L2.6 with E881 lifted |
 | **UA4** Interpretations | `T.In(C)` for the four theories, `Clone.Hom(T.clone, C) ≃ T.In(C)`, and the principle that an equation valid in every set model holds in `T.clone` | A clone homomorphism `Monoid.clone -> Group.clone` built from an interpretation; the equation `left_div(x, one) * y = left_div(x, y)` transported into `AssociativeLoop.clone` | UA3 |
-| **UA5** Group as a pushout of clones | `IsPushout(Clone.cat, …)` for every `R extends P, Q` over a shared ancestor, then the square of statement 2; `Group.clone ≅ AssociativeLoop.clone`; the equality by univalence of `Clone.cat` | The equality `Group.clone = Monoid.clone ⊔ Quasigroup.clone` over `Magma.clone` checks; `IsPushout` is a proposition and the pushout object is unique up to equality | UA4; L3.5; L2.4b |
-| **UA6** Categories of models as pullbacks | `Group.cat` as the pullback of `Monoid.cat` and `Quasigroup.cat` over `Magma.cat`; `Algebra.cat(T.clone) ≃ T.cat`; the semantics functor on the square of statement 2 | `C3` and the integers transported across both equivalences, with their divisions evaluated | UA2, UA3; L3.4, L3.5 |
+| **UA5** Group as a pushout of clones | `IsPushout(Clone.cat, …)` for every `R extends P, Q {}` with an empty body whose shared members are exactly an ancestor's, then the square of statement 2; `Group.clone ≅ AssociativeLoop.clone`; the equality by univalence of `Clone.cat` | The equality `Group.clone = Monoid.clone ⊔ Quasigroup.clone` over `Magma.clone` checks; `IsPushout` is a proposition and the pushout object is unique up to equality | UA4; L3.5; L2.4b |
+| **UA6** Categories of models as pullbacks | The pullback of `Monoid.cat` and `Quasigroup.cat` over `Magma.cat` as an explicit `Precategory` (decision 7) and `Group.cat` equivalent to it; `Algebra.cat(T.clone) ≃ T.cat`; the semantics functor on the square of statement 2 | `C3` and the integers transported across both equivalences, with their divisions evaluated | UA2, UA3, UA4; L3.4 |
 
 ## Order
 
@@ -257,8 +278,9 @@ records, so they belong early in the
 [language progression](../work-plan.md#first-actions), alongside the
 algebraic-model examples of its first row. UA3 follows L2.6's universal
 proofs and is the first consumer of free models with implemented members.
-UA4 and UA5 are acceptance examples for L3.5's `IsPushout`; UA6 for the
-pullbacks of categories. None of them resumes the paused mathematics
+UA4 needs no categories package and prepares the next two. UA5 is an
+acceptance example for L3.5's `IsPushout`; UA6 for L3.4's functors and
+equivalences of categories. None of them resumes the paused mathematics
 projects.
 
 ## Language work it drives
@@ -268,8 +290,8 @@ projects.
 | Clones and `Algebra(U, C)` | Nat-indexed carrier families with function-typed operation arguments; parameterized theories whose parameter is a model; `T.cat` for parameterized theories; universe levels `next(U)` in generated interfaces |
 | Equalities of models and homomorphisms | Structure identity for theory records (L2.4b), replacing hand-written record paths with `prop_over`; `T.Hom.ext` |
 | `T.clone` and `T.In(C)` | L2.6's free capability with implemented members; generated interfaces that quantify over another theory's models; the equation-transport principle |
-| Pushouts of clones and pullbacks of categories | L3.5's predicates on supplied cocones; functors between parameterized categories; univalence of `T.cat` for algebraic theories |
-| Concrete groups | Decidable equality and Hedberg for enumerations; `match` motives over the scrutinee; implicit universes resolved from arguments as well as expected types (E391); `Fin` until H2 |
+| Pushouts of clones and pullbacks of categories | L3.5's predicates on supplied cocones; functors between parameterized categories and an explicit pullback precategory; L3.4's equivalences of categories; univalence of `T.cat` for algebraic theories |
+| Concrete groups | Decidable equality and Hedberg for enumerations; `match` motives over the scrutinee; `Fin` until H2 |
 
 ## Open questions
 
@@ -286,7 +308,9 @@ projects.
 4. **Many-sorted theories.** Clones are one-sorted. Theory families and
    multi-carrier theories such as modules need many-sorted clones or Lawvere
    theories; out of scope here.
-5. **The pullback of categories.** Decision 7 takes it strictly, which the
-   shared carriers justify. Whether L3.5 states `IsPullback` for categories
-   as objects of a category of categories, or UA6 proves the equivalence of
-   categories directly, follows L3.4's choice of how functors are packaged.
+5. **Equivalence of categories.** Decision 7 proves UA6 as an equivalence of
+   categories between `Group.cat` and an explicit pullback precategory. Which
+   presentation of equivalence L3.4 supplies (a functor that is fully
+   faithful and essentially surjective, or an adjoint equivalence) decides
+   how UA6 states it; both are provable from probe 1's maps and the `Hom`
+   correspondence.
