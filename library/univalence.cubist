@@ -7,7 +7,8 @@ import contractible_maps;
 // along every line of Glue types, and the type of types equivalent to a type
 // is contractible. The equivalences are those of contractible_maps, the
 // kernel's own form; the `ua` builtin takes the Equiv of `import paths_;`,
-// with an inverse and its laws.
+// with an inverse and its laws. Glue-path transport agrees with the maps,
+// and operation-preserving maps give paths between transported operations.
 
 // The path of types an equivalence gives: A glued along it at 0, and B along
 // the identity at 1.
@@ -197,29 +198,26 @@ computable def univalence(U < UU0, A, B : U) :
     idtoequiv_glue_path(U, A, B), glue_path_idtoequiv(U, A, B)
   );
 
-// A dependent path identifies transport of its source with its target.
-// The final face keeps the target fixed even without a regularity rule for
-// composition in a constant family.
-computable def pathp_transport(
-  U < UU0, A, B : U, p : A = B, a : A, b : B, q : PathP(fun (i : Interval) => p @ i, a, b)
+// Function-type composition computes by reverse-transporting each input
+// and forward-transporting the output. A map-preserving binary operation
+// therefore agrees with its target operation along the Glue path.
+computable def glue_path_operation(
+  U < UU0, A, B : U, e : ContrEquiv(U, A, B), f : A -> A -> A, g : B -> B -> B, hom : forall a,
+  b : A. e.1(f(a, b)) = g(e.1(a), e.1(b))
 ) :
-  comp(fun (i : Interval) => p @ i, a) = b := path k => comp(
-    fun (i : Interval) => p @ (i | k), q @ k, face(k, 1, fun (i : Interval) => b)
+  comp(
+    fun (i : Interval) => (glue_path(U, A, B, e) @ i) -> (glue_path(U, A, B, e) @ i)
+    -> (glue_path(U, A, B, e) @ i), f
+  ) = g {
+  let back := fun (y : B) => comp(fun (i : Interval) => glue_path(U, A, B, e) @ ~i, y);
+  let cancel := fun (y : B) => trans(
+    cong(e.1, glue_path_transport_reverse(U, A, B, e, y)), equiv_inverse_section(U, A, B, e, y)
   );
-
-// A binary operation transported with its carrier is conjugated by forward
-// and reverse transport. The proof applies the filling operation to the
-// reverse-filling arguments, then uses their dependent path.
-computable def transport_binary_operation(U < UU0, A, B : U, p : A = B, op : A -> A -> A, x, y : B) :
-  comp(fun (i : Interval) => (p @ i) -> (p @ i) -> (p @ i), op)(x, y) = comp(
-    fun (i : Interval) => p @ i,
-    op(comp(fun (i : Interval) => p @ ~i, x), comp(fun (i : Interval) => p @ ~i, y))
-  ) := sym(
-    pathp_transport(
-      U, A, B, p, op(comp(fun (i : Interval) => p @ ~i, x), comp(fun (i : Interval) => p @ ~i, y)),
-      comp(fun (i : Interval) => (p @ i) -> (p @ i) -> (p @ i), op)(x, y),
-      path i => fill(fun (j : Interval) => (p @ j) -> (p @ j) -> (p @ j), op, i)(
-        fill(fun (j : Interval) => p @ ~j, x, ~i), fill(fun (j : Interval) => p @ ~j, y, ~i)
-      )
+  exact path j => fun (x, y : B) => trans(
+    glue_path_transport(U, A, B, e, f(back(x), back(y))),
+    trans(
+      hom(back(x), back(y)),
+      trans(cong(fun (z : B) => g(z, e.1(back(y))), cancel(x)), cong(g(x), cancel(y)))
     )
-  );
+  ) @ j;
+}

@@ -32,17 +32,18 @@ def mul_agrees(a, b : BNat) :
     fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
   )(a, b) = a * b := unat_bnat_transport_mul(a, b);
 
-// A dependent function family travels along the same path. Its
-// argument's path type changes with that argument and with the carrier.
-computable def transported_reflexivity : forall n : BNat. n = n := comp(
-  fun (i : Interval) => forall n : unat_bnat_path @ i. n = n, fun (n : UNat) => refl(n)
+// A dependent function family carries both a value and a path tying that
+// value to its argument. The closed first projection is checked by reduction.
+computable def transported_witness : forall n : BNat. exists m : BNat. m = n := comp(
+  fun (i : Interval) => forall n : unat_bnat_path @ i. exists m : unat_bnat_path @ i. m = n,
+  fun (n : UNat) => (n, refl(n))
 );
 
-def dependent_family_agrees(n : BNat) :
-  transported_reflexivity(n) = refl(n) := bnat_is_set(n, n, transported_reflexivity(n), refl(n));
+def dependent_closed_value : transported_witness(0b101).1 = 0b101 {
+  rfl;
+}
 
-def dependent_closed :
-  transported_reflexivity(0b101) = refl(0b101) := dependent_family_agrees(0b101);
+def dependent_closed_path : transported_witness(0b101).1 = 0b101 := transported_witness(0b101).2;
 
 // The universe path's equivalence uses the semiring isomorphism's maps.
 def same_forward_map : unat_bnat_equiv.1 = unat_bnat_semiring_iso.to.map {

@@ -27,61 +27,32 @@ computable def unat_bnat_transport_one :
     succ(zero)
   );
 
-computable def unat_bnat_forward_reverse(n : BNat) :
-  bnat_of_unat(comp(fun (i : Interval) => unat_bnat_path @ ~i, n)) = n := trans(
-    cong(bnat_of_unat, bnat_unat_transport(n)), bnat_roundtrip(n)
+// These are agreement paths. Executing the transported unary operations
+// still traverses unary magnitudes; numerical clients use bnat_add/bnat_mul.
+computable def unat_bnat_add_operation :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
+  ) = bnat_add := glue_path_operation(
+    U0, UNat, BNat, unat_bnat_equiv, add, bnat_add, bnat_encode_add
+  );
+
+computable def unat_bnat_mul_operation :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
+  ) = bnat_mul := glue_path_operation(
+    U0, UNat, BNat, unat_bnat_equiv, mul, bnat_mul, bnat_encode_mul
   );
 
 computable def unat_bnat_transport_add(a, b : BNat) :
   comp(
     fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
-  )(a, b) = bnat_add(a, b) {
-  let ra := comp(fun (i : Interval) => unat_bnat_path @ ~i, a);
-  let rb := comp(fun (i : Interval) => unat_bnat_path @ ~i, b);
-  calc {
-    comp(
-      fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i),
-      add
-    )(a, b) = comp(fun (i : Interval) => unat_bnat_path @ i, add(ra, rb)) by transport_binary_operation(
-      U0, UNat, BNat, unat_bnat_path, add, a, b
-    );
-    _ = bnat_of_unat(add(ra, rb)) by unat_bnat_transport(add(ra, rb));
-    _ = bnat_add(bnat_of_unat(ra), bnat_of_unat(rb)) by bnat_encode_add(ra, rb);
-    _ = bnat_add(a, bnat_of_unat(rb)) by cong(
-      fun (n : BNat) => bnat_add(n, bnat_of_unat(rb)), unat_bnat_forward_reverse(a)
-    );
-    _ = bnat_add(a, b) by cong(bnat_add(a), unat_bnat_forward_reverse(b));
-  }
-}
+  )(a, b) = bnat_add(a, b) := cong(
+    fun (op : BNat -> BNat -> BNat) => op(a, b), unat_bnat_add_operation
+  );
 
 computable def unat_bnat_transport_mul(a, b : BNat) :
   comp(
     fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
-  )(a, b) = bnat_mul(a, b) {
-  let ra := comp(fun (i : Interval) => unat_bnat_path @ ~i, a);
-  let rb := comp(fun (i : Interval) => unat_bnat_path @ ~i, b);
-  calc {
-    comp(
-      fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i),
-      mul
-    )(a, b) = comp(fun (i : Interval) => unat_bnat_path @ i, mul(ra, rb)) by transport_binary_operation(
-      U0, UNat, BNat, unat_bnat_path, mul, a, b
-    );
-    _ = bnat_of_unat(mul(ra, rb)) by unat_bnat_transport(mul(ra, rb));
-    _ = bnat_mul(bnat_of_unat(ra), bnat_of_unat(rb)) by bnat_encode_mul(ra, rb);
-    _ = bnat_mul(a, bnat_of_unat(rb)) by cong(
-      fun (n : BNat) => bnat_mul(n, bnat_of_unat(rb)), unat_bnat_forward_reverse(a)
-    );
-    _ = bnat_mul(a, b) by cong(bnat_mul(a), unat_bnat_forward_reverse(b));
-  }
-}
-
-computable def unat_bnat_add_operation :
-  comp(
-    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
-  ) = bnat_add := path i => fun (a, b : BNat) => unat_bnat_transport_add(a, b) @ i;
-
-computable def unat_bnat_mul_operation :
-  comp(
-    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
-  ) = bnat_mul := path i => fun (a, b : BNat) => unat_bnat_transport_mul(a, b) @ i;
+  )(a, b) = bnat_mul(a, b) := cong(
+    fun (op : BNat -> BNat -> BNat) => op(a, b), unat_bnat_mul_operation
+  );

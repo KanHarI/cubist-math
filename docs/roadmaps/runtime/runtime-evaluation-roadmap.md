@@ -11,7 +11,8 @@ EVAL1's one-pass REPL path and a version-3 baseline.
 [#269](https://github.com/KanHarI/cubist-math/pull/269) implements EVAL2, caching
 completed full normalizations by exact syntax identity. NUM0's source
 representations and bit arithmetic are implemented below. NUM1's semiring
-agreement and universe transport are implemented; its order and strong-recursion work,
+agreement and universe transport are implemented; its order, bitwise setness
+and strong-recursion work,
 NUM2 and EVAL3–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
 evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
@@ -305,8 +306,8 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 ## Milestones
 
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
-NUM1 has its semiring agreement and universe transport; its remaining parts and the other rows are
-planned. Sizes are relative scope, as in
+NUM1 has its semiring agreement and universe transport. Its remaining parts
+and the other rows are planned. Sizes are relative scope, as in
 the work plan.
 
 | Package | Deliverable | Dependencies | Size |
@@ -314,7 +315,7 @@ the work plan.
 | EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
-| NUM1 | Natural semiring isomorphism and U0 path/transport implemented; order correctness, H1 binary Peano view and coherent strong recursion remain | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
+| NUM1 | Natural semiring isomorphism and U0 path/transport implemented; order correctness, bitwise setness, H1 binary Peano view and coherent strong recursion remain | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
@@ -440,9 +441,11 @@ agreement portion. Public `Nat` has not switched.
 isomorphism's maps and their checked inverse laws. General Glue transport
 lemmas prove forward/reverse agreement with the explicit conversions.
 Transporting zero, one and the whole addition/multiplication functions
-agrees with the binary operations. Closed forward/reverse examples compute
-by conversion; a dependent function family is transported and its agreement
-proved in [binary_transport.cubist](../../../cubist-tests/binary_transport.cubist).
+agrees with the binary operations. Transported unary functions still evaluate
+through the conversions; the agreement paths justify using the direct binary
+operations. Closed forward/reverse examples compute by conversion; a
+data-carrying dependent function family is transported, and its closed first
+projection computes in [binary_transport.cubist](../../../cubist-tests/binary_transport.cubist).
 These proofs add no assumptions or kernel rules. Comparison correctness,
 bitwise setness, the dependent Peano view, strong recursion and factorial
 remain NUM1 work.
@@ -457,10 +460,11 @@ imports. Update numeral-limit diagnostic hints to the new library notation.
 Preserve their induction API and recheck the archive. The switch
 also requires decimal numeral input and decimal/binary printing that operate
 directly on binary magnitudes, without an intermediate unary numeral. It
-waits for NUM1's correctness of comparison,
-and dependent strong recursion with coherence. NUM0's computed predicates
+waits for NUM1's comparison correctness and dependent strong recursion
+with coherence. NUM0's computed predicates
 are not yet order-correctness proofs. The inverse functions now form a checked
-semiring isomorphism and the required universe path with transport agreement.
+semiring isomorphism. The universe path built from it has checked transport
+laws.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
