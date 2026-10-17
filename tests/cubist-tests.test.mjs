@@ -46,4 +46,8 @@ test("checked comments are written above their line, wrapped, and read back", ()
   const lines = text.split("\n"), at = { 1: lines.indexOf("def wrong := 1;"), 2: lines.indexOf("print(typeof(2));") };
   assert.deepEqual(stated(text), items.map(item => ({ ...item, line: at[item.line] })));
   assert.equal(stripped(text), source);
+  // Module annotations keep their line ownership and normalize text even
+  // when continuation indentation changes. Trailing comments are not owners.
+  assert.deepEqual(stated("  // Error: first  part\n//   second at 2:3\n// A note.\ndef wrong := missing; // Error: trailing\n"),
+    [{ line: 3, label: "Error", text: "first part second" }]);
 });

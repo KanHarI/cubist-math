@@ -200,6 +200,8 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   await assert.rejects(verify({ ...rejected, attrs: { ...rejected.attrs, "data-error": "Type mismatch" } }, 9), /not data-error/);
   assert.deepEqual(statedErrors("  // Error: first part\n  //   second part\nx;  // Error: other\n  //   not a continuation"),
     ["first part second part", "other"]);
+  assert.deepEqual(statedErrors("  // Error: first  part at 2:3\n //   different indent\n// note // Error: other\n//   not a continuation"),
+    ["first  part at 2:3", "other"]);
   await assert.rejects(verify({ ...accepted, text: "import nat; use nat; def wrong : 0 = 1 { exact refl(0); }" }, 5), /should check/);
   // An accepted example states its lint warnings, and only those.
   const unused = "import nat; use nat; def copy(n : Nat) := induction n as k return Nat { zero => 0; succ h => h; };";
