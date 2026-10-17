@@ -353,10 +353,14 @@ async function check({keepInspection=false}={}) {
         focusOffset = null;
         if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
         else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
-        // Embedded, the inspector is on top and the source below stays in place.
-        if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
-          revealSource({ module: proofId, start: requestedOffset });
-        else if (info) revealSource(definitionSite(info));
+        // Revealing the declaration switches to Read: not over an edit that
+        // stayed open. Embedded, the inspector is on top and the source below
+        // stays in place.
+        if (sourceMode !== "edit") {
+          if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
+            revealSource({ module: proofId, start: requestedOffset });
+          else if (info) revealSource(definitionSite(info));
+        }
       }
     }
     rememberDraft();
@@ -388,12 +392,15 @@ function setMode(mode) {
       ? "Edit the source, then Check proof. A failed check preserves your last checked proof."
       : mode === "generated" ? "Frontend expansion from the last check. Click a declaration or linked name to inspect it. Each family shows its checking status."
       : last ? "Click a name or numeral to inspect its checked type, context, and definition. Click a line number to see its goal."
-      : previewHint;
+      : $("diagnostic").hidden ? previewHint
+      : "The source as loaded. It did not check: see the diagnostic above, then edit it and check again.";
   if (mode === "generated") return showGeneration();
 }
-// The source before its check: highlighted, with nothing to inspect yet.
+// The source before its check: highlighted, with nothing to inspect yet. An
+// embedded frame starts without a source, and shows nothing until one arrives.
 function renderPreview(source) {
-  renderSource($("read-source"), { source, links: [], mode: "mathematical", preview: true });
+  renderSource($("read-source"), source ? { source, links: [], mode: "mathematical", preview: true } : null);
+  if (!source) $("source-count").textContent = "";
   if (sourceMode === "read") $("source-hint").textContent = previewHint;
 }
 async function showGeneration() {
@@ -663,6 +670,8 @@ function renderSource(target = $("read-source"), snapshot = last) {
         link.href = `proof.html?proof=${encodeURIComponent(text)}`;
         link.title = `Open ${text} module source`;
         link.onclick = () => {
+          // Before a check there is no inspection to come back to.
+          if (!last) return;
           const address = new URL(link.href);
           address.searchParams.set("back", rememberInspection());
           link.href = address.href;

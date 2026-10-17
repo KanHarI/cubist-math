@@ -55,9 +55,18 @@ async function select(path, remember) {
   }
 }
 
+// Back to the page without a file: nothing is selected, as at first.
+function unselect() {
+  selected = null;
+  tree.select("");
+  $("file-details").hidden = true;
+  $("file-empty").hidden = false;
+  document.title = "Cubist · Files";
+}
 addEventListener("popstate", () => {
   const path = new URLSearchParams(location.search).get("path");
   if (path) select(path, false);
+  else unselect();
 });
 const initial = new URLSearchParams(location.search).get("path");
 if (initial) select(initial, false);

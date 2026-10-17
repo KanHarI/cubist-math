@@ -595,6 +595,25 @@ theory Parent(U < UU0) { M : U;
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /· checked/);
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import nat;"), /· checked/);
+  // A check started from Edit shows the checked source, revealing the named
+  // declaration; editing that goes on during the check stays open instead.
+  const editDuringCheck = async typed => {
+    await page.goto(`${base}/proof.html?proof=euclid&name=euclid`); await idle();
+    await page.locator("#edit-mode").click();
+    await page.locator("#editor").fill(`${await page.locator("#editor").inputValue()}\n// edited before the check`);
+    await page.locator("#check").click();
+    await page.waitForFunction(() => document.querySelector("#status")?.textContent === "Checking…");
+    if (typed) await page.locator("#editor").evaluate(editor => {
+      editor.value += "\n// typed during the check";
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await idle(); await inspected("euclid");
+    return page.locator("#editor").isVisible();
+  };
+  assert.equal(await editDuringCheck(false), false);
+  assert.match(await page.locator("#read-source .source-line.active").textContent(), /def euclid/);
+  assert.equal(await editDuringCheck(true), true);
+  assert.match(await page.locator("#dirty").textContent(), /not checked/);
   assert.deepEqual(errors, []);
   console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and imports by place");
 });

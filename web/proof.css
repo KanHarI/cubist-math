@@ -893,6 +893,8 @@ body.embedded > header, body.embedded .introduction, body.embedded .toolbar,
 body.embedded .compiler-options, body.embedded #source-notice, body.embedded #development-note,
 body.embedded #puncture-note, body.embedded #complex-note, body.embedded #language-guide,
 body.embedded footer, body.embedded #repl-panel { display: none; }
+/* Embedded, the name the reader clicked opens, not the file's last declaration. */
+body.embedded .not-embedded { display: none; }
 .context-entry { flex: none; margin: 1px 5px; padding: 0 5px; font-size: 11px; line-height: 22px; }
 #context-panel select { width: 100%; margin-top: 5px; }
 #context-panel fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
