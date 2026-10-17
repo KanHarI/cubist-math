@@ -15,6 +15,7 @@ import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
 import { CubicalPublication } from "./cubical-publication.mjs";
+import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { ScopePoints } from "./translator/scope-points.mjs";
 import {CompilationBindings} from "./translator/compilation-bindings.mjs";
 import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
@@ -382,8 +383,8 @@ export class CubicalProgram {
         onDeclaration: (declaration, result) => {
           this.onDeclaration?.(name, declaration, result, checker);
           const accepted=result.status === "checked-native-cubical";
-          if(accepted)publication.records.push(this.prepareReferences(name,main,declaration,result,pending));
           this.completed++;
+          if(accepted)publication.records.push(this.prepareReferences(name,main,declaration,result,pending));
           pending = [];
           onProgress({ completed: this.completed, total,
             current: `${name}.${result.name}`, phase: "checked", unit: "declarations", instructions: checker.steps });

@@ -469,24 +469,6 @@ def three(S : T(U0)) : S.M { use S; exact 3; }`;
   }
 });
 
-test("FG1: observer exceptions roll back the active generated group and permit a fresh check", async t => {
-  const {CubicalProgram} = await import("../web/cubical-program.mjs");
-  let reject = true;
-  const program = new CubicalProgram(module, sourceReader(), {onDeclaration(name, declaration) {
-    if(name === "main" && declaration.name.text === "T.c" && reject) {
-      reject = false;
-      throw Error("observer interrupted publication");
-    }
-  }});
-  t.after(() => program.dispose());
-  const source = "import hlevels; def before : Unit := tt; theory T(U < UU0) { M : set U; c : M; } def after : Unit := before;";
-  await assert.rejects(program.check(source, "main"), /observer interrupted publication/);
-  absentNative(program, "main__T");
-  const recovered = await program.check(source, "main");
-  assert.deepEqual(recovered.gaps, []);
-  assert.equal(recovered.outputs.find(d=>d.name==="after").verified, true);
-});
-
 // Observers see the program checker; work spent before they interrupt a
 // module remains counted, and the module restores its printing selection.
 test("module observers share checker work and restore printing context on interruption", async t => {
@@ -510,7 +492,7 @@ for(const generated of [false,true])for(const stage of ["observer","references",
   test(`publication interruption: ${stage} in ${generated?"generated group":"ordinary declaration"} rolls back native and frontend records`,async t=>{
     const {CubicalProgram}=await import("../web/cubical-program.mjs");
     const root=generated?"T":"point",target=generated?"T.c":"point";
-    let reject=true,before;
+    let reject=true,before,expectedCompleted;
     const frontend=()=>({maps:[program.views,program.declarationBindings,program.declarationReferences].map(map=>[...map]),
       locals:{...program.localSymbols},links:[...program.links]});
     const interrupt=()=>{reject=false;throw Error("publication interrupted");};
@@ -519,6 +501,8 @@ for(const generated of [false,true])for(const stage of ["observer","references",
         if(reject&&name==="main"&&declaration.name.text===root)before=frontend();
       },
       onDeclaration(name,declaration,result) {
+        if(reject&&name==="main"&&declaration.name.text===target)
+          expectedCompleted=program.completed+(stage==="observer"?0:1);
         if(reject&&stage==="observer"&&name==="main"&&declaration.name.text===target) {
           assert.equal(result.status,"checked-native-cubical");interrupt();
         }
@@ -540,6 +524,7 @@ def after : Unit := before(tt);`;
     }),/publication interrupted/);
     assert.ok(before,"the target publication was reached");
     assert.equal(reject,false,"the intended observer interrupted checking");
+    assert.equal(program.completed,expectedCompleted,"completed work remains counted on each error path");
     assert.equal(program.scopeReady,false);
     assert.equal(program.kernel.definitions.has("main__before"),true,"earlier publication survives");
     absentNative(program,`main__${root}`);

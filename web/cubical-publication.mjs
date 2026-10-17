@@ -15,7 +15,7 @@ export class CubicalPublication {
     this.transaction=null;
   }
   begin(group=false) {
-    if(this.start!==null)throw new Error("A publication is already active.");
+    if(this.start!==null)throw new TypeError("A publication is already active.");
     this.start=this.statements.length;
     this.group=group;
     if(group||this.program.manageTransactions)
@@ -23,14 +23,15 @@ export class CubicalPublication {
   }
   beginDeclaration() { if(!this.group)this.begin(); }
   endDeclaration(accept) {
-    // Ordinary refusals retain partial proof statements for inspection, as
-    // before. A refused generated family discards all its members together.
-    if(!this.group)this.finish(accept,true);
+    if(!this.group)this.finish(accept);
   }
-  finish(accept,keepStatements=false) {
-    const {transaction,records,start}=this;
+  finish(accept) {
+    const {transaction,records,start,group}=this;
     this.transaction=null;this.records=[];this.start=null;this.group=false;
-    if(!accept&&!keepStatements)this.statements.length=start;
+    // Ordinary refusals retain partial statements for inspection. A refused
+    // generated family discards its members together. If translation throws,
+    // the caller publishes no module statements at all.
+    if(!accept&&group)this.statements.length=start;
     transaction?.finish(accept);
     if(accept)for(const record of records)this.program.publishReferences(record);
   }
