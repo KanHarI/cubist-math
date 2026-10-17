@@ -93,6 +93,17 @@ computable def original_group_constructor(G : Group(U0)) : Group(U0) := Group.ma
   G.M, G.M_is_set, G.mul, G.mul_assoc, G.one, G.one_mul, G.mul_one, G.inv, G.inv_mul, G.mul_inv
 );
 
+computable def original_comm_ring_constructor(A : CommRing(U0)) : CommRing(U0) := CommRing.make(
+  A.R, A.R_is_set, A.add, A.add_assoc, A.zero, A.zero_add, A.add_zero, A.neg, A.neg_add, A.add_neg,
+  A.add_comm, A.mul, A.mul_assoc, A.one, A.one_mul, A.mul_one, A.mul_comm, A.mul_add
+);
+
+computable def original_field_constructor(A : Field(U0)) : Field(U0) := Field.make(
+  A.R, A.R_is_set, A.add, A.add_assoc, A.zero, A.zero_add, A.add_zero, A.neg, A.neg_add, A.add_neg,
+  A.add_comm, A.mul, A.mul_assoc, A.one, A.one_mul, A.mul_one, A.mul_comm, A.mul_add, A.inverses,
+  A.zero_ne_one
+);
+
 // Homomorphisms explicitly preserve implemented operations in this slice.
 computable def comm_ring_identity(A : CommRing(U0)) : CommRing.Hom(A, A) := CommRing.Hom.make(
   A, A, map := fun (x : A.R) => x, map_add := fun (x, y : A.R) => refl(A.add(x, y)),

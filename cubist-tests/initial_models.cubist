@@ -82,6 +82,16 @@ def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
   rfl;
 }
 
+// Implemented inherited divisions currently prevent initial/free construction
+// for the library's groups and rings, including these formerly supported cases.
+// Error: E881: The equational strategy does not yet generate folds for Group's implemented
+//   inherited members.
+free FG(A : U0) : Group(U0) on A;
+
+// Error: E881: The equational strategy does not yet generate folds for CommRing's implemented
+//   inherited members.
+initial IntegerPresentation : CommRing(U0);
+
 // The equational strategy cannot yet fold implemented inherited members.
 // Field also has laws outside the equational fragment.
 // Refusal does not establish whether an initial model exists.

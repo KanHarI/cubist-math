@@ -508,11 +508,13 @@ def length{{A : U0}}(w : W(A)) : Nat := W.fold(A, nat_additive.monoid, fun (a : 
 print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
 
 def unit_left{{A : U0}}(x : W(A)) : W.mul(W.one, x) = x := W.one_mul(x);</code></pre>
+            <p>The library's <code>Group</code>, <code>AbelianGroup</code>, <code>Ring</code>, <code>CommRing</code> and their extensions currently refuse <code>initial</code>/<code>free</code> with E881: their inherited division implementations need fold preservation proofs that the strategy does not yet generate. This temporarily removes support for earlier group and commutative-ring presentations. The monoid examples above remain supported.</p>
             <p>The strategy refuses <code>Field</code> first because it inherits the additive group's implemented divisions and division laws, whose fold proofs are not generated yet (E881). It also has laws outside the equational fragment. This is a limitation of the strategy, not a proof that an initial model does not exist. Untruncated carriers are also unsupported; the circle remains an ordinary <code>inductive</code> declaration.</p>
             <p>The generator type must fit the carrier's universe. E870 marks the expression after <code>on</code> when it does not: choose a larger carrier universe or a smaller generator type.</p>
             <pre><code data-check="reject">import hlevels;
 import algebra;
 
+free FG(A : U0) : Group(U0) on A;  // Error: The equational strategy does not yet generate folds for Group's implemented inherited members.
 initial F : Field(U0);  // Error: The equational strategy does not yet generate folds for Field's implemented inherited members.
 
 // A truncated law also fails without any implemented members.

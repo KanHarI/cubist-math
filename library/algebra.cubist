@@ -132,14 +132,13 @@ theory Ring(U < UU0) extends additive_ : AbelianGroup(
 // A commutative ring shares Ring's operations and adds commutativity of
 // multiplication. The direct additive parent retains A.additive_; its
 // fields are the same ancestor's fields already inherited through Ring.
-theory CommRing(U < UU0) extends Ring,
-additive_ : AbelianGroup(
+theory CommRing(U < UU0) extends additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
   mul_comm := add_comm, left_div := add_left_div, right_div := add_right_div,
   mul_left_div := add_neg_cancel_left, left_div_mul := neg_add_cancel_left,
   right_div_mul := neg_add_cancel_right, mul_right_div := add_neg_cancel_right
-), multiplicative : CommMonoid(M := R) {
+), multiplicative : CommMonoid(M := R), Ring {
   def distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z := trans(
     mul_comm(x + y, z),
     trans(
