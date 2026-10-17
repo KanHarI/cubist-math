@@ -1539,6 +1539,10 @@
    "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, and arithmetic beyond 64 bits."
   },
   {
+   "path": "cubist-tests/binary_semiring.cubist",
+   "summary": "Binary arithmetic through the semiring and its parent models, computing conversion maps and isomorphisms, general preservation laws, cancellation and no zero divisors."
+  },
+  {
    "path": "cubist-tests/box_notation.cubist",
    "summary": "The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula."
   },
@@ -2395,8 +2399,16 @@
    "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
+   "path": "library/bnat_arithmetic.cubist",
+   "summary": "Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits."
+  },
+  {
    "path": "library/bnat_notation.cubist",
    "summary": "Binary literal parsing and the `bnat` notation for `0b` literals, arithmetic and order. Parsing builds the binary magnitude directly; unary offsets count characters only."
+  },
+  {
+   "path": "library/bnat_semiring.cubist",
+   "summary": "The binary natural commutative semiring, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits."
   },
   {
    "path": "library/bnat_unary.cubist",
@@ -2457,6 +2469,10 @@
   {
    "path": "library/rationals.cubist",
    "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one, in a section over the ring: fractions `x / d` with `d` not zero, equal when `x * d' = x' * d`, a quotient whose operations descend, with the inverse turning a fraction over, and a field (`fraction_field`) with decidable equality (`q_decide`). The rationals are the integers' (`rationals`, `Q`, `rat(a, k)` for `a / (k + 1)`), and their arithmetic computes."
+  },
+  {
+   "path": "library/semirings.cubist",
+   "summary": "The `CommSemiring` theory, with shared additive and multiplicative commutative monoids, distributivity and zero absorption; the unary natural model."
   },
   {
    "path": "library/squares.cubist",
