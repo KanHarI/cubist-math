@@ -202,3 +202,12 @@ test("benchmark shares source contracts without hiding invalid contracts or unre
   assert.equal(ordinary.declarations.length,0);
   assert.match(ordinary.importErrors[0].reason,/explicit test mode/);
 });
+
+
+test("benchmark resource failures cannot become expected refusals or semantic contract failures",async()=>{
+  const report=await benchmark({area:"tests",modules:["timed"],limitMs:0.000001,
+    readSource:async()=>"# test(timed) # expect_error(E629) def value : Unit := tt;"});
+  assert.equal(report.declarations[0].category,"optimize");
+  assert.equal(report.counts.intended,0);
+  assert.equal(report.testFailures,undefined);
+});

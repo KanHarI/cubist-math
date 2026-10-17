@@ -160,7 +160,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,definitionModule:this.definitionModule,testMode:this.testMode,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }

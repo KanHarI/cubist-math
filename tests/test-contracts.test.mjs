@@ -93,6 +93,7 @@ test("an imported expected refusal cannot make a dependency successful",async t=
   const report=observeTestCases(program,result);
   assert.ok(report.prerequisites.length);
   assert.deepEqual(report.expectedErrors,[]);
+  assert.deepEqual(report.cases.find(entry=>entry.id==="imported").failures,[]);
 });
 
 
@@ -120,4 +121,59 @@ test("unannotated declarations must have an observed output, including unused de
   const report=observeTestCases(program,result);
   assert.ok(report.failures.some(message=>message.includes("main.tail")));
   assert.ok(report.prerequisites.some(message=>message.includes("dependency.imported")));
+});
+
+
+test("case ownership takes precedence over an error span in earlier retained source",async t=>{
+  const {program,result}=await checked(t,"# test(first) # expect_error(E606) def first : Void := tt; # test(second) # expect_error(E606) def second : Void := tt;");
+  result.gaps[1].start=result.gaps[0].start;
+  const report=observeTestCases(program,result);
+  assert.deepEqual(report.cases.map(entry=>entry.failures),[[],[]]);
+  assert.deepEqual(report.expectedErrors.map(error=>error.name),["first","second"]);
+});
+
+for(const target of ["def second : Void := tt;","evaluate tt expecting Unit;"])
+  test(`an unannotated target cannot supply another case's refusal: ${target}`,async t=>{
+    const source=`# test(first) # expect_error(E606) def first : Unit := tt; ${target}`;
+    const {program,result}=await checked(t,source);
+    result.gaps[0].start=source.indexOf("def first");
+    const report=observeTestCases(program,result);
+    assert.ok(report.cases[0].failures.length,"the successful first declaration did not refuse");
+    assert.equal(report.failures.length,1,"the unannotated refusal remains a global failure");
+    assert.deepEqual(report.expectedErrors,[]);
+  });
+
+for(const failure of ["deadline","budget","fuel"])
+  test(`resource dependency cascades remain prerequisites: ${failure}`,async t=>{
+    const {program,result}=await checked(t,"def first : Void := tt; # test(uses) def uses := first; def unannotated := first;");
+    program.symbols.main__first.failure=failure;
+    const report=observeTestCases(program,result);
+    assert.equal(report.prerequisites.length,3);
+    assert.deepEqual(report.failures,[]);
+    assert.deepEqual(report.cases[0].failures,[]);
+    assert.deepEqual(report.expectedErrors,[]);
+  });
+
+test("owned expected errors remain observations when an unused import fails",async t=>{
+  const {program,result}=await checkProgram(t,"import absent; # test(refusal) # expect_error(E606) def bad : Void := tt;",{module,
+    reader:async()=>null,options:{testMode:true}});
+  const report=observeTestCases(program,result);
+  assert.ok(report.prerequisites.length,"the experiment still fails its preconditions");
+  assert.deepEqual(report.cases[0].failures,[]);
+  assert.deepEqual(report.expectedErrors.map(error=>error.name),["bad"]);
+});
+
+test("incremental entries cannot inherit fixture test mode",async t=>{
+  const {program}=await checked(t,"# test(base) def base := tt;");
+  await assert.rejects(program.checkEntry("# test(query) def query := tt;","scratch"),/Test pragmas require explicit test mode/);
+  assert.ok(!program.modules.has("scratch"));
+});
+
+
+test("an imported unannotated warning is a prerequisite, not a local semantic failure",async t=>{
+  const {program,result}=await checkProgram(t,"import dependency; # test(root) def x := tt;",{module,
+    reader:async()=>"# test(imported) def good := tt; def unused : forall x : Unit. Unit := fun (x : Unit) => tt;",options:{testMode:true}});
+  const report=observeTestCases(program,result);
+  assert.ok(report.prerequisites.some(message=>message.includes("W705")));
+  assert.deepEqual(report.failures,[]);
 });

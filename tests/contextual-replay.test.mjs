@@ -410,5 +410,6 @@ test("test-mode source can replay an arbitrary scope without granting query cont
   assert.deepEqual(result.gaps,[]);
   const session=at(program,source,"x;");
   await query(session,"typeof x","type","Unit");
-  await query(session,"# test(query) def y := x;","error");
+  const refused=await query(session,"# test(query) def y := x;","error");
+  assert.match(refused.text,/Expected an expression, found '#'/);
 });

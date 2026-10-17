@@ -112,7 +112,7 @@ export class CubicalProgram {
         if(name==="nat"&&this.bundledNat&&!text)text=naturalSource;
       }
       const ast = parse(text);
-      requireTestMode(ast,this.options.testMode);
+      requireTestMode(ast,this.options.testMode&&!discovery.reuseModules);
       prepared.set(name, { text, ast });
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
@@ -202,7 +202,7 @@ export class CubicalProgram {
       if(directive.status!=="checked")
         this.gaps.push({module:name,name:`${directive.kind} ${directive.name}`,
           reason:directive.reason,code:diagnosticCode(directive.reason),directive:true,
-          start:directive.errorStart??directive.start,end:directive.errorEnd,
+          start:directive.errorStart??directive.start,end:directive.errorEnd,declarationStart:directive.start,
           ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
           ...(directive.failure?{failure:directive.failure}:{}),...(directive.diagnostic?{diagnostic:directive.diagnostic}:{})});
       else if(directive.kind==="evaluate")

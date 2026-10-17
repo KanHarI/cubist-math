@@ -9,7 +9,7 @@ import { CubicalProgram } from "./cubical-program.mjs";
 import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
 import { normal, stated } from "./cubist/stated-comments.mjs";
-import {sourceTestCases,observeTestCases,testProblems} from "./cubist/test-pragmas.mjs";
+import {sourceTestCases,observeTestCases} from "./cubist/test-pragmas.mjs";
 import { diagnosticCode } from "./diagnostics.mjs";
 
 // The areas a benchmark can measure, each with its modules: the rebuilt
@@ -89,6 +89,7 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
         reason: result.reason, blockedBy: result.blockedBy, line };
       if (row.category === "optimize") {
         result.status = "not-translated";
+        result.failure = "deadline";
         result.reason = "Declaration time limit exceeded.";
       }
       declarations.push(row); onResult(row);
@@ -109,7 +110,8 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
     const testFailures=[];
     for(const [name,ast] of program.sourceAsts)if(sourceTestCases(ast).length) {
       const observation=observeTestCases(program,result,{main:name});
-      testFailures.push(...testProblems(observation));
+      testFailures.push(...observation.failures,
+        ...observation.cases.filter(entry=>entry.module===name).flatMap(entry=>entry.failures.map(message=>`${entry.id}: ${message}`)));
       for(const error of observation.expectedErrors) {
         const target=observation.cases.find(entry=>entry.id===error.caseId);
         const row=byName.get(`${error.module}__${error.name}`);

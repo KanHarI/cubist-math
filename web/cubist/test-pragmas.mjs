@@ -37,36 +37,51 @@ export function observeTestCases(program,result,{main=program.main}={}) {
   }
   const inTarget=(item,offset)=>Number.isInteger(offset)&&item.start<=offset&&offset<item.end;
   const unannotated=[...program.sourceAsts].filter(([module])=>dependencies.has(module))
-    .flatMap(([module,ast])=>ast.declarations.filter(item=>!item.testPragmas).map(item=>({module,item})));
-  const owned=new Map([...cases,...unannotated].map(entry=>{
+    .flatMap(([module,ast])=>(ast.items??ast.declarations).filter(item=>!item.testPragmas).map(item=>({module,item})));
+  const entries=[...cases,...unannotated],bindingOwners=new Map(),members=new Map();
+  for(const [module,groups] of program.publications)for(const group of groups)
+    members.set(`${module}__${group.owner}`,group.members);
+  const owned=new Map(entries.map(entry=>{
     const {item,module}=entry,key=`${module}__${item.name?.text}`;
     const candidate=program.symbols[key],primary=candidate&&inTarget(item,candidate.start)?candidate:null;
     const names=new Set(primary?[primary.name]:[]);
-    if(primary)for(const group of program.publications.get(module)??[])
-      if(group.owner===item.name.text)for(const name of group.members)names.add(name);
-    return [entry,[...names].map(name=>program.symbols[`${module}__${name}`]).filter(Boolean)];
+    if(primary)for(const name of members.get(key)??[])names.add(name);
+    const outputs=[...names].map(name=>program.symbols[`${module}__${name}`]).filter(Boolean);
+    for(const output of outputs)bindingOwners.set(output.binding,entry);
+    return [entry,outputs];
   }));
-  for(const entry of unannotated)if(!owned.get(entry).length)
+  for(const entry of unannotated)if(program.sourceAsts.get(entry.module).declarations.includes(entry.item)&&!owned.get(entry).length)
     (entry.module===main?failures:prerequisites).push(`${entry.module}.${entry.item.name.text}: the declaration was not observed.`);
   const describe=gap=>`${gap.module}${gap.name?`.${gap.name}`:""}: ${gap.code??"uncoded failure"}: ${gap.reason}`;
   const byCase=new Map(cases.map(entry=>[entry,[]]));
+  const resource=error=>{
+    const seen=new Set();
+    while(error) {
+      if(["fuel","budget","deadline"].includes(error.failure))return true;
+      if(!error.blockedBy||seen.has(error.blockedBy))return false;
+      seen.add(error.blockedBy);error=program.symbols[error.blockedBy];
+    }
+    return false;
+  };
   for(const gap of result.gaps.filter(gap=>dependencies.has(gap.module))) {
     const symbol=program.symbols[`${gap.module}__${gap.name}`];
-    const entry=cases.find(entry=>entry.module===gap.module&&(
-      gap.duplicate?inTarget(entry.item,gap.declarationStart??gap.start)
-      :owned.get(entry).some(output=>output.name===gap.name)||inTarget(entry.item,gap.start)));
+    // Blame can point into retained source from a different declaration.
+    // Only publication ownership and the declaring syntax locate the target.
+    const entry=(!gap.duplicate&&bindingOwners.get(symbol?.binding))
+      ||entries.find(entry=>entry.module===gap.module&&inTarget(entry.item,gap.declarationStart??symbol?.start));
     const observation={...gap,failure:gap.failure??symbol?.failure,blockedBy:gap.blockedBy??symbol?.blockedBy};
-    if(gap.module!==main||!gap.name||["fuel","budget","deadline"].includes(observation.failure))prerequisites.push(describe(gap));
-    else if(entry)byCase.get(entry).push(observation);
-    else failures.push(describe(gap));
+    if(byCase.has(entry))byCase.get(entry).push(observation);
+    if(gap.module!==main||!gap.name||resource(observation))prerequisites.push(describe(gap));
+    else if(!byCase.has(entry))failures.push(describe(gap));
   }
   for(const entry of cases) {
     const {item,module}=entry,pragmas=item.testPragmas;
     const errors=byCase.get(entry),expected=pragmas.find(pragma=>pragma.pragma==="expect_error");
+    if(errors.some(resource))continue;
     if(expected) {
       if(errors.length!==1||errors[0].code!==expected.value||errors[0].blockedBy)
         entry.failures.push(`Expected one owned ${expected.value} refusal; observed ${errors.map(describe).join("; ")||"none"}.`);
-      else expectedErrors.push({...errors[0],caseId:entry.id});
+      else if(module===main)expectedErrors.push({...errors[0],caseId:entry.id});
     } else for(const error of errors)entry.failures.push(describe(error));
     const outputs=owned.get(entry);
     const observed=outputs.length||errors.length||result.directiveFuel.some(directive=>directive.module===module&&directive.start===item.start);
@@ -91,16 +106,18 @@ export function observeTestCases(program,result,{main=program.main}={}) {
   for(const {module} of cases)if(!warnings.has(module))
     warnings.set(module,lint(program.sources[module],program.sourceAsts.get(module)));
   for(const entry of cases) {
+    if(byCase.get(entry).some(resource))continue;
     const actual=warnings.get(entry.module).filter(warning=>inTarget(entry.item,warning.start)).map(warning=>warning.code).sort();
     const expected=entry.item.testPragmas.filter(pragma=>pragma.pragma==="expect_warning").map(pragma=>pragma.value).sort();
     if(JSON.stringify(actual)!==JSON.stringify(expected))entry.failures.push(`Expected warnings [${expected}], observed [${actual}].`);
   }
   for(const [module,items] of warnings)for(const warning of items)
-    if(!cases.some(entry=>entry.module===module&&inTarget(entry.item,warning.start)))failures.push(`${module}: ${warning.code}: ${warning.message}`);
+    if(!cases.some(entry=>entry.module===module&&inTarget(entry.item,warning.start)))
+      (module===main?failures:prerequisites).push(`${module}: ${warning.code}: ${warning.message}`);
   for(const entry of cases)if(entry.module!==main)
     for(const failure of entry.failures)prerequisites.push(`${entry.id}: ${failure}`);
   return {cases:cases.map(({id,module,item,failures})=>({id,module,start:item.start,end:item.end,failures})),
-    failures,prerequisites,expectedErrors:prerequisites.length?[]:expectedErrors.filter(error=>!cases.find(entry=>entry.id===error.caseId).failures.length)};
+    failures,prerequisites,expectedErrors:expectedErrors.filter(error=>!cases.find(entry=>entry.id===error.caseId).failures.length)};
 }
 
 export const testProblems=report=>report?[...report.prerequisites,...report.failures,
