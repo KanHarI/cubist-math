@@ -3,34 +3,123 @@ import hlevels;
 import h1_truncation;
 use nat;
 
-// The algebraic hierarchy as theories (L2.4): semigroups, monoids, groups,
-// their commutative kinds, rings, commutative rings and fields, each a theory of
+// The algebraic hierarchy as theories (L2.4): the magma, quasigroup and
+// monoid lattice, groups, their commutative kinds, rings and fields. Each is a theory of
 // one set with its operations and laws. A model of a theory is a structure
 // of its kind, Monoid(U), and a theory's homomorphisms and
 // isomorphisms come with it. The natural numbers are a commutative monoid
 // for addition and for multiplication.
 
-theory Semigroup(U < UU0) {
+// A magma has only a multiplication. Identity, associativity and unique
+// left/right division are independent extensions of this common ancestor.
+theory Magma(U < UU0) {
   M : set U;
   mul(x, y : M) : M notation x * y;
-  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
 }
 
-theory Monoid(U < UU0) extends Semigroup {
+theory UnitalMagma(U < UU0) extends Magma {
   one : M;
   law one_mul(x : M) : one * x = x;
   law mul_one(x : M) : x * one = x;
 }
 
+theory Semigroup(U < UU0) extends Magma {
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+}
+
+// x * left_div(x, y) = y; right_div(x, y) * y = x. The reverse
+// equations express uniqueness, without assuming associativity or a unit.
+theory Quasigroup(U < UU0) extends Magma {
+  left_div(x, y : M) : M;
+  right_div(x, y : M) : M;
+  law mul_left_div(x, y : M) : x * left_div(x, y) = y;
+  law left_div_mul(x, y : M) : left_div(x, x * y) = y;
+  law right_div_mul(x, y : M) : right_div(x, y) * y = x;
+  law mul_right_div(x, y : M) : right_div(x * y, y) = x;
+}
+
+theory Loop(U < UU0) extends Quasigroup, UnitalMagma {}
+
+theory AssociativeQuasigroup(U < UU0) extends Quasigroup, Semigroup {}
+
+theory Monoid(U < UU0) extends Semigroup, UnitalMagma {}
+
 theory CommMonoid(U < UU0) extends Monoid {
   law mul_comm(x, y : M) : x * y = y * x;
 }
 
-theory Group(U < UU0) extends Monoid {
+// The three routes share one multiplication, unit and division structure.
+// Keep the existing inverse interface; the division laws force it to agree
+// with division of the unit. No commutativity is required.
+theory Group(U < UU0) extends Loop, AssociativeQuasigroup, Monoid {
   inv(x : M) : M;
   law inv_mul(x : M) : inv(x) * x = one;
   law mul_inv(x : M) : x * inv(x) = one;
 }
+
+section {{U < UU0}}(Q : Quasigroup(U)) {
+  computable def quasigroup_left_cancel(x, y, z : M, p : x * y = x * z) : y = z := trans(
+    sym(left_div_mul(x, y)), trans(cong(fun (w : M) => left_div(x, w), p), left_div_mul(x, z))
+  );
+
+  computable def quasigroup_right_cancel(x, y, z : M, p : y * x = z * x) : y = z := trans(
+    sym(mul_right_div(y, x)), trans(cong(fun (w : M) => right_div(w, x), p), mul_right_div(z, x))
+  );
+}
+
+// Adding associativity to a loop already supplies a group's inverse. Its
+// explicit inverse interface imposes no extra mathematical requirement.
+computable def group_from_associative_loop{{U < UU0}}(
+  L : Loop(U), assoc : forall x, y, z : L.M. L.mul(L.mul(x, y), z) = L.mul(x, L.mul(y, z))
+) :
+  Group(U) {
+  use L;
+  let inverse_op := fun (x : M) => left_div(x, one);
+  let left_inverse : forall x : M. inverse_op(x) * x = one := fun (x : M) => quasigroup_left_cancel(
+    L.quasigroup, x, inverse_op(x) * x, one,
+    trans(
+      sym(assoc(x, inverse_op(x), x)),
+      trans(cong(fun (w : M) => w * x, mul_left_div(x, one)), trans(one_mul(x), sym(mul_one(x))))
+    )
+  );
+  exact Group.make(
+    M := M, M_is_set := M_is_set, mul := mul, mul_assoc := assoc, one := one, one_mul := one_mul,
+    mul_one := mul_one, left_div := left_div, right_div := right_div, mul_left_div := mul_left_div,
+    left_div_mul := left_div_mul, right_div_mul := right_div_mul, mul_right_div := mul_right_div,
+    inv := inverse_op, inv_mul := left_inverse, mul_inv := fun (x : M) => mul_left_div(x, one)
+  );
+}
+
+// Construct the division structure from the usual group operations and
+// inverse laws. This keeps existing integer and rational operations intact.
+computable def group_from_inverse(
+  U < UU0, M : U, set_ : IsSet(U, M), op : M -> M -> M, assoc : forall x, y, z : M.
+  op(op(x, y), z) = op(x, op(y, z)), unit : M, left_unit : forall x : M. op(unit, x) = x,
+  right_unit : forall x : M. op(x, unit) = x, inverse_op : M -> M, left_inverse : forall x : M.
+  op(inverse_op(x), x) = unit, right_inverse : forall x : M. op(x, inverse_op(x)) = unit
+) :
+  Group(U) := Group.make(
+    M := M, M_is_set := set_, mul := op, mul_assoc := assoc, one := unit, one_mul := left_unit,
+    mul_one := right_unit, inv := inverse_op, inv_mul := left_inverse, mul_inv := right_inverse,
+    left_div := fun (x, y : M) => op(inverse_op(x), y),
+    right_div := fun (x, y : M) => op(x, inverse_op(y)),
+    mul_left_div := fun (x, y : M) => trans(
+      sym(assoc(x, inverse_op(x), y)),
+      trans(cong(fun (w : M) => op(w, y), right_inverse(x)), left_unit(y))
+    ),
+    left_div_mul := fun (x, y : M) => trans(
+      sym(assoc(inverse_op(x), x, y)),
+      trans(cong(fun (w : M) => op(w, y), left_inverse(x)), left_unit(y))
+    ),
+    right_div_mul := fun (x, y : M) => trans(
+      assoc(x, inverse_op(y), y),
+      trans(cong(fun (w : M) => op(x, w), left_inverse(y)), right_unit(x))
+    ),
+    mul_right_div := fun (x, y : M) => trans(
+      assoc(x, y, inverse_op(y)),
+      trans(cong(fun (w : M) => op(x, w), right_inverse(y)), right_unit(x))
+    )
+  );
 
 // An abelian group: a group whose monoid is commutative. Monoid comes once,
 // through both parents.
@@ -42,7 +131,9 @@ theory AbelianGroup(U < UU0) extends Group, CommMonoid {}
 theory Ring(U < UU0) extends additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
-  mul_comm := add_comm
+  mul_comm := add_comm, left_div := add_left_div, right_div := add_right_div,
+  mul_left_div := add_left_div_cancel, left_div_mul := add_left_cancel,
+  right_div_mul := add_right_div_cancel, mul_right_div := add_right_cancel
 ), multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
   law distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z;
@@ -63,7 +154,9 @@ theory CommRing(U < UU0) extends Ring,
 additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
-  mul_comm := add_comm
+  mul_comm := add_comm, left_div := add_left_div, right_div := add_right_div,
+  mul_left_div := add_left_div_cancel, left_div_mul := add_left_cancel,
+  right_div_mul := add_right_div_cancel, mul_right_div := add_right_cancel
 ), multiplicative : CommMonoid(M := R) {}
 
 // A field: a commutative ring in which zero is not one and every element
@@ -150,6 +243,15 @@ section {{U < UU0}}(G : Group(U)) {
   computable def inv_inv(x : M) : inv(inv(x)) = x := sym(inv_unique(inv(x), x, mul_inv(x)));
 
   computable def inv_one : inv(one) = one := sym(inv_unique(one, one, one_mul(one)));
+
+  // The retained inverse is the unique division of the unit on either side.
+  computable def inv_as_left_div(x : M) : inv(x) = left_div(x, one) := left_cancel(
+    x, inv(x), left_div(x, one), trans(mul_inv(x), sym(mul_left_div(x, one)))
+  );
+
+  computable def inv_as_right_div(x : M) : inv(x) = right_div(one, x) := right_cancel(
+    x, inv(x), right_div(one, x), trans(inv_mul(x), sym(right_div_mul(one, x)))
+  );
 }
 
 // In any commutative ring, zero absorbs: x * zero = zero, since
