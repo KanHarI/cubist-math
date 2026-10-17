@@ -596,7 +596,7 @@ export class NativeCubicalElaborator {
     return mask;
   }
   // The driver of this declaration's instructions, kept on the kernel, which
-  // every module's checker shares: its caches hold judgements and handles, so
+  // the program's checker uses: its caches hold judgements and handles, so
   // a declaration transaction's finish drops it.
   get driver() { return this.kernel.instructionDriver ??= new InstructionDriver(this.kernel); }
   ascribe(term, type, names = this.names) {
@@ -703,14 +703,14 @@ export class NativeCubicalElaborator {
   genericDefinition(name, elaborate) {
     if (this.genericDefinitions.has(name)) return this.genericDefinitions.get(name);
     const term = elaborate(), checked = this.infer(term);
-    const value = NativeCubicalElaborator.prototype.define.call(this, name, checked.term, checked.type);
+    const value = this.define(name, checked.term, checked.type);
     this.genericDefinitions.set(name, value);
     return value;
   }
   // `with unfolding [names] { e }`: e checked as a definition of its own. The
   // names guided the retired conversion oracle; the driver's own guide
   // unfolds what a comparison needs, so they no longer matter here.
-  scopedUnfolding(elaborate, context, expected = null, dimensions = this.dimensions, supply = this.names) {
+  scopedUnfolding(elaborate, context, expected = null, dimensions = this.dimensions, supply = this.names, prefix = "unfolding") {
     const raw = elaborate();
     const checked = expected ? { term: this.check(raw, expected, context, dimensions), type: expected }
       : this.infer(raw, context, dimensions);
@@ -730,8 +730,8 @@ export class NativeCubicalElaborator {
       type = T.path(dim, type, T.at(term, I.zero), T.at(term, I.one));
     }
     this.kernel.unfoldingSerial = (this.kernel.unfoldingSerial ?? 0) + 1;
-    const name = `${this.bindingName?.("unfolding") ?? "unfolding"}_${this.kernel.unfoldingSerial}`;
-    let result = NativeCubicalElaborator.prototype.define.call(this, name, this.ascribe(term, type, supply), type);
+    const name = `${prefix}_${this.kernel.unfoldingSerial}`;
+    let result = this.define(name, this.ascribe(term, type, supply), type);
     this.scopeDefinitions.add(name);
     for (const dim of dimensions.keys()) result = T.at(result, I.variable(dim));
     for (const [name,domain] of context) result = (domain.tag==="LBound"?T.levelApply:T.app)(result, T.variable(name));

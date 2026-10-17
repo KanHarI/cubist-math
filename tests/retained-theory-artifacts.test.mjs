@@ -47,10 +47,8 @@ async function setup(t,header="def T(U < UU0) : Unit := tt;",base="") {
     const built=construct(retain(text),options);records.set(built.record.name,built.record);return built;
   };
   const check=(built,source="",before="",{onReference=null,onDeclarationStart=null}={})=>{
-    const checker=Object.create(program.checker);
-    checker.bindingName=label=>`pilot__${label}`;
-    checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-    const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry,onReference,onDeclarationStart});
+    const checker=program.checker,definitionModule="pilot";
+    const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",compilationBindings:registry,onReference,onDeclarationStart});
     const result=translator.translateSyntax({declarations:[...parse(before).declarations,...built.declarations,...parse(source).declarations]},source,env);
     const scope=new Scope(translator.unit(),new Map(),result.env);
     const equal=(label,expected)=>scope.equal(result.env.get(label),translator.term(parse(expected,true),scope));

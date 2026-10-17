@@ -22,7 +22,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
-import { CubicalProgram } from "../web/cubical-program.mjs";
+import {checkedSource} from "./checked-source.mjs";
+import {testProblems} from "../web/cubist/test-pragmas.mjs";
 import { cubistTestModules } from "../web/cubist/modules.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
@@ -98,9 +99,14 @@ export function inlined(source, items) {
 // A test module checked as the command line checks its file.
 export async function checkedModule(name, module = null) {
   const path = testModulePath(name), source = await readFile(path, "utf8");
-  const program = new CubicalProgram(module ?? await createCubical(), sourceReader({ path }));
-  try { return { source, result: await program.check(source, name) }; }
-  finally { program.dispose(); }
+  return {source,...await checkedTestSource(source,name,path,module)};
+}
+
+async function checkedTestSource(source,name,path,module) {
+  const checked=await checkedSource(source,name,{module,reader:sourceReader({path}),options:{testMode:true}});
+  const problems=testProblems(checked.contracts);
+  if(problems.length)throw new Error(problems.join("\n"));
+  return checked;
 }
 
 if (process.argv[1]?.endsWith("inline-errors.mjs")) {
@@ -113,12 +119,9 @@ if (process.argv[1]?.endsWith("inline-errors.mjs")) {
     const path = testModulePath(name), source = await readFile(path, "utf8");
     if (write) {
       const plain = stripped(source);
-      const program = new CubicalProgram(module, sourceReader({ path }));
-      try {
-        const result = await program.check(plain, name);
-        const text = inlined(plain, reported(plain, result, name));
-        if (text !== source) { await writeFile(path, text); console.log(`wrote ${name}`); }
-      } finally { program.dispose(); }
+      const {result}=await checkedTestSource(plain,name,path,module);
+      const text = inlined(plain, reported(plain, result, name));
+      if (text !== source) { await writeFile(path, text); console.log(`wrote ${name}`); }
     } else {
       const { result } = await checkedModule(name, module);
       if (JSON.stringify(reported(source, result, name)) !== JSON.stringify(stated(source))) {

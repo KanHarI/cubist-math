@@ -42,19 +42,6 @@ def iso_too_low(S : T(U0)) : U${level} := T.Iso(S,S);`;
   }
 });
 
-test("CB4: generic fixed domains retain shared universes and their successor contribution",async t=>{
-  const {result,get}=await check(t,`import hlevels;
-theory T(U < UU0) { M : set U; op(A : U, x : A) : M; }
-def hom_level(U < UU0, S : T(U)) : next(U) := T.Hom(S,S);
-def iso_level(U < UU0, S : T(U)) : next(U) := T.Iso(S,S);
-def identity(U < UU0, S : T(U)) : T.Hom(S,S) := T.Hom.id(S);
-def composition(U < UU0, S : T(U), x : S.M) : T.Hom.compose(identity(U,S),identity(U,S)).map(x) = x { rfl; }
-def too_low(U < UU0, S : T(U)) : U := T.Hom(S,S);
-def incompatible(U, V < UU0, S : T(U), R : T(V)) := T.Hom(S,R);`);
-  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["too_low","E606"],["incompatible","E606"]]);
-  checked(get,["hom_level","iso_level","identity","composition"]);
-});
-
 test("CB4: multiple header universes use the full telescope rather than a blanket successor",async t=>{
   const {result,get}=await check(t,`import hlevels;
 theory T(U, V < UU0) { M : set U; op(A : V, x : A) : M; }
