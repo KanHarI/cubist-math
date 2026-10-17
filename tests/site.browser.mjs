@@ -210,6 +210,37 @@ try {
   assert.equal(await page.locator("#name").textContent(), "example");
   assert.deepEqual(errors, []);
   console.log(`PASS static kernel workbench (${base})`);
+  // Every transport consumer must finish with an error when the worker
+  // cannot import its kernel, including clients started only on first use.
+  const unavailable = await browser.newContext();
+  await unavailable.route("**/dist/cubical.mjs*", route => route.abort());
+  const failed = await unavailable.newPage();
+  const failureErrors = [];
+  failed.on("pageerror", error => failureErrors.push(error.message));
+  const proof = new URL("proof.html?example=1#source=ZGVmIHggOiBVbml0IDo9IHR0Ow", base).href;
+  await failed.goto(proof);
+  await failed.waitForFunction(() => document.querySelector("#diagnostic")?.textContent.includes("Build with make wasm."));
+  assert.equal(await failed.locator("#check-loader").isHidden(), true);
+  assert.equal(await failed.locator("#source-panel").getAttribute("aria-busy"), "false");
+  await failed.goto(new URL("reference/types.html", base).href);
+  await failed.waitForFunction(() => document.querySelector("#values .example-bar")?.textContent.includes("Not checked"));
+  // Enhancement is lazy: scroll to start a new request after failure is known.
+  const laterExample = failed.locator('pre > code[data-check="reject"]').last();
+  await laterExample.scrollIntoViewIfNeeded();
+  await failed.waitForFunction(() => [...document.querySelectorAll('pre > code[data-check="reject"]')].at(-1)
+    ?.parentElement.nextElementSibling?.textContent.includes("Not checked"));
+  await failed.goto(new URL("repl.html", base).href);
+  await failed.locator(".repl-text").fill("tt");
+  await failed.locator(".repl-text").press("Enter");
+  await failed.waitForFunction(() => document.querySelector(".repl-error")?.textContent.includes("Build with make wasm.")
+    && !document.querySelector(".repl-form.busy"));
+  await unavailable.unroute("**/dist/cubical.mjs*");
+  await failed.goto(proof);
+  await failed.waitForFunction(() => document.querySelector("#status")?.textContent.includes("· checked"));
+  assert.equal(await failed.locator("#diagnostic").isVisible(), false);
+  assert.deepEqual(failureErrors, [], "worker failures must not leave uncaught page errors");
+  await unavailable.close();
+  console.log("PASS worker startup failures settle in workspace, reference and REPL; a fresh worker recovers");
 } finally {
   await browser?.close();
   server?.kill();
