@@ -36,15 +36,18 @@ export function observeTestCases(program,result,{main=program.main}={}) {
     cases.push({...entry,module,failures:[]});
   }
   const inTarget=(item,offset)=>Number.isInteger(offset)&&item.start<=offset&&offset<item.end;
-  const symbols=Object.values(program.symbols);
-  const owned=new Map(cases.map(entry=>{
+  const unannotated=[...program.sourceAsts].filter(([module])=>dependencies.has(module))
+    .flatMap(([module,ast])=>ast.declarations.filter(item=>!item.testPragmas).map(item=>({module,item})));
+  const owned=new Map([...cases,...unannotated].map(entry=>{
     const {item,module}=entry,key=`${module}__${item.name?.text}`;
-    const primary=symbols.find(symbol=>symbol.binding===key&&inTarget(item,symbol.start));
+    const candidate=program.symbols[key],primary=candidate&&inTarget(item,candidate.start)?candidate:null;
     const names=new Set(primary?[primary.name]:[]);
     if(primary)for(const group of program.publications.get(module)??[])
       if(group.owner===item.name.text)for(const name of group.members)names.add(name);
-    return [entry,symbols.filter(symbol=>names.has(symbol.name)&&symbol.binding===`${module}__${symbol.name}`)];
+    return [entry,[...names].map(name=>program.symbols[`${module}__${name}`]).filter(Boolean)];
   }));
+  for(const entry of unannotated)if(!owned.get(entry).length)
+    (entry.module===main?failures:prerequisites).push(`${entry.module}.${entry.item.name.text}: the declaration was not observed.`);
   const describe=gap=>`${gap.module}${gap.name?`.${gap.name}`:""}: ${gap.code??"uncoded failure"}: ${gap.reason}`;
   const byCase=new Map(cases.map(entry=>[entry,[]]));
   for(const gap of result.gaps.filter(gap=>dependencies.has(gap.module))) {

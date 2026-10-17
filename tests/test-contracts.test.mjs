@@ -110,3 +110,14 @@ test("an imported positive contract is a prerequisite of selected local cases",a
     reader:async()=>"# test(imported) # expect_axioms([]) def x := Truncate(U0,Unit);",options:{testMode:true}});
   assert.ok(observeTestCases(program,result).prerequisites.some(message=>message.startsWith("imported:")));
 });
+
+
+test("unannotated declarations must have an observed output, including unused dependencies",async t=>{
+  const {program,result}=await checkProgram(t,"import dependency; # test(root) def root := tt; def tail := tt;",{module,
+    reader:async()=>"def imported := tt;",options:{testMode:true}});
+  delete program.symbols.main__tail;
+  delete program.symbols.dependency__imported;
+  const report=observeTestCases(program,result);
+  assert.ok(report.failures.some(message=>message.includes("main.tail")));
+  assert.ok(report.prerequisites.some(message=>message.includes("dependency.imported")));
+});
