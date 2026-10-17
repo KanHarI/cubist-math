@@ -77,3 +77,36 @@ for(const [label,sources] of [
   assert.deepEqual(report.cases[0].failures,[]);
   assert.ok(report.prerequisites.length);
 });
+
+test("rebuilt assumptions resolve exact signature identities",async t=>{
+  const {report}=await checked(t,`import h1_truncation;
+# test(rebuilt) # expect_axioms([LEM[h1_truncation.Trunc]])
+def excluded := LEM(Trunc,U0);`);
+  assert.deepEqual(report.prerequisites,[]);
+  assert.deepEqual(report.failures,[]);
+  assert.deepEqual(report.cases[0].failures,[]);
+});
+
+test("an imported expected refusal cannot make a dependency successful",async t=>{
+  const {program,result}=await checkProgram(t,"import dependency; # test(root) def x := tt;",{module,
+    reader:async()=>"# test(imported) # expect_error(E606) def wrong : Void := tt;",options:{testMode:true}});
+  const report=observeTestCases(program,result);
+  assert.ok(report.prerequisites.length);
+  assert.deepEqual(report.expectedErrors,[]);
+});
+
+
+test("directive contracts observe successful evaluations and exactly owned refusals",async t=>{
+  const {report}=await checked(t,`# test(evaluate_ok) evaluate tt expecting tt;
+# test(evaluate_bad) # expect_error(E325) evaluate tt expecting Unit;
+# test(print_ok) print(typeof(tt));`);
+  assert.deepEqual(report.prerequisites,[]);
+  assert.deepEqual(report.failures,[]);
+  assert.deepEqual(report.cases.map(entry=>entry.failures),[[],[],[]]);
+});
+
+test("an imported positive contract is a prerequisite of selected local cases",async t=>{
+  const {program,result}=await checkProgram(t,"import dependency; # test(root) def x := tt;",{module,
+    reader:async()=>"# test(imported) # expect_axioms([]) def x := Truncate(U0,Unit);",options:{testMode:true}});
+  assert.ok(observeTestCases(program,result).prerequisites.some(message=>message.startsWith("imported:")));
+});

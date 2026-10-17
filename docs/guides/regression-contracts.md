@@ -12,7 +12,51 @@ its subject, expected/actual types, dependency or proposed edit.
 
 ## State the case in Cubist
 
-Write the case as a Cubist module, with the outcome stated as the Cubist tests
+New semantic fixtures live in `tests/fixtures/contracts/*.cubist`. Give each
+case a stable, globally unique ID and place its pragmas immediately before the
+declaration or supported directive:
+
+```cubist
+# test(identity.local_assumptions)
+# expect_axioms([])
+def identity(A : U0, x : A) : A := x;
+
+# test(refusal.wrong_type)
+# expect_error(E606)
+def impossible : Void := tt;
+```
+
+`# test` alone requires success and no warnings. `# expect_error(E###)` requires
+exactly one refusal owned by that target, excluding dependent cascades. Repeat
+`# expect_warning(W###)` for the exact warning multiset. `# expect_axioms([...])`
+requires every checked output owned by the target (including each generated
+family member) to have exactly those external transitive assumptions, including
+type dependencies and excluding bound hypotheses. It cannot accompany an
+expected refusal. Use an assumption name such as `Truncate`, or a signature
+identity such as `LEM[h1_truncation.Trunc]` for a rebuilt assumption. The latter
+names the defining module and signature, independently of source aliases.
+
+Pragmas can target definitions, inductives, theories, initial/free models,
+`evaluate` and `print`; assumption expectations require a declaration. Parser
+errors, missing imports, resource exhaustion and crashes never satisfy an
+expected refusal. All imports must succeed even if unused; all unannotated
+local declarations must succeed. Unknown pragmas, invalid combinations, duplicate
+IDs and missing targets fail. Ordinary compilation rejects pragmas; test hosts
+explicitly enable them. They never affect kernel admission.
+
+Run `node --test tests/cubist-contracts.test.mjs`, or set `CUBIST_TEST_CASES` to a
+JSON list of exact IDs. An explicit empty, duplicate or unknown selection fails.
+Each selected fixture compiles once; its selected cases share the observation,
+then its kernel is disposed. The full suite selects every case. Use existing
+`evaluate ... expecting ...` and `computable def` syntax for computation, and
+retain JavaScript for host failures, source links/ranges, work counters and DOM.
+
+The test runner, comment tool and tests-area benchmark share the same observer.
+The benchmark keeps contract failures visible even when a declaration checks.
+`inline-errors --write` validates existing pragmas before writing comments and
+never creates or changes semantic expectations.
+
+Existing diagnostic presentation fixtures remain Cubist modules, with the outcome stated as the Cubist tests
 state theirs ([`cubist-tests/README.md`](../../cubist-tests/README.md)): an
 `// Error:` comment, with the exact message, above each declaration that must
 be refused, and nothing above one that must check.

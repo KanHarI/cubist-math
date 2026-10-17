@@ -1,3 +1,5 @@
+import {lint} from "./lint.mjs";
+
 // Parsed test metadata is inert syntax. Ordinary compilation rejects it;
 // test hosts explicitly enable it and compare the resulting observations.
 export const sourceTestCases=ast=>(ast.items??ast.declarations).filter(item=>item.testPragmas)
@@ -19,9 +21,16 @@ export function selectTestCases(cases,selected=null) {
 
 // The same observation serves source tests, checked comments and benchmark
 // refusal accounting. It never changes checking or admits an expected failure.
-export function observeTestCases(program,result) {
+export function observeTestCases(program,result,{main=program.main}={}) {
   const cases=[],ids=new Set(),failures=[],prerequisites=[],expectedErrors=[];
-  for(const [module,ast] of program.sourceAsts)for(const entry of sourceTestCases(ast)) {
+  const dependencies=new Set();
+  const include=module=>{
+    if(dependencies.has(module))return;
+    dependencies.add(module);
+    for(const imported of program.sourceAsts.get(module)?.imports??[])include(imported);
+  };
+  include(main);
+  for(const [module,ast] of program.sourceAsts)if(dependencies.has(module))for(const entry of sourceTestCases(ast)) {
     if(ids.has(entry.id))throw new TypeError(`Duplicate test case ${entry.id}.`);
     ids.add(entry.id);
     cases.push({...entry,module,failures:[]});
@@ -38,15 +47,15 @@ export function observeTestCases(program,result) {
   }));
   const describe=gap=>`${gap.module}${gap.name?`.${gap.name}`:""}: ${gap.code??"uncoded failure"}: ${gap.reason}`;
   const byCase=new Map(cases.map(entry=>[entry,[]]));
-  for(const gap of result.gaps) {
+  for(const gap of result.gaps.filter(gap=>dependencies.has(gap.module))) {
     const symbol=program.symbols[`${gap.module}__${gap.name}`];
     const entry=cases.find(entry=>entry.module===gap.module&&(
       gap.duplicate?inTarget(entry.item,gap.declarationStart??gap.start)
       :owned.get(entry).some(output=>output.name===gap.name)||inTarget(entry.item,gap.start)));
     const observation={...gap,failure:gap.failure??symbol?.failure,blockedBy:gap.blockedBy??symbol?.blockedBy};
-    if(!gap.name||["fuel","budget","deadline"].includes(observation.failure))prerequisites.push(describe(gap));
+    if(gap.module!==main||!gap.name||["fuel","budget","deadline"].includes(observation.failure))prerequisites.push(describe(gap));
     else if(entry)byCase.get(entry).push(observation);
-    else (gap.module===program.main?failures:prerequisites).push(describe(gap));
+    else failures.push(describe(gap));
   }
   for(const entry of cases) {
     const {item,module}=entry,pragmas=item.testPragmas;
@@ -54,7 +63,7 @@ export function observeTestCases(program,result) {
     if(expected) {
       if(errors.length!==1||errors[0].code!==expected.value||errors[0].blockedBy)
         entry.failures.push(`Expected one owned ${expected.value} refusal; observed ${errors.map(describe).join("; ")||"none"}.`);
-      else expectedErrors.push(errors[0]);
+      else expectedErrors.push({...errors[0],caseId:entry.id});
     } else for(const error of errors)entry.failures.push(describe(error));
     const outputs=owned.get(entry);
     const observed=outputs.length||errors.length||result.directiveFuel.some(directive=>directive.module===module&&directive.start===item.start);
@@ -75,15 +84,21 @@ export function observeTestCases(program,result) {
       }
     }
   }
-  // The compiler reports warnings for the main source. An imported failure
-  // remains a prerequisite failure; test expectations cannot hide it.
+  const warnings=new Map([[main,main===program.main?result.warnings??[]:lint(program.sources[main],program.sourceAsts.get(main))]]);
+  for(const {module} of cases)if(!warnings.has(module))
+    warnings.set(module,lint(program.sources[module],program.sourceAsts.get(module)));
   for(const entry of cases) {
-    const actual=entry.module===program.main?(result.warnings??[]).filter(warning=>inTarget(entry.item,warning.start)).map(warning=>warning.code).sort():[];
+    const actual=warnings.get(entry.module).filter(warning=>inTarget(entry.item,warning.start)).map(warning=>warning.code).sort();
     const expected=entry.item.testPragmas.filter(pragma=>pragma.pragma==="expect_warning").map(pragma=>pragma.value).sort();
     if(JSON.stringify(actual)!==JSON.stringify(expected))entry.failures.push(`Expected warnings [${expected}], observed [${actual}].`);
   }
-  for(const warning of result.warnings??[])
-    if(!cases.some(entry=>entry.module===program.main&&inTarget(entry.item,warning.start)))failures.push(`${warning.code}: ${warning.message}`);
+  for(const [module,items] of warnings)for(const warning of items)
+    if(!cases.some(entry=>entry.module===module&&inTarget(entry.item,warning.start)))failures.push(`${module}: ${warning.code}: ${warning.message}`);
+  for(const entry of cases)if(entry.module!==main)
+    for(const failure of entry.failures)prerequisites.push(`${entry.id}: ${failure}`);
   return {cases:cases.map(({id,module,item,failures})=>({id,module,start:item.start,end:item.end,failures})),
-    failures,prerequisites,expectedErrors};
+    failures,prerequisites,expectedErrors:prerequisites.length?[]:expectedErrors.filter(error=>!cases.find(entry=>entry.id===error.caseId).failures.length)};
 }
+
+export const testProblems=report=>report?[...report.prerequisites,...report.failures,
+  ...report.cases.flatMap(entry=>entry.failures.map(message=>`${entry.id}: ${message}`))]:[];

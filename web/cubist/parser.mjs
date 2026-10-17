@@ -1098,7 +1098,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   const declarations = [],items=[],directives=[];
   let pendingTests=[];
   const testIds=new Set();
-  const testFailure=(message,at)=>Object.assign(new Error(message),{offset:at.start});
+  const testFailure=(message,at)=>Object.assign(new Error(`Invalid test pragma: ${message}`),{offset:at.start});
   const testName=()=>{
     const token=take();
     if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(token.text))throw testFailure("Expected a test pragma name.",token);
@@ -1118,7 +1118,13 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     if(pragma==="expect_axioms") {
       take("[");value=[];
       if(peek()!=="]")while(true) {
-        value.push(testReference(qualifiedDots));
+        let assumption=testName();
+        if(peek()==="[") {
+          take("[");const signature=testReference(qualifiedDots).split(".");take("]");
+          if(signature.length<2)throw testFailure("An assumption signature needs a qualified module.name.",at);
+          assumption+=`:${signature.shift()}__${signature.join(".")}`;
+        }
+        value.push(assumption);
         if(peek()!==",")break;
         take(",");
       }
