@@ -95,8 +95,8 @@ export function observeTestCases(program,result,{main=program.main}={}) {
         ?[{module,start:item.start+token.start,end:item.start+tokens[index+anchor.value.length-1].end}]:[]);
       if(matches.length!==1)entry.failures.push(`Expected one source anchor [${anchor.value.join(" ")}]; found ${matches.length}.`);
       else if(errors.length===1) {
-        const actual=errors[0].diagnostic?.primary??{module,start:errors[0].start,end:errors[0].end};
-        if(actual.module!==module||actual.start!==matches[0].start||actual.end!==matches[0].end)
+        const [error]=errors,sites=[{module:error.module,start:error.start,end:error.end},error.diagnostic?.primary].filter(Boolean);
+        if(sites.some(site=>site.module!==module||site.start!==matches[0].start||site.end!==matches[0].end))
           entry.failures.push(`The refusal must cover exactly [${anchor.value.join(" ")}] in ${module}.`);
       }
     }

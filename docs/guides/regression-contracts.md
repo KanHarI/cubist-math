@@ -49,13 +49,16 @@ JSON list of exact IDs. An explicit empty, duplicate or unknown selection fails.
 Each selected fixture compiles once; its selected cases share the observation,
 then its kernel is disposed. The full suite selects every case. Use existing
 `evaluate ... expecting ...` and `computable def` syntax for computation, and
-retain JavaScript for host failures, source links, message goldens and DOM.
+retain JavaScript for host failures, source links, message goldens, unmigrated
+work counters and DOM. Put checked `// Error:` comments after the pragmas and
+directly above the declaration so the comment reader attaches them to it.
 
 For exact diagnostic ranges, pair `# expect_error` with
 `# expect_error_at(iter(n))`. The balanced token sequence must occur exactly
 once in its target's written source; whitespace and comments are ignored.
-The diagnostic's primary site must cover that sequence exactly, in the same
-module. Missing or ambiguous anchors fail instead of choosing an occurrence.
+The diagnostic's primary site and the published gap's range must both cover
+that sequence exactly, in the same module. Missing or ambiguous anchors fail
+instead of choosing an occurrence.
 An anchor is source text, not an expression that the checker evaluates.
 
 `# expect_searches(1)` requires exactly one charged coherence search on an

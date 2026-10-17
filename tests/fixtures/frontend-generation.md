@@ -214,12 +214,12 @@ npm run test:browser
 The mutation gate selects these cases by their group prefixes and the control
 names it lists. Commit-specific results belong in the PR record.
 
-
 ### Cases migrated to parsed source contracts
 
 The range and work observations below now live with their Cubist source. They
 run through `tests/cubist-contracts.test.mjs`; the JavaScript range/search-count
 assertions and their original wrapper cases are removed.
+Their exact message goldens remain in `tests/source-observations.test.mjs`.
 
 | Stable case | Source | Contract |
 | --- | --- | --- |

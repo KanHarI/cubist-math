@@ -8,7 +8,7 @@
 // It does not see a declaration with no output, which reports nothing, where
 // in its line a refusal lies, or the work a check did. So every case also
 // observes the declarations without a comment that have no output of their
-// own, and a case that needs them observes a refusal's range, the links at
+// own, and a case that needs them observes the links at
 // each use of a name, the names it must not publish or a work counter, each
 // beside its desired value. A generated output has no line of its own: a
 // written client uses each generated interface a case needs.

@@ -29,6 +29,11 @@ test("error anchors preserve token boundaries and target attachment through form
   assert.equal(formatCubist(formatted,{printWidth:40}),formatted);
   const {program,result}=await check(t,formatted);
   assert.deepEqual(observeTestCases(program,result).cases[0].failures,[]);
+  const end=result.gaps[0].end;
+  result.gaps[0].end=result.gaps[0].start;
+  assert.ok(observeTestCases(program,result).cases[0].failures.some(message=>message.includes("cover exactly")),
+    "the published gap range remains observable independently of the structured site");
+  result.gaps[0].end=end;
   result.gaps[0].diagnostic.primary.module="different_source";
   assert.ok(observeTestCases(program,result).cases[0].failures.some(message=>message.includes("cover exactly")));
 });
