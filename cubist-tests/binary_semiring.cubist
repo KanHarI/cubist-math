@@ -1,0 +1,68 @@
+import bnat_semiring;
+import bnat_notation;
+use bnat;
+
+// Binary arithmetic through the semiring model and its generated parent
+// views; both checked homomorphisms and the isomorphism compute their maps.
+def model_add : bnat_semiring.add(0b1111, 0b1) = 0b10000 {
+  rfl;
+}
+
+def model_mul :
+  bnat_semiring.mul(
+    0b1111111111111111111111111111111111111111111111111111111111111111,
+    0b1111111111111111111111111111111111111111111111111111111111111111
+  ) = 0b11111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000001 {
+  rfl;
+}
+
+def additive_parent :
+  bnat_semiring.additive_.mul(
+    0b1111111111111111111111111111111111111111111111111111111111111111, 0b1
+  ) = 0b10000000000000000000000000000000000000000000000000000000000000000 {
+  rfl;
+}
+
+def multiplicative_parent : bnat_semiring.multiplicative.mul(0b11, 0b101) = 0b1111 {
+  rfl;
+}
+
+def encode_map : unat_to_bnat_hom.map(unat.(7)) = 0b111 {
+  rfl;
+}
+
+def decode_map : bnat_to_unat_hom.map(0b1011) = unat.(11) {
+  rfl;
+}
+
+def iso_forward : unat_bnat_semiring_iso.to.map(unat.(5)) = 0b101 {
+  rfl;
+}
+
+def iso_reverse : unat_bnat_semiring_iso.from.map(0b1001) = unat.(9) {
+  rfl;
+}
+
+def inverse_iso : CommSemiring.Iso.inverse(unat_bnat_semiring_iso).to.map(0b110) = unat.(6) {
+  rfl;
+}
+
+// The laws are available for arbitrary binary values, not just numerals.
+def model_distributivity(a, b, c : BNat) :
+  (a + b) * c = a * c + b * c := bnat_semiring.distrib_right(a, b, c);
+
+def map_preserves_add(a, b : UNat) :
+  unat_to_bnat_hom.map(add(a, b)) = unat_to_bnat_hom.map(a) + unat_to_bnat_hom.map(b) := unat_to_bnat_hom.map_add(
+    a, b
+  );
+
+def map_preserves_mul(a, b : BNat) :
+  bnat_to_unat_hom.map(a * b) = mul(bnat_to_unat_hom.map(a), bnat_to_unat_hom.map(b)) := bnat_to_unat_hom.map_mul(
+    a, b
+  );
+
+def cancel_nonzero(k, a, b : BNat, nz : k = 0b0 -> Void, p : a * k = b * k) :
+  a = b := bnat_mul_cancel(k, a, b, nz, p);
+
+def nonzero_product(a, b : BNat, an : a = 0b0 -> Void, bn : b = 0b0 -> Void) :
+  a * b = 0b0 -> Void := bnat_mul_nonzero(a, b, an, bn);

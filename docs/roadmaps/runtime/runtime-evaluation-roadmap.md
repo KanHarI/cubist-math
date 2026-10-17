@@ -10,8 +10,9 @@ none of the NUM packages or other EVAL packages was implemented. The
 EVAL1's one-pass REPL path and a version-3 baseline.
 [#269](https://github.com/KanHarI/cubist-math/pull/269) implements EVAL2, caching
 completed full normalizations by exact syntax identity. NUM0's source
-representations and bit arithmetic are implemented below; NUM1–NUM2 and
-EVAL3–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
+representations and bit arithmetic are implemented below. NUM1's semiring
+agreement is implemented; its order, transport and strong-recursion work,
+NUM2 and EVAL3–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
 evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -303,8 +304,9 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
 
-EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below;
-the other rows are planned. Sizes are relative scope, as in
+EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
+NUM1 has its semiring agreement; its remaining parts and the other rows are
+planned. Sizes are relative scope, as in
 the work plan.
 
 | Package | Deliverable | Dependencies | Size |
@@ -312,7 +314,7 @@ the work plan.
 | EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
-| NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
+| NUM1 | Natural semiring isomorphism implemented; U0 path/transport, order correctness, H1 binary Peano view and coherent strong recursion remain | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
@@ -420,6 +422,20 @@ binary core loads without the unary carrier, while the explicit conversion
 module loads it. Parser refusal cases pin invalid prefixes, digits and
 their character offsets. All new modules import only the foundational library.
 
+**NUM1 algebra implementation (2026-10-17).**
+[bnat_arithmetic.cubist](../../../library/bnat_arithmetic.cubist) proves that
+decoding preserves addition and multiplication for arbitrary binary values.
+[semirings.cubist](../../../library/semirings.cubist) defines `CommSemiring`
+as a general interface.
+[bnat_semiring.cubist](../../../library/bnat_semiring.cubist) contains both natural models and proves the binary
+laws, constructs both conversion homomorphisms and `unat_bnat_semiring_iso`,
+and supplies cancellation, nontriviality and no zero divisors. The proofs
+use the explicit conversion; the arithmetic operations still recurse on
+bits. These results check without assumptions. This completes the algebraic
+agreement portion only: comparison correctness, bitwise setness, the universe path and its
+transport laws, the dependent Peano view, strong recursion and factorial
+remain NUM1 work. Public `Nat` has not switched.
+
 **Migration boundary.** Public `Nat` is still unary. `UNat` currently aliases
 that exact carrier, retaining its `zero`/`succ` constructors and structural
 induction. Before the authorized default switch, move the unary declaration
@@ -430,10 +446,10 @@ imports. Update numeral-limit diagnostic hints to the new library notation.
 Preserve their induction API and recheck the archive. The switch
 also requires decimal numeral input and decimal/binary printing that operate
 directly on binary magnitudes, without an intermediate unary numeral. It
-waits for NUM1's semiring/transport laws, correctness of comparison,
+waits for NUM1's transport laws, correctness of comparison,
 and dependent strong recursion with coherence. NUM0's computed predicates
-are not yet those proofs, and its two inverse functions are not yet the
-required semiring isomorphism or universe path.
+are not yet order-correctness proofs. The inverse functions now form a checked
+semiring isomorphism; the required universe path remains to be constructed.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
@@ -448,7 +464,10 @@ Prove or transfer cancellation, nontriviality and no-zero-divisors through
 the checked maps. Also prove comparison/order agreement for the algorithms
 that use it; a bare equivalence of carrier types is not enough. Derive
 setness from the bitwise equality decision before NUM2 quotient computations
-can force NUM0's unary-retraction proof. Conversions
+can force NUM0's unary-retraction proof. The semiring law fields also share
+`bnat_decode_injective`; use the bitwise equality decision there to return
+a binary path directly when possible, retaining the unary proof only to
+refute an impossible negative decision. Conversions
 remain explicit computational functions. From this same equivalence,
 construct `UNat =[U0] BNat` through computational univalence and prove its
 forward/reverse transport laws and agreement of transported semiring
