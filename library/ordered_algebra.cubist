@@ -1,0 +1,33 @@
+import algebra;
+
+// Ordered commutative rings and fields, without completeness or real-number
+// constructions. The strict order is proposition-valued, cotransitive and
+// tight. Cotransitivity supplies mere disjunction, not decidable trichotomy.
+// Non-strict order is the absence of the reverse strict inequality.
+theory OrderedRing(U < UU0) extends CommRing {
+  lt(x, y : R) : prop U notation x < y;
+  def le(x, y : R) : U := lt(y, x) -> Void notation x <= y;
+  law lt_irrefl(x : R) : x < x -> Void;
+  law lt_trans(x, y, z : R) : x < y -> y < z -> x < z;
+  law lt_cotrans(x, y, z : R) : x < y -> Trunc(U, (x < z) or (z < y));
+  law lt_tight(x, y : R) : (lt(y, x) -> Void) -> (lt(x, y) -> Void) -> x = y;
+  law zero_lt_one : zero < one;
+  law add_lt_add_right(x, y, z : R) : x < y -> x + z < y + z;
+  law mul_pos(x, y : R) : zero < x -> zero < y -> zero < x * y;
+}
+
+// Both parents share the same commutative ring. Inverses remain the checked
+// Field interface; no order decision procedure is assumed or generated.
+theory OrderedField(U < UU0) extends OrderedRing, Field {}
+
+section {{U < UU0}}(A : OrderedRing(U)) {
+  computable def order_le_refl(x : R) : x <= x := lt_irrefl(x);
+
+  computable def order_le_antisymm(x, y : R, xy : x <= y, yx : y <= x) :
+    x = y := lt_tight(x, y, xy, yx);
+
+  computable def order_zero_ne_one : zero = one -> Void {
+    intro same;
+    exact lt_irrefl(zero, transport zero_lt_one along sym(same) in (fun (x : R) => lt(zero, x)));
+  }
+}
