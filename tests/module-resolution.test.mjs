@@ -131,6 +131,24 @@ async function checked(t, root, source, { path = null, main = "current" } = {}) 
   return { program, result };
 }
 
+test("corpus file aliases keep their place's import policy and never fall back from a missing explicit file", async t => {
+  const { root, text } = await fixture(t);
+  const file = join(root, "archive/first-library/a.cubist");
+  for (const place of ["archive", "library"]) {
+    const reader = sourceReader({ root, files: new Map([[`${place}/example`, file]]) });
+    reader.place("main", place);
+    const program = new CubicalProgram(await createCubical(), reader, { collectReferences: false });
+    t.after(() => program.dispose());
+    const result = await program.checkModules(["example"], "main");
+    assert.deepEqual(result.gaps, []);
+    assert.equal(program.symbols.example__a_value.verified, true);
+    assert.equal(program.sources.x, await text(`${moduleRoots[place]}x.cubist`));
+  }
+  const missing = sourceReader({ root, files: new Map([["archive/x", join(root, "gone.cubist")]]) });
+  missing.place("main", "archive");
+  await assert.rejects(missing("x", "main"), { code: "ENOENT" });
+});
+
 test("same-name modules: each importer loads the module its place sees, one per name", async t => {
   const { root, text } = await fixture(t);
   // An archive module imported into a library-first check keeps the archive's x.

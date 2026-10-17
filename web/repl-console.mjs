@@ -4,6 +4,7 @@
 // a ReplSession (see repl-session.mjs).
 import { scan, tokenStyle, numeralAt } from "./source-tokens.mjs";
 import { replStatements, consoleCommands } from "./repl-session.mjs";
+import { WorkerRequests } from "./worker-requests.mjs";
 
 const element = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -148,27 +149,10 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
 // A REPL with its own worker and an empty program, for pages without a proof.
 // The worker starts on first use.
 export function standaloneRepl() {
-  let worker = null, ready = null, serial = 0;
-  const pending = new Map();
+  let worker = null;
   const request = (command, args) => {
-    if (!worker) {
-      worker = new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" });
-      ready = new Promise(resolve => {
-        worker.onmessage = ({ data }) => {
-          if (data.ready) return resolve();
-          const waiting = pending.get(data.id);
-          if (!waiting || data.progress) return;
-          pending.delete(data.id);
-          if (data.error) waiting.reject(new Error(data.error.message));
-          else waiting.resolve(data.result);
-        };
-      });
-    }
-    return ready.then(() => new Promise((resolve, reject) => {
-      const id = ++serial;
-      pending.set(id, { resolve, reject });
-      worker.postMessage({ id, command, args });
-    }));
+    worker ??= new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }));
+    return worker.request(command, args);
   };
   return {
     run: input => request("repl", { input, fresh: true }),

@@ -3,8 +3,9 @@
 // Without module names, every archive/first-library module is rewritten in place. The
 // skip file maps module names to declarations that must stay unchanged.
 // Verify the result with tools/verify-proof-migration.mjs.
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { archiveModules } from "../web/cubist/modules.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { identicalRewrites, typePreservingRewrites, rewriteModule } from "./proof-rewrites.mjs";
 
@@ -21,8 +22,7 @@ const rewrites = (option("--rewrites") ?? identicalRewrites.join(",")).split(","
 for (const name of rewrites) if (!known.includes(name)) throw new Error(`Unknown rewrite ${name}; expected ${known.join(", ")}.`);
 const skipFile = option("--skip");
 const skips = skipFile ? JSON.parse(await readFile(skipFile, "utf8")) : {};
-const modules = args.length ? args : (await readdir(`${root}archive/first-library`)).filter(name => name.endsWith(".cubist"))
-  .map(name => name.slice(0, -".cubist".length)).sort();
+const modules = args.length ? args : [...archiveModules].sort();
 const totals = {};
 let changed = 0;
 for (const module of modules) {

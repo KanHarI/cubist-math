@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Source is elaborated by JavaScript; all accepted judgements come from C/WASM.
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import createCubical from "../web/dist/cubical.mjs";
@@ -9,7 +9,7 @@ import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
-import { moduleRoots } from "../web/module-resolution.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
 import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
@@ -65,11 +65,7 @@ let program, view, binding, checkedModule, session = null, sessionProgram = null
 // imports only from the archive; anything else imports library-first, and a
 // checked file outside both roots first imports from its own directory.
 // What import can load, for the REPL's /modules.
-const importable = async () => {
-  const names = async root => (await readdir(new URL(`../${root}`, import.meta.url)).catch(() => []))
-    .filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -".cubist".length));
-  return { library: await names(moduleRoots.library), archive: await names(moduleRoots.archive) };
-};
+const importable = async () => moduleListing;
 function show() {
   const shown = view.folded ?? view;
   for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);

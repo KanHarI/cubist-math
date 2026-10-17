@@ -1,0 +1,24 @@
+// Migrated from tests/theories.test.mjs:
+// an operation whose group repeats a name has homomorphisms for each argument.
+// The group still takes both arguments; its body reads the last.
+import nat;
+import hlevels;
+use nat;
+
+# test(theory_repeated_operation.T)
+theory T(U < UU0) {
+  M : set U;
+  op : forall x, x : M. M;
+}
+
+# test(theory_repeated_operation.second)
+def second : T(U0) := T.make(Nat, nat_is_set, fun x => fun y => y);
+
+# test(theory_repeated_operation.preserved)
+def preserved(A, B : T(U0), f : T.Hom(A, B), x, y : A.M) :
+  f.map(A.op(x, y)) = B.op(f.map(x), f.map(y)) := f.map_op(x, y);
+
+# test(theory_repeated_operation.composite)
+def composite : T.Hom.compose(T.Hom.id(second), T.Hom.id(second)).map(second.op(3, 5)) = 5 {
+  rfl;
+}

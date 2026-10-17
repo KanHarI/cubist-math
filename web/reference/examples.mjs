@@ -8,31 +8,15 @@ import { archiveModules, libraryModules } from "../cubist/modules.mjs";
 import { replTranscript } from "../repl-session.mjs";
 import { moduleListing } from "../module-listing.mjs";
 import { moduleRoots } from "../module-resolution.mjs";
+import { WorkerRequests } from "../worker-requests.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
 
-let worker = null, ready = null, serial = 0;
-const pending = new Map();
+let worker = null;
 function request(command, args) {
-  if (!worker) {
-    worker = new Worker(workerURL, { type: "module" });
-    ready = new Promise(resolve => {
-      worker.onmessage = ({ data }) => {
-        if (data.ready) return resolve();
-        const waiting = pending.get(data.id);
-        if (!waiting || data.progress) return;
-        pending.delete(data.id);
-        if (data.error) waiting.reject(Object.assign(new Error(data.error.message), data.error));
-        else waiting.resolve(data.result);
-      };
-    });
-  }
-  return ready.then(() => new Promise((resolve, reject) => {
-    const id = ++serial;
-    pending.set(id, { resolve, reject });
-    worker.postMessage({ id, command, args });
-  }));
+  worker ??= new WorkerRequests(new Worker(workerURL, { type: "module" }));
+  return worker.request(command, args);
 }
 
 // The worker keeps one program at a time, so examples are checked in turn.
