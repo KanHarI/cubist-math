@@ -1,6 +1,7 @@
 // Count checked source syntax in the canonical proof corpus, excluding comments
 // and the design fixtures under docs/examples.
-import {readdirSync,readFileSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
+import {archiveModules} from '../web/cubist/modules.mjs';
 import {parse} from '../web/cubist/parser.mjs';
 
 const root=new URL('../archive/first-library/',import.meta.url);
@@ -12,7 +13,8 @@ function record(name,file) {
   features.set(name,entry);
 }
 
-for(const file of readdirSync(root).filter(name=>name.endsWith('.cubist'))) {
+for(const name of [...archiveModules].sort()) {
+  const file=`${name}.cubist`;
   const ast=parse(readFileSync(new URL(file,root),'utf8'));
   const seen=new WeakSet(),pending=[ast],introductions=new Map();
   while(pending.length) {

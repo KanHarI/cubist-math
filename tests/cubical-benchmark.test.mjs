@@ -8,7 +8,6 @@ import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { benchmark, benchmarkAreas, category } from "../web/benchmark-runner.mjs";
 import { areaLabels, savedReport } from "../web/benchmark-areas.mjs";
-import { moduleListing } from "../web/module-listing.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
@@ -103,10 +102,8 @@ test("benchmark reports the selected deadline and optimizations and rejects inva
 });
 
 test("benchmark measures an area, the library, the archive or the Cubist tests, as its modules import", async () => {
-  // Each area's modules are those the workspace lists there, and the page
-  // names each and finds its saved report.
+  // The page names each area and finds its saved report.
   assert.deepEqual(Object.keys(benchmarkAreas), ["library", "archive", "tests"]);
-  for (const [area, modules] of Object.entries(benchmarkAreas)) assert.deepEqual([...modules], [...moduleListing[area]], area);
   assert.deepEqual(Object.keys(areaLabels), Object.keys(benchmarkAreas));
   // The benchmark imports each of an area's modules, so each has a name an
   // import can write: none is a keyword, as a test named induction was.

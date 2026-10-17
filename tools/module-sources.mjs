@@ -5,9 +5,16 @@ import { realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { moduleListing } from "../web/module-listing.mjs";
 import { moduleReader, moduleRoots, placeOfPath } from "../web/module-resolution.mjs";
 
 export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+
+// File-oriented tools keep alphabetical order; corpus tools keep their
+// established import order separately. The module-resolution test checks
+// inventories against the directory contents in both directions.
+export const moduleFiles = place => [...moduleListing[place]].sort()
+  .map(name => join(projectRoot, moduleRoots[place], `${name}.cubist`));
 
 const text = async path => {
   try { return await readFile(path, "utf8"); }

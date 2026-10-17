@@ -6,7 +6,6 @@
 // declaration needed, the elaborator's included: the kernel's share.
 import createCubical from "./dist/cubical.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
-import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
 import { normal, stated } from "./cubist/stated-comments.mjs";
@@ -15,7 +14,7 @@ import { diagnosticCode } from "./diagnostics.mjs";
 // The areas a benchmark can measure, each with its modules: the rebuilt
 // library, the archive, and the Cubist tests (cubist-tests/). A test module's
 // intended errors are its "Needs fixing" entries.
-export const benchmarkAreas = Object.freeze({ library: libraryModules, archive: archiveModules, tests: cubistTestModules });
+export const benchmarkAreas = moduleListing;
 function knownArea(area) {
   if (!Object.hasOwn(benchmarkAreas, area)) throw new Error(`The benchmark area is library, archive or tests, not ${area}.`);
   return area;
