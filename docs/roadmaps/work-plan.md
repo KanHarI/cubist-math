@@ -651,7 +651,8 @@ no real-number construction or analysis is scheduled.
   bit-structured Peano view and a `Below` function, with checked coherence
   and computation equations and factorial as a computing example. This
   larger package does not depend on H2's indexed accessibility families.
-  When NUM0/NUM1 and the compatibility migration pass, switch binary naturals
+  When NUM0/NUM1 and the compatibility migration (including direct binary
+  decimal input and numeral printing) pass, switch binary naturals
   to the default `Nat`; this transition is authorized. The retained equivalence is
   `UNat` ↔ `Nat`. NUM2 builds new `Z` from pairs of `BNat` and new `Q`
   from that integer ring, including literals and numerical casts. Prove

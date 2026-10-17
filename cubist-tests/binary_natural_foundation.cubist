@@ -1,5 +1,6 @@
 // Canonical binary naturals compute over bits, including beyond word size.
 import bnat_notation;
+import bnat_unary;
 use bnat;
 
 def bnat_zero_predecessor : bnat_pred(0b0) = 0b0 {
@@ -83,6 +84,26 @@ def bnat_wide_borrow :
 }
 
 def bnat_wide_product :
-  0b10000000000000000000000000000000000000000 * 0b10000000000000000000000000000000000000000 = 0b100000000000000000000000000000000000000000000000000000000000000000000000000000000 {
+  0b1111111111111111111111111111111111111111111111111111111111111111 * 0b1111111111111111111111111111111111111111111111111111111111111111 = 0b11111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000001 {
   rfl;
 }
+
+// Refused: this notation requires at least one binary digit after 0b.
+// Error: E905: bnat's literal rule refuses 0b at its character 3.
+def missing_binary_digits := 0b;
+
+// Refused: 2 is not a binary digit, at the sixth character.
+// Error: E905: bnat's literal rule refuses 0b1012 at its character 6.
+def invalid_binary_digit := 0b1012;
+
+// Refused: the binary notation does not accept a hexadecimal prefix.
+// Error: E905: bnat's literal rule refuses 0x1 at its character 2.
+def hexadecimal_literal := 0x1;
+
+// Refused: decimal numerals need their own future binary parser.
+// Error: E905: bnat's literal rule refuses 10 at its character 1.
+def decimal_literal := 10;
+
+// Refused: the missing prefix is reported at the first character.
+// Error: E905: bnat's literal rule refuses 0 at its character 1.
+def bare_zero_literal := 0;

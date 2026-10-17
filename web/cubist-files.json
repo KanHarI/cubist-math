@@ -2400,11 +2400,11 @@
   },
   {
    "path": "library/bnat_unary.cubist",
-   "summary": "Unary/binary conversion round trips, compatibility with successor and doubling, and that `BNat` is a set."
+   "summary": "Explicit unary/binary conversions and their round trips, compatibility with successor and doubling, and that `BNat` is a set."
   },
   {
    "path": "library/bnat.cubist",
-   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; explicit unary conversions and successor/predecessor laws."
+   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws. The binary core has no imports."
   },
   {
    "path": "library/classical_axioms.cubist",

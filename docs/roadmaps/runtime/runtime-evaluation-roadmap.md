@@ -403,19 +403,22 @@ package does not claim to fix the syntax-depth failure.
 exposes the existing unary carrier as `UNat` with an explicit `unat` notation.
 [bnat.cubist](../../../library/bnat.cubist) defines canonical positive bits,
 `BNat`, bitwise successor/predecessor, addition, multiplication, comparison
-and computed equality/order predicates. Its arithmetic never calls a unary
-conversion. Both conversions are explicit; their round trips and binary
-setness check in [bnat_unary.cubist](../../../library/bnat_unary.cubist).
+and computed equality/order predicates. The binary core imports no unary
+module. The explicit conversions, their round trips and binary setness
+live in [bnat_unary.cubist](../../../library/bnat_unary.cubist).
 The successor/predecessor laws also check for arbitrary inputs.
 
 [bnat_notation.cubist](../../../library/bnat_notation.cubist) supplies
 `import bnat_notation; use bnat;` and direct `0b…` literals, separately from
 the binary core. Its unary diagnostic offset counts source characters, not
-the represented number. Decimal literal support remains with NUM2. Checked
-examples cover carries/borrows beyond 64 bits and an 81-bit product; the
-differential suite proves 632 closed identities against independent integer
-results, and inspects the checked arithmetic definitions for unary-carrier
-dependencies. All new modules import only the foundational library.
+the represented number. Decimal input and numeral printing remain migration
+work before the default switch; NUM2 extends them to integers and rationals.
+Checked examples cover carries/borrows beyond 64 bits and a dense 128-bit
+product; the differential suite proves 712 closed identities against
+independent integer results. A dependency check confirms that the complete
+binary core loads without the unary carrier, while the explicit conversion
+module loads it. Parser refusal cases pin invalid prefixes, digits and
+their character offsets. All new modules import only the foundational library.
 
 **Migration boundary.** Public `Nat` is still unary. `UNat` currently aliases
 that exact carrier, retaining its `zero`/`succ` constructors and structural
@@ -424,7 +427,9 @@ and its implementation into `unat`, update the frontend's current
 `nat__Nat` encoding/inspection hooks, separate lexical data from the public
 natural-number facade as needed, and migrate unary clients to explicit
 imports. Preserve their induction API and recheck the archive. The switch
-also waits for NUM1's semiring/transport laws, correctness of comparison,
+also requires decimal numeral input and decimal/binary printing that operate
+directly on binary magnitudes, without an intermediate unary numeral. It
+waits for NUM1's semiring/transport laws, correctness of comparison,
 and dependent strong recursion with coherence. NUM0's computed predicates
 are not yet those proofs, and its two inverse functions are not yet the
 required semiring isomorphism or universe path.
@@ -440,7 +445,9 @@ Add the necessary commutative-semiring interface alongside the existing
 algebraic hierarchy and construct its two models and their isomorphism.
 Prove or transfer cancellation, nontriviality and no-zero-divisors through
 the checked maps. Also prove comparison/order agreement for the algorithms
-that use it; a bare equivalence of carrier types is not enough. Conversions
+that use it; a bare equivalence of carrier types is not enough. Derive
+setness from the bitwise equality decision before NUM2 quotient computations
+can force NUM0's unary-retraction proof. Conversions
 remain explicit computational functions. From this same equivalence,
 construct `UNat =[U0] BNat` through computational univalence and prove its
 forward/reverse transport laws and agreement of transported semiring

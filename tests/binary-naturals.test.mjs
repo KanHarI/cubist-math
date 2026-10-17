@@ -14,7 +14,8 @@ test("binary arithmetic and comparison agree with independent integer results", 
   for (let a = 0n; a < 8n; a++) for (let b = 0n; b < 8n; b++) pairs.push([a, b]);
   for (const bits of [31n, 32n, 63n, 64n, 65n]) {
     const n = 1n << bits;
-    pairs.push([n - 1n, 1n], [n, n + 1n], [n + 1n, n - 1n]);
+    pairs.push([n - 1n, 1n], [n, n + 1n], [n + 1n, n - 1n],
+      [n - 1n, n - 1n], [n + n / 2n, n + n / 2n - 1n]);
   }
   const proofs = [];
   for (const [i, [a, b]] of pairs.entries()) {
@@ -38,28 +39,16 @@ test("binary arithmetic and comparison agree with independent integer results", 
   assert.ok(result.outputs.every(output => output.verified && !output.axioms.length));
 });
 
-test("binary arithmetic's checked definitions have no unary carrier dependency", async t => {
+test("the complete binary core loads without unary naturals", async t => {
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   const result = await program.check("import bnat; def probe := bnat_add;", "binary_dependencies");
   assert.ok(result.complete, JSON.stringify(result.gaps));
-  const kernel = program.kernel, unary = kernel.signatures.get("nat__Nat").index;
-  const visited = new Set();
-  const visit = term => {
-    if (!term || visited.has(term)) return;
-    visited.add(term);
-    const node = kernel.node(term);
-    assert.ok(node.kind !== "Sort" || node.payload !== unary, "binary arithmetic reached the unary natural carrier");
-    if (node.kind === "DefRef") {
-      const definition = kernel.definition(term);
-      visit(definition.value); visit(definition.type);
-    }
-    for (const child of node.children) visit(child);
-  };
-  for (const name of ["bnat_succ", "bnat_pred", "bnat_add", "bnat_mul", "bnat_compare", "bnat_equal", "bnat_le", "bnat_lt"]) {
-    const reference = kernel.definitions.get(`bnat__${name}`);
-    assert.ok(reference, name);
-    const { value, type } = kernel.definition(reference);
-    visit(value); visit(type);
-  }
+  assert.ok(program.kernel.signatures.has("bnat__BNat"), "the binary carrier was loaded");
+  assert.ok(!program.kernel.signatures.has("nat__Nat"), "the binary core must not import unary naturals");
+  // The explicit comparison module is the boundary: importing it really does
+  // load the unary carrier, so this guard observes the dependency it forbids.
+  const conversions = await program.check("import bnat_unary; def probe := bnat_to_unat;", "binary_conversions");
+  assert.ok(conversions.complete, JSON.stringify(conversions.gaps));
+  assert.ok(program.kernel.signatures.has("nat__Nat"), "explicit unary conversions load the unary carrier");
 });

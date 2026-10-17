@@ -1,5 +1,23 @@
 import bnat;
+import unat;
 import hlevels;
+
+// Conversions are explicit. Only these functions cross representations.
+computable def bnat_of_unat(n : UNat) : BNat := match n {
+    zero => b_zero;
+    succ(k) => bnat_succ(bnat_of_unat(k));
+  };
+
+computable def bpositive_to_unat(p : BPositive) : UNat := match p {
+    bp_one => succ(zero);
+    bp_even(q) => add(bpositive_to_unat(q), bpositive_to_unat(q));
+    bp_odd(q) => succ(add(bpositive_to_unat(q), bpositive_to_unat(q)));
+  };
+
+computable def bnat_to_unat(n : BNat) : UNat := match n {
+    b_zero => zero;
+    b_positive(p) => bpositive_to_unat(p);
+  };
 
 // The conversions are inverse. Unary values are used only in these explicit
 // comparison maps and their proofs, not to implement binary arithmetic.

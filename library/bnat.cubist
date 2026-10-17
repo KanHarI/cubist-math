@@ -1,5 +1,3 @@
-import unat;
-
 // Canonical binary naturals. A positive value ends at one; its outermost
 // constructor is the least significant bit. Zero has exactly one form.
 inductive BPositive : U0 {
@@ -139,23 +137,6 @@ computable def bnat_lt(a, b : BNat) : U0 := match bnat_compare(a, b) {
     b_less => Unit;
     b_equal => Void;
     b_greater => Void;
-  };
-
-// Conversions are explicit. Only these functions cross representations.
-computable def bnat_of_unat(n : UNat) : BNat := match n {
-    zero => b_zero;
-    succ(k) => bnat_succ(bnat_of_unat(k));
-  };
-
-computable def bpositive_to_unat(p : BPositive) : UNat := match p {
-    bp_one => succ(zero);
-    bp_even(q) => add(bpositive_to_unat(q), bpositive_to_unat(q));
-    bp_odd(q) => succ(add(bpositive_to_unat(q), bpositive_to_unat(q)));
-  };
-
-computable def bnat_to_unat(n : BNat) : UNat := match n {
-    b_zero => zero;
-    b_positive(p) => bpositive_to_unat(p);
   };
 
 // The numerical successor/predecessor view, before NUM1 supplies dependent
