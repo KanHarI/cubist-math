@@ -64,7 +64,7 @@ test("development versions cover worker dependencies, source files, renames and 
   const { root, put, server } = fixture(t);
   const inputs = ["diagnostics", "module-listing", "module-resolution", "repl-session", "generated-cubist",
     "contextual-session", "cubist/parser", "translator/arguments", "new/dependency"].map(name => `web/${name}.mjs`);
-  inputs.push("web/cubist-files.json", "web/dist/cubical.wasm", "library/example.cubist",
+  inputs.push("web/cubist-files.json", "web/dist/cubical.mjs", "web/dist/cubical.wasm", "library/example.cubist",
     "archive/first-library/example.cubist", "cubist-tests/example.cubist", "docs/example.cubist");
   for (const input of inputs) put(input, "original");
   const original = server().version;

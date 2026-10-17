@@ -19,6 +19,8 @@ def site_version():
     # Hash public inputs, including all worker dependencies. Keeping a
     # second list of compiler modules misses new imports outside cubist/.
     paths = [LAYOUT, Path(__file__).resolve()]
+    # Hidden editor files and dist's build locks/stamps do not change the
+    # running compiler; only its loader and WASM artifact count there.
     for directory in ROOTS.values():
         paths += sorted(path for path in (REPOSITORY / directory).rglob("*")
                         if path.is_file()
