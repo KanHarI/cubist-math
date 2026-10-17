@@ -1,6 +1,6 @@
 # Core theories (L2.4)
 
-Status: reconciled on 2026-10-10 against main `cb525f07`. L2.4's four
+Status: reconciled on 2026-10-17 against main `e729c2d5`. L2.4's four
 slices were implemented on 2026-10-05; all six L2.4c slices followed on
 2026-10-06. This document remains the current theory contract and the plan
 for its unfinished extensions. Original L2.4 evidence:
@@ -20,6 +20,12 @@ extension, homomorphisms and isomorphisms. It follows
 section 1 of the [language features proposal](inductive-language-features.md)
 and milestone 6 of the [ergonomics roadmap](proof-ergonomics-roadmap.md),
 and narrows both to what L2.4 delivers.
+
+The [CB implementation](capture-bindings.md) now retains complete theory
+interfaces and builds generated declarations from binding identities. The
+[RC publication owner](refactoring-and-testing.md#publication-ownership) coordinates
+their lifecycle. Construction and computing folds are integrated; the explicit
+capability interface, uniqueness and universal proofs in L2.6 remain unimplemented.
 
 Everything here is elaboration: a theory expands to ordinary definitions,
 which the kernel checks like any other. No kernel rule changes.

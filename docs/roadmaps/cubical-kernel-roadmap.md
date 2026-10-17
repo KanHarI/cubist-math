@@ -6,7 +6,8 @@ Status: reviewed on 2026-09-28 against `02a57ef`, after the
 its model, critical pairs and canonicity: its six instruction families,
 ABI version 3, admit declarations by default, with no experimental option
 or marker, and its differential fixtures and G2's ledger verifier are
-implemented. H2–H4 and the optional kernel extensions remain planned.
+implemented. At main `e729c2d5` on 2026-10-17, H2–H4 and the optional
+kernel extensions remain planned; the CB/RC work adds no such kernel extension.
 These items were split
 out of the [HoTT and cubical automation roadmap](hott-automation-roadmap.md),
 whose milestones A–F build on the existing kernel. G1–G5 keep their labels so

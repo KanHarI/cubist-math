@@ -1,7 +1,11 @@
 # HoTT and cubical abstractions and automation in Cubist
 
-Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
-work is recorded separately in the [work plan](work-plan.md#branch-work).
+Status reconciled on 2026-10-17 against main `e729c2d5`; dated measurements
+and review decisions below retain their original revisions.
+
+[CB0–CB7](capture-bindings.md) now supply retained scopes, checked model evidence
+and contextual REPLs. These do not complete the broader goal metadata, path
+induction, dependent rewriting or equivalence/structure-identity packages below.
 
 Status reviewed 2026-10-07: A4, A6, A7, A8, A5's goal layer with its four
 elaborator replacements, and D0a are delivered. B4's `show` and `suffices`

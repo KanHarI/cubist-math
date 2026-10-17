@@ -1,9 +1,11 @@
 # Morphisms, categories and universal constructions
 
-Status: proposed on 2026-10-07, at the maintainer's request; nothing here
-is implemented. The initial/free opt-in contract was decided on 2026-10-07
-and is specified in [L2.6](core-theories.md#initial-and-free-models-l26);
-the other packages remain proposed. The work plan's packages are:
+Status: proposed on 2026-10-07; reconciled on 2026-10-17 against main `e729c2d5`.
+The morphism opt-ins, general laws, implicit operations and categorical packages
+below remain unimplemented. Initial/free construction and computing folds are
+integrated through [CB0–CB7](capture-bindings.md); the revised opt-in capability
+interface and universal proofs in [L2.6](core-theories.md#initial-and-free-models-l26)
+remain unimplemented. The work plan's packages are:
 
 - L2.4d: morphisms by opt-in;
 - L2.4e: user-defined morphisms (deferred);
@@ -17,7 +19,7 @@ the other packages remain proposed. The work plan's packages are:
 The probes quoted below were checked on 2026-10-07 with `node cli/repl.mjs
 check`: those of a theory's morphisms and of `Product` at `ae94f49`, and
 those of diagrams at `075ec73`. Their files are not fixtures. The
-[homological algebra roadmap](https://github.com/KanHarI/cubist-math/blob/fb0273282afb96cdaab393ccf47983b5f44f1b25/docs/roadmaps/homological-algebra.md) builds on this one.
+[homological algebra roadmap](homological-algebra.md) builds on this one.
 
 ## Why
 

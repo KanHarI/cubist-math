@@ -1,8 +1,10 @@
 # CB3: deferred scopes
 
-Status: implemented and reviewed; external round 5 is clean at `b8823f65`,
-based on the reviewed cleanup #235 at `790162dd`. CB4–CB7 remain subsequent packages;
-the arbitrary-context REPL is still the CB6 deliverable.
+Status: complete and merged in #236; external round 5 was clean at `b8823f65`,
+based on cleanup #235 at `790162dd`. Reconciled on 2026-10-17 against main
+`e729c2d5`: CB4–CB7 and the final cleanup are also merged, including CB6's
+arbitrary-context REPL. The requirements and validation below record CB3's
+implementation boundary and reviewed checkpoint.
 
 ## Completion requirements
 

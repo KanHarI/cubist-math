@@ -1,8 +1,9 @@
 # CB5: diagnostics and public views
 
-Status: implemented, validated and ready in #238 on CB4 #237. CB5's fourth
-Claude review is clean at source head `57a1b9c9`; CB4's second review is clean.
-CB6 contextual sessions and CB7 retirement remain separate packages.
+Status: complete and merged in #238, following CB4 #237. CB5's fourth Claude
+review was clean at source head `57a1b9c9`. Reconciled on 2026-10-17 against
+main `e729c2d5`: CB6 contextual sessions, CB7 retirement and the final cleanup
+are also merged. This record retains CB5's contract and checkpoint evidence.
 
 ## Contract and implementation order
 
@@ -189,4 +190,5 @@ limited to rendering. A focused fourth review verifies that delta.
 Claude independently confirmed the final rendering delta at `57a1b9c9`, with
 no actionable findings. Binding round trips cover the changed and pre-existing
 atom callers; all 45 generated-view modules render, and differences from the
-previous round are parentheses only. Stop at round 4. CB5 is ready in #238.
+previous round were parentheses only. Review stopped at round 4; CB5 subsequently
+merged in #238.

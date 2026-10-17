@@ -1,7 +1,7 @@
 # Homological algebra
 
-Status: proposed on 2026-10-07, at the maintainer's request; nothing here
-is implemented. This is a new mathematical track. Mathematics beyond the
+Status: proposal merged in #198; HA0–HA6 remain unimplemented at main
+`e729c2d5` on 2026-10-17. Proposed on 2026-10-07 at the maintainer's request. This is a new mathematical track. Mathematics beyond the
 library's foundations is paused, so when it starts is the maintainer's
 decision ([work plan](work-plan.md#open-decisions)).
 

@@ -8,10 +8,10 @@ Moving these documents does not change their recorded status or resume paused wo
 
 ## Plan
 
-Frontend/binding progress reconciled on 2026-10-17 against main `ee7fa35c`;
-other package entries retain their dated evidence. The
-[roadmap overview](roadmaps/README.md#at-a-glance) separates delivered work
-from the [open branch stack](roadmaps/work-plan.md#branch-work).
+Progress reconciled on 2026-10-17 against main `e729c2d5`. The
+[roadmap overview](roadmaps/README.md#at-a-glance) records delivered work and
+remaining packages; the [branch record](roadmaps/work-plan.md#branch-work)
+distinguishes the merged CB/RC stacks from the unmerged Hydra draft.
 
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
   language, its kernel support and the language reference. Broad mathematical
@@ -75,8 +75,8 @@ finishing a language milestone does not automatically resume them.
   [PR comparison](reports/capture-bindings-pr-comparison.md) records the
   historical adoption decisions.
 - [Refactoring and source-level tests](roadmaps/refactoring-and-testing.md):
-  the implementation stack for publication ownership, parsed test pragmas
-  and shared tooling.
+  agreed scope and cleanup merged in #243–#263, including publication ownership,
+  parsed Cubist test contracts, actual test migrations and shared tooling.
 - [Frontend generation](roadmaps/frontend-generation.md): current generation
   contracts and semantic acceptance criteria, with the original FG schedule
   superseded by CB0–CB7. The [gap inventory](reports/frontend-generation-gaps.md)

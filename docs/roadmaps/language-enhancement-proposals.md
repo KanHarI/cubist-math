@@ -1,6 +1,7 @@
 # Language enhancement proposals
 
-Status: proposals, not scheduled. Each records a language feature that was
+Status: E1/E2 remain proposals, not scheduled, at main `e729c2d5` on
+2026-10-17. Each records a language feature that was
 considered and deferred, why it was deferred, and what would justify taking
 it up. None belongs to a roadmap milestone until a use case appears. Taking
 one up means specifying it in the owning roadmap first, with its own review.

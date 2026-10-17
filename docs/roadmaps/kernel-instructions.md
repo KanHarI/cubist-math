@@ -1,7 +1,12 @@
 # Kernel instructions: a THTH-style forward kernel
 
-Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
-work is recorded separately in the [work plan](work-plan.md#branch-work).
+Status reconciled on 2026-10-17 against main `e729c2d5`; dated measurements
+and review decisions below retain their original revisions.
+
+The merged [refactoring work](refactoring-and-testing.md) adds WASM enum parity
+checks, a shared step-budget wrapper and explicit builtin dispatch. Stage-6
+performance/certificate work remains open; instruction-driver reorganization
+is deferred.
 
 2026-09-30 update: Nat and W are now source-defined H1 inductives. Their
 primitive formation, constructor and elimination instructions have been

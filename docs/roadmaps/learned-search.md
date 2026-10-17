@@ -4,7 +4,7 @@ Status: optional research design, reviewed on 2026-09-27. Phases 1 and 2
 are delivered (2026-09-27): the driver's branch points list their moves for
 a pluggable policy, and the kernel counts its work; see
 [Phases](#phases) for the baseline they measured. The learning phases 3–5
-are unimplemented. It builds on the instruction kernel
+remain unimplemented at main `e729c2d5` on 2026-10-17. It builds on the instruction kernel
 ([kernel-instructions.md](kernel-instructions.md)), whose driver searches for
 conversion steps in JavaScript, and it reuses the ideas of the original THTH
 (2023–2025: a Rust opcode driver and PyTorch models over its ASTs). The

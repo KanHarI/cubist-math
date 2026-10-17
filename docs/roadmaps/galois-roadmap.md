@@ -1,6 +1,8 @@
 # Requirements for a full Galois theory development
 
-Status: paused during language development (reviewed 2026-09-27).
+Status: paused during language development; unchanged at main `e729c2d5`
+on 2026-10-17. Mathematical evidence retains its 2026-09-27 review and the
+dated checkpoints below.
 Artin's theorem and the core finite correspondence are checked in the
 archived first library. The remaining work below is deferred; see the
 [active work plan](work-plan.md#deferred-library-backlog).

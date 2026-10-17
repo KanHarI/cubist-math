@@ -1,7 +1,12 @@
 # Notation views and literals (L2.10)
 
-Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
-work is recorded separately in the [work plan](work-plan.md#branch-work).
+Status reconciled on 2026-10-17 against main `e729c2d5`; dated measurements
+and review decisions below retain their original revisions.
+
+[CB2/CB3](capture-bindings.md) now retain selection and operand identities;
+CB5 supplies binding-faithful generated views. The remaining notation-specific
+warning, selection/recipe inspection and general term-printing acceptance cases
+below are separate obligations.
 
 Status: roadmap, revised 2026-10-05, with [decisions](#decisions) recorded
 the same day, and revised again that day: one selection form, `use`, and

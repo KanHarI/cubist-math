@@ -1,8 +1,9 @@
 # CB4: generated artifacts
 
-Status: implemented and validated on `cb4-artifact-builder`, stacked on CB3
-#236, whose fifth review is clean. CB4's second review is clean. CB5–CB7 remain
-subsequent packages.
+Status: complete and merged in #237, following CB3 #236. CB4's second Claude
+review was clean. Reconciled on 2026-10-17 against main `e729c2d5`: CB5–CB7
+and the final cleanup are also merged. This record retains CB4's contract and
+validation at its own checkpoint.
 
 ## Contract
 

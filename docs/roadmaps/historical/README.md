@@ -6,7 +6,8 @@ sequence does not complete its unfinished proposals: their active owners are
 listed below. Specifications and acceptance contracts remain useful, and
 moving a record does not remove its regression tests.
 
-Reconciled on 2026-10-10 against main `cb525f07`.
+Index reconciled on 2026-10-17 against main `e729c2d5`. Dated records below
+retain their original revisions, measurements and review decisions.
 
 | Document | Why historical | Current contract or follow-up |
 | --- | --- | --- |
@@ -27,6 +28,10 @@ unfinished migrations; the source-defined Nat/W/pushout record describes the
 current API. Paused mathematical developments are unfinished, not completed
 history.
 
-The frontend roadmap is in an unmerged stack and has evidence/performance
-follow-ups. It is not archived by this main-based change. See
-[branch work](../work-plan.md#branch-work).
+The frontend, binding and agreed refactoring implementations are now merged.
+Their roadmaps remain linked as current semantic/API contracts and completion
+records; former staging and package-by-package measurements are explicitly
+historical. The CB7 resource allowances and RSS exception remain recorded
+acceptance limits. See [CB completion](../capture-bindings.md),
+[RC completion](../refactoring-and-testing.md) and the current
+[branch record](../work-plan.md#branch-work).

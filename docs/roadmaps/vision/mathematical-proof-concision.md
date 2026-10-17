@@ -4,7 +4,9 @@ Status: design direction and proposed acceptance criteria, recorded on
 2026-09-28. Archive evidence was inspected on `h1-signatures` at `e7bdae5`;
 the implementation baseline is the one reviewed in the
 [work-plan audit](../historical/audits/2026-09-28-audit.md). The
-[work plan](../work-plan.md) remains the scheduling authority.
+[work plan](../work-plan.md) remains the scheduling authority. At main
+`e729c2d5` on 2026-10-17 this remains a vision with proposed acceptance criteria;
+completed CB/RC tooling does not establish the full concision target.
 
 ## Goal
 

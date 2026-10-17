@@ -1,6 +1,7 @@
 # From RH to the prime-counting error
 
-Status: **roadmap only** (2026-09-23). No proof development is started by this
+Status: **roadmap only**, proposed on 2026-09-23; still unimplemented at main
+`e729c2d5` on 2026-10-17. No proof development is started by this
 document. None of the analytic number-theory milestones below is claimed to
 have been checked in Cubist. Resume only when requested, after auditing the
 current sources and the [real-number](reals-roadmap.md) and

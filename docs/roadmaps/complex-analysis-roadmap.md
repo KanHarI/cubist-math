@@ -4,7 +4,9 @@
 theorem of algebra, the residue theorem, or Great Picard. The concrete real
 field instances described in the [real-number roadmap](reals-roadmap.md) are still incomplete.
 
-Development is paused as of 2026-09-19. The
+Development remains paused at main `e729c2d5` on 2026-10-17, following the
+2026-09-19 checkpoint. Source-syntax migrations do not discharge the remaining
+mathematical obligations. The
 [handoff and resumption guide](../tactical/complex_analysis_handoff.md) records the latest
 checked integral laws, validation, outstanding obligations and entry points.
 

@@ -1,7 +1,11 @@
 # CB7: retirement and release
 
-Status: complete in #240, stacked on CB6 #239; Claude round 2 is clean at
-`32bda0ee`. The user-requested separate cleanup is complete in #241.
+Status: complete and merged in #240, following CB6 #239; Claude round 2 was
+clean at `32bda0ee`. The separate cleanup is merged in #241. Reconciled on
+2026-10-17 against main `e729c2d5`; the release measurements below retain
+their original revisions and resource exceptions. The subsequent
+[RC record](refactoring-and-testing.md#verification-record) owns the final
+1,463-test and 16-mutation evidence.
 
 ## Retired paths
 

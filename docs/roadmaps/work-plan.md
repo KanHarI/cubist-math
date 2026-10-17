@@ -1,7 +1,8 @@
 # Work plan: language features and their kernel support
 
-Status: frontend/binding integration reconciled on 2026-10-17 against main
-`ee7fa35c`; other package entries retain their earlier dated evidence.
+Status: reconciled on 2026-10-17 against main `e729c2d5`, after the CB and
+refactoring stacks merged. Package measurements and mathematical approvals
+retain their earlier dated evidence.
 Delivered means present on main. The current tables include L2.4c's six
 slices, notation L2.10a–e and i–k, h-level registration, evaluation patterns
 and closed truncation readout, squares, and EVAL0's recorded baseline.
@@ -11,8 +12,9 @@ revision notes and superseded first-action list; the
 
 Initial/free construction and fold behavior, CB0–CB7 and their separate cleanup
 are on main. The older frontend implementations are superseded. The
-[refactoring and source-test plan](refactoring-and-testing.md) owns the remaining
-#224 ideas; [branch work](#branch-work) records the current follow-ups. This does
+[refactoring and source-test record](refactoring-and-testing.md) records the
+completed agreed #224 scope in #243–#263; [branch work](#branch-work) distinguishes
+that merged work from the Hydra draft. This does
 not complete L2.6's checked universal capabilities or resume paused mathematics.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
@@ -66,11 +68,12 @@ between columns.
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 and E2, deferred proposals |
 | Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `~p` and `~i` for reversal, in place of prefix `-` (L2.10i, 2026-10-06); `hlevel`, L2.5b's first two slices (the second, 2026-10-06: `hlevel_rule`, quantified hints and evidence as rules, setness fields filled by the search); holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175), and on 2026-10-06 a sum's injections, `left` and `right`; the box notation for compositions and `library/squares.cubist` (L2.8's first three slices, 2026-10-06). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder, L2.8's last item (the archive's raw `comp` lemmas through squares) |
 | Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
+| Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI; agreed RC refactoring and source-test migrations in #243–#263 | Preserve the delivered contracts; no CB or agreed RC package remains |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08 | EVAL1–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5 |
-| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library's sixteen modules, self-contained since 2026-10-04: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms` and `universe_automorphisms`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library now has seventeen self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226). The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -625,13 +628,20 @@ REPLs inside functions, lets and induction cases are implemented. The
 [PR comparison](../reports/capture-bindings-pr-comparison.md) is the historical
 adoption decision; the dated FG schedule below records the earlier plan.
 
-**2026-10-09 addition, planned on top of PR #188 at `00d4ecce`.** The
-[frontend generation roadmap](frontend-generation.md) uses that PR's
+**Historical FG schedule, written on 2026-10-09 on PR #188 at `00d4ecce`.**
+The rows and sequencing below record the pre-CB plan, including its former
+TODO staging. All these implementation boundaries are now delivered or replaced
+by CB0–CB7; the active harness has no known-defect exemptions. The merged
+[refactoring stack](refactoring-and-testing.md) also owns publication lifecycle
+coordination and moves concrete assertions into Cubist source contracts.
+
+The [frontend generation roadmap](frontend-generation.md) uses that PR's
 failures as evidence for shared contracts. The
 [gap inventory](../reports/frontend-generation-gaps.md) pins eleven remaining
 findings (G1–G6 and G8–G12) and distinguishes them from fixed examples,
-historical symptoms and L2.6's incomplete planned capabilities. These
-packages do not mark implementation complete or resume paused mathematics.
+historical symptoms and L2.6's incomplete planned capabilities. Those
+historical gap counts are not current failures or pending CB tasks. Completion
+of the frontend work does not resume paused mathematics.
 
 | ID | Package and exit evidence | Depends on | Size |
 | --- | --- | --- | --- |
@@ -730,7 +740,8 @@ Do not repeat their implementation or the completed G0/H1 releases.
 
 Preserve the integrated [frontend contracts and semantic gate](#frontend-generation-track)
 when extending generators. The [refactoring stack](refactoring-and-testing.md)
-owns the current implementation follow-up; L2.6's universal proofs remain separate.
+and its final cleanup are merged; there is no remaining CB/RC implementation
+prerequisite for the steps below. L2.6's universal proofs remain separate.
 
 1. L2.4d: morphisms by explicit opt-in, with its two-commit migration.
 2. L2.11: laws proved propositions; L2.12: implicit theory-operation
@@ -762,15 +773,18 @@ where supplying them checks.
 
 ## Branch work
 
-Snapshot on 2026-10-17. The earlier #188/#204–#212 stack was replaced by
-#215 onward; CB0–CB7 subsequently integrated and replaced the frontend work.
+Snapshot on 2026-10-17 at main `e729c2d5`. The earlier #188/#204–#212
+implementation was replaced by #215 onward; CB0–CB7 then integrated the
+frontend work. All ready implementation PRs through #263 are merged.
+Hydra is the only remaining implementation draft and is excluded from this delivery.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
 | L2.6 construction behavior | Declared carriers, models and computing folds are integrated | Opt-ins, uniqueness, universal properties and additional laws |
 | [Capture/bindings](capture-bindings.md) | CB0–CB7 and cleanup integrated; #219–#223, #225 and #227 closed as superseded | Preserve semantic and resource gates when extending interfaces |
-| [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Merged as `165ac956`; existing mutation runner wired into CI; seven checks passed at `154c4e6b` | Preserve this gate through the cleanup stack |
-| [Refactoring/testing](refactoring-and-testing.md) | Current implementation plan replaces #224's stale compiler assumptions; RC0 underway | Complete the separately reviewable slices and their test migrations |
+| [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Merged as `165ac956`; subsequent RC work extends the runner to 16 semantic probes | Preserve passing baselines and semantic kills; CI evidence is recorded in the RC verification record |
+| [Refactoring/testing](refactoring-and-testing.md) | Agreed RC scope and cleanup merged in #243–#263; replaces #224 | No agreed slice remains; keep excluded/deferred work separate |
+| [Hydra, #233](https://github.com/KanHarI/cubist-math/pull/233) | Open draft on `hydra-termination`, head `14c3e279`; absent from main | Finish and review separately; explicitly excluded from the stack merge |
 
 The earlier FG0 known-defect staging is retired: the integrated harness requires
 the desired semantic results directly. Historical reports retain their pinned
@@ -792,8 +806,9 @@ scheduled packages from advancing.
 3. **Composition notation:** `∘` with an ASCII alias or diagrammatic
    `f >> g`; needed before L2.12's notation acceptance and L3.4.
 4. **Proposed homological track:** when to start it, and its complex-shape
-   versus integer-indexing choice before HA2. The proposal is still in the
-   [branch stack](#branch-work), and mathematics remains paused.
+   versus integer-indexing choice before HA2. The
+   [proposal](homological-algebra.md) is on main; its implementation has not
+   started, and mathematics remains paused.
 
 **Open, not blocking**
 

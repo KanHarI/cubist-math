@@ -1,11 +1,13 @@
 # CB1 implementation evidence
 
-CB1 implements the identity, observation and replay contracts in the
-[capture-bindings roadmap](capture-bindings.md). The ordinary-declaration and
-nested-function pilots are executable. The default module frontend still
-uses its existing representation; retained interfaces and deferred families
-migrate in CB2/CB3. The source/generated-view UI and full contextual REPL are
-CB6 work.
+Status: complete and merged in #231; reconciled on 2026-10-17 against main
+`e729c2d5`. CB2–CB7 and both cleanup passes are also merged.
+
+This record describes CB1's identity, observation and replay pilots at its own
+revision. The retained-interface and deferred-scope handoffs were subsequently
+completed by CB2/CB3, and the full contextual REPL and source/generated/inspector
+entry points by [CB6](capture-bindings-cb6.md). The measurements and TODO counts
+below are historical checkpoint evidence, not current release counts.
 
 ## Identity and elaboration boundary
 

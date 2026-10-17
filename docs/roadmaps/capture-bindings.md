@@ -1,28 +1,23 @@
 # Correct capture and bindings
 
-Status: CB0–CB7 and the separate cleanup are complete, 2026-10-17.
-CB3 review is clean at round 5.
-CB4 is ready in #237 after a clean second Claude review. CB5 is ready in #238
-after a clean fourth Claude review at `57a1b9c9`. CB6 is ready in #239 after a
-clean eighth Claude review at `cb1cdc2c`; its [completion record](capture-bindings-cb6.md)
-covers exact inspector/source/generated contexts and validation. CB7 is ready
-in #240 after a clean second Claude review at `32bda0ee`; its
-[release record](capture-bindings-cb7.md) includes the measured allowances and
-explicit RSS exception. The separate [cleanup](../reports/capture-bindings-cleanup.md)
-is ready in #241 after a clean second Claude review at `1481d352`; it removes
-obsolete staging and unused summaries while preserving semantic coverage.
-The [CB3 checkpoint](capture-bindings-cb3.md) records proof-scope and checked
-evidence integration, remaining requirements and validation.
-The [CB2 evidence](capture-bindings-cb2.md) records production integration,
-validation and the remaining phase boundaries.
-The [CB1 evidence](capture-bindings-cb1.md) records its identity and replay
-pilots. PR #231 received a clean fourth external review at `5f2d645b`.
-The [baseline report](../reports/capture-bindings-baseline.md) records exact
-known defects, active controls and contextual-execution TODOs.
-The production baseline is `docs/frontend-generation-roadmap` at
-`f0417ee0`; the motivating review is #219 at `d3d8f21e`. The
-[open-PR comparison](../reports/capture-bindings-pr-comparison.md) records
-what to adopt, replace and leave independent in the other current PRs.
+Status: CB0–CB7, the CB0–CB2 cleanup (#235) and the final cleanup (#241)
+are complete and merged, reconciled on 2026-10-17 against main `e729c2d5`.
+No CB package remains. The [CB6 record](capture-bindings-cb6.md) covers the
+arbitrary-context REPL, including **Open REPL in this context** in the inspector;
+the [CB7 release record](capture-bindings-cb7.md) retains its measured allowances
+and explicit RSS exception. The [final cleanup](../reports/capture-bindings-cleanup.md)
+removes obsolete staging and unused summaries while preserving semantic coverage.
+
+The CB1–CB7 records retain the review results and measurements at each package's
+own revision. Their former later-phase TODOs describe those checkpoints, not
+remaining implementation on main. The merged [refactoring work](refactoring-and-testing.md)
+subsequently completed publication ownership, test pragmas and shared tooling.
+
+The original production baseline was `docs/frontend-generation-roadmap` at
+`f0417ee0`; the motivating review was #219 at `d3d8f21e`. The
+[baseline report](../reports/capture-bindings-baseline.md) and
+[PR comparison](../reports/capture-bindings-pr-comparison.md) retain the original
+adoption evidence. Their known defects and open-PR labels are historical.
 
 Replace spelling-based capture repair with a frontend representation that
 preserves binding identities through retention, substitution, inheritance,
@@ -737,27 +732,27 @@ checked context.
 
 ## Ordered implementation packages
 
-Use #216 at `f0417ee0` or its reviewed successor as the replacement base;
-it already includes FG0/FG1. Adopt later work selectively rather than merging
-all intermediate representations first. These packages define implementation
-boundaries, not repeated approval checkpoints.
+All packages below are complete and merged. The original sequence started
+from #216 at `f0417ee0`, including FG0/FG1, and selectively adopted the later
+proposals. The table preserves each package's implementation and acceptance
+boundary; its prerequisites are now satisfied.
 
-| Package | Work and dependencies | Exit evidence and deletion |
-| --- | --- | --- |
-| CB0: baseline and witnesses | Pin adopted commits; adapt #224's useful fixture/observer improvements and #223's preservation machinery to current-stage expectations; add all review reproductions and contextual-session scenarios. | Record corpus, assumptions, artifacts and costs. Separate old TODOs from regressions; do not claim harness adoption fixes its TODOs. |
-| CB1: identities, origins and scope points | Shared contracts and adapter with resolution-time slot lowering; pilot complete ordinary telescopes, term/universe/dimension binders, attempt-owned observations and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Demonstrate the callback replay/query sequence specified above in a nested function scope and record prefix/history/query costs. |
-| CB2: retained interfaces | On CB1, migrate headers, fields, derived telescopes, family domains, inheritance, helper expansion/validation and dependency analysis; replace inheritance `sameSyntax` checks with binding correspondence. | Prevent both #219 semantic regressions; fix bare recursive references and family helper resolution. Diamond and independent-parent sharing/conflict controls pass. Do not adopt #219's `byName` dependency resolution; remove migrated record/syntax/record conversions. |
-| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, selection activations with explicit effects, notation/operand recipes and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives, nested refinements and all model-opening forms preserve meaning, including per-item file-level activation and declaration-scoped operand receivers without implicit label opening. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get intended clients and checked distinguishing controls under the witness contract below; delete corresponding fixed-binder callbacks. |
-| CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. |
-| CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. |
-| CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work. Multiple selected instances are labelled separately; discarded attempts cannot be opened. Sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. |
-| CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; verify retirement of migrated paths. | Verify the cleanup’s removal of capture-only E801/E860/E869/E871 implementations and the E866 workaround; preserve retired codes without reuse. Record the isolated historical adapter and complete release evidence. |
+| Package | Work and dependencies | Exit evidence and deletion | Merged PR |
+| --- | --- | --- | --- |
+| CB0: baseline and witnesses | Pin adopted commits; adapt #224's useful fixture/observer improvements and #223's preservation machinery to current-stage expectations; add all review reproductions and contextual-session scenarios. | Record corpus, assumptions, artifacts and costs. Separate old TODOs from regressions; do not claim harness adoption fixes its TODOs. | [#230](https://github.com/KanHarI/cubist-math/pull/230) |
+| CB1: identities, origins and scope points | Shared contracts and adapter with resolution-time slot lowering; pilot complete ordinary telescopes, term/universe/dimension binders, attempt-owned observations and persistent scope descriptions. | Cloning, grouped domains, serialization and source ownership work; missing IDs cannot fall back to names. Demonstrate the callback replay/query sequence specified above in a nested function scope and record prefix/history/query costs. | [#231](https://github.com/KanHarI/cubist-math/pull/231) |
+| CB2: retained interfaces | On CB1, migrate headers, fields, derived telescopes, family domains, inheritance, helper expansion/validation and dependency analysis; replace inheritance `sameSyntax` checks with binding correspondence. | Prevent both #219 semantic regressions; fix bare recursive references and family helper resolution. Diamond and independent-parent sharing/conflict controls pass. Do not adopt #219's `byName` dependency resolution; remove migrated record/syntax/record conversions. | [#234](https://github.com/KanHarI/cubist-math/pull/234) |
+| CB3: deferred scopes | On CB1/CB2, migrate patterns, proof statements, selection activations with explicit effects, notation/operand recipes and structural selections; adopt #221's evidence/recursion behavior. | Constructor/variable alternatives, nested refinements and all model-opening forms preserve meaning, including per-item file-level activation and declaration-scoped operand receivers without implicit label opening. Replace ambient `mayBeConstructor`/`constructorWithout` probes for retained syntax; enforce the late-lookup allowlist. Former capture-only refusals get intended clients and checked distinguishing controls under the witness contract below; delete corresponding fixed-binder callbacks. | [#236](https://github.com/KanHarI/cubist-math/pull/236) |
+| CB4: artifact builder | On CB2/CB3, migrate Hom first, then Iso, base projections and initial/free constructors/folds; adopt #220 inference and distinct support plans. | Remove each migrated textual/template path. Universe, preservation, fold computation and FG1 rollback controls pass. Generated patterns/references use IDs. | [#237](https://github.com/KanHarI/cubist-math/pull/237) |
+| CB5: diagnostics and public views | Origins start in CB1; finish binding diagnostics, #222 label/lint behavior and #225/#227 generated inspection on CB3/CB4. | Imported spans, named clients and definition links survive. Binding-faithful printing passes round-trip or explicit-marker controls. Remove ambient lookup from inspection and migrated message classifiers. | [#238](https://github.com/KanHarI/cubist-math/pull/238) |
+| CB6: contextual REPL | Backend can develop after CB1; complete after CB3/CB5. Implement isolated replay/query sessions and source/generated-view entry points; reuse current console behavior where applicable. | Nested induction/function/let and proof-goal sessions work. Multiple selected instances are labelled separately; discarded attempts cannot be opened. Sibling/late-name leaks, stale revisions, rollback and two-session interference are rejected. Queries leave the original program unchanged. | [#239](https://github.com/KanHarI/cubist-math/pull/239) |
+| CB7: retirement and release | Audit every current-language producer/consumer after CB1–CB6; verify retirement of migrated paths. | Verify the cleanup’s removal of capture-only E801/E860/E869/E871 implementations and the E866 workaround; preserve retired codes without reuse. Record the isolated historical adapter and complete release evidence. | [#240](https://github.com/KanHarI/cubist-math/pull/240) |
 
-CB3's ambiguous pattern slot is the risk to prototype during CB1, before
-spreading the representation to every generator. Scope-point replay is the
-other early pilot: IDs alone do not make native context snapshots durable.
-RC3 publication cleanup and broad test pragmas are independent, not blockers.
-Small fixes to current PRs can still land while this replacement develops.
+CB1 prototyped the ambiguous pattern slot and scope-point replay before the
+representation spread to the other generators: IDs alone do not make native
+context snapshots durable. CB3 completed deferred resolution and CB6 completed
+the contextual REPL. The later RC3 publication cleanup and source test pragmas
+are also merged; their completion record is separate.
 
 Each package names the code it removes. Transitional adapters are explicit
 by phase/family and reject accidental mixed input. Production retention must

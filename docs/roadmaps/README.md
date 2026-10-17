@@ -7,9 +7,10 @@ not resume when a language milestone ships.
 
 ## At a glance
 
-Frontend/binding status reconciled on 2026-10-17 against main `ee7fa35c`.
-Other rows retain their earlier package evidence. Delivered means merged into
-main; open PR work is identified separately.
+Roadmap status reconciled on 2026-10-17 against main `e729c2d5`, including
+the merged CB and refactoring stacks. Delivered means present on main.
+The linked specifications, mathematical approvals and dated measurements retain
+their original evidence; this status audit does not rerun those reviews.
 
 | Track | Delivered on main | Still open |
 | --- | --- | --- |
@@ -19,17 +20,19 @@ main; open PR work is identified separately.
 | Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
 | Evaluation/numbers | EVAL0 measurement harness and recorded outcomes | EVAL1–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
-| Library/reference | Sixteen self-contained foundation modules; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
+| Library/reference | Seventeen self-contained foundation modules, including the universe-smallness proofs; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
+| [Frontend/bindings](capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs | No CB packages remain; preserve the semantic and resource gates |
+| [Refactoring/testing](refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed slices remain; instruction-driver reorganization is deferred, build prerequisites/native discovery are excluded |
 
-**Frontend integration:** initial/free construction and fold behavior, CB0–CB7
-and the separate cleanup are on main. The older #219–#223, #225 and #227 PRs
-are closed as superseded. [#242](https://github.com/KanHarI/cubist-math/pull/242)
-adds the mutation CI hook. The remaining #224 ideas are tracked in the
-[refactoring and source-test stack](refactoring-and-testing.md); see the
-[branch record](work-plan.md#branch-work). Checked universal capabilities
-and their mathematical proofs remain separate unfinished work.
+**Frontend integration is complete:** initial/free construction and fold
+behavior, CB0–CB7, cleanup and the agreed #224 refactoring ideas are on main.
+The older #219–#225 and #227 proposals are closed as superseded;
+[#242](https://github.com/KanHarI/cubist-math/pull/242) supplies the mutation CI hook.
+Checked universal capabilities and their mathematical proofs remain unfinished.
+The [branch record](work-plan.md#branch-work) separately tracks Hydra #233,
+which remains an unmerged draft.
 
 Next language work: morphism opt-ins (L2.4d), general proposition laws
 (L2.11), implicit operation arguments (L2.12), then L2.6's checked
@@ -77,9 +80,9 @@ EVAL1 and NUM0/NUM1 can advance independently. See
   and contextual REPLs at arbitrary nesting depth. The
   [PR comparison](../reports/capture-bindings-pr-comparison.md) records which
   earlier solutions were adopted or replaced; CB0–CB7 and cleanup are complete.
-- [Refactoring and source-level tests](refactoring-and-testing.md): the implementation
-  stack for publication ownership, test pragmas and shared tooling, with its final
-  cleanup and verification record.
+- [Refactoring and source-level tests](refactoring-and-testing.md): completed
+  publication ownership, test pragmas and shared tooling, with merged PRs,
+  scope exclusions, final cleanup and verification evidence.
 - [Frontend generation](frontend-generation.md): current contracts motivated by
   PR #188, with its FG schedule superseded by CB0–CB7. Unifies declaration ownership,
   supported dependency analysis, universe calculation, contextual evidence
@@ -119,6 +122,7 @@ evidence, not a claim that the new library has rebuilt those areas.
 | [Reals](reals-roadmap.md) | Current quotient integers/rationals | NUM owns binary replacements; this plan owns order, presentations, completeness interfaces and real constructions. Cauchy reals need H3; paused beyond existing foundations |
 | [Complex analysis](complex-analysis-roadmap.md) | Algebra, limits, contour estimates and affine dyadic integral laws over supplied scalars | Topology and general integration bridges; FTA, residue theorem and Great Picard unproved; paused. [Checkpoint](../tactical/complex_analysis_handoff.md) |
 | [RH and prime counting](rh-prime-counting-roadmap.md) | Statement and dependency plan only | All analytic-number-theory milestones; not started |
+| [Homological algebra](homological-algebra.md) | Proposal and dependency plan only | HA0–HA6, synthetic and algebraic tracks; not started, awaiting an explicit start decision |
 
 See the [results catalog](../library-results.md) and
 [documentation index](../README.md) for supporting evidence and guides.

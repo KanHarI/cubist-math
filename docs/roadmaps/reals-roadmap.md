@@ -1,6 +1,7 @@
 # Real-number roadmap
 
-Status: paused during language development, but for R1's integers and
+Status: unchanged at main `e729c2d5` on 2026-10-17: paused during language
+development, but for R1's integers and
 rationals, built on 2026-10-05; corrected on 2026-09-28 after
 the [work-plan audit](historical/audits/2026-09-28-audit.md) (previously reviewed
 2026-09-27); restructured on 2026-09-25 for the rebuild of the library. The

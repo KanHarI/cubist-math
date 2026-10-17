@@ -4,8 +4,10 @@ Status: shared contracts and the semantic preservation gate remain current.
 CB0–CB7 and cleanup are complete and integrated on 2026-10-17. They implement
 or replace the FG schedule below. The gap fixtures now require their desired
 results directly, with no known-defect exemptions. The
-[refactoring stack](refactoring-and-testing.md) owns remaining cleanup and
-test migrations; it does not reopen completed FG/CB packages.
+[refactoring stack](refactoring-and-testing.md) completed the agreed cleanup,
+publication ownership and source-test migrations in #243–#263, merged into
+main `e729c2d5`. No FG/CB package remains open; the preservation contracts
+below continue to govern future generator changes.
 
 The original plan was written on 2026-10-09, on top of PR #188 at
 [`00d4ecce`](https://github.com/KanHarI/cubist-math/commit/00d4ecce016f7e18d13eedeced07dc098a2277cb).

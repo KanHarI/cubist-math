@@ -1,6 +1,7 @@
 # Computation notation: monadic do and arrows
 
-Status: planned on 2026-09-25; reviewed on 2026-09-27. No notation or
+Status: planned on 2026-09-25; reviewed on 2026-09-27; N0–N5 remain
+unimplemented at main `e729c2d5` on 2026-10-17. No notation or
 supporting interfaces in this roadmap are implemented. G0, the core
 goal/scope layer, computability checking, argument inference and implicit
 parameters (L4.1a, L4.1b, 2026-10-04), core theories (L2.4, 2026-10-05)

@@ -1,8 +1,9 @@
 # CB6: contextual REPL
 
-Status: complete in #239, stacked on CB5 #238. Final validation and the eighth
-Claude review are clean on `cb1cdc2c`. CB7 retirement and release follow; a separate cleanup
-PR across CB0–CB7 follows CB7, as requested by the user.
+Status: complete and merged in #239, following CB5 #238. Final validation and
+the eighth Claude review were clean on `cb1cdc2c`. Reconciled on 2026-10-17
+against main `e729c2d5`: CB7 retirement/release (#240) and the separate cleanup
+(#241) are also merged. The evidence below remains pinned to the CB6 checkpoint.
 
 ## Implemented behavior
 

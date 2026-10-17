@@ -5,7 +5,7 @@ item H, stages H1–H4. H1 was released on 2026-10-02 after its soundness
 review, on by default with no experimental marker, as the
 [H1 specification](h1-signature-specification.md) narrows it. The rest of
 the archive's truncation remedies is pending, and nothing of H2–H4 is
-implemented. The
+implemented as of main `e729c2d5` on 2026-10-17. The
 [work plan](work-plan.md) schedules it. It supersedes kernel items G1–G3 and
 the separate native-inductive and generic higher-inductive items. It depends
 on G0 (universe-generic checking). The existing literature informed this

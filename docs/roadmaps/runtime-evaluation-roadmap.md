@@ -5,7 +5,9 @@ Status: planned on 2026-10-07, following a local investigation at
 [baseline](#measurements) was recorded on 2026-10-08. The early numerical
 foundation is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q`
 and later numerical constructions. None of the NUM packages or the other
-EVAL packages is implemented. A versioned scratch evaluator supplies
+EVAL packages is implemented; this is unchanged at main `e729c2d5` on
+2026-10-17. CB6's contextual REPL and RC's shared worker transport do not
+implement EVAL1's normalization work. A versioned scratch evaluator supplies
 feasibility evidence only.
 The [work plan](work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](computation-notation-roadmap.md) owns

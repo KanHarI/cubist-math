@@ -1,9 +1,9 @@
 # Refactoring and source-level tests
 
-Status: agreed implementation is present in the PR stack, after CB0–CB7 and their cleanup.
+Status: the agreed implementation and final cleanup are complete and merged
+on 2026-10-17 in #243–#263, included in main `e729c2d5`.
 Claude Code Opus 5.5 review and local validation are complete.
-The stack remains unmerged.
-This is the current implementation plan for the remaining ideas from
+This is the completion record and continuing contract for the adopted ideas from
 [#224](https://github.com/KanHarI/cubist-math/pull/224), whose pinned
 `1fdc68a5` roadmap describes the earlier compiler. The
 [binding roadmap](capture-bindings.md) and its completion records own the
@@ -11,33 +11,34 @@ implemented binding, generation, inspection and contextual REPL contracts.
 
 The stack follows [#242](https://github.com/KanHarI/cubist-math/pull/242),
 merged as `165ac956`, which adds the existing frontend mutation runner to CI
-and preserves its evidence. It is separate from this cleanup. No PR in this plan is merged by
-recording its completion here.
+and preserves its evidence. It is separate from this cleanup.
+The final integration commit has the same tree as the reviewed #263 head
+`a76ae310`; Hydra #233 was excluded.
 
 ## Scope and order
 
-Each row is a review boundary, not a requirement to create exactly one PR.
-Split a row when its changes have independent validation. Delete each replaced
-path in the same PR as its replacement; do not retain parallel frameworks.
+Every implemented row below is merged. Rows describe the review boundaries;
+some were split into separately validated PRs. Replaced paths were removed with
+their replacements. The explicit exclusions below remain outside completion.
 
 | Slice | Work | Dependencies and evidence | Status |
 | --- | --- | --- | --- |
-| RC0 | Nontrivial archive formatter round trips; redundant test and dead-code removal; documentation reconciliation | Preserve tokens, comments and syntax after actual reformatting; kill a meaning-changing formatter mutation; existing suite | Implemented; Opus 5.5 round 2 clean |
-| RC8 | Complete development-version inputs and compilation-local inference placeholders | Editing worker dependencies changes the version; repeated compilation is deterministic | Names and development version implemented; Opus 5.5 reviews clean |
-| RC7 | One worker request transport for proof, standalone REPL and reference examples | Preserve independent program/session ownership, cancellation and stale-response rejection; worker startup errors settle pending requests | Implemented; Opus 5.5 round 6 clean |
-| RC9 | Shared diagnostic-comment reader and test-host helpers | Preserve own-line/end-of-line comments and continuation rules; remove migrated copies before adding pragma readers | Reader and shared Node/browser hosts implemented; Opus 5.5 reviews clean |
-| RC5 | Producer-assigned lint codes and structured source positions | Preserve diagnostic codes, spans and selected message snapshots; remove corresponding English classifiers and position reparsing | Lint codes and source-qualified parse/duplicate/worker diagnostics implemented; Opus 5.5 reviews clean |
-| RC10 | Verification commands shared by CI and release evidence; additional partial-failure mutation probes | Record deliberate command differences; baseline passes and assertion failures distinguish semantic kills from infrastructure failures | Shared verification commands and 16 mutation probes implemented; Opus 5.5 reviews clean |
-| RC1 | Parsed test pragmas, one case observer and first actual Cubist test migrations | After RC9; reject malformed, ignored, missing and duplicate contracts; preserve mutation selectors and benchmark refusal accounting | Implemented; Opus 5.5 round 4 clean |
-| RC2 | Source/work observations and module scenarios needed by further test migrations | Extend RC1 only for concrete migrations; retain host fault injection, DOM and malformed-kernel tests | Implemented; module migration round 1 and source/work round 3 clean |
-| RC3 | One publication lifecycle owner and explicit module context | Preserve partial-family publication, rollback, import repair, observer failures, rechecks and accounting on every exit | Explicit definition context and publication owner implemented; Opus 5.5 context round 2 found no behavioral issue, publication round 3 clean |
-| RC6 | Shared browser setup, module inventories and corpus tools | Preserve curated order, membership, titles, scenarios and report contents; validate both file-to-list and list-to-file membership | Inventories, browser fixtures and corpus execution implemented; Opus 5.5 reviews clean |
-| RC11a | Shared source scanner and lexical rules | Parser/highlighter token boundaries agree, including comments, incomplete input, numerals and operators | Implemented; Opus 5.5 round 3 clean |
-| RC11b | Shared term child/binder metadata and free-name traversal where semantics agree | Preserve binder scope, substitution and display-only terms; keep native codec independent unless parity is verified | Implemented; Opus 5.5 round 2 clean |
-| RC11c | Builtin dispatch and reserved-name correspondence | Every reserved builtin has an intentional handler; existing argument errors and elaboration results survive | Implemented; Opus 5.5 round 2 clean |
-| RC11d | WASM enum parity and step-budget wrapper | Compare C/JS encodings; preserve exact 64-bit budgets and independent native admission checks | Implemented; Opus 5.5 round 1 clean |
-| RC11e | Development/published-site layout agreement | Published roots and versioned imports agree under both servers; existing browser/site scenarios | Implemented; Opus 5.5 round 3 clean |
-| Final cleanup | Review the completed stack for redundant state, wrappers and superseded documentation | All agreed slices accounted for; independent semantic controls retained | Complete; Opus 5.5 round 2 clean |
+| RC0 | Nontrivial archive formatter round trips; redundant test and dead-code removal; documentation reconciliation | Preserve tokens, comments and syntax after actual reformatting; kill a meaning-changing formatter mutation; existing suite | Implemented; Opus 5.5 round 2 clean; merged #243 |
+| RC8 | Complete development-version inputs and compilation-local inference placeholders | Editing worker dependencies changes the version; repeated compilation is deterministic | Names and development version implemented; Opus 5.5 reviews clean; merged #244, #248 |
+| RC7 | One worker request transport for proof, standalone REPL and reference examples | Preserve independent program/session ownership, cancellation and stale-response rejection; worker startup errors settle pending requests | Implemented; Opus 5.5 round 6 clean; merged #250 |
+| RC9 | Shared diagnostic-comment reader and test-host helpers | Preserve own-line/end-of-line comments and continuation rules; remove migrated copies before adding pragma readers | Reader and shared Node/browser hosts implemented; Opus 5.5 reviews clean; merged #245, #259 |
+| RC5 | Producer-assigned lint codes and structured source positions | Preserve diagnostic codes, spans and selected message snapshots; remove corresponding English classifiers and position reparsing | Lint codes and source-qualified parse/duplicate/worker diagnostics implemented; Opus 5.5 reviews clean; merged #247, #260 |
+| RC10 | Verification commands shared by CI and release evidence; additional partial-failure mutation probes | Record deliberate command differences; baseline passes and assertion failures distinguish semantic kills from infrastructure failures | Shared verification commands and 16 mutation probes implemented; Opus 5.5 reviews clean; merged #256, #258, #262 |
+| RC1 | Parsed test pragmas, one case observer and first actual Cubist test migrations | After RC9; reject malformed, ignored, missing and duplicate contracts; preserve mutation selectors and benchmark refusal accounting | Implemented; Opus 5.5 round 4 clean; merged #259 |
+| RC2 | Source/work observations and module scenarios needed by further test migrations | Extend RC1 only for concrete migrations; retain host fault injection, DOM and malformed-kernel tests | Implemented; module migration round 1 and source/work round 3 clean; merged #261, #262 |
+| RC3 | One publication lifecycle owner and explicit module context | Preserve partial-family publication, rollback, import repair, observer failures, rechecks and accounting on every exit | Explicit definition context and publication owner implemented; Opus 5.5 context round 2 found no behavioral issue, publication round 3 clean; merged #257, #258 |
+| RC6 | Shared browser setup, module inventories and corpus tools | Preserve curated order, membership, titles, scenarios and report contents; validate both file-to-list and list-to-file membership | Inventories, browser fixtures and corpus execution implemented; Opus 5.5 reviews clean; merged #253–#255 |
+| RC11a | Shared source scanner and lexical rules | Parser/highlighter token boundaries agree, including comments, incomplete input, numerals and operators | Implemented; Opus 5.5 round 3 clean; merged #246 |
+| RC11b | Shared term child/binder metadata and free-name traversal where semantics agree | Preserve binder scope, substitution and display-only terms; keep native codec independent unless parity is verified | Implemented; Opus 5.5 round 2 clean; merged #251 |
+| RC11c | Builtin dispatch and reserved-name correspondence | Every reserved builtin has an intentional handler; existing argument errors and elaboration results survive | Implemented; Opus 5.5 round 2 clean; merged #252 |
+| RC11d | WASM enum parity and step-budget wrapper | Compare C/JS encodings; preserve exact 64-bit budgets and independent native admission checks | Implemented; Opus 5.5 round 1 clean; merged #249 |
+| RC11e | Development/published-site layout agreement | Published roots and versioned imports agree under both servers; existing browser/site scenarios | Implemented; Opus 5.5 round 3 clean; merged #248 |
+| Final cleanup | Review the completed stack for redundant state, wrappers and superseded documentation | All agreed slices accounted for; independent semantic controls retained | Complete; Opus 5.5 round 2 clean; merged #263 |
 
 RC4's complete telescopes and artifact builder are already implemented by
 CB2/CB4. Binding-related RC5 work and #224's fixture/observer improvements
@@ -188,7 +189,8 @@ remain outside the agreed scope. No resource limits were raised for these change
 
 ## Verification record
 
-The stack remains unmerged. Every PR has a separate Claude Code Opus 5.5 review;
+The stack is merged on main `e729c2d5`. Every PR received a separate
+Claude Code Opus 5.5 review;
 rounds stopped when clean, with a maximum of eight for real findings. The final
 source/work PR finished clean in round 3 and this cleanup in round 2.
 
@@ -204,4 +206,10 @@ source-contract checks and the full suite above.
 
 [CI run 39025607670](https://github.com/KanHarI/cubist-math/actions/runs/39025607670)
 checks that same final runtime revision. The four native compiler/OS jobs,
-sanitizer and lint passed; the workbench job is still running at this record.
+sanitizer and lint passed. Attempt 1 also passed the full test suite and inspector
+and contextual browser checks, then terminated during the last mutation probe
+with exit code 143 and no assertion failure reported. Only the failed workbench
+job was retried; attempt 2 is pending completion at this snapshot.
+[Publication run 39026745357](https://github.com/KanHarI/cubist-math/actions/runs/39026745357)
+checks and publishes main `e729c2d5`; it is also pending completion. These are
+separate from the passing local evidence above.

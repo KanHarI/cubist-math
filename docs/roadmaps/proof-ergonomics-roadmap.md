@@ -1,7 +1,11 @@
 # Simplification and shorter proofs in Cubist
 
-Progress reconciled on 2026-10-10 against main `cb525f07`. Open branch
-work is recorded separately in the [work plan](work-plan.md#branch-work).
+Status reconciled on 2026-10-17 against main `e729c2d5`; dated measurements
+and review decisions below retain their original revisions.
+
+Binding retention, generated inspection and contextual REPLs are now delivered
+by [CB0–CB7](capture-bindings.md). The remaining proof-language packages below
+are separate from that completed frontend work.
 
 Status reviewed 2026-10-07: first release delivered on 2026-09-25. Milestones 0–3 check through
 the native kernel: grouped binders and introductions, both `have` forms

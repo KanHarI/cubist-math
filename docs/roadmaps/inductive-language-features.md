@@ -12,7 +12,10 @@ revision, L2.4c, was done on 2026-10-06
 ([core theories](core-theories.md#revision-l24c)): carriers as fields,
 `M : set U`, the theory's name as its models' type, theory families,
 relation fields as families of propositions with notation, and `use`.
-Initial and free models have a construction prototype (L2.6, 2026-10-06):
+Status reconciled on 2026-10-17 against main `e729c2d5`: CB0–CB7 now retain
+and generate these interfaces by binding identity, with generated inspection
+and contextual REPLs. Initial and free construction and computing folds are
+integrated (L2.6's first slice):
 `initial N : T(…);`, `free W(A : U0) : T(…) on A;`, `N.model` and `N.fold`.
 The revised contract of 2026-10-07 requires explicit derivation opt-ins
 and checked universal properties; that capability interface is not yet
