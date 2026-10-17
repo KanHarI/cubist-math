@@ -1,7 +1,8 @@
 # Work plan: language features and their kernel support
 
-Status: reconciled on 2026-10-17 against main `e729c2d5`, after the CB and
-refactoring stacks merged. Package measurements and mathematical approvals
+Status: reconciled on 2026-10-17 against main `3be74796`, after the CB,
+refactoring, EVAL1 and algebra stacks merged, with EVAL2 recorded below.
+Package measurements and mathematical approvals
 retain their earlier dated evidence.
 Delivered means present on main. The current tables include L2.4c's six
 slices, notation L2.10a–e and i–k, h-level registration, evaluation patterns
@@ -104,7 +105,7 @@ between columns.
 | Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](high-level-abstractions/categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
 | Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI; agreed RC refactoring and source-test migrations in #243–#263 | Preserve the delivered contracts; no CB or agreed RC package remains |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266 | EVAL2–EVAL8 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations | EVAL3–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library now has seventeen self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226). The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
@@ -621,7 +622,11 @@ done (2026-10-08): `tools/evaluation-baseline.mjs` records the
 [#266](https://github.com/KanHarI/cubist-math/pull/266): one checked
 normalization for plain REPL evaluation, with explicit expectations retained.
 The version-3 baseline records its outcomes and work; see the runtime
-roadmap's EVAL1 measurements. The other packages remain planned.
+roadmap's EVAL1 measurements. EVAL2 now caches completed full normalizations
+by exact syntax handle, with rollback/compaction invalidation and resource
+accounting. NUM0–NUM2 and EVAL3–EVAL8 remain planned. The ordered-ring/field
+definitions and algebra lattice landed in #267 over #268's inherited operation
+implementations.
 The versioned scratch evaluator's prime projections are
 feasibility observations, not full normal forms or kernel evidence. This
 track is independent of computation notation N0–N5 and is now the first
@@ -632,8 +637,8 @@ no real-number construction or analysis is scheduled.
 
 - EVAL1 removes redundant REPL self-comparison, which took 400 of the
   435 ms of `evaluate euclid(3)` in EVAL0's baseline. EVAL2's
-  full-normalization cache is next, with exact keys and rollback/compaction
-  coverage.
+  full-normalization cache is implemented, with exact keys and
+  rollback/compaction coverage.
 - Start NUM0/NUM1 early: define explicit `UNat` and canonical `BNat`, direct
   binary arithmetic, their checked commutative-semiring isomorphism and
   `UNat =[U0] BNat` by computational univalence, with transport agreement,
@@ -762,11 +767,11 @@ not implemented; no prototype-only result counts as the checked capability.
 ## First actions
 
 **Runtime first (2026-10-17).** EVAL1 and its updated baseline are implemented
-in #266; proceed with EVAL2 and NUM0/NUM1. Switch the public `Nat` when
-their correctness and compatibility gates pass; NUM2 follows. Develop EVAL2
-and the joint EVAL3/EVAL4 design, then EVAL5 and applicable EVAL8 review.
-EVAL6 requires fresh binary profiles; EVAL7 follows NUM1. Add the ordered
-ring/field definitions within this numerical scope. Resume the language
+in #266; EVAL2's full-normalization cache is implemented. Proceed with NUM0/NUM1.
+Switch the public `Nat` when their correctness and compatibility gates pass;
+NUM2 follows. Develop the joint EVAL3/EVAL4 design, then EVAL5 and applicable
+EVAL8 review. EVAL6 requires fresh binary profiles; EVAL7 follows NUM1. The
+ordered ring/field definitions landed in #267. Resume the language
 progression below after performance work; the reals roadmap stays paused.
 
 Completed plans and checkpoints are archived under [historical/](historical/README.md);

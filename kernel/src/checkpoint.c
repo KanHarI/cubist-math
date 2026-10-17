@@ -29,6 +29,7 @@ static void truncate_store(cc_kernel *k) {
 void cc_kernel_rollback(cc_kernel *k) {
     if (!k || !k->checkpoint_count) return;
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
+    if (k->normal_cache) memset(k->normal_cache, 0, k->count * sizeof *k->normal_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
     k->count = k->checkpoint_count;
@@ -94,6 +95,7 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
                 if (child >= base) map[child - base] = 1;
             }
     if (k->weak_cache) memset(k->weak_cache, 0, k->count * sizeof *k->weak_cache);
+    if (k->normal_cache) memset(k->normal_cache, 0, k->count * sizeof *k->normal_cache);
     if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
     if (k->alpha_memo) memset(k->alpha_memo, 0, CC_ALPHA_MEMO_SIZE * sizeof *k->alpha_memo);
     size_t next = base;
