@@ -42,6 +42,14 @@ await browserTest(async ({ browser, base }) => {
     if(pattern)assert.match(text,pattern);
     return text;
   };
+  // EVAL1: the browser uses the same one-pass evaluation path as the CLI,
+  // including at the unary depth boundary. Explicit expectations still fail.
+  await open("import nat; use nat; def saved : Nat := 7;");
+  await enter("evaluate 2 * 255;","value",/^510$/,"#repl");
+  await enter("evaluate 2 + 2 expecting 5;","error",/E326: The term evaluates to 4, not 5\./,"#repl");
+  await enter("evaluate saved;","value",/^7$/,"#repl");
+  console.log("PASS one-pass REPL evaluation and explicit expectations");
+
   const source=`inductive Nat { zero; succ(n : Nat); }
 def f(k : Nat) : Nat {
   let next_ := succ(k);

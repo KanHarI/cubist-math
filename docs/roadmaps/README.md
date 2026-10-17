@@ -5,7 +5,13 @@ These describe current contracts, unfinished work and its limits. The
 theorem parameter is not an already proved result. Paused mathematics does
 not resume when a language milestone ships.
 
-**Direction selected on 2026-10-17:** develop the language through categories,
+**Current priority, directed on 2026-10-17:** runtime optimization and the
+natural/integer/rational foundations, including ordered-ring/field definitions.
+Switch to binary `Nat` when its correctness and compatibility gates pass.
+The reals roadmap stays paused. After this phase, resume the language
+direction below; see the [runtime roadmap](runtime/runtime-evaluation-roadmap.md).
+
+**Language direction selected on 2026-10-17:** develop the language through categories,
 monads, algebraic homology and synthetic cohomology as a sustained testbed.
 Both algebraic and HoTT constructions are central. Success includes reusable
 theory interfaces, proof automation, notation, inference, inspection and
@@ -17,18 +23,20 @@ below remain unfinished until their own acceptance evidence is delivered.
 ## At a glance
 
 Roadmap status reconciled on 2026-10-17 against main `e729c2d5`, including
-the merged CB and refactoring stacks. Delivered means present on main.
+the merged CB and refactoring stacks. That audit records main; the EVAL1 row
+additionally records the implementation in
+[#266](https://github.com/KanHarI/cubist-math/pull/266).
 The linked specifications, mathematical approvals and dated measurements retain
 their original evidence; this status audit does not rerun those reviews.
 
-| Track | Delivered on main | Still open |
+| Track | Implemented | Still open |
 | --- | --- | --- |
 | Kernel and universes | Instruction-kernel stages 1–5; checker retirement; G0; face restriction; checking/bridge optimizations #194–#197 | Remaining stage-6 performance/certificate work; optional E1/E2 |
 | Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand; archive truncation remedies |
 | Proof ergonomics | Rewriting, simplification, `let`, holes, inference, implicit parameters, cubical shorthand, two h-level solver slices, evaluation patterns/readout, box notation and squares | Folded path rules, constructor descent, induction tooling, broader dependent rewriting, solver and square-migration remainders |
 | Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
-| Evaluation/numbers | EVAL0 measurement harness and recorded outcomes | EVAL1–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
+| Evaluation/numbers | EVAL0 measurement harness and recorded outcomes; EVAL1 one-pass REPL evaluation (#266) | EVAL2–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
 | Library/reference | Seventeen self-contained foundation modules, including the universe-smallness proofs; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
@@ -45,14 +53,14 @@ which remains an unmerged draft. Site publication succeeded; the
 [RC verification record](historical/refactoring-and-testing.md#verification-record) records
 the unresolved termination of the final CI mutation probe.
 
-Next language work pairs morphism opt-ins (L2.4d), general proposition laws
+After the runtime phase, language work pairs morphism opt-ins (L2.4d), general proposition laws
 (L2.11) and implicit operation arguments (L2.12) with categorical examples,
 and path/induction tooling with low-degree synthetic examples. N0/N1's
 monadic interfaces can start from their existing prerequisites. Categories,
 equivalences, structure identity, checked free constructions and computation
 notation then deepen both strands; full algebraic and synthetic developments
-retain their individual dependencies. EVAL1 and NUM0/NUM1 can advance
-alongside them. See
+retain their individual dependencies. The runtime and numerical phase precedes
+these language strands. See
 [first actions](work-plan.md#first-actions) and
 [open decisions](work-plan.md#open-decisions).
 
@@ -114,7 +122,7 @@ mutation check as a validation follow-up.
 ## Runtime
 
 [runtime/](runtime/) contains [evaluation and binary foundations](runtime/runtime-evaluation-roadmap.md):
-EVAL0 is complete; EVAL1–EVAL8 and NUM0–NUM2 remain planned.
+EVAL0 and EVAL1 are implemented; EVAL2–EVAL8 and NUM0–NUM2 remain planned.
 
 ## Mathematics
 

@@ -231,11 +231,11 @@ export class ReplSession {
     return result.prints.map(print => ({ kind: "value", text: print.text }));
   }
 
-  // Both sides are the same term, so the directive reports its normal form;
-  // an assumption is reported with the path it enters through.
+  // The print path checks closedness and assumptions and normalizes once.
+  // An explicit `expecting` directive still checks its expected value.
   async evaluate(term) {
-    const result = await this.entry(`evaluate ${term} expecting ${term};`), failures = this.failures(result);
+    const result = await this.entry(`print(evaluate(${term}));`), failures = this.failures(result);
     if (failures.length) return failures;
-    return result.evaluations.map(evaluation => ({ kind: "value", text: evaluation.value }));
+    return result.prints.map(print => ({ kind: "value", text: print.text }));
   }
 }

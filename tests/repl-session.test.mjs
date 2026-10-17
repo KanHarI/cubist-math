@@ -75,6 +75,51 @@ test("imports, declarations with blocks, and errors that leave the session uncha
   assert.deepEqual(texts(await repl.run("typeof four_is_four; evaluate double(3)")).slice(0, 1), ["type: 2 + 2 = 4"]);
 });
 
+test("plain evaluation stays scratch work and explicit expectations still reject wrong values", async t => {
+  const repl = await session(t);
+  await repl.run("import nat; use nat; let saved := 7;");
+  const previous = repl.previous, accepted = [...repl.accepted], uses = [...repl.uses];
+  assert.deepEqual(texts(await repl.run("evaluate 2 * 255;")), ["value: 510"]);
+  assert.deepEqual(texts(await repl.run("saved + 1")), ["value: 8"]);
+  assert.deepEqual(texts(await repl.run("evaluate nowhere;")), ["error: E343: Untranslated name: nowhere"]);
+  assert.deepEqual(texts(await repl.run("evaluate 2 + 2 expecting 5;")),
+    ["error: E326: The term evaluates to 4, not 5."]);
+  assert.deepEqual(texts(await repl.run("evaluate 2 + 2 expecting tt;")),
+    ["error: E325: The evaluated term has type Nat, but the expected value has type Unit."]);
+  assert.deepEqual(texts(await repl.run("evaluate saved;")), ["value: 7"]);
+  assert.equal(repl.previous, previous);
+  assert.deepEqual(repl.accepted, accepted);
+  assert.deepEqual(repl.uses, uses);
+  assert.deepEqual(texts(await repl.run("evaluate 2 + 2 expecting 4;")), ["value: 4"]);
+});
+
+test("plain evaluation preserves selected notation and non-computing assumption diagnostics", async t => {
+  const repl = await session(t);
+  await repl.run("import binary_arithmetic; use binary;");
+  assert.deepEqual(texts(await repl.run("evaluate binary_succ(0b111);")), ["value: 0b1000"]);
+  await repl.run("import classical;");
+  const previous = repl.previous, accepted = [...repl.accepted];
+  assert.deepEqual(texts(await repl.run("evaluate double_negation;")), [
+    "error: E324: The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: double_negation (classical) → LEM.",
+  ]);
+  assert.equal(repl.previous, previous);
+  assert.deepEqual(repl.accepted, accepted);
+  assert.deepEqual(texts(await repl.run("evaluate binary_succ(0b1);")), ["value: 0b10"]);
+});
+
+test("plain evaluation displays like print after selecting a call-form model", async t => {
+  const repl = await session(t);
+  await repl.run("import nat; import algebra; use nat;");
+  await repl.run("def pick(n : Nat) : Monoid(U0) := nat_multiplicative.monoid; use pick(0);");
+  assert.deepEqual(texts(await repl.run("evaluate nat.(3);")), ["value: 3"]);
+  assert.deepEqual(texts(await repl.run("print(evaluate(nat.(3)));")), ["value: 3"]);
+  // This is the existing print display: the selected model has no numeral
+  // reader, so a displayed numeral needs qualification when entered again.
+  assert.deepEqual(texts(await repl.run("evaluate 3;")),
+    ["error: E907: this model's notation reads no numeral 3: write nat.(3) for a natural number, or select a notation that reads it."]);
+  assert.deepEqual(texts(await repl.run("evaluate nat.(3);")), ["value: 3"]);
+});
+
 test("witness reads a closed truncation's witness, with its type", async t => {
   const repl = await session(t);
   assert.deepEqual(texts(await repl.run("import h1_truncation; use nat;")), ["info: Imported h1_truncation.", "info: Selected nat."]);

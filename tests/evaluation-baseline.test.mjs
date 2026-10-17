@@ -72,7 +72,7 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
   }
 });
 
-test("plain REPL evaluation normalizes and compares twice; print normalizes once and shows the same value", async () => {
+test("plain REPL evaluation normalizes once without self-comparison and agrees with print", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
   assert.ok(repl.outcome.normal);
@@ -80,13 +80,16 @@ test("plain REPL evaluation normalizes and compares twice; print normalizes once
   // Shown, the value is cut; its normal form is far larger.
   assert.equal(repl.outcome.length, 1000);
   assert.match(repl.outcome.text, /^\(7, /);
-  assert.equal(repl.phases.normalize.calls, 2);
-  assert.equal(repl.phases.compare.calls, 2);
+  assert.equal(repl.phases.normalize.calls, 1);
+  assert.equal(repl.phases.compare, undefined);
   assert.equal(print.phases.normalize.calls, 1);
   assert.equal(print.phases.compare, undefined);
-  // The self-comparison checks the certificate again: almost all the entry's instructions.
-  assert.ok(repl.phases.compare.instructions > 0.9 * repl.entry.instructions);
-  assert.ok(print.entry.instructions < 100);
+  assert.ok(repl.entry.instructions < 100);
+  assert.equal(repl.entry.instructions, print.entry.instructions);
+  // A stated expected value still gets its own normalization and comparisons.
+  const expected = await cold("euclid-3-prime-expected");
+  assert.equal(expected.phases.normalize.calls, 2);
+  assert.equal(expected.phases.compare.calls, 2);
 });
 
 test("the depth failures are reproduced, with the work done before them", async () => {
@@ -97,14 +100,15 @@ test("the depth failures are reproduced, with the work done before them", async 
     assert.ok(run.phases.normalize.querySteps > 0 && run.phases.normalize.nodes > 10000, `${id} counts the failed normalization's work`);
     assert.equal(run.phases.compare, undefined, `${id} fails before any comparison`);
   }
-  // A unary 510 is a normal form of depth 512, the limit: printed, it shows;
-  // the REPL's self-comparison wraps it once more, and fails there.
-  const printed = await cold("multiply-2-255-print"), compared = await cold("multiply-2-255");
+  // A unary 510 fits at the syntax-depth limit. Plain evaluation must not
+  // introduce another wrapper through a redundant equality comparison.
+  const printed = await cold("multiply-2-255-print"), evaluated = await cold("multiply-2-255");
   assert.equal(printed.outcome.text, "510");
-  assert.equal(compared.outcome.code, "K344");
-  assert.equal(compared.phases.normalize.failures, 0);
-  assert.equal(compared.phases.compare.failures, 1);
-  assert.equal(compared.outcome.normal, printed.outcome.normal);
+  assert.equal(evaluated.outcome.text, "510");
+  assert.equal(evaluated.phases.normalize.calls, 1);
+  assert.equal(evaluated.phases.normalize.failures, 0);
+  assert.equal(evaluated.phases.compare, undefined);
+  assert.equal(evaluated.outcome.normal, printed.outcome.normal);
   assert.equal((await cold("multiply-2-254")).outcome.text, "508");
   assert.equal((await cold("multiply-2-256-print")).outcome.code, "K344");
 });

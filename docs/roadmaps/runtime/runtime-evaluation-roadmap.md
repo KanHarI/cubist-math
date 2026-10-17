@@ -4,14 +4,24 @@ Status: planned on 2026-10-07, following a local investigation at
 `825c8b8896e02364e9d5cd53f5079014362738ab`. EVAL0 is implemented: its
 [baseline](#measurements) was recorded on 2026-10-08. The early numerical
 foundation is `UNat` and `BNat`, with binary naturals underlying `Z`, `Q`
-and later numerical constructions. None of the NUM packages or the other
-EVAL packages is implemented; this is unchanged at main `e729c2d5` on
-2026-10-17. CB6's contextual REPL and RC's shared worker transport do not
-implement EVAL1's normalization work. A versioned scratch evaluator supplies
-feasibility evidence only.
+and later numerical constructions. At the main `fc0362d3` starting point,
+none of the NUM packages or other EVAL packages was implemented. The
+[#266](https://github.com/KanHarI/cubist-math/pull/266) implementation includes
+EVAL1's one-pass REPL path and a version-3 baseline. NUM0–NUM2 and
+EVAL2–EVAL8 remain planned. A versioned scratch evaluator supplies feasibility
+evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
 `do` and arrows, which are independent of these evaluator changes.
+
+**Scope directed on 2026-10-17:** runtime optimization is the current priority.
+Keep the numerical library to naturals, integers and rationals, adding only
+ordered-ring and ordered-field definitions. Make binary naturals the public
+`Nat` once NUM0/NUM1 and the unary-client migration pass; retain explicit
+`UNat`. Do not start the reals roadmap, `PosRat`, Archimedean bounds or
+completeness. After performance work, return to language features, monads,
+categories and homology/cohomology. The existing EVAL7 natural-number pilot
+stays within its stated contract.
 
 ## Goal and current failure
 
@@ -53,16 +63,20 @@ the REPL currently reports evaluation errors without failing the process.
 
 ## Measurements
 
-EVAL0's [harness](../../../tools/evaluation-baseline.mjs) repeats the
-investigation's observations as a versioned baseline. Each sample is a new
+EVAL0's [harness](../../../tools/evaluation-baseline.mjs) recorded the
+investigation's observations as a versioned baseline. The figures in this
+section are historical EVAL0 evidence; the current record includes EVAL1,
+whose measurements follow below. Each sample is a new
 Node process that checks the workload's imports and runs its entry as the
 CLI REPL does, once cold and three times warm. Five samples per workload
 were recorded on 2026-10-08 at `b5a261c8` with Node 24.13.0 on
 macOS/arm64, Apple M3 Pro, in the
-[baseline record](../../../tests/fixtures/evaluation-baseline.json). Its kernel
+[original baseline record](https://github.com/KanHarI/cubist-math/blob/fc0362d30b2fafef4b8d5f0b75a1f56a89f148b6/tests/fixtures/evaluation-baseline.json). Its kernel
 work and arena counters are deterministic; every workload's five cold
 samples agree on them. Times are medians on that machine, not portable
-targets. Repeat it after `make wasm`:
+targets. To repeat this historical behavior, use an isolated checkout of
+`b5a261c8` (or the pre-EVAL1 `fc0362d3`) and rebuild there with `make wasm`.
+Running these commands on the current sources measures EVAL1 instead:
 
 ```sh
 npm run baseline:evaluation
@@ -82,7 +96,7 @@ node tools/evaluation-baseline.mjs --only=euclid-3,euclid-3-print --samples=3
 | `print(evaluate(2 * 255));` | `510` | 1 | none | 264 | 9 ms |
 | `evaluate winding(integer_loop(negative(2)));` | `right(2)` | 2 | 2 | 59 | 36 ms |
 
-The REPL's [evaluate method](../../../web/repl-session.mjs) builds
+Before EVAL1, the REPL's [evaluate method](../../../web/repl-session.mjs) built
 `evaluate e expecting e`. The [translator](../../../web/translator/translate.mjs)
 then verifies and normalizes both sides, and asks for checked equality of
 their types and normal forms. That comparison takes 400 of the 435 ms of
@@ -128,6 +142,39 @@ normalize or certify the returned proof fields. Peak memory is the sample
 process's, about 140 MiB of which loading and checking the imports already
 use. Where the stack overflows depends on how far the JIT has compiled the
 evaluator, so the failed run's counts are observations, not counters.
+
+### EVAL1 measurements (2026-10-17)
+
+The [current baseline](../../../tests/fixtures/evaluation-baseline.json),
+version 3, records three cold samples and three warm runs per sample on
+Node 24.13.0, macOS/arm64, Apple M3 Pro. A seven-workload pre-change run
+from `fc0362d3` is retained in
+[eval1-before.json](../../reports/eval1-before.json). The after record is
+explicitly marked modified relative to that base revision. To reproduce the
+seven-workload before run, build an isolated checkout of `fc0362d3` with
+`make wasm`, then run:
+
+```sh
+node tools/evaluation-baseline.mjs --samples=3 --only=euclid-3,euclid-3-print,euclid-3-prime-expected,multiply-2-255,multiply-2-255-print,euclid-4,euclid-4-prime
+```
+
+The retained report is a copy of that checkout's `build/evaluation-baseline.json`
+(the tool writes JSON there; stdout is a text summary). On this implementation,
+`node tools/evaluation-baseline.mjs --samples=3 --write` records all 26
+workloads in the version-3 after baseline.
+
+| Workload | Before | After |
+| --- | --- | --- |
+| `evaluate euclid(3);` | 2 normalizations, 2 comparisons, 258,730 instructions; 416.5 ms cold median | 1 normalization, no comparison, 12 instructions; 29.2 ms cold median |
+| `evaluate 2 * 255;` | K344 during self-comparison | `510`, one normalization |
+| `evaluate euclid(3).1 expecting 7;` | 2 normalizations, 2 comparisons, 42 instructions | Unchanged |
+| Full `euclid(4)` and its prime projection | K344 in normalization | Still K344 |
+
+The Euclid normal-form digest and displayed value are unchanged. Its entry's
+node growth falls from 95,592 to 54,783. Timings are local observations;
+regressions assert outcomes, normalization/comparison counts and bounded work.
+EVAL1 does not solve substitution growth, persistent arena growth or the
+remaining syntax-depth failures.
 
 ## Contracts to preserve
 
@@ -205,9 +252,14 @@ This is a new numerical library. The existing
 comparison maps, isomorphisms and universe paths to those old types are
 outside this track. The unary/binary natural equivalence remains an early
 deliverable because both representations are useful. Here `BNat` names the
-binary carrier explicitly; when it is exposed as the new default `Nat`,
-this is the `UNat` ↔ `Nat` equivalence. Document the name and import
+binary carrier explicitly; once NUM0/NUM1's correctness and compatibility
+gates pass, expose it as the new default `Nat` as directed on 2026-10-17.
+The retained equivalence then becomes `UNat` ↔ `Nat`. Document the name and import
 transition for existing unary clients before switching the public name.
+
+The ordered-ring and ordered-field definitions are a separate small PR over
+the existing algebraic hierarchy. They do not supply ordered `Z`/`Q` models,
+decidable order, completeness or real-number constructions.
 
 Naturals form commutative **semirings**, not rings: they have no additive
 inverses. The required `UNat`/`BNat` isomorphism therefore preserves zero,
@@ -246,13 +298,13 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
 
-EVAL0 is done; the other rows are planned. Sizes are relative scope, as in
+EVAL0 is done. EVAL1 is implemented in #266; the other rows are planned. Sizes are relative scope, as in
 the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
 | EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
-| EVAL1 | One-pass REPL evaluation | EVAL0 | S |
+| EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path and transport laws; H1 binary Peano view and strong recursion with coherence proofs | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
@@ -290,7 +342,7 @@ time thresholds.
 full Euclid results, their prime projections under the REPL, print,
 exact-value and pattern contracts, factorial, divisibility decisions, unary
 arithmetic at the depth limit, closed transport and winding numbers.
-Eight of them fail. It also runs the four scratch projections as a separate
+Eight failed in the original EVAL0 record; seven fail in the EVAL1 record. It also runs the four scratch projections as a separate
 series. Each sample is a new process; one more times the cold entry
 unobserved, and another measures syntax depth. The phases are elaboration,
 checking, normalization, normal-form decoding, the assumption inventory,
@@ -307,12 +359,24 @@ as about 340,000 characters.
 [Its test](../../../tests/evaluation-baseline.test.mjs) keeps the recorded
 outcomes, normal forms included, and normalization and comparison counts
 exact, and lets the deterministic counters fall but grow by at most a
-quarter. It asserts the REPL/print discrepancy and the K344 failures
-directly and compares no times. It runs the scratch series on `euclid(3)`
+quarter. The EVAL0 test asserted the REPL/print discrepancy. The current
+EVAL1 test asserts agreement, the successful `510` result and the remaining
+K344 failures, and compares no times. It runs the scratch series on `euclid(3)`
 and `euclid(4)` and reads the larger two from the record. A change past
 those bounds records the baseline again with `--write`, and its reason.
 
 ### EVAL1: remove redundant REPL work
+
+Implemented on 2026-10-17 in #266: `ReplSession.evaluate`
+uses a scratch `print(evaluate(term))` entry. The existing print path checks
+closedness and assumptions and normalizes once, displaying exactly as
+`print(evaluate(term))` does. This also adopts the print path's behavior after
+a call-form model selection, such as `use pick(0);`: it can display a
+natural as `3` where the earlier REPL displayed `nat.(3)`. A selected model
+without numeral notation still cannot read that bare numeral; use `nat.(3)`
+for input. This is an existing print limitation, now shared by plain evaluation.
+Explicit expected-value directives keep their independent comparisons.
+See the [measurements](#eval1-measurements-2026-10-17).
 
 Route plain REPL evaluation through one checked normalization and display,
 sharing the existing print path where appropriate. Retain exact expected
@@ -321,7 +385,7 @@ Preserve notation selection, assumption diagnostics, scratch-entry lifetime,
 failed-entry recovery and browser/CLI agreement.
 
 **Acceptance:** one normalization for a successful plain evaluation;
-the same displayed values and assumption refusals; the Euclid self-equality
+the same full normal forms and assumption refusals, with print-equivalent display; the Euclid self-equality
 instruction overhead disappears. In the baseline that comparison takes 400
 of the 435 ms of `evaluate euclid(3)`, and plain `evaluate 2 * 255` fails
 in it where printing shows `510`; both workloads measure the change. This
@@ -444,7 +508,8 @@ The [reals roadmap's R1](../mathematics/reals-roadmap.md#milestones) consumes th
 their decidable orders and ordered-ring/field laws, `PosRat`, the
 Archimedean property and later canonical presentations. R1's order
 work remains proposed under the [number-order decision](../work-plan.md#open-decisions);
-NUM2 does not wait for it. R2 and the later real constructions target the
+the 2026-10-17 direction includes only ordered-ring/field definitions and
+keeps this further work paused. NUM2 does not wait for it. R2 and the later real constructions target the
 new `Q`, with positive-rational precision and binary natural bounds. The
 older unary-backed carriers remain compatibility clients, rather than a
 second target for the new order development. No comparison to them is

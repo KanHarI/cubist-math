@@ -30,7 +30,24 @@ migrations not yet built. **Deferred**: not scheduled. A fifth,
 `kernel extension: H1`), ended with H1's release on 2026-10-02, when the
 option and the marker were removed.
 
-**Current scope, directed on 2026-10-17.** Develop the language through
+**Current priority, directed on 2026-10-17.** Complete the runtime evaluation
+and numerical-foundation track before returning to the language progression
+below. Mathematical scope is natural numbers, integers and rationals, plus
+the definitions of ordered rings and ordered fields. Switch the public `Nat`
+to binary naturals when NUM0/NUM1's arithmetic, equivalence, induction and
+compatibility gates pass; retain explicit `UNat` for unary clients. NUM2
+supplies binary-backed `Z` and `Q`. This does not schedule the reals roadmap,
+`PosRat`, Archimedean bounds, completeness or analysis. The existing EVAL7
+natural-number computation pilot remains bounded by its runtime contract.
+After performance optimization, resume language features, monads, categories
+and algebraic homology/synthetic cohomology in the progression below.
+
+Deliver this work in focused PRs. Each PR receives Claude Opus 5.5 review
+at `xhigh` effort; resolve findings and obtain a clean review of the final
+implementation before merging. Keep the validation and review evidence with
+each PR.
+
+**Language direction, selected on 2026-10-17.** Develop the language through
 categories, monads, algebraic homology and synthetic cohomology as a sustained
 mathematical testbed. Progress includes expressive theories, reusable proofs,
 notation, inference, inspection and practical computation, as well as the
@@ -87,7 +104,7 @@ between columns.
 | Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](high-level-abstractions/categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
 | Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI; agreed RC refactoring and source-test migrations in #243–#263 | Preserve the delivered contracts; no CB or agreed RC package remains |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08 | EVAL1–EVAL8 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266 | EVAL2–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library now has seventeen self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226). The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
@@ -600,18 +617,23 @@ Added on 2026-10-07. The [runtime evaluation roadmap](runtime/runtime-evaluation
 owns EVAL0–EVAL8 and the early numerical packages NUM0–NUM2. EVAL0 is
 done (2026-10-08): `tools/evaluation-baseline.mjs` records the
 [baseline](runtime/runtime-evaluation-roadmap.md#measurements), which
-`tests/evaluation-baseline.test.mjs` keeps current. No other package is
-implemented. The versioned scratch evaluator's prime projections are
+`tests/evaluation-baseline.test.mjs` keeps current. EVAL1 is implemented in
+[#266](https://github.com/KanHarI/cubist-math/pull/266): one checked
+normalization for plain REPL evaluation, with explicit expectations retained.
+The version-3 baseline records its outcomes and work; see the runtime
+roadmap's EVAL1 measurements. The other packages remain planned.
+The versioned scratch evaluator's prime projections are
 feasibility observations, not full normal forms or kernel evidence. This
-track is independent of
-computation notation N0–N5. Its planned library scope is NUM0–NUM2 and
-EVAL7's binary divisibility/search pilot; R1's further order and canonical
-presentation work remains deferred.
+track is independent of computation notation N0–N5 and is now the first
+priority. Its library scope is NUM0–NUM2, the definitions of ordered rings
+and fields, and EVAL7's bounded natural-number computation pilot. R1's
+further order, Archimedean and canonical-presentation work remains deferred;
+no real-number construction or analysis is scheduled.
 
-- EVAL1's removal of redundant REPL self-comparison comes next: in EVAL0's
-  baseline it takes 400 of the 435 ms of `evaluate euclid(3)`. EVAL2's
-  full-normalization cache can follow independently, with exact keys and
-  rollback/compaction coverage.
+- EVAL1 removes redundant REPL self-comparison, which took 400 of the
+  435 ms of `evaluate euclid(3)` in EVAL0's baseline. EVAL2's
+  full-normalization cache is next, with exact keys and rollback/compaction
+  coverage.
 - Start NUM0/NUM1 early: define explicit `UNat` and canonical `BNat`, direct
   binary arithmetic, their checked commutative-semiring isomorphism and
   `UNat =[U0] BNat` by computational univalence, with transport agreement,
@@ -620,7 +642,8 @@ presentation work remains deferred.
   bit-structured Peano view and a `Below` function, with checked coherence
   and computation equations and factorial as a computing example. This
   larger package does not depend on H2's indexed accessibility families.
-  When binary naturals become the default `Nat`, the retained equivalence is
+  When NUM0/NUM1 and the compatibility migration pass, switch binary naturals
+  to the default `Nat`; this transition is authorized. The retained equivalence is
   `UNat` ↔ `Nat`. NUM2 builds new `Z` from pairs of `BNat` and new `Q`
   from that integer ring, including literals and numerical casts. Prove
   their ring/domain/field laws and embeddings within the new hierarchy;
@@ -631,8 +654,9 @@ presentation work remains deferred.
 - NUM2 owns the new carriers and algebraic APIs. The
   [reals roadmap's R1](mathematics/reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
-  property. That work targets the new `Z` and `Q` and still awaits
-  the number-order scope decision below; it is not a NUM2 prerequisite.
+  property. Those developments remain paused. Only the ordered-ring and
+  ordered-field definitions are included in this runtime phase; they do not
+  assert that the current `Z` or `Q` already supplies an ordered model.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
   EVAL5 specifies observation and typed readback; a successful
   `euclid(4).1` does not close the failure of full `euclid(4)`.
@@ -737,6 +761,14 @@ not implemented; no prototype-only result counts as the checked capability.
 
 ## First actions
 
+**Runtime first (2026-10-17).** EVAL1 and its updated baseline are implemented
+in #266; proceed with EVAL2 and NUM0/NUM1. Switch the public `Nat` when
+their correctness and compatibility gates pass; NUM2 follows. Develop EVAL2
+and the joint EVAL3/EVAL4 design, then EVAL5 and applicable EVAL8 review.
+EVAL6 requires fresh binary profiles; EVAL7 follows NUM1. Add the ordered
+ring/field definitions within this numerical scope. Resume the language
+progression below after performance work; the reals roadmap stays paused.
+
 Completed plans and checkpoints are archived under [historical/](historical/README.md);
 active plans and normative specifications are grouped by subject in the
 [roadmap index](README.md).
@@ -769,7 +801,7 @@ are developed with their first consumers.
 | Algebraic homology and synthetic cohomology | HA1/HA2's indexed structures, chain-map interfaces and exactness reasoning; HA4's higher paths, truncations and computational equivalences | Complexes and homology alongside `K(G, n)` and cohomology as truncated mapping spaces, with the supported degrees explicit; long exact sequences and homotopy invariance as proved milestones |
 | Computation and comparison | EVAL/NUM improvements and closed evaluation; HA3/HA5/HA6's larger reusable proofs | Finite matrix homology, presented-group Ext/Tor, and comparison of cellular and synthetic cohomology on finite complexes, with their stated assumptions |
 
-Start with the first row and N0/N1's existing prerequisites. L2.12's
+After the runtime phase, start with the first row and N0/N1's existing prerequisites. L2.12's
 composition-notation decision belongs to the categorical interface; it does
 not block the equational L2.6 proof slice. L2.6 must establish uniqueness,
 `T.Hom.ext`, universal equivalence and its inverse laws before publishing a
@@ -788,15 +820,15 @@ against the explicit baseline; a theorem proved by bypassing the intended langua
 does not close that feature's acceptance gate. A concrete limitation feeds the
 responsible language package, with a reusable design and a regression example.
 
-EVAL1 and NUM0/NUM1 can advance from EVAL0 alongside these strands; larger
+The runtime and numerical phase precedes these language strands; larger
 computations use NUM2 and the remaining evaluator work as needed. H2/H3,
 variable-level truncation and universe extensions retain their independent
 design and soundness gates. Ordinary families or complex shapes do not by
 themselves require indexed or inductive-inductive kernel declarations. Worker
 cancellation, K2.5's archive remedies and the remaining HoTT packages stay
 visible; prioritize their slices when the testbed exercises them. Paused
-analysis, Galois and RH remain paused. The number-order extension and public
-`Nat` transition remain decisions below; neither blocks NUM0–NUM2.
+analysis, Galois and RH remain paused. The public `Nat` transition and bounded
+ordered-interface scope are decided below; neither resumes the reals roadmap.
 
 One recorded follow-up from #185 remains: `top_unique` with corners left to
 inference produces E604, "Unchecked path application reached reduction",
@@ -828,12 +860,13 @@ scheduled packages from advancing.
 
 **Needed before the named work**
 
-1. **Number order:** whether to extend library scope to ordered rings and
-   fields, decidable orders on NUM2's `Z`/`Q`, `PosRat` and Archimedean
-   bounds. R1/R2 need this; NUM0–NUM2 do not.
-2. **Public `Nat`:** when binary naturals become the default, with constructor
-   names, imports and compatibility for unary clients. Explicit `UNat` and
-   `BNat` and the new `Z`/`Q` can be built before this naming decision.
+1. **Number order — decided 2026-10-17:** add ordered-ring and ordered-field
+   definitions only. Keep R1/R2, real constructions, `PosRat`, Archimedean
+   bounds and completeness paused. NUM0–NUM2 remain in scope.
+2. **Public `Nat` — decided 2026-10-17:** make binary naturals the default
+   when NUM0/NUM1 and the compatibility migration pass. Preserve explicit
+   `UNat`, document constructor/import changes, and keep unary clients
+   checking. No further scope decision is needed for that switch.
 3. **Composition notation:** `∘` with an ASCII alias or diagrammatic
    `f >> g`; needed before L2.12's notation acceptance and L3.4.
 4. **Complex indexing:** confirm complex shapes versus a separate integer
