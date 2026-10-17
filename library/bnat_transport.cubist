@@ -1,0 +1,58 @@
+import bnat_semiring;
+import univalence;
+
+// The carrier equivalence uses exactly the two maps in the semiring
+// isomorphism. The universe path is checked computational univalence.
+computable def unat_bnat_equiv : ContrEquiv(U0, UNat, BNat) := inverse_equiv(
+  U0, UNat, BNat, bnat_of_unat, bnat_to_unat, bnat_roundtrip, bnat_unat_roundtrip
+);
+
+computable def unat_bnat_path : UNat =[U0] BNat := glue_path(U0, UNat, BNat, unat_bnat_equiv);
+
+computable def unat_bnat_transport(n : UNat) :
+  comp(fun (i : Interval) => unat_bnat_path @ i, n) = bnat_of_unat(n) := glue_path_transport(
+    U0, UNat, BNat, unat_bnat_equiv, n
+  );
+
+computable def bnat_unat_transport(n : BNat) :
+  comp(fun (i : Interval) => unat_bnat_path @ ~i, n) = bnat_to_unat(n) := glue_path_transport_reverse(
+    U0, UNat, BNat, unat_bnat_equiv, n
+  );
+
+computable def unat_bnat_transport_zero :
+  comp(fun (i : Interval) => unat_bnat_path @ i, zero) = b_zero := unat_bnat_transport(zero);
+
+computable def unat_bnat_transport_one :
+  comp(fun (i : Interval) => unat_bnat_path @ i, succ(zero)) = b_positive(bp_one) := unat_bnat_transport(
+    succ(zero)
+  );
+
+// These are agreement paths. Executing the transported unary operations
+// still traverses unary magnitudes; numerical clients use bnat_add/bnat_mul.
+computable def unat_bnat_add_operation :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
+  ) = bnat_add := glue_path_operation(
+    U0, UNat, BNat, unat_bnat_equiv, add, bnat_add, bnat_encode_add
+  );
+
+computable def unat_bnat_mul_operation :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
+  ) = bnat_mul := glue_path_operation(
+    U0, UNat, BNat, unat_bnat_equiv, mul, bnat_mul, bnat_encode_mul
+  );
+
+computable def unat_bnat_transport_add(a, b : BNat) :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
+  )(a, b) = bnat_add(a, b) := cong(
+    fun (op : BNat -> BNat -> BNat) => op(a, b), unat_bnat_add_operation
+  );
+
+computable def unat_bnat_transport_mul(a, b : BNat) :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
+  )(a, b) = bnat_mul(a, b) := cong(
+    fun (op : BNat -> BNat -> BNat) => op(a, b), unat_bnat_mul_operation
+  );

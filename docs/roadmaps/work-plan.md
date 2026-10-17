@@ -643,8 +643,9 @@ by exact syntax handle, with rollback/compaction invalidation and resource
 accounting. NUM0 supplies explicit `UNat`, canonical `BNat`, bit arithmetic,
 comparison, explicit conversions with both round trips, and binary setness.
 NUM1 now supplies the commutative-semiring models, conversion homomorphisms
-and isomorphism, cancellation, nontriviality and no zero divisors. Its
-comparison, transport and dependent strong-recursion proofs remain.
+and isomorphism, cancellation, nontriviality and no zero divisors. The
+universe path and its forward/reverse and operation transport laws also
+check. Its comparison, bitwise setness and dependent strong-recursion proofs remain.
 Public `Nat` remains unary pending those proofs and migration. NUM2 and
 EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
@@ -791,7 +792,7 @@ not implemented; no prototype-only result counts as the checked capability.
 
 **Runtime first (2026-10-17).** EVAL1 and its updated baseline are implemented
 in #266; EVAL2's full-normalization cache and NUM0's binary foundations are
-implemented, as is NUM1's semiring agreement. Proceed with its transport laws, comparison
+implemented, as are NUM1's semiring agreement and universe transport. Proceed with comparison
 correctness and dependent strong recursion with coherence.
 Switch the public `Nat` when their correctness and compatibility gates pass;
 NUM2 follows. Develop the joint EVAL3/EVAL4 design, then EVAL5 and applicable
