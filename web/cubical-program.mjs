@@ -14,7 +14,7 @@ import { leadingDocumentation } from "./cubist/documentation.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
 import { cubicalText, cubicalTextParts, cubicalMathTree } from "./cubical-notation.mjs";
 import { checkReduction, simplifyTypeApplications } from "./cubical-reduction.mjs";
-import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
+import { CubicalPublication } from "./cubical-publication.mjs";
 import { ScopePoints } from "./translator/scope-points.mjs";
 import {CompilationBindings} from "./translator/compilation-bindings.mjs";
 import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
@@ -122,12 +122,10 @@ export class CubicalProgram {
   // The references a checked declaration's elaboration reported: its local
   // bindings and their views, each name's binding, and, in the checked
   // module, its source links.
-  recordReferences(name, main, declaration, result, pending) {
+  prepareReferences(name, main, declaration, result, pending) {
     const binders=[],locals=new Map(),localKey=alias=>JSON.stringify([alias.key,alias.start]);
-    this.declarationBindings.set(`${name}__${result.name}`,binders);
-    const references = [];
-    const declarationLinks = [];
-    this.declarationReferences.set(`${name}__${result.name}`, references);
+    const references=[],declarationLinks=[];
+    const record={binding:`${name}__${result.name}`,binders,references,links:declarationLinks,views:new Map(),localSymbols:{}};
     // Generated syntax stands at its declaration's name, a theory's or an
     // initial/free model's, and its links, and the marks elaboration builds
     // for it, would hide the name's own. Syntax written elsewhere, as an
@@ -150,9 +148,9 @@ export class CubicalProgram {
       const aliases=item.aliases?.map(alias=>({...alias,binding:locals.get(localKey(alias))}));
       const origin=source?.origin??item.node.origin,sourceModule=origin?.module??name;
       references.push({start:item.node.start,end:item.node.end,name:item.node.name,binding,written:written(item.node)});
-      if (!definition) this.views.set(binding, { ...item,aliases,module:name,
+      if (!definition) record.views.set(binding, { ...item,aliases,module:name,
         sourceBinding:source?locals.get(localKey(source)):null });
-      if (!definition) this.localSymbols[binding] = { binding, name: item.node.name,
+      if (!definition) record.localSymbols[binding] = { binding, name: item.node.name,
         role: item.node.role ?? (item.term.tag === "Var" ? "Local assumption" : "Local definition"), verified: true,
         expansion: item.node.expansion, description: item.node.description,
         definitionStart: source?.start ?? item.node.start,
@@ -164,13 +162,21 @@ export class CubicalProgram {
         end: item.node.end, definitionStart: source?.start, role: item.node.role ?? (declared ? "inductive" : definition ? "definition" : "local"),
         expansion: item.node.expansion, description: item.node.description,
         freeze:item.node.freeze,traceParent:item.node.traceParent };
-        this.links.push(link);declarationLinks.push(link);
+        declarationLinks.push(link);
       }
     }
     for(const link of declarationLinks)if(link.role==="simplification witness")
       link.rewriteSteps=declarationLinks.filter(step=>step.role==="simplification step"
         &&step.traceParent===link.start).map(step=>({name:step.name,binding:step.binding,
           role:step.role,description:step.description,start:step.start,end:step.end}));
+    return record;
+  }
+  publishReferences(record) {
+    this.declarationBindings.set(record.binding,record.binders);
+    this.declarationReferences.set(record.binding,record.references);
+    for(const [key,value] of record.views)this.views.set(key,value);
+    Object.assign(this.localSymbols,record.localSymbols);
+    for(const link of record.links)this.links.push(link);
   }
   // Authored location is independent of the module publishing a declaration.
   // Both checked symbols and blocked generated families use this target.
@@ -334,21 +340,7 @@ export class CubicalProgram {
         position => ` (import ${failedImport} failed: ${this.failedImports.get(failedImport)})${position}`) : reason;
       const checker = this.checker;
       let pending = [];
-      let transaction = null,publication=null;
-      const statements = [];
-      const finishPublication=accept=>{
-        transaction?.finish(accept); transaction=null;
-        if(!accept&&publication) {
-          for(const [target,snapshot] of publication.maps) {
-            target.clear();for(const [key,value] of snapshot)target.set(key,value);
-          }
-          this.localSymbols=publication.localSymbols;
-          this.links.length=publication.links;
-          statements.length=publication.statements;
-          pending=[];
-        }
-        publication=null;
-      };
+      const publication=new CubicalPublication(this);
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
@@ -365,13 +357,9 @@ export class CubicalProgram {
         nameBased: collectScopes?this.scopeReplay.modules[name].nameBased:this.readSource.nameBased?.(name)??false,
         inspectSignature: binding => this.signatureText(binding, checker.notation),
         ...Object.fromEntries(Object.entries(this.fuelLimits).filter(([, limits]) => limits)),
-        onStep: step => statements.push({ ...step, declaration: current }),
-        onPublicationStart: () => {
-          publication={maps:[this.views,this.declarationBindings,this.declarationReferences].map(target=>[target,new Map(target)]),
-            localSymbols:{...this.localSymbols},links:this.links.length,statements:statements.length};
-          transaction=new CubicalDeclarationTransaction(this.kernel,this.checker);
-        },
-        onPublicationEnd: (_group,accept) => finishPublication(accept),
+        onStep: step => publication.statements.push({ ...step, declaration: current }),
+        onPublicationStart: () => publication.begin(true),
+        onPublicationEnd: (_group,accept) => publication.finish(accept),
         // A theory's expansion adds declarations the source does not write,
         // and a failed type of models takes the rest of its theory off: the
         // total follows both, so that it is never below what is done and
@@ -384,47 +372,30 @@ export class CubicalProgram {
         },
         onDeclarationStart: declaration => {
           current = declaration.name.text;
-          if (this.manageTransactions&&!publication) transaction = new CubicalDeclarationTransaction(this.kernel,this.checker);
-          try {
-            this.onDeclarationStart?.(name, declaration, checker);
-            onProgress({ completed: this.completed, total,
-              current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
-            if(collectScopes)this.scopeReplay.record("start",name,declaration,this.kernel);
-          } catch(error) {
-            if(publication)finishPublication(false);
-            else {transaction?.finish(false);transaction=null;}
-            throw error;
-          }
+          publication.beginDeclaration();
+          this.onDeclarationStart?.(name, declaration, checker);
+          onProgress({ completed: this.completed, total,
+            current: `${name}.${declaration.name.text}`, phase: "checking", unit: "declarations", instructions: checker.steps });
+          if(collectScopes)this.scopeReplay.record("start",name,declaration,this.kernel);
         },
         onReference: this.collectReferences ? (node, term, context, dimensions, aliases) => pending.push({ node, term, context, dimensions, aliases }) : null,
         onDeclaration: (declaration, result) => {
-          try {this.onDeclaration?.(name, declaration, result, checker);}
-          catch(error) {
-            if(publication)finishPublication(false);
-            else {transaction?.finish(false);transaction=null;}
-            throw error;
-          }
-          if (transaction&&!publication) {
-            transaction.finish(result.status === "checked-native-cubical");
-            transaction = null;
-          }
+          this.onDeclaration?.(name, declaration, result, checker);
+          const accepted=result.status === "checked-native-cubical";
+          if(accepted)publication.records.push(this.prepareReferences(name,main,declaration,result,pending));
           this.completed++;
-          if (result.status === "checked-native-cubical") this.recordReferences(name, main, declaration, result, pending);
           pending = [];
           onProgress({ completed: this.completed, total,
             current: `${name}.${result.name}`, phase: "checked", unit: "declarations", instructions: checker.steps });
           if(collectScopes)this.scopeReplay.record("end",name,declaration,this.kernel,result);
+          publication.endDeclaration(accepted);
         },
       });
       let result;
       try {result=translator.translate(text,env);}
-      catch(error) {
-        if(publication)finishPublication(false);
-        else {transaction?.finish(false);transaction=null;}
-        throw error;
-      }
+      catch(error) { publication.abort(); throw error; }
       this.recordModule(name, main, ast, result, failure);
-      this.moduleSteps.set(name, statements);
+      this.moduleSteps.set(name, publication.statements);
       this.modules.set(name, result.env); visiting.delete(name);
       return result.env;
     };

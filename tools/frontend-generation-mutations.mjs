@@ -47,9 +47,15 @@ const mutations=[
     "frontend-invariants","uncolliding parameter, seed 2$"),
   mutation("reservation","web/translator/declarations.mjs",
     "conflict ??= entry;","conflict ??= null;","frontend-publication","definition then inductive"),
-  mutation("failed-publication","web/cubical-program.mjs",
-    "transaction?.finish(accept); transaction=null;", "transaction?.finish(true); transaction=null;",
+  mutation("failed-publication","web/cubical-publication.mjs",
+    "transaction?.finish(accept);", "transaction?.finish(true);",
     "frontend-publication","G7:"),
+  mutation("interrupted-publication","web/cubical-publication.mjs",
+    "if(this.start!==null)this.finish(false);", "if(this.start!==null)this.finish(true);",
+    "frontend-publication","^publication interruption:"),
+  mutation("rolled-back-inspection","web/cubical-publication.mjs",
+    "if(accept)for(const record of records)", "for(const record of records)",
+    "frontend-publication","^publication interruption: progress in generated group"),
 ];
 for(const id of selected)if(!mutations.some(m=>m.id===id))throw Error(`Unknown mutation ${id}`);
 const chosen=mutations.filter(m=>!selected.length||selected.includes(m.id));

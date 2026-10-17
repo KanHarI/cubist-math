@@ -505,3 +505,47 @@ test("module observers share checker work and restore printing context on interr
   assert.equal(program.checker.steps,steps);
   assert.equal(program.checker.notation,notation);
 });
+
+for(const generated of [false,true])for(const stage of ["observer","references","progress"])
+  test(`publication interruption: ${stage} in ${generated?"generated group":"ordinary declaration"} rolls back native and frontend records`,async t=>{
+    const {CubicalProgram}=await import("../web/cubical-program.mjs");
+    const root=generated?"T":"point",target=generated?"T.c":"point";
+    let reject=true,before;
+    const frontend=()=>({maps:[program.views,program.declarationBindings,program.declarationReferences].map(map=>[...map]),
+      locals:{...program.localSymbols},links:[...program.links]});
+    const interrupt=()=>{reject=false;throw Error("publication interrupted");};
+    const program=new CubicalProgram(module,sourceReader(),{collectScopes:true,
+      onDeclarationStart(name,declaration) {
+        if(reject&&name==="main"&&declaration.name.text===root)before=frontend();
+      },
+      onDeclaration(name,declaration,result) {
+        if(reject&&stage==="observer"&&name==="main"&&declaration.name.text===target) {
+          assert.equal(result.status,"checked-native-cubical");interrupt();
+        }
+      }});
+    t.after(()=>program.dispose());
+    const prepare=program.prepareReferences.bind(program);
+    program.prepareReferences=(name,main,declaration,result,pending)=>{
+      const record=prepare(name,main,declaration,result,pending);
+      if(reject&&stage==="references"&&name==="main"&&declaration.name.text===target) {
+        assert.ok(record.references.length,"the interrupted declaration produced reference data");interrupt();
+      }
+      return record;
+    };
+    const source=`${generated?"import hlevels;":""} def before(x : Unit) : Unit := x;
+${generated?"theory T(U < UU0) { M : set U; c : M; }":"def point(x : Unit) : Unit := x;"}
+def after : Unit := before(tt);`;
+    await assert.rejects(program.check(source,"main",event=>{
+      if(reject&&stage==="progress"&&event.phase==="checked"&&event.current===`main.${target}`)interrupt();
+    }),/publication interrupted/);
+    assert.ok(before,"the target publication was reached");
+    assert.equal(reject,false,"the intended observer interrupted checking");
+    assert.equal(program.scopeReady,false);
+    assert.equal(program.kernel.definitions.has("main__before"),true,"earlier publication survives");
+    absentNative(program,`main__${root}`);
+    assert.deepEqual(frontend(),before,"no prepared inspection record survives interruption");
+    const recovered=await program.check(source,"main");
+    assert.deepEqual(recovered.gaps,[]);
+    assert.equal(recovered.complete,true);
+    assert.equal(program.scopeReady,true);
+  });
