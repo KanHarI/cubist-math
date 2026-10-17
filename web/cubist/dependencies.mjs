@@ -69,7 +69,7 @@ export class DependencyAnalysis {
       if(category(entry)!=="helper"||done.has(entry.id))return;
       if(visiting.has(entry.id)) {
         const cycle=path.slice(path.indexOf(entry.id)).concat(entry.id);
-        throw new TypeError(`Cycle among nonrecursive helpers: ${cycle.map(id=>this.byIdentity.get(id).label??id).join(" -> ")}`);
+        throw new Error(`Cycle among nonrecursive helpers: ${cycle.map(id=>this.byIdentity.get(id).label??id).join(" -> ")}`);
       }
       visiting.add(entry.id);path.push(entry.id);
       for(const use of this.references(entry.syntax,{conditional:true}))
