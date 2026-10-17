@@ -201,6 +201,7 @@ export class InstructionDriver {
     this.chainIds = new WeakMap();
     this.chainNumbers = new Map();
     this.freeDims = new Map();
+    this.freeSymbols = new Map();
     this.pruned = new Map();
   }
 
@@ -1433,7 +1434,7 @@ export class InstructionDriver {
   // renaming is compared once, and a term against itself under binders each
   // named as on the other side needs no comparison. Without both, a term
   // such as refl(refl(… refl(0))) takes time exponential in its depth. The
-  // renaming of dimensions is cut to those the two terms mention, so that
+  // renamings are cut to names the two terms mention freely, so that
   // a subterm met under many binders is still compared once.
   //
   // A missing part, and a leaf, a node with no parts compared, are told
@@ -1445,6 +1446,7 @@ export class InstructionDriver {
     const nx = this.node(x), ny = this.node(y);
     if (nx.kind !== ny.kind) return false;
     if (this.leaf(nx) && this.leaf(ny)) return this.sameHead(nx, ny, terms, dims);
+    if (terms) terms = this.pruneSymbols(terms, this.freeTermSymbols(x), this.freeTermSymbols(y));
     if (dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
       freeDimensionMask(this.kernel, y, this.freeDims));
     if (x === y && this.unrenamed(terms) && this.unrenamed(dims)) return true;
@@ -1459,6 +1461,31 @@ export class InstructionDriver {
     }
     this.alphaMemo.set(key, equal);
     return equal;
+  }
+  // The free term/level symbols of a syntax DAG, including annotations and
+  // recorded levels. A binder scopes only child 1, never its own domain.
+  // Exact sets avoid collisions between the unbounded symbol identifiers.
+  freeTermSymbols(term) {
+    if (this.freeSymbols.has(term)) return this.freeSymbols.get(term);
+    const symbols = new Set();
+    if (term) {
+      const n = this.node(term);
+      if (n.kind === "Var") symbols.add(n.payload);
+      for (let i = 0; i < n.children.length; i++)
+        for (const symbol of this.freeTermSymbols(n.children[i]))
+          if (!(i === 1 && TERM_BINDERS.has(n.kind) && symbol === n.payload)) symbols.add(symbol);
+    }
+    this.freeSymbols.set(term, symbols);
+    return symbols;
+  }
+  // Retain a binding if either side can look it up. In particular a binding
+  // on just one side must stay: it distinguishes a bound name from a free
+  // one. The retained order preserves shadowing; chainId interns its content.
+  pruneSymbols(bindings, left, right) {
+    if (!bindings || (!left.size && !right.size)) return null;
+    const next = this.pruneSymbols(bindings.next, left, right);
+    return !left.has(bindings.left) && !right.has(bindings.right) ? next
+      : next === bindings.next ? bindings : { left: bindings.left, right: bindings.right, next };
   }
   // A renaming of dimensions without the pairs neither side mentions: no
   // lookup from either side can reach those, as names bound inside are

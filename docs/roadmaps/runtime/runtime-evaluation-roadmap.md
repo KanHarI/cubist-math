@@ -596,6 +596,16 @@ The negative polynomial-root fixture now reaches its intended E606 type
 mismatch instead of exhausting the K338 reduction budget; its expected
 diagnostic is updated accordingly.
 
+Finishing formerly budget-limited normal forms exposed a second sharing
+problem: the driver's alpha comparison retained irrelevant term-binder
+renamings, revisiting shared subterms under each enclosing scope. It now
+prunes those renamings using exact free-symbol sets, preserving shadowing,
+domains, annotations and level variables. A native-derived normal-form
+regression with 2^40 expanded leaves compares in fewer than 2,000 node reads.
+The archived `f4_galois_is_cyclic_two` re-derivation that exposed this took
+about 11 seconds with only the kernel cache, and 16 ms with the comparison
+fix (10 ms before EVAL2); the standard five-second deadline remains unchanged.
+
 **Acceptance:** shared graphs and repeated normalization avoid redundant
 traversal; typed normal forms, eta behavior, failure recovery and instruction
 isolation remain unchanged. Cache collisions cannot establish equality.
