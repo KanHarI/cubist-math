@@ -1,4 +1,4 @@
-import { parse } from "./parser.mjs";
+import { parse, scan } from "./parser.mjs";
 import { diagnosticCode } from "../diagnostics.mjs";
 
 // Warnings for bindings that are never used and can simply be removed:
@@ -19,10 +19,10 @@ import { diagnosticCode } from "../diagnostics.mjs";
 export function lint(source, ast = parse(source)) {
   // Every identifier's positions, skipping comments and numerals (0b110).
   const positions = new Map();
-  for (const match of source.matchAll(/\/\/[^\n]*|[0-9][A-Za-z0-9_]*|[A-Za-z_][A-Za-z0-9_]*/g)) {
-    if (!/^[A-Za-z_]/.test(match[0])) continue;
-    if (!positions.has(match[0])) positions.set(match[0], []);
-    positions.get(match[0]).push(match.index);
+  for (const { text, start } of scan(source)) {
+    if (!/^[A-Za-z_]/.test(text)) continue;
+    if (!positions.has(text)) positions.set(text, []);
+    positions.get(text).push(start);
   }
   // A named argument's name, f(x := e), is f's parameter, not a use of x.
   const parameterNames = new Set();

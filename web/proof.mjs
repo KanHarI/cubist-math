@@ -8,7 +8,7 @@ import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { readProofNavigation, saveProofNavigation, proofReturnURL } from "./proof-navigation.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
-import { numeralAt, tokenStyle, tokenPattern } from "./source-tokens.mjs";
+import { numeralAt, tokenStyle, scan } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
 import { createReplConsole } from "./repl-console.mjs";
@@ -627,13 +627,13 @@ function renderSource(target = $("read-source"), snapshot = last) {
     const code = document.createElement("span");
     code.className = "line-code";
     let cursor = 0;
-    for (const token of line.matchAll(tokenPattern)) {
-      if (token.index < cursor) continue;
-      if (token.index > cursor)
-        code.append(document.createTextNode(line.slice(cursor, token.index)));
-      const start = offset + token.index, info = linkMap.get(start);
+    for (const token of scan(line)) {
+      if (token.start < cursor) continue;
+      if (token.start > cursor)
+        code.append(document.createTextNode(line.slice(cursor, token.start)));
+      const start = offset + token.start, info = linkMap.get(start);
       // A generated qualified name is one reference, including every dot.
-      const text = generated && info?.generated ? snapshot.source.slice(start, info.end) : token[0];
+      const text = generated && info?.generated ? snapshot.source.slice(start, info.end) : token.text;
       if (text.startsWith("//")) {
         const span = document.createElement("span");
         span.className = "comment";
@@ -653,7 +653,7 @@ function renderSource(target = $("read-source"), snapshot = last) {
         };
         code.append(link);
       } else {
-        const expansion = (last.mode === "mathematical" ? numeralAt(line, token.index, text) : null) ?? info?.expansion;
+        const expansion = (last.mode === "mathematical" ? numeralAt(line, token.start, text) : null) ?? info?.expansion;
         // The whole source: a header's colon and its inductive may be on earlier lines.
         const style = tokenStyle(text, expansion);
         if (info) {
@@ -677,7 +677,7 @@ function renderSource(target = $("read-source"), snapshot = last) {
           code.append(span);
         } else code.append(document.createTextNode(text));
       }
-      cursor = token.index + text.length;
+      cursor = token.start + text.length;
     }
     row.append(number, code);
     target.append(row);
@@ -885,10 +885,8 @@ function renderType(text, extraSymbols = []) {
       ...extraSymbols,
     ].map((v) => [v.name, v]),
   );
-  for (const token of text.matchAll(
-    /<=|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[+*<=>]|\s+|./g,
-  )) {
-    const word = token[0],
+  for (const token of scan(text)) {
+    const word = token.text,
       name = { "<": "isLt", "<=": "le", "+": "add", "*": "mul" }[word] ?? word;
     let info = symbols.get(name);
     if (info) {

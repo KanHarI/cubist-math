@@ -25,9 +25,6 @@ export const theoryBinding = name => "\u0000theory " + name;
 // binds. A selection is complete: an operator it does not bind is an error,
 // never an earlier selection's or a function named add.
 export const notationBinding = name => "\u0000notation " + name;
-// The extensible operators a notation can bind, unary - as "unary -".
-export const notationOperators = ["+", "-", "*", "/", "^", "<", "<=", ">", ">=", "unary -"];
-
 // A theory's records, by the binding of its type of models, and its
 // projections, which print as m.f.
 export function registerTheoryDeclaration(t,d) {

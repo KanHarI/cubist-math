@@ -1,7 +1,7 @@
 // The Files page: every Cubist source the site publishes, by folder, from
 // cubist-files.json (written by tools/cubist-files.mjs). Selecting a file
 // shows its source here; the workspace opens it by its path (?file=).
-import { tokenPattern, tokenStyle, numeralAt } from "./source-tokens.mjs";
+import { scan, tokenStyle, numeralAt } from "./source-tokens.mjs";
 import { loadFileIndex, renderFileTree, filterTree, summaryNodes } from "./file-tree.mjs";
 
 const $ = id => document.getElementById(id);
@@ -23,8 +23,8 @@ const element = (tag, className, text) => {
 // A file's source, highlighted as the workspace highlights it.
 function highlighted(source) {
   const fragment = document.createDocumentFragment();
-  for (const match of source.matchAll(tokenPattern)) {
-    const [text] = match, start = match.index;
+  for (const match of scan(source)) {
+    const { text, start } = match;
     const style = text.startsWith("//") ? "comment" : tokenStyle(text, numeralAt(source, start, text));
     fragment.append(style ? element("span", style, text) : document.createTextNode(text));
   }
