@@ -10,263 +10,353 @@ import {halfAdjointEquiv,publicUnivalencePath,publicUnivalenceBeta} from "./publ
 import {dependentPathToTransport,transportToDependentPath} from "./path-over.mjs";
 import {libraryAssumption} from "../cubical-assumptions.mjs";
 
+export const builtinHandlers = new Map([
+  ["ua",ua],
+  ["UnivalenceBeta",ua],
+  ["Truncate",Truncate],
+  ["TruncateIntro",Truncate],
+  ["TruncateProp",Truncate],
+  ["TruncateElim",Truncate],
+  ["LEM",Truncate],
+  ["Choice",Truncate],
+  ["next",next],
+  ["max",next],
+  ["typed",typed],
+  ["path",path],
+  ["PathP",path],
+  ["comp",path],
+  ["fill",path],
+  ["Glue",Glue],
+  ["glue",glue],
+  ["unglue",unglue],
+  ["path_from_transport",path_from_transport],
+  ["path_to_transport",path_from_transport],
+  ["at",at],
+  ["pair_induction",pair_induction],
+  ["unit_induction",unit_induction],
+  ["FunExt",FunExt],
+  ["absurd",absurd],
+  ["left",left],
+  ["right",left],
+  ["refl",refl],
+  ["sym",sym],
+  ["trans",trans],
+  ["cong",cong],
+  ["apd",apd],
+  ["apd_path",apd_path],
+  ["transport",transport],
+  ["path_induction",path_induction],
+  ["based_induction",based_induction],
+]);
+
 export function builtinTerm(t,builtin,n,scope,expected) {
-  const {env}=scope;
-  const tr=(x,e=expected)=>t.term(x,scope,e);
-  const inferred=term=>scope.infer(term);
-  if(["ua","UnivalenceBeta"].includes(builtin)&&n.args.length>=3) {
-    const [universe,A,B]=n.args.slice(0,3).map(a=>tr(a,null));
-    if(universe.tag!=="U")throw Error("Univalence requires a universe.");
-    if(!finiteLevel(universe.level))throw scope.unit.locate(Error(`${builtin} takes a universe below UU0.`),n.args[0]);
-    scope.check(A,universe);
-    scope.check(B,universe);
-    const build=(A,B,universe)=>{
-      const E=halfAdjointEquiv(A,B),en=scope.fresh("equivalence"),x=scope.fresh("argument");
-      return builtin==="ua"?T.lam(en,E,publicUnivalencePath(A,B,T.variable(en),universe.level)):
-        T.lam(en,E,T.lam(x,A,publicUnivalenceBeta(A,B,T.variable(en),T.variable(x))));
-    };
-    let fn;
-    // Asking for the generic definition checks and admits it the first
-    // time in a session; the request is charged every time, so the
-    // charge does not depend on the session's history.
-    scope.spend("queries");
-    if(t.checker.genericDefinition && t.checker.kernel?.optimizations?.reuseChecks !== false) {
-      // The computational derivation is generic in the universe, A and B:
-      // one definition, checked once, instantiated at each use (G0).
-      const generic=t.checker.genericDefinition(`builtin__${builtin}`,()=>{
-        const level=scope.fresh("level"),a=scope.fresh("sourceType"),b=scope.fresh("targetType");
-        const at=T.universe(T.variable(level));
-        return T.levelLambda(level,T.lam(a,at,T.lam(b,at,build(T.variable(a),T.variable(b),at))));
-      });
-      fn=T.app(T.app(T.levelApply(generic,universe.level),A),B);
-    } else fn=build(A,B,universe);
-    for(const arg of n.args.slice(3)) {
-      const type=scope.nf(inferred(fn).type);
-      if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
-      fn=T.app(fn,tr(arg,type.domain));
-    }
-    return fn;
-  }
-  if(["Truncate","TruncateIntro","TruncateProp","TruncateElim","LEM","Choice"].includes(builtin)) {
-    if(!n.args.length)throw Error(`${builtin} needs a universe argument.`);
-    let start=0, truncateFormer=null;
-    // Rebuilt classical assumptions explicitly name their declared
-    // truncation: LEM(Trunc, U, ...), Choice(Trunc, U, ...). The old
-    // LEM(U, ...) and Choice(U, ...) signatures remain available.
-    let universe=tr(n.args[0],null);
-    if(["LEM","Choice"].includes(builtin) && universe.tag!=="U") {
-      truncateFormer=universe; start=1;
-      if(n.args.length<2)throw Error(`${builtin} with a truncation former needs a universe argument.`);
-      universe=tr(n.args[1],null);
-    }
-    if(universe.tag!=="U"||!t.checker.assume)throw Error("Logical assumptions require a universe and an explicit native context.");
-    scope.spend("queries");
-    // One generic assumption each, for the universes below UU0.
-    if(!finiteLevel(universe.level))throw scope.unit.locate(Error(`${builtin} holds only for universes below UU0.`),n.args[0]);
-    let fn=T.levelApply(libraryAssumption(t.checker,builtin,scope.context,truncateFormer),universe.level);
-    for(const arg of n.args.slice(start+1)) {
-      const type=scope.nf(inferred(fn).type);
-      if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
-      fn=T.app(fn,tr(arg,type.domain));
-    }
-    return fn;
-  }
-  if(["next","max"].includes(builtin)) {
-    if(n.args.length!==(builtin==="next"?1:2))throw Error(`${builtin} takes ${builtin==="next"?"one universe":"two universes"}.`);
-    const [left,right]=n.args.map(arg=>t.levelOf(arg,scope));
-    return T.universe(builtin==="next"?{tag:"LSucc",count:1,level:left}:{tag:"LMax",left,right});
-  }
-  if(builtin==="typed"&&n.args.length===2) {
-    const type=tr(n.args[0],null),term=tr(n.args[1],type);
-    const checked=scope.check(term,type);
-    return scope.ascribe(checked,type);
-  }
-  if(["path","PathP","comp","fill"].includes(builtin)) {
-    const size=n.args.length;
-    if((builtin==="path"&&size!==2)||(builtin==="PathP"&&size!==3)||(builtin==="comp"&&size<2)||(builtin==="fill"&&size<3))
-      throw Error(`Invalid arguments to ${builtin}.`);
-    const dim=scope.fresh("i"),family=t.dimensionBody(n.args[0],dim,scope);
-    if(builtin==="path")return T.line(dim,family,t.dimensionBody(n.args[1],dim,scope,family));
-    if(builtin==="PathP")return T.path(dim,family,tr(n.args[1],null),tr(n.args[2],null));
-    // Each wall is translated on its face, at the family there.
-    const onItsFace=(face,wall)=>({face,term:t.dimensionBody(wall,dim,scope.onFace(face),onFace(family,face))});
-    // A wall's face, and its wall translated there. A wall whose face is 0
-    // where a coordinate is fixed is never used there, and is not
-    // translated; one written on the face 0 is kept as written.
-    const walls=part=>{
-      let face,wall;
-      if(part.kind==="call"&&part.fn.kind==="name"&&part.fn.name==="face_when"&&part.args.length===2) {
-        [face,wall]=[t.cofibration(part.args[0],scope),part.args[1]];
-        if(part.args[0].kind==="number")return [onItsFace(face,wall)];
-      } else {
-        if(part.kind!=="call"||part.fn.kind!=="name"||part.fn.name!=="face"||part.args.length!==3)
-          throw Error("A composition wall has syntax face(i, 0 or 1, fun (j : Interval) => ...).");
-        const {node:coordinate,scope:at}=t.expressionScope(part.args[0],scope);
-        const {node:endpoint}=t.expressionScope(part.args[1],scope);
-        if(coordinate.kind!=="name"||at.env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
-          throw Error("A composition face needs an outer interval coordinate and endpoint 0 or 1.");
-        [face,wall]=[faceAt(at.env.get(coordinate.name),endpoint.value),part.args[2]];
-      }
-      return face.length?[onItsFace(face,wall)]:[];
-    };
-    const system=n.args.slice(builtin==="fill"?3:2).flatMap(walls);
-    // The base is at the family's start.
-    const base=tr(n.args[1],onFace(family,F.endpoint(dim,0)));
-    return builtin==="fill"?withNativeReferences([family,system,base],(family,system,base)=>fill(dim,family,system,base,t.interval(n.args[2],scope))):T.comp(dim,family,system,base);
-  }
-  // Glue(A, face(i, 0, T, e), face_when(φ, T, e), …): the Glue type over A,
-  // with a type T on each face and an equivalence e from T to A there: a
-  // function with contractible fibers, exists f : T -> A. forall y : A.
-  // exists c : (exists x : T. y = f(x)). forall p : (exists x : T. y = f(x)). c = p.
-  if(builtin==="Glue"&&n.args.length>=1) {
-    const base=tr(n.args[0],null);
-    return T.glueType(base,n.args.slice(1).flatMap(part=>{
-      const piece=systemPart(t,part,scope,2);
-      if(!piece)throw Error("A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).");
-      // On its face, at the types there; a piece on the face 0 is never used.
-      const {face,parts}=piece,there=scope.onFace(face);
-      if(!face.length)return [];
-      const type=t.term(parts[0],there,null);
-      return [{face,type,equiv:t.term(parts[1],there,equiv(type,onFace(base,face)))}];
-    }));
-  }
-  // glue(a, face(i, 0, t), …) at a Glue type: the element over the base a
-  // that is t on each face, a value for each piece of the type in order.
-  if(builtin==="glue"&&n.args.length>=1) {
-    const values=n.args.slice(1).map(part=>{
-      const value=systemPart(t,part,scope,1);
-      if(!value)throw Error("A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).");
-      return value;
+  const handler=builtinHandlers.get(builtin);
+  if(!handler)return;
+  return handler({t,builtin,n,scope,expected,
+    tr:(x,e=expected)=>t.term(x,scope,e),inferred:term=>scope.infer(term)});
+}
+
+function ua({t,builtin,n,scope,tr,inferred}) {
+  if(n.args.length<3)return;
+  const [universe,A,B]=n.args.slice(0,3).map(a=>tr(a,null));
+  if(universe.tag!=="U")throw Error("Univalence requires a universe.");
+  if(!finiteLevel(universe.level))throw scope.unit.locate(Error(`${builtin} takes a universe below UU0.`),n.args[0]);
+  scope.check(A,universe);
+  scope.check(B,universe);
+  const build=(A,B,universe)=>{
+    const E=halfAdjointEquiv(A,B),en=scope.fresh("equivalence"),x=scope.fresh("argument");
+    return builtin==="ua"?T.lam(en,E,publicUnivalencePath(A,B,T.variable(en),universe.level)):
+      T.lam(en,E,T.lam(x,A,publicUnivalenceBeta(A,B,T.variable(en),T.variable(x))));
+  };
+  let fn;
+  // Asking for the generic definition checks and admits it the first
+  // time in a session; the request is charged every time, so the
+  // charge does not depend on the session's history.
+  scope.spend("queries");
+  if(t.checker.genericDefinition && t.checker.kernel?.optimizations?.reuseChecks !== false) {
+    // The computational derivation is generic in the universe, A and B:
+    // one definition, checked once, instantiated at each use (G0).
+    const generic=t.checker.genericDefinition(`builtin__${builtin}`,()=>{
+      const level=scope.fresh("level"),a=scope.fresh("sourceType"),b=scope.fresh("targetType");
+      const at=T.universe(T.variable(level));
+      return T.levelLambda(level,T.lam(a,at,T.lam(b,at,build(T.variable(a),T.variable(b),at))));
     });
-    // On a face that holds, glue [1 ↦ t] a is t (CCHM), at the type there.
-    const holding=values.find(value=>value.face.length===1&&value.face[0].length===0);
-    if(holding)return t.term(holding.parts[0],scope,expected);
-    if(!expected)throw Error("glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).");
-    // A type written as Glue is taken as it is: on a face that holds, its
-    // head is the glued type.
-    const written=expected.tag==="Glue"?expected:scope.nf(expected);
-    if(written.tag!=="Glue")throw Error("glue builds an element of a Glue type.");
-    // Pieces and values on the face 0 are never used, and are left out.
-    const glue={...written,system:written.system.filter(piece=>piece.face.length)};
-    return T.glue(glue,tr(n.args[0],glue.base),values.filter(value=>value.face.length).map(({face,parts},index)=>{
-      const type=glue.system[index]?.type;
-      return {face,term:t.term(parts[0],scope.onFace(face),type?onFace(type,face):null)};
-    }));
+    fn=T.app(T.app(T.levelApply(generic,universe.level),A),B);
+  } else fn=build(A,B,universe);
+  for(const arg of n.args.slice(3)) {
+    const type=scope.nf(inferred(fn).type);
+    if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
+    fn=T.app(fn,tr(arg,type.domain));
   }
-  // unglue(g): the base of an element of a Glue type.
-  if(builtin==="unglue"&&n.args.length===1) {
-    const value=tr(n.args[0],null),type=inferred(value).type,glue=type.tag==="Glue"?type:scope.nf(type);
-    if(glue.tag!=="Glue")throw Error("unglue takes an element of a Glue type.");
-    return T.unglue(glue,value);
+  return fn;
+}
+
+function Truncate({t,builtin,n,scope,tr,inferred}) {
+  if(!n.args.length)throw Error(`${builtin} needs a universe argument.`);
+  let start=0, truncateFormer=null;
+  // Rebuilt classical assumptions explicitly name their declared
+  // truncation: LEM(Trunc, U, ...), Choice(Trunc, U, ...). The old
+  // LEM(U, ...) and Choice(U, ...) signatures remain available.
+  let universe=tr(n.args[0],null);
+  if(["LEM","Choice"].includes(builtin) && universe.tag!=="U") {
+    truncateFormer=universe; start=1;
+    if(n.args.length<2)throw Error(`${builtin} with a truncation former needs a universe argument.`);
+    universe=tr(n.args[1],null);
   }
-  if(["path_from_transport","path_to_transport"].includes(builtin)&&n.args.length===4) {
-    const dim=scope.fresh("i"),family=t.dimensionBody(n.args[0],dim,scope);
-    const left=tr(n.args[1],null),right=tr(n.args[2],null),value=tr(n.args[3],null);
-    return T.app((builtin==="path_from_transport"?transportToDependentPath:dependentPathToTransport)(dim,family,left,right),value);
+  if(universe.tag!=="U"||!t.checker.assume)throw Error("Logical assumptions require a universe and an explicit native context.");
+  scope.spend("queries");
+  // One generic assumption each, for the universes below UU0.
+  if(!finiteLevel(universe.level))throw scope.unit.locate(Error(`${builtin} holds only for universes below UU0.`),n.args[0]);
+  let fn=T.levelApply(libraryAssumption(t.checker,builtin,scope.context,truncateFormer),universe.level);
+  for(const arg of n.args.slice(start+1)) {
+    const type=scope.nf(inferred(fn).type);
+    if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
+    fn=T.app(fn,tr(arg,type.domain));
   }
-  if(builtin==="at"&&n.args.length===2)return T.at(tr(n.args[0],null),t.interval(n.args[1],scope));
-  if(builtin==="pair_induction"&&n.args.length===3) {
-    const [motive,branch,value]=n.args.map(a=>tr(a,null));
-    const sigma=scope.nf(inferred(value).type);
-    if(sigma.tag!=="Sigma")throw Error("pair_induction requires a dependent pair.");
-    const x=scope.fresh(),y=scope.fresh(),first=T.variable(x),second=T.variable(y);
-    const fiber=T.app(T.lam(sigma.name,sigma.domain,sigma.body),first);
-    const branchType=T.pi(x,sigma.domain,T.pi(y,fiber,
-      T.app(motive,T.pair(sigma,first,second))));
-    scope.check(branch,branchType);
-    // Cubical Sigma eta identifies (fst p, snd p) with p. The native
-    // checker verifies the dependent result conversion at the motive.
-    const result=T.app(T.app(branch,T.first(value)),T.second(value));
-    const type=T.app(motive,value),checked=scope.check(result,type);
-    return scope.ascribe(checked,type);
-  }
-  if(builtin==="unit_induction"&&n.args.length===3) {
-    const [motive,point,value]=n.args.map(a=>tr(a,null));
-    return T.unitrec(motive,point,value);
-  }
-  if(builtin==="FunExt"&&n.args.length===6) {
-    const [universe,A,B,f,g,h]=n.args.map(a=>tr(a,null));
-    if(universe.tag!=="U")throw Error("FunExt needs a universe.");
-    if(!finiteLevel(universe.level))throw scope.unit.locate(Error("FunExt takes a universe below UU0."),n.args[0]);
-    scope.check(A,universe);
-    const x=scope.fresh(),dim=scope.fresh("i"),variable=T.variable(x),fiber=T.app(B,variable);
-    scope.check(B,T.pi(x,A,universe));
-    const functionType=T.pi(x,A,fiber);
-    scope.check(f,functionType);
-    scope.check(g,functionType);
-    const pointwise=T.pi(x,A,T.path(dim,fiber,T.app(f,variable),T.app(g,variable)));
-    scope.check(h,pointwise);
-    return T.line(dim,functionType,T.lam(x,A,T.at(T.app(h,variable),I.variable(dim))));
-  }
-  if(builtin==="absurd"&&n.args.length===1) {
-    if(!expected)throw Error("absurd requires an expected type.");
-    return T.abort(expected,tr(n.args[0],T.void));
-  }
-  if(["left","right"].includes(builtin)&&n.args.length===1) {
-    if(!expected)throw Error("Sum injection requires an expected type.");
-    const sum=scope.nf(expected);
-    if(sum.tag!=="Sum")throw Error("Expected a sum type.");
-    return (builtin==="left"?T.inl:T.inr)(expected,tr(n.args[0],sum[builtin]));
-  }
-  if(builtin==="refl"&&n.args.length===1) {
-    const value=tr(n.args[0],null);return T.line(scope.fresh("i"),inferred(value).type,value);
-  }
-  if(builtin==="sym"&&n.args.length===1)return t.reversePath(scope,tr(n.args[0],null),"sym");
-  if(builtin==="trans"&&n.args.length===2)
-    return t.concatenatePaths(scope,tr(n.args[0],null),tr(n.args[1],null),"trans");
-  if(builtin==="cong"&&n.args.length===2) {
-    const fn=tr(n.args[0],null),p=tr(n.args[1],null),pt=scope.nf(inferred(p).type);
-    if(pt.tag!=="Path")throw Error("cong requires a path.");
-    const left=T.app(fn,pt.left),type=inferred(left).type,i=scope.fresh("i");
-    const result=T.line(i,type,T.app(fn,T.at(p,I.variable(i))));
-    return t.checker.ascribe && t.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(i,type,left,T.app(fn,pt.right))) : result;
-  }
-  if(builtin==="apd"&&n.args.length===4) {
-    const [fn,x,y,p]=n.args.map(a=>tr(a,null));
-    const pt=scope.nf(inferred(p).type),ft=scope.nf(inferred(fn).type);
-    if(pt.tag!=="Path"||ft.tag!=="Pi"||!scope.equal(pt.left,x)||!scope.equal(pt.right,y))
-      throw Error("Dependent action needs a function and a path with the supplied endpoints.");
-    const i=scope.fresh("i"),family=T.app(T.lam(ft.name,ft.domain,ft.body),T.at(p,I.variable(i)));
-    const action=T.line(i,family,T.app(fn,T.at(p,I.variable(i))));
-    return T.app(dependentPathToTransport(i,family,T.app(fn,x),T.app(fn,y)),action);
-  }
-  if(builtin==="apd_path"&&n.args.length===2) {
-    const fn=tr(n.args[0],null),p=tr(n.args[1],null);
-    const ft=scope.nf(inferred(fn).type),pt=scope.nf(inferred(p).type);
-    if(ft.tag!=="Pi"||pt.tag!=="Path"||freeDimensions(pt.family).has(pt.dim))
-      throw Error("apd_path needs a dependent function and a homogeneous path.");
-    scope.expect(pt.family,ft.domain);
-    const dim=scope.fresh("i"),index=T.at(p,I.variable(dim));
-    const family=T.app(T.lam(ft.name,ft.domain,ft.body),index);
-    return T.line(dim,family,T.app(fn,index));
-  }
-  if(builtin==="transport"&&n.args.length===5) {
-    const [family,x,y,p,value]=n.args.map(a=>tr(a,null));
-    const pt=scope.nf(inferred(p).type);if(pt.tag!=="Path")throw Error("transport requires a path.");
-    if(!scope.equal(pt.left,x)||!scope.equal(pt.right,y))throw Error("Transport endpoints do not match.");
-    const i=scope.fresh("i");return T.comp(i,T.app(family,T.at(p,I.variable(i))),[],value);
-  }
-  if(builtin==="path_induction"&&n.args.length===6) {
-    const [A,C,d,x,y,p]=n.args.map(a=>tr(a,null)),i=scope.fresh("i"),j=scope.fresh("j");
-    const pt=scope.nf(inferred(p).type);
-    if(pt.tag!=="Path"||!scope.equal(pt.family,A)||!scope.equal(pt.left,x)||!scope.equal(pt.right,y))throw Error("Path induction endpoints/carrier do not match.");
-    const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
-    const family=T.app(T.app(T.app(C,x),T.at(p,I.variable(i))),segment);
-    return T.comp(i,family,[],T.app(d,x));
-  }
-  if(builtin==="based_induction"&&n.args.length===8) {
-    const [universe,motiveUniverse,A,x,C,d,y,p]=n.args.map(a=>tr(a,null));
-    if(universe.tag!=="U"||motiveUniverse.tag!=="U")throw Error("Based induction needs universes.");
-    scope.check(A,universe);
-    const b=scope.fresh(),q=scope.fresh(),i=scope.fresh("i"),j=scope.fresh("j");
-    const pathType=T.path(j,A,x,T.variable(b));
-    scope.check(C,T.pi(b,A,T.pi(q,pathType,motiveUniverse)));
-    scope.check(p,T.path(j,A,x,y));
-    const reflexivity=T.line(j,A,x);
-    scope.check(d,T.app(T.app(C,x),reflexivity));
-    const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
-    return T.comp(i,T.app(T.app(C,T.at(p,I.variable(i))),segment),[],d);
-  }
+  return fn;
+}
+
+function next({t,builtin,n,scope}) {
+  if(n.args.length!==(builtin==="next"?1:2))throw Error(`${builtin} takes ${builtin==="next"?"one universe":"two universes"}.`);
+  const [left,right]=n.args.map(arg=>t.levelOf(arg,scope));
+  return T.universe(builtin==="next"?{tag:"LSucc",count:1,level:left}:{tag:"LMax",left,right});
+}
+
+function typed({n,scope,tr}) {
+  if(n.args.length!==2)return;
+  const type=tr(n.args[0],null),term=tr(n.args[1],type);
+  const checked=scope.check(term,type);
+  return scope.ascribe(checked,type);
+}
+
+function path({t,builtin,n,scope,tr}) {
+  const size=n.args.length;
+  if((builtin==="path"&&size!==2)||(builtin==="PathP"&&size!==3)||(builtin==="comp"&&size<2)||(builtin==="fill"&&size<3))
+    throw Error(`Invalid arguments to ${builtin}.`);
+  const dim=scope.fresh("i"),family=t.dimensionBody(n.args[0],dim,scope);
+  if(builtin==="path")return T.line(dim,family,t.dimensionBody(n.args[1],dim,scope,family));
+  if(builtin==="PathP")return T.path(dim,family,tr(n.args[1],null),tr(n.args[2],null));
+  // Each wall is translated on its face, at the family there.
+  const onItsFace=(face,wall)=>({face,term:t.dimensionBody(wall,dim,scope.onFace(face),onFace(family,face))});
+  // A wall's face, and its wall translated there. A wall whose face is 0
+  // where a coordinate is fixed is never used there, and is not
+  // translated; one written on the face 0 is kept as written.
+  const walls=part=>{
+    let face,wall;
+    if(part.kind==="call"&&part.fn.kind==="name"&&part.fn.name==="face_when"&&part.args.length===2) {
+      [face,wall]=[t.cofibration(part.args[0],scope),part.args[1]];
+      if(part.args[0].kind==="number")return [onItsFace(face,wall)];
+    } else {
+      if(part.kind!=="call"||part.fn.kind!=="name"||part.fn.name!=="face"||part.args.length!==3)
+        throw Error("A composition wall has syntax face(i, 0 or 1, fun (j : Interval) => ...).");
+      const {node:coordinate,scope:at}=t.expressionScope(part.args[0],scope);
+      const {node:endpoint}=t.expressionScope(part.args[1],scope);
+      if(coordinate.kind!=="name"||at.env.get(coordinate.name)?.tag!=="Dimension"||endpoint.kind!=="number"||![0,1].includes(endpoint.value))
+        throw Error("A composition face needs an outer interval coordinate and endpoint 0 or 1.");
+      [face,wall]=[faceAt(at.env.get(coordinate.name),endpoint.value),part.args[2]];
+    }
+    return face.length?[onItsFace(face,wall)]:[];
+  };
+  const system=n.args.slice(builtin==="fill"?3:2).flatMap(walls);
+  // The base is at the family's start.
+  const base=tr(n.args[1],onFace(family,F.endpoint(dim,0)));
+  return builtin==="fill"?withNativeReferences([family,system,base],(family,system,base)=>fill(dim,family,system,base,t.interval(n.args[2],scope))):T.comp(dim,family,system,base);
+}
+
+// Glue(A, face(i, 0, T, e), face_when(φ, T, e), …): the Glue type over A,
+// with a type T on each face and an equivalence e from T to A there: a
+// function with contractible fibers, exists f : T -> A. forall y : A.
+// exists c : (exists x : T. y = f(x)). forall p : (exists x : T. y = f(x)). c = p.
+function Glue({t,n,scope,tr}) {
+  if(n.args.length<1)return;
+  const base=tr(n.args[0],null);
+  return T.glueType(base,n.args.slice(1).flatMap(part=>{
+    const piece=systemPart(t,part,scope,2);
+    if(!piece)throw Error("A Glue piece has syntax face(i, 0 or 1, T, e) or face_when(φ, T, e).");
+    // On its face, at the types there; a piece on the face 0 is never used.
+    const {face,parts}=piece,there=scope.onFace(face);
+    if(!face.length)return [];
+    const type=t.term(parts[0],there,null);
+    return [{face,type,equiv:t.term(parts[1],there,equiv(type,onFace(base,face)))}];
+  }));
+}
+
+// glue(a, face(i, 0, t), …) at a Glue type: the element over the base a
+// that is t on each face, a value for each piece of the type in order.
+function glue({t,n,scope,expected,tr}) {
+  if(n.args.length<1)return;
+  const values=n.args.slice(1).map(part=>{
+    const value=systemPart(t,part,scope,1);
+    if(!value)throw Error("A glue value has syntax face(i, 0 or 1, t) or face_when(φ, t).");
+    return value;
+  });
+  // On a face that holds, glue [1 ↦ t] a is t (CCHM), at the type there.
+  const holding=values.find(value=>value.face.length===1&&value.face[0].length===0);
+  if(holding)return t.term(holding.parts[0],scope,expected);
+  if(!expected)throw Error("glue needs the Glue type it builds an element of: write typed(Glue(…), glue(…)).");
+  // A type written as Glue is taken as it is: on a face that holds, its
+  // head is the glued type.
+  const written=expected.tag==="Glue"?expected:scope.nf(expected);
+  if(written.tag!=="Glue")throw Error("glue builds an element of a Glue type.");
+  // Pieces and values on the face 0 are never used, and are left out.
+  const glue={...written,system:written.system.filter(piece=>piece.face.length)};
+  return T.glue(glue,tr(n.args[0],glue.base),values.filter(value=>value.face.length).map(({face,parts},index)=>{
+    const type=glue.system[index]?.type;
+    return {face,term:t.term(parts[0],scope.onFace(face),type?onFace(type,face):null)};
+  }));
+}
+
+// unglue(g): the base of an element of a Glue type.
+function unglue({n,scope,tr,inferred}) {
+  if(n.args.length!==1)return;
+  const value=tr(n.args[0],null),type=inferred(value).type,glue=type.tag==="Glue"?type:scope.nf(type);
+  if(glue.tag!=="Glue")throw Error("unglue takes an element of a Glue type.");
+  return T.unglue(glue,value);
+}
+
+function path_from_transport({t,builtin,n,scope,tr}) {
+  if(n.args.length!==4)return;
+  const dim=scope.fresh("i"),family=t.dimensionBody(n.args[0],dim,scope);
+  const left=tr(n.args[1],null),right=tr(n.args[2],null),value=tr(n.args[3],null);
+  return T.app((builtin==="path_from_transport"?transportToDependentPath:dependentPathToTransport)(dim,family,left,right),value);
+}
+
+function at({t,n,scope,tr}) {
+  if(n.args.length!==2)return;
+  return T.at(tr(n.args[0],null),t.interval(n.args[1],scope));
+}
+
+function pair_induction({n,scope,tr,inferred}) {
+  if(n.args.length!==3)return;
+  const [motive,branch,value]=n.args.map(a=>tr(a,null));
+  const sigma=scope.nf(inferred(value).type);
+  if(sigma.tag!=="Sigma")throw Error("pair_induction requires a dependent pair.");
+  const x=scope.fresh(),y=scope.fresh(),first=T.variable(x),second=T.variable(y);
+  const fiber=T.app(T.lam(sigma.name,sigma.domain,sigma.body),first);
+  const branchType=T.pi(x,sigma.domain,T.pi(y,fiber,
+    T.app(motive,T.pair(sigma,first,second))));
+  scope.check(branch,branchType);
+  // Cubical Sigma eta identifies (fst p, snd p) with p. The native
+  // checker verifies the dependent result conversion at the motive.
+  const result=T.app(T.app(branch,T.first(value)),T.second(value));
+  const type=T.app(motive,value),checked=scope.check(result,type);
+  return scope.ascribe(checked,type);
+}
+
+function unit_induction({n,tr}) {
+  if(n.args.length!==3)return;
+  const [motive,point,value]=n.args.map(a=>tr(a,null));
+  return T.unitrec(motive,point,value);
+}
+
+function FunExt({n,scope,tr}) {
+  if(n.args.length!==6)return;
+  const [universe,A,B,f,g,h]=n.args.map(a=>tr(a,null));
+  if(universe.tag!=="U")throw Error("FunExt needs a universe.");
+  if(!finiteLevel(universe.level))throw scope.unit.locate(Error("FunExt takes a universe below UU0."),n.args[0]);
+  scope.check(A,universe);
+  const x=scope.fresh(),dim=scope.fresh("i"),variable=T.variable(x),fiber=T.app(B,variable);
+  scope.check(B,T.pi(x,A,universe));
+  const functionType=T.pi(x,A,fiber);
+  scope.check(f,functionType);
+  scope.check(g,functionType);
+  const pointwise=T.pi(x,A,T.path(dim,fiber,T.app(f,variable),T.app(g,variable)));
+  scope.check(h,pointwise);
+  return T.line(dim,functionType,T.lam(x,A,T.at(T.app(h,variable),I.variable(dim))));
+}
+
+function absurd({n,expected,tr}) {
+  if(n.args.length!==1)return;
+  if(!expected)throw Error("absurd requires an expected type.");
+  return T.abort(expected,tr(n.args[0],T.void));
+}
+
+function left({builtin,n,scope,expected,tr}) {
+  if(n.args.length!==1)return;
+  if(!expected)throw Error("Sum injection requires an expected type.");
+  const sum=scope.nf(expected);
+  if(sum.tag!=="Sum")throw Error("Expected a sum type.");
+  return (builtin==="left"?T.inl:T.inr)(expected,tr(n.args[0],sum[builtin]));
+}
+
+function refl({n,scope,tr,inferred}) {
+  if(n.args.length!==1)return;
+  const value=tr(n.args[0],null);return T.line(scope.fresh("i"),inferred(value).type,value);
+}
+
+function sym({t,n,scope,tr}) {
+  if(n.args.length!==1)return;
+  return t.reversePath(scope,tr(n.args[0],null),"sym");
+}
+
+function trans({t,n,scope,tr}) {
+  if(n.args.length!==2)return;
+  return t.concatenatePaths(scope,tr(n.args[0],null),tr(n.args[1],null),"trans");
+}
+
+function cong({t,n,scope,tr,inferred}) {
+  if(n.args.length!==2)return;
+  const fn=tr(n.args[0],null),p=tr(n.args[1],null),pt=scope.nf(inferred(p).type);
+  if(pt.tag!=="Path")throw Error("cong requires a path.");
+  const left=T.app(fn,pt.left),type=inferred(left).type,i=scope.fresh("i");
+  const result=T.line(i,type,T.app(fn,T.at(p,I.variable(i))));
+  return t.checker.ascribe && t.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(i,type,left,T.app(fn,pt.right))) : result;
+}
+
+function apd({n,scope,tr,inferred}) {
+  if(n.args.length!==4)return;
+  const [fn,x,y,p]=n.args.map(a=>tr(a,null));
+  const pt=scope.nf(inferred(p).type),ft=scope.nf(inferred(fn).type);
+  if(pt.tag!=="Path"||ft.tag!=="Pi"||!scope.equal(pt.left,x)||!scope.equal(pt.right,y))
+    throw Error("Dependent action needs a function and a path with the supplied endpoints.");
+  const i=scope.fresh("i"),family=T.app(T.lam(ft.name,ft.domain,ft.body),T.at(p,I.variable(i)));
+  const action=T.line(i,family,T.app(fn,T.at(p,I.variable(i))));
+  return T.app(dependentPathToTransport(i,family,T.app(fn,x),T.app(fn,y)),action);
+}
+
+function apd_path({n,scope,tr,inferred}) {
+  if(n.args.length!==2)return;
+  const fn=tr(n.args[0],null),p=tr(n.args[1],null);
+  const ft=scope.nf(inferred(fn).type),pt=scope.nf(inferred(p).type);
+  if(ft.tag!=="Pi"||pt.tag!=="Path"||freeDimensions(pt.family).has(pt.dim))
+    throw Error("apd_path needs a dependent function and a homogeneous path.");
+  scope.expect(pt.family,ft.domain);
+  const dim=scope.fresh("i"),index=T.at(p,I.variable(dim));
+  const family=T.app(T.lam(ft.name,ft.domain,ft.body),index);
+  return T.line(dim,family,T.app(fn,index));
+}
+
+function transport({n,scope,tr,inferred}) {
+  if(n.args.length!==5)return;
+  const [family,x,y,p,value]=n.args.map(a=>tr(a,null));
+  const pt=scope.nf(inferred(p).type);if(pt.tag!=="Path")throw Error("transport requires a path.");
+  if(!scope.equal(pt.left,x)||!scope.equal(pt.right,y))throw Error("Transport endpoints do not match.");
+  const i=scope.fresh("i");return T.comp(i,T.app(family,T.at(p,I.variable(i))),[],value);
+}
+
+function path_induction({n,scope,tr,inferred}) {
+  if(n.args.length!==6)return;
+  const [A,C,d,x,y,p]=n.args.map(a=>tr(a,null)),i=scope.fresh("i"),j=scope.fresh("j");
+  const pt=scope.nf(inferred(p).type);
+  if(pt.tag!=="Path"||!scope.equal(pt.family,A)||!scope.equal(pt.left,x)||!scope.equal(pt.right,y))throw Error("Path induction endpoints/carrier do not match.");
+  const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
+  const family=T.app(T.app(T.app(C,x),T.at(p,I.variable(i))),segment);
+  return T.comp(i,family,[],T.app(d,x));
+}
+
+function based_induction({n,scope,tr}) {
+  if(n.args.length!==8)return;
+  const [universe,motiveUniverse,A,x,C,d,y,p]=n.args.map(a=>tr(a,null));
+  if(universe.tag!=="U"||motiveUniverse.tag!=="U")throw Error("Based induction needs universes.");
+  scope.check(A,universe);
+  const b=scope.fresh(),q=scope.fresh(),i=scope.fresh("i"),j=scope.fresh("j");
+  const pathType=T.path(j,A,x,T.variable(b));
+  scope.check(C,T.pi(b,A,T.pi(q,pathType,motiveUniverse)));
+  scope.check(p,T.path(j,A,x,y));
+  const reflexivity=T.line(j,A,x);
+  scope.check(d,T.app(T.app(C,x),reflexivity));
+  const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
+  return T.comp(i,T.app(T.app(C,T.at(p,I.variable(i))),segment),[],d);
 }
 
 // A part of a Glue type or a glue term on a face: face(i, 0 or 1, …) at an

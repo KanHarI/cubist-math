@@ -7,7 +7,7 @@ workbench's Kernel graph.
 
 - Every module is listed in `cubistTestModules` in
   [`web/cubist/modules.mjs`](../web/cubist/modules.mjs), and
-  `tests/cubist-tests.test.mjs` checks that every file is.
+  `tests/module-resolution.test.mjs` checks that every file is.
 - Every error and warning a module's check reports is a comment directly
   above the declaration or directive it belongs to, as
   `// Error: E606: Type mismatch: …` or `// Warning: W704: …`.

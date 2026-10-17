@@ -1,37 +1,15 @@
+import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
 import { chromium, webkit } from "playwright";
-import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel from web/dist.
-assertFreshBuild();
 import { proofCatalog } from "../web/proof-library.mjs";
 import { libraryModules } from "../web/cubist/modules.mjs";
 
-const server = spawn("python3", [fileURLToPath(new URL("../tools/serve.py", import.meta.url)), "--port", "0"],
-  { stdio: ["ignore", "pipe", "pipe"] });
-// Drain request logs: a full stderr pipe can block the local HTTP server.
-server.stderr.resume();
 const groupOnly = process.argv.includes("--group-only");
-let browser;
-try {
-  const port = await new Promise((resolve, reject) => {
-    let output = "";
-    const timer = setTimeout(() => reject(new Error("Test server did not start")), 10000);
-    server.once("error", reject);
-    server.once("exit", code => { clearTimeout(timer); reject(new Error(`Test server exited: ${code}`)); });
-    server.stdout.on("data", data => {
-      output += data;
-      const match = output.match(/127\.0\.0\.1:(\d+)\//);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
-  browser = await (process.env.THTH_BROWSER === "webkit" ? webkit : chromium).launch({ headless: true });
+await browserTest(async ({ browser, base }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const idle = () => page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
-  const base = `http://127.0.0.1:${port}`;
   const response = await page.goto(`${base}/`);
   assert.equal(response.status(), 200);
   assert.match(await page.title(), /Proof highlights/);
@@ -168,7 +146,4 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(`PASS proof landing: root, ten highlights, destinations, ${groupOnly ? "group identity" : "universe size and workbench transfer"}, mobile (${process.env.THTH_BROWSER ?? "chromium"})`);
-} finally {
-  await browser?.close();
-  server.kill();
-}
+}, { engine: process.env.THTH_BROWSER === "webkit" ? webkit : chromium });

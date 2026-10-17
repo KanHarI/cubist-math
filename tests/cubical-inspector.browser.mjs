@@ -1,29 +1,10 @@
+import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { chromium } from "playwright";
-import { assertFreshBuild } from "../tools/build-stamp.mjs";
 import { gaps } from "./frontend-generation-cases.mjs";
-// The page loads the WASM kernel from web/dist.
-assertFreshBuild();
 const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
 const zero = {tag:"Con",index:0,name:"zero",sort:natural};
 const one = {tag:"App",fn:{tag:"Con",index:1,name:"succ",sort:natural},arg:zero};
-const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
-server.stderr.resume();
-let browser;
-try {
-  const port = await new Promise((resolve, reject) => {
-    let output = "";
-    const timer = setTimeout(() => reject(new Error("Server did not start")), 10000);
-    server.once("error", reject);
-    server.once("exit", code => { clearTimeout(timer); reject(new Error(`Server exited ${code}`)); });
-    server.stdout.on("data", data => {
-      output += data;
-      const match = output.match(/127\.0\.0\.1:(\d+)\//);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
-  browser = await chromium.launch({ headless: true });
+await browserTest(async ({ browser, base }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   const idle = async () => {
@@ -37,14 +18,14 @@ try {
     document.querySelector("#inspect-name")?.textContent === name &&
     document.querySelector("#kernel-view")?.disabled === false, name);
   const openProof = async (proof, name) => {
-    await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}&name=${name}`);
+    await page.goto(`${base}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);
   };
   // An example opened in the workspace keeps its source in #source=… while the
   // quick reference's links scroll and move focus, so a reload reopens it.
   const example = Buffer.from("def kept_after_reload : Nat := 7;").toString("base64")
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${example}`); await idle();
+  await page.goto(`${base}/proof.html?example=1#source=${example}`); await idle();
   await page.locator("#guide-link").click();
   assert.equal(await page.locator("#language-guide").getAttribute("open"), "");
   await page.locator('.quick-topics a[href="#quick-paths"]').click();
@@ -57,6 +38,20 @@ try {
   assert.equal(new URL(page.url()).hash, `#source=${example}`);
   await page.reload(); await idle();
   assert.match(await page.locator("#editor").inputValue(), /kept_after_reload/);
+  // Structured parse locations survive the real worker request boundary.
+  const parseFailure=await page.evaluate(async()=>{
+    const {WorkerRequests}=await import("./worker-requests.mjs");
+    const requests=new WorkerRequests(new Worker("./cubical-worker.mjs",{type:"module"}));
+    try {
+      await requests.request("check",{source:"def broken := ;",module:"diagnostic_probe"});
+      return null;
+    } catch(error) {return {offset:error.offset,diagnostic:error.diagnostic};}
+    finally {requests.terminate();}
+  });
+  assert.ok(parseFailure,"malformed source must return a worker error");
+  assert.equal(parseFailure.diagnostic.primary.module,"diagnostic_probe");
+  assert.equal(parseFailure.diagnostic.primary.start,parseFailure.offset);
+  assert.equal(parseFailure.diagnostic.kind,"parse");
   // Frontend generation is a read-only snapshot of the last check, including
   // imported modules. Editing never changes that snapshot until a recheck.
   const generatedExample = `import hlevels;
@@ -155,7 +150,7 @@ theory Failed(U < UU0) { M : set U; c : M; law bad : c = tt; }`);
   // The original remains inspectable after a duplicate is refused, and the
   // separate diagnostic points to the second declaration rather than it.
   const duplicate = Buffer.from("def kept : Unit := tt;\ndef kept : U0 := Unit;\ndef client : Unit := kept;").toString("base64url");
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${duplicate}`); await page.reload(); await idle();
+  await page.goto(`${base}/proof.html?example=1#source=${duplicate}`); await page.reload(); await idle();
   const duplicateError = page.locator("#result .declaration-error");
   assert.equal(await duplicateError.count(), 1);
   assert.match(await duplicateError.textContent(), /E872.*Duplicate declaration kept/);
@@ -169,7 +164,7 @@ theory Failed(U < UU0) { M : set U; c : M; law bad : c = tt; }`);
   const lawSource = gaps.G9.source.replace("law l(c : M) : k(c) = op(c, c);",
     "law l(c : M) :\n    k(c) =\n    op(c, c);");
   const lawLine = lawSource.slice(0, lawSource.indexOf("law l(c : M)")).split("\n").length;
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(lawSource).toString("base64url")}`);
+  await page.goto(`${base}/proof.html?example=1#source=${Buffer.from(lawSource).toString("base64url")}`);
   await page.reload(); await idle(); await page.locator("#read-mode").click();
   const lawOccurrences = page.locator(`#read-source .source-line:is(${[0, 1, 2].map(n => `[data-line="${lawLine + n}"]`).join(", ")}) button[data-name="c"]`);
   assert.equal(await lawOccurrences.count(), 4);
@@ -189,7 +184,7 @@ theory Parent(U < UU0) { M : U;
 }`;
   await page.route("**/library/hlevels.cubist", route => route.fulfill({contentType:"text/plain",body:producer}));
   const consumer = "import hlevels;\ntheory Child(U < UU0) extends Parent {}";
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${Buffer.from(consumer).toString("base64url")}`);
+  await page.goto(`${base}/proof.html?example=1#source=${Buffer.from(consumer).toString("base64url")}`);
   await page.reload(); await idle();
   const failure = page.locator("#result > div").filter({has:page.getByRole("button",{name:"Child.bad",exact:true})});
   await failure.locator(".diagnostic-site").filter({hasText:"Source: reference_example:2:"}).click();
@@ -220,7 +215,7 @@ theory Parent(U < UU0) { M : U;
   const inheritedConsumer=header+"\n".repeat(authoredStart-header.length-unrelated.length)+unrelated
     +"def client_only : Unit := tt;\ntheory Child(U < UU0) extends Parent {}";
   await page.route("**/library/hlevels.cubist",route=>route.fulfill({contentType:"text/plain",body:inheritedProducer}));
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1&name=Child.twice#source=${Buffer.from(inheritedConsumer).toString("base64url")}`);
+  await page.goto(`${base}/proof.html?example=1&name=Child.twice#source=${Buffer.from(inheritedConsumer).toString("base64url")}`);
   await idle();await inspected("Child.twice");
   assert.equal(await page.locator("#read-source .source-line.active").count(),0);
   assert.ok((await page.locator("#view-source").getAttribute("href")).includes(`offset=${authoredStart}`));
@@ -234,7 +229,7 @@ theory Parent(U < UU0) { M : U;
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   // Only the hash differs from the page already open, so goto alone changes
   // the hash in place: reload to load the new source.
-  await page.goto(`http://127.0.0.1:${port}/proof.html?example=1#source=${wrapped}`); await page.reload(); await idle();
+  await page.goto(`${base}/proof.html?example=1#source=${wrapped}`); await page.reload(); await idle();
   await page.locator("#read-mode").click();
   const modifier = page.locator("#read-source .source-line").nth(2).locator("span, button").filter({ hasText: /^prop$/ });
   assert.equal(await modifier.count(), 1, "the modifier is a token of its own");
@@ -560,7 +555,7 @@ theory Parent(U < UU0) { M : U;
       return saveWorkbenchTransfer(program.export(step.binding));
     } finally {program.dispose();}
   });
-  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${genericTransfer}`);
+  await page.goto(`${base}/workbench.html?transfer=${genericTransfer}`);
   await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   assert.equal(await page.locator("#name").textContent(),"calc step 1");
   assert.match(await page.locator("#type").textContent(),/=/);
@@ -577,7 +572,7 @@ theory Parent(U < UU0) { M : U;
       return saveWorkbenchTransfer(program.export(h.binding));
     } finally {program.dispose();}
   });
-  await page.goto(`http://127.0.0.1:${port}/workbench.html?transfer=${sharedTransfer}`);
+  await page.goto(`${base}/workbench.html?transfer=${sharedTransfer}`);
   await page.waitForFunction(()=>document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
   assert.match(await page.locator("#syntax").inputValue(),/Raw syntax exceeds the display limit/);
   assert.equal(await page.locator("#check").isDisabled(),true);
@@ -589,8 +584,8 @@ theory Parent(U < UU0) { M : U;
   // The page keeps an edited draft across visits, so each edit starts from
   // the repository's source.
   const statusAfterImport = async (proof, root, header) => {
-    const original = await (await page.request.get(`http://127.0.0.1:${port}/${root}/${proof}.cubist`)).text();
-    await page.goto(`http://127.0.0.1:${port}/proof.html?proof=${proof}`); await idle();
+    const original = await (await page.request.get(`${base}/${root}/${proof}.cubist`)).text();
+    await page.goto(`${base}/proof.html?proof=${proof}`); await idle();
     if (!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
     await page.locator("#editor").fill(`${header}\n${original}`);
     await page.locator("#check").click(); await idle();
@@ -602,4 +597,4 @@ theory Parent(U < UU0) { M : U;
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import nat;"), /· checked/);
   assert.deepEqual(errors, []);
   console.log("PASS cubical inspector: folding, navigation, simp trace/freeze, generic transfer, bounded raw syntax, workbench editing, and imports by place");
-} finally { await browser?.close(); server.kill(); }
+});

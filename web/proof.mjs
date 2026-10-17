@@ -2,6 +2,7 @@ import { splitInspectionContext } from "./cubical-context.mjs";
 import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofCatalog, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
+import { WorkerRequests } from "./worker-requests.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
@@ -122,11 +123,9 @@ const $ = (id) => document.getElementById(id);
 let worker,
   ready = false,
   last = null,
-  serial = 0,
   selected = null,
   inspectSerial = 0;
-const pending = new Map(),
-  history = [];
+const history = [];
 let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
 const generatedSources = new Map();
 let contextual=null;
@@ -241,18 +240,18 @@ function compilerOptimizations() {
   };
 }
 function refreshStatus() {
-  $("check").disabled = !ready || pending.size > 0;
-  $("collect-contexts").disabled = !ready || pending.size > 0;
-  $("open-context-repl").disabled = !ready || pending.size > 0 || dirty() || !checkedKernelView?.contextEntry;
+  $("check").disabled = !ready || worker?.pendingCount > 0;
+  $("collect-contexts").disabled = !ready || worker?.pendingCount > 0;
+  $("open-context-repl").disabled = !ready || worker?.pendingCount > 0 || dirty() || !checkedKernelView?.contextEntry;
   for (const id of ["share-syntax", "reuse-checks", "compact-paths"])
-    $(id).disabled = !ready || pending.size > 0 || !Object.keys(compilerOptimizations()).length;
-  $("export").disabled = !last || pending.size > 0;
+    $(id).disabled = !ready || worker?.pendingCount > 0 || !Object.keys(compilerOptimizations()).length;
+  $("export").disabled = !last || worker?.pendingCount > 0;
   $("generated-mode").disabled = !last;
-  $("generated-module").disabled = pending.size > 0;
+  $("generated-module").disabled = worker?.pendingCount > 0;
   $("dirty").textContent = dirty()
     ? "Edited — changes are not checked. Read and Generated Cubist show the last checked version."
     : "";
-  $("status").textContent = pending.size
+  $("status").textContent = worker?.pendingCount
     ? "Checking…"
     : last
       ? `Cubical C · ${last.complete ? `checked · ${last.axiomCount ? `${last.axiomCount} explicit assumptions` : "no axioms"}` : "check incomplete"}`
@@ -262,28 +261,22 @@ function refreshStatus() {
 }
 function request(command, args = {}) {
   if (!ready) return Promise.reject(new Error("The checking worker is unavailable. Reload the page to restart it."));
-  const id = ++serial;
-  return new Promise((resolve, reject) => {
-    const watchdog = proofRequestWatchdog(command, () => {
-      worker.terminate();
-      ready = false;
-      contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
-      for (const p of pending.values()) {
-        p.watchdog.stop();
-        p.reject(
-          new Error(
-            "The checking worker stopped making progress. Reload the page to restart the kernel.",
-          ),
-        );
-      }
-      pending.clear();
-      refreshStatus();
-    });
-    pending.set(id, { resolve, reject, watchdog });
+  const currentWorker = worker;
+  const watchdog = proofRequestWatchdog(command, () => {
+    currentWorker.terminate(new Error("The checking worker stopped making progress. Reload the page to restart the kernel."));
+    if (worker !== currentWorker) return;
+    ready = false;
+    contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
     refreshStatus();
-    worker.postMessage({ id, command, args });
   });
+  const result = currentWorker.request(command, args, progress => {
+    watchdog.progress(progress);
+    checkingProgress(progress);
+  });
+  refreshStatus();
+  return result.finally(() => { watchdog.stop(); refreshStatus(); });
 }
+
 let focusOffset = query.has("offset") && Number.isSafeInteger(Number(query.get("offset"))) ? Number(query.get("offset")) : null, queuedExample = null;
 // Check an example sent by the embedding reference page, then inspect the
 // name the reader clicked.
@@ -988,7 +981,7 @@ function renderBoundary(boundary) {
     $(`square-${name}`).textContent = text;
 }
 $("open-context-repl").onclick = async () => {
-  if(!checkedKernelView?.contextEntry||dirty()||pending.size)return;
+  if(!checkedKernelView?.contextEntry||dirty()||worker?.pendingCount)return;
   const info=selected,sequence=inspectSerial,source=last.source;
   try {
     if(!contextual.collecting) {
@@ -1063,7 +1056,7 @@ $("editor").oninput = () => {
 $("editor").onkeydown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
     e.preventDefault();
-    if (ready && !pending.size) check();
+    if (ready && !worker?.pendingCount) check();
   }
 };
 function rememberInspection() {
@@ -1139,7 +1132,7 @@ async function serverVersion() {
   }
 }
 async function refreshCompiler() {
-  if (pending.size || !ready) return false;
+  if (worker?.pendingCount || !ready) return false;
   const version = await serverVersion();
   if (!version || version === workerVersion) return false;
   ready = false;
@@ -1158,49 +1151,21 @@ async function startWorker(version = undefined) {
   workerVersion = version ?? (await serverVersion());
   const url = new URL("./cubical-worker.mjs", import.meta.url);
   if (workerVersion) url.searchParams.set("version", workerVersion);
-  worker = new Worker(url, { type: "module" });
-  worker.onmessage = ({ data }) => {
-    if (data.ready) {
-      ready = true;
-      refreshStatus();
-      // Embedded, the page checks what the embedding page sends.
-      if (embedded) {
-        parent.postMessage({ type: "cubist-ready" }, location.origin);
-        if (queuedExample) runExample(queuedExample);
-      } else check();
-      return;
-    }
-    const p = pending.get(data.id);
-    if (!p) return;
-    if (data.progress) {
-      p.watchdog.progress(data.progress);
-      checkingProgress(data.progress);
-      return;
-    }
-    pending.delete(data.id);
-    p.watchdog.stop();
-    if (data.error)
-      p.reject(Object.assign(new Error(data.error.message), data.error));
-    else p.resolve(data.result);
-    refreshStatus();
-  };
-  worker.onerror = (e) => {
+  worker = new WorkerRequests(new Worker(url, { type: "module" }), { onError: error => {
     ready = false;
-    worker.terminate();
     contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
-    for (const p of pending.values()) {
-      p.watchdog.stop();
-      p.reject(new Error(e.message || "Unable to load the checking worker."));
-    }
-    pending.clear();
-    diagnostic(
-      new Error(
-        e.message ||
-          "Unable to load the checking worker. Build with make wasm.",
-      ),
-    );
+    diagnostic(error);
     refreshStatus();
-  };
+  } });
+  worker.ready.then(() => {
+    ready = true;
+    refreshStatus();
+    // Embedded, the page checks what the embedding page sends.
+    if (embedded) {
+      parent.postMessage({ type: "cubist-ready" }, location.origin);
+      if (queuedExample) runExample(queuedExample);
+    } else check();
+  }, () => {}); // The transport's onError reports startup failure.
 }
 addEventListener("focus", () => {
   refreshCompiler().catch(diagnostic);

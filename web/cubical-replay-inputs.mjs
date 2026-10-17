@@ -11,7 +11,7 @@ export function kernelReplayPolicy(kernel) {
 export function applyKernelReplayPolicy(kernel,policy,{resetDeadline=true}={}) {
   kernel.stepBudget=BigInt(policy.stepBudget);
   kernel.maxQuerySteps=BigInt(policy.maxQuerySteps);
-  kernel.module._cb_step_budget(kernel.handle,Number(kernel.stepBudget&0xffffffffn),Number(kernel.stepBudget>>32n));
+  kernel.setStepBudget(kernel.stepBudget);
   kernel.setOptimizations(policy.optimizations);
   kernel.setExtensions(policy.extensions);
   if(resetDeadline)kernel.setDeadline(policy.deadlineDuration);
@@ -19,7 +19,7 @@ export function applyKernelReplayPolicy(kernel,policy,{resetDeadline=true}={}) {
 
 export class ReplayInputs {
   #events=[];
-  constructor({revision,main,prepared,readSource,fuelLimits,kernel,collectReferences}) {
+  constructor({revision,main,prepared,readSource,fuelLimits,kernel,collectReferences,testMode=false}) {
     this.revision=revision;this.main=main;
     this.modules=Object.freeze(Object.fromEntries([...prepared].map(([name,entry])=>[name,Object.freeze({
       text:entry.text??null,error:entry.error?.message??null,nameBased:!!readSource.nameBased?.(name),
@@ -28,6 +28,7 @@ export class ReplayInputs {
       [kind,limits?Object.freeze({...limits}):undefined])));
     this.initialPolicy=kernelReplayPolicy(kernel);
     this.collectReferences=collectReferences;
+    this.testMode=testMode;
     Object.freeze(this);
   }
   record(stage,module,declaration,kernel,result=null) {
@@ -36,7 +37,7 @@ export class ReplayInputs {
   }
   snapshot() {
     return Object.freeze({revision:this.revision,main:this.main,modules:this.modules,fuelLimits:this.fuelLimits,
-      initialPolicy:this.initialPolicy,collectReferences:this.collectReferences,
+      initialPolicy:this.initialPolicy,collectReferences:this.collectReferences,testMode:this.testMode,
       events:Object.freeze([...this.#events])});
   }
 }

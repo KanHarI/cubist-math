@@ -16,12 +16,6 @@ import { checkProgram, testModule } from "./check-program.mjs";
 const module = await createCubical();
 const theories = testModule("theories", { module });
 
-test("theory constructors keep header parameters apart from generated field binders", async () => {
-  const { get } = await testModule("theory_headers")();
-  for (const name of ["named_nat", "named_hom", "named_iso", "named_by_fields"])
-    assert.equal(get(name).verified, true, name);
-});
-
 test("a theory checks as its model type, constructor, projections, parents' models, homomorphisms and isomorphisms", async () => {
   const { program } = await theories();
   const generated = Object.values(program.symbols)
@@ -46,74 +40,6 @@ test("a theory checks as its model type, constructor, projections, parents' mode
     "Semiring.add", "Semiring.add_assoc", "Semiring.zero", "Semiring.zero_add", "Semiring.add_zero", "Semiring.add_comm",
     "Semiring.mul", "Semiring.mul_assoc"]);
   assert.ok(semiring.includes("Semiring.additive_") && semiring.includes("Semiring.multiplicative"));
-});
-
-// Here rather than in theory_morphisms.cubist: the linter (W706) would have
-// pair written M -> M -> M, whose carrier on both sides of an arrow has no
-// homomorphisms.
-test("an operation whose arguments share one domain has homomorphisms, preserving it and computing", async t => {
-  const { result } = await checkProgram(t, `import nat;
-import hlevels;
-use nat;
-
-theory Pair(U < UU0) {
-  M : set U;
-  pair : forall x, y : M. M;
-}
-
-def nat_pair : Pair(U0) := Pair.make(Nat, nat_is_set, add);
-
-def preserved(A, B : Pair(U0), f : Pair.Hom(A, B), x, y : A.M) :
-  f.map(A.pair(x, y)) = B.pair(f.map(x), f.map(y)) := f.map_pair(x, y);
-
-def composite : Pair.Hom.compose(Pair.Hom.id(nat_pair), Pair.Hom.id(nat_pair)).map(5) = 5 {
-  rfl;
-}
-`, { module, name: "grouped" });
-  assert.deepEqual(result.gaps, []);
-  assert.equal(result.complete, true);
-});
-
-// A group that repeats a name still takes an argument for each occurrence;
-// the body reads the last.
-test("an operation whose group repeats a name has homomorphisms for each argument", async t => {
-  const { result } = await checkProgram(t, `import nat;
-import hlevels;
-use nat;
-
-theory T(U < UU0) {
-  M : set U;
-  op : forall x, x : M. M;
-}
-
-def second : T(U0) := T.make(Nat, nat_is_set, fun x => fun y => y);
-
-def preserved(A, B : T(U0), f : T.Hom(A, B), x, y : A.M) :
-  f.map(A.op(x, y)) = B.op(f.map(x), f.map(y)) := f.map_op(x, y);
-
-def composite : T.Hom.compose(T.Hom.id(second), T.Hom.id(second)).map(second.op(3, 5)) = 5 {
-  rfl;
-}
-`, { module, name: "repeated" });
-  assert.deepEqual(result.gaps, []);
-  assert.equal(result.complete, true);
-});
-
-test("fresh operation binders avoid theory parameters absent from the field type", async t => {
-  const { result } = await checkProgram(t, `import hlevels;
-theory T(U < UU0, M_1 : Unit) {
-  M : set U;
-  op(M : M) : Unit;
-}
-def preserved(A, B : T(U0, tt), f : T.Hom(A, B), x : A.M) :
-  A.op(x) = B.op(f.map(x)) := f.map_op(x);
-def composite(S : T(U0, tt), x : S.M) :
-  T.Hom.compose(T.Hom.id(S), T.Hom.id(S)).map(x) = x { rfl; }
-def iso_composite(S : T(U0, tt), x : S.M) :
-  T.Iso.compose(T.Iso.id(S), T.Iso.id(S)).to.map(x) = x { rfl; }
-`, { module, name: "fresh_parameters" });
-  assert.deepEqual(result.gaps, []);
-  assert.equal(result.complete, true);
 });
 
 test("theory syntax parses with its parents, renamings and notations, and formats stably", () => {

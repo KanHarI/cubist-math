@@ -1,5 +1,5 @@
 // Assemble the same static application used locally, without a runtime server.
-// Only web/, the libraries (library/ and archive/), the Cubist tests (cubist-tests/) and public documentation enter the Pages artifact.
+// tools/site-layout.json maps the public roots shared with the local server.
 import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -7,6 +7,8 @@ import { join, relative } from "node:path";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const layoutSource = await readFile(join(root, "tools/site-layout.json"), "utf8");
+const layout = JSON.parse(layoutSource);
 // The site publishes web/dist: never a build older than its sources.
 assertFreshBuild();
 const output = join(root, "build/site");
@@ -21,7 +23,8 @@ async function files(directory) {
 }
 // Hash filenames as well as bytes so renames/removals also invalidate imports.
 const digest = createHash("sha256");
-for (const path of [...await files(join(root, "web")), ...await files(join(root, "archive")), ...await files(join(root, "library")), ...await files(join(root, "cubist-tests")), ...await files(join(root, "docs"))]) {
+digest.update(layoutSource);
+for (const path of (await Promise.all(Object.values(layout).map(directory => files(join(root, directory))))).flat()) {
   digest.update(relative(root, path));
   digest.update("\0");
   digest.update(await readFile(path));
@@ -29,11 +32,8 @@ for (const path of [...await files(join(root, "web")), ...await files(join(root,
 const version = digest.digest("hex");
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
-await cp(join(root, "web"), output, { recursive: true, filter: path => !path.endsWith(".DS_Store") });
-await cp(join(root, "archive"), join(output, "archive"), { recursive: true, filter: path => !path.endsWith(".DS_Store") });
-await cp(join(root, "library"), join(output, "library"), { recursive: true, filter: path => !path.endsWith(".DS_Store") });
-await cp(join(root, "cubist-tests"), join(output, "cubist-tests"), { recursive: true, filter: path => !path.endsWith(".DS_Store") });
-await cp(join(root, "docs"), join(output, "docs"), { recursive: true });
+for (const [mount, directory] of Object.entries(layout))
+  await cp(join(root, directory), join(output, mount), { recursive: true, filter: path => !path.endsWith(".DS_Store") });
 for (const path of await files(output)) {
   if (path.endsWith(".mjs")) {
     let source = await readFile(path, "utf8");

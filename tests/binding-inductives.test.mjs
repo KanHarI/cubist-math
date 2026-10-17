@@ -49,10 +49,8 @@ async function setup(t) {
     return {binding,constructors,syntax,declaration};
   };
   const check=(artifacts,source,{before=""}={})=>{
-    const checker=Object.create(program.checker);
-    checker.bindingName=label=>`pilot__${label}`;
-    checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-    const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+    const checker=program.checker,definitionModule="pilot";
+    const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",compilationBindings:registry});
     const result=translator.translateSyntax({declarations:[...parse(before).declarations,...artifacts.map(a=>a.declaration),...parse(source).declarations]},source,env);
     return {result,translator};
   };

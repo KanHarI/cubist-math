@@ -75,7 +75,7 @@ finishing a language milestone does not automatically resume them.
   [PR comparison](reports/capture-bindings-pr-comparison.md) records the
   historical adoption decisions.
 - [Refactoring and source-level tests](roadmaps/refactoring-and-testing.md):
-  the active follow-up stack for publication ownership, parsed test pragmas
+  the implementation stack for publication ownership, parsed test pragmas
   and shared tooling.
 - [Frontend generation](roadmaps/frontend-generation.md): current generation
   contracts and semantic acceptance criteria, with the original FG schedule

@@ -1,5 +1,7 @@
-import { readFile, writeFile, readdir } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { moduleFiles } from "./module-sources.mjs";
 import { linearizeTuples } from "../web/cubist/tuples.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 
@@ -9,8 +11,7 @@ if (args.includes("--help")) {
 } else {
   const files = args.filter(a => a !== "--check");
   if (files.some(a => a.startsWith("--"))) throw new Error("Unknown tuple linearization option.");
-  if (!files.length) files.push(...(await readdir(new URL("../archive/first-library/", import.meta.url)))
-    .filter(n => n.endsWith(".cubist")).sort().map(n => new URL("../archive/first-library/" + n, import.meta.url)));
+  if (!files.length) files.push(...moduleFiles("archive").map(path => pathToFileURL(path)));
   // Validate every rewrite before writing any of the selected sources.
   const changes = [];
   for (const file of files) {

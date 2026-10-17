@@ -1,25 +1,6 @@
+import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { chromium } from "playwright";
-import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel from web/dist.
-assertFreshBuild();
-const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
-server.stderr.resume();
-let browser;
-try {
-  const port = await new Promise((resolve, reject) => {
-    let output = "";
-    const timer = setTimeout(() => reject(new Error("Server did not start")), 10000);
-    server.once("error", reject);
-    server.once("exit", code => { clearTimeout(timer); reject(new Error(`Server exited ${code}`)); });
-    server.stdout.on("data", data => {
-      output += data;
-      const match = output.match(/127\.0\.0\.1:(\d+)\//);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
-  browser = await chromium.launch({ headless: true });
+await browserTest(async ({ browser, base }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = []; page.on("pageerror", error => errors.push(error.message));
   const idle = async () => {
@@ -29,7 +10,7 @@ try {
       console.error(await page.locator("#diagnostic").textContent(), errors); throw error;
     }
   };
-  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=euclid&name=euclid`);
+  await page.goto(`${base}/proof.html?proof=euclid&name=euclid`);
   await idle();
   assert.equal(await page.locator("#kernel-backend").count(), 0);
   assert.match(await page.locator("#check-detail").textContent(), /^[\d,]+ kernel steps\n[\d,]+ of [\d,]+ declarations processed/);
@@ -73,7 +54,7 @@ try {
   assert.match(await page.locator("#status").textContent(), /check incomplete/);
   assert.match(await page.locator("#result").textContent(), /Not checked wrong/);
   assert.equal(await page.locator("#kernel-details").isVisible(), false);
-  await page.goto(`http://127.0.0.1:${port}/proof.html?proof=cubical_paths&name=reverse_twice`);
+  await page.goto(`${base}/proof.html?proof=cubical_paths&name=reverse_twice`);
   await idle();
   assert.match(await page.locator("#status").textContent(), /Cubical C · checked/);
   assert.equal(await page.locator("#inspect-name").textContent(), "reverse_twice");
@@ -88,7 +69,7 @@ try {
   await intervalWorkbench.locator("#workbench-view").selectOption("math");
   assert.match(await intervalWorkbench.locator("#context").textContent(), /Interval coordinates/);
   await intervalWorkbench.close();
-  await page.goto(`http://127.0.0.1:${port}/benchmark.html`);
+  await page.goto(`${base}/benchmark.html`);
   // The status names the area first: the archive, unless the address asks.
   await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Archive · Completed"));
   assert.ok(await page.locator("#entries tr").count() > 2000);
@@ -119,9 +100,9 @@ try {
   await page.locator("#category").selectOption("intended");
   assert.ok(await page.locator('#entries tr[data-category="intended"]').count() > 0);
   assert.equal(await page.locator('#entries tr:not([data-category="intended"])').count(), 0);
-  await page.goto(`http://127.0.0.1:${port}/benchmark.html?area=library`);
+  await page.goto(`${base}/benchmark.html?area=library`);
   await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Library · Completed"));
   assert.equal(await page.locator("#area").inputValue(), "library");
   assert.deepEqual(errors, []);
   console.log("PASS native proof/workbench flows and browser corpus benchmark with cancellation and live results");
-} finally { await browser?.close(); server.kill(); }
+});

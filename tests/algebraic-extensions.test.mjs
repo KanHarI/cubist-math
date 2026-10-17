@@ -76,7 +76,7 @@ test("embedding roundtrip stays within the conversion budget with inspector refe
         && declaration.name.text === "embedding_root_roundtrip";
       const budget = isRoundtrip ? 10000000n : 100000000n;
       p.kernel.stepBudget = budget;
-      p.kernel.module._cb_step_budget(p.kernel.handle, Number(budget), 0);
+      p.kernel.setStepBudget(budget);
     },
   });
   t.after(() => p.dispose());
@@ -96,7 +96,7 @@ test("finite separable count step keeps tower and root-count conversions bounded
       const budget = moduleName === "embedding_counts" && bounded.has(declaration.name.text)
         ? 10000000n : 100000000n;
       p.kernel.stepBudget = budget;
-      p.kernel.module._cb_step_budget(p.kernel.handle, Number(budget), 0);
+      p.kernel.setStepBudget(budget);
     },
   });
   t.after(() => p.dispose());

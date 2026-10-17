@@ -74,9 +74,8 @@ async function setup(t,extra="") {
     return {binding,syntax};
   };
   const check=(declarations,before="")=>{
-    const checker=Object.create(program.checker);checker.bindingName=label=>`pilot__${label}`;
-    checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-    const translator=new Translator({checker,normalize:false,moduleName:"pilot",compilationBindings:registry});
+    const checker=program.checker,definitionModule="pilot";
+    const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",compilationBindings:registry});
     const term=translator.term.bind(translator);let receivers=0;
     translator.term=(node,...args)=>{if(node.kind==="call"&&node.fn.spelling==="receiver")receivers++;return term(node,...args);};
     const result=translator.translateSyntax({declarations:[...parse(before).declarations,
@@ -252,10 +251,8 @@ test("activation ownership and saved alternatives survive cloning and conditiona
 
 test("file-level activations retain closed source receivers through theory generation and inheritance",async t=>{
   const {table,inputs,program,env,source}=await setup(t);
-  const registry=program.compilationBindings,checker=Object.create(program.checker);
-  checker.bindingName=label=>`files__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"files",compilationBindings:registry});
+  const registry=program.compilationBindings,checker=program.checker,definitionModule="files";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"files",compilationBindings:registry});
   const term=translator.term.bind(translator);let receivers=0;
   translator.term=(node,...args)=>{if(node.kind==="call"&&node.fn.spelling==="receiver")receivers++;return term(node,...args);};
   const text=`use receiver(tt);
@@ -294,9 +291,8 @@ test("file-level notation contexts survive headers, ordered theory operators and
     def digits : Digits(U0) := Digits.make(Nat, fun (n : Nat) => n);
     def numberReceiver(n : Nat) : Arithmetic(U0) := match n { zero => leftOps; succ(k) => rightOps; };
   `);
-  const checker=Object.create(program.checker);checker.bindingName=label=>`notations__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"notations",compilationBindings:program.compilationBindings});
+  const checker=program.checker,definitionModule="notations";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"notations",compilationBindings:program.compilationBindings});
   const term=translator.term.bind(translator);let receiverCalls=0;
   translator.term=(node,...args)=>{if(node.kind==="call"&&node.fn.spelling==="numberReceiver")receiverCalls++;return term(node,...args);};
   const records=new Map();let capturedEnv=env,index=0;
@@ -429,10 +425,8 @@ test("file-level activation classifies attached notation against the ordered ope
     theory Pack(U < UU0) { recipe : Numerals(U); }
     def outer : Pack(U0) := Pack.make(Numerals.make(Nat, fun (n : Nat) => succ(succ(n))));
   `);
-  const checker=Object.create(program.checker);
-  checker.bindingName=label=>`activation__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,compilationBindings:program.compilationBindings});
+  const checker=program.checker,definitionModule="activation";
+  const translator=new Translator({checker,definitionModule,normalize:false,compilationBindings:program.compilationBindings});
   let index=0;
   const prepare=text=>activateSourceItem(translator,new Scope(translator.unit({source:text}),new Map(),env),
     parse(text).declarations[0],inputs,{owner:["attached","source",String(index++)],source});
@@ -490,9 +484,8 @@ test("parent namespace selections preserve fields, lexical binders and model sha
     def selected_(b : Two) : Two := match b { left_ => left_.(x); right_ => left_.(y); };
     def qualified_(b : Two) : Two := match b { left_ => left_.x; right_ => left_.y; };
   }`,["namespace","patterns"]);
-  const checker=Object.create(program.checker);checker.bindingName=label=>`namespace__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"namespace",compilationBindings:program.compilationBindings});
+  const checker=program.checker,definitionModule="namespace";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"namespace",compilationBindings:program.compilationBindings});
   const declarations=[parent,child,absent,sorts,domains,patterns].flatMap(built=>built.artifacts)
     .map(({binding,syntax,...annotations})=>bindingDeclaration(binding,syntax,annotations));
   const result=translator.translateSyntax({declarations:[...declarations,...parse(`

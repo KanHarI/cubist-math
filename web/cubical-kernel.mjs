@@ -126,6 +126,14 @@ export class CubicalKernel {
     if (this.deadline && performance.now() >= this.deadline)
       throw new KernelError("Declaration time limit exceeded.", "deadline");
   }
+  // Apply a native per-operation budget. stepBudget remains the session's
+  // baseline, which callers restore after a temporary query budget.
+  setStepBudget(steps) {
+    this.assertOpen();
+    const budget = BigInt(steps);
+    this.module._cb_step_budget(this.handle, Number(budget & 0xffffffffn),
+      uint32(Number(budget >> 32n), "Step budget high word"));
+  }
   // A query that runs out of its step budget is run again with twice the
   // budget, up to maxQuerySteps, and then fails as the kernel's exhaustion
   // ("budget"). The session's budget is restored afterwards, so one query's
@@ -133,16 +141,15 @@ export class CubicalKernel {
   // operation's budget is the same in a fresh session and a reused one.
   withGrowingBudget(operation) {
     let budget = this.stepBudget;
-    const set = steps => this.module._cb_step_budget(this.handle, Number(steps & 0xffffffffn), Number(steps >> 32n));
     try {
       for (;;) {
         this.checkDeadline();
         const result = operation();
         if (result || this.errorKind() !== "budget" || budget >= this.maxQuerySteps) return result;
         budget = budget * 2n > this.maxQuerySteps ? this.maxQuerySteps : budget * 2n;
-        set(budget);
+        this.setStepBudget(budget);
       }
-    } finally { if (budget !== this.stepBudget) set(this.stepBudget); }
+    } finally { if (budget !== this.stepBudget) this.setStepBudget(this.stepBudget); }
   }
   // The kernel's cumulative work (cc_kernel_work in
   // kernel/include/cubical_kernel.h): instructions and queries started, their
