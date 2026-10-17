@@ -1,6 +1,6 @@
 /* Declared types (H1), families F1 and F6: signatures are admitted one
  * constructor at a time, and refused where the specification's acceptance
- * cases say (docs/roadmaps/h1-signature-specification.md, section 10). Every
+ * cases say (docs/roadmaps/hott/h1-signature-specification.md, section 10). Every
  * constructor type is derived here by ordinary instructions, as the driver
  * derives it. */
 #include "cubical_kernel.h"
@@ -1295,7 +1295,7 @@ static cc_judgement_id type_step(cc_judgement_id typing, const uint8_t *position
 
 /* The structural and explicit Face steps take different paths from each
  * peak; normalizing only their reducts does not depend on whnf's ordering.
- * CP identifiers refer to docs/roadmaps/h1-critical-pairs.md. */
+ * CP identifiers refer to docs/roadmaps/hott/h1-critical-pairs.md. */
 static void joins(cc_judgement_id left, cc_judgement_id right) {
     assert(ck_alpha_equal(k, reduct(left, CC_STEP_NORMALIZE), reduct(right, CC_STEP_NORMALIZE)));
 }

@@ -93,7 +93,7 @@ being proved is a proposition (`G` is a set).
 The target can live in `U1`, which accommodates complex numbers built from
 our intended proposition-valued Dedekind reals. The supporting
 `small_mere_eliminate` lemma uses the existing universe-lowering truncation
-signature, as explained in [the real-number foundation notes](../roadmaps/reals-roadmap.md).
+signature, as explained in [the real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md).
 
 [puncture_periods.cubist](../../archive/first-library/puncture_periods.cubist) now proves the
 explicit formula for every based loop `p`:

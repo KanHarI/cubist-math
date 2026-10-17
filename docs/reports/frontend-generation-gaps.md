@@ -4,7 +4,7 @@ Recorded on 2026-10-09 at PR #188 commit
 [`00d4ecce`](https://github.com/KanHarI/cubist-math/commit/00d4ecce016f7e18d13eedeced07dc098a2277cb).
 The comparison main revision is
 [`cb525f07`](https://github.com/KanHarI/cubist-math/commit/cb525f07796348d8bc806cd8cda11663a6544f0e).
-This inventory accompanies the [frontend generation roadmap](../roadmaps/frontend-generation.md).
+This inventory accompanies the [frontend generation roadmap](../roadmaps/historical/frontend-generation.md).
 It records observed behavior separately from proposed explanations and fixes.
 The documentation change is stacked on #188; it implements none of the
 remaining fixes. Closing #188's review threads did not close its documented
@@ -364,7 +364,7 @@ processes `item.value` without its parameter binders. Scope-aware
 substitution cannot protect a scope omitted by its caller. The earlier
 fix covers law expressions and inherited helpers under law binders, not
 this declaration boundary. The [review TODO](pr-188-todo.md) and
-[scope contract](../roadmaps/syntax-hygiene.md) are qualified accordingly.
+[scope contract](../roadmaps/historical/syntax-hygiene.md) are qualified accordingly.
 
 Expected: transform a complete declaration interface, including grouped and
 dependent parameter domains, result type and body. Preserve public parameter
@@ -401,7 +401,7 @@ point to a nonempty range at the responsible call.
 **C1 is incomplete planned functionality, not a newly discovered bug.**
 The construction-and-fold prototype registers no initial/free capability.
 The deriving opt-in, uniqueness and universal-property proofs remain in
-[L2.6](../roadmaps/core-theories.md#initial-and-free-models-l26). Broader
+[L2.6](../roadmaps/high-level-abstractions/core-theories.md#initial-and-free-models-l26). Broader
 carrier/family strategies and higher coherences remain in that contract;
 the frontend work must not silently extend the supported mathematical
 fragment or advertise those proofs as complete.

@@ -1,7 +1,7 @@
 # Proof ergonomics implementation checkpoint
 
 Date: 2026-09-24. This is the implementation handoff for the
-[roadmap](../roadmaps/proof-ergonomics-roadmap.md) and
+[roadmap](../roadmaps/high-level-abstractions/proof-ergonomics-roadmap.md) and
 [implementation plan](../roadmaps/historical/proof-ergonomics-implementation-plan.md).
 All accepted example declarations are checked by the C/WASM cubical kernel
 and report no axiom dependencies.
@@ -426,7 +426,7 @@ machine and fail on a slow one. Deterministic fuel replaced them on
 2026-09-27 (HoTT A4). Candidate failures are still
 classified by the kernel's "Type mismatch." message, and instantiated rules
 still match by conversion while quantified rules match syntactically.
-The [HoTT roadmap](../roadmaps/hott-automation-roadmap.md) now owns this work:
+The [HoTT roadmap](../roadmaps/hott/hott-automation-roadmap.md) now owns this work:
 deterministic fuel is A4, the goal layer and elaborator infrastructure A5,
 and residual-goal diagnostics A6.
 

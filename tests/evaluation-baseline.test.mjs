@@ -1,5 +1,5 @@
 // The runtime evaluation baseline (EVAL0 of
-// docs/roadmaps/runtime-evaluation-roadmap.md): tools/evaluation-baseline.mjs
+// docs/roadmaps/runtime/runtime-evaluation-roadmap.md): tools/evaluation-baseline.mjs
 // --write records tests/fixtures/evaluation-baseline.json, and the code keeps
 // to it. Outcomes and the normalizations and comparisons an entry asks are
 // exact; the kernel's deterministic work and the arena's growth may fall,

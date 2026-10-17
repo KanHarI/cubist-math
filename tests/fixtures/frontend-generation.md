@@ -57,7 +57,7 @@ generator. A client must also tell the fix from a blanket one: G2's
 fixed-domain theory needs U1 either way, so an ordinary theory's Hom must
 stay in U0. The desired messages, ranges and links were adopted from #224's fixtures
 (the fixing compiler at `1b64229b`), each reviewed against the
-[roadmap](../../docs/roadmaps/frontend-generation.md), the authority for
+[roadmap](../../docs/roadmaps/historical/frontend-generation.md), the authority for
 desired behavior. Never take a desired output from a compiler that still has
 the defect: that would record wrong behavior as accepted. A reworded message
 changes the case's comment, and the new wording needs the same review.

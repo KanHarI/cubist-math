@@ -1,4 +1,4 @@
-// Theories (L2.4, docs/roadmaps/core-theories.md): declarations of sorts,
+// Theories (L2.4, docs/roadmaps/high-level-abstractions/core-theories.md): declarations of sorts,
 // operations with notation and laws; their models, built field by field and
 // read by projections, m.f; extension, with labels, renaming and shared
 // ancestors; open, which puts a model's fields and notation in scope; and

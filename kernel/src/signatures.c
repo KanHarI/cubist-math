@@ -1,5 +1,5 @@
 /* Declared types (H1): the signature table and the admission instructions,
- * families F1 and F6 of docs/roadmaps/h1-signature-specification.md
+ * families F1 and F6 of docs/roadmaps/hott/h1-signature-specification.md
  * (section 5). A signature is admitted one constructor at a time. Every check
  * is syntactic, on terms as written, as every instruction's is: the normal
  * form of sections 1.1-1.6, strict positivity by construction, and the

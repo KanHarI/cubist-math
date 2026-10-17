@@ -1,4 +1,4 @@
-// The H1 release fixture (docs/roadmaps/h1-signature-specification.md,
+// The H1 release fixture (docs/roadmaps/hott/h1-signature-specification.md,
 // 10.8; the work plan's stage 2): the circle as a declared higher inductive
 // type, the integers as a declared data type, and the loop's winding number
 // computed by transport along univalence. Everything here computes: each

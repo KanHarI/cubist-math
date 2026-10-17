@@ -1,5 +1,5 @@
 import "./fresh-build.mjs";
-// The instruction driver's search as data (docs/roadmaps/learned-search.md,
+// The instruction driver's search as data (docs/roadmaps/kernel/learned-search.md,
 // phases 1 and 2): kernel work read through the bridge, the moves each
 // branch point of `agree` offers, pluggable policies, and the coverage
 // tool's report and exit status.

@@ -1,5 +1,5 @@
 // Declared types (H1) through the untrusted driver, work-plan K2.3
-// (docs/roadmaps/h1-signature-specification.md, section 6): admission from a
+// (docs/roadmaps/hott/h1-signature-specification.md, section 6): admission from a
 // normal form, the syntax codec, instances whose parameters are converted to
 // their telescope types, constructors, eliminators whose clauses are
 // converted to their clause types, and the conversion search: Iota, the path

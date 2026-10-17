@@ -1,5 +1,5 @@
 // The scratch closure evaluator behind the runtime evaluation roadmap's
-// preliminary measurements (docs/roadmaps/runtime-evaluation-roadmap.md),
+// preliminary measurements (docs/roadmaps/runtime/runtime-evaluation-roadmap.md),
 // versioned for EVAL0 so that its observations can be repeated. It is
 // feasibility evidence only: nothing checks, renders or trusts what it
 // returns, no checker, REPL or page uses it, and it certifies no equality.

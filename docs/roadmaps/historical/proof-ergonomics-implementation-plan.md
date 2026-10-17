@@ -3,14 +3,14 @@
 Status: historical implementation sequence, archived on 2026-10-10 from
 main `cb525f07`. Most packages shipped or were superseded; this is not a
 claim that all proposed features were implemented. The active
-[ergonomics roadmap](../proof-ergonomics-roadmap.md#remaining-implementation-contracts)
+[ergonomics roadmap](../high-level-abstractions/proof-ergonomics-roadmap.md#remaining-implementation-contracts)
 owns every remaining obligation and links the lowering/measurement contracts
 below. The [work plan](../work-plan.md#first-actions) owns scheduling.
 Dated status, code descriptions and suggested ordering below are retained
 as historical context, not instructions to restart completed work.
 
 Implementation checkpoint reviewed 2026-10-07. This refines the
-[roadmap](../proof-ergonomics-roadmap.md). The [example directory](../../examples/proof-ergonomics/README.md)
+[roadmap](../high-level-abstractions/proof-ergonomics-roadmap.md). The [example directory](../../examples/proof-ergonomics/README.md)
 pairs explicit current programs with native-checked new syntax. The remaining
 scoped algebra fixture ends in `.cubist.proposed` and is exploratory. Read the
 [tactical handoff](../../tactical/proof-ergonomics-handoff.md) before extending the
@@ -28,7 +28,7 @@ to measure their costs independently.
 Status on 2026-09-27: PRs 1 and 3–7 have delivered their first syntax releases;
 the remaining fuel, cancellation and diagnostics work belongs to HoTT A4/A6.
 PR 2's declaration transactions and core single-goal transitions are delivered
-through the [HoTT roadmap](../hott-automation-roadmap.md)'s goal layer (A5).
+through the [HoTT roadmap](../hott/hott-automation-roadmap.md)'s goal layer (A5).
 PR 8 is delivered
 except general proposition premises, deferred to HoTT D1. PR 10 moved to the
 HoTT roadmap (A5, B1, E1). PR 9 was delivered as L4.1a and L4.1b on

@@ -3,7 +3,7 @@
 CB0 adds witnesses, observation safeguards and measurements on the production
 compiler at `f0417ee0ee5f824f030069be0e6d1666696de0d1`. It does not implement
 binding identities or contextual execution. Those remain CB1–CB7 in the
-[architecture](../roadmaps/capture-bindings.md).
+[architecture](../roadmaps/historical/capture-bindings.md).
 
 The counts and staging protocol below describe the historical CB0 checkpoint.
 CB0–CB7 are now complete; current semantic tests assert desired behavior directly.
@@ -221,4 +221,4 @@ The mutation runner now changes the default binding-aware reference lowering
 and source file-activation boundary. Reservation and failed-publication mutants
 remain active. All four are killed. The original CB0 numbers above remain
 historical; current validation and phase boundaries are in the
-[CB2 evidence](../roadmaps/capture-bindings-cb2.md).
+[CB2 evidence](../roadmaps/historical/capture-bindings-cb2.md).

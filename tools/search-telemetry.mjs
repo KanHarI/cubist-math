@@ -1,4 +1,4 @@
-// Telemetry for the instruction driver's search (docs/roadmaps/
+// Telemetry for the instruction driver's search (docs/roadmaps/kernel/
 // learned-search.md, phases 1 and 2): policies that make another policy's
 // moves while counting or recording them, and kernel work read as
 // differences (CubicalKernel.work). Measurement only: a wrapped policy

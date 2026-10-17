@@ -4,7 +4,7 @@
 retired. Pushouts are now an ordinary H1 declaration with a path
 constructor, in [`pushout.cubist`](../../archive/first-library/pushout.cubist),
 and compose, transport and eliminate by the shared rules for declared higher
-sorts; see the [migration record](../roadmaps/h1-program-types.md#source-defined-pushouts).
+sorts; see the [migration record](../roadmaps/historical/h1-program-types.md#source-defined-pushouts).
 The tags and instructions below are reserved and refused. The pinned
 pre-migration kernel (`tools/legacy-kernel.mjs`) still runs them as a
 historical oracle.

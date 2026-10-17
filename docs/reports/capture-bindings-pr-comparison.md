@@ -3,7 +3,7 @@
 Comparison date: 2026-10-13. The ten open PRs below were read at the pinned
 heads, including their relevant implementation and tests. This is a design
 comparison and targeted #219 review, not a fresh full-suite certification of
-each branch. The resulting [architecture and migration plan](../roadmaps/capture-bindings.md)
+each branch. The resulting [architecture and migration plan](../roadmaps/historical/capture-bindings.md)
 is proposed; no CB package is implemented by this document.
 
 ## Stack and disposition

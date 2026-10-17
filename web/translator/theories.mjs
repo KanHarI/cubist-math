@@ -1,4 +1,4 @@
-// Theories in elaboration (L2.4, docs/roadmaps/core-theories.md): a theory
+// Theories in elaboration (L2.4, docs/roadmaps/high-level-abstractions/core-theories.md): a theory
 // declaration's retained expansion and the records it
 // leaves, by which m.f reads a field of a model m and `open m;` puts a
 // model's fields and notation in scope.

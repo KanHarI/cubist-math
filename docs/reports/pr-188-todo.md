@@ -3,7 +3,7 @@
 For the inventory at `00d4ecce`, including refreshed reproductions and the
 distinction between open defects and fixed historical triggers, see
 [frontend generation gaps](frontend-generation-gaps.md). The linked
-[design roadmap](../roadmaps/frontend-generation.md) assigns the remaining
+[design roadmap](../roadmaps/historical/frontend-generation.md) assigns the remaining
 work and uses this PR's review failures as evidence. This file retains the
 review chronology and its original baseline comparisons.
 
@@ -30,7 +30,7 @@ The entries in this section describe the cases fixed at `00d4ecce`, not a
 complete proof of the invariants. The [subsequent review](pr-188-review-00d4ecce.md)
 found three new regressions and two remaining shared cases. They are open
 in [G8–G12](frontend-generation-gaps.md#open-inventory) and assigned to
-FG0/FG2/FG4/FG5/FG6 in the [roadmap](../roadmaps/frontend-generation.md).
+FG0/FG2/FG4/FG5/FG6 in the [roadmap](../roadmaps/historical/frontend-generation.md).
 
 - [x] Capture a theory's fields against its file-level `use` scope. Opened
   fields shadow outer globals, retain their meaning under inheritance and

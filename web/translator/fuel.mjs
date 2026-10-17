@@ -1,4 +1,4 @@
-// Deterministic fuel for proof search (docs/roadmaps/hott-automation-roadmap.md,
+// Deterministic fuel for proof search (docs/roadmaps/hott/hott-automation-roadmap.md,
 // A4; work plan L1.3). A tactic's search — matching, traversal, premise search
 // and the kernel queries they ask — spends counted fuel, never elapsed time, so
 // the same source succeeds or fails the same way on any machine and in any

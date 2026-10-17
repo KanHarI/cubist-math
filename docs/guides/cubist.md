@@ -221,7 +221,7 @@ such as `fun (a : A) => typed(U1, Unit)`.
 The existing library truncation constructor returns U0 even when its input is
 large. These wrappers preserve that signature; they do not promise
 universe-preserving truncation. Elimination still requires evidence that its
-target is a proposition. See the [real-number foundation notes](../roadmaps/reals-roadmap.md) for
+target is a proposition. See the [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md) for
 the implications and current development status.
 
 ### Source checking
