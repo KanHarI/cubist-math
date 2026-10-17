@@ -34,9 +34,8 @@ async function setup(t) {
   assert.deepEqual(base.gaps,[],JSON.stringify(base.gaps));
   const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base");
   const inputs=sourceBindingInputs(registry,env,{reserved:reservedReferences("U0 UU0 Unit tt refl")});
-  const checker=Object.create(program.checker);checker.bindingName=label=>`named__${label}`;
-  checker.define=(label,...args)=>program.checker.define(checker.bindingName(label),...args);
-  const translator=new Translator({checker,normalize:false,moduleName:"client",compilationBindings:registry});
+  const checker=program.checker,definitionModule="named";
+  const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"client",compilationBindings:registry});
   const scope=new Scope(translator.unit(),new Map(),new Map([...env,...inputs.env]));
   let current=new Map([...env,...inputs.env]),serial=0;
   const source={revision:registry.revision,module:"recipe_source"};
