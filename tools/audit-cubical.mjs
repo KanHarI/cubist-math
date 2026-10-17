@@ -25,7 +25,7 @@ if(diagnosticBudget!==null) {
 }
 try {
   let count=0;
-  await program.check(selected.map(name=>`import ${name};`).join('\n'),'audit',p=>{
+  await program.checkModules(selected,'audit',p=>{
     if(args.includes("--verbose") || p.completed>=count+100){count=p.completed;process.stdout.write(`${count} declarations · ${p.instructions} steps · ${p.phase ?? "checked"} ${p.current}\n`);}
   });
   const entries=Object.values(program.symbols);

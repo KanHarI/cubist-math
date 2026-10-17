@@ -40,12 +40,17 @@ export const placeOfFile = (path, root = projectRoot) =>
 // directory first. It keeps the name it is checked under. Without a path, the
 // checked source is not a file (a REPL entry, a reference example) and imports
 // library-first. Call it with a module name alone to read a main module
-// library-first, as `check NAME` does.
-export function sourceReader({ path = null, root = projectRoot } = {}) {
+// library-first, as `check NAME` does. `files` maps explicit place/name aliases
+// to files, for corpus examples checked under synthetic module names. They
+// still obey that place's import policy; a missing explicit file is an error.
+export function sourceReader({ path = null, root = projectRoot, files = new Map() } = {}) {
   const local = path === null ? null : dirname(real(path));
-  const readSource = moduleReader((place, name) => place === "local"
-    ? (local === null ? null : text(join(local, `${name}.cubist`)))
-    : text(join(root, moduleRoots[place], `${name}.cubist`)));
+  const readSource = moduleReader((place, name) => {
+    const file = files.get(`${place}/${name}`);
+    if (file !== undefined) return readFile(file, "utf8");
+    return place === "local" ? (local === null ? null : text(join(local, `${name}.cubist`)))
+      : text(join(root, moduleRoots[place], `${name}.cubist`));
+  });
   if (path !== null) readSource.place(basename(path, ".cubist"), placeOfFile(path, root));
   return readSource;
 }

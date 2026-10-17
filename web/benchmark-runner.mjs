@@ -93,7 +93,7 @@ export async function benchmark({ area = "archive", modules = benchmarkAreas[kno
     },
   });
   try {
-    await program.check([...new Set(modules)].map(name => `import ${name};`).join("\n"), "benchmark",
+    await program.checkModules([...new Set(modules)], "benchmark",
       progress => { if (progress.phase === "checked") onSnapshot({ declarations, total: progress.total, current: progress.current, elapsedSeconds: (performance.now() - started) / 1000 }); });
     const byName = new Map(declarations.map(d => [d.binding, d]));
     // Work on an earlier member is real, but a later family failure means

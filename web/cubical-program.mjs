@@ -249,6 +249,11 @@ export class CubicalProgram {
         this.links.push({ ...info, start: syntax.name.start, end: syntax.name.end });
     }
   }
+  // Corpus clients choose their ordered entry modules and keep ownership of
+  // this program, its readers, observers and resource limits.
+  checkModules(modules, main, onProgress) {
+    return this.check(modules.map(name => `import ${name};`).join("\n"), main, onProgress);
+  }
   async check(source, main = "current", onProgress = () => {}, {reuseModules=false} = {}) {
     // Discover the source graph before checking. This only reads and parses
     // source; it does not run the mathematical library or count repeated
