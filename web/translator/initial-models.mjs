@@ -28,6 +28,8 @@ export function equationalSupport(record) {
   if(pending.length)return {status:"pending",strategy:"equational",obligations:pending};
   const origin=record.fields[0]?.binding?.origin;
   const refuse=(error,at=origin,detail={})=>({status:"unsupported",strategy:"equational",reason:error.message,at,...detail});
+  if(record.derived?.some(field=>field.implementation))
+    return refuse(Error(`The equational strategy does not yet generate folds for ${record.name}'s implemented inherited members.`));
   const carriers=record.fields.filter(field=>field.kind==="sort");
   if(carriers.length!==1||carriers[0].family)return refuse(notOneCarrier(record.name,carriers));
   const carrier=carriers[0],evidence=record.fields.find(field=>field.kind==="evidence"&&field.of===carrier.id);

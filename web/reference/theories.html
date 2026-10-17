@@ -358,6 +358,29 @@ def same(G : CommGroup(U0), x, y : G.M) : G.group.monoid.mul(x, y) = G.mul(x, y)
   rfl;
 }</code></pre>
             <p>A theory may extend several parents. An ancestor that two parents reach, as <code>Monoid</code> through <code>Group</code> and <code>CommMonoid</code> above, contributes its fields once, when it arrives with the same fields under the same names. A model of a theory has a model of each parent, by the parent's <strong>label</strong>: <code>G.group</code>, and then <code>G.group.monoid</code>. An unlabelled parent's label is its name in snake case: <code>comm_monoid</code> for <code>CommMonoid</code>. Each computes to the model built from the child's fields.</p>
+            <p>A child can <strong>implement an inherited operation or law</strong> with a <code>def</code> of the same name and parameter/result types. The constructor then takes only the remaining fields. The parents receive the checked definition, so their laws still apply. For example, one step operation supplies a parent's double step:</p>
+            <pre><code data-check="accept">import nat;
+import hlevels;
+use nat;
+
+theory Unary(U &lt; UU0) {
+  M : set U;
+  op(x : M) : M;
+  law self(x : M) : op(x) = op(x);
+}
+
+theory Twice(U &lt; UU0) extends Unary {
+  step(x : M) : M;
+  def op(x : M) : M := step(step(x));
+  def self(x : M) : op(x) = op(x) := refl(op(x));
+}
+
+def twice_nat : Twice(U0) := Twice.make(M := Nat, M_is_set := nat_is_set, step := succ);
+
+def inherited(n : Nat) : twice_nat.unary.op(n) = succ(succ(n)) {
+  rfl;
+}</code></pre>
+            <p>Implementations may use earlier fields of the child; remaining constructor fields are ordered by their dependencies. They cannot replace carriers, change an inherited signature, or form recursive cycles. When two inheritance paths reach one member, a definition also satisfies the abstract path; conflicting definitions are refused. Derived members can be renamed in <code>extends</code>. Homomorphisms still require preservation of implemented parent operations, so every parent homomorphism remains available; implemented laws need no extra evidence. The equational <code>initial</code>/<code>free</code> strategy currently refuses these theories because folds for implemented members are not generated (E881).</p>
             <p>A parent can be labelled and its fields <strong>renamed</strong>, with a new notation for an operation. A semiring has two monoids on one carrier, the additive one written with <code>+</code>:</p>
             <pre><code data-check="accept">import hlevels;
 

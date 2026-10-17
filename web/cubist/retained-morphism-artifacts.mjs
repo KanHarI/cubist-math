@@ -53,7 +53,7 @@ export function retainedMorphismArtifacts(record,{table,owner,bindings,isTheory=
   const quantify=(kind,params,body)=>params.reduceRight((body,p)=>({kind,binderKind:kind,
     name:p.name,domain:p.type,body,...site}),body);
   const tuple=values=>values.length===1?values[0]:{kind:"pair",left:values[0],right:tuple(values.slice(1)),...site};
-  const fieldById=new Map(record.fields.map(field=>[field.id,field]));
+  const fieldById=new Map([...record.fields,...record.derived??[]].map(field=>[field.id,field]));
   const projected=(id,model)=>apply(ref(fieldById.get(id).projectionId),[reference(model)]);
   const typeIn=(tree,model,locals=new Map())=>{
     const syntax=view(tree),needed=new Set(bindingUses(syntax,{conditional:true}).filter(use=>use.kind==="binding").map(use=>use.id));
@@ -205,8 +205,9 @@ export function retainedMorphismArtifacts(record,{table,owner,bindings,isTheory=
     })],implicitArgs([A,C],false)),"compose");
   for(const parent of record.parents) {
     const parentModel=model=>apply(ref(parent.projectionId),[reference(model)]);
-    const fields=parent.fieldIds.flatMap((id,k)=>parent.kinds[k]==="sort"?[maps.get(id)]
-      :parent.kinds[k]==="operation"?[homFields.find(field=>field.operation?.id===id)]:[]);
+    const kinds=parent.homKinds??parent.kinds;
+    const fields=(parent.homFieldIds??parent.fieldIds).flatMap((id,k)=>kinds[k]==="sort"?[maps.get(id)]
+      :kinds[k]==="operation"?[homFields.find(field=>field.operation?.id===id)]:[]);
     declare(`${hom}.${parent.label}`,explicit(header([A,B],true),[[f,homType(A,B)]]),
       apply(ref(parent.homId),[parentModel(A),parentModel(B)]),
       apply(ref(parent.homMakeId),[parentModel(A),parentModel(B),...fields.map(field=>project(hom,field.name,fHom))]),

@@ -97,6 +97,24 @@ export class RetainedInterfaces {
     this.context=this.context.bind(binding.label,bindingResolution(binding.id));
     return entry;
   }
+  // Implement an inherited operation under its existing identity. Its
+  // parent's laws and projection keep referring to that identity; the value
+  // is a checked helper instead of another model-constructor argument.
+  implement(item,inherited,{transform=syntax=>syntax,notation=null,ownNotation=null}={}) {
+    const index=this.entries.findIndex(entry=>entry.id===inherited.id);
+    if(index<0||!["operation","law"].includes(inherited.kind))throw new TypeError("Only an inherited operation or law can be implemented.");
+    const owner=[...this.owner,"implementation",String(this.#next++)];
+    if(ownNotation)notation={...notation,bindings:{...notation?.bindings,
+      [ownNotation.key]:{...ownNotation,field:inherited.id}}};
+    const syntax=transform(this.#resolve(interfaceTree(item),owner,{notation}));
+    const replacement={...inherited,kind:"derived",syntax,recursive:false,implementation:true,implementedKind:inherited.kind};
+    if(!sameBindingSyntax(interfaceSignature(inherited),interfaceSignature(replacement)))
+      throw Object.assign(Error(`${item.name.text}'s implementation must have its inherited parameter and result types.`),
+        {offset:item.name.start,sourceEnd:item.name.end});
+    const entry=Object.freeze(replacement);
+    this.entries[index]=entry;
+    return entry;
+  }
   // Carrier evidence is generated from the resolved carrier interface. Its
   // own telescope is cloned once; neither its predicate nor its family
   // application is read back as source text in the extended field scope.
@@ -150,7 +168,7 @@ export class RetainedInterfaces {
     // Only the canonical interface and its structural metadata inherit.
     // Analysis/checking views and generated projection IDs belong to the
     // parent's artifacts and must be rebuilt for the child correspondence.
-    const metadata=Object.fromEntries(["kind","recursive","level","family","visible","evidence"]
+    const metadata=Object.fromEntries(["kind","recursive","level","family","visible","evidence","implementation","implementedKind"]
       .filter(key=>Object.hasOwn(entry,key)).map(key=>[key,entry[key]]));
     const inherited=Object.freeze({...metadata,id:binding.id,label,binding,syntax,
       ...(entry.of?{of:map.get(entry.of)??entry.of}:{}),
@@ -164,26 +182,27 @@ export class RetainedInterfaces {
   // parent occurrence to it. Fresh local clone IDs cannot affect this test.
   inheritShared(candidates,{label=candidates[0]?.entry.label,site}={}) {
     if(!candidates.length)throw new TypeError("An inherited field needs a parent candidate.");
-    const first=candidates[0],origin=entry=>entry.binding.original??entry.id;
+    const first=candidates.find(({entry})=>entry.implementation)??candidates[0],origin=entry=>entry.binding.original??entry.id;
     const assigned=new Set(candidates.map(({entry,correspondence})=>correspondence.get(entry.id)).filter(Boolean));
     if(assigned.size>1)throw new TypeError("Shared parent fields have conflicting child identities.");
-    const signature=({entry,correspondence})=>{
+    const signature=({entry,correspondence},typeOnly=false)=>{
       // A helper has a value as well as a type. The same ancestor's helper
       // can compute differently under two field maps even when its result
       // type is unchanged. Compare its body too, aligning structural self.
       const {name,...tree}=entry.syntax.tree;
-      const syntax=entry.kind==="derived"?bindingSyntaxView(entry.syntax,tree):interfaceSignature(entry);
+      const syntax=entry.kind==="derived"&&!typeOnly?bindingSyntaxView(entry.syntax,tree):interfaceSignature(entry);
       const map=new Map(correspondence).set(entry.id,[...assigned][0]??first.entry.id);
       this.#requireCorrespondence(entry,map);
       return remapBindingSyntax(syntax,this.table,map);
     };
     const expected=signature(first);
-    for(const candidate of candidates.slice(1)) {
+    for(const candidate of candidates.filter(candidate=>candidate!==first)) {
       const a=first.entry,b=candidate.entry;
       const commonOrigin=origin(a)===origin(b);
       const independentCarrier=["sort","evidence"].includes(a.kind);
-      if(a.kind!==b.kind||!commonOrigin&&!independentCarrier||a.level!==b.level
-        ||!sameBindingSyntax(expected,signature(candidate)))
+      const implementation=a.implementation&&b.kind===a.implementedKind;
+      if((a.kind!==b.kind&&!implementation)||(!commonOrigin&&!independentCarrier)||a.level!==b.level
+        ||!sameBindingSyntax(implementation?signature(first,true):expected,signature(candidate)))
         throw new InheritedInterfaceConflict(label);
     }
     const map=new Map(first.correspondence);

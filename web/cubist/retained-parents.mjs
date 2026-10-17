@@ -44,13 +44,13 @@ export function retainParents(theory,interfaces,{lookup,source,owner,constructor
     const entries=(record.entries??[...record.fields,...record.derived??[]]).toSorted((a,b)=>a.interface.length-b.interface.length);
     const names=new Map(),renotated=new Map();
     for(const rename of parent.renaming) {
-      const field=record.fields.find(field=>field.name===rename.from.text);
+      const field=entries.find(field=>field.name===rename.from.text);
       if(!field)throw located(Error(`${record.name} has no field ${rename.from.text}; its fields are ${record.fields.map(f=>f.name).join(", ")}.`),rename.from);
       if(names.has(field.id))throw located(Error(`${rename.from.text} is renamed twice.`),rename.from);
       names.set(field.id,rename.to.text);
       if(rename.notation) {
         const arity=field.visible?.length??field.syntax.tree.params.length;
-        if(field.kind!=="operation"||arity!==(rename.notation.unary?1:2))
+        if(!["operation","derived"].includes(field.kind)||arity!==(rename.notation.unary?1:2))
           throw located(Error(rename.notation.unary?`-x names an operation's one argument; ${rename.from.text} is not an operation of one.`
             :`A notation names an operation's two arguments; ${rename.from.text} is not an operation of two.`),rename.notation);
         renotated.set(field.id,rename);
@@ -144,6 +144,10 @@ export function retainParents(theory,interfaces,{lookup,source,owner,constructor
     universeIds:parent.universes.map(p=>parent.correspondence.get(p.name.bindingId)),
     parameterIds:parent.parameters.map(p=>parent.correspondence.get(p.name.bindingId)),
     fieldIds:parent.record.fields.map(field=>parent.correspondence.get(field.id)),
-    kinds:parent.record.fields.map(field=>field.kind)}));
+    kinds:parent.record.fields.map(field=>field.kind),
+    homFieldIds:[...parent.record.fields,...(parent.record.derived??[]).filter(field=>field.implementedKind==="operation")]
+      .map(field=>parent.correspondence.get(field.id)),
+    homKinds:[...parent.record.fields,...(parent.record.derived??[]).filter(field=>field.implementedKind==="operation")]
+      .map(field=>field.implementation?"operation":field.kind)}));
   return {parents,ambiguous,...inheritNotations(prepared,{table,owner,source,constructors,context:interfaces.context,theory:T})};
 }

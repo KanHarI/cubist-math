@@ -1,0 +1,104 @@
+// One group inverse implements both quasigroup divisions and their laws.
+import integers;
+use nat;
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory UnitalMagma(U < UU0) extends Magma {
+  one : M;
+  law one_mul(x : M) : one * x = x;
+  law mul_one(x : M) : x * one = x;
+}
+
+theory Semigroup(U < UU0) extends Magma {
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+}
+
+theory Quasigroup(U < UU0) extends Magma {
+  left_div(x, y : M) : M;
+  right_div(x, y : M) : M;
+  law mul_left_div(x, y : M) : x * left_div(x, y) = y;
+  law left_div_mul(x, y : M) : left_div(x, x * y) = y;
+  law right_div_mul(x, y : M) : right_div(x, y) * y = x;
+  law mul_right_div(x, y : M) : right_div(x * y, y) = x;
+}
+
+theory Loop(U < UU0) extends Quasigroup, UnitalMagma {}
+
+theory AssociativeQuasigroup(U < UU0) extends Quasigroup, Semigroup {}
+
+theory Monoid(U < UU0) extends Semigroup, UnitalMagma {}
+
+theory Group(U < UU0) extends Loop, AssociativeQuasigroup, Monoid {
+  inv(x : M) : M;
+  law inv_mul(x : M) : inv(x) * x = one;
+  law mul_inv(x : M) : x * inv(x) = one;
+  def left_div(x, y : M) : M := inv(x) * y;
+  def right_div(x, y : M) : M := x * inv(y);
+  def mul_left_div(x, y : M) : x * left_div(x, y) = y := trans(
+    sym(mul_assoc(x, inv(x), y)), trans(cong(fun (w : M) => w * y, mul_inv(x)), one_mul(y))
+  );
+  def left_div_mul(x, y : M) : left_div(x, x * y) = y := trans(
+    sym(mul_assoc(inv(x), x, y)), trans(cong(fun (w : M) => w * y, inv_mul(x)), one_mul(y))
+  );
+  def right_div_mul(x, y : M) : right_div(x, y) * y = x := trans(
+    mul_assoc(x, inv(y), y), trans(cong(fun (w : M) => x * w, inv_mul(y)), mul_one(x))
+  );
+  def mul_right_div(x, y : M) : right_div(x * y, y) = x := trans(
+    mul_assoc(x, y, inv(y)), trans(cong(fun (w : M) => x * w, mul_inv(y)), mul_one(x))
+  );
+}
+
+// Only the usual group operations and laws are supplied. Neither division
+// nor any of the four division laws is a constructor argument.
+def sample : Group(U0) := Group.make(
+  M := Z, M_is_set := int_is_set, mul := int_add, mul_assoc := int_add_assoc, one := int_zero,
+  one_mul := int_zero_add, mul_one := int_add_zero, inv := int_neg, inv_mul := int_neg_add,
+  mul_inv := int_add_neg
+);
+
+def left_definition(G : Group(U0), x, y : G.M) :
+  G.loop.quasigroup.left_div(x, y) = G.mul(G.inv(x), y) {
+  rfl;
+}
+
+def right_definition(G : Group(U0), x, y : G.M) :
+  G.associative_quasigroup.quasigroup.right_div(x, y) = G.mul(x, G.inv(y)) {
+  rfl;
+}
+
+def division_shared(G : Group(U0)) : G.loop.quasigroup = G.associative_quasigroup.quasigroup {
+  rfl;
+}
+
+def unit_shared(G : Group(U0)) : G.loop.unital_magma = G.monoid.unital_magma {
+  rfl;
+}
+
+def association_shared(G : Group(U0)) : G.associative_quasigroup.semigroup = G.monoid.semigroup {
+  rfl;
+}
+
+def left_inverse(G : Group(U0), x : G.M) :
+  G.loop.quasigroup.left_div(x, G.one) = G.inv(x) := G.mul_one(G.inv(x));
+
+def right_inverse(G : Group(U0), x : G.M) :
+  G.loop.quasigroup.right_div(G.one, x) = G.inv(x) := G.one_mul(G.inv(x));
+
+def identity := Group.Hom.id(sample);
+
+def composite := Group.Hom.compose(identity, identity);
+
+def map_shared(x : Z) :
+  composite.loop.quasigroup.map(x) = composite.associative_quasigroup.quasigroup.map(x) {
+  rfl;
+}
+
+def iso := Group.Iso.compose(Group.Iso.id(sample), Group.Iso.inverse(Group.Iso.id(sample)));
+
+def iso_same(x : Z) : iso.to.monoid.map(x) = x {
+  rfl;
+}
