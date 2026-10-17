@@ -640,7 +640,10 @@ The version-3 baseline records its outcomes and work; see the runtime
 roadmap's EVAL1 measurements. EVAL2 in
 [#269](https://github.com/KanHarI/cubist-math/pull/269) caches completed full normalizations
 by exact syntax handle, with rollback/compaction invalidation and resource
-accounting. NUM0–NUM2 and EVAL3–EVAL8 remain planned. The ordered-ring/field
+accounting. NUM0 supplies explicit `UNat`, canonical `BNat`, bit arithmetic,
+comparison, explicit conversions with both round trips, and binary setness.
+Public `Nat` remains unary pending NUM1 and migration. NUM1–NUM2 and
+EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -663,7 +666,8 @@ no real-number construction or analysis is scheduled.
   bit-structured Peano view and a `Below` function, with checked coherence
   and computation equations and factorial as a computing example. This
   larger package does not depend on H2's indexed accessibility families.
-  When NUM0/NUM1 and the compatibility migration pass, switch binary naturals
+  When NUM0/NUM1 and the compatibility migration (including direct binary
+  decimal input and numeral printing) pass, switch binary naturals
   to the default `Nat`; this transition is authorized. The retained equivalence is
   `UNat` ↔ `Nat`. NUM2 builds new `Z` from pairs of `BNat` and new `Q`
   from that integer ring, including literals and numerical casts. Prove
@@ -783,7 +787,9 @@ not implemented; no prototype-only result counts as the checked capability.
 ## First actions
 
 **Runtime first (2026-10-17).** EVAL1 and its updated baseline are implemented
-in #266; EVAL2's full-normalization cache is implemented. Proceed with NUM0/NUM1.
+in #266; EVAL2's full-normalization cache and NUM0's binary foundations are
+implemented. Proceed with NUM1's semiring/transport laws, comparison
+correctness and dependent strong recursion with coherence.
 Switch the public `Nat` when their correctness and compatibility gates pass;
 NUM2 follows. Develop the joint EVAL3/EVAL4 design, then EVAL5 and applicable
 EVAL8 review. EVAL6 requires fresh binary profiles; EVAL7 follows NUM1. The

@@ -1,0 +1,109 @@
+// Canonical binary naturals compute over bits, including beyond word size.
+import bnat_notation;
+import bnat_unary;
+use bnat;
+
+def bnat_zero_predecessor : bnat_pred(0b0) = 0b0 {
+  rfl;
+}
+
+def bnat_one_predecessor : bnat_pred(0b1) = 0b0 {
+  rfl;
+}
+
+def bnat_zero_successor : bnat_succ(0b0) = 0b1 {
+  rfl;
+}
+
+def bnat_carry : bnat_succ(0b11111111) = 0b100000000 {
+  rfl;
+}
+
+def bnat_borrow : bnat_pred(0b100000000) = 0b11111111 {
+  rfl;
+}
+
+def bnat_leading_zeroes : 0b00001101 = 0b1101 {
+  rfl;
+}
+
+def bnat_add_bits : 0b1101 + 0b1011 = 0b11000 {
+  rfl;
+}
+
+def bnat_multiply_bits : 0b1101 * 0b1011 = 0b10001111 {
+  rfl;
+}
+
+def bnat_zero_product : 0b10101111 * 0b0 = 0b0 {
+  rfl;
+}
+
+def bnat_one_product : 0b1 * 0b10101111 = 0b10101111 {
+  rfl;
+}
+
+def bnat_order_high_bits : bnat_compare(0b101, 0b110) = b_less {
+  rfl;
+}
+
+def bnat_order_low_bits : bnat_compare(0b11, 0b10) = b_greater {
+  rfl;
+}
+
+def bnat_order_equal : bnat_compare(0b1001101, 0b1001101) = b_equal {
+  rfl;
+}
+
+def bnat_eq_holds : bnat_equal(0b111, 0b111) := tt;
+
+def bnat_le_holds : 0b111 <= 0b1000 := tt;
+
+def bnat_lt_holds : 0b111 < 0b1000 := tt;
+
+def bnat_encode_small : bnat_of_unat(unat.(10)) = 0b1010 {
+  rfl;
+}
+
+def bnat_decode_small : bnat_to_unat(0b1010) = unat.(10) {
+  rfl;
+}
+
+def unat_keeps_carrier : UNat =[U0] Nat {
+  rfl;
+}
+
+def bnat_wide_carry :
+  bnat_succ(0b1111111111111111111111111111111111111111111111111111111111111111) = 0b10000000000000000000000000000000000000000000000000000000000000000 {
+  rfl;
+}
+
+def bnat_wide_borrow :
+  bnat_pred(0b10000000000000000000000000000000000000000000000000000000000000000) = 0b1111111111111111111111111111111111111111111111111111111111111111 {
+  rfl;
+}
+
+def bnat_wide_product :
+  0b1111111111111111111111111111111111111111111111111111111111111111 * 0b1111111111111111111111111111111111111111111111111111111111111111 = 0b11111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000000000000000000000000000000000001 {
+  rfl;
+}
+
+// Refused: this notation requires at least one binary digit after 0b.
+// Error: E905: bnat's literal rule refuses 0b at its character 2.
+def missing_binary_digits := 0b;
+
+// Refused: 2 is not a binary digit, at the sixth character.
+// Error: E905: bnat's literal rule refuses 0b1012 at its character 6.
+def invalid_binary_digit := 0b1012;
+
+// Refused: the binary notation does not accept a hexadecimal prefix.
+// Error: E905: bnat's literal rule refuses 0x1 at its character 2.
+def hexadecimal_literal := 0x1;
+
+// Refused: decimal numerals need their own future binary parser.
+// Error: E905: bnat's literal rule refuses 10 at its character 1.
+def decimal_literal := 10;
+
+// Refused: the missing prefix is reported at the first character.
+// Error: E905: bnat's literal rule refuses 0 at its character 1.
+def bare_zero_literal := 0;

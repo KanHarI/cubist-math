@@ -1,0 +1,15 @@
+import nat;
+
+// The existing unary carrier, named explicitly before Nat becomes binary.
+// Its zero/succ constructors, structural induction and arithmetic are the
+// current nat module's. The public Nat transition waits for NUM1 and the
+// compatibility migration; this alias keeps the carrier identical today.
+def UNat : U0 := Nat;
+
+notation unat {
+  x + y := add(x, y);
+  x * y := mul(x, y);
+  x <= y := le(x, y);
+  x < y := isLt(x, y);
+  numeral(n : Nat) := n;
+}
