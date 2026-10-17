@@ -76,8 +76,8 @@ const levelShaped = value => typeof value === "number" || ["LConst","LSucc","LMa
 // variables are its names.
 const plainLevel = value => typeof value === "number" || ["LConst","LSucc","LMax"].includes(value?.tag);
 const dimBinder = t => dimensionScope.has(t.tag);
-// A term's free names, by the term: terms are
-// never changed once built (every operation copies), so what a term holds
+// A term's free names, by the term: terms are never changed once built
+// (every operation copies), so what a term holds
 // free is computed once, however often unification asks. The set is the
 // cache's own: callers read it and never change it. So a part's set is the
 // term's own where it is the only part with names, as for most terms: a

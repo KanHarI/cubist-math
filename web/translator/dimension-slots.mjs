@@ -1,4 +1,5 @@
-// Alpha-renaming for inert syntax transport, not a typing rule. Dimension
+// Free dimensions shared by core substitution and inert syntax transport,
+// and transport alpha-renaming, not a typing rule. Dimension
 // slots belong to live names, not every syntactic ancestor binder. Native
 // checking separately accounts for dimensions hidden in local-variable types.
 import {termChildren,dimensionScope} from './term-shape.mjs';

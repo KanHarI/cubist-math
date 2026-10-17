@@ -12,7 +12,6 @@ import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
-
 import { termBinders as TERM_BINDERS } from "./translator/term-shape.mjs";
 
 // Binders of a universe variable x < ω (G0): the level entry is found by its
