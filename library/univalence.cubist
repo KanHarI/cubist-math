@@ -14,6 +14,25 @@ import contractible_maps;
 computable def glue_path(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
   A = B := path i => Glue(B, face(i, 0, A, e), face(i, 1, B, id_contr_equiv(U, B)));
 
+// Transport along the Glue path acts by the given forward map. Ungluing
+// the filling line joins the image at its source to its transported target.
+computable def glue_path_transport(U < UU0, A, B : U, e : ContrEquiv(U, A, B), a : A) :
+  comp(fun (i : Interval) => glue_path(U, A, B, e) @ i, a) = e.1(a) := path j => unglue(
+    fill(fun (i : Interval) => glue_path(U, A, B, e) @ i, a, ~j)
+  );
+
+// Reverse transport lies in the same fiber as the equivalence's inverse.
+// Contractibility of that fiber identifies their first components.
+computable def glue_path_transport_reverse(U < UU0, A, B : U, e : ContrEquiv(U, A, B), b : B) :
+  comp(fun (i : Interval) => glue_path(U, A, B, e) @ ~i, b) = equiv_inverse(U, A, B, e, b) := path j => (
+    e.2(b).2(
+      (
+        comp(fun (i : Interval) => glue_path(U, A, B, e) @ ~i, b),
+        path k => unglue(fill(fun (i : Interval) => glue_path(U, A, B, e) @ ~i, b, k))
+      )
+    ) @ ~j
+  ).1;
+
 // The equivalence a path of types gives: the identity on B, transported back
 // along the path.
 computable def idtoequiv(U < UU0, A, B : U, p : A = B) :
@@ -176,4 +195,31 @@ computable def univalence(U < UU0, A, B : U) :
   ContrEquiv(next(U), A = B, ContrEquiv(U, A, B)) := inverse_equiv(
     next(U), A = B, ContrEquiv(U, A, B), idtoequiv(U, A, B), glue_path(U, A, B),
     idtoequiv_glue_path(U, A, B), glue_path_idtoequiv(U, A, B)
+  );
+
+// A dependent path identifies transport of its source with its target.
+// The final face keeps the target fixed even without a regularity rule for
+// composition in a constant family.
+computable def pathp_transport(
+  U < UU0, A, B : U, p : A = B, a : A, b : B, q : PathP(fun (i : Interval) => p @ i, a, b)
+) :
+  comp(fun (i : Interval) => p @ i, a) = b := path k => comp(
+    fun (i : Interval) => p @ (i | k), q @ k, face(k, 1, fun (i : Interval) => b)
+  );
+
+// A binary operation transported with its carrier is conjugated by forward
+// and reverse transport. The proof applies the filling operation to the
+// reverse-filling arguments, then uses their dependent path.
+computable def transport_binary_operation(U < UU0, A, B : U, p : A = B, op : A -> A -> A, x, y : B) :
+  comp(fun (i : Interval) => (p @ i) -> (p @ i) -> (p @ i), op)(x, y) = comp(
+    fun (i : Interval) => p @ i,
+    op(comp(fun (i : Interval) => p @ ~i, x), comp(fun (i : Interval) => p @ ~i, y))
+  ) := sym(
+    pathp_transport(
+      U, A, B, p, op(comp(fun (i : Interval) => p @ ~i, x), comp(fun (i : Interval) => p @ ~i, y)),
+      comp(fun (i : Interval) => (p @ i) -> (p @ i) -> (p @ i), op)(x, y),
+      path i => fill(fun (j : Interval) => (p @ j) -> (p @ j) -> (p @ j), op, i)(
+        fill(fun (j : Interval) => p @ ~j, x, ~i), fill(fun (j : Interval) => p @ ~j, y, ~i)
+      )
+    )
   );

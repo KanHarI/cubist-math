@@ -1543,6 +1543,10 @@
    "summary": "Binary arithmetic through the semiring and its parent models, computing conversion maps and isomorphisms, general preservation laws, cancellation and no zero divisors."
   },
   {
+   "path": "cubist-tests/binary_transport.cubist",
+   "summary": "Closed forward/reverse transport computes along the natural-number universe path; transported operations agree, and a dependent function family transports with a checked agreement proof."
+  },
+  {
    "path": "cubist-tests/box_notation.cubist",
    "summary": "The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula."
   },
@@ -2411,6 +2415,10 @@
    "summary": "The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits."
   },
   {
+   "path": "library/bnat_transport.cubist",
+   "summary": "The checked universe path `UNat =[U0] BNat` from the semiring isomorphism's maps; forward/reverse transport equals explicit conversion, and transported zero, one, addition and multiplication agree with the binary operations."
+  },
+  {
    "path": "library/bnat_unary.cubist",
    "summary": "Explicit unary/binary conversions and their round trips, compatibility with successor and doubling, and that `BNat` is a set."
   },
@@ -2484,7 +2492,7 @@
   },
   {
    "path": "library/univalence.cubist",
-   "summary": "Univalence by Glue, for the equivalences of [`contractible_maps`](contractible_maps.cubist). An equivalence glues a path of types (`glue_path`), and a path of types transports the identity to an equivalence (`idtoequiv`). The two are inverse (`glue_path_idtoequiv`, `idtoequiv_glue_path`), so `idtoequiv` is an equivalence (`univalence`). Along every line of Glue types, unglue is an equivalence (`glue_line_equiv`), and the type of types equivalent to a type is contractible (`equivalent_types_contractible`). The `ua` builtin takes the `Equiv` of `import paths_;` instead."
+   "summary": "Univalence by Glue, for the equivalences of [`contractible_maps`](contractible_maps.cubist). An equivalence glues a path of types (`glue_path`), and a path of types transports the identity to an equivalence (`idtoequiv`). The two are inverse (`glue_path_idtoequiv`, `idtoequiv_glue_path`), so `idtoequiv` is an equivalence (`univalence`). Forward and reverse Glue-path transport agree with the equivalence maps (`glue_path_transport`, `glue_path_transport_reverse`); a dependent path agrees with transport (`pathp_transport`), and binary operations transport by conjugation (`transport_binary_operation`). Along every line of Glue types, unglue is an equivalence (`glue_line_equiv`), and the type of types equivalent to a type is contractible (`equivalent_types_contractible`). The `ua` builtin takes the `Equiv` of `import paths_;` instead."
   },
   {
    "path": "library/universe_automorphisms.cubist",

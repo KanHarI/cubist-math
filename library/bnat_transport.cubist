@@ -1,0 +1,87 @@
+import bnat_semiring;
+import univalence;
+
+// The carrier equivalence uses exactly the two maps in the semiring
+// isomorphism. The universe path is checked computational univalence.
+computable def unat_bnat_equiv : ContrEquiv(U0, UNat, BNat) := inverse_equiv(
+  U0, UNat, BNat, bnat_of_unat, bnat_to_unat, bnat_roundtrip, bnat_unat_roundtrip
+);
+
+computable def unat_bnat_path : UNat =[U0] BNat := glue_path(U0, UNat, BNat, unat_bnat_equiv);
+
+computable def unat_bnat_transport(n : UNat) :
+  comp(fun (i : Interval) => unat_bnat_path @ i, n) = bnat_of_unat(n) := glue_path_transport(
+    U0, UNat, BNat, unat_bnat_equiv, n
+  );
+
+computable def bnat_unat_transport(n : BNat) :
+  comp(fun (i : Interval) => unat_bnat_path @ ~i, n) = bnat_to_unat(n) := glue_path_transport_reverse(
+    U0, UNat, BNat, unat_bnat_equiv, n
+  );
+
+computable def unat_bnat_transport_zero :
+  comp(fun (i : Interval) => unat_bnat_path @ i, zero) = b_zero := unat_bnat_transport(zero);
+
+computable def unat_bnat_transport_one :
+  comp(fun (i : Interval) => unat_bnat_path @ i, succ(zero)) = b_positive(bp_one) := unat_bnat_transport(
+    succ(zero)
+  );
+
+computable def unat_bnat_forward_reverse(n : BNat) :
+  bnat_of_unat(comp(fun (i : Interval) => unat_bnat_path @ ~i, n)) = n := trans(
+    cong(bnat_of_unat, bnat_unat_transport(n)), bnat_roundtrip(n)
+  );
+
+computable def unat_bnat_transport_add(a, b : BNat) :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
+  )(a, b) = bnat_add(a, b) {
+  let ra := comp(fun (i : Interval) => unat_bnat_path @ ~i, a);
+  let rb := comp(fun (i : Interval) => unat_bnat_path @ ~i, b);
+  calc {
+    comp(
+      fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i),
+      add
+    )(a, b) = comp(fun (i : Interval) => unat_bnat_path @ i, add(ra, rb)) by transport_binary_operation(
+      U0, UNat, BNat, unat_bnat_path, add, a, b
+    );
+    _ = bnat_of_unat(add(ra, rb)) by unat_bnat_transport(add(ra, rb));
+    _ = bnat_add(bnat_of_unat(ra), bnat_of_unat(rb)) by bnat_encode_add(ra, rb);
+    _ = bnat_add(a, bnat_of_unat(rb)) by cong(
+      fun (n : BNat) => bnat_add(n, bnat_of_unat(rb)), unat_bnat_forward_reverse(a)
+    );
+    _ = bnat_add(a, b) by cong(bnat_add(a), unat_bnat_forward_reverse(b));
+  }
+}
+
+computable def unat_bnat_transport_mul(a, b : BNat) :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
+  )(a, b) = bnat_mul(a, b) {
+  let ra := comp(fun (i : Interval) => unat_bnat_path @ ~i, a);
+  let rb := comp(fun (i : Interval) => unat_bnat_path @ ~i, b);
+  calc {
+    comp(
+      fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i),
+      mul
+    )(a, b) = comp(fun (i : Interval) => unat_bnat_path @ i, mul(ra, rb)) by transport_binary_operation(
+      U0, UNat, BNat, unat_bnat_path, mul, a, b
+    );
+    _ = bnat_of_unat(mul(ra, rb)) by unat_bnat_transport(mul(ra, rb));
+    _ = bnat_mul(bnat_of_unat(ra), bnat_of_unat(rb)) by bnat_encode_mul(ra, rb);
+    _ = bnat_mul(a, bnat_of_unat(rb)) by cong(
+      fun (n : BNat) => bnat_mul(n, bnat_of_unat(rb)), unat_bnat_forward_reverse(a)
+    );
+    _ = bnat_mul(a, b) by cong(bnat_mul(a), unat_bnat_forward_reverse(b));
+  }
+}
+
+computable def unat_bnat_add_operation :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), add
+  ) = bnat_add := path i => fun (a, b : BNat) => unat_bnat_transport_add(a, b) @ i;
+
+computable def unat_bnat_mul_operation :
+  comp(
+    fun (i : Interval) => (unat_bnat_path @ i) -> (unat_bnat_path @ i) -> (unat_bnat_path @ i), mul
+  ) = bnat_mul := path i => fun (a, b : BNat) => unat_bnat_transport_mul(a, b) @ i;
