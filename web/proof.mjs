@@ -130,6 +130,10 @@ let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
 const generatedSources = new Map();
 let contextual=null;
 $("editor").value = example;
+// The source is readable at once, before the kernel loads and checks it;
+// the check replaces this view with one whose names are inspectable.
+const previewHint = "The source as loaded. When the check finishes, each name links to its checked type, context, and definition.";
+renderPreview(example);
 for (const id of ["share-syntax", "reuse-checks", "compact-paths"]) {
   $(id).checked = true;
   try { $(id).checked = localStorage.getItem("mathscript:" + id) !== "false"; } catch {}
@@ -146,8 +150,10 @@ $("source-file").hidden = exampleMode;
 $("repository-source").hidden = exampleMode;
 if (sourceURL) {
   $("source-file").href = sourceURL;
-  $("source-file").textContent = `web/${sourceURL}`;
+  // Its path from the repository root, where the site serves it from.
+  $("source-file").textContent = sourceURL;
 }
+if (!embedded) document.title = `${$("proof-title").textContent} · Cubist`;
 $("repository-source").href = documentationExample
   ? `proof.html?file=${encodeURIComponent(filePath)}&source=repo`
   : `proof.html?proof=${encodeURIComponent(proofId)}&source=repo`;
@@ -297,6 +303,9 @@ async function check({keepInspection=false}={}) {
   const contextVersion=contextual?.invalidate("Checking the source. Select a new context when checking finishes.");
   $("diagnostic").hidden = true;
   const source = $("editor").value;
+  // Nothing checked yet: show the source being checked rather than nothing.
+  // After a check, Read keeps the last checked version until this one ends.
+  if (!last) renderPreview(source);
   const collectScopes=$("collect-contexts").checked;
   try {
     // Where the source came from decides where its imports are found
@@ -317,7 +326,9 @@ async function check({keepInspection=false}={}) {
     if(!keepInspection)history.length = 0;
     renderSource();
     renderResult();
-    await setMode(sourceMode === "generated" ? "generated" : "read");
+    // Editing that went on during the check stays open; otherwise the checked
+    // source is shown.
+    await setMode(sourceMode === "generated" ? "generated" : sourceMode === "edit" && dirty() ? "edit" : "read");
     if(!keepInspection) {
       const target = query.get("name");
       const info =
@@ -342,10 +353,14 @@ async function check({keepInspection=false}={}) {
         focusOffset = null;
         if (focus) await inspect({ ...decorate(focus), line: result.source.slice(0, focus.start).split("\n").length }, false);
         else if (info ?? fallback) await inspect(decorate(info ?? fallback), false);
-        // Embedded, the inspector is on top and the source below stays in place.
-        if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
-          revealSource({ module: proofId, start: requestedOffset });
-        else if (info) revealSource(definitionSite(info));
+        // Revealing the declaration switches to Read: not over an edit that
+        // stayed open. Embedded, the inspector is on top and the source below
+        // stays in place.
+        if (sourceMode !== "edit") {
+          if (!embedded && requestedOffset !== null && requestedOffset >= 0 && requestedOffset <= result.source.length)
+            revealSource({ module: proofId, start: requestedOffset });
+          else if (info) revealSource(definitionSite(info));
+        }
       }
     }
     rememberDraft();
@@ -376,9 +391,17 @@ function setMode(mode) {
     mode === "edit"
       ? "Edit the source, then Check proof. A failed check preserves your last checked proof."
       : mode === "generated" ? "Frontend expansion from the last check. Click a declaration or linked name to inspect it. Each family shows its checking status."
-      : last?.backend === "cubical" ? "Click a name or numeral to inspect its checked type, context, and definition."
-      : "Click a name to inspect it. Click a line number to see its goal and assumptions.";
+      : last ? "Click a name or numeral to inspect its checked type, context, and definition. Click a line number to see its goal."
+      : $("diagnostic").hidden ? previewHint
+      : "The source as loaded. It did not check: see the diagnostic above, then edit it and check again.";
   if (mode === "generated") return showGeneration();
+}
+// The source before its check: highlighted, with nothing to inspect yet. An
+// embedded frame starts without a source, and shows nothing until one arrives.
+function renderPreview(source) {
+  renderSource($("read-source"), source ? { source, links: [], mode: "mathematical", preview: true } : null);
+  if (!source) $("source-count").textContent = "";
+  if (sourceMode === "read") $("source-hint").textContent = previewHint;
 }
 async function showGeneration() {
   if (!last) return;
@@ -430,8 +453,13 @@ function revealSource({ module, start }) {
   for (const row of document.querySelectorAll(".source-line.active"))
     row.classList.remove("active");
   const row = document.querySelector(`.source-line[data-line="${line}"]`);
-  row?.classList.add("active");
-  row?.scrollIntoView({ block: "center" });
+  if (!row) return;
+  row.classList.add("active");
+  // Center the line in the source box, and bring the box into view only as
+  // far as needed: the page does not jump away from what is being read.
+  const box = $("read-source");
+  box.scrollTop += row.getBoundingClientRect().top - box.getBoundingClientRect().top - (box.clientHeight - row.offsetHeight) / 2;
+  row.scrollIntoView({ block: "nearest" });
 }
 function sourceLink(info) {
   const link = $("view-source");
@@ -591,19 +619,21 @@ function renderSource(target = $("read-source"), snapshot = last) {
       (match) => [match.index + match[0].indexOf(match[1]), match[1]],
     ),
   );
-  if (!generated) $("source-count").textContent = `${snapshot.source.split("\n").length} lines · click a name or numeral`;
+  // A preview's line numbers lead nowhere yet: plain, as in generated source.
+  const inspectable = !generated && !snapshot.preview;
+  if (!generated) $("source-count").textContent = `${snapshot.source.split("\n").length} lines${inspectable ? " · click a name or numeral" : ""}`;
   let offset = 0;
   for (const [index, line] of snapshot.source.split("\n").entries()) {
     const row = document.createElement("div");
     row.className = "source-line";
     row.dataset.line = index + 1;
-    const number = document.createElement(generated ? "span" : "button");
+    const number = document.createElement(inspectable ? "button" : "span");
     number.className = "line-number";
     number.textContent = index + 1;
-    if (!generated) number.setAttribute("aria-label", `Inspect goal at line ${index + 1}`);
+    if (inspectable) number.setAttribute("aria-label", `Inspect goal at line ${index + 1}`);
     else number.setAttribute("aria-hidden", "true");
     const lineOffset = offset;
-    if (!generated) number.onclick = () => {
+    if (inspectable) number.onclick = () => {
       const step = last.steps
         .filter(
           (s) => s.start <= lineOffset + line.length && s.end > lineOffset,
@@ -640,13 +670,15 @@ function renderSource(target = $("read-source"), snapshot = last) {
         link.href = `proof.html?proof=${encodeURIComponent(text)}`;
         link.title = `Open ${text} module source`;
         link.onclick = () => {
+          // Before a check there is no inspection to come back to.
+          if (!last) return;
           const address = new URL(link.href);
           address.searchParams.set("back", rememberInspection());
           link.href = address.href;
         };
         code.append(link);
       } else {
-        const expansion = (last.mode === "mathematical" ? numeralAt(line, token.start, text) : null) ?? info?.expansion;
+        const expansion = ((snapshot.mode ?? last?.mode) === "mathematical" ? numeralAt(line, token.start, text) : null) ?? info?.expansion;
         // The whole source: a header's colon and its inductive may be on earlier lines.
         const style = tokenStyle(text, expansion);
         if (info) {
@@ -676,7 +708,7 @@ function renderSource(target = $("read-source"), snapshot = last) {
     target.append(row);
     offset += line.length + 1;
   }
-  contextual?.decorate(target,snapshot,{module:generated?snapshot.module:proofId,generated});
+  if (!snapshot.preview) contextual?.decorate(target,snapshot,{module:generated?snapshot.module:proofId,generated});
 }
 function renderWitnessDetails(info) {
   $("inspect-description").textContent = info.description ?? "";
@@ -710,6 +742,7 @@ async function inspect(info, remember = true) {
   }
   selected = info;
   const sequence = ++inspectSerial;
+  document.querySelector(".inspector").classList.remove("empty");
   if (info.sourceView === "generated-source" &&
       (sourceMode !== "generated" || $("generated-module").value !== info.generatedModule)) {
     $("generated-module").value = info.generatedModule;

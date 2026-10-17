@@ -750,25 +750,27 @@ select {
   color: var(--muted, #607368);
 }
 
+/* The check's progress, a slim bar above the source it is checking. */
 .check-loader {
   display: flex;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-variant-numeric: tabular-nums;
   align-items: center;
-  gap: 16px;
-  min-height: 120px;
-  padding: 24px;
-  margin: 16px 0;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 10px 0 12px;
   border: 1px solid #d7e3d7;
   border-radius: 8px;
   background: #f1f6ee;
+  font-size: 12px;
 }
 .check-loader[hidden] { display: none; }
-.check-loader p { margin: 4px 0 0; color: #607368; }
+.check-loader strong { font-size: 13px; }
+.check-loader p { margin: 2px 0 0; color: #607368; line-height: 1.45; }
 .check-spinner {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
   border: 3px solid #d0dfce;
   border-top-color: #426c47;
   border-radius: 50%;
@@ -781,7 +783,19 @@ select {
 
 .check-loader > div { flex: 1; min-width: 0; }
 #check-detail { overflow-wrap: anywhere; white-space: pre-line; }
-#check-progress { display: block; width: 100%; height: 10px; margin-top: 12px; accent-color: #426c47; }
+#check-progress { display: block; width: 100%; height: 6px; margin-top: 8px; accent-color: #426c47; }
+
+/* Before anything is inspected: what the inspector is for, and nothing else. */
+.inspector-empty { margin: 4px 0 12px; color: #526459; font-size: 13px; line-height: 1.6; }
+.inspector:not(.empty) .inspector-empty,
+.inspector.empty #kernel-terms,
+.inspector.empty #inspect-type,
+.inspector.empty #kernel-details,
+.inspector.empty #kernel-details + .hint { display: none; }
+#inspect-type:empty { display: none; }
+
+/* The current page, in the main navigation. */
+nav a[aria-current] { font-weight: 600; text-decoration: none; }
 
 .compiler-options {
   display: flex;
@@ -789,7 +803,8 @@ select {
   align-items: center;
   gap: 8px 20px;
   margin: 10px 0 16px;
-  font-size: 13px;
+  font-size: 12px;
+  color: #657b6c;
 }
 .compiler-options label {
   display: inline-flex;
@@ -878,6 +893,8 @@ body.embedded > header, body.embedded .introduction, body.embedded .toolbar,
 body.embedded .compiler-options, body.embedded #source-notice, body.embedded #development-note,
 body.embedded #puncture-note, body.embedded #complex-note, body.embedded #language-guide,
 body.embedded footer, body.embedded #repl-panel { display: none; }
+/* Embedded, the name the reader clicked opens, not the file's last declaration. */
+body.embedded .not-embedded { display: none; }
 .context-entry { flex: none; margin: 1px 5px; padding: 0 5px; font-size: 11px; line-height: 22px; }
 #context-panel select { width: 100%; margin-top: 5px; }
 #context-panel fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

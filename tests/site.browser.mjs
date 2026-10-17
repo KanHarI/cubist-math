@@ -153,6 +153,19 @@ await browserTest(async ({ browser, base }) => {
   await enter("typeof x;");
   assert.deepEqual(await lastResults(1), ["E343: Untranslated name: x"]);
   console.log("PASS REPL page: /modules, /clear and /restart");
+  // The Files page opens on the library's folder, names a selected file in
+  // its title, and Back returns to no selection.
+  await page.goto(new URL("files.html", base).href);
+  await page.waitForSelector("#tree details.folder");
+  assert.equal(await page.title(), "Cubist · Files");
+  assert.deepEqual(await page.locator("#tree > details").evaluateAll(roots => roots.map(root => root.open)), [true, false, false, false]);
+  await page.locator('#tree a[data-path="library/nat.cubist"]').click();
+  await page.waitForFunction(() => document.querySelector("#file-source")?.textContent.includes("inductive"));
+  assert.equal(await page.title(), "nat.cubist · Cubist files");
+  await page.goBack();
+  await page.waitForFunction(() => document.title === "Cubist · Files");
+  assert.ok(await page.locator("#file-empty").isVisible());
+  assert.equal(await page.locator("#tree a[aria-current]").count(), 0);
   // The Files page lists every source by folder, under its four roots, and a
   // documentation example opens in the workspace by its path, and checks.
   await page.goto(new URL(`files.html?path=${encodeURIComponent("docs/examples/h1/winding.cubist")}`, base).href);
@@ -203,6 +216,9 @@ await browserTest(async ({ browser, base }) => {
   await page.waitForFunction(() => document.querySelector("#status")?.textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
   assert.equal(await page.locator("#name").textContent(), "example");
+  // The workbench shares the site's navigation, with its return link.
+  assert.deepEqual(await page.locator("header nav a").allTextContents(),
+    ["Proof highlights", "Files", "Kernel reference", "Language reference", "REPL", "GitHub repository", "← Back to Cubist"]);
   assert.deepEqual(errors, []);
   console.log(`PASS static kernel workbench (${base})`);
   // Every transport consumer must finish with an error when the worker
@@ -212,11 +228,23 @@ await browserTest(async ({ browser, base }) => {
   const failed = await unavailable.newPage();
   const failureErrors = [];
   failed.on("pageerror", error => failureErrors.push(error.message));
-  const proof = new URL("proof.html?example=1#source=ZGVmIHggOiBVbml0IDo9IHR0Ow", base).href;
+  const proof = new URL(`proof.html?example=1#source=${Buffer.from("import nat;\ndef x : Unit := tt;").toString("base64url")}`, base).href;
   await failed.goto(proof);
   await failed.waitForFunction(() => document.querySelector("#diagnostic")?.textContent.includes("Build with make wasm."));
   assert.equal(await failed.locator("#check-loader").isHidden(), true);
   assert.equal(await failed.locator("#source-panel").getAttribute("aria-busy"), "false");
+  // The source is readable without a check: previewed and highlighted, its
+  // line numbers not yet inspectable, the inspector explaining itself, and an
+  // import link opening its module.
+  await failed.locator("#read-mode").click();
+  assert.equal(await failed.locator("#read-source .source-line").count(), 2);
+  assert.ok(await failed.locator("#read-source .keyword").count() > 0);
+  assert.equal(await failed.locator("#read-source button.line-number").count(), 0);
+  assert.match(await failed.locator("#source-hint").textContent(), /did not check/);
+  assert.ok(await failed.locator("#inspect-empty").isVisible());
+  assert.equal(await failed.locator("#kernel-terms").isVisible(), false);
+  await failed.locator('#read-source a.reference[data-name="nat"]').click();
+  await failed.waitForURL("**/proof.html?proof=nat");
   await failed.goto(new URL("reference/types.html", base).href);
   await failed.waitForFunction(() => document.querySelector("#values .example-bar")?.textContent.includes("Not checked"));
   // Enhancement is lazy: scroll to start a new request after failure is known.

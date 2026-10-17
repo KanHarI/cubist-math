@@ -40,6 +40,7 @@ async function select(path, remember) {
   $("file-details").hidden = false;
   $("file-path").textContent = path.split("/").slice(0, -1).join("/") + "/";
   $("file-name").textContent = path.split("/").at(-1);
+  document.title = `${path.split("/").at(-1)} · Cubist files`;
   $("file-summary").replaceChildren(...summaryNodes(tree.summaries.get(path) ?? ""));
   $("file-open").href = `proof.html?file=${encodeURIComponent(path)}`;
   $("file-raw").href = path;
@@ -54,9 +55,20 @@ async function select(path, remember) {
   }
 }
 
+// Back to the page without a file: nothing is selected, as at first.
+function unselect() {
+  selected = null;
+  tree.select("");
+  $("file-details").hidden = true;
+  $("file-empty").hidden = false;
+  document.title = "Cubist · Files";
+}
 addEventListener("popstate", () => {
   const path = new URLSearchParams(location.search).get("path");
   if (path) select(path, false);
+  else unselect();
 });
 const initial = new URLSearchParams(location.search).get("path");
 if (initial) select(initial, false);
+// With no file chosen, the first root is open, so the page shows files at once.
+else { const first = $("tree").querySelector("details.folder"); if (first) first.open = true; }
