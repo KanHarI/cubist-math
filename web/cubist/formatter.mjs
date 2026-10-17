@@ -86,6 +86,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
   const construction = tokens[0]?.text === "construction";
   const syntax = construction ? null : parse(source);
   const declarationEnds = new Set(syntax?.declarations.map(node => node.end) ?? []);
+  const pragmaEnds=new Set((syntax?.items??syntax?.declarations??[]).flatMap(item=>(item.testPragmas??[]).map(pragma=>pragma.end)));
   // `computable`, `evaluate` and `print` are ordinary names except where the
   // parser found a top-level modifier or directive.
   // A section's keyword and the brace opening its body (L2.4).
@@ -273,7 +274,9 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         statement.push(block ? (body.length ? ["{", indent([hard, body]), hard, "}"] : "{}")
           : group([text, indent([soft, body]), soft, end]));
         previous = { text: end, end: all[position - 1].end };
-        if (items && (declarationEnds.has(previous.end) || sectionBodies.has(token.start))) {
+        if(pragmaEnds.has(previous.end)) {
+          flush();docs.push(hard);previous=null;
+        } else if (items && (declarationEnds.has(previous.end) || sectionBodies.has(token.start))) {
           // A trailing comment stays beside its declaration; separate the
           // next declaration (and its documentation) with one empty line.
           if (!(all[position]?.comment && !source.slice(previous.end, all[position].start).includes("\n"))) {

@@ -1,27 +1,8 @@
+import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { chromium } from "playwright";
-import { assertFreshBuild } from "../tools/build-stamp.mjs";
-// The page loads the WASM kernel from web/dist.
-assertFreshBuild();
-const server = spawn("python3", ["tools/serve.py", "--port", "0"], { stdio: ["ignore", "pipe", "pipe"] });
-server.stderr.resume();
-let browser;
-try {
-  const port = await new Promise((resolve, reject) => {
-    let output = "";
-    const timer = setTimeout(() => reject(new Error("Server did not start")), 10000);
-    server.once("error", reject);
-    server.stdout.on("data", data => {
-      output += data;
-      const match = output.match(/127\.0\.0\.1:(\d+)\//);
-      if (match) { clearTimeout(timer); resolve(match[1]); }
-    });
-  });
-  browser = await chromium.launch({ headless: true });
+await browserTest(async ({ browser, base }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = []; page.on("pageerror", error => errors.push(error.stack ?? error.message));
-  const base = `http://127.0.0.1:${port}`;
   await page.goto(`${base}/proof.html?proof=complex_deformation&name=complex_deformation_at_one`);
   await page.waitForFunction(() => document.querySelector("#inspect-parameters-label")?.textContent === "Parameters and hypotheses (12)");
   assert.equal(await page.locator("#inspect-type").textContent(), "complex_linear_deformation(F, addF, mulF, one, z, error) = complex_add(F, addF, z, error)");
@@ -74,4 +55,4 @@ try {
   await page.screenshot({ path: "/tmp/cubist-tower-law.png" });
   assert.deepEqual(errors, []);
   console.log("PASS source statements: conclusion, named hypotheses, binder navigation, mobile, S3, finite and general bases, dimension and tower law");
-} finally { await browser?.close(); server.kill(); }
+});

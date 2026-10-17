@@ -1,0 +1,23 @@
+// Migrated from tests/initial-models.test.mjs:
+// free folds preserve function and dependent pair generator types.
+import hlevels;
+import algebra;
+# test(initial_generator_types.Functions)
+free Functions(A, B : U0) : Monoid(U0) on A -> B;
+
+# test(initial_generator_types.Pairs)
+free Pairs(A : U0, B : A -> U0) : Monoid(U0) on exists a : A. B(a);
+
+# test(initial_generator_types.function_fold)
+def function_fold(A, B : U0, S : Monoid(U0), g : (A -> B) -> S.M, a : A -> B) :
+  Functions.fold(A, B, S, g).map(Functions.gen(a)) = g(a) {
+  rfl;
+}
+
+# test(initial_generator_types.pair_fold)
+def pair_fold(
+  A : U0, B : A -> U0, S : Monoid(U0), g : (exists a : A. B(a)) -> S.M, a : exists a : A. B(a)
+) :
+  Pairs.fold(A, B, S, g).map(Pairs.gen(a)) = g(a) {
+  rfl;
+}
