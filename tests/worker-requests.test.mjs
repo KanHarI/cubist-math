@@ -39,6 +39,7 @@ test("startup and running failures settle all requests and reject later requests
     if (ready) { native.receive({ ready: true }); await client.ready; }
     const first = assert.rejects(client.request("check"), /startup failed/);
     const second = assert.rejects(client.request("inspect"), /startup failed/);
+    if (ready) { await Promise.resolve(); assert.equal(native.sent.length, 2); }
     native.onerror({ message: "startup failed" });
     await Promise.all([first, second]);
     if (!ready) await assert.rejects(client.ready, /startup failed/);
@@ -47,6 +48,13 @@ test("startup and running failures settle all requests and reject later requests
     assert.equal(errors.length, 1);
     await assert.rejects(client.request("repl"), /startup failed/);
   }
+});
+
+test("a startup failure without a message retains the build instruction", async () => {
+  const native = worker(), client = new WorkerRequests(native);
+  const request = assert.rejects(client.request("check"), /Build with make wasm\./);
+  native.onerror({});
+  await request;
 });
 
 test("termination isolates replacement workers from late replies with reused request IDs", async () => {

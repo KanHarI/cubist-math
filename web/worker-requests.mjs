@@ -22,7 +22,7 @@ export class WorkerRequests {
     };
     worker.onerror = event => {
       if (this.#stopped) return;
-      const error = new Error(event.message || "Unable to load the checking worker.");
+      const error = new Error(event.message || "Unable to load the checking worker. Build with make wasm.");
       this.terminate(error);
       onError(error);
     };
@@ -40,7 +40,7 @@ export class WorkerRequests {
       }, () => {}); // terminate already rejects requests waiting for readiness.
     });
   }
-  terminate(error = new Error("The checking worker stopped.")) {
+  terminate(error = new Error("The checking worker is unavailable. Reload the page to restart it.")) {
     if (this.#stopped) return;
     this.#stopped = error;
     this.#rejectReady(error);

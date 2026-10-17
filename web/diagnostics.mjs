@@ -151,7 +151,7 @@ export const diagnostics = [
   ["E223", "Recheck the current source before replacing this simplification."],
   ["E224", "Allow a new tab to open the kernel workbench."],
   ["E225", "Source exceeds 1 MB."],
-  ["E226", "Unable to load the checking worker."],
+  ["E226", "Unable to load the checking worker.", "retired"],
   ["E227", "Unable to load the checking worker. Build with make wasm."],
   ["E228", "This expression transfer is no longer available. Open it again from the proof inspector."],
   ["E229", "check requires a module or .cubist file."],

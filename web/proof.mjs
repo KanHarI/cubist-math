@@ -1166,7 +1166,6 @@ async function startWorker(version = undefined) {
       if (queuedExample) runExample(queuedExample);
     } else check();
   }, () => {}); // The transport's onError reports startup failure.
-
 }
 addEventListener("focus", () => {
   refreshCompiler().catch(diagnostic);
