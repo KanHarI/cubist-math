@@ -12,8 +12,12 @@
 export class NameSupply {
   constructor({taken = () => false} = {}) {
     this.serial = 0;
+    this.placeholders = 0;
     this.taken = taken;
   }
+  // Inference placeholders have a source-inexpressible namespace. Keep their
+  // counter local to the unit, without changing ordinary generated names.
+  placeholder(stem) {return `${stem}?${++this.placeholders}`;}
   // A stem that ends in a digit gets a separator: otherwise a1 with serial 1
   // and a with serial 11 would both be a11, and one binder would capture the
   // other. So does the stem native, which would spell a kernel symbol, and a

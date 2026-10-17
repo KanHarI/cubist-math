@@ -1,7 +1,7 @@
 import "../fresh-build.mjs";
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {T} from '../../web/translator/core.mjs';
+import {T,freeNames} from '../../web/translator/core.mjs';
 import {NameSupply} from '../../web/translator/names.mjs';
 import {Scope,SourceUnit} from '../../web/translator/elaboration.mjs';
 import {Translator} from '../../web/translator/translate.mjs';
@@ -39,10 +39,28 @@ test('a derived unit shares its name supply and replaces only the given fields',
   assert.equal(error.message,'Bad. at 1:1');
 });
 
-test('elaborating a module twice yields the same generated names',()=>{
-  const source='def twice(f : Unit -> Unit, n : Unit) := f(f(n)); def id_(A : U0) : A -> A { intro x; exact x; }';
-  const translate=()=>new Translator({checker:kernelChecker()}).translate(source);
+test('elaborating a module twice yields the same generated names and inference queries',()=>{
+  const source=`def twice(f : Unit -> Unit, n : Unit) := f(f(n));
+    def id_(A : U0) : A -> A { intro x; exact x; }
+    def Tagged(U < UU0, A : U) : U0 := Unit;
+    def untag{{U < UU0, A : U}}(t : Tagged(U, A)) : Unit := t;
+    def get(t : Tagged(U0, Unit)) : Unit := untag(t);`;
+  const translate=()=>{
+    const checker=kernelChecker(),nf=checker.nf,placeholders=[];
+    // Normalization during inference sees unsolved term and universe holes.
+    // Those queries must not depend on which modules were checked earlier.
+    checker.nf=function(term,...args) {
+      const names=[...freeNames(term)].filter(name=>name.includes('?'));
+      if(names.length)placeholders.push(names);
+      return nf.call(this,term,...args);
+    };
+    try {
+      const result=new Translator({checker}).translate(source);
+      assert.ok(result.declarations.every(d=>d.term),JSON.stringify(result.declarations.map(d=>d.reason)));
+      return {terms:result.declarations.map(d=>d.term),placeholders};
+    } finally {checker.kernel.dispose();}
+  };
   const [first,second]=[translate(),translate()];
-  assert.ok(first.declarations.every(d=>d.term),JSON.stringify(first.declarations.map(d=>d.reason)));
-  assert.deepEqual(first.declarations.map(d=>d.term),second.declarations.map(d=>d.term));
+  assert.ok(first.placeholders.length,'the fixture must exercise inference placeholders');
+  assert.deepEqual(first,second);
 });
