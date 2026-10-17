@@ -564,8 +564,8 @@ reused or relocated, including forward references created during failed work.
 
 The table costs four bytes per arena capacity slot, included in the reported
 arena memory. The [native regression](../../../kernel/tests/test_normalize.c)
-normalizes forty shared sums (2^40 expanded leaves) in 123 steps with syntax
-interning, or 203 without; a repeated query takes one step. It also checks
+normalizes forty shared sums (2^40 expanded leaves) in 122 steps, with or
+without syntax interning; a repeated query takes one step. It also checks
 typed instruction use, budget/deadline failures, scope and dimension
 restriction, rollback, compaction and allocation before a later failure.
 The existing instruction-isolation and cubical eta regressions remain gates.

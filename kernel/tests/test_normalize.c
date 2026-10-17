@@ -37,8 +37,8 @@ static void shared_graph(unsigned optimizations) {
     cc_kernel_set_step_budget(k, 1000);
     uint64_t before = steps(k);
     cc_term result = cc_kernel_normalize(k, source);
-    assert(result && ck_alpha_equal(k, result, source));
     uint64_t cold = steps(k) - before;
+    assert(result && ck_alpha_equal(k, result, source));
     assert(cold >= 40 && cold < 300);
     before = steps(k);
     assert(cc_kernel_normalize(k, source) == result);
