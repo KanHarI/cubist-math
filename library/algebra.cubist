@@ -51,7 +51,7 @@ theory CommMonoid(U < UU0) extends Monoid {
 // One inverse supplies both quasigroup divisions and all four division
 // laws. Every parent uses these same checked definitions; models supply
 // only the usual group operations and inverse laws.
-theory Group(U < UU0) extends Loop, AssociativeQuasigroup, Monoid {
+theory Group(U < UU0) extends Monoid, Loop, AssociativeQuasigroup {
   inv(x : M) : M;
   law inv_mul(x : M) : inv(x) * x = one;
   law mul_inv(x : M) : x * inv(x) = one;
@@ -114,8 +114,8 @@ theory Ring(U < UU0) extends additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
   mul_comm := add_comm, left_div := add_left_div, right_div := add_right_div,
-  mul_left_div := add_left_div_cancel, left_div_mul := add_left_cancel,
-  right_div_mul := add_right_div_cancel, mul_right_div := add_right_cancel
+  mul_left_div := add_neg_cancel_left, left_div_mul := neg_add_cancel_left,
+  right_div_mul := neg_add_cancel_right, mul_right_div := add_neg_cancel_right
 ), multiplicative : Monoid(M := R) {
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
   law distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z;
@@ -137,9 +137,20 @@ additive_ : AbelianGroup(
   M := R, mul := add notation x + y, mul_assoc := add_assoc, one := zero, one_mul := zero_add,
   mul_one := add_zero, inv := neg notation - x, inv_mul := neg_add, mul_inv := add_neg,
   mul_comm := add_comm, left_div := add_left_div, right_div := add_right_div,
-  mul_left_div := add_left_div_cancel, left_div_mul := add_left_cancel,
-  right_div_mul := add_right_div_cancel, mul_right_div := add_right_cancel
-), multiplicative : CommMonoid(M := R) {}
+  mul_left_div := add_neg_cancel_left, left_div_mul := neg_add_cancel_left,
+  right_div_mul := neg_add_cancel_right, mul_right_div := add_neg_cancel_right
+), multiplicative : CommMonoid(M := R) {
+  def distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z := trans(
+    mul_comm(x + y, z),
+    trans(
+      mul_add(z, x, y),
+      trans(
+        cong(fun (w : R) => w + z * y, mul_comm(z, x)),
+        cong(fun (w : R) => x * z + w, mul_comm(z, y))
+      )
+    )
+  );
+}
 
 // A field: a commutative ring in which zero is not one and every element
 // but zero merely has a multiplicative inverse (L2.10k). Being a field is a
@@ -162,7 +173,7 @@ def nat_multiplicative : CommMonoid(U0) := CommMonoid.make(
   one_mul := nat_one_mul, mul_one := nat_mul_one, mul_comm := nat_mul_comm
 );
 
-// In any commutative monoid, products regroup freely; for a ring, at its
+// In any commutative monoid, products regroup freely; for a commutative ring, at its
 // multiplicative monoid, A.multiplicative, and its additive one,
 // A.additive_.comm_monoid.
 section {{U < UU0}}(G : CommMonoid(U)) {

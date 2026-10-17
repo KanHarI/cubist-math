@@ -21,11 +21,20 @@ theory OrderedRing(U < UU0) extends Ring {
 }
 
 // Both parents share Ring, including its carrier, operations and laws.
-theory OrderedCommRing(U < UU0) extends OrderedRing, CommRing {}
+theory OrderedCommRing(U < UU0) extends OrderedRing, CommRing {
+  def mul_pos_apart_right(x, y : R) : zero < x * y
+  -> Trunc(U, (zero < y) or (y < zero)) := fun (product : zero < x * y) => mul_pos_apart_left(
+    y, x, transport product along mul_comm(x, y) in (fun (w : R) => lt(zero, w))
+  );
+}
 
-// Both parents share the same commutative ring. Inverses remain the checked
-// Field interface; no order decision procedure is assumed or generated.
-theory OrderedField(U < UU0) extends OrderedCommRing, Field {}
+// Constructive inversion needs apartness from zero, rather than its mere
+// inequality. No order decision procedure or completeness is assumed.
+theory OrderedField(U < UU0) extends OrderedCommRing {
+  law inverses(x : R, apart : Trunc(U, (zero < x) or (x < zero))) : Trunc(
+    U, exists y : R. x * y = one
+  );
+}
 
 section {{U < UU0}}(A : OrderedRing(U)) {
   computable def order_le_refl(x : R) : x <= x := lt_irrefl(x);
@@ -37,4 +46,21 @@ section {{U < UU0}}(A : OrderedRing(U)) {
     intro same;
     exact lt_irrefl(zero, transport zero_lt_one along sym(same) in (fun (x : R) => lt(zero, x)));
   }
+}
+
+// The inverse is unique, so the truncated law supplies it without choice.
+section {{U < UU0}}(F : OrderedField(U)) {
+  computable def ordered_inverse_(x : R, apart : Trunc(U, (zero < x) or (x < zero))) :
+    exists y : R.
+    x * y = one := mere_eliminate(
+      U, U, exists y : R. x * y = one, exists y : R. x * y = one,
+      inverse_is_prop(F.ordered_comm_ring.comm_ring, x), fun (w : exists y : R. x * y = one) => w,
+      inverses(x, apart)
+    );
+
+  computable def ordered_inv(x : R, apart : Trunc(U, (zero < x) or (x < zero))) :
+    R := ordered_inverse_(x, apart).1;
+
+  computable def ordered_mul_inv(x : R, apart : Trunc(U, (zero < x) or (x < zero))) :
+    x * ordered_inv(x, apart) = one := ordered_inverse_(x, apart).2;
 }

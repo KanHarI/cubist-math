@@ -83,11 +83,21 @@ def acted{{A : U0}}(S : Act(U0), g : A -> S.M, a : A) :
 }
 
 // The equational strategy cannot yet fold implemented inherited members.
-// Field also has a truncated inverse law, outside the equational fragment.
+// Field also has laws outside the equational fragment.
 // Refusal does not establish whether an initial model exists.
 // Error: E881: The equational strategy does not yet generate folds for Field's implemented
 //   inherited members.
 initial F : Field(U0);
+
+// A truncated law is refused even without implemented inherited members.
+theory Inhabited(U < UU0) {
+  M : set U;
+  law nonempty : Trunc(U, M);
+}
+
+// Error: E856: The law nonempty is not an equation between operation terms: the equational strategy
+//   does not support this law.
+initial Nonempty : Inhabited(U0);
 
 // An argument containing the carrier under an arrow is unsupported too.
 theory Iterated(U < UU0) {
