@@ -546,6 +546,11 @@ cc_term cc_kernel_whnf(cc_kernel *, cc_term);
  * terminates. */
 cc_term cc_kernel_normalize(cc_kernel *, cc_term);
 
+/* Syntactic equality up to bound names and the existing level/interval
+ * algebra, with no reduction or unfolding. This query certifies no judgement.
+ * False means failure; only on success is the equality answer written. */
+bool cc_kernel_alpha_equal(cc_kernel *, cc_term, cc_term, bool *);
+
 /* Read-only inspection of inert syntax. It does not assert that a handle was
  * derived; callers should start from the handles of a judgement. */
 bool cc_kernel_node(const cc_kernel *, cc_term, cc_term_kind *, uint32_t *, cc_term children[4]);

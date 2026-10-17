@@ -4,9 +4,46 @@
 #include "term_internal.h"
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 
 static cc_term lambda(cc_kernel *k, uint32_t name, cc_term body) {
     return ck_make(k, CC_LAM, name, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), body, 0, 0);
+}
+
+/* A query has three outcomes: equal, different, or no answer. It never
+ * reduces, and failed work must neither write an answer nor become cached. */
+static void comparison_query(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term a = lambda(k, 10, ck_var(k, 10)), b = lambda(k, 20, ck_var(k, 20));
+    bool answer = false;
+    cc_kernel_set_step_budget(k, 1);
+    assert(!cc_kernel_alpha_equal(k, a, b, &answer) && !answer);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 10000);
+    assert(cc_kernel_alpha_equal(k, a, b, &answer) && answer);
+    cc_term free = lambda(k, 20, ck_var(k, 10));
+    assert(cc_kernel_alpha_equal(k, a, free, &answer) && !answer);
+    cc_term redex = ck_make(k, CC_APP, 0, a, ck_var(k, 30), 0, 0);
+    assert(cc_kernel_alpha_equal(k, redex, ck_var(k, 30), &answer) && !answer);
+    assert(cc_kernel_normalize(k, redex) == ck_var(k, 30));
+    assert(cc_kernel_alpha_equal(k, redex, ck_var(k, 30), &answer) && !answer);
+    cc_work_counters before, after;
+    cc_kernel_work(k, &before);
+    cc_kernel_set_step_budget(k, 1);
+    assert(cc_kernel_alpha_equal(k, a, b, &answer) && answer);
+    cc_kernel_work(k, &after);
+    assert(after.queries == before.queries + 1 && after.query_steps == before.query_steps + 1);
+    assert(!cc_kernel_alpha_equal(k, 0, b, &answer) && answer);
+    assert(!cc_kernel_alpha_equal(k, a, UINT32_MAX, &answer) && answer);
+    assert(!cc_kernel_alpha_equal(k, a, b, NULL));
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { }
+    answer = false;
+    assert(!cc_kernel_alpha_equal(k, a, b, &answer) && !answer);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_free(k);
 }
 
 /* A different term can acquire the same numeric handle after a rollback;
@@ -122,6 +159,7 @@ static void renamings_share_work(void) {
 }
 
 int main(void) {
+    comparison_query();
     renamings_share_work();
     memo_survives_no_rollback();
     cut_short_scans_are_forgotten();

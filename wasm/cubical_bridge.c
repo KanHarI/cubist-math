@@ -192,6 +192,14 @@ uint32_t cb_normalize(uint32_t token, uint32_t term) {
     return cc_kernel_normalize(s->kernel, term);
 }
 
+/* -1 is failure, distinct from a successful inequality answer. */
+int cb_alpha_equal(uint32_t token, uint32_t left, uint32_t right) {
+    browser_session *s = lookup(token);
+    bool equal;
+    if (!s || !cc_kernel_alpha_equal(s->kernel, left, right, &equal)) return -1;
+    return equal;
+}
+
 uint32_t cb_node(uint32_t token, uint32_t term, unsigned field) {
     browser_session *s = lookup(token);
     cc_term_kind kind;

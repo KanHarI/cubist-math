@@ -606,6 +606,26 @@ The archived `f4_galois_is_cyclic_two` re-derivation that exposed this took
 about 11 seconds with only the kernel cache, and 16 ms with the comparison
 fix (10 ms before EVAL2); the standard five-second deadline remains unchanged.
 
+The [follow-up in #270](https://github.com/KanHarI/cubist-math/pull/270)
+uses the kernel's existing syntactic-equality routine to compare
+normal forms when no outer term or dimension renaming is needed. Its query
+does no reduction, produces no judgement, and distinguishes failure from
+inequality. The driver remembers the answer in its existing empty-scope memo;
+the eventual instruction still validates equality. Scoped comparisons retain
+the existing JavaScript implementation, which is also the fallback if the
+native query cannot answer. Deadlines end the comparison. This avoids
+rebuilding free-symbol
+sets for the large normalized graph, without introducing a second scope
+analysis or changing proof search.
+
+In [seven alternating fresh-process pairs](../../reports/eval2-f4-comparison.json),
+F4 re-derivation improves from a 16.7 ms median to 12.1 ms on the recorded
+machine. Total kernel steps change from 200,348 to 200,349: the new query does
+the comparison work otherwise performed by the eventual instruction. These
+timings compare the follow-up against EVAL2, not against pre-EVAL2; they do
+not establish that the residual regression against pre-EVAL2 is gone. The
+original larger-input syntax-depth failures are unchanged.
+
 **Acceptance:** shared graphs and repeated normalization avoid redundant
 traversal; typed normal forms, eta behavior, failure recovery and instruction
 isolation remain unchanged. Cache collisions cannot establish equality.

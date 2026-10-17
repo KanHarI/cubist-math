@@ -1,0 +1,71 @@
+{
+  "workload": "f4_galois_group__f4_galois_is_cyclic_two",
+  "date": "2026-10-17",
+  "method": "Seven alternating sequential pairs, fresh Node processes, clean checkouts at the recorded revisions. Each checks f4_galois_group, then re-derives the selected definition with a fresh driver and the default 5000ms deadline. No concurrent review, test or benchmark jobs were running. Times are local observations.",
+  "command": "node tools/instruction-coverage.mjs --modules=f4_galois_group --select=f4_galois_is_cyclic_two --report=REPORT.json",
+  "before": {
+    "environment": {
+      "revision": "8681410cad75a3f94d0ef5b270eb1df498985a05",
+      "modified": false,
+      "node": "v24.13.0",
+      "platform": "darwin arm64",
+      "cpu": "Apple M3 Pro",
+      "cpus": 12,
+      "memoryGiB": 36
+    },
+    "samplesMs": [
+      16.7,
+      15.2,
+      17.6,
+      18.1,
+      16.2,
+      18.6,
+      16.5
+    ],
+    "medianMs": 16.7,
+    "work": {
+      "instructions": 915,
+      "rejected": 0,
+      "instructionSteps": 197582,
+      "queries": 54,
+      "failedQueries": 0,
+      "querySteps": 2766,
+      "exhausted": 0,
+      "deadlines": 0
+    },
+    "allSuccessful": true
+  },
+  "after": {
+    "environment": {
+      "revision": "aad6c8b53fb818a5cd4737beb97f7b8dd60b0ab5",
+      "modified": false,
+      "node": "v24.13.0",
+      "platform": "darwin arm64",
+      "cpu": "Apple M3 Pro",
+      "cpus": 12,
+      "memoryGiB": 36
+    },
+    "samplesMs": [
+      13.1,
+      12.8,
+      11.5,
+      13,
+      10.8,
+      11.8,
+      12.1
+    ],
+    "medianMs": 12.1,
+    "work": {
+      "instructions": 915,
+      "rejected": 0,
+      "instructionSteps": 148458,
+      "queries": 55,
+      "failedQueries": 0,
+      "querySteps": 51891,
+      "exhausted": 0,
+      "deadlines": 0
+    },
+    "allSuccessful": true
+  },
+  "note": "Total instruction plus query steps change from 200348 to 200349: comparison work moves from the eventual instruction into the syntax-only query. This comparison measures the follow-up against EVAL2, not against pre-EVAL2."
+}

@@ -290,6 +290,14 @@ export class CubicalKernel {
   // At a declaration's end, after its commit or rollback: the nodes there
   // are now settled until the next checkpoint's commit or rollback.
   forgetNodes() { this.nodes.clear(); this.settled = this.arena().nodes + 1; }
+  // Syntactic equality only: no reduction and no typing judgement.
+  alphaEqual(left, right) {
+    this.assertOpen();
+    uint32(left, "Node handle"); uint32(right, "Node handle");
+    const result = this.module._cb_alpha_equal(this.handle, left, right);
+    if (result < 0) throw this.failure("Unknown cubical node handle.");
+    return result !== 0;
+  }
   inspectFormula(id) {
     this.assertOpen();
     uint32(id, "Formula handle");

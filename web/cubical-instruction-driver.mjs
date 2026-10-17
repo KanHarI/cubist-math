@@ -1237,7 +1237,27 @@ export class InstructionDriver {
     for (const focus of [a, b]) {
       const term = this.subterm(focus);
       try { this.graph.within(NORMAL_FORM_STEPS, () => this.reduce(focus, { path: [], rule: "normalize" })); }
-      catch { this.unnormalizable.add(term); return false; }
+      catch (error) {
+        if (!(error instanceof KernelError) || error.kind === "deadline") throw error;
+        this.unnormalizable.add(term);
+        return false;
+      }
+    }
+    // With no outer renaming, reuse the kernel's syntactic comparison. The
+    // Step instructions already produced both normal forms; this query only
+    // guides search, and the eventual instruction still validates equality.
+    if (!terms && !dims) {
+      const x = this.subterm(a), y = this.subterm(b);
+      try {
+        const equal = this.graph.within(NORMAL_FORM_STEPS, () => this.kernel.alphaEqual(x, y));
+        this.alphaMemo.set(`${x},${y},1,1`, equal);
+        return equal;
+      }
+      catch (error) {
+        if (!(error instanceof KernelError) || error.kind === "deadline") throw error;
+        // No native answer: keep the original comparison path. In
+        // particular exhaustion is not an inequality to memoize.
+      }
     }
     return this.alpha(this.subterm(a), this.subterm(b), terms, dims);
   }
