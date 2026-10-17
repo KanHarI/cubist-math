@@ -23,7 +23,7 @@ export function referenceExamples(file, source) {
 const stated = label => text => {
   const messages = [], lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const block = readComment(lines, i, { inline: true, sameIndent: true });
+    const block = readComment(lines, i, { reference: true });
     if (!block) continue;
     i = block.end;
     if (block.label === label) messages.push(block.text);
