@@ -612,6 +612,19 @@ the paused analysis, Galois or RH projects. Its two mathematical routes are:
   given by their presentations. HA6, cellular cohomology of finite CW
   complexes agreeing with the synthetic definition.
 
+## Universal algebra track
+
+The [universal algebra roadmap](mathematics/universal-algebra.md) owns UA0–UA6.
+Proposed on 2026-10-17, it remains unimplemented. Its objects are abstract
+clones, a theory the language accepts today; its targets are the univalent
+category of clones, the clone of every declared theory from L2.6's free
+models, and the theory of groups as the pushout of monoids and quasigroups
+over magmas in that category, with the dual pullback of the categories of
+models. UA1 and UA2 depend on no categories package and are early clients of
+L3.4's parameterized `T.cat` and L2.4b's structure identity; UA4–UA6 are
+acceptance examples for L3.5's pushouts and pullbacks. It adds examples to
+those packages without reordering the [first actions](#first-actions).
+
 ## Runtime evaluation track
 
 Added on 2026-10-07. The [runtime evaluation roadmap](runtime/runtime-evaluation-roadmap.md)
