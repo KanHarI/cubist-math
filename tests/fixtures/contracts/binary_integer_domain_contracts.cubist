@@ -1,0 +1,95 @@
+// NUM2: a shared domain proof and binary nonzero-product certificates.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num2-build-the-new-binary-backed-integers-and-rationals
+import fractions;
+import binary_integers;
+use binary_integers;
+
+# test(binary_domain.domain_law)
+# expect_axioms([])
+computable def binary_domain_law(x, y : BInt, nx : x = 0 -> Void, ny : y = 0 -> Void) :
+  x * y = 0 -> Void := bint_mul_nonzero(x, y, nx, ny);
+
+// The domain evidence satisfies the existing fraction construction's contract.
+# test(binary_domain.fraction_field)
+# expect_axioms([])
+def binary_domain_fraction_field :
+  Field(U0) := fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
+
+# test(binary_domain.normalize_nontriviality)
+evaluate bint_zero_ne_one expecting _;
+
+# test(binary_domain.zero_decision)
+# expect_axioms([])
+computable def binary_domain_zero_flag(x : BInt) : UNat := match bint_decide_zero(x) return UNat {
+    left same => unat.(0);
+    right nonzero => unat.(1);
+  };
+
+# test(binary_domain.shifted_zero)
+evaluate binary_domain_zero_flag(
+  bint(
+    bnat.(340282366920938463463374607431768211455), bnat.(340282366920938463463374607431768211455)
+  )
+) expecting unat.(0);
+
+# test(binary_domain.negative_nonzero)
+evaluate binary_domain_zero_flag(-340282366920938463463374607431768211455) expecting unat.(1);
+
+# test(binary_domain.normalize_zero_decision)
+evaluate bint_decide_zero(
+  bint(
+    bnat.(340282366920938463463374607431768211455), bnat.(340282366920938463463374607431768211455)
+  )
+) expecting _;
+
+# test(binary_domain.normalize_nonzero_decision)
+evaluate bint_decide_zero(-340282366920938463463374607431768211455) expecting _;
+
+# test(binary_domain.gap_cases)
+# expect_axioms([])
+computable def binary_domain_gap(a, b : BNat) :
+  BNat := match bint_natural_trichotomy(a, b) return BNat {
+    left above => above.1;
+    right rest => match rest return BNat {
+      left same => bnat.(0);
+      right below => below.1;
+    };
+  };
+
+# test(binary_domain.gap_above)
+evaluate binary_domain_gap(bnat.(5), bnat.(2)) expecting bnat.(3);
+# test(binary_domain.gap_equal)
+evaluate binary_domain_gap(bnat.(4), bnat.(4)) expecting bnat.(0);
+# test(binary_domain.gap_below)
+evaluate binary_domain_gap(bnat.(2), bnat.(5)) expecting bnat.(3);
+
+// Keep nonzeroness hypotheses symbolic while fully normalizing the resulting
+// certificate. Expanding either magnitude to unary naturals would exhaust
+// the ordinary evaluation limits.
+# test(binary_domain.wide_certificate)
+# expect_axioms([])
+computable def binary_domain_wide_certificate(
+  nx : typed(BInt, 18446744073709551615) = 0 -> Void, ny : typed(BInt, 18446744073709551615) = 0
+  -> Void
+) :
+  typed(BInt, 18446744073709551615) * 18446744073709551615 = 0
+  -> Void := bint_mul_nonzero(18446744073709551615, 18446744073709551615, nx, ny);
+
+# test(binary_domain.normalize_wide_certificate)
+evaluate binary_domain_wide_certificate expecting _;
+
+// The negative factor has a noncanonical representative with large components.
+# test(binary_domain.shifted_certificate)
+# expect_axioms([])
+computable def binary_domain_shifted_certificate(
+  nx : bint(bnat.(18446744073709551615), bnat.(18446744073709551616)) = 0 -> Void,
+  ny : typed(BInt, 340282366920938463463374607431768211455) = 0 -> Void
+) :
+  bint(bnat.(18446744073709551615), bnat.(18446744073709551616)) * 340282366920938463463374607431768211455 = 0
+  -> Void := bint_mul_nonzero(
+    bint(bnat.(18446744073709551615), bnat.(18446744073709551616)),
+    340282366920938463463374607431768211455, nx, ny
+  );
+
+# test(binary_domain.normalize_shifted_certificate)
+evaluate binary_domain_shifted_certificate expecting _;

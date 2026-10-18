@@ -211,8 +211,61 @@ computable def bint_of_nat_mul(a, b : BNat) :
 computable def bint_of_nat_injective(a, b : BNat, p : bint_of_nat(a) = bint_of_nat(b)) :
   a = b := difference_embed_injective{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, a, b, p);
 
-computable def bint_zero_ne_one(p : bint_zero = bint_one) :
-  Void := bnat_zero_ne_one(bint_of_nat_injective(0, 1, p));
+computable def bint_zero_ne_one(p : bint_zero = bint_one) : Void := difference_zero_ne_one{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel, bnat_zero_ne_one, p
+);
+
+// Natural trichotomy supplies the additive-gap hypothesis. Its unary
+// justification is confined to the domain proof's contradictory zero branch;
+// a concrete nonzero product returns the binary equality certificate first.
+computable def bint_natural_gap(
+  a, b : BNat, t : UNat, e : bnat_to_unat(a) = add(bnat_to_unat(b), succ(t))
+) :
+  exists s : BNat. (a = bnat_add(b, s))
+  and (s = b_zero -> Void) := (
+    bnat_of_unat(succ(t)),
+    bnat_decode_injective(
+      a, bnat_add(b, bnat_of_unat(succ(t))),
+      trans(
+        e,
+        sym(
+          trans(
+            bnat_decode_add(b, bnat_of_unat(succ(t))),
+            cong(add(bnat_to_unat(b)), bnat_unat_roundtrip(succ(t)))
+          )
+        )
+      )
+    ), fun (p : bnat_of_unat(succ(t)) = b_zero) => bnat_zero_ne_succ(bnat_of_unat(t), sym(p))
+  );
+
+computable def bint_natural_trichotomy(a, b : BNat) :
+  DifferenceTrichotomy{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, a, b) := match unat_trichotomy(
+    bnat_to_unat(a), bnat_to_unat(b)
+  ) return DifferenceTrichotomy{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, a, b) {
+    left above => left(bint_natural_gap(a, b, above.1, above.2));
+    right rest => match rest return DifferenceTrichotomy{{U0}}(
+      bnat_semiring, bnat_decide, bnat_add_cancel, a, b
+    ) {
+      left same => right(left(bnat_decode_injective(a, b, same)));
+      right below => right(right(bint_natural_gap(b, a, below.1, below.2)));
+    };
+  };
+
+// Zero decisions retain compact certificates for nonzero denominators.
+computable def bint_decide_zero(x : BInt) :
+  Decidable(U0, x = bint_zero) := difference_decide_zero{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x
+  );
+
+// A product of two nonzero binary integers is nonzero.
+computable def bint_mul_nonzero(
+  x, y : BInt, nx : x = bint_zero -> Void, ny : y = bint_zero -> Void,
+  p : bint_mul(x, y) = bint_zero
+) :
+  Void := difference_mul_nonzero{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, bnat_mul_cancel, bint_natural_trichotomy, x, y, nx,
+    ny, p
+  );
 
 // Literal magnitudes go straight from the binary reader into a quotient pair.
 // Only lexical glyphs and error positions use unary naturals.
