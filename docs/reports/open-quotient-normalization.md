@@ -67,3 +67,27 @@ level-pair comparisons against independent arithmetic evaluation remain.
 using only `Unit`, with no integer arithmetic. The WebAssembly regression
 fully normalizes that operation and `bint_mul` under a fixed test work budget.
 The `_` expectation still requires a full normal form.
+
+## Validation and measurements
+
+All native suites pass, including UBSan. The local full suite passed 1,516 of
+1,517 tests; its sole failure was two unregistered error messages. Those now
+reuse existing diagnostics, and all 12 diagnostic/normalization tests pass.
+All seven CI jobs, including the full workbench suite, pass at `0f442893`.
+The additional formula-arena regression passes the full UBSan suite too.
+
+The existing evaluation-baseline tests retain their exact outcomes and normal
+form digests within the unchanged work/allocation bounds. A second normalization
+of both the minimal quotient and `bint_mul` is alpha-equal to the first.
+Using #281's integer-domain source overlay with this kernel, the binary fraction
+field's `one` also fully normalizes: about 668 ms for normalization and 1.90 s
+for the entry in the final diagnostic run, with 2.10 million live arena nodes.
+These figures are local observations, not portable performance thresholds.
+
+The [F4 comparison](open-quotient-f4-comparison.json) repeats three alternating
+before/after pairs. All declarations and the selected Galois-group theorem
+derive in every run. Median module checking stays at 3.7 s; the selected
+derivation changes from 14.6 ms to 15.0 ms, with overlapping sample ranges.
+Its counted instruction/query work increases from 200,349 to 227,322 steps
+(13.5%); cache hits now count as work. No general speedup or exact timing
+equality is claimed. The regression baselines and production budgets are unchanged.

@@ -1,0 +1,76 @@
+{
+  "workload": "f4_galois_group__f4_galois_is_cyclic_two",
+  "date": "2026-10-18",
+  "method": "Three alternating sequential pairs in fresh Node processes and clean checkouts. The baseline checkout has the same tree as main b4ee1b87. No other local validation ran concurrently; the stalled read-only review client was interrupted during this comparison. Times are local observations, not test thresholds.",
+  "command": "node tools/instruction-coverage.mjs --modules=f4_galois_group --select=f4_galois_is_cyclic_two --report=REPORT.json",
+  "before": {
+    "environment": {
+      "revision": "c68369d4e88fe0d3a01bfd96d01f15a056f2d9f0",
+      "modified": false,
+      "node": "v24.13.0",
+      "platform": "darwin arm64",
+      "cpu": "Apple M3 Pro",
+      "cpus": 12,
+      "memoryGiB": 36
+    },
+    "checkSeconds": [
+      3.8,
+      3.7,
+      3.4
+    ],
+    "medianCheckSeconds": 3.7,
+    "derivationMs": [
+      14.7,
+      14.6,
+      13.7
+    ],
+    "medianDerivationMs": 14.6,
+    "work": {
+      "instructions": 915,
+      "rejected": 0,
+      "instructionSteps": 148458,
+      "queries": 55,
+      "failedQueries": 0,
+      "querySteps": 51891,
+      "exhausted": 0,
+      "deadlines": 0
+    },
+    "allSuccessful": true,
+    "deterministicWork": true
+  },
+  "after": {
+    "environment": {
+      "revision": "5fab77719e03fb8febbec2511a5197f8683fa76b",
+      "modified": false,
+      "node": "v24.13.0",
+      "platform": "darwin arm64",
+      "cpu": "Apple M3 Pro",
+      "cpus": 12,
+      "memoryGiB": 36
+    },
+    "checkSeconds": [
+      3.9,
+      3.7,
+      3.5
+    ],
+    "medianCheckSeconds": 3.7,
+    "derivationMs": [
+      15,
+      13.8,
+      15.1
+    ],
+    "medianDerivationMs": 15,
+    "work": {
+      "instructions": 915,
+      "rejected": 0,
+      "instructionSteps": 166942,
+      "queries": 55,
+      "failedQueries": 0,
+      "querySteps": 60380,
+      "exhausted": 0,
+      "deadlines": 0
+    },
+    "allSuccessful": true,
+    "deterministicWork": true
+  }
+}
