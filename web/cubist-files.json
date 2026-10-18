@@ -2467,6 +2467,10 @@
    "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. An equivalence has an inverse with both inverse laws (`equiv_inverse`), and every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
   },
   {
+   "path": "library/fractions.cubist",
+   "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one: fractions `x / d` carry evidence that `d` is nonzero, cross multiplication defines their quotient relation, and their operations descend to a field (`fraction_field`) with a separate equality decision (`q_decide`). This construction does not import the integer instance."
+  },
+  {
    "path": "library/h1_classical.cubist",
    "summary": "Excluded middle and choice stated over `Trunc`, as `LEM(Trunc, U)` and `Choice(Trunc, U)` give them; double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`."
   },
@@ -2508,7 +2512,7 @@
   },
   {
    "path": "library/rationals.cubist",
-   "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one, in a section over the ring: fractions `x / d` with `d` not zero, equal when `x * d' = x' * d`, a quotient whose operations descend, with the inverse turning a fraction over, and a field (`fraction_field`) with decidable equality (`q_decide`). The rationals are the integers' (`rationals`, `Q`, `rat(a, k)` for `a / (k + 1)`), and their arithmetic computes."
+   "summary": "The integers' field of fractions (`rationals`, `Q`), with `rat(a, k)` for `a / (k + 1)`, decidable equality and checked fraction/decimal literals. Arithmetic computes on closed rationals."
   },
   {
    "path": "library/semirings.cubist",
