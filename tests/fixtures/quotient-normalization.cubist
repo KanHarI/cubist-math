@@ -1,0 +1,16 @@
+import quotients;
+
+// A binary quotient operation with no arithmetic. Normalizing its open
+// function traverses the generated relation and squash clauses too.
+def Related(a, b : Unit) : U0 := Unit;
+
+def Q : U0 := Quotient(U0, Unit, Related);
+
+computable def select_first(x, y : Q) : Q := descend2(
+  U0, U0, Unit, Related, Q, quotient_is_set(U0, Unit, Related),
+  fun (a, b : Unit) => typed(Q, class(a)),
+  fun (a, c, b : Unit, r : Related(a, c)) => class_path(U0, Unit, Related, a, c, r),
+  fun (a, b, d : Unit, r : Related(b, d)) => refl(typed(Q, class(a))), x, y
+);
+
+evaluate select_first expecting _;

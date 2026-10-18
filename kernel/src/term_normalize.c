@@ -307,6 +307,33 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
         return ck_fail(k, "Native normal-form depth exceeded."), 0;
     }
     cc_node n = k->nodes[head];
+    if (n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM) {
+        const cc_formula *face = cc_kernel_get_formula(k, n.payload);
+        if (!face || face->sort != CC_FACE) {
+            --k->recursion;
+            return ck_fail(k, "Unchecked partial face reached normalization."), 0;
+        }
+        /* A wall exists only on its face. Generated transport corrections
+         * can still mention coordinates fixed there: reduce those before
+         * normalizing the wall, rather than expanding their off-face values.
+         * For a disjunction, only endpoints common to every clause are
+         * available. Keep the face and its order, including under renaming. */
+        if (face->length) {
+            cc_clause common = face->clauses[0];
+            for (size_t i = 1; i < face->length; ++i) {
+                common.positive &= face->clauses[i].positive;
+                common.negative &= face->clauses[i].negative;
+            }
+            unsigned parts = n.kind == CC_GLUE_SYSTEM ? 2 : 1;
+            for (unsigned i = 0; i < parts; ++i) {
+                n.child[i] = ck_restrict(k, n.child[i], common);
+                if (!n.child[i]) {
+                    --k->recursion;
+                    return 0;
+                }
+            }
+        }
+    }
     for (unsigned i = 0; i < ck_arity(n.kind); ++i)
         if (n.child[i]) {
             n.child[i] = ck_normal(k, n.child[i]);

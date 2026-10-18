@@ -95,11 +95,28 @@ static bool join(cc_kernel *k, cc_level_nf *a, const cc_level_nf *b) {
     return true;
 }
 
-/* The normal form by structural recursion. Each node visited costs a step of
- * the budget, so a level shared as a DAG but huge as a tree is rejected
- * rather than expanded without bound; recursion is bounded by the syntax
- * depth, and successor chains are walked iteratively. */
-static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
+/* A query-local cache owns arithmetic normal forms, not syntax handles.
+ * This also handles levels whose expanded canonical syntax would exceed
+ * the term-depth limit. It needs no arena allocation or rollback protocol.
+ * Exact keys are checked; collisions only discard completed work. */
+enum { LEVEL_MEMO_SIZE = 256 };
+typedef struct { cc_term term; cc_level_nf nf; } level_memo;
+
+static bool copy_nf(cc_kernel *k, cc_level_nf *out, const cc_level_nf *from) {
+    if (!reserve_terms(k, out, from->count))
+        return false;
+    out->tier = from->tier;
+    out->constant = from->constant;
+    out->count = from->count;
+    if (from->count)
+        memcpy(out->terms, from->terms, from->count * sizeof *from->terms);
+    return true;
+}
+
+static bool normal(cc_kernel *, cc_term, cc_level_nf *, level_memo **);
+
+/* Recursion follows the syntax depth; successor chains remain iterative. */
+static bool normal_uncached(cc_kernel *k, cc_term level, cc_level_nf *out, level_memo **memo) {
     uint64_t successors = 0;
     for (;;) {
         if (!level || level >= k->count)
@@ -133,7 +150,7 @@ static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
         break;
     case CC_LMAX: {
         cc_level_nf right = {0};
-        bool joined = normal(k, n.child[0], out) && normal(k, n.child[1], &right) && join(k, out, &right);
+        bool joined = normal(k, n.child[0], out, memo) && normal(k, n.child[1], &right, memo) && join(k, out, &right);
         ck_level_nf_free(&right);
         if (!joined)
             return false;
@@ -147,9 +164,36 @@ static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
     return add(k, out, successors);
 }
 
+static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out, level_memo **memo) {
+    /* Short levels need less work than allocating/copying a memo. Larger
+     * shared subgraphs must not be expanded once per path to a leaf. */
+    bool cache = level && level < k->count && k->nodes[level].depth >= 8;
+    size_t slot = level % LEVEL_MEMO_SIZE;
+    if (cache && *memo && (*memo)[slot].term == level)
+        return ck_tick(k) && copy_nf(k, out, &(*memo)[slot].nf);
+    if (!normal_uncached(k, level, out, memo))
+        return false;
+    if (cache) {
+        if (!*memo && !(*memo = calloc(LEVEL_MEMO_SIZE, sizeof **memo)))
+            return ck_fail(k, "Level memo allocation failed.");
+        level_memo *entry = &(*memo)[slot];
+        if (!copy_nf(k, &entry->nf, out))
+            return false;
+        entry->term = level;
+    }
+    return true;
+}
+
 bool ck_level_normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
     *out = (cc_level_nf){0};
-    if (!normal(k, level, out)) {
+    level_memo *memo = NULL;
+    bool ok = normal(k, level, out, &memo);
+    if (memo) {
+        for (size_t i = 0; i < LEVEL_MEMO_SIZE; ++i)
+            ck_level_nf_free(&memo[i].nf);
+        free(memo);
+    }
+    if (!ok) {
         ck_level_nf_free(out);
         return false;
     }

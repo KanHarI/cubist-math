@@ -15,6 +15,12 @@ agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
 NUM2 and EVAL3–EVAL8 remain.
+The [open quotient normalization fix and API audit](../../reports/open-quotient-normalization.md)
+extend EVAL2: dimension substitution preserves shared work, partial bodies
+normalize under their face conditions, shared universe levels avoid repeated
+expansion, and interrupted substitution queries report failure consistently.
+This addresses the open `bint_mul` failure found during NUM2 without changing
+the arithmetic definitions or raising kernel limits.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns

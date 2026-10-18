@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel, KernelError } from "../web/cubical-kernel.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { readFile } from "node:fs/promises";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 async function setup(t) {
   const kernel = new CubicalKernel(await createCubical());
@@ -124,5 +127,24 @@ test("normalization and comparison propagate deadlines and programming errors", 
     kernel.alphaEqual = () => { throw error; };
     assert.throws(() => driver.normalizeBoth(left, right, null, null), caught => caught === error);
     kernel.alphaEqual = query;
+  }
+});
+
+test("open quotient operations fully normalize within a bounded amount of kernel work", async () => {
+  const module = await createCubical();
+  for (const [name, source] of [
+    ["small_quotient", await readFile(new URL("fixtures/quotient-normalization.cubist", import.meta.url), "utf8")],
+    ["integer_multiplication", "import binary_integers; evaluate bint_mul expecting _;"],
+  ]) {
+    const program = new CubicalProgram(module, sourceReader(), {collectReferences: false});
+    // Bound regressions by deterministic work, including query retries. The
+    // previous implementation exhausted the arena on these small functions.
+    program.kernel.maxQuerySteps = 40000000n;
+    try {
+      const result = await program.check(source, name);
+      assert.deepEqual(result.gaps, [], name);
+      assert.equal(result.evaluations.length, 1, name);
+      assert.ok(result.evaluations[0].value.length > 0, name);
+    } finally { program.dispose(); }
   }
 });

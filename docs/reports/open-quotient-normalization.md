@@ -1,0 +1,68 @@
+# Open quotient normalization and kernel API audit
+
+Full normalization of `bint_mul` on main after #280 repeatedly expanded the
+proofs used to lift multiplication through the quotient. The pair operation
+`(a,b) * (c,d) = (ac+bd, ad+bc)` was not the expensive part: its open function
+normalized in about 5 ms in the diagnostic run. The quotient's relation and
+squash clauses generated compositions and transports whose normalization
+grew until the arena or diagnostic deadline was exhausted.
+
+Two interacting causes were found:
+
+- Full normalization visited composition walls outside their face conditions.
+  Generated walls can still contain coordinates fixed by their face. Expanding
+  those off-face values computes irrelevant transport corrections.
+- Dimension substitution, used by path beta and restrictions, traversed shared
+  syntax repeatedly. Ordinary term substitution already had a memo, but its
+  dimension counterpart did not.
+
+The fix restricts a partial body by the endpoint conditions common to every
+clause of its face before normalizing it. It keeps the original face and piece
+order, including for disjunctions; splitting into ordered clauses would make
+normal forms sensitive to dimension renaming. Only the restricted term's
+normalization is cached, so the restriction does not affect an unrestricted
+use of the original body. The same rule applies to Glue's partial types and
+equivalences. No constant-transport regularity rule is introduced.
+
+Dimension substitution now memoizes the complete operation: source handle,
+dimension and exact interned interval formula. The formula descriptor is kept
+by value across recursive formula interning, which can move the formula arena.
+Capture avoidance, composition's different scopes for faces and wall bodies,
+and the existing rollback/compaction invalidation remain in force.
+
+## Related failures found in the API scan
+
+The scan covered normalization, weak-head reduction, term/dimension renaming,
+endpoint restriction, alpha comparison, universe-level operations, partial
+systems, and their cache/error lifecycles.
+
+- **Shared universe levels:** the old level normalizer expanded a compact DAG
+  as a tree; its test explicitly expected exhaustion. A bounded, query-local
+  cache now owns copies of completed arithmetic normal forms. It does not
+  convert them into canonical syntax, so equality/order acquire no extra term
+  depth limit. Both successful and failed queries release the cache.
+- **Warm term renaming:** a memo hit could bypass the deadline and take no
+  budget step. Hits now charge a step, as normalization and comparison do.
+- **Interrupted free-variable scans:** substitution could return the original
+  term while the scan had recorded an error. Term and dimension substitution
+  now return failure; no incomplete result is published in the memo. Retrying
+  with sufficient budget computes the actual substitution.
+
+These are changes to computation and error handling. Instructions still check
+their premises independently; syntax queries do not certify typing. No library
+proofs, arithmetic definitions, arena/depth limits or production budgets change.
+
+## Regression coverage
+
+`kernel/tests/test_normalize.c` exercises shared path substitution with syntax
+interning on and off, capture avoidance, rollback handle reuse, warm deadlines,
+interrupted-query recovery, disjunctive faces and independent Glue pieces.
+`kernel/tests/test_levels.c` checks repeated and diamond-shaped shared levels,
+interruption/recovery, and a 1,024-variable arithmetic normal form whose
+canonical term would exceed the syntax depth bound. Its existing 1,500 random
+level-pair comparisons against independent arithmetic evaluation remain.
+
+`tests/fixtures/quotient-normalization.cubist` reproduces the quotient issue
+using only `Unit`, with no integer arithmetic. The WebAssembly regression
+fully normalizes that operation and `bint_mul` under a fixed test work budget.
+The `_` expectation still requires a full normal form.

@@ -172,6 +172,169 @@ static void scope_and_restriction(void) {
     cc_kernel_free(k);
 }
 
+/* Path beta substitutes a dimension through a shared graph too. Forty
+ * shared sums must not turn that substitution into 2^40 recursive visits. */
+static void shared_dimension_substitution(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_judgement_id universe = cc_instr_universe(k, ck_level_constant(k, 0, 0));
+    cc_judgement_id unit = cc_instr_unit(k), empty = cc_instr_void(k);
+    cc_entry_id i = cc_instr_dimension(k, 0);
+    cc_judgement_id path = cc_instr_path(k, i, universe, unit, empty);
+    cc_entry_id p = cc_instr_extend(k, path, 100);
+    cc_judgement_id type = cc_instr_path_apply(k, cc_instr_variable(k, p), i, 0);
+    for (unsigned n = 0; n < 40; ++n)
+        type = cc_instr_sum(k, type, type);
+    cc_term source = info(k, type).term;
+    cc_kernel_set_step_budget(k, 5000);
+    uint64_t before = steps(k);
+    cc_term left = cc_kernel_endpoint_term(k, source, 0, 0);
+    assert(left && steps(k) - before < 1000);
+    cc_term right = cc_kernel_endpoint_term(k, source, 0, 1);
+    assert(right && left != right);
+    cc_term l = cc_kernel_normalize(k, left), r = cc_kernel_normalize(k, right);
+    assert(l && r);
+    for (unsigned n = 0; n < 40; ++n) {
+        assert(k->nodes[l].kind == CC_SUM && k->nodes[r].kind == CC_SUM);
+        assert(k->nodes[l].child[0] == k->nodes[l].child[1]);
+        assert(k->nodes[r].child[0] == k->nodes[r].child[1]);
+        l = k->nodes[l].child[0]; r = k->nodes[r].child[0];
+    }
+    assert(k->nodes[l].kind == CC_UNIT && k->nodes[r].kind == CC_VOID);
+    before = steps(k);
+    cc_kernel_set_step_budget(k, 1);
+    assert(cc_kernel_endpoint_term(k, source, 0, 0) == left && steps(k) - before == 1);
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { }
+    assert(!cc_kernel_endpoint_term(k, source, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_deadline_ms(k, 0);
+    cc_kernel_set_step_budget(k, 5000);
+    assert(cc_kernel_endpoint_term(k, source, 0, 0) == left);
+    cc_kernel_free(k);
+}
+
+static void dimension_cache_scope_and_rollback(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 2, unit, point, point, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 100), path);
+    cc_term line = raw(k, CC_PLAM, 1, unit, at);
+    cc_formula j;
+    cc_init(&j, CC_INTERVAL);
+    assert(cc_generator(&j, 1, true) == CC_OK);
+    cc_term renamed = ck_dimension_substitute(k, line, 0, &j);
+    assert(renamed && k->nodes[renamed].payload != 1);
+    assert(ck_free_dims(k, renamed) & (UINT64_C(1) << 1));
+    assert(ck_dimension_substitute(k, line, 0, &j) == renamed);
+    cc_clear(&j);
+
+    cc_kernel_checkpoint(k);
+    cc_term old = cc_kernel_endpoint_term(k, at, 0, 0);
+    assert(old);
+    cc_kernel_rollback(k);
+    while (k->count <= old)
+        raw(k, CC_VAR, 1000 + (uint32_t)k->count, 0, 0);
+    cc_term again = cc_kernel_endpoint_term(k, at, 0, 0);
+    assert(again && again != old && cc_kernel_normalize(k, again) == point);
+    cc_kernel_free(k);
+}
+
+static void cached_term_rename(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term x = raw(k, CC_VAR, 100, 0, 0), source = raw(k, CC_SUM, 0, x, x);
+    cc_term renamed = cc_kernel_rename(k, source, false, 100, 101);
+    assert(renamed && renamed != source);
+    uint64_t before = steps(k);
+    cc_kernel_set_step_budget(k, 1);
+    assert(cc_kernel_rename(k, source, false, 100, 101) == renamed);
+    assert(steps(k) - before == 1);
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { }
+    assert(!cc_kernel_rename(k, source, false, 100, 101));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_deadline_ms(k, 0);
+    assert(cc_kernel_rename(k, source, false, 100, 101) == renamed);
+    cc_kernel_free(k);
+}
+
+/* A failed free-name scan is not evidence that substitution does nothing.
+ * Public queries must return failure, then recover with enough budget. */
+static void interrupted_substitution(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term x = raw(k, CC_VAR, 100, 0, 0), unit = raw(k, CC_UNIT, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 2, ck_universe_at(k, 0), unit, unit, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), x, path);
+    cc_term term_graph = x, dimension_graph = at;
+    for (unsigned n = 0; n < 40; ++n) {
+        term_graph = raw(k, CC_SUM, 0, term_graph, term_graph);
+        dimension_graph = raw(k, CC_SUM, 0, dimension_graph, dimension_graph);
+    }
+    cc_kernel_set_step_budget(k, 1);
+    assert(!cc_kernel_rename(k, term_graph, false, 100, 101));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_clear_error(k);
+    assert(!cc_kernel_endpoint_term(k, dimension_graph, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 5000);
+    cc_term renamed = cc_kernel_rename(k, term_graph, false, 100, 101);
+    cc_term restricted = cc_kernel_endpoint_term(k, dimension_graph, 0, 0);
+    assert(renamed && restricted && renamed != term_graph && restricted != dimension_graph);
+    assert(!ck_term_free(k, renamed, 100) && ck_term_free(k, renamed, 101));
+    assert(!ck_free_dims(k, restricted) && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+/* Reduction-generated walls may still mention the coordinates fixed on
+ * their face. Their off-face computation is not part of the partial value.
+ * Disjunctive faces must retain their order and only common restrictions. */
+static void wall_faces(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), empty = raw(k, CC_VOID, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 3, ck_universe_at(k, 0), unit, empty, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 100), path);
+    cc_formula_id i0 = ck_endpoint_face(k, 0, 0);
+    cc_term wall = raw(k, CC_TUBE, i0, at, 0);
+    cc_term result = cc_kernel_normalize(k, wall);
+    assert(result && k->nodes[result].payload == i0 && k->nodes[result].child[0] == unit);
+
+    cc_clause alternatives[] = {{0, 1}, {0, 2}};
+    cc_formula either = {CC_FACE, alternatives, 2, 2};
+    cc_formula_id disjunction = ck_formula(k, &either);
+    wall = raw(k, CC_TUBE, disjunction, at, 0);
+    result = cc_kernel_normalize(k, wall);
+    assert(result && k->nodes[result].payload == disjunction && k->nodes[result].child[0] == at);
+
+    cc_clause common[] = {{0, 3}, {0, 5}};
+    cc_formula shared = {CC_FACE, common, 2, 2};
+    cc_formula_id fixed_i = ck_formula(k, &shared);
+    wall = raw(k, CC_TUBE, fixed_i, at, 0);
+    result = cc_kernel_normalize(k, wall);
+    assert(result && k->nodes[result].payload == fixed_i && k->nodes[result].child[0] == unit);
+    /* Glue has partial types and equivalences on the same face. Its tail
+     * belongs to its own face, so must retain its own endpoint. */
+    cc_formula_id i1 = ck_endpoint_face(k, 0, 1);
+    cc_term tail = ck_make(k, CC_GLUE_SYSTEM, i1, at, at, 0, 0);
+    cc_term glue = ck_make(k, CC_GLUE_SYSTEM, fixed_i, at, at, tail, 0);
+    result = cc_kernel_normalize(k, glue);
+    assert(result && k->nodes[result].payload == fixed_i);
+    assert(k->nodes[result].child[0] == unit && k->nodes[result].child[1] == unit);
+    tail = k->nodes[result].child[2];
+    assert(k->nodes[tail].payload == i1);
+    assert(k->nodes[tail].child[0] == empty && k->nodes[tail].child[1] == empty);
+    /* Restrictions cannot escape into an unrestricted use of the term. */
+    assert(cc_kernel_normalize(k, at) == at);
+    cc_kernel_free(k);
+}
+
 int main(void) {
     shared_graph(CC_SHARE_SYNTAX);
     shared_graph(0);
@@ -179,5 +342,11 @@ int main(void) {
     compaction();
     failed_parent();
     scope_and_restriction();
+    shared_dimension_substitution(CC_SHARE_SYNTAX);
+    shared_dimension_substitution(0);
+    dimension_cache_scope_and_rollback();
+    cached_term_rename();
+    interrupted_substitution();
+    wall_faces();
     puts("full normalization cache: ok");
 }
