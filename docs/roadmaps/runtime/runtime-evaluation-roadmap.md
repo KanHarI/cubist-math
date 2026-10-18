@@ -481,10 +481,19 @@ literal rule directly through `bnat_literal` so its printing metadata follows
 the same reader, retiring the default unary numeral limit. Unary numerals
 currently print bare under every selected view: fix that during migration
 so only an identity unary notation prints them bare, and other views use
-`unat.(n)`. The switch also waits for NUM1's dependent strong recursion with
-coherence. Comparison
+`unat.(n)`. Before the switch, the mathematical printer must also show
+literal-rule numerals as written and computed `BNat` values in decimal.
+The switch also waits for NUM1's dependent strong recursion with coherence.
+Comparison
 correctness, the semiring isomorphism, the universe path and its transport
 laws are checked.
+
+Outstanding display checks from #277:
+
+- [ ] Qualify unary numerals under non-identity notation views.
+- [ ] Show `0b` and rational literal-rule values readably in mathematical
+  output, including the proof page's type column, which currently exposes
+  their `parsed_value` and lexeme constructor chains.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
