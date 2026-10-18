@@ -1,0 +1,120 @@
+import bnat_recursion;
+import bnat_notation;
+use bnat;
+
+computable def peano_count(n : BNat) : BNat := bnat_peano(
+  U0, fun (m : BNat) => BNat, b_zero, fun (m, count : BNat) => bnat_succ(count), n
+);
+
+def count_zero : peano_count(0b0) = 0b0 {
+  rfl;
+}
+
+def count_seven : peano_count(0b111) = 0b111 {
+  rfl;
+}
+
+def factorial_zero : bnat_factorial(0b0) = 0b1 {
+  rfl;
+}
+
+def factorial_five : bnat_factorial(0b101) = 0b1111000 {
+  rfl;
+}
+
+def factorial_successor(n : BNat) :
+  bnat_factorial(bnat_succ(n)) = bnat_succ(n) * bnat_factorial(n) := bnat_factorial_succ(n);
+
+// A step that ignores smaller results must not enumerate a huge bound.
+def unused_smaller :
+  bnat_strong_recursion(
+    U0, fun (m : BNat) => BNat,
+    fun (n : BNat, below : BNatBelow(U0, fun (m : BNat) => BNat, n)) => n,
+    0b1111111111111111111111111111111111111111111111111111111111111111
+  ) = 0b1111111111111111111111111111111111111111111111111111111111111111 {
+  rfl;
+}
+
+// The recursive value and its certificate both depend on the index.
+computable def IdentityWitness(n : BNat) : U0 := exists value : BNat. value = n;
+
+computable def identity_step(n : BNat, below : BNatBelow(U0, IdentityWitness, n)) :
+  IdentityWitness(n) := match n {
+    b_zero => (b_zero, refl(b_zero));
+    b_positive(p) => (
+      bnat_succ(below(bpositive_pred(p), bpositive_pred_lt(p)).1),
+      trans(
+        cong(bnat_succ, below(bpositive_pred(p), bpositive_pred_lt(p)).2), bpositive_succ_pred(p)
+      )
+    );
+  };
+
+computable def dependent_identity(n : BNat) :
+  IdentityWitness(n) := bnat_strong_recursion(U0, IdentityWitness, identity_step, n);
+
+def dependent_value : dependent_identity(0b101).1 = 0b101 {
+  rfl;
+}
+
+def dependent_certificate : dependent_identity(0b101).1 = 0b101 := dependent_identity(0b101).2;
+
+// Reference lemmas supply evidence only for an impossible decision branch.
+computable def reference_le_add(a, b : UNat) : le(a, add(a, b)) := match a {
+    zero => tt;
+    succ(k) => reference_le_add(k, b);
+  };
+
+computable def reference_lt_add_succ(a, b : UNat) : isLt(a, add(a, succ(b))) := comp(
+  fun (i : Interval) => isLt(a, nat_add_succ(a, b) @ ~i), reference_le_add(a, b)
+);
+
+// Count binary digits by requesting the result at half the input. At five,
+// this asks for two, not the immediate predecessor four.
+computable def positive_half(p : BPositive) : BNat := match p {
+    bp_one => b_zero;
+    bp_even(q) => b_positive(q);
+    bp_odd(q) => b_positive(q);
+  };
+
+computable def half_below_positive(p : BPositive) :
+  bnat_lt(positive_half(p), b_positive(p)) := match p {
+    bp_one => tt;
+    bp_even(q) => bnat_lt_from_decoding(
+      b_positive(q), b_positive(bp_even(q)),
+      comp(
+        fun (i : Interval) => isLt(
+          bpositive_to_unat(q), add(bpositive_to_unat(q), bpositive_decode_positive(q) @ ~i)
+        ), reference_lt_add_succ(bpositive_to_unat(q), bnat_to_unat(bpositive_pred(q)))
+      )
+    );
+    bp_odd(q) => bnat_lt_from_decoding(
+      b_positive(q), b_positive(bp_odd(q)),
+      reference_le_add(bpositive_to_unat(q), bpositive_to_unat(q))
+    );
+  };
+
+computable def digit_step(n : BNat, below : BNatBelow(U0, fun (m : BNat) => BNat, n)) :
+  BNat := match n {
+    b_zero => b_zero;
+    b_positive(p) => bnat_succ(below(positive_half(p), half_below_positive(p)));
+  };
+
+computable def binary_digits(n : BNat) :
+  BNat := bnat_strong_recursion(U0, fun (m : BNat) => BNat, digit_step, n);
+
+def digits_zero : binary_digits(0b0) = 0b0 {
+  rfl;
+}
+
+def digits_five : binary_digits(0b101) = 0b11 {
+  rfl;
+}
+
+def digits_eight : binary_digits(0b1000) = 0b100 {
+  rfl;
+}
+
+// The callback cannot request its own index without false decrease evidence.
+// Error: E606: Type mismatch: found Unit, expected Void.
+def refused_self_call(below : BNatBelow(U0, fun (m : BNat) => BNat, 0b101)) :
+  BNat := below(0b101, tt);

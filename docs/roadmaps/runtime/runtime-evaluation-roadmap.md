@@ -12,8 +12,9 @@ EVAL1's one-pass REPL path and a version-3 baseline.
 completed full normalizations by exact syntax identity. NUM0's source
 representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
-correctness are implemented. Its strong-recursion work, NUM2 and EVAL3–EVAL8
-remain planned. A versioned scratch evaluator supplies feasibility evidence only.
+correctness are implemented, together with dependent Peano/strong recursion
+and factorial. The default-`Nat` migration, NUM2 and EVAL3–EVAL8 remain.
+A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
 `do` and arrows, which are independent of these evaluator changes.
@@ -305,16 +306,16 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 ## Milestones
 
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
-NUM1 has its semiring agreement, universe transport, bitwise setness and
-comparison correctness; its remaining parts and the other rows are planned.
-Sizes are relative scope, as in the work plan.
+NUM1's semiring, transport, equality/order and dependent-recursion work is
+implemented. The default-`Nat` compatibility migration and the other rows
+remain. Sizes are relative scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
 | EVAL0 | Reproducible workload and phase measurements. **Done** on 2026-10-08 | Existing CLI, counters and build stamps | S |
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
-| NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness and comparison correctness implemented; H1 binary Peano view and coherent strong recursion remain | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
+| NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
@@ -465,8 +466,32 @@ through the conversions; the agreement paths justify using the direct binary
 operations. Closed forward/reverse examples compute by conversion; a
 data-carrying dependent function family is transported, and its closed first
 projection computes in [binary_transport.cubist](../../../cubist-tests/binary_transport.cubist).
-These proofs add no assumptions or kernel rules. The dependent Peano view,
-strong recursion and factorial remain NUM1 work. Public `Nat` has not switched.
+These proofs add no assumptions or kernel rules.
+
+**NUM1 recursion implementation (2026-10-18).**
+[bnat_peano.cubist](../../../library/bnat_peano.cubist) defines dependent
+`advance(p, a)` over positive offsets by bit recursion, with known binary
+offsets and checked reindexing paths. Starting at zero gives `bnat_peano`,
+whose zero/successor equations hold for arbitrary dependent families in
+every finite universe.
+The proof compares total dependent values with homogeneous iteration and
+uses setness only for the binary index. That total-state iterator is proof
+machinery; the executable dependent iterator uses its known binary offsets.
+[bnat_recursion.cubist](../../../library/bnat_recursion.cubist) constructs
+`BNatBelow`, decomposes `m < succ(n)` using binary decisions, and proves the
+coherence of smaller-value callbacks. Its strong-recursion equation has no
+proposition-valued restriction on the result family. Unary comparison
+evidence is used only to refute impossible negative decisions.
+
+Binary factorial uses that recursor and has checked zero/successor laws.
+[binary_recursion.cubist](../../../cubist-tests/binary_recursion.cubist)
+computes `0! = 1`, `5! = 120`, a data-carrying dependent witness, and digit
+counts whose recursive call halves the input. It refuses a callback at its
+own bound without strict-decrease evidence. A step ignoring smaller results
+computes at a 64-bit bound without enumerating them. The `Below` construction
+can still walk through intervening predecessor bounds when a smaller result
+is requested; this is not a sublinear-time or memoization claim.
+Public `Nat` has not switched.
 
 **Migration boundary.** Public `Nat` is still unary. `UNat` currently aliases
 that exact carrier, retaining its `zero`/`succ` constructors and structural
@@ -483,10 +508,8 @@ currently print bare under every selected view: fix that during migration
 so only an identity unary notation prints them bare, and other views use
 `unat.(n)`. Before the switch, the mathematical printer must also show
 literal-rule numerals as written and computed `BNat` values in decimal.
-The switch also waits for NUM1's dependent strong recursion with coherence.
-Comparison
-correctness, the semiring isomorphism, the universe path and its transport
-laws are checked.
+The switch now waits for that frontend and unary-client migration. NUM1's
+comparison, semiring, universe-transport and dependent-recursion laws check.
 
 Outstanding display checks from #277:
 
@@ -546,8 +569,8 @@ as ordinary definitions, with the following proof obligations:
    strong recursor's computation law for arbitrary dependent `P`, without
    restricting it to propositions or assuming the computation law.
 
-This is the planned H1 construction, not an implemented recursor or an
-import from the archive. H2 and archived `W` are not dependencies. The
+This H1 construction is implemented in `bnat_peano` and `bnat_recursion`;
+H2 and archived `W` are not dependencies. The zero and
 bit-constructor clauses unfold by H1 computation; the public successor
 and strong-recursion equations require checked path proofs, including
 their transports and coherence. No new definitional computation rule is

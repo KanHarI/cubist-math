@@ -1,0 +1,202 @@
+import bnat_peano;
+import bnat_order;
+
+computable def bordering_lt_decide(order : BOrdering) :
+  Decidable(U0, BOrderingLt(order)) := match order {
+    b_less => left(tt);
+    b_equal => right(fun (v : Void) => v);
+    b_greater => right(fun (v : Void) => v);
+  };
+
+computable def bnat_lt_decide(m, n : BNat) :
+  Decidable(U0, bnat_lt(m, n)) := bordering_lt_decide(bnat_compare(m, n));
+
+computable def bnat_lt_zero(m : BNat, smaller : bnat_lt(m, b_zero)) : Void := match m {
+    b_zero => smaller;
+    b_positive(p) => smaller;
+  };
+
+computable def unat_lt_succ_cases(a, b : UNat, smaller : isLt(a, succ(b))) :
+  isLt(a, b) or (a = b) := match a, b {
+    zero, zero => right(refl(zero));
+    zero, succ(y) => left(tt);
+    succ(x), zero => absurd(smaller);
+    succ(x),
+    succ(y) => match unat_lt_succ_cases(x, y, smaller) return (
+      isLt(succ(x), succ(y)) or (succ(x) = succ(y))
+    ) {
+      left less => left(less);
+      right same => right(cong(succ, same));
+    };
+  };
+
+// Unary order is used only to refute an impossible negative decision.
+// Successful decomposition, including its equality certificate, uses bits.
+computable def bnat_lt_succ_impossible(
+  m, n : BNat, smaller : bnat_lt(m, bnat_succ(n)), not_less : bnat_lt(m, n) -> Void,
+  not_equal : m = n -> Void
+) :
+  Void {
+  let un := comp(fun (i : Interval) => bnat_lt_correct(m, bnat_succ(n)) @ i, smaller);
+  let un_succ := comp(fun (i : Interval) => isLt(bnat_to_unat(m), bnat_decode_succ(n) @ i), un);
+  exact match unat_lt_succ_cases(bnat_to_unat(m), bnat_to_unat(n), un_succ) return Void {
+    left less => not_less(comp(fun (i : Interval) => bnat_lt_correct(m, n) @ ~i, less));
+    right same => not_equal(bnat_decode_injective(m, n, same));
+  };
+}
+
+computable def bnat_lt_succ_cases(m, n : BNat, smaller : bnat_lt(m, bnat_succ(n))) :
+  bnat_lt(m, n) or (m = n) := match bnat_lt_decide(m, n) return (bnat_lt(m, n) or (m = n)) {
+    left less => left(less);
+    right not_less => match bnat_decide(m, n) return (bnat_lt(m, n) or (m = n)) {
+      left same => right(same);
+      right not_equal => absurd(bnat_lt_succ_impossible(m, n, smaller, not_less, not_equal));
+    };
+  };
+
+computable def BNatBelow(U < UU0, P : BNat -> U, n : BNat) :
+  U := forall m : BNat. bnat_lt(m, n) -> P(m);
+
+computable def bnat_below_zero(U < UU0, P : BNat -> U) :
+  BNatBelow(U, P, b_zero) := fun (m : BNat, smaller : bnat_lt(m, b_zero)) => absurd(
+    bnat_lt_zero(m, smaller)
+  );
+
+computable def bnat_below_case(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, P, n), m : BNat, split : bnat_lt(m, n) or (m = n)
+) :
+  P(m) := match split return P(m) {
+    left smaller => below(m, smaller);
+    right same => comp(fun (i : Interval) => P(same @ ~i), step(n, below));
+  };
+
+computable def bnat_below_step(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, P, n)
+) :
+  BNatBelow(U, P, bnat_succ(n)) := fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => bnat_below_case(
+    U, P, step, n, below, m, bnat_lt_succ_cases(m, n, smaller)
+  );
+
+computable def bnat_below(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
+) :
+  BNatBelow(U, P, n) := bnat_peano(
+    U, BNatBelow(U, P), bnat_below_zero(U, P), bnat_below_step(U, P, step), n
+  );
+
+computable def bnat_strong_recursion(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
+) :
+  P(n) := step(n, bnat_below(U, P, step, n));
+
+computable def bnat_below_succ(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
+) :
+  bnat_below(U, P, step, bnat_succ(n)) = bnat_below_step(U, P, step, n, bnat_below(U, P, step, n)) := bnat_peano_succ(
+    U, BNatBelow(U, P), bnat_below_zero(U, P), bnat_below_step(U, P, step), n
+  );
+
+computable def bnat_below_case_coherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n, m : BNat,
+  split : bnat_lt(m, n) or (m = n),
+  ih : (
+    forall k : BNat. forall smaller : bnat_lt(k, n).
+    bnat_below(U, P, step, n)(k, smaller) = bnat_strong_recursion(U, P, step, k)
+  )
+) :
+  bnat_below_case(U, P, step, n, bnat_below(U, P, step, n), m, split) = bnat_strong_recursion(
+    U, P, step, m
+  ) {
+  match split {
+    left(smaller) => {
+      exact ih(m, smaller);
+    }
+    right(same) => {
+      exact apd(fun (k : BNat) => bnat_strong_recursion(U, P, step, k), n, m, sym(same));
+    }
+  }
+}
+
+// Coherence is proved for arbitrary dependent families. No proof
+// irrelevance assumption is made about P or the result of the step.
+computable def bnat_below_coherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
+) :
+  forall m : BNat. forall smaller : bnat_lt(m, n).
+  bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m) := bnat_peano(
+    U, fun (n : BNat) => forall m : BNat. forall smaller : bnat_lt(m, n).
+    bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m),
+    fun (m : BNat, smaller : bnat_lt(m, b_zero)) => absurd(bnat_lt_zero(m, smaller)),
+    fun (
+      n : BNat, ih : forall m : BNat. forall smaller : bnat_lt(m, n).
+      bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m)
+    ) => fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => trans(
+      cong(
+        fun (below : BNatBelow(U, P, bnat_succ(n))) => below(m, smaller),
+        bnat_below_succ(U, P, step, n)
+      ), bnat_below_case_coherent(U, P, step, n, m, bnat_lt_succ_cases(m, n, smaller), ih)
+    ), n
+  );
+
+computable def bnat_strong_recursion_equation(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
+) :
+  bnat_strong_recursion(U, P, step, n) = step(
+    n, fun (m : BNat, smaller : bnat_lt(m, n)) => bnat_strong_recursion(U, P, step, m)
+  ) := path i => step(
+    n, fun (m : BNat, smaller : bnat_lt(m, n)) => bnat_below_coherent(U, P, step, n)(m, smaller) @ i
+  );
+
+// As with equality reflection, the positive decision returns its binary
+// witness. The unary comparison argument only refutes an impossible branch.
+computable def bnat_lt_from_decoding(m, n : BNat, p : isLt(bnat_to_unat(m), bnat_to_unat(n))) :
+  bnat_lt(m, n) := match bnat_lt_decide(m, n) return bnat_lt(m, n) {
+    left yes => yes;
+    right no => absurd(no(comp(fun (i : Interval) => bnat_lt_correct(m, n) @ ~i, p)));
+  };
+
+computable def bnat_lt_succ(n : BNat) : bnat_lt(n, bnat_succ(n)) := bnat_lt_from_decoding(
+  n, bnat_succ(n),
+  comp(
+    fun (i : Interval) => isLt(bnat_to_unat(n), bnat_decode_succ(n) @ ~i),
+    nat_le_refl(bnat_to_unat(n))
+  )
+);
+
+computable def bpositive_pred_lt(p : BPositive) : bnat_lt(bpositive_pred(p), b_positive(p)) := comp(
+  fun (i : Interval) => bnat_lt(bpositive_pred(p), bpositive_succ_pred(p) @ i),
+  bnat_lt_succ(bpositive_pred(p))
+);
+
+computable def bnat_factorial_step(n : BNat, below : BNatBelow(U0, fun (m : BNat) => BNat, n)) :
+  BNat := match n {
+    b_zero => b_positive(bp_one);
+    b_positive(p) => bnat_mul(b_positive(p), below(bpositive_pred(p), bpositive_pred_lt(p)));
+  };
+
+computable def bnat_factorial(n : BNat) :
+  BNat := bnat_strong_recursion(U0, fun (m : BNat) => BNat, bnat_factorial_step, n);
+
+computable def bnat_factorial_zero :
+  bnat_factorial(b_zero) = b_positive(bp_one) := bnat_strong_recursion_equation(
+    U0, fun (m : BNat) => BNat, bnat_factorial_step, b_zero
+  );
+
+computable def bnat_factorial_step_succ(n : BNat) :
+  bnat_factorial_step(
+    bnat_succ(n), fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => bnat_factorial(m)
+  ) = bnat_mul(bnat_succ(n), bnat_factorial(n)) := match n {
+    b_zero => refl(bnat_mul(b_positive(bp_one), bnat_factorial(b_zero)));
+    b_positive(p) => cong(
+      fun (m : BNat) => bnat_mul(b_positive(bpositive_succ(p)), bnat_factorial(m)),
+      bpositive_pred_succ(p)
+    );
+  };
+
+computable def bnat_factorial_succ(n : BNat) :
+  bnat_factorial(bnat_succ(n)) = bnat_mul(bnat_succ(n), bnat_factorial(n)) := trans(
+    bnat_strong_recursion_equation(U0, fun (m : BNat) => BNat, bnat_factorial_step, bnat_succ(n)),
+    bnat_factorial_step_succ(n)
+  );
