@@ -7,7 +7,7 @@ import { parse, languageKeywords } from "../web/cubist/parser.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
-import { importedDeclarationsReader, migrationSourceReader, historicalModulePaths, historicalMigrationSources } from "../tools/migration-sources.mjs";
+import { importedDeclarationsReader, migrationSourceReader, historicalModulePaths, historicalMigrationSources, unaryNaturalBase } from "../tools/migration-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
 
 const module = await createCubical();
@@ -250,4 +250,33 @@ test("historical implicit parent labels become fresh explicit labels with matchi
   assert.match(rewritten, /extends left__ : Left/);
   assert.match(rewritten, /:= m.left__;/);
   assert.match(rewritten, /:= m.left_;/);
+});
+
+
+test("historical unary foundations relocate without changing checked clients", async () => {
+  const sources=new Map([
+    ["library/nat.cubist", `inductive Nat : U0 { zero; succ(n : Nat); }
+      computable def add(a,b : Nat) : Nat := match a { zero => b; succ(n) => succ(add(n,b)); };
+      notation nat { x + y := add(x,y); numeral(n : Nat) := n; }`],
+    ["archive/first-library/history.cubist", `import nat; use nat;
+      def same(n : Nat) : n + 0 = n + 0 := refl(n + 0);`],
+  ]);
+  const available=new Set(sources.keys()), unaryNat=unaryNaturalBase({available,readSource:p=>sources.get(p)});
+  assert.equal(unaryNat,true);
+  const paths=historicalModulePaths({available,unaryNat});
+  const history=historicalMigrationSources({available,...paths,readSource:p=>sources.get(p)});
+  const readOriginal=migrationSourceReader(async (place,name)=>{
+    const path=paths.modulePath(place,name);
+    return available.has(path)?historicalSource(history.source(path),name==="unat"?"nat":name,
+      {implicitNat:false,minusReverses:false,unaryNat,importedDeclarations:history.importsOf(path)}):null;
+  },["history"]);
+  const [report]=await verifyMigration({modules:["history"],readOriginal,
+    readEdited:async()=>`import unat; use unat; def same(n : UNat) : n + 0 = n + 0 := refl(n + 0);`});
+  assert.deepEqual(report.failures,[]);
+  assert.equal(report.identical,1);
+  assert.throws(()=>historicalSource("import nat; def f(UNat : U0) := UNat;","history",
+    {implicitNat:false,unaryNat:true}),/would capture existing binding UNat/);
+  sources.set("library/unat.cubist","import nat; def UNat : U0 := Void;");
+  available.add("library/unat.cubist");
+  assert.throws(()=>unaryNaturalBase({available,readSource:p=>sources.get(p)}),/not the identity alias/);
 });

@@ -111,13 +111,13 @@ test("plain evaluation displays like print after selecting a call-form model", a
   const repl = await session(t);
   await repl.run("import unat; import algebra; use unat;");
   await repl.run("def pick(n : UNat) : Monoid(U0) := nat_multiplicative.monoid; use pick(0);");
-  assert.deepEqual(texts(await repl.run("evaluate unat.(3);")), ["value: 3"]);
-  assert.deepEqual(texts(await repl.run("print(evaluate(unat.(3)));")), ["value: 3"]);
+  assert.deepEqual(texts(await repl.run("evaluate unat.(3);")), ["value: unat.(3)"]);
+  assert.deepEqual(texts(await repl.run("print(evaluate(unat.(3)));")), ["value: unat.(3)"]);
   // This is the existing print display: the selected model has no numeral
   // reader, so a displayed numeral needs qualification when entered again.
   assert.deepEqual(texts(await repl.run("evaluate 3;")),
-    ["error: E907: this model's notation reads no numeral 3: write unat.(3) for a natural number, or select a notation that reads it."]);
-  assert.deepEqual(texts(await repl.run("evaluate unat.(3);")), ["value: 3"]);
+    ["error: E907: this model's notation reads no numeral 3: write nat.(3) for a natural number, or select a notation that reads it."]);
+  assert.deepEqual(texts(await repl.run("evaluate unat.(3);")), ["value: unat.(3)"]);
 });
 
 test("witness reads a closed truncation's witness, with its type", async t => {

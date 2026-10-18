@@ -1119,7 +1119,7 @@ export class Translator {
     const zero=natural?.constructors.findIndex(c=>c.source==="zero"&&c.arity===0&&c.dims===0);
     const succ=natural?.constructors.findIndex(c=>c.source==="succ"&&c.arity===1&&c.dims===0);
     if(!natural||natural.slots.length||natural.constructors.length!==2||zero<0||succ<0)
-      throw Error("Numerals and induction require an imported UNat with zero and succ constructors.");
+      throw Error("Numerals and induction require an imported UNat with zero and succ constructors. For binary Nat, use nat_peano.");
     return {type,zero:T.constructor(zero,type,"zero"),succ:T.constructor(succ,type,"succ")};
   }
   // Both a source binding and a closed notation capture supply an elaboration

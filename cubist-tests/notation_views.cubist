@@ -124,11 +124,11 @@ print(evaluate(unat.(nested(3))));
 // A selection is complete: + is not the additive monoid's, whose
 // operation is *.
 // Error: E397: + is not in additive_'s notation, which is selected here: select a notation that
-//   binds it, as unat.(x + y), or write the operation.
+//   binds it, as nat.(x + y), or write the operation.
 def missing(x : UNat) : UNat := additive_.(x + x);
 
 // Error: E397: < is not in times's notation, which is selected here: select a notation that binds
-//   it, as unat.(x < y), or write the operation.
+//   it, as nat.(x < y), or write the operation.
 def no_order : times.(1 < 2) := tt;
 
 use unat;

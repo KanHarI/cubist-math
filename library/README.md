@@ -36,12 +36,15 @@ Existing structural clients, lexical digits/offsets, list lengths and h-level
 indices use this explicit carrier. Integer and rational representations also
 remain unary until NUM2. Public `Nat` no longer matches on unary constructors;
 use `nat_peano` for its dependent zero/successor view. A unary numeral is
-qualified as `unat.(n)` outside an identity unary view. In mixed-carrier code,
-select the notation explicitly and use the unambiguous `bnat_*` operations;
-short names such as `zero` and `add` follow ordinary import shadowing.
+qualified as `unat.(n)` outside an identity unary view. Imports re-export their dependencies, and a later import shadows earlier
+short names: even `import nat; import hlevels;` exposes unary `zero` and
+`add` through `hlevels`. Import `nat` last to use its binary short names.
+Explicit `nat.(...)`, `bnat_*` operations and `nat_peano` remain unambiguous
+in either order; this migration does not change import visibility.
 
 Conversion remains explicit: `bnat_unary` supplies both maps and inverse laws,
-`bnat_semiring` proves their semiring agreement, and `bnat_transport` supplies
+`bnat_semiring` proves their arithmetic laws, `bnat_models` packages the
+optional models and their semiring isomorphism, and `bnat_transport` supplies
 the universe path and transport laws. `bnat_equality` supplies bitwise equality
 and setness, `bnat_order` comparison correctness, `bnat_peano` dependent
 zero/successor recursion, and `bnat_recursion` strong recursion and factorial.
@@ -57,7 +60,8 @@ zero/successor recursion, and `bnat_recursion` strong recursion and factorial.
 | [`bnat_arithmetic`](bnat_arithmetic.cubist) | Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits. | None |
 | [`bnat_order`](bnat_order.cubist) | Proofs connecting the high-bit binary comparison and its computed non-strict/strict predicates to unary numerical order; both predicates are propositions. | None |
 | [`semirings`](semirings.cubist) | The `CommSemiring` theory, with shared additive and multiplicative commutative monoids, distributivity and zero absorption. | None |
-| [`bnat_semiring`](bnat_semiring.cubist) | The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits. | None |
+| [`bnat_semiring`](bnat_semiring.cubist) | Binary semiring laws, addition and nonzero-factor multiplication cancellation, nontriviality, no zero divisors, and conversion preservation. The arithmetic computes directly on bits; this module does not load the general algebra hierarchy. | None |
+| [`bnat_models`](bnat_models.cubist) | Optional unary and binary commutative-semiring models, their conversion homomorphisms and isomorphism. | None |
 | [`bnat_transport`](bnat_transport.cubist) | The checked universe path `UNat =[U0] BNat` from the semiring isomorphism's maps; forward/reverse transport equals explicit conversion, and transported zero, one, addition and multiplication agree with the binary operations. Transported unary functions evaluate through the conversions; these paths justify using the direct binary operations. | None |
 | [`bnat_peano`](bnat_peano.cubist) | Dependent advance over binary offsets and the Peano eliminator; its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families. Homogeneous total-state iteration is used only in the successor proof. | None |
 | [`bnat_recursion`](bnat_recursion.cubist) | Binary strict-order decisions and successor decomposition; callbacks for every smaller value, coherent dependent strong recursion and its equation; binary factorial with zero/successor laws. Successful decrease checks keep binary witnesses. | None |

@@ -108,7 +108,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
     const fromBinary = dependencies(`factorial_ten_binary_to_base_${suffix}`);
     assert.ok(fromBinary.has("binary_factorial_ten"));
     assert.equal(fromBinary.has(manual), false, "target manual factorial must not prove its own transfer");
-    for (const target of ["binary", "unat"]) {
+    for (const target of ["binary", "nat"]) {
       const fromRadix = dependencies(`factorial_ten_base_${suffix}_to_${target}`);
       assert.ok(fromRadix.has(manual));
       assert.equal(fromRadix.has("binary_factorial_ten"), false, "radix input must suffice independently");

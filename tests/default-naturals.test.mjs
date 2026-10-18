@@ -38,3 +38,28 @@ test("a same-named non-identity view cannot turn unary values into bare numerals
   assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "original" }), "10");
   assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "shadow" }), "unat.(10)");
 });
+
+
+test("public natural notation stays binary under transitive unary imports", async t => {
+  for (const [imports, shortType] of [
+    ["import nat; import hlevels;", "UNat"],
+    ["import hlevels; import nat;", "Nat"],
+  ]) {
+    const { result } = await checkProgram(t, `${imports}
+      def short_zero : ${shortType} := zero;
+      def wide : Nat := nat.(18446744073709551616);
+      def dependent(U < UU0, P : Nat -> U, z : P(b_zero),
+        step : forall n : Nat. P(n) -> P(bnat_succ(n))) := nat_peano(U, P, z, step, b_zero);
+    `);
+    assert.ok(result.complete, JSON.stringify(result.gaps));
+  }
+});
+
+
+test("unary constructor patterns on default Nat explain its numerical induction view", async t => {
+  const { result } = await checkProgram(t, `import nat; use nat;
+    def wrong(n : Nat) : Nat := match n { zero => 0; succ(k) => k; };
+  `);
+  assert.equal(result.complete,false);
+  assert.match(result.outputs.find(output=>output.name==="wrong").reason,/Use nat_peano/);
+});

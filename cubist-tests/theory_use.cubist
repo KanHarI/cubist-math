@@ -46,19 +46,19 @@ use additive_;
 
 def twice(x : UNat) : UNat := x * x;
 
-// Output: 6
+// Output: unat.(6)
 print(evaluate(twice(unat.(3))));
 
 // An expression in a directive is read in the selection too: * is
 // additive's.
-// Output: 6
+// Output: unat.(6)
 print(evaluate(unat.(3) * unat.(3)));
 
 use multiplicative;
 
 def squared(x : UNat) : UNat := x * x;
 
-// Output: 9
+// Output: unat.(9)
 print(evaluate(squared(unat.(3))));
 
 theory Magma(U < UU0) {
@@ -101,7 +101,8 @@ def not_a_model := 3 UNat.(*) 4;
 // Error: E836: Magma binds no operation to +.
 def no_notation(G : Magma(U0), x : G.M) : G.M := x G.(+) x;
 
-// Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type UNat.
+// Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type
+//   UNat.
 def use_a_number(n : UNat) : UNat {
   use n;
   exact n;
@@ -117,7 +118,7 @@ use pick(0);
 
 def picked : UNat := one;
 
-// Output: 1
+// Output: unat.(1)
 print(evaluate(picked));
 
 // And inner is the field that use outer opens.
@@ -133,7 +134,7 @@ use inner;
 
 def wrapped : UNat := one;
 
-// Output: 0
+// Output: unat.(0)
 print(evaluate(wrapped));
 
 // A use before it that no longer reads, its model's name taken by a later

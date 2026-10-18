@@ -218,7 +218,7 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
 test("the harness replays REPL transcripts on the example before them", async () => {
   const transcriptOf = text => ({ label: "sample.html:1", attrs: { "data-check": "repl" }, text });
   const base = "import unat; use unat; def two := succ(succ(0));";
-  await verify(transcriptOf("> typeof two;\nNat\n> let three := succ(two);\nthree : UNat\n> three\n3"), 0, new Map(), base);
+  await verify(transcriptOf("> typeof two;\nUNat\n> let three := succ(two);\nthree : UNat\n> three\n3"), 0, new Map(), base);
   await assert.rejects(verify(transcriptOf("> evaluate two;\n3"), 1, new Map(), base), /gives \["2"\]/);
   await assert.rejects(verify(transcriptOf("> evaluate two;"), 2, new Map(), base), /gives \["2"\]/);
   await assert.rejects(verify(transcriptOf("> evaluate two;\n2"), 3), /follows the accepted example/);

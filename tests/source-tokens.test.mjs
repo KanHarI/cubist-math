@@ -46,7 +46,7 @@ test("a projection's index is not a numeral, and the removed have, show and suff
   assert.equal(numeralAt(source, source.lastIndexOf("1"), "1"), "succ(0)");
   assert.equal(numeralAt(source, at("2."), "2"), null);
   // A quantifier's dot is followed by a space, so a numeral after it expands.
-  assert.equal(numeralAt("forall n : UNat. 1 = n", 16, "1"), "succ(0)");
+  assert.equal(numeralAt("forall n : UNat. 1 = n", "forall n : UNat. ".length, "1"), "succ(0)");
   for (const word of ["have", "show", "suffices"]) assert.equal(tokenStyle(word, null), tokenStyle("name", null), word);
   assert.equal(tokenStyle("let", null), "keyword");
 });

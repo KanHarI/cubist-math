@@ -1,5 +1,12 @@
 # Cubist
 
+Public `Nat` is binary `BNat`: write `import nat; use nat;` for decimal or
+`0b` literals and binary arithmetic. Decimal input does not build a unary
+magnitude. The structural induction examples below use explicit `UNat`
+from `import unat; use unat;`. Use `nat_peano` or `nat_strong_recursion`
+for the public binary carrier's numerical induction views.
+
+
 > Historical design notes. The current project uses only the cubical C kernel;
 > see [the project README](../../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
 
@@ -40,7 +47,7 @@ Back button retraces inspections; browser Back retraces source navigation.
 
 Clicking `<` explains `isLt(a, b)`, equivalently `(isLt(a))(b)`, and links to its
 source. The definition is `le(succ(a), b)`. Other arithmetic operators also expose
-their named functions. A numeral such as `2` denotes `succ(succ(0))` of type `Nat`.
+their named functions. A numeral such as `2` denotes `succ(succ(0))` of type `UNat`.
 The source explorer makes both notation and numeral meanings inspectable.
 
 ## Mathematical syntax
@@ -48,7 +55,7 @@ The source explorer makes both notation and numeral meanings inspectable.
 ```text
 def identity(A : U0, x : A) = x;
 
-def copy(n : Nat) = induction n as k return Nat {
+def copy(n : UNat) = induction n as k return UNat {
   zero => 0;
   succ previous => succ(previous);
 };
@@ -83,7 +90,7 @@ to keep one folded.
 
 Named definitions retain their checked bodies, which conversion can unfold
 when necessary to compare types. Function application still computes by beta
-reduction: `(fun (x : Nat) => succ(x))(1)` computes to `2`. Proof blocks appear
+reduction: `(fun (x : UNat) => succ(x))(1)` computes to `2`. Proof blocks appear
 by name in the inspector, with their bodies available to open. This presentation
 does not change checking or introduce an axiom.
 
@@ -131,7 +138,7 @@ induction n as k return C(k) {
 }
 ```
 
-The base has type `C(0)`. In the successor branch, `k : Nat` and `ih : C(k)` are
+The base has type `C(0)`. In the successor branch, `k : UNat` and `ih : C(k)` are
 available, and the result must have type `C(succ(k))`. The kernel checks this
 substitution, including dependencies. Expression forms of case analysis are:
 
@@ -241,7 +248,7 @@ claimed mathematical translations of the older catalogue.
 
 The CLI command `prove FILE.cubist` checks the source and opens the result in the
 existing selection/reduction workbench. JSON remains an optional checked replay
-export. Source is limited to 1 MB, nesting to 128, numerals to 256, and compiled
+export. Source is limited to 1 MB, nesting to 128, unary numerals to 256, and compiled
 programs to 4,194,304 instructions. The WASM kernel allows 16,777,216 nodes
 per expanded expression and limits expression depth to 256. Shared AST and
 judgment storage grows by doubling as needed, without fixed count caps.
@@ -267,7 +274,7 @@ well-founded trees `W(U, V, A, B)` and `wrec`, but nothing imports it.
 and `binary.(0b0)` to `binary_zero`. Leading zeroes are ignored; malformed
 digits are rejected. There is a parser limit of 256 significant bits, subject
 also to kernel term depth limits. No machine-number conversion is used.
-Decimal literals are unary `Nat` numerals where `use nat;` selects the
+Decimal literals are unary `UNat` numerals where `use unat;` selects the
 naturals' notation, and an operator or numeral outside any selection is an
 error. Import
 `binary_arithmetic` for `binary_add`, `binary_mul`, `binary_of_nat` and the
@@ -280,7 +287,7 @@ calculation blocks, implicit arguments, and editor completion are future work.
 A named proposition can be used directly as a definition's result type:
 
 ```text
-def InfinitelyManyPrimes = forall n : Nat. exists p : Nat. Prime(p) and n < p;
+def InfinitelyManyPrimes = forall n : UNat. exists p : UNat. Prime(p) and n < p;
 
 def euclid : InfinitelyManyPrimes {
   intro n;
@@ -329,7 +336,7 @@ whatever a comparison needs, so the list has no further effect. A block adds
 no equality, rewrite theorem or axiom, and an invalid proof stays invalid.
 
 ```cubist
-def identity(n : Nat) = n;
+def identity(n : UNat) = n;
 def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };
 }

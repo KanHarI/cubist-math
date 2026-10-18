@@ -56,7 +56,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // A natural number reads back where a notation is selected, and as nat's
   // where none is; a binary number, where binary is (L2.10j).
   const natural = n => {
-    const own = symbols.unat__UNat?.printing?.some(entry => entry.identityNumeral
+    const unary = symbols.unat__UNat;
+    const own = !unary && selection === "unat" || unary?.printing?.some(entry => entry.identityNumeral
       && entry.notation === selection && (selectionIdentity === undefined || entry.identity === selectionIdentity));
     return atom(own ? String(n) : `unat.(${n})`);
   };

@@ -109,7 +109,7 @@ notation diagonal {
 
 use diagonal;
 
-// Output: pick(2, 3) = pick(2, 3)
+// Output: pick(unat.(2), unat.(3)) = pick(unat.(2), unat.(3))
 print(typeof(refl(pick(unat.(2), unat.(3)))));
 
 // Output: 2 = 2

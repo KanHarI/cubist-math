@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 import { archiveModules } from "../web/cubist/modules.mjs";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { migrationSourceReader, historicalModulePaths, historicalMigrationSources } from "./migration-sources.mjs";
+import { migrationSourceReader, historicalModulePaths, historicalMigrationSources, unaryNaturalBase } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
 import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
@@ -79,8 +79,11 @@ const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library",
 // Until 2026-10-05 every module had Nat without importing it, from the
 // kernel and then from an implicit import of nat; a base of that time is read
 // with the import (legacy-syntax.mjs, historicalSource). A later base has
-// bundledNat in its program and imports nat where it uses it.
+// bundledNat (later bundledUNat) in its program and uses explicit imports.
 const implicitNat = (() => { try { return !/bundled(?:U)?Nat/.test(git(["show",`${base}:web/cubical-program.mjs`])); } catch { return true; } })();
+// Read the actual base foundation, not today's public Nat alias. The
+// location can precede the foundation's move out of the archive.
+const unaryNat=unaryNaturalBase({available,readSource:path=>git(["show",`${base}:${path}`])});
 // Until 2026-10-06 prefix - reversed paths and coordinates; a base of that
 // time is read with ~ for it. A later base's legacy rewrite knows minusReverses.
 const minusReverses = (() => { try { return !git(["show",`${base}:web/cubist/legacy-syntax.mjs`]).includes("minusReverses"); } catch { return true; } })();
@@ -96,7 +99,7 @@ const movedToLibrary = new Set([...available].filter(path => path.startsWith(mod
   .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
   .filter(name => existsSync(`${root}${moduleRoots.library}${name}.cubist`)
     && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
-const paths = historicalModulePaths({ available, movedToLibrary });
+const paths = historicalModulePaths({ available, movedToLibrary, unaryNat });
 const originalModulePath = paths.modulePath;
 const historicalSources = historicalMigrationSources({ available, ...paths, implicitNat,
   readSource: path => git(["show", `${base}:${path}`]),
@@ -120,8 +123,8 @@ const readOriginal = migrationSourceReader(async (place, name) => {
   if (!originals.has(path)) {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
-    let text = available.has(path) ? historicalSource(historicalSources.source(path), name,
-      { implicitNat, minusReverses, renaming, importedDeclarations: historicalSources.importsOf(path) }) : null;
+    let text = available.has(path) ? historicalSource(historicalSources.source(path), unaryNat&&name==="unat"?"nat":name,
+      { implicitNat, minusReverses, renaming, unaryNat, importedDeclarations: historicalSources.importsOf(path) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.

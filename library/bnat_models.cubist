@@ -1,0 +1,36 @@
+// Optional numerical models and their isomorphism. The arithmetic laws
+// and numerical recursors do not need the general algebra hierarchy.
+import bnat_semiring;
+import semirings;
+use unat;
+
+def unat_semiring : CommSemiring(U0) := CommSemiring.make(
+  R := UNat, R_is_set := unat_is_set, add := add, add_assoc := unat_add_assoc, zero := zero,
+  zero_add := unat_zero_add, add_zero := unat_add_zero, add_comm := unat_add_comm, mul := mul,
+  mul_assoc := unat_mul_assoc, one := succ(zero), one_mul := unat_one_mul, mul_one := unat_mul_one,
+  mul_comm := unat_mul_comm, mul_add := unat_mul_add, mul_zero := unat_mul_zero
+);
+
+def bnat_semiring : CommSemiring(U0) := CommSemiring.make(
+  R := BNat, R_is_set := bnat_is_set, add := bnat_add, add_assoc := bnat_add_assoc, zero := b_zero,
+  zero_add := bnat_zero_add, add_zero := bnat_add_zero, add_comm := bnat_add_comm, mul := bnat_mul,
+  mul_assoc := bnat_mul_assoc, one := b_positive(bp_one), one_mul := bnat_one_mul,
+  mul_one := bnat_mul_one, mul_comm := bnat_mul_comm, mul_add := bnat_mul_add,
+  mul_zero := bnat_mul_zero
+);
+
+def unat_to_bnat_hom : CommSemiring.Hom(unat_semiring, bnat_semiring) := CommSemiring.Hom.make(
+  unat_semiring, bnat_semiring, map := bnat_of_unat, map_add := bnat_encode_add,
+  map_zero := refl(b_zero), map_mul := bnat_encode_mul, map_one := refl(b_positive(bp_one))
+);
+
+def bnat_to_unat_hom : CommSemiring.Hom(bnat_semiring, unat_semiring) := CommSemiring.Hom.make(
+  bnat_semiring, unat_semiring, map := bnat_to_unat, map_add := bnat_decode_add,
+  map_zero := refl(zero), map_mul := bnat_decode_mul, map_one := refl(succ(zero))
+);
+
+def unat_bnat_semiring_iso :
+  CommSemiring.Iso(unat_semiring, bnat_semiring) := CommSemiring.Iso.make(
+    unat_semiring, bnat_semiring, unat_to_bnat_hom, bnat_to_unat_hom, bnat_unat_roundtrip,
+    bnat_roundtrip
+  );

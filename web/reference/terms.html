@@ -405,7 +405,7 @@ def unannotated(impossible : Void) := absurd(impossible);</code></pre>
           </section>
           <section id="numbers">
             <h2>Numbers and arithmetic</h2>
-            <p><code>UNat</code> is built from <code>0</code> and <code>succ</code>. A numeral is notation for repeated <code>succ</code>: <code>3</code> is <code>succ(succ(succ(0)))</code>, not a machine integer. Numerals go up to 256. A numeral means what the selected notation reads it as: <code>import unat;</code> loads the arithmetic library, and <code>use unat;</code> selects its notation for the rest of the file.</p>
+            <p><code>UNat</code> is built from <code>0</code> and <code>succ</code>. A numeral is notation for repeated <code>succ</code>: <code>3</code> is <code>succ(succ(succ(0)))</code>, not a machine integer. The unary numeral reader goes up to 256; the default binary <code>nat</code> reader accepts larger decimal magnitudes directly. A numeral means what the selected notation reads it as: <code>import unat;</code> loads the arithmetic library, and <code>use unat;</code> selects its notation for the rest of the file.</p>
             <pre><code data-check="accept">import unat;
 use unat;
 
@@ -416,7 +416,7 @@ def three_is_three : three = 3 {
 }</code></pre>
             <pre><code data-check="reject">import unat;
 
-def too_big := unat.(257);  // Error: Numerals are limited to 256 in this version.</code></pre>
+def too_big := unat.(257);  // Error: Unary numerals are limited to 256. Import nat and use nat for binary naturals.</code></pre>
             <p>The operators <code>+</code>, <code>*</code>, <code>&lt;</code> and <code>&lt;=</code> are <code>unat</code>'s notation for <code>add</code>, <code>mul</code>, <code>isLt</code> and <code>le</code>, which the arithmetic library defines; <code>x &gt; y</code> and <code>x &gt;= y</code> are <code>y &lt; x</code> and <code>y &lt;= x</code>. <code>use unat;</code> selects them for the rest of a file, and <code>unat.(2 * 3)</code> for one expression. An operator means only what the selected notation binds: it is not overloaded by the types of its operands, and a function named <code>add</code> in scope gives <code>+</code> no meaning. A <a href="theories.html#open"><code>use</code></a> of a model binds them to its operations instead.</p>
             <pre><code data-check="accept">import unat;
 use unat;
@@ -431,7 +431,7 @@ def two_below_three : 2 &lt; 3 {
             <p>Closed arithmetic computes, so <code>refl(6)</code> proves <code>2 * 3 = 6</code>. The order is defined by computation too: <code>2 &lt; 3</code> computes to <code>Unit</code>, proved by <code>tt</code>, and <code>3 &lt; 2</code> computes to <code>Void</code>. Where no notation is selected, neither the operators nor the numerals mean anything:</p>
             <pre><code data-check="reject">import unat;
 
-def four := 2 + 2;  // Error: x + y means what a selected notation binds + to: for natural numbers, use unat; or write unat.(x + y).</code></pre>
+def four := 2 + 2;  // Error: x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).</code></pre>
             <p>Addition recurses on its first argument. <code>0 + n</code> computes to <code>n</code>, but <code>n + 0</code> is stuck on the variable <code>n</code>, so it needs a proof by induction. The library proves it as <code>unat_add_zero(n)</code>.</p>
             <pre><code data-check="accept">import unat;
 use unat;

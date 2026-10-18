@@ -61,7 +61,7 @@ print(evaluate(counting.(2 + 5)));
 // A notation with neither rule reads no numerals; unat.(…) gives one.
 def additive_ : Monoid(U0) := nat_additive.monoid;
 
-// Error: E907: additive_'s notation reads no numeral 2: write unat.(2) for a natural number, or
+// Error: E907: additive_'s notation reads no numeral 2: write nat.(2) for a natural number, or
 //   select a notation that reads it.
 def unread : UNat := additive_.(2 * 3);
 
@@ -117,7 +117,7 @@ notation box {
 // Output: 3
 print(evaluate(box.(2)));
 
-// Error: E907: box's notation reads no numeral 2: write unat.(2) for a natural number, or select a
+// Error: E907: box's notation reads no numeral 2: write nat.(2) for a natural number, or select a
 //   notation that reads it.
 def shadowed(box : Boxed(U0)) : box.M := box.(2);
 

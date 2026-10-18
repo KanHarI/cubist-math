@@ -101,16 +101,16 @@ def decided_set(A : U1, decide : forall x, y : A. (x = y) or ((x = y) -> Void)) 
 def parallel_nat_paths(p, q : 0 = 0) : p = q := unat_is_set(0, 0, p, q);
 
 // Error: E606: Type mismatch: found (fun (n : UNat) => induction n return U0 -> U0 { zero => fun (A
-//   : U0) => IsProp(U0, A); succ h => fun (A : U0) => forall x : A. forall y : A. h(x = y); })(0, 0
-//   …, expected 0 = 1.
+//   : U0) => IsProp(U0, A); succ h => fun (A : U0) => forall x : A. forall y : A. h(x = y); })(0,
+//   0…, expected 0 = 1.
 def zero_is_one : 0 = 1 := unat_is_set(0, 1);
 
 // The HoTT roadmap's D1: a set's evidence never equates arbitrary elements,
 // and a proposition's never invents an element.
 // No lemma proves more than it states.
-// Error: E606: Type mismatch: found (fun (n : UNat) => induction n return U -> U { zero => fun (A1 :
-//   U) => IsProp(U, A1); succ h => fun (A1 : U) => forall x1 : A1. forall y1 : A1. h(x1 = y1);
-//   })(0…, expected x = y.
+// Error: E606: Type mismatch: found (fun (n : UNat) => induction n return U -> U { zero => fun (A1
+//   : U) => IsProp(U, A1); succ h => fun (A1 : U) => forall x1 : A1. forall y1 : A1. h(x1 = y1);
+//   })(…, expected x = y.
 def set_equates_elements(U < UU0, A : U, s : IsSet(U, A), x, y : A) : x = y := s(x, y);
 
 // Error: E606: Type mismatch: found IsSet(U, A), expected IsProp(U, A).

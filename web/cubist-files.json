@@ -2423,6 +2423,10 @@
    "summary": "Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion."
   },
   {
+   "path": "library/bnat_models.cubist",
+   "summary": "Optional unary and binary commutative-semiring models, their conversion homomorphisms and isomorphism."
+  },
+  {
    "path": "library/bnat_notation.cubist",
    "summary": "Decimal and `0b` literal parsing and the `bnat` notation for arithmetic and order. Parsing builds the binary magnitude directly; unary glyph digits and character offsets never hold the magnitude."
   },
@@ -2440,7 +2444,7 @@
   },
   {
    "path": "library/bnat_semiring.cubist",
-   "summary": "The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits."
+   "summary": "Binary semiring laws, addition and nonzero-factor multiplication cancellation, nontriviality, no zero divisors, and conversion preservation. The arithmetic computes directly on bits; this module does not load the general algebra hierarchy."
   },
   {
    "path": "library/bnat_transport.cubist",

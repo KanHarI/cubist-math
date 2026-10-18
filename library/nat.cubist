@@ -28,31 +28,40 @@ notation nat {
   literal(s : Lexeme) := bnat_literal(s);
 }
 
-computable def nat_zero_add := bnat_zero_add;
+use nat;
 
-computable def nat_add_zero := bnat_add_zero;
+// State public laws in this notation so rewriting sees the same heads and
+// literals as a user's goal. Their binary proofs check by conversion.
+computable def nat_zero_add(n : Nat) : 0 + n = n := bnat_zero_add(n);
 
-computable def nat_add_assoc := bnat_add_assoc;
+computable def nat_add_zero(n : Nat) : n + 0 = n := bnat_add_zero(n);
 
-computable def nat_add_comm := bnat_add_comm;
+computable def nat_add_assoc(a, b, c : Nat) : (a + b) + c = a + (b + c) := bnat_add_assoc(a, b, c);
 
-computable def nat_add_cancel := bnat_add_cancel;
+computable def nat_add_comm(a, b : Nat) : a + b = b + a := bnat_add_comm(a, b);
 
-computable def nat_mul_zero := bnat_mul_zero;
+computable def nat_add_cancel(k, a, b : Nat, p : k + a = k + b) :
+  a = b := bnat_add_cancel(k, a, b, p);
 
-computable def nat_one_mul := bnat_one_mul;
+computable def nat_mul_zero(n : Nat) : n * 0 = 0 := bnat_mul_zero(n);
 
-computable def nat_mul_one := bnat_mul_one;
+computable def nat_one_mul(n : Nat) : 1 * n = n := bnat_one_mul(n);
 
-computable def nat_mul_comm := bnat_mul_comm;
+computable def nat_mul_one(n : Nat) : n * 1 = n := bnat_mul_one(n);
 
-computable def nat_mul_assoc := bnat_mul_assoc;
+computable def nat_mul_comm(a, b : Nat) : a * b = b * a := bnat_mul_comm(a, b);
 
-computable def nat_mul_add := bnat_mul_add;
+computable def nat_mul_assoc(a, b, c : Nat) : (a * b) * c = a * (b * c) := bnat_mul_assoc(a, b, c);
 
-computable def nat_zero_ne_succ := bnat_zero_ne_succ;
+computable def nat_mul_add(a, b, c : Nat) : a * (b + c) = a * b + a * c := bnat_mul_add(a, b, c);
 
-computable def nat_mul_cancel := bnat_mul_cancel;
+computable def nat_zero_ne_succ(n : Nat, p : 0 = succ(n)) : Void := bnat_zero_ne_succ(n, p);
+
+computable def nat_succ_injective(a, b : Nat, p : succ(a) = succ(b)) :
+  a = b := trans(sym(bnat_pred_succ(a)), trans(cong(bnat_pred, p), bnat_pred_succ(b)));
+
+computable def nat_mul_cancel(k, a, b : Nat, nz : k = 0 -> Void, p : a * k = b * k) :
+  a = b := bnat_mul_cancel(k, a, b, nz, p);
 
 computable def nat_decide := bnat_decide;
 

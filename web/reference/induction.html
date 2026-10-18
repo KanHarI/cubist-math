@@ -443,7 +443,7 @@ def six : value(binary.(0b110)) = 6 { rfl; }</code></pre>
             permits at most 256 significant bits, and the kernel's term-depth
             resource bound also applies. Digits are stored as text, so there is
             no machine-number rounding. These literals denote nonnegative
-            numbers; decimal literals still use unary <code>UNat</code>.</p>
+            numbers. The rebuilt <code>nat</code> notation reads decimal and binary literals into <code>BNat</code>; <code>unat</code> retains structural unary numerals.</p>
             <p><code>binary_add</code>, <code>binary_mul</code> and
             <code>binary_of_nat</code> are available from
             <code>binary_arithmetic</code>. Arithmetic symbols are not overloaded.

@@ -128,6 +128,7 @@ export const diagnostics = [
   ["E199", "An anonymous universe has no name: name the header universe to refer to it here."],
   // Reading the source (continued)
   ["E001", "Invalid test pragma: …"],
+  ["E002", "Historical unary migration would capture existing binding …."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -214,7 +215,7 @@ export const diagnostics = [
   ["E332", "sym requires a path."],
   ["E333", "p ++ q concatenates paths; found no path."],
   ["E334", "trans requires paths."],
-  ["E335", "Numerals and induction require an imported UNat with zero and succ constructors."],
+  ["E335", "Numerals and induction require an imported UNat with zero and succ constructors. For binary Nat, use nat_peano."],
   ["E336", "Missing source expression."],
   ["E337", "No checked definition to unfold: …"],
   ["E338", "path i => ... needs an expected Path or PathP type."],
@@ -435,6 +436,7 @@ export const diagnostics = [
   ["E577", "Keep only the … constructor field… of … in parentheses; name induction hypotheses after with."],
   ["E578", "… has … recursive field…, so with names … induction …, not …; or omit with."],
   ["E579", "… has no recursive fields, so it has no induction hypotheses: remove with."],
+  ["E580", "Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
   ["E602", "Only LEM and Choice have rebuilt truncation signatures."],
