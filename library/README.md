@@ -28,7 +28,9 @@ two carriers is explicit: `bnat_unary` supplies the maps and their inverse
 laws. `bnat_semiring` proves their semiring agreement, and `bnat_transport`
 constructs the universe path and proves its transport laws. `bnat_equality`
 supplies bitwise equality and setness; `bnat_order` proves comparison
-correctness. The dependent Peano view and strong recursion remain NUM1 work.
+correctness. `bnat_peano` supplies dependent zero/successor recursion, and
+`bnat_recursion` supplies coherent strong recursion and factorial. The default
+`Nat` switch still requires the numeral and unary-client migration.
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |
@@ -43,6 +45,8 @@ correctness. The dependent Peano view and strong recursion remain NUM1 work.
 | [`semirings`](semirings.cubist) | The `CommSemiring` theory, with shared additive and multiplicative commutative monoids, distributivity and zero absorption. | None |
 | [`bnat_semiring`](bnat_semiring.cubist) | The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits. | None |
 | [`bnat_transport`](bnat_transport.cubist) | The checked universe path `UNat =[U0] BNat` from the semiring isomorphism's maps; forward/reverse transport equals explicit conversion, and transported zero, one, addition and multiplication agree with the binary operations. Transported unary functions evaluate through the conversions; these paths justify using the direct binary operations. | None |
+| [`bnat_peano`](bnat_peano.cubist) | Dependent advance over binary offsets and the Peano eliminator; its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families. Homogeneous total-state iteration is used only in the successor proof. | None |
+| [`bnat_recursion`](bnat_recursion.cubist) | Binary strict-order decisions and successor decomposition; callbacks for every smaller value, coherent dependent strong recursion and its equation; binary factorial with zero/successor laws. Successful decrease checks keep binary witnesses. | None |
 | [`classical_axioms`](classical_axioms.cubist) | The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them. | `LEM`, `Choice`, `Truncate` |
 | [`hlevels`](hlevels.cubist) | Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg). | None |
 | [`h1_truncation`](h1_truncation.cubist) | The propositional truncation `Trunc(U, A)` as a declared type that computes: `merely`, that it is a proposition, maps between truncations, and elimination into a proposition of any universe below `UU0`. | None |
