@@ -26,6 +26,10 @@ equivalences. A newly exposed constructor can enable composition or an
 enclosing eliminator to reduce; that result must itself be fully normalized.
 Opus's first review identified this missing final pass, and a sum-composition
 regression now requires idempotence and a fully reduced constructor argument.
+The second review found that, with syntax interning disabled, a stuck weak head
+can be a fresh copy of the same syntax. The final pass now checks alpha equality
+before recurring, so allocation alone cannot start another normalization pass.
+Composition and partial-scope regressions run with interning both on and off.
 No constant-transport regularity rule is introduced.
 
 Dimension substitution now memoizes the complete operation: source handle,
@@ -78,6 +82,7 @@ level-pair comparisons against independent arithmetic evaluation remain.
 using only `Unit`, with no integer arithmetic. The WebAssembly regression
 fully normalizes that operation, `bint_mul`, and the binary fraction field's
 `one` under a fixed test work budget.
+The small quotient also runs with syntax sharing disabled.
 The `_` expectation still requires a full normal form.
 
 ## Initial validation and measurements

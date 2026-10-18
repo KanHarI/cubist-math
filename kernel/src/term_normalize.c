@@ -353,8 +353,15 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
     /* Restricting a wall can expose a constructor and enable composition
      * or an enclosing eliminator to compute. Its newly generated children
      * still need full normalization; a weak head is not the final answer. */
-    if (result && result != rebuilt)
-        result = ck_normal(k, result);
+    if (result && result != rebuilt) {
+        /* With interning off, a stuck reduction can rebuild identical
+         * syntax at a new handle. Only a structural change needs another
+         * normalization pass; otherwise fresh copies would loop forever. */
+        if (!ck_alpha_equal(k, result, rebuilt))
+            result = k->error[0] ? 0 : ck_normal(k, result);
+        else
+            result = rebuilt;
+    }
     --k->recursion;
     /* Recursive children can finish before a sibling fails. Their completed
      * results remain usable, but never publish this node's partial result. */

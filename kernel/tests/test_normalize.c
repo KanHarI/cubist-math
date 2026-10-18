@@ -367,9 +367,10 @@ static void wall_faces(void) {
 
 /* A face restriction can expose the constructor needed by composition.
  * The new constructor's arguments are compositions, not yet normal forms. */
-static void composition_after_restriction(void) {
+static void composition_after_restriction(unsigned optimizations) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
     cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
     cc_term sum = raw(k, CC_SUM, 0, unit, unit), left = raw(k, CC_INL, 0, sum, point);
     cc_term path = ck_make(k, CC_PATH, 2, sum, left, left, 0);
@@ -377,16 +378,18 @@ static void composition_after_restriction(void) {
     cc_term wall = raw(k, CC_TUBE, ck_endpoint_face(k, 0, 0), at, 0);
     cc_term comp = ck_make(k, CC_COMP, 1, sum, wall, left, 0);
     cc_term result = cc_kernel_normalize(k, comp);
-    assert(result == left && cc_kernel_normalize(k, result) == result);
+    assert(result && ck_alpha_equal(k, result, left));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result));
     /* Each public query starts with a fresh recursion counter. */
     k->recursion = 1024;
-    assert(cc_kernel_normalize(k, comp) == left && !k->recursion);
+    assert(cc_kernel_normalize(k, comp) == result && !k->recursion);
     cc_kernel_free(k);
 }
 
-static void partial_scopes(void) {
+static void partial_scopes(unsigned optimizations) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
     cc_term a = ck_var(k, 100), x = ck_var(k, 101), y = ck_var(k, 102);
     cc_term along_type = ck_make(k, CC_PATH, 2, a, x, y, 0);
     cc_term along = raw(k, CC_PAPP, ck_interval_variable(k, 1), ck_var(k, 103), along_type);
@@ -398,8 +401,8 @@ static void partial_scopes(void) {
     cc_term result = cc_kernel_normalize(k, comp);
     assert(result && k->nodes[result].kind == CC_COMP && k->nodes[result].payload == 1);
     cc_term body = k->nodes[k->nodes[result].child[1]].child[0];
-    assert(body == along && ck_free_dims(k, body) == (UINT64_C(1) << 1));
-    assert(cc_kernel_normalize(k, result) == result);
+    assert(ck_alpha_equal(k, body, along) && ck_free_dims(k, body) == (UINT64_C(1) << 1));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result));
 
     cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
     cc_term piece = ck_make(k, CC_GLUE_SYSTEM, j0, unit, ck_var(k, 105), 0, 0);
@@ -411,8 +414,22 @@ static void partial_scopes(void) {
     result = cc_kernel_normalize(k, value);
     assert(result && k->nodes[result].kind == CC_GLUE_TERM);
     partial = k->nodes[result].child[2];
-    assert(k->nodes[partial].payload == j0 && k->nodes[partial].child[0] == point);
-    assert(cc_kernel_normalize(k, result) == result && !k->error[0]);
+    assert(k->nodes[partial].payload == j0 && ck_alpha_equal(k, k->nodes[partial].child[0], point));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result) && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+static void unshared_stuck_composition(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, 0);
+    cc_term a = ck_var(k, 100), u = ck_var(k, 101), b = ck_var(k, 102);
+    cc_term tube = raw(k, CC_TUBE, ck_endpoint_face(k, 0, 0), u, 0);
+    cc_term comp = ck_make(k, CC_HCOMP, 1, a, tube, b, 0);
+    cc_kernel_set_step_budget(k, 1000);
+    cc_term result = cc_kernel_normalize(k, comp);
+    assert(result && ck_alpha_equal(k, result, comp));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result) && !k->error[0]);
     cc_kernel_free(k);
 }
 
@@ -430,7 +447,10 @@ int main(void) {
     cached_term_rename();
     interrupted_substitution();
     wall_faces();
-    composition_after_restriction();
-    partial_scopes();
+    composition_after_restriction(CC_SHARE_SYNTAX);
+    composition_after_restriction(0);
+    partial_scopes(CC_SHARE_SYNTAX);
+    partial_scopes(0);
+    unshared_stuck_composition();
     puts("full normalization cache: ok");
 }

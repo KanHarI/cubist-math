@@ -132,13 +132,15 @@ test("normalization and comparison propagate deadlines and programming errors", 
 
 test("open quotient operations fully normalize within a bounded amount of kernel work", async () => {
   const module = await createCubical();
-  for (const [name, source] of [
-    ["small_quotient", await readFile(new URL("fixtures/quotient-normalization.cubist", import.meta.url), "utf8")],
+  const smallQuotient = await readFile(new URL("fixtures/quotient-normalization.cubist", import.meta.url), "utf8");
+  for (const [name, source, optimizations = {}] of [
+    ["small_quotient", smallQuotient],
+    ["small_quotient_unshared", smallQuotient, {shareSyntax: false}],
     ["integer_multiplication", "import binary_integers; evaluate bint_mul expecting _;"],
     ["binary_fraction_one", `import fractions; import binary_integers;
       evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one).one expecting _;`],
   ]) {
-    const program = new CubicalProgram(module, sourceReader(), {collectReferences: false});
+    const program = new CubicalProgram(module, sourceReader(), {collectReferences: false, optimizations});
     // Bound regressions by deterministic work, including query retries. The
     // previous implementation exhausted the arena on these small functions.
     program.kernel.maxQuerySteps = 40000000n;
