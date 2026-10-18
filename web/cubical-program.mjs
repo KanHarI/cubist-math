@@ -231,7 +231,6 @@ export class CubicalProgram {
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
         status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
-        notation: d.notation ?? {selection:null,selectionIdentity:null},
         ...(d.diagnostic?{diagnostic:d.diagnostic}:{}),
         ...(d.blockedBy?{blockedBy:d.blockedBy}:{}),...(d.failedMember?{failedMember:d.failedMember}:{}),...(d.cause?{cause:d.cause}:{}),
         axioms: d.native?.axioms ?? [],
@@ -243,6 +242,9 @@ export class CubicalProgram {
         ...(name === main ? {} : { sourceModule: name, sourceName: d.name }) };
       const notationPrinting=this.checker.notationPrinting;
       Object.defineProperty(info,"printing",{get:()=>notationPrinting.get(binding)});
+      // Like printing metadata, a checked selection belongs to this session;
+      // its identity must not leak into serialized declaration results.
+      Object.defineProperty(info,"notation",{value:d.notation??{selection:null,selectionIdentity:null}});
       // The type's text, written when first read: the pages and the
       // inspector show it, a check does not. Its names are the program's
       // symbols' and the declaration's own for its variables; none of the

@@ -6,6 +6,7 @@ import { sourceText } from "../web/cubical-source-text.mjs";
 import { numeral } from "../web/translator/numerals.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { elaboration } from "../web/cubical-elaboration.mjs";
+import { ReplSession } from "../web/repl-session.mjs";
 
 test("default Nat uses binary arithmetic and readable mixed-carrier displays", async t => {
   const { program, result, get } = await checkTestModule(t, "default_naturals");
@@ -118,4 +119,10 @@ test("proof, elaboration and signature displays retain each declaration's notati
   assert.match(program.signatureView("main__Before").constructors[0].type, /1 = 1/);
   assert.doesNotMatch(program.signatureView("main__Before").constructors[0].type, /unat\.\(/);
   assert.match(program.signatureView("main__After").constructors[0].type, /unat\.\(1\) = unat\.\(1\)/);
+  const repl = new ReplSession(program, { base: "main" });
+  assert.deepEqual((await repl.run("let displayed := refl(unat.(1)); typeof displayed;")).map(result => result.text), [
+    "displayed : unat.(1) = unat.(1)", "unat.(1) = unat.(1)",
+  ]);
+  await repl.run("use unat;");
+  assert.equal((await repl.run("typeof displayed;"))[0].text, "1 = 1");
 });
