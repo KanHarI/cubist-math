@@ -2420,7 +2420,7 @@
   },
   {
    "path": "library/binary_integers.cubist",
-   "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. Computed values remain quotient representatives; domain laws and the public `Z` migration follow in NUM2."
+   "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. The shared no-zero-divisor proof is instantiated as `bint_mul_nonzero`; `bint_decide_zero` supplies compact nonzero certificates. Computed values remain quotient representatives; the public `Z` migration follows in NUM2."
   },
   {
    "path": "library/bnat_arithmetic.cubist",
@@ -2476,7 +2476,7 @@
   },
   {
    "path": "library/differences.cubist",
-   "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, and an injective semiring embedding. Unary and binary integers instantiate this shared construction."
+   "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, an injective semiring embedding, compact zero-decision certificates, and no-zero-divisor laws from multiplicative cancellation and additive trichotomy. Unary and binary integers instantiate this shared construction."
   },
   {
    "path": "library/fractions.cubist",
@@ -2496,7 +2496,7 @@
   },
   {
    "path": "library/integers.cubist",
-   "summary": "The unary compatibility integers instantiate `differences`: a pair of unary naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
+   "summary": "The unary compatibility integers instantiate the shared ring and domain proofs in `differences`: a pair of unary naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
   },
   {
    "path": "library/lexemes.cubist",
