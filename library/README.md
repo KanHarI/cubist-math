@@ -10,7 +10,9 @@ follows.
 
 - Modules here take precedence over archive modules of the same name, in the
   command-line checker, the proof workspace and the language reference.
-- Each module has one theme, and no helper is duplicated across modules.
+- Each module has one theme, and general helpers are shared across modules.
+  The notation module keeps its single-glyph digit map local so parsing
+  does not load full-magnitude conversion proofs.
 - Every module is listed in `libraryModules` in
   [`web/cubist/modules.mjs`](../web/cubist/modules.mjs), and
   `tests/library.test.mjs` checks that each checks completely and uses exactly
@@ -24,8 +26,9 @@ follows.
 Public `Nat` remains unary during the binary migration. Import `unat` for
 the explicit unary name, `bnat` for binary arithmetic, or `bnat_notation`
 and `use bnat;` for decimal or binary literals, such as `5`, `1_000` or
-`0b101`. Computed values print in decimal directly from their bits;
-unreduced literals retain their original spelling. Conversion between the
+`0b101`. With that reader loaded, computed values print in decimal directly
+from their bits; otherwise they retain constructor spelling. Unreduced
+literals retain their original spelling. Conversion between the
 two carriers is explicit: `bnat_unary` supplies the maps and their inverse
 laws. `bnat_semiring` proves their semiring agreement, and `bnat_transport`
 constructs the universe path and proves its transport laws. `bnat_equality`

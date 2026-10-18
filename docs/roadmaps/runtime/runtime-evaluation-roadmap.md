@@ -475,10 +475,14 @@ and its implementation into `unat`, update the frontend's current
 `nat__Nat` encoding/inspection hooks, separate lexical data from the public
 natural-number facade as needed, and migrate unary clients to explicit
 imports. Update numeral-limit diagnostic hints to the new library notation.
-Preserve their induction API and recheck the archive. The switch
-also requires decimal numeral input and decimal/binary printing that operate
-directly on binary magnitudes, without an intermediate unary numeral. It
-waits for NUM1's dependent strong recursion with coherence. Comparison
+Preserve their induction API and recheck the archive. Direct decimal input
+and printing are implemented for `bnat`; route the default `nat` notation's
+literal rule directly through `bnat_literal` so its printing metadata follows
+the same reader, retiring the default unary numeral limit. Unary numerals
+currently print bare under every selected view: fix that during migration
+so only an identity unary notation prints them bare, and other views use
+`unat.(n)`. The switch also waits for NUM1's dependent strong recursion with
+coherence. Comparison
 correctness, the semiring isomorphism, the universe path and its transport
 laws are checked.
 

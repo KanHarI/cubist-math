@@ -20,7 +20,7 @@ test("decimal binary-natural input and computed printing preserve arbitrary prec
   const result = await program.check(`import bnat_notation; use bnat;\n${source}`, "decimal_binary");
   assert.ok(result.complete, JSON.stringify(result.gaps));
   assert.ok(result.outputs.every(output => output.verified && !output.axioms.length));
-  const printed = result.directives.filter(d => d.kind === "print");
+  const printed = result.prints;
   assert.deepEqual(printed.map(d => d.text), values.map(n => String(n + 1n)));
   assert.ok(!program.kernel.definitions.has("bnat_unary__bnat_to_unat"), "decimal magnitudes need no unary conversion module");
 
@@ -34,6 +34,7 @@ test("computed binary-natural printing follows the parser's declared notation", 
   const program = new CubicalProgram(await createCubical(), sourceReader());
   t.after(() => program.dispose());
   const result = await program.check(`import bnat_notation;
+    def probe : BNat := b_zero;
     notation decimal { literal(s : Lexeme) := bnat_literal(s); }
     print(evaluate(bnat.(0b0)));
     use decimal;
@@ -44,7 +45,7 @@ test("computed binary-natural printing follows the parser's declared notation", 
     print(evaluate(bnat.(0b101)));
   `, "binary_printing_views");
   assert.ok(result.complete, JSON.stringify(result.gaps));
-  assert.deepEqual(result.directives.filter(d => d.kind === "print").map(d => d.text),
+  assert.deepEqual(result.prints.map(d => d.text),
     ["bnat.(0)", "5", "0b101 = 0b101", "1_000 = 1_000", "bnat.(5)"]);
 });
 

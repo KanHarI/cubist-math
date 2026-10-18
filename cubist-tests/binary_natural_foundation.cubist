@@ -108,6 +108,11 @@ def bare_zero_literal : 0 = 0b0 {
   rfl;
 }
 
+// Leading zeroes in a decimal token do not select a different base.
+def decimal_leading_zero : 0101 = 101 {
+  rfl;
+}
+
 def decimal_separators :
   18_446_744_073_709_551_615 + 1 = 0b10000000000000000000000000000000000000000000000000000000000000000 {
   rfl;

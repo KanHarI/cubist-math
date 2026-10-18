@@ -24,7 +24,7 @@ computable def bnat_decimal_digits(s : Lexeme, value : BNat, at_ : UNat) :
     nil => ok(value);
     cons(digit(d), rest) => bnat_decimal_digits(
       rest,
-      bnat_add(bnat_mul(value, b_positive(bp_even(bp_odd(bp_even(bp_one))))), bnat_digit_value(d)),
+      bnat_add(bnat_mul(b_positive(bp_even(bp_odd(bp_even(bp_one)))), value), bnat_digit_value(d)),
       succ(at_)
     );
     cons(underscore, rest) => bnat_decimal_digits(rest, value, succ(at_));
