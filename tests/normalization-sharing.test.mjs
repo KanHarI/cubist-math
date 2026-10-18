@@ -135,8 +135,8 @@ test("open quotient operations fully normalize within a bounded amount of kernel
   const smallQuotient = await readFile(new URL("fixtures/quotient-normalization.cubist", import.meta.url), "utf8");
   for (const [name, source, optimizations = {}] of [
     ["small_quotient", smallQuotient],
-    // A unary descent isolates the stuck eliminator without the expansion
-    // cost of the binary operation's coherence proof when interning is off.
+    // A unary descent covers the stuck eliminator with interning off. The
+    // binary fixture exceeds this test's budget in that mode.
     ["unary_quotient_unshared", `import quotients;
       def Related(a, b : Unit) : U0 := Unit;
       def Q : U0 := Quotient(U0, Unit, Related);
