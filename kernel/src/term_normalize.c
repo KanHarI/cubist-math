@@ -317,7 +317,9 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
          * can still mention coordinates fixed there: reduce those before
          * normalizing the wall, rather than expanding their off-face values.
          * For a disjunction, only endpoints common to every clause are
-         * available. Keep the face and its order, including under renaming. */
+         * available. Keep the face and its order, including under renaming.
+         * A tube face never mentions its composition's bound direction:
+         * SystemTube enforces this, and reduction picks fresh directions. */
         if (face->length) {
             cc_clause common = face->clauses[0];
             for (size_t i = 1; i < face->length; ++i) {
@@ -343,10 +345,16 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
             }
         }
     cc_term result = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
+    cc_term rebuilt = result;
     if (result && n.kind == CC_GLUE_TERM)
         result = normal_glue_eta(k, result);
     if (result)
         result = ck_whnf(k, result);
+    /* Restricting a wall can expose a constructor and enable composition
+     * or an enclosing eliminator to compute. Its newly generated children
+     * still need full normalization; a weak head is not the final answer. */
+    if (result && result != rebuilt)
+        result = ck_normal(k, result);
     --k->recursion;
     /* Recursive children can finish before a sibling fails. Their completed
      * results remain usable, but never publish this node's partial result. */

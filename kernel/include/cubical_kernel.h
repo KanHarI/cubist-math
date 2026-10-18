@@ -179,7 +179,9 @@ typedef enum {
     CC_STEP_IOTA,      /* an eliminator or projection on a constructor */
     CC_STEP_PATH,      /* a path lambda applied at an interval point, or a
                         * path applied at an endpoint of its annotated type */
-    CC_STEP_NORMALIZE, /* the normal form, by the kernel's fixed strategy */
+    CC_STEP_NORMALIZE, /* the full normal form, including partial bodies
+                        * restricted by endpoints common to their face's clauses;
+                        * tube faces never mention the composition's direction */
     CC_STEP_WHNF,      /* the weak head normal form, by the same strategy:
                         * composition, transport and Glue compute,
                         * and lambdas contract by eta */

@@ -22,7 +22,11 @@ order, including for disjunctions; splitting into ordered clauses would make
 normal forms sensitive to dimension renaming. Only the restricted term's
 normalization is cached, so the restriction does not affect an unrestricted
 use of the original body. The same rule applies to Glue's partial types and
-equivalences. No constant-transport regularity rule is introduced.
+equivalences. A newly exposed constructor can enable composition or an
+enclosing eliminator to reduce; that result must itself be fully normalized.
+Opus's first review identified this missing final pass, and a sum-composition
+regression now requires idempotence and a fully reduced constructor argument.
+No constant-transport regularity rule is introduced.
 
 Dimension substitution now memoizes the complete operation: source handle,
 dimension and exact interned interval formula. The formula descriptor is kept
@@ -47,6 +51,13 @@ systems, and their cache/error lifecycles.
   term while the scan had recorded an error. Term and dimension substitution
   now return failure; no incomplete result is published in the memo. Retrying
   with sufficient budget computes the actual substitution.
+- **Borrowed formula descriptors in checking instructions:** `SystemTube`,
+  `Trans`, `GluePiece` and `GlueTermPiece` could read a descriptor after
+  restriction moved its arena. Context extraction now accepts a stable formula
+  ID and looks it up at use; `Trans` retains its loop's descriptor by value.
+  An actual `SystemTube` regression forces arena growth during restriction.
+- **Recursion-counter recovery:** normalization resets the query's recursion
+  counter, and rebuilding a selected subterm restores it on depth overflow.
 
 These are changes to computation and error handling. Instructions still check
 their premises independently; syntax queries do not certify typing. No library
@@ -65,10 +76,14 @@ level-pair comparisons against independent arithmetic evaluation remain.
 
 `tests/fixtures/quotient-normalization.cubist` reproduces the quotient issue
 using only `Unit`, with no integer arithmetic. The WebAssembly regression
-fully normalizes that operation and `bint_mul` under a fixed test work budget.
+fully normalizes that operation, `bint_mul`, and the binary fraction field's
+`one` under a fixed test work budget.
 The `_` expectation still requires a full normal form.
 
-## Validation and measurements
+## Initial validation and measurements
+
+The measurements below precede the first review's final-pass and instruction
+formula-lifetime fixes; they describe `5fab7771`, not the final reviewed head.
 
 All native suites pass, including UBSan. The local full suite passed 1,516 of
 1,517 tests; its sole failure was two unregistered error messages. Those now

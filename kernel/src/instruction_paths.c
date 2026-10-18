@@ -111,8 +111,11 @@ cc_judgement_id cc_instr_restrict(cc_kernel *k, cc_judgement_id id, cc_formula_i
     return ck_instr_typing(k, ck_restrict(k, t.term, clause), ck_restrict(k, t.type, clause), context);
 }
 
-/* The context of the dimensions an interval or face formula names. */
-bool ck_instr_formula_context(cc_kernel *k, const cc_formula *f, uint32_t *out) {
+/* Look up the formula at use: preceding restrictions may grow its arena. */
+bool ck_instr_formula_context(cc_kernel *k, cc_formula_id formula, uint32_t *out) {
+    const cc_formula *f = cc_kernel_get_formula(k, formula);
+    if (!f)
+        return ck_fail(k, "A formula handle names no registered formula.");
     uint64_t names = 0;
     for (size_t i = 0; i < f->length; ++i) names |= f->clauses[i].positive | f->clauses[i].negative;
     *out = 0;
@@ -138,7 +141,7 @@ cc_judgement_id cc_instr_path_at(cc_kernel *k, cc_judgement_id path_id, cc_formu
     const cc_formula *point = cc_kernel_get_formula(k, interval);
     if (!point || point->sort != CC_INTERVAL)
         return ck_fail(k, "A path applies at an interval formula."), 0;
-    if (!ck_instr_formula_context(k, point, &dims) || !ck_instr_merge(k, p.context, dims, &context))
+    if (!ck_instr_formula_context(k, interval, &dims) || !ck_instr_merge(k, p.context, dims, &context))
         return 0;
     return ck_instr_typing(k, ck_instr_make(k, CC_PAPP, interval, p.term, p.type, 0, 0),
                   ck_dimension_substitute(k, type.child[0], type.payload, point), context);
@@ -258,7 +261,7 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc
         !ck_instr_same(k, e.term, ck_endpoint_term(k, u.term, dim, 0), "The equality does not start at the tube at 0.") ||
         !ck_instr_same(k, e.other, ck_restrict(k, comp.child[2], clause), "The equality does not end at the base on the face.") ||
         !ck_instr_on_face(k, u.context, clause, &on_face) || !ck_instr_on_face(k, e.context, clause, &adjacent) ||
-        !ck_instr_formula_context(k, phi, &dims) || !ck_instr_merge(k, s.context, on_face, &context) ||
+        !ck_instr_formula_context(k, face, &dims) || !ck_instr_merge(k, s.context, on_face, &context) ||
         !ck_instr_merge3(k, context, adjacent, dims, &context))
         return 0;
     cc_term tubes = ck_instr_append_tube(k, comp.child[1], face, u.term);
@@ -368,6 +371,10 @@ cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formu
     const cc_formula *phi = cc_kernel_get_formula(k, face);
     if (!phi || phi->sort != CC_FACE)
         return ck_fail(k, "A transport's face is a face formula."), 0;
+    /* Restricting a base can move the descriptor arena between clauses.
+     * Interned clause buffers are immutable and remain at fixed addresses. */
+    cc_formula stable = *phi;
+    phi = &stable;
     cc_node comp = k->nodes[s.term];
     size_t clause = 0;
     for (cc_term cursor = comp.child[1]; cursor; cursor = k->nodes[cursor].child[1], ++clause) {
@@ -384,7 +391,7 @@ cc_judgement_id cc_instr_trans(cc_kernel *k, cc_judgement_id system_id, cc_formu
     if (!formal_family(k, comp.child[0], "Transport is for families of declared higher sorts."))
         return 0;
     cc_entry_id dimension = ck_instr_dimension_entry(k, comp.payload);
-    if (!dimension || !ck_instr_formula_context(k, phi, &dims) || !ck_instr_discharge(k, s.context, &dimension, 1, &context) ||
+    if (!dimension || !ck_instr_formula_context(k, face, &dims) || !ck_instr_discharge(k, s.context, &dimension, 1, &context) ||
         !ck_instr_merge(k, context, dims, &context))
         return 0;
     cc_term tube = ck_instr_make(k, CC_TUBE, face, comp.child[2], 0, 0, 0);

@@ -88,7 +88,7 @@ cc_judgement_id cc_instr_glue_piece(cc_kernel *k, cc_judgement_id system_id, cc_
             return ck_fail(k, "A Glue piece must already be restricted to its face."), 0;
         if (!ck_instr_same(k, e.type, ck_equiv_type(k, t.term, ck_restrict(k, glue.child[0], clause)),
                   "The equivalence is not from the piece's type to the base on the face.") ||
-            !overlapping(k, glue.child[1], 2, clause, &pending) || !ck_instr_formula_context(k, phi, &dims) ||
+            !overlapping(k, glue.child[1], 2, clause, &pending) || !ck_instr_formula_context(k, face, &dims) ||
             !ck_instr_on_face(k, t.context, clause, &type_context) || !ck_instr_on_face(k, e.context, clause, &equivalence_context))
             return 0;
     }
@@ -207,7 +207,7 @@ cc_judgement_id cc_instr_glue_term_piece(cc_kernel *k, cc_judgement_id system_id
         if (!ck_instr_same(k, v.type, part.child[0], "The value is not in the piece's type.") ||
             !ck_instr_same(k, e.term, image, "The equality does not start at the value's image.") ||
             !ck_instr_same(k, e.other, ck_restrict(k, term.child[1], clause), "The equality does not end at the base on the face.") ||
-            !overlapping(k, term.child[2], 1, clause, &pending) || !ck_instr_formula_context(k, phi, &dims) ||
+            !overlapping(k, term.child[2], 1, clause, &pending) || !ck_instr_formula_context(k, part.payload, &dims) ||
             !ck_instr_on_face(k, v.context, clause, &value_context) || !ck_instr_on_face(k, e.context, clause, &image_context) ||
             !ck_instr_merge(k, s.context, image_context, &context))
             return 0;

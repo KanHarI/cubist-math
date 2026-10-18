@@ -365,6 +365,57 @@ static void wall_faces(void) {
     cc_kernel_free(k);
 }
 
+/* A face restriction can expose the constructor needed by composition.
+ * The new constructor's arguments are compositions, not yet normal forms. */
+static void composition_after_restriction(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term sum = raw(k, CC_SUM, 0, unit, unit), left = raw(k, CC_INL, 0, sum, point);
+    cc_term path = ck_make(k, CC_PATH, 2, sum, left, left, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 100), path);
+    cc_term wall = raw(k, CC_TUBE, ck_endpoint_face(k, 0, 0), at, 0);
+    cc_term comp = ck_make(k, CC_COMP, 1, sum, wall, left, 0);
+    cc_term result = cc_kernel_normalize(k, comp);
+    assert(result == left && cc_kernel_normalize(k, result) == result);
+    /* Each public query starts with a fresh recursion counter. */
+    k->recursion = 1024;
+    assert(cc_kernel_normalize(k, comp) == left && !k->recursion);
+    cc_kernel_free(k);
+}
+
+static void partial_scopes(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term a = ck_var(k, 100), x = ck_var(k, 101), y = ck_var(k, 102);
+    cc_term along_type = ck_make(k, CC_PATH, 2, a, x, y, 0);
+    cc_term along = raw(k, CC_PAPP, ck_interval_variable(k, 1), ck_var(k, 103), along_type);
+    cc_term across_type = ck_make(k, CC_PATH, 2, a, along, along, 0);
+    cc_term across = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 104), across_type);
+    cc_formula_id j0 = ck_endpoint_face(k, 0, 0);
+    cc_term wall = raw(k, CC_TUBE, j0, across, 0);
+    cc_term comp = ck_make(k, CC_COMP, 1, a, wall, x, 0);
+    cc_term result = cc_kernel_normalize(k, comp);
+    assert(result && k->nodes[result].kind == CC_COMP && k->nodes[result].payload == 1);
+    cc_term body = k->nodes[k->nodes[result].child[1]].child[0];
+    assert(body == along && ck_free_dims(k, body) == (UINT64_C(1) << 1));
+    assert(cc_kernel_normalize(k, result) == result);
+
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term piece = ck_make(k, CC_GLUE_SYSTEM, j0, unit, ck_var(k, 105), 0, 0);
+    cc_term glue = raw(k, CC_GLUE, 0, unit, piece);
+    cc_term path = ck_make(k, CC_PATH, 2, unit, point, point, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 106), path);
+    cc_term partial = raw(k, CC_TUBE, j0, at, 0);
+    cc_term value = ck_make(k, CC_GLUE_TERM, 0, glue, ck_var(k, 107), partial, 0);
+    result = cc_kernel_normalize(k, value);
+    assert(result && k->nodes[result].kind == CC_GLUE_TERM);
+    partial = k->nodes[result].child[2];
+    assert(k->nodes[partial].payload == j0 && k->nodes[partial].child[0] == point);
+    assert(cc_kernel_normalize(k, result) == result && !k->error[0]);
+    cc_kernel_free(k);
+}
+
 int main(void) {
     shared_graph(CC_SHARE_SYNTAX);
     shared_graph(0);
@@ -379,5 +430,7 @@ int main(void) {
     cached_term_rename();
     interrupted_substitution();
     wall_faces();
+    composition_after_restriction();
+    partial_scopes();
     puts("full normalization cache: ok");
 }

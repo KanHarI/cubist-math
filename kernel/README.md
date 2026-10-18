@@ -133,7 +133,15 @@ completed normalization costs one kernel step. Cache hits still check budgets
 and deadlines. No in-progress or failed result is stored; successfully
 completed children of a failed computation can be reused.
 
-Reduction consults no local context or assumed face. Term substitution,
+The fixed strategy first restricts each partial body (composition walls and
+Glue pieces) by the endpoints common to all clauses of its own face, keeping
+the face and piece order. Tube faces never mention their composition's bound
+direction: `SystemTube` enforces this and reduction picks fresh directions.
+This prevents a face restriction from substituting into that binder. If a
+restricted wall enables composition or elimination, its result is fully
+normalized too; returning only its weak head would leave new redexes.
+
+Reduction consults no external local context or assumed face. Term substitution,
 dimension substitution and face restriction produce their own syntax keys;
 definitions and admitted signatures are immutable. Rollback and checkpoint
 compaction clear the cache before handles can be reused or relocated,
@@ -152,6 +160,17 @@ a hash collision only discards an optimization. It stores no typing judgements
 and cannot bypass checking a context or a face restriction. Its allocation is
 included in the reported arena memory. Substitution also returns the original
 node immediately when the substituted variable or dimension does not occur.
+Dimension-substitution keys include the source handle, dimension and exact
+interned interval formula. Borrowed formula descriptors are retained by value
+across recursive interning; their immutable clause buffers remain stable.
+Interrupted substitutions return failure, and term/dimension memo hits charge
+the budget and deadline.
+
+Shared universe-level expressions use a separate, query-local cache of
+arithmetic normal forms, released on success and failure. It checks exact
+handles and uses 256 slots, with collisions only losing completed work. It
+does not build canonical syntax, which could exceed the term-depth limit even
+when the arithmetic normal form fits. Short expressions bypass this cache.
 
 ### Sharing during comparison
 
