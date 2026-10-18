@@ -4,6 +4,7 @@ import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs
 import {SourceUnit} from "./translator/elaboration.mjs";
 import { Translator } from "./translator/translate.mjs";
 import { selectionName } from "./translator/theories.mjs";
+import {notationForScope} from "./translator/notation-context.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
 import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
@@ -230,6 +231,7 @@ export class CubicalProgram {
       const info = { name: d.name, binding, kind: syntax.kind, role: syntax.kind, verified,
         status: d.status, reason, ...(verified ? {} : { code: diagnosticCode(reason) }), errorStart: d.errorStart, errorEnd: d.errorEnd,
         rewriteWork: d.rewriteWork, searchFuel: d.searchFuel, failure: d.failure ?? null,
+        notation: d.notation ?? {selection:null,selectionIdentity:null},
         ...(d.diagnostic?{diagnostic:d.diagnostic}:{}),
         ...(d.blockedBy?{blockedBy:d.blockedBy}:{}),...(d.failedMember?{failedMember:d.failedMember}:{}),...(d.cause?{cause:d.cause}:{}),
         axioms: d.native?.axioms ?? [],
@@ -554,8 +556,8 @@ export class CubicalProgram {
   // The same, as display text, for the CLI's inspect and the workbench:
   // whole, as a clause's boundary comes at the end of its type, and with one
   // naming for the whole view, so a parameter has one name in every type.
-  // By default it prints in the selection its module ends with (L2.10j).
-  signatureView(binding, notation = { selection: this.selectionsAfter(binding.split("__")[0]).at(-1) ?? null }) {
+  // By default it prints in the checked selection at its declaration.
+  signatureView(binding, notation = this.symbols[binding]?.notation ?? {selection:null,selectionIdentity:null}) {
     const signature = this.signature(binding);
     if (!signature) return null;
     const { eliminator } = signature;
@@ -633,7 +635,7 @@ export class CubicalProgram {
       return { start: record.statement.start, end: record.statement.end, kind: record.statement.kind,
         declaration: record.declaration, closes: !record.next,
         ...this.checker.displayGoal(record.goal.scope.shownContext([record.goal.target, built]), record.goal.target, built, 400, null, true,
-          { selection: record.goal.scope.env.get("\u0000selection")?.name ?? null }) };
+          notationForScope(record.goal.scope)) };
     }).sort((a, b) => a.start - b.start);
   }
   // Check one more module on top of the loaded ones, as a REPL entry does,

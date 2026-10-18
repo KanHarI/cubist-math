@@ -5,6 +5,7 @@ import { checkTestModule, checkProgram } from "./check-program.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { numeral } from "../web/translator/numerals.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { elaboration } from "../web/cubical-elaboration.mjs";
 
 test("default Nat uses binary arithmetic and readable mixed-carrier displays", async t => {
   const { program, result, get } = await checkTestModule(t, "default_naturals");
@@ -78,4 +79,43 @@ test("mismatch and goal diagnostics preserve a shadowed notation's identity", as
     assert.equal(get(name).verified, false);
     assert.match(get(name).reason, /unat\.\(1\) = unat\.\(2\)/, name);
   }
+});
+
+test("late directive and inductive errors keep the checked file notation", async t => {
+  const { result } = await checkProgram(t, `import unat; use unat;
+    def two_eq : 2 = 2 := refl(2);
+    print(typeof(add(two_eq, 1)));
+    evaluate add(two_eq, 1) expecting 0;
+    inductive Bad : U0 { bad(p : add(two_eq, 1) = 0); }
+  `);
+  assert.equal(result.complete, false);
+  const errors = result.gaps.filter(gap => gap.module === "main");
+  assert.equal(errors.length, 3);
+  for (const error of errors) {
+    assert.match(error.reason, /found 2 = 2, expected UNat/);
+    assert.doesNotMatch(error.reason, /unat\.\(/);
+  }
+});
+
+test("proof, elaboration and signature displays retain each declaration's notation identity", async t => {
+  const fallback = sourceReader();
+  const { program, result } = await checkProgram(t, `import identity_reader; use view;
+    def before : unat.(1) = unat.(1) { rfl; }
+    inductive Before : U0 { first(p : unat.(1) = unat.(1)); }
+    notation view { numeral(n : UNat) := succ(n); }
+    use view;
+    def after : unat.(1) = unat.(1) { rfl; }
+    inductive After : U0 { second(p : unat.(1) = unat.(1)); }
+  `, { reader: async (name, importer) => name === "identity_reader"
+    ? "import unat; notation view { numeral(n : UNat) := n; }"
+    : fallback(name, importer) });
+  assert.ok(result.complete, JSON.stringify(result.gaps));
+  const views = elaboration(program, "main");
+  for (const [name, equality] of [["before", "1 = 1"], ["after", "unat.(1) = unat.(1)"]]) {
+    assert.equal(program.steps("main", name)[0].goal, equality);
+    assert.equal(views.find(view => view.name === name).type, equality);
+  }
+  assert.match(program.signatureView("main__Before").constructors[0].type, /1 = 1/);
+  assert.doesNotMatch(program.signatureView("main__Before").constructors[0].type, /unat\.\(/);
+  assert.match(program.signatureView("main__After").constructors[0].type, /unat\.\(1\) = unat\.\(1\)/);
 });
