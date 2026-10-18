@@ -1,0 +1,486 @@
+import quotients;
+import semirings;
+
+// The ring of differences of an additively cancellative commutative semiring
+// with decidable equality.
+// Its laws are proved once; unary and binary integers instantiate this construction.
+section {{U < UU0}}(
+  N : CommSemiring(U), decide : (forall a, b : N.R. Decidable(U, a = b)),
+  cancel : (forall a, b, c : N.R. N.add(a, b) = N.add(a, c) -> b = c)
+) {
+  // Regroup addition using the additive commutative monoid.
+  computable def difference_add_interchange(a, b, c, d : R) :
+    (a + b) + (c + d) = (a + c) + (b + d) := mul_interchange(N.additive_, a, b, c, d);
+
+  // (a, b) and (c, d) have the same difference: a + d = c + b.
+  def DifferenceRelation(p, q : R and R) : U := p.1 + q.2 = q.1 + p.2;
+
+  computable def difference_same_difference_props(p, q : R and R) :
+    IsProp(U, DifferenceRelation(p, q)) := R_is_set(p.1 + q.2, q.1 + p.2);
+
+  computable def difference_same_difference_refl(p : R and R) :
+    DifferenceRelation(p, p) := refl(p.1 + p.2);
+
+  computable def difference_same_difference_sym(p, q : R and R, r : DifferenceRelation(p, q)) :
+    DifferenceRelation(q, p) := sym(r);
+
+  // From a + d = c + b and c + f = e + d, a + f = e + b: both sides plus d
+  // agree, and addition cancels.
+  computable def difference_same_difference_trans(
+    p, q, s : R and R, r : DifferenceRelation(p, q), t : DifferenceRelation(q, s)
+  ) :
+    DifferenceRelation(p, s) {
+    let shifted : q.2 + (p.1 + s.2) = q.2 + (s.1 + p.2) {
+      calc {
+        q.2 + (p.1 + s.2) = (p.1 + q.2) + s.2 by trans(
+          sym(add_assoc(q.2, p.1, s.2)), cong(fun (m : R) => m + s.2, add_comm(q.2, p.1))
+        );
+        _ = (q.1 + p.2) + s.2 by cong(fun (m : R) => m + s.2, r);
+        _ = (q.1 + s.2) + p.2 by mul_right_comm(N.additive_, q.1, p.2, s.2);
+        _ = (s.1 + q.2) + p.2 by cong(fun (m : R) => m + p.2, t);
+        _ = q.2 + (s.1 + p.2) by trans(
+          cong(fun (m : R) => m + p.2, add_comm(s.1, q.2)), add_assoc(q.2, s.1, p.2)
+        );
+      }
+    }
+    exact cancel(q.2, p.1 + s.2, s.1 + p.2, shifted);
+  }
+
+  def Difference : U := Quotient(U, R and R, DifferenceRelation);
+
+  computable def difference_is_set :
+    IsSet(U, Difference) := quotient_is_set(U, R and R, DifferenceRelation);
+
+  // The difference a - b.
+  computable def difference(a, b : R) : Difference := class((a, b));
+
+  // Pairs with the same difference represent one element.
+  computable def difference_path(p, q : R and R, r : DifferenceRelation(p, q)) :
+    typed(Difference, class(p)) = typed(Difference, class(q)) := class_path(
+      U, R and R, DifferenceRelation, p, q, r
+    );
+
+  // Equal pairs represent one element.
+  computable def difference_pairs(p, q : R and R, e : p = q) :
+    typed(Difference, class(p)) = typed(Difference, class(q)) := cong(
+      fun (s : R and R) => typed(Difference, class(s)), e
+    );
+
+  // An equation of differences holds when it holds at every class.
+  computable def difference_induction(
+    P : Difference -> U, props : (forall z : Difference. IsProp(U, P(z))),
+    f : (forall p : R and R. P(class(p))), z : Difference
+  ) :
+    P(z) := quotient_induction_prop(U, U, R and R, DifferenceRelation, P, props, f, z);
+
+  computable def difference_zero : Difference := difference(zero, zero);
+
+  computable def difference_one : Difference := difference(one, zero);
+
+  // Negation swaps a pair: -(a - b) = b - a.
+  computable def difference_neg(x : Difference) : Difference := descend(
+    U, U, R and R, DifferenceRelation, Difference, difference_is_set,
+    fun (p : R and R) => typed(Difference, class((p.2, p.1))),
+    fun (p, q : R and R, r : DifferenceRelation(p, q)) => difference_path(
+      (p.2, p.1), (q.2, q.1), trans(add_comm(p.2, q.1), trans(sym(r), add_comm(p.1, q.2)))
+    ), x
+  );
+
+  // Addition adds pairs: (a - b) + (c - d) = (a + c) - (b + d).
+  computable def difference_add_pairs(p, q : R and R) : R and R := (p.1 + q.1, p.2 + q.2);
+
+  // The sums of pairs with the same difference have the same difference.
+  computable def difference_add_pairs_left(p, s, q : R and R, r : DifferenceRelation(p, s)) :
+    DifferenceRelation(difference_add_pairs(p, q), difference_add_pairs(s, q)) {
+    calc {
+      (p.1 + q.1) + (s.2 + q.2) = (p.1 + s.2) + (q.1 + q.2) by difference_add_interchange(
+        p.1, q.1, s.2, q.2
+      );
+      _ = (s.1 + p.2) + (q.1 + q.2) by cong(fun (m : R) => m + (q.1 + q.2), r);
+      _ = (s.1 + q.1) + (p.2 + q.2) by difference_add_interchange(s.1, p.2, q.1, q.2);
+    }
+  }
+
+  computable def difference_add_pairs_comm(p, q : R and R) :
+    difference_add_pairs(p, q) = difference_add_pairs(q, p) := path i => (
+      add_comm(p.1, q.1) @ i, add_comm(p.2, q.2) @ i
+    );
+
+  computable def difference_add(x, y : Difference) : Difference := descend2(
+    U, U, R and R, DifferenceRelation, Difference, difference_is_set,
+    fun (p, q : R and R) => typed(Difference, class(difference_add_pairs(p, q))),
+    fun (p, s, q : R and R, r : DifferenceRelation(p, s)) => difference_path(
+      difference_add_pairs(p, q), difference_add_pairs(s, q), difference_add_pairs_left(p, s, q, r)
+    ),
+    fun (p, q, s : R and R, r : DifferenceRelation(q, s)) => trans(
+      difference_pairs(
+        difference_add_pairs(p, q), difference_add_pairs(q, p), difference_add_pairs_comm(p, q)
+      ),
+      trans(
+        difference_path(
+          difference_add_pairs(q, p), difference_add_pairs(s, p),
+          difference_add_pairs_left(q, s, p, r)
+        ),
+        difference_pairs(
+          difference_add_pairs(s, p), difference_add_pairs(p, s), difference_add_pairs_comm(s, p)
+        )
+      )
+    ), x, y
+  );
+
+  // Multiplication: (a - b) * (c - d) = (a * c + b * d) - (a * d + b * c).
+  computable def difference_mul_pairs(p, q : R and R) :
+    R and R := (p.1 * q.1 + p.2 * q.2, p.1 * q.2 + p.2 * q.1);
+
+  // With a + b' = a' + b, both sides are (a + b') * c + (b + a') * d,
+  // regrouped.
+  computable def difference_mul_pairs_left(p, s, q : R and R, r : DifferenceRelation(p, s)) :
+    DifferenceRelation(difference_mul_pairs(p, q), difference_mul_pairs(s, q)) {
+    let swapped : p.2 + s.1 = s.2 + p.1 :=
+      trans(add_comm(p.2, s.1), trans(sym(r), add_comm(p.1, s.2)));
+    calc {
+      (p.1 * q.1 + p.2 * q.2) + (s.1 * q.2 + s.2 * q.1) = (p.1 * q.1 + s.2 * q.1) + (
+        p.2 * q.2 + s.1 * q.2
+      ) by trans(
+        cong(fun (m : R) => (p.1 * q.1 + p.2 * q.2) + m, add_comm(s.1 * q.2, s.2 * q.1)),
+        difference_add_interchange(p.1 * q.1, p.2 * q.2, s.2 * q.1, s.1 * q.2)
+      );
+      _ = (p.1 + s.2) * q.1 + (p.2 + s.1) * q.2 by sym(
+        trans(
+          cong(fun (m : R) => m + (p.2 + s.1) * q.2, distrib_right(p.1, s.2, q.1)),
+          cong(fun (m : R) => (p.1 * q.1 + s.2 * q.1) + m, distrib_right(p.2, s.1, q.2))
+        )
+      );
+      _ = (s.1 + p.2) * q.1 + (s.2 + p.1) * q.2 by trans(
+        cong(fun (m : R) => m * q.1 + (p.2 + s.1) * q.2, r),
+        cong(fun (m : R) => (s.1 + p.2) * q.1 + m * q.2, swapped)
+      );
+      _ = (s.1 * q.1 + p.2 * q.1) + (s.2 * q.2 + p.1 * q.2) by trans(
+        cong(fun (m : R) => m + (s.2 + p.1) * q.2, distrib_right(s.1, p.2, q.1)),
+        cong(fun (m : R) => (s.1 * q.1 + p.2 * q.1) + m, distrib_right(s.2, p.1, q.2))
+      );
+      _ = (s.1 * q.1 + s.2 * q.2) + (p.1 * q.2 + p.2 * q.1) by trans(
+        difference_add_interchange(s.1 * q.1, p.2 * q.1, s.2 * q.2, p.1 * q.2),
+        cong(fun (m : R) => (s.1 * q.1 + s.2 * q.2) + m, add_comm(p.2 * q.1, p.1 * q.2))
+      );
+    }
+  }
+
+  computable def difference_mul_pairs_comm(p, q : R and R) :
+    difference_mul_pairs(p, q) = difference_mul_pairs(q, p) := path i => (
+      (
+        cong(fun (m : R) => m + p.2 * q.2, mul_comm(p.1, q.1)) ++ cong(
+          fun (m : R) => q.1 * p.1 + m, mul_comm(p.2, q.2)
+        )
+      ) @ i,
+      (
+        add_comm(p.1 * q.2, p.2 * q.1) ++ cong(fun (m : R) => m + p.1 * q.2, mul_comm(p.2, q.1)) ++ cong(
+          fun (m : R) => q.1 * p.2 + m, mul_comm(p.1, q.2)
+        )
+      ) @ i
+    );
+
+  computable def difference_mul(x, y : Difference) : Difference := descend2(
+    U, U, R and R, DifferenceRelation, Difference, difference_is_set,
+    fun (p, q : R and R) => typed(Difference, class(difference_mul_pairs(p, q))),
+    fun (p, s, q : R and R, r : DifferenceRelation(p, s)) => difference_path(
+      difference_mul_pairs(p, q), difference_mul_pairs(s, q), difference_mul_pairs_left(p, s, q, r)
+    ),
+    fun (p, q, s : R and R, r : DifferenceRelation(q, s)) => trans(
+      difference_pairs(
+        difference_mul_pairs(p, q), difference_mul_pairs(q, p), difference_mul_pairs_comm(p, q)
+      ),
+      trans(
+        difference_path(
+          difference_mul_pairs(q, p), difference_mul_pairs(s, p),
+          difference_mul_pairs_left(q, s, p, r)
+        ),
+        difference_pairs(
+          difference_mul_pairs(s, p), difference_mul_pairs(p, s), difference_mul_pairs_comm(s, p)
+        )
+      )
+    ), x, y
+  );
+
+  // An equation of differences in one, two or three of them holds when it holds
+  // at their classes.
+  computable def difference_equation(
+    f, g : Difference -> Difference, e : (forall p : R and R. f(class(p)) = g(class(p))),
+    x : Difference
+  ) :
+    f(x) = g(x) := difference_induction(
+      fun (z : Difference) => f(z) = g(z), fun (z : Difference) => difference_is_set(f(z), g(z)), e,
+      x
+    );
+
+  computable def difference_equation2(
+    f, g : Difference -> Difference -> Difference,
+    e : (forall p, q : R and R. f(class(p), class(q)) = g(class(p), class(q))), x, y : Difference
+  ) :
+    f(x, y) = g(x, y) := difference_equation(
+      fun (a : Difference) => f(a, y), fun (a : Difference) => g(a, y),
+      fun (p : R and R) => difference_equation(
+        fun (b : Difference) => f(class(p), b), fun (b : Difference) => g(class(p), b),
+        fun (q : R and R) => e(p, q), y
+      ), x
+    );
+
+  computable def difference_equation3(
+    f, g : Difference -> Difference -> Difference -> Difference,
+    e : (
+      forall p, q, s : R and R. f(class(p), class(q), class(s)) = g(class(p), class(q), class(s))
+    ), x, y, z : Difference
+  ) :
+    f(x, y, z) = g(x, y, z) := difference_equation(
+      fun (a : Difference) => f(a, y, z), fun (a : Difference) => g(a, y, z),
+      fun (p : R and R) => difference_equation2(
+        fun (b, c : Difference) => f(class(p), b, c), fun (b, c : Difference) => g(class(p), b, c),
+        fun (q, s : R and R) => e(p, q, s), y, z
+      ), x
+    );
+
+  // Addition is associative and commutative, with zero a unit and negation an
+  // inverse.
+  computable def difference_add_assoc(x, y, z : Difference) :
+    difference_add(difference_add(x, y), z) = difference_add(x, difference_add(y, z)) := difference_equation3(
+      fun (a, b, c : Difference) => difference_add(difference_add(a, b), c),
+      fun (a, b, c : Difference) => difference_add(a, difference_add(b, c)),
+      fun (p, q, s : R and R) => difference_pairs(
+        difference_add_pairs(difference_add_pairs(p, q), s),
+        difference_add_pairs(p, difference_add_pairs(q, s)),
+        path i => (add_assoc(p.1, q.1, s.1) @ i, add_assoc(p.2, q.2, s.2) @ i)
+      ), x, y, z
+    );
+
+  computable def difference_add_comm(x, y : Difference) :
+    difference_add(x, y) = difference_add(y, x) := difference_equation2(
+      fun (a, b : Difference) => difference_add(a, b),
+      fun (a, b : Difference) => difference_add(b, a),
+      fun (p, q : R and R) => difference_pairs(
+        difference_add_pairs(p, q), difference_add_pairs(q, p), difference_add_pairs_comm(p, q)
+      ), x, y
+    );
+
+  computable def difference_zero_add(x : Difference) :
+    difference_add(difference_zero, x) = x := difference_equation(
+      fun (a : Difference) => difference_add(difference_zero, a), fun (a : Difference) => a,
+      fun (p : R and R) => difference_pairs(
+        difference_add_pairs((zero, zero), p), p, path i => (zero_add(p.1) @ i, zero_add(p.2) @ i)
+      ), x
+    );
+
+  computable def difference_add_zero(x : Difference) :
+    difference_add(x, difference_zero) = x := trans(
+      difference_add_comm(x, difference_zero), difference_zero_add(x)
+    );
+
+  computable def difference_neg_add(x : Difference) :
+    difference_add(difference_neg(x), x) = difference_zero := difference_equation(
+      fun (a : Difference) => difference_add(difference_neg(a), a),
+      fun (a : Difference) => difference_zero,
+      fun (p : R and R) => difference_path(
+        (p.2 + p.1, p.1 + p.2), (zero, zero),
+        trans(add_zero(p.2 + p.1), trans(add_comm(p.2, p.1), sym(zero_add(p.1 + p.2))))
+      ), x
+    );
+
+  computable def difference_add_neg(x : Difference) :
+    difference_add(x, difference_neg(x)) = difference_zero := trans(
+      difference_add_comm(x, difference_neg(x)), difference_neg_add(x)
+    );
+
+  // The components of a product of three pairs, and of a product with a sum,
+  // regrouped: ((a c + b d) e + (a d + b c) f) is a (c e + d f) + b (c f + d e),
+  // and a (c + e) + b (d + f) is (a c + b d) + (a e + b f).
+  computable def difference_pairs_mul_assoc(a, b, c, d, e, f : R) :
+    (a * c + b * d) * e + (a * d + b * c) * f = a * (c * e + d * f) + b * (c * f + d * e) {
+    calc {
+      (a * c + b * d) * e + (a * d + b * c) * f = ((a * c) * e + (b * d) * e) + (
+        (a * d) * f + (b * c) * f
+      ) by trans(
+        cong(fun (m : R) => m + (a * d + b * c) * f, distrib_right(a * c, b * d, e)),
+        cong(fun (m : R) => ((a * c) * e + (b * d) * e) + m, distrib_right(a * d, b * c, f))
+      );
+      _ = (a * (c * e) + b * (d * e)) + (a * (d * f) + b * (c * f)) by trans(
+        cong(fun (m : R) => (m + (b * d) * e) + ((a * d) * f + (b * c) * f), mul_assoc(a, c, e)),
+        trans(
+          cong(fun (m : R) => (a * (c * e) + m) + ((a * d) * f + (b * c) * f), mul_assoc(b, d, e)),
+          trans(
+            cong(fun (m : R) => (a * (c * e) + b * (d * e)) + (m + (b * c) * f), mul_assoc(a, d, f)),
+            cong(fun (m : R) => (a * (c * e) + b * (d * e)) + (a * (d * f) + m), mul_assoc(b, c, f))
+          )
+        )
+      );
+      _ = (a * (c * e) + a * (d * f)) + (b * (c * f) + b * (d * e)) by trans(
+        difference_add_interchange(a * (c * e), b * (d * e), a * (d * f), b * (c * f)),
+        cong(fun (m : R) => (a * (c * e) + a * (d * f)) + m, add_comm(b * (d * e), b * (c * f)))
+      );
+      _ = a * (c * e + d * f) + b * (c * f + d * e) by sym(
+        trans(
+          cong(fun (m : R) => m + b * (c * f + d * e), mul_add(a, c * e, d * f)),
+          cong(fun (m : R) => (a * (c * e) + a * (d * f)) + m, mul_add(b, c * f, d * e))
+        )
+      );
+    }
+  }
+
+  computable def difference_pairs_mul_add(a, b, c, d, e, f : R) :
+    a * (c + e) + b * (d + f) = (a * c + b * d) + (a * e + b * f) {
+    calc {
+      a * (c + e) + b * (d + f) = (a * c + a * e) + (b * d + b * f) by trans(
+        cong(fun (m : R) => m + b * (d + f), mul_add(a, c, e)),
+        cong(fun (m : R) => (a * c + a * e) + m, mul_add(b, d, f))
+      );
+      _ = (a * c + b * d) + (a * e + b * f) by difference_add_interchange(
+        a * c, a * e, b * d, b * f
+      );
+    }
+  }
+
+  // Multiplication is associative and commutative, with one a unit, and
+  // distributes over addition.
+  computable def difference_mul_assoc(x, y, z : Difference) :
+    difference_mul(difference_mul(x, y), z) = difference_mul(x, difference_mul(y, z)) := difference_equation3(
+      fun (a, b, c : Difference) => difference_mul(difference_mul(a, b), c),
+      fun (a, b, c : Difference) => difference_mul(a, difference_mul(b, c)),
+      fun (p, q, s : R and R) => difference_pairs(
+        difference_mul_pairs(difference_mul_pairs(p, q), s),
+        difference_mul_pairs(p, difference_mul_pairs(q, s)),
+        path i => (
+          difference_pairs_mul_assoc(p.1, p.2, q.1, q.2, s.1, s.2) @ i,
+          difference_pairs_mul_assoc(p.1, p.2, q.1, q.2, s.2, s.1) @ i
+        )
+      ), x, y, z
+    );
+
+  computable def difference_mul_comm(x, y : Difference) :
+    difference_mul(x, y) = difference_mul(y, x) := difference_equation2(
+      fun (a, b : Difference) => difference_mul(a, b),
+      fun (a, b : Difference) => difference_mul(b, a),
+      fun (p, q : R and R) => difference_pairs(
+        difference_mul_pairs(p, q), difference_mul_pairs(q, p), difference_mul_pairs_comm(p, q)
+      ), x, y
+    );
+
+  computable def difference_one_mul(x : Difference) :
+    difference_mul(difference_one, x) = x := difference_equation(
+      fun (a : Difference) => difference_mul(difference_one, a), fun (a : Difference) => a,
+      fun (p : R and R) => difference_pairs(
+        difference_mul_pairs((one, zero), p), p,
+        path i => (
+          trans(
+            cong(fun (n : R) => n + zero * p.2, one_mul(p.1)),
+            trans(cong(fun (n : R) => p.1 + n, zero_mul(p.2)), add_zero(p.1))
+          ) @ i,
+          trans(
+            cong(fun (n : R) => n + zero * p.1, one_mul(p.2)),
+            trans(cong(fun (n : R) => p.2 + n, zero_mul(p.1)), add_zero(p.2))
+          ) @ i
+        )
+      ), x
+    );
+
+  computable def difference_mul_one(x : Difference) :
+    difference_mul(x, difference_one) = x := trans(
+      difference_mul_comm(x, difference_one), difference_one_mul(x)
+    );
+
+  computable def difference_mul_add(x, y, z : Difference) :
+    difference_mul(x, difference_add(y, z)) = difference_add(
+      difference_mul(x, y), difference_mul(x, z)
+    ) := difference_equation3(
+      fun (a, b, c : Difference) => difference_mul(a, difference_add(b, c)),
+      fun (a, b, c : Difference) => difference_add(difference_mul(a, b), difference_mul(a, c)),
+      fun (p, q, s : R and R) => difference_pairs(
+        difference_mul_pairs(p, difference_add_pairs(q, s)),
+        difference_add_pairs(difference_mul_pairs(p, q), difference_mul_pairs(p, s)),
+        path i => (
+          difference_pairs_mul_add(p.1, p.2, q.1, q.2, s.1, s.2) @ i,
+          difference_pairs_mul_add(p.1, p.2, q.2, q.1, s.2, s.1) @ i
+        )
+      ), x, y, z
+    );
+
+  // Equality of differences is decidable: pairs have the same difference or not,
+  // and equal classes have related pairs (quotient_effective).
+  computable def difference_decide(x, y : Difference) :
+    Decidable(U, x = y) := difference_induction(
+      fun (a : Difference) => forall b : Difference. Decidable(U, a = b),
+      fun (a : Difference) => pi_is_prop(
+        U, Difference, fun (b : Difference) => Decidable(U, a = b),
+        fun (b : Difference) => decision_is_prop(U, a = b, difference_is_set(a, b))
+      ),
+      fun (p : R and R) => fun (b : Difference) => difference_induction(
+        fun (c : Difference) => Decidable(U, typed(Difference, class(p)) = c),
+        fun (c : Difference) => decision_is_prop(
+          U, typed(Difference, class(p)) = c, difference_is_set(class(p), c)
+        ),
+        fun (q : R and R) => match decide(p.1 + q.2, q.1 + p.2) return (
+          Decidable(U, typed(Difference, class(p)) = typed(Difference, class(q)))
+        ) {
+          left e => left(difference_path(p, q, e));
+          right no => right(
+            fun (same : typed(Difference, class(p)) = typed(Difference, class(q))) => no(
+              quotient_effective(
+                U, R and R, DifferenceRelation, difference_same_difference_props,
+                difference_same_difference_refl, difference_same_difference_sym,
+                difference_same_difference_trans, p, q, same
+              )
+            )
+          );
+        }, b
+      ), x
+    )(y);
+
+  // The differences, a commutative ring.
+  def difference_ring : CommRing(U) := CommRing.make(
+    R := Difference, R_is_set := difference_is_set, add := difference_add,
+    add_assoc := difference_add_assoc, zero := difference_zero, zero_add := difference_zero_add,
+    add_zero := difference_add_zero, neg := difference_neg, neg_add := difference_neg_add,
+    add_neg := difference_add_neg, add_comm := difference_add_comm, mul := difference_mul,
+    mul_assoc := difference_mul_assoc, one := difference_one, one_mul := difference_one_mul,
+    mul_one := difference_mul_one, mul_comm := difference_mul_comm, mul_add := difference_mul_add
+  );
+
+  // The semiring embeds in its difference ring, preserving its operations.
+  computable def difference_embed(n : R) : Difference := difference(n, zero);
+
+  computable def difference_embed_zero :
+    difference_embed(zero) = difference_zero := refl(difference_zero);
+
+  computable def difference_embed_one :
+    difference_embed(one) = difference_one := refl(difference_one);
+
+  computable def difference_embed_add(a, b : R) :
+    difference_embed(a + b) = difference_add(difference_embed(a), difference_embed(b)) := sym(
+      difference_pairs(
+        difference_add_pairs((a, zero), (b, zero)), (a + b, zero),
+        path i => (a + b, zero_add(zero) @ i)
+      )
+    );
+
+  computable def difference_embed_mul(a, b : R) :
+    difference_embed(a * b) = difference_mul(difference_embed(a), difference_embed(b)) := sym(
+      difference_pairs(
+        difference_mul_pairs((a, zero), (b, zero)), (a * b, zero),
+        path i => (
+          trans(cong(fun (n : R) => a * b + n, zero_mul(zero)), add_zero(a * b)) @ i,
+          trans(
+            cong(fun (n : R) => n + zero * b, mul_zero(a)), trans(zero_add(zero * b), zero_mul(b))
+          ) @ i
+        )
+      )
+    );
+
+  computable def difference_embed_injective(a, b : R, p : difference_embed(a) = difference_embed(b)) :
+    a = b := trans(
+      sym(add_zero(a)),
+      trans(
+        quotient_effective(
+          U, R and R, DifferenceRelation, difference_same_difference_props,
+          difference_same_difference_refl, difference_same_difference_sym,
+          difference_same_difference_trans, (a, zero), (b, zero), p
+        ), add_zero(b)
+      )
+    );
+}

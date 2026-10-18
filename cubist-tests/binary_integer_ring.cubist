@@ -1,0 +1,17 @@
+// Binary integer displays: retained literals and computed quotient representatives.
+import binary_integers;
+use binary_integers;
+
+def integer_wide_product :
+  18446744073709551615 * 18446744073709551615 = 340282366920938463426481119284349108225 {
+  rfl;
+}
+
+// Output: 0b1010 = 0b1010
+print(typeof(refl(0b1010)));
+// Output: class((bnat.(18446744073709551616), bnat.(0)))
+print(evaluate(18446744073709551615 + 1));
+// Output: class((bnat.(0), bnat.(36893488147419103230)))
+print(evaluate((-18446744073709551615) * 2));
+// Output: class((bnat.(18446744073709551616), bnat.(18446744073709551615)))
+print(evaluate(18446744073709551616 + (-18446744073709551615)));

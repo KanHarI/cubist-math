@@ -1,0 +1,10 @@
+import semirings;
+use unat;
+
+// The unary semiring model, without importing binary arithmetic.
+def unat_semiring : CommSemiring(U0) := CommSemiring.make(
+  R := UNat, R_is_set := unat_is_set, add := add, add_assoc := unat_add_assoc, zero := zero,
+  zero_add := unat_zero_add, add_zero := unat_add_zero, add_comm := unat_add_comm, mul := mul,
+  mul_assoc := unat_mul_assoc, one := succ(zero), one_mul := unat_one_mul, mul_one := unat_mul_one,
+  mul_comm := unat_mul_comm, mul_add := unat_mul_add, mul_zero := unat_mul_zero
+);

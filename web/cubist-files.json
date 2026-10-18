@@ -1539,6 +1539,10 @@
    "summary": "Computed/path equality agreement, bitwise decisions on large values, and a forced 64-bit model-law certificate that avoids unary proof evaluation."
   },
   {
+   "path": "cubist-tests/binary_integer_ring.cubist",
+   "summary": "Binary integer literal spelling, large positive and negative arithmetic displays, and noncanonical quotient representatives after cancellation. Semantic outcomes are also checked in the binary integer source contracts."
+  },
+  {
    "path": "cubist-tests/binary_natural_foundation.cubist",
    "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, decimal/binary input and printing, and arithmetic beyond 64 bits."
   },
@@ -2415,6 +2419,10 @@
    "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
+   "path": "library/binary_integers.cubist",
+   "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. Computed values remain quotient representatives; domain laws and the public `Z` migration follow in NUM2."
+  },
+  {
    "path": "library/bnat_arithmetic.cubist",
    "summary": "Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits."
   },
@@ -2467,6 +2475,10 @@
    "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. An equivalence has an inverse with both inverse laws (`equiv_inverse`), and every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
   },
   {
+   "path": "library/differences.cubist",
+   "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, and an injective semiring embedding. Unary and binary integers instantiate this shared construction."
+  },
+  {
    "path": "library/fractions.cubist",
    "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one: fractions `x / d` carry evidence that `d` is nonzero, cross multiplication defines their quotient relation, and their operations descend to a field (`fraction_field`) with a separate equality decision (`q_decide`). This construction does not import the integer instance."
   },
@@ -2484,7 +2496,7 @@
   },
   {
    "path": "library/integers.cubist",
-   "summary": "The integers as a quotient: a pair of naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
+   "summary": "The unary compatibility integers instantiate `differences`: a pair of unary naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
   },
   {
    "path": "library/lexemes.cubist",
@@ -2521,6 +2533,10 @@
   {
    "path": "library/squares.cubist",
    "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
+  },
+  {
+   "path": "library/unat_models.cubist",
+   "summary": "The unary commutative-semiring model, without importing binary arithmetic. Re-exported by `bnat_models`."
   },
   {
    "path": "library/unat.cubist",

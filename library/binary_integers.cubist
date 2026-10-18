@@ -1,0 +1,226 @@
+import differences;
+import bnat_models;
+import bnat_notation;
+use bnat;
+
+// Binary integers instantiate the shared difference-ring construction.
+// These public names preserve binary notation and the natural-number API.
+
+def BIntSameDifference(p, q : BNat and BNat) :
+  U0 := DifferenceRelation{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, p, q);
+
+computable def bint_same_difference_props(p, q : BNat and BNat) :
+  IsProp(U0, BIntSameDifference(p, q)) := difference_same_difference_props{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q
+  );
+
+computable def bint_same_difference_refl(p : BNat and BNat) :
+  BIntSameDifference(p, p) := difference_same_difference_refl{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p
+  );
+
+computable def bint_same_difference_sym(p, q : BNat and BNat, r : BIntSameDifference(p, q)) :
+  BIntSameDifference(q, p) := difference_same_difference_sym{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q, r
+  );
+
+computable def bint_same_difference_trans(
+  p, q, s : BNat and BNat, r : BIntSameDifference(p, q), t : BIntSameDifference(q, s)
+) :
+  BIntSameDifference(p, s) := difference_same_difference_trans{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q, s, r, t
+  );
+
+def BInt : U0 := Difference{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel);
+
+computable def bint_is_set :
+  IsSet(U0, BInt) := difference_is_set{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel);
+
+computable def bint(a, b : BNat) :
+  BInt := difference{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, a, b);
+
+computable def bint_path(p, q : BNat and BNat, r : BIntSameDifference(p, q)) :
+  typed(BInt, class(p)) = typed(BInt, class(q)) := difference_path{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q, r
+  );
+
+computable def bint_pairs(p, q : BNat and BNat, e : p = q) :
+  typed(BInt, class(p)) = typed(BInt, class(q)) := difference_pairs{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q, e
+  );
+
+computable def bint_induction(
+  P : BInt -> U0, props : (forall z : BInt. IsProp(U0, P(z))),
+  f : (forall p : BNat and BNat. P(class(p))), z : BInt
+) :
+  P(z) := difference_induction{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, P, props, f, z);
+
+computable def bint_zero :
+  BInt := difference_zero{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel);
+
+computable def bint_one : BInt := difference_one{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel);
+
+computable def bint_neg(x : BInt) :
+  BInt := difference_neg{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, x);
+
+computable def bint_add_pairs(p, q : BNat and BNat) :
+  BNat and BNat := difference_add_pairs{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, p, q);
+
+computable def bint_add_pairs_left(p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) :
+  BIntSameDifference(bint_add_pairs(p, q), bint_add_pairs(s, q)) := difference_add_pairs_left{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, s, q, r
+  );
+
+computable def bint_add_pairs_comm(p, q : BNat and BNat) :
+  bint_add_pairs(p, q) = bint_add_pairs(q, p) := difference_add_pairs_comm{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q
+  );
+
+computable def bint_add(x, y : BInt) :
+  BInt := difference_add{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, x, y);
+
+computable def bint_mul_pairs(p, q : BNat and BNat) :
+  BNat and BNat := difference_mul_pairs{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, p, q);
+
+computable def bint_mul_pairs_left(p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) :
+  BIntSameDifference(bint_mul_pairs(p, q), bint_mul_pairs(s, q)) := difference_mul_pairs_left{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, s, q, r
+  );
+
+computable def bint_mul_pairs_comm(p, q : BNat and BNat) :
+  bint_mul_pairs(p, q) = bint_mul_pairs(q, p) := difference_mul_pairs_comm{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, p, q
+  );
+
+computable def bint_mul(x, y : BInt) :
+  BInt := difference_mul{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, x, y);
+
+computable def bint_equation(
+  f, g : BInt -> BInt, e : (forall p : BNat and BNat. f(class(p)) = g(class(p))), x : BInt
+) :
+  f(x) = g(x) := difference_equation{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, f, g, e, x);
+
+computable def bint_equation2(
+  f, g : BInt -> BInt -> BInt,
+  e : (forall p, q : BNat and BNat. f(class(p), class(q)) = g(class(p), class(q))), x, y : BInt
+) :
+  f(x, y) = g(x, y) := difference_equation2{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, f, g, e, x, y
+  );
+
+computable def bint_equation3(
+  f, g : BInt -> BInt -> BInt -> BInt,
+  e : (
+    forall p, q, s : BNat and BNat.
+    f(class(p), class(q), class(s)) = g(class(p), class(q), class(s))
+  ), x, y, z : BInt
+) :
+  f(x, y, z) = g(x, y, z) := difference_equation3{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, f, g, e, x, y, z
+  );
+
+computable def bint_add_assoc(x, y, z : BInt) :
+  bint_add(bint_add(x, y), z) = bint_add(x, bint_add(y, z)) := difference_add_assoc{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x, y, z
+  );
+
+computable def bint_add_comm(x, y : BInt) :
+  bint_add(x, y) = bint_add(y, x) := difference_add_comm{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x, y
+  );
+
+computable def bint_zero_add(x : BInt) : bint_add(bint_zero, x) = x := difference_zero_add{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel, x
+);
+
+computable def bint_add_zero(x : BInt) : bint_add(x, bint_zero) = x := difference_add_zero{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel, x
+);
+
+computable def bint_neg_add(x : BInt) :
+  bint_add(bint_neg(x), x) = bint_zero := difference_neg_add{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x
+  );
+
+computable def bint_add_neg(x : BInt) :
+  bint_add(x, bint_neg(x)) = bint_zero := difference_add_neg{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x
+  );
+
+computable def bint_pairs_mul_assoc(a, b, c, d, e, f : BNat) :
+  (a * c + b * d) * e + (a * d + b * c) * f = a * (c * e + d * f) + b * (c * f + d * e) := difference_pairs_mul_assoc{{
+    U0
+  }}(bnat_semiring, bnat_decide, bnat_add_cancel, a, b, c, d, e, f);
+
+computable def bint_pairs_mul_add(a, b, c, d, e, f : BNat) :
+  a * (c + e) + b * (d + f) = (a * c + b * d) + (a * e + b * f) := difference_pairs_mul_add{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, a, b, c, d, e, f
+  );
+
+computable def bint_mul_assoc(x, y, z : BInt) :
+  bint_mul(bint_mul(x, y), z) = bint_mul(x, bint_mul(y, z)) := difference_mul_assoc{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x, y, z
+  );
+
+computable def bint_mul_comm(x, y : BInt) :
+  bint_mul(x, y) = bint_mul(y, x) := difference_mul_comm{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x, y
+  );
+
+computable def bint_one_mul(x : BInt) : bint_mul(bint_one, x) = x := difference_one_mul{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel, x
+);
+
+computable def bint_mul_one(x : BInt) : bint_mul(x, bint_one) = x := difference_mul_one{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel, x
+);
+
+computable def bint_mul_add(x, y, z : BInt) :
+  bint_mul(x, bint_add(y, z)) = bint_add(bint_mul(x, y), bint_mul(x, z)) := difference_mul_add{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, x, y, z
+  );
+
+computable def bint_decide(x, y : BInt) : Decidable(U0, x = y) := difference_decide{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel, x, y
+);
+
+def binary_integers :
+  CommRing(U0) := difference_ring{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel);
+
+computable def bint_of_nat(n : BNat) :
+  BInt := difference_embed{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, n);
+
+computable def bint_of_nat_zero : bint_of_nat(0) = bint_zero := difference_embed_zero{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel
+);
+
+computable def bint_of_nat_one : bint_of_nat(1) = bint_one := difference_embed_one{{U0}}(
+  bnat_semiring, bnat_decide, bnat_add_cancel
+);
+
+computable def bint_of_nat_add(a, b : BNat) :
+  bint_of_nat(a + b) = bint_add(bint_of_nat(a), bint_of_nat(b)) := difference_embed_add{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, a, b
+  );
+
+computable def bint_of_nat_mul(a, b : BNat) :
+  bint_of_nat(a * b) = bint_mul(bint_of_nat(a), bint_of_nat(b)) := difference_embed_mul{{U0}}(
+    bnat_semiring, bnat_decide, bnat_add_cancel, a, b
+  );
+
+computable def bint_of_nat_injective(a, b : BNat, p : bint_of_nat(a) = bint_of_nat(b)) :
+  a = b := difference_embed_injective{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, a, b, p);
+
+computable def bint_zero_ne_one(p : bint_zero = bint_one) :
+  Void := bnat_zero_ne_one(bint_of_nat_injective(0, 1, p));
+
+// Literal magnitudes go straight from the binary reader into a quotient pair.
+// Only lexical glyphs and error positions use unary naturals.
+computable def bint_literal(s : Lexeme) : Parsed(U0, BInt) := match bnat_literal(s) {
+    ok(n) => ok(bint_of_nat(n));
+    error(at_) => error(at_);
+  };
+
+notation binary_integers {
+  literal(s : Lexeme) := bint_literal(s);
+}

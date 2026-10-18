@@ -13,7 +13,7 @@ completed full normalizations by exact syntax identity. NUM0's source
 representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
-and factorial. The default-`Nat` migration is implemented below; its release checks are pending.
+and factorial. The default-`Nat` migration is implemented below; its release checks pass.
 NUM2 and EVAL3–EVAL8 remain.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
@@ -309,7 +309,7 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
-release validation pending; the other rows remain. Sizes are relative scope, as in the work plan.
+release validation passed; the other rows remain. Sizes are relative scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
@@ -493,7 +493,7 @@ own bound without strict-decrease evidence. A step ignoring smaller results
 computes at a 64-bit bound without enumerating them. The `Below` construction
 can still walk through intervening predecessor bounds when a smaller result
 is requested; this is not a sublinear-time or memoization claim.
-**Default migration (2026-10-18; release validation pending).** Public
+**Default migration (2026-10-18; release validation passed).** Public
 `Nat` now aliases `BNat`. Its facade uses direct binary operations and calls
 `bnat_literal` directly for decimal/`0b` input. The original unary declaration
 and proofs live in `unat`: structural clients import `unat`, use `UNat`, and
@@ -650,8 +650,29 @@ Its quotient relation, operations, field laws and decidable equality are
 unchanged. `rationals` imports this layer and instantiates it at `integers`.
 The moved definitions keep their ordinary imported names; their qualified
 inspection names now use the `fractions__` prefix.
-The integer and rational carriers and their numeral readers are still unary;
-their binary migration and embeddings remain the next NUM2 work.
+The public integer and rational carriers and their numeral readers are still
+unary; their default migration remains NUM2 work.
+
+**Binary integer ring (2026-10-18).**
+[binary_integers.cubist](../../../library/binary_integers.cubist) supplies `BInt`,
+the same-difference quotient of `BNat` pairs. Both integer instances reuse
+[differences.cubist](../../../library/differences.cubist), the ring of
+differences of an additively cancellative commutative semiring with decidable
+equality. Its proofs use the existing semiring distributivity and
+commutative-monoid regrouping laws; they are not reimplemented for `BNat`.
+The unary semiring model lives separately in `unat_models`, so the unary
+compatibility integers do not import binary arithmetic. Public wrappers
+instantiate the generic universe explicitly. Negation, addition and
+multiplication respect the quotient; the commutative-ring laws, decidable
+equality, nontriviality and an injective natural embedding preserving zero,
+one, addition and multiplication are checked without assumptions. Its
+`binary_integers` notation reads decimal and `0b` magnitudes directly into
+binary pairs. Computed output still shows quotient representatives; this
+is not a canonical signed presentation. The public `Z`/`Q` APIs and generic
+`Ring.of_nat` compatibility path have not switched. No-zero-divisor proofs,
+the binary fraction instance and integer-to-rational embedding, generic binary
+numeral interpretation, and the default migration remain open. This source
+representation work changes no evaluator or kernel code.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
