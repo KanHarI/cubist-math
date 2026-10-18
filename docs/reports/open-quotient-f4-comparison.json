@@ -1,7 +1,7 @@
 {
   "workload": "f4_galois_group__f4_galois_is_cyclic_two",
   "date": "2026-10-18",
-  "method": "Three alternating sequential pairs in fresh Node processes and clean checkouts. The baseline checkout has the same tree as main b4ee1b87. No other local validation ran concurrently; the stalled read-only review client was interrupted during this comparison. Times are local observations, not test thresholds.",
+  "method": "Three alternating sequential pairs in fresh Node processes and clean checkouts. The baseline checkout has the same tree as main b4ee1b87; the after checkout includes merged main09c326ea and all kernel review fixes. No other local validation ran concurrently; the read-only Opus review client was active. These short samples completed without a sleep-sized pause. Times are local observations, not test thresholds.",
   "command": "node tools/instruction-coverage.mjs --modules=f4_galois_group --select=f4_galois_is_cyclic_two --report=REPORT.json",
   "before": {
     "environment": {
@@ -14,17 +14,17 @@
       "memoryGiB": 36
     },
     "checkSeconds": [
-      3.8,
-      3.7,
-      3.4
+      2.7,
+      2.7,
+      2.8
     ],
-    "medianCheckSeconds": 3.7,
+    "medianCheckSeconds": 2.7,
     "derivationMs": [
-      14.7,
-      14.6,
-      13.7
+      10.6,
+      11,
+      10.2
     ],
-    "medianDerivationMs": 14.6,
+    "medianDerivationMs": 10.6,
     "work": {
       "instructions": 915,
       "rejected": 0,
@@ -40,7 +40,7 @@
   },
   "after": {
     "environment": {
-      "revision": "5fab77719e03fb8febbec2511a5197f8683fa76b",
+      "revision": "081e71860dd7e19ef5ac6f72e7b4a19879e62da6",
       "modified": false,
       "node": "v24.13.0",
       "platform": "darwin arm64",
@@ -49,17 +49,17 @@
       "memoryGiB": 36
     },
     "checkSeconds": [
-      3.9,
-      3.7,
-      3.5
+      2.8,
+      2.8,
+      2.8
     ],
-    "medianCheckSeconds": 3.7,
+    "medianCheckSeconds": 2.8,
     "derivationMs": [
-      15,
-      13.8,
-      15.1
+      10.5,
+      11.4,
+      10.6
     ],
-    "medianDerivationMs": 15,
+    "medianDerivationMs": 10.6,
     "work": {
       "instructions": 915,
       "rejected": 0,

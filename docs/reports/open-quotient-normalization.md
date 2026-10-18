@@ -106,10 +106,35 @@ field's `one` also fully normalizes: about 668 ms for normalization and 1.90 s
 for the entry in the final diagnostic run, with 2.10 million live arena nodes.
 These figures are local observations, not portable performance thresholds.
 
-The [F4 comparison](open-quotient-f4-comparison.json) repeats three alternating
-before/after pairs. All declarations and the selected Galois-group theorem
-derive in every run. Median module checking stays at 3.7 s; the selected
+The initial F4 comparison repeated three alternating before/after pairs. All
+declarations and the selected Galois-group theorem derived in every run.
+Median module checking stayed at 3.7 s; the selected
 derivation changes from 14.6 ms to 15.0 ms, with overlapping sample ranges.
 Its counted instruction/query work increases from 200,349 to 227,322 steps
 (13.5%); cache hits now count as work. No general speedup or exact timing
 equality is claimed. The regression baselines and production budgets are unchanged.
+
+## Validation after review corrections
+
+The complete native and UBSan suites pass with the sharing-off correction.
+All 21 focused WebAssembly normalization, evaluation-baseline and diagnostic
+tests pass at `081e7186`, including the unary sharing-off quotient, `bint_mul`
+and binary fraction-field `one`. Existing baseline outcomes, normal-form
+digests and work/allocation bounds remain unchanged. Linux CI ASan also passes
+on the identical kernel code at `8695c364`; final PR checks include the full
+workbench suite.
+
+The preceding `3c04840a` passed all seven CI jobs and all 1,533 workbench tests.
+A local full-suite run at that revision passed 1,531, failed one corpus test
+and cancelled one worker test: closed-lid sleep repeatedly paused the host
+for about 300 seconds, crossing declaration and worker wall-clock deadlines.
+Final full-suite validation therefore uses CI; no deadlines were increased.
+
+The [final F4 comparison](open-quotient-f4-comparison.json) records three fresh
+alternating pairs at `081e7186`. All declarations and the selected theorem
+derive. Median checking changes from 2.7 s to 2.8 s; median selected derivation
+is 10.6 ms on both versions (ranges 10.2–11.0 and 10.5–11.4 ms). The counted
+work remains 200,349 before and 227,322 after, matching the initial comparison.
+The final normalization corrections add no work to this workload. These short
+samples completed without a sleep-sized pause; they do not establish exact
+timing equality or a general speedup.
