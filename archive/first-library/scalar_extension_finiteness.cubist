@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import finite_spanning;
 import scalar_restriction;
-use nat;
+use unat;
 
 // Regard the same finite generating vectors as an L-linear family. The
 // coefficients are extended along K -> L; vectors themselves do not move.
 def extend_coordinate_linear(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : UNat
 ) :=
   induction n as k return (
     LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V))
@@ -32,7 +32,7 @@ def extend_coordinate_linear(
   };
 
 def extend_coefficients(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, a : Fin(n) -> af_carrier(K)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : UNat, a : Fin(n) -> af_carrier(K)
 ) :=
   fun (i : Fin(n)) => field_embedding_map(K, L, e, a(i));
 
@@ -57,7 +57,7 @@ def extend_coordinate_zero(
 }
 
 def extend_coordinate_square(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : UNat
 ) :=
   induction n as k return (
     forall h : LinearMap(K, CoordinateSpace(K, k), RestrictScalars(K, L, e, V)).
@@ -93,7 +93,7 @@ def extend_coordinate_square(
   };
 
 def scalar_extension_basis_finite(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), V : VectorSpace(L), n : UNat,
   basis : FiniteBasis(K, RestrictScalars(K, L, e, V), n)
 ) :
   FiniteDimensional(L, V) {

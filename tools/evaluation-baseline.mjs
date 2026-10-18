@@ -41,9 +41,12 @@ const root = new URL("../", import.meta.url);
 export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Bumped when a workload, a phase or the report's meaning changes: a
 // recorded baseline of another version is not comparable.
-export const version = 3;
+// Version 4 relocates the fixed unary workloads to UNat/unat. Algorithms,
+// contracts and counters stay comparable; free-name and display digests do
+// not, because the checked carrier and public law identities were renamed.
+export const version = 4;
 
-const euclid = "import euclid; use nat;", circle = "import circle; use nat;";
+const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // The archived Euclid construction and its prerequisites stay fixed for
 // evaluator comparisons (archive/first-library/euclid.cubist, primes.cubist):
 // a change to their algorithm starts a separate series.
@@ -76,7 +79,7 @@ export const workloads = [
   // Cubical terms (docs/examples/hott-automation/canonicity.cubist):
   // transport along a closed path, and winding numbers through Glue and the
   // circle's declared pushout.
-  { id: "transport-closed", setup: circle, entry: "evaluate transport(fun (n : Nat) => Nat, 3 + 0, 3, nat_add_zero(3), 5);" },
+  { id: "transport-closed", setup: circle, entry: "evaluate transport(fun (n : UNat) => UNat, 3 + 0, 3, unat_add_zero(3), 5);" },
   { id: "winding-2", setup: circle, entry: "evaluate winding(concatenate(U1, S1, base, base, base, loop, loop));" },
   { id: "winding-minus-2", setup: circle, entry: "evaluate winding(integer_loop(negative(2)));" },
   // The closure experiment's prime projections, the roadmap's preliminary

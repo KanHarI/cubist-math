@@ -1,16 +1,16 @@
-import nat;
+import unat;
 import complex_algebra;
 import complex_contour_samples;
 import contour_examples;
 import contour_sums;
-use nat;
+use unat;
 
 // Specialization of the finite quadrature laws to complex coordinates.
 // These are finite sums; existence of a contour integral is not asserted.
 
 def complex_constant_contour_closed(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : Complex(F), n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : Complex(F), n : UNat,
   vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n),
   closed : sample_last(Complex(F), n, vertices) = sample_first(Complex(F), n, vertices)
 ) :
@@ -27,8 +27,8 @@ def complex_constant_contour_closed(
 
 def complex_contour_composes(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : Complex(F) -> Complex(F), n : Nat,
-  vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n), m : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : Complex(F) -> Complex(F), n : UNat,
+  vertices : SampleVertices(Complex(F), n), tags : SampleTags(Complex(F), n), m : UNat,
   rightVertices : SampleVertices(Complex(F), m), rightTags : SampleTags(Complex(F), m),
   meets : sample_last(Complex(F), n, vertices) = sample_first(Complex(F), m, rightVertices)
 ) :

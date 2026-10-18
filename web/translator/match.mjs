@@ -191,6 +191,8 @@ function constructorClauses(n, { inductive, info }, locate) {
   const byIndex = new Map();
   for (const clause of [...n.clauses, ...(n.obligations ?? [])]) {
     const head = clause.constructor.text, k = indexOf(head);
+    if(k<0&&inductive.binding==="bnat__BNat"&&["zero","succ"].includes(head))
+      throw locate(Error("Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat."),clause.constructor);
     if (k < 0)
       throw locate(Error(`${inductive.source} has no constructor ${head}: its constructors are ${keys.join(", ")}.`), clause.constructor);
     if (byIndex.has(k)) throw locate(Error(`${keys[k]} has two clauses.`), clause.constructor);

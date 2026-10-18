@@ -8,7 +8,7 @@ import primes;
 import circle;
 import hlevels;
 import quotients;
-use nat;
+use unat;
 
 // Natural-number recursion.
 computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
@@ -16,14 +16,14 @@ computable def closed_arithmetic : add(mul(3, 4), 5) = 17 {
 }
 
 // General induction names recursive results separately from stored fields.
-computable def closed_induction_double : (induction 3 return Nat {
+computable def closed_induction_double : (induction 3 return UNat {
       zero => 0;
       succ(k) with ih => succ(succ(ih));
     }) = 6 {
   rfl;
 }
 
-evaluate (induction 3 return Nat {
+evaluate (induction 3 return UNat {
     zero => 0;
     succ(k) with ih => succ(succ(ih));
   }) expecting 6;
@@ -31,19 +31,20 @@ evaluate (induction 3 return Nat {
 // Derived path induction along a closed path that is not refl.
 computable def closed_path_induction :
   path_induction(
-    Nat, fun (a : Nat) => fun (b : Nat) => fun (r : a = b) => Nat, fun (a : Nat) => 7, 3 + 0, 3,
-    nat_add_zero(3)
+    UNat, fun (a : UNat) => fun (b : UNat) => fun (r : a = b) => UNat, fun (a : UNat) => 7, 3 + 0,
+    3, unat_add_zero(3)
   ) = 7 {
   rfl;
 }
 
 // Transport along a closed path, and along a closed family.
-computable def closed_transport : transport(fun (n : Nat) => Nat, 3 + 0, 3, nat_add_zero(3), 5) = 5 {
+computable def closed_transport :
+  transport(fun (n : UNat) => UNat, 3 + 0, 3, unat_add_zero(3), 5) = 5 {
   rfl;
 }
 
 computable def closed_dependent_transport :
-  transport(fun (n : Nat) => n = n, 3 + 0, 3, nat_add_zero(3), refl(3 + 0)) = refl(3) {
+  transport(fun (n : UNat) => n = n, 3 + 0, 3, unat_add_zero(3), refl(3 + 0)) = refl(3) {
   rfl;
 }
 
@@ -92,7 +93,7 @@ computable def retract_path_computes :
   rfl;
 }
 
-computable def nat_decision_computes : match nat_decide(2, 3) return Nat {
+computable def nat_decision_computes : match unat_decide(2, 3) return UNat {
     left p => 1;
     right n => 0;
   }
@@ -100,7 +101,7 @@ computable def nat_decision_computes : match nat_decide(2, 3) return Nat {
   rfl;
 }
 
-computable def nat_square_computes : nat_is_set(1, 1, refl(1), refl(1)) = refl(refl(1)) {
+computable def nat_square_computes : unat_is_set(1, 1, refl(1), refl(1)) = refl(refl(1)) {
   rfl;
 }
 
@@ -113,10 +114,10 @@ computable def unit_paths_contract : path_is_contr(U0, Unit, unit_is_contr, tt, 
 // univalence's Glue types.
 computable def effective_class_computes :
   quotient_effective(
-    U0, Nat, fun (m, n : Nat) => m = n, fun (m, n : Nat) => nat_is_set(m, n),
-    fun (n : Nat) => refl(n), fun (m, n : Nat, r : m = n) => sym(r),
-    fun (k, m, n : Nat, r : k = m, s : m = n) => trans(r, s), 2, 2,
-    class_path(U0, Nat, fun (m, n : Nat) => m = n, 2, 2, refl(2))
+    U0, UNat, fun (m, n : UNat) => m = n, fun (m, n : UNat) => unat_is_set(m, n),
+    fun (n : UNat) => refl(n), fun (m, n : UNat, r : m = n) => sym(r),
+    fun (k, m, n : UNat, r : k = m, s : m = n) => trans(r, s), 2, 2,
+    class_path(U0, UNat, fun (m, n : UNat) => m = n, 2, 2, refl(2))
   ) = refl(2) {
   rfl;
 }

@@ -16,16 +16,16 @@ const checked = async (t, source, fixtures = {}) => {
 
 test("family indices carry captured syntax through generated homomorphisms and isomorphisms", async t => {
   await checked(t, `import fixture;
-def k : Nat := succ(zero);
+def k : UNat := succ(zero);
 theory Child(U < UU0) extends G {}
 def inherited(S : Child(U0)) : S.V(zero) := S.unit;
 def identity(S : Child(U0)) : Child.Hom(S, S) := Child.Hom.id(S);
 def composite(S : Child(U0)) : Child.Hom(S, S) := Child.Hom.compose(Child.Hom.id(S), Child.Hom.id(S));
 def iso(S : Child(U0)) : Child.Iso(S, S) := Child.Iso.compose(Child.Iso.id(S), Child.Iso.id(S));
 `, {fixture: `import hlevels;
-import nat;
-def k : Nat := zero;
-theory G(U < UU0) { V(n : Nat) : set U; unit : V(k); base : V(zero); }
+import unat;
+def k : UNat := zero;
+theory G(U < UU0) { V(n : UNat) : set U; unit : V(k); base : V(zero); }
 `});
 });
 
@@ -53,8 +53,8 @@ def apply(S : T(U0), p : P(U0)) : S.M := S.op(p, p.x);
 test("former template marker spellings remain ordinary parameter and family-index names", async t => {
   for (const binder of ["__theory_type_0", "__theory_parameter_0", "__theory_reference"]) {
     await checked(t, `import hlevels;
-import nat;
-theory T(U < UU0, ${binder} : Nat) { V(n : Nat) : set U; point : V(${binder}); }
+import unat;
+theory T(U < UU0, ${binder} : UNat) { V(n : UNat) : set U; point : V(${binder}); }
 def identity(S : T(U0, zero)) : T.Hom(S, S) := T.Hom.id(S);
 `);
   }
@@ -65,14 +65,14 @@ test("a captured field global can be shadowed by the generated model's name", as
 initial A : T(U0);
 def use_it : A := A.point(tt);
 free W(A : U0) : T(U0) on A;
-def free_argument : W(Nat) := W.point(tt);
+def free_argument : W(UNat) := W.point(tt);
 `, {fixture: "import hlevels; def A : U0 := Unit; theory T(U < UU0) { M : set U; point(a : A) : M; }"});
 });
 
 test("initial and free models retain imported global types and law constants", async t => {
   await checked(t, `import fixture;
-def A : U0 := Nat;
-def k : Nat := succ(zero);
+def A : U0 := UNat;
+def k : UNat := succ(zero);
 initial N : T(U0);
 free W(B : U0) : T(U0) on B;
 def argument : N := N.point(tt);
@@ -81,21 +81,21 @@ def free_argument(B : U0) : W(B) := W.point(tt);
 def folded(B : U0, S : T(U0), g : B -> S.M) :
   W.fold(B, S, g).map(W.point(tt)) = S.point(tt) { rfl; }
 `, {fixture: `import hlevels;
-import nat;
+import unat;
 def A : U0 := Unit;
-def k : Nat := zero;
+def k : UNat := zero;
 theory T(U < UU0) {
   M : set U;
   point(a : A) : M;
-  number(n : Nat) : M;
+  number(n : UNat) : M;
   law at_k : number(k) = number(k);
 }`});
 });
 
 test("inherited fields and derived operations keep globals when the child shadows them", async t => {
   await checked(t, `import fixture;
-def A : U0 := Nat;
-def k : Nat := succ(zero);
+def A : U0 := UNat;
+def k : UNat := succ(zero);
 theory Child(U < UU0) extends Parent {}
 initial N : Child(U0);
 def argument : N := N.point(tt);
@@ -103,13 +103,13 @@ def boundary : N.number(zero) = N.number(zero) := N.at_k;
 def derived(S : Child(U0)) : S.number(zero) = S.named(tt) { rfl; }
 def parent(S : Child(U0)) : Unit -> S.M := S.parent.point;
 `, {fixture: `import hlevels;
-import nat;
+import unat;
 def A : U0 := Unit;
-def k : Nat := zero;
+def k : UNat := zero;
 theory Parent(U < UU0) {
   M : set U;
   point(a : A) : M;
-  number(n : Nat) : M;
+  number(n : UNat) : M;
   def named(u : Unit) : M := number(k);
   law at_k : named(tt) = number(k);
 }`});
@@ -117,34 +117,34 @@ theory Parent(U < UU0) {
 
 test("inheritance retains each parent's notation and leaves the child's notation local", async t => {
   await checked(t, `import fixture;
-notation shifted { numeral(n : Nat) := succ(n); }
+notation shifted { numeral(n : UNat) := succ(n); }
 use shifted;
 theory Child(U < UU0) extends Parent { law own : number(0) = number(0); }
 initial N : Child(U0);
 def inherited : N.number(zero) = N.number(zero) := N.base;
 def own : N.number(succ(zero)) = N.number(succ(zero)) := N.own;
 `, {fixture: `import hlevels;
-import nat;
-use nat;
+import unat;
+use unat;
 theory Parent(U < UU0) {
   M : set U;
-  number(n : Nat) : M;
+  number(n : UNat) : M;
   law base : number(0) = number(0);
 }`});
 });
 
 test("explicit notation selections keep their declaration when that notation name is rebound", async t => {
   await checked(t, `import fixture;
-notation fixed { numeral(n : Nat) := succ(n); }
+notation fixed { numeral(n : UNat) := succ(n); }
 initial N : T(U0);
 theory Child(U < UU0) extends T {}
 initial C : Child(U0);
 def original : N.number(zero) = N.number(zero) := N.base;
 def inherited : C.number(zero) = C.number(zero) := C.base;
 `, {fixture: `import hlevels;
-import nat;
-notation fixed { numeral(n : Nat) := n; }
-theory T(U < UU0) { M : set U; number(n : Nat) : M; law base : number(fixed.(0)) = number(zero); }`});
+import unat;
+notation fixed { numeral(n : UNat) := n; }
+theory T(U < UU0) { M : set U; number(n : UNat) : M; law base : number(fixed.(0)) = number(zero); }`});
 });
 
 test("a fold's h-level helper keeps the theory's definition when the caller rebinds IsSet", async t => {
@@ -158,7 +158,7 @@ def folded(S : T(U0)) : N.fold(S).map(N.c) = S.c { rfl; }
 
 test("a model's projections and selected fields use its original theory after that name is rebound", async t => {
   await checked(t, `import fixture;
-theory T(U < UU0) { M : set U; extra : Nat; c : M; }
+theory T(U < UU0) { M : set U; extra : UNat; c : M; }
 def direct : Unit := source.c;
 def expression : Unit := (fun (x : Unit) => source)(tt).c;
 def opened : Unit { use source; exact c; }
@@ -169,20 +169,20 @@ def source : T(U0) := T.make(Unit, prop_is_set(U0, Unit, unit_is_prop), tt);`});
 
 test("a captured global cannot become a later field or an inlined operation's binder", async t => {
   await checked(t, `import hlevels;
-import nat;
+import unat;
 def A : U0 := Unit;
-def k : Nat := zero;
+def k : UNat := zero;
 theory T(U < UU0) {
   M : set U;
   point(a : A) : M;
-  number(n : Nat) : M;
+  number(n : UNat) : M;
   def original(u : Unit) : M := number(k);
   A : M;
-  law local(k : Nat) : original(tt) = number(zero);
+  law local(k : UNat) : original(tt) = number(zero);
 }
 initial N : T(U0);
 def argument : N := N.point(tt);
-def bound(k : Nat) : N.number(zero) = N.number(zero) := N.local(k);
+def bound(k : UNat) : N.number(zero) = N.number(zero) := N.local(k);
 `);
 });
 
@@ -224,32 +224,32 @@ def parameter : W := W.op(tt, tt);
 
 test("recursive derived operations retain their recursive binder with captured globals", async t => {
   await checked(t, `import fixture;
-def k : Nat := succ(zero);
+def k : UNat := succ(zero);
 theory Child(U < UU0) extends T {}
 def recursive(S : Child(U0)) : S.iterate(succ(zero)) = S.op(S.number(zero)) { rfl; }
 `, {fixture: `import hlevels;
-import nat;
-def k : Nat := zero;
+import unat;
+def k : UNat := zero;
 theory T(U < UU0) {
   M : set U;
-  number(n : Nat) : M;
+  number(n : UNat) : M;
   op(T : M) : M;
-  def iterate(n : Nat) : M := match n { zero => number(k); succ(m) => op(iterate(m)); };
+  def iterate(n : UNat) : M := match n { zero => number(k); succ(m) => op(iterate(m)); };
 }`});
 });
 
 test("equal header notation stays compatible across extends, and changed notation does not", async t => {
   const {program} = await checked(t, `import hlevels;
-import nat;
-use nat;
+import unat;
+use unat;
 theory P(U < UU0, p : 0 = 0) { M : set U; c : M; }
 theory C(U < UU0, p : 0 = 0) extends P {}
 `);
   const result = await program.check(`import hlevels;
-import nat;
-use nat;
+import unat;
+use unat;
 theory P(U < UU0, p : 0 = 0) { M : set U; c : M; }
-notation shifted { numeral(n : Nat) := succ(n); }
+notation shifted { numeral(n : UNat) := succ(n); }
 use shifted;
 theory C(U < UU0, p : 0 = 0) extends P {}
 `, "different");
@@ -265,14 +265,14 @@ def first_argument : N := N.first(tt);
 def second_argument : N := N.second(zero);
 `, {
     first: `import hlevels; def A : U0 := Unit; theory P(U < UU0) { M : set U; first(a : A) : M; }`,
-    second: `import hlevels; import nat; def A : U0 := Nat; theory Q(U < UU0) { M : set U; second(a : A) : M; }`,
+    second: `import hlevels; import unat; def A : U0 := UNat; theory Q(U < UU0) { M : set U; second(a : A) : M; }`,
   });
 });
 
 test("copied model projections preserve both the receiver and the theory's projection binding", async t => {
   await checked(t, `import fixture;
-theory Item(U < UU0) { M : set U; extra : Nat; c : M; }
-def source : Item(U0) := Item.make(Nat, nat_is_set, zero, zero);
+theory Item(U < UU0) { M : set U; extra : UNat; c : M; }
+def source : Item(U0) := Item.make(UNat, unat_is_set, zero, zero);
 initial N : P(U0);
 def original : N := N.point(tt);
 def boundary : N.point(tt) = N.point(tt) := N.at_source;
@@ -319,11 +319,11 @@ theory Child(U < UU0) extends Parent { law invalid : Q(tt); }
 test("inherited notation keeps the complete operand tree in its original selection", async t => {
   for (const [crossModule, selected] of [[false, true], [true, true], [true, false]]) for (const operand of ["0 + 0", "0"]) {
     const parent = `import hlevels;
-import nat;
-use nat;
-theory P(U < UU0) { M : set U; point(n : Nat) : M; law base : point(${operand}) = point(0); }
+import unat;
+use unat;
+theory P(U < UU0) { M : set U; point(n : UNat) : M; law base : point(${operand}) = point(0); }
 `;
-    const child = `${selected ? "notation shifted { numeral(n : Nat) := succ(n); }\nuse shifted;" : ""}
+    const child = `${selected ? "notation shifted { numeral(n : UNat) := succ(n); }\nuse shifted;" : ""}
 theory Q(U < UU0) extends P { law own : point(${selected ? "0" : "succ(zero)"}) = point(${selected ? "0" : "succ(zero)"}); }
 initial N : Q(U0);
 free W(A : U0) : Q(U0) on A;

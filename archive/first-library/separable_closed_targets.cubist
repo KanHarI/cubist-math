@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import finite_embedding_extensions;
 import separable_polynomials;
 import splitting_fields;
 
 // Embeddings preserve both the coefficient factorization and distinctness.
 def distinct_polynomial_splitting_map(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : UNat,
   splitting : DistinctPolynomialSplitting(K, p, n)
 ) :
   DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n) {
@@ -25,7 +25,7 @@ def distinct_polynomial_splitting_map(
 
 def generated_splitting_roots_algebraic(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  nonzero : PolynomialNonzero(K, p), n : UNat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
     L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
   ), index : Fin(n)
@@ -58,7 +58,7 @@ def generated_splitting_roots_algebraic(
 // supplied splitting field may be arbitrarily large.
 def distinct_splitting_to_closed(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  nonzero : PolynomialNonzero(K, p), n : Nat,
+  nonzero : PolynomialNonzero(K, p), n : UNat,
   splitting : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n), T : AlgebraicField,
   closed : AlgebraicallyClosed(T), j : FieldEmbedding(K, T)
 ) :

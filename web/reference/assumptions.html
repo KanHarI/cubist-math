@@ -165,23 +165,23 @@ def merely_assumed(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
             </dl>
             <p>All three need every argument; there is no separate univalence axiom. Because they use no assumption, results built on them can be marked <a href="#computable"><code>computable</code></a>, and transport along <code>ua</code> computes:</p>
             <pre><code data-check="accept">import paths_;
-use nat;
+use unat;
 
-def swap(p : Unit and Nat) := unpack p as (u, n) return Nat and Unit { typed(Nat and Unit, (n, u)); };
+def swap(p : Unit and UNat) := unpack p as (u, n) return UNat and Unit { typed(UNat and Unit, (n, u)); };
 
-def swap_back(p : Nat and Unit) := unpack p as (n, u) return Unit and Nat { typed(Unit and Nat, (u, n)); };
+def swap_back(p : UNat and Unit) := unpack p as (n, u) return Unit and UNat { typed(Unit and UNat, (u, n)); };
 
-computable def swap_equivalence : Equiv(U0, Unit and Nat, Nat and Unit) {
-  exact (swap, swap_back, fun (p : Unit and Nat) =&gt; refl(p), fun (q : Nat and Unit) =&gt; refl(q),
-    fun (p : Unit and Nat) =&gt; refl(refl(swap(p))));
+computable def swap_equivalence : Equiv(U0, Unit and UNat, UNat and Unit) {
+  exact (swap, swap_back, fun (p : Unit and UNat) =&gt; refl(p), fun (q : UNat and Unit) =&gt; refl(q),
+    fun (p : Unit and UNat) =&gt; refl(refl(swap(p))));
 }
 
-computable def swapped : (Unit and Nat) = (Nat and Unit) {
-  exact ua(U0, Unit and Nat, Nat and Unit, swap_equivalence);
+computable def swapped : (Unit and UNat) = (UNat and Unit) {
+  exact ua(U0, Unit and UNat, UNat and Unit, swap_equivalence);
 }
 
-evaluate transport typed(Unit and Nat, (tt, 3)) along swapped in (fun (T : U0) =&gt; T)
-  expecting typed(Nat and Unit, (3, tt));</code></pre>
+evaluate transport typed(Unit and UNat, (tt, 3)) along swapped in (fun (T : U0) =&gt; T)
+  expecting typed(UNat and Unit, (3, tt));</code></pre>
             <pre><code data-check="accept">computable def extensional(A : U0, B : A -&gt; U0, f, g : forall a : A. B(a),
     h : forall a : A. f(a) = g(a)) : f = g {
   exact FunExt(U0, A, B, f, g, h);
@@ -211,13 +211,13 @@ computable def props_form_a_set : IsSet(U1, Prop(U0)) := prop_type_is_set(U0);</
           </section>
           <section id="computability">
             <h2>Computability</h2>
-            <p>A term that uses an assumption can stop computing. <code>LEM(U0, A, doubleNegation)</code> has type <code>Truncate(U0, A)</code>, but it is not built from any element of <code>A</code>, so nothing can be computed from it. A term that uses no assumption is built from the kernel’s own rules only. The kernel is designed so that such a closed term reduces to a canonical value: a closed <code>Nat</code> reduces to a numeral. The test suite checks this on closed examples. The language lets a declaration require it, and lets a file test what a term computes to.</p>
+            <p>A term that uses an assumption can stop computing. <code>LEM(U0, A, doubleNegation)</code> has type <code>Truncate(U0, A)</code>, but it is not built from any element of <code>A</code>, so nothing can be computed from it. A term that uses no assumption is built from the kernel’s own rules only. The kernel is designed so that such a closed term reduces to a canonical value: a closed <code>UNat</code> reduces to a numeral. The test suite checks this on closed examples. The language lets a declaration require it, and lets a file test what a term computes to.</p>
             <h3 id="computable"><code>computable def</code></h3>
             <p>Writing <code>computable</code> before <code>def</code> requires the declaration to use no assumption. The checker collects the assumptions of the checked term, of its type and of every definition they mention; this is the same list that the inspector shows. If the list is not empty, the declaration is rejected. The error names every assumption, and one chain of definitions through which the first one enters. A rejected declaration is not added, so the declarations that use it are blocked too.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
-computable def double(n : Nat) := n + n;
+computable def double(n : UNat) := n + n;
 
 computable def double_two : double(2) = 4 {
   rfl;
@@ -240,39 +240,39 @@ computable def recover(P : U0, prop_ : Proposition(P), nn : (P -&gt; Void) -&gt;
             <p>Without the modifier, the same proofs are accepted and their assumptions are listed as usual. The modifier changes nothing else: a computable declaration is checked and unfolded like any other.</p>
             <h3 id="evaluate"><code>evaluate</code></h3>
             <p><code>evaluate term expecting value;</code> is a top-level directive, placed between declarations. It checks both terms and requires <code>term</code> to use no assumption. It requires the two to have the same type, then compares their normal forms. It defines no name. A success is reported with the normal form. A failure is an error that makes the module incomplete, so every evaluation is rechecked with the rest of its module.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
-def double(n : Nat) := n + n;
+def double(n : UNat) := n + n;
 
 evaluate double(3) expecting 6;
 evaluate double(double(1)) expecting 2 + 2;</code></pre>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
-def double(n : Nat) := n + n;
+def double(n : UNat) := n + n;
 
 evaluate double(3) expecting 7;  // Error: The term evaluates to 6, not 7.</code></pre>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
 // Error: The evaluated term depends on non-computing assumptions: Truncate, TruncateIntro.
 //   Path to Truncate: Truncate.
-evaluate TruncateIntro(U0, Nat, 3) expecting TruncateIntro(U0, Nat, 3);</code></pre>
+evaluate TruncateIntro(U0, UNat, 3) expecting TruncateIntro(U0, UNat, 3);</code></pre>
             <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to.</p>
             <p>An expected value with a hole <code>_</code> is a <strong>pattern</strong>, matched against the normal form part by part: a hole matches anything; a pair, <code>left(p)</code>, <code>right(p)</code> or a constructor of the part's type applied to patterns matches a value built so; and any other expression is elaborated at the part's type and compared by normal form. A mismatch names the part that differs. A hole stands only where such a part can be read, not inside another function's arguments.</p>
             <pre><code data-check="accept">import lists;
-use nat;
+use unat;
 
-def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
-def tagged : List(U0, Nat) and (Unit or Nat) := (numbers, right(2 + 2));
+def numbers : List(U0, UNat) := cons(1, cons(2, cons(3, nil)));
+def tagged : List(U0, UNat) and (Unit or UNat) := (numbers, right(2 + 2));
 
 evaluate numbers expecting cons(1, _);
 evaluate tagged expecting (cons(_, cons(2, _)), right(4));</code></pre>
             <pre><code data-check="reject">import lists;
-use nat;
+use unat;
 
-def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
+def numbers : List(U0, UNat) := cons(1, cons(2, cons(3, nil)));
 
 evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_, nil): cons(2, cons(3, nil)) is not nil.</code></pre>
             <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are reserved keywords: no declaration or binder takes their names.</p>

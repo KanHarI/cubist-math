@@ -45,11 +45,11 @@ test("natural numbers and the circle are admitted one constructor at a time", t 
   g.extend(g.variable(s), "zero");
   const n = g.extend(g.variable(s), "n");
   sig = g.signatureConstructor(sig, g.pi(n, g.variable(s)), "succ");
-  const nat = kernel.signature(g.signatureClose(sig));
-  assert.equal(nat.admitted, true);
+  const unat = kernel.signature(g.signatureClose(sig));
+  assert.equal(unat.admitted, true);
   // Since H1's release no signature is admitted experimentally.
-  assert.equal(nat.experimental, false);
-  assert.deepEqual(nat.constructors.map(c => [c.data, c.positions, c.dimensions]), [[0, 0, 0], [0, 1, 0]]);
+  assert.equal(unat.experimental, false);
+  assert.deepEqual(unat.constructors.map(c => [c.data, c.positions, c.dimensions]), [[0, 0, 0], [0, 1, 0]]);
   assert.throws(() => g.signatureClose(sig), /already admitted/);
   // inductive Circle { base; loop : base = base; }
   let circle = g.signatureBegin(u0, 0, "Circle");
@@ -100,7 +100,7 @@ test("instances of admitted signatures give their constructors", t => {
   const one = g.apply(g.construct(n, 1), g.construct(n, 0));
   assert.equal(g.judgement(one).type, g.judgement(n).term);
   assert.throws(() => g.construct(n, 2), /no such constructor/);
-  // Trunc(U < UU0, A : U) : prop { point(a : A); } at Nat: in progress, then complete.
+  // Trunc(U < UU0, A : U) : prop { point(a : A); } at UNat: in progress, then complete.
   const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
   const a = g.extend(ux, "A");
   let trunc = g.signatureBegin(g.levelPi(x, g.pi(a, ux)), 1, "Trunc");

@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import field_magnitude_close;
 
 // Constructive moduli for multiplication by a fixed bounded scalar.
@@ -164,10 +164,10 @@ def field_bounded_scale_zero_converges(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), factor, length : F,
-  boundedFactor : FieldMagnitudeBound(F, negF, lt, factor, length), xs : Nat -> F,
+  boundedFactor : FieldMagnitudeBound(F, negF, lt, factor, length), xs : UNat -> F,
   vanishes : FieldConverges(F, zero, addF, lt, xs, zero)
 ) :
-  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => mulF(xs(n), factor)), zero) {
+  FieldConverges(F, zero, addF, lt, (fun (n : UNat) => mulF(xs(n), factor)), zero) {
   intro epsilon, positive;
   let nonnegativeLength := field_magnitude_radius_nonnegative(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, factor, length, boundedFactor
@@ -178,7 +178,8 @@ def field_bounded_scale_zero_converges(
   );
   obtain (bound, close) := vanishes(delta, positiveDelta);
   let tail :
-    forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
+    forall n : UNat. IndexLE(bound, n)
+    -> FieldClose(F, addF, lt, mulF(xs(n), factor), zero, epsilon) {
     intro n, large;
     let boundedX := field_close_zero_magnitude(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), delta, close(n, large)
@@ -200,10 +201,10 @@ def field_nonnegative_scale_zero_converges(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), length : F,
-  nonnegativeLength : FieldLe(F, lt, zero, length), xs : Nat -> F,
+  nonnegativeLength : FieldLe(F, lt, zero, length), xs : UNat -> F,
   vanishes : FieldConverges(F, zero, addF, lt, xs, zero)
 ) :
-  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => mulF(xs(n), length)), zero) {
+  FieldConverges(F, zero, addF, lt, (fun (n : UNat) => mulF(xs(n), length)), zero) {
   exact field_bounded_scale_zero_converges(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, length, length,
     field_nonnegative_magnitude(

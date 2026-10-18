@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import sample_subdivision_conditions;
 import interval_sampling;
 
@@ -29,7 +29,7 @@ def interval_refinement_radius(
 // with no factor for the number of coarse intervals or refined samples.
 def interval_refinement_radius_sum(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), delta, length : F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), delta, length : F, n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :

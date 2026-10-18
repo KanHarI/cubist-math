@@ -1,3 +1,4 @@
+import bnat_models;
 import bnat_transport;
 import bnat_notation;
 use bnat;

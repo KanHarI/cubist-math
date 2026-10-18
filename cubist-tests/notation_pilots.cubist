@@ -1,19 +1,19 @@
 // The notation roadmap's pilots (L2.10e): its proposed examples on the
 // library's integers, rationals and algebra, checked. Each qualifier a
 // pilot needs is counted in the roadmap.
-import nat;
+import unat;
 import hlevels;
 import algebra;
 import integers;
 import rationals;
-use nat;
+use unat;
 
 // The integers, selected for a statement and its proof.
 def add_comm(x, y : Z) : integers.(x + y = y + x) := int_add_comm(x, y);
 
 // Mixed arithmetic: int's arguments are natural numbers, so inside the
 // integers' notation they are qualified.
-def mixed(n : Nat, x : Z) : Z := integers.(x * int(nat.(n + 1), nat.(0)));
+def mixed(n : UNat, x : Z) : Z := integers.(x * int(unat.(n + 1), unat.(0)));
 
 // One literal, read by the rationals' parser, and a sum of two.
 def half : Q := rationals.(1/2);
@@ -47,9 +47,9 @@ def undefined : Q := rationals.(1/0);
 def square_one(U < UU0, G : Group(U)) : G.(one * one = one) := G.one_mul(G.one);
 
 // Same carrier, different operations, with no competing registrations.
-def additive_product(x, y : Nat) : Nat := nat_additive.(x * y);
+def additive_product(x, y : UNat) : UNat := nat_additive.(x * y);
 
-def multiplicative_product(x, y : Nat) : Nat := nat_multiplicative.(x * y);
+def multiplicative_product(x, y : UNat) : UNat := nat_multiplicative.(x * y);
 
 // Output: 7
 print(evaluate(additive_product(3, 4)));

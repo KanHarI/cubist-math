@@ -27,15 +27,15 @@ if (!destination || !Number.isSafeInteger(repeats) || repeats < 1)
   throw Error("Usage: node tools/frontend-generation-metrics.mjs REPORT.json [positive repeat count]");
 const sources = {
   algebra: "import hlevels; import algebra;",
-  inheritance: `import hlevels; import nat;
-def outside : Nat := zero;
-theory P(U < UU0) { M : set U; c : M; op(x : Nat, y : M) : M; def helper(y : M) : M := op(outside, y); law l(y : M) : helper(y) = y; }
+  inheritance: `import hlevels; import unat;
+def outside : UNat := zero;
+theory P(U < UU0) { M : set U; c : M; op(x : UNat, y : M) : M; def helper(y : M) : M := op(outside, y); law l(y : M) : helper(y) = y; }
 theory Q(U < UU0) extends P {}
 theory R(U < UU0) extends Q {}
 def meaning(S : R(U0), y : S.M) : S.op(zero, y) = y := S.l(y);`,
-  fold: `import hlevels; import algebra; import nat;
+  fold: `import hlevels; import algebra; import unat;
 free W(A : U0) : Monoid(U0) on A;
-def computation : W.fold(Nat, nat_additive.monoid, fun (x : Nat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }`,
+def computation : W.fold(UNat, nat_additive.monoid, fun (x : UNat) => x).map(W.gen(succ(zero))) = succ(zero) { rfl; }`,
 };
 const modes={
   "refs-off":{collectReferences:false,collectScopes:false,collectGeneration:false},

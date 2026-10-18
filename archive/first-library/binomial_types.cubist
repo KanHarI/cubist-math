@@ -1,4 +1,4 @@
-import nat;
+import unat;
 
 import truncation;
 import finite_cancellation;
@@ -23,7 +23,7 @@ def Binomial(A, B : U0) := exists p : A -> Bool. Mere(Equiv(U0, B, Selected(A, p
 
 // An internal presentation convenient for finite sets; the bridge below checks
 // that using full equivalences or bijections gives equivalent binomial types.
-def FiniteBinomial(n, k : Nat) :=
+def FiniteBinomial(n, k : UNat) :=
   exists p : Fin(n) -> Bool. Mere(Bijection(Fin(k), Selected(Fin(n), p)));
 
 def truth_prop(b : Bool) := match b as c return Proposition(Truth(c)) {
@@ -86,7 +86,7 @@ def subtype_bijection(
   );
 }
 
-def finite_binomial_presentation(n, k : Nat) :
+def finite_binomial_presentation(n, k : UNat) :
   Bijection(Binomial(Fin(n), Fin(k)), FiniteBinomial(n, k)) {
   exact subtype_bijection(
     Fin(n) -> Bool, (fun (p : Fin(n) -> Bool) => Mere(Equiv(U0, Fin(k), Selected(Fin(n), p)))),

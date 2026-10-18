@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import parameter_contour_bounds;
 import complex_algebra;
 
@@ -7,7 +7,7 @@ import complex_algebra;
 // proves equality with the original contour sums at the mapped samples.
 def complex_parameter_contour_sum(
   C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> Complex(F),
-  n : Nat
+  n : UNat
 ) :=
   parameter_contour_sum(
     C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
@@ -20,8 +20,8 @@ def complex_parameter_tag_change_close(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve, values : C -> Complex(F),
   realWeight, imagWeight : C -> C -> C -> F, delta, length : F,
-  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(C, n), oldTags,
-  newTags : SampleTags(C, n),
+  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : UNat, vertices : SampleVertices(C, n),
+  oldTags, newTags : SampleTags(C, n),
   errors : ComplexParameterTagBounds(
     C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags
   ),

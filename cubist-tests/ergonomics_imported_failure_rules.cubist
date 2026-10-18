@@ -3,10 +3,10 @@
 // though a long line comes before it:
 // ........................................................................................
 
-import nat;
-use nat;
+import unat;
+use unat;
 
 // Error: E433: simp only requires homogeneous equality lemmas.
-def broken__rule(U < UU0, n : Nat) : n = n {
+def broken__rule(U < UU0, n : UNat) : n = n {
   simp only [0];
 }

@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import complex_polynomials;
 
 // The algebraic step in Horner division by X - r.
@@ -50,7 +50,7 @@ def polynomial_difference_step(
 }
 
 // This is a polynomial expression, defined by recursion, with no division.
-def monic_divided_difference(F : U1, zero, one : F, addF, mulF : F -> F -> F, x, r : F, n : Nat) :=
+def monic_divided_difference(F : U1, zero, one : F, addF, mulF : F -> F -> F, x, r : F, n : UNat) :=
   induction n as k return (MonicCoefficients(F, k) -> F) {
     zero => fun (u : Unit) => zero;
     succ previous => fun (coefficients : MonicCoefficients(F, succ(k))) => unpack typed(
@@ -62,7 +62,7 @@ def monic_divided_difference(F : U1, zero, one : F, addF, mulF : F -> F -> F, x,
 
 def monic_difference_identity(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), x, r : F, n : Nat
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), x, r : F, n : UNat
 ) :
   forall coefficients : MonicCoefficients(F, n).
   monic_eval(F, one, addF, mulF, n, coefficients, x) = addF(
@@ -113,7 +113,7 @@ def monic_difference_identity(
 // p(x) = (x-r) q(x). It does not assert that a root exists.
 def monic_factor_at_root(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : UNat,
   coefficients : MonicCoefficients(F, n), r : F,
   root : monic_eval(F, one, addF, mulF, n, coefficients, r) = zero, x : F
 ) :

@@ -8,7 +8,7 @@ import {sourceReader} from "../tools/module-sources.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 import {CubicalProgram} from "../web/cubical-program.mjs";
 
-const module=await create(),nat="inductive Nat { zero; succ(n : Nat); }\n";
+const module=await create(),unat="inductive UNat { zero; succ(n : UNat); }\n";
 async function setup(t,source,dependency) {
   const read=sourceReader(),reader=(name,...args)=>name==="fixture"?dependency:read(name,...args);
   const off=await checkProgram(t,source,{module,reader});
@@ -38,13 +38,13 @@ async function query(session,input,kind,text) {
 }
 
 test("notation-body queries keep source globals, local binders and lazy caller operands separate",async t=>{
-  const dependency=nat+`def base : Nat := zero;
-    def unused : Nat := succ(zero);
-    notation pick { x + y := (fun (z : Nat) => x)(base); }
+  const dependency=unat+`def base : UNat := zero;
+    def unused : UNat := succ(zero);
+    notation pick { x + y := (fun (z : UNat) => x)(base); }
     def later_ : Unit := tt;`;
   const source=`import fixture;
-    def base : Nat := succ(succ(zero));
-    def f(p : Nat) : Nat := pick.(p + absent);
+    def base : UNat := succ(succ(zero));
+    def f(p : UNat) : UNat := pick.(p + absent);
     def checked : f(succ(zero)) = succ(zero) := refl(succ(zero));`;
   const program=await setup(t,source,dependency);
   const session=selected(t,program,dependency,"x)(base)",{length:1});
@@ -53,7 +53,7 @@ test("notation-body queries keep source globals, local binders and lazy caller o
   await query(session,"typed(base = zero, refl(base))","value");
   await query(session,"typed(base = succ(succ(zero)), refl(base))","error");
   await query(session,"unused","value","succ(zero)");
-  await query(session,"typeof z","type","Nat");
+  await query(session,"typeof z","type","UNat");
   for(const input of ["p","later_","y"])await query(session,input,"error");
   const locals=await query(session,"/locals","locals");
   assert.deepEqual(locals.bindings.filter(row=>row.visible).map(row=>row.label),["x","y","z"]);
@@ -67,9 +67,9 @@ test("notation-body queries keep source globals, local binders and lazy caller o
 });
 
 test("nested notation operands replay their original caller without eager evaluation",async t=>{
-  const dependency=nat+`notation first { x + y := x; }
+  const dependency=unat+`notation first { x + y := x; }
     notation outer { a * b := first.(a + b); }`;
-  const source="import fixture; def f(p : Nat) : Nat := outer.(p * absent);";
+  const source="import fixture; def f(p : UNat) : UNat := outer.(p * absent);";
   const program=await setup(t,source,dependency);
   const session=selected(t,program,dependency,"x;",{length:1});
   await query(session,"x","value","p");
@@ -81,15 +81,15 @@ test("nested notation operands replay their original caller without eager evalua
 });
 
 test("foreign notation names cannot hide caller definition evidence",async t=>{
-  const dependency=`import nat; import hlevels;
+  const dependency=`import unat; import hlevels;
     inductive Quotient(A : U0, R : A -> A -> U0) : U0 {
       class(a : A); relate(a, b : A, r : R(a, b)) : class(a) = class(b);
     }
     theory T(U < UU0) { M : U; ev : M; }
     def chosen : T(U0) := T.make(Unit, tt);
-    notation qe { x + y := match x return Nat { class(a) => y; } obligations by hlevel; }
-    notation qf { x + y := (fun (ev : Unit) => match x return Nat { class(a) => y; } obligations by hlevel)(tt); }
-    notation qm { x + y := chosen.(match x return Nat { class(a) => y; } obligations by hlevel); }
+    notation qe { x + y := match x return UNat { class(a) => y; } obligations by hlevel; }
+    notation qf { x + y := (fun (ev : Unit) => match x return UNat { class(a) => y; } obligations by hlevel)(tt); }
+    notation qm { x + y := chosen.(match x return UNat { class(a) => y; } obligations by hlevel); }
     notation outer { u * v := qe.(u + v); }
     notation keep { x + y := x; }`;
   const read=sourceReader(),reader=(name,...args)=>name==="fixture"?dependency:read(name,...args);
@@ -99,12 +99,12 @@ test("foreign notation names cannot hide caller definition evidence",async t=>{
     ["inner binder", "let ev := h(tt);", "qf.(q + b)",true],
     ["inner opening", "let ev := h(tt);", "qm.(q + b)",true],
     ["nested rule", "let u := h(tt);", "outer.(q * b)",true],
-    ["lazy operand", "let x := h(tt);", "keep.((match q return Nat { class(a) => b; } obligations by hlevel) + absent)",true],
+    ["lazy operand", "let x := h(tt);", "keep.((match q return UNat { class(a) => b; } obligations by hlevel) + absent)",true],
     ["no evidence", "", "qe.(q + b)",false],
     ["caller shadowing", "let y := h(tt); let y := tt;", "qe.(q + b)",false],
   ])await t.test(name,async()=>{
-    const source=`import nat; import hlevels; import fixture;
-      def probe_(A : U0, R : A -> A -> U0, h : Unit -> IsProp(U0, Nat), b : Nat, q : Quotient(A, R)) : Nat {
+    const source=`import unat; import hlevels; import fixture;
+      def probe_(A : U0, R : A -> A -> U0, h : Unit -> IsProp(U0, UNat), b : UNat, q : Quotient(A, R)) : UNat {
         ${local} exact ${expression};
       }`;
     const off=new CubicalProgram(module,reader),on=new CubicalProgram(module,reader,{collectScopes:true});
@@ -121,7 +121,7 @@ test("foreign notation names cannot hide caller definition evidence",async t=>{
       try {await query(session,`/prove { exact ${expression}; }`,accepts?"proof":"error");}
       finally {session.dispose();}
       if(name==="inner binder") {
-        const marker="match x return Nat { class(a) => y; } obligations by hlevel",start=dependency.indexOf(marker+")(tt)");
+        const marker="match x return UNat { class(a) => y; } obligations by hlevel",start=dependency.indexOf(marker+")(tt)");
         const instances=[...on.scopePoints.values()].filter(point=>point.origin.module==="fixture"
           &&point.phase==="expression"&&point.origin.start===start&&point.origin.end===start+marker.length);
         assert.equal(instances.length,2,"the lambda body is inferred and checked in distinct contexts");
@@ -129,9 +129,9 @@ test("foreign notation names cannot hide caller definition evidence",async t=>{
           assert.ok(point.available,point.reason);
           const inside=new ContextualSession(on,point.id);
           try {
-            await query(inside,"typed(Nat, qe.(x + y))","value");
+            await query(inside,"typed(UNat, qe.(x + y))","value");
             await query(inside,"let saved := x","defined");
-            await query(inside,"typed(Nat, qe.(saved + y))","value");
+            await query(inside,"typed(UNat, qe.(saved + y))","value");
           } finally {inside.dispose();}
         }
       }
@@ -140,8 +140,8 @@ test("foreign notation names cannot hide caller definition evidence",async t=>{
 });
 
 test("lazy dependent matches refine caller identities without a query scope collector",async t=>{
-  const source=nat+`notation eqn { x + y := typed(y = y, x); }
-    def f(n : Nat) : n = n := eqn.((match n {
+  const source=unat+`notation eqn { x + y := typed(y = y, x); }
+    def f(n : UNat) : n = n := eqn.((match n {
       zero => refl(zero); succ(k) => refl(succ(k));
     }) + n);
     def checked : f(zero) = refl(zero) := refl(refl(zero));`;
@@ -160,9 +160,9 @@ test("lazy dependent matches refine caller identities without a query scope coll
 });
 
 test("lazy operand recipes retain their selected notation in copied scoped syntax",async t=>{
-  const dependency=nat+`notation shifted { numeral(n : Nat) := succ(n); }
+  const dependency=unat+`notation shifted { numeral(n : UNat) := succ(n); }
     notation power { x ^ shifted.(n) := n; }`;
-  const source="import fixture; def f : Nat := power.(zero ^ 1);";
+  const source="import fixture; def f : UNat := power.(zero ^ 1);";
   const program=await setup(t,source,dependency);
   const session=selected(t,program,dependency,"n; }",{length:1});
   await query(session,"n","value","succ(succ(zero))");
@@ -187,13 +187,13 @@ test("lazy interval and universe operands keep their caller's dimensions and lev
 });
 
 test("lazy recursive arguments preserve structural permissions through query history",async t=>{
-  const dependency=nat+"notation keep { x + y := x; }";
-  const source=`import fixture; def f(n : Nat) : Nat := match n {
+  const dependency=unat+"notation keep { x + y := x; }";
+  const source=`import fixture; def f(n : UNat) : UNat := match n {
     zero => zero; succ(k) => keep.(f(k) + absent);
   };`;
   const program=await setup(t,source,dependency);
   const session=selected(t,program,dependency,"x;",{length:1});
-  await query(session,"typeof x","type","Nat");
+  await query(session,"typeof x","type","UNat");
   await query(session,"let saved := x","defined");
   await query(session,"let invalid : Unit := x","error");
   await query(session,"typed(saved = x, refl(saved))","value");
@@ -203,8 +203,8 @@ test("lazy recursive arguments preserve structural permissions through query his
 });
 
 test("forcing a lazy operand spends the query's fuel and uses its fresh name supply",async t=>{
-  const dependency=nat+"notation keep { x + y := x; }";
-  const source="import fixture; def f(p : Nat) : Nat := keep.(succ(p) + absent);";
+  const dependency=unat+"notation keep { x + y := x; }";
+  const source="import fixture; def f(p : UNat) : UNat := keep.(succ(p) + absent);";
   const program=await setup(t,source,dependency),session=selected(t,program,dependency,"x;",{length:1});
   const term=Translator.prototype.term;
   let queryUnit,forced=false;
@@ -229,11 +229,11 @@ test("forcing a lazy operand spends the query's fuel and uses its fresh name sup
 });
 
 test("model-numeral implementation scopes preserve the selected receiver",async t=>{
-  const source=nat+`theory Reader(U < UU0) { M : U; read(n : Nat) : M;
-      def numeral_(n : Nat) : M := read(n) notation numeral;
+  const source=unat+`theory Reader(U < UU0) { M : U; read(n : UNat) : M;
+      def numeral_(n : UNat) : M := read(n) notation numeral;
     }
-    def raised : Reader(U0) := Reader.make(Nat, fun (n : Nat) => succ(n));
-    def f(p : Nat) : Nat := raised.(2);`;
+    def raised : Reader(U0) := Reader.make(UNat, fun (n : UNat) => succ(n));
+    def f(p : UNat) : UNat := raised.(2);`;
   const program=await setup(t,source);
   const points=[...program.scopePoints.values()].filter(point=>point.declaration==="f"
     &&point.origin.module==="main"&&point.origin.start===source.indexOf("2)")&&point.origin.end===source.indexOf("2)")+1);
@@ -261,7 +261,7 @@ test("model numerals keep their authored definition and view links",async t=>{
 
 test("literal-reader instances keep their lazy lexeme and qualified source origin",async t=>{
   const dependency="import lexemes; notation decimal { literal(s : Lexeme) := natural_literal(s); }";
-  const source="import fixture; def f : Nat := decimal.(32);";
+  const source="import fixture; def f : UNat := decimal.(32);";
   const program=await setup(t,source,dependency),marker="natural_literal(s)",start=dependency.indexOf(marker);
   const points=[...program.scopePoints.values()].filter(point=>point.origin.module==="fixture"
     &&point.origin.start===start&&point.origin.end===start+marker.length&&point.phase==="expression");
@@ -280,10 +280,10 @@ test("literal-reader instances keep their lazy lexeme and qualified source origi
 });
 
 test("a lazy selector keeps the passed notation distinct from the rule's source notation",async t=>{
-  const dependency=nat+`notation numeric { numeral(n : Nat) := succ(n); }
+  const dependency=unat+`notation numeric { numeral(n : UNat) := succ(n); }
     notation select_operand { m + x := m.(0); }`;
-  const source=`import fixture; notation numeric { numeral(n : Nat) := succ(succ(n)); }
-    def f : Nat := select_operand.(numeric + absent);`;
+  const source=`import fixture; notation numeric { numeral(n : UNat) := succ(succ(n)); }
+    def f : UNat := select_operand.(numeric + absent);`;
   const program=await setup(t,source,dependency),session=selected(t,program,dependency,"m.(0)");
   await query(session,"m.(1)","value","succ(succ(succ(zero)))");
   await query(session,"numeric.(1)","value","succ(succ(zero))");

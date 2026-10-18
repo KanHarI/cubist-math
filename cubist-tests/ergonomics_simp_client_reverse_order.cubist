@@ -2,8 +2,8 @@
 // keeps the higher priority.
 import ergonomics_simp_rules_b;
 import ergonomics_simp_rules_a;
-use nat;
+use unat;
 
-def works(n : Nat) : n + 0 = n {
+def works(n : UNat) : n + 0 = n {
   simp;
 }

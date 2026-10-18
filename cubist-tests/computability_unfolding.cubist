@@ -1,12 +1,12 @@
 // From tests/computability.test.mjs: Evaluation unfolds every definition and
 // ignores unfolding hints.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
-def boxed(n : Nat) := succ(n);
+def boxed(n : UNat) := succ(n);
 
-def identity(n : Nat) := n;
+def identity(n : UNat) := n;
 
 evaluate boxed(1) expecting 2;
 evaluate with unfolding [identity] {

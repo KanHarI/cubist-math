@@ -19,7 +19,7 @@ export const captureControls = {
     positive:"meaning",
     intended:[{module:"parent",anchor:"succ(b) =>",replacement:"succ(other) =>"}],
     captured:{kind:"refused",module:"parent",name:"P",code:"E606",
-      reason:"The captured local b has type Nat, but the field b has arbitrary type M.",
+      reason:"The captured local b has type UNat, but the field b has arbitrary type M.",
       edits:[{module:"parent",anchor:"succ(b) => a;",replacement:"succ(b) => b;"}]},
   },
   "helper-pattern-argument": {
@@ -58,7 +58,7 @@ export const captureControls = {
     positive:"intended",ordinaryRefusals:{k:"E856"},
     intended:[{module:"main",anchor:"succ(k) =>",replacement:"succ(other) =>"}],
     captured:{kind:"refused",module:"main",name:"P",code:"E343",
-      reason:"The captured k is a Nat pattern variable, not the model used to qualify c. The equation strategy also independently refuses match laws.",
+      reason:"The captured k is a UNat pattern variable, not the model used to qualify c. The equation strategy also independently refuses match laws.",
       edits:[{module:"main",anchor:"succ(k) => c;",replacement:"succ(k) => k.c;"}]},
   },
   G10: {

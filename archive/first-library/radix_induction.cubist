@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import radix_naturals;
 
 def radix_positive_induction(
-  extra : Nat, P : RadixPositive(extra) -> U0,
+  extra : UNat, P : RadixPositive(extra) -> U0,
   leading : (forall d : RadixDigit(succ(extra)). P(radix_leading(extra, d))),
   append : (
     forall d : RadixDigit(succ(succ(extra))). forall p : RadixPositive(extra). P(p)

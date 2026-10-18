@@ -1,10 +1,10 @@
-import nat;
+import unat;
 import radix_uniqueness;
 import equivalence_from_inverse;
-use nat;
+use unat;
 
 // Every positive digit tree evaluates to a positive natural number.
-def radix_decode_positive(extra : Nat, p : RadixPositive(extra)) :
+def radix_decode_positive(extra : UNat, p : RadixPositive(extra)) :
   1 <= radix_positive_to_nat(extra, p) {
   exact radix_positive_induction(
     extra, (fun (q : RadixPositive(extra)) => 1 <= radix_positive_to_nat(extra, q)),
@@ -29,19 +29,19 @@ def radix_decode_positive(extra : Nat, p : RadixPositive(extra)) :
   );
 }
 
-def radix_nat_positive_decompose(n : Nat) : (1 <= n) -> (exists k : Nat. n = succ(k)) {
-  exact induction n as k return ((1 <= k) -> (exists predecessor : Nat. k = succ(predecessor))) {
+def radix_nat_positive_decompose(n : UNat) : (1 <= n) -> (exists k : UNat. n = succ(k)) {
+  exact induction n as k return ((1 <= k) -> (exists predecessor : UNat. k = succ(predecessor))) {
     zero => fun (impossible : Void) => typed(
-      (exists predecessor : Nat. 0 = succ(predecessor)), absurd(impossible)
+      (exists predecessor : UNat. 0 = succ(predecessor)), absurd(impossible)
     );
     succ previous => fun (positive : 1 <= succ(k)) => typed(
-      (exists predecessor : Nat. succ(k) = succ(predecessor)), (k, refl(succ(k)))
+      (exists predecessor : UNat. succ(k) = succ(predecessor)), (k, refl(succ(k)))
     );
   };
 }
 
 def radix_leading_not_append(
-  extra : Nat, d : RadixDigit(succ(extra)), e : RadixDigit(succ(succ(extra))),
+  extra : UNat, d : RadixDigit(succ(extra)), e : RadixDigit(succ(succ(extra))),
   q : RadixPositive(extra),
   same : radix_positive_to_nat(extra, radix_leading(extra, d)) = radix_positive_to_nat(
     extra, radix_append(extra, e, q)
@@ -58,16 +58,16 @@ def radix_leading_not_append(
     radix_digit_bound(succ(extra), d),
     trans(
       same,
-      trans(cong((fun (v : Nat) => base * v + ev), next_), radix_eval_succ(base, predecessor, ev))
+      trans(cong((fun (v : UNat) => base * v + ev), next_), radix_eval_succ(base, predecessor, ev))
     )
   );
 }
 
-def RadixPositiveInjectiveAt(extra : Nat, p : RadixPositive(extra)) :=
+def RadixPositiveInjectiveAt(extra : UNat, p : RadixPositive(extra)) :=
   forall q : RadixPositive(extra).
   (radix_positive_to_nat(extra, p) = radix_positive_to_nat(extra, q)) -> (p = q);
 
-def radix_leading_injective(extra : Nat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)) :
+def radix_leading_injective(extra : UNat, d : RadixDigit(succ(extra)), q : RadixPositive(extra)) :
   (radix_positive_to_nat(extra, radix_leading(extra, d)) = radix_positive_to_nat(extra, q))
   -> (radix_leading(extra, d) = q) {
   exact radix_positive_induction(
@@ -87,7 +87,7 @@ def radix_leading_injective(extra : Nat, d : RadixDigit(succ(extra)), q : RadixP
         radix_leading(extra),
         radix_digit_injective(
           succ(extra), d, e,
-          nat_succ_injective(
+          unat_succ_injective(
             radix_digit_value(succ(extra), d), radix_digit_value(succ(extra), e), same
           )
         )
@@ -111,7 +111,7 @@ def radix_leading_injective(extra : Nat, d : RadixDigit(succ(extra)), q : RadixP
 }
 
 def radix_append_append_injective(
-  extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
+  extra : UNat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
   ih : RadixPositiveInjectiveAt(extra, p), e : RadixDigit(succ(succ(extra))),
   q : RadixPositive(extra),
   same : radix_positive_to_nat(extra, radix_append(extra, d, p)) = radix_positive_to_nat(
@@ -134,7 +134,7 @@ def radix_append_append_injective(
 }
 
 def radix_append_injective(
-  extra : Nat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
+  extra : UNat, d : RadixDigit(succ(succ(extra))), p : RadixPositive(extra),
   ih : RadixPositiveInjectiveAt(extra, p), q : RadixPositive(extra)
 ) :
   (radix_positive_to_nat(extra, radix_append(extra, d, p)) = radix_positive_to_nat(extra, q))
@@ -168,7 +168,7 @@ def radix_append_injective(
   );
 }
 
-def radix_positive_injective(extra : Nat, p : RadixPositive(extra)) :
+def radix_positive_injective(extra : UNat, p : RadixPositive(extra)) :
   RadixPositiveInjectiveAt(extra, p) {
   exact radix_positive_induction(
     extra, RadixPositiveInjectiveAt(extra), radix_leading_injective(extra),
@@ -177,13 +177,13 @@ def radix_positive_injective(extra : Nat, p : RadixPositive(extra)) :
 }
 
 def radix_decode_nonzero(
-  extra : Nat, p : RadixPositive(extra), same : radix_positive_to_nat(extra, p) = 0
+  extra : UNat, p : RadixPositive(extra), same : radix_positive_to_nat(extra, p) = 0
 ) :
   Void {
-  exact transport radix_decode_positive(extra, p) along same in ((fun (n : Nat) => 1 <= n));
+  exact transport radix_decode_positive(extra, p) along same in ((fun (n : UNat) => 1 <= n));
 }
 
-def radix_zero_injective(extra : Nat, b : RadixNat(extra)) :
+def radix_zero_injective(extra : UNat, b : RadixNat(extra)) :
   (0 = radix_to_nat(extra, b)) -> (radix_zero(extra) = b) {
   exact match b as y return ((0 = radix_to_nat(extra, y)) -> (radix_zero(extra) = y)) {
     radix_nat_zero => fun (same : 0 = 0) => refl(radix_zero(extra));
@@ -194,7 +194,7 @@ def radix_zero_injective(extra : Nat, b : RadixNat(extra)) :
   };
 }
 
-def radix_nonzero_injective(extra : Nat, p : RadixPositive(extra), b : RadixNat(extra)) :
+def radix_nonzero_injective(extra : UNat, p : RadixPositive(extra), b : RadixNat(extra)) :
   (radix_positive_to_nat(extra, p) = radix_to_nat(extra, b)) -> (radix_positive(extra, p) = b) {
   exact match b as y return (
     (radix_positive_to_nat(extra, p) = radix_to_nat(extra, y)) -> (radix_positive(extra, p) = y)
@@ -208,7 +208,7 @@ def radix_nonzero_injective(extra : Nat, p : RadixPositive(extra), b : RadixNat(
   };
 }
 
-def radix_injective(extra : Nat, a, b : RadixNat(extra)) :
+def radix_injective(extra : UNat, a, b : RadixNat(extra)) :
   (radix_to_nat(extra, a) = radix_to_nat(extra, b)) -> (a = b) {
   exact match a as x return ((radix_to_nat(extra, x) = radix_to_nat(extra, b)) -> (x = b)) {
     radix_nat_zero => radix_zero_injective(extra, b);
@@ -216,7 +216,7 @@ def radix_injective(extra : Nat, a, b : RadixNat(extra)) :
   };
 }
 
-def radix_roundtrip(extra : Nat, a : RadixNat(extra)) :
+def radix_roundtrip(extra : UNat, a : RadixNat(extra)) :
   radix_of_nat(extra, radix_to_nat(extra, a)) = a {
   exact radix_injective(
     extra, radix_of_nat(extra, radix_to_nat(extra, a)), a,
@@ -224,12 +224,12 @@ def radix_roundtrip(extra : Nat, a : RadixNat(extra)) :
   );
 }
 
-def radix_nat_equiv(extra : Nat) := equiv_from_inverse(
-  U0, RadixNat(extra), Nat, radix_to_nat(extra), radix_of_nat(extra), radix_roundtrip(extra),
+def radix_nat_equiv(extra : UNat) := equiv_from_inverse(
+  U0, RadixNat(extra), UNat, radix_to_nat(extra), radix_of_nat(extra), radix_roundtrip(extra),
   radix_nat_roundtrip(extra)
 );
 
-def nat_radix_equiv(extra : Nat) := equiv_from_inverse(
-  U0, Nat, RadixNat(extra), radix_of_nat(extra), radix_to_nat(extra), radix_nat_roundtrip(extra),
+def nat_radix_equiv(extra : UNat) := equiv_from_inverse(
+  U0, UNat, RadixNat(extra), radix_of_nat(extra), radix_to_nat(extra), radix_nat_roundtrip(extra),
   radix_roundtrip(extra)
 );

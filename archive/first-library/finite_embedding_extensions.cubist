@@ -1,10 +1,10 @@
-import nat;
+import unat;
 import finite_field_generators;
-use nat;
+use unat;
 
 // Algebraic extensions with n specified field generators admit extensions
 // of their base embeddings into any algebraically closed target field.
-def FiniteEmbeddingExtension(n : Nat) :=
+def FiniteEmbeddingExtension(n : UNat) :=
   forall K : AlgebraicField. forall L : AlgebraicField. forall e : FieldEmbedding(K, L).
   forall generators : Fin(n) -> af_carrier(L).
   (forall i : Fin(n). AlgebraicElement(K, L, e, generators(i)))
@@ -25,7 +25,7 @@ def finite_embedding_extension_zero : FiniteEmbeddingExtension(0) {
   exact merely(EmbeddingsOver(K, L, e, T, j), extension);
 }
 
-def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension(n)) :
+def finite_embedding_extension_step(n : UNat, previous : FiniteEmbeddingExtension(n)) :
   FiniteEmbeddingExtension(succ(n)) {
   intro K, L, e, generators, algebraic, generates, T, closed, j;
   let x := finite_head(af_carrier(L), n, generators);
@@ -73,7 +73,7 @@ def finite_embedding_extension_step(n : Nat, previous : FiniteEmbeddingExtension
   );
 }
 
-def finitely_generated_embedding_extension(n : Nat) :=
+def finitely_generated_embedding_extension(n : UNat) :=
   induction n as k return FiniteEmbeddingExtension(k) {
     zero => finite_embedding_extension_zero;
     succ previous => finite_embedding_extension_step(k, previous);

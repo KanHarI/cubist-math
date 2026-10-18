@@ -4,6 +4,7 @@ import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs
 import {SourceUnit} from "./translator/elaboration.mjs";
 import { Translator } from "./translator/translate.mjs";
 import { selectionName } from "./translator/theories.mjs";
+import {notationForScope} from "./translator/notation-context.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
 import { substituteTerm, T } from "./translator/core.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
@@ -21,7 +22,7 @@ import { CubicalDeclarationTransaction } from "./cubical-transaction.mjs";
 import { ScopePoints } from "./translator/scope-points.mjs";
 import {CompilationBindings} from "./translator/compilation-bindings.mjs";
 import { ReplayInputs, kernelReplayPolicy, applyKernelReplayPolicy } from "./cubical-replay-inputs.mjs";
-import naturalSource from "./translator/nat-source.mjs";
+import naturalSource from "./translator/unat-source.mjs";
 
 // A property computed when first read, and then kept as a plain value.
 function whenRead(object, key, compute) {
@@ -36,7 +37,7 @@ function whenRead(object, key, compute) {
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
     const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,collectGeneration=false,optimizations={},manageTransactions=true,
-      searchFuel,declarationFuel,experimental,representation,bundledNat=true,prelude}=options;
+      searchFuel,declarationFuel,experimental,representation,bundledUNat=true,prelude}=options;
     this.options={...options};
     if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     // The representation map τ to declared counterparts was the differential
@@ -55,12 +56,12 @@ export class CubicalProgram {
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
     this.readSource = readSource;
-    // Nothing is imported automatically. A module that uses the natural
-    // numbers imports nat, which a reader with no library can still load from
-    // its bundled source unless bundledNat is false.
+    // Nothing is imported automatically. Structural unary clients import
+    // unat, which a reader with no library can still load from
+    // its bundled source unless bundledUNat is false.
     if (prelude !== undefined)
-      throw Error("The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source.");
-    this.bundledNat=bundledNat;
+      throw Error("The prelude option was removed: no module is imported automatically, so a module imports unat itself; bundledUNat controls unat's bundled source.");
+    this.bundledUNat=bundledUNat;
     this.onDeclarationStart = onDeclarationStart; this.onDeclaration = onDeclaration;
     this.collectReferences = collectReferences;
     this.collectScopes = collectScopes;
@@ -107,10 +108,10 @@ export class CubicalProgram {
     try {
       if(text===null) {
         try { text=await this.readSource(name,importer); }
-        catch(error) {if(name!=="nat"||!this.bundledNat)throw error;}
+        catch(error) {if(name!=="unat"||!this.bundledUNat)throw error;}
         // Readers with no standard library (such as an exported inspection)
-        // can still load nat's bundled source.
-        if(name==="nat"&&this.bundledNat&&!text)text=naturalSource;
+        // can still load unat's bundled source.
+        if(name==="unat"&&this.bundledUNat&&!text)text=naturalSource;
       }
       let ast;
       try {ast=parse(text);requireTestMode(ast,this.options.testMode&&!discovery.reuseModules);}
@@ -239,6 +240,11 @@ export class CubicalProgram {
         extensions: d.native?.extensions ?? [], start: syntax.start, end: syntax.end,
         ...this.sourceSite(syntax,name),
         ...(name === main ? {} : { sourceModule: name, sourceName: d.name }) };
+      const notationPrinting=this.checker.notationPrinting;
+      Object.defineProperty(info,"printing",{get:()=>notationPrinting.get(binding)});
+      // Like printing metadata, a checked selection belongs to this session;
+      // its identity must not leak into serialized declaration results.
+      Object.defineProperty(info,"notation",{value:d.notation??{selection:null,selectionIdentity:null}});
       // The type's text, written when first read: the pages and the
       // inspector show it, a check does not. Its names are the program's
       // symbols' and the declaration's own for its variables; none of the
@@ -552,8 +558,8 @@ export class CubicalProgram {
   // The same, as display text, for the CLI's inspect and the workbench:
   // whole, as a clause's boundary comes at the end of its type, and with one
   // naming for the whole view, so a parameter has one name in every type.
-  // By default it prints in the selection its module ends with (L2.10j).
-  signatureView(binding, notation = { selection: this.selectionsAfter(binding.split("__")[0]).at(-1) ?? null }) {
+  // By default it prints in the checked selection at its declaration.
+  signatureView(binding, notation = this.symbols[binding]?.notation ?? {selection:null,selectionIdentity:null}) {
     const signature = this.signature(binding);
     if (!signature) return null;
     const { eliminator } = signature;
@@ -631,7 +637,7 @@ export class CubicalProgram {
       return { start: record.statement.start, end: record.statement.end, kind: record.statement.kind,
         declaration: record.declaration, closes: !record.next,
         ...this.checker.displayGoal(record.goal.scope.shownContext([record.goal.target, built]), record.goal.target, built, 400, null, true,
-          { selection: record.goal.scope.env.get("\u0000selection")?.name ?? null }) };
+          notationForScope(record.goal.scope)) };
     }).sort((a, b) => a.start - b.start);
   }
   // Check one more module on top of the loaded ones, as a REPL entry does,

@@ -1,8 +1,8 @@
-// Nat is an ordinary name that can be bound or shadowed. From
+// UNat is an ordinary name that can be bound or shadowed. From
 // tests/program-types.test.mjs.
 
-def identity(Nat : U0, x : Nat) := x;
+def identity(UNat : U0, x : UNat) := x;
 
-def Nat := Unit;
+def UNat := Unit;
 
-def point : Nat := tt;
+def point : UNat := tt;

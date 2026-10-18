@@ -123,7 +123,7 @@ test("actual binary and radix factorial proofs transport through native Glue in 
   let maximum = 0;
   for (let id = 1; id <= last.arenaNodes; id++) {
     const node = kernel.node(id);
-    if (node.kind === "Con" && node.payload === 0 && kernel.node(node.children[0]).payload === kernel.signatures.get("nat__Nat").index) lengths.set(id, 0);
+    if (node.kind === "Con" && node.payload === 0 && kernel.node(node.children[0]).payload === kernel.signatures.get("unat__UNat").index) lengths.set(id, 0);
     if (node.kind === "App" && kernel.node(node.children[0]).kind === "Con" && kernel.node(node.children[0]).payload === 1 && lengths.has(node.children[1])) {
       const length = lengths.get(node.children[1]) + 1;
       lengths.set(id, length);
@@ -131,6 +131,6 @@ test("actual binary and radix factorial proofs transport through native Glue in 
     }
   }
   // The largest is a binary literal's character count, 24 for
-  // 0b1101110101111100000000, which its parser counts in Nat (L2.10j).
+  // 0b1101110101111100000000, which its parser counts in UNat (L2.10j).
   assert.equal(maximum, 24, "no transfer may materialize the large unary numeral");
 });

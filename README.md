@@ -9,9 +9,11 @@ extension. The browser and CLI elaborate the same source language and submit
 terms to the native kernel compiled to WebAssembly. Definitions remain named;
 conversion unfolds them on demand. Explicit assumptions are shown with each proof.
 
-`Nat`, `zero`, and `succ` come from the ordinary source module
-[`nat.cubist`](library/nat.cubist), imported as the standard prelude.
-They are ordinary names and can be shadowed. Binary and radix numbers are
+Public `Nat` is binary `BNat`; explicitly import
+[`nat.cubist`](library/nat.cubist) for its arithmetic and numerical induction.
+Structural unary `UNat`, `zero`, and `succ` come from
+[`unat.cubist`](library/unat.cubist). These are ordinary names and can be shadowed.
+Binary and radix numbers are
 ordinary inductive declarations too. The source module `w` keeps the inductive
 `W(U,V,A,B)` and its structurally recursive `wrec`, though nothing imports it.
 H1 was released on 2026-10-02, after review of its model, critical pairs and

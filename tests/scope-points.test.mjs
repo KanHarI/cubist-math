@@ -34,7 +34,7 @@ test("nested function scope descriptions preserve identity, visibility, origins 
     assert.equal(fixture.source.slice(record.origin.start,record.origin.end),label);
   }
   assert.equal(binding(point,"f"),undefined);
-  assert.equal(program.scopeRecorder.table.get(binding(point,"Nat")).origin.module,"nat");
+  assert.equal(program.scopeRecorder.table.get(binding(point,"UNat")).origin.module,"unat");
   for(const entry of points(program))if(entry.parent)assert.ok(program.scopePoints.has(entry.parent),entry.id);
   assert.deepEqual(JSON.parse(JSON.stringify(point)),point);
   assert.ok(Object.isFrozen(point.state.context.nodes));
@@ -81,8 +81,8 @@ def h(x : N) : N := match x { zero => zero; y => y; };`;
 });
 
 test("pattern aliases preserve parameter permissions without forcing a generalized attempt",async t=>{
-  const source=`inductive Nat { zero; succ(n : Nat); }
-def add(n, m : Nat) : Nat := match n, m { zero, y => y; succ(k), y => succ(add(k, y)); };`;
+  const source=`inductive UNat { zero; succ(n : UNat); }
+def add(n, m : UNat) : UNat := match n, m { zero, y => y; succ(k), y => succ(add(k, y)); };`;
   const {program,result}=await setup(t,source);
   assert.deepEqual(result.gaps,[]);
   const attempts=points(program).filter(point=>point.declaration==="add").flatMap(point=>point.attempt);
@@ -121,7 +121,7 @@ test("identity receipts do not expose shadowed evidence to tactics or automatic 
         let h : IsProp(U0, A) { exact p(tt); } let h := tt; hlevel;
       }`,
     obtain:`import hlevels;
-      def probe_(A : U0, q : IsProp(U0, A) and Nat) : IsProp(U0, A) {
+      def probe_(A : U0, q : IsProp(U0, A) and UNat) : IsProp(U0, A) {
         obtain (h, n) := q; let h := tt; hlevel;
       }`,
     obligation:`import hlevels;
@@ -320,7 +320,7 @@ test("a rejected duplicate cannot reassign a retained declaration's source origi
 });
 
 test("private replay interception occurs before buffered observation publication and unwinds cleanly",async t=>{
-  const source="import nat; def f(n, m : Nat) : Nat := match n { zero => m; succ(k) => f(k, m); };";
+  const source="import unat; def f(n, m : UNat) : UNat := match n { zero => m; succ(k) => f(k, m); };";
   const initial=await setup(t,source,{scopeRevision:"attempt-replay"});
   const [selected]=at(initial.program,source,"f(k, m)");
   assert.ok(selected?.attempt.length,selected?.id);

@@ -69,7 +69,7 @@ def bnat_decode_small : bnat_to_unat(0b1010) = unat.(10) {
   rfl;
 }
 
-def unat_keeps_carrier : UNat =[U0] Nat {
+def unat_keeps_carrier : UNat =[U0] UNat {
   rfl;
 }
 

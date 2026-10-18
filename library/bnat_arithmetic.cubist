@@ -31,7 +31,7 @@ computable def bnat_add_right_one(
   BPositiveAddCorrect(p, bp_one) {
   exact trans(
     cong(bpositive_to_unat, same),
-    trans(bpositive_decode_succ(p), sym(nat_add_comm(bpositive_to_unat(p), 1)))
+    trans(bpositive_decode_succ(p), sym(unat_add_comm(bpositive_to_unat(p), 1)))
   );
 }
 
@@ -41,7 +41,7 @@ computable def bnat_add_even_even(p, q : BPositive, ih : BPositiveAddCorrect(p, 
     bpositive_decode_even(bpositive_add(p, q)),
     trans(
       cong((fun (v : UNat) => v + v), ih),
-      nat_add_interchange(
+      unat_add_interchange(
         bpositive_to_unat(p), bpositive_to_unat(q), bpositive_to_unat(p), bpositive_to_unat(q)
       )
     )
@@ -57,12 +57,12 @@ computable def bnat_add_even_odd(p, q : BPositive, ih : BPositiveAddCorrect(p, q
       trans(
         cong(
           succ,
-          nat_add_interchange(
+          unat_add_interchange(
             bpositive_to_unat(p), bpositive_to_unat(q), bpositive_to_unat(p), bpositive_to_unat(q)
           )
         ),
         sym(
-          nat_add_succ(
+          unat_add_succ(
             bpositive_to_unat(p) + bpositive_to_unat(p), bpositive_to_unat(q) + bpositive_to_unat(q)
           )
         )
@@ -79,7 +79,7 @@ computable def bnat_add_odd_even(p, q : BPositive, ih : BPositiveAddCorrect(p, q
       cong((fun (v : UNat) => succ(v + v)), ih),
       cong(
         succ,
-        nat_add_interchange(
+        unat_add_interchange(
           bpositive_to_unat(p), bpositive_to_unat(q), bpositive_to_unat(p), bpositive_to_unat(q)
         )
       )
@@ -97,12 +97,12 @@ computable def bnat_add_odd_odd(p, q : BPositive, ih : BPositiveAddCorrect(p, q)
     trans(
       cong((fun (v : UNat) => v + v), bpositive_decode_succ(bpositive_add(p, q))),
       trans(
-        cong(succ, nat_add_succ(sum, sum)),
+        cong(succ, unat_add_succ(sum, sum)),
         trans(
           cong((fun (v : UNat) => succ(succ(v + v))), ih),
           trans(
-            cong((fun (v : UNat) => succ(succ(v))), nat_add_interchange(a, b, a, b)),
-            cong(succ, sym(nat_add_succ(a + a, b + b)))
+            cong((fun (v : UNat) => succ(succ(v))), unat_add_interchange(a, b, a, b)),
+            cong(succ, sym(unat_add_succ(a + a, b + b)))
           )
         )
       )
@@ -143,7 +143,7 @@ computable def bnat_decode_add(a, b : BNat) :
     b_positive(p) => match b as y return (
       bnat_to_unat(bnat_add(b_positive(p), y)) = bpositive_to_unat(p) + bnat_to_unat(y)
     ) {
-      b_zero => sym(nat_add_zero(bpositive_to_unat(p)));
+      b_zero => sym(unat_add_zero(bpositive_to_unat(p)));
       b_positive(q) => bnat_decode_positive_add(p, q);
     };
   };
@@ -158,7 +158,7 @@ computable def bnat_mul_even(p, q : BPositive, ih : BPositiveMulCorrect(p, q)) :
     bpositive_decode_even(bpositive_mul(p, q)),
     trans(
       cong((fun (v : UNat) => v + v), ih),
-      sym(nat_add_mul(bpositive_to_unat(p), bpositive_to_unat(p), bpositive_to_unat(q)))
+      sym(unat_add_mul(bpositive_to_unat(p), bpositive_to_unat(p), bpositive_to_unat(q)))
     )
   );
 }
@@ -173,7 +173,7 @@ computable def bnat_mul_odd(p, q : BPositive, ih : BPositiveMulCorrect(p, q)) :
         bpositive_decode_even(bpositive_mul(p, q)),
         trans(
           cong((fun (v : UNat) => v + v), ih),
-          sym(nat_add_mul(bpositive_to_unat(p), bpositive_to_unat(p), bpositive_to_unat(q)))
+          sym(unat_add_mul(bpositive_to_unat(p), bpositive_to_unat(p), bpositive_to_unat(q)))
         )
       )
     )
@@ -182,7 +182,7 @@ computable def bnat_mul_odd(p, q : BPositive, ih : BPositiveMulCorrect(p, q)) :
 
 computable def bnat_decode_positive_mul(p, q : BPositive) : BPositiveMulCorrect(p, q) {
   exact bpositive_induction(
-    (fun (a : BPositive) => BPositiveMulCorrect(a, q)), sym(nat_add_zero(bpositive_to_unat(q))),
+    (fun (a : BPositive) => BPositiveMulCorrect(a, q)), sym(unat_add_zero(bpositive_to_unat(q))),
     (fun (a : BPositive, ih : BPositiveMulCorrect(a, q)) => bnat_mul_even(a, q, ih)),
     (fun (a : BPositive, ih : BPositiveMulCorrect(a, q)) => bnat_mul_odd(a, q, ih)), p
   );
@@ -195,7 +195,7 @@ computable def bnat_decode_mul(a, b : BNat) :
     b_positive(p) => match b as y return (
       bnat_to_unat(bnat_mul(b_positive(p), y)) = bpositive_to_unat(p) * bnat_to_unat(y)
     ) {
-      b_zero => sym(nat_mul_zero(bpositive_to_unat(p)));
+      b_zero => sym(unat_mul_zero(bpositive_to_unat(p)));
       b_positive(q) => bnat_decode_positive_mul(p, q);
     };
   };

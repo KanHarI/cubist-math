@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import polynomial_leading;
 
 // Additive cancellation is reused through the ordinary bundled group API.
@@ -83,7 +83,7 @@ def polynomial_subtract_mul(K : AlgebraicField, p, q, r : Polynomial(K)) :
 }
 
 def polynomial_small_multiple_zero(
-  K : AlgebraicField, q, divisor : Polynomial(K), d : Nat,
+  K : AlgebraicField, q, divisor : Polynomial(K), d : UNat,
   degree : polynomial_cutoff(K, divisor) = succ(d),
   support : SeriesSupport(K, polynomial_coefficients(K, polynomial_mul(K, q, divisor)), d)
 ) :
@@ -94,7 +94,7 @@ def polynomial_small_multiple_zero(
     let productDegree := polynomial_product_degree(K, q, divisor, m, d, dq, degree);
     let tooSmall :=
       transport polynomial_cutoff_least(K, polynomial_mul(K, q, divisor), d, support) along productDegree in (
-        (fun (k : Nat) => le(k, d))
+        (fun (k : UNat) => le(k, d))
       );
     exact successor_not_le_self(
       d, nat_le_trans(succ(d), succ(add_count(m, d)), d, nat_le_add(m, d), tooSmall)
@@ -108,7 +108,7 @@ def polynomial_small_multiple_zero(
 // Uniqueness uses formal degree and the integral-domain property; equality
 // of evaluations on the field would not be sufficient here.
 def polynomial_division_unique(
-  K : AlgebraicField, p, divisor : Polynomial(K), d : Nat,
+  K : AlgebraicField, p, divisor : Polynomial(K), d : UNat,
   degree : polynomial_cutoff(K, divisor) = succ(d), q, r : Polynomial(K),
   equation : p = polynomial_add(K, polynomial_mul(K, q, divisor), r),
   support : SeriesSupport(K, polynomial_coefficients(K, r), d), otherQ, otherR : Polynomial(K),

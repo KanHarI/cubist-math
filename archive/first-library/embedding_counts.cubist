@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import embedding_tower_types;
 import separability_base_change;
 import finite_towers;
-use nat;
+use unat;
 
 // A surjective base embedding leaves exactly one embedding over that base.
 def embeddings_over_surjective_prop(
@@ -70,14 +70,14 @@ def surjective_embedding_degree(
 
 // Cardinal multiplication is independent of whether the tower is read bottom
 // first or top first. It agrees with the multiplication in the degree theorem.
-def count_multiply_comm(n, m : Nat) : multiply_count(n, m) = multiply_count(m, n) {
-  exact nat_mul_comm(n, m);
+def count_multiply_comm(n, m : UNat) : multiply_count(n, m) = multiply_count(m, n) {
+  exact unat_mul_comm(n, m);
 }
 
 def embedding_tower_count(
   K, R, L, T : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
   e : FieldEmbedding(K, L), triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
-  n, m : Nat, lower : HasCardinality(EmbeddingsOver(K, R, i, T, j), n),
+  n, m : UNat, lower : HasCardinality(EmbeddingsOver(K, R, i, T, j), n),
   upper : (
     forall d : EmbeddingsOver(K, R, i, T, j).
     HasCardinality(EmbeddingTowerFiber(K, R, L, T, i, h, j, d), m)
@@ -132,7 +132,7 @@ def embedding_tower_degree_count(
   );
 }
 
-def FiniteSeparableEmbeddingCount(n : Nat) :=
+def FiniteSeparableEmbeddingCount(n : UNat) :=
   forall K : AlgebraicField. forall L : AlgebraicField. forall e : FieldEmbedding(K, L).
   forall finite : FiniteExtension(K, embedding_as_extension(K, L, e)).
   forall generators : Fin(n) -> af_carrier(L). FieldGeneratedBy(K, L, e, n, generators)
@@ -152,7 +152,7 @@ def finite_separable_count_zero : FiniteSeparableEmbeddingCount(0) {
   ) in HasCardinality(H);
 }
 
-def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCount(n)) :
+def finite_separable_count_step(n : UNat, previous : FiniteSeparableEmbeddingCount(n)) :
   FiniteSeparableEmbeddingCount(succ(n)) {
   intro K, L, e, finite, generators, generates, T, closed, separable, j;
   let algebraic := finite_extension_algebraic(K, L, e, finite);
@@ -193,7 +193,7 @@ def finite_separable_count_step(n : Nat, previous : FiniteSeparableEmbeddingCoun
   };
 }
 
-def finitely_generated_separable_embedding_count(n : Nat) :=
+def finitely_generated_separable_embedding_count(n : UNat) :=
   induction n as k return FiniteSeparableEmbeddingCount(k) {
     zero => finite_separable_count_zero;
     succ previous => finite_separable_count_step(k, previous);

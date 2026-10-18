@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import dyadic_mesh;
 import dyadic_decay;
 
@@ -8,7 +8,7 @@ def FineIntervalSamples(
   F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F, a,
   b : FieldUnitInterval(F, zero, one, lt)
 ) :=
-  exists depth : Nat. exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
+  exists depth : UNat. exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
   and IntervalAdmissibleTags(
     F, zero, one, lt, subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece),
@@ -49,7 +49,7 @@ def archimedean_interval_fine_samples(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, inverses,
     archimedean, width, nonnegativeWidth, mesh, positiveMesh
   );
-  let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), mesh));
+  let A := (exists depth : UNat. lt(dyadic_width(F, half, depth, width), mesh));
   let B := FineIntervalSamples(F, zero, one, addF, negF, lt, mesh, a, b);
   let mapping : A -> B {
     intro data;

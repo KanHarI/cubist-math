@@ -1,9 +1,9 @@
-import nat;
+import unat;
 
 import suspension;
 import signed_integers;
 import groups;
-use nat;
+use unat;
 
 // The cover has fiber Z at both poles. Crossing upper applies successor;
 // crossing lower leaves the integer unchanged. Univalence uses the
@@ -85,12 +85,12 @@ def winding_generator : winding(loop) = nonnegative(1) {
 }
 
 // Turn an integer into a loop by repeating loop, or its inverse.
-def positive_loops(n : Nat) := induction n as k return (base = base) {
+def positive_loops(n : UNat) := induction n as k return (base = base) {
     zero => refl(base);
     succ previous => trans(previous, loop);
   };
 
-def negative_loops(n : Nat) := induction n as k return (base = base) {
+def negative_loops(n : UNat) := induction n as k return (base = base) {
     zero => loop_inverse;
     succ previous => trans(previous, loop_inverse);
   };
@@ -100,7 +100,7 @@ def integer_loop(z : Z) := match z return (base = base) {
     right n => negative_loops(n);
   };
 
-def winding_positive(n : Nat) :=
+def winding_positive(n : UNat) :=
   induction n as k return (winding(positive_loops(k)) = nonnegative(k)) {
     zero => refl(zeroZ);
     succ previous => trans(
@@ -109,7 +109,7 @@ def winding_positive(n : Nat) :=
     );
   };
 
-def winding_negative(n : Nat) :=
+def winding_negative(n : UNat) :=
   induction n as k return (winding(negative_loops(k)) = negative(k)) {
     zero => code_loop_inverse(zeroZ);
     succ previous => trans(
@@ -225,7 +225,7 @@ def integer_loop_winding(p : base = base) : integer_loop(winding(p)) = p {
 }
 
 // Concatenation acts as ordinary integer addition, not just as a bijection.
-def action_positive(n : Nat, z : Z) :=
+def action_positive(n : UNat, z : Z) :=
   induction n as k return ((transport z along positive_loops(k) in code) = add_nonnegative(k, z)) {
     zero => transport_constant(S1, Z, base, base, refl(base), z);
     succ previous => trans(
@@ -234,7 +234,7 @@ def action_positive(n : Nat, z : Z) :=
     );
   };
 
-def action_negative(n : Nat, z : Z) :=
+def action_negative(n : UNat, z : Z) :=
   induction n as k return ((transport z along negative_loops(k) in code) = add_negative(k, z)) {
     zero => code_loop_inverse(z);
     succ previous => trans(

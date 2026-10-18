@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import radix_binary_equivalence;
 import binary_univalence_transfer;
 import radix_factorial;
-use nat;
+use unat;
 
 // Compatibility identifies each transported algorithm with the already proved
 // factorial on its target representation, rather than silently redefining it.
-def binary_to_radix_factorial(extra, n : Nat) :
+def binary_to_radix_factorial(extra, n : UNat) :
   binary_to_radix(extra, binary_factorial(n)) = radix_factorial(extra, n) {
   exact radix_injective(
     extra, binary_to_radix(extra, binary_factorial(n)), radix_factorial(extra, n),
@@ -17,7 +17,7 @@ def binary_to_radix_factorial(extra, n : Nat) :
   );
 }
 
-def radix_to_binary_factorial(extra, n : Nat) :
+def radix_to_binary_factorial(extra, n : UNat) :
   radix_to_binary(extra, radix_factorial(extra, n)) = binary_factorial(n) {
   exact binary_injective(
     radix_to_binary(extra, radix_factorial(extra, n)), binary_factorial(n),
@@ -29,7 +29,7 @@ def radix_to_binary_factorial(extra, n : Nat) :
 }
 
 // Binary -> arbitrary radix, using the same binary proof for every radix.
-def factorial_ten_binary_to_radix(extra : Nat) :
+def factorial_ten_binary_to_radix(extra : UNat) :
   radix_factorial(extra, 10) = binary_to_radix(extra, binary.(0b1101110101111100000000)) {
   exact trans(
     sym(binary_to_radix_factorial(extra, 10)),
@@ -42,7 +42,7 @@ def factorial_ten_binary_to_radix(extra : Nat) :
 
 // Arbitrary radix -> binary, for any checked factorial value in that radix.
 def factorial_ten_radix_to_binary(
-  extra : Nat, value : RadixNat(extra), same : radix_factorial(extra, 10) = value
+  extra : UNat, value : RadixNat(extra), same : radix_factorial(extra, 10) = value
 ) :
   binary_factorial(10) = radix_to_binary(extra, value) {
   exact trans(
@@ -53,20 +53,20 @@ def factorial_ten_radix_to_binary(
   );
 }
 
-// Arbitrary radix -> unary Nat. The endpoint remains an unevaluated expression.
+// Arbitrary radix -> unary UNat. The endpoint remains an unevaluated expression.
 def factorial_ten_radix_to_nat(
-  extra : Nat, value : RadixNat(extra), same : radix_factorial(extra, 10) = value
+  extra : UNat, value : RadixNat(extra), same : radix_factorial(extra, 10) = value
 ) :
   factorial(10) = radix_to_nat(extra, value) {
   exact trans(
     sym(radix_factorial_correct(extra, 10)),
     univalence_transfer_equality(
-      RadixNat(extra), Nat, radix_nat_equiv(extra), radix_factorial(extra, 10), value, same
+      RadixNat(extra), UNat, radix_nat_equiv(extra), radix_factorial(extra, 10), value, same
     )
   );
 }
 
-// Concrete manual decimal and generic-binary proofs transported to unary Nat.
+// Concrete manual decimal and generic-binary proofs transported to unary UNat.
 def factorial_ten_from_base_ten : factorial(10) = radix_to_nat(8, base_ten_factorial_value_10) {
   exact factorial_ten_radix_to_nat(8, base_ten_factorial_value_10, radix_factorial_ten_base_ten);
 }

@@ -3,9 +3,9 @@
 // kind and type merge; another field or operator of one name from two
 // parents is ambiguous in the child, refused where it is used, and reached
 // through the parents' labels.
-import nat;
+import unat;
 import hlevels;
-use nat;
+use unat;
 
 theory Magma(U < UU0) {
   M : set U;
@@ -25,8 +25,8 @@ theory Both(U < UU0) extends Magma, Action {
 
 // One carrier: Both's fields are M, M_is_set, mul, act, act_idem and mixed.
 def both_nat : Both(U0) := Both.make(
-  M := Nat, M_is_set := nat_is_set, mul := fun (x, y : Nat) => x, act := fun (x, y : Nat) => x,
-  act_idem := fun (x : Nat) => refl(x), mixed := fun (x : Nat) => refl(x)
+  M := UNat, M_is_set := unat_is_set, mul := fun (x, y : UNat) => x, act := fun (x, y : UNat) => x,
+  act_idem := fun (x : UNat) => refl(x), mixed := fun (x : UNat) => refl(x)
 );
 
 def first_of(G : Both(U0), x, y : G.M) : G.M := G.magma.mul(x, y);
@@ -61,7 +61,7 @@ theory Second(U < UU0) {
 theory Bipointed(U < UU0) extends First, Second {}
 
 def zero_one : Bipointed(U0) := Bipointed.make(
-  M := Nat, M_is_set := nat_is_set, first_point := 0, second_point := 1
+  M := UNat, M_is_set := unat_is_set, first_point := 0, second_point := 1
 );
 
 def first_is_zero : zero_one.first.point = 0 {

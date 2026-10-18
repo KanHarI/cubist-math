@@ -3,10 +3,10 @@
 // The step's checked path belongs to its `by` keyword, not its left endpoint.
 
 import primes;
-use nat;
+use unat;
 
-def generic(U < UU0, n : Nat) : n + 0 = n {
+def generic(U < UU0, n : UNat) : n + 0 = n {
   calc {
-    n + 0 = n by nat_add_zero(n);
+    n + 0 = n by unat_add_zero(n);
   }
 }

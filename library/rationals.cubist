@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import hlevels;
 import h1_truncation;
 import lists;
@@ -6,7 +6,7 @@ import lexemes;
 import quotients;
 import algebra;
 import integers;
-use nat;
+use unat;
 
 // The field of fractions of a commutative ring with decidable equality, no
 // zero divisors and zero not one: fractions x / d with d not zero, two of
@@ -580,18 +580,19 @@ def rationals : Field(U0) := fraction_field(integers, int_decide, int_mul_nonzer
 def Q : U0 := rationals.R;
 
 // k + 1 is not zero.
-computable def int_succ_nonzero(k : Nat, p : int(succ(k), 0) = int_zero) : Void := nat_zero_ne_succ(
-  k + 0,
-  sym(
-    quotient_effective(
-      U0, Nat and Nat, SameDifference, same_difference_props, same_difference_refl,
-      same_difference_sym, same_difference_trans, (succ(k), 0), (0, 0), p
+computable def int_succ_nonzero(k : UNat, p : int(succ(k), 0) = int_zero) :
+  Void := unat_zero_ne_succ(
+    k + 0,
+    sym(
+      quotient_effective(
+        U0, UNat and UNat, SameDifference, same_difference_props, same_difference_refl,
+        same_difference_sym, same_difference_trans, (succ(k), 0), (0, 0), p
+      )
     )
-  )
-);
+  );
 
 // The rational a / (k + 1).
-computable def rat(a : Z, k : Nat) : Q := class((a, int(succ(k), 0), int_succ_nonzero(k)));
+computable def rat(a : Z, k : UNat) : Q := class((a, int(succ(k), 0), int_succ_nonzero(k)));
 
 computable def rat_decide(x, y : Q) :
   Decidable(U0, x = y) := q_decide(integers, int_decide, int_mul_nonzero, int_zero_ne_one, x, y);
@@ -599,8 +600,8 @@ computable def rat_decide(x, y : Q) :
 // The rationals' literals (L2.10c): an integer, n/d with d not zero, or a
 // decimal, a.b, read from their characters, so rationals.(1/2 + 0.75) needs
 // no evidence. 1/0 is refused at its denominator.
-computable def rational_fraction(numerator, at_ : Nat, s : Lexeme) : Parsed(U0, Q) {
-  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
+computable def rational_fraction(numerator, at_ : UNat, s : Lexeme) : Parsed(U0, Q) {
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
   exact match read.2 return Parsed(U0, Q) {
     nil => match read.1.1 return Parsed(U0, Q) {
       zero => error(at_);
@@ -610,8 +611,8 @@ computable def rational_fraction(numerator, at_ : Nat, s : Lexeme) : Parsed(U0, 
   };
 }
 
-computable def rational_decimal(whole, at_ : Nat, s : Lexeme) : Parsed(U0, Q) {
-  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
+computable def rational_decimal(whole, at_ : UNat, s : Lexeme) : Parsed(U0, Q) {
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
   exact match read.2 return Parsed(U0, Q) {
     nil => match power_of_ten(read.1.2) return Parsed(U0, Q) {
       zero => error(at_);
@@ -625,7 +626,7 @@ computable def rational_decimal(whole, at_ : Nat, s : Lexeme) : Parsed(U0, Q) {
 }
 
 computable def rational_literal(s : Lexeme) : Parsed(U0, Q) {
-  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
   exact match read.2 return Parsed(U0, Q) {
     nil => ok(rat(int(read.1.1, 0), 0));
     cons(g, rest) => match g return Parsed(U0, Q) {

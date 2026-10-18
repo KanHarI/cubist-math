@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import finite_combinations;
-use nat;
+use unat;
 
 // A subspace is a proposition-valued subset containing zero and closed under
 // addition and scalar multiplication. Membership evidence is not extra data.
@@ -60,7 +60,7 @@ def SubspaceIncluded(K : AlgebraicField, V : VectorSpace(K), S, T : Subspace(K, 
   forall x : vector_carrier(K, V). subspace_members(K, V, S, x) -> subspace_members(K, V, T, x);
 
 // Every finite combination of members stays in the subspace.
-def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
+def combination_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : UNat) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V). forall a : Fin(k) -> af_carrier(K).
     (forall i : Fin(k). subspace_members(K, V, S, v(i)))

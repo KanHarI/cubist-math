@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import finite_cardinalities;
 import function_counting;
-use nat;
+use unat;
 
 // Finite choice is proved by induction. No Choice axiom is needed to select
 // one witness from each member of a supplied finite enumeration.
@@ -11,7 +11,7 @@ def finite_mere_choice_zero(P : Fin(0) -> U0, inhabited : forall i : Fin(0). Mer
 }
 
 def finite_mere_choice_step(
-  n : Nat,
+  n : UNat,
   previous : (
     forall P : Fin(n) -> U0. (forall i : Fin(n). Mere(P(i))) -> Mere(forall i : Fin(n). P(i))
   ), P : Fin(succ(n)) -> U0, inhabited : forall i : Fin(succ(n)). Mere(P(i))
@@ -41,7 +41,7 @@ def finite_mere_choice_step(
   exact mere_eliminate(P(h), Mere(Goal), mere_is_prop(Goal), fromHead, inhabited(h));
 }
 
-def finite_mere_choice(n : Nat) :=
+def finite_mere_choice(n : UNat) :=
   induction n as k return (
     forall P : Fin(k) -> U0. (forall i : Fin(k). Mere(P(i))) -> Mere(forall i : Fin(k). P(i))
   ) {
@@ -49,13 +49,13 @@ def finite_mere_choice(n : Nat) :=
     succ previous => finite_mere_choice_step(k, previous);
   };
 
-def UniformFiberCount(A : U0, n, m : Nat) :=
+def UniformFiberCount(A : U0, n, m : UNat) :=
   forall B : A -> U0. (forall a : A. IsSet(U0, B(a))) -> (forall a : A. HasCardinality(B(a), m))
   -> HasCardinality((exists a : A. B(a)), multiply_count(n, m));
 
 // Equal-size finite fibers multiply their size by the size of the base.
 // The family is identified with the constant Fin(m) family by univalence.
-def finite_uniform_fiber_count(n, m : Nat) : UniformFiberCount(Fin(n), n, m) {
+def finite_uniform_fiber_count(n, m : UNat) : UniformFiberCount(Fin(n), n, m) {
   intro B, sets, counts;
   let A := (exists i : Fin(n). B(i));
   let C := Fin(n) and Fin(m);
@@ -77,7 +77,7 @@ def finite_uniform_fiber_count(n, m : Nat) : UniformFiberCount(Fin(n), n, m) {
   );
 }
 
-def uniform_fiber_count(A : U0, setA : IsSet(U0, A), n, m : Nat, countA : HasCardinality(A, n)) :
+def uniform_fiber_count(A : U0, setA : IsSet(U0, A), n, m : UNat, countA : HasCardinality(A, n)) :
   UniformFiberCount(A, n, m) {
   intro B, sets, counts;
   let Goal := HasCardinality((exists a : A. B(a)), multiply_count(n, m));

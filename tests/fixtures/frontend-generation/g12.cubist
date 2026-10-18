@@ -1,16 +1,16 @@
 // G12 (CB2/CB3): ordinary calls to earlier recursive values check and compute.
 
 import hlevels;
-import nat;
+import unat;
 theory T(U < UU0) {
   M : set U;
   c : M;
   op(x : M) : M;
-  def iter(n : Nat) : M := match n {
+  def iter(n : UNat) : M := match n {
     zero => c;
     succ(k) => op(iter(k));
   };
-  def twice(n : Nat) : M := op(iter(n));
+  def twice(n : UNat) : M := op(iter(n));
 }
 
 def computation(S : T(U0)) : S.twice(succ(zero)) = S.op(S.op(S.c)) {
@@ -25,8 +25,8 @@ def base(S : T(U0)) : S.twice(zero) = S.op(S.c) {
   rfl;
 }
 
-// Error: E606: Type mismatch: found T.twice{{U0}}(S, nat.(1)) = T.twice{{U0}}(S, nat.(1)), expected
-//   T.twice{{U0}}(S, nat.(1)) = S.op(S.c).
+// Error: E606: Type mismatch: found T.twice{{U0}}(S, unat.(1)) = T.twice{{U0}}(S, unat.(1)), expected
+//   T.twice{{U0}}(S, unat.(1)) = S.op(S.c).
 def wrong(S : T(U0)) : S.twice(succ(zero)) = S.op(S.c) {
   rfl;
 }

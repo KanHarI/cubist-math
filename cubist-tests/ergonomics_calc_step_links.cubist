@@ -3,11 +3,11 @@
 // No other link starts at `by`, so the source view shows this one.
 
 import primes;
-use nat;
+use unat;
 
-def ordinary(B : U0, f : Nat -> B, n : Nat) : f((n + 0) + 0) = f(n) {
+def ordinary(B : U0, f : UNat -> B, n : UNat) : f((n + 0) + 0) = f(n) {
   calc {
-    f((n + 0) + 0) = f(n + 0) by cong(f, nat_add_zero(n + 0));
-    _ = f(n) by cong(f, nat_add_zero(n));
+    f((n + 0) + 0) = f(n + 0) by cong(f, unat_add_zero(n + 0));
+    _ = f(n) by cong(f, unat_add_zero(n));
   }
 }

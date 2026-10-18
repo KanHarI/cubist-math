@@ -3,7 +3,7 @@
 
 import extension_degree;
 import finite_fields;
-use nat;
+use unat;
 
 def degree_of_identity :
   extension_degree(

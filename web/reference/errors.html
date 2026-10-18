@@ -98,7 +98,7 @@
                 <tr id="E140"><td class="code"><code>E140</code></td><td data-message="Use obtain to unpack a pair.">“Use obtain to unpack a pair.”</td><td><code>let</code> names one term; <code>obtain</code> takes a pair apart.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
                 <tr id="E120"><td class="code"><code>E120</code></td><td data-message="A pair has only the projections .1 and .2.">“A pair has only the projections .1 and .2. …”</td><td>A projection is <code>.1</code> or <code>.2</code>. A tuple nests pairs to the right, so the third component of <code>(a, b, c)</code> is <code>.2.2</code>.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr id="E131"><td class="code"><code>E131</code></td><td data-message="A pair pattern needs at least two components.">“A pair pattern needs at least two components.”</td><td>Write <code>obtain (a, b) := pair;</code>, or name the whole value with <code>let</code>.</td><td><a href="proof-blocks.html#obtain">obtain</a></td></tr>
-                <tr id="E122"><td class="code"><code>E122</code></td><td data-message="Numerals are limited to 256 in this version.">“Numerals are limited to 256 in this version.”</td><td>Build larger numbers with arithmetic, or use binary literals.</td><td><a href="terms.html#numbers">numbers</a>, <a href="checking.html#limits">limits</a></td></tr>
+                <tr id="E122"><td class="code"><code>E122</code></td><td data-message="Unary numerals are limited to 256. Import nat and use nat for binary naturals.">“Unary numerals are limited to 256. Import nat and use nat for binary naturals.”</td><td>Build larger numbers with arithmetic, or use binary literals.</td><td><a href="terms.html#numbers">numbers</a>, <a href="checking.html#limits">limits</a></td></tr>
                 <tr id="E144"><td class="code"><code>E144</code></td><td data-message="simp only requires an explicit rule list.">“simp only requires an explicit rule list.”</td><td>Write <code>simp only [rules];</code>, or plain <code>simp;</code> for the default rules.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
                 <tr id="E145"><td class="code"><code>E145</code></td><td data-message="simp only cannot exclude rules.">“simp only cannot exclude rules.”</td><td><code>without</code> removes default rules; <code>simp only</code> has none. Leave the rule out of the list instead.</td><td><a href="rewriting.html#simp-registration">rule selection</a></td></tr>
                 <tr id="E149"><td class="code"><code>E149</code></td><td data-message="simp_rule priority must be an integer from 0 to 1000.">“simp_rule priority must be an integer from 0 to 1000.”</td><td>Give a priority in range.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
@@ -110,7 +110,7 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import nat;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
+                <tr id="E343"><td class="code"><code>E343</code></td><td data-message="Untranslated name:">“Untranslated name: <var>name</var>”</td><td>The name is not in scope. It may be declared later, be the declaration itself (there is no recursion), need an import (<code>+</code> needs <code>import unat;</code>), be misspelled, or not be a construct of the language, such as <code>Interval</code> as a type.</td><td><a href="first-proof.html#order">order</a>, <a href="terms.html#numbers">numbers</a></td></tr>
                 <tr id="E340"><td class="code"><code>E340</code></td><td data-message="Untranslated dependency:">“Untranslated dependency: <var>name</var>”</td><td>The named declaration failed, so its users are blocked. Fix the named declaration.</td><td><a href="first-proof.html#checking">checking</a></td></tr>
                 <tr id="E872"><td class="code"><code>E872</code></td><td data-message="Duplicate declaration">“Duplicate declaration …: a declaration in this module already owns that name.”</td><td>A name is declared twice in one module. Rename one; the earlier declaration remains available.</td><td><a href="first-proof.html#order">order</a></td></tr>
                 <tr id="E327"><td class="code"><code>E327</code></td><td data-message="is already registered in this module.">“Simplification rule <var>name</var> is already registered in this module.”</td><td>Register each rule once per module.</td><td><a href="rewriting.html#simp-registration">registration</a></td></tr>
@@ -135,7 +135,7 @@
                 <tr id="E351"><td class="code"><code>E351</code></td><td data-message="Expected a Sigma type for pair.">“Expected a Sigma type for pair.”</td><td>A pair is checked against a type that is not a pair type, or a tuple does not match the nesting of its type.</td><td><a href="terms.html#tuples">tuples</a></td></tr>
                 <tr id="E349"><td class="code"><code>E349</code></td><td data-message="requires a dependent pair; found a value of type">“Projection <var>.1</var> requires a dependent pair; found a value of type <var>T</var>.”</td><td>Only a pair has projections. The message shows the type of the projected value.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
                 <tr id="E356"><td class="code"><code>E356</code></td><td data-message="unpack requires a dependent pair.">“unpack requires a dependent pair.”</td><td>Only pairs can be unpacked.</td><td><a href="terms.html#using-pairs">using pairs</a></td></tr>
-                <tr id="E912"><td class="code"><code>E912</code></td><td data-message="for natural numbers, use nat; or write nat.(x">“x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).”</td><td>An operator means only what the selected notation binds, and nothing is selected here: a function named <code>add</code> in scope gives <code>+</code> no meaning. After <code>import nat;</code>, write <code>use nat;</code> at the top of the file, or <code>nat.(2 + 3)</code> for one expression. <code>-</code>, <code>/</code> and <code>^</code> name the integers instead (E399).</td><td><a href="terms.html#numbers">numbers</a></td></tr>
+                <tr id="E912"><td class="code"><code>E912</code></td><td data-message="for natural numbers, use nat; or write nat.(x">“x + y means what a selected notation binds + to: for natural numbers, use nat; or write nat.(x + y).”</td><td>An operator means only what the selected notation binds, and nothing is selected here: a function named <code>add</code> in scope gives <code>+</code> no meaning. After <code>import unat;</code>, write <code>use unat;</code> at the top of the file, or <code>unat.(2 + 3)</code> for one expression. <code>-</code>, <code>/</code> and <code>^</code> name the integers instead (E399).</td><td><a href="terms.html#numbers">numbers</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -169,7 +169,7 @@
                 <tr id="E321"><td class="code"><code>E321</code></td><td data-message="A universe variable's bound must be UU0, as in U &lt; UU0.">“A universe variable's bound must be UU0, as in U &lt; UU0.”</td><td>Only <code>UU0</code> bounds a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
                 <tr id="E175"><td class="code"><code>E175</code></td><td data-message="is reserved">“<var>name</var> is reserved…; pick another name.”</td><td>Keywords such as <code>fun</code> and <code>let</code>, the built-in types <code>Unit</code> and <code>Void</code>, <code>Unit</code>'s element <code>tt</code>, and generated interface names such as <code>map</code> and <code>model</code>, cannot be bound. The message identifies generated interface names and points to <code>docs/guides/keywords.md</code>.</td><td><a href="terms.html#unit-and-void">Reserved names</a></td></tr>
                 <tr id="E518"><td class="code"><code>E518</code></td><td data-message="A universe argument must lie below UU0">“A universe argument must lie below UU0: …”</td><td>A generic declaration was used at <code>UU0</code> or above. Use <code>U0</code>, <code>U1</code>, … or a universe variable.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
-                <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(Nat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
+                <tr id="E322"><td class="code"><code>E322</code></td><td data-message="Expected a universe:">“Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).”</td><td>A type or a term stands where a universe is required, such as <code>next(UNat)</code>.</td><td><a href="universes.html#universe-expressions">next and max</a></td></tr>
                 <tr id="E111"><td class="code"><code>E111</code></td><td data-message="is a universe constant; pick another name.">“<var>name</var> is a universe constant; pick another name.”</td><td>Names such as <code>U1</code> and <code>UU2</code> are universes.</td><td><a href="universes.html#large-universes">UU0</a></td></tr>
               </tbody>
             </table></div>
@@ -185,7 +185,7 @@
                 <tr id="E420"><td class="code"><code>E420</code></td><td data-message="transport requires a path.">“transport requires a path.”</td><td>The fourth argument must be a path.</td><td><a href="paths.html#transport">transport</a></td></tr>
                 <tr id="E422"><td class="code"><code>E422</code></td><td data-message="Path induction endpoints/carrier do not match.">“Path induction endpoints/carrier do not match.”</td><td>The type and endpoints passed to <code>path_induction</code> must be the path’s.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
                 <tr id="E423"><td class="code"><code>E423</code></td><td data-message="Based induction needs universes.">“Based induction needs universes.”</td><td>The first two arguments of <code>based_induction</code> are universes.</td><td><a href="paths.html#path-induction">path induction</a></td></tr>
-                <tr id="E366"><td class="code"><code>E366</code></td><td data-message="hlevel could not prove">“hlevel could not prove <var>goal</var>”</td><td>The message names each obligation the goal needs, down to the first that nothing discharges, and why. Supply that evidence as a hypothesis or with <code>hlevel with [h];</code>. Some goals are false: <code>Nat</code> is not a proposition.</td><td><a href="paths.html#hlevel">hlevel</a></td></tr>
+                <tr id="E366"><td class="code"><code>E366</code></td><td data-message="hlevel could not prove">“hlevel could not prove <var>goal</var>”</td><td>The message names each obligation the goal needs, down to the first that nothing discharges, and why. Supply that evidence as a hypothesis or with <code>hlevel with [h];</code>. Some goals are false: <code>UNat</code> is not a proposition.</td><td><a href="paths.html#hlevel">hlevel</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -198,7 +198,7 @@
                 <tr id="E559"><td class="code"><code>E559</code></td><td data-message="This clause is never reached">“This clause is never reached: the clauses before it take every case it would.”</td><td>Clauses are tried in order, and earlier ones, a variable or <code>_</code> among them, already take every case this one fits. Move it before them, or remove it.</td><td><a href="induction.html#patterns">patterns</a></td></tr>
                 <tr id="E567"><td class="code"><code>E567</code></td><td data-message="The match on a sum needs a clause for">“The match on a sum needs a clause for <var>right</var>: <var>right</var>(a) =&gt; { … }.”</td><td>A match on <code>A or B</code> has a clause for each side, <code>left(a)</code> and <code>right(b)</code>. Add the missing one.</td><td><a href="proof-blocks.html#sums">taking a sum apart</a></td></tr>
                 <tr id="E519"><td class="code"><code>E519</code></td><td data-message="needs an expected type, to know which">“<var>nil</var> needs an expected type, to know which <var>List(…)</var> it builds: write typed(<var>List(…)</var>, <var>nil</var>).”</td><td>A constructor of a parameterized type takes only its declared arguments, so the type’s arguments come from context. Give a result type, or use <code>typed</code>.</td><td><a href="induction.html#inductive-parameters">parameters</a></td></tr>
-                <tr id="E528"><td class="code"><code>E528</code></td><td data-message="Nat has no constructor left: its constructors are zero, succ.">“<var>Nat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>Nat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
+                <tr id="E528"><td class="code"><code>E528</code></td><td data-message="UNat has no constructor left: its constructors are zero, succ.">“<var>UNat</var> has no constructor <var>left</var>: its constructors are <var>zero, succ</var>.”</td><td>A <code>match</code> clause names a constructor that the matched type does not have, such as a sum’s <code>left</code> on <code>UNat</code>. Use the listed constructors.</td><td><a href="terms.html#match">match</a></td></tr>
                 <tr id="E557"><td class="code"><code>E557</code></td><td data-message="constructor fields in parentheses">“<var>c</var> takes <var>n</var> constructor fields in parentheses; name its induction hypotheses after with, or omit with.”</td><td>An induction clause must name exactly the constructor’s fields inside parentheses. Its optional <code>with</code> list names one hypothesis per recursive field.</td><td><a href="induction.html#induction">induction</a></td></tr>
                 <tr id="E547"><td class="code"><code>E547</code></td><td data-message="loop is being defined: it can call itself only on an argument of a constructor">“<var>loop</var> is being defined: it can call itself only on an argument of a constructor”</td><td>A definition calls itself, but its whole body is not a <code>match</code> on one of its parameters. Make it one, and recurse on a child bound by a clause.</td><td><a href="first-proof.html#order">order</a>, <a href="induction.html#recursion">structural recursion</a></td></tr>
                 <tr id="E552"><td class="code"><code>E552</code></td><td data-message="is not on an argument of the matched constructor: only structural recursion">“The recursive call of <var>f</var> is not on an argument of the matched constructor: only structural recursion, …”</td><td>A recursive call passes something other than a child bound by the clause, such as the original input or a new constructor value. Recurse on a child.</td><td><a href="induction.html#recursion">structural recursion</a></td></tr>
@@ -216,7 +216,7 @@
                 <tr id="E448"><td class="code"><code>E448</code></td><td data-message="calc requires a homogeneous equality goal.">“calc requires a homogeneous equality goal.”</td><td>The goal is not an equality.</td><td><a href="rewriting.html#calc">calc</a></td></tr>
                 <tr id="E442"><td class="code"><code>E442</code></td><td data-message="Rewrite occurrence">“Rewrite occurrence <var>n</var> was not found (<var>m</var> eligible matches).”</td><td>Fewer matches exist than requested, or none: the rule must be instantiated at exactly the subterm that appears. Rewriting never looks under binders. The message shows the goal that was searched.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
                 <tr id="E452"><td class="code"><code>E452</code></td><td data-message="rw left an unresolved equality goal; add a following proof statement.">“rw left an unresolved equality goal; add a following proof statement.”</td><td>The rewrite worked, but the new goal does not hold by computation. The message shows that goal and the rewrites that changed it. Add another statement.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
-                <tr id="E431"><td class="code"><code>E431</code></td><td data-message="rw requires a homogeneous equality proof.">“rw requires a homogeneous equality proof.”</td><td>Instantiate the rule fully, as in <code>nat_add_zero(n)</code>, or use <code>simp only</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
+                <tr id="E431"><td class="code"><code>E431</code></td><td data-message="rw requires a homogeneous equality proof.">“rw requires a homogeneous equality proof.”</td><td>Instantiate the rule fully, as in <code>unat_add_zero(n)</code>, or use <code>simp only</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
                 <tr id="E441"><td class="code"><code>E441</code></td><td data-message="Rewrite match occurs in an unsupported dependent position.">“Rewrite match occurs in an unsupported dependent position.”</td><td>The only match is in a dependent argument. Use an explicit <code>cong</code>.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
                 <tr id="E360"><td class="code"><code>E360</code></td><td data-message="rw requires a homogeneous equality goal.">“rw requires a homogeneous equality goal.”</td><td>The goal is a type, not an equality. <code>simp</code> rewrites types.</td><td><a href="rewriting.html#rw">rw</a></td></tr>
                 <tr id="E436"><td class="code"><code>E436</code></td><td data-message="A simplification rule parameter is not determined by the matched side; supply arguments.">“A simplification rule parameter is not determined by the matched side; supply arguments.”</td><td>Matching cannot fix every parameter. Pass the missing arguments.</td><td><a href="rewriting.html#simp">simplification</a></td></tr>
@@ -291,17 +291,17 @@
           <section id="not-yet-available">
             <h2>Not yet available</h2>
             <p>These are planned; see the work plan. Until then, they are rejected:</p>
-            <pre><code data-check="reject">def unfinished : Nat {
+            <pre><code data-check="reject">def unfinished : UNat {
   sorry;  // Error: Expected a proof statement; found 'sorry'.
 }</code></pre>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def hole : Nat {
+def hole : UNat {
   exact _;  // Error: A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.
 }</code></pre>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def mixed(a, b : Nat, h : a = b) : a &lt;= b {
+def mixed(a, b : UNat, h : a = b) : a &lt;= b {
   calc {
     a = b by h;
     _ &lt;= b by tt;  // Error: Expected '=', found '&lt;='.
@@ -345,7 +345,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E119"><td><code>E119</code></td><td>Expression nesting exceeds 128.</td></tr>
                 <tr><td><a href="#E120"><code>E120</code></a></td><td>A pair has only the projections .1 and .2. A tuple nests pairs to the right: the third component of (a, b, c) is .2.2.</td></tr>
                 <tr id="E121"><td><code>E121</code></td><td>Binary literals are limited to 256 significant bits.</td></tr>
-                <tr><td><a href="#E122"><code>E122</code></a></td><td>Numerals are limited to 256 in this version.</td></tr>
+                <tr><td><a href="#E122"><code>E122</code></a></td><td>Unary numerals are limited to 256. Import nat and use nat for binary naturals.</td></tr>
                 <tr><td><a href="#E123"><code>E123</code></a></td><td>Expected an expression, found '…'.</td></tr>
                 <tr id="E124"><td><code>E124</code></td><td>Give the motive after as: match v as z return T { … }.</td></tr>
                 <tr id="E125"><td><code>E125</code></td><td>Expected '}' to close the match.</td></tr>
@@ -428,6 +428,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
               <thead><tr><th>Code</th><th>Message</th></tr></thead>
               <tbody>
                 <tr id="E001"><td><code>E001</code></td><td>Invalid test pragma: …</td></tr>
+                <tr id="E002"><td><code>E002</code></td><td>Historical unary migration would capture existing binding ….</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -475,7 +476,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E239"><td><code>E239</code></td><td>Module … was not loaded.</td></tr>
                 <tr id="E240"><td><code>E240</code></td><td>… did not check.</td></tr>
                 <tr id="E241"><td><code>E241</code></td><td>Could not load the file index: HTTP …</td></tr>
-                <tr id="E242"><td><code>E242</code></td><td>The prelude option was removed: no module is imported automatically, so a module imports nat itself; bundledNat controls nat's bundled source.</td></tr>
+                <tr id="E242"><td><code>E242</code></td><td>The prelude option was removed: no module is imported automatically, so a module imports unat itself; bundledUNat controls unat's bundled source.</td></tr>
                 <tr id="E243"><td><code>E243</code></td><td>The benchmark area is library, archive or tests, not ….</td></tr>
                 <tr id="E244"><td><code>E244</code></td><td>No saved benchmark of the … yet. Run it in this browser, or run npm run benchmark:cubical -- --area=….</td></tr>
                 <tr id="E245"><td><code>E245</code></td><td>This binding is unavailable.</td></tr>
@@ -524,7 +525,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E332"><td><code>E332</code></td><td>sym requires a path.</td></tr>
                 <tr id="E333"><td><code>E333</code></td><td>p ++ q concatenates paths; found no path.</td></tr>
                 <tr id="E334"><td><code>E334</code></td><td>trans requires paths.</td></tr>
-                <tr id="E335"><td><code>E335</code></td><td>Numerals and induction require an imported Nat with zero and succ constructors.</td></tr>
+                <tr id="E335"><td><code>E335</code></td><td>Numerals and induction require an imported UNat with zero and succ constructors. For binary Nat, use nat_peano.</td></tr>
                 <tr id="E336"><td><code>E336</code></td><td>Missing source expression.</td></tr>
                 <tr><td><a href="#E337"><code>E337</code></a></td><td>No checked definition to unfold: …</td></tr>
                 <tr><td><a href="#E338"><code>E338</code></a></td><td>path i =&gt; ... needs an expected Path or PathP type.</td></tr>
@@ -755,6 +756,7 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E577"><td><code>E577</code></td><td>Keep only the … constructor field… of … in parentheses; name induction hypotheses after with.</td></tr>
                 <tr id="E578"><td><code>E578</code></td><td>… has … recursive field…, so with names … induction …, not …; or omit with.</td></tr>
                 <tr id="E579"><td><code>E579</code></td><td>… has no recursive fields, so it has no induction hypotheses: remove with.</td></tr>
+                <tr id="E580"><td><code>E580</code></td><td>Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e6">Checking</h3>
@@ -887,8 +889,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E843"><td><code>E843</code></td><td>A model's notation is its theory's; …'s adds only a numeral or a literal rule.</td></tr>
                 <tr id="E844"><td><code>E844</code></td><td>A literal rule reads a Lexeme: import lexemes, which defines ….</td></tr>
                 <tr id="E845"><td><code>E845</code></td><td>… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.</td></tr>
-                <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : Nat) : R := … notation numeral.</td></tr>
-                <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a natural number: import nat.</td></tr>
+                <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : UNat) : R := … notation numeral.</td></tr>
+                <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a unary natural number: import unat.</td></tr>
                 <tr id="E848"><td><code>E848</code></td><td>…'s label would be …, which is reserved: label it, as in other : ….</td></tr>
                 <tr id="E850"><td><code>E850</code></td><td>… takes a theory at its universes and parameters, as …; … is none.</td></tr>
                 <tr id="E851"><td><code>E851</code></td><td>… takes … argument…, its universes and parameters; this gives ….</td></tr>
@@ -933,8 +935,8 @@ def mixed(a, b : Nat, h : a = b) : a &lt;= b {
                 <tr id="E906"><td><code>E906</code></td><td>…'s literal rule does not evaluate … to an answer; it gives ….</td></tr>
                 <tr id="E907"><td><code>E907</code></td><td>…'s notation reads no numeral …: write nat.(…) for a natural number, or select a notation that reads it.</td></tr>
                 <tr id="E908"><td><code>E908</code></td><td>…'s notation reads no literal …: select a notation whose literal rule reads it, as rationals.(…).</td></tr>
-                <tr id="E909"><td><code>E909</code></td><td>… is a binary literal, which a selected notation's literal rule reads, as the archive's binary.(…).</td></tr>
-                <tr id="E910"><td><code>E910</code></td><td>…'s notation reads no binary literal …: select one whose literal rule reads it, as the archive's binary.(…).</td></tr>
+                <tr id="E909"><td><code>E909</code></td><td>… is a binary literal, which a selected notation's literal rule reads, as nat.(…).</td></tr>
+                <tr id="E910"><td><code>E910</code></td><td>…'s notation reads no binary literal …: select one whose literal rule reads it, as nat.(…).</td></tr>
                 <tr id="E911"><td><code>E911</code></td><td>… means the natural number in a selected notation that reads it: use nat; or write nat.(…).</td></tr>
                 <tr><td><a href="#E912"><code>E912</code></a></td><td>x … y means what a selected notation binds … to: for natural numbers, use nat; or write nat.(x … y).</td></tr>
               </tbody>

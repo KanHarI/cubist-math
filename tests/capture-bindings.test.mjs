@@ -36,9 +36,9 @@ test("capture witness IDs are unique", () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
-const ruleModel = `import hlevels; import nat;
-theory Rules(U < UU0) { M : set U; rule : Nat; }
-def selected : Rules(U0) := Rules.make(Nat, nat_is_set, zero);`;
+const ruleModel = `import hlevels; import unat;
+theory Rules(U < UU0) { M : set U; rule : UNat; }
+def selected : Rules(U0) := Rules.make(UNat, unat_is_set, zero);`;
 for (const kind of ["simp_rule", "simp_set", "hlevel_rule"]) for (const imported of [false, true]) {
   test(`CB0: ${kind} ignores opened labels (${imported ? "imported" : "local"} registration)`, async t => {
     const hlevel = kind === "hlevel_rule";
@@ -51,12 +51,12 @@ def rule(A : U0, setA : IsSet(U0, A)) : IsSet(U0, Box(A)) := retract_has_level(U
   A, Box(A), fun (b : Box(A)) => unbox(A, b), fun (a : A) => box(a),
   fun (b : Box(A)) => box_unbox(A, b), setA
 );`
-      : "def rule(n : Nat) : add(n, zero) = n := nat_add_zero(n);";
+      : "def rule(n : UNat) : add(n, zero) = n := unat_add_zero(n);";
     const directive = kind === "simp_set" ? "simp_set named_rules := [rule];" : `${kind} rule;`;
     const beforeRegistration = `${ruleModel}\n${definition}\nuse selected;`;
     const source = `${beforeRegistration}\n${directive}`;
-    const client = hlevel ? "def checked : IsSet(U0, Box(Nat)) { hlevel; }"
-      : `def checked(n : Nat) : add(n, zero) = n { ${kind === "simp_set" ? "simp only [named_rules]" : "simp"}; }`;
+    const client = hlevel ? "def checked : IsSet(U0, Box(UNat)) { hlevel; }"
+      : `def checked(n : UNat) : add(n, zero) = n { ${kind === "simp_set" ? "simp only [named_rules]" : "simp"}; }`;
     const { program, result } = await checkProgram(t, `${imported ? "import registered;" : source}\n${client}`, {
       module, reader: (name, importer) => name === "registered" ? source : library(name, importer),
     });

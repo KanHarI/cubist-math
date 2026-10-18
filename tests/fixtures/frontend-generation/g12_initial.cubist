@@ -1,16 +1,16 @@
 // G12-initial (CB2/CB3): initial-model calls to earlier recursive values check and compute.
 
 import hlevels;
-import nat;
+import unat;
 theory T(U < UU0) {
   M : set U;
   c : M;
   op(x : M) : M;
-  def iter(n : Nat) : M := match n {
+  def iter(n : UNat) : M := match n {
     zero => c;
     succ(k) => op(iter(k));
   };
-  def twice(n : Nat) : M := op(iter(n));
+  def twice(n : UNat) : M := op(iter(n));
 }
 
 initial N : T(U0);
@@ -27,8 +27,8 @@ def base : N.model.twice(zero) = N.op(N.c) {
   rfl;
 }
 
-// Error: E606: Type mismatch: found T.twice{{U0}}(N.model, nat.(1)) = T.twice{{U0}}(N.model,
-//   nat.(1)), expected T.twice{{U0}}(N.model, nat.(1)) = N.op(N.c).
+// Error: E606: Type mismatch: found T.twice{{U0}}(N.model, unat.(1)) = T.twice{{U0}}(N.model,
+//   unat.(1)), expected T.twice{{U0}}(N.model, unat.(1)) = N.op(N.c).
 def wrong : N.model.twice(succ(zero)) = N.op(N.c) {
   rfl;
 }

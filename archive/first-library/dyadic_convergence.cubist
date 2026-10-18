@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import dyadic_tails;
 
 // Actual Archimedean witnesses, kept separate from the merely existential
 // Archimedean property of CompleteOrderedField. No principle extracting
 // this stronger data is assumed here.
 def ArchimedeanBounds(F : U1, zero, one : F, addF : F -> F -> F, lt : F -> F -> U0) :=
-  forall x : F. exists n : Nat. lt(x, field_natural(F, zero, one, addF)(n));
+  forall x : F. exists n : UNat. lt(x, field_natural(F, zero, one, addF)(n));
 
 def archimedean_bounds_forget(
   F : U1, zero, one : F, addF : F -> F -> F, lt : F -> F -> U0,
@@ -13,7 +13,9 @@ def archimedean_bounds_forget(
 ) :
   Archimedean(F, zero, one, addF, lt) {
   intro x;
-  exact field_exists_intro((exists n : Nat. lt(x, field_natural(F, zero, one, addF)(n))), bounds(x));
+  exact field_exists_intro(
+    (exists n : UNat. lt(x, field_natural(F, zero, one, addF)(n))), bounds(x)
+  );
 }
 
 // A small width at one index supplies the actual FieldClose tail required
@@ -23,10 +25,10 @@ def dyadic_width_close_tail(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
   halfSum : (forall x : F. addF(half(x), half(x)) = x), width : F,
-  nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, bound : Nat,
+  nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, bound : UNat,
   small : lt(dyadic_width(F, half, bound, width), epsilon)
 ) :
-  forall n : Nat. IndexLE(bound, n)
+  forall n : UNat. IndexLE(bound, n)
   -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon) {
   intro n, later;
   let radius := dyadic_width(F, half, n, width);
@@ -57,7 +59,7 @@ def dyadic_width_converges_from_bounds(
   bounds : ArchimedeanBounds(F, zero, one, addF, lt), width : F,
   nonnegativeWidth : FieldLe(F, lt, zero, width)
 ) :
-  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => dyadic_width(F, half, n, width)), zero) {
+  FieldConverges(F, zero, addF, lt, (fun (n : UNat) => dyadic_width(F, half, n, width)), zero) {
   intro epsilon, positiveEpsilon;
   obtain (reciprocal, positiveReciprocal, inverseLaw) := field_positive_reciprocal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, epsilon, positiveEpsilon
@@ -88,12 +90,12 @@ def dyadic_width_mere_close_tail(
   nonnegativeWidth : FieldLe(F, lt, zero, width), epsilon : F, positiveEpsilon : lt(zero, epsilon)
 ) :
   FieldExists(
-    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+    exists bound : UNat. forall n : UNat. IndexLE(bound, n)
     -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
   ) {
-  let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), epsilon));
+  let A := (exists depth : UNat. lt(dyadic_width(F, half, depth, width), epsilon));
   let B := (
-    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+    exists bound : UNat. forall n : UNat. IndexLE(bound, n)
     -> FieldClose(F, addF, lt, dyadic_width(F, half, n, width), zero, epsilon)
   );
   let mapping : A -> B {

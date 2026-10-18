@@ -2,14 +2,14 @@
 // defining simplification sets when used: the rules, which
 // ergonomics_rule_scope uses where units means another set.
 import primes;
-use nat;
+use unat;
 
-simp_set units := [nat_add_zero];
+simp_set units := [unat_add_zero];
 
-def generic(U < UU0, n : Nat) : n + 0 = n {
+def generic(U < UU0, n : UNat) : n + 0 = n {
   simp only [units];
 }
 
 // One check covers every level.
-// Output: forall U < UU0. forall n : Nat. n + 0 = n
+// Output: forall U < UU0. forall n : UNat. n + 0 = n
 print(typeof(generic));

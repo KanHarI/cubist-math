@@ -1,9 +1,9 @@
-import nat;
+import unat;
 import artin_evaluation_matrix;
-use nat;
+use unat;
 
 def EmbeddingEvaluationFrame(
-  K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+  K, L : AlgebraicField, n, m : UNat, maps : Fin(n) -> FieldEmbedding(K, L)
 ) :=
   exists points : Fin(m) -> af_carrier(K).
   LinearInjective(
@@ -15,7 +15,7 @@ def EmbeddingEvaluationFrame(
   );
 
 def embedding_evaluation_frame_zero(
-  K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L)
+  K, L : AlgebraicField, n : UNat, maps : Fin(n) -> FieldEmbedding(K, L)
 ) :
   EmbeddingEvaluationFrame(K, L, n, 0, maps) {
   exact (
@@ -27,12 +27,12 @@ def embedding_evaluation_frame_zero(
 // Iterate the checked rank-growth step. Each extension merely picks its
 // next point, so the final family also remains under propositional truncation.
 def embedding_evaluation_frame_build_step(
-  k : Nat, previous : forall K : AlgebraicField. forall L : AlgebraicField. forall n : Nat.
-  forall m : Nat. forall maps : Fin(n) -> FieldEmbedding(K, L).
+  k : UNat, previous : forall K : AlgebraicField. forall L : AlgebraicField. forall n : UNat.
+  forall m : UNat. forall maps : Fin(n) -> FieldEmbedding(K, L).
   PairwiseDistinctEmbeddings(K, L, n, maps) -> n = add_count(k, m)
   -> EmbeddingEvaluationFrame(K, L, n, m, maps)
   -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps)), K, L : AlgebraicField, n,
-  m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  m : UNat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(succ(k), m),
   frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
 ) :
@@ -40,7 +40,7 @@ def embedding_evaluation_frame_build_step(
   obtain (points, independent) := frame;
   let tooSmall : le(n, m) -> Void {
     intro small;
-    let bound := transport small along total in ((fun (v : Nat) => le(v, m)));
+    let bound := transport small along total in ((fun (v : UNat) => le(v, m)));
     exact successor_not_le_self(
       m, nat_le_trans(succ(m), add_count(succ(k), m), m, nat_le_add(k, m), bound)
     );
@@ -50,13 +50,13 @@ def embedding_evaluation_frame_build_step(
   let continue : Next -> Mere(Final) {
     intro next_;
     let done :=
-      previous(K, L, n, succ(m), maps, distinct, trans(total, sym(nat_add_succ(k, m))), next_);
+      previous(K, L, n, succ(m), maps, distinct, trans(total, sym(unat_add_succ(k, m))), next_);
     exact mere_map(
       EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps), Final,
       (
-        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => transport f along nat_add_succ(
+        fun (f : EmbeddingEvaluationFrame(K, L, n, add_count(k, succ(m)), maps)) => transport f along unat_add_succ(
           k, m
-        ) in ((fun (index : Nat) => EmbeddingEvaluationFrame(K, L, n, index, maps)))
+        ) in ((fun (index : UNat) => EmbeddingEvaluationFrame(K, L, n, index, maps)))
       ), done
     );
   }
@@ -68,15 +68,15 @@ def embedding_evaluation_frame_build_step(
   );
 }
 
-def embedding_evaluation_frame_build(fuel : Nat) :=
+def embedding_evaluation_frame_build(fuel : UNat) :=
   induction fuel as k return (
-    forall K : AlgebraicField. forall L : AlgebraicField. forall n : Nat. forall m : Nat.
+    forall K : AlgebraicField. forall L : AlgebraicField. forall n : UNat. forall m : UNat.
     forall maps : Fin(n) -> FieldEmbedding(K, L). PairwiseDistinctEmbeddings(K, L, n, maps)
     -> n = add_count(k, m) -> EmbeddingEvaluationFrame(K, L, n, m, maps)
     -> Mere(EmbeddingEvaluationFrame(K, L, n, add_count(k, m), maps))
   ) {
     zero => fun (
-      K, L : AlgebraicField, n, m : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+      K, L : AlgebraicField, n, m : UNat, maps : Fin(n) -> FieldEmbedding(K, L),
       distinct : PairwiseDistinctEmbeddings(K, L, n, maps), total : n = add_count(0, m),
       frame : EmbeddingEvaluationFrame(K, L, n, m, maps)
     ) => merely(EmbeddingEvaluationFrame(K, L, n, m, maps), frame);
@@ -87,7 +87,7 @@ def embedding_evaluation_frame_build(fuel : Nat) :=
 // whose evaluation vectors form a basis of L^n. No point tuple is selected
 // globally; the matrix and its inverse live in a mere existence statement.
 def distinct_embeddings_evaluation_basis(
-  K, L : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(K, L),
+  K, L : AlgebraicField, n : UNat, maps : Fin(n) -> FieldEmbedding(K, L),
   distinct : PairwiseDistinctEmbeddings(K, L, n, maps)
 ) :
   Mere(
@@ -97,14 +97,14 @@ def distinct_embeddings_evaluation_basis(
       (fun (j : Fin(n)) => embedding_evaluation_vector(K, L, n, maps, points(j)))
     )
   ) {
-  let Frame := fun (m : Nat) => EmbeddingEvaluationFrame(K, L, n, m, maps);
+  let Frame := fun (m : UNat) => EmbeddingEvaluationFrame(K, L, n, m, maps);
   let atSum := embedding_evaluation_frame_build(
-    n, K, L, n, 0, maps, distinct, sym(nat_add_zero(n)),
+    n, K, L, n, 0, maps, distinct, sym(unat_add_zero(n)),
     embedding_evaluation_frame_zero(K, L, n, maps)
   );
   let atN := mere_map(
     Frame(add_count(n, 0)), Frame(n),
-    (fun (f : Frame(add_count(n, 0))) => transport f along nat_add_zero(n) in Frame), atSum
+    (fun (f : Frame(add_count(n, 0))) => transport f along unat_add_zero(n) in Frame), atSum
   );
   let make_ :
     Frame(n)
@@ -135,7 +135,7 @@ def distinct_embeddings_evaluation_basis(
 }
 
 def loop_evaluation_vector(
-  K : AlgebraicField, E : FieldExt(K), n : Nat, loops : Fin(n) -> (E =[FieldExt(K)] E),
+  K : AlgebraicField, E : FieldExt(K), n : UNat, loops : Fin(n) -> (E =[FieldExt(K)] E),
   x : extension_carrier(K, E)
 ) :
   vector_carrier(extension_field(K, E), CoordinateSpace(extension_field(K, E), n)) {
@@ -146,7 +146,7 @@ def loop_evaluation_vector(
 // Here each matrix entry computes as transport, rather than as a separately
 // postulated automorphism action.
 def distinct_extension_loops_evaluation_basis(
-  K : AlgebraicField, E : FieldExt(K), n : Nat, loops : Fin(n) -> (E =[FieldExt(K)] E),
+  K : AlgebraicField, E : FieldExt(K), n : UNat, loops : Fin(n) -> (E =[FieldExt(K)] E),
   distinct : forall i : Fin(n). forall j : Fin(n). loops(i) = loops(j) -> i = j
 ) :
   Mere(

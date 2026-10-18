@@ -21,10 +21,10 @@ test("tuples expand to right-associated pairs without changing comparison syntax
 });
 
 test("tuple formatting preserves nested delimiters, comments, comparisons and patterns", () => {
-  const source = `def build(a:Nat,b:Nat):Nat and Nat and Nat{exact (a, // saved
-b,0);} def unpacked : Nat { obtain (a,b,c) := build(0,0); exact c; }
-  def nested := typed((Nat and Nat) and Nat and Nat, ((0,1),2,3));
-  def relation(a:Nat,b:Nat) := a < b;
+  const source = `def build(a:UNat,b:UNat):UNat and UNat and UNat{exact (a, // saved
+b,0);} def unpacked : UNat { obtain (a,b,c) := build(0,0); exact c; }
+  def nested := typed((UNat and UNat) and UNat and UNat, ((0,1),2,3));
+  def relation(a:UNat,b:UNat) := a < b;
 `;
   for (const printWidth of [40, 80, 100]) {
     const formatted = formatCubist(source, { printWidth });
@@ -38,11 +38,11 @@ b,0);} def unpacked : Nat { obtain (a,b,c) := build(0,0); exact c; }
 test("AST linearization preserves comments, grouping, left components and application arguments", async () => {
   const { linearizeTuples, expandedSyntax } = await import("../web/cubist/tuples.mjs");
   const source = `// 🧮 A tuple with a paired first field and a right-associated tail.
-    def build : (Nat and Nat) and Nat and Nat and Nat {
+    def build : (UNat and UNat) and UNat and UNat and UNat {
       exact ((0, 1), (2, // keep the tail note
         ((3, 4))));
     }
-    def use_ : Nat { obtain ((a, b), (c, (d, e))) := build; exact e; }
+    def use_ : UNat { obtain ((a, b), (c, (d, e))) := build; exact e; }
     def call := f(a, b, c);
   `;
   const raw = linearizeTuples(source);
@@ -61,12 +61,12 @@ test("native tuple notation exposes its expansion and a checked inspector bindin
   const { CubicalProgram } = await import("../web/cubical-program.mjs");
   const program = new CubicalProgram(await createCubical(), async () => "");
   t.after(() => program.dispose());
-  const result = await program.check("import nat; use nat; def triple : Nat and Nat and Nat { exact (0, 1, 2); }", "tuples");
+  const result = await program.check("import unat; use unat; def triple : UNat and UNat and UNat { exact (0, 1, 2); }", "tuples");
   assert.equal(result.complete, true);
   const links = result.links.filter(x => x.role === "tuple macro");
   assert.equal(links.length, 2);
   assert.equal(links[0].expansion, "(0, (1, 2))");
   assert.equal(program.inspect(links[0].binding).expression.tag, "Pair");
-  const invalid = await program.check("import nat; def wrong : Nat and Nat { exact (0, 1, 2); }", "wrong");
+  const invalid = await program.check("import unat; def wrong : UNat and UNat { exact (0, 1, 2); }", "wrong");
   assert.equal(invalid.complete, false);
 });

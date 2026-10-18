@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import lexemes;
 
 // Binary positive integers: the leading one, then each trailing digit, the
@@ -41,7 +41,7 @@ computable def binary_twice_succ(n : BinaryNat) : BinaryNat := match n {
   };
 
 // The binary digits from position `at` of a lexeme, read after `value`.
-computable def binary_digits(s : Lexeme, value : BinaryNat, at_ : Nat) :
+computable def binary_digits(s : Lexeme, value : BinaryNat, at_ : UNat) :
   Parsed(U0, BinaryNat) := match s {
     nil => ok(value);
     cons(digit(zero), rest) => binary_digits(rest, binary_twice(value), succ(at_));

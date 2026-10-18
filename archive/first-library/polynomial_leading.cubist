@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import polynomial_division;
-use nat;
+use unat;
 
 // A polynomial with support below 1 is a constant coefficient function.
 def series_support_one(K : AlgebraicField, f : FormalSeries(K), support : SeriesSupport(K, f, 1)) :
@@ -12,7 +12,7 @@ def series_support_one(K : AlgebraicField, f : FormalSeries(K), support : Series
   };
 }
 
-def convolution_constant_left(K : AlgebraicField, a : af_carrier(K), n : Nat, f : FormalSeries(K)) :
+def convolution_constant_left(K : AlgebraicField, a : af_carrier(K), n : UNat, f : FormalSeries(K)) :
   convolution(K, n, series_constant(K, a), f) = field_mul(K, a, f(n)) {
   exact trans(
     convolution_comm(K, n, series_constant(K, a), f),
@@ -20,21 +20,21 @@ def convolution_constant_left(K : AlgebraicField, a : af_carrier(K), n : Nat, f 
   );
 }
 
-def convolution_top(K : AlgebraicField, m : Nat) :=
+def convolution_top(K : AlgebraicField, m : UNat) :=
   induction m as k return (
-    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : Nat.
+    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : UNat.
     SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
     -> convolution(K, add_count(k, n), f, g) = field_mul(K, f(k), g(n))
   ) {
     zero => fun (
-      f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1),
+      f, g : FormalSeries(K), n : UNat, sf : SeriesSupport(K, f, 1),
       sg : SeriesSupport(K, g, succ(n))
     ) => trans(
       cong((fun (s : FormalSeries(K)) => convolution(K, n, s, g)), series_support_one(K, f, sf)),
       convolution_constant_left(K, f(0), n, g)
     );
     succ previous => fun (
-      f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(k))),
+      f, g : FormalSeries(K), n : UNat, sf : SeriesSupport(K, f, succ(succ(k))),
       sg : SeriesSupport(K, g, succ(n))
     ) => trans(
       cong(
@@ -55,7 +55,7 @@ def convolution_top(K : AlgebraicField, m : Nat) :=
         trans(
           scalar_add_zero(K, convolution(K, add_count(k, n), series_tail(K, f), g)),
           previous(
-            series_tail(K, f), g, n, (fun (j : Nat, above : le(succ(k), j)) => sf(succ(j), above)),
+            series_tail(K, f), g, n, (fun (j : UNat, above : le(succ(k), j)) => sf(succ(j), above)),
             sg
           )
         )
@@ -64,7 +64,7 @@ def convolution_top(K : AlgebraicField, m : Nat) :=
   };
 
 def support_product_degrees_zero(
-  K : AlgebraicField, f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, 1),
+  K : AlgebraicField, f, g : FormalSeries(K), n : UNat, sf : SeriesSupport(K, f, 1),
   sg : SeriesSupport(K, g, succ(n))
 ) :
   SeriesSupport(K, series_mul(K, f, g), succ(n)) {
@@ -79,12 +79,12 @@ def support_product_degrees_zero(
 }
 
 def support_product_degrees_step(
-  K : AlgebraicField, m : Nat,
+  K : AlgebraicField, m : UNat,
   previous : (
-    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : Nat.
+    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : UNat.
     SeriesSupport(K, f, succ(m)) -> SeriesSupport(K, g, succ(n))
     -> SeriesSupport(K, series_mul(K, f, g), succ(add_count(m, n)))
-  ), f, g : FormalSeries(K), n : Nat, sf : SeriesSupport(K, f, succ(succ(m))),
+  ), f, g : FormalSeries(K), n : UNat, sf : SeriesSupport(K, f, succ(succ(m))),
   sg : SeriesSupport(K, g, succ(n))
 ) :
   SeriesSupport(K, series_mul(K, f, g), succ(succ(add_count(m, n)))) {
@@ -119,7 +119,7 @@ def support_product_degrees_step(
             field_add(K, field_zero(K)),
             previous(
               series_tail(K, f), g, n,
-              (fun (i : Nat, bound : le(succ(m), i)) => sf(succ(i), bound)), sg, j, above
+              (fun (i : UNat, bound : le(succ(m), i)) => sf(succ(i), bound)), sg, j, above
             )
           ), scalar_add_zero(K, field_zero(K))
         )
@@ -128,9 +128,9 @@ def support_product_degrees_step(
   };
 }
 
-def support_product_degrees(K : AlgebraicField, m : Nat) :=
+def support_product_degrees(K : AlgebraicField, m : UNat) :=
   induction m as k return (
-    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : Nat.
+    forall f : FormalSeries(K). forall g : FormalSeries(K). forall n : UNat.
     SeriesSupport(K, f, succ(k)) -> SeriesSupport(K, g, succ(n))
     -> SeriesSupport(K, series_mul(K, f, g), succ(add_count(k, n)))
   ) {
@@ -152,7 +152,7 @@ def scalar_product_nonzero(
 }
 
 def polynomial_product_degree(
-  K : AlgebraicField, p, q : Polynomial(K), m, n : Nat, dp : polynomial_cutoff(K, p) = succ(m),
+  K : AlgebraicField, p, q : Polynomial(K), m, n : UNat, dp : polynomial_cutoff(K, p) = succ(m),
   dq : polynomial_cutoff(K, q) = succ(n)
 ) :
   polynomial_cutoff(K, polynomial_mul(K, p, q)) = succ(add_count(m, n)) {
@@ -177,17 +177,17 @@ def polynomial_product_degree(
 def polynomial_nonzero_degree(
   K : AlgebraicField, p : Polynomial(K), nonzero : (p = polynomial_zero(K)) -> Void
 ) :
-  exists n : Nat. polynomial_cutoff(K, p) = succ(n) {
+  exists n : UNat. polynomial_cutoff(K, p) = succ(n) {
   exact (
     induction polynomial_cutoff(K, p) as k return (
-      (polynomial_cutoff(K, p) = k) -> exists n : Nat. polynomial_cutoff(K, p) = succ(n)
+      (polynomial_cutoff(K, p) = k) -> exists n : UNat. polynomial_cutoff(K, p) = succ(n)
     ) {
       zero => fun (same : polynomial_cutoff(K, p) = 0) => typed(
-        (exists n : Nat. polynomial_cutoff(K, p) = succ(n)),
+        (exists n : UNat. polynomial_cutoff(K, p) = succ(n)),
         absurd(nonzero(polynomial_cutoff_zero(K, p, same)))
       );
       succ ignored => fun (same : polynomial_cutoff(K, p) = succ(k)) => typed(
-        (exists n : Nat. polynomial_cutoff(K, p) = succ(n)), (k, same)
+        (exists n : UNat. polynomial_cutoff(K, p) = succ(n)), (k, same)
       );
     }
   )(refl(polynomial_cutoff(K, p)));
@@ -204,5 +204,5 @@ def polynomial_product_nonzero(
     sym(polynomial_product_degree(K, p, q, m, n, dp, dq)),
     trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))
   );
-  exact nat_zero_ne_succ(add_count(m, n), sym(same));
+  exact unat_zero_ne_succ(add_count(m, n), sym(same));
 }

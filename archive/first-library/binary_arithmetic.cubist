@@ -1,8 +1,8 @@
-import nat;
+import unat;
 
 import binary_naturals;
 import paths_;
-use nat;
+use unat;
 
 // Increment follows a carry only through trailing one bits.
 def binary_positive_succ(p : BinaryPositive) := binary_positive_rec(
@@ -60,13 +60,13 @@ def binary_mul(a, b : BinaryNat) := match a return BinaryNat {
     };
   };
 
-def binary_of_nat(n : Nat) := induction n return BinaryNat {
+def binary_of_nat(n : UNat) := induction n return BinaryNat {
     zero => binary.(0b0);
     succ previous => binary_succ(previous);
   };
 
 // The recursion index is small; all intermediate products are binary W trees.
-def binary_factorial(n : Nat) := induction n as k return BinaryNat {
+def binary_factorial(n : UNat) := induction n as k return BinaryNat {
     zero => binary.(0b1);
     succ previous => binary_mul(binary_of_nat(succ(k)), previous);
   };
@@ -84,12 +84,12 @@ def binary_mul_example : binary_mul(binary.(0b1101), binary.(0b1011)) = binary.(
 }
 
 // The factorial step remains folded until its previous value is supplied.
-def binary_factorial_step(n : Nat) :
+def binary_factorial_step(n : UNat) :
   binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), binary_factorial(n)) {
   rfl;
 }
 
-def binary_factorial_value_step(n : Nat, value : BinaryNat, previous : binary_factorial(n) = value) :
+def binary_factorial_value_step(n : UNat, value : BinaryNat, previous : binary_factorial(n) = value) :
   binary_factorial(succ(n)) = binary_mul(binary_of_nat(succ(n)), value) {
   rw [binary_factorial_step(n), previous] at lhs;
 }

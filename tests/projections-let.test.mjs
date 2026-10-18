@@ -30,15 +30,15 @@ const at = (source, text, anchor = "") => {
 
 test("misused projections are rejected with precise messages", async () => {
   const tuple = "A pair has only the projections .1 and .2. A tuple nests pairs to the right: the third component of (a, b, c) is .2.2.";
-  assert.equal(parseError("def third(t : Nat and Nat and Nat) : Nat := t.3;"), tuple);
-  assert.equal(parseError("def zeroth(t : Nat and Nat) : Nat := t.0;"), tuple);
+  assert.equal(parseError("def third(t : UNat and UNat and UNat) : UNat := t.3;"), tuple);
+  assert.equal(parseError("def zeroth(t : UNat and UNat) : UNat := t.0;"), tuple);
   // Only a tight dot projects: a quantifier's dot is followed by a space.
-  assert.match(parseError("def spaced(p : Nat and Nat) : Nat := p. 1;"), /Expected ';', found '\.'/);
-  assert.equal(parseError("def fine := forall n : Nat. n = n;"), null);
+  assert.match(parseError("def spaced(p : UNat and UNat) : UNat := p. 1;"), /Expected ';', found '\.'/);
+  assert.equal(parseError("def fine := forall n : UNat. n = n;"), null);
   const { source, verdicts } = await projections();
   // Reported at the projection itself.
-  assert.equal(verdicts.not_a_pair, `Projection .1 requires a dependent pair; found a value of type Nat. at ${at(source, ".1;", "def not_a_pair")}`);
-  assert.match(verdicts.function_projection, /^Projection \.2 requires a dependent pair; found a value of type Nat -> Nat\./);
+  assert.equal(verdicts.not_a_pair, `Projection .1 requires a dependent pair; found a value of type UNat. at ${at(source, ".1;", "def not_a_pair")}`);
+  assert.match(verdicts.function_projection, /^Projection \.2 requires a dependent pair; found a value of type UNat -> UNat\./);
 });
 
 test("projections print as p.1 and p.2 in source text and in mathematical notation", () => {
@@ -115,25 +115,25 @@ test("a historical nat without a notation is read with the one it had in effect,
 });
 
 test("a historical module's binders named left or right are renamed, as the injections became reserved on 2026-10-06", () => {
-  const old = "def f(left, right : Nat, p : Unit or Nat) : Nat := match p { left u => left; right n => right(n); };\n"
-    + "def g : Unit or Nat := left(tt);\n";
+  const old = "def f(left, right : UNat, p : Unit or UNat) : UNat := match p { left u => left; right n => right(n); };\n"
+    + "def g : Unit or UNat := left(tt);\n";
   // The binders and what they shadow are renamed; sum patterns and the
   // injection elsewhere stay.
   assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
-    "def f(left_, right_ : Nat, p : Unit or Nat) : Nat := match p { left u => left_; right n => right_(n); };\n"
-    + "def g : Unit or Nat := left(tt);\n");
+    "def f(left_, right_ : UNat, p : Unit or UNat) : UNat := match p { left u => left_; right n => right_(n); };\n"
+    + "def g : Unit or UNat := left(tt);\n");
 });
 
 test("a historical module's binders named typed or evaluate are renamed, as both became reserved on 2026-10-07", () => {
-  const old = "def g := typed(Nat, 0);\ndef typed(n, m : Nat) : Nat := n;\ndef f(typed : Nat) : Nat := typed;\n"
-    + "def k := typed(1, 2);\ndef h(n : Nat) : Nat {\n  let evaluate : Nat := n;\n  exact evaluate;\n}\n"
+  const old = "def g := typed(UNat, 0);\ndef typed(n, m : UNat) : UNat := n;\ndef f(typed : UNat) : UNat := typed;\n"
+    + "def k := typed(1, 2);\ndef h(n : UNat) : UNat {\n  let evaluate : UNat := n;\n  exact evaluate;\n}\n"
     + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n";
   // The declaration and the binders, and the references they shadow, are
   // renamed: a module's own typed holds in the items after it. An
   // ascription before it, an evaluate directive and a print stay.
   assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
-    "def g := typed(Nat, 0);\ndef typed_(n, m : Nat) : Nat := n;\ndef f(typed_ : Nat) : Nat := typed_;\n"
-    + "def k := typed_(1, 2);\ndef h(n : Nat) : Nat {\n  let evaluate_ : Nat := n;\n  exact evaluate_;\n}\n"
+    "def g := typed(UNat, 0);\ndef typed_(n, m : UNat) : UNat := n;\ndef f(typed_ : UNat) : UNat := typed_;\n"
+    + "def k := typed_(1, 2);\ndef h(n : UNat) : UNat {\n  let evaluate_ : UNat := n;\n  exact evaluate_;\n}\n"
     + "evaluate h(0) expecting 0;\nprint(evaluate(h(0)));\n");
 });
 
@@ -146,17 +146,17 @@ test("a historical module's references are renamed only within their binder's sc
     "def f : Unit or Unit {\n  let left_ : Unit or Unit := left(tt);\n  exact left_;\n}\n");
   assert.equal(read("def g := (fun (left : Unit) => left, left(tt));\n"), "def g := (fun (left_ : Unit) => left_, left(tt));\n");
   // A clause's variables, a bare one too, hold in their clause only.
-  assert.equal(read("def h(n : Nat) : Unit or Nat := match n { zero => left(tt); succ(left) => right(left); };\n"
-    + "def k(n : Nat) : Unit or Nat := match n { right => left(right); };\n"),
-    "def h(n : Nat) : Unit or Nat := match n { zero => left(tt); succ(left_) => right(left_); };\n"
-    + "def k(n : Nat) : Unit or Nat := match n { right_ => left(right_); };\n");
+  assert.equal(read("def h(n : UNat) : Unit or UNat := match n { zero => left(tt); succ(left) => right(left); };\n"
+    + "def k(n : UNat) : Unit or UNat := match n { right => left(right); };\n"),
+    "def h(n : UNat) : Unit or UNat := match n { zero => left(tt); succ(left_) => right(left_); };\n"
+    + "def k(n : UNat) : Unit or UNat := match n { right_ => left(right_); };\n");
   // A declaration holds in itself, where a recursive one calls it.
-  assert.equal(read("def evaluate(n : Nat) : Nat := match n { zero => 0; succ(k) => evaluate(k); };\n"),
-    "def evaluate_(n : Nat) : Nat := match n { zero => 0; succ(k) => evaluate_(k); };\n");
+  assert.equal(read("def evaluate(n : UNat) : UNat := match n { zero => 0; succ(k) => evaluate(k); };\n"),
+    "def evaluate_(n : UNat) : UNat := match n { zero => 0; succ(k) => evaluate_(k); };\n");
   // A parameter is named in a call's named argument, and a field after a dot.
-  assert.equal(read("def p(left : Nat) : Nat := left;\ndef q := p(left := 1);\n"
+  assert.equal(read("def p(left : UNat) : UNat := left;\ndef q := p(left := 1);\n"
     + "theory T(U < UU0) {\n  M : set U;\n  right : M;\n  law fixed(x : M) : x = right;\n}\ndef r(m : T(U0)) := m.right;\n"),
-    "def p(left_ : Nat) : Nat := left_;\ndef q := p(left_ := 1);\n"
+    "def p(left_ : UNat) : UNat := left_;\ndef q := p(left_ := 1);\n"
     + "theory T(U < UU0) {\n  M : set U;\n  right_ : M;\n  law fixed(x : M) : x = right_;\n}\ndef r(m : T(U0)) := m.right_;\n");
 });
 
@@ -167,14 +167,14 @@ test("a historical module's constructors are renamed in the constructors after t
   const read = source => historicalSource(source, "old", { implicitNat: false, minusReverses: false });
   assert.equal(read("inductive T : U0 {\n  left;\n  loop : left = left;\n}\n"), "inductive T : U0 {\n  left_;\n  loop : left_ = left_;\n}\n");
   // Each of these checks before the reservation and, read so, after it.
-  const sum = "def g(x : Unit or Nat) : Nat := match x return Nat { left u => zero; right n => n; };\n";
-  assert.equal(read("def s(x : Unit or Nat) : Nat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
-    + "inductive E { left(n : Nat); typed(b : Unit); }\ninductive W { base; wrap(e : E); right : base = base; }\n"
-    + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left(n)) => n; "
+  const sum = "def g(x : Unit or UNat) : UNat := match x return UNat { left u => zero; right n => n; };\n";
+  assert.equal(read("def s(x : Unit or UNat) : UNat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
+    + "inductive E { left(n : UNat); typed(b : Unit); }\ninductive W { base; wrap(e : E); right : base = base; }\n"
+    + "def f(x : Unit or UNat, w : W) : UNat := match x, w return UNat { y, base => zero; y, wrap(left(n)) => n; "
     + "y, wrap(typed(b)) => zero; y, right @ i => zero; };\n" + sum),
-  "def s(x : Unit or Nat) : Nat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
-    + "inductive E { left_(n : Nat); typed_(b : Unit); }\ninductive W { base; wrap(e : E); right_ : base = base; }\n"
-    + "def f(x : Unit or Nat, w : W) : Nat := match x, w return Nat { y, base => zero; y, wrap(left_(n)) => n; "
+  "def s(x : Unit or UNat) : UNat { match x { left(u) => { exact zero; } right(n) => { exact n; } } }\n"
+    + "inductive E { left_(n : UNat); typed_(b : Unit); }\ninductive W { base; wrap(e : E); right_ : base = base; }\n"
+    + "def f(x : Unit or UNat, w : W) : UNat := match x, w return UNat { y, base => zero; y, wrap(left_(n)) => n; "
     + "y, wrap(typed_(b)) => zero; y, right_ @ i => zero; };\n" + sum);
 });
 

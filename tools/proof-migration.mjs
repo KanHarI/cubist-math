@@ -190,9 +190,9 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     return type ? `${label}:${snapshotHash(type)}` : label;
   }});
   const readableBindings = mapDefinitions(originalName, originalName);
-  // A pin's text reads numerals and nat's operations as nat's notation does,
-  // as every ledger was recorded (L2.10j); its hash is what is compared.
-  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)),{},4000,{selection:"nat"})});
+  // Pin text uses the explicit unary view. Both the rendered text and the
+  // checked structural hash remain exact ledger requirements.
+  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)),{},4000,{selection:"unat"})});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {

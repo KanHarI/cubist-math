@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import sample_subdivisions;
 
 // A condition for each coarse tag together with its own finite subdivision.
 // Conditions can contain witnesses in U1; no propositional truncation or
 // selection of witnesses is built into this finite family.
 def SubdivisionTagged(
-  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : Nat
+  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : UNat
 ) :=
   induction n as k return (
     forall vertices : SampleVertices(C, k). SampleTags(C, k) -> SampleSubdivisions(C, k, vertices)
@@ -42,7 +42,7 @@ def subdivision_tagged_map_step(
   mapping : (
     forall a : C. forall b : C. forall tag : C. forall piece : SampleSubdivision(C, a, b).
     condition(a, b, tag, piece) -> other(a, b, tag, piece)
-  ), n : Nat,
+  ), n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
     forall pieces : SampleSubdivisions(C, n, vertices).
@@ -75,7 +75,7 @@ def subdivision_tagged_map(
   mapping : (
     forall a : C. forall b : C. forall tag : C. forall piece : SampleSubdivision(C, a, b).
     condition(a, b, tag, piece) -> other(a, b, tag, piece)
-  ), n : Nat
+  ), n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   forall pieces : SampleSubdivisions(C, n, vertices).

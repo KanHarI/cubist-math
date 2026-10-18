@@ -146,21 +146,21 @@ free V(V : U0) : Monoid(U0) on V;`);
 });
 
 test("free parameters cannot capture globals used by theory fields or generated definitions", async t => {
-  await verified(t, `import hlevels; import algebra; import nat; use nat;
-theory P(U < UU0) { M : set U; point(n : Nat) : M; }
-free W(Nat : U0) : P(U0) on Nat;
+  await verified(t, `import hlevels; import algebra; import unat; use unat;
+theory P(U < UU0) { M : set U; point(n : UNat) : M; }
+free W(UNat : U0) : P(U0) on UNat;
 free H(IsSet, IsProp, P : U0) : P(U0) on IsSet;
-def global_argument(A : U0, S : P(U0), g : A -> S.M, n : Nat) :
-  W.fold(Nat := A, S, g).map(W.point(n)) = S.point(n) { rfl; }
+def global_argument(A : U0, S : P(U0), g : A -> S.M, n : UNat) :
+  W.fold(UNat := A, S, g).map(W.point(n)) = S.point(n) { rfl; }
 def generator_argument(A : U0, S : P(U0), g : A -> S.M, a : A) :
   W.fold(A, S, g).map(W.gen(a)) = g(a) { rfl; }
-free Dep(Nat : U0, A : Nat -> U0) : P(U0) on exists n : Nat. A(n);
+free Dep(UNat : U0, A : UNat -> U0) : P(U0) on exists n : UNat. A(n);
 `);
 });
 
 test("initial and free constructors and folds share file-level notation", async t => {
-  await verified(t, `import hlevels; import nat; use nat;
-theory P(U < UU0, n : Nat) { M : set U; point(p : n = n) : M; }
+  await verified(t, `import hlevels; import unat; use unat;
+theory P(U < UU0, n : UNat) { M : set U; point(p : n = n) : M; }
 initial N : P(U0, 3);
 free W(A : U0) : P(U0, 3) on A;
 def folded(S : P(U0, 3), p : 3 = 3) : N.fold(S).map(N.point(p)) = S.point(p) { rfl; }
@@ -168,12 +168,12 @@ def folded(S : P(U0, 3), p : 3 = 3) : N.fold(S).map(N.point(p)) = S.point(p) { r
 });
 
 const notationTheory = `import hlevels;
-import nat;
-use nat;
-theory T(U < UU0, k : Nat) {
+import unat;
+use unat;
+theory T(U < UU0, k : UNat) {
   M : set U;
-  op(n : Nat, p : n = 0) : M;
-  point(n : Nat) : M;
+  op(n : UNat, p : n = 0) : M;
+  point(n : UNat) : M;
   law base : point(0 + 0) = point(0);
   law index : point(k) = point(k);
 }`;
@@ -199,7 +199,7 @@ def folded(S : T(U0, zero)) : N.fold(S).map(N.op(zero, refl(zero))) = S.op(zero,
 
 test("copied fields keep theory notation while free parameters, theory arguments and generators keep caller notation", async t => {
   const {result} = await checkProgram(t, `import notation_theory;
-notation shifted { numeral(n : Nat) := succ(n); }
+notation shifted { numeral(n : UNat) := succ(n); }
 use shifted;
 initial N : T(U0, 0);
 free W(p : 0 = 0) : T(U0, 0) on 0 = 0;
@@ -216,10 +216,10 @@ def folded(p : succ(zero) = succ(zero), S : T(U0, succ(zero)), g : (succ(zero) =
 
 test("a caller rebinding a notation name cannot change an imported theory's captured rules", async t => {
   const {result} = await checkProgram(t, `import notation_theory;
-notation nat { numeral(n : Nat) := succ(n); }
-use nat;
+notation unat { numeral(n : UNat) := succ(n); }
+use unat;
 initial N : T(U0, 0);
-free W(nat : U0) : T(U0, 0) on nat;
+free W(unat : U0) : T(U0, 0) on unat;
 def operation : N := N.op(zero, refl(zero));
 def boundary : N.point(zero) = N.point(zero) := N.base;
 def argument : N.point(succ(zero)) = N.point(succ(zero)) := N.index;
@@ -230,13 +230,13 @@ def free_boundary(A : U0) : typed(W(A), W.point(zero)) = W.point(zero) := W.base
 
 test("captured model notation survives a model or free parameter taking its name", async t => {
   const reader = notationReader(`import hlevels;
-import nat;
+import unat;
 theory Arithmetic(U < UU0) { K : set U; plus(x, y : K) : K notation x + y; }
-def arithmetic : Arithmetic(U0) := Arithmetic.make(Nat, nat_is_set, add);
+def arithmetic : Arithmetic(U0) := Arithmetic.make(UNat, unat_is_set, add);
 use arithmetic;
 theory T(U < UU0) {
   M : set U;
-  point(n : Nat) : M;
+  point(n : UNat) : M;
   law base : point(zero + zero) = point(zero);
 }`);
   const {result} = await checkProgram(t, `import notation_theory;
@@ -249,8 +249,8 @@ def free_boundary(A : U0) : typed(W(A), W.point(zero)) = W.point(zero) := W.base
 });
 
 test("ill-typed theory arguments fail once at the argument before expansion", async t => {
-  for (const application of ["Action(U0, Nat)", "Action(R := Nat, U := U0)", "Action(U0, tt)"]) {
-    const source = `import hlevels; import algebra; import nat;
+  for (const application of ["Action(U0, UNat)", "Action(R := UNat, U := U0)", "Action(U0, tt)"]) {
+    const source = `import hlevels; import algebra; import unat;
 theory Action(U < UU0, R : Monoid(U)) { M : set U; act(r : R.M, x : M) : M; }
 initial N : ${application};`;
     const {result} = await checkProgram(t, source, {module});
@@ -258,7 +258,7 @@ initial N : ${application};`;
     assert.equal(outputs.length, 1);
     assert.equal(outputs[0].verified, false);
     assert.ok(outputs[0].code, outputs[0].reason);
-    const arg = application.includes("Nat") ? "Nat" : "tt";
+    const arg = application.includes("UNat") ? "UNat" : "tt";
     assert.equal(outputs[0].errorStart, source.lastIndexOf(arg), outputs[0].reason);
   }
 });
@@ -276,11 +276,11 @@ def folded(V < UU0, A : V, S : Monoid(V), g : A -> S.M, a : A) :
 });
 
 test("a theory's pattern names leave unrelated free parameters and model names usable", async t => {
-  await verified(t, `import nat;
+  await verified(t, `import unat;
 import hlevels;
 theory T(U < UU0, A : U) {
   M : set U;
-  op(n : Nat, b : (match n return U { zero => A; succ(k) => A; })) : M;
+  op(n : UNat, b : (match n return U { zero => A; succ(k) => A; })) : M;
 }
 free W(k : U0) : T(U0, Unit) on k;
 initial k : T(U0, Unit);
@@ -328,8 +328,8 @@ test("fold clauses bind names no constructor in scope can take", async t => {
   // target, g and x, which shadow a constructor as any binder does.
   await verified(t, `import hlevels;
 import algebra;
-import nat;
-use nat;
+import unat;
+use unat;
 inductive Letter : set U0 { a; b; }
 inductive Two : set U0 { x0; x1; i; target; g; x; }
 free Words : Monoid(U0) on Letter;
@@ -337,7 +337,7 @@ free W(A : U0) : Monoid(U0) on A;
 theory P(U < UU0) { M : set U; op(t : Two, m : M) : M; law swap(t : Two, m : M) : op(t, m) = op(t, m); }
 initial N : P(U0);
 free F(A : U0) : P(U0) on A;
-def count(w : Words) : Nat := Words.fold(nat_additive.monoid, fun (l : Letter) => 1).map(w);
+def count(w : Words) : UNat := Words.fold(nat_additive.monoid, fun (l : Letter) => 1).map(w);
 def three : count(Words.mul(Words.gen(a), Words.mul(Words.gen(b), Words.gen(a)))) = 3 { rfl; }
 def kept(A : U0, T : P(U0), h : A -> T.M, y : A) :
   F.fold(A, T, h).map(F.op(x1, F.op(i, F.gen(y)))) = T.op(x1, T.op(i, h(y))) { rfl; }
@@ -346,15 +346,15 @@ def kept(A : U0, T : P(U0), h : A -> T.M, y : A) :
 
 test("a free parameter keeps its name when a field's global is already resolved", async t => {
   const source = `import hlevels;
-import nat;
-theory P(U < UU0) { M : set U; point(n : Nat) : M; }
-free W(Nat : U0) : P(U0) on Nat;
+import unat;
+theory P(U < UU0) { M : set U; point(n : UNat) : M; }
+free W(UNat : U0) : P(U0) on UNat;
 print(typeof(W.fold));
-def folded(A : U0, S : P(U0), h : A -> S.M, a : A) : W.fold(Nat := A, target := S, g := h).map(W.gen(a)) = h(a) { rfl; }`;
+def folded(A : U0, S : P(U0), h : A -> S.M, a : A) : W.fold(UNat := A, target := S, g := h).map(W.gen(a)) = h(a) { rfl; }`;
   const {result} = await verified(t, source);
-  assert.deepEqual(result.prints.map(p => p.text), ["forall Nat : U0. forall target : P(U0). (Nat -> target.M) -> P.Hom{{U0, U0}}(W.model(Nat), target)"]);
-  const written = source.indexOf("Nat : U0");
-  assert.deepEqual([...new Set(result.links.filter(link => link.start === written).map(link => link.name))], ["Nat"]);
+  assert.deepEqual(result.prints.map(p => p.text), ["forall UNat : U0. forall target : P(U0). (UNat -> target.M) -> P.Hom{{U0, U0}}(W.model(UNat), target)"]);
+  const written = source.indexOf("UNat : U0");
+  assert.deepEqual([...new Set(result.links.filter(link => link.start === written).map(link => link.name))], ["UNat"]);
 });
 
 test("only the kernel's boundary refusals of a law are the strategy's E856", () => {
@@ -389,10 +389,10 @@ test("refusals of a theory name the declaration's own spelling and the carriers 
   const {result} = await checkProgram(t, `import hlevels;
 theory Two(U < UU0) { M : set U; P : set U; c : M; }
 initial N : Two(U0);
-free X : Nat on Unit;`, {module});
+free X : UNat on Unit;`, {module});
   assert.deepEqual(result.outputs.filter(o => !o.verified).map(o => [o.name, o.code]), [["N", "E852"], ["X", "E850"]]);
   assert.match(result.outputs.find(o => o.name === "N").reason, /one carrier that is not a family; Two has M, P\./);
-  assert.match(result.outputs.find(o => o.name === "X").reason, /as free W\(A : U0\) : Monoid\(U0\) on A; Nat is none\./);
+  assert.match(result.outputs.find(o => o.name === "X").reason, /as free W\(A : U0\) : Monoid\(U0\) on A; UNat is none\./);
 });
 
 test("a failed generated declaration skips its dependents and keeps progress totals accurate", async t => {
@@ -458,14 +458,14 @@ free W(A : U0) : T(U0) on A;`, {module});
 });
 
 test("a law the kernel refuses as a boundary gets the strategy's refusal, and a law's redexes reduce", async t => {
-  const source = `import nat;
+  const source = `import unat;
 import hlevels;
-use nat;
+use unat;
 theory P(U < UU0) {
   M : set U;
   c : M;
-  op(n : Nat) : M;
-  law l(n : Nat) : c = (match n return M { zero => c; succ(k) => op(k); });
+  op(n : UNat) : M;
+  law l(n : UNat) : c = (match n return M { zero => c; succ(k) => op(k); });
 }
 initial N : P(U0);
 free W(j : U0) : P(U0) on j;`;
@@ -475,15 +475,15 @@ free W(j : U0) : P(U0) on j;`;
   for (const keyword of ["initial", "free"])
     assert.equal(result.outputs.find(o => o.name === (keyword === "free" ? "W" : "N")).errorStart, source.indexOf("P(U0)", source.indexOf(keyword)));
   // The kernel reads a boundary beta-reduced, and a data argument as data.
-  await verified(t, `import nat;
+  await verified(t, `import unat;
 import hlevels;
-use nat;
+use unat;
 theory R(U < UU0) {
   M : set U;
   c : M;
-  op(n : Nat, x : M) : M;
+  op(n : UNat, x : M) : M;
   law redex : op(0, c) = (fun (y : M) => y)(c);
-  law data(n : Nat, x : M) : op(match n return Nat { zero => 0; succ(k) => k; }, x) = x;
+  law data(n : UNat, x : M) : op(match n return UNat { zero => 0; succ(k) => k; }, x) = x;
 }
 initial N : R(U0);
 free W(A : U0) : R(U0) on A;`);

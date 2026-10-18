@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import complex_uniform_operations;
 
 // Right multiplication is convenient for the product-box estimate. Complex
@@ -168,12 +168,13 @@ def complex_converges_scale(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), minF, maxF : F -> F -> F,
-  lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), sequence : Nat -> Complex(F),
-  value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
+  lattice : FieldLattice(F, lt, minF, maxF), coefficient : Complex(F), sequence : UNat
+  -> Complex(F), value : Complex(F),
+  converges : ComplexConverges(F, zero, addF, lt, sequence, value)
 ) :
   ComplexConverges(
     F, zero, addF, lt,
-    (fun (n : Nat) => complex_mul(F, addF, mulF, negF, sequence(n), coefficient)),
+    (fun (n : UNat) => complex_mul(F, addF, mulF, negF, sequence(n), coefficient)),
     complex_mul(F, addF, mulF, negF, value, coefficient)
   ) {
   intro epsilon, positive;
@@ -184,6 +185,6 @@ def complex_converges_scale(
   obtain (bound, close) := converges(delta, positiveDelta);
   exact (
     bound,
-    (fun (n : Nat, later : IndexLE(bound, n)) => scaleClose(sequence(n), value, close(n, later)))
+    (fun (n : UNat, later : IndexLE(bound, n)) => scaleClose(sequence(n), value, close(n, later)))
   );
 }

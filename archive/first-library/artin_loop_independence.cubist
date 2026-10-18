@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import artin_finite_relations;
 import artin_fixed_embeddings;
 
@@ -139,7 +139,7 @@ def distinct_extension_loops_two_independent(
 // Dedekind independence in the loop presentation, for any finite family.
 // The loop action is the actual carrier transport, with no truncation of paths.
 def distinct_extension_loops_independent(
-  n : Nat, K : AlgebraicField, E : FieldExt(K), loops : Fin(n) -> (E =[FieldExt(K)] E),
+  n : UNat, K : AlgebraicField, E : FieldExt(K), loops : Fin(n) -> (E =[FieldExt(K)] E),
   distinct : forall i : Fin(n). forall j : Fin(n). loops(i) = loops(j) -> i = j,
   coefficients : Fin(n) -> extension_carrier(K, E), relation : forall x : extension_carrier(K, E).
   field_sum(

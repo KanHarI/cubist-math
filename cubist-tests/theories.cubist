@@ -3,10 +3,10 @@
 // read by projections, m.f; extension, with labels, renaming and shared
 // ancestors; open, which puts a model's fields and notation in scope; and
 // the refusals.
-import nat;
+import unat;
 import hlevels;
 import h1_truncation;
-use nat;
+use unat;
 
 theory Semigroup(U < UU0) {
   M : set U;
@@ -57,7 +57,7 @@ theory Inhabited(U < UU0) {
 }
 
 def nat_inhabited : Inhabited(U0) := Inhabited.make(
-  M := Nat, M_is_set := nat_is_set, inhabited := merely(U0, Nat, 0)
+  M := UNat, M_is_set := unat_is_set, inhabited := merely(U0, UNat, 0)
 );
 
 // A header parameter that takes a proposition's name is the parameter: its
@@ -79,8 +79,8 @@ def recarried_evidence(A : Recarried(U0)) : IsSet(U0, A.S) := A.S_is_set;
 
 // A model is built field by field, by name.
 def additive_nat : CommMonoid(U0) := CommMonoid.make(
-  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
-  one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+  M := UNat, M_is_set := unat_is_set, mul := add, mul_assoc := unat_add_assoc, one := 0,
+  one_mul := unat_zero_add, mul_one := unat_add_zero, mul_comm := unat_add_comm
 );
 
 // Its fields are read by m.f, and compute.
@@ -120,8 +120,8 @@ def twice_plus_square(R : Semiring(U0), x : R.R) : R.R {
   exact x * x + x;
 }
 
-// Outside an open, + and * mean add and mul in scope, Nat's here.
-def still_nat(n : Nat) : 0 + n * 1 = n * 1 {
+// Outside an open, + and * mean add and mul in scope, UNat's here.
+def still_nat(n : UNat) : 0 + n * 1 = n * 1 {
   rfl;
 }
 
@@ -147,14 +147,14 @@ def own_name_used(Monoid : Monoid(U0), x : Monoid.M) : Monoid.M {
 
 // So does a model e in e.f or in use e, as counted(Counted.count).
 theory Counted(U < UU0) {
-  count : Nat;
+  count : UNat;
 }
 
-def counted(n : Nat) : Counted(U0) := Counted.make{{U0}}(count := n);
+def counted(n : UNat) : Counted(U0) := Counted.make{{U0}}(count := n);
 
-def own_name_inner(Counted : Counted(U0)) : Nat := counted(Counted.count).count;
+def own_name_inner(Counted : Counted(U0)) : UNat := counted(Counted.count).count;
 
-def own_name_inner_used(Counted : Counted(U0)) : Nat {
+def own_name_inner_used(Counted : Counted(U0)) : UNat {
   use counted(Counted.count);
   exact count;
 }
@@ -175,7 +175,7 @@ def field_of_b(B : Monoid(U0), x : B.M) : B.M := B.mul(B.one, x);
 // model's fields.
 // Error: E862: B is bound here, which hides the declaration B.one: rename the binding to refer to
 //   it.
-def hidden_declaration(B : Nat) := B.one;
+def hidden_declaration(B : UNat) := B.one;
 
 theory Lettered(U < UU0) {
   B : set U;
@@ -259,8 +259,8 @@ theory Unknown(U < UU0) extends Missing {}
 //   mul_one.
 theory BadRenaming(U < UU0) extends Monoid(unit := one) {}
 
-// Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type Nat.
-def open_a_number(n : Nat) : Nat {
+// Error: E834: use selects a model of a theory, such as m : Group(U0); this is a value of type UNat.
+def open_a_number(n : UNat) : UNat {
   use n;
   exact n;
 }

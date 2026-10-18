@@ -378,8 +378,8 @@ export class HLevelSearch {
         return applied("prop_has_level", universe, numeral(level), T.void, lemma("void_is_prop"));
       case "Sort": {
         if(scope.equal(head,naturalSort)) {
-          if(level==="contr"||level===0)unproved(`Nat is not ${named(level)}: 0 and 1 differ`);
-          return this.lift(1,level,universe,head,lemma("nat_is_set"));
+          if(level==="contr"||level===0)unproved(`UNat is not ${named(level)}: 0 and 1 differ`);
+          return this.lift(1,level,universe,head,lemma("unat_is_set"));
         }
         const record = scope.checker.kernel?.signatures.get(head.signature);
         const info = record && scope.checker.kernel.signature(record.index);

@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import artin_fixed_evaluation;
-use nat;
+use unat;
 
 // A field automorphism commutes with a finite sum. The proof is by finite
 // recursion and uses only preservation of zero and addition.
@@ -15,7 +15,7 @@ def embedding_preserves_field_sum_zero(
 }
 
 def embedding_preserves_field_sum_step(
-  F : AlgebraicField, e : FieldEmbedding(F, F), k : Nat,
+  F : AlgebraicField, e : FieldEmbedding(F, F), k : UNat,
   previous : forall values : Fin(k) -> af_carrier(F).
   field_embedding_map(F, F, e, field_sum(F, k, values)) = field_sum(
     F, k, (fun (i : Fin(k)) => field_embedding_map(F, F, e, values(i)))
@@ -36,7 +36,7 @@ def embedding_preserves_field_sum_step(
   );
 }
 
-def embedding_preserves_field_sum(F : AlgebraicField, e : FieldEmbedding(F, F), n : Nat) :=
+def embedding_preserves_field_sum(F : AlgebraicField, e : FieldEmbedding(F, F), n : UNat) :=
   induction n as k return (
     forall values : Fin(k) -> af_carrier(F).
     field_embedding_map(F, F, e, field_sum(F, k, values)) = field_sum(
@@ -48,7 +48,7 @@ def embedding_preserves_field_sum(F : AlgebraicField, e : FieldEmbedding(F, F), 
   };
 
 def embedding_preserves_weighted_sum(
-  F : AlgebraicField, e : FieldEmbedding(F, F), n : Nat, coefficients, values : Fin(n)
+  F : AlgebraicField, e : FieldEmbedding(F, F), n : UNat, coefficients, values : Fin(n)
   -> af_carrier(F)
 ) :
   field_embedding_map(
@@ -81,7 +81,7 @@ def embedding_preserves_weighted_sum(
 // Projecting a coordinate linear combination gives the corresponding scalar
 // finite sum. This connects the evaluated basis to pointwise automorphism
 // equations without selecting any inverse matrix entries.
-def coordinate_combination_component(F : AlgebraicField, n : Nat, i : Fin(n), m : Nat) :=
+def coordinate_combination_component(F : AlgebraicField, n : UNat, i : Fin(n), m : UNat) :=
   induction m as k return (
     forall rows : Fin(k) -> (Fin(n) -> af_carrier(F)).
     forall coefficients : Fin(k) -> af_carrier(F).
@@ -110,7 +110,7 @@ def coordinate_combination_component(F : AlgebraicField, n : Nat, i : Fin(n), m 
 
 // The evaluation basis makes coefficients of a pointwise relation unique.
 def evaluation_coefficients_unique(
-  F : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
+  F : AlgebraicField, n : UNat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
   -> af_carrier(F),
   independent : LinearInjective(
     F, CoordinateSpace(F, n), CoordinateSpace(F, n),
@@ -153,7 +153,7 @@ def evaluation_coefficients_unique(
 }
 
 def evaluation_coefficients(
-  F : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
+  F : AlgebraicField, n : UNat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
   -> af_carrier(F),
   basis : FamilyBasis(
     F, CoordinateSpace(F, n), n,
@@ -171,7 +171,7 @@ def evaluation_coefficients(
 }
 
 def evaluation_coefficients_relation(
-  F : AlgebraicField, n : Nat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
+  F : AlgebraicField, n : UNat, maps : Fin(n) -> FieldEmbedding(F, F), points : Fin(n)
   -> af_carrier(F),
   basis : FamilyBasis(
     F, CoordinateSpace(F, n), n,
@@ -240,7 +240,7 @@ def subgroup_cancel_action(
 }
 
 def subgroup_indexed_relation(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points,
   coefficients : Fin(n) -> extension_carrier(K, E), y : extension_carrier(K, E),
   indexed : forall i : Fin(n).
@@ -288,7 +288,7 @@ def subgroup_indexed_relation(
 }
 
 def subgroup_relation_transform(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat, points,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat, points,
   coefficients : Fin(n) -> extension_carrier(K, E), y : extension_carrier(K, E),
   relation : forall h : SubgroupCarrier(GaloisGroup(K, E), H).
   field_sum(
@@ -344,7 +344,7 @@ def subgroup_relation_transform(
 // invariant under every subgroup automorphism. This is the central descent
 // calculation in Artin's fixed-field dimension argument.
 def subgroup_evaluation_coefficient_fixed(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
   -> extension_carrier(K, E),
   basis : FamilyBasis(
@@ -414,7 +414,7 @@ def subgroup_evaluation_coefficient_fixed(
 }
 
 def subgroup_evaluation_coefficient_member(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
   -> extension_carrier(K, E),
   basis : FamilyBasis(
@@ -445,7 +445,7 @@ def subgroup_evaluation_coefficient_member(
 }
 
 def subgroup_evaluation_at_identity(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
   -> extension_carrier(K, E),
   basis : FamilyBasis(
@@ -481,7 +481,7 @@ def subgroup_evaluation_at_identity(
   );
 }
 
-def field_vector_combination_sum(R, F : AlgebraicField, i : FieldEmbedding(R, F), n : Nat) :=
+def field_vector_combination_sum(R, F : AlgebraicField, i : FieldEmbedding(R, F), n : UNat) :=
   induction n as k return (
     forall points : Fin(k) -> af_carrier(F). forall coefficients : Fin(k) -> af_carrier(R).
     linear_combination(R, field_vector_space(R, F, i), k, points, coefficients) = field_sum(
@@ -507,7 +507,7 @@ def field_vector_combination_sum(R, F : AlgebraicField, i : FieldEmbedding(R, F)
   };
 
 def subgroup_evaluation_spans_fixed_field(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
   -> extension_carrier(K, E),
   basis : FamilyBasis(

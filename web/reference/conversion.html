@@ -59,49 +59,49 @@
             <p><a href="types.html#tour-equality">Chapter 1</a> accepted <code>refl(4)</code> as evidence of <code>2 + 2 = 4</code> because <code>2 + 2</code> computes to <code>4</code>. This chapter says what computing means, and where the checker relies on it.</p>
             <p>The checker accepts a term when its type is definitionally equal to the type required. Two terms are <strong>definitionally equal</strong> when they compute to the same <strong>normal form</strong>, a term in which no reduction step applies anywhere. Bound names do not matter: <code>fun (x : A) => x</code> and <code>fun (y : A) => y</code> are the same function. <code>refl</code> and <code>rfl</code> prove an equality exactly when its sides are definitionally equal. The reduction steps are:</p>
             <ul>
-              <li><strong>beta</strong>: a function applied to an argument computes, so <code>(fun (n : Nat) => succ(n))(0)</code> is <code>1</code>;</li>
+              <li><strong>beta</strong>: a function applied to an argument computes, so <code>(fun (n : UNat) => succ(n))(0)</code> is <code>1</code>;</li>
               <li><strong>delta</strong>: a named definition unfolds to its checked body;</li>
               <li><strong>eliminator rules</strong>: <code>induction</code>, <code>match</code>, <code>unpack</code> and the other eliminators compute on constructors, so <code>2 + 2</code> is <code>4</code> but <code>n + 0</code> is stuck on the variable <code>n</code>;</li>
               <li><strong>eta</strong>: a function equals <code>fun x => f(x)</code>, and a pair equals the pair of its components;</li>
               <li><strong>cubical rules</strong>: a path at <code>0</code> or <code>1</code> is its endpoint, and interval formulas are compared in normal form; see <a href="cubical.html#cubical">cubical paths</a>.</li>
             </ul>
             <p>The checker compares two types this way wherever one must match another: when <code>exact</code> gives a value for the goal, when an argument meets its parameter’s type, when <code>intro</code> looks for a function type in the goal, and when <code>let name : T := term;</code> checks <code>term</code>. In the REPL, <code>evaluate</code> shows a term’s normal form.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
-def beta : (fun (n : Nat) =&gt; succ(n))(0) = 1 {
+def beta : (fun (n : UNat) =&gt; succ(n))(0) = 1 {
   rfl;
 }
 
-def add_two(n : Nat) := succ(succ(n));
+def add_two(n : UNat) := succ(succ(n));
 
 def delta : add_two(1) = 3 {
   rfl;
 }
 
-def eliminators : match typed(Unit or Nat, right(4)) return Nat { left u =&gt; 0; right n =&gt; n; } = 2 + 2 {
+def eliminators : match typed(Unit or UNat, right(4)) return UNat { left u =&gt; 0; right n =&gt; n; } = 2 + 2 {
   rfl;
 }</code></pre>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
 def function_eta(A, B : U0, f : A -&gt; B) : f = fun (x : A) =&gt; f(x) {
   rfl;
 }
 
-def pair_eta(p : Nat and Nat) :
-  p = unpack p as (a, b) return Nat and Nat { typed(Nat and Nat, (a, b)); } {
+def pair_eta(p : UNat and UNat) :
+  p = unpack p as (a, b) return UNat and UNat { typed(UNat and UNat, (a, b)); } {
   rfl;
 }
 
-def pair_projection : typed(Nat and Nat, (2, 5)).2 = 5 {
+def pair_projection : typed(UNat and UNat, (2, 5)).2 = 5 {
   rfl;
 }</code></pre>
             <p>An eliminator applied to a variable does not compute, so an equality that needs a case analysis or induction on the variable is not definitional. It is a theorem, proved with a lemma, <code>rw</code> or <code>simp</code>:</p>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
-def plus_zero(n : Nat) : n + 0 = n {
+def plus_zero(n : UNat) : n + 0 = n {
   rfl;  // Error: Type mismatch: found n + 0 = n + 0, expected n + 0 = n.
 }</code></pre>
             <p>Such an equality is <em>propositional</em>: it holds, but only by a proof, a path that the chapter on <a href="paths.html#paths">equality and paths</a> describes. The checker never uses a theorem automatically. A proved equality such as commutativity is a path, not a reduction rule; <code>rw</code> and <code>simp</code> use it only when it is named in the proof or registered with <a href="rewriting.html#simp-registration"><code>simp_rule</code></a>.</p>
@@ -109,10 +109,10 @@ def plus_zero(n : Nat) : n + 0 = n {
           <section id="unfolding-definitions">
             <h2>Definitions unfold</h2>
             <p>A definition unfolds wherever conversion needs its value: conversion opens <code>boxed_successor(1)</code> to <code>succ(1)</code>, which is the numeral <code>2</code>. There is no separate operation that unfolds a term on request, and no way to keep a definition folded; conversion unfolds definitions as it needs them.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
-def boxed_successor(n : Nat) := succ(n);
+def boxed_successor(n : UNat) := succ(n);
 
 def opened_is_two : boxed_successor(1) = 2 {
   exact refl(2);
@@ -125,16 +125,16 @@ def opened_in_a_type(v : boxed_successor(0) = 1) : 1 = 1 {
           <section id="unfolding-hints">
             <h2>Unfolding hints</h2>
             <p>Earlier versions of the checker needed to be told which definitions to unfold. The syntax remains, so older proofs still check, but new proofs do not need it. <code>with unfolding [name₁, name₂] { expression }</code> checks one expression as a definition of its own. The list names already checked definitions; the braces hold one expression, without a trailing semicolon. Empty lists and nested scopes are allowed. The names once steered the kernel’s conversion search, which was retired on 2026-10-02; the checker now unfolds whatever a comparison needs, so the list has no further effect.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
-def identity(n : Nat) := n;
+def identity(n : UNat) := n;
 
 def identity_zero : identity(0) = 0 {
   exact with unfolding [identity] { refl(0) };
 }
 
-def twice(n : Nat) := identity(identity(n));
+def twice(n : UNat) := identity(identity(n));
 
 def nested : twice(0) = 0 {
   exact with unfolding [twice] { with unfolding [identity] { refl(0) } };
@@ -144,20 +144,20 @@ def no_hints : 0 = 0 {
   exact with unfolding [] { refl(0) };
 }</code></pre>
             <p>The compiler keeps the result as a checked helper definition, so the enclosing proof can reuse it without expanding it again. The names change nothing else: never the type, the assumptions or the proof obligations, and they are no evidence of an equality. <a href="assumptions.html#evaluate"><code>evaluate</code></a> ignores them.</p>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
 def unknown_hint : 0 = 0 {
   // Error: No checked definition to unfold: missing_name
   exact with unfolding [missing_name] { refl(0) };
 }</code></pre>
             <p>Only top-level definitions can be listed; a parameter or local name is not one:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def local_hint(n : Nat) : n = n {
+def local_hint(n : UNat) : n = n {
   exact with unfolding [n] { refl(n) };  // Error: No checked definition to unfold: n
 }</code></pre>
-            <pre><code data-check="reject">def identity(n : Nat) := n;
+            <pre><code data-check="reject">def identity(n : UNat) := n;
 
 def statement_in_braces : identity(0) = 0 {
   exact with unfolding [identity] { refl(0); };  // Error: Expected '}', found ';'.

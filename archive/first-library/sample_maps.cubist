@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import sample_chains;
 
 // Map both kinds of finite sampling data, preserving their lengths.
-def map_sample_vertices(C, D : U1, f : C -> D, n : Nat) :=
+def map_sample_vertices(C, D : U1, f : C -> D, n : UNat) :=
   induction n as k return (SampleVertices(C, k) -> SampleVertices(D, k)) {
     zero => f;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => typed(
@@ -14,7 +14,7 @@ def map_sample_vertices(C, D : U1, f : C -> D, n : Nat) :=
     );
   };
 
-def map_sample_tags(C, D : U1, f : C -> D, n : Nat) :=
+def map_sample_tags(C, D : U1, f : C -> D, n : UNat) :=
   induction n as k return (SampleTags(C, k) -> SampleTags(D, k)) {
     zero => fun (tags : Unit) => tags;
     succ previous => fun (tags : SampleTags(C, succ(k))) => typed(
@@ -23,7 +23,7 @@ def map_sample_tags(C, D : U1, f : C -> D, n : Nat) :=
     );
   };
 
-def map_sample_first(C, D : U1, f : C -> D, n : Nat) :
+def map_sample_first(C, D : U1, f : C -> D, n : UNat) :
   forall vertices : SampleVertices(C, n).
   sample_first(D, n, map_sample_vertices(C, D, f, n, vertices)) = f(sample_first(C, n, vertices)) {
   exact induction n as k return (
@@ -37,7 +37,7 @@ def map_sample_first(C, D : U1, f : C -> D, n : Nat) :
   };
 }
 
-def map_sample_last(C, D : U1, f : C -> D, n : Nat) :
+def map_sample_last(C, D : U1, f : C -> D, n : UNat) :
   forall vertices : SampleVertices(C, n).
   sample_last(D, n, map_sample_vertices(C, D, f, n, vertices)) = f(sample_last(C, n, vertices)) {
   exact induction n as k return (
@@ -53,7 +53,7 @@ def map_sample_last(C, D : U1, f : C -> D, n : Nat) :
 
 // Sampling after a map agrees with evaluating the pulled-back edge formula.
 def map_sample_sum(
-  C, D : U1, f : C -> D, G : U1, zero : G, addG : G -> G -> G, edge : D -> D -> D -> G, n : Nat
+  C, D : U1, f : C -> D, G : U1, zero : G, addG : G -> G -> G, edge : D -> D -> D -> G, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   sample_sum(

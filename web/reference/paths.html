@@ -68,8 +68,8 @@
               <li><strong>Propositional equality</strong>: a path <code>p : x = y</code>, which must be constructed, as for <code>n + 0 = n</code>. Using it to replace <code>x</code> by <code>y</code> takes an explicit operation: <code>transport</code>, <code>cong</code>, <code>rw</code> or <code>simp</code>.</li>
             </ul>
             <p><code>refl(x)</code> is the path from <code>x</code> to itself. It proves <code>x = y</code> exactly when <code>x</code> and <code>y</code> are definitionally equal, so it connects the two notions:</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
 def zero_is_zero : 0 = 0 {
   exact refl(0);
@@ -82,8 +82,8 @@ def numeral_is_successors : succ(succ(0)) = 2 {
 def path_between_paths(A : U0, x : A) : refl(x) = refl(x) {
   exact refl(refl(x));
 }</code></pre>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
 def zero_is_one : 0 = 1 {
   exact refl(0);  // Error: Type mismatch: found 0 = 0, expected 0 = 1.
@@ -100,10 +100,10 @@ def reverse_type_equality(A : U1, B : U1, p : A =[U1] B) : B =[U1] A {
   exact sym(p);
 }</code></pre>
             <p>In <code>A =[U1] B</code>, the endpoints are types and the carrier is a universe. Equalities between different types come from univalence; see <a href="assumptions.html#univalence">extensionality and univalence</a>. The carrier must be the type of both endpoints:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def wrong_carrier(x : Nat) : x =[Unit] x {
-  exact refl(x);  // Error: Type mismatch: found Nat, expected Unit.
+def wrong_carrier(x : UNat) : x =[Unit] x {
+  exact refl(x);  // Error: Type mismatch: found UNat, expected Unit.
 }</code></pre>
             <p id="exists-and">Types that are definitionally equal need no univalence: <code>refl</code> proves them equal. When <code>B</code> does not mention <code>a</code>, <code>exists a : A. B</code> is a pair of an <code>a : A</code> and a value of <code>B</code>, whatever <code>a</code> is. That is the same type as <code>A and B</code>. In the same way, when <code>B</code> does not mention <code>x</code>, <code>forall x : A. B</code> is the type of functions from <code>A</code> to <code>B</code>, <code>A -> B</code>:</p>
             <pre><code data-check="accept">def exists_is_and(A : U0, B : U0) : (exists a : A. B) =[U0] (A and B) {  // Warning: a is unused in the body: write A and … instead of exists a : A. ….
@@ -157,9 +157,9 @@ def notation_is_trans(A : U0, x, y, z : A, p : x = y, q : y = z) : ~p ++ p ++ q 
             <pre><code data-check="reject">def gap_between(A : U0, x, y, z, w : A, p : x = y, q : z = w) : x = w {
   exact trans(p, q);  // Error: Path endpoints do not match.
 }</code></pre>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def not_a_path(f : Nat -&gt; Nat, n : Nat) : f(n) = f(n) {
+def not_a_path(f : UNat -&gt; UNat, n : UNat) : f(n) = f(n) {
   exact cong(f, n);  // Error: cong requires a path.
 }</code></pre>
             <p><code>cong</code> needs a function with a fixed result type. For a dependent function, <code>f(x)</code> and <code>f(y)</code> have different types, so <code>f(x) = f(y)</code> does not type-check the way <code>cong</code> needs; use <code>apd</code> or <code>apd_path</code>:</p>
@@ -188,10 +188,10 @@ def respects(A : U0, C : A -&gt; U0, f : forall a : A. C(a), x, y : A, p : x = y
             <pre><code data-check="reject">def backwards(A : U0, C : A -&gt; U0, x, y : A, p : x = y, v : C(y)) : C(x) {
   exact transport(C, y, x, p, v);  // Error: Transport endpoints do not match.
 }</code></pre>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
-def not_a_path(C : Nat -&gt; U0, v : C(0)) : C(0) {
+def not_a_path(C : UNat -&gt; U0, v : C(0)) : C(0) {
   exact transport(C, 0, 0, 0, v);  // Error: transport requires a path.
 }</code></pre>
             <p>To move backwards, transport along <code>sym(p)</code>.</p>
@@ -213,12 +213,12 @@ def not_a_path(C : Nat -&gt; U0, v : C(0)) : C(0) {
   exact path_induction(A, fun (a, b : A, q : a = b) =&gt; a = b,
     fun (a : A) =&gt; refl(a), y, x, p);
 }</code></pre>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
 def not_a_universe(A : U0, x, y : A, p : x = y,
     C : forall b : A. (x = b) -&gt; U0, c : C(x, refl(x))) : C(y, p) {
   // Error: Based induction needs universes.
-  exact based_induction(Nat, U0, A, x, C, c, y, p);
+  exact based_induction(UNat, U0, A, x, C, c, y, p);
 }</code></pre>
           </section>
           <section id="paths-library">
@@ -239,7 +239,7 @@ def cancel(A : U0, x, y : A, p : x = y) : trans(sym(p), p) = refl(y) {
             <h2>Propositions and sets</h2>
             <p><code>import hlevels;</code> measures how much a type's paths carry, in every universe <code>U</code> below <code>UU0</code>. <code>IsContr(U, A)</code> says that <code>A</code> has a center with a path to every element, and <code>IsProp(U, A)</code> that any two elements are equal. <code>HasLevel(U, n, A)</code> is <code>IsProp</code> at <code>n = 0</code>, and at <code>n + 1</code> it says that every path type of <code>A</code> has level <code>n</code>. <code>IsSet(U, A)</code> is level 1, so by conversion it says that any two parallel paths are equal.</p>
             <pre><code data-check="accept">import hlevels;
-use nat;
+use unat;
 
 def set_unfolds(A : U0) : IsSet(U0, A) = (forall x, y : A. forall p, q : x = y. p = q) {
   rfl;
@@ -253,7 +253,7 @@ def pairs_of_sets(A : U0, B : A -> U0, hA : IsSet(U0, A), hB : forall a : A. IsS
   IsSet(U0, exists a : A. B(a)) {
   exact sigma_has_level(U0, 1, A, B, hA, hB);
 }</code></pre>
-            <p>The module also proves that levels are cumulative and that having a level is a proposition. Retracts, function types, pairs, products and path types keep levels and contractibility, and subtypes keep levels. Hedberg's theorem says that a type with decidable equality is a set, as <code>nat_is_set</code> shows for <code>Nat</code>. The propositions of a universe form a set too, by univalence (<a href="assumptions.html#library-univalence">propositional extensionality</a>), and a <a href="cubical.html#quotients">set quotient</a> is a set by its declaration.</p>
+            <p>The module also proves that levels are cumulative and that having a level is a proposition. Retracts, function types, pairs, products and path types keep levels and contractibility, and subtypes keep levels. Hedberg's theorem says that a type with decidable equality is a set, as <code>unat_is_set</code> shows for <code>UNat</code>. The propositions of a universe form a set too, by univalence (<a href="assumptions.html#library-univalence">propositional extensionality</a>), and a <a href="cubical.html#quotients">set quotient</a> is a set by its declaration.</p>
           </section>
           <section id="hlevel">
             <h2>Proving levels: <code>hlevel</code></h2>
@@ -262,12 +262,12 @@ def pairs_of_sets(A : U0, B : A -> U0, hA : IsSet(U0, A), hB : forall a : A. IsS
               <li>evidence in scope, or listed after <code>with</code>, that states the level or a lower one, where a proposition or a contractible type has every level;</li>
               <li>a level statement being itself a proposition;</li>
               <li>a rule whose statement matches the type: quantified evidence in scope or after <code>with</code>, then a lemma registered with <code>hlevel_rule</code>; its parameters are read from the match, and its premises proved the same way;</li>
-              <li>the type's shape, at a numeral level: functions, pairs and paths reduce to their parts, and <code>Unit</code>, <code>Void</code> and <code>Nat</code> have their levels.</li>
+              <li>the type's shape, at a numeral level: functions, pairs and paths reduce to their parts, and <code>Unit</code>, <code>Void</code> and <code>UNat</code> have their levels.</li>
             </ul>
             <p>It needs <code>import hlevels;</code>. A quantified hint is a rule, so <code>h</code> below serves for <code>B(a)</code>, and so would <code>h</code> in scope alone. The search spends counted fuel, and the kernel checks the proof it builds.</p>
             <pre><code data-check="accept">import hlevels;
 
-def functions_into_nat(A : U0) : IsSet(U0, A -> Nat) {
+def functions_into_nat(A : U0) : IsSet(U0, A -> UNat) {
   hlevel;
 }
 
@@ -275,12 +275,12 @@ def equal_in_a_proposition(A : U0, h : IsProp(U0, A), x, y : A) : x = y {
   hlevel;
 }
 
-def from_a_hint(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x)), a : A) : IsSet(U0, B(a) and Nat) {
+def from_a_hint(A : U0, B : A -> U0, h : forall x : A. IsSet(U0, B(x)), a : A) : IsSet(U0, B(a) and UNat) {
   hlevel with [h];
 }</code></pre>
             <p><code>hlevel_rule lemma;</code> registers a checked lemma whose type states a level, for every <code>hlevel</code> after it and in the modules that import it. Each of the lemma's parameters must be read from the carrier of its statement, or be a premise, a level statement that the search proves in turn. A type that the shape rules cannot see into, such as a declared type, gets its level this way:</p>
             <pre><code data-check="accept">import hlevels;
-use nat;
+use unat;
 
 inductive Box(A : U0) : U0 {
   box(a : A);
@@ -305,12 +305,12 @@ def boxes_of_functions : IsSet(U0, Box(Box(Unit -> Unit))) {
   hlevel;
 }</code></pre>
             <p>A lemma whose parameter is neither read from its statement nor a premise is no rule, and is refused where it is registered. The library registers <code>prop_type_is_set</code>, so the propositions of a universe are a set. The same search fills a level statement that a call leaves out, such as a carrier's setness field in a model's <a href="theories.html#models"><code>T.make(…)</code></a>.</p>
-            <p>A set's evidence never equates two elements: <code>Nat</code> is a set, but not a proposition. A failure names the obligation nothing discharges:</p>
+            <p>A set's evidence never equates two elements: <code>UNat</code> is a set, but not a proposition. A failure names the obligation nothing discharges:</p>
             <pre><code data-check="reject">import hlevels;
-use nat;
+use unat;
 
 def zero_is_one : 0 = 1 {
-  hlevel;  // Error: hlevel could not prove 0 = 1; Nat is not a proposition: 0 and 1 differ.
+  hlevel;  // Error: hlevel could not prove 0 = 1; UNat is not a proposition: 0 and 1 differ.
 }</code></pre>
             <pre><code data-check="reject">import hlevels;
 

@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import galois_normal_target;
 import finite_equal_dimension;
 import galois_orders;
@@ -110,11 +110,11 @@ def finite_normal_separable_fixed_fixing_intermediate(
   let m := extension_degree(R, embedding_as_extension(R, Q, i), lower);
   let towerDegree := tower_law(R, Q, F, i, h, e, triangle, lower, upperN, upperM);
   let product : multiply_count(d, m) = d :=
-    trans(sym(cong((fun (q : Nat) => multiply_count(q, m)), degreeN)), sym(towerDegree));
+    trans(sym(cong((fun (q : UNat) => multiply_count(q, m)), degreeN)), sym(towerDegree));
   let nonempty := subgroup_carrier_unit(G, H);
   obtain (k, positive) := inhabited_cardinality_positive(SubgroupCarrier(G, H), d, countH, nonempty);
   let productPositive :=
-    transport product along positive in ((fun (q : Nat) => multiply_count(q, m) = q));
+    transport product along positive in ((fun (q : UNat) => multiply_count(q, m) = q));
   let degreeOne := positive_product_unit(k, m, productPositive);
   let onto := degree_one_embedding_surjective(R, Q, i, lower, degreeOne);
   exact sym(intermediate_inclusion_surjective_equal(K, E, M, N, included, onto));
@@ -128,7 +128,7 @@ def finite_galois_correspondence_with_finite_subgroups(
   normal : NormalEmbeddingLaw(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   separable : SeparableExtension(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T),
-  finiteAll : forall H : GaloisSubgroup(K, E). exists n : Nat.
+  finiteAll : forall H : GaloisSubgroup(K, E). exists n : UNat.
   HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   Equiv(U1, GaloisSubgroup(K, E), IntermediateField(K, E)) {
@@ -152,7 +152,7 @@ def finite_galois_correspondence_with_finite_subgroups(
 }
 
 def finite_galois_subgroup_cardinality(
-  K : AlgebraicField, E : FieldExt(K), n : Nat, finiteG : HasCardinality(Galois(K, E), n),
+  K : AlgebraicField, E : FieldExt(K), n : UNat, finiteG : HasCardinality(Galois(K, E), n),
   H : GaloisSubgroup(K, E)
 ) :
   HasFiniteCardinality(SubgroupCarrier(GaloisGroup(K, E), H)) {
@@ -191,7 +191,7 @@ def finite_galois_cardinality_tower_law(
   separable : SeparableExtension(K, extension_field(K, E), extension_inclusion_embedding(K, E)),
   T : AlgebraicField, closed : AlgebraicallyClosed(T), j : FieldEmbedding(extension_field(K, E), T)
 ) :
-  exists lower : FiniteExtension(K, intermediate_as_extension(K, E, M)). exists h : Nat.
+  exists lower : FiniteExtension(K, intermediate_as_extension(K, E, M)). exists h : UNat.
   HasCardinality(SubgroupCarrier(GaloisGroup(K, E), fixing_galois_subgroup(K, E, M)), h)
   and (
     extension_degree(K, E, finite) = multiply_count(

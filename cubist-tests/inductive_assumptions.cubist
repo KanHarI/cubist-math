@@ -9,12 +9,12 @@
 // Each refusal names the assumption by its label, and the parameter or
 // argument that uses it, where the source writes it.
 
-import nat;
+import unat;
 import classical_axioms;
 
 // Error: E507: InParameter's parameter t uses the assumption Truncate: a declared type's parameters
 //   and constructors cannot use assumptions, since its signature is closed.
-inductive InParameter(t : Truncate(U0, Nat)) {
+inductive InParameter(t : Truncate(U0, UNat)) {
   p;
 }
 
@@ -27,7 +27,7 @@ inductive InGeneric(U < UU0, A : U, t : Truncate(U, A)) {
 // Error: E507: a's argument t uses the assumption Truncate: a declared type's parameters and
 //   constructors cannot use assumptions, since its signature is closed.
 inductive InArgument {
-  a(t : Truncate(U0, Nat));
+  a(t : Truncate(U0, UNat));
 }
 
 // Error: E507: d's argument t uses the assumption Truncate: a declared type's parameters and
@@ -39,13 +39,13 @@ inductive InDefinition {
 // Error: E507: r's type uses the assumption Truncate: a declared type's parameters and constructors
 //   cannot use assumptions, since its signature is closed.
 inductive InResult {
-  r : Truncate(U0, Nat) -> InResult;
+  r : Truncate(U0, UNat) -> InResult;
 }
 
 inductive Clear {
-  c(n : Nat);
+  c(n : UNat);
 }
 
-// Output: inductive Clear : U0 (type) { c : Nat -> Clear [1 data, 0 positions, 0 dimensions]; }
-//   eliminator for P : Clear -> U { c_case : forall x : Nat. P(c(x)); }
+// Output: inductive Clear : U0 (type) { c : UNat -> Clear [1 data, 0 positions, 0 dimensions]; }
+//   eliminator for P : Clear -> U { c_case : forall x : UNat. P(c(x)); }
 print(inspect(Clear));

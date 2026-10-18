@@ -1,4 +1,4 @@
-import nat;
+import unat;
 
 // Cubical path foundations. Reversal and function action are pointwise;
 // composition and its laws use checked square and cube fillings.

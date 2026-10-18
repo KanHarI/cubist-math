@@ -1,7 +1,7 @@
 // G10 (CB3): a pattern binder cannot capture a helper's free field.
 
 import hlevels;
-import nat;
+import unat;
 inductive Box(U < UU0, A : U) : U {
   box(a : A);
 }
@@ -9,7 +9,7 @@ inductive Box(U < UU0, A : U) : U {
 theory T(U < UU0) {
   M : set U;
   c : M;
-  def k(n : Nat) : M := c;
+  def k(n : UNat) : M := c;
   law l(x : M) : (match typed(Box(U, M), box(x)) return M {
       box(c) => k(zero);
     }) = c;

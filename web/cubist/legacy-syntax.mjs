@@ -95,9 +95,20 @@ export const reservedBindingRenaming = (sources, preferred = historicalRenaming)
     return [word, name];
   }));
 };
+// The unary foundation's fixed relocation. Historical source keeps its
+// checked structure; only these declaration/module spellings move. The NUM0
+// alias module is bypassed by historicalModulePaths, not rewritten as itself.
+export const unaryNaturalRenaming = Object.freeze({nat:"unat",Nat:"UNat",
+  ...Object.fromEntries([
+    "zero_add","add_zero","add_succ","succ_injective","zero_ne_succ","is_zero",
+    "add_assoc","add_comm","add_left_comm","add_interchange","add_cancel",
+    "mul_zero","mul_succ","one_mul","mul_one","mul_comm","add_mul","mul_add",
+    "mul_assoc","mul_cancel","trichotomy","le_refl","decide","is_set",
+  ].map(name=>[`nat_${name}`,`unat_${name}`]))});
+
 // Used by the source migration as well as by the historical source reader.
 // Only binders and their references change; grammar tokens keep their roles.
-export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [], importedDeclarations = [] } = {}) => {
+export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [], importedDeclarations = [], fixedNames = {} } = {}) => {
   let ast, tokens;
   try {
     tokens = tokenize(source);
@@ -106,7 +117,8 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   } catch { return source; }
   // A replacement must not capture an existing name, even in an inner
   // scope. Use one fresh spelling throughout this source, including labels.
-  renamedReserved = reservedBindingRenaming([source], renamedReserved);
+  renamedReserved = {...reservedBindingRenaming([source], renamedReserved),...fixedNames};
+  const fixedTargets = new Set(Object.values(fixedNames));
   const edits = new Map();
   const items = ast.items ?? ast.declarations;
   const declarations = [...importedDeclarations, ...items];
@@ -179,7 +191,10 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   // Binder tokens: each is renamed, and the scope they open holds them.
   const bind = (scope, tokens, type = null) => {
     const named = tokens.filter(token => token?.text);
-    for (const token of named) rename(token.start, token.text);
+    for (const token of named) {
+      if(fixedTargets.has(token.text))throw Error(`Historical unary migration would capture existing binding ${token.text}.`);
+      rename(token.start, token.text);
+    }
     return named.length ? new Map([...scope, ...named.map(token => [token.text, type])]) : scope;
   };
   // A name, as its scope reads it, and each part after a dot, a field or a
@@ -326,7 +341,9 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     for (const [key, child] of Object.entries(node)) if (key !== "uses") visit(child, scope);
   };
   // Items in order: what one declares holds in it and after it.
-  for (let k = 1; k < tokens.length; k++) if (tokens[k - 1].text === "import") rename(tokens[k].start, tokens[k].text);
+  for (let k = 0; k < tokens.length; k++) if (tokens[k].text === "import") {
+    for(k++;k<tokens.length&&tokens[k].text!==";";k++)rename(tokens[k].start,tokens[k].text);
+  }
   let module = new Map([
     ...[...importedNames, ...ast.imports].map(name => [name, null]),
     ...importedDeclarations.flatMap(item => [[item.name.text, declarationType(item)],
@@ -389,10 +406,12 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
 // unless it is nat or already does: so a baseline sees the names it saw then.
 export const historicalSource = (source, module, {
   implicitNat = true, minusReverses = true, importedNames = [], importedDeclarations = [], renaming = historicalRenaming,
+  unaryNat = false,
 } = {}) => {
-  const rewritten = currentSyntax(source), text = renameReservedBindings(minusReverses ? reversalsAsTilde(rewritten) : rewritten,
-    renaming, { importedNames, importedDeclarations });
-  if (module === "nat") return withNatNotation(text);
-  if (!implicitNat || /(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text)) return text;
-  return `import nat;\n${text}`;
+  let text = currentSyntax(source);
+  if(module==="nat")text=withNatNotation(text);
+  else if(implicitNat&&!/(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text))text=`import nat;\n${text}`;
+  const fixedNames=unaryNat?unaryNaturalRenaming:{};
+  return renameReservedBindings(minusReverses?reversalsAsTilde(text):text,
+    {...renaming,...fixedNames},{importedNames,importedDeclarations,fixedNames});
 };

@@ -128,6 +128,8 @@ function compile(t, scope, columns, rows, context) {
       ? { kind: "constructor", token: first.token, args: [], coordinates: [] } : first;
     if (head.kind === "constructor" && !type)
       throw locate(Error(`${column.describe} is not of a declared type: its patterns are variables or _.`), head.token);
+    if(head.kind==="constructor"&&type?.instance?.signature==="bnat__BNat"&&["zero","succ"].includes(head.token.text))
+      throw locate(Error("Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat."),head.token);
     if (head.kind === "constructor" && !byName.has(head.token.text))
       throw locate(Error(`${type.source} has no constructor ${head.token.text}: its constructors are ${type.constructors.map(c => c.name).join(", ")}.`), head.token);
     if (first.kind === "name" && first.token.bindingRole === "pattern") row = {...row,

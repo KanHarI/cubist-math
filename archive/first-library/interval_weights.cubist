@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import field_interval;
 import contour_samples;
 import sample_sum_laws;
@@ -65,7 +65,7 @@ def interval_difference_le_one(
 // and their use as magnitude bounds require ordered adjacent parameters.
 def interval_weight_sum(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), length : F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), length : F, n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :
@@ -108,7 +108,7 @@ def interval_weight_sum_bound(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), length : F,
-  nonnegativeLength : FieldLe(F, lt, zero, length), n : Nat,
+  nonnegativeLength : FieldLe(F, lt, zero, length), n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :

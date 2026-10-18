@@ -2,8 +2,8 @@
 // proofs, and expose their checked bodies; a false claim is refused and
 // admits nothing.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
 def identity(A : U0, x : A) := x;
 
@@ -13,7 +13,7 @@ def identity_proof : forall A : U0. A -> A {
   exact x;
 }
 
-def computes : identity_proof(Nat, 0) = identity(Nat, 0) {
+def computes : identity_proof(UNat, 0) = identity(UNat, 0) {
   exact refl(0);
 }
 

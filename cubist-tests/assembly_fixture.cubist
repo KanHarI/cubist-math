@@ -2,12 +2,12 @@
 // lists: opcodes, payloads and operand slots, checked and inferred type
 // roots, and an open interval context.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
-def N := Nat;
+def N := UNat;
 
-def id_(n : Nat) := n;
+def id_(n : UNat) := n;
 
 def twice := id_(id_(0));
 

@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import pushout;
 
 // Suspension glues two points along one path for each element of A: the

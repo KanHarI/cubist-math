@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import field_extensionality;
 
 // Equivalence classes as predicates, not an additional quotient axiom.
@@ -119,15 +119,15 @@ def equal_classes_related(
 // The exact countable choice instance used to lift a sequence of classes.
 // This is a hypothesis, not an axiom declaration or an extracted representative.
 def RepresentativeChoice(
-  A : U1, relation : A -> A -> U0, sequence : Nat -> SetQuotient(A, relation)
+  A : U1, relation : A -> A -> U0, sequence : UNat -> SetQuotient(A, relation)
 ) :=
-  (forall n : Nat. FieldExists(exists a : A. quotient_class(A, relation, a) = sequence(n)))
-  -> FieldExists(forall n : Nat. exists a : A. quotient_class(A, relation, a) = sequence(n));
+  (forall n : UNat. FieldExists(exists a : A. quotient_class(A, relation, a) = sequence(n)))
+  -> FieldExists(forall n : UNat. exists a : A. quotient_class(A, relation, a) = sequence(n));
 
 def quotient_sequence_representatives(
-  A : U1, relation : A -> A -> U0, sequence : Nat -> SetQuotient(A, relation),
+  A : U1, relation : A -> A -> U0, sequence : UNat -> SetQuotient(A, relation),
   choice : RepresentativeChoice(A, relation, sequence)
 ) :
-  FieldExists(forall n : Nat. exists a : A. quotient_class(A, relation, a) = sequence(n)) {
-  exact choice(fun (n : Nat) => quotient_surjective(A, relation, sequence(n)));
+  FieldExists(forall n : UNat. exists a : A. quotient_class(A, relation, a) = sequence(n)) {
+  exact choice(fun (n : UNat) => quotient_surjective(A, relation, sequence(n)));
 }

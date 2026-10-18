@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import parameter_contour_bounds;
 import sample_magnitude;
 
@@ -15,7 +15,7 @@ def parameter_imag_increment(
 // Repackage separately proved coordinate bounds for the contour estimate.
 def parameter_coordinate_increment_bounds(
   C, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
-  realWeight, imagWeight : C -> C -> C -> F, n : Nat
+  realWeight, imagWeight : C -> C -> C -> F, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleMagnitudeBounds(

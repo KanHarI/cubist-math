@@ -1,18 +1,18 @@
-import nat;
+import unat;
 import polynomial_support;
-use nat;
+use unat;
 
 // Equality is coefficientwise equality of formal polynomials, with support
 // evidence removed by subtype extensionality.
 def polynomial_coefficient_ext(
   K : AlgebraicField, p, q : Polynomial(K),
-  same : (forall n : Nat. polynomial_coefficients(K, p, n) = polynomial_coefficients(K, q, n))
+  same : (forall n : UNat. polynomial_coefficients(K, p, n) = polynomial_coefficients(K, q, n))
 ) :
   p = q {
   exact polynomial_ext(
     K, p, q,
     FunExt(
-      U0, Nat, (fun (n : Nat) => af_carrier(K)), polynomial_coefficients(K, p),
+      U0, UNat, (fun (n : UNat) => af_carrier(K)), polynomial_coefficients(K, p),
       polynomial_coefficients(K, q), same
     )
   );
@@ -23,7 +23,7 @@ def polynomial_add_assoc(K : AlgebraicField, p, q, r : Polynomial(K)) :
   exact polynomial_coefficient_ext(
     K, polynomial_add(K, polynomial_add(K, p, q), r), polynomial_add(K, p, polynomial_add(K, q, r)),
     (
-      fun (n : Nat) => scalar_add_assoc(
+      fun (n : UNat) => scalar_add_assoc(
         K, polynomial_coefficients(K, p, n), polynomial_coefficients(K, q, n),
         polynomial_coefficients(K, r, n)
       )
@@ -36,7 +36,7 @@ def polynomial_add_comm(K : AlgebraicField, p, q : Polynomial(K)) :
   exact polynomial_coefficient_ext(
     K, polynomial_add(K, p, q), polynomial_add(K, q, p),
     (
-      fun (n : Nat) => scalar_add_comm(
+      fun (n : UNat) => scalar_add_comm(
         K, polynomial_coefficients(K, p, n), polynomial_coefficients(K, q, n)
       )
     )
@@ -47,7 +47,7 @@ def polynomial_add_zero(K : AlgebraicField, p : Polynomial(K)) :
   polynomial_add(K, polynomial_zero(K), p) = p {
   exact polynomial_coefficient_ext(
     K, polynomial_add(K, polynomial_zero(K), p), p,
-    (fun (n : Nat) => scalar_add_zero(K, polynomial_coefficients(K, p, n)))
+    (fun (n : UNat) => scalar_add_zero(K, polynomial_coefficients(K, p, n)))
   );
 }
 
@@ -55,7 +55,7 @@ def polynomial_add_inverse(K : AlgebraicField, p : Polynomial(K)) :
   polynomial_add(K, polynomial_neg(K, p), p) = polynomial_zero(K) {
   exact polynomial_coefficient_ext(
     K, polynomial_add(K, polynomial_neg(K, p), p), polynomial_zero(K),
-    (fun (n : Nat) => scalar_add_inverse(K, polynomial_coefficients(K, p, n)))
+    (fun (n : UNat) => scalar_add_inverse(K, polynomial_coefficients(K, p, n)))
   );
 }
 
@@ -64,7 +64,7 @@ def polynomial_mul_assoc(K : AlgebraicField, p, q, r : Polynomial(K)) :
   exact polynomial_coefficient_ext(
     K, polynomial_mul(K, polynomial_mul(K, p, q), r), polynomial_mul(K, p, polynomial_mul(K, q, r)),
     (
-      fun (n : Nat) => convolution_assoc(
+      fun (n : UNat) => convolution_assoc(
         K, n, polynomial_coefficients(K, p), polynomial_coefficients(K, q),
         polynomial_coefficients(K, r)
       )
@@ -77,7 +77,7 @@ def polynomial_mul_comm(K : AlgebraicField, p, q : Polynomial(K)) :
   exact polynomial_coefficient_ext(
     K, polynomial_mul(K, p, q), polynomial_mul(K, q, p),
     (
-      fun (n : Nat) => convolution_comm(
+      fun (n : UNat) => convolution_comm(
         K, n, polynomial_coefficients(K, p), polynomial_coefficients(K, q)
       )
     )
@@ -90,7 +90,7 @@ def polynomial_mul_one(K : AlgebraicField, p : Polynomial(K)) :
   exact polynomial_coefficient_ext(
     K, polynomial_mul(K, polynomial_one(K), p), p,
     (
-      fun (n : Nat) => trans(
+      fun (n : UNat) => trans(
         convolution_comm(K, n, series_constant(K, field_one(K)), f),
         trans(convolution_constant_right(K, field_one(K), n, f), scalar_mul_one_right(K, f(n)))
       )
@@ -106,7 +106,7 @@ def polynomial_distribute(K : AlgebraicField, p, q, r : Polynomial(K)) :
     K, polynomial_mul(K, p, polynomial_add(K, q, r)),
     polynomial_add(K, polynomial_mul(K, p, q), polynomial_mul(K, p, r)),
     (
-      fun (n : Nat) => convolution_add_right(
+      fun (n : UNat) => convolution_add_right(
         K, n, polynomial_coefficients(K, p), polynomial_coefficients(K, q),
         polynomial_coefficients(K, r)
       )

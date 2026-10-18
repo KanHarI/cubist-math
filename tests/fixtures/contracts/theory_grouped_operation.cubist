@@ -1,8 +1,8 @@
 // Migrated from tests/theories.test.mjs:
 // an operation whose arguments share one domain has homomorphisms, preserving it and computing.
-import nat;
+import unat;
 import hlevels;
-use nat;
+use unat;
 
 # test(theory_grouped_operation.Pair)
 theory Pair(U < UU0) {
@@ -11,7 +11,7 @@ theory Pair(U < UU0) {
 }
 
 # test(theory_grouped_operation.nat_pair)
-def nat_pair : Pair(U0) := Pair.make(Nat, nat_is_set, add);
+def nat_pair : Pair(U0) := Pair.make(UNat, unat_is_set, add);
 
 # test(theory_grouped_operation.preserved)
 def preserved(A, B : Pair(U0), f : Pair.Hom(A, B), x, y : A.M) :

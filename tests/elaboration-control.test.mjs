@@ -13,7 +13,7 @@ const cases = [
   {name: "ordinary declaration", source: "def f : Unit := stop_here;", attempt: null},
   {name: "quiet argument inference", source: "def keep_{{A : U0}}(x : A) : A := x; def f := keep_(stop_here);", attempt: "argument-inference"},
   {name: "quiet constructor inference", source: "inductive Box(A : U0) { box(value : A); } def f := box(stop_here);", attempt: "constructor-inference"},
-  {name: "recursive retry", source: "import nat; def f(n, m : Nat) : Nat := match n { zero => stop_here; succ(k) => f(k, m); };", attempt: "recursive-fixed"},
+  {name: "recursive retry", source: "import unat; def f(n, m : UNat) : UNat := match n { zero => stop_here; succ(k) => f(k, m); };", attempt: "recursive-fixed"},
   {name: "written implicit path before fallback", source: "import hlevels; inductive S1 { base; loop : base = base; } inductive Two : prop U0 { left_; right_; } def f(c : S1) : Two := match c { base => left_; _ => stop_here; };", attempt: "implicit-path-body"},
 ];
 for (const scenario of cases) test(`a replay stop escapes ${scenario.name} and rolls back the declaration`, async t => {

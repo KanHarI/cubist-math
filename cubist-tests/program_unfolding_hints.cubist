@@ -3,10 +3,10 @@
 // body is a definition of its own; the names steer nothing since the
 // conversion oracle's retirement.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
-def id_(n : Nat) := n;
+def id_(n : UNat) := n;
 
 def hinted : id_(0) = 0 {
   exact with unfolding [id_] {

@@ -2,9 +2,9 @@
 // fails is reported in its own module, ergonomics_imported_failure_rules; a
 // use of it here fails, and the rest of this module checks.
 
-import nat;
+import unat;
 import ergonomics_imported_failure_rules;
-use nat;
+use unat;
 
 // Error: E340: Untranslated dependency: broken__rule
 def use_ := broken__rule(U0, 0);

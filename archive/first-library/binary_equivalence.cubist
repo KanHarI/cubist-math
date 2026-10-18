@@ -1,18 +1,18 @@
-import nat;
+import unat;
 import binary_arithmetic;
 import binary_induction;
 import primes;
 import equivalence_from_inverse;
-use nat;
+use unat;
 
-// Keep evaluation into unary Nat folded. A compact binary input can denote a
+// Keep evaluation into unary UNat folded. A compact binary input can denote a
 // huge unary result without materializing that result during proof transport.
 def binary_positive_to_nat(p : BinaryPositive) := binary_positive_rec(
-  Nat, 1, fun (child : BinaryPositive, ih : Nat) => ih + ih,
-  fun (child : BinaryPositive, ih : Nat) => succ(ih + ih), p
+  UNat, 1, fun (child : BinaryPositive, ih : UNat) => ih + ih,
+  fun (child : BinaryPositive, ih : UNat) => succ(ih + ih), p
 );
 
-def binary_to_nat(n : BinaryNat) := match n return Nat {
+def binary_to_nat(n : BinaryNat) := match n return UNat {
     binary_zero => 0;
     binary_positive(p) => binary_positive_to_nat(p);
   };
@@ -54,8 +54,8 @@ def binary_decode_positive_succ(p : BinaryPositive) :
       ) => trans(
         binary_decode_even(binary_positive_succ(q)),
         trans(
-          cong((fun (v : Nat) => v + v), ih),
-          cong(succ, nat_add_succ(binary_positive_to_nat(q), binary_positive_to_nat(q)))
+          cong((fun (v : UNat) => v + v), ih),
+          cong(succ, unat_add_succ(binary_positive_to_nat(q), binary_positive_to_nat(q)))
         )
       )
     ), p
@@ -69,7 +69,7 @@ def binary_decode_succ(n : BinaryNat) : binary_to_nat(binary_succ(n)) = succ(bin
   };
 }
 
-def binary_nat_roundtrip(n : Nat) : binary_to_nat(binary_of_nat(n)) = n {
+def binary_nat_roundtrip(n : UNat) : binary_to_nat(binary_of_nat(n)) = n {
   exact induction n as k return (binary_to_nat(binary_of_nat(k)) = k) {
     zero => refl(0);
     succ previous => trans(binary_decode_succ(binary_of_nat(k)), cong(succ, previous));
@@ -91,11 +91,11 @@ def binary_double_succ(n : BinaryNat) :
   };
 }
 
-def binary_encode_double(n : Nat) : binary_of_nat(n + n) = binary_double(binary_of_nat(n)) {
+def binary_encode_double(n : UNat) : binary_of_nat(n + n) = binary_double(binary_of_nat(n)) {
   exact induction n as k return (binary_of_nat(k + k) = binary_double(binary_of_nat(k))) {
     zero => refl(binary.(0b0));
     succ previous => trans(
-      cong((fun (v : Nat) => binary_of_nat(succ(v))), nat_add_succ(k, k)),
+      cong((fun (v : UNat) => binary_of_nat(succ(v))), unat_add_succ(k, k)),
       trans(
         cong((fun (v : BinaryNat) => binary_succ(binary_succ(v))), previous),
         sym(binary_double_succ(binary_of_nat(k)))
@@ -136,9 +136,9 @@ def binary_roundtrip(n : BinaryNat) : binary_of_nat(binary_to_nat(n)) = n {
 
 // Full equivalences retain both round trips and the half-adjoint coherence.
 def binary_nat_equiv := equiv_from_inverse(
-  U0, BinaryNat, Nat, binary_to_nat, binary_of_nat, binary_roundtrip, binary_nat_roundtrip
+  U0, BinaryNat, UNat, binary_to_nat, binary_of_nat, binary_roundtrip, binary_nat_roundtrip
 );
 
 def nat_binary_equiv := equiv_from_inverse(
-  U0, Nat, BinaryNat, binary_of_nat, binary_to_nat, binary_nat_roundtrip, binary_roundtrip
+  U0, UNat, BinaryNat, binary_of_nat, binary_to_nat, binary_nat_roundtrip, binary_roundtrip
 );

@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import dimension;
 import surjections;
-use nat;
+use unat;
 
 // Injectivity and surjectivity refer to the underlying map of a checked
 // linear map. Surjectivity promises only truncated preimages.
@@ -95,7 +95,7 @@ def linear_empty_injective(K : AlgebraicField, V : VectorSpace(K)) :
 
 // Add one generator to an already independent coordinate family.
 def adjoin_linear(
-  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  K : AlgebraicField, V : VectorSpace(K), m : UNat, f : LinearMap(K, CoordinateSpace(K, m), V),
   x : vector_carrier(K, V)
 ) :=
   linear_sum(
@@ -111,7 +111,7 @@ def adjoin_linear(
   );
 
 def adjoin_nonzero_impossible(
-  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  K : AlgebraicField, V : VectorSpace(K), m : UNat, f : LinearMap(K, CoordinateSpace(K, m), V),
   x : vector_carrier(K, V),
   outside : Mere(
     Fiber(
@@ -153,7 +153,7 @@ def adjoin_nonzero_impossible(
 }
 
 def adjoin_linear_kernel(
-  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  K : AlgebraicField, V : VectorSpace(K), m : UNat, f : LinearMap(K, CoordinateSpace(K, m), V),
   injective : LinearInjective(K, CoordinateSpace(K, m), V, f), x : vector_carrier(K, V),
   outside : Mere(
     Fiber(
@@ -203,7 +203,7 @@ def adjoin_linear_kernel(
 }
 
 def adjoin_linear_injective(
-  K : AlgebraicField, V : VectorSpace(K), m : Nat, f : LinearMap(K, CoordinateSpace(K, m), V),
+  K : AlgebraicField, V : VectorSpace(K), m : UNat, f : LinearMap(K, CoordinateSpace(K, m), V),
   injective : LinearInjective(K, CoordinateSpace(K, m), V, f), x : vector_carrier(K, V),
   outside : Mere(
     Fiber(

@@ -9,21 +9,21 @@ import { verifyMigration } from "../tools/proof-migration.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkedHypothesisStarts, migrateInductionHypotheses } from "../tools/induction-migration.mjs";
 
-const declarations = `import nat; use nat;
-inductive Tree { leaf; node(l : Tree, datum : Nat, r : Tree); }
-inductive Forest { empty; grow(children : Nat -> Forest); }
+const declarations = `import unat; use unat;
+inductive Tree { leaf; node(l : Tree, datum : UNat, r : Tree); }
+inductive Forest { empty; grow(children : UNat -> Forest); }
 inductive EmptyTree { tip; sprout(children : Void -> EmptyTree); }
 inductive Loopy { base; loop(x : Loopy) : x = x; }
 `;
 const examples = `
-computable def size(t : Tree) : Nat := induction t return Nat {
+computable def size(t : Tree) : UNat := induction t return UNat {
   leaf => 0; node(l, datum, r) with ih_l, ih_r => datum + ih_l + ih_r;
 };
 computable def erase(t : Tree) : Unit { induction t {
   leaf => { exact tt; } node(l, datum, r) with ih_l, ih_r => { exact ih_r; }
 } }
-computable def omit(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, datum, r) => datum; };
-computable def depth(t : Forest) : Nat := induction t return Nat { empty => 0; grow(children) with below => succ(below(0)); };
+computable def omit(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, datum, r) => datum; };
+computable def depth(t : Forest) : UNat := induction t return UNat { empty => 0; grow(children) with below => succ(below(0)); };
 computable def vacuous(t : EmptyTree) : Void -> Unit := induction t return (Void -> Unit) {
   tip => fun (v : Void) => absurd(v);
   sprout(children) with ih => fun (v : Void) => ih(v)(v);
@@ -38,20 +38,20 @@ computable def loop_obligations(t : Loopy) : Unit { induction t {
 computable def copy(t : Tree) : Tree := induction t return Tree {
   leaf => leaf; node(l, datum, r) with ih_l, ih_r => node(ih_l, datum, ih_r);
 };
-computable def left_depth(t : Tree) : Nat := induction t return Nat {
+computable def left_depth(t : Tree) : UNat := induction t return UNat {
   leaf => 0; node(l, datum, r) with ih_l, ih_r => succ(ih_l);
 };
-computable def right_depth(t : Tree) : Nat { induction t {
+computable def right_depth(t : Tree) : UNat { induction t {
   leaf => { exact 0; } node(l, datum, r) with ih_l, ih_r => { exact succ(ih_r); }
 } }
-computable def doubled(n : Nat) : Nat := induction n return Nat { zero => 0; succ(k) with h => succ(succ(h)); };
-computable def specialized(n : Nat) : Nat := induction n return Nat { zero => 0; succ h => succ(succ(h)); };
+computable def doubled(n : UNat) : UNat := induction n return UNat { zero => 0; succ(k) with h => succ(succ(h)); };
+computable def specialized(n : UNat) : UNat := induction n return UNat { zero => 0; succ h => succ(succ(h)); };
 def agrees : doubled = specialized { rfl; }
 evaluate(size(node(node(leaf, 2, leaf), 3, node(leaf, 4, leaf)))) expecting 9;
 evaluate(left_depth(node(node(leaf, 0, leaf), 0, leaf))) expecting 2;
 evaluate(right_depth(node(node(leaf, 0, leaf), 0, leaf))) expecting 1;
 evaluate(left_depth(copy(node(node(leaf, 0, leaf), 0, leaf)))) expecting 2;
-evaluate(depth(grow(fun (n : Nat) => empty))) expecting 1;
+evaluate(depth(grow(fun (n : UNat) => empty))) expecting 1;
 evaluate(doubled(3)) expecting 6;
 `;
 
@@ -67,7 +67,7 @@ test("separate hypotheses check and compute for data, functions, paths and proof
     assert.equal(source.slice(token.start, token.end), token.text);
     const link = result.links.find(link => link.start === token.start);
     assert.equal(link.role, "induction hypothesis");
-    assert.match(program.inspect(link.binding).typeText, /Nat/);
+    assert.match(program.inspect(link.binding).typeText, /UNat/);
     assert.ok(result.links.some(link => link.start > token.end && link.definitionStart === token.start));
   }
 });
@@ -101,19 +101,19 @@ test("with needs a nonempty list, follows coordinates, and is forbidden on match
 
 test("wrong counts and mixed spellings fail, while body unfolding and shadowing work", async t => {
   const { get, result } = await checkProgram(t, declarations + `
-def few(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with h => 0; };
-def many(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with h, j, k => 0; };
-def single(t : Forest) : Nat := induction t return Nat { empty => 0; grow(children) with a, b => 0; };
-def no_recursive(t : Tree) : Nat := induction t return Nat { leaf with h => 0; node(l, d, r) => 0; };
-def arity(t : Tree) : Nat := match t { leaf => 0; node(l, d) => d; };
-def nullary(t : Tree) : Nat := match t { leaf(x) => 0; node(l, d, r) => d; };
-def mixed(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r, h, j) with k, m => 0; };
-def fields(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, r) with h, j => 0; };
-def escapes(t : Tree) : Nat := induction t return Nat { leaf => ih; node(l, d, r) with ih, other => ih; };
+def few(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r) with h => 0; };
+def many(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r) with h, j, k => 0; };
+def single(t : Forest) : UNat := induction t return UNat { empty => 0; grow(children) with a, b => 0; };
+def no_recursive(t : Tree) : UNat := induction t return UNat { leaf with h => 0; node(l, d, r) => 0; };
+def arity(t : Tree) : UNat := match t { leaf => 0; node(l, d) => d; };
+def nullary(t : Tree) : UNat := match t { leaf(x) => 0; node(l, d, r) => d; };
+def mixed(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r, h, j) with k, m => 0; };
+def fields(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, r) with h, j => 0; };
+def escapes(t : Tree) : UNat := induction t return UNat { leaf => ih; node(l, d, r) with ih, other => ih; };
 def construction : Tree := node(leaf, 0, leaf, 1, 2);
-def identity(n : Nat) : Nat := n;
-def unfolded(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with h, j => with unfolding [identity] { identity(h) }; };
-def shadow(t : Tree) : Nat := induction t return Nat { leaf => 0; node(l, d, r) with t, j => t; };
+def identity(n : UNat) : UNat := n;
+def unfolded(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r) with h, j => with unfolding [identity] { identity(h) }; };
+def shadow(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r) with t, j => t; };
 `);
   for (const [name, code, message] of [
     ["few", "E578", /^node has 2 recursive fields, so with names 2 induction hypotheses, not 1; or omit with\./],
@@ -137,14 +137,14 @@ test("checked migration preserves nested clauses, coordinates and comments", asy
   // each name once (E872), so the clauses' types are imported.
   const library = sourceReader();
   const reader = (name, importer) => name === "tree_types" ? declarations : library(name, importer);
-  const original = "import tree_types; import nat; use nat;\ninductive Other { stop; node(datum : Nat); }\n" + `
-def plain(t : Tree) : Nat := match t { leaf => 0; node(l, d, r) => d; };
-def nested(t : Tree) : Nat := induction t return Nat {
+  const original = "import tree_types; import unat; use unat;\ninductive Other { stop; node(datum : UNat); }\n" + `
+def plain(t : Tree) : UNat := match t { leaf => 0; node(l, d, r) => d; };
+def nested(t : Tree) : UNat := induction t return UNat {
   leaf => 0;
   node(l, datum, r, // left hypothesis
     ih_l, // right hypothesis
     ih_r // before close
-  ) => induction l return Nat { leaf => ih_r; node(a, d, b, h, j) => h; };
+  ) => induction l return UNat { leaf => ih_r; node(a, d, b, h, j) => h; };
 };
 def along_loop(t : Loopy) : Unit := induction t return Unit { base => tt; loop(x, // hypothesis
   ih) // coordinate
@@ -152,9 +152,9 @@ def along_loop(t : Loopy) : Unit := induction t return Unit { base => tt; loop(x
 def blocks(t : Tree) : Unit { induction t { leaf => { exact tt; } node(l, d, r, h, j) => { exact j; } } }
 // A directive's references are recorded with the declaration after it, and a
 // last directive's not at all: neither is migrated, and both are reported.
-evaluate(induction 2 return Nat { zero => 0; succ(k, h) => succ(h); }) expecting 2;
-def after_directive : Nat := 0;
-print(evaluate(induction 1 return Nat { zero => 0; succ(k, h) => h; }));
+evaluate(induction 2 return UNat { zero => 0; succ(k, h) => succ(h); }) expecting 2;
+def after_directive : UNat := 0;
+print(evaluate(induction 1 return UNat { zero => 0; succ(k, h) => h; }));
 `;
   const { program, result } = await checkProgram(t, original, { name: "fixture", reader });
   assert.equal(result.complete, true, JSON.stringify(result.gaps));

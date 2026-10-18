@@ -2,38 +2,38 @@
 // bounded and keeps nested witnesses.
 
 import primes;
-use nat;
+use unat;
 
-def folded(n : Nat) := n + 0;
+def folded(n : UNat) := n + 0;
 
-def twice(n : Nat) := folded(n);
+def twice(n : UNat) := folded(n);
 
-def inner(n : Nat, h : n + 0 = n) : folded(n) = n {
+def inner(n : UNat, h : n + 0 = n) : folded(n) = n {
   exact h;
 }
 
-def outer(n : Nat, h : folded(n) = n) : twice(n) = n {
+def outer(n : UNat, h : folded(n) = n) : twice(n) = n {
   exact h;
 }
 
-computable def nested(n : Nat) : twice(n) = n {
-  simp only [outer, inner, nat_add_zero];
+computable def nested(n : UNat) : twice(n) = n {
+  simp only [outer, inner, unat_add_zero];
 }
 
-computable def simpa_nested(n : Nat) : twice(n) = n {
-  simpa only [outer, inner, nat_add_zero] using refl(n);
+computable def simpa_nested(n : UNat) : twice(n) = n {
+  simpa only [outer, inner, unat_add_zero] using refl(n);
 }
 
 // Error: E456: simp only left an unresolved equality goal; add a following proof statement. Rule
 //   outer has an unproved premise at parameter 2; supply a local witness with simp with [name].
 //   Remaining goal: twice(n) = n. No rule fired.
-def no_base(n : Nat) : twice(n) = n {
+def no_base(n : UNat) : twice(n) = n {
   simp only [outer, inner];
 }
 
 // Error: E456: simp only left an unresolved equality goal; add a following proof statement. Rule
 //   outer has an unproved premise at parameter 2; supply a local witness with simp with [name].
 //   Remaining goal: twice(n) = n. No rule fired.
-def no_self(n : Nat) : twice(n) = n {
+def no_self(n : UNat) : twice(n) = n {
   simp only [outer];
 }

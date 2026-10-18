@@ -4,19 +4,37 @@
 // fallback. `read` supplies pinned files and any explicitly shared foundations.
 import { moduleReader, moduleNamePattern, moduleRoots, placeOfPath, searchOrder } from "../web/module-resolution.mjs";
 import { currentSyntax, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
-import { parse, languageKeywords } from "../web/cubist/parser.mjs";
+import { parse, tokenize, languageKeywords } from "../web/cubist/parser.mjs";
+
+// The relocation is valid only for the source unary epoch. A transitional
+// UNat module may be bypassed only when it is the published identity alias;
+// accepting an arbitrary module here could discard a changed carrier/view.
+export function unaryNaturalBase({available,readSource}) {
+  const words=text=>tokenize(text).map(token=>token.text).join(" ");
+  const unary=["library/nat.cubist","archive/first-library/nat.cubist"]
+    .some(path=>available.has(path)&&/\binductive Nat\b/.test(words(readSource(path))));
+  if(!unary)return false;
+  const alias=`import nat; def UNat : U0 := Nat;
+    notation unat { x + y := add(x,y); x * y := mul(x,y);
+      x <= y := le(x,y); x < y := isLt(x,y); numeral(n : Nat) := n; }`;
+  for(const path of ["library/unat.cubist","archive/first-library/unat.cubist"])
+    if(available.has(path)&&words(readSource(path))!==words(alias))
+      throw Error(`Cannot relocate historical unary foundation: ${path} is not the identity alias.`);
+  return true;
+}
 
 // Resolve renamed and relocated modules once for both baseline checks and
 // historical declaration discovery. A relocated file has its current place
 // even though its contents are read from the old archive path.
-export function historicalModulePaths({ available, movedToLibrary = new Set() }) {
+export function historicalModulePaths({ available, movedToLibrary = new Set(), unaryNat = false }) {
   const movedPaths = new Set();
   const modulePath = (place, name) => {
-    const oldName = name.endsWith("_") && languageKeywords.has(name.slice(0, -1)) ? name.slice(0, -1) : name;
+    const historicalName=unaryNat&&name==="unat"?"nat":name;
+    const oldName = historicalName.endsWith("_") && languageKeywords.has(historicalName.slice(0, -1)) ? historicalName.slice(0, -1) : historicalName;
     const moved = movedToLibrary.has(name) || movedToLibrary.has(oldName);
     if (moved && place !== "library") return null;
     const root = moduleRoots[moved ? "archive" : place];
-    const current = `${root}${name}.cubist`, old = `${root}${oldName}.cubist`;
+    const current = `${root}${historicalName}.cubist`, old = `${root}${oldName}.cubist`;
     const path = available.has(current) ? current : available.has(old) ? old : current;
     if (moved) movedPaths.add(path);
     return path;

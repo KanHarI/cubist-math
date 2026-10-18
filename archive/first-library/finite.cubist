@@ -1,17 +1,17 @@
-import nat;
+import unat;
 
 import equivalences;
 import hlevels;
-use nat;
+use unat;
 
 // The natural-number-to-type bridge: n distinct alternatives, built from sums.
 // Fin(0) = Void; Fin(n+1) = Unit or Fin(n).
-def Fin(n : Nat) := induction n as k return U0 {
+def Fin(n : UNat) := induction n as k return U0 {
     zero => Void;
     succ previous => Unit or previous;
   };
 
-def add_count(n, m : Nat) := induction n as k return Nat {
+def add_count(n, m : UNat) := induction n as k return UNat {
     zero => m;
     succ previous => succ(previous);
   };
@@ -86,7 +86,7 @@ def sum_associativity(A, B, C : U0) := typed(
 );
 
 // Joining an n-element enumeration to an m-element enumeration.
-def fin_sum(n, m : Nat) :=
+def fin_sum(n, m : UNat) :=
   induction n as k return Bijection(Fin(k) or Fin(m), Fin(add_count(k, m))) {
     zero => empty_sum_bijection(Fin(m));
     succ previous => compose_bijection(
@@ -153,7 +153,7 @@ def tail_or(A : U0, fallback : A, x : Unit or A) := match x return A {
 def tail_injective(A : U0, a, b : A, p : typed(Unit or A, right(a)) = typed(Unit or A, right(b))) :=
   cong(tail_or(A, a), p);
 
-def fin_decidable(n : Nat) :=
+def fin_decidable(n : UNat) :=
   induction n as k return (forall a : Fin(k). forall b : Fin(k). Decidable(U0, a = b)) {
     zero => fun (a, b : Fin(0)) => typed(Decidable(U0, a = b), absurd(a));
     succ previous => fun (a, b : Fin(succ(k))) => match typed(Unit or Fin(k), a) as x return Decidable(
@@ -211,6 +211,6 @@ def fin_decidable(n : Nat) :=
     };
   };
 
-def fin_is_set(n : Nat) : IsSet(U0, Fin(n)) {
+def fin_is_set(n : UNat) : IsSet(U0, Fin(n)) {
   exact hedberg(U0, Fin(n), fin_decidable(n));
 }

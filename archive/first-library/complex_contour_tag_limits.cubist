@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import complex_contour_bounds;
 import field_scale_limits;
 import complex_algebra;
@@ -10,8 +10,8 @@ def complex_contour_tag_change_close(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
   realWeight, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, delta, length : F,
-  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(Complex(F), n),
-  oldTags, newTags : SampleTags(Complex(F), n),
+  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : UNat,
+  vertices : SampleVertices(Complex(F), n), oldTags, newTags : SampleTags(Complex(F), n),
   errors : ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags),
   increments : ComplexContourIncrementBounds(
     F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags
@@ -63,25 +63,25 @@ def complex_contour_tag_errors_converge(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), f : Complex(F) -> Complex(F), realWeight,
-  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, count : Nat -> Nat,
-  vertices : (forall n : Nat. SampleVertices(Complex(F), count(n))), oldTags,
-  newTags : (forall n : Nat. SampleTags(Complex(F), count(n))), delta : Nat -> F, length : F,
+  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, count : UNat -> UNat,
+  vertices : (forall n : UNat. SampleVertices(Complex(F), count(n))), oldTags,
+  newTags : (forall n : UNat. SampleTags(Complex(F), count(n))), delta : UNat -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
-  nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
+  nonnegativeDelta : (forall n : UNat. FieldLe(F, lt, zero, delta(n))),
   errors : (
-    forall n : Nat.
+    forall n : UNat.
     ComplexContourTagBounds(
       F, addF, negF, lt, f, delta(n), count(n), vertices(n), oldTags(n), newTags(n)
     )
   ),
   increments : (
-    forall n : Nat.
+    forall n : UNat.
     ComplexContourIncrementBounds(
       F, addF, negF, lt, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
     )
   ),
   variation : (
-    forall n : Nat.
+    forall n : UNat.
     FieldLe(
       F, lt,
       sample_sum(
@@ -95,7 +95,7 @@ def complex_contour_tag_errors_converge(
   ComplexConverges(
     F, zero, addF, lt,
     (
-      fun (n : Nat) => complex_contour_tag_error_sum(
+      fun (n : UNat) => complex_contour_tag_error_sum(
         F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
       )
     ), complex_zero(F, zero)
@@ -107,12 +107,12 @@ def complex_contour_tag_errors_converge(
   exact complex_box_squeeze(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic,
     (
-      fun (n : Nat) => complex_contour_tag_error_sum(
+      fun (n : UNat) => complex_contour_tag_error_sum(
         F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
       )
-    ), (fun (n : Nat) => mulF(delta(n), length)),
+    ), (fun (n : UNat) => mulF(delta(n), length)),
     (
-      fun (n : Nat) => complex_contour_tag_error_length_bound(
+      fun (n : UNat) => complex_contour_tag_error_length_bound(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, f, realWeight, imagWeight,
         delta(n), length, nonnegativeDelta(n), count(n), vertices(n), oldTags(n), newTags(n),
         errors(n), increments(n), variation(n)
@@ -128,25 +128,25 @@ def complex_contour_tag_independent_limit(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), f : Complex(F) -> Complex(F), realWeight,
-  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, count : Nat -> Nat,
-  vertices : (forall n : Nat. SampleVertices(Complex(F), count(n))), oldTags,
-  newTags : (forall n : Nat. SampleTags(Complex(F), count(n))), delta : Nat -> F, length : F,
+  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, count : UNat -> UNat,
+  vertices : (forall n : UNat. SampleVertices(Complex(F), count(n))), oldTags,
+  newTags : (forall n : UNat. SampleTags(Complex(F), count(n))), delta : UNat -> F, length : F,
   nonnegativeLength : FieldLe(F, lt, zero, length),
-  nonnegativeDelta : (forall n : Nat. FieldLe(F, lt, zero, delta(n))),
+  nonnegativeDelta : (forall n : UNat. FieldLe(F, lt, zero, delta(n))),
   errors : (
-    forall n : Nat.
+    forall n : UNat.
     ComplexContourTagBounds(
       F, addF, negF, lt, f, delta(n), count(n), vertices(n), oldTags(n), newTags(n)
     )
   ),
   increments : (
-    forall n : Nat.
+    forall n : UNat.
     ComplexContourIncrementBounds(
       F, addF, negF, lt, realWeight, imagWeight, count(n), vertices(n), oldTags(n)
     )
   ),
   variation : (
-    forall n : Nat.
+    forall n : UNat.
     FieldLe(
       F, lt,
       sample_sum(
@@ -159,7 +159,7 @@ def complex_contour_tag_independent_limit(
   oldConverges : ComplexConverges(
     F, zero, addF, lt,
     (
-      fun (n : Nat) => complex_contour_sum(
+      fun (n : UNat) => complex_contour_sum(
         F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n)
       )
     ), value
@@ -168,23 +168,23 @@ def complex_contour_tag_independent_limit(
   ComplexConverges(
     F, zero, addF, lt,
     (
-      fun (n : Nat) => complex_contour_sum(
+      fun (n : UNat) => complex_contour_sum(
         F, zero, addF, mulF, negF, f, count(n), vertices(n), newTags(n)
       )
     ), value
   ) {
   let oldSums := (
-    fun (n : Nat) => complex_contour_sum(
+    fun (n : UNat) => complex_contour_sum(
       F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n)
     )
   );
   let newSums := (
-    fun (n : Nat) => complex_contour_sum(
+    fun (n : UNat) => complex_contour_sum(
       F, zero, addF, mulF, negF, f, count(n), vertices(n), newTags(n)
     )
   );
   let errorSums := (
-    fun (n : Nat) => complex_contour_tag_error_sum(
+    fun (n : UNat) => complex_contour_tag_error_sum(
       F, zero, addF, mulF, negF, f, count(n), vertices(n), oldTags(n), newTags(n)
     )
   );
@@ -204,9 +204,9 @@ def complex_contour_tag_independent_limit(
     Complex(F), complex_zero(F, zero), complex_one(F, zero, one), complex_add(F, addF),
     complex_mul(F, addF, mulF, negF), complex_neg(F, negF), ringC, value
   );
-  let total := fun (n : Nat) => complex_add(F, addF, oldSums(n), errorSums(n));
+  let total := fun (n : UNat) => complex_add(F, addF, oldSums(n), errorSums(n));
   let sameLimit := transport added along unit in ComplexConverges(F, zero, addF, lt, total);
-  let pointwise : forall n : Nat. total(n) = newSums(n) {
+  let pointwise : forall n : UNat. total(n) = newSums(n) {
     intro n;
     exact sym(
       contour_sum_change_tags(

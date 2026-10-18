@@ -87,7 +87,7 @@ test("the complete binary core loads without unary naturals", async t => {
   const result = await program.check("import bnat; def probe := bnat_add;", "binary_dependencies");
   assert.ok(result.complete, JSON.stringify(result.gaps));
   assert.ok(program.kernel.signatures.has("bnat__BNat"), "the binary carrier was loaded");
-  assert.ok(!program.kernel.signatures.has("nat__Nat"), "the binary core must not import unary naturals");
+  assert.ok(!program.kernel.signatures.has("unat__UNat"), "the binary core must not import unary naturals");
   const equality = await program.check("import bnat_equality; def probe := bnat_decide;", "binary_equality_dependencies");
   assert.ok(equality.complete, JSON.stringify(equality.gaps));
   assert.ok(!program.kernel.definitions.has("bnat_unary__bnat_to_unat"), "bitwise equality and setness must not load unary conversion");

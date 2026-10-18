@@ -2,11 +2,11 @@
 // the default rule set.
 
 import primes;
-use nat;
+use unat;
 
-def ordinary(n : Nat) := n;
+def ordinary(n : UNat) := n;
 
-def useless(n : Nat) : 0 = 0 {
+def useless(n : UNat) : 0 = 0 {
   rfl;
 }
 
@@ -19,10 +19,10 @@ simp_rule useless;
 simp_set bad := [ordinary];
 // Error: E456: simp only left an unresolved equality goal; add a following proof statement.
 //   Remaining goal: n + 0 = n. No rule fired.
-def missing(n : Nat) : n + 0 = n {
+def missing(n : UNat) : n + 0 = n {
   simp;
 }
 
-def explicit(n : Nat) : n + 0 = n {
-  simp only [nat_add_zero];
+def explicit(n : UNat) : n + 0 = n {
+  simp only [unat_add_zero];
 }

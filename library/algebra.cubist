@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import hlevels;
 import h1_truncation;
-use nat;
+use unat;
 
 // The algebraic hierarchy as theories (L2.4): the magma, quasigroup and
 // monoid lattice, groups, their commutative kinds, rings and fields. Each is a theory of
@@ -122,7 +122,7 @@ theory Ring(U < UU0) extends additive_ : AbelianGroup(
   def sub(x, y : R) : R := x + -y notation x - y;
   // A natural number in the ring, which reads plain numerals in its
   // notation: one added to itself n times (L2.10c).
-  def of_nat(n : Nat) : R := match n {
+  def of_nat(n : UNat) : R := match n {
     zero => zero;
     succ(k) => one + of_nat(k);
   }
@@ -163,13 +163,13 @@ theory Field(U < UU0) extends CommRing {
 // The natural numbers under addition, with 0, and under multiplication,
 // with 1.
 def nat_additive : CommMonoid(U0) := CommMonoid.make(
-  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
-  one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+  M := UNat, M_is_set := unat_is_set, mul := add, mul_assoc := unat_add_assoc, one := 0,
+  one_mul := unat_zero_add, mul_one := unat_add_zero, mul_comm := unat_add_comm
 );
 
 def nat_multiplicative : CommMonoid(U0) := CommMonoid.make(
-  M := Nat, M_is_set := nat_is_set, mul := mul, mul_assoc := nat_mul_assoc, one := 1,
-  one_mul := nat_one_mul, mul_one := nat_mul_one, mul_comm := nat_mul_comm
+  M := UNat, M_is_set := unat_is_set, mul := mul, mul_assoc := unat_mul_assoc, one := 1,
+  one_mul := unat_one_mul, mul_one := unat_mul_one, mul_comm := unat_mul_comm
 );
 
 // In any commutative monoid, products regroup freely; for a commutative ring, at its

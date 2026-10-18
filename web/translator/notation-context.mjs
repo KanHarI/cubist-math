@@ -3,9 +3,15 @@
 // supplies it; neither live environments nor spelling lookups are serialized.
 export const operatorBinding = operator => "\u0000operator " + operator;
 export const SELECTION = "\u0000selection";
-export const NUMERAL_NAT="\u0000notation Nat";
+export const NUMERAL_NAT="\u0000notation UNat";
 export function lexemeKey(name) { return "\u0000lexeme "+name; }
 export const notationContextKey = key => "\u0000notation context " + key;
+
+// Display a value in the checked selection, never by a spelling alone.
+export function notationForScope(scope) {
+  const selected=scope.env.get(SELECTION);
+  return {selection:selected?.name??null,selectionIdentity:selected?.identity??null};
+}
 
 export function checkedNotationContext(scope) {
   const selection=scope.env.get(SELECTION);

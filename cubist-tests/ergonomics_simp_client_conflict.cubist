@@ -3,19 +3,19 @@
 // fails, until this module declares its own.
 import ergonomics_simp_rules_a;
 import ergonomics_simp_rules_b;
-use nat;
+use unat;
 
-def default_ok(n : Nat) : n + 0 = n {
+def default_ok(n : UNat) : n + 0 = n {
   simp;
 }
 
 // Error: E443: Simplification set units is ambiguous: ergonomics_simp_rules_a,
 //   ergonomics_simp_rules_b.
-def ambiguous(n : Nat) : n + 0 = n {
+def ambiguous(n : UNat) : n + 0 = n {
   simp only [units];
 }
 
-simp_set units := [nat_add_zero];
-def locally_resolved(n : Nat) : n + 0 = n {
+simp_set units := [unat_add_zero];
+def locally_resolved(n : UNat) : n + 0 = n {
   simp only [units];
 }

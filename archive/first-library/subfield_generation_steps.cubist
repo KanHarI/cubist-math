@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import subfields;
 import order_maps;
 import primes;
-use nat;
+use unat;
 
 // A finite derivation step. Its witnesses live in U0, including inverse
 // witnesses; the construction never tests whether an element equals zero.
@@ -138,40 +138,40 @@ def field_closure_step_into_subfield(
 }
 
 // Rank zero contains the generators; every successor permits one more step.
-def FieldClosureStage(F : AlgebraicField, P : af_carrier(F) -> U0, n : Nat) :=
+def FieldClosureStage(F : AlgebraicField, P : af_carrier(F) -> U0, n : UNat) :=
   induction n as k return (af_carrier(F) -> U0) {
     zero => P;
     succ previous => FieldClosureStep(F, previous);
   };
 
 // Padding a derivation by m keep-steps raises its rank from n to m+n.
-def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : Nat) :=
+def field_closure_pad(F : AlgebraicField, P : af_carrier(F) -> U0, m : UNat) :=
   induction m as k return (
-    forall n : Nat. forall x : af_carrier(F). FieldClosureStage(F, P, n, x)
+    forall n : UNat. forall x : af_carrier(F). FieldClosureStage(F, P, n, x)
     -> FieldClosureStage(F, P, k + n, x)
   ) {
-    zero => (fun (n : Nat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => member);
+    zero => (fun (n : UNat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => member);
     succ previous => (
-      fun (n : Nat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => field_closure_step_keep(
+      fun (n : UNat, x : af_carrier(F), member : FieldClosureStage(F, P, n, x)) => field_closure_step_keep(
         F, FieldClosureStage(F, P, k + n), x, previous(n, x, member)
       )
     );
   };
 
 def field_closure_pad_right(
-  F : AlgebraicField, P : af_carrier(F) -> U0, n, m : Nat, x : af_carrier(F),
+  F : AlgebraicField, P : af_carrier(F) -> U0, n, m : UNat, x : af_carrier(F),
   member : FieldClosureStage(F, P, n, x)
 ) :
   FieldClosureStage(F, P, n + m, x) {
-  exact transport field_closure_pad(F, P, m, n, x, member) along nat_add_comm(m, n) in (
-    (fun (rank : Nat) => FieldClosureStage(F, P, rank, x))
+  exact transport field_closure_pad(F, P, m, n, x, member) along unat_add_comm(m, n) in (
+    (fun (rank : UNat) => FieldClosureStage(F, P, rank, x))
   );
 }
 
 // Every finite derivation lies in any subfield containing the generators.
 def field_closure_stage_least(
   F : AlgebraicField, P, Q : af_carrier(F) -> U0, laws : SubfieldLaws(F, Q),
-  included : PredicateIncluded(af_carrier(F), P, Q), n : Nat
+  included : PredicateIncluded(af_carrier(F), P, Q), n : UNat
 ) :=
   induction n as k return (forall x : af_carrier(F). FieldClosureStage(F, P, k, x) -> Q(x)) {
     zero => included;

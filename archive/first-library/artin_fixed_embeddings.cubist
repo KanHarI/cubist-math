@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import galois_fixing_subgroups;
 import intermediate_towers;
 import field_embedding_spaces;
@@ -201,7 +201,7 @@ def fixed_subgroup_loop_embedding_injective(
 // embeddings over its fixed field. This is the lower-bound half of Artin's
 // embedding comparison, stated without choosing an enumeration.
 def fixed_subgroup_distinct_embeddings(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   Mere(

@@ -69,21 +69,21 @@ test("a search out of fuel stops the same way in every session, with the fuel it
     [["warm_arithmetic", await read("docs/examples/proof-ergonomics/implemented/arithmetic.cubist")]]));
   assert.deepEqual(reused, fresh);
   assert.equal(fresh.growing.failure, "fuel");
-  assert.match(fresh.growing.reason, /^simp ran out of search fuel: 3 candidate rules tried\. Remaining goal: n \+ 0 \+ 0 = m \+ 0\. 2 rewrites changed the left side, using nat_add_zero\./);
+  assert.match(fresh.growing.reason, /^simp ran out of search fuel: 3 candidate rules tried\. Remaining goal: n \+ 0 \+ 0 = m \+ 0\. 2 rewrites changed the left side, using unat_add_zero\./);
   // A search that needs less still checks.
   assert.equal(fresh.rewritten.status, "checked-native-cubical");
 });
 
 test("a declaration's fuel bounds every kernel question it asks, its searches' included", async t => {
-  const outputs = await check(t, "import nat; use nat;\ndef reflexive(n : Nat) : n = n {\n  rfl;\n}\n", { declarationFuel: { queries: 1 } });
+  const outputs = await check(t, "import unat; use unat;\ndef reflexive(n : UNat) : n = n {\n  rfl;\n}\n", { declarationFuel: { queries: 1 } });
   assert.equal(outputs.reflexive.failure, "fuel");
   assert.match(outputs.reflexive.reason, /^The declaration's elaboration ran out of search fuel: 1 kernel queries\./);
-  const roomy = await check(t, "import nat; use nat;\ndef reflexive(n : Nat) : n = n {\n  rfl;\n}\n");
+  const roomy = await check(t, "import unat; use unat;\ndef reflexive(n : UNat) : n = n {\n  rfl;\n}\n");
   assert.equal(roomy.reflexive.status, "checked-native-cubical");
 });
 
 test("fuel, the kernel's steps and the time limit are three kinds of failure", async t => {
-  const source = "import nat; use nat;\n\ndef twice(n : Nat) : (n + 0) + 0 = n {\n  simp only [nat_add_zero];\n}\n";
+  const source = "import unat; use unat;\n\ndef twice(n : UNat) : (n + 0) + 0 = n {\n  simp only [unat_add_zero];\n}\n";
   const fuel = await check(t, source, { searchFuel: { ...SEARCH_FUEL, queries: 1 } });
   assert.equal(fuel.twice.failure, "fuel");
   // The kernel's own budget per operation: every instruction of this
@@ -141,12 +141,12 @@ test("the CLI reports the same residual goals as the checker the browser runs", 
 test("a declaration's closing check and admission, and an evaluation, are on fuel", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import nat; use nat;\ndef x := 0;\nevaluate x expecting 0;\n", "fuel_example");
+  const result = await program.check("import unat; use unat;\ndef x := 0;\nevaluate x expecting 0;\n", "fuel_example");
   assert.ok(result.outputs[0].searchFuel.queries >= 2, JSON.stringify(result.outputs[0].searchFuel));
   const evaluation = result.directiveFuel.find(directive => directive.kind === "evaluate");
   assert.ok(evaluation.searchFuel.queries >= 2, JSON.stringify(evaluation));
   // A declaration whose fuel cannot cover its admission fails as fuel.
-  const tight = await check(t, "import nat; use nat;\ndef x := 0;\n", { declarationFuel: { queries: 1 } });
+  const tight = await check(t, "import unat; use unat;\ndef x := 0;\n", { declarationFuel: { queries: 1 } });
   assert.equal(tight.x.failure, "fuel");
 });
 
@@ -163,7 +163,7 @@ test("a search's own questions and rewrites are on its fuel", async t => {
 test("registering simplification rules is a search, recorded on its directive", async t => {
   const program = new CubicalProgram(await createCubical(), readLibrary, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import nat; use nat;\n\nsimp_rule nat_add_zero priority 10;\nsimp_set units := [nat_add_zero, nat_add_succ];\n", "fuel_example");
+  const result = await program.check("import unat; use unat;\n\nsimp_rule unat_add_zero priority 10;\nsimp_set units := [unat_add_zero, unat_add_succ];\n", "fuel_example");
   const rule = result.directiveFuel.find(directive => directive.kind === "simp_rule");
   const set = result.directiveFuel.find(directive => directive.kind === "simp_set");
   assert.equal(rule.searchFuel.searches, 1);
@@ -175,27 +175,27 @@ test("registering simplification rules is a search, recorded on its directive", 
 });
 
 test("simpa out of fuel names the phase that stopped, where it stopped, and how far the supplied type got", async t => {
-  const source = `import nat; use nat;
+  const source = `import unat; use unat;
 
-def stopped(n, m : Nat, h : n + 0 = m) : m + 0 = n {
-  simpa only [nat_add_zero] using h;
+def stopped(n, m : UNat, h : n + 0 = m) : m + 0 = n {
+  simpa only [unat_add_zero] using h;
 }
 `;
   // The supplied type simplifies within the fuel; the goal's search runs out.
   const late = await check(t, source, { searchFuel: { ...SEARCH_FUEL, candidates: 7 } });
   assert.equal(late.stopped.failure, "fuel");
-  assert.match(late.stopped.reason, /^simpa ran out of search fuel: 7 candidate rules tried\. Simplifying the goal stopped at m \+ 0 = n\. .* The supplied type had simplified to n = m\. 1 rewrite changed the left side, using nat_add_zero\./);
+  assert.match(late.stopped.reason, /^simpa ran out of search fuel: 7 candidate rules tried\. Simplifying the goal stopped at m \+ 0 = n\. .* The supplied type had simplified to n = m\. 1 rewrite changed the left side, using unat_add_zero\./);
   // The fourth review of #74: the two goals are named together. A variable
   // introduced as add is named apart from the add that + prints in the
   // goal, and so in the supplied type too, where neither it nor the context
   // prints an add of its own.
-  const named = await check(t, `import nat; use nat;
+  const named = await check(t, `import unat; use unat;
 
-def stopped : forall n : Nat. forall m : Nat. n = m -> m + 0 = n {
+def stopped : forall n : UNat. forall m : UNat. n = m -> m + 0 = n {
   intro add;
   intro m;
   intro h;
-  simpa only [nat_add_zero] using h;
+  simpa only [unat_add_zero] using h;
 }
 `, { searchFuel: { ...SEARCH_FUEL, candidates: 3 } });
   assert.match(named.stopped.reason, /Simplifying the goal stopped at m \+ 0 = (\w+)\. .* The supplied type had simplified to \1 = m\./);
@@ -209,10 +209,10 @@ def stopped : forall n : Nat. forall m : Nat. n = m -> m + 0 = n {
 test("a freeze suggestion's replay spends fuel of its own", async t => {
   // Not `only`, with a selected rule the proof does not use: the inspector
   // replays the simplification without it before suggesting `simp only`.
-  const source = `import nat; use nat;
+  const source = `import unat; use unat;
 
-def frozen(n : Nat) : (n + 0) + 0 = n {
-  simp [nat_add_zero, nat_add_succ];
+def frozen(n : UNat) : (n + 0) + 0 = n {
+  simp [unat_add_zero, unat_add_succ];
 }
 `;
   const run = async collectReferences => {
@@ -223,13 +223,13 @@ def frozen(n : Nat) : (n + 0) + 0 = n {
   const inspected = await run(true), plain = await run(false);
   assert.equal(inspected.outputs[0].status, "checked-native-cubical");
   const suggestion = inspected.links.find(link => link.freeze);
-  assert.equal(suggestion?.freeze.text, "simp only [nat_add_zero];");
+  assert.equal(suggestion?.freeze.text, "simp only [unat_add_zero];");
   assert.deepEqual(inspected.outputs[0].searchFuel, plain.outputs[0].searchFuel);
 });
 
 test("preparing the rules is part of the tactic's search: out of fuel, it shows the unchanged goal", async t => {
-  const outputs = await check(t, `import nat; use nat;
-def stopped(n, m : Nat, h : n = m) : n = m {
+  const outputs = await check(t, `import unat; use unat;
+def stopped(n, m : UNat, h : n = m) : n = m {
   simp only [h];
 }
 `, { searchFuel: { ...SEARCH_FUEL, queries: 1 } });
@@ -262,7 +262,7 @@ test("the kernel's step budget is a safety bound outside the determinism guarant
     kernel.maxQuerySteps = 16n;
     return { kernel, syntax: new CubicalSyntax(kernel) };
   };
-  const nat = { tag: "Unit" }, id = { tag: "Lam", name: "x", domain: nat, body: { tag: "Var", name: "x" } };
+  const unat = { tag: "Unit" }, id = { tag: "Lam", name: "x", domain: unat, body: { tag: "Var", name: "x" } };
   const nest = depth => { let term = { tag: "Point" }; for (let i = 0; i < depth; i++) term = { tag: "App", fn: id, arg: term }; return term; };
   const cold = await session();
   assert.throws(() => cold.kernel.head(cold.syntax.encode(nest(8))), error => error.kind === "budget");

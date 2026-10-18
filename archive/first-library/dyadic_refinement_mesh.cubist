@@ -1,14 +1,14 @@
-import nat;
+import unat;
 import dyadic_refinement;
 import subdivision_tagged_zip;
 import interval_subdivisions;
-use nat;
+use unat;
 
 // Coarse width bounds and fine admissibility refer to the same actual family.
 def interval_refinement_mesh(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius, mesh : F,
-  small : lt(radius, mesh), n : Nat,
+  small : lt(radius, mesh), n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices),
@@ -56,7 +56,7 @@ def dyadic_samples_refine_below_mesh(
   leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, depth, extra : Nat, a,
+  -> FieldUnitInterval(F, zero, one, lt) -> G, depth, extra : UNat, a,
   b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),

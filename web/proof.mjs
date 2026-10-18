@@ -438,7 +438,7 @@ function decorate(info) {
   if (/^[0-9]+$/.test(info.name ?? "")) {
     const n = Number(info.name);
     value.role = "natural-number literal";
-    value.description = `${n} : Nat is notation for ${"succ(".repeat(n)}0${")".repeat(n)}. Numerals are built from zero and successor; they are not axioms.`;
+    value.description = `${n} : UNat is notation for ${"succ(".repeat(n)}0${")".repeat(n)}. Numerals are built from zero and successor; they are not axioms.`;
   }
   return value;
 }

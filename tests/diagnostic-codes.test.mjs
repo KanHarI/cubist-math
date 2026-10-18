@@ -27,7 +27,7 @@ test("codes are unique and well formed, each in its group, one per message", () 
 });
 
 test("a message is shown with its code, the most specific that matches it", () => {
-  const mismatch = "Type mismatch: found Unit, expected Nat.";
+  const mismatch = "Type mismatch: found Unit, expected UNat.";
   assert.equal(diagnostics.find(([code]) => code === diagnosticCode(mismatch))[1], "Type mismatch: found …, expected ….");
   assert.equal(diagnosticCode("Not a message the checker reports."), null);
   assert.equal(withCode(mismatch), `${diagnosticCode(mismatch)}: ${mismatch}`);
@@ -40,7 +40,7 @@ test("a message is shown with its code, the most specific that matches it", () =
 });
 
 test("each warning carries its code", () => {
-  const [warning] = lint("def copy(n : Nat) := induction n as k return Nat { zero => 0; succ h => succ(h); };");
+  const [warning] = lint("def copy(n : UNat) := induction n as k return UNat { zero => 0; succ h => succ(h); };");
   assert.equal(warning.code, "W703");
   assert.equal(diagnosticCode(warning.message), null, "warning codes are not inferred from English");
   assert.equal(withCode(warning.message, warning.code), `W703: ${warning.message}`);

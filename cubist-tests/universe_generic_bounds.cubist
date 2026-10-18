@@ -2,7 +2,7 @@
 // removed, and bounds, reserved names and universes are checked.
 // B13: universe constants are reserved names.
 
-import nat;
+import unat;
 
 // Error: E342: Universe was removed: bind a universe variable as U < UU0.
 def u := Universe;
@@ -28,12 +28,12 @@ def g(UU : U1, x : UU) := x;
 def h := UU;
 
 // Error: E322: Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).
-def not_a_universe(U < UU0) := next(Nat);
+def not_a_universe(U < UU0) := next(UNat);
 
 def identity(U < UU0, A : U, x : A) := x;
 
 // Error: E322: Expected a universe: U0, UU0, a universe variable, next(E) or max(E, F).
-def bad_identity := identity(Nat, Nat, 0);
+def bad_identity := identity(UNat, UNat, 0);
 
 // Error: E321: A universe variable's bound must be UU0, as in U < UU0.
 def numeral_bound := forall n < 3. n = n;

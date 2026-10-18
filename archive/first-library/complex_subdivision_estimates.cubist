@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import sample_subdivision_conditions;
 import complex_perturbations;
 
@@ -18,7 +18,7 @@ def complex_subdivision_total_estimate_step(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),
-  radius : C -> C -> C -> F, n : Nat,
+  radius : C -> C -> C -> F, n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
     forall pieces : SampleSubdivisions(C, n, vertices).
@@ -85,7 +85,7 @@ def complex_subdivision_total_estimate(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),
-  radius : C -> C -> C -> F, n : Nat
+  radius : C -> C -> C -> F, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   forall pieces : SampleSubdivisions(C, n, vertices).
@@ -132,7 +132,7 @@ def complex_subdivision_flat_estimate(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge : C -> C -> C -> Complex(F),
-  radius : C -> C -> C -> F, n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n),
+  radius : C -> C -> C -> F, n : UNat, vertices : SampleVertices(C, n), tags : SampleTags(C, n),
   pieces : SampleSubdivisions(C, n, vertices),
   estimates : SubdivisionTagged(
     C, ComplexSubdivisionEstimate(C, F, zero, addF, negF, lt, edge, radius), n, vertices, tags,

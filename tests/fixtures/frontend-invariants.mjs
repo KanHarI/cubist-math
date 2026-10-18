@@ -14,19 +14,19 @@ export function generate(config) {
   const names=renamed&&inherited?{M:"Carrier",c:"point",op:"combine"}:{M:"M",c:"c",op:"op"};
   const {M,c,op}=names, model=inherited?"Child":"T";
   const parameter=config.capture===false?"value_":"c";
-  const header=`import hlevels; import nat;
-notation lexical { numeral(n : Nat) := n; }
+  const header=`import hlevels; import unat;
+notation lexical { numeral(n : UNat) := n; }
 use lexical;
 ${noise?"def f : Unit := tt; def result : Unit := tt; def c1 : Unit := tt;":""}`;
   const helpers=Array.from({length:depth},(_,i)=>`def helper${i}(x : M) : M := ${i?`helper${i-1}(x)`:"op(0,x,c)"};`).join("\n");
   const parent=`${header}
-theory T(U < UU0) { M : set U; c : M; op(n : Nat, x, y : M) : M;
+theory T(U < UU0) { M : set U; c : M; op(n : UNat, x, y : M) : M;
   ${helpers}
   def wrapped(${parameter} : M, proof_ : ${parameter} = ${parameter}) : M := (fun (${binder} : M) => helper${depth-1}(${binder}))(${parameter});
   law same(c : M) : helper${depth-1}(c) = op(0,c,c);
-  ${recursive?"def iter(n : Nat) : M := match n { zero => c; succ(k) => op(0,iter(k),c); };\ndef twice(n : Nat) : M := op(0,iter(n),c);":""}
+  ${recursive?"def iter(n : UNat) : M := match n { zero => c; succ(k) => op(0,iter(k),c); };\ndef twice(n : UNat) : M := op(0,iter(n),c);":""}
 }`;
-  const shifted=`notation shifted { numeral(n : Nat) := succ(n); }
+  const shifted=`notation shifted { numeral(n : UNat) := succ(n); }
 use shifted;`;
   const child=inherited?`theory Child(U < UU0) extends T${renamed?"(M := Carrier, c := point, op := combine)":""} {
   def fresh(x : ${M}) : ${M} := ${op}(0,x,${c});

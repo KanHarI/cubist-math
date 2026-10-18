@@ -2,10 +2,10 @@
 // type with a constructor for each of T's operations and a path constructor
 // for each law, its model N.model, and N.fold(M) : T.Hom(N.model, M), whose
 // map computes on constructors. free W(A) : T(…) on A adds the generators.
-import nat;
+import unat;
 import hlevels;
 import algebra;
-use nat;
+use unat;
 
 initial N : Monoid(U0);
 
@@ -19,9 +19,9 @@ def unit_to_unit(M : Monoid(U0)) : N.fold(M).map(N.one) = M.one {
   rfl;
 }
 
-// And on generators: a word's length, folding each generator to 1 in Nat's
+// And on generators: a word's length, folding each generator to 1 in UNat's
 // additive monoid.
-def length{{A : U0}}(w : W(A)) : Nat := W.fold(A, nat_additive.monoid, fun (a : A) => 1).map(w);
+def length{{A : U0}}(w : W(A)) : UNat := W.fold(A, nat_additive.monoid, fun (a : A) => 1).map(w);
 
 // Output: 3
 print(evaluate(length{{Unit}}(W.mul(W.gen(tt), W.mul(W.gen(tt), W.gen(tt))))));
@@ -65,7 +65,7 @@ def idem_at(x : K) : x = x := K.idem(x);
 free Named(target, evidence, g, x, x0, i : U0) : Monoid(U0) on x0;
 
 def named_fold :=
-  Named.fold(Unit, Unit, Unit, Unit, Nat, Unit, nat_additive.monoid, fun (n : Nat) => n);
+  Named.fold(Unit, Unit, Unit, Unit, UNat, Unit, nat_additive.monoid, fun (n : UNat) => n);
 
 // Output: 2
 print(evaluate(named_fold.map(Named.gen(2))));
@@ -120,8 +120,8 @@ theory Iterated(U < UU0) {
 initial I : Iterated(U0);
 
 // Error: E850: initial takes a theory at its universes and parameters, as initial N : Monoid(U0);
-//   Nat is none.
-initial X : Nat;
+//   UNat is none.
+initial X : UNat;
 
 // Local models still own their dotted fields when a declared initial model
 // has the same name. A catch-all likewise follows the checked scrutinee type.

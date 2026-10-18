@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import pushout;
 
 import suspension_types;
@@ -18,11 +18,11 @@ def map_path(A, B : U0, f : A -> B, x, y : A, p : x = y) :=
   path(fun (i : Interval) => B, fun (i : Interval) => f(p @ i));
 
 // Paths in a varying family can be stated without encoding them as transport.
-def dependent_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x, y : Nat) :=
+def dependent_path(P : PathP(fun (i : Interval) => U0, UNat, UNat), x, y : UNat) :=
   PathP(fun (i : Interval) => P @ i, x, y);
 
 // An empty tube gives transport through a family of types.
-def transport_path(P : PathP(fun (i : Interval) => U0, Nat, Nat), x : Nat) :=
+def transport_path(P : PathP(fun (i : Interval) => U0, UNat, UNat), x : UNat) :=
   comp(fun (i : Interval) => P @ i, x);
 
 // Composition fills a square with fixed left edge and right edge q.

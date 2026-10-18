@@ -44,14 +44,14 @@ await browserTest(async ({ browser, base }) => {
   };
   // EVAL1: the browser uses the same one-pass evaluation path as the CLI,
   // including at the unary depth boundary. Explicit expectations still fail.
-  await open("import nat; use nat; def saved : Nat := 7;");
+  await open("import unat; use unat; def saved : UNat := 7;");
   await enter("evaluate 2 * 255;","value",/^510$/,"#repl");
   await enter("evaluate 2 + 2 expecting 5;","error",/E326: The term evaluates to 4, not 5\./,"#repl");
   await enter("evaluate saved;","value",/^7$/,"#repl");
   console.log("PASS one-pass REPL evaluation and explicit expectations");
 
-  const source=`inductive Nat { zero; succ(n : Nat); }
-def f(k : Nat) : Nat {
+  const source=`inductive UNat { zero; succ(n : UNat); }
+def f(k : UNat) : UNat {
   let next_ := succ(k);
   exact next_;
 }`;
@@ -62,11 +62,11 @@ def f(k : Nat) : Nat {
   const before=(await options()).filter(option=>option.text.includes("Before statement"));
   assert.equal(before.length,1);
   await select(before[0].id);
-  await enter("/locals","locals",/next_ : Nat := succ\(k\)/);
-  await enter("/goal","goal",/Nat/);
-  await enter("let scratch := next_;","defined",/scratch : Nat/);
-  await enter("/prove { exact scratch; }","proof",/Checked against Nat/);
-  await enter("typeof scratch;","type",/^Nat$/);
+  await enter("/locals","locals",/next_ : UNat := succ\(k\)/);
+  await enter("/goal","goal",/UNat/);
+  await enter("let scratch := next_;","defined",/scratch : UNat/);
+  await enter("/prove { exact scratch; }","proof",/Checked against UNat/);
+  await enter("typeof scratch;","type",/^UNat$/);
   await enter("typeof scratch;","error",/scratch/,"#repl");
   await page.locator("#context-panel .repl-restart").click();
   await page.waitForFunction(()=>document.querySelector("#context-panel .repl-log").textContent.includes("Started a new session"));

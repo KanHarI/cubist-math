@@ -1,16 +1,16 @@
-import nat;
+import unat;
 
 import ring_laws;
-use nat;
+use unat;
 
 // Lower coefficients of a monic polynomial, constant coefficient first.
 // The implicit leading coefficient is one, so its formal degree is n.
-def MonicCoefficients(F : U1, n : Nat) := induction n as k return U1 {
+def MonicCoefficients(F : U1, n : UNat) := induction n as k return U1 {
     zero => Unit;
     succ previous => F and previous;
   };
 
-def monic_eval(F : U1, one : F, addF, mulF : F -> F -> F, n : Nat) :=
+def monic_eval(F : U1, one : F, addF, mulF : F -> F -> F, n : UNat) :=
   induction n as k return (MonicCoefficients(F, k) -> F -> F) {
     zero => fun (u : Unit, z : F) => one;
     succ previous => fun (coefficients : MonicCoefficients(F, succ(k)), z : F) => unpack typed(
@@ -21,7 +21,7 @@ def monic_eval(F : U1, one : F, addF, mulF : F -> F -> F, n : Nat) :=
   };
 
 def MonicRoot(
-  F : U1, zero, one : F, addF, mulF : F -> F -> F, n : Nat, coefficients : MonicCoefficients(F, n)
+  F : U1, zero, one : F, addF, mulF : F -> F -> F, n : UNat, coefficients : MonicCoefficients(F, n)
 ) :=
   exists z : F. monic_eval(F, one, addF, mulF, n, coefficients, z) = zero;
 
@@ -29,7 +29,7 @@ def MonicRoot(
 // Mere existence per polynomial does not pick roots simultaneously.
 // Over a field, an invertible leading coefficient permits monic normalization.
 def MonicAlgebraicClosure(F : U1, zero, one : F, addF, mulF : F -> F -> F) :=
-  forall n : Nat. forall coefficients : MonicCoefficients(F, succ(n)).
+  forall n : UNat. forall coefficients : MonicCoefficients(F, succ(n)).
   FieldExists(MonicRoot(F, zero, one, addF, mulF, succ(n), coefficients));
 
 def linear_coefficients(F : U1, a : F) : MonicCoefficients(F, 1) {

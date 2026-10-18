@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import finite;
 import suspension;
 import path_actions;
@@ -19,9 +19,9 @@ def bouquet_generator(A : U0, a : A) := trans(bouquet_edge(A, a), sym(bouquet_sp
 
 def BouquetLoops(A : U0) := bouquet_base(A) = bouquet_base(A);
 
-def PunctureGraph(n : Nat) := Bouquet(Fin(n));
+def PunctureGraph(n : UNat) := Bouquet(Fin(n));
 
-def puncture_loop(n : Nat, i : Fin(n)) := bouquet_generator(Fin(n), i);
+def puncture_loop(n : UNat, i : Fin(n)) := bouquet_generator(Fin(n), i);
 
 def bouquet_generator_spoke(A : U0, a : A) :
   trans(bouquet_generator(A, a), bouquet_spoke(A)) = bouquet_edge(A, a) {

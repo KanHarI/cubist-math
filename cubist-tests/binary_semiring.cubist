@@ -1,4 +1,4 @@
-import bnat_semiring;
+import bnat_models;
 import bnat_notation;
 use bnat;
 

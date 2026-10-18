@@ -1,9 +1,9 @@
-import nat;
+import unat;
 import span_exchange;
 import finite_omission;
 import independent_order;
 import classical;
-use nat;
+use unat;
 
 // Adjoining one vector gives a proposition-valued subset. Membership is
 // truncated; it does not expose a particular side of the disjunction.
@@ -52,7 +52,7 @@ def adjoin_vector_other(
 // generators. Coverage restores the conclusion at every original index.
 def independent_zero_omission(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
-  independent : LinearlyIndependent(K, V, P), n : Nat, v : Fin(succ(n)) -> vector_carrier(K, V),
+  independent : LinearlyIndependent(K, V, P), n : UNat, v : Fin(succ(n)) -> vector_carrier(K, V),
   distinct : (forall i : Fin(succ(n)). forall j : Fin(succ(n)). v(i) = v(j) -> i = j),
   a : Fin(succ(n)) -> af_carrier(K), i : Fin(succ(n)),
   zero : a(i) = af_zero(af_carrier(K), af_operations(K)),
@@ -101,7 +101,7 @@ def independent_zero_omission(
 // A vector outside the old span cannot have a nonzero coefficient in a
 // dependence. Turning not-nonzero into zero uses the explicit LEM instance.
 def outside_span_coefficient_zero(
-  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, n : Nat, v : Fin(n)
+  K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, n : UNat, v : Fin(n)
   -> vector_carrier(K, V), a : Fin(n) -> af_carrier(K), i : Fin(n), outside : Span(K, V, P, v(i))
   -> Void, others : (forall j : Fin(n). ((j = i) -> Void) -> P(v(j))),
   vanishes : linear_combination(K, V, n, v, a) = vector_zero(K, V)
@@ -122,7 +122,7 @@ def adjoin_dependence_at_new(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop_ : (forall y : vector_carrier(K, V). Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V), outside : Span(K, V, P, x)
-  -> Void, n : Nat, v : Fin(succ(n)) -> vector_carrier(K, V),
+  -> Void, n : UNat, v : Fin(succ(n)) -> vector_carrier(K, V),
   distinct : (forall i : Fin(succ(n)). forall j : Fin(succ(n)). v(i) = v(j) -> i = j),
   members : (forall i : Fin(succ(n)). AdjoinVector(K, V, P, x, v(i))), a : Fin(succ(n))
   -> af_carrier(K), vanishes : linear_combination(K, V, succ(n), v, a) = vector_zero(K, V),
@@ -149,7 +149,7 @@ def adjoin_independent_step(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop_ : (forall y : vector_carrier(K, V). Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V), outside : Span(K, V, P, x)
-  -> Void, n : Nat, v : Fin(succ(n)) -> vector_carrier(K, V),
+  -> Void, n : UNat, v : Fin(succ(n)) -> vector_carrier(K, V),
   distinct : (forall i : Fin(succ(n)). forall j : Fin(succ(n)). v(i) = v(j) -> i = j),
   members : (forall i : Fin(succ(n)). AdjoinVector(K, V, P, x, v(i))), a : Fin(succ(n))
   -> af_carrier(K), vanishes : linear_combination(K, V, succ(n), v, a) = vector_zero(K, V),
@@ -188,7 +188,7 @@ def adjoin_independent_finite(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0,
   prop_ : (forall y : vector_carrier(K, V). Proposition(P(y))),
   independent : LinearlyIndependent(K, V, P), x : vector_carrier(K, V),
-  outside : Span(K, V, P, x) -> Void, n : Nat
+  outside : Span(K, V, P, x) -> Void, n : UNat
 ) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V).

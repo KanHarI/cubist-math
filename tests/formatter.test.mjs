@@ -36,18 +36,18 @@ test("nested pairs, equality carriers and line comments keep their boundaries", 
   const source = `// Header
 def copy(A:U0,x:A):A and A{exact (x, // first component
 x);}
-def equality_ := 0 =[Nat] 0; // keep this comment
+def equality_ := 0 =[UNat] 0; // keep this comment
 `;
   const formatted = formatCubist(source, { printWidth: 40 });
   assert.match(formatted, /x, \/\/ first component\n\s+x/);
-  assert.match(formatted, /0\s+=\[Nat\] 0;/);
+  assert.match(formatted, /0\s+=\[UNat\] 0;/);
   assert.deepEqual(semantic(parse(formatted)), semantic(parse(source)));
   assert.equal(formatCubist(formatted, { printWidth: 40 }), formatted);
 });
 
 test("projections stay tight, and a let states a type and proves it in a block", () => {
   const source = `def swap(A,B:U0,p:A and B):B and A:=(p.2,p.1);
-def nested(t:Nat and Nat and Nat,f:Nat->Nat and Nat):Nat:=f(t.2.1).2;
+def nested(t:UNat and UNat and UNat,f:UNat->UNat and UNat):UNat:=f(t.2.1).2;
 def reduce(A,B:U0,a:A,f:A->B):B{let y:A:=a;exact f(y);}
 def block(A,B:U0,a:A,f:A->B):B{let x:A{exact a;}exact f(x);}
 `;
@@ -61,11 +61,11 @@ def block(A,B:U0,a:A,f:A->B):B{let x:A{exact a;}exact f(x);}
 });
 
 test("a projection of a block expression keeps its dot on the closing brace", () => {
-  const source = `def a(n : Nat) : Nat := induction n as k return Nat and Nat { zero => (0, 0); succ h => h; }.1;
-def b(v : Unit or Unit) : Nat := match v return Nat and Nat { left x => (0, 0); right y => (1, 1); }.2;
-def c(p : Nat and Nat) : Nat := unpack p as (x, y) return Nat and Nat { (y, x); }.1;
-def d(n : Nat, v : Unit or Unit) : Nat and Nat := (induction n as k return Nat and Nat { zero => (0, 0); succ h => h; }.1,
-  match v return Nat and Nat { left x => (0, 0); right y => (1, 1); }.2);
+  const source = `def a(n : UNat) : UNat := induction n as k return UNat and UNat { zero => (0, 0); succ h => h; }.1;
+def b(v : Unit or Unit) : UNat := match v return UNat and UNat { left x => (0, 0); right y => (1, 1); }.2;
+def c(p : UNat and UNat) : UNat := unpack p as (x, y) return UNat and UNat { (y, x); }.1;
+def d(n : UNat, v : Unit or Unit) : UNat and UNat := (induction n as k return UNat and UNat { zero => (0, 0); succ h => h; }.1,
+  match v return UNat and UNat { left x => (0, 0); right y => (1, 1); }.2);
 `;
   const formatted = formatCubist(source);
   assert.equal(formatted.match(/\n *\}\.[12][;,)]/g)?.length, 5, formatted);
@@ -142,7 +142,7 @@ test("long quantified statements pack short binders and preserve function domain
 
 test("the formatter automatically linearizes tuples while preserving their expanded AST", async () => {
   const { expandedSyntax } = await import("../web/cubist/tuples.mjs");
-  const source = "def triple : Nat and Nat and Nat { exact (0, (1, 2)); }";
+  const source = "def triple : UNat and UNat and UNat { exact (0, (1, 2)); }";
   const formatted = formatCubist(source);
   assert.match(formatted, /exact \(0, 1, 2\);/);
   assert.equal(expandedSyntax(parse(formatted)), expandedSyntax(parse(source)));
@@ -151,29 +151,29 @@ test("the formatter automatically linearizes tuples while preserving their expan
 });
 
 test("lambda binder groups are one comma-separated list; separate groups are rejected", () => {
-  const formatted = formatCubist("def f(F : Nat -> Nat -> U0) := fun (a : Nat,b : F(0)(1)) => a;\n");
-  assert.match(formatted, /fun \(a : Nat, b : F\(0\)\(1\)\) => a;/);
-  assert.throws(() => parse("def f := fun (a : Nat) (b : Nat) => a;"), /Separate binder groups with commas/);
+  const formatted = formatCubist("def f(F : UNat -> UNat -> U0) := fun (a : UNat,b : F(0)(1)) => a;\n");
+  assert.match(formatted, /fun \(a : UNat, b : F\(0\)\(1\)\) => a;/);
+  assert.throws(() => parse("def f := fun (a : UNat) (b : UNat) => a;"), /Separate binder groups with commas/);
 });
 
 test("a keyword keeps its space before a parenthesis; the reserved words written as calls are tight", () => {
-  assert.equal(formatCubist("def p : Nat and Nat := (1, 2);\n\nevaluate(p) expecting(1, _);\n"),
-    "def p : Nat and Nat := (1, 2);\n\nevaluate (p) expecting (1, _);\n");
-  assert.match(formatCubist("def m(n : Nat) : Nat := match(n) { zero => n; succ(k) => k; };\n"), /:= match \(n\) \{/);
-  assert.equal(formatCubist("def f := fun(n : Nat) => n;\n"), "def f := fun (n : Nat) => n;\n");
+  assert.equal(formatCubist("def p : UNat and UNat := (1, 2);\n\nevaluate(p) expecting(1, _);\n"),
+    "def p : UNat and UNat := (1, 2);\n\nevaluate (p) expecting (1, _);\n");
+  assert.match(formatCubist("def m(n : UNat) : UNat := match(n) { zero => n; succ(k) => k; };\n"), /:= match \(n\) \{/);
+  assert.equal(formatCubist("def f := fun(n : UNat) => n;\n"), "def f := fun (n : UNat) => n;\n");
   // left(a), right(b), typed(T, e) and print's evaluate(e) are calls.
-  assert.equal(formatCubist("def s : Unit or Nat := typed (Unit or Nat, left (tt));\n\nprint(evaluate (s));\n"),
-    "def s : Unit or Nat := typed(Unit or Nat, left(tt));\n\nprint(evaluate(s));\n");
+  assert.equal(formatCubist("def s : Unit or UNat := typed (Unit or UNat, left (tt));\n\nprint(evaluate (s));\n"),
+    "def s : Unit or UNat := typed(Unit or UNat, left(tt));\n\nprint(evaluate(s));\n");
   // Built-ins and generated names are reserved too, but remain calls.
-  assert.equal(formatCubist("def same(n : Nat) : n = n := refl (n);\n"),
-    "def same(n : Nat) : n = n := refl(n);\n");
-  assert.equal(formatCubist("def m := Monoid.make (M := Nat);\n"),
-    "def m := Monoid.make(M := Nat);\n");
+  assert.equal(formatCubist("def same(n : UNat) : n = n := refl (n);\n"),
+    "def same(n : UNat) : n = n := refl(n);\n");
+  assert.equal(formatCubist("def m := Monoid.make (M := UNat);\n"),
+    "def m := Monoid.make(M := UNat);\n");
   // So are print's forms, a notation's numeral and literal rules, and an
   // inductive's trunc level, as the reference and the printer write them.
-  assert.equal(formatCubist("def t : Nat := 3;\n\nprint (witness (t));\n\nprint(typeof (t));\n"),
-    "def t : Nat := 3;\n\nprint(witness(t));\n\nprint(typeof(t));\n");
-  assert.match(formatCubist("notation counts {\n  x + y := add(x, y);\n  numeral (n : Nat) := n;\n}\n"), /\n  numeral\(n : Nat\) := n;\n/);
+  assert.equal(formatCubist("def t : UNat := 3;\n\nprint (witness (t));\n\nprint(typeof (t));\n"),
+    "def t : UNat := 3;\n\nprint(witness(t));\n\nprint(typeof(t));\n");
+  assert.match(formatCubist("notation counts {\n  x + y := add(x, y);\n  numeral (n : UNat) := n;\n}\n"), /\n  numeral\(n : UNat\) := n;\n/);
   assert.match(formatCubist("notation digits {\n  literal (s : Lexeme) := read(s);\n}\n"), /\n  literal\(s : Lexeme\) := read\(s\);\n/);
   assert.equal(formatCubist("inductive G : trunc (1) {\n  g;\n}\n"), "inductive G : trunc(1) {\n  g;\n}\n");
   assert.equal(formatCubist("inductive P : trunc (- 1) {\n  p;\n}\n"), "inductive P : trunc(-1) {\n  p;\n}\n");
@@ -186,18 +186,18 @@ test("an empty block is {} on its declaration's line", () => {
   assert.equal(formatCubist("theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n"),
     "theory Later(U < UU0) extends Group {\n  // nothing yet\n}\n");
   // A trailing comment closes its block with no empty line.
-  assert.equal(formatCubist("def f(x : Nat) : Nat {\n  exact x; // finish\n}\n"),
-    "def f(x : Nat) : Nat {\n  exact x; // finish\n}\n");
+  assert.equal(formatCubist("def f(x : UNat) : UNat {\n  exact x; // finish\n}\n"),
+    "def f(x : UNat) : UNat {\n  exact x; // finish\n}\n");
 });
 
 test("a long value ending in brackets breaks inside them, its definition on one line", () => {
-  const fields = "M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := zero";
-  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := nat_zero_add);\n`),
-    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := nat_zero_add\n);\n`);
+  const fields = "M := UNat, M_is_set := unat_is_set, mul := add, mul_assoc := unat_add_assoc, one := zero";
+  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := unat_zero_add);\n`),
+    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := unat_zero_add\n);\n`);
   // A value that fits on a line of its own goes there, whole.
   assert.equal(formatCubist("computable def same_ratio_props(f, g : Fraction) : IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n"),
     "computable def same_ratio_props(f, g : Fraction) :\n  IsProp(U, SameRatio(f, g)) := R_is_set(f.1 * g.2.1, g.1);\n");
   // A comment after the value leaves the layout as it is without one.
-  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := nat_zero_add); // note\n`),
-    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := nat_zero_add\n); // note\n`);
+  assert.equal(formatCubist(`def additive_nat : Monoid(U0) := Monoid.make(${fields}, one_mul := unat_zero_add); // note\n`),
+    `def additive_nat : Monoid(U0) := Monoid.make(\n  ${fields},\n  one_mul := unat_zero_add\n); // note\n`);
 });

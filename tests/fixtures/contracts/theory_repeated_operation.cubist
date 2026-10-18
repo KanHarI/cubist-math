@@ -1,9 +1,9 @@
 // Migrated from tests/theories.test.mjs:
 // an operation whose group repeats a name has homomorphisms for each argument.
 // The group still takes both arguments; its body reads the last.
-import nat;
+import unat;
 import hlevels;
-use nat;
+use unat;
 
 # test(theory_repeated_operation.T)
 theory T(U < UU0) {
@@ -12,7 +12,7 @@ theory T(U < UU0) {
 }
 
 # test(theory_repeated_operation.second)
-def second : T(U0) := T.make(Nat, nat_is_set, fun x => fun y => y);
+def second : T(U0) := T.make(UNat, unat_is_set, fun x => fun y => y);
 
 # test(theory_repeated_operation.preserved)
 def preserved(A, B : T(U0), f : T.Hom(A, B), x, y : A.M) :

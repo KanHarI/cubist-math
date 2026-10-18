@@ -1,7 +1,7 @@
 import { browserTest } from "./browser-test.mjs";
 import assert from "node:assert/strict";
 import { gaps } from "./frontend-generation-cases.mjs";
-const natural = {tag:"Sort",signature:"nat__Nat",parameters:[],levels:[]};
+const natural = {tag:"Sort",signature:"unat__UNat",parameters:[],levels:[]};
 const zero = {tag:"Con",index:0,name:"zero",sort:natural};
 const one = {tag:"App",fn:{tag:"Con",index:1,name:"succ",sort:natural},arg:zero};
 await browserTest(async ({ browser, base }) => {
@@ -21,9 +21,18 @@ await browserTest(async ({ browser, base }) => {
     await page.goto(`${base}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);
   };
+  // The navigation links also open the workbench without a proof transfer.
+  // Its standalone example must use the bundled unary source.
+  await page.goto(`${base}/workbench.html`);
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  assert.equal(await page.locator("#name").textContent(), "example");
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  await page.locator("#workbench-view").selectOption("math");
+  await page.locator("#normalize").click();
+  assert.equal(await page.locator("#expression").textContent(), "2");
   // An example opened in the workspace keeps its source in #source=… while the
   // quick reference's links scroll and move focus, so a reload reopens it.
-  const example = Buffer.from("def kept_after_reload : Nat := 7;").toString("base64")
+  const example = Buffer.from("def kept_after_reload : UNat := 7;").toString("base64")
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   await page.goto(`${base}/proof.html?example=1#source=${example}`); await idle();
   await page.locator("#guide-link").click();
@@ -176,11 +185,11 @@ theory Failed(U < UU0) { M : set U; c : M; law bad : c = tt; }`);
     assert.equal(await page.locator(".source-line.active").getAttribute("data-line"), String(lawLine));
   }
   // A copied failure links both the caller and the precise imported source.
-  const producer = `import nat;
+  const producer = `import unat;
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Parent(U < UU0) { M : U;
-  def bad(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
-    obligations by { rw [nat_add_zero]; };
+  def bad(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
+    obligations by { rw [unat_add_zero]; };
 }`;
   await page.route("**/library/hlevels.cubist", route => route.fulfill({contentType:"text/plain",body:producer}));
   const consumer = "import hlevels;\ntheory Child(U < UU0) extends Parent {}";
@@ -190,10 +199,10 @@ theory Parent(U < UU0) { M : U;
   await failure.locator(".diagnostic-site").filter({hasText:"Source: reference_example:2:"}).click();
   assert.match(await page.locator("#read-source .source-line.active").textContent(),/extends Parent/);
   const related = failure.locator(".diagnostic-site").filter({hasText:"Related: hlevels:5:"});
-  assert.ok((await related.getAttribute("href")).includes(`offset=${producer.indexOf("nat_add_zero")}`));
+  assert.ok((await related.getAttribute("href")).includes(`offset=${producer.indexOf("unat_add_zero")}`));
   await related.click(); await idle();
   assert.equal(new URL(page.url()).searchParams.get("proof"),"hlevels");
-  assert.match(await page.locator("#read-source .source-line.active").textContent(),/rw \[nat_add_zero\]/);
+  assert.match(await page.locator("#read-source .source-line.active").textContent(),/rw \[unat_add_zero\]/);
   await page.locator("#back").click(); await idle();
   assert.equal(await page.locator("#editor").inputValue(),consumer);
   await page.locator("#generated-mode").click(); await idle();
@@ -251,26 +260,26 @@ theory Parent(U < UU0) { M : U;
   assert.doesNotMatch(await page.locator("#inspect-axioms").textContent(), /kernel extension/);
   assert.equal(await page.locator("#kernel-terms").isVisible(), false, "no checked term to show");
   assert.deepEqual(errors, []);
-  // Nat is an ordinary imported declaration: both occurrences in Z lead to
+  // UNat is an ordinary imported declaration: both occurrences in Z lead to
   // its signature and View source opens the actual inductive, not this use.
   await openProof("signed_integers", "Z");
-  const naturalUses = page.locator('.source-line').filter({ hasText: "def Z := Nat or Nat;" })
-    .locator('button[data-name="Nat"]');
+  const naturalUses = page.locator('.source-line').filter({ hasText: "def Z := UNat or UNat;" })
+    .locator('button[data-name="UNat"]');
   assert.equal(await naturalUses.count(), 2);
   await naturalUses.first().click();
-  await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "Nat"
+  await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "UNat"
     && !document.querySelector("#inspect-signature").hidden);
   assert.deepEqual(await page.locator("#inspect-constructors li code").allTextContents(),
-    ["zero : Nat", "succ : Nat -> Nat"]);
-  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=nat&name=Nat/);
+    ["zero : UNat", "succ : UNat -> UNat"]);
+  assert.match(await page.locator("#view-source").getAttribute("href"), /proof=unat&name=UNat/);
   await page.locator("#view-source").click(); await idle();
-  assert.equal(new URL(page.url()).searchParams.get("proof"), "nat");
-  assert.equal(new URL(page.url()).searchParams.get("name"), "Nat");
-  assert.match(await page.locator(".source-line.active").textContent(), /inductive Nat : U0/);
-  assert.match(await page.locator("#editor").inputValue(), /succ\(n : Nat\)/);
+  assert.equal(new URL(page.url()).searchParams.get("proof"), "unat");
+  assert.equal(new URL(page.url()).searchParams.get("name"), "UNat");
+  assert.match(await page.locator(".source-line.active").textContent(), /inductive UNat : U0/);
+  assert.match(await page.locator("#editor").inputValue(), /succ\(n : UNat\)/);
   await page.locator("#back").click(); await idle();
   assert.equal(new URL(page.url()).searchParams.get("proof"), "signed_integers");
-  assert.equal(await page.locator("#inspect-name").textContent(), "Nat");
+  assert.equal(await page.locator("#inspect-name").textContent(), "UNat");
   await openProof("suspension", "S1");
   for (const name of ["Suspension", "north", "south", "meridian", "suspension_induction", "suspension_meridian_beta"]) {
     const link = page.locator(`#read-source button[data-name="${name}"]`).first();
@@ -304,7 +313,7 @@ theory Parent(U < UU0) { M : U;
   assert.equal(await page.locator("#kernel-expression").textContent(), "hd");
   assert.equal(await page.locator("#kernel-context-list button").first().textContent(), "n");
   await page.locator('#kernel-type [data-name="i"]').click(); await inspected("i");
-  assert.equal(await page.locator("#kernel-type").textContent(), "Nat");
+  assert.equal(await page.locator("#kernel-type").textContent(), "UNat");
   await page.locator("#back").click(); await inspected("hd");
   await page.locator('#kernel-context-list button').first().click(); await inspected("n");
   await page.locator("#back").click(); await inspected("hd");
@@ -324,7 +333,7 @@ theory Parent(U < UU0) { M : U;
   await workbench.locator("#graph-listing .graph-row").first().waitFor();
   await workbench.locator("#workbench-view").selectOption("math");
   assert.equal(await workbench.locator("#expression").textContent(), "Divides(succ(succ(i)),m)");
-  assert.match(await workbench.locator("#context").textContent(), /n :Nat/);
+  assert.match(await workbench.locator("#context").textContent(), /n :UNat/);
   await workbench.locator("#fold-names").uncheck();
   assert.match(await workbench.locator("#expression").textContent(), /prime_divisor_exists/);
   await workbench.locator("#fold-names").check();
@@ -332,10 +341,10 @@ theory Parent(U < UU0) { M : U;
   await workbench.waitForFunction(() => document.querySelector("#name")?.textContent === "i");
   await workbench.locator("#back").click();
   await workbench.locator("details summary").click();
-  // The exported type is itself a U0 term: replace it with Nat and recheck.
+  // The exported type is itself a U0 term: replace it with UNat and recheck.
   await workbench.locator("#syntax").fill(JSON.stringify(natural));
   await workbench.locator("#check").click();
-  assert.equal(await workbench.locator("#expression").textContent(), "Nat");
+  assert.equal(await workbench.locator("#expression").textContent(), "UNat");
   await workbench.locator("#syntax").fill('{"tag":"Var","name":"missing"}');
   await workbench.locator("#check").click();
   assert.equal(await workbench.locator("#diagnostic").isVisible(), true);
@@ -361,9 +370,9 @@ theory Parent(U < UU0) { M : U;
   // node links lead back into the assembly's syntax graph.
   await assemblyBench.locator("#workbench-view").selectOption("graph");
   assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
-  // hd is a local definition over n : Nat, derived with its context entry.
+  // hd is a local definition over n : UNat, derived with its context entry.
   assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
-    /^\{n : Nat\} ⊢ prime_divisor_exists\(.*\)\.2\.2 : Divides\(/);
+    /^\{n : UNat\} ⊢ prime_divisor_exists\(.*\)\.2\.2 : Divides\(/);
   // A lookup's definition is derived on request, as the lookup's premise, or
   // says which rule it still needs.
   const rows = await assemblyBench.locator(".graph-row").count();
@@ -418,12 +427,12 @@ theory Parent(U < UU0) { M : U;
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`import nat;
-    use nat;
-    def N := Nat;
+  await page.locator("#editor").fill(`import unat;
+    use unat;
+    def N := UNat;
     def IdentityType(A : U0) := A;
     def Alias := IdentityType(N);
-    def id_(n : Nat) := n;
+    def id_(n : UNat) := n;
     def value := typed(Alias, id_(0));`);
   await page.locator("#check").click(); await idle(); await inspected("value");
   const reductionPopup = page.waitForEvent("popup");
@@ -447,11 +456,11 @@ theory Parent(U < UU0) { M : U;
   await selectReduction("type", "beta");
   assert.equal(await reductionBench.locator("#type").textContent(), "N");
   await selectReduction("type", "delta");
-  assert.equal(await reductionBench.locator("#type").textContent(), "Nat");
+  assert.equal(await reductionBench.locator("#type").textContent(), "UNat");
   await reductionBench.locator("#back").click();
   assert.equal(await reductionBench.locator("#type").textContent(), "N");
   await reductionBench.locator("#normalize-type").click();
-  assert.equal(await reductionBench.locator("#type").textContent(), "Nat");
+  assert.equal(await reductionBench.locator("#type").textContent(), "UNat");
   await selectReduction("expression", "delta", ["arg", "fn"]);
   assert.match(await reductionBench.locator("#reduction-status").textContent(), /δ expression: id/);
   await selectReduction("expression", "beta");
@@ -506,9 +515,9 @@ theory Parent(U < UU0) { M : U;
   await reductionBench.close();
   await page.locator("#edit-mode").click();
   await page.locator("#editor").fill(`import primes;
-    use nat;
-    simp_rule nat_add_zero;
-    def frozen(n : Nat) : n + 0 = n { simp; }
+    use unat;
+    simp_rule unat_add_zero;
+    def frozen(n : UNat) : n + 0 = n { simp; }
   `);
   await page.locator("#check").click(); await idle();
   await page.locator('#read-source button[data-name="simp"]').click(); await inspected("simp");
@@ -517,14 +526,14 @@ theory Parent(U < UU0) { M : U;
   await page.locator("#back").click(); await inspected("simp");
   assert.equal(await page.locator("#freeze-simp").isVisible(),true);
   await page.locator("#freeze-simp").click(); await idle();
-  assert.match(await page.locator("#editor").inputValue(),/simp only \[nat_add_zero\];/);
+  assert.match(await page.locator("#editor").inputValue(),/simp only \[unat_add_zero\];/);
   assert.equal(await page.locator("#diagnostic").isVisible(),false);
   if(!await page.locator("#editor").isVisible()) await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`import nat;
-    def generic_calc(U < UU0, x : Nat) : x = x {
+  await page.locator("#editor").fill(`import unat;
+    def generic_calc(U < UU0, x : UNat) : x = x {
       calc { x = x by refl(x); }
     }
-    def generic_simp(U < UU0, f : Nat -> Nat, n : Nat, h : f(n) = n) : f(n) = n {
+    def generic_simp(U < UU0, f : UNat -> UNat, n : UNat, h : f(n) = n) : f(n) = n {
       simp [h];
     }`);
   await page.locator("#check").click(); await idle();
@@ -538,19 +547,19 @@ theory Parent(U < UU0) { M : U;
   const genericTransfer=await page.evaluate(async()=>{
     const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
-    const source=`import primes; use nat;
-      def generic(U < UU0, n : Nat) : n + 0 = n {
-        calc { n + 0 = n by nat_add_zero(n); }
+    const source=`import primes; use unat;
+      def generic(U < UU0, n : UNat) : n + 0 = n {
+        calc { n + 0 = n by unat_add_zero(n); }
       }`;
-    // A module the archive does not hold, such as nat, is read as missing;
-    // the program then loads nat's bundled source.
+    // A module the archive does not hold, such as unat, is read as missing;
+    // the program then loads unat's bundled source.
     const program=new CubicalProgram(await createCubical(),async name=>{
       const response=await fetch(`/archive/first-library/${name}.cubist`);
       return response.ok?response.text():null;
     });
     try {
       const result=await program.check(source,"browser_generic_calc");
-      const offset=source.indexOf("by nat_add_zero");
+      const offset=source.indexOf("by unat_add_zero");
       const step=result.links.find(link=>link.start===offset&&link.role==="calculation step");
       return saveWorkbenchTransfer(program.export(step.binding));
     } finally {program.dispose();}
@@ -562,7 +571,7 @@ theory Parent(U < UU0) { M : U;
   const sharedTransfer=await page.evaluate(async()=>{
     const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
-    let source="import nat; use nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+    let source="import unat; use unat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
     for(let i=1;i<=28;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
     source+="let h : forall x : T28. x = x { intro x; exact path i => x; } rfl; }";
     const program=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");});
@@ -594,7 +603,7 @@ theory Parent(U < UU0) { M : U;
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import classical;"), /check incomplete/);
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /· checked/);
   assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
-  assert.match(await statusAfterImport("universe_automorphisms", "library", "import nat;"), /· checked/);
+  assert.match(await statusAfterImport("universe_automorphisms", "library", "import unat;"), /· checked/);
   // A check started from Edit shows the checked source, revealing the named
   // declaration; editing that goes on during the check stays open instead.
   const editDuringCheck = async typed => {

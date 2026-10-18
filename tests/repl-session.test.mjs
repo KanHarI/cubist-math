@@ -18,11 +18,11 @@ const texts = results => results.map(result => `${result.kind}: ${result.text}`)
 
 test("statements end at ; outside brackets, and a block declaration at its brace", () => {
   assert.deepEqual(replStatements("let x := 7; typeof x;").statements, ["let x := 7;", "typeof x;"]);
-  assert.deepEqual(replStatements("def a : Nat {\n  exact 1;\n}\nevaluate a").statements, ["def a : Nat {\n  exact 1;\n}"]);
-  assert.equal(replStatements("def a : Nat {\n  exact 1;\n}\nevaluate a").rest, "evaluate a");
+  assert.deepEqual(replStatements("def a : UNat {\n  exact 1;\n}\nevaluate a").statements, ["def a : UNat {\n  exact 1;\n}"]);
+  assert.equal(replStatements("def a : UNat {\n  exact 1;\n}\nevaluate a").rest, "evaluate a");
   assert.deepEqual(replStatements("def f := match x { left a => 1; right b => 2; };").statements,
     ["def f := match x { left a => 1; right b => 2; };"]);
-  assert.equal(replStatements("def a : Nat {\n  exact").depth, 1);
+  assert.equal(replStatements("def a : UNat {\n  exact").depth, 1);
   assert.deepEqual(replStatements("// a comment; with a semicolon\ntypeof 1;").statements, ["// a comment; with a semicolon\ntypeof 1;"]);
   // A brace within a term ends nothing: what follows a box, a match or
   // implicit arguments stays in its statement.
@@ -43,27 +43,27 @@ test("statements end at ; outside brackets, and a block declaration at its brace
 
 test("let binds, typeof shows the type, and evaluate the value", async t => {
   const repl = await session(t);
-  assert.deepEqual(texts(await repl.run("import nat;")), ["info: Imported nat."]);
+  assert.deepEqual(texts(await repl.run("import unat;")), ["info: Imported unat."]);
   // A use selects for every entry after it, as at a file's top level.
-  assert.deepEqual(texts(await repl.run("use nat;")), ["info: Selected nat."]);
-  assert.deepEqual(texts(await repl.run("let x := 7;")), ["defined: x : Nat"]);
-  assert.deepEqual(texts(await repl.run("typeof x;")), ["type: Nat"]);
+  assert.deepEqual(texts(await repl.run("use unat;")), ["info: Selected unat."]);
+  assert.deepEqual(texts(await repl.run("let x := 7;")), ["defined: x : UNat"]);
+  assert.deepEqual(texts(await repl.run("typeof x;")), ["type: UNat"]);
   assert.deepEqual(texts(await repl.run("evaluate x;")), ["value: 7"]);
   // A term alone is evaluated, and a last statement may omit its `;`.
   assert.deepEqual(texts(await repl.run("x")), ["value: 7"]);
-  assert.deepEqual(texts(await repl.run("typeof fun (n : Nat) => succ(n)")), ["type: Nat -> Nat"]);
+  assert.deepEqual(texts(await repl.run("typeof fun (n : UNat) => succ(n)")), ["type: UNat -> UNat"]);
   // A print directive is an entry too.
   assert.deepEqual(texts(await repl.run("print(evaluate(succ(x)));")), ["value: 8"]);
-  assert.deepEqual(texts(await repl.run("print(typeof(x))")), ["value: Nat"]);
+  assert.deepEqual(texts(await repl.run("print(typeof(x))")), ["value: UNat"]);
   assert.deepEqual(texts(await repl.run("print(inspect(succ(x)));")), ["value: succ(x)"]);
 });
 
 test("imports, declarations with blocks, and errors that leave the session unchanged", async t => {
   const repl = await session(t);
-  assert.deepEqual(texts(await repl.run("import nat;")), ["info: Imported nat."]);
+  assert.deepEqual(texts(await repl.run("import unat;")), ["info: Imported unat."]);
   // A use that selects nothing is refused, and changes nothing.
   assert.deepEqual(texts(await repl.run("use nowhere;")), ["error: E343: Untranslated name: nowhere"]);
-  assert.deepEqual(texts(await repl.run("use nat;")), ["info: Selected nat."]);
+  assert.deepEqual(texts(await repl.run("use unat;")), ["info: Selected unat."]);
   assert.deepEqual(texts(await repl.run("evaluate 2 + 3 * 4;")), ["value: 14"]);
   assert.deepEqual(texts(await repl.run("def four_is_four : 2 + 2 = 4 {\n  exact refl(4);\n}")), ["defined: four_is_four : 2 + 2 = 4"]);
   assert.deepEqual(texts(await repl.run("def wrong : 2 + 2 = 5 {\n  exact refl(4);\n}")),
@@ -77,7 +77,7 @@ test("imports, declarations with blocks, and errors that leave the session uncha
 
 test("plain evaluation stays scratch work and explicit expectations still reject wrong values", async t => {
   const repl = await session(t);
-  await repl.run("import nat; use nat; let saved := 7;");
+  await repl.run("import unat; use unat; let saved := 7;");
   const previous = repl.previous, accepted = [...repl.accepted], uses = [...repl.uses];
   assert.deepEqual(texts(await repl.run("evaluate 2 * 255;")), ["value: 510"]);
   assert.deepEqual(texts(await repl.run("saved + 1")), ["value: 8"]);
@@ -85,7 +85,7 @@ test("plain evaluation stays scratch work and explicit expectations still reject
   assert.deepEqual(texts(await repl.run("evaluate 2 + 2 expecting 5;")),
     ["error: E326: The term evaluates to 4, not 5."]);
   assert.deepEqual(texts(await repl.run("evaluate 2 + 2 expecting tt;")),
-    ["error: E325: The evaluated term has type Nat, but the expected value has type Unit."]);
+    ["error: E325: The evaluated term has type UNat, but the expected value has type Unit."]);
   assert.deepEqual(texts(await repl.run("evaluate saved;")), ["value: 7"]);
   assert.equal(repl.previous, previous);
   assert.deepEqual(repl.accepted, accepted);
@@ -109,21 +109,21 @@ test("plain evaluation preserves selected notation and non-computing assumption 
 
 test("plain evaluation displays like print after selecting a call-form model", async t => {
   const repl = await session(t);
-  await repl.run("import nat; import algebra; use nat;");
-  await repl.run("def pick(n : Nat) : Monoid(U0) := nat_multiplicative.monoid; use pick(0);");
-  assert.deepEqual(texts(await repl.run("evaluate nat.(3);")), ["value: 3"]);
-  assert.deepEqual(texts(await repl.run("print(evaluate(nat.(3)));")), ["value: 3"]);
+  await repl.run("import unat; import algebra; use unat;");
+  await repl.run("def pick(n : UNat) : Monoid(U0) := nat_multiplicative.monoid; use pick(0);");
+  assert.deepEqual(texts(await repl.run("evaluate unat.(3);")), ["value: unat.(3)"]);
+  assert.deepEqual(texts(await repl.run("print(evaluate(unat.(3)));")), ["value: unat.(3)"]);
   // This is the existing print display: the selected model has no numeral
   // reader, so a displayed numeral needs qualification when entered again.
   assert.deepEqual(texts(await repl.run("evaluate 3;")),
     ["error: E907: this model's notation reads no numeral 3: write nat.(3) for a natural number, or select a notation that reads it."]);
-  assert.deepEqual(texts(await repl.run("evaluate nat.(3);")), ["value: 3"]);
+  assert.deepEqual(texts(await repl.run("evaluate unat.(3);")), ["value: unat.(3)"]);
 });
 
 test("witness reads a closed truncation's witness, with its type", async t => {
   const repl = await session(t);
-  assert.deepEqual(texts(await repl.run("import h1_truncation; use nat;")), ["info: Imported h1_truncation.", "info: Selected nat."]);
-  assert.deepEqual(texts(await repl.run("witness merely(U0, Nat, 2 + 1);")), ["value: 3 : Nat"]);
+  assert.deepEqual(texts(await repl.run("import h1_truncation; use unat;")), ["info: Imported h1_truncation.", "info: Selected unat."]);
+  assert.deepEqual(texts(await repl.run("witness merely(U0, UNat, 2 + 1);")), ["value: 3 : UNat"]);
   assert.match(texts(await repl.run("witness 3;"))[0], /^error: E479: witness reads a closed truncation/);
 });
 
@@ -138,13 +138,13 @@ test("a box is a term: its projection, application and expectation stay in the e
 });
 
 test("a session over a proof sees its names, and rebases onto a rechecked proof", async t => {
-  const repl = await session(t, "import nat; use nat;\ndef double(n : Nat) := n + n;\n");
+  const repl = await session(t, "import unat; use unat;\ndef double(n : UNat) := n + n;\n");
   assert.deepEqual(texts(await repl.run("evaluate double(21);")), ["value: 42"]);
-  assert.deepEqual(texts(await repl.run("let y := double(2);")), ["defined: y : Nat"]);
+  assert.deepEqual(texts(await repl.run("let y := double(2);")), ["defined: y : UNat"]);
   assert.equal(repl.program.main, "proof", "the program still presents the proof");
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef double(n : Nat) := n + n + n;\n", "proof");
+  await program.check("import unat; use unat;\ndef double(n : UNat) := n + n + n;\n", "proof");
   const rebased = await repl.rebase(program);
   assert.deepEqual(texts(await rebased.run("evaluate y")), ["value: 6"]);
 });

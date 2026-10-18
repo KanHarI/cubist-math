@@ -17,7 +17,7 @@ const check = (t, source, fixtures = {}, options = {}) => {
 for (const [label, source, original, kind] of [
   ["definition then inductive", "def N : Unit := tt; inductive N : U0 { c; } def client : Unit := N;", "N", "def"],
   ["inductive then definition", "inductive N : U0 { c; } def N : Unit := tt; def client : N := c;", "N", "inductive"],
-  ["two definitions", "def N : Unit := tt; def N : U0 := Nat; def client : Unit := N;", "N", "def"],
+  ["two definitions", "def N : Unit := tt; def N : U0 := UNat; def client : Unit := N;", "N", "def"],
   ["definition then constructor", "def c : Unit := tt; inductive N : U0 { c; } def client : Unit := c;", "c", "def"],
   ["constructor then definition", "inductive N : U0 { c; } def c : Unit := tt; def client : N := c;", "N", "inductive"],
   ["constructor then type", "inductive N : U0 { c; } inductive c : U0 { other; } def client : N := c;", "N", "inductive"],
@@ -91,17 +91,17 @@ def after := c2;`;
   }
 });
 
-test("FG1 refusal: a refused local Nat cannot verify clients against imported Nat", async t => {
-  const {result,get} = await check(t,`import nat;
+test("FG1 refusal: a refused local UNat cannot verify clients against imported UNat", async t => {
+  const {result,get} = await check(t,`import unat;
 def zero : Unit := tt;
-inductive Nat : U0 { zero; succ(n : Nat); }
-def two : Nat := succ(succ(nat.(0)));
-def check_two : two = nat.(2) := refl(two);
+inductive UNat : U0 { zero; succ(n : UNat); }
+def two : UNat := succ(succ(unat.(0)));
+def check_two : two = unat.(2) := refl(two);
 def original : Unit := zero;`);
-  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["Nat","E872"],["two","E340"],["check_two","E340"]]);
+  assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),[["UNat","E872"],["two","E340"],["check_two","E340"]]);
   for(const name of ["two","check_two"]) {
     assert.equal(get(name).verified,false);
-    assert.equal(get(name).blockedBy,"main__Nat");
+    assert.equal(get(name).blockedBy,"main__UNat");
     assert.equal(get(name).cause,result.gaps[0].reason);
   }
   assert.equal(get("original").verified,true);
@@ -228,10 +228,10 @@ def client : N := N.c;`);
 });
 
 test("FG1: model notation extensions are separate from ownership and a refused extension preserves the model", async t => {
-  const source=`import hlevels; import nat;
+  const source=`import hlevels; import unat;
 theory T(U < UU0) { M : set U; c : M; }
-def n := T.make(Nat, nat_is_set, zero);
-notation n { numeral(k : Nat) := zero; }
+def n := T.make(UNat, unat_is_set, zero);
+notation n { numeral(k : UNat) := zero; }
 def selected : n.M := n.(7);
 notation n { x + y := add(x, y); }
 def after : n.M := n.(8);`;
@@ -449,12 +449,12 @@ def identity(S : T(U0)) := T.Hom.id(S);`, {}, injected("T.helper"));
 });
 
 test("FG1: an operator or numeral whose derived operation failed reports that operation's failure", async t => {
-  const source = `import hlevels; import nat;
+  const source = `import hlevels; import unat;
 theory T(U < UU0) {
   M : set U; c : M; op(x, y : M) : M notation x + y;
   def sub(x, y : M) : M := op(x, y) notation x - y;
   def opposite(x : M) : M := x notation - x;
-  def of_nat(n : Nat) : M := c notation numeral;
+  def of_nat(n : UNat) : M := c notation numeral;
 }
 def plus(S : T(U0)) : S.M { use S; exact c + c; }
 def minus(S : T(U0)) : S.M { use S; exact c - c; }

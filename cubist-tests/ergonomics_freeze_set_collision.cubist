@@ -2,10 +2,10 @@
 // by a named simplification set.
 
 import primes;
-use nat;
+use unat;
 
-simp_rule nat_add_zero;
-simp_set nat_add_zero := [];
-def checked(n : Nat) : n + 0 = n {
+simp_rule unat_add_zero;
+simp_set unat_add_zero := [];
+def checked(n : UNat) : n + 0 = n {
   simp;
 }

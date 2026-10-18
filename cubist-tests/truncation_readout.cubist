@@ -4,24 +4,24 @@
 // the truncation: it reads a closed value, as evaluate does.
 import h1_truncation;
 import paths_;
-use nat;
+use unat;
 
-// Output: 3 : Nat
-print(witness(merely(U0, Nat, 3)));
+// Output: 3 : UNat
+print(witness(merely(U0, UNat, 3)));
 
 // A map under the truncation computes first.
-// Output: 4 : Nat
-print(witness(mere_map(U0, U0, Nat, Nat, fun (n : Nat) => n + 1, point(3))));
+// Output: 4 : UNat
+print(witness(mere_map(U0, U0, UNat, UNat, fun (n : UNat) => n + 1, point(3))));
 
 // An end of the squash path is the truncation there.
-// Output: 1 : Nat
-print(witness(typed(Trunc(U0, Nat), Trunc.squash(point(1), point(2)) @ 0)));
+// Output: 1 : UNat
+print(witness(typed(Trunc(U0, UNat), Trunc.squash(point(1), point(2)) @ 0)));
 
 // A witness with its certificate: a number above 2, and the evidence,
 // which the kernel checked with the rest of the term.
-def above_two : Trunc(U0, exists n : Nat. 2 < n) := point((3, tt));
+def above_two : Trunc(U0, exists n : UNat. 2 < n) := point((3, tt));
 
-// Output: (3, tt) : exists n : Nat. 2 < n
+// Output: (3, tt) : exists n : UNat. 2 < n
 print(witness(above_two));
 
 // A truncation in a larger universe: the witness is read at the requested
@@ -37,29 +37,29 @@ print(witness(lifted));
 // A transported truncation: along a path of types, the witness is of the
 // type at its end. Swapping a pair's components is an equivalence, and so a
 // path, by univalence.
-def swap(p : Unit and Nat) := unpack p as (u, n) return Nat and Unit {
-    typed(Nat and Unit, (n, u));
+def swap(p : Unit and UNat) := unpack p as (u, n) return UNat and Unit {
+    typed(UNat and Unit, (n, u));
   };
 
-def swap_back(p : Nat and Unit) := unpack p as (n, u) return Unit and Nat {
-    typed(Unit and Nat, (u, n));
+def swap_back(p : UNat and Unit) := unpack p as (n, u) return Unit and UNat {
+    typed(Unit and UNat, (u, n));
   };
 
-computable def swap_equivalence : Equiv(U0, Unit and Nat, Nat and Unit) {
+computable def swap_equivalence : Equiv(U0, Unit and UNat, UNat and Unit) {
   exact (
-    swap, swap_back, fun (p : Unit and Nat) => refl(p), fun (q : Nat and Unit) => refl(q),
-    fun (p : Unit and Nat) => refl(refl(swap(p)))
+    swap, swap_back, fun (p : Unit and UNat) => refl(p), fun (q : UNat and Unit) => refl(q),
+    fun (p : Unit and UNat) => refl(refl(swap(p)))
   );
 }
 
-computable def swapped : (Unit and Nat) = (Nat and Unit) {
-  exact ua(U0, Unit and Nat, Nat and Unit, swap_equivalence);
+computable def swapped : (Unit and UNat) = (UNat and Unit) {
+  exact ua(U0, Unit and UNat, UNat and Unit, swap_equivalence);
 }
 
-// Output: (5, tt) : Nat and Unit
+// Output: (5, tt) : UNat and Unit
 print(
   witness(
-    transport typed(Trunc(U0, Unit and Nat), point((tt, 5))) along swapped in (
+    transport typed(Trunc(U0, Unit and UNat), point((tt, 5))) along swapped in (
       fun (T : U0) => Trunc(U0, T)
     )
   )
@@ -67,5 +67,5 @@ print(
 
 // Only a truncation has a witness to read.
 // Error: E479: witness reads a closed truncation, a value of a truncated declared type such as
-//   Trunc(U, A); this is a value of Nat.
+//   Trunc(U, A); this is a value of UNat.
 print(witness(3));

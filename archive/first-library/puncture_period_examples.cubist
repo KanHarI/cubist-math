@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import puncture_periods;
 import puncture_noncommutative;
-use nat;
+use unat;
 
 // The noncontractible commutator is invisible to every additive period.
 // This does NOT identify paths having the same winding vector.
@@ -22,8 +22,8 @@ def nontrivial_loop_with_zero_period(
 
 // Reversing a generator negates its local contribution.
 def puncture_period_reversed_generator(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
-  period : BouquetLoops(Fin(n)) -> G,
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G,
+  laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   i : Fin(n)
 ) :

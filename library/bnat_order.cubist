@@ -17,9 +17,9 @@ computable def unat_compare_even_even(a, b : UNat) :
     succ(x), zero => refl(b_greater);
     succ(x),
     succ(y) => trans(
-      cong(fun (n : UNat) => unat_compare(succ(n), succ(y) + succ(y)), nat_add_succ(x, x)),
+      cong(fun (n : UNat) => unat_compare(succ(n), succ(y) + succ(y)), unat_add_succ(x, x)),
       trans(
-        cong(fun (n : UNat) => unat_compare(succ(succ(x + x)), succ(n)), nat_add_succ(y, y)),
+        cong(fun (n : UNat) => unat_compare(succ(succ(x + x)), succ(n)), unat_add_succ(y, y)),
         unat_compare_even_even(x, y)
       )
     );
@@ -29,12 +29,12 @@ computable def unat_compare_even_odd(a, b : UNat) :
   unat_compare(a + a, succ(b + b)) = bnat_even_odd_order(unat_compare(a, b)) := match a, b {
     zero, zero => refl(b_less);
     zero, succ(y) => refl(b_less);
-    succ(x), zero => cong(fun (n : UNat) => unat_compare(succ(n), succ(zero)), nat_add_succ(x, x));
+    succ(x), zero => cong(fun (n : UNat) => unat_compare(succ(n), succ(zero)), unat_add_succ(x, x));
     succ(x),
     succ(y) => trans(
-      cong(fun (n : UNat) => unat_compare(succ(n), succ(succ(y) + succ(y))), nat_add_succ(x, x)),
+      cong(fun (n : UNat) => unat_compare(succ(n), succ(succ(y) + succ(y))), unat_add_succ(x, x)),
       trans(
-        cong(fun (n : UNat) => unat_compare(succ(succ(x + x)), succ(succ(n))), nat_add_succ(y, y)),
+        cong(fun (n : UNat) => unat_compare(succ(succ(x + x)), succ(succ(n))), unat_add_succ(y, y)),
         unat_compare_even_odd(x, y)
       )
     );
@@ -43,13 +43,13 @@ computable def unat_compare_even_odd(a, b : UNat) :
 computable def unat_compare_odd_even(a, b : UNat) :
   unat_compare(succ(a + a), b + b) = bnat_odd_even_order(unat_compare(a, b)) := match a, b {
     zero, zero => refl(b_greater);
-    zero, succ(y) => cong(fun (n : UNat) => unat_compare(succ(zero), succ(n)), nat_add_succ(y, y));
+    zero, succ(y) => cong(fun (n : UNat) => unat_compare(succ(zero), succ(n)), unat_add_succ(y, y));
     succ(x), zero => refl(b_greater);
     succ(x),
     succ(y) => trans(
-      cong(fun (n : UNat) => unat_compare(succ(succ(n)), succ(y) + succ(y)), nat_add_succ(x, x)),
+      cong(fun (n : UNat) => unat_compare(succ(succ(n)), succ(y) + succ(y)), unat_add_succ(x, x)),
       trans(
-        cong(fun (n : UNat) => unat_compare(succ(succ(succ(x + x))), succ(n)), nat_add_succ(y, y)),
+        cong(fun (n : UNat) => unat_compare(succ(succ(succ(x + x))), succ(n)), unat_add_succ(y, y)),
         unat_compare_odd_even(x, y)
       )
     );

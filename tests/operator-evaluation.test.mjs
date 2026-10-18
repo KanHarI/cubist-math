@@ -34,7 +34,7 @@ function tree(depth) {
 // The tree written with only the parentheses its grouping needs; each
 // operator qualified, x arith.(op) y, where `qualify` says.
 function written(node, qualify) {
-  if (node.literal !== undefined) return `nat.(${node.literal})`;
+  if (node.literal !== undefined) return `unat.(${node.literal})`;
   const side = (child, isRight) => {
     const text = written(child, qualify);
     if (child.literal !== undefined) return text;
@@ -57,11 +57,11 @@ test("random arithmetic evaluates as BigInt does, in a selection and qualified",
   // The examples that once went wrong: ^ inside *, and a qualified ^,
   // which groups to the right (left, it would be 8). Values stay small:
   // a numeral is unary in the kernel.
-  cases.push({ source: "arith.(nat.(2) * nat.(3) ^ nat.(2))", value: 18n });
-  cases.push({ source: "nat.(2) arith.(^) nat.(1) arith.(^) nat.(3)", value: 2n });
-  const source = `import nat;
+  cases.push({ source: "arith.(unat.(2) * unat.(3) ^ unat.(2))", value: 18n });
+  cases.push({ source: "unat.(2) arith.(^) unat.(1) arith.(^) unat.(3)", value: 2n });
+  const source = `import unat;
 
-def power(x, n : Nat) : Nat := induction n return Nat { zero => succ(zero); succ h => mul(x, h); };
+def power(x, n : UNat) : UNat := induction n return UNat { zero => succ(zero); succ h => mul(x, h); };
 
 notation arith {
   x + y := add(x, y);
@@ -76,6 +76,6 @@ ${cases.map(({ source }) => `print(evaluate(${source}));`).join("\n")}
   const result = await program.check(source, "arithmetic");
   assert.deepEqual(result.gaps ?? [], []);
   assert.equal(result.prints.length, cases.length);
-  // A natural number prints as nat.(n) where nothing is selected (L2.10j).
-  result.prints.forEach((print, k) => assert.equal(print.text.replace(/^nat\.\((\d+)\)$/, "$1"), String(cases[k].value), cases[k].source));
+  // A natural number prints as unat.(n) where nothing is selected (L2.10j).
+  result.prints.forEach((print, k) => assert.equal(print.text.replace(/^unat\.\((\d+)\)$/, "$1"), String(cases[k].value), cases[k].source));
 });

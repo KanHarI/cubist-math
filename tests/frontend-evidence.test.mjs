@@ -31,15 +31,15 @@ def coordinate_value : coordinate(base, yes) = base { rfl; }
 def coordinate_loop : base = base := path k => coordinate(loop @ k, yes);
 def coordinate_path : coordinate_loop = loop { rfl; }
 def wrong_path : coordinate_loop = refl(base) { rfl; }
-def constructor(b : Bit) : Nat := match zero, b { n, off => n; n, yes => succ(n); };
+def constructor(b : Bit) : UNat := match zero, b { n, off => n; n, yes => succ(n); };
 def constructor_value : constructor(yes) = succ(zero) { rfl; }
 def wrong_constructor : constructor(yes) = zero { rfl; }
 notation pick { x + y := match x, y { zero, m => m; succ(n), m => succ(m); }; }
-def operand : Nat := pick.(succ(zero) + succ(zero));
+def operand : UNat := pick.(succ(zero) + succ(zero));
 def operand_value : operand = succ(succ(zero)) { rfl; }
 def wrong_operand : operand = succ(zero) { rfl; }`;
   for(const context of ["", "theory T(U < UU0) { M : set U; }", "import algebra;"]) {
-    const {result,get}=await check(t,`import nat; import hlevels; ${context}\n${body}`);
+    const {result,get}=await check(t,`import unat; import hlevels; ${context}\n${body}`);
     assert.deepEqual(result.gaps.map(g=>[g.name,g.code]),
       [["wrong_path","E606"],["wrong_constructor","E606"],["wrong_operand","E606"]],JSON.stringify(result.gaps));
     for(const name of ["coordinate_value","coordinate_path","constructor_value","operand_value"])
@@ -48,11 +48,11 @@ def wrong_operand : operand = succ(zero) { rfl; }`;
 });
 
 test("CB3: dependent motives rebuild evidence for generalized model parameters",async t=>{
-  const {result,get}=await check(t,`import hlevels; import nat;
+  const {result,get}=await check(t,`import hlevels; import unat;
 inductive Bit : set U0 { off; yes; }
-theory T(U < UU0, n : Nat) { M : set U; c : M; }
+theory T(U < UU0, n : UNat) { M : set U; c : M; }
 def unit_set : IsSet(U0,Unit) { hlevel; }
-def value(n : Nat, S : T(U0,n), b : Bit) : S.M {
+def value(n : UNat, S : T(U0,n), b : Bit) : S.M {
   match n {
     zero => { exact S.c; }
     succ(k) => {

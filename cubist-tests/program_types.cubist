@@ -1,27 +1,27 @@
-// Nat and W as ordinary source declarations, from
-// tests/program-types.test.mjs: imported Nat has generic constructors,
+// UNat and W as ordinary source declarations, from
+// tests/program-types.test.mjs: imported UNat has generic constructors,
 // literals and elimination; source W and its dependent eliminator compute at
 // finite universes; and an ordinary W declaration at a fixed higher universe
 // checks.
-import nat;
+import unat;
 import w;
-use nat;
+use unat;
 
-// Imported Nat has generic constructors, literals and elimination.
-def two : Nat := 2;
+// Imported UNat has generic constructors, literals and elimination.
+def two : UNat := 2;
 
-// Nat is a declared type, and W too.
-// Output: inductive Nat : U0 (type) { zero : Nat [0 data, 0 positions, 0 dimensions]; succ : Nat ->
-//   Nat [0 data, 1 position, 0 dimensions]; } eliminator for P : Nat -> U { zero_case : P(0);
-//   succ_case : forall x : Nat. P(x) -> P(succ(x)); }
-print(inspect(Nat));
+// UNat is a declared type, and W too.
+// Output: inductive UNat : U0 (type) { zero : UNat [0 data, 0 positions, 0 dimensions]; succ : UNat ->
+//   UNat [0 data, 1 position, 0 dimensions]; } eliminator for P : UNat -> U { zero_case : P(0);
+//   succ_case : forall x : UNat. P(x) -> P(succ(x)); }
+print(inspect(UNat));
 // Output: inductive W : forall U < UU0. forall V < UU0. forall A1 : U. (A1 -> V) -> max(U, V)
 //   (type) { sup : forall a : A. (B(a) -> W) -> W [1 data, 1 position, 0 dimensions]; } eliminator
 //   for P : W(__U, __U, A, B) -> X { sup_case : forall x : A. forall x1 : B(x) -> W(__U, __U, A,
 //   B). (forall x2 : B(x). P(x1(x2))) -> P(sup(x, x1)); }
 print(inspect(W));
 
-def double(n : Nat) : Nat := match n {
+def double(n : UNat) : UNat := match n {
     zero => zero;
     succ(k) => succ(succ(double(k)));
   };
@@ -30,7 +30,7 @@ def four : double(two) = 4 {
   rfl;
 }
 
-def predecessor(n : Nat) := induction n as k return Nat {
+def predecessor(n : UNat) := induction n as k return UNat {
     zero => 0;
     succ h => k;
   };
@@ -45,8 +45,8 @@ def Tree := W(U1, U0, Unit, fun (a : Unit) => Void);
 def leaf : Tree := sup(tt, fun (v : Void) => typed(Tree, absurd(v)));
 
 def result := wrec(
-  U1, U0, U0, Unit, (fun (a : Unit) => Void), (fun (t : Tree) => Nat),
-  (fun (a : Unit, children : Void -> Tree, ih : Void -> Nat) => 2), leaf
+  U1, U0, U0, Unit, (fun (a : Unit) => Void), (fun (t : Tree) => UNat),
+  (fun (a : Unit, children : Void -> Tree, ih : Void -> UNat) => 2), leaf
 );
 
 def computed : result = 2 {

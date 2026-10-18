@@ -1,38 +1,38 @@
-import nat;
+import unat;
 import field_arithmetic;
 import primes;
-use nat;
+use unat;
 
 // Formal coefficient functions. There is deliberately no equality of
 // evaluation functions here: distinct polynomials may agree on a finite field.
-def FormalSeries(K : AlgebraicField) := Nat -> af_carrier(K);
+def FormalSeries(K : AlgebraicField) := UNat -> af_carrier(K);
 
-def series_zero(K : AlgebraicField) := fun (n : Nat) => field_zero(K);
+def series_zero(K : AlgebraicField) := fun (n : UNat) => field_zero(K);
 
 def series_add(K : AlgebraicField, f, g : FormalSeries(K)) :=
-  fun (n : Nat) => field_add(K, f(n), g(n));
+  fun (n : UNat) => field_add(K, f(n), g(n));
 
-def series_neg(K : AlgebraicField, f : FormalSeries(K)) := fun (n : Nat) => field_neg(K, f(n));
+def series_neg(K : AlgebraicField, f : FormalSeries(K)) := fun (n : UNat) => field_neg(K, f(n));
 
 def series_scale(K : AlgebraicField, a : af_carrier(K), f : FormalSeries(K)) :=
-  fun (n : Nat) => field_mul(K, a, f(n));
+  fun (n : UNat) => field_mul(K, a, f(n));
 
-def series_tail(K : AlgebraicField, f : FormalSeries(K)) := fun (n : Nat) => f(succ(n));
+def series_tail(K : AlgebraicField, f : FormalSeries(K)) := fun (n : UNat) => f(succ(n));
 
-def series_constant(K : AlgebraicField, a : af_carrier(K), n : Nat) :=
+def series_constant(K : AlgebraicField, a : af_carrier(K), n : UNat) :=
   induction n as k return af_carrier(K) {
     zero => a;
     succ ignored => field_zero(K);
   };
 
-def series_shift(K : AlgebraicField, f : FormalSeries(K), n : Nat) :=
+def series_shift(K : AlgebraicField, f : FormalSeries(K), n : UNat) :=
   induction n as k return af_carrier(K) {
     zero => field_zero(K);
     succ ignored => f(k);
   };
 
 // The nth Cauchy coefficient uses exactly n+1 products, by finite recursion.
-def convolution(K : AlgebraicField, n : Nat) :=
+def convolution(K : AlgebraicField, n : UNat) :=
   induction n as k return (FormalSeries(K) -> FormalSeries(K) -> af_carrier(K)) {
     zero => fun (f, g : FormalSeries(K)) => field_mul(K, f(0), g(0));
     succ previous => fun (f, g : FormalSeries(K)) => field_add(
@@ -41,9 +41,9 @@ def convolution(K : AlgebraicField, n : Nat) :=
   };
 
 def series_mul(K : AlgebraicField, f, g : FormalSeries(K)) :=
-  fun (n : Nat) => convolution(K, n, f, g);
+  fun (n : UNat) => convolution(K, n, f, g);
 
-def convolution_zero_left(K : AlgebraicField, n : Nat) :=
+def convolution_zero_left(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall g : FormalSeries(K). convolution(K, k, series_zero(K), g) = field_zero(K)
   ) {
@@ -56,7 +56,7 @@ def convolution_zero_left(K : AlgebraicField, n : Nat) :=
     );
   };
 
-def convolution_zero_right(K : AlgebraicField, n : Nat) :=
+def convolution_zero_right(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). convolution(K, k, f, series_zero(K)) = field_zero(K)
   ) {
@@ -76,7 +76,7 @@ def convolution_zero_right(K : AlgebraicField, n : Nat) :=
     );
   };
 
-def convolution_add_left(K : AlgebraicField, n : Nat) :=
+def convolution_add_left(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). forall g : FormalSeries(K). forall h : FormalSeries(K).
     convolution(K, k, series_add(K, f, g), h) = field_add(
@@ -105,7 +105,7 @@ def convolution_add_left(K : AlgebraicField, n : Nat) :=
     );
   };
 
-def convolution_add_right(K : AlgebraicField, n : Nat) :=
+def convolution_add_right(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). forall g : FormalSeries(K). forall h : FormalSeries(K).
     convolution(K, k, f, series_add(K, g, h)) = field_add(
@@ -134,7 +134,7 @@ def convolution_add_right(K : AlgebraicField, n : Nat) :=
     );
   };
 
-def convolution_scale_left(K : AlgebraicField, a : af_carrier(K), n : Nat) :=
+def convolution_scale_left(K : AlgebraicField, a : af_carrier(K), n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). forall g : FormalSeries(K).
     convolution(K, k, series_scale(K, a, f), g) = field_mul(K, a, convolution(K, k, f, g))
@@ -162,7 +162,7 @@ def convolution_scale_left(K : AlgebraicField, a : af_carrier(K), n : Nat) :=
     );
   };
 
-def convolution_constant_right(K : AlgebraicField, a : af_carrier(K), n : Nat) :=
+def convolution_constant_right(K : AlgebraicField, a : af_carrier(K), n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). convolution(K, k, f, series_constant(K, a)) = field_mul(K, f(k), a)
   ) {
@@ -182,7 +182,7 @@ def convolution_constant_right(K : AlgebraicField, a : af_carrier(K), n : Nat) :
     );
   };
 
-def convolution_shift_right(K : AlgebraicField, n : Nat) :=
+def convolution_shift_right(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). forall g : FormalSeries(K).
     convolution(K, succ(k), f, series_shift(K, g)) = convolution(K, k, f, g)
@@ -207,7 +207,7 @@ def series_decompose(K : AlgebraicField, f : FormalSeries(K)) :
   };
 }
 
-def convolution_right_step(K : AlgebraicField, n : Nat, f, g : FormalSeries(K)) :
+def convolution_right_step(K : AlgebraicField, n : UNat, f, g : FormalSeries(K)) :
   convolution(K, succ(n), f, g) = field_add(
     K, field_mul(K, f(succ(n)), g(0)), convolution(K, n, f, series_tail(K, g))
   ) {
@@ -234,7 +234,7 @@ def convolution_right_step(K : AlgebraicField, n : Nat, f, g : FormalSeries(K)) 
   );
 }
 
-def convolution_comm(K : AlgebraicField, n : Nat) :=
+def convolution_comm(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). forall g : FormalSeries(K).
     convolution(K, k, f, g) = convolution(K, k, g, f)
@@ -260,7 +260,7 @@ def series_mul_tail(K : AlgebraicField, f, g : FormalSeries(K)) :
 }
 
 def convolution_assoc_step(
-  K : AlgebraicField, n : Nat,
+  K : AlgebraicField, n : UNat,
   previous : (
     forall f : FormalSeries(K). forall g : FormalSeries(K). forall h : FormalSeries(K).
     convolution(K, n, series_mul(K, f, g), h) = convolution(K, n, f, series_mul(K, g, h))
@@ -308,7 +308,7 @@ def convolution_assoc_step(
   );
 }
 
-def convolution_assoc(K : AlgebraicField, n : Nat) :=
+def convolution_assoc(K : AlgebraicField, n : UNat) :=
   induction n as k return (
     forall f : FormalSeries(K). forall g : FormalSeries(K). forall h : FormalSeries(K).
     convolution(K, k, series_mul(K, f, g), h) = convolution(K, k, f, series_mul(K, g, h))

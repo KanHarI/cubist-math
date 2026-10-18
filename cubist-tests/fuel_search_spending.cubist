@@ -1,19 +1,19 @@
 // From tests/search-fuel.test.mjs: a search's own questions and rewrites
 // are on its fuel. Reading the goal's endpoints is the search's question,
 // and each rewrite is counted.
-import nat;
-use nat;
+import unat;
+use unat;
 
-def nothing(n : Nat) : n = n {
+def nothing(n : UNat) : n = n {
   simp only [];
 }
 
-def rewritten(n, m : Nat, h : n = m) : n + 0 = m {
-  rw [nat_add_zero(n)];
+def rewritten(n, m : UNat, h : n = m) : n + 0 = m {
+  rw [unat_add_zero(n)];
   exact h;
 }
 
-def targeted(n, m : Nat, h : n = m) : n + 0 = m {
-  rw [nat_add_zero(n)] at lhs;
+def targeted(n, m : UNat, h : n = m) : n + 0 = m {
+  rw [unat_add_zero(n)] at lhs;
   exact h;
 }

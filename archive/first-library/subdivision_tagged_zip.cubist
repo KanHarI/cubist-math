@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import sample_subdivision_conditions;
 import sample_tagged;
 
@@ -10,7 +10,7 @@ def subdivision_tagged_zip_step(
   combine : (
     forall a : C. forall b : C. forall tag : C. forall piece : SampleSubdivision(C, a, b).
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)
-  ), n : Nat,
+  ), n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
     forall pieces : SampleSubdivisions(C, n, vertices). SampleTagged(C, coarse, n, vertices, tags)
@@ -50,7 +50,7 @@ def subdivision_tagged_zip(
   combine : (
     forall a : C. forall b : C. forall tag : C. forall piece : SampleSubdivision(C, a, b).
     coarse(a, b, tag) -> fine(a, b, tag, piece) -> other(a, b, tag, piece)
-  ), n : Nat
+  ), n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   forall pieces : SampleSubdivisions(C, n, vertices). SampleTagged(C, coarse, n, vertices, tags)

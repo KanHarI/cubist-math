@@ -1587,6 +1587,10 @@
    "summary": "`match` on declared types, for `tests/declared-match.test.mjs`: clauses against the kernel's clause types, dependent motives, path and squash clauses, structural recursion, the match statement, recursion whose other arguments vary, and each refusal."
   },
   {
+   "path": "cubist-tests/default_naturals.cubist",
+   "summary": "Default binary naturals compute decimal arithmetic beyond 64 bits, factorial and dependent recursion, with explicit unary notation in mixed views."
+  },
+  {
    "path": "cubist-tests/dimension_degree_regression.cubist",
    "summary": "Extension degree: positive, one for the identity, invariant under extension equality."
   },
@@ -2364,7 +2368,7 @@
   },
   {
    "path": "docs/examples/proof-ergonomics/current/arithmetic.cubist",
-   "summary": "Current expansion for a two-step calc or simp only [nat_add_zero]."
+   "summary": "Current expansion for a two-step calc or simp only [unat_add_zero]."
   },
   {
    "path": "docs/examples/proof-ergonomics/current/dependent-transport.cubist",
@@ -2419,6 +2423,10 @@
    "summary": "Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion."
   },
   {
+   "path": "library/bnat_models.cubist",
+   "summary": "Optional unary and binary commutative-semiring models, their conversion homomorphisms and isomorphism."
+  },
+  {
    "path": "library/bnat_notation.cubist",
    "summary": "Decimal and `0b` literal parsing and the `bnat` notation for arithmetic and order. Parsing builds the binary magnitude directly; unary glyph digits and character offsets never hold the magnitude."
   },
@@ -2436,7 +2444,7 @@
   },
   {
    "path": "library/bnat_semiring.cubist",
-   "summary": "The unary and binary natural commutative semirings, both conversion homomorphisms and their isomorphism; addition cancellation, multiplication cancellation by a nonzero factor, nontriviality and no zero divisors. The arithmetic still computes directly on bits."
+   "summary": "Binary semiring laws, addition and nonzero-factor multiplication cancellation, nontriviality, no zero divisors, and conversion preservation. The arithmetic computes directly on bits; this module does not load the general algebra hierarchy."
   },
   {
    "path": "library/bnat_transport.cubist",
@@ -2468,7 +2476,7 @@
   },
   {
    "path": "library/hlevels.cubist",
-   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg)."
+   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `UNat`, is a set (Hedberg)."
   },
   {
    "path": "library/integers.cubist",
@@ -2484,7 +2492,7 @@
   },
   {
    "path": "library/nat.cubist",
-   "summary": "The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity; the predecessor, the injectivity of `succ`, that 0 is no successor, cancellation of addition and of multiplication by a successor, and trichotomy. Numerals and `+`, `*`, `<` and `<=` need it."
+   "summary": "Public binary `Nat`, an alias of `BNat`, with direct arithmetic and order, decimal/`0b` notation, semiring and cancellation laws, setness, dependent Peano and strong recursion, and factorial."
   },
   {
    "path": "library/ordered_algebra.cubist",
@@ -2512,7 +2520,7 @@
   },
   {
    "path": "library/unat.cubist",
-   "summary": "The explicit unary name `UNat`, currently an alias of `Nat`, with `unat` notation for unary numerals, arithmetic and order."
+   "summary": "Structural unary `UNat` with `zero`/`succ`, unary notation, arithmetic, order and their laws, predecessor, successor injectivity, cancellation and trichotomy."
   },
   {
    "path": "library/univalence.cubist",

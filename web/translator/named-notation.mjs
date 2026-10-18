@@ -32,10 +32,24 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
   for(const rule of artifact.rules) {
     const adapter=bindingSyntaxAdapter(rule.syntax,t.compilationBindings.table);
     const tree=lowerBindingSyntax(rule.syntax,adapter),v=tree.value;
+    const operands=tree.operands.map(token=>adapter.key(token.bindingId));
+    if(rule.key==="numeral"&&v.kind==="name"&&v.name===operands[0]) {
+      const reader=rule.readers.find(([label])=>label==="UNat")?.[1];
+      const readerAdapter=reader&&bindingSyntaxAdapter(reader,t.compilationBindings.table);
+      const input=reader&&lowerBindingSyntax(reader,readerAdapter);
+      const type=input?.kind==="name"?env.get(input.name):null;
+      const carrier=type?.tag==="Sort"?type:type?.tag==="DefRef"?t.checker.verify(type).normal:null;
+      const signature=type?.tag==="Inductive"?type.binding:carrier?.tag==="Sort"?carrier.signature:null;
+      if(signature) {
+        const printing=t.checker.notationPrinting??=new Map();
+        printing.set(signature,[...(printing.get(signature)??[]),
+          {notation:artifact.binding.label,identity:artifact.binding.id,identityNumeral:true}]);
+      }
+      continue;
+    }
     if(v.kind!=="call"||v.fn.kind!=="name")continue;
     const f=env.get(v.fn.name);
     if(f?.tag!=="DefRef")continue;
-    const operands=tree.operands.map(token=>adapter.key(token.bindingId));
     let entry;
     if(rule.key==="literal"&&v.args.length===1&&v.args[0].name===operands[0])entry={literal:true};
     else if(rule.key==="numeral"&&v.args.some(arg=>arg.name===operands[0])
@@ -45,7 +59,7 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe)};
     if(entry) {
       const printing=t.checker.notationPrinting??=new Map();
-      printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,...entry}]);
+      printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,identity:artifact.binding.id,...entry}]);
     }
   }
 }

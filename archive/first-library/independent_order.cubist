@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import independent_unions;
 
 // Independence is a property, not extra structure. Pointwise paths between
@@ -9,7 +9,7 @@ def independence_is_prop(
 ) :
   p = q {
   exact path t => fun (
-    n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+    n : UNat, vectors : Fin(n) -> vector_carrier(K, V),
     distinct : (forall i : Fin(n). forall j : Fin(n). vectors(i) = vectors(j) -> i = j),
     members : (forall i : Fin(n). P(vectors(i))), coefficients : Fin(n) -> af_carrier(K),
     vanishes : linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V), i : Fin(n)

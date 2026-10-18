@@ -8,9 +8,9 @@ import {LexicalContext} from "../web/cubist/bindings.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 
 const module=await create();
-const naturals="inductive Nat { zero; succ(n : Nat); }\n";
+const naturals="inductive UNat { zero; succ(n : UNat); }\n";
 const theory="theory T(U < UU0) { M : U; c : M; def get(x : M) : M := x; }\n";
-const model="def instance_ : T(U0) := T.make(Nat, zero);\n";
+const model="def instance_ : T(U0) := T.make(UNat, zero);\n";
 const setup=(t,source,options={})=>checkProgram(t,source,{module,...options,
   options:{collectScopes:true,...options.options}});
 function select(t,program,source,marker,{name="main",declaration="f",phase="expression",length=marker.length}={}) {
@@ -42,12 +42,12 @@ test("inductive context labels preserve the header's ordinary missing-name diagn
 
 test("model openings preserve their checked receiver in expression, statement and file contexts",async t=>{
   const cases=[
-    {name:"expression",body:"def f : Nat := instance_.(c);",marker:"c);",length:1},
-    {name:"statement",body:"def f : Nat { use instance_; exact c; }",marker:"exact c;",phase:"before"},
-    {name:"file",body:"use instance_; def f : Nat := c;",marker:"c;",length:1},
+    {name:"expression",body:"def f : UNat := instance_.(c);",marker:"c);",length:1},
+    {name:"statement",body:"def f : UNat { use instance_; exact c; }",marker:"exact c;",phase:"before"},
+    {name:"file",body:"use instance_; def f : UNat := c;",marker:"c;",length:1},
   ];
   for(const c of cases)await t.test(c.name,async t=>{
-    const source=naturals+theory+model+"def c : Nat := succ(zero);\n"+c.body+
+    const source=naturals+theory+model+"def c : UNat := succ(zero);\n"+c.body+
       "\ndef checked : f = zero := refl(zero);";
     const {program,result}=await setup(t,source);
     assert.deepEqual(result.gaps,[]);
@@ -62,7 +62,7 @@ test("model openings preserve their checked receiver in expression, statement an
 });
 
 test("a local opening shadows an earlier binder and a later let shadows the opening",async t=>{
-  const source=naturals+theory+model+`def f(c : Nat) : Nat {
+  const source=naturals+theory+model+`def f(c : UNat) : UNat {
     use instance_;
     let saved := c;
     let c := succ(saved);
@@ -87,9 +87,9 @@ test("a local opening shadows an earlier binder and a later let shadows the open
 test("selected standalone and attached notation retain their exact checked rules",async t=>{
   for(const attached of [false,true])await t.test(attached?"attached":"standalone",async t=>{
     const source=naturals+(attached?theory+model:"")+`notation ${attached?"instance_":"keep"} {
-        ${attached?"numeral(n : Nat) := succ(n);":"x + y := x;"}
+        ${attached?"numeral(n : UNat) := succ(n);":"x + y := x;"}
       }
-      def f(k : Nat) : Nat := ${attached?"instance_":"keep"}.(${attached?"k":"k + zero"});`;
+      def f(k : UNat) : UNat := ${attached?"instance_":"keep"}.(${attached?"k":"k + zero"});`;
     const {program,result}=await setup(t,source);
     assert.deepEqual(result.gaps,[]);
     const session=select(t,program,source,attached?"k);":"k + zero",{length:attached?1:8});
@@ -119,7 +119,7 @@ test("generated and inherited helpers select distinct instances of the authored 
 
 test("collecting model and notation scopes preserves source results and kernel work",async t=>{
   const source=naturals+theory+model+`notation keep { x + y := x; }
-    def f(c : Nat) : Nat { use instance_; let c := succ(c); exact keep.(c + zero); }
+    def f(c : UNat) : UNat { use instance_; let c := succ(c); exact keep.(c + zero); }
     def checked : f(zero) = succ(zero) := refl(succ(zero));`;
   const off=await setup(t,source,{options:{collectScopes:false}}),on=await setup(t,source);
   assert.deepEqual(off.result.gaps,[]);

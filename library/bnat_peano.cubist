@@ -8,7 +8,7 @@ computable def bnat_succ_add(a, b : BNat) :
       trans(
         cong(succ, bnat_decode_add(a, b)),
         trans(
-          sym(nat_add_succ(bnat_to_unat(a), bnat_to_unat(b))),
+          sym(unat_add_succ(bnat_to_unat(a), bnat_to_unat(b))),
           trans(
             cong(add(bnat_to_unat(a)), sym(bnat_decode_succ(b))),
             sym(bnat_decode_add(a, bnat_succ(b)))

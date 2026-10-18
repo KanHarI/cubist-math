@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import complex_numbers;
 import complete_fields;
 
@@ -10,15 +10,15 @@ def ComplexClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, z, w : Complex(F
   and FieldClose(F, addF, lt, complex_imag(F, z), complex_imag(F, w), epsilon);
 
 def ComplexConverges(
-  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : UNat -> Complex(F),
   limit : Complex(F)
 ) :=
-  forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+  forall epsilon : F. lt(zero, epsilon) -> exists bound : UNat. forall n : UNat. IndexLE(bound, n)
   -> ComplexClose(F, addF, lt, sequence(n), limit, epsilon);
 
 def ComplexCauchy(
-  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F)
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : UNat -> Complex(F)
 ) :=
-  forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall m : Nat. forall n : Nat.
+  forall epsilon : F. lt(zero, epsilon) -> exists bound : UNat. forall m : UNat. forall n : UNat.
   IndexLE(bound, m) -> IndexLE(bound, n)
   -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon);

@@ -1,13 +1,13 @@
-import nat;
+import unat;
 import dyadic_sampling;
-use nat;
+use unat;
 
 // Scalar estimates for mesh decay; these use no Archimedean or completeness
 // assumption and do not extract witnesses from propositional truncation.
 def field_natural_nonnegative(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : UNat
 ) :
   FieldLe(F, lt, zero, field_natural(F, zero, one, addF)(n)) {
   obtain (positiveOne, remaining) := arithmetic;
@@ -26,7 +26,7 @@ def field_natural_nonnegative(
 def field_natural_successor_ge_one(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : UNat
 ) :
   FieldLe(F, lt, one, field_natural(F, zero, one, addF)(succ(n))) {
   exact transport order_le_translate(
@@ -41,7 +41,7 @@ def dyadic_width_nonnegative(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : UNat
 ) :
   forall width : F. FieldLe(F, lt, zero, width)
   -> FieldLe(F, lt, zero, dyadic_width(F, half, depth, width)) {
@@ -64,7 +64,7 @@ def dyadic_width_growth_step(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat,
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : UNat,
   previous : (
     forall width : F. FieldLe(F, lt, zero, width)
     -> FieldLe(
@@ -128,7 +128,7 @@ def dyadic_width_growth_bound(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : UNat
 ) :
   forall width : F. FieldLe(F, lt, zero, width)
   -> FieldLe(

@@ -12,10 +12,10 @@ import {sourceOrigin} from "../web/cubist/bindings.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
 const wasm=await create();
-const base=`import nat; import hlevels;
+const base=`import unat; import hlevels;
 inductive Two { choice; other; }
-def original(n : Nat) : add(n, zero) = n := nat_add_zero(n);
-def zero_if(n : Nat, h : n = zero) : add(n, zero) = zero {
+def original(n : UNat) : add(n, zero) = n := unat_add_zero(n);
+def zero_if(n : UNat, h : n = zero) : add(n, zero) = zero {
   calc { add(n, zero) = n by original(n); _ = zero by h; }
 }
 simp_rule original;
@@ -26,21 +26,21 @@ test("retained proof references survive cloning, source-set expansion and destin
   assert.deepEqual((await program.check(base,"base")).gaps,[]);
   const registry=program.compilationBindings,table=registry.table;
   const source=`
-def from_set(n : Nat) : add(n, zero) = n { simp only [saved]; }
-def shadow_set(n : Nat, saved : Unit) : add(n, zero) = n { simp only [saved]; }
-def excluded(n : Nat) : add(n, zero) = n { simp without [saved]; }
-def absent_set(n : Nat) : add(n, zero) = n { simp only [absent]; }
-def local_copy(n : Nat, h : add(n, zero) = n) : n = n { simp only [h] at h as h; exact h; }
-def premise(n : Nat, h : n = zero) : add(n, zero) = zero { simp only [zero_if] with [h]; }
-def wrong_premise(n : Nat, h : n = succ(zero)) : add(n, zero) = zero { simp only [zero_if] with [h]; }
-def supplied(n : Nat, h : add(n, zero) = n) : n = n { simpa only [original] using h; }
-def slots(n : Nat, other : add(n, zero) = n, b : Two) : add(n, zero) = n {
+def from_set(n : UNat) : add(n, zero) = n { simp only [saved]; }
+def shadow_set(n : UNat, saved : Unit) : add(n, zero) = n { simp only [saved]; }
+def excluded(n : UNat) : add(n, zero) = n { simp without [saved]; }
+def absent_set(n : UNat) : add(n, zero) = n { simp only [absent]; }
+def local_copy(n : UNat, h : add(n, zero) = n) : n = n { simp only [h] at h as h; exact h; }
+def premise(n : UNat, h : n = zero) : add(n, zero) = zero { simp only [zero_if] with [h]; }
+def wrong_premise(n : UNat, h : n = succ(zero)) : add(n, zero) = zero { simp only [zero_if] with [h]; }
+def supplied(n : UNat, h : add(n, zero) = n) : n = n { simpa only [original] using h; }
+def slots(n : UNat, other : add(n, zero) = n, b : Two) : add(n, zero) = n {
   match b { choice => { exact other; } other => { simp only [other] with [other]; } }
 }
-def unfolded(n : Nat) : Nat := with unfolding [original] { n };
+def unfolded(n : UNat) : UNat := with unfolding [original] { n };
 def universe_hint(U < UU0, A : U, x : A) : A := with unfolding [original] { x };
-def local_hint(original : Nat) : Nat := with unfolding [original] { original };
-def absent_hint : Nat := with unfolding [later] { zero };
+def local_hint(original : UNat) : UNat := with unfolding [original] { original };
+def absent_hint : UNat := with unfolding [later] { zero };
 `;
   const inputs=sourceBindingInputs(registry,program.modules.get("base"),{
     reserved:reservedReferences(source),simpRegistry:program.simpRegistries.get("base")});
@@ -60,7 +60,7 @@ def absent_hint : Nat := with unfolding [later] { zero };
   const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"proofs",compilationBindings:registry,
     simpRegistry:program.simpRegistries.get("base")});
   const destination=parse(`simp_set saved := []; simp_set absent := [original];
-    def original : Unit := tt; def later : Nat := zero; def h : Unit := tt;`);
+    def original : Unit := tt; def later : UNat := zero; def h : Unit := tt;`);
   const result=translator.translateSyntax({items:[...destination.items,...records.map(({binding,syntax})=>bindingDeclaration(binding,syntax))]},
     source,new Map([...program.modules.get("base"),...inputs.env]));
   const failures=result.declarations.filter(d=>d.status!=="checked-native-cubical");
@@ -84,35 +84,35 @@ test("imported inherited proof bodies keep their source simplification set",asyn
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Parent(U < UU0) {
   M : set U;
-  def equation(n : Nat, x : Edge) : Nat := match x {
+  def equation(n : UNat, x : Edge) : UNat := match x {
     lo => add(n, zero); hi => n;
   } obligations by { simp only [saved]; };
-  def copy(n : Nat, h : add(n, zero) = n, x : Edge) : Nat := match x {
+  def copy(n : UNat, h : add(n, zero) = n, x : Edge) : UNat := match x {
     lo => add(n, zero); hi => n;
   } obligations by { simp only [h] at h as h2; simpa only [h] using h2; };
-  def unfolded(n : Nat) : Nat := with unfolding [original] { n };
+  def unfolded(n : UNat) : UNat := with unfolding [original] { n };
 }`;
   const program=new CubicalProgram(wasm,name=>name==="parent"?parent:read(name));t.after(()=>program.dispose());
   const source=`import hlevels; import parent;
 simp_set saved := [];
 def original : Unit := tt;
 theory Child(U < UU0) extends p : Parent {}
-def intended(S : Child(U0), n : Nat) : S.equation(n, hi) = n { rfl; }
-def copied(S : Child(U0), n : Nat) : S.copy(n, nat_add_zero(n), hi) = n { rfl; }
-def wrong(S : Child(U0), n : Nat) : S.equation(n, hi) = succ(n) { rfl; }`;
+def intended(S : Child(U0), n : UNat) : S.equation(n, hi) = n { rfl; }
+def copied(S : Child(U0), n : UNat) : S.copy(n, unat_add_zero(n), hi) = n { rfl; }
+def wrong(S : Child(U0), n : UNat) : S.equation(n, hi) = succ(n) { rfl; }`;
   const result=await program.check(source,"child");
   assert.deepEqual(result.gaps.map(g=>g.name),["wrong"],JSON.stringify(result.gaps));
   assert.ok(result.outputs.find(d=>d.name==="intended").verified);
 });
 
 test("ambiguous source sets fail at consumption without aborting the generated queue",async t=>{
-  const read=sourceReader(),rules="import nat; simp_set conflict := [nat_add_zero];";
+  const read=sourceReader(),rules="import unat; simp_set conflict := [unat_add_zero];";
   const program=new CubicalProgram(wasm,name=>["a","b"].includes(name)?rules:read(name));t.after(()=>program.dispose());
   const source=`import a; import b; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Broken(U < UU0) {
   M : set U;
-  def equation(n : Nat, x : Edge) : Nat := match x {
+  def equation(n : UNat, x : Edge) : UNat := match x {
     lo => add(n, zero); hi => n;
   } obligations by { simp only [conflict]; };
 }
@@ -126,13 +126,13 @@ def independent : Unit := tt;`;
 test("substituted proof fields keep their written diagnostic labels and source-owned sites",async t=>{
   const read=sourceReader();
   const prelude=base+"\ninductive Edge { lo; hi; edge : lo = hi; }";
-  const fields="theory Parent(U < UU0) { M : set U; fz : zero = zero; fr(n : Nat) : add(n, zero) = n; }";
+  const fields="theory Parent(U < UU0) { M : set U; fz : zero = zero; fr(n : UNat) : add(n, zero) = n; }";
   const helpers=`
-  def field_witness(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  def field_witness(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
     obligations by { simp only [zero_if] with [fz]; };
-  def copy(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  def copy(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
     obligations by { simp only [saved] at fr as h2; simpa only [saved] using h2; };
-  def shadow(n : Nat, fr : add(n, zero) = n, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  def shadow(n : UNat, fr : add(n, zero) = n, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
     obligations by { simp only [saved] at fr as h2; simpa only [saved] using h2; };`;
   for(const imported of [false,true]) {
     const program=new CubicalProgram(wasm,name=>name==="parent"?prelude+fields:read(name));t.after(()=>program.dispose());
@@ -171,20 +171,20 @@ theory Grand(U < UU0) extends Child(gz := hz, gr := hr) {}`;
 });
 
 test("freeze edits preserve written field, helper and using references through inheritance",async t=>{
-  const prelude="import nat; import hlevels; inductive Edge { lo; hi; edge : lo = hi; }";
-  const helper="def lemma(n : Nat) : add(n, zero) = n := nat_add_zero(n);";
+  const prelude="import unat; import hlevels; inductive Edge { lo; hi; edge : lo = hi; }";
+  const helper="def lemma(n : UNat) : add(n, zero) = n := unat_add_zero(n);";
   const bodies=`
-def by_field(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+def by_field(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
   obligations by { simp [fe]; };
-def by_helper(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+def by_helper(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
   obligations by { simp [lemma]; };
-def by_using(x : Edge) : Nat := match x { lo => add(zero, zero); hi => zero; }
-  obligations by { simpa [nat_add_zero] using fz; };`;
+def by_using(x : Edge) : UNat := match x { lo => add(zero, zero); hi => zero; }
+  obligations by { simpa [unat_add_zero] using fz; };`;
   const sources=[
-    prelude+`def fe(n : Nat) : add(n, zero) = n := nat_add_zero(n);
+    prelude+`def fe(n : UNat) : add(n, zero) = n := unat_add_zero(n);
 def fz : zero = zero := refl(zero);`+helper+bodies,
     prelude+`theory Parent(U < UU0) { M : set U;
-fe(n : Nat) : add(n, zero) = n; fz : zero = zero; ${helper}${bodies}}
+fe(n : UNat) : add(n, zero) = n; fz : zero = zero; ${helper}${bodies}}
 theory Child(U < UU0) extends Parent(fe := renamed_fe, fz := renamed_fz) {}`,
   ];
   const run=async source=>{
@@ -199,7 +199,7 @@ theory Child(U < UU0) extends Parent(fe := renamed_fe, fz := renamed_fz) {}`,
     for(const [original,text,label] of [
       ["simp [fe];","simp only [fe];","fe"],
       ["simp [lemma];","simp only [lemma];","lemma"],
-      ["simpa [nat_add_zero] using fz;","simpa only [nat_add_zero] using fz;","nat_add_zero"],
+      ["simpa [unat_add_zero] using fz;","simpa only [unat_add_zero] using fz;","unat_add_zero"],
     ]) {
       const links=result.links.filter(link=>link.freeze?.original===original);
       assert.ok(links.length,original);
@@ -214,12 +214,12 @@ theory Child(U < UU0) extends Parent(fe := renamed_fe, fz := renamed_fz) {}`,
 });
 
 test("conditional rule failures name the written field in ordinary and inherited proofs",async t=>{
-  const prelude="import nat; import hlevels; inductive Edge { lo; hi; edge : lo = hi; }";
-  const proof=`def rejected(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  const prelude="import unat; import hlevels; inductive Edge { lo; hi; edge : lo = hi; }";
+  const proof=`def rejected(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
   obligations by { simp only [fc]; };`;
   for(const source of [
-    prelude+"def fc(n : Nat, h : n = zero) : add(n, zero) = n := nat_add_zero(n);"+proof,
-    prelude+`theory Parent(U < UU0) { M : set U; fc(n : Nat, h : n = zero) : add(n, zero) = n; ${proof}}
+    prelude+"def fc(n : UNat, h : n = zero) : add(n, zero) = n := unat_add_zero(n);"+proof,
+    prelude+`theory Parent(U < UU0) { M : set U; fc(n : UNat, h : n = zero) : add(n, zero) = n; ${proof}}
 theory Child(U < UU0) extends Parent(fc := renamed_fc) {}`,
   ]) {
     const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
@@ -234,12 +234,12 @@ theory Child(U < UU0) extends Parent(fc := renamed_fc) {}`,
 });
 
 test("imported proof sites cannot offer edits or traced links in the client source",async t=>{
-  const parent=`import nat; import hlevels;
+  const parent=`import unat; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
-theory Parent(U < UU0) { M : set U; fe(n : Nat) : add(n, zero) = n;
-  def by_field(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+theory Parent(U < UU0) { M : set U; fe(n : UNat) : add(n, zero) = n;
+  def by_field(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
     obligations by { simp [fe]; };
-  def calculated(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+  def calculated(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
     obligations by { calc { add(n, zero) = n by fe(n); } };
 }`;
   const library=sourceReader(),reader=name=>name==="parent"?parent:library(name);
@@ -258,25 +258,25 @@ theory Parent(U < UU0) { M : set U; fe(n : Nat) : add(n, zero) = n;
       "calculation witness","calculation step"].includes(link.role)),false);
     // Generated definition/match annotations still await CB5. They offer
     // no source edits; tactic witnesses and their traced steps must be owned.
-    const local=source+"\ndef local_proof(n : Nat) : add(n, zero) = n { simp [nat_add_zero]; }";
+    const local=source+"\ndef local_proof(n : UNat) : add(n, zero) = n { simp [unat_add_zero]; }";
     const checked=await run(local),edits=checked.links.filter(link=>link.freeze).map(link=>link.freeze);
     assert.equal(edits.length,1);
     const edit=edits[0];
-    assert.equal(edit.start,local.indexOf("simp [nat_add_zero]"));
-    assert.equal(edit.text,"simp only [nat_add_zero];");
+    assert.equal(edit.start,local.indexOf("simp [unat_add_zero]"));
+    assert.equal(edit.text,"simp only [unat_add_zero];");
     await run(local.slice(0,edit.start)+edit.text+local.slice(edit.end));
   }
 });
 
 test("an inherited proof cannot edit its parent's source using the child's later rules",async t=>{
   for(const explicit of [true,false]) {
-    const source=`import nat; import hlevels;
+    const source=`import unat; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
-theory Parent(U < UU0) { M : set U; fe(n : Nat) : add(n, zero) = n;
-  def derived_proof(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
+theory Parent(U < UU0) { M : set U; fe(n : UNat) : add(n, zero) = n;
+  def derived_proof(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
     obligations by { ${explicit?"simp [fe];":"simp;"} };
 }
-def extra(n : Nat) : add(n, zero) = n := nat_add_zero(n);
+def extra(n : UNat) : add(n, zero) = n := unat_add_zero(n);
 simp_rule extra;
 theory Child(U < UU0) extends Parent {}`;
     const run=async source=>{

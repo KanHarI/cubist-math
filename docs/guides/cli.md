@@ -116,8 +116,8 @@ see the checked module's names.
 ```text
 import nat;          Imported nat.
 use nat;             Selected nat.
-let x := 7;          x : Nat
-typeof x;            Nat
+let x := 7;          x : BNat
+typeof x;            BNat
 evaluate x;          7
 x + 3 * 4            19
 ```

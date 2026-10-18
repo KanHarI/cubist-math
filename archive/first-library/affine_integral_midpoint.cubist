@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import affine_integrals;
 import curve_sample_sums;
 
@@ -13,7 +13,7 @@ def affine_dyadic_sum_successor(
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
-  ), depth : Nat
+  ), depth : UNat
 ) :
   affine_dyadic_sum(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope, integrand,
@@ -171,14 +171,14 @@ def affine_dyadic_integral_midpoint(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, minF, maxF, lattice, inverses,
     bounds, half, halfSum, z, slope, integrand, uniform, midpoint, b, rightOrdered, complete
   );
-  let total := (fun (n : Nat) => complex_add(F, addF, left_(n), right_(n)));
-  let shifted := (fun (n : Nat) => whole(succ(n)));
+  let total := (fun (n : UNat) => complex_add(F, addF, left_(n), right_(n)));
+  let shifted := (fun (n : UNat) => whole(succ(n)));
   let sumValue := complex_add(F, addF, leftValue, rightValue);
   let totalConverges := complex_converges_add(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, left_, right_, leftValue,
     rightValue, leftConverges, rightConverges
   );
-  let computes : forall n : Nat. total(n) = shifted(n) {
+  let computes : forall n : UNat. total(n) = shifted(n) {
     intro n;
     exact sym(
       affine_dyadic_sum_successor(

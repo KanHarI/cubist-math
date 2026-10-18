@@ -1,6 +1,6 @@
 import hlevels;
 import algebra;
-import nat;
+import unat;
 # test(initial.parameter_substitution.theory)
 # expect_axioms([])
 theory Action(U < UU0, R : Monoid(U)) {

@@ -444,7 +444,7 @@ export class NativeCubicalElaborator {
   signatureDisplay(name) {
     const record = this.kernel.signatures.get(name), shapes = this.kernel.signature(record.index).constructors;
     const inductive = this.inductives?.get(name);
-    return { name: localName(name), ...(inductive ? { slots: inductive.slots.map(slot => slot.level === undefined ? "parameter"
+    return { name: localName(name), printing: this.notationPrinting.get(name), ...(inductive ? { slots: inductive.slots.map(slot => slot.level === undefined ? "parameter"
         : inductive.levels[slot.level].recorded ? "recorded" : "erased") } : {}),
       constructors: record.constructors.map((constructor, c) => ({
       name: shapes[c].generated ? `${localName(name)}.${constructor}` : constructor,

@@ -1,10 +1,10 @@
-import nat;
+import unat;
 import parameter_refinement;
 import interval_refinement;
 import curve_contour_estimates;
 
 def sample_interval_width(
-  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, n : Nat,
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n)
 ) :=
   interval_difference(
@@ -24,7 +24,7 @@ def affine_coordinate_length(
 // of refined intervals. Ordering is only needed when using it as a bound.
 def affine_sample_variation_sum(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), r, s : F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), r, s : F, n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :
@@ -65,7 +65,7 @@ def affine_refinement_error_bound(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), minF, maxF : F -> F -> F,
   lattice : FieldLattice(F, lt, minF, maxF), z, slope : Complex(F),
-  values : FieldUnitInterval(F, zero, one, lt) -> Complex(F), delta : F, n : Nat,
+  values : FieldUnitInterval(F, zero, one, lt) -> Complex(F), delta : F, n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   coarseTag : FieldUnitInterval(F, zero, one, lt),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
@@ -130,7 +130,7 @@ def affine_refinement_error_bound(
 def curve_coarse_contribution(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  n : UNat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   coarseTag : FieldUnitInterval(F, zero, one, lt)
 ) :=
   parameter_contour_edge(
@@ -161,7 +161,7 @@ def affine_refinement_uniform_estimate(
 ) :
   exists mesh : F. lt(zero, mesh)
   and (
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall coarseTag : FieldUnitInterval(F, zero, one, lt).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
@@ -205,7 +205,7 @@ def affine_refinement_uniform_estimate(
     positiveDelta
   );
   let estimates :
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall coarseTag : FieldUnitInterval(F, zero, one, lt).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)

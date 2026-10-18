@@ -13,10 +13,10 @@ import {contextualScenarios} from "../tests/fixtures/contextual-sessions.mjs";
 assertFreshBuild();
 const name=process.argv[2]??"nested-function",collectGeneration=process.argv.includes("--artifacts");
 const fixtures=[...contextualScenarios,
-  {id:"lazy-notation",source:`inductive Nat { zero; succ(n : Nat); }
+  {id:"lazy-notation",source:`inductive UNat { zero; succ(n : UNat); }
     notation first { x + y := x; }
     notation outer { a * b := first.(a + b); }
-    def f(p : Nat) : Nat := outer.(p * absent);`,marker:"x;",length:1,
+    def f(p : UNat) : UNat := outer.(p * absent);`,marker:"x;",length:1,
     sessions:[{entry:"x",value:"p"},{entry:"let saved := x"},{entry:"typed(saved = x, refl(saved))"},{entry:"y",accepts:false}]},
   {id:"generated-helper",source:`theory T(U < UU0) { M : U; def get(x : M) : M := x; }
     theory Child(U < UU0) extends T {}`,marker:"x;",length:1,declaration:"Child.get",

@@ -32,12 +32,12 @@ test("a named argument is a node of its call; a hole is a name", () => {
 });
 
 test("the formatter keeps holes and named arguments", () => {
-  const source = "def d(n : Nat) : Nat := apply(U0, _, _, f := fun x => succ(x), a := n);\n";
+  const source = "def d(n : UNat) : UNat := apply(U0, _, _, f := fun x => succ(x), a := n);\n";
   assert.equal(formatCubist(source), source);
 });
 
 test("a named argument's name is its function's parameter, not a use", () => {
-  const unused = "def f(a : Nat) : Nat := a;\ndef g(n : Nat) : Nat {\n  let a := n;\n  exact f(a := n);\n}\n";
+  const unused = "def f(a : UNat) : UNat := a;\ndef g(n : UNat) : UNat {\n  let a := n;\n  exact f(a := n);\n}\n";
   assert.deepEqual(lint(unused).map(warning => warning.code), ["W702"]);
   assert.deepEqual(lint(unused.replace("f(a := n)", "f(a := a)")), []);
 });
@@ -49,7 +49,7 @@ test("the inspector shows what each hole and each omitted parameter became", asy
   const endpoints = result.links.filter(link => link.role === "inferred argument"
     && /of concat, inferred/.test(link.description));
   assert.deepEqual(endpoints.map(link => link.description), [
-    "The parameter A of concat, inferred: Nat.",
+    "The parameter A of concat, inferred: UNat.",
     "The parameter x of concat, inferred: x.",
     "The parameter y of concat, inferred: y.",
     "The parameter z of concat, inferred: z.",
@@ -61,8 +61,8 @@ test("the inspector shows what each hole and each omitted parameter became", asy
 });
 
 test("a call asks for its function's type once, never for the growing application's", async t => {
-  const source = "import nat;\ndef concat(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p, q);\n"
-    + "def joined(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(U0, Nat, a, b, c, p, q);\n";
+  const source = "import unat;\ndef concat(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p, q);\n"
+    + "def joined(a, b, c : UNat, p : a = b, q : b = c) : a = c := concat(U0, UNat, a, b, c, p, q);\n";
   const asked = [];
   const { verdicts } = await checkProgram(t, source, { module, options: {
     onDeclarationStart: (name, declaration, checker) => {
@@ -90,13 +90,13 @@ test("implicit parameters are a double brace group before the parameter list, ea
   assert.equal(formatCubist("def f {{ U < UU0, A : U }} ( a : A ) : A := a;\n"), source);
   // One brace is a block's, or a clause list's: implicit parameters are in
   // two, opened and closed together.
-  assert.throws(() => parse("def f{U < UU0}(a : Nat) : Nat := a;"), /Implicit parameters are in double braces: def f\{\{/);
-  assert.throws(() => parse("def f{{U < UU0} }(a : Nat) : Nat := a;"), /Close double braces with \}\}/);
+  assert.throws(() => parse("def f{U < UU0}(a : UNat) : UNat := a;"), /Implicit parameters are in double braces: def f\{\{/);
+  assert.throws(() => parse("def f{{U < UU0} }(a : UNat) : UNat := a;"), /Close double braces with \}\}/);
   // A group wider than a line breaks inside its braces, never between them.
-  const wide = "def f{{first_parameter, second_parameter, third_parameter, fourth_parameter, fifth_parameter, sixth_parameter : Nat}}(n : Nat) : Nat := n;\n";
+  const wide = "def f{{first_parameter, second_parameter, third_parameter, fourth_parameter, fifth_parameter, sixth_parameter : UNat}}(n : UNat) : UNat := n;\n";
   const wrapped = formatCubist(wide);
   assert.match(wrapped, /^def f\{\{\n/);
-  assert.match(wrapped, /\n\}\}\(n : Nat\)/);
+  assert.match(wrapped, /\n\}\}\(n : UNat\)/);
   assert.equal(formatCubist(wrapped), wrapped);
 });
 
@@ -111,20 +111,20 @@ test("implicit arguments are a double brace group after a name; a block after a 
   assert.deepEqual([value("def d := f{{U0}};").args, value("def d := f{{U0}};").implicitArgs.length], [[], 1]);
   assert.equal(value("def d := f{{g{{A}}}}(x);").implicitArgs[0].implicitArgs[0].name, "A");
   // A named argument in double braces names an implicit parameter.
-  const named = value("def d := f{{A := Nat, U0}}(x);").implicitArgs;
+  const named = value("def d := f{{A := UNat, U0}}(x);").implicitArgs;
   assert.deepEqual(named.map(arg => arg.kind), ["namedArgument", "name"]);
   assert.equal(named[0].name.text, "A");
-  assert.equal(formatCubist("def d := f{{ A:=Nat }}(x);\n"), "def d := f{{A := Nat}}(x);\n");
+  assert.equal(formatCubist("def d := f{{ A:=UNat }}(x);\n"), "def d := f{{A := UNat}}(x);\n");
   // Clauses or a proof block after a name, even written tight, are what
   // they were.
   assert.equal(value("def d := match n{ zero => 0; succ(m) => m; };").kind, "match");
-  assert.equal(parse("def d : Nat{ exact 1; }").declarations[0].body[0].kind, "exact");
-  assert.equal(parse("def d(n : Nat) : Nat { match n{ zero => { exact 0; } succ(m) => { exact m; } } }")
+  assert.equal(parse("def d : UNat{ exact 1; }").declarations[0].body[0].kind, "exact");
+  assert.equal(parse("def d(n : UNat) : UNat { match n{ zero => { exact 0; } succ(m) => { exact m; } } }")
     .declarations[0].body[0].kind, "matchStatement");
   // One brace after a name is no argument list.
   assert.throws(() => parse("def d := f{U0}(x);"), /Expected ';'/);
-  assert.equal(formatCubist("def d := concat{{ U0,Nat }}(p,q);\n"), "def d := concat{{U0, Nat}}(p, q);\n");
-  assert.equal(formatCubist("def d := same{{U0, Nat}};\n"), "def d := same{{U0, Nat}};\n");
+  assert.equal(formatCubist("def d := concat{{ U0,UNat }}(p,q);\n"), "def d := concat{{U0, UNat}}(p, q);\n");
+  assert.equal(formatCubist("def d := same{{U0, UNat}};\n"), "def d := same{{U0, UNat}};\n");
 });
 
 test("a goal shows a definition's implicit arguments in double braces, as a call writes them", async () => {
@@ -138,9 +138,9 @@ test("the inspector shows each inferred universe, and the omitted implicit argum
   const { result, verdicts } = await implicit();
   assert.equal(verdicts.from_argument, true);
   const omitted = result.links.filter(link => link.role === "inferred arguments").map(link => link.description);
-  assert.ok(omitted.includes("Arguments of same inferred: U := U0, A := Nat."), omitted.join("\n"));
+  assert.ok(omitted.includes("Arguments of same inferred: U := U0, A := UNat."), omitted.join("\n"));
   assert.ok(omitted.includes("Arguments of same inferred: U := U1, A := U0."), omitted.join("\n"));
-  assert.ok(omitted.includes("Arguments of append inferred: U := U0, A := Nat."), omitted.join("\n"));
+  assert.ok(omitted.includes("Arguments of append inferred: U := U0, A := UNat."), omitted.join("\n"));
   const holes = result.links.filter(link => link.role === "inferred argument").map(link => link.description);
   assert.ok(holes.includes("The universe U of same, inferred: U2."), holes.join("\n"));
 });

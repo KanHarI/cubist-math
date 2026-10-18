@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import field_asymptotics;
 import descent_loop_laws;
 
@@ -13,7 +13,7 @@ def homotopy_limit_descent(
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
   C : U1, X : U0, point : X, present : C -> (point = point),
   covered : (forall p : point = point. FieldExists(exists c : C. present(c) = p)),
-  approximations : C -> Nat -> F,
+  approximations : C -> UNat -> F,
   cauchy : (forall c : C. FieldCauchy(F, zero, addF, lt, approximations(c))),
   homotopyError : (
     forall c : C. forall d : C. (present(c) = present(d))
@@ -51,21 +51,21 @@ def homotopy_limit_period(
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
   C : U1, X : U0, point : X, present : C -> (point = point),
   covered : (forall p : point = point. FieldExists(exists c : C. present(c) = p)),
-  approximations : C -> Nat -> F,
+  approximations : C -> UNat -> F,
   cauchy : (forall c : C. FieldCauchy(F, zero, addF, lt, approximations(c))),
   homotopyError : (
     forall c : C. forall d : C. (present(c) = present(d))
     -> FieldAsymptotic(F, zero, addF, lt, approximations(c), approximations(d))
   ), constant : C, constantPath : present(constant) = refl(point),
   constantError : FieldAsymptotic(
-    F, zero, addF, lt, approximations(constant), (fun (n : Nat) => zero)
+    F, zero, addF, lt, approximations(constant), (fun (n : UNat) => zero)
   ), join_ : C -> C -> C,
   joinPath : (forall c : C. forall d : C. present(join_(c, d)) = trans(present(c), present(d))),
   joinError : (
     forall c : C. forall d : C.
     FieldAsymptotic(
       F, zero, addF, lt, approximations(join_(c, d)),
-      (fun (n : Nat) => addF(approximations(c, n), approximations(d, n)))
+      (fun (n : UNat) => addF(approximations(c, n), approximations(d, n)))
     )
   )
 ) :
@@ -87,7 +87,7 @@ def homotopy_limit_period(
   );
   let constantValue : value(constant) = zero := field_asymptotic_limits_equal(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving, approximations(constant),
-    (fun (n : Nat) => zero), constantError, value(constant), zero,
+    (fun (n : UNat) => zero), constantError, value(constant), zero,
     field_sequence_limit_converges(
       F, zero, addF, lt, complete, approximations(constant), cauchy(constant)
     ), field_converges_constant(F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, zero)
@@ -97,7 +97,7 @@ def homotopy_limit_period(
     exact field_asymptotic_limits_equal(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, halving,
       approximations(join_(c, d)),
-      (fun (n : Nat) => addF(approximations(c, n), approximations(d, n))), joinError(c, d),
+      (fun (n : UNat) => addF(approximations(c, n), approximations(d, n))), joinError(c, d),
       value(join_(c, d)), addF(value(c), value(d)),
       field_sequence_limit_converges(
         F, zero, addF, lt, complete, approximations(join_(c, d)), cauchy(join_(c, d))

@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import sample_magnitude;
 
 // Adjacent vertices satisfy a relation; no condition is imposed on tags.
-def SampleAdjacent(C : U1, related : C -> C -> U0, n : Nat) :=
+def SampleAdjacent(C : U1, related : C -> C -> U0, n : UNat) :=
   induction n as k return (SampleVertices(C, k) -> U0) {
     zero => fun (vertices : C) => Unit;
     succ previous => fun (vertices : SampleVertices(C, succ(k))) => related(
@@ -17,7 +17,7 @@ def sample_adjacent_magnitude(
   bounded : (
     forall a : C. forall b : C. forall tag : C. related(a, b)
     -> FieldMagnitudeBound(F, negF, lt, edge(a, b, tag), radius(a, b, tag))
-  ), n : Nat
+  ), n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleAdjacent(C, related, n, vertices)

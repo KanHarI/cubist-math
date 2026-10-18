@@ -4,9 +4,9 @@
 // propositions; and their homomorphisms, which map each family at each
 // index and push an index that is an element of a carrier. A family of sets
 // indexed by a carrier has no isomorphisms.
-import nat;
+import unat;
 import hlevels;
-use nat;
+use unat;
 
 // A monad on sets. Inside the theory, F(A) passes A's evidence along.
 theory Monad(U < UU0) {
@@ -33,7 +33,7 @@ def identity : Monad(U0) := Monad.make(
 
 // Outside the theory, an index's evidence is written.
 def three :
-  identity.bind(Nat, nat_is_set, Nat, nat_is_set, identity.pure(Nat, nat_is_set, 2), succ) = 3 {
+  identity.bind(UNat, unat_is_set, UNat, unat_is_set, identity.pure(UNat, unat_is_set, 2), succ) = 3 {
   rfl;
 }
 
@@ -49,7 +49,7 @@ def identity_twice : Monad.Hom(identity, identity) := Monad.Hom.compose(
 );
 
 // Output: 7
-print(evaluate(identity_twice.map(Nat, nat_is_set, 7)));
+print(evaluate(identity_twice.map(UNat, unat_is_set, 7)));
 
 def identity_iso : Monad.Iso(identity, identity) := Monad.Iso.compose(
   Monad.Iso.id(identity), Monad.Iso.id(identity)
@@ -77,8 +77,8 @@ def preorder_iso := Preorder.Iso.compose;
 
 // A graded family: its index is the same on both sides, m + n too.
 theory Graded(U < UU0) {
-  V(n : Nat) : set U;
-  mul(m, n : Nat, x : V(m), y : V(n)) : V(m + n);
+  V(n : UNat) : set U;
+  mul(m, n : UNat, x : V(m), y : V(n)) : V(m + n);
 }
 
 def graded_compose := Graded.Hom.compose;
@@ -105,8 +105,8 @@ def shifted_by_name(A : Shifted(U0)) : Shifted.Hom(A, A) := Shifted.Hom.make(
 );
 
 theory Lifted(U < UU0) {
-  F(to_ : Nat) : set U;
-  lift_(to_ : Nat, x : F(to_)) : F(to_);
+  F(to_ : UNat) : set U;
+  lift_(to_ : UNat, x : F(to_)) : F(to_);
 }
 
 def lifted_compose := Lifted.Hom.compose;
@@ -115,7 +115,7 @@ def lifted_iso := Lifted.Iso.compose;
 
 def lifted_by_name(A : Lifted(U0)) : Lifted.Iso(A, A) := Lifted.Iso.make(
   A, A, to := Lifted.Hom.id(A), from := Lifted.Hom.id(A),
-  from_to := fun (n : Nat, x : A.F(n)) => refl(x), to_from := fun (n : Nat, y : A.F(n)) => refl(y)
+  from_to := fun (n : UNat, x : A.F(n)) => refl(x), to_from := fun (n : UNat, y : A.F(n)) => refl(y)
 );
 
 // A family of sets indexed by a carrier has homomorphisms, but no
@@ -147,5 +147,5 @@ theory Bare(U < UU0) {
 //   or write its evidence after it, F(…, A, A_is_set, …).
 theory Unbound(U < UU0) {
   F(A : set U) : set U;
-  nat_member : F(Nat);
+  nat_member : F(UNat);
 }

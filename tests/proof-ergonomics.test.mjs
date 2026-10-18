@@ -84,7 +84,7 @@ test("constant path reversal avoids exponential native interval expansion",async
   while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
     terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
   const lets=dimensions.map((_,i)=>`let t${i} := ${i?`refl(t${i-1})`:"0"};`).join("\n");
-  const source=`import nat; use nat; def native_interval_budget : 0 = 0 {
+  const source=`import unat; use unat; def native_interval_budget : 0 = 0 {
     ${lets}
     let h : t31 = t31 {
       exact ${dimensions.map(d=>`path ${d} => `).join("")}sym(refl(0)) @ ${terms[0]};
@@ -128,12 +128,12 @@ test("positive composition faces use only the needed endpoint of a compact inter
   while(terms.length>1)terms=Array.from({length:Math.ceil(terms.length/2)},(_,i)=>
     terms[2*i+1]?`join(${terms[2*i]},${terms[2*i+1]})`:terms[2*i]);
   const lets=dimensions.map((_,i)=>`let t${i} := ${i?`refl(t${i-1})`:"0"};`).join("\n");
-  const source=`import nat; use nat; def positive_face_budget : 0 = 0 {
+  const source=`import unat; use unat; def positive_face_budget : 0 = 0 {
     ${lets}
     let h : t31 = t31 {
       exact ${dimensions.map(d=>`path ${d} => `).join("")}
-        path(fun (i : Interval) => Nat,
-          fun (i : Interval) => comp(fun (j : Interval) => Nat, 0,
+        path(fun (i : Interval) => UNat,
+          fun (i : Interval) => comp(fun (j : Interval) => UNat, 0,
             face(i, 1, fun (j : Interval) => 0))) @ ${terms[0]};
     }
     rfl;
@@ -149,7 +149,7 @@ test("positive composition faces use only the needed endpoint of a compact inter
 test("a pushout instance visits shared source types within the proof deadline",()=>{
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const programPath=new URL("../web/cubical-program.mjs",import.meta.url).href;
-  let source="import nat;\nimport pushout; use nat;\ndef shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+  let source="import unat;\nimport pushout; use unat;\ndef shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
   for(let i=1;i<=sharedDepth;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
   source+=`let P := Pushout(U0, U0, U0, T${sharedDepth}, Unit, Unit, fun (x : T${sharedDepth}) => tt, fun (x : T${sharedDepth}) => tt);
     let h : forall x : P. x = x { intro x; exact path i => x; } rfl; }
@@ -182,7 +182,7 @@ test("new proof syntax survives formatting with the same expanded AST",async()=>
 test("incomplete grouped binders and introductions fail without hanging the parser",()=>{
   const parser=new URL("../web/cubist/parser.mjs",import.meta.url).href;
   for(const source of ["def f(x","def f : forall x","def f := fun (x",
-    "def f : Nat { intro x"]) {
+    "def f : UNat { intro x"]) {
     const script=`import {parse} from ${JSON.stringify(parser)}; parse(process.argv[1]);`;
     const child=spawnSync(process.execPath,["--input-type=module","-e",script,source],
       {encoding:"utf8",timeout:childLimit});
@@ -199,7 +199,7 @@ test("simp size budget interrupts serialization of a compact shared term",()=>{
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
   const script=`import createCubical from ${JSON.stringify(wasm)};
     import {CubicalProgram} from ${JSON.stringify(program)};
-    let source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+    let source="import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;";
     for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
     source+="let h : t${sharedDepth} = t${sharedDepth} { simp only []; } rfl; }";
     const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
@@ -222,7 +222,7 @@ test("simp rule selection and exclusion bound compact shared identities",()=>{
   for(const tactic of ["simp only [h]","simp without [h]"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      let source="import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;";
       for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
       source+="let h : t${sharedDepth} = t${sharedDepth} { rfl; } ${tactic}; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
@@ -246,9 +246,9 @@ test("quantified simp rules scan each shared pattern node once",()=>{
   for(const tactic of ["simp only [h]","simp without [h]"]) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
-      let source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      let source="import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;";
       for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+", t"+(i-1)+");";
-      source+="let helper : (forall k : Nat. f(t${sharedDepth},k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
+      source+="let helper : (forall k : UNat. f(t${sharedDepth},k) = k) -> n = n { intro h; ${tactic}; } rfl; }";
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
       try {
@@ -267,14 +267,14 @@ test("path reconstruction preserves compact shared terms within the proof deadli
   const wasm=new URL("../web/dist/cubical.mjs",import.meta.url).href;
   const program=new URL("../web/cubical-program.mjs",import.meta.url).href;
   const cases=[
-    ["rw","import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
+    ["rw","import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;",
       "f", `let proof : t${sharedDepth} = t${sharedDepth} { rw [refl(t${sharedDepth})] at lhs; } rfl; }`],
-    ["calc","import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;",
+    ["calc","import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;",
       "f", `let proof : t${sharedDepth} = t${sharedDepth} { calc { t${sharedDepth} = t${sharedDepth} by refl(t${sharedDepth}); _ = t${sharedDepth} by refl(t${sharedDepth}); } } rfl; }`],
-    ["simp","import nat; use nat; def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
-      "g", `let h : n = n := (fun (unused : Nat) => refl(n))(t${sharedDepth}); simp only [c] with [h]; }`],
-    ["simpa","import nat; use nat; def shared(f : Nat -> Nat, g : Nat -> Nat -> Nat, n : Nat, c : forall k : Nat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
-      "g", `let h : n = n := (fun (unused : Nat) => refl(n))(t${sharedDepth}); simpa only [c] with [h] using refl(n); }`],
+    ["simp","import unat; use unat; def shared(f : UNat -> UNat, g : UNat -> UNat -> UNat, n : UNat, c : forall k : UNat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
+      "g", `let h : n = n := (fun (unused : UNat) => refl(n))(t${sharedDepth}); simp only [c] with [h]; }`],
+    ["simpa","import unat; use unat; def shared(f : UNat -> UNat, g : UNat -> UNat -> UNat, n : UNat, c : forall k : UNat. n = n -> f(k) = k) : f(n) = n { let t0 := n;",
+      "g", `let h : n = n := (fun (unused : UNat) => refl(n))(t${sharedDepth}); simpa only [c] with [h] using refl(n); }`],
   ];
   for(const [name,prefix,fn,suffix] of cases) {
     const script=`import createCubical from ${JSON.stringify(wasm)};
@@ -305,13 +305,13 @@ test("path abstraction and dependent-path transport keep shared inputs compact",
       import {CubicalProgram} from ${JSON.stringify(program)};
       let source;
       if(${JSON.stringify(mode)}==="path") {
-        source="import nat; use nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+        source="import unat; use unat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
         for(let i=1;i<=${sharedDepth};i++)source+="let T"+i+" := F(T"+(i-1)+",T"+(i-1)+");";
         source+="let h : forall x : T${sharedDepth}. x = x { intro x; exact path i => x; } rfl; }";
       } else {
-        source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+        source="import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;";
         for(let i=1;i<=${sharedDepth};i++)source+="let t"+i+" := f(t"+(i-1)+",t"+(i-1)+");";
-        source+="let h : (transport t${sharedDepth} along refl(0) in (fun (n : Nat) => Nat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; exact lift q along refl(0) in (fun (n : Nat) => Nat); } rfl; }";
+        source+="let h : (transport t${sharedDepth} along refl(0) in (fun (n : UNat) => UNat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; exact lift q along refl(0) in (fun (n : UNat) => UNat); } rfl; }";
       }
       const checker=new CubicalProgram(await createCubical(),()=>{throw Error("No imports");},
         {collectReferences:false});
@@ -336,7 +336,7 @@ test("interval expansion is bounded while later declarations still elaborate",()
     let formula=Array.from({length:pairs},(_,i)=>`join(d${2*i},d${2*i+1})`);
     while(formula.length>1)formula=Array.from({length:Math.ceil(formula.length/2)},(_,i)=>
       formula[2*i+1]?`meet(${formula[2*i]},${formula[2*i+1]})`:formula[2*i]);
-    let source="import nat; use nat; def interval_budget : 0 = 0 { let t0 := 0;";
+    let source="import unat; use unat; def interval_budget : 0 = 0 { let t0 := 0;";
     for(let i=1;i<dimensions.length;i++)source+=`let t${i} := refl(t${i-1});`;
     source+=`let h : t${dimensions.length-1} = t${dimensions.length-1} { exact `;
     source+=dimensions.map(d=>`path ${d} => `).join("");
@@ -371,13 +371,13 @@ test("shared path and transport proofs remain inspectable without expanding raw 
   for(const mode of ["path","lift"]) {
     let source;
     if(mode==="path") {
-      source="import nat; use nat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
+      source="import unat; use unat; def shared(F : U0 -> U0 -> U0, A : U0) : 0 = 0 { let T0 := A;";
       for(let i=1;i<=sharedDepth;i++)source+=`let T${i} := F(T${i-1},T${i-1});`;
       source+=`let h : forall x : T${sharedDepth}. x = x { intro x; exact path i => x; } rfl; }`;
     } else {
-      source="import nat; use nat; def shared(f : Nat -> Nat -> Nat, n : Nat) : n = n { let t0 := n;";
+      source="import unat; use unat; def shared(f : UNat -> UNat -> UNat, n : UNat) : n = n { let t0 := n;";
       for(let i=1;i<=sharedDepth;i++)source+=`let t${i} := f(t${i-1},t${i-1});`;
-      source+=`let h : (transport t${sharedDepth} along refl(0) in (fun (n : Nat) => Nat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; exact lift q along refl(0) in (fun (n : Nat) => Nat); } rfl; }`;
+      source+=`let h : (transport t${sharedDepth} along refl(0) in (fun (n : UNat) => UNat)) = t${sharedDepth} -> t${sharedDepth} = t${sharedDepth} { intro q; exact lift q along refl(0) in (fun (n : UNat) => UNat); } rfl; }`;
     }
     const script=`import createCubical from ${JSON.stringify(wasm)};
       import {CubicalProgram} from ${JSON.stringify(program)};
@@ -412,7 +412,7 @@ test("simpa transports through checked paths of types without inventing equivale
   assert.equal(checked.outputs.length,5);
   assert.ok(checked.outputs.every(output=>output.verified&&output.axioms.length===0));
   const frozen=checked.links.find(link=>link.role==="simplification witness"&&link.freeze);
-  assert.equal(frozen?.freeze.text,"simpa only [nat_add_zero] using h;");
+  assert.equal(frozen?.freeze.text,"simpa only [unat_add_zero] using h;");
   assert.equal(program.inspect(frozen.rewriteSteps[0].binding).type.tag,"Path");
   const replaySource=source.slice(0,frozen.freeze.start)+frozen.freeze.text
     +source.slice(frozen.freeze.end);
@@ -446,7 +446,7 @@ test("freeze withholds a rule name shadowed by a named simplification set",async
   const {source,result}=await cases(t,"freeze_set_collision");
   assert.equal(result.links.find(item=>item.role==="simplification witness")?.freeze,null);
   // The edit it withholds would name the set.
-  const broken=await edited(t,"freeze_set_collision",source.replace("simp;","simp only [nat_add_zero];"));
+  const broken=await edited(t,"freeze_set_collision",source.replace("simp;","simp only [unat_add_zero];"));
   assert.equal(broken.result.outputs[0].verified,false);
 });
 
@@ -475,7 +475,7 @@ for(const tactic of ["simp","simpa"]) {
     const links=result.links.filter(item=>item.role==="simplification witness");
     assert.equal(links.length,3);
     assert.equal(links[1].freeze,null);
-    assert.equal(links[2].freeze?.text,`${tactic} only [nat_add_zero]${tactic==="simpa"?" using h":""};`);
+    assert.equal(links[2].freeze?.text,`${tactic} only [unat_add_zero]${tactic==="simpa"?" using h":""};`);
     const edit=links[2].freeze;
     assert.equal((await edited(t,module,source.slice(0,edit.start)+edit.text+source.slice(edit.end))).result.complete,true);
   });
@@ -524,7 +524,7 @@ test("generic calc endpoints stay separate from step witnesses",async t=>{
   assert.ok(endpoint);
   assert.equal(program.inspect(endpoint.binding).type.tag,"Sort");
   // The step's checked path belongs to its `by` keyword, not its left endpoint.
-  const byOffset=source.indexOf("by nat_add_zero");
+  const byOffset=source.indexOf("by unat_add_zero");
   const step=result.links.find(item=>item.start===byOffset&&item.role==="calculation step");
   assert.ok(step);
   const stepView=program.inspect(step.binding);
@@ -567,9 +567,9 @@ test("a late declaration observer error rolls back its native definition",async 
     onDeclaration() {if(reject){reject=false;throw Error("observer rejected declaration");}}
   });
   t.after(()=>program.dispose());
-  await assert.rejects(program.check("import nat; use nat; def discarded := 0;","observer_failure"),/observer rejected declaration/);
+  await assert.rejects(program.check("import unat; use unat; def discarded := 0;","observer_failure"),/observer rejected declaration/);
   assert.equal(program.kernel.definitions.has("observer_failure__discarded"),false);
-  const recovered=await program.check("import nat; use nat; def accepted := 1;","observer_recovery");
+  const recovered=await program.check("import unat; use unat; def accepted := 1;","observer_recovery");
   assert.equal(recovered.outputs[0].verified,true);
 });
 
@@ -589,7 +589,7 @@ test("registered default and named sets retain checked proofs and format stably"
   const witnesses=result.links.filter(link=>link.role==="simplification witness"&&link.freeze);
   assert.equal(witnesses.length,6);
   const recursive=witnesses.find(witness=>witness.freeze.original==="simp;"
-    &&witness.freeze.text.includes("nat_add_zero"));
+    &&witness.freeze.text.includes("unat_add_zero"));
   assert.ok(recursive);
   assert.doesNotMatch(recursive.freeze.text,/double_zero_if/);
   for(const [index,witness] of witnesses.entries()) {
@@ -609,8 +609,8 @@ test("registered default and named sets retain checked proofs and format stably"
   assert.equal(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)));
   // A set assignment is spaced like one; an equality carrier stays attached.
   assert.equal(formatted,source);
-  assert.match(formatted,/simp_set nat_units := \[nat_add_zero\];/);
-  assert.match(formatCubist("def t(x : Nat) : x =[Nat] x {\n  rfl;\n}\n"),/x =\[Nat\] x/);
+  assert.match(formatted,/simp_set nat_units := \[unat_add_zero\];/);
+  assert.match(formatCubist("def t(x : UNat) : x =[UNat] x {\n  rfl;\n}\n"),/x =\[UNat\] x/);
 });
 
 // The verdicts are the ergonomics_simp_client_* modules'; here, the rule
@@ -647,16 +647,16 @@ test("conditional premise simplification is bounded and keeps nested witnesses",
   assert.equal(work("no_base").premiseProofs,0);
   const step=result.links.find(link=>link.role==="simplification step"
     &&link.description.includes("using outer"));
-  assert.match(step?.description??"",/Premise simplified using inner, nat_add_zero/);
+  assert.match(step?.description??"",/Premise simplified using inner, unat_add_zero/);
   assert.equal(program.inspect(step.binding).type.tag,"Path");
 });
 
 test("rewrite errors are reported at the rule they name",async t=>{
-  const reverseSource="def reverse(n : Nat) : n = n { rw [<- refl(n)] at lhs; }";
+  const reverseSource="def reverse(n : UNat) : n = n { rw [<- refl(n)] at lhs; }";
   const reverseRule=parse(reverseSource).declarations[0].body[0].rules[0];
   assert.equal(reverseSource.slice(reverseRule.start,reverseRule.end),"<- refl(n)");
   const {source,result}=await cases(t,"rule_diagnostics");
-  for(const [name,token] of [["bad_rw","nat_add_zero(n)"],
+  for(const [name,token] of [["bad_rw","unat_add_zero(n)"],
     ["bad_simp","[0]"],["missing_premise","[zero_if]"]]) {
     const output=result.outputs.find(d=>d.name===name);
     const statementStart=source.indexOf(`def ${name}`);
@@ -696,16 +696,16 @@ test("a conditional rule with unprovable premises does not stop simplification",
   const goal=count=>{
     const names=Array.from({length:count},(_,index)=>`b${index}`);
     const args=names.map(name=>`c(${name})`).join(", ");
-    return {params:`a : Nat, g : ${Array(count+2).fill("Nat").join(" -> ")}, ${names.join(", ")} : Nat`,
+    return {params:`a : UNat, g : ${Array(count+2).fill("UNat").join(" -> ")}, ${names.join(", ")} : UNat`,
       type:`g(${args}, (a + 0) + 0) = g(${args}, a)`};
   };
   const few=goal(20),many=goal(70);
-  const result=await program.check(`import primes; use nat;
-    def c(x : Nat) := x;
-    def c_zero(x : Nat, h : x = 0) : c(x) = 0 { rw [h] at lhs; }
+  const result=await program.check(`import primes; use unat;
+    def c(x : UNat) := x;
+    def c_zero(x : UNat, h : x = 0) : c(x) = 0 { rw [h] at lhs; }
     simp_rule c_zero priority 50;
-    def few(${few.params}) : ${few.type} { simp [nat_add_zero]; }
-    def many(${many.params}) : ${many.type} { simp [nat_add_zero]; }
+    def few(${few.params}) : ${few.type} { simp [unat_add_zero]; }
+    def many(${many.params}) : ${many.type} { simp [unat_add_zero]; }
   `,"premise_budget");
   assert.equal(result.complete,true,JSON.stringify(result.gaps));
   // Each c(b_i) premise is searched once, although it recurs on both sides

@@ -2,7 +2,7 @@
 // indexed subfamily basis without choice.
 import spanning_subfamilies;
 def extract(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, v : Fin(n) -> vector_carrier(K, V),
   spans : FiniteSpanningFamily(K, V, n, v)
 ) :
   Mere(SubfamilyBasis(K, V, n, v)) {
@@ -10,7 +10,7 @@ def extract(
 }
 
 def generator_coordinates(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, v : Fin(n) -> vector_carrier(K, V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, v : Fin(n) -> vector_carrier(K, V),
   basis : FamilyBasis(K, V, n, v)
 ) :
   FiniteBasis(K, V, n) {

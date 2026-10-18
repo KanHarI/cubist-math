@@ -3,7 +3,7 @@
 // laws and arithmetic compatibility in C. They are checked definitions, not
 // axioms. All other names come from the original binary/radix source modules.
 
-use nat;
+use unat;
 
 def factorial_ten_binary_to_nat : factorial(10) = nat_3628800 {
   exact cubical_factorial_ten_via_univalence;

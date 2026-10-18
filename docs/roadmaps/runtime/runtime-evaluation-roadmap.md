@@ -13,7 +13,8 @@ completed full normalizations by exact syntax identity. NUM0's source
 representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
-and factorial. The default-`Nat` migration, NUM2 and EVAL3–EVAL8 remain.
+and factorial. The default-`Nat` migration is implemented below; its release checks are pending.
+NUM2 and EVAL3–EVAL8 remain.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -150,8 +151,8 @@ evaluator, so the failed run's counts are observations, not counters.
 
 ### EVAL1 measurements (2026-10-17)
 
-The [current baseline](../../../tests/fixtures/evaluation-baseline.json),
-version 3, records three cold samples and three warm runs per sample on
+The [EVAL1 baseline](https://github.com/KanHarI/cubist-math/blob/f675a07cec93c9a73c272208742e65ad0aec91eb/tests/fixtures/evaluation-baseline.json),
+version 3, recorded three cold samples and three warm runs per sample on
 Node 24.13.0, macOS/arm64, Apple M3 Pro. A seven-workload pre-change run
 from `fc0362d3` is retained in
 [eval1-before.json](../../reports/eval1-before.json). The after record is
@@ -164,7 +165,7 @@ node tools/evaluation-baseline.mjs --samples=3 --only=euclid-3,euclid-3-print,eu
 ```
 
 The retained report is a copy of that checkout's `build/evaluation-baseline.json`
-(the tool writes JSON there; stdout is a text summary). On this implementation,
+(the tool writes JSON there; stdout is a text summary). On that implementation,
 `node tools/evaluation-baseline.mjs --samples=3 --write` records all 26
 workloads in the version-3 after baseline.
 
@@ -307,8 +308,8 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
-implemented. The default-`Nat` compatibility migration and the other rows
-remain. Sizes are relative scope, as in the work plan.
+implemented. The default-`Nat` compatibility migration is implemented with
+release validation pending; the other rows remain. Sizes are relative scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
@@ -434,9 +435,10 @@ their character offsets. All new modules import only the foundational library.
 decoding preserves addition and multiplication for arbitrary binary values.
 [semirings.cubist](../../../library/semirings.cubist) defines `CommSemiring`
 as a general interface.
-[bnat_semiring.cubist](../../../library/bnat_semiring.cubist) contains both natural models and proves the binary
-laws, constructs both conversion homomorphisms and `unat_bnat_semiring_iso`,
-and supplies cancellation, nontriviality and no zero divisors. The proofs
+[bnat_semiring.cubist](../../../library/bnat_semiring.cubist) proves the binary
+laws, cancellation, nontriviality and no zero divisors. The optional
+[bnat_models.cubist](../../../library/bnat_models.cubist) packages both natural
+models, conversion homomorphisms and `unat_bnat_semiring_iso`. The proofs
 use the explicit conversion; the arithmetic operations still recurse on
 bits. These results check without assumptions.
 
@@ -491,32 +493,53 @@ own bound without strict-decrease evidence. A step ignoring smaller results
 computes at a 64-bit bound without enumerating them. The `Below` construction
 can still walk through intervening predecessor bounds when a smaller result
 is requested; this is not a sublinear-time or memoization claim.
-Public `Nat` has not switched.
+**Default migration (2026-10-18; release validation pending).** Public
+`Nat` now aliases `BNat`. Its facade uses direct binary operations and calls
+`bnat_literal` directly for decimal/`0b` input. The original unary declaration
+and proofs live in `unat`: structural clients import `unat`, use `UNat`, and
+call `unat_*` laws. Frontend numeral construction, lexical digits/offsets and
+h-level indices refer to that explicit unary declaration. No default unary
+magnitude limit applies to binary literals; the bounded unary diagnostic
+points to `nat`.
 
-**Migration boundary.** Public `Nat` is still unary. `UNat` currently aliases
-that exact carrier, retaining its `zero`/`succ` constructors and structural
-induction. Before the authorized default switch, move the unary declaration
-and its implementation into `unat`, update the frontend's current
-`nat__Nat` encoding/inspection hooks, separate lexical data from the public
-natural-number facade as needed, and migrate unary clients to explicit
-imports. Update numeral-limit diagnostic hints to the new library notation.
-Preserve their induction API and recheck the archive. Direct decimal input
-and printing are implemented for `bnat`; route the default `nat` notation's
-literal rule directly through `bnat_literal` so its printing metadata follows
-the same reader, retiring the default unary numeral limit. Unary numerals
-currently print bare under every selected view: fix that during migration
-so only an identity unary notation prints them bare, and other views use
-`unat.(n)`. Before the switch, the mathematical printer must also show
-literal-rule numerals as written and computed `BNat` values in decimal.
-The switch now waits for that frontend and unary-client migration. NUM1's
-comparison, semiring, universe-transport and dependent-recursion laws check.
+Source printing records identity unary readers by their retained notation
+identity: only the selected identity reader prints unary numerals bare;
+other views print `unat.(n)`. The source and mathematical printers share
+literal recognition, preserve literal spelling, and show computed binary
+magnitudes in decimal. The migration fixture covers 64-bit carry, a dense
+128-bit product, comparison, factorial, dependent recursion, mixed-carrier
+printing and setness. Library, archive, browser and independent rechecking
+remain release gates; passing the focused fixture alone does not release
+the migration. The library README records constructor/import compatibility.
+NUM2's integer/rational representations and EVAL3–EVAL8 remain separate work.
 
-Outstanding display checks from #277:
+The default facade retains numerical induction but does not load the general
+algebra models. Moving those five models to `bnat_models` reduces its checked
+imports from 816 to 266 and native checking steps from 138,611 to 40,376 for
+`import nat; def probe : Unit := tt;`. The former unary import checks 29
+imports in 4,128 steps. These are deterministic import costs, not evaluator
+benchmarks or wall-time speed claims. Public equational laws state their
+conclusions in `nat` notation so `rw`, `simp` and `simpa` match public goals.
 
-- [ ] Qualify unary numerals under non-identity notation views.
-- [ ] Show `0b` and rational literal-rule values readably in mathematical
-  output, including the proof page's type column, which currently exposes
-  their `parsed_value` and lexeme constructor chains.
+The [version-4 baseline](../../../tests/fixtures/evaluation-baseline.json)
+records the fixed archive workloads with `UNat` identities and `unat`
+notation. Their algorithms are unchanged. A fresh
+[before report](../../reports/default-nat-before.json) on `81478e09` and the
+after run on `553a1f17` use the same kernel build, three cold samples and one
+warm run per sample. All 22 kernel entries have identical deterministic
+work, allocations, phase calls/failures and measured syntax depths. Their
+success/error outcomes match; normal-form digests and three rendered hashes
+change with the renamed unary identities. All three successful closure
+experiments retain identical work counts; the fourth still overflows the
+host stack, whose stopping depth is not a performance counter. The fixture
+is refreshed for this representation change, without changing its tests or
+counter bounds. This comparison makes no wall-time speedup claim.
+
+Display migration gates from #277:
+
+- [x] Qualify unary numerals under non-identity notation views.
+- [x] Show `0b` and rational literal-rule values readably in mathematical
+  output, with readable numerical types in the proof workspace.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
@@ -715,8 +738,9 @@ record exactly, and each workload allocates the same number of syntax nodes.
 Full `euclid(3)` saves 58% of normalization steps; its reported peak arena
 includes an additional 262,144 bytes for 65,536 cache slots. These are
 deterministic work measurements, not a wall-clock speedup claim. K344 still
-limits the larger Euclid inputs. The version-3 fixture remains the regression
-reference: its allowed counter decreases cover this optimization.
+limits the larger Euclid inputs. The version-3 fixture served as the regression
+reference: its allowed counter decreases covered this optimization. The
+default-Nat migration records version 4 for the renamed unary identities.
 The negative polynomial-root fixture now reaches its intended E606 type
 mismatch instead of exhausting the K338 reduction budget; its expected
 diagnostic is updated accordingly.

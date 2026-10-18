@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import fine_interval_samples;
 import dyadic_convergence;
 
 // Data at a specified dyadic level, rather than an existentially chosen level.
 def FineDyadicLevel(
   F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F, a,
-  b : FieldUnitInterval(F, zero, one, lt), depth : Nat
+  b : FieldUnitInterval(F, zero, one, lt), depth : UNat
 ) :=
   exists piece : SampleSubdivision(FieldUnitInterval(F, zero, one, lt), a, b).
   (subdivision_count(FieldUnitInterval(F, zero, one, lt), a, b, piece) = dyadic_count(depth))
@@ -24,7 +24,7 @@ def FineIntervalTail(
   F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, mesh : F, a,
   b : FieldUnitInterval(F, zero, one, lt)
 ) :=
-  exists bound : Nat. forall depth : Nat. IndexLE(bound, depth)
+  exists bound : UNat. forall depth : UNat. IndexLE(bound, depth)
   -> FineDyadicLevel(F, zero, one, addF, negF, lt, mesh, a, b, depth);
 
 // One small dyadic width gives a uniform construction of fine samples at
@@ -38,7 +38,7 @@ def interval_fine_tail_from_bound(
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
-  ), mesh : F, bound : Nat,
+  ), mesh : F, bound : UNat,
   small : lt(
     dyadic_width(F, half, bound, interval_difference(F, zero, one, addF, negF, lt, a, b)), mesh
   )
@@ -51,7 +51,7 @@ def interval_fine_tail_from_bound(
     ordered
   );
   let levels :
-    forall depth : Nat. IndexLE(bound, depth)
+    forall depth : UNat. IndexLE(bound, depth)
     -> FineDyadicLevel(F, zero, one, addF, negF, lt, mesh, a, b, depth) {
     intro depth, later;
     let smallDepth := dyadic_width_small_tail(
@@ -89,7 +89,7 @@ def archimedean_interval_fine_tail(
   obtain (half, halfSum, halfPositive) := ordered_field_halving(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses
   );
-  let A := (exists depth : Nat. lt(dyadic_width(F, half, depth, width), mesh));
+  let A := (exists depth : UNat. lt(dyadic_width(F, half, depth, width), mesh));
   let B := FineIntervalTail(F, zero, one, addF, negF, lt, mesh, a, b);
   let mapping : A -> B {
     intro data;

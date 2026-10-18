@@ -1,6 +1,6 @@
 // One group inverse implements both quasigroup divisions and their laws.
 import integers;
-use nat;
+use unat;
 
 theory Magma(U < UU0) {
   M : set U;

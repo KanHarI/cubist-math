@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import contour_samples;
 
 // Exact error terms from tag changes and splitting an oriented edge.
@@ -111,7 +111,7 @@ def contour_edge_refinement(
   );
 }
 
-def contour_tag_error_sum(F : U1, zero : F, addF, mulF : F -> F -> F, negF, f : F -> F, n : Nat) :=
+def contour_tag_error_sum(F : U1, zero : F, addF, mulF : F -> F -> F, negF, f : F -> F, n : UNat) :=
   induction n as k return (SampleVertices(F, k) -> SampleTags(F, k) -> SampleTags(F, k) -> F) {
     zero => fun (vertices : F, oldTags, newTags : Unit) => zero;
     succ previous => fun (
@@ -131,7 +131,7 @@ def contour_tag_error_sum(F : U1, zero : F, addF, mulF : F -> F -> F, negF, f : 
 
 def contour_sum_change_tags(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : UNat
 ) :
   forall vertices : SampleVertices(F, n). forall oldTags : SampleTags(F, n).
   forall newTags : SampleTags(F, n).

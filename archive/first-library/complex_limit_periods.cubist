@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import limit_periods;
 import complex_numbers;
 
@@ -37,14 +37,14 @@ def paired_complex_period_laws(
 // These are properties of proposed scalar approximations, not new axioms.
 def PeriodApproximationLaws(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, X : U0, point : X,
-  approximations : (point = point) -> Nat -> F
+  approximations : (point = point) -> UNat -> F
 ) :=
-  FieldAsymptotic(F, zero, addF, lt, approximations(refl(point)), (fun (n : Nat) => zero))
+  FieldAsymptotic(F, zero, addF, lt, approximations(refl(point)), (fun (n : UNat) => zero))
   and (
     forall p : point = point. forall q : point = point.
     FieldAsymptotic(
       F, zero, addF, lt, approximations(trans(p, q)),
-      (fun (n : Nat) => addF(approximations(p, n), approximations(q, n)))
+      (fun (n : UNat) => addF(approximations(p, n), approximations(q, n)))
     )
   );
 
@@ -53,7 +53,7 @@ def complex_cauchy_approximation_period_laws(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
   inverses : FieldInverses(F, zero, one, mulF, lt), complete : CauchyComplete(F, zero, addF, lt),
-  X : U0, point : X, realApproximations, imagApproximations : (point = point) -> Nat -> F,
+  X : U0, point : X, realApproximations, imagApproximations : (point = point) -> UNat -> F,
   realCauchy : (forall p : point = point. FieldCauchy(F, zero, addF, lt, realApproximations(p))),
   imagCauchy : (forall p : point = point. FieldCauchy(F, zero, addF, lt, imagApproximations(p))),
   realEstimates : PeriodApproximationLaws(F, zero, addF, lt, X, point, realApproximations),

@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import complex_curves;
 import affine_variation;
 
@@ -25,7 +25,7 @@ def ComplexCurveVariation(
   imagWeight : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
   -> FieldUnitInterval(F, zero, one, lt) -> F, length : F
 ) :=
-  forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+  forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
   forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
   IntervalOrderedSamples(F, zero, one, lt, n, vertices)
   -> SampleMagnitudeBounds(

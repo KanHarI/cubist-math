@@ -5,7 +5,7 @@
 
 import classical;
 
-computable def successor(n : Nat) := succ(n);
+computable def successor(n : UNat) := succ(n);
 
 // Error: E330: This computable declaration depends on non-computing assumptions: LEM, Truncate,
 //   TruncateElim. Path to LEM: double_negation (classical) → LEM.

@@ -6,7 +6,7 @@ import {checkProgram} from "./check-program.mjs";
 import {ContextualSession} from "../web/contextual-session.mjs";
 
 const module=await create();
-const nat="inductive Nat { zero; succ(n : Nat); }\n";
+const unat="inductive UNat { zero; succ(n : UNat); }\n";
 async function setup(t,source,marker,{phase="before",length=marker.length}={}) {
   const {program,result}=await checkProgram(t,source,{module,options:{collectScopes:true}});
   assert.deepEqual(result.gaps,[]);
@@ -45,9 +45,9 @@ test("/locals separates shadowed identities and preserves checked types through 
 });
 
 test("/locals follows model openings without treating the hidden parameter as visible",async t=>{
-  const source=nat+`theory T(U < UU0) { M : U; c : M; }
-    def chosen : T(U0) := T.make(Nat, zero);
-    def f(c : Nat) : Nat { use chosen; exact c; }`;
+  const source=unat+`theory T(U < UU0) { M : U; c : M; }
+    def chosen : T(U0) := T.make(UNat, zero);
+    def f(c : UNat) : UNat { use chosen; exact c; }`;
   const {session}=await setup(t,source,"exact c;");
   const result=await query(session,"/locals","locals"),cs=result.bindings.filter(row=>row.label==="c");
   assert.equal(cs.length,2);
@@ -64,9 +64,9 @@ test("shadowed lets and obtain components retain the same branch refinements as 
   for(const kind of ["match","induction"])await t.test(kind,async t=>{
     const collected=[];
     for(const shadowed of [false,true]) {
-      const source=nat+`def f(n : Nat) : Nat {
+      const source=unat+`def f(n : UNat) : UNat {
         let v := n; let m := succ(n); let p := refl(n);
-        obtain (a, b) := typed(Nat and (n = n), (succ(n), refl(n)));
+        obtain (a, b) := typed(UNat and (n = n), (succ(n), refl(n)));
         ${shadowed?"let v := zero; let m := zero; let p := tt; let a := zero; let b := tt;":""}
         ${kind} n {
           zero => { exact m; }
@@ -91,9 +91,9 @@ test("shadowed lets and obtain components retain the same branch refinements as 
 });
 
 test("opened-member receipts retain their source behavior through branch refinement",async t=>{
-  const source=nat+`theory T(U < UU0) { M : U; c : M; }
-    def f(n : Nat) : Nat {
-      use T.make(Nat, n);
+  const source=unat+`theory T(U < UU0) { M : U; c : M; }
+    def f(n : UNat) : UNat {
+      use T.make(UNat, n);
       match n { zero => { exact c; } succ(k) => { exact k; } }
     }`;
   const off=await checkProgram(t,source,{module});
@@ -120,7 +120,7 @@ test("/locals describes universe variables and actual interval coordinates",asyn
 });
 
 test("proof experiments check the selected goal without changing source or scratch history",async t=>{
-  const source=nat+"def proof(k : Nat) : k = k { exact refl(k); }";
+  const source=unat+"def proof(k : UNat) : k = k { exact refl(k); }";
   const {program,session}=await setup(t,source,"exact refl(k);");
   const before={work:program.kernel.work(),definitions:[...program.kernel.definitions],symbols:JSON.stringify(program.symbols)};
   const goal=await query(session,"/goal","goal");
@@ -220,22 +220,22 @@ test("proof introductions shadow retained let evidence without dropping an unsha
 });
 
 test("expression contexts distinguish expected types from active proof goals",async t=>{
-  const source=nat+"def f(k : Nat) : Nat := k;";
+  const source=unat+"def f(k : UNat) : UNat := k;";
   const {session}=await setup(t,source,"k;",{phase:"expression",length:1});
   const result=await query(session,"/goal","goal");
   assert.equal(result.goal,null);
-  assert.equal(result.expected,"Nat");
+  assert.equal(result.expected,"UNat");
   assert.match((await query(session,"/prove { exact k; }","error")).text,/no active proof goal/);
   await query(session,"k","value");
 });
 
 test("inspection and ordinary print commands use the selected context",async t=>{
-  const source=nat+"def f(k : Nat) : Nat { let next_ := succ(k); exact next_; }";
+  const source=unat+"def f(k : UNat) : UNat { let next_ := succ(k); exact next_; }";
   const {session}=await setup(t,source,"exact next_;");
   const first=await query(session,"print(inspect(next_))","inspection");
   assert.ok(first.text.length);
   assert.equal((await query(session,"inspect next_","inspection")).text,first.text);
-  assert.equal((await query(session,"print(typeof(next_))","type")).text,"Nat");
+  assert.equal((await query(session,"print(typeof(next_))","type")).text,"UNat");
   assert.equal((await query(session,"print(evaluate(next_))","value")).text,"succ(k)");
   await query(session,"print(inspect(absent))","error");
   assert.equal(session.accepted.length,0);
@@ -252,12 +252,12 @@ test("context inspection commands reject stale sessions",async t=>{
 });
 
 test("witness readout keeps its closedness restriction in a local context",async t=>{
-  const source="import nat; import h1_truncation; def f(k : Nat) : Nat := k;";
+  const source="import unat; import h1_truncation; def f(k : UNat) : UNat := k;";
   const {session}=await setup(t,source,"k;",{phase:"expression",length:1});
-  const closed=await query(session,"witness merely(U0, Nat, succ(zero))","value");
-  assert.match(closed.text,/Nat/);
-  await query(session,"witness merely(U0, Nat, k)","error");
-  const printed=await query(session,"print(witness(merely(U0, Nat, succ(zero))))","value");
+  const closed=await query(session,"witness merely(U0, UNat, succ(zero))","value");
+  assert.match(closed.text,/UNat/);
+  await query(session,"witness merely(U0, UNat, k)","error");
+  const printed=await query(session,"print(witness(merely(U0, UNat, succ(zero))))","value");
   assert.equal(printed.text,closed.text);
 });
 

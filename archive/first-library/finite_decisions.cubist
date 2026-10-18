@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import finite;
 import bijection_equality;
-use nat;
+use unat;
 
 // Transport a decision along two implications; no excluded middle is used.
 def decision_transfer(P, Q : U0, toQ : P -> Q, toP : Q -> P, decision : Decidable(U0, P)) :=
@@ -44,7 +44,7 @@ def decision_prop(P : U0, prop_ : Proposition(P), d, e : Decidable(U0, P)) :=
 
 // Extend a decision over the tail by testing the new first element.
 def finite_decision_step(
-  n : Nat, P : Fin(succ(n)) -> U0, head : Decidable(U0, P(typed(Unit or Fin(n), left(tt)))),
+  n : UNat, P : Fin(succ(n)) -> U0, head : Decidable(U0, P(typed(Unit or Fin(n), left(tt)))),
   tail : Decidable(U0, forall x : Fin(n). P(typed(Unit or Fin(n), right(x))))
 ) :=
   match head return Decidable(U0, forall x : Fin(succ(n)). P(x)) {
@@ -70,7 +70,7 @@ def finite_decision_step(
 
 // Finite search decides a universal statement only when every instance is
 // decidable. Finiteness alone does not decide an arbitrary predicate.
-def finite_forall_decidable(n : Nat) :=
+def finite_forall_decidable(n : UNat) :=
   induction n as k return (
     forall P : Fin(k) -> U0. (forall x : Fin(k). Decidable(U0, P(x)))
     -> Decidable(U0, forall x : Fin(k). P(x))

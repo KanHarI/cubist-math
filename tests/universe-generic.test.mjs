@@ -21,7 +21,7 @@ const parseError = source => { try { parse(source); return null; } catch (error)
 const labels = (program, binding) => program.symbols[binding].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
 
 test("B13: universe constants are reserved names", () => {
-  assert.equal(parseError("def UU2 := Nat;"), "UU2 is a universe constant; pick another name.");
+  assert.equal(parseError("def UU2 := UNat;"), "UU2 is a universe constant; pick another name.");
   assert.equal(parseError("def f := fun (U1 : U0) => U1;"), "U1 is a universe constant; pick another name.");
   assert.match(parseError("def f := exists U < UU0. U;"), /exists has no level form/);
 });
@@ -104,7 +104,7 @@ function generator(seed) {
 
 test("Lemma 5: instantiating a level commutes with normalization", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check("import nat; def retained : Unit := tt;", "properties");
+  await program.check("import unat; def retained : Unit := tt;", "properties");
   const nf = term => program.checker.verify(term).normal, hash = canonicalHasher();
   const same = (a, b) => hash(a) === hash(b);
   const { x, type, number } = generator(12345);
@@ -126,7 +126,7 @@ test("Lemma 5: instantiating a level commutes with normalization", async t => {
 
 test("composition at a level Π is pointwise: its reduct instantiated is the composition at the instance", async t => {
   const program = new CubicalProgram(module, async () => ""); t.after(() => program.dispose());
-  await program.check("import nat; def retained : Unit := tt;", "properties");
+  await program.check("import unat; def retained : Unit := tt;", "properties");
   const nf = term => program.checker.verify(term).normal, hash = canonicalHasher();
   const { x, inhabited } = generator(777);
   for (let i = 0; i < 30; i++) {

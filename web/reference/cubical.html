@@ -104,11 +104,11 @@ def value_at_one(A : U0, x, y : A, p : x = y) : p @ 1 = y {
             <pre><code data-check="reject">// Error: path i =&gt; ... needs an expected Path or PathP type.
 def no_expected_type(A : U0, x : A) := path i =&gt; x;</code></pre>
             <p>A coordinate is not a term, and <code>Interval</code> is not a type:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
 def coordinate_as_term(A : U0, x : A) : x = x {
   // Error: Interval coordinates can only be used in interval arguments.
-  exact path i =&gt; typed(Nat, i);
+  exact path i =&gt; typed(UNat, i);
 }</code></pre>
             <pre><code data-check="reject">def interval_as_type(i : Interval) := i;  // Error: Untranslated name: Interval</code></pre>
           </section>
@@ -252,9 +252,9 @@ def section_via_transport(A : U0, C : A -&gt; U0, f : (forall a : A. C(a)),
   PathP(fun (i : Interval) =&gt; C(p @ i), a, transport a along p in C) :=
   lift refl(transport a along p in C) along p in C;</code></pre>
             <p>All three operands of <code>lift</code> and <code>transport</code> are expressions. Give a longer equality proof a name first with <code>let q : (transport a along p in C) = b { … }</code>, then use <code>lift q along p in C</code>. Parenthesize nested keyword expressions. The family <code>C</code> and base path <code>p</code> are explicit; <code>lift</code>, like <code>path i =&gt; …</code>, reads its endpoints from an expected path type. Give a result type on a definition or local binding, or use <code>typed(PathP(…), lift q along p in C)</code>. A non-path result type is refused:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : Nat {
+def not_a_path_goal(A : U0, C : A -&gt; U0, x, y : A, p : x = y) : UNat {
   exact lift 0 along p in C;  // Error: lift needs an expected Path or PathP type; annotate the result type.
 }</code></pre>
             <p>Squares are dependent paths too. The type of <code>to_start</code> in <a href="#meets-and-joins">meets and joins</a>, <code>PathP(fun (j : Interval) =&gt; x = p @ j, refl(x), p)</code>, is a dependent path over the family of path types <code>x = p @ j</code>, whose ends change with <code>j</code>.</p>
@@ -273,9 +273,9 @@ def dependent_pointwise(A : U0, C : A -&gt; U0, f, g : forall a : A. C(a),
   exact h(a);
 }</code></pre>
             <p>Cubical paths make function extensionality provable: <code>path i => fun x => h(x) @ i</code> is a path from <code>f</code> to <code>g</code>. <code>ext x;</code> builds that term. It works for dependent functions too, provided the goal is <code>f = g</code> with <code>f, g : forall x : A. C(x)</code>. It uses no assumption; <a href="assumptions.html#univalence"><code>FunExt</code></a> builds the same term. Unlike <code>rw</code>, <code>ext</code> never closes the block: a statement proving <code>f(x) = g(x)</code> must follow, even when that holds by <code>rfl</code>.</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def not_functions(n : Nat) : n = n {
+def not_functions(n : UNat) : n = n {
   ext x;  // Error: ext requires equality of functions.
   rfl;
 }</code></pre>
@@ -422,40 +422,40 @@ def reverse(c : Circle) : Circle := match c {
 def reverse_loop : cong(reverse, loop) = sym(loop) { rfl; }</code></pre>
             <p>At <code>loop @ i</code>, <code>reverse</code> returns <code>loop @ ~i</code>, where <code>~i</code> is <span class="math">1 − i</span>. At <code>i = 0</code> and <code>i = 1</code> the point is <code>base</code>, so there the clause must agree with the <code>base</code> clause: <code>loop @ ~0</code> is <code>loop @ 1</code>, which is <code>base</code>, and <code>loop @ ~1</code> is <code>loop @ 0</code>, also <code>base</code>. Taken over all <code>i</code>, the clause traces a path between the results at <code>base</code>. Applying <code>reverse</code> along the whole loop, <code>cong(reverse, loop)</code>, gives that path, <code>sym(loop)</code>, and <code>rfl</code> checks this by computation.</p>
             <p>A clause whose ends disagree with the point clause is rejected. Here the loop clause traces a path from <code>1</code> to <code>1</code>, but the <code>base</code> clause requires one from <code>0</code> to <code>0</code>:</p>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
 inductive Circle : U0 {
   base;
   loop : base = base;
 }
 
-def broken(c : Circle) : Nat := match c {  // Error: Type mismatch: found 1 = 1, expected 0 = 0.
+def broken(c : Circle) : UNat := match c {  // Error: Type mismatch: found 1 = 1, expected 0 = 0.
   base =&gt; 0;
   loop @ i =&gt; 1;
 };</code></pre>
             <p>A constant clause traces the constant path. <code>flatten</code> sends every point of the loop to <code>0</code>, so along the loop it gives <code>refl(0)</code>. A variable or <code>_</code> after the <code>base</code> clause covers the points along the loop, as in <code>flatten_rest</code>. A path clause can also be omitted and its path proved instead: <code>obligations by rfl</code> proves the path the missing loop clause must give, <code>0 = 0</code>.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
 inductive Circle : U0 {
   base;
   loop : base = base;
 }
 
-def flatten(c : Circle) : Nat := match c {
+def flatten(c : Circle) : UNat := match c {
   base =&gt; 0;
   loop @ i =&gt; 0;
 };
 
 def flatten_loop : cong(flatten, loop) = refl(0) { rfl; }
 
-def flatten_rest(c : Circle) : Nat := match c {
+def flatten_rest(c : Circle) : UNat := match c {
   base =&gt; 0;
   _ =&gt; 0;
 };
 
-def flatten_again(c : Circle) : Nat := match c {
+def flatten_again(c : Circle) : UNat := match c {
   base =&gt; 0;
 } obligations by rfl;</code></pre>
             <h3 id="loops-and-based-paths">Loops and based paths</h3>
@@ -519,12 +519,12 @@ def discard(A : U0, x : Mere(A)) : Unit := match x {
   relate(a, b : A, r : R(a, b)) : class(a) = class(b);
 }</code></pre>
             <p>No class carries a chosen element, and nothing about quotients uses an assumption: a closed computation with them evaluates. A map into a set that sends related elements to equal values <strong>descends</strong> to the quotient, and computes on classes. Here the naturals modulo parity, and parity read off a class:</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 import hlevels;
 import quotients;
-use nat;
+use unat;
 
-def parity(n : Nat) : Nat := match n {
+def parity(n : UNat) : UNat := match n {
   zero =&gt; 0;
   succ(k) =&gt; match parity(k) {
     zero =&gt; 1;
@@ -532,12 +532,12 @@ def parity(n : Nat) : Nat := match n {
   };
 };
 
-def SameParity(m, n : Nat) : U0 := parity(m) = parity(n);
+def SameParity(m, n : UNat) : U0 := parity(m) = parity(n);
 
-def Parities : U0 := Quotient(U0, Nat, SameParity);
+def Parities : U0 := Quotient(U0, UNat, SameParity);
 
-def parity_of(x : Parities) : Nat :=
-  descend(U0, U0, Nat, SameParity, Nat, nat_is_set, parity, fun (m, n : Nat, r : SameParity(m, n)) =&gt; r, x);
+def parity_of(x : Parities) : UNat :=
+  descend(U0, U0, UNat, SameParity, UNat, unat_is_set, parity, fun (m, n : UNat, r : SameParity(m, n)) =&gt; r, x);
 
 evaluate parity_of(class(7)) expecting 1;</code></pre>
             <p><code>descend(U, V, A, R, B, set, f, respects, q)</code> takes the map <code>f : A -&gt; B</code>, evidence that <code>B</code> is a set, and <code>respects : forall a, b : A. R(a, b) -&gt; f(a) = f(b)</code>. The quotient's universe <code>U</code> and the result's <code>V</code> are independent. At a class it is <code>f</code>, by computation (<code>descend_class</code>), and it is the only map that is (<code>descend_unique</code>). The module also gives:</p>
@@ -554,12 +554,12 @@ evaluate parity_of(class(7)) expecting 1;</code></pre>
               </tbody>
             </table></div>
             <p><strong>Effectiveness</strong> reads the relation back from a path of classes. It needs the relation to be an equivalence valued in propositions: <code>quotient_effective</code> takes that evidence, then the two elements and the path. The proof descends relatedness to an element into the set of propositions, which univalence makes a set (<a href="assumptions.html#library-univalence">propositional extensionality</a>), so it uses no assumption, and on closed classes it computes:</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 import hlevels;
 import quotients;
-use nat;
+use unat;
 
-def parity(n : Nat) : Nat := match n {
+def parity(n : UNat) : UNat := match n {
   zero =&gt; 0;
   succ(k) =&gt; match parity(k) {
     zero =&gt; 1;
@@ -567,25 +567,25 @@ def parity(n : Nat) : Nat := match n {
   };
 };
 
-def SameParity(m, n : Nat) : U0 := parity(m) = parity(n);
+def SameParity(m, n : UNat) : U0 := parity(m) = parity(n);
 
-def Parities : U0 := Quotient(U0, Nat, SameParity);
+def Parities : U0 := Quotient(U0, UNat, SameParity);
 
 computable def one_three : typed(Parities, class(1)) = typed(Parities, class(3)) :=
-  class_path(U0, Nat, SameParity, 1, 3, refl(1));
+  class_path(U0, UNat, SameParity, 1, 3, refl(1));
 
 computable def same_parity : SameParity(1, 3) := quotient_effective(
-  U0, Nat, SameParity, fun (m, n : Nat) =&gt; nat_is_set(parity(m), parity(n)), fun (n : Nat) =&gt; refl(parity(n)),
-  fun (m, n : Nat, r : SameParity(m, n)) =&gt; sym(r), fun (k, m, n : Nat, r : SameParity(k, m), t : SameParity(m, n)) =&gt; trans(r, t),
+  U0, UNat, SameParity, fun (m, n : UNat) =&gt; unat_is_set(parity(m), parity(n)), fun (n : UNat) =&gt; refl(parity(n)),
+  fun (m, n : UNat, r : SameParity(m, n)) =&gt; sym(r), fun (k, m, n : UNat, r : SameParity(k, m), t : SameParity(m, n)) =&gt; trans(r, t),
   1, 3, one_three
 );
 
 evaluate same_parity expecting refl(1);</code></pre>
             <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
             <pre><code data-check="accept">import integers;
-use nat;
+use unat;
 
-def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
+def equal_or_not(x, y : Z) : UNat := match int_decide(x, y) return UNat {
   left same =&gt; 1;
   right different =&gt; 0;
 };
@@ -605,17 +605,17 @@ evaluate equal_or_not(int_mul(int(0, 2), int(0, 3)), int(6, 0)) expecting 1;</co
   push(c : C) : inl(f(c)) = inr(g(c));
 }</code></pre>
             <p>After <code>import pushout;</code>, write its universe arguments explicitly, as for any declaration with universe parameters. The constructors take their instance from the expected type, and <code>match</code> eliminates a pushout: a clause for each side and a path clause <code>push(c) @ i</code>, which the kernel checks against the two side clauses at <code>i = 0</code> and <code>i = 1</code>.</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
 import pushout;
 
-def TwoPoints : U0 := Pushout(U0, U0, U0, Nat, Unit, Unit, fun (n : Nat) =&gt; tt, fun (n : Nat) =&gt; tt);
+def TwoPoints : U0 := Pushout(U0, U0, U0, UNat, Unit, Unit, fun (n : UNat) =&gt; tt, fun (n : UNat) =&gt; tt);
 
 def west : TwoPoints := inl(tt);
 
 def east : TwoPoints := inr(tt);
 
-def bridge(n : Nat) : west = east {
+def bridge(n : UNat) : west = east {
   exact push(n);
 }
 

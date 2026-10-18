@@ -43,7 +43,7 @@ test("the H1 release fixture: the circle's winding number computes through univa
 
 test("the formatter keeps a qualified name's dot tight", async () => {
   const { formatCubist } = await import("../web/cubist/formatter.mjs");
-  const source = "def same(x, y : Trunc(U0, Nat)) : x = y := Trunc.squash(x, y);\n";
+  const source = "def same(x, y : Trunc(U0, UNat)) : x = y := Trunc.squash(x, y);\n";
   const formatted = formatCubist(source);
   assert.match(formatted, /Trunc\.squash\(x, y\)/);
   assert.equal(formatCubist(formatted), formatted);
@@ -53,8 +53,8 @@ test("nested legacy matches are walked once: parsing and formatting stay linear"
   const { parse } = await import("../web/cubist/parser.mjs");
   const { formatCubist } = await import("../web/cubist/formatter.mjs");
   let body = "0";
-  for (let depth = 0; depth < 40; depth++) body = `match x return Nat { left a => ${body}; right b => 0; }`;
-  const source = `def deep(x : Nat or Nat) : Nat := ${body};\n`;
+  for (let depth = 0; depth < 40; depth++) body = `match x return UNat { left a => ${body}; right b => 0; }`;
+  const source = `def deep(x : UNat or UNat) : UNat := ${body};\n`;
   const started = performance.now();
   const match = parse(source).declarations[0].body[0].value;
   assert.ok(match.leftBody && match.clauses.length === 2, "the legacy fields and the clauses are both there");
