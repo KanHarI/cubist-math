@@ -55,7 +55,8 @@ proofs, arithmetic definitions, arena/depth limits or production budgets change.
 ## Regression coverage
 
 `kernel/tests/test_normalize.c` exercises shared path substitution with syntax
-interning on and off, capture avoidance, rollback handle reuse, warm deadlines,
+interning on and off, capture avoidance, formula-arena growth during recursion,
+rollback handle reuse, warm deadlines,
 interrupted-query recovery, disjunctive faces and independent Glue pieces.
 `kernel/tests/test_levels.c` checks repeated and diamond-shaped shared levels,
 interruption/recovery, and a 1,024-variable arithmetic normal form whose

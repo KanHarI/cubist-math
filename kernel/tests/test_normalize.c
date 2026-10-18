@@ -243,6 +243,36 @@ static void dimension_cache_scope_and_rollback(void) {
     cc_kernel_free(k);
 }
 
+/* The replacement formula may itself live in the formula arena. A new
+ * formula in the first child can grow that arena before the second child
+ * uses the replacement, so recursive substitution must retain its value. */
+static void substitution_grows_formula_arena(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), empty = raw(k, CC_VOID, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 3, ck_universe_at(k, 0), unit, empty, 0);
+    cc_clause both = {3, 0};
+    cc_formula interval = {CC_INTERVAL, &both, 1, 1};
+    cc_term p = ck_var(k, 100);
+    cc_term first = raw(k, CC_PAPP, ck_formula(k, &interval), p, path);
+    cc_term second = raw(k, CC_PAPP, ck_interval_variable(k, 0), p, path);
+    cc_term source = raw(k, CC_SUM, 0, first, second);
+    cc_formula_id replacement = ck_interval_variable(k, 2);
+    for (uint64_t n = 1; k->formula_count < k->formula_capacity; ++n) {
+        cc_clause unused = {8 | n << 4, 0};
+        cc_formula fill = {CC_INTERVAL, &unused, 1, 1};
+        assert(ck_formula(k, &fill));
+    }
+    size_t capacity = k->formula_capacity;
+    cc_term result = ck_dimension_substitute(k, source, 0, cc_kernel_get_formula(k, replacement));
+    assert(result && k->formula_capacity > capacity);
+    cc_node pair = k->nodes[result];
+    const cc_formula *left = cc_kernel_get_formula(k, k->nodes[pair.child[0]].payload);
+    assert(left && left->length == 1 && left->clauses[0].positive == 6 && !left->clauses[0].negative);
+    assert(k->nodes[pair.child[1]].payload == replacement && !k->error[0]);
+    cc_kernel_free(k);
+}
+
 static void cached_term_rename(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
@@ -345,6 +375,7 @@ int main(void) {
     shared_dimension_substitution(CC_SHARE_SYNTAX);
     shared_dimension_substitution(0);
     dimension_cache_scope_and_rollback();
+    substitution_grows_formula_arena();
     cached_term_rename();
     interrupted_substitution();
     wall_faces();
