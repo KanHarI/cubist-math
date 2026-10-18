@@ -64,6 +64,7 @@ workbench's Kernel graph.
 | [`binary_semiring`](binary_semiring.cubist) | Binary arithmetic through the semiring and its parent models, computing conversion maps and isomorphisms, general preservation laws, cancellation and no zero divisors. |
 | [`binary_transport`](binary_transport.cubist) | Closed forward/reverse transport computes along the natural-number universe path; transported operations agree, and the value in a transported dependent witness computes. |
 | [`binary_equality`](binary_equality.cubist) | Computed/path equality agreement, bitwise decisions on large values, and a forced 64-bit model-law certificate that avoids unary proof evaluation. |
+| [`binary_recursion`](binary_recursion.cubist) | Dependent Peano/strong recursion computes factorial, a dependent witness and digit counts via halving; a step ignoring smaller results computes at a 64-bit bound without enumerating them, and a self-call without strict decrease is refused. |
 | [`integer_examples`](integer_examples.cubist) | The library's integers at work: equality decided and arithmetic computed on closed integers, a commutative ring's lemma at the integers, and the natural numbers embedded as a homomorphism of additive monoids. |
 | [`rational_examples`](rational_examples.cubist) | The library's rationals at work: sums, equal fractions and the inverse of a negative fraction, decided by computation, and a ring lemma at the rationals' ring. |
 | [`theories_without_hlevels`](theories_without_hlevels.cubist) | A theory's sorts without `hlevels`, which its model type names. |

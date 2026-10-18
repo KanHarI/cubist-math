@@ -1543,6 +1543,10 @@
    "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, decimal/binary input and printing, and arithmetic beyond 64 bits."
   },
   {
+   "path": "cubist-tests/binary_recursion.cubist",
+   "summary": "Dependent Peano/strong recursion computes factorial, a dependent witness and digit counts via halving; a step ignoring smaller results computes at a 64-bit bound without enumerating them, and a self-call without strict decrease is refused."
+  },
+  {
    "path": "cubist-tests/binary_semiring.cubist",
    "summary": "Binary arithmetic through the semiring and its parent models, computing conversion maps and isomorphisms, general preservation laws, cancellation and no zero divisors."
   },
@@ -2421,6 +2425,14 @@
   {
    "path": "library/bnat_order.cubist",
    "summary": "Proofs connecting the high-bit binary comparison and its computed non-strict/strict predicates to unary numerical order; both predicates are propositions."
+  },
+  {
+   "path": "library/bnat_peano.cubist",
+   "summary": "Dependent advance over binary offsets and the Peano eliminator; its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families. Homogeneous total-state iteration is used only in the successor proof."
+  },
+  {
+   "path": "library/bnat_recursion.cubist",
+   "summary": "Binary strict-order decisions and successor decomposition; callbacks for every smaller value, coherent dependent strong recursion and its equation; binary factorial with zero/successor laws. Successful decrease checks keep binary witnesses."
   },
   {
    "path": "library/bnat_semiring.cubist",
