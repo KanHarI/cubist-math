@@ -675,10 +675,47 @@ one, addition and multiplication are checked without assumptions. Its
 `binary_integers` notation reads decimal and `0b` magnitudes directly into
 binary pairs. Computed output still shows quotient representatives; this
 is not a canonical signed presentation. The public `Z`/`Q` APIs and generic
-`Ring.of_nat` compatibility path have not switched. No-zero-divisor proofs,
-the binary fraction instance and integer-to-rational embedding, generic binary
-numeral interpretation, and the default migration remain open. This source
+`Ring.of_nat` compatibility path have not switched. The binary fraction instance
+and integer-to-rational embedding, generic binary numeral interpretation, and
+the default migration remain open. This source
 representation work changes no evaluator or kernel code.
+
+**Shared integer domain proofs (2026-10-18).** `differences` derives absence
+of zero divisors from nonzero-factor multiplicative cancellation and an
+additive trichotomy witness. The existing unary domain statements become
+typed instances of this proof; `bint_mul_nonzero` supplies the binary instance.
+The natural equivalence supplies the binary additive-gap justification,
+without comparison maps to the old integer carrier.
+
+A quotient-respecting zero observer gives `bint_decide_zero` a compact
+negative certificate. It compares the representative's components and uses
+only constant 0/1 flags, independent of magnitude. The domain proof first
+uses this zero decision on the product. For concrete nonzero products, its
+certificate avoids evaluating the additive-gap justification or the general
+quotient-effectiveness family parameterized by a large representative.
+The constructor, arithmetic, equality and domain laws add no assumptions;
+this source-level change does not alter the kernel or its resource limits.
+
+The domain contracts fully normalize nonzero-product certificates with
+64/128-bit components and check an instance of `fraction_field`. They do not
+establish full rational-value normalization. A separate probe at this stage,
+`evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
+bint_zero_ne_one).one expecting _;`, exhausts the term arena (`K347`) even
+though its type checks and the individual nontriviality and product
+certificates fully normalize.
+Resolving this remains part of the NUM2 runtime work before the rational
+default migration; evaluator changes, if needed, belong to EVAL3–EVAL5.
+The probe is not a bounded regression test and should not be added to CI
+without first isolating and bounding the failing normalization.
+
+Bounded follow-up probes localize the growth to full normalization of the
+open integer multiplication function within the quotient's cross-multiplication
+relation. The raw fraction `(1, 1, nonzero proof)` normalizes in about 57 ms;
+`SameRatio`, `Frac`, `q_one`, and `bint_mul` each exceed a 10-second probe
+deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduces
+on merged main after #280, before these domain changes. Closed large integer
+products still normalize. These timings are diagnostic observations on one
+machine, not benchmark thresholds or a change to normal evaluation limits.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.

@@ -483,4 +483,262 @@ section {{U < UU0}}(
         ), add_zero(b)
       )
     );
+
+  // Observe only whether a representative has equal components. The two
+  // unary flag values are constants; they never encode an integer magnitude.
+  computable def difference_decision_tag(P : U, decision : Decidable(U, P)) :
+    UNat := match decision return UNat {
+      left yes => unat.(0);
+      right no => unat.(1);
+    };
+
+  computable def difference_decision_tags_agree(
+    P, Q : U, forward : P -> Q, backward : Q -> P, first : Decidable(U, P), second : Decidable(U, Q)
+  ) :
+    difference_decision_tag(P, first) = difference_decision_tag(Q, second) := match first as a return (
+      difference_decision_tag(P, a) = difference_decision_tag(Q, second)
+    ) {
+      left yes => match second as b return (unat.(0) = difference_decision_tag(Q, b)) {
+        left also => refl(unat.(0));
+        right no => absurd(no(forward(yes)));
+      };
+      right no => match second as b return (unat.(1) = difference_decision_tag(Q, b)) {
+        left yes => absurd(no(backward(yes)));
+        right also => refl(unat.(1));
+      };
+    };
+
+  // Related representatives agree on whether their components are equal.
+  computable def difference_related_zero(
+    p, q : R and R, r : DifferenceRelation(p, q), equal : p.1 = p.2
+  ) :
+    q.1 = q.2 := cancel(
+      p.1, q.1, q.2, trans(add_comm(p.1, q.1), trans(cong(fun (a : R) => q.1 + a, equal), sym(r)))
+    );
+
+  computable def difference_zero_tag_pair(p : R and R) :
+    UNat := difference_decision_tag(p.1 = p.2, decide(p.1, p.2));
+
+  computable def difference_zero_tag(x : Difference) : UNat := descend(
+    U, U0, R and R, DifferenceRelation, UNat, unat_is_set, difference_zero_tag_pair,
+    fun (p, q : R and R, r : DifferenceRelation(p, q)) => difference_decision_tags_agree(
+      p.1 = p.2, q.1 = q.2, difference_related_zero(p, q, r), difference_related_zero(q, p, sym(r)),
+      decide(p.1, p.2), decide(q.1, q.2)
+    ), x
+  );
+
+  computable def difference_zero_tag_zero :
+    difference_zero_tag(difference_zero) = unat.(0) := match decide(zero, zero) as decision return (
+      difference_decision_tag(zero = zero, decision) = unat.(0)
+    ) {
+      left same => refl(unat.(0));
+      right no => absurd(no(refl(zero)));
+    };
+
+  computable def difference_equal_zero(p : R and R, equal : p.1 = p.2) :
+    typed(Difference, class(p)) = difference_zero := difference_path(
+      p, (zero, zero), trans(add_zero(p.1), trans(equal, sym(zero_add(p.2))))
+    );
+
+  computable def difference_zero_tag_correct(x : Difference) :
+    difference_zero_tag(x) = unat.(0)
+    -> x = difference_zero := difference_induction(
+      fun (a : Difference) => difference_zero_tag(a) = unat.(0) -> a = difference_zero,
+      fun (a : Difference) => pi_is_prop(
+        U, difference_zero_tag(a) = unat.(0),
+        fun (e : difference_zero_tag(a) = unat.(0)) => a = difference_zero,
+        fun (e : difference_zero_tag(a) = unat.(0)) => difference_is_set(a, difference_zero)
+      ),
+      fun (p : R and R) => match decide(p.1, p.2) as decision return (
+        difference_decision_tag(p.1 = p.2, decision) = unat.(0)
+        -> typed(Difference, class(p)) = difference_zero
+      ) {
+        left same => fun (e : unat.(0) = unat.(0)) => difference_equal_zero(p, same);
+        right no => fun (e : unat.(1) = unat.(0)) => absurd(unat_zero_ne_succ(unat.(0), sym(e)));
+      }, x
+    );
+
+  // A zero decision with a compact negative certificate. The observation
+  // above descends into a fixed set, avoiding a family of propositions
+  // parameterized by the integer's potentially large representative.
+  computable def difference_decide_zero(x : Difference) :
+    Decidable(U, x = difference_zero) := match unat_decide(difference_zero_tag(x), unat.(0)) return Decidable(
+      U, x = difference_zero
+    ) {
+      left same => left(difference_zero_tag_correct(x, same));
+      right no => right(
+        fun (p : x = difference_zero) => no(
+          trans(cong(difference_zero_tag, p), difference_zero_tag_zero)
+        )
+      );
+    };
+
+  // Use the same compact zero certificate for nontriviality of the ring.
+  computable def difference_zero_ne_one(
+    nontrivial : zero = one -> Void, p : difference_zero = difference_one
+  ) :
+    Void := match difference_decide_zero(difference_one) return Void {
+      left same => nontrivial(difference_embed_injective(zero, one, p));
+      right no => no(sym(p));
+    };
+
+  // The difference ring has no zero divisors if nonzero multiplication
+  // cancels and any two semiring elements admit a nonzero additive gap or agree.
+  // This is an algebraic hypothesis, not an ordered-ring instance.
+  def DifferenceTrichotomy(a, b : R) : U := (exists s : R. (a = b + s) and (s = zero -> Void)) or (
+    (a = b) or (exists s : R. (b = a + s) and (s = zero -> Void))
+  );
+
+  // A nonzero additive gap cancels from a balanced product equation.
+  computable def difference_pairs_product_cancel(
+    multiply_cancel : (forall k, a, b : R. (k = zero -> Void) -> a * k = b * k -> a = b), b, s, c,
+    d : R, nonzero : s = zero -> Void, h : (b + s) * c + b * d = (b + s) * d + b * c
+  ) :
+    c = d {
+    let shifted : (b * c + b * d) + s * c = (b * c + b * d) + s * d {
+      calc {
+        (b * c + b * d) + s * c = (b * c + s * c) + b * d by mul_right_comm(
+          N.additive_, b * c, b * d, s * c
+        );
+        _ = (b + s) * c + b * d by cong(fun (m : R) => m + b * d, sym(distrib_right(b, s, c)));
+        _ = (b + s) * d + b * c by h;
+        _ = (b * d + s * d) + b * c by cong(fun (m : R) => m + b * c, distrib_right(b, s, d));
+        _ = (b * c + b * d) + s * d by trans(
+          add_comm(b * d + s * d, b * c), sym(add_assoc(b * c, b * d, s * d))
+        );
+      }
+    }
+    let multiples : c * s = d * s :=
+      trans(mul_comm(c, s), trans(cancel(b * c + b * d, s * c, s * d, shifted), mul_comm(s, d)));
+    exact multiply_cancel(s, c, d, nonzero, multiples);
+  }
+
+  // At pairs: if the product of p and q is zero, p's components or q's are
+  // equal, by trichotomy on p's and cancellation, so p or q is zero.
+  computable def difference_zero_divisors(
+    multiply_cancel : (forall k, a, b : R. (k = zero -> Void) -> a * k = b * k -> a = b),
+    trichotomy : (forall a, b : R. DifferenceTrichotomy(a, b)), p, q : R and R,
+    np : typed(Difference, class(p)) = difference_zero -> Void,
+    nq : typed(Difference, class(q)) = difference_zero -> Void,
+    r : DifferenceRelation(difference_mul_pairs(p, q), (zero, zero))
+  ) :
+    Void {
+    let products : p.1 * q.1 + p.2 * q.2 = p.1 * q.2 + p.2 * q.1 :=
+      trans(sym(add_zero(p.1 * q.1 + p.2 * q.2)), trans(r, zero_add(p.1 * q.2 + p.2 * q.1)));
+    let q_zero := fun (e : q.1 = q.2) => nq(difference_equal_zero(q, e));
+    match trichotomy(p.1, p.2) {
+      left(above) => {
+        let shifted : (p.2 + above.1) * q.1 + p.2 * q.2 = (p.2 + above.1) * q.2 + p.2 * q.1 {
+          calc {
+            (p.2 + above.1) * q.1 + p.2 * q.2 = p.1 * q.1 + p.2 * q.2 by cong(
+              fun (m : R) => m * q.1 + p.2 * q.2, sym(above.2.1)
+            );
+            _ = p.1 * q.2 + p.2 * q.1 by products;
+            _ = (p.2 + above.1) * q.2 + p.2 * q.1 by cong(
+              fun (m : R) => m * q.2 + p.2 * q.1, above.2.1
+            );
+          }
+        }
+        exact q_zero(
+          difference_pairs_product_cancel(
+            multiply_cancel, p.2, above.1, q.1, q.2, above.2.2, shifted
+          )
+        );
+      }
+      right(rest) => {
+        match rest {
+          left(same) => {
+            exact np(difference_equal_zero(p, same));
+          }
+          right(below) => {
+            let shifted : (p.1 + below.1) * q.2 + p.1 * q.1 = (p.1 + below.1) * q.1 + p.1 * q.2 {
+              calc {
+                (p.1 + below.1) * q.2 + p.1 * q.1 = p.1 * q.1 + (p.1 + below.1) * q.2 by add_comm(
+                  (p.1 + below.1) * q.2, p.1 * q.1
+                );
+                _ = p.1 * q.1 + p.2 * q.2 by cong(
+                  fun (m : R) => p.1 * q.1 + m * q.2, sym(below.2.1)
+                );
+                _ = p.1 * q.2 + p.2 * q.1 by products;
+                _ = p.1 * q.2 + (p.1 + below.1) * q.1 by cong(
+                  fun (m : R) => p.1 * q.2 + m * q.1, below.2.1
+                );
+                _ = (p.1 + below.1) * q.1 + p.1 * q.2 by add_comm(p.1 * q.2, (p.1 + below.1) * q.1);
+              }
+            }
+            exact q_zero(
+              sym(
+                difference_pairs_product_cancel(
+                  multiply_cancel, p.1, below.1, q.2, q.1, below.2.2, shifted
+                )
+              )
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // Decide the concrete product first. A nonzero product returns its checked
+  // equality decision directly, without evaluating the trichotomy proof.
+  computable def difference_mul_nonzero(
+    multiply_cancel : (forall k, a, b : R. (k = zero -> Void) -> a * k = b * k -> a = b),
+    trichotomy : (forall a, b : R. DifferenceTrichotomy(a, b)), x, y : Difference,
+    nx : x = difference_zero -> Void, ny : y = difference_zero -> Void,
+    p : difference_mul(x, y) = difference_zero
+  ) :
+    Void := match difference_decide_zero(difference_mul(x, y)) return Void {
+      left same => difference_induction(
+        fun (a : Difference) => forall b : Difference. (a = difference_zero -> Void)
+        -> (b = difference_zero -> Void) -> difference_mul(a, b) = difference_zero -> Void,
+        fun (a : Difference) => pi_is_prop(
+          U, Difference, fun (b : Difference) => (a = difference_zero -> Void)
+          -> (b = difference_zero -> Void) -> difference_mul(a, b) = difference_zero -> Void,
+          fun (b : Difference) => pi_is_prop(
+            U, a = difference_zero -> Void,
+            fun (na : a = difference_zero -> Void) => (b = difference_zero -> Void)
+            -> difference_mul(a, b) = difference_zero -> Void,
+            fun (na : a = difference_zero -> Void) => pi_is_prop(
+              U, b = difference_zero -> Void,
+              fun (nb : b = difference_zero -> Void) => difference_mul(a, b) = difference_zero
+              -> Void,
+              fun (nb : b = difference_zero -> Void) => not_is_prop(
+                U, difference_mul(a, b) = difference_zero
+              )
+            )
+          )
+        ),
+        fun (p1 : R and R) => fun (b : Difference) => difference_induction(
+          fun (c : Difference) => (typed(Difference, class(p1)) = difference_zero -> Void)
+          -> (c = difference_zero -> Void) -> difference_mul(class(p1), c) = difference_zero
+          -> Void,
+          fun (c : Difference) => pi_is_prop(
+            U, typed(Difference, class(p1)) = difference_zero -> Void,
+            fun (na : typed(Difference, class(p1)) = difference_zero -> Void) => (
+              c = difference_zero -> Void
+            ) -> difference_mul(class(p1), c) = difference_zero -> Void,
+            fun (na : typed(Difference, class(p1)) = difference_zero -> Void) => pi_is_prop(
+              U, c = difference_zero -> Void,
+              fun (nc : c = difference_zero -> Void) => difference_mul(class(p1), c) = difference_zero
+              -> Void,
+              fun (nc : c = difference_zero -> Void) => not_is_prop(
+                U, difference_mul(class(p1), c) = difference_zero
+              )
+            )
+          ),
+          fun (q : R and R) => fun (na : typed(Difference, class(p1)) = difference_zero -> Void) => fun (
+            nc : typed(Difference, class(q)) = difference_zero -> Void
+          ) => fun (zero_product : difference_mul(class(p1), class(q)) = difference_zero) => difference_zero_divisors(
+            multiply_cancel, trichotomy, p1, q, na, nc,
+            quotient_effective(
+              U, R and R, DifferenceRelation, difference_same_difference_props,
+              difference_same_difference_refl, difference_same_difference_sym,
+              difference_same_difference_trans, difference_mul_pairs(p1, q), (zero, zero),
+              zero_product
+            )
+          ), b
+        ), x
+      )(y, nx, ny, p);
+      right nonzero => nonzero(p);
+    };
 }
