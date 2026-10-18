@@ -535,6 +535,11 @@ host stack, whose stopping depth is not a performance counter. The fixture
 is refreshed for this representation change, without changing its tests or
 counter bounds. This comparison makes no wall-time speedup claim.
 
+Display migration gates from #277:
+
+- [x] Qualify unary numerals under non-identity notation views.
+- [x] Show `0b` and rational literal-rule values readably in mathematical
+  output, with readable numerical types in the proof workspace.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
