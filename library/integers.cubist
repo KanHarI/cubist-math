@@ -237,8 +237,7 @@ computable def int_mul_nonzero(
 
 // The shared construction keeps zero and one distinct.
 computable def int_zero_ne_one(p : int_zero = int_one) : Void := difference_zero_ne_one{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel,
-  fun (e : unat.(0) = unat.(1)) => unat_zero_ne_succ(0, e), p
+  unat_semiring, unat_decide, unat_add_cancel, fun (e : 0 = 1) => unat_zero_ne_succ(0, e), p
 );
 
 // The integers' numerals (L2.10c): integers.(2) is int(2, 0).

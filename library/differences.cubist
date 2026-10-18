@@ -486,8 +486,8 @@ section {{U < UU0}}(
 
   // Observe only whether a representative has equal components. The two
   // unary flag values are constants; they never encode an integer magnitude.
-  computable def difference_decision_tag(P : U, choice : Decidable(U, P)) :
-    UNat := match choice return UNat {
+  computable def difference_decision_tag(P : U, decision : Decidable(U, P)) :
+    UNat := match decision return UNat {
       left yes => unat.(0);
       right no => unat.(1);
     };
@@ -528,12 +528,17 @@ section {{U < UU0}}(
   );
 
   computable def difference_zero_tag_zero :
-    difference_zero_tag(difference_zero) = unat.(0) := match decide(zero, zero) as choice return (
-      difference_decision_tag(zero = zero, choice) = unat.(0)
+    difference_zero_tag(difference_zero) = unat.(0) := match decide(zero, zero) as decision return (
+      difference_decision_tag(zero = zero, decision) = unat.(0)
     ) {
       left same => refl(unat.(0));
       right no => absurd(no(refl(zero)));
     };
+
+  computable def difference_equal_zero(p : R and R, equal : p.1 = p.2) :
+    typed(Difference, class(p)) = difference_zero := difference_path(
+      p, (zero, zero), trans(add_zero(p.1), trans(equal, sym(zero_add(p.2))))
+    );
 
   computable def difference_zero_tag_correct(x : Difference) :
     difference_zero_tag(x) = unat.(0)
@@ -544,13 +549,11 @@ section {{U < UU0}}(
         fun (e : difference_zero_tag(a) = unat.(0)) => a = difference_zero,
         fun (e : difference_zero_tag(a) = unat.(0)) => difference_is_set(a, difference_zero)
       ),
-      fun (p : R and R) => match decide(p.1, p.2) as choice return (
-        difference_decision_tag(p.1 = p.2, choice) = unat.(0)
+      fun (p : R and R) => match decide(p.1, p.2) as decision return (
+        difference_decision_tag(p.1 = p.2, decision) = unat.(0)
         -> typed(Difference, class(p)) = difference_zero
       ) {
-        left same => fun (e : unat.(0) = unat.(0)) => difference_path(
-          p, (zero, zero), trans(add_zero(p.1), trans(same, sym(zero_add(p.2))))
-        );
+        left same => fun (e : unat.(0) = unat.(0)) => difference_equal_zero(p, same);
         right no => fun (e : unat.(1) = unat.(0)) => absurd(unat_zero_ne_succ(unat.(0), sym(e)));
       }, x
     );
@@ -622,9 +625,7 @@ section {{U < UU0}}(
     Void {
     let products : p.1 * q.1 + p.2 * q.2 = p.1 * q.2 + p.2 * q.1 :=
       trans(sym(add_zero(p.1 * q.1 + p.2 * q.2)), trans(r, zero_add(p.1 * q.2 + p.2 * q.1)));
-    let q_zero := fun (e : q.1 = q.2) => nq(
-      difference_path(q, (zero, zero), trans(add_zero(q.1), trans(e, sym(zero_add(q.2)))))
-    );
+    let q_zero := fun (e : q.1 = q.2) => nq(difference_equal_zero(q, e));
     match trichotomy(p.1, p.2) {
       left(above) => {
         let shifted : (p.2 + above.1) * q.1 + p.2 * q.2 = (p.2 + above.1) * q.2 + p.2 * q.1 {
@@ -647,11 +648,7 @@ section {{U < UU0}}(
       right(rest) => {
         match rest {
           left(same) => {
-            exact np(
-              difference_path(
-                p, (zero, zero), trans(add_zero(p.1), trans(same, sym(zero_add(p.2))))
-              )
-            );
+            exact np(difference_equal_zero(p, same));
           }
           right(below) => {
             let shifted : (p.1 + below.1) * q.2 + p.1 * q.1 = (p.1 + below.1) * q.1 + p.1 * q.2 {

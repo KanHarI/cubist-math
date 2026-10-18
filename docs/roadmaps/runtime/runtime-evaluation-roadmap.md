@@ -695,11 +695,21 @@ The domain contracts fully normalize nonzero-product certificates with
 establish full rational-value normalization. A separate probe at this stage,
 `evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
 bint_zero_ne_one).one expecting _;`, exhausts the term arena (`K347`) even
-though its type and the individual nontriviality/product certificates check.
+though its type checks and the individual nontriviality and product
+certificates fully normalize.
 Resolving this remains part of the NUM2 runtime work before the rational
 default migration; evaluator changes, if needed, belong to EVAL3–EVAL5.
 The probe is not a bounded regression test and should not be added to CI
 without first isolating and bounding the failing normalization.
+
+Bounded follow-up probes localize the growth to full normalization of the
+open integer multiplication function within the quotient's cross-multiplication
+relation. The raw fraction `(1, 1, nonzero proof)` normalizes in about 57 ms;
+`SameRatio`, `Frac`, `q_one`, and `bint_mul` each exceed a 10-second probe
+deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduces
+on merged main after #280, before these domain changes. Closed large integer
+products still normalize. These timings are diagnostic observations on one
+machine, not benchmark thresholds or a change to normal evaluation limits.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
