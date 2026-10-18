@@ -2468,7 +2468,7 @@
   },
   {
    "path": "library/fractions.cubist",
-   "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one: fractions `x / d` carry evidence that `d` is nonzero, their operations descend through cross multiplication, and `fraction_field` supplies the field laws with decidable equality (`q_decide`). This construction does not import the integer instance."
+   "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one: fractions `x / d` carry evidence that `d` is nonzero, cross multiplication defines their quotient relation, and their operations descend to a field (`fraction_field`) with a separate equality decision (`q_decide`). This construction does not import the integer instance."
   },
   {
    "path": "library/h1_classical.cubist",

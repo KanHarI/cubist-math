@@ -648,6 +648,8 @@ The archive remains a compatibility corpus, not a library dependency.
 field-of-fractions construction independently of the integer instance.
 Its quotient relation, operations, field laws and decidable equality are
 unchanged. `rationals` imports this layer and instantiates it at `integers`.
+The moved definitions keep their ordinary imported names; their qualified
+inspection names now use the `fractions__` prefix.
 The integer and rational carriers and their numeral readers are still unary;
 their binary migration and embeddings remain the next NUM2 work.
 
