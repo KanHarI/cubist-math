@@ -675,7 +675,10 @@ no real-number construction or analysis is scheduled.
   larger package does not depend on H2's indexed accessibility families.
   When NUM0/NUM1 and the compatibility migration (including direct binary
   decimal input and numeral printing) pass, switch binary naturals
-  to the default `Nat`; this transition is authorized. The retained equivalence is
+  to the default `Nat`; this transition is authorized. Direct decimal I/O
+  is implemented for `bnat`; the migration must route the default notation
+  through that reader and qualify unary numerals under other views.
+  The retained equivalence is
   `UNat` ↔ `Nat`. NUM2 builds new `Z` from pairs of `BNat` and new `Q`
   from that integer ring, including literals and numerical casts. Prove
   their ring/domain/field laws and embeddings within the new hierarchy;

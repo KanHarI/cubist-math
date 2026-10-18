@@ -11,13 +11,32 @@ computable def bnat_digits(s : Lexeme, value : BNat, at_ : UNat) : Parsed(U0, BN
     cons(_, rest) => error(at_);
   };
 
+// A glyph carries a unary digit (at most nine in a numeric token). Only
+// this digit and the character offset are unary; the accumulated value
+// stays binary, even for a decimal token larger than a machine integer.
+computable def bnat_digit_value(d : UNat) : BNat := match d {
+    zero => b_zero;
+    succ(k) => bnat_succ(bnat_digit_value(k));
+  };
+
+computable def bnat_decimal_digits(s : Lexeme, value : BNat, at_ : UNat) :
+  Parsed(U0, BNat) := match s {
+    nil => ok(value);
+    cons(digit(d), rest) => bnat_decimal_digits(
+      rest,
+      bnat_add(bnat_mul(b_positive(bp_even(bp_odd(bp_even(bp_one)))), value), bnat_digit_value(d)),
+      succ(at_)
+    );
+    cons(underscore, rest) => bnat_decimal_digits(rest, value, succ(at_));
+    cons(_, rest) => error(at_);
+  };
+
 computable def bnat_literal(s : Lexeme) : Parsed(U0, BNat) := match s {
     cons(digit(zero), cons(lower(succ(zero)), cons(g, rest))) => bnat_digits(
       cons(g, rest), b_zero, succ(succ(zero))
     );
     cons(digit(zero), cons(lower(succ(zero)), nil)) => error(succ(zero));
-    cons(digit(zero), nil) => error(zero);
-    cons(digit(zero), _) => error(succ(zero));
+    cons(digit(d), rest) => bnat_decimal_digits(cons(digit(d), rest), b_zero, zero);
     _ => error(zero);
   };
 

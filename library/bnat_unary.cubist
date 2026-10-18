@@ -3,7 +3,8 @@ import unat;
 // Re-export binary equality and setness for existing conversion clients.
 import bnat_equality;
 
-// Conversions are explicit. Only these functions cross representations.
+// Full-magnitude conversions are explicit. bnat_notation keeps a local
+// single-glyph digit map so parsing does not load these conversion proofs.
 computable def bnat_of_unat(n : UNat) : BNat := match n {
     zero => b_zero;
     succ(k) => bnat_succ(bnat_of_unat(k));

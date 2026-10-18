@@ -413,10 +413,14 @@ binary setness from bitwise equality, as described below.
 The successor/predecessor laws also check for arbitrary inputs.
 
 [bnat_notation.cubist](../../../library/bnat_notation.cubist) supplies
-`import bnat_notation; use bnat;` and direct `0b…` literals, separately from
-the binary core. Its unary diagnostic offset counts source characters, not
-the represented number. Decimal input and numeral printing remain migration
-work before the default switch; NUM2 extends them to integers and rationals.
+`import bnat_notation; use bnat;` and direct decimal and `0b…` literals,
+separately from the binary core. Decimal parsing accumulates a binary value;
+only individual glyph digits and diagnostic character offsets are unary.
+Decimal underscores count toward diagnostic positions. Computed values print
+in decimal directly from their bits, using an available notation for the
+checked binary literal parser; unreduced literals retain decimal or binary
+spelling. Closed input/output round trips cover the 31/32-, 53-, 63/64/65-
+and 127/128-bit boundaries. NUM2 extends this to integers and rationals.
 Checked examples cover carries/borrows beyond 64 bits and a dense 128-bit
 product; the differential suite proves 712 closed identities against
 independent integer results. A dependency check confirms that the complete
@@ -496,11 +500,23 @@ and its implementation into `unat`, update the frontend's current
 `nat__Nat` encoding/inspection hooks, separate lexical data from the public
 natural-number facade as needed, and migrate unary clients to explicit
 imports. Update numeral-limit diagnostic hints to the new library notation.
-Preserve their induction API and recheck the archive. The switch
-also requires decimal numeral input and decimal/binary printing that operate
-directly on binary magnitudes, without an intermediate unary numeral. It
-now waits for that numeral/frontend and unary-client migration. NUM1's
+Preserve their induction API and recheck the archive. Direct decimal input
+and printing are implemented for `bnat`; route the default `nat` notation's
+literal rule directly through `bnat_literal` so its printing metadata follows
+the same reader, retiring the default unary numeral limit. Unary numerals
+currently print bare under every selected view: fix that during migration
+so only an identity unary notation prints them bare, and other views use
+`unat.(n)`. Before the switch, the mathematical printer must also show
+literal-rule numerals as written and computed `BNat` values in decimal.
+The switch now waits for that frontend and unary-client migration. NUM1's
 comparison, semiring, universe-transport and dependent-recursion laws check.
+
+Outstanding display checks from #277:
+
+- [ ] Qualify unary numerals under non-identity notation views.
+- [ ] Show `0b` and rational literal-rule values readably in mathematical
+  output, including the proof page's type column, which currently exposes
+  their `parsed_value` and lexeme constructor chains.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
