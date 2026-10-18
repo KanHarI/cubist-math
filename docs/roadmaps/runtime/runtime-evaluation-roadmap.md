@@ -521,6 +521,20 @@ imports in 4,128 steps. These are deterministic import costs, not evaluator
 benchmarks or wall-time speed claims. Public equational laws state their
 conclusions in `nat` notation so `rw`, `simp` and `simpa` match public goals.
 
+The [version-4 baseline](../../../tests/fixtures/evaluation-baseline.json)
+records the fixed archive workloads with `UNat` identities and `unat`
+notation. Their algorithms are unchanged. A fresh
+[before report](../../reports/default-nat-before.json) on `81478e09` and the
+after run on `553a1f17` use the same kernel build, three cold samples and one
+warm run per sample. All 22 kernel entries have identical deterministic
+work, allocations, phase calls/failures and measured syntax depths. Their
+success/error outcomes match; normal-form digests and three rendered hashes
+change with the renamed unary identities. All three successful closure
+experiments retain identical work counts; the fourth still overflows the
+host stack, whose stopping depth is not a performance counter. The fixture
+is refreshed for this representation change, without changing its tests or
+counter bounds. This comparison makes no wall-time speedup claim.
+
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one
