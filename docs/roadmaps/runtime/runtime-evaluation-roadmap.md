@@ -515,7 +515,7 @@ NUM2's integer/rational representations and EVAL3–EVAL8 remain separate work.
 
 The default facade retains numerical induction but does not load the general
 algebra models. Moving those five models to `bnat_models` reduces its checked
-imports from 816 to 266 and native checking steps from 138,611 to 39,654 for
+imports from 816 to 266 and native checking steps from 138,611 to 40,376 for
 `import nat; def probe : Unit := tt;`. The former unary import checks 29
 imports in 4,128 steps. These are deterministic import costs, not evaluator
 benchmarks or wall-time speed claims. Public equational laws state their

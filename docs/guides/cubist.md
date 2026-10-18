@@ -6,7 +6,6 @@ magnitude. The structural induction examples below use explicit `UNat`
 from `import unat; use unat;`. Use `nat_peano` or `nat_strong_recursion`
 for the public binary carrier's numerical induction views.
 
-
 > Historical design notes. The current project uses only the cubical C kernel;
 > see [the project README](../../README.md) and the [CLI guide](cli.md). Retired implementation paths below describe the earlier design.
 

@@ -69,20 +69,34 @@ computable def nat_is_set := bnat_is_set;
 
 computable def nat_peano := bnat_peano;
 
-computable def nat_peano_zero := bnat_peano_zero;
+computable def nat_peano_zero(
+  U < UU0, P : Nat -> U, z : P(zero), step : (forall n : Nat. P(n) -> P(succ(n)))
+) :
+  nat_peano(U, P, z, step, zero) = z := bnat_peano_zero(U, P, z, step);
 
-computable def nat_peano_succ := bnat_peano_succ;
+computable def nat_peano_succ(
+  U < UU0, P : Nat -> U, z : P(zero), step : (forall n : Nat. P(n) -> P(succ(n))), n : Nat
+) :
+  nat_peano(U, P, z, step, succ(n)) = step(n, nat_peano(U, P, z, step, n)) := bnat_peano_succ(
+    U, P, z, step, n
+  );
 
 computable def NatBelow := BNatBelow;
 
 computable def nat_strong_recursion := bnat_strong_recursion;
 
-computable def nat_strong_recursion_equation := bnat_strong_recursion_equation;
+computable def nat_strong_recursion_equation(
+  U < UU0, P : Nat -> U, step : (forall n : Nat. NatBelow(U, P, n) -> P(n)), n : Nat
+) :
+  nat_strong_recursion(U, P, step, n) = step(
+    n, fun (m : Nat, smaller : m < n) => nat_strong_recursion(U, P, step, m)
+  ) := bnat_strong_recursion_equation(U, P, step, n);
 
 computable def factorial := bnat_factorial;
 
-computable def nat_factorial_zero := bnat_factorial_zero;
+computable def nat_factorial_zero : factorial(0) = 1 := bnat_factorial_zero;
 
-computable def nat_factorial_succ := bnat_factorial_succ;
+computable def nat_factorial_succ(n : Nat) :
+  factorial(succ(n)) = succ(n) * factorial(n) := bnat_factorial_succ(n);
 
 hlevel_rule nat_is_set;

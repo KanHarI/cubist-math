@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { checkTestModule, checkProgram } from "./check-program.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { numeral } from "../web/translator/numerals.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 test("default Nat uses binary arithmetic and readable mixed-carrier displays", async t => {
   const { program, result, get } = await checkTestModule(t, "default_naturals");
@@ -39,7 +40,6 @@ test("a same-named non-identity view cannot turn unary values into bare numerals
   assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "shadow" }), "unat.(10)");
 });
 
-
 test("public natural notation stays binary under transitive unary imports", async t => {
   for (const [imports, shortType] of [
     ["import nat; import hlevels;", "UNat"],
@@ -55,11 +55,27 @@ test("public natural notation stays binary under transitive unary imports", asyn
   }
 });
 
-
 test("unary constructor patterns on default Nat explain its numerical induction view", async t => {
   const { result } = await checkProgram(t, `import nat; use nat;
     def wrong(n : Nat) : Nat := match n { zero => 0; succ(k) => k; };
   `);
-  assert.equal(result.complete,false);
-  assert.match(result.outputs.find(output=>output.name==="wrong").reason,/Use nat_peano/);
+  assert.equal(result.complete, false);
+  assert.match(result.outputs.find(output => output.name === "wrong").reason, /Use nat_peano/);
+});
+
+test("mismatch and goal diagnostics preserve a shadowed notation's identity", async t => {
+  const fallback = sourceReader();
+  const { result, get } = await checkProgram(t, `import identity_reader;
+    notation view { numeral(n : UNat) := succ(n); }
+    use view;
+    def mismatch : unat.(1) = unat.(2) := refl(unat.(1));
+    def unfinished : unat.(1) = unat.(2) { simp only []; }
+  `, { reader: async (name, importer) => name === "identity_reader"
+    ? "import unat; notation view { numeral(n : UNat) := n; }"
+    : fallback(name, importer) });
+  assert.equal(result.complete, false);
+  for (const name of ["mismatch", "unfinished"]) {
+    assert.equal(get(name).verified, false);
+    assert.match(get(name).reason, /unat\.\(1\) = unat\.\(2\)/, name);
+  }
 });

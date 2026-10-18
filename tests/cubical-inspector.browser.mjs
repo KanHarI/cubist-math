@@ -21,6 +21,15 @@ await browserTest(async ({ browser, base }) => {
     await page.goto(`${base}/proof.html?proof=${proof}&name=${name}`);
     await idle(); await inspected(name);
   };
+  // The navigation links also open the workbench without a proof transfer.
+  // Its standalone example must use the bundled unary source.
+  await page.goto(`${base}/workbench.html`);
+  await page.waitForFunction(() => document.querySelector("#status")?.textContent.startsWith("Cubical C checked"));
+  assert.equal(await page.locator("#name").textContent(), "example");
+  assert.equal(await page.locator("#diagnostic").isVisible(), false);
+  await page.locator("#workbench-view").selectOption("math");
+  await page.locator("#normalize").click();
+  assert.equal(await page.locator("#expression").textContent(), "2");
   // An example opened in the workspace keeps its source in #source=… while the
   // quick reference's links scroll and move focus, so a reload reopens it.
   const example = Buffer.from("def kept_after_reload : UNat := 7;").toString("base64")

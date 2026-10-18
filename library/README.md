@@ -36,7 +36,8 @@ Existing structural clients, lexical digits/offsets, list lengths and h-level
 indices use this explicit carrier. Integer and rational representations also
 remain unary until NUM2. Public `Nat` no longer matches on unary constructors;
 use `nat_peano` for its dependent zero/successor view. A unary numeral is
-qualified as `unat.(n)` outside an identity unary view. Imports re-export their dependencies, and a later import shadows earlier
+qualified as `unat.(n)` outside an identity unary view. Imports re-export their
+dependencies, and a later import shadows earlier
 short names: even `import nat; import hlevels;` exposes unary `zero` and
 `add` through `hlevels`. Import `nat` last to use its binary short names.
 Explicit `nat.(...)`, `bnat_*` operations and `nat_peano` remain unambiguous

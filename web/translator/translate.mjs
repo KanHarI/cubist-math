@@ -382,16 +382,16 @@ export class Translator {
       const source=node=>scope.unit.source.slice(node.start,node.end).trim();
       const found=mismatch(d.expected,result.normal,result.type,scope,
         (node,type)=>{scope.spend("queries");return this.checker.verify(this.term(node,scope,type)).normal;},source);
-      if(found)throw valueMismatch(this.shown(result.normal),source(d.expected),this.shown(found.value),source(found.pattern));
-      return this.shown(result.normal);
+      if(found)throw valueMismatch(this.shownIn(result.normal,scope),source(d.expected),this.shownIn(found.value,scope),source(found.pattern));
+      return this.shownIn(result.normal,scope);
     }
     scope.spend("queries");
     const expected=this.checker.verify(this.term(d.expected,scope));
     if(!scope.equal(result.type,expected.type))
-      throw Error(`The evaluated term has type ${this.shown(result.type)}, but the expected value has type ${this.shown(expected.type)}.`);
+      throw Error(`The evaluated term has type ${this.shownIn(result.type,scope)}, but the expected value has type ${this.shownIn(expected.type,scope)}.`);
     if(!scope.equal(result.normal,expected.normal))
-      throw Error(`The term evaluates to ${this.shown(result.normal)}, not ${this.shown(expected.normal)}.`);
-    return this.shown(result.normal);
+      throw Error(`The term evaluates to ${this.shownIn(result.normal,scope)}, not ${this.shownIn(expected.normal,scope)}.`);
+    return this.shownIn(result.normal,scope);
   }
   // `print(evaluate(e));` shows the normal form of a closed, assumption-free
   // term, as `evaluate` computes one; `print(typeof(e));` its type; and
@@ -415,17 +415,30 @@ export class Translator {
     if(d.value.kind==="name") {
       let body=result.term;
       while(body.tag==="Lam"||body.tag==="LLam")body=body.body;
-      if(body.tag==="Sort"&&this.inspectSignature)return this.inspectSignature(body.signature);
+      if(body.tag==="Sort"&&this.inspectSignature)
+        return this.inNotation(scope,()=>this.inspectSignature(body.signature));
     }
     const definition=d.value.kind==="name"&&result.term.tag==="DefRef"?this.checker.definitionViews?.get(result.term.name):null;
     return this.checker.kernelText(definition?.term??result.term,1000);
   }
   // A term as messages show it: source names, generated suffixes removed.
   shown(term) {return this.checker.displayText?.(term,1000)??sourceText(term);}
+  notationIn(scope) {
+    const selected=scope.env.get(SELECTION);
+    return {selection:selected?.name??null,selectionIdentity:selected?.identity??null};
+  }
+  inNotation(scope,run) {
+    // Messages and signature inspection use the actual retained selection,
+    // including in captured operands, then return to the caller's context.
+    const previous=this.checker.notation,selected=scope.env.get(SELECTION);
+    if(previous?.selection!==(selected?.name??null)||previous?.selectionIdentity!==(selected?.identity??null))
+      this.checker.notation=this.notationIn(scope);
+    try {return run();}
+    finally {this.checker.notation=previous;}
+  }
   // A term as read where `scope`'s notation is selected (L2.10d).
   shownIn(term,scope) {
-    const selected=scope.env.get(SELECTION);
-    const notation={selection:selected?.name??null,selectionIdentity:selected?.identity??null};
+    const notation=this.notationIn(scope);
     return this.checker.displayText?.(term,1000,4000,notation)??sourceText(term,{},4000,notation);
   }
   // Terms in one scope that a message shows, named together: a variable
@@ -555,7 +568,7 @@ export class Translator {
         if(conflict) { rejectDuplicate(d,conflict); continue; }
       }
       // Its messages print in what a file-level use selects for it (L2.10j).
-      if(this.checker)this.checker.notation={selection:selectionName(d.uses)};
+      if(this.checker)this.checker.notation={selection:selectionName(d.uses),selectionIdentity:null};
       // A theory, or an initial or free model (L2.6), is checked as the
       // declarations it expands to: the ones beyond its own are declarations
       // to count too.
@@ -729,8 +742,6 @@ export class Translator {
         // applied (L2.4).
         if(d.section)expression=lambdas(d.section.params,{kind:"sectionScope",section:d.section,body:expression,
           start:d.start,end:d.start});
-        // The models a file-level use selected before it, outermost.
-        if(d.uses)expression={kind:"useScope",uses:d.uses,effects,body:expression,start:d.start,end:d.start};
         // A body that is, as a whole, a match on a declared type may call the
         // declaration on a constructor's argument: its own name is a recursive
         // reference there. Only then is that argument's recursive result the
@@ -747,6 +758,10 @@ export class Translator {
             tokens:own.map(p=>p.name),bindings:new Map(),site};
           bodyScope=withRecursion(bodyScope,recursive,{introduce:true});
         }
+        // Resolve file-level uses once, outside the parameter/section scopes.
+        // The closing kernel check reports in this same retained notation.
+        bodyScope=sourceItemScope(this,bodyScope,d);
+        this.checker.notation=this.notationIn(bodyScope);
         const term=this.term(expression,bodyScope);
         // Normal forms are optional inspection output, not a prerequisite for
         // checking a declaration whose Nat value may have millions of successors.
@@ -1079,7 +1094,8 @@ export class Translator {
   }
   term(n,scope,expected=null) {
     const run=()=>this.termAt(n,scope,expected);
-    return scope.unit.scopePoints?scope.unit.scopePoints.around(this,n,scope,{expected},run):run();
+    return this.inNotation(scope,scope.unit.scopePoints
+      ?()=>scope.unit.scopePoints.around(this,n,scope,{expected},run):run);
   }
   termAt(n,scope,expected=null) {
     const resolve=node=>{
@@ -1108,7 +1124,7 @@ export class Translator {
     }
     return result;
   }
-  // Numerals and the legacy induction syntax use the Nat in the source's
+  // Unary numerals and legacy induction use the UNat in the source's
   // environment. Its declaration and admission belong to the imported module.
   naturalConstructors(scope,name="UNat") {
     return this.naturalSignature(scope,this.term({kind:"name",name},scope,null));
@@ -1767,7 +1783,7 @@ export class Translator {
   // in length.
   goalText(goal,width=160) {
     try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.target,null,width,null,true,
-      {selection:goal.scope.env.get(SELECTION)?.name??null}).goal??sourceText(goal.target);}
+      this.notationIn(goal.scope)).goal??sourceText(goal.target);}
     catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
   // Two goals one diagnostic shows, named together when they share a scope,
@@ -1776,7 +1792,7 @@ export class Translator {
     if(goal.scope!==other.scope||!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
     try {
       const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.target,other.target,width,null,true,
-        {selection:goal.scope.env.get(SELECTION)?.name??null});
+        this.notationIn(goal.scope));
       return [shown.goal,shown.built];
     } catch (control) {propagateElaborationStop(control);return ["(too large to show)","(too large to show)"];}
   }

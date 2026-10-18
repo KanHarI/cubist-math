@@ -54,6 +54,38 @@ def default_rewrite(n : Nat) : n + 0 = n {
   rfl;
 }
 
+def default_factorial_rewrite(n : Nat) : factorial(succ(n)) = succ(n) * factorial(n) {
+  rw [nat_factorial_succ(n)];
+  rfl;
+}
+
+def default_factorial_zero_rewrite : factorial(0) = 1 {
+  rw [nat_factorial_zero];
+  rfl;
+}
+
+def default_factorial_simp(n : Nat) : factorial(succ(n)) = succ(n) * factorial(n) {
+  simp only [nat_factorial_succ];
+}
+
+def default_peano_rewrite(
+  U < UU0, P : Nat -> U, z : P(zero), step : (forall n : Nat. P(n) -> P(succ(n))), n : Nat
+) :
+  nat_peano(U, P, z, step, succ(n)) = step(n, nat_peano(U, P, z, step, n)) {
+  rw [nat_peano_succ(U, P, z, step, n)];
+  rfl;
+}
+
+def default_strong_rewrite(
+  U < UU0, P : Nat -> U, step : (forall n : Nat. NatBelow(U, P, n) -> P(n)), n : Nat
+) :
+  nat_strong_recursion(U, P, step, n) = step(
+    n, fun (m : Nat, smaller : m < n) => nat_strong_recursion(U, P, step, m)
+  ) {
+  rw [nat_strong_recursion_equation(U, P, step, n)];
+  rfl;
+}
+
 // Output: 340282366920938463426481119284349108225
 print(evaluate(18446744073709551615 * 18446744073709551615));
 
