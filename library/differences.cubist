@@ -1,7 +1,8 @@
 import quotients;
 import semirings;
 
-// The ring of differences of an additively cancellative commutative semiring.
+// The ring of differences of an additively cancellative commutative semiring
+// with decidable equality.
 // Its laws are proved once; unary and binary integers instantiate this construction.
 section {{U < UU0}}(
   N : CommSemiring(U), decide : (forall a, b : N.R. Decidable(U, a = b)),
@@ -35,10 +36,7 @@ section {{U < UU0}}(
           sym(add_assoc(q.2, p.1, s.2)), cong(fun (m : R) => m + s.2, add_comm(q.2, p.1))
         );
         _ = (q.1 + p.2) + s.2 by cong(fun (m : R) => m + s.2, r);
-        _ = (q.1 + s.2) + p.2 by trans(
-          add_assoc(q.1, p.2, s.2),
-          trans(cong(fun (m : R) => q.1 + m, add_comm(p.2, s.2)), sym(add_assoc(q.1, s.2, p.2)))
-        );
+        _ = (q.1 + s.2) + p.2 by mul_right_comm(N.additive_, q.1, p.2, s.2);
         _ = (s.1 + q.2) + p.2 by cong(fun (m : R) => m + p.2, t);
         _ = q.2 + (s.1 + p.2) by trans(
           cong(fun (m : R) => m + p.2, add_comm(s.1, q.2)), add_assoc(q.2, s.1, p.2)
@@ -53,16 +51,16 @@ section {{U < UU0}}(
   computable def difference_is_set :
     IsSet(U, Difference) := quotient_is_set(U, R and R, DifferenceRelation);
 
-  // The integer a - b.
+  // The difference a - b.
   computable def difference(a, b : R) : Difference := class((a, b));
 
-  // Pairs with the same difference are one integer.
+  // Pairs with the same difference represent one element.
   computable def difference_path(p, q : R and R, r : DifferenceRelation(p, q)) :
     typed(Difference, class(p)) = typed(Difference, class(q)) := class_path(
       U, R and R, DifferenceRelation, p, q, r
     );
 
-  // Equal pairs are one integer.
+  // Equal pairs represent one element.
   computable def difference_pairs(p, q : R and R, e : p = q) :
     typed(Difference, class(p)) = typed(Difference, class(q)) := cong(
       fun (s : R and R) => typed(Difference, class(s)), e

@@ -313,7 +313,7 @@ computable def int_mul_nonzero(
     ), x
   )(y, nx, ny, p);
 
-// Zero is not one: (0, 0) and (1, 0) do not have the same difference.
+// The injective natural embedding preserves zero distinct from one.
 computable def int_zero_ne_one(p : int_zero = int_one) : Void := unat_zero_ne_succ(
   0, difference_embed_injective{{U0}}(unat_semiring, unat_decide, unat_add_cancel, 0, 1, p)
 );

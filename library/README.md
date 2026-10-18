@@ -47,7 +47,7 @@ in either order; this migration does not change import visibility.
 
 Conversion remains explicit: `bnat_unary` supplies both maps and inverse laws,
 `bnat_semiring` proves their arithmetic laws, `unat_models` supplies the unary
-semiring model without binary dependencies, and `bnat_models` supplies the
+semiring model without binary dependencies, `bnat_models` supplies the
 binary model and their semiring isomorphism, and `bnat_transport` supplies
 the universe path and transport laws. `bnat_equality` supplies bitwise equality
 and setness, `bnat_order` comparison correctness, `bnat_peano` dependent
