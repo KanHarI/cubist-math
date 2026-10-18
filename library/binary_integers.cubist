@@ -1,0 +1,483 @@
+import quotients;
+import algebra;
+import bnat_semiring;
+import bnat_notation;
+use bnat;
+
+// Binary-backed integers, as the same-difference quotient of pairs of BNat.
+// The existing unary integer instance remains a compatibility client while
+// NUM2 builds the domain, fraction and default-API migration.
+
+// Pair calculations use only the binary semiring laws.
+computable def bint_nat_add_interchange(a, b, c, d : BNat) : (a + b) + (c + d) = (a + c) + (b + d) {
+  calc {
+    (a + b) + (c + d) = a + (b + (c + d)) by bnat_add_assoc(a, b, c + d);
+    _ = a + ((b + c) + d) by cong(fun (n : BNat) => a + n, sym(bnat_add_assoc(b, c, d)));
+    _ = a + ((c + b) + d) by cong(fun (n : BNat) => a + (n + d), bnat_add_comm(b, c));
+    _ = a + (c + (b + d)) by cong(fun (n : BNat) => a + n, bnat_add_assoc(c, b, d));
+    _ = (a + c) + (b + d) by sym(bnat_add_assoc(a, c, b + d));
+  }
+}
+
+computable def bint_nat_add_mul(a, b, c : BNat) : (a + b) * c = a * c + b * c {
+  calc {
+    (a + b) * c = c * (a + b) by bnat_mul_comm(a + b, c);
+    _ = c * a + c * b by bnat_mul_add(c, a, b);
+    _ = a * c + c * b by cong(fun (n : BNat) => n + c * b, bnat_mul_comm(c, a));
+    _ = a * c + b * c by cong(fun (n : BNat) => a * c + n, bnat_mul_comm(c, b));
+  }
+}
+
+// Binary integers as a quotient: a pair of naturals (a, b) stands for a - b,
+// and two pairs stand for one integer when a + d = c + b. Binary integers are
+// a commutative ring with decidable equality, and every operation computes
+// on closed binary integers.
+
+// (a, b) and (c, d) have the same difference: a + d = c + b.
+def BIntSameDifference(p, q : BNat and BNat) : U0 := p.1 + q.2 = q.1 + p.2;
+
+computable def bint_same_difference_props(p, q : BNat and BNat) :
+  IsProp(U0, BIntSameDifference(p, q)) := bnat_is_set(p.1 + q.2, q.1 + p.2);
+
+computable def bint_same_difference_refl(p : BNat and BNat) :
+  BIntSameDifference(p, p) := refl(p.1 + p.2);
+
+computable def bint_same_difference_sym(p, q : BNat and BNat, r : BIntSameDifference(p, q)) :
+  BIntSameDifference(q, p) := sym(r);
+
+// From a + d = c + b and c + f = e + d, a + f = e + b: both sides plus d
+// agree, and addition cancels.
+computable def bint_same_difference_trans(
+  p, q, s : BNat and BNat, r : BIntSameDifference(p, q), t : BIntSameDifference(q, s)
+) :
+  BIntSameDifference(p, s) {
+  let shifted : q.2 + (p.1 + s.2) = q.2 + (s.1 + p.2) {
+    calc {
+      q.2 + (p.1 + s.2) = (p.1 + q.2) + s.2 by trans(
+        sym(bnat_add_assoc(q.2, p.1, s.2)), cong(fun (m : BNat) => m + s.2, bnat_add_comm(q.2, p.1))
+      );
+      _ = (q.1 + p.2) + s.2 by cong(fun (m : BNat) => m + s.2, r);
+      _ = (q.1 + s.2) + p.2 by trans(
+        bnat_add_assoc(q.1, p.2, s.2),
+        trans(
+          cong(fun (m : BNat) => q.1 + m, bnat_add_comm(p.2, s.2)),
+          sym(bnat_add_assoc(q.1, s.2, p.2))
+        )
+      );
+      _ = (s.1 + q.2) + p.2 by cong(fun (m : BNat) => m + p.2, t);
+      _ = q.2 + (s.1 + p.2) by trans(
+        cong(fun (m : BNat) => m + p.2, bnat_add_comm(s.1, q.2)), bnat_add_assoc(q.2, s.1, p.2)
+      );
+    }
+  }
+  exact bnat_add_cancel(q.2, p.1 + s.2, s.1 + p.2, shifted);
+}
+
+def BInt : U0 := Quotient(U0, BNat and BNat, BIntSameDifference);
+
+computable def bint_is_set :
+  IsSet(U0, BInt) := quotient_is_set(U0, BNat and BNat, BIntSameDifference);
+
+// The integer a - b.
+computable def bint(a, b : BNat) : BInt := class((a, b));
+
+// Pairs with the same difference are one integer.
+computable def bint_path(p, q : BNat and BNat, r : BIntSameDifference(p, q)) :
+  typed(BInt, class(p)) = typed(BInt, class(q)) := class_path(
+    U0, BNat and BNat, BIntSameDifference, p, q, r
+  );
+
+// Equal pairs are one integer.
+computable def bint_pairs(p, q : BNat and BNat, e : p = q) :
+  typed(BInt, class(p)) = typed(BInt, class(q)) := cong(
+    fun (s : BNat and BNat) => typed(BInt, class(s)), e
+  );
+
+// An equation of binary integers holds when it holds at every class.
+computable def bint_induction(
+  P : BInt -> U0, props : (forall z : BInt. IsProp(U0, P(z))),
+  f : (forall p : BNat and BNat. P(class(p))), z : BInt
+) :
+  P(z) := quotient_induction_prop(U0, U0, BNat and BNat, BIntSameDifference, P, props, f, z);
+
+computable def bint_zero : BInt := bint(0, 0);
+
+computable def bint_one : BInt := bint(1, 0);
+
+// Negation swaps a pair: -(a - b) = b - a.
+computable def bint_neg(x : BInt) : BInt := descend(
+  U0, U0, BNat and BNat, BIntSameDifference, BInt, bint_is_set,
+  fun (p : BNat and BNat) => typed(BInt, class((p.2, p.1))),
+  fun (p, q : BNat and BNat, r : BIntSameDifference(p, q)) => bint_path(
+    (p.2, p.1), (q.2, q.1), trans(bnat_add_comm(p.2, q.1), trans(sym(r), bnat_add_comm(p.1, q.2)))
+  ), x
+);
+
+// Addition adds pairs: (a - b) + (c - d) = (a + c) - (b + d).
+computable def bint_add_pairs(p, q : BNat and BNat) : BNat and BNat := (p.1 + q.1, p.2 + q.2);
+
+// The sums of pairs with the same difference have the same difference.
+computable def bint_add_pairs_left(p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) :
+  BIntSameDifference(bint_add_pairs(p, q), bint_add_pairs(s, q)) {
+  calc {
+    (p.1 + q.1) + (s.2 + q.2) = (p.1 + s.2) + (q.1 + q.2) by bint_nat_add_interchange(
+      p.1, q.1, s.2, q.2
+    );
+    _ = (s.1 + p.2) + (q.1 + q.2) by cong(fun (m : BNat) => m + (q.1 + q.2), r);
+    _ = (s.1 + q.1) + (p.2 + q.2) by bint_nat_add_interchange(s.1, p.2, q.1, q.2);
+  }
+}
+
+computable def bint_add_pairs_comm(p, q : BNat and BNat) :
+  bint_add_pairs(p, q) = bint_add_pairs(q, p) := path i => (
+    bnat_add_comm(p.1, q.1) @ i, bnat_add_comm(p.2, q.2) @ i
+  );
+
+computable def bint_add(x, y : BInt) : BInt := descend2(
+  U0, U0, BNat and BNat, BIntSameDifference, BInt, bint_is_set,
+  fun (p, q : BNat and BNat) => typed(BInt, class(bint_add_pairs(p, q))),
+  fun (p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) => bint_path(
+    bint_add_pairs(p, q), bint_add_pairs(s, q), bint_add_pairs_left(p, s, q, r)
+  ),
+  fun (p, q, s : BNat and BNat, r : BIntSameDifference(q, s)) => trans(
+    bint_pairs(bint_add_pairs(p, q), bint_add_pairs(q, p), bint_add_pairs_comm(p, q)),
+    trans(
+      bint_path(bint_add_pairs(q, p), bint_add_pairs(s, p), bint_add_pairs_left(q, s, p, r)),
+      bint_pairs(bint_add_pairs(s, p), bint_add_pairs(p, s), bint_add_pairs_comm(s, p))
+    )
+  ), x, y
+);
+
+// Multiplication: (a - b) * (c - d) = (a * c + b * d) - (a * d + b * c).
+computable def bint_mul_pairs(p, q : BNat and BNat) :
+  BNat and BNat := (p.1 * q.1 + p.2 * q.2, p.1 * q.2 + p.2 * q.1);
+
+// With a + b' = a' + b, both sides are (a + b') * c + (b + a') * d,
+// regrouped.
+computable def bint_mul_pairs_left(p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) :
+  BIntSameDifference(bint_mul_pairs(p, q), bint_mul_pairs(s, q)) {
+  let swapped : p.2 + s.1 = s.2 + p.1 :=
+    trans(bnat_add_comm(p.2, s.1), trans(sym(r), bnat_add_comm(p.1, s.2)));
+  calc {
+    (p.1 * q.1 + p.2 * q.2) + (s.1 * q.2 + s.2 * q.1) = (p.1 * q.1 + s.2 * q.1) + (
+      p.2 * q.2 + s.1 * q.2
+    ) by trans(
+      cong(fun (m : BNat) => (p.1 * q.1 + p.2 * q.2) + m, bnat_add_comm(s.1 * q.2, s.2 * q.1)),
+      bint_nat_add_interchange(p.1 * q.1, p.2 * q.2, s.2 * q.1, s.1 * q.2)
+    );
+    _ = (p.1 + s.2) * q.1 + (p.2 + s.1) * q.2 by sym(
+      trans(
+        cong(fun (m : BNat) => m + (p.2 + s.1) * q.2, bint_nat_add_mul(p.1, s.2, q.1)),
+        cong(fun (m : BNat) => (p.1 * q.1 + s.2 * q.1) + m, bint_nat_add_mul(p.2, s.1, q.2))
+      )
+    );
+    _ = (s.1 + p.2) * q.1 + (s.2 + p.1) * q.2 by trans(
+      cong(fun (m : BNat) => m * q.1 + (p.2 + s.1) * q.2, r),
+      cong(fun (m : BNat) => (s.1 + p.2) * q.1 + m * q.2, swapped)
+    );
+    _ = (s.1 * q.1 + p.2 * q.1) + (s.2 * q.2 + p.1 * q.2) by trans(
+      cong(fun (m : BNat) => m + (s.2 + p.1) * q.2, bint_nat_add_mul(s.1, p.2, q.1)),
+      cong(fun (m : BNat) => (s.1 * q.1 + p.2 * q.1) + m, bint_nat_add_mul(s.2, p.1, q.2))
+    );
+    _ = (s.1 * q.1 + s.2 * q.2) + (p.1 * q.2 + p.2 * q.1) by trans(
+      bint_nat_add_interchange(s.1 * q.1, p.2 * q.1, s.2 * q.2, p.1 * q.2),
+      cong(fun (m : BNat) => (s.1 * q.1 + s.2 * q.2) + m, bnat_add_comm(p.2 * q.1, p.1 * q.2))
+    );
+  }
+}
+
+computable def bint_mul_pairs_comm(p, q : BNat and BNat) :
+  bint_mul_pairs(p, q) = bint_mul_pairs(q, p) := path i => (
+    (
+      cong(fun (m : BNat) => m + p.2 * q.2, bnat_mul_comm(p.1, q.1)) ++ cong(
+        fun (m : BNat) => q.1 * p.1 + m, bnat_mul_comm(p.2, q.2)
+      )
+    ) @ i,
+    (
+      bnat_add_comm(p.1 * q.2, p.2 * q.1) ++ cong(
+        fun (m : BNat) => m + p.1 * q.2, bnat_mul_comm(p.2, q.1)
+      ) ++ cong(fun (m : BNat) => q.1 * p.2 + m, bnat_mul_comm(p.1, q.2))
+    ) @ i
+  );
+
+computable def bint_mul(x, y : BInt) : BInt := descend2(
+  U0, U0, BNat and BNat, BIntSameDifference, BInt, bint_is_set,
+  fun (p, q : BNat and BNat) => typed(BInt, class(bint_mul_pairs(p, q))),
+  fun (p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) => bint_path(
+    bint_mul_pairs(p, q), bint_mul_pairs(s, q), bint_mul_pairs_left(p, s, q, r)
+  ),
+  fun (p, q, s : BNat and BNat, r : BIntSameDifference(q, s)) => trans(
+    bint_pairs(bint_mul_pairs(p, q), bint_mul_pairs(q, p), bint_mul_pairs_comm(p, q)),
+    trans(
+      bint_path(bint_mul_pairs(q, p), bint_mul_pairs(s, p), bint_mul_pairs_left(q, s, p, r)),
+      bint_pairs(bint_mul_pairs(s, p), bint_mul_pairs(p, s), bint_mul_pairs_comm(s, p))
+    )
+  ), x, y
+);
+
+// An equation of binary integers in one, two or three of them holds when it holds
+// at their classes.
+computable def bint_equation(
+  f, g : BInt -> BInt, e : (forall p : BNat and BNat. f(class(p)) = g(class(p))), x : BInt
+) :
+  f(x) = g(x) := bint_induction(
+    fun (z : BInt) => f(z) = g(z), fun (z : BInt) => bint_is_set(f(z), g(z)), e, x
+  );
+
+computable def bint_equation2(
+  f, g : BInt -> BInt -> BInt,
+  e : (forall p, q : BNat and BNat. f(class(p), class(q)) = g(class(p), class(q))), x, y : BInt
+) :
+  f(x, y) = g(x, y) := bint_equation(
+    fun (a : BInt) => f(a, y), fun (a : BInt) => g(a, y),
+    fun (p : BNat and BNat) => bint_equation(
+      fun (b : BInt) => f(class(p), b), fun (b : BInt) => g(class(p), b),
+      fun (q : BNat and BNat) => e(p, q), y
+    ), x
+  );
+
+computable def bint_equation3(
+  f, g : BInt -> BInt -> BInt -> BInt,
+  e : (
+    forall p, q, s : BNat and BNat.
+    f(class(p), class(q), class(s)) = g(class(p), class(q), class(s))
+  ), x, y, z : BInt
+) :
+  f(x, y, z) = g(x, y, z) := bint_equation(
+    fun (a : BInt) => f(a, y, z), fun (a : BInt) => g(a, y, z),
+    fun (p : BNat and BNat) => bint_equation2(
+      fun (b, c : BInt) => f(class(p), b, c), fun (b, c : BInt) => g(class(p), b, c),
+      fun (q, s : BNat and BNat) => e(p, q, s), y, z
+    ), x
+  );
+
+// Addition is associative and commutative, with zero a unit and negation an
+// inverse.
+computable def bint_add_assoc(x, y, z : BInt) :
+  bint_add(bint_add(x, y), z) = bint_add(x, bint_add(y, z)) := bint_equation3(
+    fun (a, b, c : BInt) => bint_add(bint_add(a, b), c),
+    fun (a, b, c : BInt) => bint_add(a, bint_add(b, c)),
+    fun (p, q, s : BNat and BNat) => bint_pairs(
+      bint_add_pairs(bint_add_pairs(p, q), s), bint_add_pairs(p, bint_add_pairs(q, s)),
+      path i => (bnat_add_assoc(p.1, q.1, s.1) @ i, bnat_add_assoc(p.2, q.2, s.2) @ i)
+    ), x, y, z
+  );
+
+computable def bint_add_comm(x, y : BInt) : bint_add(x, y) = bint_add(y, x) := bint_equation2(
+  fun (a, b : BInt) => bint_add(a, b), fun (a, b : BInt) => bint_add(b, a),
+  fun (p, q : BNat and BNat) => bint_pairs(
+    bint_add_pairs(p, q), bint_add_pairs(q, p), bint_add_pairs_comm(p, q)
+  ), x, y
+);
+
+computable def bint_zero_add(x : BInt) : bint_add(bint_zero, x) = x := bint_equation(
+  fun (a : BInt) => bint_add(bint_zero, a), fun (a : BInt) => a,
+  fun (p : BNat and BNat) => refl(typed(BInt, class(p))), x
+);
+
+computable def bint_add_zero(x : BInt) :
+  bint_add(x, bint_zero) = x := trans(bint_add_comm(x, bint_zero), bint_zero_add(x));
+
+computable def bint_neg_add(x : BInt) : bint_add(bint_neg(x), x) = bint_zero := bint_equation(
+  fun (a : BInt) => bint_add(bint_neg(a), a), fun (a : BInt) => bint_zero,
+  fun (p : BNat and BNat) => bint_path(
+    (p.2 + p.1, p.1 + p.2), (0, 0), trans(bnat_add_zero(p.2 + p.1), bnat_add_comm(p.2, p.1))
+  ), x
+);
+
+computable def bint_add_neg(x : BInt) :
+  bint_add(x, bint_neg(x)) = bint_zero := trans(bint_add_comm(x, bint_neg(x)), bint_neg_add(x));
+
+// The components of a product of three pairs, and of a product with a sum,
+// regrouped: ((a c + b d) e + (a d + b c) f) is a (c e + d f) + b (c f + d e),
+// and a (c + e) + b (d + f) is (a c + b d) + (a e + b f).
+computable def bint_pairs_mul_assoc(a, b, c, d, e, f : BNat) :
+  (a * c + b * d) * e + (a * d + b * c) * f = a * (c * e + d * f) + b * (c * f + d * e) {
+  calc {
+    (a * c + b * d) * e + (a * d + b * c) * f = ((a * c) * e + (b * d) * e) + (
+      (a * d) * f + (b * c) * f
+    ) by trans(
+      cong(fun (m : BNat) => m + (a * d + b * c) * f, bint_nat_add_mul(a * c, b * d, e)),
+      cong(fun (m : BNat) => ((a * c) * e + (b * d) * e) + m, bint_nat_add_mul(a * d, b * c, f))
+    );
+    _ = (a * (c * e) + b * (d * e)) + (a * (d * f) + b * (c * f)) by trans(
+      cong(
+        fun (m : BNat) => (m + (b * d) * e) + ((a * d) * f + (b * c) * f), bnat_mul_assoc(a, c, e)
+      ),
+      trans(
+        cong(
+          fun (m : BNat) => (a * (c * e) + m) + ((a * d) * f + (b * c) * f), bnat_mul_assoc(b, d, e)
+        ),
+        trans(
+          cong(
+            fun (m : BNat) => (a * (c * e) + b * (d * e)) + (m + (b * c) * f),
+            bnat_mul_assoc(a, d, f)
+          ),
+          cong(
+            fun (m : BNat) => (a * (c * e) + b * (d * e)) + (a * (d * f) + m),
+            bnat_mul_assoc(b, c, f)
+          )
+        )
+      )
+    );
+    _ = (a * (c * e) + a * (d * f)) + (b * (c * f) + b * (d * e)) by trans(
+      bint_nat_add_interchange(a * (c * e), b * (d * e), a * (d * f), b * (c * f)),
+      cong(
+        fun (m : BNat) => (a * (c * e) + a * (d * f)) + m, bnat_add_comm(b * (d * e), b * (c * f))
+      )
+    );
+    _ = a * (c * e + d * f) + b * (c * f + d * e) by sym(
+      trans(
+        cong(fun (m : BNat) => m + b * (c * f + d * e), bnat_mul_add(a, c * e, d * f)),
+        cong(fun (m : BNat) => (a * (c * e) + a * (d * f)) + m, bnat_mul_add(b, c * f, d * e))
+      )
+    );
+  }
+}
+
+computable def bint_pairs_mul_add(a, b, c, d, e, f : BNat) :
+  a * (c + e) + b * (d + f) = (a * c + b * d) + (a * e + b * f) {
+  calc {
+    a * (c + e) + b * (d + f) = (a * c + a * e) + (b * d + b * f) by trans(
+      cong(fun (m : BNat) => m + b * (d + f), bnat_mul_add(a, c, e)),
+      cong(fun (m : BNat) => (a * c + a * e) + m, bnat_mul_add(b, d, f))
+    );
+    _ = (a * c + b * d) + (a * e + b * f) by bint_nat_add_interchange(a * c, a * e, b * d, b * f);
+  }
+}
+
+// Multiplication is associative and commutative, with one a unit, and
+// distributes over addition.
+computable def bint_mul_assoc(x, y, z : BInt) :
+  bint_mul(bint_mul(x, y), z) = bint_mul(x, bint_mul(y, z)) := bint_equation3(
+    fun (a, b, c : BInt) => bint_mul(bint_mul(a, b), c),
+    fun (a, b, c : BInt) => bint_mul(a, bint_mul(b, c)),
+    fun (p, q, s : BNat and BNat) => bint_pairs(
+      bint_mul_pairs(bint_mul_pairs(p, q), s), bint_mul_pairs(p, bint_mul_pairs(q, s)),
+      path i => (
+        bint_pairs_mul_assoc(p.1, p.2, q.1, q.2, s.1, s.2) @ i,
+        bint_pairs_mul_assoc(p.1, p.2, q.1, q.2, s.2, s.1) @ i
+      )
+    ), x, y, z
+  );
+
+computable def bint_mul_comm(x, y : BInt) : bint_mul(x, y) = bint_mul(y, x) := bint_equation2(
+  fun (a, b : BInt) => bint_mul(a, b), fun (a, b : BInt) => bint_mul(b, a),
+  fun (p, q : BNat and BNat) => bint_pairs(
+    bint_mul_pairs(p, q), bint_mul_pairs(q, p), bint_mul_pairs_comm(p, q)
+  ), x, y
+);
+
+computable def bint_one_mul(x : BInt) : bint_mul(bint_one, x) = x := bint_equation(
+  fun (a : BInt) => bint_mul(bint_one, a), fun (a : BInt) => a,
+  fun (p : BNat and BNat) => bint_pairs(
+    bint_mul_pairs((1, 0), p), p,
+    path i => (
+      trans(bnat_add_zero(p.1 + 0), bnat_add_zero(p.1)) @ i,
+      trans(bnat_add_zero(p.2 + 0), bnat_add_zero(p.2)) @ i
+    )
+  ), x
+);
+
+computable def bint_mul_one(x : BInt) :
+  bint_mul(x, bint_one) = x := trans(bint_mul_comm(x, bint_one), bint_one_mul(x));
+
+computable def bint_mul_add(x, y, z : BInt) :
+  bint_mul(x, bint_add(y, z)) = bint_add(bint_mul(x, y), bint_mul(x, z)) := bint_equation3(
+    fun (a, b, c : BInt) => bint_mul(a, bint_add(b, c)),
+    fun (a, b, c : BInt) => bint_add(bint_mul(a, b), bint_mul(a, c)),
+    fun (p, q, s : BNat and BNat) => bint_pairs(
+      bint_mul_pairs(p, bint_add_pairs(q, s)),
+      bint_add_pairs(bint_mul_pairs(p, q), bint_mul_pairs(p, s)),
+      path i => (
+        bint_pairs_mul_add(p.1, p.2, q.1, q.2, s.1, s.2) @ i,
+        bint_pairs_mul_add(p.1, p.2, q.2, q.1, s.2, s.1) @ i
+      )
+    ), x, y, z
+  );
+
+// Equality of binary integers is decidable: pairs have the same difference or not,
+// and equal classes have related pairs (quotient_effective).
+computable def bint_decide(x, y : BInt) :
+  Decidable(U0, x = y) := bint_induction(
+    fun (a : BInt) => forall b : BInt. Decidable(U0, a = b),
+    fun (a : BInt) => pi_is_prop(
+      U0, BInt, fun (b : BInt) => Decidable(U0, a = b),
+      fun (b : BInt) => decision_is_prop(U0, a = b, bint_is_set(a, b))
+    ),
+    fun (p : BNat and BNat) => fun (b : BInt) => bint_induction(
+      fun (c : BInt) => Decidable(U0, typed(BInt, class(p)) = c),
+      fun (c : BInt) => decision_is_prop(U0, typed(BInt, class(p)) = c, bint_is_set(class(p), c)),
+      fun (q : BNat and BNat) => match bnat_decide(p.1 + q.2, q.1 + p.2) return (
+        Decidable(U0, typed(BInt, class(p)) = typed(BInt, class(q)))
+      ) {
+        left e => left(bint_path(p, q, e));
+        right no => right(
+          fun (same : typed(BInt, class(p)) = typed(BInt, class(q))) => no(
+            quotient_effective(
+              U0, BNat and BNat, BIntSameDifference, bint_same_difference_props,
+              bint_same_difference_refl, bint_same_difference_sym, bint_same_difference_trans, p, q,
+              same
+            )
+          )
+        );
+      }, b
+    ), x
+  )(y);
+
+// The binary integers, a commutative ring.
+def binary_integers : CommRing(U0) := CommRing.make(
+  R := BInt, R_is_set := bint_is_set, add := bint_add, add_assoc := bint_add_assoc,
+  zero := bint_zero, zero_add := bint_zero_add, add_zero := bint_add_zero, neg := bint_neg,
+  neg_add := bint_neg_add, add_neg := bint_add_neg, add_comm := bint_add_comm, mul := bint_mul,
+  mul_assoc := bint_mul_assoc, one := bint_one, one_mul := bint_one_mul, mul_one := bint_mul_one,
+  mul_comm := bint_mul_comm, mul_add := bint_mul_add
+);
+
+// The natural-number embedding belongs to the new binary hierarchy.
+computable def bint_of_nat(n : BNat) : BInt := bint(n, 0);
+
+computable def bint_of_nat_zero : bint_of_nat(0) = bint_zero := refl(bint_zero);
+
+computable def bint_of_nat_one : bint_of_nat(1) = bint_one := refl(bint_one);
+
+computable def bint_of_nat_add(a, b : BNat) :
+  bint_of_nat(a + b) = bint_add(bint_of_nat(a), bint_of_nat(b)) := refl(bint_of_nat(a + b));
+
+computable def bint_of_nat_mul(a, b : BNat) :
+  bint_of_nat(a * b) = bint_mul(bint_of_nat(a), bint_of_nat(b)) := sym(
+    bint_pairs(
+      bint_mul_pairs((a, 0), (b, 0)), (a * b, 0),
+      path i => (bnat_add_zero(a * b) @ i, trans(bnat_add_zero(a * 0), bnat_mul_zero(a)) @ i)
+    )
+  );
+
+computable def bint_of_nat_injective(a, b : BNat, p : bint_of_nat(a) = bint_of_nat(b)) :
+  a = b := trans(
+    sym(bnat_add_zero(a)),
+    trans(
+      quotient_effective(
+        U0, BNat and BNat, BIntSameDifference, bint_same_difference_props,
+        bint_same_difference_refl, bint_same_difference_sym, bint_same_difference_trans, (a, 0),
+        (b, 0), p
+      ), bnat_add_zero(b)
+    )
+  );
+
+computable def bint_zero_ne_one(p : bint_zero = bint_one) : Void := bnat_zero_ne_one(
+  quotient_effective(
+    U0, BNat and BNat, BIntSameDifference, bint_same_difference_props, bint_same_difference_refl,
+    bint_same_difference_sym, bint_same_difference_trans, (0, 0), (1, 0), p
+  )
+);
+
+// Literal magnitudes go straight from the binary reader into a quotient pair.
+// Only lexical glyphs and error positions use unary naturals.
+computable def bint_literal(s : Lexeme) : Parsed(U0, BInt) := match bnat_literal(s) {
+    ok(n) => ok(bint_of_nat(n));
+    error(at_) => error(at_);
+  };
+
+notation binary_integers {
+  literal(s : Lexeme) := bint_literal(s);
+}

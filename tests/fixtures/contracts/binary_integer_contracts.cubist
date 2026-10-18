@@ -1,0 +1,106 @@
+// NUM2 binary integer arithmetic, quotient equality and the natural embedding.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num2-build-the-new-binary-backed-integers-and-rationals
+import binary_integers;
+use binary_integers;
+
+# test(binary_integers.integer_equal)
+# expect_axioms([])
+computable def integer_equal(x, y : BInt) : BNat := match bint_decide(x, y) return BNat {
+    left same => bnat.(1);
+    right different => bnat.(0);
+  };
+
+# test(binary_integers.integer_cross_base)
+# expect_axioms([])
+def integer_cross_base : 0b1010 = 10 {
+  rfl;
+}
+
+# test(binary_integers.integer_carry)
+# expect_axioms([])
+def integer_carry : 18446744073709551615 + 1 = 18446744073709551616 {
+  rfl;
+}
+
+# test(binary_integers.integer_wide_product)
+# expect_axioms([])
+def integer_wide_product :
+  18446744073709551615 * 18446744073709551615 = 340282366920938463426481119284349108225 {
+  rfl;
+}
+
+# test(binary_integers.integer_negative_product)
+# expect_axioms([])
+def integer_negative_product : (-18446744073709551615) * (-2) = 36893488147419103230 {
+  rfl;
+}
+
+# test(binary_integers.integer_cancel)
+# expect_axioms([])
+def integer_cancel :
+  18446744073709551616 + (-18446744073709551616) = 0 := bint_add_neg(18446744073709551616);
+
+# test(binary_integers.integer_shifted_pair)
+# expect_axioms([])
+def integer_shifted_pair :
+  bint(bnat.(18446744073709551616), bnat.(18446744073709551615)) = 1 := bint_path(
+    (bnat.(18446744073709551616), bnat.(18446744073709551615)), (bnat.(1), bnat.(0)),
+    refl(bnat.(18446744073709551616))
+  );
+
+# test(binary_integers.integer_natural_product)
+# expect_axioms([])
+def integer_natural_product(a, b : BNat) :
+  bint_of_nat(bnat.(a * b)) = bint_of_nat(a) * bint_of_nat(b) := bint_of_nat_mul(a, b);
+
+# test(binary_integers.integer_natural_injective)
+# expect_axioms([])
+def integer_natural_injective(a, b : BNat, p : bint_of_nat(a) = bint_of_nat(b)) :
+  a = b := bint_of_nat_injective(a, b, p);
+
+# test(binary_integers.integer_distinct)
+# expect_axioms([])
+def integer_distinct(p : 0 = 1) : Void := bint_zero_ne_one(p);
+
+# test(binary_integers.cancel_decision)
+evaluate integer_equal(18446744073709551616 + (-18446744073709551615), 1) expecting bnat.(1);
+# test(binary_integers.sign_decision)
+evaluate integer_equal(-18446744073709551616, 18446744073709551616) expecting bnat.(0);
+# test(binary_integers.wide_product_decision)
+evaluate integer_equal(
+  340282366920938463463374607431768211455 * 340282366920938463463374607431768211455,
+  115792089237316195423570985008687907852589419931798687112530834793049593217025
+) expecting bnat.(1);
+
+# test(binary_integers.integer_bad_digit)
+# expect_error(E905)
+// Error: E905: binary_integers's literal rule refuses 0b102 at its character 5.
+def integer_bad_digit : BInt := 0b102;
+
+# test(binary_integers.integer_unary_component)
+# expect_error(E606)
+// Error: E606: Type mismatch: found UNat, expected BNat.
+def integer_unary_component : BInt := bint(unat.(3), bnat.(0));
+
+// A plausible incorrect arithmetic equation must be refused.
+# test(binary_integers.wrong_product)
+# expect_error(E606)
+// Error: E606: Type mismatch: found 6 = 6, expected binary_integers.neg(2) * binary_integers.neg(3)
+//   = 7.
+def integer_wrong_product : (-2) * (-3) = 7 := refl(6);
+
+# test(binary_integers.ring_client)
+# expect_axioms([])
+computable def integer_times_zero(x : BInt) :
+  bint_mul(x, bint_zero) = bint_zero := mul_zero(binary_integers, x);
+
+// Operations on noncanonical representatives still decide the same integer.
+# test(binary_integers.shifted_product)
+evaluate integer_equal(bint(bnat.(18446744073709551617), bnat.(18446744073709551616)) * (-3), -3) expecting bnat.(
+  1
+);
+
+# test(binary_integers.shifted_negation)
+evaluate integer_equal(-bint(bnat.(18446744073709551617), bnat.(18446744073709551616)), -1) expecting bnat.(
+  1
+);

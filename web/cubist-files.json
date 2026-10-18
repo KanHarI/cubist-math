@@ -1539,6 +1539,10 @@
    "summary": "Computed/path equality agreement, bitwise decisions on large values, and a forced 64-bit model-law certificate that avoids unary proof evaluation."
   },
   {
+   "path": "cubist-tests/binary_integer_ring.cubist",
+   "summary": "Binary integer literal spelling, large positive and negative arithmetic displays, and noncanonical quotient representatives after cancellation. Semantic outcomes are also checked in the binary integer source contracts."
+  },
+  {
    "path": "cubist-tests/binary_natural_foundation.cubist",
    "summary": "Binary zero, carries and borrows, addition, multiplication, high-bit comparison, explicit unary conversions, decimal/binary input and printing, and arithmetic beyond 64 bits."
   },
@@ -2413,6 +2417,10 @@
   {
    "path": "library/algebra.cubist",
    "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
+  },
+  {
+   "path": "library/binary_integers.cubist",
+   "summary": "Binary integers `BInt` as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. Computed values remain quotient representatives; domain laws and the public `Z` migration follow in NUM2."
   },
   {
    "path": "library/bnat_arithmetic.cubist",
