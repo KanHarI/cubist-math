@@ -690,6 +690,17 @@ quotient-effectiveness family parameterized by a large representative.
 The constructor, arithmetic, equality and domain laws add no assumptions;
 this source-level change does not alter the kernel or its resource limits.
 
+The domain contracts fully normalize nonzero-product certificates with
+64/128-bit components and check an instance of `fraction_field`. They do not
+establish full rational-value normalization. A separate probe at this stage,
+`evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
+bint_zero_ne_one).one expecting _;`, exhausts the term arena (`K347`) even
+though its type and the individual nontriviality/product certificates check.
+Resolving this remains part of the NUM2 runtime work before the rational
+default migration; evaluator changes, if needed, belong to EVAL3–EVAL5.
+The probe is not a bounded regression test and should not be added to CI
+without first isolating and bounding the failing normalization.
+
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
 Construct `Q` as fractions over this `Z`, retaining its nonzero-denominator

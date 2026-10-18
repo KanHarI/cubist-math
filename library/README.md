@@ -35,7 +35,7 @@ Its constructors remain `zero` and `succ`; its laws have the `unat_` prefix.
 Existing structural clients, lexical digits/offsets, list lengths and h-level
 indices use this explicit carrier. The public `Z` and `Q` representations
 remain unary until NUM2 completes; `binary_integers` provides the new binary
-integer ring as `BInt` while its domain laws and default migration are built.
+integer ring and domain laws on `BInt` while the default migration is built.
 Public `Nat` no longer matches on unary constructors;
 use `nat_peano` for its dependent zero/successor view. A unary numeral is
 qualified as `unat.(n)` outside an identity unary view. Imports re-export their
