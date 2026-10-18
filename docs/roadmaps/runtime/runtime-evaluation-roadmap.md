@@ -655,7 +655,14 @@ unary; their default migration remains NUM2 work.
 
 **Binary integer ring (2026-10-18).**
 [binary_integers.cubist](../../../library/binary_integers.cubist) supplies `BInt`,
-the same-difference quotient of `BNat` pairs. Negation, addition and
+the same-difference quotient of `BNat` pairs. Both integer instances reuse
+[differences.cubist](../../../library/differences.cubist), the ring of
+differences of an additively cancellative commutative semiring with decidable
+equality. Its proofs use the existing semiring distributivity and
+commutative-monoid regrouping laws; they are not reimplemented for `BNat`.
+The unary semiring model lives separately in `unat_models`, so the unary
+compatibility integers do not import binary arithmetic. Public wrappers
+instantiate the generic universe explicitly. Negation, addition and
 multiplication respect the quotient; the commutative-ring laws, decidable
 equality, nontriviality and an injective natural embedding preserving zero,
 one, addition and multiplication are checked without assumptions. Its
