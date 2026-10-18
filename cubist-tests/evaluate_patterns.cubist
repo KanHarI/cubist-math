@@ -3,11 +3,11 @@
 // matches anything; a pair, an injection or a constructor matches a value
 // built so; any other expression is elaborated at the part's type and
 // compared by normal form.
-import nat;
+import unat;
 import lists;
-use nat;
+use unat;
 
-def pairs : Nat and (Unit or Nat) := (3, right(2 + 2));
+def pairs : UNat and (Unit or UNat) := (3, right(2 + 2));
 
 evaluate pairs expecting (3, _);
 
@@ -15,7 +15,7 @@ evaluate pairs expecting (_, right(4));
 
 evaluate pairs expecting (1 + 2, right(_));
 
-def numbers : List(U0, Nat) := cons(1, cons(2, cons(3, nil)));
+def numbers : List(U0, UNat) := cons(1, cons(2, cons(3, nil)));
 
 evaluate numbers expecting cons(1, _);
 
@@ -24,7 +24,7 @@ evaluate numbers expecting cons(_, cons(2, _));
 evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _))));
 
 // typed(T, p) states the part's type.
-evaluate pairs expecting (typed(Nat, _), right(4));
+evaluate pairs expecting (typed(UNat, _), right(4));
 
 // A constructor's argument is read at its field's declared type, with the
 // arguments before it substituted: box's field is at U1, though Unit
@@ -41,9 +41,9 @@ inductive Tagged {
   tagged(A : U0, a : A);
 }
 
-def tagged_three : Tagged := tagged(Nat, 3);
+def tagged_three : Tagged := tagged(UNat, 3);
 
-evaluate tagged_three expecting tagged(_, typed(Nat, _));
+evaluate tagged_three expecting tagged(_, typed(UNat, _));
 
 // A mismatch names the part that differs.
 // Error: E477: The term evaluates to (3, right(4)), which does not match (4, _): 3 is not 4.
@@ -65,7 +65,7 @@ evaluate pairs expecting (typed(Unit, _), _);
 //   typed(U0, _).
 evaluate boxed expecting box(typed(U0, _));
 
-// Error: E477: The term evaluates to tagged(Nat, 3), which does not match tagged(_, typed(Unit,
+// Error: E477: The term evaluates to tagged(UNat, 3), which does not match tagged(_, typed(Unit,
 //   _)): 3 is not typed(Unit, _).
 evaluate tagged_three expecting tagged(_, typed(Unit, _));
 
@@ -80,7 +80,7 @@ evaluate numbers expecting append(_, nil);
 evaluate pairs expecting (succ{{bogus}}(2), _);
 
 // Error: E701: right has no implicit parameters: give its arguments in parentheses, as right(…).
-evaluate pairs expecting (_, right{{Nat}}(4));
+evaluate pairs expecting (_, right{{UNat}}(4));
 
 // Error: E379: succ is a declared type or a constructor, whose arguments are written out: a hole _
 //   or a named argument is an argument of a definition or a function.

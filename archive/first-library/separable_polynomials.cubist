@@ -1,10 +1,10 @@
-import nat;
+import unat;
 import polynomial_root_enumeration;
 import minimal_polynomials;
 
 // A separable splitting lists exactly deg(p) distinct roots. The scalar and
 // coefficient identity remain explicit; a bare list of roots is insufficient.
-def DistinctPolynomialSplitting(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
+def DistinctPolynomialSplitting(K : AlgebraicField, p : Polynomial(K), n : UNat) :=
   exists roots : Fin(n) -> af_carrier(K). exists a : af_carrier(K).
   (p = polynomial_mul(K, polynomial_constant(K, a), linear_factor_product(K, n, roots)))
   and Injective(Fin(n), af_carrier(K), roots);
@@ -73,7 +73,7 @@ def mapped_roots_bijection(K, L : AlgebraicField, e : FieldEmbedding(K, L), p : 
 }
 
 def distinct_splitting_root_count(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : UNat,
   nonzero : PolynomialNonzero(K, p),
   splitting : DistinctPolynomialSplitting(L, polynomial_map(K, L, e, p), n)
 ) :
@@ -163,7 +163,7 @@ def adjoined_embeddings_upper_bound(
     (fun (A : U0) => DistinctFamily(A, n))
   );
   let degree :=
-    cong((fun (d : Nat) => succ(natural_predecessor(d))), modulus_degree_equality(K, M));
+    cong((fun (d : UNat) => succ(natural_predecessor(d))), modulus_degree_equality(K, M));
   exact polynomial_root_family_upper_bound(
     K, L, e, p, polynomial_irreducible_nonzero(K, p, irreducible),
     transport roots along sym(degree) in DistinctFamily(R)

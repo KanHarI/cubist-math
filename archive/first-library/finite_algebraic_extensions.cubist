@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import polynomial_coordinate_maps;
 import minimal_polynomials;
 import finite_basis_search;
@@ -7,7 +7,7 @@ import extension_degree;
 // The n+1 powers of any element of an n-dimensional extension are dependent.
 // The resulting nonzero coefficient array is a formal annihilating polynomial.
 def finite_basis_element_algebraic(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : UNat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), x : af_carrier(L)
 ) :
   AlgebraicElement(K, L, e, x) {

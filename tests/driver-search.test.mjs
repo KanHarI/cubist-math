@@ -218,11 +218,11 @@ test("agree: policies are pluggable and untrusted", async t => {
 });
 
 test("the heuristic policy, counted, derives the first library exactly as the default driver does", async t => {
-  const source = await readFile(new URL("../library/nat.cubist", import.meta.url), "utf8");
+  const source = await readFile(new URL("../library/unat.cubist", import.meta.url), "utf8");
   const derive = async policy => {
     const program = new CubicalProgram(await createCubical(), async () => { throw new Error("no imports"); });
     t.after(() => program.dispose());
-    await program.check(source, "nat");
+    await program.check(source, "unat");
     const kernel = program.kernel, before = kernel.work(), judgements = [];
     for (const [name, reference] of kernel.definitions) {
       const { value, type } = kernel.definition(reference);

@@ -1,9 +1,9 @@
-import nat;
+import unat;
 import dyadic_sampling;
 import sample_condition_maps;
 
 def interval_tagged_width_admissible(
-  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat,
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   valid : SampleTagged(
@@ -28,7 +28,7 @@ def interval_tagged_width_admissible(
 def interval_tagged_width_mesh(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), radius, mesh : F,
-  small : lt(radius, mesh), n : Nat,
+  small : lt(radius, mesh), n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   valid : SampleTagged(
@@ -57,7 +57,7 @@ def dyadic_interval_samples_fine(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), half : F -> F,
-  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : Nat, a,
+  halfSum : (forall x : F. addF(half(x), half(x)) = x), depth : UNat, a,
   b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),

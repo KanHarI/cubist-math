@@ -10,9 +10,9 @@ const run = (args, options = {}) => spawnSync(process.execPath, [cli, ...args], 
 test("CLI checks custom sibling imports, rejects false proofs, and explores actual native terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(join(directory, "helper.cubist"), "import nat; def identity(n : Nat) := n;");
-  await writeFile(join(directory, "example.cubist"), "import nat; import helper; def self_equal(n : Nat) : n =[Nat] n { exact refl(identity(n)); }");
-  await writeFile(join(directory, "bad.cubist"), "import nat; def false_claim : 0 = 1 { exact refl(0); }");
+  await writeFile(join(directory, "helper.cubist"), "import unat; def identity(n : UNat) := n;");
+  await writeFile(join(directory, "example.cubist"), "import unat; import helper; def self_equal(n : UNat) : n =[UNat] n { exact refl(identity(n)); }");
+  await writeFile(join(directory, "bad.cubist"), "import unat; def false_claim : 0 = 1 { exact refl(0); }");
   const good = run(["check", "example.cubist"], { cwd: directory });
   assert.equal(good.status, 0, good.stderr); assert.match(good.stdout, /Checked 1 declarations/);
   const bad = run(["check", "bad.cubist"], { cwd: directory }); assert.notEqual(bad.status, 0);
@@ -25,8 +25,8 @@ test("CLI reports assumptions and evaluates closed terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   await writeFile(join(directory, "sample.cubist"), `import primes;
-import classical; use nat;
-def double(n : Nat) := n + n;
+import classical; use unat;
+def double(n : UNat) := n + n;
 def recover(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
   exact double_negation(P, prop_, nn);
 }

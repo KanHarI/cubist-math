@@ -1,7 +1,7 @@
 // B1-changed (control): a later selection and later globals change only later declarations.
 
 import hlevels;
-import nat;
+import unat;
 theory Point(U < UU0) {
   M : set U;
   point : M;
@@ -27,7 +27,7 @@ theory T(U < UU0) {
   op(x : M) : A;
 }
 
-def other : Point(U0) := Point.make(Nat, nat_is_set, zero);
+def other : Point(U0) := Point.make(UNat, unat_is_set, zero);
 
 use other;
 inductive Later : U0 {

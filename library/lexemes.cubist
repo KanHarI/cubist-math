@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import lists;
-use nat;
+use unat;
 
 // Literals read by the library (L2.10c). A numeric token, as 1/2, 2.3 or
 // 5i, reaches a notation's literal rule as a Lexeme, the list of its
@@ -13,9 +13,9 @@ use nat;
 // A literal's characters: a digit by its value, a letter by its place in
 // the alphabet, lower or upper case, and . (period), /, _, + and -.
 inductive Glyph : U0 {
-  digit(value : Nat);
-  lower(place : Nat);
-  upper(place : Nat);
+  digit(value : UNat);
+  lower(place : UNat);
+  upper(place : UNat);
   period;
   slash;
   underscore;
@@ -29,7 +29,7 @@ def Lexeme : U0 := List(U0, Glyph);
 // refuses.
 inductive Parsed(U < UU0, A : U) : U {
   ok(value : A);
-  error(position : Nat);
+  error(position : UNat);
 }
 
 // That a parse succeeded: Unit when it did, Void when it refused, so tt is
@@ -42,7 +42,7 @@ computable def Succeeded{{U < UU0, A : U}}(p : Parsed(U, A)) : U0 := match p {
 // A parse's answer as a number: 0 when it succeeded, and k + 1 when it
 // refused the character at position k. The translator evaluates it, which
 // reduces the parse only to its answer, never its value.
-computable def parse_answer{{U < UU0, A : U}}(p : Parsed(U, A)) : Nat := match p {
+computable def parse_answer{{U < UU0, A : U}}(p : Parsed(U, A)) : UNat := match p {
     ok(a) => 0;
     error(k) => succ(k);
   };
@@ -57,8 +57,8 @@ computable def parsed_value{{U < UU0, A : U}}(p : Parsed(U, A), succeeded : Succ
 // The digits at a lexeme's start, _ between them ignored: their value, how
 // many there were, and the rest of the lexeme. `value` and `count` hold
 // what was read before.
-computable def leading_digits(s : Lexeme, value, count : Nat) :
-  (Nat and Nat) and Lexeme := match s {
+computable def leading_digits(s : Lexeme, value, count : UNat) :
+  (UNat and UNat) and Lexeme := match s {
     nil => ((value, count), nil);
     cons(g, rest) => match g {
       digit(d) => leading_digits(rest, add(mul(value, 10), d), succ(count));
@@ -73,15 +73,15 @@ computable def leading_digits(s : Lexeme, value, count : Nat) :
   };
 
 // 10^k.
-computable def power_of_ten(k : Nat) : Nat := match k {
+computable def power_of_ten(k : UNat) : UNat := match k {
     zero => 1;
     succ(j) => mul(10, power_of_ten(j));
   };
 
 // A natural number written in decimal digits, 1_000 included.
-computable def natural_literal(s : Lexeme) : Parsed(U0, Nat) {
-  let read : (Nat and Nat) and Lexeme := leading_digits(s, 0, 0);
-  exact match read.2 return Parsed(U0, Nat) {
+computable def natural_literal(s : Lexeme) : Parsed(U0, UNat) {
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, UNat) {
     nil => ok(read.1.1);
     cons(g, rest) => error(read.1.2);
   };

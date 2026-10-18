@@ -129,8 +129,8 @@ test("dependent pair induction checks its motive and both branch arguments nativ
     def second(A : U0, B : A -> U0, p : (exists x : A. B(x))) :=
       pair_induction((fun (q : (exists x : A. B(x))) => B(unpack q as (a, b) return A { a; })),
         (fun (a : A) => fun (b : B(a)) => b), p);
-    def wrong(p : Nat and Nat) := pair_induction(
-      (fun (q : Nat and Nat) => Nat), (fun (a : Nat) => fun (b : Unit) => a), p);
+    def wrong(p : UNat and UNat) := pair_induction(
+      (fun (q : UNat and UNat) => UNat), (fun (a : UNat) => fun (b : Unit) => a), p);
   `);
   assert.equal(result.declarations[0].status, "checked-native-cubical", result.declarations[0].reason);
   assert.equal(result.declarations[1].status, "not-translated");
@@ -169,7 +169,7 @@ test("native elaboration checks all manual factorial sources while retaining che
   }
 });
 
-test("the existing Nat factorial theorem checks cubically without a million-successor expression",async t=>{
+test("the existing UNat factorial theorem checks cubically without a million-successor expression",async t=>{
   const program = await archive(t, "binary_arithmetic_correct");
   const view=program.inspect("binary_arithmetic_correct__factorial_ten_from_binary"),checked=program.checker.checkView(view.expression,view.type);
   assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);

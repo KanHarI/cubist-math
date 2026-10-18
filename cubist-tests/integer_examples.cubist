@@ -2,12 +2,12 @@
 // a - b. Equality is decided by computation, arithmetic computes on
 // representatives, the ring's lemmas apply to them, and the natural
 // numbers embed into them as a homomorphism of additive monoids.
-import nat;
+import unat;
 import algebra;
 import integers;
-use nat;
+use unat;
 
-computable def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
+computable def equal_or_not(x, y : Z) : UNat := match int_decide(x, y) return UNat {
     left same => 1;
     right different => 0;
   };
@@ -36,8 +36,8 @@ computable def times_zero(x : Z) : int_mul(x, int_zero) = int_zero := mul_zero(i
 // n is the integer n - 0, and addition is preserved.
 computable def naturals_in_integers :
   CommMonoid.Hom(nat_additive, integers.additive_.comm_monoid) := CommMonoid.Hom.make(
-    nat_additive, integers.additive_.comm_monoid, map := fun (n : Nat) => int(n, 0),
-    map_mul := fun (x, y : Nat) => refl(int(x + y, 0)), map_one := refl(int_zero)
+    nat_additive, integers.additive_.comm_monoid, map := fun (n : UNat) => int(n, 0),
+    map_mul := fun (x, y : UNat) => refl(int(x + y, 0)), map_one := refl(int_zero)
   );
 
 // Output: 1

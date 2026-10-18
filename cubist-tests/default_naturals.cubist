@@ -1,0 +1,63 @@
+// The public Nat is binary; structural Peano clients use explicit UNat.
+import nat;
+use nat;
+
+def default_is_binary : Nat = BNat {
+  rfl;
+}
+
+def default_decimal_carry : 18446744073709551615 + 1 = 18446744073709551616 {
+  rfl;
+}
+
+def default_wide_product :
+  18446744073709551615 * 18446744073709551615 = 340282366920938463426481119284349108225 {
+  rfl;
+}
+
+def default_order : 18446744073709551615 < 18446744073709551616 := tt;
+
+def default_factorial : factorial(5) = 120 {
+  rfl;
+}
+
+def default_is_set : IsSet(U0, Nat) {
+  hlevel;
+}
+
+def default_dependent_zero(
+  U < UU0, P : Nat -> U, z : P(zero), step : forall n : Nat. P(n) -> P(succ(n))
+) :
+  nat_peano(U, P, z, step, zero) = z {
+  rfl;
+}
+
+def default_unused_smaller :
+  nat_strong_recursion(
+    U0, fun (n : Nat) => Nat, fun (n : Nat, below : NatBelow(U0, fun (m : Nat) => Nat, n)) => n,
+    18446744073709551615
+  ) = 18446744073709551615 {
+  rfl;
+}
+
+// Output: 340282366920938463426481119284349108225
+print(evaluate(18446744073709551615 * 18446744073709551615));
+
+// An explicit unary numeral keeps its carrier under the default binary view.
+// Output: unat.(10) = unat.(10)
+print(typeof(refl(unat.(10))));
+
+// Output: 0b101 = 0b101
+print(typeof(refl(0b101)));
+
+notation unary_view {
+  numeral(n : UNat) := n;
+}
+use unary_view;
+
+// Output: 10 = 10
+print(typeof(refl(unat.(10))));
+
+// A binary value is qualified when the selected view reads unary values.
+// Output: bnat.(1000)
+print(evaluate(nat.(1000)));

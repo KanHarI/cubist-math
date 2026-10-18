@@ -348,7 +348,7 @@ export class Translator {
     const rule=selection.literal;
     // A glyph's number is built from the library's Nat, as its glyphs are.
     const lexeme=[...n.text].reduceRight((tail,character)=>{
-      const raw=value=>({kind:"rawNumeral",value,natural:rule.aliases.get(lexemeKey("Nat"))});
+      const raw=value=>({kind:"rawNumeral",value,natural:rule.aliases.get(lexemeKey("UNat"))});
       const glyph=/[0-9]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("digit")},args:[raw(Number(character))]}
         :/[a-z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("lower")},args:[raw(character.charCodeAt(0)-97)]}
         :/[A-Z]/.test(character)?{kind:"call",fn:{kind:"name",name:lexemeKey("upper")},args:[raw(character.charCodeAt(0)-65)]}
@@ -424,7 +424,8 @@ export class Translator {
   shown(term) {return this.checker.displayText?.(term,1000)??sourceText(term);}
   // A term as read where `scope`'s notation is selected (L2.10d).
   shownIn(term,scope) {
-    const notation={selection:scope.env.get(SELECTION)?.name??null};
+    const selected=scope.env.get(SELECTION);
+    const notation={selection:selected?.name??null,selectionIdentity:selected?.identity??null};
     return this.checker.displayText?.(term,1000,4000,notation)??sourceText(term,{},4000,notation);
   }
   // Terms in one scope that a message shows, named together: a variable
@@ -1109,7 +1110,7 @@ export class Translator {
   }
   // Numerals and the legacy induction syntax use the Nat in the source's
   // environment. Its declaration and admission belong to the imported module.
-  naturalConstructors(scope,name="Nat") {
+  naturalConstructors(scope,name="UNat") {
     return this.naturalSignature(scope,this.term({kind:"name",name},scope,null));
   }
   naturalSignature(scope,type) {
@@ -1118,7 +1119,7 @@ export class Translator {
     const zero=natural?.constructors.findIndex(c=>c.source==="zero"&&c.arity===0&&c.dims===0);
     const succ=natural?.constructors.findIndex(c=>c.source==="succ"&&c.arity===1&&c.dims===0);
     if(!natural||natural.slots.length||natural.constructors.length!==2||zero<0||succ<0)
-      throw Error("Numerals and induction require an imported Nat with zero and succ constructors.");
+      throw Error("Numerals and induction require an imported UNat with zero and succ constructors.");
     return {type,zero:T.constructor(zero,type,"zero"),succ:T.constructor(succ,type,"succ")};
   }
   // Both a source binding and a closed notation capture supply an elaboration
@@ -1244,18 +1245,18 @@ export class Translator {
         const selection=env.get(SELECTION);
         if(!n.raw&&selection?.complete)return this.literalTerm({...n,kind:"literal",text:n.text??String(n.value)},scope,expected);
         if(!n.raw&&!this.nameBased)throw unselectedLiteral(n.text??String(n.value));
-        if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
-        const natural=this.naturalConstructors(scope,n.natural??"Nat");
+        if(n.value>256)throw Error("Unary numerals are limited to 256. Import nat and use nat for binary naturals.");
+        const natural=this.naturalConstructors(scope,n.natural??"UNat");
         let t=natural.zero;for(let i=0;i<n.value;i++)t=T.app(natural.succ,t);
         this.reference(scope,{...n,name:String(n.value)},t);return t;}
       case "rawNumeral": {
         // A reader's input is lazy data over its own checked Nat. Building it
         // only when used preserves ignored-operand and refused-rule behavior.
         // No source/destination name is consulted, even under a binding adapter.
-        if(n.value>256)throw Error("Numerals are limited to 256 in this version.");
+        if(n.value>256)throw Error("Unary numerals are limited to 256. Import nat and use nat for binary naturals.");
         if(!n.natural)throw new TypeError("A numeral reader requires its captured natural-number type.");
         // The implicit type is not another authored occurrence at the token.
-        const type=this.valueTerm({kind:"name",name:n.natural.source??"Nat"},n.natural,scope);
+        const type=this.valueTerm({kind:"name",name:n.natural.source??"UNat"},n.natural,scope);
         const natural=this.naturalSignature(scope,type);
         let value=natural.zero;for(let i=0;i<n.value;i++)value=T.app(natural.succ,value);
         this.reference(scope,{...n,name:String(n.value)},value);return value;

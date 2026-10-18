@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import sample_tagged;
 
 // Map the evidence at each edge without changing vertices or tags.
 def sample_tagged_map_step(
   C : U1, condition, other : C -> C -> C -> U0,
   mapping : (forall a : C. forall b : C. forall tag : C. condition(a, b, tag) -> other(a, b, tag)),
-  n : Nat,
+  n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
     SampleTagged(C, condition, n, vertices, tags) -> SampleTagged(C, other, n, vertices, tags)
@@ -29,7 +29,7 @@ def sample_tagged_map_step(
 def sample_tagged_map(
   C : U1, condition, other : C -> C -> C -> U0,
   mapping : (forall a : C. forall b : C. forall tag : C. condition(a, b, tag) -> other(a, b, tag)),
-  n : Nat
+  n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleTagged(C, condition, n, vertices, tags) -> SampleTagged(C, other, n, vertices, tags) {

@@ -5,7 +5,7 @@ import finite_towers;
 def subspace_basis(
   K : AlgebraicField, V : VectorSpace(K), finite : FiniteDimensional(K, V), S : Subspace(K, V)
 ) :
-  Mere(exists n : Nat. FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
+  Mere(exists n : UNat. FiniteBasis(K, SubspaceVectorSpace(K, V, S), n)) {
   exact finite_subspace_basis(K, V, finite, S);
 }
 

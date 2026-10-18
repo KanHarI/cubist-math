@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import parameter_contours;
 import sample_refinement_tags;
 
@@ -6,7 +6,7 @@ import sample_refinement_tags;
 // No continuity, ordering, or admissibility is needed for this exact identity.
 def parameter_constant_tag_sum(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F, tag : C, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F, tag : C, n : UNat,
   vertices : SampleVertices(C, n)
 ) :
   parameter_contour_sum(
@@ -43,7 +43,7 @@ def parameter_constant_tag_sum(
 def parameter_refinement_identity(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F, coarseTag : C,
-  n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
+  n : UNat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
 ) :
   parameter_contour_sum(C, F, zero, addF, mulF, negF, curve, values, n, vertices, tags) = addF(
     parameter_contour_edge(

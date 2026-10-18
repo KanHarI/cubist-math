@@ -1,13 +1,13 @@
-import nat;
+import unat;
 import artin_evaluation_matrix;
 import extension_degree;
-use nat;
+use unat;
 
 // An injective map between two n-dimensional spaces is onto. The proof
 // transports both spaces to the same coordinate space and uses the checked
 // square-matrix result.
 def equal_basis_dimension_injective_surjective(
-  K : AlgebraicField, V, W : VectorSpace(K), n : Nat, basisV : FiniteBasis(K, V, n),
+  K : AlgebraicField, V, W : VectorSpace(K), n : UNat, basisV : FiniteBasis(K, V, n),
   basisW : FiniteBasis(K, W, n), f : LinearMap(K, V, W), injective : LinearInjective(K, V, W, f)
 ) :
   LinearSurjective(K, V, W, f) {
@@ -53,7 +53,7 @@ def equal_basis_dimension_injective_surjective(
 }
 
 def equal_dimension_injective_surjective(
-  K : AlgebraicField, V, W : VectorSpace(K), n : Nat, dimensionV : HasDimension(K, V, n),
+  K : AlgebraicField, V, W : VectorSpace(K), n : UNat, dimensionV : HasDimension(K, V, n),
   dimensionW : HasDimension(K, W, n), f : LinearMap(K, V, W),
   injective : LinearInjective(K, V, W, f)
 ) :
@@ -74,38 +74,38 @@ def equal_dimension_injective_surjective(
   );
 }
 
-def nonzero_nat_successor(n : Nat, nonzero : (n = 0) -> Void) : exists k : Nat. n = succ(k) {
-  exact induction n as k return ((k = 0) -> Void) -> (exists j : Nat. k = succ(j)) {
+def nonzero_nat_successor(n : UNat, nonzero : (n = 0) -> Void) : exists k : UNat. n = succ(k) {
+  exact induction n as k return ((k = 0) -> Void) -> (exists j : UNat. k = succ(j)) {
     zero => fun (impossible : (0 = 0) -> Void) => absurd(impossible(refl(0)));
     succ previous => fun (impossible : (succ(k) = 0) -> Void) => (k, refl(succ(k)));
   }
   (nonzero);
 }
 
-def positive_product_zero(k, q : Nat, same : multiply_count(succ(k), q) = 0) : q = 0 {
+def positive_product_zero(k, q : UNat, same : multiply_count(succ(k), q) = 0) : q = 0 {
   exact induction q as r return (multiply_count(succ(k), r) = 0) -> (r = 0) {
     zero => fun (equal : multiply_count(succ(k), 0) = 0) => refl(0);
     succ previous => fun (equal : multiply_count(succ(k), succ(r)) = 0) => absurd(
-      nat_zero_ne_succ(
-        add_count(k, multiply_count(succ(k), r)), trans(sym(equal), nat_mul_succ(succ(k), r))
+      unat_zero_ne_succ(
+        add_count(k, multiply_count(succ(k), r)), trans(sym(equal), unat_mul_succ(succ(k), r))
       )
     );
   }
   (same);
 }
 
-def positive_product_unit(k, m : Nat, same : multiply_count(succ(k), m) = succ(k)) : m = 1 {
+def positive_product_unit(k, m : UNat, same : multiply_count(succ(k), m) = succ(k)) : m = 1 {
   exact induction m as q return (multiply_count(succ(k), q) = succ(k)) -> (q = 1) {
     zero => fun (equal : multiply_count(succ(k), 0) = succ(k)) => absurd(
-      nat_zero_ne_succ(k, trans(sym(nat_mul_zero(succ(k))), equal))
+      unat_zero_ne_succ(k, trans(sym(unat_mul_zero(succ(k))), equal))
     );
     succ previous => fun (equal : multiply_count(succ(k), succ(q)) = succ(k)) => cong(
       succ,
       positive_product_zero(
         k, q,
-        nat_add_cancel(
+        unat_add_cancel(
           succ(k), multiply_count(succ(k), q), 0,
-          trans(sym(nat_mul_succ(succ(k), q)), trans(equal, sym(nat_add_zero(succ(k)))))
+          trans(sym(unat_mul_succ(succ(k), q)), trans(equal, sym(unat_add_zero(succ(k)))))
         )
       )
     );
@@ -113,8 +113,8 @@ def positive_product_unit(k, m : Nat, same : multiply_count(succ(k), m) = succ(k
   (same);
 }
 
-def inhabited_cardinality_positive(A : U0, n : Nat, count : HasCardinality(A, n), a : A) :
-  exists k : Nat. n = succ(k) {
+def inhabited_cardinality_positive(A : U0, n : UNat, count : HasCardinality(A, n), a : A) :
+  exists k : UNat. n = succ(k) {
   let nonzero : (n = 0) -> Void {
     intro zero;
     let countZero := transport count along zero in HasCardinality(A);

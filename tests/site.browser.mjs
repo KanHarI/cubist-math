@@ -53,8 +53,8 @@ await browserTest(async ({ browser, base }) => {
       // A line number shows the goal at that proof statement and the names in scope.
       await page.locator('.source-line[data-line="10"] .line-number').click();
       assert.equal(await page.locator("#inspect-name").textContent(), "Goal at line 10");
-      assert.match(await page.locator("#inspect-type").textContent(), /exists p : Nat\. Prime\(p\) and n < p/);
-      assert.match(await page.locator("#locals").textContent(), /n\s*Nat/);
+      assert.match(await page.locator("#inspect-type").textContent(), /exists p : UNat\. Prime\(p\) and n < p/);
+      assert.match(await page.locator("#locals").textContent(), /n\s*UNat/);
     }
     console.log(`PASS static worker, WASM, checking and folded inspection: ${proof} (${backend})`);
   }
@@ -67,14 +67,14 @@ await browserTest(async ({ browser, base }) => {
   await inspector.locator("#inspect-name").filter({ hasText: /^seven$/ }).waitFor();
   await inspector.locator("#kernel-view:not([disabled])").waitFor();
   assert.equal((await inspector.locator("#kernel-expression").textContent()).trim(), "7");
-  assert.equal((await inspector.locator("#kernel-type").textContent()).trim(), "Nat");
+  assert.equal((await inspector.locator("#kernel-type").textContent()).trim(), "UNat");
   await page.locator("#tour-numbers").scrollIntoViewIfNeeded();
   await page.waitForSelector("#tour-numbers .example-token");
   assert.match(await page.locator("#tour-numbers .example-bar span").first().textContent(), /evaluate at line 8: 6/);
   // An imported module's name opens the module in the workspace.
   const moduleLink = page.locator("#tour-numbers a.example-module").first();
-  assert.equal(await moduleLink.textContent(), "nat");
-  assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=nat$/);
+  assert.equal(await moduleLink.textContent(), "unat");
+  assert.match(await moduleLink.getAttribute("href"), /proof\.html\?proof=unat$/);
   // 0 is the constructor itself, not notation.
   assert.deepEqual(await page.locator("#tour-numbers pre code").first().evaluate(code =>
     [...code.querySelectorAll("*")].filter(node => node.textContent === "0").map(node => node.classList.contains("macro"))), [false]);
@@ -86,17 +86,17 @@ await browserTest(async ({ browser, base }) => {
   // An excerpt is checked with the module it quotes: its names open the
   // inspector, and its workspace link opens that module at the declaration.
   await page.goto(new URL("reference/induction.html", base).href);
-  // The first of nat's excerpts is its declaration of Nat.
-  const excerpt = page.locator('pre > code[data-check="excerpt"][data-module="nat"]').first();
+  // The first of unat's excerpts is its declaration of UNat.
+  const excerpt = page.locator('pre > code[data-check="excerpt"][data-module="unat"]').first();
   const excerptBar = excerpt.locator("xpath=../following-sibling::div[contains(@class, 'example-bar')][1]");
   await excerpt.scrollIntoViewIfNeeded();
-  await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().waitFor();
-  assert.match(await excerptBar.locator("span").textContent(), /^Quoted from nat · Click a name/);
-  assert.match(await excerptBar.locator("a").getAttribute("href"), /proof\.html\?proof=nat&name=Nat$/);
-  await excerpt.locator(".example-token", { hasText: /^Nat$/ }).first().click();
-  await inspector.locator("#inspect-name").filter({ hasText: /^Nat$/ }).waitFor();
-  assert.deepEqual(await inspector.locator("#inspect-constructors li code").allTextContents(), ["zero : Nat", "succ : Nat -> Nat"]);
-  assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?proof=nat&name=Nat$/);
+  await excerpt.locator(".example-token", { hasText: /^UNat$/ }).first().waitFor();
+  assert.match(await excerptBar.locator("span").textContent(), /^Quoted from unat · Click a name/);
+  assert.match(await excerptBar.locator("a").getAttribute("href"), /proof\.html\?proof=unat&name=UNat$/);
+  await excerpt.locator(".example-token", { hasText: /^UNat$/ }).first().click();
+  await inspector.locator("#inspect-name").filter({ hasText: /^UNat$/ }).waitFor();
+  assert.deepEqual(await inspector.locator("#inspect-constructors li code").allTextContents(), ["zero : UNat", "succ : UNat -> UNat"]);
+  assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?proof=unat&name=UNat$/);
   console.log("PASS reference excerpts: checked with their module, linked names, the module's workspace link");
   // The reference's REPL bar opens and closes.
   const dockToggle = page.locator(".repl-dock-toggle");
@@ -115,7 +115,7 @@ await browserTest(async ({ browser, base }) => {
   // Any checked example opens in the REPL bar, which shows what it defines.
   await page.goto(new URL("reference/types.html", base).href);
   await page.locator("#values .example-bar .repl-fork").first().click();
-  await page.waitForFunction(() => [...document.querySelectorAll(".repl-dock .repl-result")].some(line => line.textContent === "seven : Nat"));
+  await page.waitForFunction(() => [...document.querySelectorAll(".repl-dock .repl-result")].some(line => line.textContent === "seven : UNat"));
   await enter("evaluate seven");
   assert.deepEqual(await lastResults(1), ["7"]);
   console.log("PASS examples open in the REPL bar with their definitions");
@@ -128,19 +128,19 @@ await browserTest(async ({ browser, base }) => {
   await enter("evaluate exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
   console.log("PASS read-only REPL transcripts fork into the REPL bar");
-  await page.goto(new URL("proof.html?proof=nat", base).href);
+  await page.goto(new URL("proof.html?proof=unat", base).href);
   await page.locator("#read-source .reference").first().waitFor();
-  assert.equal(await page.locator("#proof-title").textContent(), "Library: nat");
+  assert.equal(await page.locator("#proof-title").textContent(), "Library: unat");
   assert.equal(await page.locator("#archive-note").isHidden(), true);
   // The console under a proof has the proof's names loaded.
-  await enter("typeof nat_add_comm;");
+  await enter("typeof unat_add_comm;");
   await enter("let y := add(2, 3);");
   await enter("y");
-  assert.deepEqual(await lastResults(3), ["forall x : Nat. forall y : Nat. x + y = y + x", "y : Nat", "5"]);
+  assert.deepEqual(await lastResults(3), ["forall x : UNat. forall y : UNat. x + y = y + x", "y : UNat", "5"]);
   console.log("PASS library module in the workspace, with its console");
   await page.goto(new URL("repl.html", base).href);
-  for (const text of ["import nat;", "use nat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
-  assert.deepEqual(await lastResults(4), ["x : Nat", "Nat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
+  for (const text of ["import unat;", "use unat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
+  assert.deepEqual(await lastResults(4), ["x : UNat", "UNat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
@@ -159,9 +159,9 @@ await browserTest(async ({ browser, base }) => {
   await page.waitForSelector("#tree details.folder");
   assert.equal(await page.title(), "Cubist · Files");
   assert.deepEqual(await page.locator("#tree > details").evaluateAll(roots => roots.map(root => root.open)), [true, false, false, false]);
-  await page.locator('#tree a[data-path="library/nat.cubist"]').click();
+  await page.locator('#tree a[data-path="library/unat.cubist"]').click();
   await page.waitForFunction(() => document.querySelector("#file-source")?.textContent.includes("inductive"));
-  assert.equal(await page.title(), "nat.cubist · Cubist files");
+  assert.equal(await page.title(), "unat.cubist · Cubist files");
   await page.goBack();
   await page.waitForFunction(() => document.title === "Cubist · Files");
   assert.ok(await page.locator("#file-empty").isVisible());
@@ -182,7 +182,7 @@ await browserTest(async ({ browser, base }) => {
   console.log("PASS Files page: folders, filter, preview, and a documentation example checked in the workspace");
   // The workspace's explorer marks the open file and opens another in its
   // place; closed, it stays closed. Its folders stay as they were left: the
-  // library's is open since nat opened in this tab.
+  // library's is open since unat opened in this tab.
   assert.ok(await page.locator('#explorer-tree a[data-path="docs/examples/h1/winding.cubist"][aria-current]').isVisible());
   assert.ok(await page.locator('#explorer-tree details[data-path="library"]').evaluate(details => details.open));
   await page.locator('#explorer-tree a[data-path="library/lists.cubist"]').click();
@@ -202,12 +202,12 @@ await browserTest(async ({ browser, base }) => {
   await elaboration.locator("summary").click();
   await elaboration.locator(".elaboration-declaration").nth(2).waitFor();
   assert.equal(await elaboration.locator(".elaboration-declaration").count(), 3);
-  assert.match(await elaboration.textContent(), /intro n;\s*⊢ forall n : Nat\. exists m : Nat\. lt\(n, m\)\s*builds fun \(n : Nat\) => \?/);
+  assert.match(await elaboration.textContent(), /intro n;\s*⊢ forall n : UNat\. exists m : UNat\. lt\(n, m\)\s*builds fun \(n : UNat\) => \?/);
   assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel\.html$/);
   // The kernel's check as a THTH-style forward derivation, with comments.
   const derivation = elaboration.locator(".derivation").first();
-  assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ Nat : U0\s*2 SortBegin\(\)/);
-  assert.match(await derivation.textContent(), /\/\/ \{n : Nat\}\s*\d+ CtxExt\(2\)/);
+  assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ UNat : U0\s*2 SortBegin\(\)/);
+  assert.match(await derivation.textContent(), /\/\/ \{n : UNat\}\s*\d+ CtxExt\(2\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
   await page.goto(new URL("kernel.html", base).href);
   assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
@@ -228,7 +228,7 @@ await browserTest(async ({ browser, base }) => {
   const failed = await unavailable.newPage();
   const failureErrors = [];
   failed.on("pageerror", error => failureErrors.push(error.message));
-  const proof = new URL(`proof.html?example=1#source=${Buffer.from("import nat;\ndef x : Unit := tt;").toString("base64url")}`, base).href;
+  const proof = new URL(`proof.html?example=1#source=${Buffer.from("import unat;\ndef x : Unit := tt;").toString("base64url")}`, base).href;
   await failed.goto(proof);
   await failed.waitForFunction(() => document.querySelector("#diagnostic")?.textContent.includes("Build with make wasm."));
   assert.equal(await failed.locator("#check-loader").isHidden(), true);
@@ -243,8 +243,8 @@ await browserTest(async ({ browser, base }) => {
   assert.match(await failed.locator("#source-hint").textContent(), /did not check/);
   assert.ok(await failed.locator("#inspect-empty").isVisible());
   assert.equal(await failed.locator("#kernel-terms").isVisible(), false);
-  await failed.locator('#read-source a.reference[data-name="nat"]').click();
-  await failed.waitForURL("**/proof.html?proof=nat");
+  await failed.locator('#read-source a.reference[data-name="unat"]').click();
+  await failed.waitForURL("**/proof.html?proof=unat");
   await failed.goto(new URL("reference/types.html", base).href);
   await failed.waitForFunction(() => document.querySelector("#values .example-bar")?.textContent.includes("Not checked"));
   // Enhancement is lazy: scroll to start a new request after failure is known.

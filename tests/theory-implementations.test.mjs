@@ -7,7 +7,7 @@ import {checkProgram} from "./check-program.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 
 const module=await createCubical();
-const base=`import nat; import hlevels; use nat;
+const base=`import unat; import hlevels; use unat;
 theory Base(U < UU0) {
   M : set U;
   op(x : M) : M;
@@ -29,9 +29,9 @@ test("inherited operations and laws compute from new fields through both diamond
   for(const parents of ["Twice, Base","Base, Twice"]) {
     const {result}=await checked(t,`${base} ${twice}
       theory Diamond(U < UU0) extends ${parents} {}
-      def sample : Diamond(U0) := Diamond.make(M := Nat, M_is_set := nat_is_set, step := succ);
+      def sample : Diamond(U0) := Diamond.make(M := UNat, M_is_set := unat_is_set, step := succ);
       def shared : sample.twice.base = sample.base { rfl; }
-      def through_parent(x : Nat) : sample.base.op(x) = succ(succ(x)) { rfl; }
+      def through_parent(x : UNat) : sample.base.op(x) = succ(succ(x)) { rfl; }
       print(evaluate(sample.base.op(3)));
       def identity : Diamond.Hom(sample, sample) := Diamond.Hom.id(sample);
       def composed := Diamond.Hom.compose(identity, identity);
@@ -49,21 +49,21 @@ test("implemented operations keep inherited laws as constructor obligations in d
       step(x : M) : M;
       def op(y : M) : M := step(y);
     }
-    def sample : Implemented(U0) := Implemented.make(M := Nat, M_is_set := nat_is_set,
-      step := succ, self := fun (x : Nat) => refl(succ(x)));
-    def through_parent(x : Nat) : sample.base.op(x) = succ(x) { rfl; }
+    def sample : Implemented(U0) := Implemented.make(M := UNat, M_is_set := unat_is_set,
+      step := succ, self := fun (x : UNat) => refl(succ(x)));
+    def through_parent(x : UNat) : sample.base.op(x) = succ(x) { rfl; }
   `);
 });
 
 test("inherited helpers and earlier implementations publish after their dependencies",async t=>{
-  const {result,get}=await checked(t,`import nat; import hlevels; use nat;
+  const {result,get}=await checked(t,`import unat; import hlevels; use unat;
     theory Base(U < UU0) {
       M : set U;
       op(x : M) : M;
       twice_op(x : M) : M;
       law self(x : M) : op(x) = op(x);
       def twice(x : M) : M := op(op(x));
-      def repeat(x : M, n : Nat) : M := match n {
+      def repeat(x : M, n : UNat) : M := match n {
         zero => x;
         succ(k) => op(repeat(x, k));
       };
@@ -76,17 +76,17 @@ test("inherited helpers and earlier implementations publish after their dependen
       def op(x : M) : M := step(x);
     }
     theory Grandchild(U < UU0) extends Implemented {}
-    def inherited_model : Grandchild(U0) := Grandchild.make(M := Nat, M_is_set := nat_is_set, step := succ);
+    def inherited_model : Grandchild(U0) := Grandchild.make(M := UNat, M_is_set := unat_is_set, step := succ);
     def inherited_id := Grandchild.Hom.id(inherited_model);
     print(evaluate(inherited_model.twice(3)));
-    def sample : Implemented(U0) := Implemented.make(M := Nat, M_is_set := nat_is_set, step := succ);
+    def sample : Implemented(U0) := Implemented.make(M := UNat, M_is_set := unat_is_set, step := succ);
     print(evaluate(sample.twice(3)));
     print(evaluate(sample.repeat(3, 2)));
     print(evaluate(sample.own(3)));
-    def self_proof(x : Nat) : succ(x) = succ(x) := sample.self(x);
+    def self_proof(x : UNat) : succ(x) = succ(x) := sample.self(x);
     def identity := Implemented.Hom.id(sample);
     def composed := Implemented.Hom.compose(identity, identity);
-    def preserved(x : Nat) : composed.base.map(sample.twice_op(x)) = sample.twice_op(composed.base.map(x)) := composed.base.map_twice_op(x);
+    def preserved(x : UNat) : composed.base.map(sample.twice_op(x)) = sample.twice_op(composed.base.map(x)) := composed.base.map_twice_op(x);
     def iso := Implemented.Iso.compose(Implemented.Iso.id(sample), Implemented.Iso.id(sample));
     def unchanged : iso.to.base.map(3) = 3 { rfl; }
   `);
@@ -96,16 +96,16 @@ test("inherited helpers and earlier implementations publish after their dependen
 });
 
 test("implementation cycles report the local definition even with an imported parent",async t=>{
-  const parent=`import nat; import hlevels; use nat;
+  const parent=`import unat; import hlevels; use unat;
     theory Base(U < UU0) {
       M : set U;
       op(x : M) : M;
-      def repeat(x : M, n : Nat) : M := match n { zero => op(x); succ(k) => repeat(x, k); };
+      def repeat(x : M, n : UNat) : M := match n { zero => op(x); succ(k) => repeat(x, k); };
     }`;
   const child=`theory Bad(U < UU0) extends Base { def op(x : M) : M := repeat(x, 0); }
     def healthy : Unit := tt;`;
   for(const imported of [false,true]) {
-    const source=(imported?"import fixture; use nat;":parent)+child;
+    const source=(imported?"import fixture; use unat;":parent)+child;
     const library=sourceReader();
     const {get,program}=await checkProgram(t,source,{module,
       reader:(name,importer)=>name==="fixture"?parent:library(name,importer)});
@@ -122,19 +122,19 @@ test("one group inverse implements both quasigroup divisions and all their laws"
 });
 
 test("implemented members retain captured names across modules and derived renaming",async t=>{
-  const {result}=await checked(t,`import fixture; use nat;
-    def advance(n : Nat) : Nat := n;
+  const {result}=await checked(t,`import fixture; use unat;
+    def advance(n : UNat) : UNat := n;
     theory Renamed(U < UU0) extends twice_ : Twice(op := twice) {}
-    def sample : Renamed(U0) := Renamed.make(M := Nat, M_is_set := nat_is_set, value := advance);
-    def definition_is_shared(x : Nat) : sample.twice(x) = sample.twice_.op(x) { rfl; }
+    def sample : Renamed(U0) := Renamed.make(M := UNat, M_is_set := unat_is_set, value := advance);
+    def definition_is_shared(x : UNat) : sample.twice(x) = sample.twice_.op(x) { rfl; }
     print(evaluate(sample.twice(3)));
   `,{
-    fixture:`import nat; import hlevels; use nat;
-      def advance(n : Nat) : Nat := succ(n);
-      theory Base(U < UU0) { M : set U; op(n : Nat) : M; }
+    fixture:`import unat; import hlevels; use unat;
+      def advance(n : UNat) : UNat := succ(n);
+      theory Base(U < UU0) { M : set U; op(n : UNat) : M; }
       theory Twice(U < UU0) extends Base {
-        value(n : Nat) : M;
-        def op(n : Nat) : M := value(advance(n));
+        value(n : UNat) : M;
+        def op(n : UNat) : M := value(advance(n));
       }`,
   });
   assert.equal(result.prints.at(-1).text,"4");

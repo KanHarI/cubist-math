@@ -13,24 +13,24 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 
 const repository = new URL("../", import.meta.url);
-export const traceSource = `import nat; use nat;
+export const traceSource = `import unat; use unat;
 
-def lt(n, m : Nat) : U0 {
-  exact exists k : Nat. succ(k) + n = m;
+def lt(n, m : UNat) : U0 {
+  exact exists k : UNat. succ(k) + n = m;
 }
 
-def lt_succ(n : Nat) : lt(n, succ(n)) {
+def lt_succ(n : UNat) : lt(n, succ(n)) {
   exact (0, refl(succ(n)));
 }
 
-def exists_greater_number : forall n : Nat. exists m : Nat. lt(n, m) {
+def exists_greater_number : forall n : UNat. exists m : UNat. lt(n, m) {
   intro n;
   exact (succ(n), lt_succ(n));
 }
 
-def double(n : Nat) := n + n;
-def twice(n : Nat) := double(n);
-def twice_is_double(n : Nat) : twice(n) = double(n) {
+def double(n : UNat) := n + n;
+def twice(n : UNat) := double(n);
+def twice_is_double(n : UNat) : twice(n) = double(n) {
   rfl;
 }
 
@@ -38,8 +38,8 @@ def product : 12 * 12 = 144 {
   rfl;
 }
 
-def shifted(a, b : Nat) : (a + 0) + b = a + b {
-  rw [nat_add_zero(a)];
+def shifted(a, b : UNat) : (a + 0) + b = a + b {
+  rw [unat_add_zero(a)];
 }
 `;
 

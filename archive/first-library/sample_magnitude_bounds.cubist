@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import sample_magnitude;
 import sample_sum_laws;
 
@@ -6,7 +6,7 @@ def sample_sum_magnitude_bound(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge, radius : C -> C -> C -> F,
-  n : Nat
+  n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
@@ -97,7 +97,7 @@ def sample_magnitude_product(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge, other, radius, otherRadius : C
-  -> C -> C -> F, n : Nat
+  -> C -> C -> F, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
   SampleMagnitudeBounds(C, F, negF, lt, edge, radius, n, vertices, tags)
@@ -270,7 +270,7 @@ def sample_weighted_sum_bound(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), edge, other, weight : C -> C -> C
-  -> F, delta, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
+  -> F, delta, length : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : UNat,
   vertices : SampleVertices(C, n), tags : SampleTags(C, n),
   errors : SampleMagnitudeBounds(
     C, F, negF, lt, edge, (fun (a, b, t : C) => delta), n, vertices, tags

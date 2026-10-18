@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import separable_closed_targets;
 import separable_divisors;
 
@@ -84,7 +84,7 @@ def separable_elements_enlarge_base(
     let result :=
       distinct_splitting_divisor(T, closed, n, P, nonzeroP, splitting, Q, nonzeroQ, divides);
     exact transport result along cong(natural_predecessor, polynomial_map_cutoff(R, T, j, q)) in (
-      (fun (m : Nat) => Mere(DistinctPolynomialSplitting(T, Q, m)))
+      (fun (m : UNat) => Mere(DistinctPolynomialSplitting(T, Q, m)))
     );
   }
   exact mere_eliminate(

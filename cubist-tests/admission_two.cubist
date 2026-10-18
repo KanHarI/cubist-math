@@ -2,10 +2,10 @@
 // instruction driver watched: Define admits each, a tactic's check is
 // derived as the tactic runs, and every definition derives again from
 // nothing.
-import nat;
-use nat;
+import unat;
+use unat;
 
-def two : Nat {
+def two : UNat {
   exact 2;
 }
 

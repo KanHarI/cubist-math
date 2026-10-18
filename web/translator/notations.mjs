@@ -21,16 +21,16 @@ export const unboundNegation = selection =>
 
 // A literal no selected notation reads, one its parser refuses, and one
 // whose parse does not evaluate to an answer (L2.10c). A binary literal's
-// notation is the archive's binary (binary_naturals).
+// notation is the public nat view (import nat).
 export const literalUnread = (selection, text) => {
   const binary = /^0b/.test(text);
   if (!selection?.complete) return binary
-    ? Error(`${text} is a binary literal, which a selected notation's literal rule reads, as the archive's binary.(${text}).`)
+    ? Error(`${text} is a binary literal, which a selected notation's literal rule reads, as nat.(${text}).`)
     : Error(`${text} is a literal that a selected notation's literal rule reads, as rationals.(${text}).`);
   if (/^[0-9]+$/.test(text))
     return Error(`${selection.name}'s notation reads no numeral ${text}: write nat.(${text}) for a natural number, or select a notation that reads it.`);
   return binary
-    ? Error(`${selection.name}'s notation reads no binary literal ${text}: select one whose literal rule reads it, as the archive's binary.(${text}).`)
+    ? Error(`${selection.name}'s notation reads no binary literal ${text}: select one whose literal rule reads it, as nat.(${text}).`)
     : Error(`${selection.name}'s notation reads no literal ${text}: select a notation whose literal rule reads it, as rationals.(${text}).`);
 };
 export const literalRefused = (selection, text, position) =>

@@ -3,8 +3,8 @@
 // T2, directly and through a definition: since H1's release, no result that
 // uses a declared type carries the marker (the specification's 6.4).
 
-import nat;
-use nat;
+import unat;
+use unat;
 
 inductive N {
   zero;
@@ -26,7 +26,7 @@ def one_two : List(U0, N) := cons(succ(zero), cons(two, nil));
 
 computable def counted : N := two;
 
-def plain : Nat := 2;
+def plain : UNat := 2;
 
 // Types print by name.
 // Output: N

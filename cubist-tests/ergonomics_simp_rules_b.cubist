@@ -1,11 +1,11 @@
 // From tests/proof-ergonomics.test.mjs: Imported simp registrations are
-// scoped: nat_add_zero by default at priority 7, and as units.
+// scoped: unat_add_zero by default at priority 7, and as units.
 import primes;
-use nat;
+use unat;
 
-simp_rule nat_add_zero priority 7;
-simp_set units := [nat_add_zero];
+simp_rule unat_add_zero priority 7;
+simp_set units := [unat_add_zero];
 
-def registered(n : Nat) : n + 0 = n {
+def registered(n : UNat) : n + 0 = n {
   simp;
 }

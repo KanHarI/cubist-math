@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import finite_basis_search;
-use nat;
+use unat;
 
 // A finite free vector space is projective: lift its generators through a
 // surjection and extend linearly. The result is truncated; finite recursion
 // needs no axiom of choice.
 def FiniteLinearLift(
-  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : UNat,
   h : LinearMap(K, CoordinateSpace(K, m), W)
 ) :=
   exists lift_ : LinearMap(K, CoordinateSpace(K, m), V). forall v : Fin(m) -> af_carrier(K).
@@ -15,8 +15,8 @@ def FiniteLinearLift(
   );
 
 def linear_first_tail(
-  K : AlgebraicField, W : VectorSpace(K), m : Nat, h : LinearMap(K, CoordinateSpace(K, succ(m)), W),
-  v : Fin(succ(m)) -> af_carrier(K)
+  K : AlgebraicField, W : VectorSpace(K), m : UNat,
+  h : LinearMap(K, CoordinateSpace(K, succ(m)), W), v : Fin(succ(m)) -> af_carrier(K)
 ) :
   linear_map(K, CoordinateSpace(K, succ(m)), W, h, v) = vector_add(
     K, W,
@@ -47,7 +47,7 @@ def linear_first_tail(
 }
 
 def finite_linear_lift_assemble(
-  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : Nat,
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), m : UNat,
   h : LinearMap(K, CoordinateSpace(K, succ(m)), W), x : vector_carrier(K, V),
   first : linear_map(K, V, W, f, x) = linear_map(
     K, CoordinateSpace(K, succ(m)), W, h, coordinate_first(K, m)
@@ -123,7 +123,7 @@ def finite_linear_lift_zero(
 
 def finite_linear_lift_step(
   K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
-  onto : LinearSurjective(K, V, W, f), m : Nat,
+  onto : LinearSurjective(K, V, W, f), m : UNat,
   previous : (
     forall h : LinearMap(K, CoordinateSpace(K, m), W). Mere(FiniteLinearLift(K, V, W, f, m, h))
   ), h : LinearMap(K, CoordinateSpace(K, succ(m)), W)
@@ -152,7 +152,7 @@ def finite_linear_lift_step(
 
 def finite_linear_lift(
   K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W),
-  onto : LinearSurjective(K, V, W, f), m : Nat
+  onto : LinearSurjective(K, V, W, f), m : UNat
 ) :=
   induction m as k return (
     forall h : LinearMap(K, CoordinateSpace(K, k), W). Mere(FiniteLinearLift(K, V, W, f, k, h))
@@ -164,7 +164,7 @@ def finite_linear_lift(
   };
 
 def coordinate_surjection_bound(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, f : LinearMap(K, CoordinateSpace(K, n), V),
   onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
 ) :
   NoIndependent(K, V, succ(n)) {
@@ -189,7 +189,7 @@ def coordinate_surjection_bound(
 }
 
 def finite_dimensional_coordinate_surjection(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, f : LinearMap(K, CoordinateSpace(K, n), V),
   onto : LinearSurjective(K, CoordinateSpace(K, n), V, f)
 ) :
   FiniteDimensional(K, V) {

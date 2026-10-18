@@ -1,23 +1,23 @@
-import nat;
+import unat;
 import radix_naturals;
 import paths_;
-use nat;
+use unat;
 
 // Increment either produces the next digit or certifies that the old digit
 // was the maximum. This is constructive, with no decidability axiom.
-def RadixDigitStepLaw(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :=
+def RadixDigitStepLaw(n : UNat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :=
   match result return U0 {
     left next_ => radix_digit_value(n, next_) = succ(radix_digit_value(n, d));
     right carry => succ(radix_digit_value(n, d)) = n;
   };
 
-def radix_digit_lift_step(n : Nat, result : RadixDigit(n) or Unit) :=
+def radix_digit_lift_step(n : UNat, result : RadixDigit(n) or Unit) :=
   match result return (RadixDigit(succ(n)) or Unit) {
     left next_ => left(radix_digit_weaken(n, next_));
     right carry => left(radix_digit_top(n));
   };
 
-def radix_digit_lift_law(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :
+def radix_digit_lift_law(n : UNat, d : RadixDigit(n), result : RadixDigit(n) or Unit) :
   RadixDigitStepLaw(n, d, result)
   -> RadixDigitStepLaw(succ(n), radix_digit_weaken(n, d), radix_digit_lift_step(n, result)) {
   exact match result as r return (
@@ -29,7 +29,7 @@ def radix_digit_lift_law(n : Nat, d : RadixDigit(n), result : RadixDigit(n) or U
   };
 }
 
-def radix_digit_succ_law(n : Nat) :
+def radix_digit_succ_law(n : UNat) :
   forall d : RadixDigit(n). RadixDigitStepLaw(n, d, radix_digit_succ(n, d)) {
   exact induction n as k return (
     forall d : RadixDigit(k). RadixDigitStepLaw(k, d, radix_digit_succ(k, d))
@@ -44,7 +44,7 @@ def radix_digit_succ_law(n : Nat) :
   };
 }
 
-def radix_digit_zero_value(n : Nat) : radix_digit_value(succ(n), radix_digit_zero(n)) = 0 {
+def radix_digit_zero_value(n : UNat) : radix_digit_value(succ(n), radix_digit_zero(n)) = 0 {
   exact induction n as k return (radix_digit_value(succ(k), radix_digit_zero(k)) = 0) {
     zero => refl(0);
     succ previous => previous;

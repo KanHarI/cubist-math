@@ -2,7 +2,7 @@
 // checks as written; later milestones must keep it checking.
 import primes;
 import paths_;
-use nat;
+use unat;
 
 // Sigma extensionality: the second component is a PathP over the first.
 def sigma_line(
@@ -15,14 +15,14 @@ def sigma_line(
 
 // Rewriting in a dependent position: the dependent argument follows its
 // transport filler. One line, no composition.
-def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat. B(a) -> R), n : Nat, v : B(n + 0)) :
-  f(n + 0, v) = f(n, transport(B, n + 0, n, nat_add_zero(n), v)) {
-  exact path i => f(nat_add_zero(n) @ i, fill(fun (j : Interval) => B(nat_add_zero(n) @ j), v, i));
+def filler_rewrite(B : UNat -> U0, R : U0, f : (forall a : UNat. B(a) -> R), n : UNat, v : B(n + 0)) :
+  f(n + 0, v) = f(n, transport(B, n + 0, n, unat_add_zero(n), v)) {
+  exact path i => f(unat_add_zero(n) @ i, fill(fun (j : Interval) => B(unat_add_zero(n) @ j), v, i));
 }
 
 // Several positions rewritten at once.
-def multi_hole(g : Nat -> Nat -> Nat, n, m : Nat) : g(n + 0, m + 0) = g(n, m) {
-  exact path i => g(nat_add_zero(n) @ i, nat_add_zero(m) @ i);
+def multi_hole(g : UNat -> UNat -> UNat, n, m : UNat) : g(n + 0, m + 0) = g(n, m) {
+  exact path i => g(unat_add_zero(n) @ i, unat_add_zero(m) @ i);
 }
 
 // l = r rebuilt from l = l2, r = r2 and l2 = r2 by one composition.
@@ -76,6 +76,6 @@ def ordered_fillers(
   );
 
 // An imported constructor is an ordinary function for congruence search.
-def under_succ(n : Nat) : succ(n + 0) = succ(n) {
-  simp only [nat_add_zero];
+def under_succ(n : UNat) : succ(n + 0) = succ(n) {
+  simp only [unat_add_zero];
 }

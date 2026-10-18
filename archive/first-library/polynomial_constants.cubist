@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import polynomial_leading;
 
 def polynomial_constant_mul(K : AlgebraicField, a, b : af_carrier(K)) :
@@ -6,7 +6,7 @@ def polynomial_constant_mul(K : AlgebraicField, a, b : af_carrier(K)) :
     K, polynomial_constant(K, a), polynomial_constant(K, b)
   ) {
   let coefficient :
-    forall n : Nat.
+    forall n : UNat.
     polynomial_coefficients(K, polynomial_constant(K, field_mul(K, a, b)), n) = polynomial_coefficients(
       K, polynomial_mul(K, polynomial_constant(K, a), polynomial_constant(K, b)), n
     ) {
@@ -31,7 +31,7 @@ def polynomial_constant_mul(K : AlgebraicField, a, b : af_carrier(K)) :
 def polynomial_constant_neg(K : AlgebraicField, a : af_carrier(K)) :
   polynomial_constant(K, field_neg(K, a)) = polynomial_neg(K, polynomial_constant(K, a)) {
   let coefficient :
-    forall n : Nat. series_constant(K, field_neg(K, a), n) = field_neg(K, series_constant(K, a, n)) {
+    forall n : UNat. series_constant(K, field_neg(K, a), n) = field_neg(K, series_constant(K, a, n)) {
     intro n;
     exact induction n as k return (
       series_constant(K, field_neg(K, a), k) = field_neg(K, series_constant(K, a, k))

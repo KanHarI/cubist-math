@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import basis_generators;
 import simple_algebraic_extensions;
 import algebraic_base_change;
-use nat;
+use unat;
 
 // The list need not be independent or a primitive-element presentation.
 def FieldGeneratedBy(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, generators : Fin(n) -> af_carrier(L)
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : UNat, generators : Fin(n) -> af_carrier(L)
 ) :=
   forall S : Subfield(L).
   (forall a : af_carrier(K). subfield_members(L, S, field_embedding_map(K, L, e, a)))
@@ -14,7 +14,7 @@ def FieldGeneratedBy(
   subfield_members(L, S, y);
 
 def finite_basis_generates_field(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : UNat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n)
 ) :
   FieldGeneratedBy(K, L, e, n, basis_columns(K, field_vector_space(K, L, e), n, basis)) {
@@ -65,7 +65,7 @@ def field_generated_empty_surjective(
 // After adjoining the first generator, the tail generates over the new base.
 def field_generated_adjoin_tail(
   K, R, L : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
-  e : FieldEmbedding(K, L), triangle : EmbeddingOverLaw(K, R, i, L, e, h), n : Nat,
+  e : FieldEmbedding(K, L), triangle : EmbeddingOverLaw(K, R, i, L, e, h), n : UNat,
   generators : Fin(succ(n)) -> af_carrier(L),
   generates : FieldGeneratedBy(K, L, e, succ(n), generators), r : af_carrier(R),
   first : field_embedding_map(R, L, h, r) = finite_head(af_carrier(L), n, generators)
@@ -93,7 +93,7 @@ def field_generated_adjoin_tail(
 }
 
 def generated_field_generators(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat, roots : Fin(n) -> af_carrier(L),
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : UNat, roots : Fin(n) -> af_carrier(L),
   generates : (
     forall y : af_carrier(L). GeneratedField(L, RootFieldGenerators(K, L, e, n, roots), y)
   )

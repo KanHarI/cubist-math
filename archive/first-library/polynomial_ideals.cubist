@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import polynomial_division_unique;
 
 // Ideals are proposition-valued subsets, with explicit closure evidence.
@@ -102,7 +102,7 @@ def ideal_minimal_divides(
         polynomial_cutoff(K, g), polynomial_cutoff(K, r), d, minimal(r, memberR, nr),
         polynomial_cutoff_least(K, r, d, support)
       );
-      exact successor_not_le_self(d, transport below along degree in ((fun (n : Nat) => le(n, d))));
+      exact successor_not_le_self(d, transport below along degree in ((fun (n : UNat) => le(n, d))));
     }
     exact double_negation(
       r = polynomial_zero(K), polynomial_set(K, r, polynomial_zero(K)), impossible
@@ -132,7 +132,7 @@ def IdealPrincipalGenerator(K : AlgebraicField, I : PolynomialIdeal(K)) :=
   exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)
   and (forall p : Polynomial(K). polynomial_ideal_members(K, I, p) -> PolynomialDivides(K, g, p));
 
-def IdealCutoffWitness(K : AlgebraicField, I : PolynomialIdeal(K), n : Nat) :=
+def IdealCutoffWitness(K : AlgebraicField, I : PolynomialIdeal(K), n : UNat) :=
   exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)
   and (polynomial_cutoff(K, g) = n);
 
@@ -145,10 +145,10 @@ def polynomial_ideal_principal(
   )
 ) :
   Mere(IdealPrincipalGenerator(K, I)) {
-  let P := fun (n : Nat) => Mere(IdealCutoffWitness(K, I, n));
+  let P := fun (n : UNat) => Mere(IdealCutoffWitness(K, I, n));
   let candidate :
     (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g))
-    -> (exists n : Nat. P(n)) {
+    -> (exists n : UNat. P(n)) {
     intro witness_;
     obtain (g, member, nonzero) := witness_;
     exact (
@@ -163,10 +163,10 @@ def polynomial_ideal_principal(
     );
   }
   let minima := natural_minimum(
-    P, (fun (n : Nat) => mere_is_prop(IdealCutoffWitness(K, I, n))),
+    P, (fun (n : UNat) => mere_is_prop(IdealCutoffWitness(K, I, n))),
     mere_map(
       (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
-      (exists n : Nat. P(n)), candidate, inhabited
+      (exists n : UNat. P(n)), candidate, inhabited
     )
   );
   obtain (n, pn, least) := minima;
@@ -181,7 +181,7 @@ def polynomial_ideal_principal(
       let candidateR := merely(
         IdealCutoffWitness(K, I, cr), typed(IdealCutoffWitness(K, I, cr), (r, mr, nr, refl(cr)))
       );
-      exact transport least(cr, candidateR) along sym(same) in ((fun (k : Nat) => le(k, cr)));
+      exact transport least(cr, candidateR) along sym(same) in ((fun (k : UNat) => le(k, cr)));
     }
     exact (g, member, nonzero, ideal_minimal_divides(K, I, g, member, nonzero, minimal));
   }

@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import artin_degree;
-use nat;
+use unat;
 
 def embedding_evaluation_add_at(
   F : AlgebraicField, map_ : FieldEmbedding(F, F), x, y : af_carrier(F)
@@ -13,7 +13,7 @@ def embedding_evaluation_add_at(
 }
 
 def embedding_evaluation_add(
-  F : AlgebraicField, k : Nat, maps : Fin(k) -> FieldEmbedding(F, F), x, y : af_carrier(F)
+  F : AlgebraicField, k : UNat, maps : Fin(k) -> FieldEmbedding(F, F), x, y : af_carrier(F)
 ) :
   embedding_evaluation_vector(F, F, k, maps, field_add(F, x, y)) = vector_add(
     F, CoordinateSpace(F, k), embedding_evaluation_vector(F, F, k, maps, x),
@@ -40,7 +40,7 @@ def embedding_evaluation_scale_at(
 }
 
 def embedding_evaluation_scale(
-  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : UNat, maps : Fin(k) -> FieldEmbedding(F, F),
   over_ : forall t : Fin(k). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
@@ -60,18 +60,18 @@ def embedding_evaluation_zero_at(F : AlgebraicField, map_ : FieldEmbedding(F, F)
   exact zero;
 }
 
-def embedding_evaluation_zero(F : AlgebraicField, k : Nat, maps : Fin(k) -> FieldEmbedding(F, F)) :
+def embedding_evaluation_zero(F : AlgebraicField, k : UNat, maps : Fin(k) -> FieldEmbedding(F, F)) :
   embedding_evaluation_vector(F, F, k, maps, field_zero(F)) = vector_zero(F, CoordinateSpace(F, k)) {
   ext t;
   exact embedding_evaluation_zero_at(F, maps(t));
 }
 
 def embedding_evaluation_combination_step(
-  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : UNat, maps : Fin(k) -> FieldEmbedding(F, F),
   over_ : forall t : Fin(k). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
-  ), m : Nat, previous : forall points : Fin(m) -> af_carrier(F).
+  ), m : UNat, previous : forall points : Fin(m) -> af_carrier(F).
   forall coefficients : Fin(m) -> af_carrier(R).
   embedding_evaluation_vector(
     F, F, k, maps, linear_combination(R, field_vector_space(R, F, e), m, points, coefficients)
@@ -118,11 +118,11 @@ def embedding_evaluation_combination_step(
 }
 
 def embedding_evaluation_combination(
-  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : Nat, maps : Fin(k) -> FieldEmbedding(F, F),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), k : UNat, maps : Fin(k) -> FieldEmbedding(F, F),
   over_ : forall t : Fin(k). forall a : af_carrier(R).
   field_embedding_map(F, F, maps(t), field_embedding_map(R, F, e, a)) = field_embedding_map(
     R, F, e, a
-  ), m : Nat
+  ), m : UNat
 ) :=
   induction m as j return (
     forall points : Fin(j) -> af_carrier(F). forall coefficients : Fin(j) -> af_carrier(R).
@@ -144,7 +144,7 @@ def embedding_evaluation_combination(
 // vector annihilating the evaluations of an R-spanning n-family. R-linearity
 // extends that relation to every element, contradicting Dedekind independence.
 def finite_spanning_embeddings_upper_bound(
-  R, F : AlgebraicField, e : FieldEmbedding(R, F), n : Nat, points : Fin(n) -> af_carrier(F),
+  R, F : AlgebraicField, e : FieldEmbedding(R, F), n : UNat, points : Fin(n) -> af_carrier(F),
   spanning : FiniteSpanningFamily(R, field_vector_space(R, F, e), n, points), maps : Fin(succ(n))
   -> FieldEmbedding(F, F), distinct : PairwiseDistinctEmbeddings(F, F, succ(n), maps),
   over_ : forall t : Fin(succ(n)). forall a : af_carrier(R).

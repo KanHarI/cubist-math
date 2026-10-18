@@ -161,7 +161,7 @@ computable def bnat_lt_succ(n : BNat) : bnat_lt(n, bnat_succ(n)) := bnat_lt_from
   n, bnat_succ(n),
   comp(
     fun (i : Interval) => isLt(bnat_to_unat(n), bnat_decode_succ(n) @ ~i),
-    nat_le_refl(bnat_to_unat(n))
+    unat_le_refl(bnat_to_unat(n))
   )
 );
 

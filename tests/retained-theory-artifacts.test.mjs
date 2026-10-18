@@ -18,7 +18,7 @@ import {LexicalContext,bindingResolution} from "../web/cubist/bindings.mjs";
 const module=await create();
 async function setup(t,header="def T(U < UU0) : Unit := tt;",base="") {
   const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
-  assert.deepEqual((await program.check(`inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); }
+  assert.deepEqual((await program.check(`inductive Two { left_; right_; } inductive UNat { zero; succ(n : UNat); }
     def Index : U0 := Two; def IsSet(U < UU0, A : U) : U := forall x, y : A. forall p, q : x = y. p = q;
     ${base}`,"base")).gaps,[]);
   const registry=program.compilationBindings,table=registry.table,env=program.modules.get("base");
@@ -136,7 +136,7 @@ const retainedLast=built=>built.record.fields.at(-1);
 test("generated structural self calls keep the fixed model and explicit parameter interface",async t=>{
   const {add,build,check}=await setup(t);
   add("def M : U := Unit;","sort");add("def c : M := tt;");
-  add("def count(n : Nat, x : M) : M := match n { zero => x; succ(k) => count(k, x); };","derived",{self:true});
+  add("def count(n : UNat, x : M) : M := match n { zero => x; succ(k) => count(k, x); };","derived",{self:true});
   const {result,equal}=check(build(),`
     def instance_ : T(U0) := T.make(M := Two, c := left_);
     def value : Two := T.count(instance_, n := succ(zero), x := right_);
@@ -271,7 +271,7 @@ test("the retained law predicate rejects data and recursive helper dependencies 
   assert.throws(()=>retain("theory T(U < UU0) { M : U; c : M; law invalid : c = c; }"),/has no h-level/);
   for(const reference of ["recurse_","recurse_(zero)"])
     assert.throws(()=>retain(`theory T(U < UU0) { M : set U;
-      def recurse_(n : Nat) : M := match n { zero => recurse_(zero); succ(k) => recurse_(k); };
+      def recurse_(n : UNat) : M := match n { zero => recurse_(zero); succ(k) => recurse_(k); };
       law invalid : ${reference} = ${reference}; }`),/recursive, and a field's type cannot unfold it/);
 });
 
@@ -541,38 +541,38 @@ test("universe and term header correspondence preserve anonymous positions indep
 
 const operandModels=`
   theory Numerals(U < UU0) {
-    M : U; one : Nat; ghost : Nat; read(n : Nat) : M;
-    def numeral_(n : Nat) : M := read(n) notation numeral;
+    M : U; one : UNat; ghost : UNat; read(n : UNat) : M;
+    def numeral_(n : UNat) : M := read(n) notation numeral;
   }
-  def recipe : Numerals(U0) := Numerals.make(Nat, succ(zero), succ(zero), fun (n : Nat) => n);
-  def shifted : Numerals(U0) := Numerals.make(Nat, succ(zero), succ(zero), fun (n : Nat) => succ(n));
+  def recipe : Numerals(U0) := Numerals.make(UNat, succ(zero), succ(zero), fun (n : UNat) => n);
+  def shifted : Numerals(U0) := Numerals.make(UNat, succ(zero), succ(zero), fun (n : UNat) => succ(n));
   def original : Numerals(U0) := recipe;
 `;
 
 test("retained operand recipes keep declaration receivers and caller operand bindings",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const built=buildSource(`theory Power(U < UU0) {
-    M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+    M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n);
   }`);
   const snapshot=JSON.stringify(built.record);
   assert.doesNotThrow(()=>snapshotSyntax(built.declarations));
   const {result,equal}=check(built,`
-    def chosen : Power(U0) := Power.make(Nat, fun (x, n : Nat) => n);
-    def value(recipe : Numerals(U0)) : Nat := chosen.(zero ^ 0);
-    def local_operand(one : Nat) : Nat := chosen.(zero ^ one);
+    def chosen : Power(U0) := Power.make(UNat, fun (x, n : UNat) => n);
+    def value(recipe : Numerals(U0)) : UNat := chosen.(zero ^ 0);
+    def local_operand(one : UNat) : UNat := chosen.(zero ^ one);
     def intended : value(shifted) = zero := refl(zero);
     def wrong : value(shifted) = succ(zero) := refl(succ(zero));
-    def unbound : Nat := chosen.(zero ^ ghost);
+    def unbound : UNat := chosen.(zero ^ ghost);
   `,"def recipe : Numerals(U0) := shifted;");
   assert.deepEqual(failures(result).map(([name])=>name),["wrong","unbound"],JSON.stringify(failures(result)));
   assert.equal(equal("value","fun (recipe : Numerals(U0)) => zero"),true);
-  assert.equal(equal("local_operand","fun (one : Nat) => one"),true);
+  assert.equal(equal("local_operand","fun (one : UNat) => one"),true);
   assert.equal(JSON.stringify(built.record),snapshot,"opening instantiates recipes without changing their canonical source");
 });
 
 test("operand receivers require a complete source selection namespace and retain missing names until use",async t=>{
   const {retain,inputs}=await setup(t,undefined,operandModels);
-  const theory=`theory Power(U < UU0) { M : U; pow(x : M, n : Nat) : M notation x ^ absent.(n); }`;
+  const theory=`theory Power(U < UU0) { M : U; pow(x : M, n : UNat) : M notation x ^ absent.(n); }`;
   const missing=retain(theory).notationBindings["^"].recipe.right.tree;
   assert.deepEqual(missing.resolution,{tag:"missing",label:"absent"});
   assert.equal(missing.origin.start,theory.indexOf("absent"));
@@ -584,7 +584,7 @@ test("operand receivers require a complete source selection namespace and retain
 test("standalone named notation takes precedence over model receivers and later binders",async t=>{
   for(const model of [false,true])await t.test(model?"same-named model":"notation only",async t=>{
     const {retain,inputs,retained}=await setup(t,undefined,`
-      notation recipe { numeral(n : Nat) := n; }
+      notation recipe { numeral(n : UNat) := n; }
       ${model?operandModels:""}
     `);
     const inventory=inputs.context.notations();
@@ -594,42 +594,42 @@ test("standalone named notation takes precedence over model receivers and later 
     for(const context of [inputs.context,new LexicalContext(JSON.parse(JSON.stringify(inputs.context.snapshot())))]) {
       for(const header of ["",", recipe : Unit"])
         assert.doesNotThrow(()=>retain(`theory Power(U < UU0${header}) {
-          M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+          M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n);
         }`,{context}));
     }
-    assert.doesNotThrow(()=>retained.retain(parse("def value(x : Nat) : Nat { use recipe; exact x; }").declarations[0],
+    assert.doesNotThrow(()=>retained.retain(parse("def value(x : UNat) : UNat { use recipe; exact x; }").declarations[0],
       {kind:"derived"}));
   });
 });
 
 test("explicit parent scopes precede module named notation while use keeps its ordinary selection namespace",async t=>{
-  const {buildSource,check,retained}=await setup(t,undefined,"notation p { numeral(n : Nat) := n; }");
+  const {buildSource,check,retained}=await setup(t,undefined,"notation p { numeral(n : UNat) := n; }");
   const parent=buildSource("theory Parent(U < UU0) { M : U; x : M; }");
   const child=buildSource("theory Child(U < UU0) extends p : Parent(M := Carrier) { N : U; f(a : p.(M)) : N; }");
   const {result}=check({declarations:[...parent.declarations,...child.declarations]},`
-    def intended : Child(U0) := Child.make(Nat, zero, Two, fun (a : Nat) => left_);
-    def wrong : Child(U0) := Child.make(Nat, zero, Two, fun (a : Two) => a);
+    def intended : Child(U0) := Child.make(UNat, zero, Two, fun (a : UNat) => left_);
+    def wrong : Child(U0) := Child.make(UNat, zero, Two, fun (a : Two) => a);
   `);
   assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
-  assert.doesNotThrow(()=>retained.retain(parse("def value(x : Nat) : Nat { use p; exact x; }").declarations[0],
+  assert.doesNotThrow(()=>retained.retain(parse("def value(x : UNat) : UNat { use p; exact x; }").declarations[0],
     {kind:"derived"}));
 });
 
 test("model notation extensions follow that model's identity, not a later same-named receiver",async t=>{
   const {retain,buildSource,check,inputs}=await setup(t,undefined,`
     ${operandModels}
-    notation recipe { numeral(n : Nat) := succ(n); }
+    notation recipe { numeral(n : UNat) := succ(n); }
   `);
   assert.equal(inputs.context.notations()[0].model.id,inputs.context.lookup("recipe").id);
   assert.doesNotThrow(()=>retain(`theory Original(U < UU0) {
-    M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+    M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n);
   }`));
   const built=buildSource(`theory Power(U < UU0, recipe : Numerals(U0)) {
-    M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+    M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n);
   }`);
   const {result,equal}=check(built,`
-    def chosen : Power(U0, original) := Power.make(original, Nat, fun (x, n : Nat) => n);
-    def value : Nat := chosen.(zero ^ 0);
+    def chosen : Power(U0, original) := Power.make(original, UNat, fun (x, n : UNat) => n);
+    def value : UNat := chosen.(zero ^ 0);
     def intended : value = zero := refl(zero);
     def wrong : value = succ(zero) := refl(succ(zero));
   `);
@@ -640,10 +640,10 @@ test("model notation extensions follow that model's identity, not a later same-n
 test("both producers honor operand views on family notation",async t=>{
   const {program,buildSource,check}=await setup(t,undefined,operandModels);
   const theory=`theory Order(U < UU0) {
-    M : U; le(x : M, n : Nat) : U notation x <= shifted.(n);
+    M : U; le(x : M, n : UNat) : U notation x <= shifted.(n);
   }`;
   const client=`
-    def ord : Order(U0) := Order.make(Two, fun (x : Two, n : Nat) => n = succ(zero));
+    def ord : Order(U0) := Order.make(Two, fun (x : Two, n : UNat) => n = succ(zero));
     def viewed : ord.(left_ <= 0) := refl(succ(zero));
     def wrong : ord.(left_ <= 0) := refl(zero);
   `;
@@ -656,10 +656,10 @@ test("both producers honor operand views on family notation",async t=>{
 test("retained operand receivers cannot record their source offsets as client references",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const built=buildSource(`theory Power(U < UU0) {
-    inner : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ inner.(n);
+    inner : Numerals(U0); M : U; pow(x : M, n : UNat) : M notation x ^ inner.(n);
   }`);
-  const client=`def chosen : Power(U0) := Power.make(shifted, Nat, fun (x, n : Nat) => n);
-    def value : Nat := chosen.(zero ^ zero);`;
+  const client=`def chosen : Power(U0) := Power.make(shifted, UNat, fun (x, n : UNat) => n);
+    def value : UNat := chosen.(zero ^ zero);`;
   const references=[];let declaration;
   const {result,equal}=check(built,client,"",{onDeclarationStart:node=>{declaration=node.name.text;},
     onReference:node=>{if(declaration==="value")references.push(node);}});
@@ -676,14 +676,14 @@ test("retained operand recipes instantiate the selected model's header and field
     const header=location==="header"?", recipe : Numerals(U0)":"";
     const field=location==="field"?"recipe : Numerals(U0);":"";
     const built=buildSource(`theory Power(U < UU0${header}) {
-      ${field} M : U; pow(recipe : M, n : Nat) : M notation recipe ^ recipe.(n);
+      ${field} M : U; pow(recipe : M, n : UNat) : M notation recipe ^ recipe.(n);
     }`);
     const model=arg=>location==="header"?`Power(U0, ${arg})`:"Power(U0)";
     const {result,equal}=check(built,`
-      def plain : ${model("original")} := Power.make(original, Nat, fun (x, n : Nat) => n);
-      def raised : ${model("shifted")} := Power.make(shifted, Nat, fun (x, n : Nat) => n);
-      def plain_value(recipe : Numerals(U0)) : Nat := plain.(zero ^ 0);
-      def raised_value(recipe : Numerals(U0)) : Nat := raised.(zero ^ 0);
+      def plain : ${model("original")} := Power.make(original, UNat, fun (x, n : UNat) => n);
+      def raised : ${model("shifted")} := Power.make(shifted, UNat, fun (x, n : UNat) => n);
+      def plain_value(recipe : Numerals(U0)) : UNat := plain.(zero ^ 0);
+      def raised_value(recipe : Numerals(U0)) : UNat := raised.(zero ^ 0);
       def intended : plain_value(shifted) = zero := refl(zero);
       def shifted_value : raised_value(original) = succ(zero) := refl(succ(zero));
       def wrong : raised_value(original) = zero := refl(zero);
@@ -752,8 +752,8 @@ test("a derived operation's own notation retains structural self through inherit
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const base=buildSource(`theory Iterate(U < UU0) {
     M : U;
-    def count(n : Nat, x : M) : M := match n { zero => x; succ(k) => k + x; } notation recipe.(n) + x;
-    def call(n : Nat, x : M) : M := n + x;
+    def count(n : UNat, x : M) : M := match n { zero => x; succ(k) => k + x; } notation recipe.(n) + x;
+    def call(n : UNat, x : M) : M := n + x;
   }`);
   const recursive=base.record.derived.find(entry=>entry.label==="count");
   assert.equal(recursive.recursive,true);
@@ -765,7 +765,7 @@ test("a derived operation's own notation retains structural self through inherit
     def through_helper : Two := chosen.call(succ(zero), right_);
     def intended : value = right_ := refl(right_);
     def wrong : value = left_ := refl(left_);
-  `,"def count(n : Nat, x : Two) : Two := left_;");
+  `,"def count(n : UNat, x : Two) : Two := left_;");
   assert.deepEqual(failures(result).map(([name])=>name),["wrong"],JSON.stringify(failures(result)));
   for(const name of ["value","through_helper"]) {
     assert.equal(equal(name,"right_"),true);assert.equal(equal(name,"left_"),false);
@@ -778,7 +778,7 @@ test("recursive operand scopes check their receivers and cannot make a non-struc
     const invalidReceiver=variant==="invalid receiver",receiver=invalidReceiver?"bad":"recipe";
     const built=buildSource(`theory Refused(U < UU0) {
       M : U; ${invalidReceiver?"bad : Unit;":""}
-      def count(n : Nat, x : M) : M := match n {
+      def count(n : UNat, x : M) : M := match n {
         zero => x; succ(k) => ${invalidReceiver?"k":"succ(k)"} + x;
       } notation ${receiver}.(n) + x;
     }`);
@@ -794,9 +794,9 @@ test("recursive operand scopes check their receivers and cannot make a non-struc
 test("source operand recipes retain their field receiver and never open labels over operands",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const base=buildSource(`theory Power(U < UU0) {
-    recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
-    def apply(recipe : Unit, x : M, n : Nat) : M := x ^ n;
-    def local_operand(x : M, one : Nat) : M := x ^ one;
+    recipe : Numerals(U0); M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n);
+    def apply(recipe : Unit, x : M, n : UNat) : M := x ^ n;
+    def local_operand(x : M, one : UNat) : M := x ^ one;
     def literal_operand(x : M) : M := x ^ original.(0);
     def unbound(x : M) : M := x ^ ghost;
   }`);
@@ -804,10 +804,10 @@ test("source operand recipes retain their field receiver and never open labels o
   const helper=child.record.derived.find(entry=>entry.label==="apply"),receiver=child.record.fields.find(entry=>entry.label==="reader");
   assert.ok(bindingUses(helper.syntax).some(use=>use.id===receiver.id));
   const {result,equal}=check({declarations:[...base.declarations,...child.declarations]},`
-    def chosen : Child(U0) := Child.make(original, Nat, fun (x, n : Nat) => n);
-    def value : Nat := chosen.apply(tt, succ(zero), zero);
-    def local_value : Nat := chosen.local_operand(succ(zero), zero);
-    def literal_value : Nat := chosen.literal_operand(succ(zero));
+    def chosen : Child(U0) := Child.make(original, UNat, fun (x, n : UNat) => n);
+    def value : UNat := chosen.apply(tt, succ(zero), zero);
+    def local_value : UNat := chosen.local_operand(succ(zero), zero);
+    def literal_value : UNat := chosen.literal_operand(succ(zero));
     def wrong : value = succ(zero) := refl(succ(zero));
   `);
   assert.deepEqual(failures(result).map(([name])=>name),["Power.unbound","Child.unbound","wrong"],JSON.stringify(failures(result)));
@@ -820,7 +820,7 @@ test("source operand recipes retain their field receiver and never open labels o
 test("a refused retained numeral operation preserves its dependency without forcing the raw input",async t=>{
   const {buildSource,retain,construct,inputs,check}=await setup(t);
   const reader=buildSource(`theory Broken(U < UU0) {
-    M : U; def numeral_(n : Nat) : M := missing notation numeral;
+    M : U; def numeral_(n : UNat) : M := missing notation numeral;
   }`);
   const context=inputs.context.bind("Broken",bindingResolution(reader.record.modelId));
   const consumer=construct(retain(`theory Consumer(U < UU0, m : Broken(U0)) {
@@ -828,8 +828,8 @@ test("a refused retained numeral operation preserves its dependency without forc
     def value : m.M := m.(999);
   }`,{context}));
   const {result}=check({declarations:[...reader.declarations,...consumer.declarations]},`
-    def healthy : Broken(U0) := Broken.make(Nat);
-    def unavailable : Nat := healthy.(999);
+    def healthy : Broken(U0) := Broken.make(UNat);
+    def unavailable : UNat := healthy.(999);
   `);
   assert.deepEqual(failures(result).map(([name])=>name),["Broken.numeral_","Consumer.value","unavailable"],JSON.stringify(failures(result)));
   for(const [,reason] of failures(result).slice(1)) {
@@ -959,7 +959,7 @@ test("deferred namespace failures keep the same source diagnostic as immediate l
 test("inherited notation substitutes receiver fields through renaming and shared diamonds",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const parent=buildSource(`theory Power(U < UU0) {
-    recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n);
+    recipe : Numerals(U0); M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n);
   }`),snapshot=JSON.stringify(parent.record);
   const built=[parent,...[
     "theory L(U < UU0) extends p : Power(recipe := reader, M := Carrier, pow := power) {}",
@@ -973,9 +973,9 @@ test("inherited notation substitutes receiver fields through renaming and shared
   assert.equal(JSON.stringify(parent.record),snapshot);
   assert.doesNotThrow(()=>snapshotSyntax(record));
   const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
-    def plain : D(U0) := D.make(reader := original, Carrier := Nat, power := fun (x, n : Nat) => n);
-    def raised : D(U0) := D.make(reader := shifted, Carrier := Nat, power := fun (x, n : Nat) => n);
-    def value : Nat := plain.(zero ^ 0);
+    def plain : D(U0) := D.make(reader := original, Carrier := UNat, power := fun (x, n : UNat) => n);
+    def raised : D(U0) := D.make(reader := shifted, Carrier := UNat, power := fun (x, n : UNat) => n);
+    def value : UNat := plain.(zero ^ 0);
     def intended : value = zero := refl(zero);
     def raised_intended : raised.(zero ^ 0) = succ(zero) := refl(succ(zero));
     def parent_intended : raised.l.p.(zero ^ 0) = succ(zero) := refl(succ(zero));
@@ -987,7 +987,7 @@ test("inherited notation substitutes receiver fields through renaming and shared
 test("one shared operation with different inherited operand receivers stays ambiguous",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const built=[
-    "theory Power(U < UU0) { recipe : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }",
+    "theory Power(U < UU0) { recipe : Numerals(U0); M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n); }",
     "theory L(U < UU0) extends p : Power(recipe := a) {}",
     "theory R(U < UU0) extends p : Power(recipe := b) {}",
     "theory Both(U < UU0) extends l : L, r : R {}",
@@ -999,13 +999,13 @@ test("one shared operation with different inherited operand receivers stays ambi
   assert.equal(record.ambiguousNotationBindings["^"].length,2);
   assert.deepEqual(record.ambiguousNotations["^"].map(rule=>rule.label),["both.l","both.r"]);
   assert.throws(()=>buildSource(`theory Collision(U < UU0) extends base : Both {
-    other(x : M, n : Nat) : M notation x ^ recipe.(n);
+    other(x : M, n : UNat) : M notation x ^ recipe.(n);
   }`),/parents bind it to/);
   const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
-    def chosen : Further(U0) := Further.make(a := original, b := shifted, M := Nat, pow := fun (x, n : Nat) => n);
-    def ambiguous : Nat := chosen.(zero ^ 0);
-    def left_value : Nat := chosen.both.l.(zero ^ 0);
-    def right_value : Nat := chosen.both.r.(zero ^ 0);
+    def chosen : Further(U0) := Further.make(a := original, b := shifted, M := UNat, pow := fun (x, n : UNat) => n);
+    def ambiguous : UNat := chosen.(zero ^ 0);
+    def left_value : UNat := chosen.both.l.(zero ^ 0);
+    def right_value : UNat := chosen.both.r.(zero ^ 0);
     def left_intended : left_value = zero := refl(zero);
     def right_intended : right_value = succ(zero) := refl(succ(zero));
     def wrong : right_value = zero := refl(zero);
@@ -1017,20 +1017,20 @@ test("one shared operation with different inherited operand receivers stays ambi
 test("operand receivers select parent namespaces instead of ambient same-named models",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels+`
     def num : Numerals(U0) := shifted;
-    notation num { numeral(n : Nat) := succ(n); }
+    notation num { numeral(n : UNat) := succ(n); }
   `);
   const parent=buildSource(`theory Num(U, V < UU0) {
-    M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral;
+    M : U; read(n : UNat) : M; def numeral_(n : UNat) : M := read(n) notation numeral;
   }`);
   const child=buildSource(`theory Power(U, V < UU0) extends num : Num {
-    pow(num : M, n : Nat) : M notation num ^ num.(n);
+    pow(num : M, n : UNat) : M notation num ^ num.(n);
   }`);
   const renamed=buildSource("theory Renamed(U, V < UU0) extends p : Power(M := Carrier, read := convert) {}");
   const snapshot=JSON.stringify(child.record.notationBindings);
   assert.ok(bindingUses(child.record.notationBindings["^"].recipe.right).some(use=>use.id===parent.record.makeId));
   const {result}=check({declarations:[...parent.declarations,...child.declarations,...renamed.declarations]},`
-    def chosen : Renamed(U0, U1) := Renamed.make(Carrier := Nat, convert := fun (n : Nat) => n, pow := fun (x, n : Nat) => n);
-    def value(num : Numerals(U0)) : Nat := chosen.(zero ^ 0);
+    def chosen : Renamed(U0, U1) := Renamed.make(Carrier := UNat, convert := fun (n : UNat) => n, pow := fun (x, n : UNat) => n);
+    def value(num : Numerals(U0)) : UNat := chosen.(zero ^ 0);
     def intended : value(shifted) = zero := refl(zero);
     def wrong : value(shifted) = succ(zero) := refl(succ(zero));
   `);
@@ -1041,7 +1041,7 @@ test("operand receivers select parent namespaces instead of ambient same-named m
 test("extends notation replacements capture the renamed child interface and leave parent recipes intact",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const built=[
-    "theory Power(U < UU0) { decoder : Numerals(U0); M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }",
+    "theory Power(U < UU0) { decoder : Numerals(U0); M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n); }",
     "theory Child(U < UU0) extends p : Power(decoder := recipe, pow := sum notation x + recipe.(n)) {}",
     "theory Further(U < UU0) extends c : Child(recipe := reader) {}",
   ].map(text=>buildSource(text));
@@ -1049,11 +1049,11 @@ test("extends notation replacements capture the renamed child interface and leav
   assert.equal(record.notationBindings["^"],undefined);
   assert.equal(record.notationBindings["+"].recipe.right.tree.resolution.id,record.fields.find(field=>field.label==="reader").id);
   const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
-    def chosen : Further(U0) := Further.make(reader := shifted, M := Nat, sum := fun (x, n : Nat) => n);
-    def value(recipe : Numerals(U0)) : Nat := chosen.(zero + 0);
+    def chosen : Further(U0) := Further.make(reader := shifted, M := UNat, sum := fun (x, n : UNat) => n);
+    def value(recipe : Numerals(U0)) : UNat := chosen.(zero + 0);
     def intended : value(original) = succ(zero) := refl(succ(zero));
     def parent_intended : chosen.c.p.(zero ^ 0) = zero := refl(zero);
-    def removed : Nat := chosen.(zero ^ 0);
+    def removed : UNat := chosen.(zero ^ 0);
     def wrong : value(original) = zero := refl(zero);
   `);
   assert.deepEqual(failures(result).map(([name])=>name),["removed","wrong"],JSON.stringify(failures(result)));
@@ -1062,7 +1062,7 @@ test("extends notation replacements capture the renamed child interface and leav
 test("renoting one ambiguous inherited field removes only that field's previous notation",async t=>{
   const {buildSource,check}=await setup(t,undefined,operandModels);
   const built=[
-    "theory Power(U < UU0) { M : U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }",
+    "theory Power(U < UU0) { M : U; pow(x : M, n : UNat) : M notation x ^ recipe.(n); }",
     "theory Both(U < UU0) extends l : Power(pow := left_power notation x + recipe.(n)), r : Power(pow := right_power notation x + recipe.(n)) {}",
     "theory Fixed(U < UU0) extends b : Both(left_power := product notation x * recipe.(n)) {}",
   ].map(text=>buildSource(text));
@@ -1072,11 +1072,11 @@ test("renoting one ambiguous inherited field removes only that field's previous 
   assert.equal(fixed.notationBindings["+"].field,fixed.fields.find(field=>field.label==="right_power").id);
   assert.equal(fixed.notationBindings["*"].field,fixed.fields.find(field=>field.label==="product").id);
   const {result}=check({declarations:built.flatMap(b=>b.declarations)},`
-    def both : Both(U0) := Both.make(M := Nat, left_power := fun (x, n : Nat) => n, right_power := fun (x, n : Nat) => succ(n));
-    def ambiguous : Nat := both.(zero + 0);
+    def both : Both(U0) := Both.make(M := UNat, left_power := fun (x, n : UNat) => n, right_power := fun (x, n : UNat) => succ(n));
+    def ambiguous : UNat := both.(zero + 0);
     def left_call : both.l.pow(zero, zero) = zero := refl(zero);
     def right_call : both.r.pow(zero, zero) = succ(zero) := refl(succ(zero));
-    def fixed : Fixed(U0) := Fixed.make(M := Nat, product := fun (x, n : Nat) => n, right_power := fun (x, n : Nat) => succ(n));
+    def fixed : Fixed(U0) := Fixed.make(M := UNat, product := fun (x, n : UNat) => n, right_power := fun (x, n : UNat) => succ(n));
     def left_intended : fixed.(zero * 0) = zero := refl(zero);
     def right_intended : fixed.(zero + 0) = succ(zero) := refl(succ(zero));
     def wrong : fixed.(zero + 0) = zero := refl(zero);

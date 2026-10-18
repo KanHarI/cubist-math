@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import polynomial_evaluation;
 import polynomial_leading;
-use nat;
+use unat;
 
 // Roots may live in an arbitrary extension through its specified embedding.
 def PolynomialRoot(
@@ -76,7 +76,7 @@ def linear_factor_nonzero(
   K : AlgebraicField, r : af_carrier(K), zero : polynomial_linear_factor(K, r) = polynomial_zero(K)
 ) :
   Void {
-  exact nat_zero_ne_succ(
+  exact unat_zero_ne_succ(
     1,
     sym(
       trans(

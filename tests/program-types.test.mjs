@@ -7,7 +7,7 @@ import { instructions } from "../web/cubical-instructions.mjs";
 import { cubicalKinds } from "../web/cubical-kernel.mjs";
 import { checkProgram, testModule } from "./check-program.mjs";
 
-// Nat and W as source declarations. The cases whose verdicts and prints are
+// UNat and W as source declarations. The cases whose verdicts and prints are
 // the test are cubist-tests/program_types*.cubist (tests/cubist-tests.test.mjs
 // compares them); here, what neither shows, and the programs that need an
 // option or are generated.
@@ -17,8 +17,8 @@ const check = (t, source, options = {}) => checkProgram(t, source, { module, opt
 const ok=result=>assert.equal(result.complete,true,JSON.stringify(result.gaps));
 const types=testModule("program_types",{module});
 
-test("Nat, its constructors and W require ordinary source imports",async t=>{
-  const {result}=await check(t,`def missing : Nat := 0;
+test("UNat, its constructors and W require ordinary source imports",async t=>{
+  const {result}=await check(t,`def missing : UNat := 0;
 def successor := succ;
 def tree := W(U0, U0, Unit, fun (a : Unit) => Void);
 `);
@@ -27,15 +27,15 @@ def tree := W(U0, U0, Unit, fun (a : Unit) => Void);
   for(const output of result.outputs)assert.match(output.reason,/Untranslated name/);
 });
 
-// Imported Nat and W are source declarations, as the module's prints show:
+// Imported UNat and W are source declarations, as the module's prints show:
 // no definition the program holds uses a retired primitive, and they build
 // with constructors and eliminators.
-test("imported Nat and W use no retired primitive", async () => {
+test("imported UNat and W use no retired primitive", async () => {
   const { program } = await types();
   const tags = new Set(), seen = new WeakSet();
   const visit = value => { if (!value || typeof value !== "object" || seen.has(value)) return; seen.add(value); if (value.tag) tags.add(value.tag); Object.values(value).forEach(visit); };
   for (const [name] of program.kernel.definitions) { const view = program.inspect(name); visit(view.expression); visit(view.type); }
-  for (const tag of ["Nat", "Zero", "Succ", "NatRec", "W", "Sup", "WRec"]) assert.equal(tags.has(tag), false, tag);
+  for (const tag of ["UNat", "Zero", "Succ", "NatRec", "W", "Sup", "WRec"]) assert.equal(tags.has(tag), false, tag);
   assert.ok(tags.has("Con")); assert.ok(tags.has("Elim"));
 });
 
@@ -57,7 +57,7 @@ test("the producer refuses the reserved primitive syntax and instruction slots",
   ok(result);
   // The retired kinds and instructions have no names, and their numbers
   // stay reserved: the C kernel refuses each.
-  for(const kind of ["Nat","Zero","Succ","NatRec","W","Sup","WRec","Pushout","PushLeft","PushRight","PushPath","PushElim"])
+  for(const kind of ["UNat","Zero","Succ","NatRec","W","Sup","WRec","Pushout","PushLeft","PushRight","PushPath","PushElim"])
     assert.throws(()=>program.kernel.term(kind),/Unsupported cubical constructor/);
   const kinds=cubicalKinds.flatMap((name,tag)=>name===null?[tag]:[]);
   assert.equal(kinds.length,12);
@@ -75,11 +75,11 @@ test("the producer refuses the reserved primitive syntax and instruction slots",
   }
 });
 
-test("imported Nat keeps a folded 2^22 value and discards it without unary evaluation",async t=>{
-  let source=`import nat; use nat;
-def double(n : Nat) : Nat := match n { zero => 0; succ(k) => succ(succ(double(k))); };\ndef power0 : Nat := 1;\n`;
-  for(let n=1;n<=22;n++)source+=`def power${n} : Nat := double(power${n-1});\n`;
-  source+="def folded : power22 = power22 { rfl; }\ndef discarded := (fun (unused : Nat) => 0)(power22);\ndef zero_result : discarded = 0 { rfl; }\n";
+test("imported UNat keeps a folded 2^22 value and discards it without unary evaluation",async t=>{
+  let source=`import unat; use unat;
+def double(n : UNat) : UNat := match n { zero => 0; succ(k) => succ(succ(double(k))); };\ndef power0 : UNat := 1;\n`;
+  for(let n=1;n<=22;n++)source+=`def power${n} : UNat := double(power${n-1});\n`;
+  source+="def folded : power22 = power22 { rfl; }\ndef discarded := (fun (unused : UNat) => 0)(power22);\ndef zero_result : discarded = 0 { rfl; }\n";
   const {program,result}=await check(t,source);
   ok(result);
   assert.ok(program.kernel.arena().nodes<30000);

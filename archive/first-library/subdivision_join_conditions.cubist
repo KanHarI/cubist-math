@@ -1,14 +1,14 @@
-import nat;
+import unat;
 import subdivision_join;
-use nat;
+use unat;
 
 // The condition can depend on the actual fine subdivision, not just on
 // endpoints. Transport along the endpoint path preserves this dependency.
 def subdivision_tagged_join_step(
-  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : Nat,
+  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
-    forall pieces : SampleSubdivisions(C, n, vertices). forall m : Nat.
+    forall pieces : SampleSubdivisions(C, n, vertices). forall m : UNat.
     forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
     forall rightPieces : SampleSubdivisions(C, m, rightVertices).
     forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices).
@@ -20,7 +20,7 @@ def subdivision_tagged_join_step(
       join_subdivision_families(C, n, vertices, pieces, m, rightVertices, rightPieces, same)
     )
   ), vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)),
-  pieces : SampleSubdivisions(C, succ(n), vertices), m : Nat, rightVertices : SampleVertices(C, m),
+  pieces : SampleSubdivisions(C, succ(n), vertices), m : UNat, rightVertices : SampleVertices(C, m),
   rightTags : SampleTags(C, m), rightPieces : SampleSubdivisions(C, m, rightVertices),
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices),
   valid : SubdivisionTagged(C, condition, succ(n), vertices, tags, pieces),
@@ -67,10 +67,10 @@ def subdivision_tagged_join_step(
 }
 
 def subdivision_tagged_join(
-  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : Nat
+  C : U1, condition : (forall a : C. forall b : C. C -> SampleSubdivision(C, a, b) -> U1), n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n).
-  forall pieces : SampleSubdivisions(C, n, vertices). forall m : Nat.
+  forall pieces : SampleSubdivisions(C, n, vertices). forall m : UNat.
   forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
   forall rightPieces : SampleSubdivisions(C, m, rightVertices).
   forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices).
@@ -83,7 +83,7 @@ def subdivision_tagged_join(
   ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k).
-    forall pieces : SampleSubdivisions(C, k, vertices). forall m : Nat.
+    forall pieces : SampleSubdivisions(C, k, vertices). forall m : UNat.
     forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
     forall rightPieces : SampleSubdivisions(C, m, rightVertices).
     forall same : sample_last(C, k, vertices) = sample_first(C, m, rightVertices).
@@ -96,7 +96,7 @@ def subdivision_tagged_join(
     )
   ) {
     zero => fun (
-      vertices : C, tags, pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      vertices : C, tags, pieces : Unit, m : UNat, rightVertices : SampleVertices(C, m),
       rightTags : SampleTags(C, m), rightPieces : SampleSubdivisions(C, m, rightVertices),
       same : vertices = sample_first(C, m, rightVertices), valid : Unit,
       rightValid : SubdivisionTagged(C, condition, m, rightVertices, rightTags, rightPieces)

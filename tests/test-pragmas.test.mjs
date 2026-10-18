@@ -6,7 +6,7 @@ import {formatCubist} from "../web/cubist/formatter.mjs";
 import {requireTestMode,sourceTestCases} from "../web/cubist/test-pragmas.mjs";
 
 test("test pragmas attach to the next declaration or supported directive with separate spans",()=>{
-  const source=`import nat;
+  const source=`import unat;
 # test(generation.hom_universe)
 # expect_error(E606)
 def wrong : Void := tt;
@@ -47,7 +47,7 @@ for(const [source,message] of [
   ["# test(a) # expect_axioms([Choice,Choice]) def x := tt;",/repeats a name/],
   ["# expect_error(E606) def x := tt;",/named # test/],
   ["# test(a)",/no following target/],
-  ["# test(a) import nat;",/cannot target import/],
+  ["# test(a) import unat;",/cannot target import/],
   ["# test(a) section (A : U0) { def x := A; }",/cannot target section/],
   ["section (A : U0) { # test(a) }",/cannot target/],
   ["# test(a) notation n { x + y := x; }",/cannot target notation/],

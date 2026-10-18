@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import affine_refinement;
 import interval_subdivisions;
 import complex_subdivision_estimates;
@@ -22,7 +22,7 @@ def curve_subdivision_samples(
 def CurvePartitionEstimate(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  n : UNat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices), radius : F
 ) :=
@@ -77,7 +77,7 @@ def affine_partition_piece_estimate(
     )
   ), delta : F, positiveDelta : lt(zero, delta), mesh : F,
   localEstimates : (
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall coarseTag : FieldUnitInterval(F, zero, one, lt).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
@@ -214,7 +214,7 @@ def affine_partition_from_local_estimates(
     )
   ), delta : F, positiveDelta : lt(zero, delta), mesh : F,
   localEstimates : (
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall coarseTag : FieldUnitInterval(F, zero, one, lt).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
@@ -251,7 +251,7 @@ def affine_partition_from_local_estimates(
     )
   )
 ) :
-  forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+  forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
   forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
   forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).
   SubdivisionTagged(
@@ -288,7 +288,7 @@ def affine_partition_from_local_estimates(
     integrand, uniform, delta, positiveDelta, mesh, localEstimates
   );
   let estimates :
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).
     SubdivisionTagged(
@@ -356,7 +356,7 @@ def affine_partition_uniform_estimate(
 ) :
   exists mesh : F. lt(zero, mesh)
   and (
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     forall pieces : SampleSubdivisions(FieldUnitInterval(F, zero, one, lt), n, vertices).
     SubdivisionTagged(

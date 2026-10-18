@@ -28,7 +28,7 @@ async function session(t) {
 
 test("benchmark distinguishes invalid proofs, blocked uses, and independent checked declarations", async () => {
   const report = await benchmark({ modules: ["sample"], readSource: async name => name === "sample" ?
-    "import nat; use nat; def good := 0; def bad : 0 = 1 { exact refl(0); } def dependent := bad; def independent := 2;" : sourceReader()(name) });
+    "import unat; use unat; def good := 0; def bad : 0 = 1 { exact refl(0); } def dependent := bad; def independent := 2;" : sourceReader()(name) });
   assert.deepEqual(report.declarations.filter(d=>d.module === "sample").map(d => d.category), ["checked", "failed", "blocked", "checked"]);
   assert.equal(report.declarations.find(d=>d.name === "dependent").rootBlocker, "sample__bad");
   for(const row of report.declarations.filter(d=>d.module === "sample")) {
@@ -121,7 +121,7 @@ test("benchmark measures an area, the library, the archive or the Cubist tests, 
 });
 
 test("benchmark lists a failure or block its source's comment states as intended, not as one to fix", async () => {
-  const body = "import nat;\ndef bad : 0 = 1 { exact refl(0); }\ndef dependent := bad;\ndef other : 0 = 1 { exact refl(0); }\n";
+  const body = "import unat;\ndef bad : 0 = 1 { exact refl(0); }\ndef dependent := bad;\ndef other : 0 = 1 { exact refl(0); }\n";
   const read = source => async name => name === "sample" ? source : sourceReader()(name);
   const first = await benchmark({ modules: ["sample"], readSource: read(body) });
   // Each comment as tools/inline-errors.mjs writes it: the code and the
@@ -146,11 +146,11 @@ test("benchmark checks local simp witnesses without collecting inspector referen
         ? new URL("../docs/examples/proof-ergonomics/implemented/registered-simp.cubist",import.meta.url)
         : new URL(`../archive/first-library/${name}.cubist`,import.meta.url),"utf8");
       return name==="ergonomics_registered"?`${source}
-        def folded(n : Nat) := n + 0;
-        def twice(n : Nat) := folded(n);
-        def inner(n : Nat, h : n + 0 = n) : folded(n) = n { exact h; }
-        def outer(n : Nat, h : folded(n) = n) : twice(n) = n { exact h; }
-        def nested(n : Nat) : twice(n) = n { simp only [outer, inner, nat_add_zero]; }
+        def folded(n : UNat) := n + 0;
+        def twice(n : UNat) := folded(n);
+        def inner(n : UNat, h : n + 0 = n) : folded(n) = n { exact h; }
+        def outer(n : UNat, h : folded(n) = n) : twice(n) = n { exact h; }
+        def nested(n : UNat) : twice(n) = n { simp only [outer, inner, unat_add_zero]; }
       `:source;
     }});
   assert.equal(report.counts.failed,0,JSON.stringify(report.declarations.filter(d=>d.category==="failed")));
@@ -161,7 +161,7 @@ test("benchmark checks local simp witnesses without collecting inspector referen
 });
 
 test("the instruction kernel admits each declaration the benchmark counts", async () => {
-  const readSource = async name => name === "sample" ? "import nat; use nat; def good := 0; def uses := good;" : sourceReader()(name);
+  const readSource = async name => name === "sample" ? "import unat; use unat; def good := 0; def uses := good;" : sourceReader()(name);
   const report = await benchmark({ modules: ["sample"], readSource });
   for (const row of report.declarations.filter(d=>d.module === "sample")) {
     assert.equal(row.category, "checked");

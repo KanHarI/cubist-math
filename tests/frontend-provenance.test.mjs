@@ -82,11 +82,11 @@ test("CB5: the original arrow rewrite loses generated capability despite equal f
 
 
 test("CB5: inherited binding failures retain caller and authored source locations",async t=>{
-  const fixture=`import hlevels; import nat;
+  const fixture=`import hlevels; import unat;
 notation consume { x + y := x; }
 theory Parent(U < UU0) { M : set U; c : M; }
 theory Child(U < UU0) extends p : Parent {
-  def rejected : Nat := consume.(p.absent + zero);
+  def rejected : UNat := consume.(p.absent + zero);
 }`;
   for(const imported of [false,true]) {
     const prefix=imported?"import fixture;\n":fixture+"\n";
@@ -105,11 +105,11 @@ theory Child(U < UU0) extends p : Parent {
 });
 
 test("CB5: inherited proof failures use caller spans and keep the exact written statement",async t=>{
-  for(const statement of ["rfl;","exact refl(succ(zero));","simp only [nat_add_zero];","rw [nat_add_zero];"]) {
-    const fixture=`import nat; import hlevels;
+  for(const statement of ["rfl;","exact refl(succ(zero));","simp only [unat_add_zero];","rw [unat_add_zero];"]) {
+    const fixture=`import unat; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Parent(U < UU0) { M : set U;
-  def bad(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => succ(n); }
+  def bad(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => succ(n); }
     obligations by { ${statement} };
 }`;
     for(const padding of ["","// "+"x".repeat(fixture.length)+"\n"]) {
@@ -118,7 +118,7 @@ theory Parent(U < UU0) { M : set U;
       const gap=checked.result.gaps.find(g=>g.name==="Child.bad");
       assert.ok(gap);assert.equal(source.slice(gap.start,gap.end),"Parent");
       assert.equal(gap.diagnostic.primary.module,"main");
-      const written=statement.startsWith("rw ")?"nat_add_zero":statement;
+      const written=statement.startsWith("rw ")?"unat_add_zero":statement;
       const related=gap.diagnostic.related.find(site=>site.module==="fixture"&&fixture.slice(site.start,site.end)===written);
       assert.ok(related,JSON.stringify(gap));
     }
@@ -127,10 +127,10 @@ theory Parent(U < UU0) { M : set U;
 
 test("CB5: rewrite descriptions and residual errors name the written substituted rule",async t=>{
   for(const fails of [false,true]) {
-    const source=`import nat; import hlevels;
+    const source=`import unat; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
-theory Parent(U < UU0, n : Nat) { M : set U; fe : add(n, zero) = n;
-  def d(x : Edge) : Nat := match x { lo => add(n, zero); hi => ${fails?"succ(n)":"n"}; }
+theory Parent(U < UU0, n : UNat) { M : set U; fe : add(n, zero) = n;
+  def d(x : Edge) : UNat := match x { lo => add(n, zero); hi => ${fails?"succ(n)":"n"}; }
     obligations by { rw [fe]; };
 }`;
     const checked=await check(t,source);
@@ -169,11 +169,11 @@ test("CB5: copied observations keep distinct checked views and cannot annotate t
 });
 
 test("CB5: imported generated observations keep their source module without foreign links",async t=>{
-  const fixture=`import nat; import hlevels;
+  const fixture=`import unat; import hlevels;
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Parent(U < UU0) { M : set U;
-  def d(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
-    obligations by { simp only [nat_add_zero]; };
+  def d(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
+    obligations by { simp only [unat_add_zero]; };
 }`;
   const source="import fixture; theory Child(U < UU0) extends Parent {}";
   const checked=await check(t,source,{fixture});clean(checked);

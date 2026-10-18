@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import polynomial_ring;
 import natural_minimum;
-use nat;
+use unat;
 
 // The cutoff is the least support bound. It is zero for the zero polynomial
 // and degree+1 otherwise; this avoids giving zero a misleading leading term.
@@ -11,11 +11,11 @@ def polynomial_minimum(K : AlgebraicField, p : Polynomial(K)) := natural_minimum
 );
 
 def polynomial_cutoff(K : AlgebraicField, p : Polynomial(K)) := sigma_first(
-  Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+  UNat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
 );
 
 def polynomial_cutoff_data(K : AlgebraicField, p : Polynomial(K)) := sigma_second(
-  Nat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+  UNat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
 );
 
 def polynomial_cutoff_support(K : AlgebraicField, p : Polynomial(K)) :
@@ -25,7 +25,7 @@ def polynomial_cutoff_support(K : AlgebraicField, p : Polynomial(K)) :
 }
 
 def polynomial_cutoff_least(K : AlgebraicField, p : Polynomial(K)) :
-  forall n : Nat. SeriesSupport(K, polynomial_coefficients(K, p), n)
+  forall n : UNat. SeriesSupport(K, polynomial_coefficients(K, p), n)
   -> le(polynomial_cutoff(K, p), n) {
   obtain (support, least) := polynomial_cutoff_data(K, p);
   exact least;
@@ -36,7 +36,7 @@ def support_zero_polynomial(
   support : SeriesSupport(K, polynomial_coefficients(K, p), 0)
 ) :
   p = polynomial_zero(K) {
-  exact polynomial_coefficient_ext(K, p, polynomial_zero(K), (fun (k : Nat) => support(k, tt)));
+  exact polynomial_coefficient_ext(K, p, polynomial_zero(K), (fun (k : UNat) => support(k, tt)));
 }
 
 def polynomial_cutoff_zero(
@@ -55,13 +55,13 @@ def polynomial_zero_cutoff(K : AlgebraicField) : polynomial_cutoff(K, polynomial
   exact nat_le_zero(
     polynomial_cutoff(K, polynomial_zero(K)),
     polynomial_cutoff_least(
-      K, polynomial_zero(K), 0, (fun (k : Nat, above : le(0, k)) => refl(field_zero(K)))
+      K, polynomial_zero(K), 0, (fun (k : UNat, above : le(0, k)) => refl(field_zero(K)))
     )
   );
 }
 
 def support_predecessor(
-  K : AlgebraicField, f : FormalSeries(K), n : Nat, support : SeriesSupport(K, f, succ(n)),
+  K : AlgebraicField, f : FormalSeries(K), n : UNat, support : SeriesSupport(K, f, succ(n)),
   last : f(n) = field_zero(K)
 ) :
   SeriesSupport(K, f, n) {
@@ -73,7 +73,7 @@ def support_predecessor(
 }
 
 def polynomial_leading_nonzero(
-  K : AlgebraicField, p : Polynomial(K), n : Nat, degree : polynomial_cutoff(K, p) = succ(n)
+  K : AlgebraicField, p : Polynomial(K), n : UNat, degree : polynomial_cutoff(K, p) = succ(n)
 ) :
   FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n)) {
   intro zero;
@@ -84,14 +84,14 @@ def polynomial_leading_nonzero(
   exact successor_not_le_self(
     n,
     transport polynomial_cutoff_least(K, p, n, lowered) along degree in (
-      (fun (k : Nat) => le(k, n))
+      (fun (k : UNat) => le(k, n))
     )
   );
 }
 
 // A known top nonzero coefficient determines the canonical cutoff.
 def polynomial_cutoff_exact(
-  K : AlgebraicField, p : Polynomial(K), n : Nat,
+  K : AlgebraicField, p : Polynomial(K), n : UNat,
   support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
   nonzero : FieldNonzero(af_carrier(K), af_operations(K), polynomial_coefficients(K, p, n))
 ) :

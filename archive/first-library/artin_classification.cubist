@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import artin_embedding_bound;
 
 def outside_subgroup_extra_embedding_distinct(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), g : Galois(K, E),
   outside : subgroup_members(GaloisGroup(K, E), H, g) -> Void
 ) :
@@ -31,7 +31,7 @@ def outside_subgroup_extra_embedding_distinct(
 }
 
 def extra_embedding_fixes_fixed_base(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), g : Galois(K, E),
   fixes : GaloisFixing(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)), g),
   t : Fin(succ(n)), a : af_carrier(intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)))
@@ -77,7 +77,7 @@ def extra_embedding_fixes_fixed_base(
 // in that subgroup. This completes Artin's automorphism classification without
 // assuming that the full automorphism group is finite in advance.
 def artin_fixed_field_automorphism_classification(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n), g : Galois(K, E),
   fixes : GaloisFixing(K, E, intermediate_members(K, E, fixed_intermediate_field(K, E, H)), g)
 ) :
@@ -133,7 +133,7 @@ def artin_fixed_field_automorphism_classification(
 // The membership comparison is pointwise; extensionality then identifies the
 // loop subgroups themselves.
 def artin_fixing_fixed_subgroup(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   fixing_galois_subgroup(K, E, fixed_intermediate_field(K, E, H)) =[GaloisSubgroup(K, E)] H {
@@ -162,8 +162,8 @@ def artin_fixing_fixed_subgroup(
 
 // A fixed field determines its finite loop subgroup uniquely.
 def artin_fixed_field_injective(
-  K : AlgebraicField, E : FieldExt(K), H, J : GaloisSubgroup(K, E), n : Nat,
-  finiteH : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n), m : Nat,
+  K : AlgebraicField, E : FieldExt(K), H, J : GaloisSubgroup(K, E), n : UNat,
+  finiteH : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n), m : UNat,
   finiteJ : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), J), m),
   same : fixed_intermediate_field(K, E, H) =[IntermediateField(K, E)] fixed_intermediate_field(
     K, E, J

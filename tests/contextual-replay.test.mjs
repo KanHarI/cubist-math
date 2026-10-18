@@ -64,18 +64,18 @@ test("CB1 contextual session: nested-function",async t=>{
 });
 
 test("replayed recursive calls keep structural permissions and cannot change a selected motive",async t=>{
-  const source="import nat; def f(n, m : Nat) : Nat := match n { zero => m; succ(k) => f(k, m); };";
+  const source="import unat; def f(n, m : UNat) : UNat := match n { zero => m; succ(k) => f(k, m); };";
   const {program,result}=await setup(t,source);
   assert.deepEqual(result.gaps,[]);
   const session=at(program,source,"f(k, m)");
-  await query(session,"typeof f(k, m)","type","Nat");
+  await query(session,"typeof f(k, m)","type","UNat");
   await query(session,"f(n, m)","error");
   await query(session,"f(k, zero)","error");
-  await query(session,"typeof (fun (x : Nat) => x)","type","Nat -> Nat");
-  await query(session,"let identity := fun (x : Nat) => x","defined");
-  await query(session,"typeof identity(f(k, m))","type","Nat");
+  await query(session,"typeof (fun (x : UNat) => x)","type","UNat -> UNat");
+  await query(session,"let identity := fun (x : UNat) => x","defined");
+  await query(session,"typeof identity(f(k, m))","type","UNat");
   await query(session,"let invalid : Unit := f(k, m)","error");
-  await query(session,"typeof f(k, m)","type","Nat");
+  await query(session,"typeof f(k, m)","type","UNat");
   assert.equal(session.accepted.length,1);
 });
 
@@ -116,15 +116,15 @@ test("contextual model queries share the replay compilation's exact projection i
 
 test("contextual selections preserve the source named-notation namespace across scratch bindings",async t=>{
   for(const attached of [false,true])await t.test(attached?"model-attached rules":"standalone notation",async t=>{
-    const model=`def recipe : Numerals(U0) := Numerals.make(Nat, fun (n : Nat) => n);`;
-    const notation=`notation recipe { numeral(n : Nat) := succ(n); }`;
-    const source=`inductive Nat { zero; succ(n : Nat); }
-      theory Numerals(U < UU0) { M : U; read(n : Nat) : M; }
-      def read(n : Nat) : Nat := succ(n);
+    const model=`def recipe : Numerals(U0) := Numerals.make(UNat, fun (n : UNat) => n);`;
+    const notation=`notation recipe { numeral(n : UNat) := succ(n); }`;
+    const source=`inductive UNat { zero; succ(n : UNat); }
+      theory Numerals(U < UU0) { M : U; read(n : UNat) : M; }
+      def read(n : UNat) : UNat := succ(n);
       ${attached?model+notation:notation+model}
-      def source_value : Nat := recipe.(read(zero));
+      def source_value : UNat := recipe.(read(zero));
       def intended : source_value = ${attached?"zero":"succ(zero)"} := refl(${attached?"zero":"succ(zero)"});
-      def f(k : Nat) : Nat := k;`;
+      def f(k : UNat) : UNat := k;`;
     const {program,result}=await setup(t,source);
     assert.deepEqual(result.gaps,[]);
     const session=at(program,source,"k;");
@@ -149,10 +149,10 @@ test("CB1 contextual session: let-before-after",async t=>{
 });
 
 test("scratch proof blocks share source set identities through history and local shadowing",async t=>{
-  const source=`import nat;
-simp_set rules := [nat_add_zero];
-def focus(n : Nat) : Nat := n;
-simp_set later := [nat_add_zero];`;
+  const source=`import unat;
+simp_set rules := [unat_add_zero];
+def focus(n : UNat) : UNat := n;
+simp_set later := [unat_add_zero];`;
   const {program,result}=await setup(t,source);
   assert.deepEqual(result.gaps,[]);
   const session=at(program,source,"n;");
@@ -162,7 +162,7 @@ simp_set later := [nat_add_zero];`;
   await query(session,"let copied : n = n { simp only [h] at h as h2; exact h2; }","defined");
   await query(session,"let supplied : n = n { simpa only [rules] using h; }","defined");
   assert.match((await query(session,"let bad : add(n, zero) = n { simp only [later]; }","error")).text,/Untranslated name: later/);
-  await query(session,"with unfolding [nat_add_zero] { n }","value","n");
+  await query(session,"with unfolding [unat_add_zero] { n }","value","n");
   await query(session,"typeof supplied","type","n = n");
   assert.equal(session.accepted.length,4);
   assert.deepEqual({work:program.kernel.work(),definitions:[...program.kernel.definitions]},before);
@@ -172,7 +172,7 @@ test("CB1 contextual session: selected-failing-prefix",async t=>{
   const fixture=scenario("selected-failing-prefix"),{program}=await setup(t,fixture.source);
   const session=at(program,fixture.source,fixture.marker,"before");
   await query(session,fixture.sessions[0].entry,"value");
-  await query(session,"let saved := next_","defined","saved : Nat");
+  await query(session,"let saved := next_","defined","saved : UNat");
   await query(session,"typed(Unit, saved)","error");
   await query(session,"evaluate saved","value","succ(k)");
   await query(session,"broken(k)","error");
@@ -373,7 +373,7 @@ test("nested induction queries distinguish the inner and outer hypotheses",async
   await query(session,fixture.sessions[0].entry,"value");
   await query(session,fixture.sessions[1].entry,"error");
   await query(session,"let sum := add(ih, inner_ih)","defined");
-  await query(session,"typeof sum","type","Nat");
+  await query(session,"typeof sum","type","UNat");
 });
 
 test("overlapping wildcard instances retain different refinements through query history",async t=>{
@@ -390,11 +390,11 @@ test("overlapping wildcard instances retain different refinements through query 
     const [locals]=await session.run("/locals");
     assert.equal(locals.kind,"locals",JSON.stringify(locals));
     refinements.push(locals.bindings.filter(row=>row.visible).map(({label,value})=>[label,value]));
-    await query(session,"typeof (fun (x : Nat) => x)","type","Nat -> Nat");
-    await query(session,"let identity := fun (x : Nat) => x","defined");
-    await query(session,"typeof identity(a)","type","Nat");
+    await query(session,"typeof (fun (x : UNat) => x)","type","UNat -> UNat");
+    await query(session,"let identity := fun (x : UNat) => x","defined");
+    await query(session,"typeof identity(a)","type","UNat");
     await query(session,"let invalid : Unit := a","error");
-    await query(session,"typeof identity(a)","type","Nat");
+    await query(session,"typeof identity(a)","type","UNat");
     assert.equal(session.accepted.length,1);
     const [answer]=await session.run("typed(a = zero, refl(a))");
     verdicts.push(answer.kind);

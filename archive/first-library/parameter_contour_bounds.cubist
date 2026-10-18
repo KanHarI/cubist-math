@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import parameter_contours;
 import complex_contour_bounds;
 
 // The domain C retains each parameter even when the curve revisits a point.
 def complex_parameter_tag_error_sum(
   C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> Complex(F),
-  n : Nat
+  n : UNat
 ) :=
   parameter_contour_tag_error_sum(
     C, Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
@@ -15,7 +15,7 @@ def complex_parameter_tag_error_sum(
 // Error and displacement bounds are required only at visited samples.
 def ComplexParameterTagBounds(
   C, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, values : C -> Complex(F),
-  delta : F, n : Nat
+  delta : F, n : UNat
 ) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, oldTags, newTags : Unit) => Unit;
@@ -37,7 +37,7 @@ def ComplexParameterTagBounds(
 
 def ComplexParameterIncrementBounds(
   C, F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, curve : C -> Complex(F),
-  realWeight, imagWeight : C -> C -> C -> F, n : Nat
+  realWeight, imagWeight : C -> C -> C -> F, n : UNat
 ) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> U0) {
     zero => fun (vertices : C, oldTags : Unit) => Unit;
@@ -68,7 +68,7 @@ def complex_parameter_tag_error_variation_bound(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve, values : C -> Complex(F),
-  realWeight, imagWeight : C -> C -> C -> F, delta : F, n : Nat
+  realWeight, imagWeight : C -> C -> C -> F, delta : F, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall oldTags : SampleTags(C, n).
   forall newTags : SampleTags(C, n).
@@ -295,8 +295,8 @@ def complex_parameter_tag_error_length_bound(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), curve, values : C -> Complex(F),
   realWeight, imagWeight : C -> C -> C -> F, delta, length : F,
-  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(C, n), oldTags,
-  newTags : SampleTags(C, n),
+  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : UNat, vertices : SampleVertices(C, n),
+  oldTags, newTags : SampleTags(C, n),
   errors : ComplexParameterTagBounds(
     C, F, addF, negF, lt, values, delta, n, vertices, oldTags, newTags
   ),

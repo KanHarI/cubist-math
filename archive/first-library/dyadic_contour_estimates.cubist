@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import curve_refinement_estimates;
 import dyadic_refinement_mesh;
-use nat;
+use unat;
 
 // Uniform continuity supplies one mesh controlling every later dyadic level.
 // The bound depends on the outer width, not the number of samples.
@@ -23,7 +23,7 @@ def affine_dyadic_refinement_estimate(
 ) :
   exists mesh : F. lt(zero, mesh)
   and (
-    forall depth : Nat. forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall depth : UNat. forall extra : UNat. forall a : FieldUnitInterval(F, zero, one, lt).
     forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
@@ -76,7 +76,7 @@ def affine_dyadic_refinement_estimate(
     integrand, uniform, delta, positiveDelta
   );
   let bounds :
-    forall depth : Nat. forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall depth : UNat. forall extra : UNat. forall a : FieldUnitInterval(F, zero, one, lt).
     forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),

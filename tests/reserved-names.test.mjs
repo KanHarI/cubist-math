@@ -15,16 +15,16 @@ const reserved = word => `${word} is reserved${generatedNames.has(word) ? " for 
 test("Unit, Void and tt cannot be declared or bound at any binding site", () => {
   for (const word of ["Unit", "Void", "tt"]) {
     const sites = {
-      definition: `def ${word} : U0 := Nat;`,
-      parameter: `def f(${word} : U0) : U0 := Nat;`,
-      implicit: `def f{{${word} : U0}}(n : Nat) : Nat := n;`,
-      lambda: `def f := fun (${word} : U0) => Nat;`,
-      forall: `def F := forall ${word} : U0. Nat;`,
-      exists: `def F := exists ${word} : U0. Nat;`,
-      let: `def f(n : Nat) : Nat {\n  let ${word} := n;\n  exact n;\n}`,
-      pattern: `def f(p : Nat and Nat) : Nat {\n  obtain (${word}, b) := p;\n  exact b;\n}`,
-      clause: `def f(n : Nat) : Nat := match n {\n  zero => n;\n  succ(${word}) => n;\n};`,
-      motive: `def f(n : Nat) : Nat := match n as ${word} {\n  zero => n;\n  succ(k) => n;\n};`,
+      definition: `def ${word} : U0 := UNat;`,
+      parameter: `def f(${word} : U0) : U0 := UNat;`,
+      implicit: `def f{{${word} : U0}}(n : UNat) : UNat := n;`,
+      lambda: `def f := fun (${word} : U0) => UNat;`,
+      forall: `def F := forall ${word} : U0. UNat;`,
+      exists: `def F := exists ${word} : U0. UNat;`,
+      let: `def f(n : UNat) : UNat {\n  let ${word} := n;\n  exact n;\n}`,
+      pattern: `def f(p : UNat and UNat) : UNat {\n  obtain (${word}, b) := p;\n  exact b;\n}`,
+      clause: `def f(n : UNat) : UNat := match n {\n  zero => n;\n  succ(${word}) => n;\n};`,
+      motive: `def f(n : UNat) : UNat := match n as ${word} {\n  zero => n;\n  succ(k) => n;\n};`,
       inductive: `inductive ${word} {\n  c;\n}`,
       constructor: `inductive T {\n  ${word};\n}`,
       theory: `theory T(U < UU0) {\n  M : set U;\n  ${word} : M;\n}`,
@@ -49,7 +49,7 @@ test("keywords and generated interface names cannot be bound at any naming site"
       `def f : Unit { let ${word} := tt; exact tt; }`,
       `def f : Unit -> Unit { intro ${word}; exact tt; }`,
       `def f : Unit := match tt { ${word} => tt; };`,
-      `def f(n : Nat) := match n { succ(${word}) => tt; };`,
+      `def f(n : UNat) := match n { succ(${word}) => tt; };`,
       `inductive T { ${word}; }`,
       `theory T(U < UU0) { M : set U; ${word} : M; }`,
       `section (${word} : Unit) { def f := tt; }`,
@@ -59,8 +59,8 @@ test("keywords and generated interface names cannot be bound at any naming site"
       `theory T(U < UU0) extends ${word} : Parent { M : set U; }`,
     ]) assert.equal(parseError(source), reserved(word), `${word}: ${source}`);
   }
-  for (const word of ["Nat", "zero", "succ", "axiom", "opaque"]) {
-    assert.equal(parseError(`def f(${word} : Nat) : Nat := 0;`), null, word);
+  for (const word of ["UNat", "zero", "succ", "axiom", "opaque"]) {
+    assert.equal(parseError(`def f(${word} : UNat) : UNat := 0;`), null, word);
   }
 });
 

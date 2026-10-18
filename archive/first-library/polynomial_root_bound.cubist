@@ -1,9 +1,9 @@
-import nat;
+import unat;
 import polynomial_roots;
-use nat;
+use unat;
 
 // A nonzero polynomial of degree d cannot have d+1 distinct roots.
-def RootFamily(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
+def RootFamily(K : AlgebraicField, p : Polynomial(K), n : UNat) :=
   exists roots : Fin(n) -> af_carrier(K). Injective(Fin(n), af_carrier(K), roots)
   and (forall i : Fin(n). PolynomialRoot(K, K, field_embedding_identity(K), p, roots(i)));
 
@@ -54,7 +54,7 @@ def factor_quotient_nonzero(
 
 def linear_factor_quotient_degree(
   K : AlgebraicField, p : Polynomial(K), r : af_carrier(K), q : Polynomial(K),
-  factor : p = polynomial_mul(K, polynomial_linear_factor(K, r), q), m : Nat,
+  factor : p = polynomial_mul(K, polynomial_linear_factor(K, r), q), m : UNat,
   degree : polynomial_cutoff(K, p) = succ(succ(m)), nonzero : (q = polynomial_zero(K)) -> Void
 ) :
   polynomial_cutoff(K, q) = succ(m) {
@@ -68,8 +68,8 @@ def linear_factor_quotient_degree(
       )
     )
   );
-  let mk := nat_succ_injective(m, k, nat_succ_injective(succ(m), succ(k), same));
-  exact trans(dq, cong((fun (n : Nat) => succ(n)), sym(mk)));
+  let mk := unat_succ_injective(m, k, unat_succ_injective(succ(m), succ(k), same));
+  exact trans(dq, cong((fun (n : UNat) => succ(n)), sym(mk)));
 }
 
 def polynomial_constant_no_root_family(
@@ -89,7 +89,7 @@ def polynomial_constant_no_root_family(
 }
 
 def polynomial_root_bound_step(
-  K : AlgebraicField, m : Nat,
+  K : AlgebraicField, m : UNat,
   previous : (
     forall p : Polynomial(K). polynomial_cutoff(K, p) = succ(m) -> RootFamily(K, p, succ(m)) -> Void
   ), p : Polynomial(K), degree : polynomial_cutoff(K, p) = succ(succ(m)),
@@ -102,7 +102,7 @@ def polynomial_root_bound_step(
   obtain (q, factor) := polynomial_factor_theorem(K, p, r, allRoots(first));
   let pNonzero : (p = polynomial_zero(K)) -> Void {
     intro zero;
-    exact nat_zero_ne_succ(
+    exact unat_zero_ne_succ(
       succ(m),
       sym(trans(sym(degree), trans(cong(polynomial_cutoff(K), zero), polynomial_zero_cutoff(K))))
     );
@@ -135,7 +135,7 @@ def polynomial_root_bound_step(
   exact previous(q, dq, typed(RootFamily(K, q, succ(m)), (rest, restDistinct, restRoots)));
 }
 
-def polynomial_root_bound_degree(K : AlgebraicField, d : Nat) :=
+def polynomial_root_bound_degree(K : AlgebraicField, d : UNat) :=
   induction d as k return (
     forall p : Polynomial(K). polynomial_cutoff(K, p) = succ(k) -> RootFamily(K, p, succ(k)) -> Void
   ) {
@@ -149,7 +149,7 @@ def polynomial_root_bound(
 ) :
   RootFamily(K, p, succ(polynomial_degree(K, p))) -> Void {
   obtain (d, degree) := polynomial_nonzero_degree(K, p, nonzero);
-  let number := cong((fun (n : Nat) => succ(natural_predecessor(n))), degree);
+  let number := cong((fun (n : UNat) => succ(natural_predecessor(n))), degree);
   intro family;
   exact polynomial_root_bound_degree(
     K, d, p, degree, transport family along number in RootFamily(K, p)

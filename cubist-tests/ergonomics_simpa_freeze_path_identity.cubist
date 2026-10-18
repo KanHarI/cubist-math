@@ -1,12 +1,12 @@
 // From tests/proof-ergonomics.test.mjs: simpa freeze preserves a proof later
 // compared with another path: the second simpa is offered no frozen form.
 import primes;
-use nat;
+use unat;
 
 // Warning: W702: stable is never used after this let: remove it.
 computable def dependent(
-  f, g, k : Nat -> Nat, a, b : Nat, c : forall n : Nat. g(n) = n -> f(n) = k(n), divert : g(a) = b,
-  unit : forall n : Nat. g(n) = n, fallback : f(a) = k(a)
+  f, g, k : UNat -> UNat, a, b : UNat, c : forall n : UNat. g(n) = n -> f(n) = k(n),
+  divert : g(a) = b, unit : forall n : UNat. g(n) = n, fallback : f(a) = k(a)
 ) :
   0 = 0 {
   let h1 : f(a) + f(b) = k(a) + k(b) {

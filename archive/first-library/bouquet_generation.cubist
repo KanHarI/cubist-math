@@ -1,4 +1,4 @@
-import nat;
+import unat;
 
 import bouquet_cover;
 import loop_words;
@@ -119,7 +119,7 @@ def every_bouquet_loop_generated(A : U0, p : BouquetLoops(A)) :
   ) in BouquetGenerated(A);
 }
 
-def every_puncture_loop_generated(n : Nat, p : bouquet_base(Fin(n)) = bouquet_base(Fin(n))) :
+def every_puncture_loop_generated(n : UNat, p : bouquet_base(Fin(n)) = bouquet_base(Fin(n))) :
   Mere(
     exists word : Word(Fin(n)).
     eval_word(Fin(n), PunctureGraph(n), bouquet_base(Fin(n)), puncture_loop(n), word) = p

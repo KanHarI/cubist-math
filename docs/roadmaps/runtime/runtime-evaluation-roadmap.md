@@ -13,7 +13,8 @@ completed full normalizations by exact syntax identity. NUM0's source
 representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
-and factorial. The default-`Nat` migration, NUM2 and EVAL3–EVAL8 remain.
+and factorial. The default-`Nat` migration is implemented below; its release checks are pending.
+NUM2 and EVAL3–EVAL8 remain.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -307,8 +308,8 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
-implemented. The default-`Nat` compatibility migration and the other rows
-remain. Sizes are relative scope, as in the work plan.
+implemented. The default-`Nat` compatibility migration is implemented with
+release validation pending; the other rows remain. Sizes are relative scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
@@ -491,24 +492,25 @@ own bound without strict-decrease evidence. A step ignoring smaller results
 computes at a 64-bit bound without enumerating them. The `Below` construction
 can still walk through intervening predecessor bounds when a smaller result
 is requested; this is not a sublinear-time or memoization claim.
-Public `Nat` has not switched.
+**Default migration (2026-10-18; release validation pending).** Public
+`Nat` now aliases `BNat`. Its facade uses direct binary operations and calls
+`bnat_literal` directly for decimal/`0b` input. The original unary declaration
+and proofs live in `unat`: structural clients import `unat`, use `UNat`, and
+call `unat_*` laws. Frontend numeral construction, lexical digits/offsets and
+h-level indices refer to that explicit unary declaration. No default unary
+magnitude limit applies to binary literals; the bounded unary diagnostic
+points to `nat`.
 
-**Migration boundary.** Public `Nat` is still unary. `UNat` currently aliases
-that exact carrier, retaining its `zero`/`succ` constructors and structural
-induction. Before the authorized default switch, move the unary declaration
-and its implementation into `unat`, update the frontend's current
-`nat__Nat` encoding/inspection hooks, separate lexical data from the public
-natural-number facade as needed, and migrate unary clients to explicit
-imports. Update numeral-limit diagnostic hints to the new library notation.
-Preserve their induction API and recheck the archive. Direct decimal input
-and printing are implemented for `bnat`; route the default `nat` notation's
-literal rule directly through `bnat_literal` so its printing metadata follows
-the same reader, retiring the default unary numeral limit. Unary numerals
-currently print bare under every selected view: fix that during migration
-so only an identity unary notation prints them bare, and other views use
-`unat.(n)`. The switch now waits for that numeral/frontend and unary-client
-migration. NUM1's comparison, semiring, universe-transport and
-dependent-recursion laws check.
+Source printing records identity unary readers by their retained notation
+identity: only the selected identity reader prints unary numerals bare;
+other views print `unat.(n)`. The source and mathematical printers share
+literal recognition, preserve literal spelling, and show computed binary
+magnitudes in decimal. The migration fixture covers 64-bit carry, a dense
+128-bit product, comparison, factorial, dependent recursion, mixed-carrier
+printing and setness. Library, archive, browser and independent rechecking
+remain release gates; passing the focused fixture alone does not release
+the migration. The library README records constructor/import compatibility.
+NUM2's integer/rational representations and EVAL3–EVAL8 remain separate work.
 
 Expose the existing unary naturals as `UNat`, with a documented compatibility
 policy for `Nat`, constructor names and imports. Define `BNat` with one

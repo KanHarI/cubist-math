@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import polynomial_splitting;
 import polynomial_root_existence;
-use nat;
+use unat;
 
 // This first construction gives a finite extension where the polynomial
 // splits. The splitting-field construction then restricts to the roots' field.
-def FiniteSplittingExtension(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
+def FiniteSplittingExtension(K : AlgebraicField, p : Polynomial(K), n : UNat) :=
   exists L : AlgebraicField. exists e : FieldEmbedding(K, L).
   FiniteExtension(K, embedding_as_extension(K, L, e))
   and PolynomialSplitting(L, polynomial_map(K, L, e, p), n);
@@ -28,7 +28,7 @@ def splitting_extension_compose(
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), x : af_carrier(L),
   q : Polynomial(L),
   factor : polynomial_map(K, L, e, p) = polynomial_mul(L, polynomial_linear_factor(L, x), q),
-  n : Nat, upper : FiniteSplittingExtension(L, q, n)
+  n : UNat, upper : FiniteSplittingExtension(L, q, n)
 ) :
   FiniteSplittingExtension(K, p, succ(n)) {
   obtain (T, h, finiteT, splitting) := upper;
@@ -56,7 +56,7 @@ def splitting_extension_compose(
 }
 
 def finite_splitting_step(
-  n : Nat,
+  n : UNat,
   previous : (
     forall L : AlgebraicField. forall q : Polynomial(L). polynomial_cutoff(L, q) = succ(n)
     -> FieldExists(FiniteSplittingExtension(L, q, n))
@@ -65,7 +65,7 @@ def finite_splitting_step(
   FieldExists(FiniteSplittingExtension(K, p, succ(n))) {
   let nonzero : PolynomialNonzero(K, p) {
     intro zero;
-    exact nat_zero_ne_succ(
+    exact unat_zero_ne_succ(
       succ(n),
       trans(sym(polynomial_zero_cutoff(K)), trans(cong(polynomial_cutoff(K), sym(zero)), degree))
     );
@@ -98,7 +98,7 @@ def finite_splitting_step(
 
 // Each step adjoins one root and recurses on the quotient of smaller degree.
 // Finiteness is composed using the proved tower theorem.
-def finite_splitting_by_degree(n : Nat) :=
+def finite_splitting_by_degree(n : UNat) :=
   induction n as k return (
     forall K : AlgebraicField. forall p : Polynomial(K). polynomial_cutoff(K, p) = succ(k)
     -> FieldExists(FiniteSplittingExtension(K, p, k))
@@ -116,5 +116,5 @@ def finite_splitting_extension_exists(
   obtain (n, degree) := polynomial_nonzero_degree(K, p, nonzero);
   exact transport finite_splitting_by_degree(n, K, p, degree) along sym(
     cong(natural_predecessor, degree)
-  ) in ((fun (d : Nat) => FieldExists(FiniteSplittingExtension(K, p, d))));
+  ) in ((fun (d : UNat) => FieldExists(FiniteSplittingExtension(K, p, d))));
 }

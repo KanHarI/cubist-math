@@ -1,34 +1,34 @@
-import nat;
+import unat;
 import maps;
 import classical;
-use nat;
+use unat;
 
 // Iterate g after f. A g-point has a g-preimage at every possible ancestor.
-def iterate(A : U0, step : A -> A, x : A, n : Nat) := induction n as k return A {
+def iterate(A : U0, step : A -> A, x : A, n : UNat) := induction n as k return A {
     zero => x;
     succ previous => step(previous);
   };
 
 def GPoint(A, B : U0, f : A -> B, g : B -> A, x : A) :=
-  forall origin : A. forall n : Nat. (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x)
+  forall origin : A. forall n : UNat. (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x)
   -> Fiber(B, A, g, origin);
 
 def gpoint_is_prop(A, B : U0, f : A -> B, g : B -> A, embedG : Embedding(B, A, g), x : A) :=
   forall_prop(
     A,
     (
-      fun (origin : A) => forall n : Nat. (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x)
+      fun (origin : A) => forall n : UNat. (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x)
       -> Fiber(B, A, g, origin)
     ),
     (
       fun (origin : A) => forall_prop(
-        Nat,
+        UNat,
         (
-          fun (n : Nat) => (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x)
+          fun (n : UNat) => (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x)
           -> Fiber(B, A, g, origin)
         ),
         (
-          fun (n : Nat) => forall_prop(
+          fun (n : UNat) => forall_prop(
             (iterate(A, (fun (a : A) => g(f(a))), origin, n) = x),
             (
               fun (p : iterate(A, (fun (a : A) => g(f(a))), origin, n) = x) => Fiber(
@@ -90,7 +90,7 @@ def f_preimage(
     Fiber(A, B, f, y), embedF(y),
     (
       fun (empty : Fiber(A, B, f, y) -> Void) => bad(
-        fun (origin : A, n : Nat) => induction n as k return (
+        fun (origin : A, n : UNat) => induction n as k return (
           (iterate(A, (fun (a : A) => g(f(a))), origin, k) = g(y)) -> Fiber(B, A, g, origin)
         ) {
           zero => fun (p : origin = g(y)) => typed(Fiber(B, A, g, origin), (y, sym(p)));

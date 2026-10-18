@@ -1,17 +1,17 @@
-import nat;
+import unat;
 import binary_equivalence;
-use nat;
+use unat;
 
 // Small scalar identities used to check the four digit-addition cases.
-def nat_add_one(n : Nat) : n + 1 = succ(n) {
-  exact trans(nat_add_succ(n, 0), cong(succ, nat_add_zero(n)));
+def nat_add_one(n : UNat) : n + 1 = succ(n) {
+  exact trans(unat_add_succ(n, 0), cong(succ, unat_add_zero(n)));
 }
 
-def nat_double_add(a, b : Nat) : (a + b) + (a + b) = (a + a) + (b + b) {
+def nat_double_add(a, b : UNat) : (a + b) + (a + b) = (a + a) + (b + b) {
   calc {
-    (a + b) + (a + b) = a + (b + (a + b)) by nat_add_assoc(a, b, a + b);
-    _ = a + (a + (b + b)) by cong(add(a), nat_add_left_comm(b, a, b));
-    _ = (a + a) + (b + b) by sym(nat_add_assoc(a, a, b + b));
+    (a + b) + (a + b) = a + (b + (a + b)) by unat_add_assoc(a, b, a + b);
+    _ = a + (a + (b + b)) by cong(add(a), unat_add_left_comm(b, a, b));
+    _ = (a + a) + (b + b) by sym(unat_add_assoc(a, a, b + b));
   }
 }
 
@@ -35,7 +35,7 @@ def binary_add_even_even(p, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   exact trans(
     binary_decode_even(binary_positive_add(p, q)),
     trans(
-      cong((fun (v : Nat) => v + v), ih),
+      cong((fun (v : UNat) => v + v), ih),
       nat_double_add(binary_positive_to_nat(p), binary_positive_to_nat(q))
     )
   );
@@ -46,11 +46,11 @@ def binary_add_even_odd(p, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   exact trans(
     binary_decode_odd(binary_positive_add(p, q)),
     trans(
-      cong((fun (v : Nat) => succ(v + v)), ih),
+      cong((fun (v : UNat) => succ(v + v)), ih),
       trans(
         cong(succ, nat_double_add(binary_positive_to_nat(p), binary_positive_to_nat(q))),
         sym(
-          nat_add_succ(
+          unat_add_succ(
             binary_positive_to_nat(p) + binary_positive_to_nat(p),
             binary_positive_to_nat(q) + binary_positive_to_nat(q)
           )
@@ -65,7 +65,7 @@ def binary_add_odd_even(p, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   exact trans(
     binary_decode_odd(binary_positive_add(p, q)),
     trans(
-      cong((fun (v : Nat) => succ(v + v)), ih),
+      cong((fun (v : UNat) => succ(v + v)), ih),
       cong(succ, nat_double_add(binary_positive_to_nat(p), binary_positive_to_nat(q)))
     )
   );
@@ -79,14 +79,14 @@ def binary_add_odd_odd(p, q : BinaryPositive, ih : BinaryAddCorrect(p, q)) :
   exact trans(
     binary_decode_even(binary_positive_succ(binary_positive_add(p, q))),
     trans(
-      cong((fun (v : Nat) => v + v), binary_decode_positive_succ(binary_positive_add(p, q))),
+      cong((fun (v : UNat) => v + v), binary_decode_positive_succ(binary_positive_add(p, q))),
       trans(
-        cong(succ, nat_add_succ(sum, sum)),
+        cong(succ, unat_add_succ(sum, sum)),
         trans(
-          cong((fun (v : Nat) => succ(succ(v + v))), ih),
+          cong((fun (v : UNat) => succ(succ(v + v))), ih),
           trans(
-            cong((fun (v : Nat) => succ(succ(v))), nat_double_add(a, b)),
-            cong(succ, sym(nat_add_succ(a + a, b + b)))
+            cong((fun (v : UNat) => succ(succ(v))), nat_double_add(a, b)),
+            cong(succ, sym(unat_add_succ(a + a, b + b)))
           )
         )
       )
@@ -151,7 +151,7 @@ def binary_decode_add(a, b : BinaryNat) :
         y
       )
     ) {
-      binary_zero => sym(nat_add_zero(binary_positive_to_nat(p)));
+      binary_zero => sym(unat_add_zero(binary_positive_to_nat(p)));
       binary_positive(q) => binary_decode_positive_add(p, q);
     };
   };
@@ -167,9 +167,11 @@ def binary_mul_even(p, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
   exact trans(
     binary_decode_even(binary_positive_mul(p, q)),
     trans(
-      cong((fun (v : Nat) => v + v), ih),
+      cong((fun (v : UNat) => v + v), ih),
       sym(
-        nat_add_mul(binary_positive_to_nat(p), binary_positive_to_nat(p), binary_positive_to_nat(q))
+        unat_add_mul(
+          binary_positive_to_nat(p), binary_positive_to_nat(p), binary_positive_to_nat(q)
+        )
       )
     )
   );
@@ -184,9 +186,9 @@ def binary_mul_odd(p, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
       trans(
         binary_decode_even(binary_positive_mul(p, q)),
         trans(
-          cong((fun (v : Nat) => v + v), ih),
+          cong((fun (v : UNat) => v + v), ih),
           sym(
-            nat_add_mul(
+            unat_add_mul(
               binary_positive_to_nat(p), binary_positive_to_nat(p), binary_positive_to_nat(q)
             )
           )
@@ -199,7 +201,7 @@ def binary_mul_odd(p, q : BinaryPositive, ih : BinaryMulCorrect(p, q)) :
 def binary_decode_positive_mul(p, q : BinaryPositive) : BinaryMulCorrect(p, q) {
   exact binary_positive_induction(
     (fun (a : BinaryPositive) => BinaryMulCorrect(a, q)),
-    sym(nat_add_zero(binary_positive_to_nat(q))),
+    sym(unat_add_zero(binary_positive_to_nat(q))),
     (fun (a : BinaryPositive, ih : BinaryMulCorrect(a, q)) => binary_mul_even(a, q, ih)),
     (fun (a : BinaryPositive, ih : BinaryMulCorrect(a, q)) => binary_mul_odd(a, q, ih)), p
   );
@@ -214,13 +216,13 @@ def binary_decode_mul(a, b : BinaryNat) :
         y
       )
     ) {
-      binary_zero => sym(nat_mul_zero(binary_positive_to_nat(p)));
+      binary_zero => sym(unat_mul_zero(binary_positive_to_nat(p)));
       binary_positive(q) => binary_decode_positive_mul(p, q);
     };
   };
 }
 
-def binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = factorial(n) {
+def binary_factorial_correct(n : UNat) : binary_to_nat(binary_factorial(n)) = factorial(n) {
   exact induction n as k return (binary_to_nat(binary_factorial(k)) = factorial(k)) {
     zero => refl(1);
     succ previous => trans(
@@ -229,7 +231,8 @@ def binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = fac
         binary_decode_mul(binary_of_nat(succ(k)), binary_factorial(k)),
         trans(
           cong(
-            (fun (v : Nat) => v * binary_to_nat(binary_factorial(k))), binary_nat_roundtrip(succ(k))
+            (fun (v : UNat) => v * binary_to_nat(binary_factorial(k))),
+            binary_nat_roundtrip(succ(k))
           ), cong(mul(succ(k)), previous)
         )
       )
@@ -237,7 +240,7 @@ def binary_factorial_correct(n : Nat) : binary_to_nat(binary_factorial(n)) = fac
   };
 }
 
-// The right side denotes 3628800 in unary Nat but remains a compact expression.
+// The right side denotes 3628800 in unary UNat but remains a compact expression.
 // This manual transfer uses the proved compatibility theorem. It is not yet
 // the computational cubical-univalence transport regression.
 def nat_3628800 := binary_to_nat(binary.(0b1101110101111100000000));

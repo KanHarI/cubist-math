@@ -18,11 +18,11 @@ const variable = name => ({ tag: "Var", name });
 // Programs whose links and views are the test are
 // cubist-tests/inspection_*.cubist (tests/cubist-tests.test.mjs checks them).
 const cases = (t, name) => checkTestModule(t, `inspection_${name}`, { module });
-const nat = naturalSort;
+const unat = naturalSort;
 
 test("declared type occurrences link to their imported and local source declarations", async t => {
   const { program, result } = await cases(t, "declared_types");
-  for (const [name, binding] of [["Nat", "nat__Nat"], ["W", "w__W"], ["N", "inspection_declared_types__N"]]) {
+  for (const [name, binding] of [["UNat", "unat__UNat"], ["W", "w__W"], ["N", "inspection_declared_types__N"]]) {
     const links = result.links.filter(link => link.name === name);
     assert.equal(links.length, name === "N" ? 3 : 2, name);
     for (const link of links) {
@@ -30,22 +30,22 @@ test("declared type occurrences link to their imported and local source declarat
       assert.equal(link.role, "inductive");
     }
   }
-  const imported = result.imports.find(info => info.binding === "nat__Nat");
-  assert.equal(imported.sourceModule, "nat");
-  assert.equal(imported.sourceName, "Nat");
-  assert.match(result.sources.nat.slice(imported.definitionStart), /^inductive Nat/);
-  assert.deepEqual(program.signatureView("nat__Nat").constructors.map(c => c.name), ["zero", "succ"]);
+  const imported = result.imports.find(info => info.binding === "unat__UNat");
+  assert.equal(imported.sourceModule, "unat");
+  assert.equal(imported.sourceName, "UNat");
+  assert.match(result.sources.unat.slice(imported.definitionStart), /^inductive UNat/);
+  assert.deepEqual(program.signatureView("unat__UNat").constructors.map(c => c.name), ["zero", "succ"]);
 });
 
-test("shadowed Nat names retain their own local source targets", async t => {
+test("shadowed UNat names retain their own local source targets", async t => {
   const { result } = await cases(t, "shadowed_nat");
-  const links = result.links.filter(link => link.name === "Nat");
+  const links = result.links.filter(link => link.name === "UNat");
   assert.equal(links.length, 5);
   for (const link of links.slice(0, 3)) {
-    assert.notEqual(link.binding, "nat__Nat");
+    assert.notEqual(link.binding, "unat__UNat");
     assert.notEqual(link.role, "inductive");
   }
-  assert.equal(links.at(-1).binding, "inspection_shadowed_nat__Nat");
+  assert.equal(links.at(-1).binding, "inspection_shadowed_nat__UNat");
   assert.equal(links.at(-1).role, "def");
 });
 
@@ -70,8 +70,8 @@ test("inferred induction statements simplify the motive and retain source binder
 });
 
 test("type simplification avoids capture, preserves definitions, and has a budget", () => {
-  const term = { tag: "App", fn: { tag: "Lam", name: "x", domain: nat,
-    body: { tag: "Lam", name: "y", domain: nat, body: variable("x") } }, arg: variable("y") };
+  const term = { tag: "App", fn: { tag: "Lam", name: "x", domain: unat,
+    body: { tag: "Lam", name: "y", domain: unat, body: variable("x") } }, arg: variable("y") };
   const result = simplifyTypeApplications(term);
   assert.equal(result.tag, "Lam");
   assert.notEqual(result.name, "y");
@@ -104,8 +104,8 @@ test("Euclid locals retain checked syntax, source aliases, and navigable assumpt
 
 test("aliases abbreviate exact syntax and never cross a binder or rewrite stored terms", () => {
   const term = { tag: "Fst", pair: variable("pair") };
-  const typed = { tag: "App", fn: { tag: "Lam", name: "id", domain: nat, body: variable("id") }, arg: term };
-  const view = { name: "other", expression: typed, type: nat, context: [{ name: "hyp", type: term }] };
+  const typed = { tag: "App", fn: { tag: "Lam", name: "id", domain: unat, body: variable("id") }, arg: term };
+  const view = { name: "other", expression: typed, type: unat, context: [{ name: "hyp", type: term }] };
   const before = structuredClone(view);
   const aliases = [{ name: "local", binding: "source_local", term }];
   const folded = foldedInspection(view, aliases);
@@ -113,8 +113,8 @@ test("aliases abbreviate exact syntax and never cross a binder or rewrite stored
   assert.equal(folded.context[0].type.name, "local");
   assert.deepEqual(view, before);
   for (const expression of [
-    { tag: "Lam", name: "pair", domain: nat, body: term },
-    { tag: "PLam", dim: "i", family: nat, body: term },
+    { tag: "Lam", name: "pair", domain: unat, body: term },
+    { tag: "PLam", dim: "i", family: unat, body: term },
   ]) {
     assert.equal(foldedInspection({ ...view, expression }, aliases).expression.body.tag, "Fst");
   }
@@ -126,16 +126,16 @@ test("aliases abbreviate exact syntax and never cross a binder or rewrite stored
 test("notation preserves dependency and distinguishes renamed shadowing variables", () => {
   const symbols = { outer: { name: "x", local: true }, inner: { name: "x", local: true } };
   const body = { tag: "Pair", first: variable("inner"), second: variable("outer") };
-  const lambda = cubicalMathTree({ tag: "Lam", name: "inner", domain: nat, body }, symbols);
+  const lambda = cubicalMathTree({ tag: "Lam", name: "inner", domain: unat, body }, symbols);
   assert.equal(lambda.name, "x′");
   assert.equal(lambda.body.left.name, "x′");
   assert.equal(lambda.body.right.name, "x");
-  assert.equal(cubicalMathTree({ tag: "Pi", name: "x", domain: nat, body: nat }).kind, "Arrow");
-  assert.equal(cubicalMathTree({ tag: "Sigma", name: "x", domain: nat, body: variable("x") }).kind, "Sigma");
+  assert.equal(cubicalMathTree({ tag: "Pi", name: "x", domain: unat, body: unat }).kind, "Arrow");
+  assert.equal(cubicalMathTree({ tag: "Sigma", name: "x", domain: unat, body: variable("x") }).kind, "Sigma");
 });
 
 test("path notation and raw syntax display stay bounded on shared terms", () => {
-  let shared = nat;
+  let shared = unat;
   for (let i = 0; i < 28; i++) shared = { tag: "App", fn: shared, arg: shared };
   const constant = { tag: "PLam", dim: "i", family: shared, body: variable("x") };
   assert.equal(cubicalMathTree(constant, {}, 1).fn.name, "refl");
@@ -145,8 +145,8 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
   assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: varying,
     left: variable("x"), right: variable("x") }).fn.name, "PathP");
   assert.equal(boundedSyntaxJson(shared), null);
-  assert.equal(boundedSyntaxJson(nat), JSON.stringify(nat, null, 2));
-  let deep = nat;
+  assert.equal(boundedSyntaxJson(unat), JSON.stringify(unat, null, 2));
+  let deep = unat;
   for (let i = 0; i < 600; i++) deep = { tag: "Inl", as: { tag: "Unit" }, value: deep };
   assert.equal(boundedSyntaxJson(deep), null);
 });

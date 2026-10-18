@@ -6,7 +6,7 @@
 // than a context entry, so the displayed context does not list b; the
 // final exact uses it all the same.
 
-import nat;
+import unat;
 
 def Endo(A : U0) := A -> A;
 
@@ -26,7 +26,7 @@ def contrapositive(A, B : U0, f : A -> B, not_b : B -> Void) : A -> Void {
   exact not_b(b);
 }
 
-def stated(n : Nat) : n = n {
+def stated(n : UNat) : n = n {
   let same : n = n := refl(n);
   exact same;
 }

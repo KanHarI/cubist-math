@@ -3,7 +3,7 @@ import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
-import { tokenize } from "./cubist/parser.mjs";
+import {binaryDigits as binary, parsedLiteral} from "./translator/numeral-printing.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -15,43 +15,10 @@ import { tokenize } from "./cubist/parser.mjs";
 // `and` group to the right, `+` and `*` to the left.
 const LEVEL = { binder: 0, arrow: 1, or: 2, and: 3, compare: 4, plus: 5, times: 6, power: 6.5, at: 7, atom: 9 };
 const infix = { add: ["+", LEVEL.plus], mul: ["*", LEVEL.times], le: ["<=", LEVEL.compare], isLt: ["<", LEVEL.compare] };
-const arithmetic = /^nat__(add|mul|le|isLt)$/;
+const arithmetic = /^unat__(add|mul|le|isLt)$/;
 // A notation's operator's level (L2.10b).
 const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/": LEVEL.times, "^": LEVEL.power,
   "<": LEVEL.compare, "<=": LEVEL.compare };
-// A lexeme's marks, by their constructors, as characters (L2.10c).
-const glyphs = { period: ".", slash: "/", underscore: "_", plus: "+", minus: "-" };
-// A constructor of the declared type `signature`, applied to `arity`
-// arguments: its name and arguments, or null.
-const constructed = (t, signature, arity) => {
-  const args = [];
-  while (t?.tag === "App" && args.length < arity) { args.unshift(t.arg); t = t.fn; }
-  return t?.tag === "Con" && t.sort?.tag === "Sort" && t.sort.signature === signature && args.length === arity ? { name: t.name, args } : null;
-};
-// A lexeme's text, from its constructors: a list of lexemes' glyphs, each a
-// digit, a letter or a mark. Null where any part is no such constructor, or
-// the text would not read back as one numeric token, so that only a whole
-// literal prints as one.
-const lexemeText = t => {
-  let text = "";
-  for (;;) {
-    if (constructed(t, "lists__List", 0)?.name === "nil") break;
-    const cell = constructed(t, "lists__List", 2);
-    if (cell?.name !== "cons") return null;
-    const [glyph, rest] = cell.args, mark = constructed(glyph, "lexemes__Glyph", 0), valued = constructed(glyph, "lexemes__Glyph", 1);
-    const value = valued && numeralValue(valued.args[0]);
-    const character = mark ? glyphs[mark.name]
-      : valued?.name === "digit" && value !== null && value < 10 ? String(value)
-      : ["lower", "upper"].includes(valued?.name) && value !== null && value < 26 ? String.fromCharCode((valued.name === "lower" ? 97 : 65) + value)
-      : undefined;
-    if (character === undefined) return null;
-    text += character;
-    t = rest;
-  }
-  try { const tokens = tokenize(text); return tokens.length === 2 && tokens[0].text === text && /^[0-9]/.test(text) ? text : null; }
-  catch { return null; }
-};
-
 // `symbols` maps kernel names to their display names, as for cubicalText.
 // Without an entry, a definition shows its name without the module prefix.
 // `context.selection` names the notation selected where the text is read
@@ -59,7 +26,7 @@ const lexemeText = t => {
 // that notation is selected, and is qualified, as nat.(x + y), elsewhere,
 // even where nothing is selected (L2.10j).
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
-  let budget = limit, selection = context.selection ?? null;
+  let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
   const label = binding => symbols[binding]?.name
     ?? localName(binding);
   // Terms share subterms, so each scan visits a node once.
@@ -86,29 +53,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const onFace = (formula, parts) => formula.length === 1 && formula[0].length === 1
     ? `face(${equation(formula[0][0])}, ${parts.join(", ")})`
     : `face_when(${formula.length ? formula.map(clause => clause.length ? clause.map(text => `on(${equation(text)})`).join(" and ") : "1").join(" or ") : "0"}, ${parts.join(", ")})`;
-  // A binary number from the archive's binary_naturals, in normal form:
-  // binary_zero is 0b0, and binary_positive(p) holds binary_bit0 and
-  // binary_bit1 digits, the last digit outermost, around the leading binary_one.
-  const constructorOf = (t, signature) => {
-    const head = t?.tag === "App" ? t.fn : t;
-    return head?.tag === "Con" && head.sort?.tag === "Sort" && head.sort.signature === signature ? head.index : null;
-  };
-  const binary = (t, naturalSignature = "binary_naturals__BinaryNat", positiveSignature = "binary_naturals__BinaryPositive") => {
-    const natural = constructorOf(t, naturalSignature);
-    if (natural === 0 && t.tag === "Con") return "0b0";
-    if (natural !== 1 || t.tag !== "App") return null;
-    let digits = "", p = t.arg;
-    for (;;) {
-      const index = constructorOf(p, positiveSignature);
-      if (index === 0 && p.tag === "Con") return `0b1${digits}`;
-      if ((index !== 1 && index !== 2) || p.tag !== "App") return null;
-      digits = (index === 1 ? "0" : "1") + digits;
-      p = p.arg;
-    }
-  };
   // A natural number reads back where a notation is selected, and as nat's
   // where none is; a binary number, where binary is (L2.10j).
-  const natural = n => atom(selection === null ? `nat.(${n})` : String(n));
+  const natural = n => {
+    const own = symbols.unat__UNat?.printing?.some(entry => entry.identityNumeral
+      && entry.notation === selection && (selectionIdentity === undefined || entry.identity === selectionIdentity));
+    return atom(own ? String(n) : `unat.(${n})`);
+  };
   const bits = text => atom(selection === "binary" ? text : `binary.(${text})`);
   // The rebuilt binary carrier prints decimal magnitudes directly from its
   // bits. Use a notation known to read this exact parser, including aliases;
@@ -162,9 +113,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const level = operatorLevel[printing.operator], recipe = printing.recipe ?? {};
     const levels = printing.operator === "^" ? [level + 1, level] : [level === LEVEL.compare ? level + 1 : level, level + 1];
     const operand = (arg, view, at) => {
-      const saved = selection;
+      const saved = selection, savedIdentity = selectionIdentity;
       selection = view ?? own;
-      try { return sub(arg, at); } finally { selection = saved; }
+      selectionIdentity = view ? undefined : printing.identity;
+      try { return sub(arg, at); } finally { selection = saved; selectionIdentity = savedIdentity; }
     };
     return [`${operand(left, recipe.left, levels[0])} ${printing.operator} ${operand(right, recipe.right, levels[1])}`, level];
   };
@@ -290,7 +242,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // the application case below prints.
       case "Elim": {
         if (t.motive?.tag !== "Lam") return fallback(t);
-        const nat = t.signature === "nat__Nat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
+        const nat = t.signature === "unat__UNat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
         const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
         const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
         return text ? [`fun (${x} : ${show(t.motive.domain)}) => ${text}`, LEVEL.binder] : fallback(t);
@@ -304,7 +256,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
         // spelling. Eta reduction may leave its successor clause curried.
-        if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="nat__Nat"
+        if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="unat__UNat"
           &&t.fn.motive?.tag==="Lam"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
           let step=t.fn.clauses[1];
           if(step.body.tag!=="Lam") {
@@ -332,17 +284,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         }
         // A literal read from its characters prints as it was written, in
         // its notation (L2.10c): parsed_value(parse(lexeme), tt).
-        if (head.tag === "DefRef" && /(?:^|__)parsed_value$/.test(head.name) && args.length >= 2) {
-          let parser = args.at(-2);
-          const parsed = [];
-          while (parser.tag === "App") { parsed.unshift(parser.arg); parser = parser.fn; }
-          const readings = parser.tag === "DefRef" ? symbols[parser.name]?.printing : undefined;
-          const reading = readings?.find(entry => entry.literal && entry.notation === selection) ?? readings?.find(entry => entry.literal);
-          if (reading?.literal && parsed.length) {
-            const text = lexemeText(parsed.at(-1));
-            if (text) return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
-          }
-        }
+        const parsed = parsedLiteral(t, symbols, selection);
+        if (parsed) return atom(selection === parsed.reading.notation ? parsed.text
+          : `${parsed.reading.notation}.(${parsed.text})`);
         // A numeral rule's application to a numeral, as int(3, 0), prints as
         // the numeral where its notation is selected.
         if (printing?.numeral && selection === printing.notation && args.length >= printing.numeral.length) {
@@ -357,10 +301,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if (operator) {
           const [symbol, level] = infix[operator], left = level === LEVEL.compare ? level + 1 : level;
           const saved = selection;
-          selection = "nat";
+          selection = "unat";
           const text = `${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`;
           selection = saved;
-          return selection === "nat" ? [text, level] : atom(`nat.(${text})`);
+          return selection === "unat" ? [text, level] : atom(`unat.(${text})`);
         }
         // A theory's projection of a model is m.f, and applied further,
         // m.f(x, y), as the source writes it (L2.4).

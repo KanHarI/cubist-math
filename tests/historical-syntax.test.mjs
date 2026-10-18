@@ -190,8 +190,8 @@ test("historical imports follow relocated library modules with their library res
 
 test("historical imported notation and simp sets are renamed with their uses", async t => {
   const sources = new Map([
-    ["library/provider.cubist", "import nat; notation set { x + y := add(x, y); } simp_set map := [nat_add_zero];"],
-    ["library/history.cubist", "import provider; use set; def f(n : Nat) : n + zero = n { simp only [map]; }"],
+    ["library/provider.cubist", "import unat; notation set { x + y := add(x, y); } simp_set map := [unat_add_zero];"],
+    ["library/history.cubist", "import provider; use set; def f(n : UNat) : n + zero = n { simp only [map]; }"],
   ]);
   const available = new Set(sources.keys()), paths = historicalModulePaths({ available });
   const history = historicalMigrationSources({ available, ...paths, readSource: path => sources.get(path) });

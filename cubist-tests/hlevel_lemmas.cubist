@@ -1,10 +1,10 @@
 // The h-levels of library/hlevels.cubist (work-plan L2.5a), from
-// tests/hlevels.test.mjs: the levels are one definition by recursion on Nat,
+// tests/hlevels.test.mjs: the levels are one definition by recursion on UNat,
 // so each named level is that definition at a numeral, by conversion; the
 // lemmas hold in every universe below UU0; and none proves more than it
 // states.
 import hlevels;
-use nat;
+use unat;
 
 // Each named level is the recursive definition at a numeral, by conversion.
 def level_zero(U < UU0, A : U) : HasLevel(U, 0, A) = IsProp(U, A) := refl(IsProp(U, A));
@@ -18,7 +18,7 @@ def level_two(U < UU0, A : U) :
 // The lemmas hold in a universe above U0.
 def prop_set_in_u1(A : U1, h : IsProp(U1, A)) : IsSet(U1, A) := prop_is_set(U1, A, h);
 
-def every_level_in_u1(n : Nat, A : U1, h : IsProp(U1, A)) :
+def every_level_in_u1(n : UNat, A : U1, h : IsProp(U1, A)) :
   HasLevel(U1, n, A) := prop_has_level(U1, n, A, h);
 
 def functions_into_u0_props(A : U1, B : A -> U1, h : forall x : A. IsProp(U1, B(x))) :
@@ -53,8 +53,8 @@ def pairs_of_groupoids(
 def product_of_props(A, B : U0, hA : IsProp(U0, A), hB : IsProp(U0, B)) :
   IsProp(U0, A and B) := product_has_level(U0, 0, A, B, hA, hB);
 
-def subset_of_nat(P : Nat -> U0, hP : forall n : Nat. IsProp(U0, P(n))) :
-  IsSet(U0, exists n : Nat. P(n)) := subtype_has_level(U0, 1, Nat, P, nat_is_set, hP);
+def subset_of_nat(P : UNat -> U0, hP : forall n : UNat. IsProp(U0, P(n))) :
+  IsSet(U0, exists n : UNat. P(n)) := subtype_has_level(U0, 1, UNat, P, unat_is_set, hP);
 
 def contractible_is_prop(A : U1) : IsProp(U1, IsContr(U1, A)) := is_contr_is_prop(U1, A);
 
@@ -92,23 +92,23 @@ def empty_subtype_is_prop : IsProp(U0, exists x : Unit. Void) := subtype_has_lev
 // Warning: W705: x is unused in the body: write Unit and … instead of exists x : Unit. ….
 def empty_subtype_not_contractible(c : IsContr(U0, exists x : Unit. Void)) : Void := c.1.2;
 
-// Hedberg's theorem, and the HoTT roadmap's D completion: with Nat a set,
+// Hedberg's theorem, and the HoTT roadmap's D completion: with UNat a set,
 // parallel paths of numbers are equal, but 0 = 1 stays unproved.
-// A type with decidable equality is a set, and Nat is one.
+// A type with decidable equality is a set, and UNat is one.
 def decided_set(A : U1, decide : forall x, y : A. (x = y) or ((x = y) -> Void)) :
   IsSet(U1, A) := hedberg(U1, A, decide);
 
-def parallel_nat_paths(p, q : 0 = 0) : p = q := nat_is_set(0, 0, p, q);
+def parallel_nat_paths(p, q : 0 = 0) : p = q := unat_is_set(0, 0, p, q);
 
-// Error: E606: Type mismatch: found (fun (n : Nat) => induction n return U0 -> U0 { zero => fun (A
+// Error: E606: Type mismatch: found (fun (n : UNat) => induction n return U0 -> U0 { zero => fun (A
 //   : U0) => IsProp(U0, A); succ h => fun (A : U0) => forall x : A. forall y : A. h(x = y); })(0, 0
 //   …, expected 0 = 1.
-def zero_is_one : 0 = 1 := nat_is_set(0, 1);
+def zero_is_one : 0 = 1 := unat_is_set(0, 1);
 
 // The HoTT roadmap's D1: a set's evidence never equates arbitrary elements,
 // and a proposition's never invents an element.
 // No lemma proves more than it states.
-// Error: E606: Type mismatch: found (fun (n : Nat) => induction n return U -> U { zero => fun (A1 :
+// Error: E606: Type mismatch: found (fun (n : UNat) => induction n return U -> U { zero => fun (A1 :
 //   U) => IsProp(U, A1); succ h => fun (A1 : U) => forall x1 : A1. forall y1 : A1. h(x1 = y1);
 //   })(0…, expected x = y.
 def set_equates_elements(U < UU0, A : U, s : IsSet(U, A), x, y : A) : x = y := s(x, y);

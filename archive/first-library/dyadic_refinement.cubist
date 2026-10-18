@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import dyadic_data;
 import subdivision_refinement;
-use nat;
+use unat;
 
 // The fine samples on each coarse edge remain inside that edge.
 def IntervalRefinementAdmissible(
@@ -25,7 +25,7 @@ def dyadic_refinement_zero(
   leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, extra : Nat, a,
+  -> FieldUnitInterval(F, zero, one, lt) -> G, extra : UNat, a,
   b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
@@ -75,9 +75,9 @@ def dyadic_refinement_step(
   leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat,
+  -> FieldUnitInterval(F, zero, one, lt) -> G, depth : UNat,
   previous : (
-    forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall extra : UNat. forall a : FieldUnitInterval(F, zero, one, lt).
     forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),
@@ -95,7 +95,7 @@ def dyadic_refinement_step(
         a, b, ordered
       )
     )
-  ), extra : Nat, a, b : FieldUnitInterval(F, zero, one, lt),
+  ), extra : UNat, a, b : FieldUnitInterval(F, zero, one, lt),
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
@@ -188,9 +188,9 @@ def dyadic_samples_refine(
   leftUnit : (forall x : G. addG(zeroG, x) = x), rightUnit : (forall x : G. addG(x, zeroG) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
   edge : FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt)
-  -> FieldUnitInterval(F, zero, one, lt) -> G, depth : Nat
+  -> FieldUnitInterval(F, zero, one, lt) -> G, depth : UNat
 ) :
-  forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+  forall extra : UNat. forall a : FieldUnitInterval(F, zero, one, lt).
   forall b : FieldUnitInterval(F, zero, one, lt).
   forall ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
@@ -209,7 +209,7 @@ def dyadic_samples_refine(
     )
   ) {
   exact induction depth as k return (
-    forall extra : Nat. forall a : FieldUnitInterval(F, zero, one, lt).
+    forall extra : UNat. forall a : FieldUnitInterval(F, zero, one, lt).
     forall b : FieldUnitInterval(F, zero, one, lt).
     forall ordered : FieldLe(
       F, lt, field_interval_coordinate(F, zero, one, lt)(a),

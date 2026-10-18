@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import interval_subdivisions;
 import ordered_halves;
-use nat;
+use unat;
 
 // If a + increment = b, the oriented difference from a to b is increment.
 def difference_from_increment(

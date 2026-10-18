@@ -26,7 +26,7 @@ async function checked(t) {
   return (await firstProof(t)).program.kernel;
 }
 
-test("the first proof and nat, trans included, derive in instruction mode, at their checked types", async t => {
+test("the first proof and unat, trans included, derive in instruction mode, at their checked types", async t => {
   const kernel = await checked(t);
   const derived = [];
   for (const [name, reference] of kernel.definitions) {
@@ -40,12 +40,12 @@ test("the first proof and nat, trans included, derive in instruction mode, at th
     assert.ok(driver.alpha(judgement.type, type), name);
     derived.push(name);
   }
-  assert.deepEqual(derived, ["nat__add", "nat__mul", "nat__le", "nat__isLt", "nat__nat_zero_add",
-    "nat__nat_add_zero", "nat__nat_add_succ", "nat__nat_add_assoc", "nat__nat_add_comm", "nat__nat_add_left_comm",
-    "nat__nat_add_interchange", "nat__pred", "nat__nat_succ_injective", "nat__nat_is_zero", "nat__nat_zero_ne_succ",
-    "nat__nat_add_cancel", "nat__nat_mul_zero", "nat__nat_mul_succ", "nat__nat_one_mul", "nat__nat_mul_one",
-    "nat__nat_mul_comm", "nat__nat_add_mul", "nat__nat_mul_add", "nat__nat_mul_assoc", "nat__nat_mul_cancel",
-    "nat__Trichotomy", "nat__nat_trichotomy", "nat__nat_le_refl",
+  assert.deepEqual(derived, ["unat__add", "unat__mul", "unat__le", "unat__isLt", "unat__unat_zero_add",
+    "unat__unat_add_zero", "unat__unat_add_succ", "unat__unat_add_assoc", "unat__unat_add_comm", "unat__unat_add_left_comm",
+    "unat__unat_add_interchange", "unat__pred", "unat__unat_succ_injective", "unat__unat_is_zero", "unat__unat_zero_ne_succ",
+    "unat__unat_add_cancel", "unat__unat_mul_zero", "unat__unat_mul_succ", "unat__unat_one_mul", "unat__unat_mul_one",
+    "unat__unat_mul_comm", "unat__unat_add_mul", "unat__unat_mul_add", "unat__unat_mul_assoc", "unat__unat_mul_cancel",
+    "unat__Trichotomy", "unat__unat_trichotomy", "unat__unat_le_refl",
     "driver_first_proof__lt", "driver_first_proof__lt_succ", "driver_first_proof__exists_greater_number"]);
 });
 
@@ -71,7 +71,7 @@ test("the judgement graph records each derivation: rule, premises, highlighted s
   const steps = [...seen.values()].filter(judgement => judgement.rule === "step");
   assert.ok(steps.some(step => step.stepRule === "delta"));
   assert.ok(steps.every(step => Array.isArray(step.position) && ["term", "other", "type"].includes(step.side)));
-  // The lambda binds an entry n : Nat, justified by NatForm.
+  // The lambda binds an entry n : UNat, justified by NatForm.
   const lambda = [...seen.values()].find(judgement => judgement.rule === "lambda");
   const entry = graph.entry(lambda.entry);
   assert.equal(entry.dimension, false);
@@ -88,7 +88,7 @@ test("the workbench's kernel graph lists lt_succ's derivation in THTH style", as
   const root = listing.rows.at(-1);
   assert.equal(root.number, listing.root);
   assert.equal(root.label, "PiIntro");
-  assert.match(root.statement, /^\{\} ⊢ λ \(n : Nat\)\. .* : Π \(n : Nat\), lt\(n, succ\(n\)\)$/);
+  assert.match(root.statement, /^\{\} ⊢ λ \(n : UNat\)\. .* : Π \(n : UNat\), lt\(n, succ\(n\)\)$/);
   // Numbered in derivation order, premises first, each used where it is cited.
   for (const row of listing.rows) for (const premise of row.premises) {
     assert.ok(premise < row.number);
@@ -97,9 +97,9 @@ test("the workbench's kernel graph lists lt_succ's derivation in THTH style", as
   // The goal lt(n, succ(n)) is unfolded at its highlighted head, then computed.
   const unfold = listing.rows.find(row => row.highlight?.rule === "delta" && row.highlight.text === "lt");
   assert.deepEqual(unfold.highlight.position, [0, 0]);
-  assert.match(unfold.statement, /^\{n : Nat\} ⊢ lt\(n, succ\(n\)\) ≡ /);
+  assert.match(unfold.statement, /^\{n : UNat\} ⊢ lt\(n, succ\(n\)\) ≡ /);
   assert.ok(listing.rows.some(row => row.highlight?.rule === "iota"));
-  assert.ok(listing.rows.some(row => row.label === "SigmaIntro" && /^\{n : Nat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ/.test(row.statement)));
+  assert.ok(listing.rows.some(row => row.label === "SigmaIntro" && /^\{n : UNat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ/.test(row.statement)));
   assert.deepEqual(listing.entries.map(entry => entry.shown), ["n", "ascription", "d0"]);
 });
 
@@ -112,7 +112,7 @@ test("a definition's body is derived on request, as its lookup's premise", async
   assert.equal(lookup.definition.expanded, false);
   assert.equal(lookup.definition.root, null);
   // lt's body uses add; both are derived and spliced in, each before its lookup.
-  const add = program.kernel.definitions.get("nat__add");
+  const add = program.kernel.definitions.get("unat__add");
   const listing = judgementGraph(program, view, checked, { expanded: new Set([lookup.definition.reference, add]) });
   for (const name of ["lt", "add"]) {
     const row = listing.rows.find(item => item.definition?.name === name);
@@ -145,7 +145,7 @@ test("every definition behind Euclid's theorem derives in instruction mode", asy
   assert.deepEqual(failures, []);
   // sym and trans: a path at 1 - i, and composition with tubes on two faces.
   const rules = new Set();
-  const { value, type } = kernel.definition(kernel.definitions.get("nat__nat_add_comm"));
+  const { value, type } = kernel.definition(kernel.definitions.get("unat__unat_add_comm"));
   const driver = new InstructionDriver(kernel);
   for (const stack = [driver.check(value, type)], seen = new Set(); stack.length;) {
     const id = stack.pop();
@@ -165,7 +165,7 @@ test("a derived term is its source: a constructor at a type that reduces keeps t
     const { value, type } = kernel.definition(kernel.definitions.get(name));
     const driver = new InstructionDriver(kernel);
     const judgement = driver.graph.judgement(driver.check(value, type));
-    // The injection is built at Nat + Nat, and both its annotation and its
+    // The injection is built at UNat + UNat, and both its annotation and its
     // type are rewritten back to NatSum.
     assert.ok(driver.alpha(judgement.term, value), name);
     assert.ok(driver.alpha(judgement.type, type), name);
@@ -453,7 +453,7 @@ test("a Glue term that is its base by eta only after a step still agrees with it
   const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "glue_eta");
+  await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "glue_eta");
   const equivalence = identityEquivalence(T.unit);
   const G = face => T.glueType(T.unit, [{ face, type: T.unit, equiv: equivalence }]);
   const context = [["b1", G(F.bottom)], ["p", T.path("j", G(F.endpoint("j", 0)), T.point, T.variable("b1"))]];
@@ -464,7 +464,7 @@ test("a Glue term that is its base by eta only after a step still agrees with it
   assert.equal(checked.term.tag, "Comp");
 });
 
-// The review of #73. The glue move is a last resort. G = Glue [] Nat,
+// The review of #73. The glue move is a last resort. G = Glue [] UNat,
 // u = glue_G [] x and H = Glue [] G: u and unglue_H(glue_H [] u) agree by the
 // right side's weak head. A move that took u's normal form first would, over
 // a shared open graph t(n + 1) = f(t(n))(t(n)), take time exponential in n,
@@ -476,7 +476,7 @@ test("the glue move comes last, after the weak heads", async t => {
   const agrees = async (base, context, optimizations) => {
     const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
     t.after(() => program.dispose());
-    await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "glue_move");
+    await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "glue_move");
     const u = T.glue(G, base, []), unglued = T.unglue(H, T.glue(H, u, []));
     const before = program.kernel.work();
     const checked = program.checker.checkView(T.line("i", G, u), T.path("i", G, u, unglued), context);
@@ -502,7 +502,7 @@ const glueSession = async (t, optimizations = {}) => {
   const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary, { optimizations });
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "glue_move");
+  await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "glue_move");
   // Each move made, its outcome, and the kernel steps since the one before.
   const made = [], spent = [], steps = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let last = steps();
@@ -511,7 +511,7 @@ const glueSession = async (t, optimizations = {}) => {
       const name = `${move.move}${move.side ? `:${move.side}` : ""}:${outcome}`, now = steps();
       made.push(name); spent.push([name, now - last]); last = now;
     } };
-  // A path between two Glue terms of G = Glue [] Nat, which only agree when
+  // A path between two Glue terms of G = Glue [] UNat, which only agree when
   // their bases do: the comparison fails, and its last moves are glue moves.
   const G = T.glueType(naturalSort, []);
   const compare = (left, right, context) => {
@@ -558,7 +558,7 @@ test("the normalize move runs within its own budget, and a normal form it did no
   const { KernelError } = await import("../web/cubical-kernel.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("import nat;\ndef unit_point : Unit := tt;\n", "normal_forms");
+  await program.check("import unat;\ndef unit_point : Unit := tt;\n", "normal_forms");
   const driver = program.checker.driver, g = driver.graph, syntax = program.checker.syntax;
   // A closed term focused on, as a comparison of two copies focuses on it.
   const typed = n => driver.check(syntax.encode(numeral(n)), syntax.encode(naturalSort));
@@ -599,7 +599,7 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
 });
 
 // The third review of #73: the glue move waits for enclosing reductions. With
-// n0 := 0, n(k) := succ(n(k - 1)) up to n600, G = Glue [] Nat and
+// n0 := 0, n(k) := succ(n(k - 1)) up to n600, G = Glue [] UNat and
 // f(A : U0, z : A) := point, f(G, glue_G [] n600) and f(G, glue_G [] y) agree
 // by unfolding f. The heuristic first descends into the arguments, whose
 // equality it cannot rule out; there, while the unfolding still waits, no
@@ -610,7 +610,7 @@ test("the glue move rethrows a deadline, and a Glue term needs it at every focus
 test("the glue move waits for enclosing reductions, and reduces nothing beyond its side conditions", async t => {
   const { T } = await import("../web/translator/core.mjs");
   const { heuristicPolicy } = await import("../web/cubical-instruction-driver.mjs");
-  const numbers = ["import nat;", "use nat;", "def n0 : Nat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : Nat := succ(n${k});`)];
+  const numbers = ["import unat;", "use unat;", "def n0 : UNat := 0;", ...Array.from({ length: 600 }, (_, k) => `def n${k + 1} : UNat := succ(n${k});`)];
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
   await program.check([...numbers, "def f(A : U0, z : A) : Unit := tt;"].join("\n") + "\n", "deep");
@@ -644,7 +644,7 @@ test("a Glue term agrees with its base though its path mentions a large shared g
   const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "glue_graph");
+  await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "glue_graph");
   // The glue moves made, and the kernel steps each took.
   const made = [], work = () => { const w = program.kernel.work(); return w.instructionSteps + w.querySteps; };
   let started = 0;
@@ -666,8 +666,8 @@ test("a Glue term agrees with its base though its path mentions a large shared g
 });
 
 // The fifth review of #73: the Glue step exposes a base that is itself a
-// Glue eta redex, as conversion does. With A = Glue [] Nat, A' = Glue []
-// ((λ X. X)(Nat)), G = Glue [] A, g : G and u = unglue_G(g), the constant
+// Glue eta redex, as conversion does. With A = Glue [] UNat, A' = Glue []
+// ((λ X. X)(UNat)), G = Glue [] A, g : G and u = unglue_G(g), the constant
 // tube glue_G [] (glue_A' [] (unglue_A(u))) of a composition over G must
 // agree with its base g: the inner Glue term is u once A' is A, and the
 // outer Glue term and g have different heads, so congruence cannot reach it.
@@ -676,7 +676,7 @@ test("a Glue term whose base is a nested Glue eta redex agrees with its base", a
   const { face: F } = await import("../web/translator/lattice.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "glue_nested");
+  await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "glue_nested");
   const A = T.glueType(naturalSort, []), redex = T.glueType(T.app(T.lam("X", T.universe(0), T.variable("X")), naturalSort), []);
   const G = T.glueType(A, []), g = T.variable("g");
   const outer = T.glue(G, T.glue(redex, T.unglue(A, T.unglue(G, g)), []), []);
@@ -695,10 +695,10 @@ test("a Glue term agrees with its base through pair eta, and through types equal
   const { face: F } = await import("../web/translator/lattice.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "glue_eta_expansion");
+  await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "glue_eta_expansion");
   const tube = (G, term, context) =>
     program.checker.checkView(T.comp("k", G, [{ face: F.endpoint("m", 0), term }], T.variable("g")), G, context, new Map([["m", 0]]));
-  // A = Σ (n : Nat). Nat, G = Glue [] A, u = unglue_G(g): glue_G [] (fst u, snd ((λ x. x) u)) is g.
+  // A = Σ (n : UNat). UNat, G = Glue [] A, u = unglue_G(g): glue_G [] (fst u, snd ((λ x. x) u)) is g.
   const A = T.sigma("n", naturalSort, naturalSort), G = T.glueType(A, []), u = T.unglue(G, T.variable("g"));
   const paired = T.glue(G, T.pair(A, T.first(u), T.second(T.app(T.lam("x", A, T.variable("x")), u))), []);
   assert.equal(tube(G, paired, [["g", G]]).term.tag, "Comp");
@@ -725,7 +725,7 @@ test("generated Glue cases: a base type that computes, and no eta and glue loop"
   const { identityEquivalence } = await import("../web/translator/equivalence.mjs");
   const program = new CubicalProgram(await createCubical(), readLibrary);
   t.after(() => program.dispose());
-  await program.check("import nat; use nat;\ndef unit_point : Unit := tt;\n", "generated_glue");
+  await program.check("import unat; use unat;\ndef unit_point : Unit := tt;\n", "generated_glue");
   const e = identityEquivalence(T.unit), unitRedex = T.app(T.lam("X", T.universe(0), T.variable("X")), T.unit);
   const G = (base, d) => T.glueType(base, [{ face: F.endpoint(d, 0), type: T.unit, equiv: e }]);
   const context = [["b1", T.glueType(T.unit, [{ face: F.bottom, type: T.unit, equiv: e }])],

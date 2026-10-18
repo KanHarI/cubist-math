@@ -17,7 +17,7 @@ def documented := 0;
 def detached := 0; // Trailing comment belongs to this line.
 def next_ := 0;
 // Proof documentation.
-def proof : Nat { exact 0; }
+def proof : UNat { exact 0; }
 `;
   for (const newline of ["\n", "\r\n"]) {
     const text = source.replaceAll("\n", newline);

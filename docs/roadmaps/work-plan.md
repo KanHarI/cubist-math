@@ -648,8 +648,9 @@ supplies setness and avoids unary evaluation in model-law certificates;
 comparison correctness and order propositionality also check. The universe
 path and its forward/reverse and operation transport laws check as well.
 The dependent Peano view, coherent strong recursion for arbitrary dependent
-families and binary factorial also check. Public `Nat` remains unary pending
-the numeral/frontend and unary-client migration. NUM2 and
+families and binary factorial also check. Public `Nat` now aliases binary
+`BNat`; the unary declaration and structural clients use explicit `UNat`.
+Decimal I/O and both printers are migrated; release validation is pending. NUM2 and
 EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
@@ -800,9 +801,8 @@ not implemented; no prototype-only result counts as the checked capability.
 in #266; EVAL2's full-normalization cache and NUM0's binary foundations are
 implemented, as are NUM1's semiring agreement, universe transport, bitwise
 setness, comparison correctness and coherent dependent strong recursion.
-Proceed with direct binary decimal input/printing and the unary-client
-migration.
-Switch the public `Nat` when their correctness and compatibility gates pass;
+Finish the default-`Nat` migration gates: recheck the unary library/archive
+clients, frontend and browser behavior, then obtain the required review;
 NUM2 follows. Develop the joint EVAL3/EVAL4 design, then EVAL5 and applicable
 EVAL8 review. EVAL6 requires fresh binary profiles; EVAL7 follows NUM1. The
 ordered ring/field definitions landed in #267. Resume the language

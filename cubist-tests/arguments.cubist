@@ -5,7 +5,7 @@
 // checked, with every hole's solution in its place.
 import univalence;
 import hlevels;
-use nat;
+use unat;
 
 def same(U < UU0, A : U, a : A) : A := a;
 
@@ -16,26 +16,26 @@ def concat(U < UU0, A : U, x, y, z : A, p : x = y, q : y = z) : x = z := trans(p
 def function_of(U < UU0, A, B : U, f : A -> B) : A -> B := f;
 
 // From an argument's type: the carrier of n.
-def from_argument(n : Nat) : Nat := same(U0, _, n);
+def from_argument(n : UNat) : UNat := same(U0, _, n);
 
-// Output: λ (n : Nat). (λ (ascription : Nat). ascription)(same(U0, Nat, n))
+// Output: λ (n : UNat). (λ (ascription : UNat). ascription)(same(U0, UNat, n))
 print(inspect(from_argument));
 
 // From the type expected of the call: glue_path's two types.
 def from_expected(P : U0, e : ContrEquiv(U0, P, Unit)) : P = Unit := glue_path(U0, _, _, e);
 
 // A path's endpoints, from the paths' types.
-def endpoints(x, y, z : Nat, p : x = y, q : y = z) : x = z := concat(U0, _, _, _, _, p, q);
+def endpoints(x, y, z : UNat, p : x = y, q : y = z) : x = z := concat(U0, _, _, _, _, p, q);
 
-// Output: λ (x : Nat). λ (y : Nat). λ (z : Nat). λ (p : (x =[Nat] y)). λ (q : (y =[Nat] z)). (λ
-//   (ascription : (x =[Nat] z)). ascription)(concat(U0, Nat, x, y, z, p, q))
+// Output: λ (x : UNat). λ (y : UNat). λ (z : UNat). λ (p : (x =[UNat] y)). λ (q : (y =[UNat] z)). (λ
+//   (ascription : (x =[UNat] z)). ascription)(concat(U0, UNat, x, y, z, p, q))
 print(inspect(endpoints));
 
 // A lambda with a typed binder gives A and B; an untyped one waits until n
 // and the expected type have given them, and is checked against A -> B.
-def typed_lambda(n : Nat) : Nat := apply(U0, _, _, fun (x : Nat) => succ(x), n);
+def typed_lambda(n : UNat) : UNat := apply(U0, _, _, fun (x : UNat) => succ(x), n);
 
-def untyped_lambda(n : Nat) : Nat := apply(U0, _, _, fun x => succ(x), n);
+def untyped_lambda(n : UNat) : UNat := apply(U0, _, _, fun x => succ(x), n);
 
 // Holes inside an argument, solved from the type the outer call expects of
 // it: an equivalence from inverses, glued to a path of types.
@@ -57,10 +57,10 @@ computable def named(P : U0, prop_ : IsProp(U0, P), p : P) : P = Unit := glue_pa
   )
 );
 
-def named_after_positional(n : Nat) : Nat := apply(U0, Nat, a := n, f := fun x => succ(x));
+def named_after_positional(n : UNat) : UNat := apply(U0, UNat, a := n, f := fun x => succ(x));
 
 // Parameters after the last one given are left for a later application.
-def partial : Nat -> Nat := apply(U0, f := fun (x : Nat) => succ(x));
+def partial : UNat -> UNat := apply(U0, f := fun (x : UNat) => succ(x));
 
 // Output: 3
 print(evaluate(partial(2)));
@@ -69,50 +69,50 @@ print(evaluate(partial(2)));
 // n = n, is not determined, although refl(n) has that type.
 // Error: E388: Nothing determines the parameter a of same, of type n = n: not the other arguments'
 //   types, nor the type expected of the call. Give it explicitly.
-def no_search(n : Nat) : n = n := same(U0, n = n, _);
+def no_search(n : UNat) : n = n := same(U0, n = n, _);
 
-// A universe that cumulativity leaves open: Nat is in U0, and in U1 as well.
+// A universe that cumulativity leaves open: UNat is in U0, and in U1 as well.
 // Error: E392: The parameter A of same is not determined: U0 fits, and so would a larger universe.
 //   Give it explicitly.
-def universe_open := same(U2, _, Nat);
+def universe_open := same(U2, _, UNat);
 
-def universe_given := same(U2, U0, Nat);
+def universe_given := same(U2, U0, UNat);
 
 // A solution may not mention a variable bound inside the constraint: B
 // would be n = n, for the lambda's own n.
 // Error: E389: The parameter B of function_of would be n = n, which mentions a variable bound
 //   inside an argument, out of its scope. Give it explicitly.
-def bound_variable := function_of(U0, _, _, fun (n : Nat) => refl(n));
+def bound_variable := function_of(U0, _, _, fun (n : UNat) => refl(n));
 
 // A universe argument can be a hole: the least universe the call needs,
-// here U0, which holds A := Nat (cubist-tests/implicit_parameters).
-def universe_hole(n : Nat) : Nat := same(_, Nat, n);
+// here U0, which holds A := UNat (cubist-tests/implicit_parameters).
+def universe_hole(n : UNat) : UNat := same(_, UNat, n);
 
 // Error: E375: same has no parameter b; its parameters are U, A, a.
-def unknown_parameter(n : Nat) : Nat := same(U0, b := n);
+def unknown_parameter(n : UNat) : UNat := same(U0, b := n);
 
 // Error: E377: The argument a is given twice.
-def given_twice(n : Nat) : Nat := same(U0, a := n, a := n);
+def given_twice(n : UNat) : UNat := same(U0, a := n, a := n);
 
 // Error: E378: refl takes its arguments explicitly: a hole _ or a named argument is an argument of
 //   a definition or a function.
-def builtin_hole(n : Nat) : n = n := refl(_);
+def builtin_hole(n : UNat) : n = n := refl(_);
 
 // Error: E379: succ is a declared type or a constructor, whose arguments are written out: a hole _
 //   or a named argument is an argument of a definition or a function.
-def constructor_hole(n : Nat) : Nat := succ(_);
+def constructor_hole(n : UNat) : UNat := succ(_);
 
 // Error: E374: f has no named parameters: a named argument gives a parameter that a definition
 //   declares.
-def local_function(f : Nat -> Nat, n : Nat) : Nat := f(x := n);
+def local_function(f : UNat -> UNat, n : UNat) : UNat := f(x := n);
 
 // Error: E382: same takes 3 arguments; this is one more.
-def too_many(n : Nat) : Nat := same(U0, Nat, n, n);
+def too_many(n : UNat) : UNat := same(U0, UNat, n, n);
 
 // Error: E385: A hole _ stands for an argument of a call, which the call's other arguments or the
 //   type expected of it determine; anywhere else, write the term.
-def standalone : Nat := _;
+def standalone : UNat := _;
 
 // A mismatch is reported at the argument.
-// Error: E606: Type mismatch: found Unit, expected Nat.
-def mismatch(n : Nat) : Nat := apply(U0, _, _, fun (x : Nat) => x, tt);
+// Error: E606: Type mismatch: found Unit, expected UNat.
+def mismatch(n : UNat) : UNat := apply(U0, _, _, fun (x : UNat) => x, tt);

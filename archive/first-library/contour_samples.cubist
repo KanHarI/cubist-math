@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import sample_chains;
 import ring_laws;
 
@@ -9,7 +9,7 @@ def coordinate_difference(F : U1, addF : F -> F -> F, negF : F -> F, a, b : F) :
 def contour_edge(F : U1, addF, mulF : F -> F -> F, negF, f : F -> F, a, b, tag : F) :=
   mulF(f(tag), coordinate_difference(F, addF, negF, a, b));
 
-def contour_sum(F : U1, zero : F, addF, mulF : F -> F -> F, negF, f : F -> F, n : Nat) :=
+def contour_sum(F : U1, zero : F, addF, mulF : F -> F -> F, negF, f : F -> F, n : UNat) :=
   sample_sum(F, F, zero, addF, contour_edge(F, addF, mulF, negF, f), n);
 
 def difference_add_back(

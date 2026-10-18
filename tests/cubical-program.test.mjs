@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
-import naturalSource from "../web/translator/nat-source.mjs";
+import naturalSource from "../web/translator/unat-source.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { testModulePath } from "../tools/inline-errors.mjs";
 import { checkTestModule } from "./check-program.mjs";
@@ -17,10 +17,10 @@ const module = await createCubical();
 // programs that need a reader of their own.
 const cases = (t, name, options = {}) => checkTestModule(t, `program_${name}`, { module, options });
 
-// A reader with no library, such as the first test's, still loads `nat`.
-test("nat's bundled source is the library's nat module", async () => {
-  assert.equal(naturalSource, await readFile(new URL("../library/nat.cubist", import.meta.url), "utf8"),
-    "Regenerate web/translator/nat-source.mjs from library/nat.cubist.");
+// A reader with no library, such as the first test's, still loads `unat`.
+test("unat's bundled source is the library's unat module", async () => {
+  assert.equal(naturalSource, await readFile(new URL("../library/unat.cubist", import.meta.url), "utf8"),
+    "Regenerate web/translator/unat-source.mjs from library/unat.cubist.");
 });
 
 test("a universe-generic definition is one kernel definition", async t => {
@@ -56,7 +56,7 @@ test("module shadowing cannot retarget earlier checked native definitions", asyn
 
 test("unsupported foundations and invalid proofs remain explicitly unverified", async t => {
   const program = new CubicalProgram(module, async () => { throw new Error("Source unavailable"); }); t.after(() => program.dispose());
-  const result = await program.check("import nat; import missing; use nat; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
+  const result = await program.check("import unat; import missing; use unat; def wrong : 0 = 1 { exact refl(0); } def dependent := wrong; def fine := 0;", "example");
   assert.equal(result.complete, false);
   assert.deepEqual(result.outputs.map(d => d.verified), [false, false, true]);
   assert.ok(result.gaps.some(g => g.module === "missing"));
@@ -263,7 +263,7 @@ test("a declaration that fails after a failed import names the import", async t 
     throw new Error(`Native source is not available for ${name}.`);
   }, { collectReferences: false });
   t.after(() => program.dispose());
-  const result = await program.check("import nat;\nimport lists; use nat;\ndef four := append;\ndef five := 5;\ndef six : Nat {\n  exact length;\n}\n", "imports_missing");
+  const result = await program.check("import unat;\nimport lists; use unat;\ndef four := append;\ndef five := 5;\ndef six : UNat {\n  exact length;\n}\n", "imports_missing");
   const reason = name => result.outputs.find(output => output.name === name).reason;
   assert.equal(reason("four"),
     "Untranslated name: append (import lists failed: Native source is not available for lists.)");

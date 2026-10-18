@@ -1,15 +1,15 @@
-import nat;
+import unat;
 
 import finite;
-use nat;
+use unat;
 
-// Pascal's recurrence, computed entirely in Nat.
-def choose(n : Nat) := induction n as row return (Nat -> Nat) {
-    zero => fun (k : Nat) => induction k as column return Nat {
+// Pascal's recurrence, computed entirely in UNat.
+def choose(n : UNat) := induction n as row return (UNat -> UNat) {
+    zero => fun (k : UNat) => induction k as column return UNat {
       zero => 1;
       succ previous => 0;
     };
-    succ previous_row => fun (k : Nat) => induction k as column return Nat {
+    succ previous_row => fun (k : UNat) => induction k as column return UNat {
       zero => 1;
       succ previous => add_count(previous_row(column), previous_row(succ(column)));
     };
@@ -17,27 +17,27 @@ def choose(n : Nat) := induction n as row return (Nat -> Nat) {
 
 // A structural representation of k-element subsets of n alternatives.
 // The successor branches respectively select or omit the first alternative.
-def Selections(n : Nat) := induction n as row return (Nat -> U0) {
-    zero => fun (k : Nat) => induction k as column return U0 {
+def Selections(n : UNat) := induction n as row return (UNat -> U0) {
+    zero => fun (k : UNat) => induction k as column return U0 {
       zero => Unit;
       succ previous => Void;
     };
-    succ previous_row => fun (k : Nat) => induction k as column return U0 {
+    succ previous_row => fun (k : UNat) => induction k as column return U0 {
       zero => Unit;
       succ previous => previous_row(column) or previous_row(succ(column));
     };
   };
 
 // Every branch is a bijection with explicit inverse laws, for arbitrary n,k.
-def selections_count(n : Nat) :=
-  induction n as row return (forall k : Nat. Bijection(Selections(row, k), Fin(choose(row, k)))) {
-    zero => fun (k : Nat) => induction k as column return Bijection(
+def selections_count(n : UNat) :=
+  induction n as row return (forall k : UNat. Bijection(Selections(row, k), Fin(choose(row, k)))) {
+    zero => fun (k : UNat) => induction k as column return Bijection(
       Selections(0, column), Fin(choose(0, column))
     ) {
       zero => unit_to_fin_one;
       succ previous => identity_bijection(Void);
     };
-    succ previous_row => fun (k : Nat) => induction k as column return Bijection(
+    succ previous_row => fun (k : UNat) => induction k as column return Bijection(
       Selections(succ(row), column), Fin(choose(succ(row), column))
     ) {
       zero => unit_to_fin_one;

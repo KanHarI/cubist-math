@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import integer_multiples;
 import finite;
-use nat;
+use unat;
 
 // Finite sums and the single-supported-term identity.
 
-def finite_sum(G : U1, zero : G, addG : G -> G -> G, n : Nat) :=
+def finite_sum(G : U1, zero : G, addG : G -> G -> G, n : UNat) :=
   induction n as k return ((Fin(k) -> G) -> G) {
     zero => fun (values : Fin(0) -> G) => zero;
     succ previous => fun (values : Fin(succ(k)) -> G) => addG(
@@ -15,7 +15,7 @@ def finite_sum(G : U1, zero : G, addG : G -> G -> G, n : Nat) :=
   };
 
 def finite_sum_zero(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : UNat
 ) :
   forall values : Fin(n) -> G. (forall i : Fin(n). values(i) = zero)
   -> finite_sum(G, zero, addG, n, values) = zero {
@@ -54,7 +54,7 @@ def finite_sum_zero(
 }
 
 def finite_sum_add(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : UNat
 ) :
   forall values : Fin(n) -> G. forall other : Fin(n) -> G.
   finite_sum(G, zero, addG, n, (fun (i : Fin(n)) => addG(values(i), other(i)))) = addG(
@@ -87,7 +87,7 @@ def finite_sum_add(
 }
 
 def finite_sum_cong(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : UNat
 ) :
   forall values : Fin(n) -> G. forall other : Fin(n) -> G. (forall i : Fin(n). values(i) = other(i))
   -> finite_sum(G, zero, addG, n, values) = finite_sum(G, zero, addG, n, other) {
@@ -125,7 +125,7 @@ def finite_sum_cong(
 }
 
 def finite_sum_single(
-  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : Nat
+  G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), n : UNat
 ) :
   forall values : Fin(n) -> G. forall selected : Fin(n). forall v : G. (values(selected) = v)
   -> (forall i : Fin(n). ((selected = i) -> Void) -> values(i) = zero)

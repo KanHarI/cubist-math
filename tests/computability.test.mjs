@@ -15,7 +15,7 @@ test("evaluate reports the normal form, and a failed evaluation makes its module
   const { result } = await evaluation();
   // Only the evaluations that pass have values; each that fails states its
   // error in the module.
-  // The module selects nat, so the binary value is qualified (L2.10j).
+  // The module selects unat, so the binary value is qualified (L2.10j).
   assert.deepEqual(result.evaluations.map(item => item.value), ["4", "binary.(0b10001111)"]);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });
@@ -23,8 +23,8 @@ test("computable and evaluate parse and format stably; their keywords cannot be 
   const source = `import primes;
 computable def one := 1;
 computable def two := 2;
-def uses_names(computable_ : Nat) : Nat {
-  let value : Nat := computable_;
+def uses_names(computable_ : UNat) : UNat {
+  let value : UNat := computable_;
   exact value;
 }
 evaluate one + one expecting two;
@@ -38,8 +38,8 @@ evaluate one + one expecting two;
   assert.equal(formatCubist(formatted), formatted);
   assert.match(formatted, /\ncomputable def one := 1;\n\ncomputable def two := 2;\n\n/);
   assert.match(formatted, /\n\nevaluate one \+ one expecting two;\n$/);
-  assert.match(formatted, /let value : Nat := computable_;/);
+  assert.match(formatted, /let value : UNat := computable_;/);
   for (const word of ["computable", "evaluate", "expecting"])
-    assert.throws(() => parse(`def f(${word} : Nat) : Nat := ${word};`),
+    assert.throws(() => parse(`def f(${word} : UNat) : UNat := ${word};`),
       new RegExp(`^Error: ${word} is reserved, as a keyword or a built-in type of the language; pick another name\\.$`));
 });

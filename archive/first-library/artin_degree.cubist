@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import artin_equivariance;
 import finite_linear_lifts;
 import extension_degree;
@@ -8,8 +8,8 @@ import natural_minimum;
 // proof lifts a basis through the family's surjection and applies the checked
 // finite-coordinate injection bound.
 def finite_spanning_basis_size_bound(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
-  spanning : FiniteSpanningFamily(K, V, n, vectors), m : Nat, basis : FiniteBasis(K, V, m)
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, vectors : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, vectors), m : UNat, basis : FiniteBasis(K, V, m)
 ) :
   le(m, n) {
   let C := CoordinateSpace(K, n);
@@ -36,8 +36,8 @@ def finite_spanning_basis_size_bound(
 }
 
 def finite_spanning_dimension_bound(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
-  spanning : FiniteSpanningFamily(K, V, n, vectors), m : Nat, dimension : HasDimension(K, V, m)
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, vectors : Fin(n) -> vector_carrier(K, V),
+  spanning : FiniteSpanningFamily(K, V, n, vectors), m : UNat, dimension : HasDimension(K, V, m)
 ) :
   le(m, n) {
   exact mere_eliminate(
@@ -54,7 +54,7 @@ def finite_spanning_dimension_bound(
 // automorphisms makes E finite-dimensional over its fixed field, of degree at
 // most n. The lower bound and automorphism classification are separate steps.
 def finite_subgroup_fixed_degree_upper_bound(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   exists finiteExtension : FiniteExtension(
@@ -120,7 +120,7 @@ def finite_subgroup_fixed_degree_upper_bound(
 // fixed-field relation remains a relation after every subgroup automorphism,
 // and the evaluation vectors are independent over the ambient field.
 def subgroup_evaluation_points_independent(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   enumeration : Bijection(Fin(n), SubgroupCarrier(GaloisGroup(K, E), H)), points : Fin(n)
   -> extension_carrier(K, E),
   basis : FamilyBasis(
@@ -241,9 +241,9 @@ def subgroup_evaluation_points_independent(
 }
 
 def finite_independent_basis_size_bound(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, vectors : Fin(n) -> vector_carrier(K, V),
   independent : LinearInjective(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors)),
-  m : Nat, basis : FiniteBasis(K, V, m)
+  m : UNat, basis : FiniteBasis(K, V, m)
 ) :
   le(n, m) {
   let C := CoordinateSpace(K, n);
@@ -265,9 +265,9 @@ def finite_independent_basis_size_bound(
 }
 
 def finite_independent_dimension_bound(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, vectors : Fin(n) -> vector_carrier(K, V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, vectors : Fin(n) -> vector_carrier(K, V),
   independent : LinearInjective(K, CoordinateSpace(K, n), V, family_linear(K, V, n, vectors)),
-  m : Nat, dimension : HasDimension(K, V, m)
+  m : UNat, dimension : HasDimension(K, V, m)
 ) :
   le(n, m) {
   exact mere_eliminate(
@@ -281,7 +281,7 @@ def finite_independent_dimension_bound(
 }
 
 def finite_subgroup_fixed_degree_lower_bound(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n),
   finiteExtension : FiniteExtension(
     intermediate_as_field(K, E, fixed_intermediate_field(K, E, H)),
@@ -332,7 +332,7 @@ def finite_subgroup_fixed_degree_lower_bound(
 // extension automorphisms. Both inequalities come from the same evaluation
 // basis: its points span over the fixed field and are independent there.
 def artin_fixed_field_degree(
-  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : Nat,
+  K : AlgebraicField, E : FieldExt(K), H : GaloisSubgroup(K, E), n : UNat,
   finite : HasCardinality(SubgroupCarrier(GaloisGroup(K, E), H), n)
 ) :
   exists finiteExtension : FiniteExtension(

@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import interval_tag_bounds;
 import sample_tagged;
 
-def IntervalAdmissibleTags(F : U1, zero, one : F, lt : F -> F -> U0, n : Nat) :=
+def IntervalAdmissibleTags(F : U1, zero, one : F, lt : F -> F -> U0, n : UNat) :=
   SampleTagged(FieldUnitInterval(F, zero, one, lt), IntervalTagWithin(F, zero, one, lt), n);
 
 def IntervalMeshBelow(
-  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : Nat
+  F : U1, zero, one : F, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, radius : F, n : UNat
 ) :=
   SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),
@@ -36,7 +36,7 @@ def interval_tag_orders_endpoints(
 
 def interval_admissible_samples_ordered(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, lt : F -> F -> U0,
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : Nat,
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   valid : IntervalAdmissibleTags(F, zero, one, lt, n, vertices, tags)
@@ -64,7 +64,7 @@ def interval_admissible_samples_ordered(
 }
 
 def interval_endpoint_tags_admissible(
-  F : U1, zero, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), n : Nat,
+  F : U1, zero, one : F, lt : F -> F -> U0, order : StrictOrder(F, lt), n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   ordered : SampleAdjacent(
     FieldUnitInterval(F, zero, one, lt),

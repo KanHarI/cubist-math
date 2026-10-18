@@ -4,8 +4,8 @@
 // arguments vary, and the refusals. tests/declared-match.test.mjs checks each
 // case by name.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
 inductive N {
   zero;
@@ -369,7 +369,7 @@ def too_many(s : S) : S := match s {
   };
 
 // A parameter that shadows its type's name still matches.
-def count(N : N) : Nat := match N {
+def count(N : N) : UNat := match N {
     zero => 0;
     succ(k) => count(k);
   };

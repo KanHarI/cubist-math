@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import finite;
-use nat;
+use unat;
 
 // Swap the first alternative with a given alternative. These maps will also
 // split a permutation into its first image and a permutation of the remainder.
@@ -181,7 +181,7 @@ def restrict_bijection(
   );
 }
 
-def cancel_finite_successor(n, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
+def cancel_finite_successor(n, m : UNat, e : Bijection(Fin(succ(n)), Fin(succ(m)))) :
   Bijection(Fin(n), Fin(m)) {
   let image := forward(Fin(succ(n)), Fin(succ(m)), e, head(Fin(n)));
   let adjusted := compose_bijection(
@@ -191,15 +191,15 @@ def cancel_finite_successor(n, m : Nat, e : Bijection(Fin(succ(n)), Fin(succ(m))
 }
 
 // Finite cardinality is invariant under arbitrary bijections.
-def finite_cardinality_unique(n : Nat) :=
-  induction n as k return (forall m : Nat. Bijection(Fin(k), Fin(m)) -> (k = m)) {
-    zero => fun (m : Nat) => induction m as j return (Bijection(Fin(0), Fin(j)) -> (0 = j)) {
+def finite_cardinality_unique(n : UNat) :=
+  induction n as k return (forall m : UNat. Bijection(Fin(k), Fin(m)) -> (k = m)) {
+    zero => fun (m : UNat) => induction m as j return (Bijection(Fin(0), Fin(j)) -> (0 = j)) {
       zero => fun (e : Bijection(Fin(0), Fin(0))) => refl(0);
       succ previous => fun (e : Bijection(Fin(0), Fin(succ(j)))) => typed(
         (0 = succ(j)), absurd(backward(Fin(0), Fin(succ(j)), e, head(Fin(j))))
       );
     };
-    succ previous => fun (m : Nat) => induction m as j return (
+    succ previous => fun (m : UNat) => induction m as j return (
       Bijection(Fin(succ(k)), Fin(j)) -> (succ(k) = j)
     ) {
       zero => fun (e : Bijection(Fin(succ(k)), Fin(0))) => typed(

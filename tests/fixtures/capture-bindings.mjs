@@ -1,8 +1,8 @@
 // Review witnesses have independent source clients. Expectations describe
 // the intended language, never a type or term copied from generated syntax.
-const imports = "import hlevels; import nat;";
-const recursive = "def iter(n : Nat) : Nat := match n { zero => zero; succ(k) => iter(k); };";
-const global = "def iter(n : Nat) : Nat := succ(zero);";
+const imports = "import hlevels; import unat;";
+const recursive = "def iter(n : UNat) : UNat := match n { zero => zero; succ(k) => iter(k); };";
+const global = "def iter(n : UNat) : UNat := succ(zero);";
 const recovery = "def independent : Unit := tt;";
 const box = "inductive Box(U < UU0, A : U) : U { box(a : A); }";
 const refusedTheory = [["main", "T", "E845"], ["main", "captured", "E340"]];
@@ -24,10 +24,10 @@ ${recovery}`,
   id:"initial-pattern-model", phase:"CB4", contract:"capture repair exposes the real strategy refusal and preserves the usable theory",
   source:`${imports}
 theory P(U < UU0) { M : set U; c : M;
-  law l(n : Nat) : c = (match n return M { zero => c; succ(k) => c; });
+  law l(n : UNat) : c = (match n return M { zero => c; succ(k) => c; });
 }
 initial k : P(U0);
-def intended(S : P(U0), n : Nat) : S.c = (match n return S.M { zero => S.c; succ(j) => S.c; }) := S.l(n);
+def intended(S : P(U0), n : UNat) : S.c = (match n return S.M { zero => S.c; succ(j) => S.c; }) := S.l(n);
 ${recovery}`,
   clients:["k","intended","independent"],
   desired:{gaps:[["main","k","E856"]],clients:{k:false,intended:true,independent:true},assumes:[]},
@@ -59,10 +59,10 @@ for (const location of resolutionLocations) {
     contract: "recursive field dependencies cannot become a same-spelled global",
     source: `${context.prefix}
 theory T(U < UU0) { M : set U; ${recursive}
-  ${bare ? "" : "def wrap(n : Nat) : Nat := iter(n);"}
-  op(p : ${bare ? "iter = (fun (n : Nat) => succ(zero))" : "wrap(zero) = succ(zero)"}) : M;
+  ${bare ? "" : "def wrap(n : UNat) : UNat := iter(n);"}
+  op(p : ${bare ? "iter = (fun (n : UNat) => succ(zero))" : "wrap(zero) = succ(zero)"}) : M;
 }
-def captured(S : T(U0)) : S.M := S.op(${bare ? "refl(fun (n : Nat) => succ(zero))" : "refl(succ(zero))"});
+def captured(S : T(U0)) : S.M := S.op(${bare ? "refl(fun (n : UNat) => succ(zero))" : "refl(succ(zero))"});
 ${recovery}`,
     fixtures: context.fixtures,
     clients: ["captured", "independent"],
@@ -73,10 +73,10 @@ ${recovery}`,
 bindingCases.push({
   id: "ordered-header", phase: "CB2", contract: "later helpers cannot replace an earlier header parameter",
   source: `${imports}
-theory T(U < UU0, n : Nat) { M : set U; op(p : n = n) : M; def n : Nat := zero; }
-def identity(n : Nat, S : T(U0, n)) : T.Hom(S, S) := T.Hom.id(S);
-def param(m : Nat, S : T(U0, m), p : m = m) : S.M := S.op(p);
-def captured_param(m : Nat, S : T(U0, m)) : S.M := S.op(refl(zero));
+theory T(U < UU0, n : UNat) { M : set U; op(p : n = n) : M; def n : UNat := zero; }
+def identity(n : UNat, S : T(U0, n)) : T.Hom(S, S) := T.Hom.id(S);
+def param(m : UNat, S : T(U0, m), p : m = m) : S.M := S.op(p);
+def captured_param(m : UNat, S : T(U0, m)) : S.M := S.op(refl(zero));
 initial N : T(U0, succ(zero));
 def generated : N := N.op(refl(succ(zero)));
 def captured : N := N.op(refl(zero));`,
@@ -88,11 +88,11 @@ def captured : N := N.op(refl(zero));`,
   contract: "inheritance renames field identities without capturing imported pattern binders",
   fixtures: { parent: `${imports}\n${"// imported source ownership padding\n".repeat(16)}
 theory P(U < UU0) { M : set U; a : M;
-  law l(n : Nat) : (match n return M { zero => a; succ(b) => a; }) = a;
+  law l(n : UNat) : (match n return M { zero => a; succ(b) => a; }) = a;
 }` },
   source: `import parent;
 theory C(U < UU0) extends P(a := b) {}
-def meaning(S : C(U0), n : Nat) :
+def meaning(S : C(U0), n : UNat) :
   (match n return S.M { zero => S.b; succ(k) => S.b; }) = S.b := S.l(n);
 ${recovery}`,
   clients: ["meaning", "independent"],
@@ -105,7 +105,7 @@ for (const location of resolutionLocations) {
     id: `family-domain-helper-${location}`, phase: "CB2", contract: "family domains retain the helper instead of an ambient Index",
     fixtures: context.fixtures,
     source: `${context.prefix}
-theory T(U < UU0) { M : set U; def Index : U0 := Nat; F(n : Index) : set U; }
+theory T(U < UU0) { M : set U; def Index : U0 := UNat; F(n : Index) : set U; }
 def member(S : T(U0)) : U0 := S.F(zero);
 def captured(S : T(U0)) : U0 := S.F(tt);
 ${recovery}`,
@@ -116,15 +116,15 @@ ${recovery}`,
 
 const models = `${imports}
 theory Point(U < UU0) { M : set U; one : M; }
-def additive_ : Point(U0) := Point.make(Nat, nat_is_set, zero);
-def multiplicative : Point(U0) := Point.make(Nat, nat_is_set, succ(zero));`;
+def additive_ : Point(U0) := Point.make(UNat, unat_is_set, zero);
+def multiplicative : Point(U0) := Point.make(UNat, unat_is_set, succ(zero));`;
 bindingCases.push({
   id: "file-opening-precedence", phase: "CB3", contract: "per-item openings outrank module globals but not parameters",
   source: `${models}
 use multiplicative;
-def one : Nat := zero;
-def f : Nat := one;
-def local(one : Nat) : Nat := one;
+def one : UNat := zero;
+def f : UNat := one;
+def local(one : UNat) : UNat := one;
 def opened : f = succ(zero) { rfl; }
 def shadowed : local(zero) = zero { rfl; }
 def captured : f = zero { rfl; }`,
@@ -134,8 +134,8 @@ def captured : f = zero { rfl; }`,
   id: "file-opening-reactivation", phase: "CB3", contract: "each later source item resolves a file-level opening receiver anew",
   source: `${imports} import algebra;
 use nat_multiplicative.monoid;
-def nat_multiplicative : Nat := nat.(1);
-use nat;`,
+def nat_multiplicative : UNat := unat.(1);
+use unat;`,
   clients: ["nat_multiplicative"],
   desired: { gaps: [["main", "use at line 4", "E343"]], clients: { nat_multiplicative: true }, assumes: [] },
 });
@@ -143,10 +143,10 @@ use nat;`,
 // The operand recipe selects a numeral rule that distinguishes its receiver
 // from a same-spelled client model, without depending on implicit field opening.
 const notationModels = `${imports}
-theory Numerals(U < UU0) { M : set U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
-def recipe : Numerals(U0) := Numerals.make(Nat, nat_is_set, fun (n : Nat) => n);
-def shifted : Numerals(U0) := Numerals.make(Nat, nat_is_set, fun (n : Nat) => succ(n));
-theory Power(U < UU0) { M : set U; pow(x : M, n : Nat) : M notation x ^ recipe.(n); }`;
+theory Numerals(U < UU0) { M : set U; read(n : UNat) : M; def numeral_(n : UNat) : M := read(n) notation numeral; }
+def recipe : Numerals(U0) := Numerals.make(UNat, unat_is_set, fun (n : UNat) => n);
+def shifted : Numerals(U0) := Numerals.make(UNat, unat_is_set, fun (n : UNat) => succ(n));
+theory Power(U < UU0) { M : set U; pow(x : M, n : UNat) : M notation x ^ recipe.(n); }`;
 for (const imported of [false, true]) bindingCases.push({
   id: `operand-receiver-${imported ? "global" : "local"}`, phase: "CB3",
   contract: "an operand recipe retains its declaration-scoped model receiver",
@@ -166,19 +166,19 @@ bindingCases.push({
   id: "failed-theory-activation", phase: "CB3", contract: "failed required openings refuse every dependent generated group",
   source: `${imports} import algebra;
 ${recovery}
-def one : Nat := zero;
+def one : UNat := zero;
 use nat_multiplicative.monoid;
-def nat_multiplicative : Nat := nat.(1);
-theory Pointed(U < UU0) { M : set U; c : M; op(n : Nat) : M; law is_one : op(one) = c; }`,
+def nat_multiplicative : UNat := unat.(1);
+theory Pointed(U < UU0) { M : set U; c : M; op(n : UNat) : M; law is_one : op(one) = c; }`,
   clients: ["independent"], publication: ["Pointed"],
   desired: { gaps: [["main", "Pointed", "E343"]], clients: { independent: true }, assumes: [], published: [] },
 }, {
   id: "operand-local", phase: "CB3", contract: "synthesized operand selection cannot open fields over caller locals",
   source: `${models}
-theory Power(U < UU0) { M : set U; pow(x : M, n : Nat) : M notation x ^ additive_.(n); }
-def client(S : Power(U0), x : S.M, one : Nat) : S.M := S.(x ^ one);
-def intended(S : Power(U0), x : S.M, n : Nat) : client(S, x, n) = S.pow(x, n) { rfl; }
-def captured(S : Power(U0), x : S.M, n : Nat) : client(S, x, n) = S.pow(x, zero) { rfl; }`,
+theory Power(U < UU0) { M : set U; pow(x : M, n : UNat) : M notation x ^ additive_.(n); }
+def client(S : Power(U0), x : S.M, one : UNat) : S.M := S.(x ^ one);
+def intended(S : Power(U0), x : S.M, n : UNat) : client(S, x, n) = S.pow(x, n) { rfl; }
+def captured(S : Power(U0), x : S.M, n : UNat) : client(S, x, n) = S.pow(x, zero) { rfl; }`,
   clients: ["client", "intended", "captured"],
   desired: { gaps: [["main", "captured", "E606"]], clients: { client: true, intended: true, captured: false }, assumes: [] },
 }, {

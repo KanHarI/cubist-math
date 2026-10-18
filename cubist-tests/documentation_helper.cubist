@@ -1,7 +1,7 @@
 // From tests/documentation.test.mjs: an imported definition whose comment is
 // its documentation, for documentation_use.
 
-import nat;
+import unat;
 
 // Imported identity.
-def identity(n : Nat) := n;
+def identity(n : UNat) := n;

@@ -1,14 +1,14 @@
 // From tests/cubical-program.test.mjs: path proofs and their refusals, which
 // every combination of the kernel's optimization switches checks alike.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
-def compose_(x : Nat, y : Nat, z : Nat, p : x = y, q : y = z) : succ(x) = succ(z) {
+def compose_(x : UNat, y : UNat, z : UNat, p : x = y, q : y = z) : succ(x) = succ(z) {
   exact cong(succ, trans(p, q));
 }
 
-def reverse(x : Nat, y : Nat, p : x = y) : y = x {
+def reverse(x : UNat, y : UNat, p : x = y) : y = x {
   exact sym(p);
 }
 

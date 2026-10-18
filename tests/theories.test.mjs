@@ -119,19 +119,19 @@ test("the parser refuses a theory's malformed fields", () => {
 });
 
 test("a section is parsed and formatted as one item, and refused in its form", () => {
-  const source = "section {{U < UU0}}(n : U) { def a := n; def b(m : Nat) : Nat := m;\n}\ndef c := 0;\n";
+  const source = "section {{U < UU0}}(n : U) { def a := n; def b(m : UNat) : UNat := m;\n}\ndef c := 0;\n";
   const [a, b, c] = parse(source).declarations;
   assert.deepEqual([a.section.declared, b.section.declared, c.section], [[], ["a"], undefined]);
   assert.deepEqual(b.section.params.map(p => [p.name.text, !!p.implicit]), [["U", true], ["n", false]]);
   const formatted = formatCubist(source);
-  assert.equal(formatted, "section {{U < UU0}}(n : U) {\n  def a := n;\n\n  def b(m : Nat) : Nat := m;\n}\n\ndef c := 0;\n");
+  assert.equal(formatted, "section {{U < UU0}}(n : U) {\n  def a := n;\n\n  def b(m : UNat) : UNat := m;\n}\n\ndef c := 0;\n");
   assert.equal(formatCubist(formatted), formatted);
-  assert.throws(() => parse("section (n : Nat) { section (m : Nat) { } }"), /Sections do not nest: close this one with \} first\./);
+  assert.throws(() => parse("section (n : UNat) { section (m : UNat) { } }"), /Sections do not nest: close this one with \} first\./);
   assert.throws(() => parse("section { def a := 0; }"), /A section gives its definitions parameters/);
-  assert.throws(() => parse("section (n : Nat) { def a := n;"), /Expected '}' to close the section\./);
-  assert.throws(() => parse("section (n : Nat) { inductive T { t; } }"), /A section holds definitions: def and computable def\./);
+  assert.throws(() => parse("section (n : UNat) { def a := n;"), /Expected '}' to close the section\./);
+  assert.throws(() => parse("section (n : UNat) { inductive T { t; } }"), /A section holds definitions: def and computable def\./);
   // An ordinary parameter uses a different name.
-  assert.equal(parse("def f(section_ : Nat) := section_;").declarations[0].name.text, "f");
+  assert.equal(parse("def f(section_ : UNat) := section_;").declarations[0].name.text, "f");
 });
 
 test("a theory declared in one module is read, opened and printed in another", async t => {
@@ -172,14 +172,14 @@ def idempotent(G : Magma(U0), x : G.M) : G.mul(x, x) = x {
 });
 
 test("open, use's earlier spelling, is refused with a message naming use", () => {
-  assert.throws(() => parse("def f(G : M) : Nat { open G; exact 0; }"), /open is now use: write use m; to select a model's fields and notation\./);
-  assert.equal(currentSyntax("def f(G : M) : Nat {\n  open G;\n  exact 0;\n}\n"), "def f(G : M) : Nat {\n  use G;\n  exact 0;\n}\n");
+  assert.throws(() => parse("def f(G : M) : UNat { open G; exact 0; }"), /open is now use: write use m; to select a model's fields and notation\./);
+  assert.equal(currentSyntax("def f(G : M) : UNat {\n  open G;\n  exact 0;\n}\n"), "def f(G : M) : UNat {\n  use G;\n  exact 0;\n}\n");
 });
 
 test("a source from before L2.4c is read with carriers, a header and T for T.Model", () => {
-  const old = "theory Monoid extends Semigroup {\n  sort M : set;\n  sort P : prop;\n}\ndef f(G : Monoid.Model(U0), sort : Nat) : G.M := G.one;\n";
+  const old = "theory Monoid extends Semigroup {\n  sort M : set;\n  sort P : prop;\n}\ndef f(G : Monoid.Model(U0), sort : UNat) : G.M := G.one;\n";
   assert.equal(historicalSource(old, "old", { implicitNat: false, minusReverses: false }),
-    "theory Monoid(U < UU0) extends Semigroup {\n  M : set U;\n  P : prop U;\n}\ndef f(G : Monoid(U0), sort_ : Nat) : G.M := G.one;\n");
+    "theory Monoid(U < UU0) extends Semigroup {\n  M : set U;\n  P : prop U;\n}\ndef f(G : Monoid(U0), sort_ : UNat) : G.M := G.one;\n");
   assert.doesNotThrow(() => parse(historicalSource(old, "old", { implicitNat: false, minusReverses: false })));
 });
 
@@ -208,18 +208,18 @@ test("arithmetic groups as L2.10b says, with the cubical operators tightest", ()
 
 test("each consuming source item reports its own failed selection activation", async t => {
   const source = `import hlevels;
-use Nat;
+use UNat;
 theory T(U < UU0) { M : set U; c : M; }
 theory C extends T {}
 initial N : T(U0);`;
   const { result } = await checkProgram(t, source, { module });
   const failures = result.outputs.filter(o => !o.verified);
   assert.deepEqual(failures.map(o => [o.name, o.code]), [["T", "E834"], ["C", "E834"], ["N", "E834"]]);
-  for(const failure of failures)assert.equal(failure.errorStart,source.indexOf("Nat"));
+  for(const failure of failures)assert.equal(failure.errorStart,source.indexOf("UNat"));
 });
 
 test("a child with a valid selection reports its refused theory dependency",async t=>{
-  const dependency=`import hlevels; use Nat;
+  const dependency=`import hlevels; use UNat;
 theory T(U < UU0) { M : set U; c : M; }`;
   const source=`import refused_theory;
 theory C extends T {}

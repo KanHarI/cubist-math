@@ -3,13 +3,13 @@
 // descends to the quotient, and equal classes have related elements. Here
 // the natural numbers modulo parity, a relation into a set, whose classes
 // compute.
-import nat;
+import unat;
 import hlevels;
 import propositions;
 import quotients;
-use nat;
+use unat;
 
-computable def parity(n : Nat) : Nat := match n {
+computable def parity(n : UNat) : UNat := match n {
     zero => 0;
     succ(k) => match parity(k) {
       zero => 1;
@@ -17,28 +17,29 @@ computable def parity(n : Nat) : Nat := match n {
     };
   };
 
-def SameParity(m, n : Nat) : U0 := parity(m) = parity(n);
+def SameParity(m, n : UNat) : U0 := parity(m) = parity(n);
 
-computable def same_parity_props(m, n : Nat) :
-  IsProp(U0, SameParity(m, n)) := nat_is_set(parity(m), parity(n));
+computable def same_parity_props(m, n : UNat) :
+  IsProp(U0, SameParity(m, n)) := unat_is_set(parity(m), parity(n));
 
-computable def same_parity_reflexive(n : Nat) : SameParity(n, n) := refl(parity(n));
+computable def same_parity_reflexive(n : UNat) : SameParity(n, n) := refl(parity(n));
 
-computable def same_parity_symmetric(m, n : Nat, r : SameParity(m, n)) : SameParity(n, m) := sym(r);
+computable def same_parity_symmetric(m, n : UNat, r : SameParity(m, n)) :
+  SameParity(n, m) := sym(r);
 
-computable def same_parity_transitive(k, m, n : Nat, r : SameParity(k, m), s : SameParity(m, n)) :
+computable def same_parity_transitive(k, m, n : UNat, r : SameParity(k, m), s : SameParity(m, n)) :
   SameParity(k, n) := trans(r, s);
 
-def Parities : U0 := Quotient(U0, Nat, SameParity);
+def Parities : U0 := Quotient(U0, UNat, SameParity);
 
 // One and three have the same class, and so the same parity, read back
 // from the path between their classes.
 computable def one_three : typed(Parities, class(1)) = typed(Parities, class(3)) := class_path(
-  U0, Nat, SameParity, 1, 3, refl(1)
+  U0, UNat, SameParity, 1, 3, refl(1)
 );
 
 computable def one_three_related : SameParity(1, 3) := quotient_effective(
-  U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+  U0, UNat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
   same_parity_transitive, 1, 3, one_three
 );
 
@@ -46,18 +47,18 @@ computable def one_three_related : SameParity(1, 3) := quotient_effective(
 print(evaluate(one_three_related));
 
 // Two classes are equal exactly when their elements are related.
-computable def parity_classes(m, n : Nat) :
+computable def parity_classes(m, n : UNat) :
   ContrEquiv(U0, typed(Parities, class(m)) = typed(Parities, class(n)), SameParity(m, n)) := class_path_equiv(
-    U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+    U0, UNat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
     same_parity_transitive, m, n
   );
 
 // Distinct classes: the class of 0 is not the class of 1, since 0 is not 1.
 computable def zero_one_distinct(p : typed(Parities, class(0)) = typed(Parities, class(1))) :
   Void := comp(
-    fun (i : Interval) => nat_is_zero(
+    fun (i : Interval) => unat_is_zero(
       quotient_effective(
-        U0, Nat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
+        U0, UNat, SameParity, same_parity_props, same_parity_reflexive, same_parity_symmetric,
         same_parity_transitive, 0, 1, p
       ) @ i
     ), tt
@@ -65,7 +66,7 @@ computable def zero_one_distinct(p : typed(Parities, class(0)) = typed(Parities,
 
 // Relatedness to 0, as a proposition at each class.
 computable def related_to_zero : Parities -> Prop(U0) := related_to(
-  U0, Nat, SameParity, same_parity_props, same_parity_symmetric, same_parity_transitive, 0
+  U0, UNat, SameParity, same_parity_props, same_parity_symmetric, same_parity_transitive, 0
 );
 
 // Output: 0 = 0

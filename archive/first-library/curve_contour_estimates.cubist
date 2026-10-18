@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import parameter_contour_estimates;
 import parameter_increment_bounds;
 import complex_curve_variation;
@@ -8,7 +8,7 @@ import complex_curve_variation;
 def curve_contour_samples(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   curve : FieldUnitInterval(F, zero, one, lt) -> Complex(F), integrand : Complex(F) -> Complex(F),
-  n : Nat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
+  n : UNat, vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n),
   tags : SampleTags(FieldUnitInterval(F, zero, one, lt), n)
 ) :=
   complex_contour_sum(
@@ -26,7 +26,7 @@ def curve_contour_tag_change_close(
   -> FieldUnitInterval(F, zero, one, lt) -> FieldUnitInterval(F, zero, one, lt) -> F, length : F,
   variation : ComplexCurveVariation(
     F, zero, one, addF, negF, lt, curve, realWeight, imagWeight, length
-  ), delta : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat,
+  ), delta : F, nonnegativeDelta : FieldLe(F, lt, zero, delta), n : UNat,
   vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n), oldTags,
   newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n),
   ordered : IntervalOrderedSamples(F, zero, one, lt, n, vertices),

@@ -2,9 +2,9 @@
 // repeated parameter consistency.
 
 import primes;
-use nat;
+use unat;
 
-def duplicated(n : Nat) : n + n = n + n {
+def duplicated(n : UNat) : n + n = n + n {
   rfl;
 }
 

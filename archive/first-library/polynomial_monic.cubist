@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import polynomial_cancellation;
 import polynomial_constants;
 
@@ -45,7 +45,7 @@ def polynomial_scale_divides(
 }
 
 def polynomial_normalize_degree(
-  K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(d),
+  K : AlgebraicField, p : Polynomial(K), d : UNat, degree : polynomial_cutoff(K, p) = succ(d),
   a : af_carrier(K), inverse_ : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
 ) :
   polynomial_cutoff(K, polynomial_scale(K, a, p)) = succ(d) {
@@ -65,7 +65,7 @@ def polynomial_normalize_degree(
 }
 
 def polynomial_normalize_monic(
-  K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(d),
+  K : AlgebraicField, p : Polynomial(K), d : UNat, degree : polynomial_cutoff(K, p) = succ(d),
   a : af_carrier(K), inverse_ : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
 ) :
   PolynomialMonic(K, polynomial_scale(K, a, p)) {
@@ -82,13 +82,13 @@ def polynomial_normalize_monic(
 }
 
 def polynomial_normalize_nonzero(
-  K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(d),
+  K : AlgebraicField, p : Polynomial(K), d : UNat, degree : polynomial_cutoff(K, p) = succ(d),
   a : af_carrier(K), inverse_ : field_mul(K, polynomial_coefficients(K, p, d), a) = field_one(K)
 ) :
   PolynomialNonzero(K, polynomial_scale(K, a, p)) {
   intro zero;
   let dq := polynomial_normalize_degree(K, p, d, degree, a, inverse_);
-  exact nat_zero_ne_succ(
+  exact unat_zero_ne_succ(
     d, trans(sym(polynomial_zero_cutoff(K)), trans(cong(polynomial_cutoff(K), sym(zero)), dq))
   );
 }
@@ -114,8 +114,8 @@ def polynomial_divides_cutoff_le(
     let dq :=
       trans(cong(polynomial_cutoff(K), equation), polynomial_product_degree(K, p, r, m, n, dp, dr));
     exact transport (
-      transport natural_le_add_left(m, n) along sym(dq) in ((fun (j : Nat) => le(succ(m), j)))
-    ) along sym(dp) in ((fun (i : Nat) => le(i, polynomial_cutoff(K, q))));
+      transport natural_le_add_left(m, n) along sym(dq) in ((fun (j : UNat) => le(succ(m), j)))
+    ) along sym(dp) in ((fun (i : UNat) => le(i, polynomial_cutoff(K, q))));
   }
   exact mere_eliminate(
     (exists r : Polynomial(K). q = polynomial_mul(K, p, r)),
@@ -125,7 +125,7 @@ def polynomial_divides_cutoff_le(
 }
 
 def monic_difference_support(
-  K : AlgebraicField, p, q : Polynomial(K), d : Nat, dp : polynomial_cutoff(K, p) = succ(d),
+  K : AlgebraicField, p, q : Polynomial(K), d : UNat, dp : polynomial_cutoff(K, p) = succ(d),
   dq : polynomial_cutoff(K, q) = succ(d), monicP : PolynomialMonic(K, p),
   monicQ : PolynomialMonic(K, q)
 ) :

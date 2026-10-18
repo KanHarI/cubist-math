@@ -5,8 +5,8 @@
 // the induction or match that builds them, not as kernel notation: a sum's
 // clauses keep the names the source gave them.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
 def or_swap(A, B : U0) : A or B -> B or A {
   intro either;
@@ -26,7 +26,7 @@ def swap_sides(A, B : U0, value : A or B) := match value return B or A {
   };
 
 def Shape(value : Unit or Unit) := match value return U0 {
-    left a => Nat;
+    left a => UNat;
     right b => Unit;
   };
 
@@ -35,21 +35,21 @@ def default(value : Unit or Unit) := match value as z return Shape(z) {
     right b => tt;
   };
 
-def copy(n : Nat) := induction n return Nat {
+def copy(n : UNat) := induction n return UNat {
     zero => 0;
     succ previous => succ(previous);
   };
 
-def predecessor(n : Nat) := induction n as k return Nat {
+def predecessor(n : UNat) := induction n as k return UNat {
     zero => 0;
     succ previous => k;
   };
 
-// Warning: W705: x is unused in the body: write Nat -> … instead of forall x : Nat. ….
-def constant : forall x : Nat. Nat := fun (x : Nat) => 0;
+// Warning: W705: x is unused in the body: write UNat -> … instead of forall x : UNat. ….
+def constant : forall x : UNat. UNat := fun (x : UNat) => 0;
 
-// Warning: W705: n is unused in the body: write Nat and … instead of exists n : Nat. ….
-def pairs : exists n : Nat. Unit := (0, tt);
+// Warning: W705: n is unused in the body: write UNat and … instead of exists n : UNat. ….
+def pairs : exists n : UNat. Unit := (0, tt);
 
 inductive Bool : U0 {
   false;
@@ -76,7 +76,7 @@ inductive List(U < UU0, A : U) : U {
   cons(head : A, tail : List(U, A));
 }
 
-def length(xs : List(U0, Nat)) : Nat := match xs {
+def length(xs : List(U0, UNat)) : UNat := match xs {
     nil => 0;
     cons(head, tail) => succ(length(tail));
   };
@@ -92,25 +92,25 @@ print(evaluate(swap_sides));
 // Output: forall A : U0. forall B : U0. A or B -> B or A
 print(typeof(swap_sides));
 // Output: fun (value : Unit or Unit) => match value as value1 return match value1 return U0 { left
-//   a => Nat; right b => Unit; } { left a => 0; right b => tt; }
+//   a => UNat; right b => Unit; } { left a => 0; right b => tt; }
 print(evaluate(default));
 // Output: forall value : Unit or Unit. Shape(value)
 print(typeof(default));
-// Output: fun (n : Nat) => induction n return Nat { zero => 0; succ h => succ(h); }
+// Output: fun (n : UNat) => induction n return UNat { zero => 0; succ h => succ(h); }
 print(evaluate(copy));
-// Output: Nat -> Nat
+// Output: UNat -> UNat
 print(typeof(copy));
-// Output: fun (n : Nat) => induction n as k return Nat { zero => 0; succ previous => k; }
+// Output: fun (n : UNat) => induction n as k return UNat { zero => 0; succ previous => k; }
 print(evaluate(predecessor));
-// Output: Nat -> Nat
+// Output: UNat -> UNat
 print(typeof(predecessor));
-// Output: fun (x : Nat) => 0
+// Output: fun (x : UNat) => 0
 print(evaluate(constant));
-// Output: Nat -> Nat
+// Output: UNat -> UNat
 print(typeof(constant));
 // Output: (0, tt)
 print(evaluate(pairs));
-// Output: Nat and Unit
+// Output: UNat and Unit
 print(typeof(pairs));
 // Output: fun (x : Bool) => match x return Bool { false => true; true => false; }
 print(evaluate(negate));
@@ -120,8 +120,8 @@ print(typeof(negate));
 print(evaluate(reverse));
 // Output: Circle -> Circle
 print(typeof(reverse));
-// Output: fun (x : List(__U, Nat)) => induction x return Nat { nil => 0; cons(head, tail) with ih
+// Output: fun (x : List(__U, UNat)) => induction x return UNat { nil => 0; cons(head, tail) with ih
 //   => succ(ih); }
 print(evaluate(length));
-// Output: List(__U, Nat) -> Nat
+// Output: List(__U, UNat) -> UNat
 print(typeof(length));

@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import affine_integrals;
 import contour_sums;
-use nat;
+use unat;
 
 // The constant-integrand formula holds already for every finite subdivision,
 // without a continuity, fineness, or limiting assumption.
@@ -96,7 +96,7 @@ def complex_constant_sequence_converges(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), value : Complex(F)
 ) :
-  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => value), value) {
+  ComplexConverges(F, zero, addF, lt, (fun (n : UNat) => value), value) {
   intro epsilon, positive;
   let close := typed(
     ComplexClose(F, addF, lt, value, value, epsilon),
@@ -111,7 +111,7 @@ def complex_constant_sequence_converges(
       )
     )
   );
-  exact (0, (fun (n : Nat, later : IndexLE(0, n)) => close));
+  exact (0, (fun (n : UNat, later : IndexLE(0, n)) => close));
 }
 
 // Normalization of the constructed integral, not an assumed integral law:
@@ -154,8 +154,8 @@ def affine_dyadic_integral_constant(
     F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, half, halfSum, z, slope,
     (fun (x : Complex(F)) => coefficient), a, b, ordered
   );
-  let constant := (fun (n : Nat) => value);
-  let computes : forall n : Nat. constant(n) = sequence(n) {
+  let constant := (fun (n : UNat) => value);
+  let computes : forall n : UNat. constant(n) = sequence(n) {
     intro n;
     exact sym(
       curve_subdivision_constant(

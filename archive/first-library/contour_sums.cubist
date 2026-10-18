@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import contour_samples;
 import sample_sum_laws;
-use nat;
+use unat;
 
 def contour_sum_join(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : Nat,
-  vertices : SampleVertices(F, n), tags : SampleTags(F, n), m : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, n : UNat,
+  vertices : SampleVertices(F, n), tags : SampleTags(F, n), m : UNat,
   rightVertices : SampleVertices(F, m), rightTags : SampleTags(F, m),
   meets : sample_last(F, n, vertices) = sample_first(F, m, rightVertices)
 ) :
@@ -26,7 +26,7 @@ def contour_sum_join(
 
 def contour_sum_add(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f, g : F -> F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f, g : F -> F, n : UNat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
 ) :
   contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => addF(f(x), g(x))), n, vertices, tags) = addF(
@@ -55,7 +55,7 @@ def contour_sum_add(
 // candidate primitives; no derivative or fundamental theorem is assumed.
 def potential_sample_sum(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), potential : C -> F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), potential : C -> F, n : UNat,
   vertices : SampleVertices(C, n), tags : SampleTags(C, n)
 ) :
   sample_sum(
@@ -79,7 +79,7 @@ def potential_sample_sum(
 
 def contour_sum_constant(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F, n : UNat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
 ) :
   contour_sum(F, zero, addF, mulF, negF, (fun (x : F) => coefficient), n, vertices, tags) = mulF(
@@ -107,7 +107,7 @@ def contour_sum_constant(
 
 def contour_sum_constant_closed(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), coefficient : F, n : UNat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n),
   closed : sample_last(F, n, vertices) = sample_first(F, n, vertices)
 ) :

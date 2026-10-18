@@ -21,6 +21,6 @@ def five : sums.(succ(succ(zero)) + succ(succ(succ(zero)))) = succ(succ(succ(suc
   rfl;
 }
 
-// Error: E912: x + y means what a selected notation binds + to: for natural numbers, use nat; or
-//   write nat.(x + y).
+// Error: E912: x + y means what a selected notation binds + to: for natural numbers, use unat; or
+//   write unat.(x + y).
 def unselected(n : N) : N := n + n;

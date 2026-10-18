@@ -65,7 +65,7 @@ computable def reference_le_add(a, b : UNat) : le(a, add(a, b)) := match a {
   };
 
 computable def reference_lt_add_succ(a, b : UNat) : isLt(a, add(a, succ(b))) := comp(
-  fun (i : Interval) => isLt(a, nat_add_succ(a, b) @ ~i), reference_le_add(a, b)
+  fun (i : Interval) => isLt(a, unat_add_succ(a, b) @ ~i), reference_le_add(a, b)
 );
 
 // Count binary digits by requesting the result at half the input. At five,

@@ -4,7 +4,7 @@
 // their join. Each elaborates through the same code as its built-in form,
 // and on a non-path each says which operator failed.
 
-import nat;
+import unat;
 
 // ~p, p ++ q and ~i elaborate as sym, trans and flip do.
 def inverse_(A : U0, x, y : A, p : x = y) : y = x := ~p;
@@ -45,18 +45,18 @@ def same_square(A : U0, x, y : A, p : x = y) :
 def reversed_meet(A : U0, x, y : A, p : x = y) : y = x := path i => p @ ~(i & 1) | 0;
 
 // The operators do not depend on what the names sym and trans mean here.
-def shadowed(A : U0, x, y : A, p : x = y, sym_ : Nat, trans_ : Nat) :
+def shadowed(A : U0, x, y : A, p : x = y, sym_ : UNat, trans_ : UNat) :
   y = x := ~p ++ refl(x) ++ p ++ ~p;
 
 // The operators on a non-path say which operator failed.
 // Error: E373: ~p reverses a path; found no path.
-def negated(n : Nat) : Nat := ~n;
+def negated(n : UNat) : UNat := ~n;
 
 // Error: E333: p ++ q concatenates paths; found no path.
-def appended(n, m : Nat) : Nat := n ++ m;
+def appended(n, m : UNat) : UNat := n ++ m;
 
 // Error: E429: Path endpoints do not match.
 def unmatched(A : U0, x, y, z : A, p : x = y, q : x = z) : x = z := p ++ q;
 
 // Error: E347: & combines interval coordinates, as in p @ i & j; it is not an operation on terms.
-def conjunction(n, m : Nat) : Nat := n & m;
+def conjunction(n, m : UNat) : UNat := n & m;

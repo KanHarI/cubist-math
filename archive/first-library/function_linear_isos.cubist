@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import linear_constructions;
 import function_counting;
 
@@ -144,7 +144,7 @@ def curry_linear_iso(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
   );
 }
 
-def coordinate_product_iso(K : AlgebraicField, n, m : Nat) :
+def coordinate_product_iso(K : AlgebraicField, n, m : UNat) :
   LinearIso(
     K, CoordinateSpace(K, multiply_count(n, m)), FunctionSpace(K, Fin(n), CoordinateSpace(K, m))
   ) {

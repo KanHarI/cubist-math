@@ -1,25 +1,25 @@
-import nat;
+import unat;
 
 import function_linear_isos;
 
 def coordinate_cons(
-  K : AlgebraicField, n : Nat, a : af_carrier(K), v : Fin(n) -> af_carrier(K), i : Fin(succ(n))
+  K : AlgebraicField, n : UNat, a : af_carrier(K), v : Fin(n) -> af_carrier(K), i : Fin(succ(n))
 ) :=
   match i return af_carrier(K) {
     left u => a;
     right j => v(j);
   };
 
-def coordinate_first(K : AlgebraicField, n : Nat) := coordinate_cons(
+def coordinate_first(K : AlgebraicField, n : UNat) := coordinate_cons(
   K, n, af_one(af_carrier(K), af_operations(K)),
   (fun (i : Fin(n)) => af_zero(af_carrier(K), af_operations(K)))
 );
 
-def coordinate_insert(K : AlgebraicField, n : Nat, v : Fin(n) -> af_carrier(K)) :=
+def coordinate_insert(K : AlgebraicField, n : UNat, v : Fin(n) -> af_carrier(K)) :=
   coordinate_cons(K, n, af_zero(af_carrier(K), af_operations(K)), v);
 
 def finite_function_ext(
-  A : U0, n : Nat, f, g : Fin(succ(n)) -> A, first : finite_head(A, n, f) = finite_head(A, n, g),
+  A : U0, n : UNat, f, g : Fin(succ(n)) -> A, first : finite_head(A, n, f) = finite_head(A, n, g),
   rest : finite_tail(A, n, f) = finite_tail(A, n, g)
 ) :
   f = g {
@@ -40,7 +40,7 @@ def scalar_mul_one_right(K : AlgebraicField, a : af_carrier(K)) :
   exact trans(comm(a, af_one(af_carrier(K), af_operations(K))), one(a));
 }
 
-def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
+def coordinate_insert_linear(K : AlgebraicField, n : UNat) :
   LinearMap(K, CoordinateSpace(K, n), CoordinateSpace(K, succ(n))) {
   let A := af_carrier(K);
   let zero := af_zero(A, af_operations(K));
@@ -74,14 +74,14 @@ def coordinate_insert_linear(K : AlgebraicField, n : Nat) :
   exact (coordinate_insert(K, n), additive_, scalar);
 }
 
-def coordinate_tail_linear(K : AlgebraicField, n : Nat) :
+def coordinate_tail_linear(K : AlgebraicField, n : UNat) :
   LinearMap(K, CoordinateSpace(K, succ(n)), CoordinateSpace(K, n)) {
   exact reindex_linear(
     K, Fin(succ(n)), Fin(n), ScalarSpace(K), (fun (i : Fin(n)) => typed(Fin(succ(n)), right(i)))
   );
 }
 
-def coordinate_decompose(K : AlgebraicField, n : Nat, v : Fin(succ(n)) -> af_carrier(K)) :
+def coordinate_decompose(K : AlgebraicField, n : UNat, v : Fin(succ(n)) -> af_carrier(K)) :
   vector_add(
     K, CoordinateSpace(K, succ(n)),
     vector_scale(

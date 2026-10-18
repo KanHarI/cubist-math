@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import polynomial_factor_omission;
 import algebraic_base_change;
 import polynomial_root_existence;
-use nat;
+use unat;
 
 // Cancellation of a common linear factor also cancels divisibility evidence.
 def polynomial_factor_divisibility_cancel(
@@ -55,14 +55,14 @@ def unit_distinct_splitting(
   );
 }
 
-def DistinctSplittingDivisors(K : AlgebraicField, n : Nat) :=
+def DistinctSplittingDivisors(K : AlgebraicField, n : UNat) :=
   forall p : Polynomial(K). PolynomialNonzero(K, p) -> DistinctPolynomialSplitting(K, p, n)
   -> forall q : Polynomial(K). PolynomialNonzero(K, q) -> PolynomialDivides(K, q, p)
   -> Mere(DistinctPolynomialSplitting(K, q, polynomial_degree(K, q)));
 
 // The selected root is absent from every root of the remaining divisor.
 def omitted_divisor_roots_avoid(
-  K : AlgebraicField, n : Nat, roots : Fin(succ(n)) -> af_carrier(K),
+  K : AlgebraicField, n : UNat, roots : Fin(succ(n)) -> af_carrier(K),
   distinct : Injective(Fin(succ(n)), af_carrier(K), roots), index : Fin(succ(n)), a : af_carrier(K),
   p : Polynomial(K),
   equation : p = polynomial_mul(
@@ -87,7 +87,7 @@ def omitted_divisor_roots_avoid(
 }
 
 def distinct_splitting_divisor_at_root(
-  K : AlgebraicField, n : Nat, previous : DistinctSplittingDivisors(K, n), p : Polynomial(K),
+  K : AlgebraicField, n : UNat, previous : DistinctSplittingDivisors(K, n), p : Polynomial(K),
   nonzero : PolynomialNonzero(K, p), roots : Fin(succ(n)) -> af_carrier(K), a : af_carrier(K),
   equation : p = polynomial_mul(
     K, polynomial_constant(K, a), linear_factor_product(K, succ(n), roots)
@@ -145,7 +145,7 @@ def distinct_splitting_divisor_at_root(
     );
     let size := trans(
       cong(natural_predecessor, productDegree),
-      sym(cong((fun (k : Nat) => succ(natural_predecessor(k))), degree))
+      sym(cong((fun (k : UNat) => succ(natural_predecessor(k))), degree))
     );
     exact transport result along sym(size) in DistinctPolynomialSplitting(K, q);
   }
@@ -192,7 +192,7 @@ def distinct_splitting_divisor_zero(K : AlgebraicField, closed : AlgebraicallyCl
 }
 
 def distinct_splitting_divisor_step(
-  K : AlgebraicField, closed : AlgebraicallyClosed(K), n : Nat,
+  K : AlgebraicField, closed : AlgebraicallyClosed(K), n : UNat,
   previous : DistinctSplittingDivisors(K, n)
 ) :
   DistinctSplittingDivisors(K, succ(n)) {
@@ -234,7 +234,7 @@ def distinct_splitting_divisor_step(
   };
 }
 
-def distinct_splitting_divisor(K : AlgebraicField, closed : AlgebraicallyClosed(K), n : Nat) :=
+def distinct_splitting_divisor(K : AlgebraicField, closed : AlgebraicallyClosed(K), n : UNat) :=
   induction n as k return DistinctSplittingDivisors(K, k) {
     zero => distinct_splitting_divisor_zero(K, closed);
     succ previous => distinct_splitting_divisor_step(K, closed, k, previous);

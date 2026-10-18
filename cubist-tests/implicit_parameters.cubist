@@ -1,71 +1,71 @@
 // Implicit parameters and universe arguments as holes (work-plan L4.1b). A
 // definition's parameters in double braces are not given among its other
 // arguments: each one before the last argument given is a hole, and double
-// braces after the name give them, in order, f{{U0, Nat}}(x), or by name,
-// f{{A := Nat}}(x). A universe hole is the least universe the call needs. A
+// braces after the name give them, in order, f{{U0, UNat}}(x), or by name,
+// f{{A := UNat}}(x). A universe hole is the least universe the call needs. A
 // definition names its parameters apart.
 import lists;
-use nat;
+use unat;
 
 def same{{U < UU0, A : U}}(a : A) : A := a;
 
 def concat{{U < UU0, A : U, x, y, z : A}}(p : x = y, q : y = z) : x = z := trans(p, q);
 
 // The universe and the type from the argument.
-def from_argument(n : Nat) : Nat := same(n);
+def from_argument(n : UNat) : UNat := same(n);
 
-// Output: λ (n : Nat). (λ (ascription : Nat). ascription)(same(U0, Nat, n))
+// Output: λ (n : UNat). (λ (ascription : UNat). ascription)(same(U0, UNat, n))
 print(inspect(from_argument));
 
 // The endpoints and the carrier from the paths.
-def endpoints(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat(p, q);
+def endpoints(a, b, c : UNat, p : a = b, q : b = c) : a = c := concat(p, q);
 
 // An implicit parameter by name, in double braces; the others stay holes.
-def named(n : Nat) : Nat := same{{A := Nat}}(n);
+def named(n : UNat) : UNat := same{{A := UNat}}(n);
 
 def named_universe(T : U1) : U1 := same{{U := U2}}(T);
 
 // A call of a call: the second gives the parameters the first left.
 def choose{{A : U0}}(x, y : A) : A := y;
 
-def two_calls : Nat := choose(1)(2);
+def two_calls : UNat := choose(1)(2);
 
-// A definition that does not determine its arguments, Family(n) := Nat, does
+// A definition that does not determine its arguments, Family(n) := UNat, does
 // not fix n from the first argument's type, Family(0); refl(1) fixes it.
-def Family(n : Nat) : U0 := Nat;
+def Family(n : UNat) : U0 := UNat;
 
-def pick{{n : Nat}}(a : Family(n), h : n = 1) : Nat := n;
+def pick{{n : UNat}}(a : Family(n), h : n = 1) : UNat := n;
 
 def zero_family : Family(0) := 0;
 
-def picked : Nat := pick(zero_family, refl(1));
+def picked : UNat := pick(zero_family, refl(1));
 
 // Output: 1
 print(evaluate(picked));
 
 // Where nothing else determines them, the arguments are read off the
-// definition applied on both sides, even though Tagged(U, A) := Nat forgets
+// definition applied on both sides, even though Tagged(U, A) := UNat forgets
 // A: untag(t) finds A := Unit.
-def Tagged(U < UU0, A : U) : U0 := Nat;
+def Tagged(U < UU0, A : U) : U0 := UNat;
 
-def untag{{U < UU0, A : U}}(t : Tagged(U, A)) : Nat := t;
+def untag{{U < UU0, A : U}}(t : Tagged(U, A)) : UNat := t;
 
-def tag_of(t : Tagged(U0, Unit)) : Nat := untag(t);
+def tag_of(t : Tagged(U0, Unit)) : UNat := untag(t);
 
 // Output: 2
 print(evaluate(two_calls));
 
-def named_then : Nat := (same{{A := Nat}})(3);
+def named_then : UNat := (same{{A := UNat}})(3);
 
 // The library's lists read their universe and element type off the lists.
-def joined := append(cons(1, typed(List(U0, Nat), nil)), cons(2, nil));
+def joined := append(cons(1, typed(List(U0, UNat), nil)), cons(2, nil));
 
 // Output: 2
 print(evaluate(length(joined)));
 
 // A recursive call passes the implicit parameters as themselves, even where
 // a pattern variable of the same name, here the head A, shadows one.
-def heads{{U < UU0, A : U}}(xs : List(U, A)) : Nat := match xs {
+def heads{{U < UU0, A : U}}(xs : List(U, A)) : UNat := match xs {
     nil => 0;
     cons(A, rest) => succ(heads(rest));
   };
@@ -74,7 +74,7 @@ def heads{{U < UU0, A : U}}(xs : List(U, A)) : Nat := match xs {
 print(evaluate(heads(joined)));
 
 // A definition that calls itself passes its implicit parameters unchanged.
-def size{{U < UU0, A : U}}(xs : List(U, A)) : Nat := match xs {
+def size{{U < UU0, A : U}}(xs : List(U, A)) : UNat := match xs {
     nil => 0;
     cons(head, tail) => succ(size(tail));
   };
@@ -99,34 +99,34 @@ def open_type(T : U0) : U1 := same(T);
 
 // A universe nothing bounds: the least, U0, where the call's type does not
 // mention it; refused where it does.
-def counted{{U < UU0}}(n : Nat) : Nat := n;
+def counted{{U < UU0}}(n : UNat) : UNat := n;
 
-def counted_at(n : Nat) : Nat := counted(n);
+def counted_at(n : UNat) : UNat := counted(n);
 
-def the_universe{{U < UU0}}(n : Nat) : next(U) := U;
+def the_universe{{U < UU0}}(n : UNat) : next(U) := U;
 
 // Error: E391: Nothing determines the universe U of the_universe: no argument's type bounds it, and
 //   the call's type depends on it. Give it explicitly.
-def which(n : Nat) := the_universe(n);
+def which(n : UNat) := the_universe(n);
 
-def which_given(n : Nat) : U1 := the_universe{{U := U0}}(n);
+def which_given(n : UNat) : U1 := the_universe{{U := U0}}(n);
 
-// An implicit parameter is not given by position: Nat is a, and n is one
+// An implicit parameter is not given by position: UNat is a, and n is one
 // argument too many.
 // Error: E393: same takes 1 argument by position; give its implicit parameters U, A in double
 //   braces, in order or by name, as same{{…}}(…) or same{{U := …}}(…).
-def by_position(n : Nat) : Nat := same(Nat, n);
+def by_position(n : UNat) : UNat := same(UNat, n);
 
 // Implicit arguments in double braces, in order: all of them, the first
 // ones, or some with _ for the others, which stay holes.
-def braced(n : Nat) : Nat := same{{U0, Nat}}(n);
+def braced(n : UNat) : UNat := same{{U0, UNat}}(n);
 
-def first_only(n : Nat) : Nat := same{{U0}}(n);
+def first_only(n : UNat) : UNat := same{{U0}}(n);
 
-def middle(a, b, c : Nat, p : a = b, q : b = c) : a = c := concat{{_, _, _, b}}(p, q);
+def middle(a, b, c : UNat, p : a = b, q : b = c) : a = c := concat{{_, _, _, b}}(p, q);
 
 // Double braces without parentheses give a function of the other parameters.
-def identity := same{{U0, Nat}};
+def identity := same{{U0, UNat}};
 
 // Output: 3
 print(evaluate(identity(3)));
@@ -139,36 +139,36 @@ def pinned_open(T : U0) : U1 := same{{_, U0}}(T);
 def still_open(T : U0) : U1 := same{{U1}}(T);
 
 // Error: E702: same has 2 implicit parameters, U, A; the double braces give 3.
-def too_many(n : Nat) : Nat := same{{U0, Nat, n}}(n);
+def too_many(n : UNat) : UNat := same{{U0, UNat, n}}(n);
 
 // Named and in order together: the others fill the implicit parameters no
 // name gives.
-def named_first(n : Nat) : Nat := same{{A := Nat, U0}}(n);
+def named_first(n : UNat) : UNat := same{{A := UNat, U0}}(n);
 
 // Error: E377: The argument A is given twice.
-def given_twice(n : Nat) : Nat := same{{A := Nat, A := Nat}}(n);
+def given_twice(n : UNat) : UNat := same{{A := UNat, A := UNat}}(n);
 
 // An implicit parameter is named in double braces, an explicit one in
 // parentheses.
 // Error: E705: A is an implicit parameter of same: give it in double braces, as same{{A := …}}(…).
-def named_in_parentheses(n : Nat) : Nat := same(A := Nat, n);
+def named_in_parentheses(n : UNat) : UNat := same(A := UNat, n);
 
 // Error: E704: a is not an implicit parameter of same: give it in parentheses, as same(a := …).
-def explicit_in_braces(n : Nat) : Nat := same{{a := n}};
+def explicit_in_braces(n : UNat) : UNat := same{{a := n}};
 
 // Error: E701: sym has no implicit parameters: give its arguments in parentheses, as sym(…).
-def no_implicit(n : Nat) : n = n := sym{{Nat}}(refl(n));
+def no_implicit(n : UNat) : n = n := sym{{UNat}}(refl(n));
 
 // Error: E703: A recursive call of count passes its implicit parameters unchanged: give only the
 //   others, as count(…).
-def count{{U < UU0, A : U}}(xs : List(U, A)) : Nat := match xs {
+def count{{U < UU0, A : U}}(xs : List(U, A)) : UNat := match xs {
     nil => 0;
     cons(head, tail) => succ(count{{U, A}}(tail));
   };
 
 // A definition names its parameters apart, implicit or not.
 // Error: E568: repeated has two parameters named x: give each its own name.
-def repeated{{x : Nat, x : Nat}}(n : Nat) : Nat := n;
+def repeated{{x : UNat, x : UNat}}(n : UNat) : UNat := n;
 
 // Error: E568: repeated_explicit has two parameters named n: give each its own name.
-def repeated_explicit(n : Nat, n : Nat) : Nat := n;
+def repeated_explicit(n : UNat, n : UNat) : UNat := n;

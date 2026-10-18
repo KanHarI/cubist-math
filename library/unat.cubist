@@ -1,15 +1,235 @@
-import nat;
+// Unary naturals: UNat, its addition, multiplication and order, and
+// the laws of addition and multiplication. A module that uses them,
+// numerals included, imports unat. `+`, `*`, `<` and `<=` stand for `add`,
+// `mul`, `isLt` and `le`.
+inductive UNat : U0 {
+  zero;
+  succ(n : UNat);
+}
 
-// The existing unary carrier, named explicitly before Nat becomes binary.
-// Its zero/succ constructors, structural induction and arithmetic are the
-// current nat module's. The public Nat transition waits for NUM1 and the
-// compatibility migration; this alias keeps the carrier identical today.
-def UNat : U0 := Nat;
+// Addition, by recursion on the first argument: 0 + b = b and
+// succ(a) + b = succ(a + b).
+computable def add(x, y : UNat) : UNat := match x {
+    zero => y;
+    succ(k) => succ(add(k, y));
+  };
 
+// Multiplication: 0 * b = 0 and succ(a) * b = b + a * b.
+computable def mul(x, y : UNat) : UNat := match x {
+    zero => zero;
+    succ(k) => add(y, mul(k, y));
+  };
+
+// Order, computed: 0 <= b holds, succ(a) <= 0 does not, and
+// succ(a) <= succ(b) is a <= b.
+computable def le(x, y : UNat) : U0 := match x, y {
+    zero, _ => Unit;
+    succ(a), zero => Void;
+    succ(a), succ(b) => le(a, b);
+  };
+
+// Strict order: n < p is succ(n) <= p.
+computable def isLt(n, p : UNat) : U0 := le(succ(n), p);
+
+// The natural numbers' notation (L2.10a): use unat; or unat.(e) selects it.
 notation unat {
   x + y := add(x, y);
   x * y := mul(x, y);
   x <= y := le(x, y);
   x < y := isLt(x, y);
-  numeral(n : Nat) := n;
+  numeral(n : UNat) := n;
 }
+
+use unat;
+
+// 0 + n = n, by computation.
+computable def unat_zero_add(n : UNat) : 0 + n = n := refl(n);
+
+// n + 0 = n, by induction, since addition recurses on its first argument.
+computable def unat_add_zero(n : UNat) : n + 0 = n := match n {
+    zero => refl(0);
+    succ(k) => cong(fun (m : UNat) => succ(m), unat_add_zero(k));
+  };
+
+// n + succ(m) = succ(n + m).
+computable def unat_add_succ(x, y : UNat) : x + succ(y) = succ(x + y) := match x {
+    zero => refl(succ(y));
+    succ(k) => cong(fun (m : UNat) => succ(m), unat_add_succ(k, y));
+  };
+
+// Addition is associative.
+computable def unat_add_assoc(x, y, z : UNat) : (x + y) + z = x + (y + z) := match x {
+    zero => refl(y + z);
+    succ(k) => cong(fun (m : UNat) => succ(m), unat_add_assoc(k, y, z));
+  };
+
+// Addition is commutative.
+computable def unat_add_comm(x, y : UNat) : x + y = y + x := match x {
+    zero => sym(unat_add_zero(y));
+    succ(k) => trans(cong(fun (m : UNat) => succ(m), unat_add_comm(k, y)), sym(unat_add_succ(y, k)));
+  };
+
+// a + (b + c) = b + (a + c).
+computable def unat_add_left_comm(a, b, c : UNat) : a + (b + c) = b + (a + c) {
+  calc {
+    a + (b + c) = (a + b) + c by sym(unat_add_assoc(a, b, c));
+    _ = (b + a) + c by cong(fun (m : UNat) => m + c, unat_add_comm(a, b));
+    _ = b + (a + c) by unat_add_assoc(b, a, c);
+  }
+}
+
+// (a + b) + (c + d) = (a + c) + (b + d): the middle two trade places.
+computable def unat_add_interchange(a, b, c, d : UNat) : (a + b) + (c + d) = (a + c) + (b + d) {
+  calc {
+    (a + b) + (c + d) = a + (b + (c + d)) by unat_add_assoc(a, b, c + d);
+    _ = a + (c + (b + d)) by cong(fun (m : UNat) => a + m, unat_add_left_comm(b, c, d));
+    _ = (a + c) + (b + d) by sym(unat_add_assoc(a, c, b + d));
+  }
+}
+
+// The predecessor: pred(0) = 0 and pred(succ(n)) = n.
+computable def pred(n : UNat) : UNat := match n {
+    zero => 0;
+    succ(k) => k;
+  };
+
+// succ is injective: equal successors have equal predecessors.
+computable def unat_succ_injective(x, y : UNat, p : succ(x) = succ(y)) : x = y := cong(pred, p);
+
+// 0 is no successor: unat_is_zero holds at 0 and fails at every successor,
+// so a path from 0 to a successor carries tt to an element of Void.
+computable def unat_is_zero(n : UNat) : U0 := match n {
+    zero => Unit;
+    succ(k) => Void;
+  };
+
+computable def unat_zero_ne_succ(n : UNat, p : 0 = succ(n)) :
+  Void := comp(fun (i : Interval) => unat_is_zero(p @ i), tt);
+
+// Addition cancels: k + x = k + y gives x = y.
+computable def unat_add_cancel(k, x, y : UNat, p : k + x = k + y) : x = y := match k {
+    zero => p;
+    succ(j) => unat_add_cancel(j, x, y, unat_succ_injective(j + x, j + y, p));
+  };
+
+// n * 0 = 0, since 0 * b = 0 and succ(a) * 0 = 0 + a * 0.
+computable def unat_mul_zero(n : UNat) : n * 0 = 0 := match n {
+    zero => refl(0);
+    succ(k) => unat_mul_zero(k);
+  };
+
+// n * succ(m) = n + n * m: both are succ(m) added n times, regrouped.
+computable def unat_mul_succ(x, y : UNat) : x * succ(y) = x + x * y {
+  match x {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      calc {
+        succ(y + k * succ(y)) = succ(y + (k + k * y)) by cong(
+          fun (m : UNat) => succ(y + m), unat_mul_succ(k, y)
+        );
+        _ = succ((y + k) + k * y) by cong(
+          fun (m : UNat) => succ(m), sym(unat_add_assoc(y, k, k * y))
+        );
+        _ = succ((k + y) + k * y) by cong(fun (m : UNat) => succ(m + k * y), unat_add_comm(y, k));
+        _ = succ(k + (y + k * y)) by cong(fun (m : UNat) => succ(m), unat_add_assoc(k, y, k * y));
+      }
+    }
+  }
+}
+
+// 1 is a unit for multiplication on both sides.
+computable def unat_one_mul(n : UNat) : 1 * n = n := unat_add_zero(n);
+
+computable def unat_mul_one(n : UNat) : n * 1 = n {
+  calc {
+    n * 1 = n + n * 0 by unat_mul_succ(n, 0);
+    _ = n + 0 by cong(fun (m : UNat) => n + m, unat_mul_zero(n));
+    _ = n by unat_add_zero(n);
+  }
+}
+
+// Multiplication is commutative.
+computable def unat_mul_comm(x, y : UNat) : x * y = y * x := match x {
+    zero => sym(unat_mul_zero(y));
+    succ(k) => trans(cong(fun (m : UNat) => y + m, unat_mul_comm(k, y)), sym(unat_mul_succ(y, k)));
+  };
+
+// Multiplication distributes over addition, on the right and on the left.
+computable def unat_add_mul(x, y, z : UNat) : (x + y) * z = x * z + y * z {
+  match x {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      calc {
+        z + (k + y) * z = z + (k * z + y * z) by cong(
+          fun (m : UNat) => z + m, unat_add_mul(k, y, z)
+        );
+        _ = (z + k * z) + y * z by sym(unat_add_assoc(z, k * z, y * z));
+      }
+    }
+  }
+}
+
+computable def unat_mul_add(x, y, z : UNat) : x * (y + z) = x * y + x * z {
+  calc {
+    x * (y + z) = (y + z) * x by unat_mul_comm(x, y + z);
+    _ = y * x + z * x by unat_add_mul(y, z, x);
+    _ = x * y + z * x by cong(fun (m : UNat) => m + z * x, unat_mul_comm(y, x));
+    _ = x * y + x * z by cong(fun (m : UNat) => x * y + m, unat_mul_comm(z, x));
+  }
+}
+
+// Multiplication is associative.
+computable def unat_mul_assoc(x, y, z : UNat) : (x * y) * z = x * (y * z) {
+  match x {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      calc {
+        (y + k * y) * z = y * z + (k * y) * z by unat_add_mul(y, k * y, z);
+        _ = y * z + k * (y * z) by cong(fun (m : UNat) => y * z + m, unat_mul_assoc(k, y, z));
+      }
+    }
+  }
+}
+
+// Multiplication by a successor cancels.
+computable def unat_mul_cancel(k, x, y : UNat, p : x * succ(k) = y * succ(k)) :
+  x = y := match x, y {
+    zero, zero => refl(0);
+    zero, succ(j) => absurd(unat_zero_ne_succ(k + j * succ(k), p));
+    succ(i), zero => absurd(unat_zero_ne_succ(k + i * succ(k), sym(p)));
+    succ(i),
+    succ(j) => cong(
+      fun (m : UNat) => succ(m),
+      unat_mul_cancel(k, i, j, unat_add_cancel(succ(k), i * succ(k), j * succ(k), p))
+    );
+  };
+
+// Of two naturals, the first exceeds the second, they are equal, or the
+// second exceeds the first, each by a successor that the evidence names.
+def Trichotomy(a, b : UNat) :
+  U0 := (exists t : UNat. a = b + succ(t)) or ((a = b) or (exists t : UNat. b = a + succ(t)));
+
+computable def unat_trichotomy(a, b : UNat) : Trichotomy(a, b) := match a, b {
+    zero, zero => right(left(refl(0)));
+    zero, succ(j) => right(right((j, refl(succ(j)))));
+    succ(i), zero => left((i, refl(succ(i))));
+    succ(i), succ(j) => match unat_trichotomy(i, j) return Trichotomy(succ(i), succ(j)) {
+      left above => left((above.1, cong(fun (m : UNat) => succ(m), above.2)));
+      right rest => match rest return Trichotomy(succ(i), succ(j)) {
+        left same => right(left(cong(fun (m : UNat) => succ(m), same)));
+        right below => right(right((below.1, cong(fun (m : UNat) => succ(m), below.2))));
+      };
+    };
+  };
+
+// Order is reflexive.
+computable def unat_le_refl(n : UNat) : n <= n := match n {
+    zero => tt;
+    succ(k) => unat_le_refl(k);
+  };

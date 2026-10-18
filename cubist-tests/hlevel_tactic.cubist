@@ -3,7 +3,7 @@
 // propositions, from the lemmas of library/hlevels.cubist, evidence in scope
 // and hints, under counted fuel.
 import hlevels;
-use nat;
+use unat;
 
 // hlevel proves each kind of goal, from evidence, hints and the type's shape.
 // Every proof is built from computable lemmas and uses no assumption, so it
@@ -17,23 +17,23 @@ def void_proposition : IsProp(U0, Void) {
   hlevel;
 }
 
-def nat_set : IsSet(U0, Nat) {
+def nat_set : IsSet(U0, UNat) {
   hlevel;
 }
 
-def nat_groupoid : HasLevel(U0, 2, Nat) {
+def nat_groupoid : HasLevel(U0, 2, UNat) {
   hlevel;
 }
 
-def functions_into_nat : IsSet(U0, Nat -> Nat) {
+def functions_into_nat : IsSet(U0, UNat -> UNat) {
   hlevel;
 }
 
-def pairs_of_numbers : IsSet(U0, Nat and Nat) {
+def pairs_of_numbers : IsSet(U0, UNat and UNat) {
   hlevel;
 }
 
-def functions_into_unit : IsContr(U0, Nat -> Unit) {
+def functions_into_unit : IsContr(U0, UNat -> Unit) {
   hlevel;
 }
 
@@ -41,7 +41,7 @@ def paths_of_numbers : IsProp(U0, 3 = 3) {
   hlevel;
 }
 
-def level_statement : IsProp(U0, IsSet(U0, Nat)) {
+def level_statement : IsProp(U0, IsSet(U0, UNat)) {
   hlevel;
 }
 
@@ -67,7 +67,7 @@ def equal_in_prop(A : U0, h : IsProp(U0, A), x, y : A) : x = y {
 }
 
 def from_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) :
-  IsSet(U0, B(a) and Nat) {
+  IsSet(U0, B(a) and UNat) {
   hlevel with [h(a)];
 }
 
@@ -76,7 +76,7 @@ def after_intro : forall A : U0. IsSet(U0, A) -> IsSet(U0, A -> A) {
   hlevel;
 }
 
-def after_universe_intro : forall U < UU0. IsSet(U, Nat) {
+def after_universe_intro : forall U < UU0. IsSet(U, UNat) {
   intro U;
   hlevel;
 }
@@ -103,30 +103,30 @@ def from_let(A : U0, p : Unit -> IsContr(U0, A)) : IsSet(U0, A) {
   hlevel;
 }
 
-def from_obtain(A : U0, q : IsProp(U0, A) and Nat) : IsSet(U0, A) {
+def from_obtain(A : U0, q : IsProp(U0, A) and UNat) : IsSet(U0, A) {
   obtain (h, n) := q;
   hlevel;
 }
 
-def prop_at_any_level(n : Nat, A : U0, h : IsProp(U0, A)) : HasLevel(U0, n, A) {
+def prop_at_any_level(n : UNat, A : U0, h : IsProp(U0, A)) : HasLevel(U0, n, A) {
   hlevel;
 }
 
-def contractible_at_any_level(n : Nat, A : U0, c : IsContr(U0, A)) : HasLevel(U0, n, A) {
+def contractible_at_any_level(n : UNat, A : U0, c : IsContr(U0, A)) : HasLevel(U0, n, A) {
   hlevel;
 }
 
-def statement_at_any_level(n : Nat, A : U0) : HasLevel(U0, n, IsSet(U0, A)) {
+def statement_at_any_level(n : UNat, A : U0) : HasLevel(U0, n, IsSet(U0, A)) {
   hlevel;
 }
 
 // Error: E366: hlevel could not prove HasLevel(U0, n, A -> A); nothing in scope states that A -> A
 //   has level n.
-def same_variable_level(n : Nat, A : U0, h : HasLevel(U0, n, A)) : HasLevel(U0, n, A -> A) {
+def same_variable_level(n : UNat, A : U0, h : HasLevel(U0, n, A)) : HasLevel(U0, n, A -> A) {
   hlevel with [h];
 }
 
-computable def computable_evidence : IsSet(U0, Nat -> (Nat and Unit)) {
+computable def computable_evidence : IsSet(U0, UNat -> (UNat and Unit)) {
   hlevel;
 }
 
@@ -134,7 +134,7 @@ def any_universe(U < UU0, A : U, h : IsSet(U, A)) : IsSet(U, (A -> A) and (Unit 
   hlevel;
 }
 
-def variable_statement(n : Nat, A : U0) : IsProp(U0, HasLevel(U0, n, A)) {
+def variable_statement(n : UNat, A : U0) : IsProp(U0, HasLevel(U0, n, A)) {
   hlevel;
 }
 
@@ -158,17 +158,17 @@ def no_evidence(A, B : U0, e : A = B, a : A, b : B) :
 
 // hlevel refuses, naming the first obligation nothing discharges. The HoTT
 // roadmap's D completion: IsProp of an arbitrary type and 0 = 1 stay
-// unproved, the second with Nat a set. At a variable level HasLevel does not
+// unproved, the second with UNat a set. At a variable level HasLevel does not
 // reduce, so evidence in another universe states something else; a
 // quantified hypothesis is no evidence until applied; each binder the search
 // goes under keeps its name, however deep.
-// Error: E366: hlevel could not prove 0 = 1; Nat is not a proposition: 0 and 1 differ.
+// Error: E366: hlevel could not prove 0 = 1; UNat is not a proposition: 0 and 1 differ.
 def zero_is_one : 0 = 1 {
   hlevel;
 }
 
-// Error: E366: hlevel could not prove IsProp(U0, Nat); Nat is not a proposition: 0 and 1 differ.
-def nat_prop : IsProp(U0, Nat) {
+// Error: E366: hlevel could not prove IsProp(U0, UNat); UNat is not a proposition: 0 and 1 differ.
+def nat_prop : IsProp(U0, UNat) {
   hlevel;
 }
 
@@ -177,9 +177,9 @@ def arbitrary(A : U0) : IsProp(U0, A) {
   hlevel;
 }
 
-// Error: E366: hlevel could not prove IsSet(U0, A -> Nat and B): it needs Nat and B to be a set,
+// Error: E366: hlevel could not prove IsSet(U0, A -> UNat and B): it needs UNat and B to be a set,
 //   which needs B to be a set; no local evidence, hint or rule gives that.
-def nested(A, B : U0) : IsSet(U0, A -> (Nat and B)) {
+def nested(A, B : U0) : IsSet(U0, A -> (UNat and B)) {
   hlevel;
 }
 
@@ -195,14 +195,14 @@ def void_contractible : IsContr(U0, Void) {
 }
 
 // Error: E364: hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition;
-//   the goal is Nat.
-def not_a_level : Nat {
+//   the goal is UNat.
+def not_a_level : UNat {
   hlevel;
 }
 
 // Error: E366: hlevel could not prove HasLevel(U0, n, A); nothing in scope states that A has level
 //   n.
-def variable_level(n : Nat, A : U0) : HasLevel(U0, n, A) {
+def variable_level(n : UNat, A : U0) : HasLevel(U0, n, A) {
   hlevel;
 }
 
@@ -214,7 +214,7 @@ def unreachable : IsProp(U0, Unit) {
 
 // Error: E366: hlevel could not prove HasLevel(U0, n, A); nothing in scope states that A has level
 //   n.
-def other_universe(n : Nat, A : U0, h : HasLevel(U1, n, A)) : HasLevel(U0, n, A) {
+def other_universe(n : UNat, A : U0, h : HasLevel(U1, n, A)) : HasLevel(U0, n, A) {
   hlevel;
 }
 
@@ -225,7 +225,7 @@ def not_a_statement(A : U0, a : A) : IsProp(U0, Unit) {
 
 // Quantified evidence in scope is a rule too, so no hint is needed.
 def without_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A) :
-  IsSet(U0, B(a) and Nat) {
+  IsSet(U0, B(a) and UNat) {
   hlevel;
 }
 

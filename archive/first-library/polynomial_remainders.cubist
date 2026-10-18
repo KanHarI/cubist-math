@@ -1,25 +1,25 @@
-import nat;
+import unat;
 import polynomial_irreducible;
 
 // A nonzero modulus with its degree certified once for all reductions.
 def PolynomialModulus(K : AlgebraicField) :=
-  exists p : Polynomial(K). exists d : Nat. polynomial_cutoff(K, p) = succ(d);
+  exists p : Polynomial(K). exists d : UNat. polynomial_cutoff(K, p) = succ(d);
 
 def modulus_polynomial(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_first(
-  Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat. polynomial_cutoff(K, p) = succ(d)), M
+  Polynomial(K), (fun (p : Polynomial(K)) => exists d : UNat. polynomial_cutoff(K, p) = succ(d)), M
 );
 
 def modulus_degree_data(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_second(
-  Polynomial(K), (fun (p : Polynomial(K)) => exists d : Nat. polynomial_cutoff(K, p) = succ(d)), M
+  Polynomial(K), (fun (p : Polynomial(K)) => exists d : UNat. polynomial_cutoff(K, p) = succ(d)), M
 );
 
 def modulus_degree(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_first(
-  Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
+  UNat, (fun (d : UNat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
   modulus_degree_data(K, M)
 );
 
 def modulus_degree_equality(K : AlgebraicField, M : PolynomialModulus(K)) := sigma_second(
-  Nat, (fun (d : Nat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
+  UNat, (fun (d : UNat) => polynomial_cutoff(K, modulus_polynomial(K, M)) = succ(d)),
   modulus_degree_data(K, M)
 );
 
@@ -93,7 +93,7 @@ def polynomial_remainder_small(
 def polynomial_remainder_zero(K : AlgebraicField, M : PolynomialModulus(K)) :=
   polynomial_remainder_small(
     K, M, polynomial_zero(K),
-    (fun (n : Nat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
+    (fun (n : UNat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
   );
 
 def polynomial_remainder_add(K : AlgebraicField, M : PolynomialModulus(K), p, q : Polynomial(K)) :
@@ -140,7 +140,7 @@ def polynomial_remainder_multiple(K : AlgebraicField, M : PolynomialModulus(K), 
   exact polynomial_remainder_unique(
     K, M, polynomial_mul(K, p, modulus_polynomial(K, M)), p, polynomial_zero(K),
     sym(polynomial_add_zero_right(K, polynomial_mul(K, p, modulus_polynomial(K, M)))),
-    (fun (n : Nat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
+    (fun (n : UNat, above : le(modulus_degree(K, M), n)) => refl(field_zero(K)))
   );
 }
 

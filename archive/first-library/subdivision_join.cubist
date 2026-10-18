@@ -1,19 +1,19 @@
-import nat;
+import unat;
 import subdivision_transport;
-use nat;
+use unat;
 
 // Join the per-edge refinements of two coarse sample lists. The endpoint of
 // each left head piece is transported along the checked join endpoint path.
 def join_subdivision_families_step(
-  C : U1, n : Nat,
+  C : U1, n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall pieces : SampleSubdivisions(C, n, vertices).
-    forall m : Nat. forall rightVertices : SampleVertices(C, m).
+    forall m : UNat. forall rightVertices : SampleVertices(C, m).
     forall rightPieces : SampleSubdivisions(C, m, rightVertices).
     (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
     -> SampleSubdivisions(C, n + m, join_vertices(C, n, vertices, m, rightVertices))
   ), vertices : SampleVertices(C, succ(n)), pieces : SampleSubdivisions(C, succ(n), vertices),
-  m : Nat, rightVertices : SampleVertices(C, m),
+  m : UNat, rightVertices : SampleVertices(C, m),
   rightPieces : SampleSubdivisions(C, m, rightVertices),
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices)
 ) :
@@ -35,16 +35,16 @@ def join_subdivision_families_step(
   );
 }
 
-def join_subdivision_families(C : U1, n : Nat) :=
+def join_subdivision_families(C : U1, n : UNat) :=
   induction n as k return (
     forall vertices : SampleVertices(C, k). forall pieces : SampleSubdivisions(C, k, vertices).
-    forall m : Nat. forall rightVertices : SampleVertices(C, m).
+    forall m : UNat. forall rightVertices : SampleVertices(C, m).
     forall rightPieces : SampleSubdivisions(C, m, rightVertices).
     (sample_last(C, k, vertices) = sample_first(C, m, rightVertices))
     -> SampleSubdivisions(C, k + m, join_vertices(C, k, vertices, m, rightVertices))
   ) {
     zero => fun (
-      vertices : C, pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      vertices : C, pieces : Unit, m : UNat, rightVertices : SampleVertices(C, m),
       rightPieces : SampleSubdivisions(C, m, rightVertices),
       same : vertices = sample_first(C, m, rightVertices)
     ) => rightPieces;
@@ -54,10 +54,10 @@ def join_subdivision_families(C : U1, n : Nat) :=
 def subdivision_total_join_step(
   C, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G. addG(zero, x) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
-  edge : C -> C -> C -> G, n : Nat,
+  edge : C -> C -> C -> G, n : UNat,
   previous : (
     forall vertices : SampleVertices(C, n). forall pieces : SampleSubdivisions(C, n, vertices).
-    forall m : Nat. forall rightVertices : SampleVertices(C, m).
+    forall m : UNat. forall rightVertices : SampleVertices(C, m).
     forall rightPieces : SampleSubdivisions(C, m, rightVertices).
     forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices).
     subdivision_total(
@@ -68,7 +68,7 @@ def subdivision_total_join_step(
       subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)
     )
   ), vertices : SampleVertices(C, succ(n)), pieces : SampleSubdivisions(C, succ(n), vertices),
-  m : Nat, rightVertices : SampleVertices(C, m),
+  m : UNat, rightVertices : SampleVertices(C, m),
   rightPieces : SampleSubdivisions(C, m, rightVertices),
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices)
 ) :
@@ -110,10 +110,10 @@ def subdivision_total_join_step(
 def subdivision_total_join(
   C, G : U1, zero : G, addG : G -> G -> G, unitLaw : (forall x : G. addG(zero, x) = x),
   assoc : (forall x : G. forall y : G. forall z : G. addG(addG(x, y), z) = addG(x, addG(y, z))),
-  edge : C -> C -> C -> G, n : Nat
+  edge : C -> C -> C -> G, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall pieces : SampleSubdivisions(C, n, vertices).
-  forall m : Nat. forall rightVertices : SampleVertices(C, m).
+  forall m : UNat. forall rightVertices : SampleVertices(C, m).
   forall rightPieces : SampleSubdivisions(C, m, rightVertices).
   forall same : sample_last(C, n, vertices) = sample_first(C, m, rightVertices).
   subdivision_total(
@@ -125,7 +125,7 @@ def subdivision_total_join(
   ) {
   exact induction n as k return (
     forall vertices : SampleVertices(C, k). forall pieces : SampleSubdivisions(C, k, vertices).
-    forall m : Nat. forall rightVertices : SampleVertices(C, m).
+    forall m : UNat. forall rightVertices : SampleVertices(C, m).
     forall rightPieces : SampleSubdivisions(C, m, rightVertices).
     forall same : sample_last(C, k, vertices) = sample_first(C, m, rightVertices).
     subdivision_total(
@@ -137,7 +137,7 @@ def subdivision_total_join(
     )
   ) {
     zero => fun (
-      vertices : C, pieces : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      vertices : C, pieces : Unit, m : UNat, rightVertices : SampleVertices(C, m),
       rightPieces : SampleSubdivisions(C, m, rightVertices),
       same : vertices = sample_first(C, m, rightVertices)
     ) => sym(unitLaw(subdivision_total(C, G, zero, addG, edge, m, rightVertices, rightPieces)));

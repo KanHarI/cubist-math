@@ -1,8 +1,8 @@
-import nat;
+import unat;
 
 import ordered_fields;
 import signed_integers;
-use nat;
+use unat;
 
 // Integer multiples in an arbitrary abelian group, constructed by recursion.
 // No field, order, choice, or excluded-middle assumption is used.
@@ -59,7 +59,7 @@ def additive_shuffle(
   );
 }
 
-def natural_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, n : Nat) :=
+def natural_multiple(G : U1, zero : G, addG : G -> G -> G, negG : G -> G, x : G, n : UNat) :=
   induction n as k return G {
     zero => zero;
     succ previous => addG(previous, x);
@@ -129,7 +129,7 @@ def integer_multiple_predecessor(
 
 def integer_multiple_add_positive(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
-  z : Z, n : Nat
+  z : Z, n : UNat
 ) :
   integer_multiple(G, zero, addG, negG, x, add_nonnegative(n, z)) = addG(
     integer_multiple(G, zero, addG, negG, x, z), natural_multiple(G, zero, addG, negG, x, n)
@@ -158,7 +158,7 @@ def integer_multiple_add_positive(
 
 def integer_multiple_add_negative(
   G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG), x : G,
-  z : Z, n : Nat
+  z : Z, n : UNat
 ) :
   integer_multiple(G, zero, addG, negG, x, add_negative(n, z)) = addG(
     integer_multiple(G, zero, addG, negG, x, z),

@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import circle;
 import path_actions;
 import homotopy_paths;
-use nat;
+use unat;
 
 // A circle map specified by the image of its generating loop. These are
 // maps of homotopy types, not yet functions on the geometric unit circle.
@@ -41,12 +41,12 @@ def circle_map_generator(X : U0, point : X, p : point = point) :
   );
 }
 
-def circle_power_map(n : Nat, x : S1) := circle_map_from_loop(S1, base, positive_loops(n), x);
+def circle_power_map(n : UNat, x : S1) := circle_map_from_loop(S1, base, positive_loops(n), x);
 
 def circle_map_degree(f : S1 -> S1, anchor : f(base) = base) :=
   winding(rebase_loop(S1, f(base), base, anchor, cong(f, loop)));
 
-def circle_power_degree(n : Nat) :
+def circle_power_degree(n : UNat) :
   circle_map_degree(circle_power_map(n), refl(base)) = nonnegative(n) {
   let generator := cong(circle_power_map(n), loop);
   // Transport along reflexivity has a cubical computation path.
@@ -79,7 +79,7 @@ def nonzero_degree_not_null_homotopic(
 }
 
 def positive_circle_power_not_null_homotopic(
-  n : Nat, point : S1, homotopy : (forall x : S1. circle_power_map(succ(n), x) = point)
+  n : UNat, point : S1, homotopy : (forall x : S1. circle_power_map(succ(n), x) = point)
 ) :
   Void {
   let zeroDegree :=
@@ -92,7 +92,7 @@ def positive_circle_power_not_null_homotopic(
 // The homotopy need not fix the basepoint. Its value at base is tracked by
 // naturality, so an arbitrary contraction point is allowed.
 def homotopic_to_positive_power_not_null(
-  n : Nat, f : S1 -> S1, comparison : (forall x : S1. f(x) = circle_power_map(succ(n), x)),
+  n : UNat, f : S1 -> S1, comparison : (forall x : S1. f(x) = circle_power_map(succ(n), x)),
   point : S1, contraction : (forall x : S1. f(x) = point)
 ) :
   Void {
@@ -105,7 +105,7 @@ def homotopic_to_positive_power_not_null(
 // type. Applying this to polynomials still needs the geometric circle/disk
 // comparison and the leading-term homotopy; neither is assumed as an axiom.
 def positive_degree_no_contractible_extension(
-  n : Nat, X : U1, center : X, contraction : (forall x : X. x = center), boundary : S1 -> X,
+  n : UNat, X : U1, center : X, contraction : (forall x : X. x = center), boundary : S1 -> X,
   value : X -> S1, comparison : (forall x : S1. value(boundary(x)) = circle_power_map(succ(n), x))
 ) :
   Void {
@@ -117,14 +117,14 @@ def positive_degree_no_contractible_extension(
 
 // The corresponding statements directly about loops and retractions.
 def positive_winding_loop_not_null(
-  n : Nat, p : base = base, degree : winding(p) = nonnegative(succ(n)), null : p = refl(base)
+  n : UNat, p : base = base, degree : winding(p) = nonnegative(succ(n)), null : p = refl(base)
 ) :
   Void {
   let impossible : nonnegative(succ(n)) = zeroZ := trans(sym(degree), cong(winding, null));
   exact zero_not_successor(n, sym(cong(magnitude, impossible)));
 }
 
-def positive_loop_not_null(n : Nat, null : positive_loops(succ(n)) = refl(base)) : Void {
+def positive_loop_not_null(n : UNat, null : positive_loops(succ(n)) = refl(base)) : Void {
   exact positive_winding_loop_not_null(n, positive_loops(succ(n)), winding_positive(succ(n)), null);
 }
 

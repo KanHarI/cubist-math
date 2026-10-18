@@ -4,7 +4,7 @@
 import primes;
 import classical;
 import binary_arithmetic;
-use nat;
+use unat;
 
 evaluate 2 + 2 expecting 4;
 // Error: E326: The term evaluates to 4, not 5.
@@ -16,5 +16,5 @@ print(evaluate(binary_mul(binary.(0b1101), binary.(0b1011))));
 // Error: E324: The evaluated term depends on non-computing assumptions: LEM, Truncate,
 //   TruncateElim. Path to LEM: double_negation (classical) → LEM.
 evaluate double_negation expecting double_negation;
-// Error: E325: The evaluated term has type Nat, but the expected value has type Unit.
+// Error: E325: The evaluated term has type UNat, but the expected value has type Unit.
 evaluate 2 + 2 expecting tt;

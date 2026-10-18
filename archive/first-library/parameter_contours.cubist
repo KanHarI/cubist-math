@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import contour_refinement;
 import sample_maps;
 
@@ -18,7 +18,7 @@ def parameter_contour_tag_error(
   );
 
 def parameter_contour_sum(
-  C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> F, n : Nat
+  C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> F, n : UNat
 ) :=
   sample_sum(C, F, zero, addF, parameter_contour_edge(C, F, addF, mulF, negF, curve, values), n);
 
@@ -38,7 +38,7 @@ def parameter_contour_edge_change_tag(
 }
 
 def parameter_contour_tag_error_sum(
-  C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> F, n : Nat
+  C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve, values : C -> F, n : UNat
 ) :=
   induction n as k return (SampleVertices(C, k) -> SampleTags(C, k) -> SampleTags(C, k) -> F) {
     zero => fun (vertices : C, oldTags, newTags : Unit) => zero;
@@ -59,7 +59,7 @@ def parameter_contour_tag_error_sum(
 
 def parameter_contour_sum_change_tags(
   C, F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F, n : Nat
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), curve, values : C -> F, n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall oldTags : SampleTags(C, n).
   forall newTags : SampleTags(C, n).
@@ -154,7 +154,7 @@ def parameter_contour_sum_change_tags(
 // contour sums on the mapped vertices and tags, without injectivity of curve.
 def parameter_contour_sum_is_mapped(
   C, F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, curve : C -> F, integrand : F -> F,
-  n : Nat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
+  n : UNat, vertices : SampleVertices(C, n), tags : SampleTags(C, n)
 ) :
   parameter_contour_sum(
     C, F, zero, addF, mulF, negF, curve, (fun (t : C) => integrand(curve(t))), n, vertices, tags

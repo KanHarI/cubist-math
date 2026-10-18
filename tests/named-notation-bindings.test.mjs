@@ -24,10 +24,10 @@ async function setup(t) {
     inductive Two : set U0 { left_; right_; }
     def source_value : Two := left_;
     def first(a, b : Two) : Two := a;
-    def Natural : U0 := Nat;
-    theory Reader(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
-    def plain : Reader(U0) := Reader.make(Nat, fun (n : Nat) => n);
-    def raised : Reader(U0) := Reader.make(Nat, fun (n : Nat) => succ(n));
+    def Natural : U0 := UNat;
+    theory Reader(U < UU0) { M : U; read(n : UNat) : M; def numeral_(n : UNat) : M := read(n) notation numeral; }
+    def plain : Reader(U0) := Reader.make(UNat, fun (n : UNat) => n);
+    def raised : Reader(U0) := Reader.make(UNat, fun (n : UNat) => succ(n));
     theory ReaderBox(U < UU0) { anchor : Unit; plain : Reader(U); }
     def box : ReaderBox(U0) := ReaderBox.make(tt, raised);
   `,"base");
@@ -119,11 +119,11 @@ test("a missing rule-source name stays missing despite a destination declaration
 
 test("named numeral and lexeme rules keep source readers while preserving ignored inputs",async t=>{
   const {retain,check}=await setup(t);
-  retain("notation numeric { numeral(n : Nat) := succ(n); }");
-  retain("notation ignored { numeral(n : Nat) := zero; }");
+  retain("notation numeric { numeral(n : UNat) := succ(n); }");
+  retain("notation ignored { numeral(n : UNat) := zero; }");
   retain("notation text_reader { literal(s : Lexeme) := natural_literal(s); }");
   const {result,equal}=check(`
-    def Nat : U0 := Unit;
+    def UNat : U0 := Unit;
     def natural_literal(s : Lexeme) : Unit := tt;
     def numeric_value : Natural := numeric.(0);
     def ignored_value : Natural := ignored.(999);
@@ -143,12 +143,12 @@ test("named operand recipes capture source models independently of operand label
   retain("notation power { x ^ plain.(n) := n; }");
   const {result,equal}=check(`
     def plain : Reader(U0) := raised;
-    def value : Nat := power.(zero ^ 0);
-    def caller(plain : Unit, n : Nat) : Nat := power.(zero ^ n);
+    def value : UNat := power.(zero ^ 0);
+    def caller(plain : Unit, n : UNat) : UNat := power.(zero ^ n);
   `);
   assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
   assert.equal(equal("value","zero"),true);assert.equal(equal("value","succ(zero)"),false);
-  assert.equal(equal("caller","fun (plain : Unit) => fun (n : Nat) => n"),true);
+  assert.equal(equal("caller","fun (plain : Unit) => fun (n : UNat) => n"),true);
 });
 
 test("retained named selections keep the exact receipt through block use, copying and destination shadowing",async t=>{
@@ -175,17 +175,17 @@ test("retained named selections keep the exact receipt through block use, copyin
 
 test("file-level named contexts preserve source rule selection and empty label openings",async t=>{
   const {retain,retainDeclaration,check}=await setup(t);
-  retain("notation numeric { numeral(n : Nat) := succ(n); }");
+  retain("notation numeric { numeral(n : UNat) := succ(n); }");
   const {artifact,prepared}=retain("use numeric; notation wrapped { -x := 0; x + y := numeric.(0); }");
   assert.equal(prepared.captures.length,0,"a standalone notation has no term receiver");
   assert.equal(prepared.activations[0].members.length,0);
   assert.doesNotThrow(()=>snapshotSyntax({artifact,activations:prepared.activations,context:prepared.context.snapshot()}));
   const retained=[
-    "use wrapped; def file_value : Nat := -absent;",
-    "use wrapped; def nested_value : Nat := absent + absent;",
+    "use wrapped; def file_value : UNat := -absent;",
+    "use wrapped; def nested_value : UNat := absent + absent;",
     "use wrapped; def fallback(source_value : Two) : Two := source_value;",
   ].map(retainDeclaration);
-  const {result,equal}=check(`notation numeric { numeral(n : Nat) := n; }
+  const {result,equal}=check(`notation numeric { numeral(n : UNat) := n; }
     notation wrapped { -x := x; x + y := y; }`,{retained,env:retained.at(-1).env});
   assert.deepEqual(failures(result),[],JSON.stringify(failures(result)));
   for(const name of ["file_value","nested_value"]) {
@@ -197,12 +197,12 @@ test("file-level named contexts preserve source rule selection and empty label o
 test("attached rules follow model identity through deferred selections and source captures",async t=>{
   const {retain,retainDeclaration,check,table}=await setup(t);
   const declared=new Set(["plain"]);
-  const first=retain("notation plain { numeral(n : Nat) := succ(succ(n)); }",{declared});
+  const first=retain("notation plain { numeral(n : UNat) := succ(succ(n)); }",{declared});
   const retained=[
-    "def attached_value : Nat := plain.(0);",
+    "def attached_value : UNat := plain.(0);",
     "def parameter_value(plain : Reader(U0)) : plain.M := plain.(0);",
-    "def opened_value : Nat { use box; exact plain.(0); }",
-    "use plain; def captured_first : Nat := 0;",
+    "def opened_value : UNat { use box; exact plain.(0); }",
+    "use plain; def captured_first : UNat := 0;",
   ].map(retainDeclaration);
   const priorContext=retained.at(-1).prepared.activations[0].notation.id;
   assert.ok(bindingUses(retained[0].syntax).some(use=>use.id===first.artifact.binding.id));
@@ -210,8 +210,8 @@ test("attached rules follow model identity through deferred selections and sourc
   const cloned=cloneBindingSyntax(retained[0].syntax,table,["attached-copy"]);
   assert.equal(sameBindingSyntax(retained[0].syntax,cloned.syntax),true);
   retained[0]={...retained[0],syntax:cloned.syntax};
-  retain("notation plain { numeral(n : Nat) := n; }",{declared});
-  const later=retainDeclaration("use plain; def captured_second : Nat := 0;");
+  retain("notation plain { numeral(n : UNat) := n; }",{declared});
+  const later=retainDeclaration("use plain; def captured_second : UNat := 0;");
   assert.notEqual(later.prepared.activations[0].notation.id,priorContext,
     "a different rule extension changes the semantic context even on the same model");
   const {result,equal}=check("def plain : Reader(U0) := raised;",{retained:[...retained,later]});
@@ -227,7 +227,7 @@ test("attached rules follow model identity through deferred selections and sourc
 
 test("source retention enforces attachment ownership and preserves notation printing",async t=>{
   const {retain,translator}=await setup(t);
-  assert.throws(()=>retain("notation plain { numeral(n : Nat) := n; }"),/declared in another module/);
+  assert.throws(()=>retain("notation plain { numeral(n : UNat) := n; }"),/declared in another module/);
   assert.throws(()=>retain("notation plain { x + y := x; }",{declared:new Set(["plain"])}),/adds only a numeral or a literal/);
   retain("notation printed { literal(s : Lexeme) := natural_literal(s); }");
   assert.ok([...translator.checker.notationPrinting.values()].flat().some(entry=>entry.notation==="printed"&&entry.literal));
@@ -236,16 +236,16 @@ test("source retention enforces attachment ownership and preserves notation prin
 test("qualified named operators and bare operations use source identities without applying operand recipes",async t=>{
   const {retain,retainDeclaration,check}=await setup(t);
   retain("notation callable { x + y := first(x, y); -x := source_value; }");
-  retain("notation numeric { numeral(n : Nat) := succ(n); }");
+  retain("notation numeric { numeral(n : UNat) := succ(n); }");
   retain("notation power { x ^ numeric.(n) := n; }");
   const retained=[
     "def binary_value : Two := left_ callable.(+) right_;",
     "def negated_value : Two := callable.(-) right_;",
     "def function_value : Two -> Two -> Two := callable.(+);",
-    "def qualified_recipe : Nat := plain.(zero power.(^) 0);",
-    "def ordinary_recipe : Nat := power.(zero ^ 0);",
+    "def qualified_recipe : UNat := plain.(zero power.(^) 0);",
+    "def ordinary_recipe : UNat := power.(zero ^ 0);",
     "def missing_operation : Two := left_ callable.(*) right_;",
-    "def non_function : Nat -> Nat -> Nat := power.(^);",
+    "def non_function : UNat -> UNat -> UNat := power.(^);",
   ].map(retainDeclaration);
   const {result,equal}=check(`def first(a, b : Two) : Two := b;
     notation callable { x + y := y; -x := right_; }
@@ -291,10 +291,10 @@ test("lazy rule operands enter caller scope for interval and universe consumers"
 
 test("named-rule receipts survive isolated replay",async t=>{
   const library=sourceReader();
-  const source=`import nat;
-    notation increment { numeral(n : Nat) := succ(n); }
-    def source_value : Nat := increment.(0);
-    def anchor(x : Nat) : Nat := x;`;
+  const source=`import unat;
+    notation increment { numeral(n : UNat) := succ(n); }
+    def source_value : UNat := increment.(0);
+    def anchor(x : UNat) : UNat := x;`;
   const program=new CubicalProgram(wasm,library,{collectScopes:true});
   t.after(()=>program.dispose());
   const result=await program.check(source,"main");
@@ -305,18 +305,18 @@ test("named-rule receipts survive isolated replay",async t=>{
   const session=new ContextualSession(program,points[0].id);
   const [query]=await session.run("evaluate increment.(0)");
   assert.equal(query.kind,"value",JSON.stringify(query));
-  assert.equal(query.text,"nat.(1)");
+  assert.equal(query.text,"unat.(1)");
 });
 
 test("lazy operands retain distinct term and selection meanings through copying and invocation",async t=>{
   const {retain,retainDeclaration,check,table}=await setup(t);
-  retain("notation m { numeral(n : Nat) := succ(n); x + y := add(x, y); }");
+  retain("notation m { numeral(n : UNat) := succ(n); x + y := add(x, y); }");
   retain("notation select_operand { m + x := m.(0); m * x := m; m ^ x := x m.(+) x; }");
   retain("notation forward { n + x := select_operand.(n + x); }");
-  const saved=["def selected : Nat := select_operand.(m + absent);",
-    "def qualified : Nat := select_operand.(m ^ succ(zero));",
-    "def forwarded : Nat := forward.(m + absent);",
-    "def term_missing : Nat := select_operand.(m * absent);"].map(retainDeclaration);
+  const saved=["def selected : UNat := select_operand.(m + absent);",
+    "def qualified : UNat := select_operand.(m ^ succ(zero));",
+    "def forwarded : UNat := forward.(m + absent);",
+    "def term_missing : UNat := select_operand.(m * absent);"].map(retainDeclaration);
   for(const item of saved) {
     assert.doesNotThrow(()=>snapshotSyntax(item.syntax));
     const clone=cloneBindingSyntax(item.syntax,table,["copied-operand",item.binding.label]).syntax;
@@ -336,21 +336,21 @@ test("lazy operands retain distinct term and selection meanings through copying 
 
 test("lazy selector operands keep attached rules and the caller's ordinary operand notation",async t=>{
   const {retain,retainDeclaration,check}=await setup(t);
-  retain("notation plain { numeral(n : Nat) := succ(succ(n)); }",{declared:new Set(["plain"])});
+  retain("notation plain { numeral(n : UNat) := succ(succ(n)); }",{declared:new Set(["plain"])});
   retain(`notation select_operand {
-    numeral(n : Nat) := n;
+    numeral(n : UNat) := n;
     m + x := m.(0);
     m * x := m.(x);
   }`);
   const saved=[
-    "def attached : Nat := select_operand.(plain + absent);",
+    "def attached : UNat := select_operand.(plain + absent);",
     "def parameter(plain : Reader(U0)) : plain.M := select_operand.(plain + absent);",
-    "def ambient : Nat := select_operand.(plain * 0);",
-    "def labels(read : Nat) : Nat := select_operand.(plain * read);",
-    "def missing_label : Nat := select_operand.(plain * read);",
+    "def ambient : UNat := select_operand.(plain * 0);",
+    "def labels(read : UNat) : UNat := select_operand.(plain * read);",
+    "def missing_label : UNat := select_operand.(plain * read);",
   ].map(retainDeclaration);
-  retain("notation plain { numeral(n : Nat) := n; }",{declared:new Set(["plain"])});
-  const {result,equal}=check("def plain : Reader(U0) := raised; def read : Nat := zero;",{retained:saved});
+  retain("notation plain { numeral(n : UNat) := n; }",{declared:new Set(["plain"])});
+  const {result,equal}=check("def plain : Reader(U0) := raised; def read : UNat := zero;",{retained:saved});
   assert.deepEqual(failures(result).map(([name])=>name),["missing_label"],JSON.stringify(failures(result)));
   assert.match(failures(result)[0][1],/Untranslated name: read/);
   assert.equal(equal("attached","succ(succ(zero))"),true);
@@ -358,18 +358,18 @@ test("lazy selector operands keep attached rules and the caller's ordinary opera
   assert.equal(equal("parameter","fun (plain : Reader(U0)) => plain.read(zero)"),true);
   assert.equal(equal("ambient","zero"),true);
   assert.equal(equal("ambient","succ(succ(zero))"),false);
-  assert.equal(equal("labels","fun (read : Nat) => read"),true);
+  assert.equal(equal("labels","fun (read : UNat) => read"),true);
 });
 
 test("unused lazy namespace failures survive retained generation without becoming destination names",async t=>{
   const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
-  const source=`import hlevels; import nat;
+  const source=`import hlevels; import unat;
 notation ignore { x + y := zero; }
 notation consume { x + y := x; }
 theory Parent(U < UU0) { M : set U; c : M; }
 theory Child(U < UU0) extends p : Parent {
-  def ignored : Nat := ignore.(p.absent + zero);
-  def rejected : Nat := consume.(p.absent + zero);
+  def ignored : UNat := ignore.(p.absent + zero);
+  def rejected : UNat := consume.(p.absent + zero);
 }
 def value(S : Child(U0)) : S.ignored = zero { rfl; }
 def wrong(S : Child(U0)) : S.ignored = succ(zero) { rfl; }`;
@@ -401,7 +401,7 @@ test("nested rule expansion preserves both producer sites and the outer caller",
 
 test("missing notation readers keep their source diagnostics",async t=>{
   for(const [rule,code,advice] of [
-    ["numeral(n : Nat) := n;","E847","import nat"],
+    ["numeral(n : UNat) := n;","E847","import unat"],
     ["literal(s : Lexeme) := s;","E844","import lexemes"],
   ]) {
     const program=new CubicalProgram(wasm,async()=>"");t.after(()=>program.dispose());
@@ -418,8 +418,8 @@ def independent : Unit := tt;`;
 test("unselected retained notation reports source errors and preserves later declarations",async t=>{
   for(const [expression,code] of [["x * x","E912"],["-x","E901"],["f(0)","E911"],["f(0b101)","E909"]]) {
     const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
-    const source=`import hlevels; import nat;
-theory T(U < UU0) { M : set U; f(n : Nat) : M; law l(x : M) : ${expression} = x; }
+    const source=`import hlevels; import unat;
+theory T(U < UU0) { M : set U; f(n : UNat) : M; law l(x : M) : ${expression} = x; }
 def independent : Unit := tt;`;
     const result=await program.check(source,"main");
     assert.deepEqual(result.gaps.map(gap=>gap.code),[code],JSON.stringify(result.gaps));
@@ -428,7 +428,7 @@ def independent : Unit := tt;`;
     assert.ok(result.outputs.find(output=>output.name==="independent").verified);
   }
   const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
-  const source="import nat;\nnotation n { x + y := x * y; }\ndef independent : Unit := tt;";
+  const source="import unat;\nnotation n { x + y := x * y; }\ndef independent : Unit := tt;";
   const result=await program.check(source,"main"),[gap]=result.gaps;
   assert.deepEqual(result.gaps.map(gap=>gap.code),["E912"]);
   assert.equal(source.slice(gap.start,gap.end),"x * y");
@@ -437,15 +437,15 @@ def independent : Unit := tt;`;
 
 test("theory notation printing uses its retained operand views",async t=>{
   const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
-  const result=await program.check(`import nat; import hlevels;
-theory Ring(U < UU0) { R : set U; mul(x, y : R) : R notation x * y; pow(x : R, n : Nat) : R notation x ^ nat.(n); }
-def Z : Ring(U0) := Ring.make(Nat, nat_is_set, mul, fun (x, n : Nat) => x);
-def p(x, n : Nat) : Z.pow(x, nat.(n + 1)) = Z.pow(x, nat.(n + 1)) := refl(Z.pow(x, nat.(n + 1)));
+  const result=await program.check(`import unat; import hlevels;
+theory Ring(U < UU0) { R : set U; mul(x, y : R) : R notation x * y; pow(x : R, n : UNat) : R notation x ^ unat.(n); }
+def Z : Ring(U0) := Ring.make(UNat, unat_is_set, mul, fun (x, n : UNat) => x);
+def p(x, n : UNat) : Z.pow(x, unat.(n + 1)) = Z.pow(x, unat.(n + 1)) := refl(Z.pow(x, unat.(n + 1)));
 use Z;
 print(typeof(p));`,"main");
   assert.deepEqual(result.gaps,[]);
   assert.match(program.prints[0].text,/x \^ \(n \+ 1\)/);
-  assert.doesNotMatch(program.prints[0].text,/nat\.\(/);
+  assert.doesNotMatch(program.prints[0].text,/unat\.\(/);
 });
 
 test("imported rule failures belong to the caller while operand errors keep their own spans",async t=>{
@@ -456,14 +456,14 @@ test("imported rule failures belong to the caller while operand errors keep thei
     ["add(x.1, y)","zero","E349",true,["zero + zero","a + a"]],
     ["add(x, y)","zero.1","E349",false,[".1",".1"]],
   ]) {
-    const lib=`import nat;\n// ${"source padding ".repeat(20)}\nnotation bad { x + y := ${body}; }`;
+    const lib=`import unat;\n// ${"source padding ".repeat(20)}\nnotation bad { x + y := ${body}; }`;
     const middle="import lib; notation wrapper { x + y := bad.(x + y); }";
     const program=new CubicalProgram(wasm,async(name,importer)=>({lib,middle})[name]??library(name,importer));
     t.after(()=>program.dispose());
     const rule=nested?"wrapper":"bad",arg=operand==="zero.1"?"a.1":"a";
-    const source=`import ${nested?"middle":"lib"}; import nat;
+    const source=`import ${nested?"middle":"lib"}; import unat;
 print(evaluate(${rule}.(${operand} + zero)));
-def f(a : Nat) : Nat := ${rule}.(${arg} + a);
+def f(a : UNat) : UNat := ${rule}.(${arg} + a);
 def after : Unit := tt;`;
     const result=await program.check(source,"main");
     assert.deepEqual(result.gaps.map(gap=>gap.code),[code,code],JSON.stringify(result.gaps));
@@ -474,8 +474,8 @@ def after : Unit := tt;`;
 });
 
 test("explicit parent notation keeps missing-operation diagnostics and interval endpoints",async t=>{
-  const header=`import hlevels; import nat;
-theory P(U < UU0) { M : set U; c : M; op(x, y : M) : M notation x + y; f(n : Nat) : M; }\n`;
+  const header=`import hlevels; import unat;
+theory P(U < UU0) { M : set U; c : M; op(x, y : M) : M notation x + y; f(n : UNat) : M; }\n`;
   for(const [expression,code] of [["x * x","E397"],["-x","E902"],["f(0b1)","E910"],["f(0)","E907"]]) {
     const program=new CubicalProgram(wasm,sourceReader());t.after(()=>program.dispose());
     const source=header+`theory T(U < UU0) extends p : P { law l(x : M) : p.(${expression}) = x; }`;

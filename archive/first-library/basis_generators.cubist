@@ -1,13 +1,13 @@
-import nat;
+import unat;
 import finite_family_images;
 import vector_subspaces;
 import root_generated_fields;
 import extension_degree;
-use nat;
+use unat;
 
 // A linear map on finite coordinates lands in a subspace as soon as all of
 // its coordinate-unit images do. This avoids choosing coefficients anew.
-def CoordinatesInSubspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
+def CoordinatesInSubspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : UNat) :=
   forall h : LinearMap(K, CoordinateSpace(K, n), V).
   (
     forall i : Fin(n).
@@ -32,7 +32,7 @@ def coordinates_in_subspace_zero(K : AlgebraicField, V : VectorSpace(K), S : Sub
 }
 
 def coordinates_in_subspace_step(
-  K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat,
+  K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : UNat,
   previous : CoordinatesInSubspace(K, V, S, n)
 ) :
   CoordinatesInSubspace(K, V, S, succ(n)) {
@@ -57,19 +57,20 @@ def coordinates_in_subspace_step(
   exact transport contained along trans(scaled, same) in subspace_members(K, V, S);
 }
 
-def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : Nat) :=
+def coordinates_in_subspace(K : AlgebraicField, V : VectorSpace(K), S : Subspace(K, V), n : UNat) :=
   induction n as k return CoordinatesInSubspace(K, V, S, k) {
     zero => coordinates_in_subspace_zero(K, V, S);
     succ previous => coordinates_in_subspace_step(K, V, S, k, previous);
   };
 
 def basis_columns(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n), i : Fin(n)
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n), i : Fin(n)
 ) :=
   linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), coordinate_unit(K, n, i));
 
 def basis_columns_span(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n), S : Subspace(K, V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n),
+  S : Subspace(K, V),
   contains : (forall i : Fin(n). subspace_members(K, V, S, basis_columns(K, V, n, basis, i))),
   y : vector_carrier(K, V)
 ) :
@@ -101,7 +102,7 @@ def subfield_base_subspace(
 // Consequently every finite extension has finitely many field generators:
 // any supplied vector basis supplies them, with no primitive-element theorem.
 def finite_basis_field_generators(
-  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : Nat,
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), n : UNat,
   basis : FiniteBasis(K, field_vector_space(K, L, e), n), y : af_carrier(L)
 ) :
   GeneratedField(

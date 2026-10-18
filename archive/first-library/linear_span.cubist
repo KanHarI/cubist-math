@@ -1,10 +1,10 @@
-import nat;
+import unat;
 import finite_bases;
-use nat;
+use unat;
 
 // A finite linear combination has an explicit list of vectors and scalars.
 // Fin(n) supplies its indices, including the empty combination when n = 0.
-def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
+def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : UNat) :=
   induction n as k return (
     (Fin(k) -> vector_carrier(K, V)) -> (Fin(k) -> af_carrier(K)) -> vector_carrier(K, V)
   ) {
@@ -28,7 +28,7 @@ def linear_combination(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
 def SpanWitness(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) :=
-  exists n : Nat. exists vectors : Fin(n) -> vector_carrier(K, V).
+  exists n : UNat. exists vectors : Fin(n) -> vector_carrier(K, V).
   exists coefficients : Fin(n) -> af_carrier(K). (forall i : Fin(n). P(vectors(i)))
   and (linear_combination(K, V, n, vectors, coefficients) = x);
 
@@ -108,7 +108,7 @@ def span_included(
 // Independence quantifies over distinct finite lists of members. Distinctness
 // is essential: repeated vectors can otherwise cancel with nonzero coefficients.
 def LinearlyIndependent(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :=
-  forall n : Nat. forall vectors : Fin(n) -> vector_carrier(K, V).
+  forall n : UNat. forall vectors : Fin(n) -> vector_carrier(K, V).
   (forall i : Fin(n). forall j : Fin(n). vectors(i) = vectors(j) -> i = j)
   -> (forall i : Fin(n). P(vectors(i))) -> forall coefficients : Fin(n) -> af_carrier(K).
   linear_combination(K, V, n, vectors, coefficients) = vector_zero(K, V) -> forall i : Fin(n).

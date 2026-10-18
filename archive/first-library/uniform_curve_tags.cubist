@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import interval_sampling;
 import parameter_tag_sampling;
 import complex_curves;
@@ -44,7 +44,7 @@ def uniform_curve_tag_bounds(
 ) :
   exists mesh : F. lt(zero, mesh)
   and (
-    forall n : Nat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
+    forall n : UNat. forall vertices : SampleVertices(FieldUnitInterval(F, zero, one, lt), n).
     forall oldTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     forall newTags : SampleTags(FieldUnitInterval(F, zero, one, lt), n).
     IntervalMeshBelow(F, zero, one, addF, negF, lt, mesh, n, vertices)
@@ -81,7 +81,7 @@ def uniform_curve_tag_bounds(
   exact (
     mesh, positiveMesh,
     (
-      fun (n : Nat) => parameter_tag_bounds_from_samples(
+      fun (n : UNat) => parameter_tag_bounds_from_samples(
         I, F, addF, negF, lt, values, epsilon, smallEdge, IntervalTagWithin(F, zero, one, lt),
         localBound, n
       )

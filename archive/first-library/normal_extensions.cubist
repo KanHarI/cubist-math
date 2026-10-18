@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import splitting_fields;
 import polynomial_root_enumeration;
 import finite_algebraic_extensions;
@@ -18,7 +18,7 @@ def NormalExtension(K, L : AlgebraicField, e : FieldEmbedding(K, L)) :=
 def splitting_root_image(
   K, L, T : AlgebraicField, e : FieldEmbedding(K, L), j, h : FieldEmbedding(L, T),
   triangle : field_embedding_compose(K, L, T, e, h) = field_embedding_compose(K, L, T, e, j),
-  p : Polynomial(K), nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L),
+  p : Polynomial(K), nonzero : PolynomialNonzero(K, p), n : UNat, roots : Fin(n) -> af_carrier(L),
   a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
     L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
@@ -72,7 +72,7 @@ def splitting_root_image(
 // first locates the images of the roots, then uses generated-field leastness.
 def splitting_field_embedding_normal(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K),
-  nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  nonzero : PolynomialNonzero(K, p), n : UNat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
     L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
   ),
@@ -117,7 +117,7 @@ def splitting_field_embedding_normal(
 def finite_splitting_field_normal(
   K, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), p : Polynomial(K),
-  nonzero : PolynomialNonzero(K, p), n : Nat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
+  nonzero : PolynomialNonzero(K, p), n : UNat, roots : Fin(n) -> af_carrier(L), a : af_carrier(L),
   equation : polynomial_map(K, L, e, p) = polynomial_mul(
     L, polynomial_constant(L, a), linear_factor_product(L, n, roots)
   ),

@@ -17,6 +17,6 @@ test("E4: a quotient's dependent eliminator generates its set squash", async () 
 });
 
 test("obligations by takes hlevel, a term or a proof block", () => {
-  assert.throws(() => parse("def f(x : Circle) : Nat := match x { base => 0; } obligations by simp;"),
+  assert.throws(() => parse("def f(x : Circle) : UNat := match x { base => 0; } obligations by simp;"),
     /obligations by supports hlevel.*proof block/);
 });

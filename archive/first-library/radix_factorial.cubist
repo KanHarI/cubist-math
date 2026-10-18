@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import radix_arithmetic;
-use nat;
+use unat;
 
 // The same radix arithmetic and factorial are checked at radix 2 and radix 10.
 // The parameter is radix minus two. Every numeral below is a compact W tree.

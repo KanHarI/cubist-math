@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import primes;
-use nat;
+use unat;
 
-def InfinitelyManyPrimes := forall n : Nat. exists p : Nat. Prime(p) and n < p;
+def InfinitelyManyPrimes := forall n : UNat. exists p : UNat. Prime(p) and n < p;
 
 // Every bound has a larger prime. No axioms are required.
 def euclid : InfinitelyManyPrimes {

@@ -15,7 +15,7 @@ import {DeclarationOwnership} from "../web/translator/declarations.mjs";
 import {snapshotSyntax} from "../web/translator/syntax-graph.mjs";
 
 const module=await create();
-const base="inductive Two { left_; right_; } inductive Nat { zero; succ(n : Nat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : Nat, r : Tree); } def recurse_ : U0 := Unit;";
+const base="inductive Two { left_; right_; } inductive UNat { zero; succ(n : UNat); } inductive Loopy { base; loop(x : Loopy) : x = x; } inductive List(A : U0) : U0 { nil; cons(x : A, xs : List(A)); } inductive Tree { leaf; node(l : Tree, d : UNat, r : Tree); } def recurse_ : U0 := Unit;";
 
 // Prepare fixture artifacts with the syntax resolver; admission and lowering
 // use the same retained-declaration queue as production generators.
@@ -61,7 +61,7 @@ async function prepared(t,source,{clone=false,destination=new Map()}={}) {
 
 test("retained generated declarations enter a mixed source queue with exact references and shared refusals",async t=>{
   const program=new CubicalProgram(module,async()=>"");t.after(()=>program.dispose());
-  assert.deepEqual((await program.check(base+" notation digits { numeral(n : Nat) := n; }","base")).gaps,[]);
+  assert.deepEqual((await program.check(base+" notation digits { numeral(n : UNat) := n; }","base")).gaps,[]);
   const registry=program.compilationBindings,table=registry.table,imports=new Map();
   const env=program.modules.get("base");
   for(const [label,value] of env)if(/^[A-Za-z_][A-Za-z0-9_]*$/.test(label)) {
@@ -73,7 +73,7 @@ test("retained generated declarations enter a mixed source queue with exact refe
   assert.doesNotThrow(()=>snapshotSyntax(declarations),"the queue contains inert syntax, not adapters or handles");
   const serialized=JSON.parse(JSON.stringify(declarations));
   const before=parse("def left_ : Two := right_;").declarations;
-  const after=parse("def native : Nat := digits.(2);").declarations;
+  const after=parse("def native : UNat := digits.(2);").declarations;
   const checker=program.checker,definitionModule="pilot";
   const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"pilot",compilationBindings:registry});
   const result=translator.translateSyntax({declarations:[...before,...serialized,...after]},source,env);
@@ -95,7 +95,7 @@ test("retained generated declarations enter a mixed source queue with exact refe
 });
 
 test("recursive bodies do not replace an earlier same-named declaration in their signature",async t=>{
-  const source=`def recurse_(n : Nat, x : recurse_) : recurse_ := match n {
+  const source=`def recurse_(n : UNat, x : recurse_) : recurse_ := match n {
     zero => x; succ(k) => recurse_(k, x);
   }; def client : Unit := recurse_(succ(zero), tt);`;
   const {program,translator,result}=await prepared(t,source);
@@ -114,22 +114,22 @@ def inferred_named : Two := inferred(x := left_, y := right_);
 def dependent_named : Two := dependent(y := right_, p := refl(right_), x := right_);
 def shadow(x : Two) : Two := (fun (x : Two) => x)(right_);
 def line(p : tt = tt) : tt = tt := path i => p @ i;
-def copy(n : Nat) : Nat := match n { zero => zero; succ(k) => succ(copy(k)); };
-def computation : Nat := copy(succ(zero));
-def count(n, m : Nat) : Nat := match n { zero => m; succ(k) => count(k, succ(m)); };
-def varied : Nat := count(succ(zero), zero);
-def keep{{U < UU0, A : U}}(n : Nat, x : A) : A := match n { zero => x; succ(k) => keep(k, x); };
+def copy(n : UNat) : UNat := match n { zero => zero; succ(k) => succ(copy(k)); };
+def computation : UNat := copy(succ(zero));
+def count(n, m : UNat) : UNat := match n { zero => m; succ(k) => count(k, succ(m)); };
+def varied : UNat := count(succ(zero), zero);
+def keep{{U < UU0, A : U}}(n : UNat, x : A) : A := match n { zero => x; succ(k) => keep(k, x); };
 def implicit_recursive : Two := keep(succ(zero), right_);
-def predecessor(n : Nat) : Nat := induction n return Nat { zero => zero; succ(k) with h => k; };
-def predecessor_statement(n : Nat) : Nat { induction n { zero => { exact zero; } succ(k) with h => { exact k; } } }
-def nested(n : Nat) : Nat {
+def predecessor(n : UNat) : UNat := induction n return UNat { zero => zero; succ(k) with h => k; };
+def predecessor_statement(n : UNat) : UNat { induction n { zero => { exact zero; } succ(k) with h => { exact k; } } }
+def nested(n : UNat) : UNat {
   match n { zero => { exact zero; } succ(k) => {
     match k { zero => { exact zero; } succ(j) => { exact nested(k); } }
   } }
 }
-def predecessor_value : Nat := predecessor(succ(succ(zero)));
-def predecessor_statement_value : Nat := predecessor_statement(succ(succ(zero)));
-def nested_value : Nat := nested(succ(succ(zero)));
+def predecessor_value : UNat := predecessor(succ(succ(zero)));
+def predecessor_statement_value : UNat := predecessor_statement(succ(succ(zero)));
+def nested_value : UNat := nested(succ(succ(zero)));
 def loops(t : Loopy) : Unit { induction t {
   base => { exact tt; }
 } obligations { loop(x) @ i with ih => { exact ih; } } }
@@ -216,7 +216,7 @@ test("fresh identities do not conceal repeated public parameter labels",async t=
 });
 
 test("identity-bearing recursive calls retain the structural restriction",async t=>{
-  const {result}=await prepared(t,"def bad(n : Nat) : Nat := match n { zero => zero; succ(k) => bad(n); };");
+  const {result}=await prepared(t,"def bad(n : UNat) : UNat := match n { zero => zero; succ(k) => bad(n); };");
   assert.match(result.declarations[0].reason,/only structural recursion/);
 });
 
@@ -231,16 +231,16 @@ test("module preparation and admission share duplicate ownership without replaci
 
 test("identity clauses preserve nominal shadowing and construct values without destination spellings",async t=>{
   const source=`
-def same(n : Nat) : Nat := match n { zero => zero; m => m; };
-def legacy(n : Nat) : Nat := induction n return Nat { zero => zero; succ h => succ(h); };
-def shadow(n : Nat) : Nat := induction n return Nat { zero => zero; succ(k) with k => k; };
-def len2(A : U0, xs : List(A)) : Nat := match xs, A {
+def same(n : UNat) : UNat := match n { zero => zero; m => m; };
+def legacy(n : UNat) : UNat := induction n return UNat { zero => zero; succ h => succ(h); };
+def shadow(n : UNat) : UNat := induction n return UNat { zero => zero; succ(k) with k => k; };
+def len2(A : U0, xs : List(A)) : UNat := match xs, A {
   nil, B => zero; cons(x, rest), B => succ(len2(B, rest));
 };
-def same_value : Nat := same(succ(succ(zero)));
-def legacy_value : Nat := legacy(succ(succ(zero)));
-def shadow_value : Nat := shadow(succ(succ(zero)));
-def length_value : Nat := len2(Two, cons(left_, cons(right_, nil)));
+def same_value : UNat := same(succ(succ(zero)));
+def legacy_value : UNat := legacy(succ(succ(zero)));
+def shadow_value : UNat := shadow(succ(succ(zero)));
+def length_value : UNat := len2(Two, cons(left_, cons(right_, nil)));
 `;
   for(const clone of [false,true]) {
     const {result,program,translator}=await prepared(t,source,{clone});
@@ -260,13 +260,13 @@ def length_value : Nat := len2(Two, cons(left_, cons(right_, nil)));
 
 test("clause variables are distinct by public label in direct and compiled paths",async t=>{
   const source=`
-def duplicate_tree(t : Tree) : Nat := induction t return Nat { leaf => zero; node(x, x, r) with a, b => x; };
-def duplicate_match(t : Tree) : Nat := match t { leaf => zero; node(x, x, r) => zero; };
+def duplicate_tree(t : Tree) : UNat := induction t return UNat { leaf => zero; node(x, x, r) with a, b => x; };
+def duplicate_match(t : Tree) : UNat := match t { leaf => zero; node(x, x, r) => zero; };
 def duplicate_dimension(t : Loopy) : Unit := match t { base => tt; loop(y) @ y => tt; };
 def duplicate_compiled_dimension(t : Loopy, u : Unit) : Unit := match t, u { base, _ => tt; loop(y) @ y, _ => tt; };
-def pick(t : Tree) : Nat := induction t return Nat { leaf => zero; node(l, d, r) with a, b => d; };
-def picked : Nat := pick(node(leaf, succ(zero), leaf));
-def hypothesis(n : Nat) : Nat := induction n return Nat { zero => zero; succ(k) with h => h; };
+def pick(t : Tree) : UNat := induction t return UNat { leaf => zero; node(l, d, r) with a, b => d; };
+def picked : UNat := pick(node(leaf, succ(zero), leaf));
+def hypothesis(n : UNat) : UNat := induction n return UNat { zero => zero; succ(k) with h => h; };
 `;
   const program=new CubicalProgram(module,async()=>base);t.after(()=>program.dispose());
   const nominal=await program.check(`import base; ${source}`,"main");

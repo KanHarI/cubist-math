@@ -26,7 +26,7 @@ test("hlevel's proofs use no assumption", async () => {
 });
 
 test("the search spends counted fuel, the same on every run, and stops when it runs out", async t => {
-  const source = "import hlevels;\ndef deep : IsSet(U0, Nat -> (Nat and (Nat -> Nat))) { hlevel; }\n";
+  const source = "import hlevels;\ndef deep : IsSet(U0, UNat -> (UNat and (UNat -> UNat))) { hlevel; }\n";
   const first = await check(t, source), second = await check(t, source);
   ok(first.get("deep"));
   assert.deepEqual(first.get("deep").searchFuel, second.get("deep").searchFuel, "the same fuel on every run");
@@ -38,7 +38,7 @@ test("the search spends counted fuel, the same on every run, and stops when it r
 });
 
 test("the keyword links to the checked proof, and the formatter keeps hints", async t => {
-  const source = "import hlevels;\n\ndef hinted(A : U0, h : Unit -> IsSet(U0, A)) : IsSet(U0, A and Nat) {\n  hlevel with [h(tt)];\n}\n";
+  const source = "import hlevels;\n\ndef hinted(A : U0, h : Unit -> IsSet(U0, A)) : IsSet(U0, A and UNat) {\n  hlevel with [h(tt)];\n}\n";
   const { program, get } = await check(t, source, { collectReferences: true });
   ok(get("hinted"));
   const link = program.links.find(item => item.role === "h-level evidence");

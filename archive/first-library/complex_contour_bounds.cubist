@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import complex_contour_samples;
 import complex_magnitude;
 import complex_convergence;
 import field_magnitude_close;
 
 def complex_contour_tag_error_sum(
-  F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, f : Complex(F) -> Complex(F), n : Nat
+  F : U1, zero : F, addF, mulF : F -> F -> F, negF : F -> F, f : Complex(F) -> Complex(F), n : UNat
 ) :=
   contour_tag_error_sum(
     Complex(F), complex_zero(F, zero), complex_add(F, addF), complex_mul(F, addF, mulF, negF),
@@ -46,15 +46,15 @@ def complex_box_enlarge(
 def complex_box_squeeze(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : Nat -> Complex(F),
-  radii : Nat -> F, bounds : (forall n : Nat. ComplexBoxBound(F, negF, lt, errors(n), radii(n))),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors : UNat -> Complex(F),
+  radii : UNat -> F, bounds : (forall n : UNat. ComplexBoxBound(F, negF, lt, errors(n), radii(n))),
   vanishes : FieldConverges(F, zero, addF, lt, radii, zero)
 ) :
   ComplexConverges(F, zero, addF, lt, errors, complex_zero(F, zero)) {
   intro epsilon, positive;
   obtain (bound, close) := vanishes(epsilon, positive);
   let tail :
-    forall n : Nat. IndexLE(bound, n)
+    forall n : UNat. IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, errors(n), complex_zero(F, zero), epsilon) {
     intro n, large;
     obtain (upper, lower) := close(n, large);
@@ -80,7 +80,7 @@ def complex_box_squeeze(
 // Error and displacement bounds are required only at visited samples.
 def ComplexContourTagBounds(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, f : Complex(F) -> Complex(F),
-  delta : F, n : Nat
+  delta : F, n : UNat
 ) :=
   induction n as k return (
     SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> SampleTags(Complex(F), k) -> U0
@@ -106,7 +106,7 @@ def ComplexContourTagBounds(
 
 def ComplexContourIncrementBounds(
   F : U1, addF : F -> F -> F, negF : F -> F, lt : F -> F -> U0, realWeight,
-  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, n : Nat
+  imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, n : UNat
 ) :=
   induction n as k return (SampleVertices(Complex(F), k) -> SampleTags(Complex(F), k) -> U0) {
     zero => fun (vertices : Complex(F), oldTags : Unit) => Unit;
@@ -140,7 +140,7 @@ def complex_contour_tag_error_variation_bound(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
-  realWeight, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, delta : F, n : Nat
+  realWeight, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, delta : F, n : UNat
 ) :
   forall vertices : SampleVertices(Complex(F), n). forall oldTags : SampleTags(Complex(F), n).
   forall newTags : SampleTags(Complex(F), n).
@@ -393,8 +393,8 @@ def complex_contour_tag_error_length_bound(
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), f : Complex(F) -> Complex(F),
   realWeight, imagWeight : Complex(F) -> Complex(F) -> Complex(F) -> F, delta, length : F,
-  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : Nat, vertices : SampleVertices(Complex(F), n),
-  oldTags, newTags : SampleTags(Complex(F), n),
+  nonnegativeDelta : FieldLe(F, lt, zero, delta), n : UNat,
+  vertices : SampleVertices(Complex(F), n), oldTags, newTags : SampleTags(Complex(F), n),
   errors : ComplexContourTagBounds(F, addF, negF, lt, f, delta, n, vertices, oldTags, newTags),
   increments : ComplexContourIncrementBounds(
     F, addF, negF, lt, realWeight, imagWeight, n, vertices, oldTags

@@ -1,7 +1,7 @@
-import nat;
+import unat;
 import subfield_transport;
 import f4_intermediate_fields;
-use nat;
+use unat;
 
 // Zero and one already give the embedded F2, for any choice of generators.
 def f4_generated_contains_base(P : F4Carrier -> U0, k : F2Carrier) :
@@ -70,7 +70,7 @@ def f4_add_derivation := field_derivation_add(
 
 def f4_add_derivation_rank :
   sigma_first(
-    Nat, (fun (n : Nat) => FieldClosureStage(F4, F4AlphaGenerator, n, f4_0)), f4_add_derivation
+    UNat, (fun (n : UNat) => FieldClosureStage(F4, F4AlphaGenerator, n, f4_0)), f4_add_derivation
   ) = 2 {
   rfl;
 }

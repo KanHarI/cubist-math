@@ -5,7 +5,7 @@
 // evidence.
 import hlevels;
 import quotients;
-use nat;
+use unat;
 
 // E4: a quotient's dependent eliminator generates its set squash; the motive
 // is a family of sets, here the paths of the quotient, not just a constant
@@ -25,7 +25,7 @@ inductive Circle {
   loop : base = base;
 }
 
-def flat(x : Circle) : Nat := match x {
+def flat(x : Circle) : UNat := match x {
     base => 0;
   }
 obligations by rfl;
@@ -35,7 +35,7 @@ def checked : flat(loop @ 1) = 0 {
 }
 
 // Error: E606: Type mismatch: found 1 = 1, expected 0 = 0.
-def wrong(x : Circle) : Nat := match x {
+def wrong(x : Circle) : UNat := match x {
     base => 0;
   }
 obligations {
@@ -44,12 +44,12 @@ obligations {
 
 // Error: E531: match on Circle needs a clause for base. Give path clauses in obligations { … }, or
 //   obligations by { … }.
-def missing(x : Circle) : Nat := match x {}
+def missing(x : Circle) : UNat := match x {}
 obligations by hlevel;
 
 // Error: E530: base is a point constructor: give its computational clause in match, before
 //   obligations.
-def misplaced(x : Circle) : Nat := match x {}
+def misplaced(x : Circle) : UNat := match x {}
 obligations {
   base => 0;
   loop @ i => 0;
@@ -78,11 +78,11 @@ def rebuilt(A : U0, x : Tr(A)) : Tr(A) {
   }
 }
 
-def point_computes : rebuilt(Nat, point(2)) = point(2) {
+def point_computes : rebuilt(UNat, point(2)) = point(2) {
   rfl;
 }
 
-def flat_statement(x : Circle) : Nat {
+def flat_statement(x : Circle) : UNat {
   match x {
     base => {
       exact 0;
@@ -105,13 +105,13 @@ def by_level(x : Circle) : Unit {
 }
 
 // Trailing proofs fill declared paths without replacing a generated squash.
-def by_rfl(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat := match q {
+def by_rfl(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : UNat := match q {
     class(a) => 0;
     relate(a, b, r) @ i => 0;
   }
 obligations by rfl;
 
-def by_block(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat := match q {
+def by_block(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : UNat := match q {
     class(a) => 0;
   }
 obligations by {
@@ -119,12 +119,12 @@ obligations by {
   rfl;
 };
 
-def by_term(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat := match q {
+def by_term(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : UNat := match q {
     class(a) => 0;
   }
 obligations by (fun (a, b : A, r : R(a, b)) => path i => 0);
 
-def statement_block(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat {
+def statement_block(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : UNat {
   match q {
     class(a) => {
       exact 0;
@@ -136,7 +136,7 @@ def statement_block(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat {
   }
 }
 
-def statement_term(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : Nat {
+def statement_term(A : U0, R : A -> A -> U0, q : Quotient(U0, A, R)) : UNat {
   match q {
     class(a) => {
       exact 0;
@@ -156,14 +156,14 @@ inductive TwoLoops {
   second : hub = hub;
 }
 
-def tactics(x : TwoLoops) : Nat := match x {
+def tactics(x : TwoLoops) : UNat := match x {
     hub => 0;
   }
 obligations by rfl;
 
 // Error: E532: obligations by a term or proof block needs exactly one missing declared path clause;
 //   found 2. Use named obligations { … } for separate clauses.
-def ambiguous_block(x : TwoLoops) : Nat := match x {
+def ambiguous_block(x : TwoLoops) : UNat := match x {
     hub => 0;
   }
 obligations by {
@@ -172,7 +172,7 @@ obligations by {
 
 // Error: E532: obligations by a term or proof block needs exactly one missing declared path clause;
 //   found 2. Use named obligations { … } for separate clauses.
-def ambiguous_term(x : TwoLoops) : Nat := match x {
+def ambiguous_term(x : TwoLoops) : UNat := match x {
     hub => 0;
   }
 obligations by (path i => 0);

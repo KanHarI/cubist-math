@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import dyadic_contour_estimates;
 import dyadic_convergence;
 import complex_refinement_cauchy;
-use nat;
+use unat;
 
 // This sequence is the actual recursively constructed sampling, with all
 // vertices, tags and endpoint proofs retained in each dyadic piece.
@@ -15,7 +15,7 @@ def affine_dyadic_sum(
   ordered : FieldLe(
     F, lt, field_interval_coordinate(F, zero, one, lt)(a),
     field_interval_coordinate(F, zero, one, lt)(b)
-  ), depth : Nat
+  ), depth : UNat
 ) :=
   curve_subdivision_samples(
     F, zero, one, addF, mulF, negF, lt,
@@ -107,8 +107,9 @@ def affine_dyadic_cauchy(
     width, nonnegativeWidth
   );
   let refines :
-    forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. forall extra : Nat.
-    IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
+    forall epsilon : F. lt(zero, epsilon) -> exists bound : UNat. forall n : UNat.
+    forall extra : UNat. IndexLE(bound, n)
+    -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
     intro epsilon, positive;
     obtain (delta, positiveDelta, smallRadius) := field_small_scaled_radius(
       F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, inverses, scale,
@@ -120,7 +121,7 @@ def affine_dyadic_cauchy(
     );
     obtain (bound, closeWidths) := widthsVanish(mesh, positiveMesh);
     let tail :
-      forall n : Nat. forall extra : Nat. IndexLE(bound, n)
+      forall n : UNat. forall extra : UNat. IndexLE(bound, n)
       -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon) {
       intro n, extra, later;
       obtain (upper, lower) := closeWidths(n, later);

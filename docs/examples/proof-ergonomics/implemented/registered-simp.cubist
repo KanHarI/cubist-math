@@ -1,55 +1,55 @@
 import primes;
-use nat;
+use unat;
 
 // Registrations refer to already checked equality proofs.
-simp_rule nat_add_zero priority 10;
-simp_set nat_units := [nat_add_zero];
+simp_rule unat_add_zero priority 10;
+simp_set nat_units := [unat_add_zero];
 
-def default_rewrite(n : Nat) : n + 0 = n {
+def default_rewrite(n : UNat) : n + 0 = n {
   simp;
 }
 
-def named_rewrite(n : Nat) : n + 0 = n {
+def named_rewrite(n : UNat) : n + 0 = n {
   simp [nat_units];
 }
 
-def frozen_rewrite(n : Nat) : n + 0 = n {
+def frozen_rewrite(n : UNat) : n + 0 = n {
   simp only [nat_units];
 }
 
-def supplied_rewrite(n : Nat) : n + 0 = n {
+def supplied_rewrite(n : UNat) : n + 0 = n {
   simpa [nat_units] using refl(n);
 }
 
-def simplified_copy(n : Nat, h : n + 0 = n) : n = n {
+def simplified_copy(n : UNat, h : n + 0 = n) : n = n {
   simp [nat_units] at h as normalized;
   exact normalized;
 }
 
-def zero_if(n : Nat, h : n = 0) : n + 0 = 0 {
+def zero_if(n : UNat, h : n = 0) : n + 0 = 0 {
   calc {
-    n + 0 = n by nat_add_zero(n);
+    n + 0 = n by unat_add_zero(n);
     _ = 0 by h;
   }
 }
 
 simp_rule zero_if priority 20;
 
-def conditional_rewrite(n : Nat, h : n = 0) : n + 0 = 0 {
+def conditional_rewrite(n : UNat, h : n = 0) : n + 0 = 0 {
   simp with [h];
 }
 
 // This conditional rule remains available when its whole left side is selected.
-def double_zero_if(n : Nat, h : n + 0 = n) : (n + 0) + 0 = n {
+def double_zero_if(n : UNat, h : n + 0 = n) : (n + 0) + 0 = n {
   calc {
-    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
+    (n + 0) + 0 = n + 0 by unat_add_zero(n + 0);
     _ = n by h;
   }
 }
 
 simp_rule double_zero_if priority 30;
 
-def recursive_premise(n : Nat) : (n + 0) + 0 = n {
-  // Child rewrites fire first, so nat_add_zero reduces both nested additions.
+def recursive_premise(n : UNat) : (n + 0) + 0 = n {
+  // Child rewrites fire first, so unat_add_zero reduces both nested additions.
   simp;
 }

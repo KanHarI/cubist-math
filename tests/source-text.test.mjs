@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
-import { naturalSort as nat, numeral as number } from "../web/translator/numerals.mjs";
+import { naturalSort as unat, numeral as number } from "../web/translator/numerals.mjs";
 
 const U0 = { tag: "U", level: 0 }, unit = { tag: "Unit" }, v = { tag: "Void" };
 const variable = name => ({ tag: "Var", name });
@@ -12,45 +12,46 @@ const pi = (name, domain, body) => ({ tag: "Pi", name, domain, body });
 const sigma = (name, domain, body) => ({ tag: "Sigma", name, domain, body });
 const sum = (left, right) => ({ tag: "Sum", left, right });
 const app = (fn, ...args) => args.reduce((f, arg) => ({ tag: "App", fn: f, arg }), fn);
-const succ = value => app({ tag: "Con", index: 1, sort: nat, name: "succ" }, value);
-// The source Nat's eliminator applied, which prints as `induction`.
-const induction = ({ motive, zero, step, value }) => app({ tag: "Elim", signature: "nat__Nat", motive, clauses: [zero, step] }, value);
-const add = (a, b) => app({ tag: "DefRef", name: "nat__add" }, a, b);
-const equal = (left, right) => ({ tag: "Path", dim: "i", family: nat, left, right });
+const succ = value => app({ tag: "Con", index: 1, sort: unat, name: "succ" }, value);
+// The source UNat's eliminator applied, which prints as `induction`.
+const induction = ({ motive, zero, step, value }) => app({ tag: "Elim", signature: "unat__UNat", motive, clauses: [zero, step] }, value);
+const add = (a, b) => app({ tag: "DefRef", name: "unat__add" }, a, b);
+const equal = (left, right) => ({ tag: "Path", dim: "i", family: unat, left, right });
 
 test("types print as they are written, with only the parentheses the parser needs", () => {
-  assert.equal(sourceText(sum(unit, sum(unit, nat))), "Unit or Unit or Nat");
-  assert.equal(sourceText(sum(sum(unit, unit), nat)), "(Unit or Unit) or Nat");
-  assert.equal(sourceText(pi("_", nat, pi("_", nat, nat))), "Nat -> Nat -> Nat");
-  assert.equal(sourceText(pi("_", pi("_", nat, nat), nat)), "(Nat -> Nat) -> Nat");
+  assert.equal(sourceText(sum(unit, sum(unit, unat))), "Unit or Unit or UNat");
+  assert.equal(sourceText(sum(sum(unit, unit), unat)), "(Unit or Unit) or UNat");
+  assert.equal(sourceText(pi("_", unat, pi("_", unat, unat))), "UNat -> UNat -> UNat");
+  assert.equal(sourceText(pi("_", pi("_", unat, unat), unat)), "(UNat -> UNat) -> UNat");
   // `and` binds tighter than `or`, which binds tighter than `->`.
-  assert.equal(sourceText(pi("_", sigma("_", nat, unit), sum(unit, v))), "Nat and Unit -> Unit or Void");
-  assert.equal(sourceText(sigma("_", sum(nat, unit), unit)), "(Nat or Unit) and Unit");
+  assert.equal(sourceText(pi("_", sigma("_", unat, unit), sum(unit, v))), "UNat and Unit -> Unit or Void");
+  assert.equal(sourceText(sigma("_", sum(unat, unit), unit)), "(UNat or Unit) and Unit");
   assert.equal(sourceText(pi("A", U0, pi("_", variable("A"), sigma("_", variable("A"), variable("A"))))),
     "forall A : U0. A -> A and A");
-  assert.equal(sourceText(sigma("m", nat, app({ tag: "DefRef", name: "reference_example__lt" }, variable("n"), variable("m")))),
-    "exists m : Nat. lt(n, m)");
-  assert.equal(sourceText(pi("_", pi("n", nat, equal(variable("n"), variable("n"))), unit)), "(forall n : Nat. n = n) -> Unit");
+  assert.equal(sourceText(sigma("m", unat, app({ tag: "DefRef", name: "reference_example__lt" }, variable("n"), variable("m")))),
+    "exists m : UNat. lt(n, m)");
+  assert.equal(sourceText(pi("_", pi("n", unat, equal(variable("n"), variable("n"))), unit)), "(forall n : UNat. n = n) -> Unit");
 });
 
-// Where nat's notation is selected, as after use nat;.
-const natText = term => sourceText(term, {}, 4000, { selection: "nat" });
+// Where unat's notation is selected, as after use unat;.
+const unarySymbols = { unat__UNat: { printing: [{ notation: "unat", identity: "unary-view", identityNumeral: true }] } };
+const natText = term => sourceText(term, unarySymbols, 4000, { selection: "unat", selectionIdentity: "unary-view" });
 
 test("values and arithmetic print in source syntax", () => {
   assert.equal(natText(equal(add(number(2), number(2)), number(5))), "2 + 2 = 5");
   assert.equal(natText(add(add(number(1), number(2)), number(3))), "1 + 2 + 3");
   assert.equal(natText(add(number(1), add(number(2), number(3)))), "1 + (2 + 3)");
-  assert.equal(natText(app({ tag: "DefRef", name: "nat__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
-  assert.equal(natText(app({ tag: "DefRef", name: "nat__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
+  assert.equal(natText(app({ tag: "DefRef", name: "unat__mul" }, add(number(1), number(2)), number(3))), "(1 + 2) * 3");
+  assert.equal(natText(app({ tag: "DefRef", name: "unat__isLt" }, variable("n"), succ(variable("n")))), "n < succ(n)");
   assert.equal(natText({ tag: "Pair", first: number(3), second: { tag: "Pair", first: { tag: "Point" }, second: number(1) } }), "(3, tt, 1)");
-  assert.equal(sourceText({ tag: "Inl", as: sum(unit, nat), value: { tag: "Point" } }), "left(tt)");
-  assert.equal(natText({ tag: "Lam", name: "m", domain: nat, body: { tag: "Lam", name: "n", domain: nat,
-    body: { tag: "Lam", name: "p", domain: unit, body: add(variable("m"), variable("n")) } } }), "fun (m, n : Nat, p : Unit) => m + n");
-  assert.equal(natText(app({ tag: "Lam", name: "x", domain: nat, body: variable("x") }, number(1))), "(fun (x : Nat) => x)(1)");
-  // Where nothing is selected, nat's operations and numerals are qualified,
+  assert.equal(sourceText({ tag: "Inl", as: sum(unit, unat), value: { tag: "Point" } }), "left(tt)");
+  assert.equal(natText({ tag: "Lam", name: "m", domain: unat, body: { tag: "Lam", name: "n", domain: unat,
+    body: { tag: "Lam", name: "p", domain: unit, body: add(variable("m"), variable("n")) } } }), "fun (m, n : UNat, p : Unit) => m + n");
+  assert.equal(natText(app({ tag: "Lam", name: "x", domain: unat, body: variable("x") }, number(1))), "(fun (x : UNat) => x)(1)");
+  // Where nothing is selected, unat's operations and numerals are qualified,
   // so the text reads back (L2.10j).
-  assert.equal(sourceText(equal(add(number(2), number(2)), number(5))), "nat.(2 + 2) = nat.(5)");
-  assert.equal(sourceText(add(variable("m"), variable("n"))), "nat.(m + n)");
+  assert.equal(sourceText(equal(add(number(2), number(2)), number(5)), unarySymbols), "unat.(2 + 2) = unat.(5)");
+  assert.equal(sourceText(add(variable("m"), variable("n"))), "unat.(m + n)");
 });
 
 // Messages, evaluations and prints in source syntax are
@@ -85,7 +86,7 @@ test("binary numbers print as binary literals", () => {
   assert.equal(binaryText(zero), "0b0");
   assert.equal(binaryText(positive(bit(0, bit(1, one)))), "0b110");
   assert.equal(sourceText(positive(bit(0, bit(1, one)))), "binary.(0b110)");
-  assert.equal(sourceText(zero, {}, 4000, { selection: "nat" }), "binary.(0b0)");
+  assert.equal(sourceText(zero, {}, 4000, { selection: "unat" }), "binary.(0b0)");
   // Anything else in the same type prints as it is built.
   assert.match(sourceText(positive(variable("p"))), /^binary_positive\(p\)$/);
   assert.match(sourceText(positive(bit(1, variable("p")))), /^binary_positive\(binary_bit1\(p\)\)$/);
@@ -109,24 +110,24 @@ test("binary-natural normal forms print only through a known reader", () => {
 });
 
 test("recursion and case analysis print as induction and match", () => {
-  const recursion = { motive: { tag: "Lam", name: "b", domain: nat, body: nat }, zero: variable("n"),
-    step: { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "h", domain: nat, body: succ(variable("h")) } },
+  const recursion = { motive: { tag: "Lam", name: "b", domain: unat, body: unat }, zero: variable("n"),
+    step: { tag: "Lam", name: "k", domain: unat, body: { tag: "Lam", name: "h", domain: unat, body: succ(variable("h")) } },
     value: variable("m") };
   // A constant motive, and a successor clause that does not use the
   // predecessor, need no `as`.
-  assert.equal(sourceText(induction(recursion)), "induction m return Nat { zero => n; succ h => succ(h); }");
+  assert.equal(sourceText(induction(recursion)), "induction m return UNat { zero => n; succ h => succ(h); }");
   const predecessor = { ...recursion, step: { ...recursion.step, body: { ...recursion.step.body, body: variable("k") } } };
-  assert.equal(sourceText(induction(predecessor)), "induction m as k return Nat { zero => n; succ h => k; }");
+  assert.equal(sourceText(induction(predecessor)), "induction m as k return UNat { zero => n; succ h => k; }");
   // The motive's variable reads as the name `as` binds.
-  const dependent = { ...recursion, motive: { tag: "Lam", name: "b", domain: nat, body: equal(variable("b"), variable("b")) } };
+  const dependent = { ...recursion, motive: { tag: "Lam", name: "b", domain: unat, body: equal(variable("b"), variable("b")) } };
   assert.match(sourceText(induction(dependent)), /^induction m as k return k = k \{/);
   const cases = { tag: "SumRec", motive: { tag: "Lam", name: "z", domain: sum(unit, unit), body: U0 },
-    left: { tag: "Lam", name: "a", domain: unit, body: nat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
+    left: { tag: "Lam", name: "a", domain: unit, body: unat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
   // As the linter asks, `as z` is written only where the return type uses z.
-  assert.equal(sourceText(cases), "match v return U0 { left a => Nat; right b => Unit; }");
+  assert.equal(sourceText(cases), "match v return U0 { left a => UNat; right b => Unit; }");
   const dependentCases = { ...cases, motive: { ...cases.motive, body: equal(variable("z"), variable("z")) } };
   assert.match(sourceText(dependentCases), /^match v as z return z = z \{ left a => /);
-  assert.equal(natText(add(induction(recursion), number(1))), "(induction m return Nat { zero => n; succ h => succ(h); }) + 1");
+  assert.equal(natText(add(induction(recursion), number(1))), "(induction m return UNat { zero => n; succ h => succ(h); }) + 1");
 });
 
 test("messages name unnamed dimensions once, keep sharing, and avoid the names they show", async () => {

@@ -80,7 +80,7 @@ const available = new Set(git(["ls-tree","-r","--name-only",base,"--","library",
 // kernel and then from an implicit import of nat; a base of that time is read
 // with the import (legacy-syntax.mjs, historicalSource). A later base has
 // bundledNat in its program and imports nat where it uses it.
-const implicitNat = (() => { try { return !git(["show",`${base}:web/cubical-program.mjs`]).includes("bundledNat"); } catch { return true; } })();
+const implicitNat = (() => { try { return !/bundled(?:U)?Nat/.test(git(["show",`${base}:web/cubical-program.mjs`])); } catch { return true; } })();
 // Until 2026-10-06 prefix - reversed paths and coordinates; a base of that
 // time is read with ~ for it. A later base's legacy rewrite knows minusReverses.
 const minusReverses = (() => { try { return !git(["show",`${base}:web/cubist/legacy-syntax.mjs`]).includes("minusReverses"); } catch { return true; } })();

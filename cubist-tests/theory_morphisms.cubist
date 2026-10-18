@@ -3,9 +3,9 @@
 // composition and each parent's homomorphism; T.Iso(A, B), a homomorphism
 // each way, inverse on each sort, with identity, composition and inverse.
 // On closed models they compute.
-import nat;
+import unat;
 import hlevels;
-use nat;
+use unat;
 
 theory Monoid(U < UU0) {
   M : set U;
@@ -21,8 +21,8 @@ theory CommMonoid(U < UU0) extends Monoid {
 }
 
 def additive_nat : CommMonoid(U0) := CommMonoid.make(
-  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
-  one_mul := nat_zero_add, mul_one := nat_add_zero, mul_comm := nat_add_comm
+  M := UNat, M_is_set := unat_is_set, mul := add, mul_assoc := unat_add_assoc, one := 0,
+  one_mul := unat_zero_add, mul_one := unat_add_zero, mul_comm := unat_add_comm
 );
 
 // The trivial monoid, on Unit.
@@ -36,7 +36,7 @@ def trivial : CommMonoid(U0) := CommMonoid.make(
 // A homomorphism is built field by field: its map, and that the map
 // preserves the operation and the unit.
 def collapse : CommMonoid.Hom(additive_nat, trivial) := CommMonoid.Hom.make(
-  additive_nat, trivial, map := fun (n : Nat) => tt, map_mul := fun (x, y : Nat) => refl(tt),
+  additive_nat, trivial, map := fun (n : UNat) => tt, map_mul := fun (x, y : UNat) => refl(tt),
   map_one := refl(tt)
 );
 
@@ -101,7 +101,7 @@ theory A(U < UU0) {
   one : M;
 }
 
-def nat_point : A(U0) := A.make(Nat, nat_is_set, 0);
+def nat_point : A(U0) := A.make(UNat, unat_is_set, 0);
 
 // Output: 3
 print(evaluate(A.Hom.compose(A.Hom.id(nat_point), A.Hom.id(nat_point)).map(3)));
@@ -122,7 +122,7 @@ theory Scaled(U < UU0, R : Monoid(U)) {
 }
 
 def nat_scaled :
-  Scaled(U0, additive_nat.monoid) := Scaled.make{{U0}}(additive_nat.monoid, Nat, nat_is_set, add);
+  Scaled(U0, additive_nat.monoid) := Scaled.make{{U0}}(additive_nat.monoid, UNat, unat_is_set, add);
 
 def scaled_round : Scaled.Hom(nat_scaled, nat_scaled) := Scaled.Hom.compose(
   Scaled.Hom.id(nat_scaled), Scaled.Hom.id(nat_scaled)

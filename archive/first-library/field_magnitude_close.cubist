@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import field_magnitude;
 import complete_fields;
 
@@ -85,14 +85,14 @@ def field_magnitude_perturbation_close(
 def field_magnitude_squeeze(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
-  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors, radii : Nat -> F,
-  bounds : (forall n : Nat. FieldMagnitudeBound(F, negF, lt, errors(n), radii(n))),
+  arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt), errors, radii : UNat -> F,
+  bounds : (forall n : UNat. FieldMagnitudeBound(F, negF, lt, errors(n), radii(n))),
   vanishes : FieldConverges(F, zero, addF, lt, radii, zero)
 ) :
   FieldConverges(F, zero, addF, lt, errors, zero) {
   intro epsilon, positive;
   obtain (bound, close) := vanishes(epsilon, positive);
-  let tail : forall n : Nat. IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
+  let tail : forall n : UNat. IndexLE(bound, n) -> FieldClose(F, addF, lt, errors(n), zero, epsilon) {
     intro n, large;
     obtain (upper, lower) := close(n, large);
     let small :=

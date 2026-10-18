@@ -155,15 +155,15 @@ test("generated recursive helpers retain their calls and patterns in Cubist", as
 });
 
 test("generated proof helpers preserve blocks, local identities and imported navigation",async t=>{
-  const fixture=`import nat;
+  const fixture=`import unat;
 inductive Edge { lo; hi; edge : lo = hi; }
 theory Parent(U < UU0) { M : U;
-  def step(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
-    obligations by { rw [nat_add_zero(n)]; };
-  def chain(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
-    obligations by { calc { add(n, zero) = n by nat_add_zero(n); } };
-  def local(n : Nat, x : Edge) : Nat := match x { lo => add(n, zero); hi => n; }
-    obligations by { let y : add(n, zero) = n := nat_add_zero(n); exact y; };
+  def step(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
+    obligations by { rw [unat_add_zero(n)]; };
+  def chain(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
+    obligations by { calc { add(n, zero) = n by unat_add_zero(n); } };
+  def local(n : UNat, x : Edge) : UNat := match x { lo => add(n, zero); hi => n; }
+    obligations by { let y : add(n, zero) = n := unat_add_zero(n); exact y; };
 }`;
   const read=sourceReader();
   const {program,result}=await checkProgram(t,"import fixture; theory Child(U < UU0) extends Parent {}",{module,options,
@@ -172,10 +172,10 @@ theory Parent(U < UU0) { M : U;
   const before=program.kernel.work(),view=generatedCubist(program);
   assert.deepEqual(program.kernel.work(),before);
   assert.doesNotMatch(view.source,/display unavailable|undefined|\u0000/);
-  assert.match(view.source,/rw \[nat_add_zero\(n\)\]/);
+  assert.match(view.source,/rw \[unat_add_zero\(n\)\]/);
   assert.match(view.source,/calc \{/);
-  assert.match(view.source,/let y : \(add\(n, zero\) = n\) := nat_add_zero\(n\);/);
-  const links=view.links.filter(link=>link.generated&&link.name==="x"&&link.sourceModule==="fixture"&&link.definitionStart===fixture.indexOf("local(n : Nat, x")+"local(n : Nat, ".length);
+  assert.match(view.source,/let y : \(add\(n, zero\) = n\) := unat_add_zero\(n\);/);
+  const links=view.links.filter(link=>link.generated&&link.name==="x"&&link.sourceModule==="fixture"&&link.definitionStart===fixture.indexOf("local(n : UNat, x")+"local(n : UNat, ".length);
   assert.ok(links.length);
   for(const link of links) {
     assert.equal(link.sourceName,"Parent");
@@ -189,12 +189,12 @@ theory Parent(U < UU0) { M : U;
 
 
 test("generated member spellings and nested deferred slots preserve their identities",async t=>{
-  const source=`import nat; import hlevels;
+  const source=`import unat; import hlevels;
 theory P(U < UU0) { M : set U; z0 : M; z1 : M; }
 theory Q(U < UU0) { M : set U; c : M;
   def pick(S : P(U0)) : S.M := S.z1;
   def again(S : P(U0)) : S.M := S.z0;
-  def nested(n, p : Nat) : Nat := match n {
+  def nested(n, p : UNat) : UNat := match n {
     zero => p; succ(k) => match p { zero => k; succ(k) => k; };
   };
 }`;
@@ -262,9 +262,9 @@ theory Parent(U < UU0) {
 
 
 test("generated induction preserves distinct index and hypothesis aliases",async t=>{
-  const source=`import hlevels; import nat;
+  const source=`import hlevels; import unat;
 theory T(U < UU0) { M : set U; c : M;
-  def h(k : M, n : Nat) : Nat := induction n as k return Nat { zero => n; succ k1 => k; };
+  def h(k : M, n : UNat) : UNat := induction n as k return UNat { zero => n; succ k1 => k; };
 }`;
   const {program,result}=await checkProgram(t,source,{module,options});
   assert.deepEqual(result.gaps,[]);

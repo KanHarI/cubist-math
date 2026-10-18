@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import polynomial_monic;
-use nat;
+use unat;
 
 // A nonzero degree-zero polynomial is an invertible constant.
 def polynomial_degree_zero_unit(
@@ -56,9 +56,9 @@ def polynomial_factor_nonzero_right(
   );
 }
 
-def natural_sum_le_left_zero(m : Nat) :=
-  induction m as k return (forall n : Nat. le(add_count(k, n), k) -> n = 0) {
-    zero => fun (n : Nat, above : le(n, 0)) => dimension_order_antisymmetric(n, 0, above, tt);
+def natural_sum_le_left_zero(m : UNat) :=
+  induction m as k return (forall n : UNat. le(add_count(k, n), k) -> n = 0) {
+    zero => fun (n : UNat, above : le(n, 0)) => dimension_order_antisymmetric(n, 0, above, tt);
     succ previous => previous;
   };
 
@@ -98,13 +98,13 @@ def least_nonunit_divisor_irreducible(
       );
       let bound := least(a, typed(NonunitDivisor(K, p, a), (na, nonunitA, ap)));
       let numerical :=
-        transport (transport bound along dg in ((fun (j : Nat) => le(j, polynomial_cutoff(K, a))))) along da in (
-          (fun (j : Nat) => le(succ(add_count(m, n)), j))
+        transport (transport bound along dg in ((fun (j : UNat) => le(j, polynomial_cutoff(K, a))))) along da in (
+          (fun (j : UNat) => le(succ(add_count(m, n)), j))
         );
       let zero := natural_sum_le_left_zero(m, n, numerical);
       exact merely(
         Result,
-        right(polynomial_degree_zero_unit(K, b, trans(db, cong((fun (j : Nat) => succ(j)), zero))))
+        right(polynomial_degree_zero_unit(K, b, trans(db, cong((fun (j : UNat) => succ(j)), zero))))
       );
     }
     exact match excluded_middle(PolynomialUnit(K, a), polynomial_unit_prop(K, a)) as which return Mere(
@@ -117,7 +117,7 @@ def least_nonunit_divisor_irreducible(
   exact (nonzero, nonunit, factors);
 }
 
-def NonunitDivisorAt(K : AlgebraicField, p : Polynomial(K), n : Nat) :=
+def NonunitDivisorAt(K : AlgebraicField, p : Polynomial(K), n : UNat) :=
   exists g : Polynomial(K). NonunitDivisor(K, p, g) and (polynomial_cutoff(K, g) = n);
 
 // The least-degree nonunit divisor is irreducible. This avoids assuming
@@ -127,14 +127,14 @@ def polynomial_irreducible_factor(
   nonunit : PolynomialUnit(K, p) -> Void
 ) :
   Mere(IrreducibleFactor(K, p)) {
-  let P := fun (n : Nat) => Mere(NonunitDivisorAt(K, p, n));
+  let P := fun (n : UNat) => Mere(NonunitDivisorAt(K, p, n));
   let self := typed(NonunitDivisor(K, p, p), (nonzero, nonunit, polynomial_divides_refl(K, p)));
   let cp := polynomial_cutoff(K, p);
   let witness_ :=
     merely(NonunitDivisorAt(K, p, cp), typed(NonunitDivisorAt(K, p, cp), (p, self, refl(cp))));
-  let inhabited := merely((exists n : Nat. P(n)), typed((exists n : Nat. P(n)), (cp, witness_)));
+  let inhabited := merely((exists n : UNat. P(n)), typed((exists n : UNat. P(n)), (cp, witness_)));
   obtain (n, candidate, least) := natural_minimum(
-    P, (fun (i : Nat) => mere_is_prop(NonunitDivisorAt(K, p, i))), inhabited
+    P, (fun (i : UNat) => mere_is_prop(NonunitDivisorAt(K, p, i))), inhabited
   );
   let extract : NonunitDivisorAt(K, p, n) -> IrreducibleFactor(K, p) {
     intro data;
@@ -146,7 +146,7 @@ def polynomial_irreducible_factor(
       let ca := polynomial_cutoff(K, a);
       let wa :=
         merely(NonunitDivisorAt(K, p, ca), typed(NonunitDivisorAt(K, p, ca), (a, da, refl(ca))));
-      exact transport least(ca, wa) along sym(degree) in ((fun (j : Nat) => le(j, ca)));
+      exact transport least(ca, wa) along sym(degree) in ((fun (j : UNat) => le(j, ca)));
     }
     obtain (nz, nu, divides) := divisor;
     exact (g, least_nonunit_divisor_irreducible(K, p, g, divisor, minimum), divides);
@@ -184,20 +184,20 @@ def polynomial_unit_cutoff(
   let numerical :=
     transport (
       transport bound along degree in (
-        (fun (j : Nat) => le(j, polynomial_cutoff(K, polynomial_one(K))))
+        (fun (j : UNat) => le(j, polynomial_cutoff(K, polynomial_one(K))))
       )
-    ) along polynomial_one_cutoff(K) in ((fun (j : Nat) => le(succ(d), j)));
+    ) along polynomial_one_cutoff(K) in ((fun (j : UNat) => le(succ(d), j)));
   let zero := dimension_order_antisymmetric(d, 0, numerical, tt);
-  exact trans(degree, cong((fun (j : Nat) => succ(j)), zero));
+  exact trans(degree, cong((fun (j : UNat) => succ(j)), zero));
 }
 
 def polynomial_positive_degree_nonunit(
-  K : AlgebraicField, p : Polynomial(K), d : Nat, degree : polynomial_cutoff(K, p) = succ(succ(d)),
+  K : AlgebraicField, p : Polynomial(K), d : UNat, degree : polynomial_cutoff(K, p) = succ(succ(d)),
   nonzero : PolynomialNonzero(K, p), unit : PolynomialUnit(K, p)
 ) :
   Void {
-  exact nat_zero_ne_succ(
+  exact unat_zero_ne_succ(
     d,
-    nat_succ_injective(0, succ(d), trans(sym(polynomial_unit_cutoff(K, p, nonzero, unit)), degree))
+    unat_succ_injective(0, succ(d), trans(sym(polynomial_unit_cutoff(K, p, nonzero, unit)), degree))
   );
 }

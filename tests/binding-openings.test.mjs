@@ -159,25 +159,25 @@ test("qualified model operations retain their source receiver and surrounding op
   }
 });
 
-test("retained numeral uses keep their reader and Nat through operand recipes and destination shadowing",async t=>{
+test("retained numeral uses keep their reader and UNat through operand recipes and destination shadowing",async t=>{
   const {retain,check}=await setup(t,`
-    theory Numeric(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
-    def plain : Numeric(U0) := Numeric.make(Nat, fun (n : Nat) => n);
-    def shifted : Numeric(U0) := Numeric.make(Nat, fun (n : Nat) => succ(n));
-    theory Powers(U < UU0) { M : U; power(x : M, n : Nat) : M notation x ^ shifted.(n); }
-    def powers : Powers(U0) := Powers.make(Nat, fun (x, n : Nat) => n);
+    theory Numeric(U < UU0) { M : U; read(n : UNat) : M; def numeral_(n : UNat) : M := read(n) notation numeral; }
+    def plain : Numeric(U0) := Numeric.make(UNat, fun (n : UNat) => n);
+    def shifted : Numeric(U0) := Numeric.make(UNat, fun (n : UNat) => succ(n));
+    theory Powers(U < UU0) { M : U; power(x : M, n : UNat) : M notation x ^ shifted.(n); }
+    def powers : Powers(U0) := Powers.make(UNat, fun (x, n : UNat) => n);
   `);
   const declarations=[
-    "def literal_value : Nat := plain.(2);",
-    "def nested : Nat := shifted.(plain.(0));",
-    "def recipe_value : Nat := powers.(zero ^ 0);",
-    "def local(shifted : Unit) : Nat := powers.(zero ^ 0);",
+    "def literal_value : UNat := plain.(2);",
+    "def nested : UNat := shifted.(plain.(0));",
+    "def recipe_value : UNat := powers.(zero ^ 0);",
+    "def local(shifted : Unit) : UNat := powers.(zero ^ 0);",
     "def param(m : Numeric(U0)) : m.M := m.(2);",
     "def missing_reader : Two := chosen.(0);",
-    "def missing_literal : Nat := plain.(0b10);",
-    "def limited : Nat := plain.(257);",
+    "def missing_literal : UNat := plain.(0b10);",
+    "def limited : UNat := plain.(257);",
   ].map(retain);
-  const {result,equal}=check(declarations,"def plain : Numeric(U0) := shifted; def Nat : U0 := Unit;");
+  const {result,equal}=check(declarations,"def plain : Numeric(U0) := shifted; def UNat : U0 := Unit;");
   assert.deepEqual(failures(result).map(([name])=>name),["missing_reader","missing_literal","limited"],JSON.stringify(failures(result)));
   assert.match(failures(result).find(([name])=>name==="limited")[1],/limited to 256/);
   assert.equal(equal("literal_value","succ(succ(zero))"),true);
@@ -287,9 +287,9 @@ test("file-level activations retain closed source receivers through theory gener
 
 test("file-level notation contexts survive headers, ordered theory operators and inherited helpers",async t=>{
   const {table,inputs,program,env,source}=await setup(t,operatorModels+`
-    theory Digits(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
-    def digits : Digits(U0) := Digits.make(Nat, fun (n : Nat) => n);
-    def numberReceiver(n : Nat) : Arithmetic(U0) := match n { zero => leftOps; succ(k) => rightOps; };
+    theory Digits(U < UU0) { M : U; read(n : UNat) : M; def numeral_(n : UNat) : M := read(n) notation numeral; }
+    def digits : Digits(U0) := Digits.make(UNat, fun (n : UNat) => n);
+    def numberReceiver(n : UNat) : Arithmetic(U0) := match n { zero => leftOps; succ(k) => rightOps; };
   `);
   const checker=program.checker,definitionModule="notations";
   const translator=new Translator({checker,definitionModule,normalize:false,moduleName:"notations",compilationBindings:program.compilationBindings});
@@ -322,8 +322,8 @@ test("file-level notation contexts survive headers, ordered theory operators and
     anchor : Unit; def captured : Two := left_ + right_;
   }`);
   assert.equal(receiverCalls,1,"a later source receiver consumes the earlier captured notation");
-  const numeric=build(`use digits; theory Numeric(U < UU0, n : Nat, p : n = 0) {
-    anchor : Unit; def captured : Nat := 0;
+  const numeric=build(`use digits; theory Numeric(U < UU0, n : UNat, p : n = 0) {
+    anchor : Unit; def captured : UNat := 0;
   }`);
   const refused=build(`use leftOps; use chosen; theory Refused(U < UU0) {
     anchor : Unit; def captured : Two := left_ + right_;
@@ -351,7 +351,7 @@ test("file-level notation contexts survive headers, ordered theory operators and
     def numeric_instance : Numeric(U0, zero, refl(zero)) := Numeric.make(zero, refl(zero), tt);
     def later_value : Two := later_instance.captured;
     def ordered_value : Two := ordered_instance.captured;
-    def numeric_value : Nat := numeric_instance.captured;
+    def numeric_value : UNat := numeric_instance.captured;
     def intended : captured_value = left_ := refl(left_);
     def wrong : captured_value = right_ := refl(right_);
   `).declarations]},"",capturedEnv);
@@ -419,11 +419,11 @@ test("source activation is ordered, required per consumer and outside declaratio
 
 test("file-level activation classifies attached notation against the ordered opened receiver",async t=>{
   const {table,inputs,program,env,source}=await setup(t,`
-    theory Numerals(U < UU0) { M : U; read(n : Nat) : M; def numeral_(n : Nat) : M := read(n) notation numeral; }
-    def recipe : Numerals(U0) := Numerals.make(Nat, fun (n : Nat) => n);
-    notation recipe { numeral(n : Nat) := succ(n); }
+    theory Numerals(U < UU0) { M : U; read(n : UNat) : M; def numeral_(n : UNat) : M := read(n) notation numeral; }
+    def recipe : Numerals(U0) := Numerals.make(UNat, fun (n : UNat) => n);
+    notation recipe { numeral(n : UNat) := succ(n); }
     theory Pack(U < UU0) { recipe : Numerals(U); }
-    def outer : Pack(U0) := Pack.make(Numerals.make(Nat, fun (n : Nat) => succ(succ(n))));
+    def outer : Pack(U0) := Pack.make(Numerals.make(UNat, fun (n : UNat) => succ(succ(n))));
   `);
   const checker=program.checker,definitionModule="activation";
   const translator=new Translator({checker,definitionModule,normalize:false,compilationBindings:program.compilationBindings});
@@ -434,7 +434,7 @@ test("file-level activation classifies attached notation against the ordered ope
   assert.equal(direct.activations.length,1);
   assert.ok(direct.context.selectedNotation());
   const prepared=prepare(`use outer; use recipe;
-    theory T(U < UU0) { M : U; point : M; def picked : Nat := read(zero); }`);
+    theory T(U < UU0) { M : U; point : M; def picked : UNat := read(zero); }`);
   assert.equal(prepared.activations.length,2);
   const record=retainTheorySource(prepared.item,{table,source,owner:["attached","T"],context:prepared.context,
     constructors:prepared.constructors});
@@ -442,7 +442,7 @@ test("file-level activation classifies attached notation against the ordered ope
   const declarations=built.artifacts.map(({binding,syntax,...annotations})=>bindingDeclaration(binding,syntax,annotations));
   const result=translator.translateSyntax({declarations:[...declarations,...parse(`
     def chosen : T(U0) := T.make(Two, left_);
-    def value : Nat := chosen.picked;
+    def value : UNat := chosen.picked;
     def intended : value = succ(succ(zero)) := refl(succ(succ(zero)));
     def wrong : value = succ(zero) := refl(succ(zero));
   `).declarations]},"",withSourceCaptures(env,prepared,inputs.adapter));

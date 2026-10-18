@@ -1,14 +1,14 @@
-import nat;
+import unat;
 import field_limits;
 import field_products;
-use nat;
+use unat;
 
 // Mere eventual closeness is enough to identify limits. No selection of a
 // bound for every radius is needed when the conclusion is an equality.
-def FieldAsymptotic(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs, ys : Nat -> F) :=
+def FieldAsymptotic(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, xs, ys : UNat -> F) :=
   forall epsilon : F. lt(zero, epsilon)
   -> FieldExists(
-    exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+    exists bound : UNat. forall n : UNat. IndexLE(bound, n)
     -> FieldClose(F, addF, lt, xs(n), ys(n), epsilon)
   );
 
@@ -31,7 +31,7 @@ def field_asymptotic_limits_equal(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), xs, ys : Nat -> F,
+  halving : Halving(F, zero, addF, lt), xs, ys : UNat -> F,
   same : FieldAsymptotic(F, zero, addF, lt, xs, ys), x, y : F,
   toX : FieldConverges(F, zero, addF, lt, xs, x), toY : FieldConverges(F, zero, addF, lt, ys, y)
 ) :
@@ -45,7 +45,7 @@ def field_asymptotic_limits_equal(
     let positiveQuarter := halfPositive(delta, positiveDelta);
     obtain (leftBound, leftClose) := toX(delta, positiveDelta);
     obtain (rightBound, rightClose) := toY(quarter, positiveQuarter);
-    let tails := exists bound : Nat. forall n : Nat. IndexLE(bound, n) -> FieldClose(
+    let tails := exists bound : UNat. forall n : UNat. IndexLE(bound, n) -> FieldClose(
       F, addF, lt, xs(n), ys(n), quarter
     );
     let useTail : tails -> FieldClose(F, addF, lt, x, y, epsilon) {
@@ -86,14 +86,14 @@ def field_asymptotic_limits_equal(
 // The operator uses that data directly, not an axiom selecting from truncation.
 def field_sequence_limit(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
-  complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
+  complete : CauchyComplete(F, zero, addF, lt), sequence : UNat -> F,
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)
 ) :=
   field_first(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));
 
 def field_sequence_limit_converges(
   F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0,
-  complete : CauchyComplete(F, zero, addF, lt), sequence : Nat -> F,
+  complete : CauchyComplete(F, zero, addF, lt), sequence : UNat -> F,
   cauchy : FieldCauchy(F, zero, addF, lt, sequence)
 ) :=
   field_second(F, FieldConverges(F, zero, addF, lt, sequence), complete(sequence, cauchy));

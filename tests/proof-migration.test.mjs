@@ -9,8 +9,8 @@ import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
 
 const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-const original = `import primes; use nat;
-def moved(C : Nat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
+const original = `import primes; use unat;
+def moved(C : UNat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
   exact transport(C, 0 + 0, 0, p, v);
 }
 def evaluated(A : U0, x, y : A, p : x = y) := at(p, 0);
@@ -65,13 +65,13 @@ test("a changed proof passes only the type level, and a changed statement fails"
   assert.equal(typed.typesPreserved, 1);
   // 2 = 2 would still convert to 1 + 1 = 2; this statement genuinely differs.
   const statement = await verify(original.replace("def two : 1 + 1 = 2 {\n  exact refl(2);",
-    "def two : forall n : Nat. n = n {\n  intro n;\n  rfl;"), "types");
+    "def two : forall n : UNat. n = n {\n  intro n;\n  rfl;"), "types");
   assert.match(statement.failures.find(failure => failure.name === "two")?.reason ?? "", /public type changed/);
 });
 
 test("syntax rewrites keep comments and verify at their declared level", async () => {
-  const source = `import paths_; use nat;
-def moved(C : Nat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : Nat. C(0) {
+  const source = `import paths_; use unat;
+def moved(C : UNat -> U0, p : 0 = 0, q : 0 = 0, v : C(0)) : forall a, b, c : UNat. C(0) {
   intro a;
   intro b; // kept apart by this comment
   intro c;
@@ -96,7 +96,7 @@ def pointwise(A : U0, f : A -> A) : f = f {
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
   assert.deepEqual(identical.applied, { params: 1, intro: 1, let: 1, transport: 1, "path-apply": 1, fun: 1 });
-  assert.match(identical.source, /\(C : Nat -> U0, p, q : 0 = 0, v : C\(0\)\)/);
+  assert.match(identical.source, /\(C : UNat -> U0, p, q : 0 = 0, v : C\(0\)\)/);
   assert.match(identical.source, /intro a, b; \/\/ kept apart by this comment\n  intro c;/);
   assert.match(identical.source, /let h : C\(0\) := transport v along p in C;/);
   assert.match(identical.source, /\(fun \(a, b : A\) => a\)\(p @ 0, y\)/);
@@ -117,17 +117,17 @@ def pointwise(A : U0, f : A -> A) : f = f {
 });
 
 test("a rewrite under a projection keeps the projected operand whole", async () => {
-  const source = `import nat; use nat;
-def applied(p, q : Nat and Nat, e : p = q) : Nat := at(e, 0).1;
-def moved(x, y : Nat, e : x = y, v : Nat and Unit) : Nat := transport(fun (n : Nat) => Nat and Unit, x, y, e, v).1;
-def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)))(1, 2).2;
+  const source = `import unat; use unat;
+def applied(p, q : UNat and UNat, e : p = q) : UNat := at(e, 0).1;
+def moved(x, y : UNat, e : x = y, v : UNat and Unit) : UNat := transport(fun (n : UNat) => UNat and Unit, x, y, e, v).1;
+def picked : UNat := (fun (x : UNat) => fun (y : UNat) => typed(UNat and UNat, (x, y)))(1, 2).2;
 `;
   const identical = rewriteModule(source, { rewrites: identicalRewrites });
   assert.deepEqual(identical.applied, { "path-apply": 1, transport: 1, fun: 1 });
   // e @ 0.1 would read as e @ (0.1), which is no interval coordinate.
   assert.match(identical.source, /:= \(e @ 0\)\.1;/);
-  assert.match(identical.source, /:= \(transport v along e in \(fun \(n : Nat\) => Nat and Unit\)\)\.1;/);
-  assert.match(identical.source, /:= \(fun \(x, y : Nat\) => typed\(Nat and Nat, \(x, y\)\)\)\(1, 2\)\.2;/);
+  assert.match(identical.source, /:= \(transport v along e in \(fun \(n : UNat\) => UNat and Unit\)\)\.1;/);
+  assert.match(identical.source, /:= \(fun \(x, y : UNat\) => typed\(UNat and UNat, \(x, y\)\)\)\(1, 2\)\.2;/);
   const [report] = await verifyMigration({ modules: ["projection_fixture"], level: "identical",
     readOriginal: name => name === "projection_fixture" ? source : library(name),
     readEdited: async () => formatCubist(identical.source) });
@@ -139,7 +139,7 @@ def picked : Nat := (fun (x : Nat) => fun (y : Nat) => typed(Nat and Nat, (x, y)
 });
 
 test("a rewrite under a prefix ~ keeps its operand whole", async () => {
-  const source = `import nat; use nat;
+  const source = `import unat; use unat;
 def reversed_at(A : U0, x, y : A, p, q : x = y, e : p = q) : y = x := ~at(e, 0);
 def concatenated_at(A : U0, x, y : A, p, q : x = y, e : p = q) : x = x := at(e, 0) ++ ~at(e, 1);
 `;
@@ -159,15 +159,15 @@ test("dependents are checked against edited definitions they mention", async () 
   const originals = {
     // n + 0 does not reduce for a variable n, so the edited pick is not
     // convertible with the original.
-    dependency_fixture: `import primes; use nat;
-def double(n : Nat) := n + n;
+    dependency_fixture: `import primes; use unat;
+def double(n : UNat) := n + n;
 def four : double(2) = 4 {
   exact refl(4);
 }
-def pick(n : Nat) := n + 0;
+def pick(n : UNat) := n + 0;
 `,
-    dependent_fixture: `import dependency_fixture; use nat;
-def same(n : Nat) : pick(n) = pick(n) {
+    dependent_fixture: `import dependency_fixture; use unat;
+def same(n : UNat) : pick(n) = pick(n) {
   rfl;
 }
 def eight : double(4) = 8 {
@@ -207,7 +207,7 @@ test("since H1's release, using a declared type adds or removes no kernel extens
   assert.deepEqual((await verify(declared, plain, "types")).failures, []);
   assert.deepEqual((await verify(declared, declared, "identical")).failures, []);
   // Generative copies now compare through their identical admitted schemas.
-  const own = "import nat; use nat;\ninductive C { c; }\ndef one : Nat := 1;\n";
+  const own = "import unat; use unat;\ninductive C { c; }\ndef one : UNat := 1;\n";
   const report = (await verifyMigration({ modules: ["h1_fixture"], level: "types",
     readOriginal: name => name === "h1_fixture" ? own : library(name), readEdited: async () => own }))[0];
   assert.deepEqual(report.failures, []);
@@ -258,18 +258,18 @@ test("G4: an exact ledger records removed truncation assumptions, and no marker 
 });
 
 test("a ledger never admits a failed declaration or bypasses identical proof verification", async () => {
-  const original = "import nat; use nat;\ndef n : Nat := 0;\n", edited = "import nat; use nat;\ndef n : Nat := 1;\n";
+  const original = "import unat; use unat;\ndef n : UNat := 0;\n", edited = "import unat; use unat;\ndef n : UNat := 1;\n";
   const run = async (after,ledger=null) => (await verifyMigration({modules:["pin"],ledger,
     readOriginal:async name => name === "pin" ? original : library(name),readEdited:async () => after}))[0];
   const initial = await run(edited);
   const ledger = {version:2,changes:[{...initial.changes[0],remedyGroup:1}]};
   assert.match((await run(edited,ledger)).failures[0].reason,/ordinary verification for proof changes/);
-  assert.match((await run("import nat; use nat;\ndef n : Nat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
+  assert.match((await run("import unat; use unat;\ndef n : UNat := tt;\n",ledger)).failures[0].reason,/No longer checks/);
 });
 
 test("a pinned type construction can change when both versions already use H1",async()=>{
-  const before="import nat; use nat;\ndef Carrier(n : Nat) : U0 := Unit;\n";
-  const after="import nat; use nat;\ndef Carrier(n : Nat) : U0 := Unit or Unit;\n";
+  const before="import unat; use unat;\ndef Carrier(n : UNat) : U0 := Unit;\n";
+  const after="import unat; use unat;\ndef Carrier(n : UNat) : U0 := Unit or Unit;\n";
   const run=async(edited=after,ledger=null)=>(await verifyMigration({modules:["type_value"],ledger,
     readOriginal:name=>name==="type_value"?before:library(name),readEdited:async()=>edited}))[0];
   const strict=await run();
@@ -349,7 +349,7 @@ test("rebuilt classical assumptions require explicit, pinned replacements", asyn
 });
 
 test("pinned source resolution keeps archive imports isolated from library collisions", async () => {
-  const archive = new Map([["root","import collision;\ndef n : Nat := value;\n"],["collision","import nat; use nat;\ndef value : Nat := 1;\n"]]);
+  const archive = new Map([["root","import collision;\ndef n : UNat := value;\n"],["collision","import unat; use unat;\ndef value : UNat := 1;\n"]]);
   const rebuilt = new Map([["collision","inductive H { point; }\n"]]);
   const read = async (place,name) => (place === "archive" ? archive : rebuilt).get(name) ?? null;
   const original = migrationSourceReader(read,["root"]);

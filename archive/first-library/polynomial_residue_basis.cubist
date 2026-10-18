@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import polynomial_adjoin;
 import polynomial_coordinates;
 import linear_bijections;
@@ -109,7 +109,7 @@ def residue_coordinates_scale(
   let n := modulus_degree(K, M);
   let coefficient : polynomial_coefficients(K, polynomial_scale(K, a, p)) = series_scale(K, a, f) :=
     FunExt(
-      U0, Nat, (fun (j : Nat) => af_carrier(K)),
+      U0, UNat, (fun (j : UNat) => af_carrier(K)),
       polynomial_coefficients(K, polynomial_scale(K, a, p)), series_scale(K, a, f),
       polynomial_scale_coefficient(K, a, p)
     );

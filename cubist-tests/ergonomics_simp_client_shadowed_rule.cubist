@@ -2,10 +2,10 @@
 // imported rule shadows it in the source, so simp is offered no frozen form
 // that would name it.
 import ergonomics_simp_rules_a;
-use nat;
+use unat;
 
-def nat_add_zero(n : Nat) := n;
+def unat_add_zero(n : UNat) := n;
 
-def proven(n : Nat) : n + 0 = n {
+def proven(n : UNat) : n + 0 = n {
   simp;
 }

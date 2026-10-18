@@ -2,9 +2,9 @@
 // definition in it. A parameter that is a model is opened for each one's
 // statement and proof, and inside the section an earlier definition is
 // applied to the section's parameters already.
-import nat;
+import unat;
 import hlevels;
-use nat;
+use unat;
 
 theory Monoid(U < UU0) {
   M : set U;
@@ -34,8 +34,8 @@ section {{U < UU0}}(G : Monoid(U)) {
 print(typeof(fourth_one));
 
 def additive_ : Monoid(U0) := Monoid.make(
-  M := Nat, M_is_set := nat_is_set, mul := add, mul_assoc := nat_add_assoc, one := 0,
-  one_mul := nat_zero_add, mul_one := nat_add_zero
+  M := UNat, M_is_set := unat_is_set, mul := add, mul_assoc := unat_add_assoc, one := 0,
+  one_mul := unat_zero_add, mul_one := unat_add_zero
 );
 
 def four : square(additive_, 2) = 4 {
@@ -46,7 +46,7 @@ def four : square(additive_, 2) = 4 {
 print(evaluate(fourth(additive_, 3)));
 
 // A section's parameters need not be models.
-section (n : Nat) {
+section (n : UNat) {
   def double := n + n;
 
   def double_again : double = n + n {
@@ -59,8 +59,8 @@ print(evaluate(double(4)));
 
 // A recursive call passes the section's parameters unchanged, as a call of
 // an earlier definition does: plus(k) is plus(n, k).
-section (n : Nat) {
-  def plus(m : Nat) : Nat := match m {
+section (n : UNat) {
+  def plus(m : UNat) : UNat := match m {
       zero => n;
       succ(k) => succ(plus(k));
     };
@@ -71,8 +71,8 @@ print(evaluate(plus(2, 3)));
 
 // The section's parameter is passed as itself, even where a pattern
 // variable of the same name shadows it: here succ(n) names the predecessor.
-section (n : Nat) {
-  def plus_shadowed(m : Nat) : Nat := match m {
+section (n : UNat) {
+  def plus_shadowed(m : UNat) : UNat := match m {
       zero => n;
       succ(n) => succ(plus_shadowed(n));
     };
@@ -83,7 +83,7 @@ print(evaluate(plus_shadowed(2, 3)));
 
 // Recursion over a model's operations: x to the power n.
 section {{U < UU0}}(G : Monoid(U)) {
-  def power(x : M, n : Nat) : M := match n {
+  def power(x : M, n : UNat) : M := match n {
       zero => one;
       succ(k) => x * power(x, k);
     };
@@ -93,12 +93,12 @@ section {{U < UU0}}(G : Monoid(U)) {
 print(evaluate(power(additive_, 2, 4)));
 
 // Refusals.
-section (n : Nat) {
+section (n : UNat) {
   // Error: E568: own_name has two parameters named n: give each its own name.
-  def own_name(n : Nat) : Nat := n;
+  def own_name(n : UNat) : UNat := n;
 }
 
-section (n : Nat) {
+section (n : UNat) {
   // Error: E395: A definition in a section has the section's implicit parameters, not its own: add
   //   them to the section's {{…}}.
   def own_implicit{{A : U0}}(a : A) : A := a;

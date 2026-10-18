@@ -1,14 +1,17 @@
-import nat;
+import unat;
 import polynomial_ideals;
 import polynomial_maps;
 import polynomial_root_bound;
-use nat;
+use unat;
 
-def bounded_eval_mapped(K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : Nat) :=
+def bounded_eval_mapped(
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), n : UNat
+) :=
   induction n as k return (
     forall f : FormalSeries(K).
     bounded_eval(
-      L, L, field_embedding_identity(L), x, k, (fun (j : Nat) => field_embedding_map(K, L, e, f(j)))
+      L, L, field_embedding_identity(L), x, k,
+      (fun (j : UNat) => field_embedding_map(K, L, e, f(j)))
     ) = bounded_eval(K, L, e, x, k, f)
   ) {
     zero => fun (f : FormalSeries(K)) => refl(field_zero(L));
@@ -33,9 +36,9 @@ def polynomial_eval_mapped(
     trans(
       cong(
         (
-          fun (k : Nat) => bounded_eval(
+          fun (k : UNat) => bounded_eval(
             L, L, field_embedding_identity(L), x, k,
-            (fun (j : Nat) => field_embedding_map(K, L, e, f(j)))
+            (fun (j : UNat) => field_embedding_map(K, L, e, f(j)))
           )
         ), polynomial_map_cutoff(K, L, e, p)
       ), bounded_eval_mapped(K, L, e, x, n, f)
@@ -56,7 +59,9 @@ def polynomial_map_nonzero(
   );
 }
 
-def ExtensionRootFamily(K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : Nat) :=
+def ExtensionRootFamily(
+  K, L : AlgebraicField, e : FieldEmbedding(K, L), p : Polynomial(K), n : UNat
+) :=
   exists roots : Fin(n) -> af_carrier(L). Injective(Fin(n), af_carrier(L), roots)
   and (forall i : Fin(n). PolynomialRoot(K, L, e, p, roots(i)));
 
@@ -77,7 +82,7 @@ def polynomial_extension_root_bound(
     )
   );
   let degree :=
-    cong((fun (k : Nat) => succ(natural_predecessor(k))), polynomial_map_cutoff(K, L, e, p));
+    cong((fun (k : UNat) => succ(natural_predecessor(k))), polynomial_map_cutoff(K, L, e, p));
   exact polynomial_root_bound(
     L, q, polynomial_map_nonzero(K, L, e, p, nonzero),
     transport local along sym(degree) in RootFamily(L, q)

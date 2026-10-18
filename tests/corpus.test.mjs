@@ -24,10 +24,10 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // too since the archive has one list of modules (web/cubist/modules.mjs).
   // The count includes the library modules the archive imports: replacing
   // the archive's sets by the library's hlevels removed 6 declarations and
-  // added hlevels' 40; nat's multiplication laws added 8 and removed
-  // primes' 5 copies; and nat's predecessor, injectivity, cancellation and
+  // added hlevels' 40; unat's multiplication laws added 8 and removed
+  // primes' 5 copies; and unat's predecessor, injectivity, cancellation and
   // two rearrangements added 5 and removed hlevels' predecessor and primes'
-  // 3 copies; and nat's zero test, multiplicative cancellation and
+  // 3 copies; and unat's zero test, multiplicative cancellation and
   // trichotomy added 5 and removed hlevels' zero test; the binary
   // notation's parser added binary_naturals' 4 and the library's lexemes (9)
   // and lists (7), which it imports.

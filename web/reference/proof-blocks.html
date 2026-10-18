@@ -86,7 +86,7 @@
   exact a;  // Error: Statements after exact are unreachable.
 }</code></pre>
             <p>An unknown word where a statement belongs is a syntax error:</p>
-            <pre><code data-check="reject">def not_a_statement(a : Nat) : Nat {
+            <pre><code data-check="reject">def not_a_statement(a : UNat) : UNat {
   return a;  // Error: Expected a proof statement; found 'return'.
 }</code></pre>
             <div class="table-scroll"><table>
@@ -124,9 +124,9 @@ def compose_endo(A : U0, f, g : Endo(A)) : Endo(A) {
   exact f(g(a));
 }</code></pre>
             <p>A goal that is not a function type has nothing to introduce. This includes asking for more names than the goal has inputs:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def nothing_to_introduce : Nat {
+def nothing_to_introduce : UNat {
   intro n;  // Error: intro requires a dependent function goal.
   exact n;
 }</code></pre>
@@ -149,8 +149,8 @@ def keep_decision : Statement {
           <section id="exact">
             <h2><code>exact</code></h2>
             <p><code>exact term;</code> checks the term against the goal and closes the block. The two types need only be equal by computation, as described in <a href="conversion.html#conversion">conversion</a>:</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
 def by_computation : 2 + 2 = 4 {
   exact refl(4);
@@ -174,9 +174,9 @@ def identity_function(A : U0) : A -&gt; A {
                 <tr><td><code>let name : T { … }</code></td><td>Prove <code>T</code> in a nested block. The block sees the surrounding context, but not <code>name</code>.</td></tr>
               </tbody>
             </table></div>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
-def three_ways(n : Nat) : n = n {
+def three_ways(n : UNat) : n = n {
   let p := refl(n);
   let q : n = n := p;
   let r : n = n {
@@ -185,34 +185,34 @@ def three_ways(n : Nat) : n = n {
   exact r;
 }</code></pre>
             <p>The name stands for the term itself, so the checker sees through it: <code>refl(m)</code> below proves <code>succ(n) = succ(n)</code> because <code>m</code> is <code>succ(n)</code>. This holds for every form; a proof named by <code>let</code> stays visible to computation. With a stated type, the name's type is <code>T</code> as written, and that is what the goal display, <code>rw</code> and <code>simp</code> see.</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
-def see_through(n : Nat) : succ(n) = succ(n) {
+def see_through(n : UNat) : succ(n) = succ(n) {
   let m := succ(n);
   exact refl(m);
 }</code></pre>
             <p>Without a type, <code>let name := term;</code> gives the term no expected type, so a pair is rejected. State the type instead:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def untyped_pair(a, b : Nat) : Nat and Nat {
+def untyped_pair(a, b : UNat) : UNat and UNat {
   let p := (a, b);  // Error: Pair requires an expected type.
   exact p;
 }</code></pre>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
-def stated_pair(a, b : Nat) : Nat and Nat {
-  let p : Nat and Nat := (a, b);
+def stated_pair(a, b : UNat) : UNat and UNat {
+  let p : UNat and UNat := (a, b);
   exact p;
 }</code></pre>
             <p><code>let</code> names one term. To take a pair apart, use <code>obtain</code>:</p>
-            <pre><code data-check="reject">def pattern_in_let(p : Nat and Nat) : Nat {
+            <pre><code data-check="reject">def pattern_in_let(p : UNat and UNat) : UNat {
   let (a, b) = p;  // Error: Use obtain to unpack a pair.
   exact a;
 }</code></pre>
             <p>A <code>let</code> whose name nothing after it uses can be removed, and the checker <a href="checking.html#warnings">warns</a> about it:</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
-def leftover(n : Nat) : Nat {
+def leftover(n : UNat) : UNat {
   let doubled := succ(succ(n));  // Warning: doubled is never used after this let: remove it.
   let same : n = n := refl(n);  // Warning: same is never used after this let: remove it.
   exact n;
@@ -225,17 +225,17 @@ def leftover(n : Nat) : Nat {
   }
   exact pair;
 }</code></pre>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def empty_claim(a : Nat) : Nat {
-  let b : Nat {  // Error: Proof block has no conclusion.
+def empty_claim(a : UNat) : UNat {
+  let b : UNat {  // Error: Proof block has no conclusion.
   }
   exact b;
 }</code></pre>
             <h3 id="show">Restating the goal</h3>
             <p>To work on the goal in another form, prove that form and close the goal with it. <code>exact</code> accepts it when the two are equal by computation, as described in <a href="conversion.html#conversion">conversion</a>. Use this to unfold a definition in the goal, or to see a computed form of it:</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
 def Endo(A : U0) := A -&gt; A;
 
@@ -247,17 +247,17 @@ def identity_endo(A : U0) : Endo(A) {
   exact restated;
 }
 
-def first_of_pair(n : Nat) : typed(Nat and Nat, (n, 0)).1 = n {
+def first_of_pair(n : UNat) : typed(UNat and UNat, (n, 0)).1 = n {
   let restated : n = n {
     rfl;
   }
   exact restated;
 }</code></pre>
             <p>A form that is only provably equal to the goal is not enough. <code>n + 0</code> and <code>n</code> are equal by a proof, not by computation:</p>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
-def plus_zero(n : Nat) : n + 0 = n {  // Error: Type mismatch: found n = n, expected n + 0 = n.
+def plus_zero(n : UNat) : n + 0 = n {  // Error: Type mismatch: found n = n, expected n + 0 = n.
   let restated : n = n {
     rfl;
   }
@@ -290,39 +290,39 @@ def plus_zero(n : Nat) : n + 0 = n {  // Error: Type mismatch: found n = n, expe
           <section id="obtain">
             <h2><code>obtain</code></h2>
             <p><code>obtain (a, b) := pair;</code> names the components of a pair or dependent pair. Patterns can be tuples and can nest, following the shape of the type.</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
-def witness_(t : exists n : Nat. (n = n) and Unit) : Nat {
+def witness_(t : exists n : UNat. (n = n) and Unit) : UNat {
   obtain (n, same, u) := t;
   exact n;
 }
 
-def inner_unit(t : (Nat and Unit) and Nat) : Unit {
+def inner_unit(t : (UNat and Unit) and UNat) : Unit {
   obtain ((a, u), b) := t;
   exact u;
 }</code></pre>
             <p>Like <code>let</code>, <code>obtain</code> introduces no new variables. Each name stands for a component of the pair, so <code>(n, q)</code> is equal to <code>p</code> by computation. A goal that mentions the original pair therefore still works:</p>
-            <pre><code data-check="accept">import nat;
+            <pre><code data-check="accept">import unat;
 
-def about_the_pair(P : (exists n : Nat. n = n) -&gt; U0,
-    h : forall n : Nat. forall q : n = n. P((n, q)), p : exists n : Nat. n = n) : P(p) {
+def about_the_pair(P : (exists n : UNat. n = n) -&gt; U0,
+    h : forall n : UNat. forall q : n = n. P((n, q)), p : exists n : UNat. n = n) : P(p) {
   obtain (n, q) := p;
   exact h(n, q);
 }</code></pre>
             <p>The pattern must match the type’s shape, and a pattern needs at least two components:</p>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def not_a_pair(n : Nat) : Nat {
+def not_a_pair(n : UNat) : UNat {
   obtain (a, b) := n;  // Error: obtain requires a dependent pair matching its pattern.
   exact a;
 }</code></pre>
-            <pre><code data-check="reject">import nat;
+            <pre><code data-check="reject">import unat;
 
-def too_many_components(p : Nat and Nat) : Nat {
+def too_many_components(p : UNat and UNat) : UNat {
   obtain (a, b, c) := p;  // Error: obtain requires a dependent pair matching its pattern.
   exact a;
 }</code></pre>
-            <pre><code data-check="reject">def one_component(p : Nat and Nat) : Nat {
+            <pre><code data-check="reject">def one_component(p : UNat and UNat) : UNat {
   obtain (a) := p;  // Error: A pair pattern needs at least two components.
   exact a;
 }</code></pre>
@@ -350,11 +350,11 @@ def reassociate(A, B, C : U0, value : A or (B or C)) : (A or B) or C {
   }
 }</code></pre>
             <p>Each clause proves the goal at its side. Where the goal mentions <code>value</code>, the left clause sees <code>left(a)</code> in its place and the right clause <code>right(b)</code>, as a <a href="induction.html#dependent-match">match on a declared type</a> does; a hypothesis about <code>value</code> is taken at each side too, under its own name.</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <pre><code data-check="accept">import unat;
+use unat;
 
 def Shape(value : Unit or Unit) := match value return U0 {
-  left a =&gt; Nat;
+  left a =&gt; UNat;
   right b =&gt; Unit;
 };
 
@@ -380,26 +380,26 @@ def default(value : Unit or Unit) : Shape(value) {
           </section>
           <section id="changing-the-goal">
             <h2>Changing the goal</h2>
-            <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Each has its own chapter: <a href="rewriting.html#rw">rewriting and simplification</a> for <code>rw</code> and <code>simp</code>, and <a href="cubical.html#ext">function extensionality</a> for <code>ext</code>. They share one pattern. <code>rw</code> and <code>simp</code> finish the block when the new goal holds by <a href="conversion.html#conversion">computation</a>; otherwise, and always after <code>ext</code>, a following statement proves the new goal. Here <code>nat_add_zero(n)</code> is the library’s proof of <code>n + 0 = n</code>, and <code>rw</code> uses it to replace the first <code>n + 0</code> in the goal by <code>n</code>:</p>
-            <pre><code data-check="accept">import nat;
-use nat;
+            <p><code>rw</code>, <code>simp</code> and <code>ext</code> replace the goal with a new one and continue. Each has its own chapter: <a href="rewriting.html#rw">rewriting and simplification</a> for <code>rw</code> and <code>simp</code>, and <a href="cubical.html#ext">function extensionality</a> for <code>ext</code>. They share one pattern. <code>rw</code> and <code>simp</code> finish the block when the new goal holds by <a href="conversion.html#conversion">computation</a>; otherwise, and always after <code>ext</code>, a following statement proves the new goal. Here <code>unat_add_zero(n)</code> is the library’s proof of <code>n + 0 = n</code>, and <code>rw</code> uses it to replace the first <code>n + 0</code> in the goal by <code>n</code>:</p>
+            <pre><code data-check="accept">import unat;
+use unat;
 
-def rewrite_then_finish(n : Nat) : (n + 0) + 0 = n {
-  rw [nat_add_zero(n)];      // the goal is now n + 0 = n
-  exact nat_add_zero(n);
+def rewrite_then_finish(n : UNat) : (n + 0) + 0 = n {
+  rw [unat_add_zero(n)];      // the goal is now n + 0 = n
+  exact unat_add_zero(n);
 }</code></pre>
             <p>The rewritten goal, <code>n + 0 = n</code>, does not hold by computation, so a statement must follow. Without one, <code>rw</code> reports the goal it left:</p>
-            <pre><code data-check="reject">import nat;
-use nat;
+            <pre><code data-check="reject">import unat;
+use unat;
 
-def rewrite_only(n : Nat) : (n + 0) + 0 = n {
-  rw [nat_add_zero(n)];  // Error: rw left an unresolved equality goal; add a following proof statement.
+def rewrite_only(n : UNat) : (n + 0) + 0 = n {
+  rw [unat_add_zero(n)];  // Error: rw left an unresolved equality goal; add a following proof statement.
 }</code></pre>
           </section>
           <section id="where-blocks-go">
             <h2>Where blocks can appear</h2>
             <p>A block can appear as the body of a block declaration, of a <code>let</code> with a stated type, of each clause of a <code>match</code>, of a <code>calc</code> step, and of <code>over</code>. A block is not an expression: to use a proof inside a term, prove it first with <code>let name : T { … }</code>, or move it into its own declaration.</p>
-            <pre><code data-check="reject">def block_as_term : Nat and Nat {
+            <pre><code data-check="reject">def block_as_term : UNat and UNat {
   exact ({ exact 0; }, 1);  // Error: Expected an expression, found '{'.
 }</code></pre>
           </section>

@@ -49,10 +49,10 @@ test("an inspected induction hypothesis opens its exact introduction or later us
 });
 
 test("inspection preserves distinct refinements of one written lambda occurrence",async t=>{
-  const source=`inductive Nat { zero; succ(n : Nat); }
-def f(a, b : Nat) : Nat := match a, b {
+  const source=`inductive UNat { zero; succ(n : UNat); }
+def f(a, b : UNat) : UNat := match a, b {
   zero, zero => zero;
-  _, _ => (fun (v : Nat) => v)(a);
+  _, _ => (fun (v : UNat) => v)(a);
 };`;
   const {program,result}=await checkProgram(t,source,{module,options:{collectScopes:true}});
   assert.deepEqual(result.gaps,[]);

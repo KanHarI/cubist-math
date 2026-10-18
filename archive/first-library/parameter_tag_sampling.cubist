@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import parameter_contour_bounds;
 import sample_tagged;
 
@@ -15,7 +15,7 @@ def parameter_tag_bounds_from_samples(
         Complex(F), complex_add(F, addF), complex_neg(F, negF), values(x), values(y)
       ), delta
     )
-  ), n : Nat
+  ), n : UNat
 ) :
   forall vertices : SampleVertices(C, n). forall oldTags : SampleTags(C, n).
   forall newTags : SampleTags(C, n). SampleAdjacent(C, mesh, n, vertices)

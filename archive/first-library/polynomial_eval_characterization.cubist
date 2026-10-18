@@ -1,6 +1,6 @@
-import nat;
+import unat;
 import polynomial_evaluation;
-use nat;
+use unat;
 
 // The Horner equations characterize evaluation. This abstract lemma is also
 // useful when comparing maps into two different representations of a field.
@@ -16,14 +16,14 @@ def PolynomialHornerLaw(
 
 def polynomial_eval_characterization_step(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L), F : Polynomial(K)
-  -> af_carrier(L), step : PolynomialHornerLaw(K, L, e, x, F), n : Nat, p : Polynomial(K),
+  -> af_carrier(L), step : PolynomialHornerLaw(K, L, e, x, F), n : UNat, p : Polynomial(K),
   support : SeriesSupport(K, polynomial_coefficients(K, p), succ(n)),
   previous : polynomial_eval(K, L, e, polynomial_tail(K, p), x) = F(polynomial_tail(K, p))
 ) :
   polynomial_eval(K, L, e, p, x) = F(p) {
   let tail := polynomial_tail(K, p);
   let f := polynomial_coefficients(K, p);
-  let tailSupport := fun (j : Nat, above : le(n, j)) => support(succ(j), above);
+  let tailSupport := fun (j : UNat, above : le(n, j)) => support(succ(j), above);
   let mappedTail := trans(sym(polynomial_eval_bound(K, L, e, tail, x, n, tailSupport)), previous);
   exact with unfolding [] {
     trans(
@@ -44,7 +44,7 @@ def polynomial_eval_characterization_step(
 def polynomial_eval_characterization_bounded(
   K, L : AlgebraicField, e : FieldEmbedding(K, L), x : af_carrier(L),
   F : Polynomial(K) -> af_carrier(L), zero : F(polynomial_zero(K)) = field_zero(L),
-  step : PolynomialHornerLaw(K, L, e, x, F), n : Nat
+  step : PolynomialHornerLaw(K, L, e, x, F), n : UNat
 ) :=
   induction n as k return (
     forall p : Polynomial(K). SeriesSupport(K, polynomial_coefficients(K, p), k)
@@ -58,7 +58,7 @@ def polynomial_eval_characterization_bounded(
       p : Polynomial(K), support : SeriesSupport(K, polynomial_coefficients(K, p), succ(k))
     ) => polynomial_eval_characterization_step(
       K, L, e, x, F, step, k, p, support,
-      previous(polynomial_tail(K, p), (fun (j : Nat, above : le(k, j)) => support(succ(j), above)))
+      previous(polynomial_tail(K, p), (fun (j : UNat, above : le(k, j)) => support(succ(j), above)))
     );
   };
 

@@ -3,18 +3,18 @@
 // q, the quantified a takes serial 11. Both were once named a11, so this
 // false statement checked as forall a, a = a.
 
-import nat;
+import unat;
 
-// Error: E606: Type mismatch: found forall a : Nat. a = a, expected forall a : Nat. a = a1_.
-def aliased(a1 : Nat, q : Nat -> Nat -> Nat -> Nat -> Nat -> Nat -> Nat -> Nat -> Nat) :
-  forall a : Nat. a = a1 {
+// Error: E606: Type mismatch: found forall a : UNat. a = a, expected forall a : UNat. a = a1_.
+def aliased(a1 : UNat, q : UNat -> UNat -> UNat -> UNat -> UNat -> UNat -> UNat -> UNat -> UNat) :
+  forall a : UNat. a = a1 {
   intro a;
   exact refl(a);
 }
 
-// Warning: W705: a is unused in the body: write Nat -> … instead of forall a : Nat. ….
-def distinct(a1 : Nat, q : Nat -> Nat -> Nat -> Nat -> Nat -> Nat -> Nat -> Nat -> Nat) :
-  forall a : Nat. a1 = a1 {
+// Warning: W705: a is unused in the body: write UNat -> … instead of forall a : UNat. ….
+def distinct(a1 : UNat, q : UNat -> UNat -> UNat -> UNat -> UNat -> UNat -> UNat -> UNat -> UNat) :
+  forall a : UNat. a1 = a1 {
   intro a;
   exact refl(a1);
 }

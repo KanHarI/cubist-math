@@ -4,31 +4,31 @@
 // their own form, zero => …; succ h => …;, as well. From
 // tests/induction.test.mjs. The lists are the library's, whose length,
 // concatenation and laws are proved by induction too.
-import nat;
+import unat;
 import lists;
-use nat;
+use unat;
 
 // An induction expression names its hypotheses after with: the sum
 // of a list of numbers.
-def sum(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+def sum(xs : List(U0, UNat)) : UNat := induction xs return UNat {
     nil => 0;
     cons(head, tail) with rest => head + rest;
   };
 
 // The motive may depend on the value, so the hypothesis is the statement for
 // the tail.
-def sum_append(xs, ys : List(U0, Nat)) :
+def sum_append(xs, ys : List(U0, UNat)) :
   sum(append(xs, ys)) = sum(xs) + sum(ys) := induction xs as v return sum(append(v, ys)) = sum(v) + sum(
     ys
   ) {
     nil => refl(sum(ys));
     cons(head, tail) with ih => trans(
-      cong(fun (m : Nat) => head + m, ih), sym(nat_add_assoc(head, sum(tail), sum(ys)))
+      cong(fun (m : UNat) => head + m, ih), sym(unat_add_assoc(head, sum(tail), sum(ys)))
     );
   };
 
 // Hypotheses may be left out, as a match does.
-def head_or_zero(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+def head_or_zero(xs : List(U0, UNat)) : UNat := induction xs return UNat {
     nil => 0;
     cons(head, tail) => head;
   };
@@ -43,7 +43,7 @@ def joined_sum : sum(append(cons(1, nil), cons(2, nil))) = 3 {
 
 // The induction statement proves a goal with a hypothesis for each recursive
 // argument.
-def length_append_nil(xs : List(U0, Nat)) : length(append(xs, nil)) = length(xs) {
+def length_append_nil(xs : List(U0, UNat)) : length(append(xs, nil)) = length(xs) {
   induction xs {
     nil => {
       rfl;
@@ -55,12 +55,12 @@ def length_append_nil(xs : List(U0, Nat)) : length(append(xs, nil)) = length(xs)
 }
 
 // Natural numbers take the general form and their own, which agree.
-def general(n : Nat) : Nat := induction n return Nat {
+def general(n : UNat) : UNat := induction n return UNat {
     zero => 0;
     succ(k) with h => succ(succ(h));
   };
 
-def own(n : Nat) : Nat := induction n return Nat {
+def own(n : UNat) : UNat := induction n return UNat {
     zero => 0;
     succ h => succ(succ(h));
   };
@@ -79,18 +79,18 @@ inductive Circle : U0 {
   loop : base = base;
 }
 
-def flat(c : Circle) : Nat := induction c return Nat {
+def flat(c : Circle) : UNat := induction c return UNat {
     base => 0;
     loop @ i => 0;
   };
 
 inductive Tree : U0 {
   leaf;
-  node(children : Nat -> Tree);
+  node(children : UNat -> Tree);
 }
 
 // The hypothesis for children is a function: the result for each child.
-def leftmost_depth(t : Tree) : Nat := induction t return Nat {
+def leftmost_depth(t : Tree) : UNat := induction t return UNat {
     leaf => 0;
     node(children) with below => succ(below(0));
   };
@@ -98,18 +98,18 @@ def leftmost_depth(t : Tree) : Nat := induction t return Nat {
 // Refusals and the warning, each with its code.
 // Error: E557: cons takes 2 constructor fields in parentheses; name its 1 induction hypothesis
 //   after with, or omit with.
-def too_few(xs : List(U0, Nat)) : Nat := induction xs return Nat {
+def too_few(xs : List(U0, UNat)) : UNat := induction xs return UNat {
     nil => 0;
     cons(head) => 1;
   };
 
 // Error: E371: induction requires a value of a declared type.
-def a_pair(p : Nat and Nat) : Nat := induction p return Nat {
+def a_pair(p : UNat and UNat) : UNat := induction p return UNat {
     pair(a, b) => a;
   };
 
 // Error: E467: Statements after induction are unreachable: each clause's block closes the goal.
-def after(n : Nat) : Nat {
+def after(n : UNat) : UNat {
   induction n {
     zero => {
       exact 0;
@@ -123,7 +123,7 @@ def after(n : Nat) : Nat {
 
 // Warning: W707: v is unused: the return type does not mention it. Omit as v: induction xs return
 //   ….
-def unused(xs : List(U0, Nat)) : Nat := induction xs as v return Nat {
+def unused(xs : List(U0, UNat)) : UNat := induction xs as v return UNat {
     nil => 0;
     cons(head, tail) with ih => ih;
   };

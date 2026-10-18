@@ -1,24 +1,25 @@
-import nat;
+import unat;
 
 import ordered_fields;
-use nat;
+use unat;
 
 // Natural indices are separate from the field's ordered carrier.
-def IndexLE(n : Nat) := induction n as k return (Nat -> U0) {
-    zero => fun (m : Nat) => Unit;
-    succ previous => fun (m : Nat) => induction m as j return U0 {
+def IndexLE(n : UNat) := induction n as k return (UNat -> U0) {
+    zero => fun (m : UNat) => Unit;
+    succ previous => fun (m : UNat) => induction m as j return U0 {
       zero => Void;
       succ ignored => previous(j);
     };
   };
 
-def field_natural(F : U1, zero, one : F, addF : F -> F -> F, n : Nat) := induction n as k return F {
+def field_natural(F : U1, zero, one : F, addF : F -> F -> F, n : UNat) :=
+  induction n as k return F {
     zero => zero;
     succ previous => addF(previous, one);
   };
 
 def Archimedean(F : U1, zero, one : F, addF : F -> F -> F, lt : F -> F -> U0) :=
-  forall x : F. FieldExists(exists n : Nat. lt(x, field_natural(F, zero, one, addF, n)));
+  forall x : F. FieldExists(exists n : UNat. lt(x, field_natural(F, zero, one, addF, n)));
 
 // |x-y| < epsilon, expressed without requiring a total absolute-value API.
 def FieldClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, x, y, epsilon : F) :=
@@ -26,19 +27,19 @@ def FieldClose(F : U1, addF : F -> F -> F, lt : F -> F -> U0, x, y, epsilon : F)
 
 // The bound is an actual natural number. A merely existing modulus is a
 // different interface and would require a separate choice argument.
-def FieldCauchy(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> F) :=
-  forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall m : Nat. forall n : Nat.
+def FieldCauchy(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : UNat -> F) :=
+  forall epsilon : F. lt(zero, epsilon) -> exists bound : UNat. forall m : UNat. forall n : UNat.
   IndexLE(bound, m) -> IndexLE(bound, n)
   -> FieldClose(F, addF, lt, sequence(m), sequence(n), epsilon);
 
 def FieldConverges(
-  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> F, limit : F
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : UNat -> F, limit : F
 ) :=
-  forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. IndexLE(bound, n)
+  forall epsilon : F. lt(zero, epsilon) -> exists bound : UNat. forall n : UNat. IndexLE(bound, n)
   -> FieldClose(F, addF, lt, sequence(n), limit, epsilon);
 
 def CauchyComplete(F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0) :=
-  forall sequence : Nat -> F. FieldCauchy(F, zero, addF, lt, sequence) -> exists limit : F.
+  forall sequence : UNat -> F. FieldCauchy(F, zero, addF, lt, sequence) -> exists limit : F.
   FieldConverges(F, zero, addF, lt, sequence, limit);
 
 def CompleteOrderedField(
@@ -78,7 +79,7 @@ def complete_field_ordered(
 def complete_field_limit(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, minF, maxF : F -> F -> F, lt : F
   -> F -> U0, complete : CompleteOrderedField(F, zero, one, addF, mulF, negF, minF, maxF, lt),
-  sequence : Nat -> F, cauchySequence : FieldCauchy(F, zero, addF, lt, sequence)
+  sequence : UNat -> F, cauchySequence : FieldCauchy(F, zero, addF, lt, sequence)
 ) :
   exists limit : F. FieldConverges(F, zero, addF, lt, sequence, limit) {
   obtain (ordered, archimedean, cauchy) := complete;
@@ -90,7 +91,7 @@ def field_constant_converges(
   translate : (forall x : F. forall y : F. forall z : F. lt(x, y) -> lt(addF(z, x), addF(z, y))),
   x : F
 ) :
-  FieldConverges(F, zero, addF, lt, (fun (n : Nat) => x), x) {
+  FieldConverges(F, zero, addF, lt, (fun (n : UNat) => x), x) {
   intro epsilon, positive;
   let step := transport translate(zero, epsilon, x, positive) along unit(x) in (
     (fun (a : F) => lt(a, addF(x, epsilon)))
@@ -98,7 +99,7 @@ def field_constant_converges(
   exact (
     0,
     (
-      fun (n : Nat, bound : IndexLE(0, n)) => typed(
+      fun (n : UNat, bound : IndexLE(0, n)) => typed(
         FieldClose(F, addF, lt, x, x, epsilon), (step, step)
       )
     )

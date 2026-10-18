@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import finite_sums;
 import puncture_winding;
 import bouquet_invariants;
@@ -8,7 +8,7 @@ import bouquet_invariants;
 // A period takes values in any abelian group in U1 (including complex
 // addition). Its analytic construction as a contour integral is still needed.
 def weighted_winding_sum(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, values : Fin(n) -> G,
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, values : Fin(n) -> G,
   p : BouquetLoops(Fin(n))
 ) :=
   finite_sum(
@@ -21,8 +21,8 @@ def weighted_winding_sum(
   );
 
 def weighted_winding_laws(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
-  values : Fin(n) -> G
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G,
+  laws : AddLaws(G, zero, addG, negG), values : Fin(n) -> G
 ) :
   LoopMapLaws(
     PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG,
@@ -71,8 +71,8 @@ def weighted_winding_laws(
 }
 
 def weighted_winding_generator(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, laws : AddLaws(G, zero, addG, negG),
-  values : Fin(n) -> G, selected : Fin(n)
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G,
+  laws : AddLaws(G, zero, addG, negG), values : Fin(n) -> G, selected : Fin(n)
 ) :
   weighted_winding_sum(n, G, zero, addG, negG, values, puncture_loop(n, selected)) = values(
     selected
@@ -111,7 +111,7 @@ def additive_right_cancellation(
 // explicitly given words. Generation is used only under propositional
 // truncation to establish an equality in the set G; no word is picked.
 def puncture_period_formula(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   values : Fin(n) -> G, localValues : (forall i : Fin(n). period(puncture_loop(n, i)) = values(i)),
@@ -131,7 +131,7 @@ def puncture_period_formula(
 }
 
 def puncture_period_same_windings(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period), p,
   q : BouquetLoops(Fin(n)),
@@ -168,7 +168,7 @@ def puncture_period_same_windings(
 }
 
 def puncture_period_zero_windings(
-  n : Nat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
+  n : UNat, G : U1, zero : G, addG : G -> G -> G, negG : G -> G, setG : FieldSet(G),
   laws : AddLaws(G, zero, addG, negG), period : BouquetLoops(Fin(n)) -> G,
   periodLaws : LoopMapLaws(PunctureGraph(n), bouquet_base(Fin(n)), G, zero, addG, period),
   p : BouquetLoops(Fin(n)), noWinding : (forall i : Fin(n). puncture_winding(n, i, p) = zeroZ)

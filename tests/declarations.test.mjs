@@ -16,12 +16,12 @@ test("removed theorem declarations are rejected in both source forms", () => {
 });
 
 test("axiom and opaque are not declarations, and imports come first", () => {
-  assert.throws(() => parse("axiom assumed : Nat;"), /Expected a declaration or directive: def, computable def/);
+  assert.throws(() => parse("axiom assumed : UNat;"), /Expected a declaration or directive: def, computable def/);
   assert.throws(() => parse("opaque def boxed := 0;"), /Expected a declaration or directive: def, computable def/);
   assert.throws(() => parse("def zero_again := 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
   // `axiom` and `opaque` are ordinary names elsewhere.
-  assert.equal(parse("def axiom(n : Nat) := n;").declarations[0].name.text, "axiom");
-  assert.equal(parse("def opaque(n : Nat) := n;").declarations[0].name.text, "opaque");
+  assert.equal(parse("def axiom(n : UNat) := n;").declarations[0].name.text, "axiom");
+  assert.equal(parse("def opaque(n : UNat) := n;").declarations[0].name.text, "opaque");
 });
 
 // `print(evaluate|typeof|inspect(term));` is a top-level directive; `print`,
@@ -33,7 +33,7 @@ test("print directives show evaluate, typeof, inspect or witness of a term", () 
   assert.throws(() => parse("print(normalize(2));"), /^Error: print shows evaluate\(term\), typeof\(term\), inspect\(term\) or witness\(term\)\.$/);
   assert.throws(() => parse("print(evaluate(2);"), /Expected '\)'/);
   assert.throws(() => parse("print;"), /Expected a declaration or directive: def, computable def, inductive, evaluate, print/);
-  assert.throws(() => parse("def print(n : Nat) := n;"), /print is reserved/);
+  assert.throws(() => parse("def print(n : UNat) := n;"), /print is reserved/);
 });
 
 test("a box lowers to comp or fill, with a face(…) or face_when(…) for each wall", () => {
@@ -53,35 +53,35 @@ test("a box lowers to comp or fill, with a face(…) or face_when(…) for each 
   assert.throws(() => parse(carried), error => /^A wall's face is a formula of equations/.test(error.message)
     && error.offset === carried.indexOf("unbound_type"));
   assert.throws(() => parse("def j(A : U0, x : A, p : x = x) : x = x := path i => compose k in A from p @ i { on i = 0 => x;"), /Expected '}' to close the box\./);
-  assert.throws(() => parse("def compose(n : Nat) := n;"), /compose is reserved/);
+  assert.throws(() => parse("def compose(n : UNat) := n;"), /compose is reserved/);
 });
 
 test("left and right, a sum's injections, are reserved: no binder takes them, while injections and sum patterns stay", () => {
-  for (const source of ["def h(left : Nat) := left;", "def k(p : Nat) : Nat { let right := p; exact right; }",
-    "def m(f : Nat -> Nat) := fun (left : Nat) => f(left);", "def left := 0;",
+  for (const source of ["def h(left : UNat) := left;", "def k(p : UNat) : UNat { let right := p; exact right; }",
+    "def m(f : UNat -> UNat) := fun (left : UNat) => f(left);", "def left := 0;",
     // A bare left in a pattern would be a variable, which catches every
     // value (#186's review): it is refused, alone, beside another value's
     // pattern, as an argument, with coordinates and in a match statement.
-    "def f(n : Nat) : Nat := match n { left => left; };", "def f(n : Nat) : Nat := match n { right => 0; };",
-    "def f(n, m : Nat) : Nat := match n, m { zero, left => 0; succ(k), _ => k; };",
-    "def f(n : Nat) : Nat := match n { zero => 0; succ(left) => left; };",
-    "def f(x : Unit or Nat) : Nat := match x { left @ i => 0; };",
-    "def f(n : Nat) : Nat { match n { right => { exact right; } } }"])
+    "def f(n : UNat) : UNat := match n { left => left; };", "def f(n : UNat) : UNat := match n { right => 0; };",
+    "def f(n, m : UNat) : UNat := match n, m { zero, left => 0; succ(k), _ => k; };",
+    "def f(n : UNat) : UNat := match n { zero => 0; succ(left) => left; };",
+    "def f(x : Unit or UNat) : UNat := match x { left @ i => 0; };",
+    "def f(n : UNat) : UNat { match n { right => { exact right; } } }"])
     assert.throws(() => parse(source), /^Error: (left|right) is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
-  parse("def f(x : Unit or Nat) : Nat := match x { left u => 0; right n => n; };");
-  parse("def g(x : Unit or Nat) : Nat := match x { left(u) => 0; right(n) => n; };");
-  parse("def g(x : (Unit or Nat) or Unit) : Nat := match x { left(right(n)) => n; left(left(u)) => 0; right(u) => 0; };");
-  parse("def i : Unit or Nat := left(tt);");
+  parse("def f(x : Unit or UNat) : UNat := match x { left u => 0; right n => n; };");
+  parse("def g(x : Unit or UNat) : UNat := match x { left(u) => 0; right(n) => n; };");
+  parse("def g(x : (Unit or UNat) or Unit) : UNat := match x { left(right(n)) => n; left(left(u)) => 0; right(u) => 0; };");
+  parse("def i : Unit or UNat := left(tt);");
   // A historical source may still bind them (web/cubist/legacy-syntax.mjs).
-  parse("def h(left : Nat) := left;", false, { bindable: ["left"] });
+  parse("def h(left : UNat) := left;", false, { bindable: ["left"] });
 });
 
 test("typed, the ascription, is reserved: no binder takes it, while typed(T, e) stays", () => {
-  for (const source of ["def typed(n, m : Nat) : Nat := n;", "def h(typed : Nat) := typed;",
-    "def k(p : Nat) : Nat { let typed := p; exact typed; }", "def m := fun (typed : Nat) => typed;"])
+  for (const source of ["def typed(n, m : UNat) : UNat := n;", "def h(typed : UNat) := typed;",
+    "def k(p : UNat) : UNat { let typed := p; exact typed; }", "def m := fun (typed : UNat) => typed;"])
     assert.throws(() => parse(source), /^Error: typed is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
-  parse("def n := typed(Nat, 0);");
-  parse("def h(typed : Nat) := typed;", false, { bindable: ["typed"] });
+  parse("def n := typed(UNat, 0);");
+  parse("def h(typed : UNat) := typed;", false, { bindable: ["typed"] });
 });
 
 // The definitions are cubist-tests/declarations_definitions.cubist, whose

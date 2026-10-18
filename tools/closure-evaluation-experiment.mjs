@@ -8,7 +8,7 @@
 // memoized thunks, in place of substitution, and keeps lambda domains, pair
 // types, eliminator motives and unused fields suspended. It supports
 // functions, pairs, sums, Unit and the eliminator of a declared type laid
-// out as Nat is: two constructors, no parameters, levels, dimensions or
+// out as UNat is: two constructors, no parameters, levels, dimensions or
 // data, and at most one recursive position. Anything else is refused with
 // an error, never guessed: general H1 elimination and cubical computation
 // are out of its scope. Recursion is the host's: a deep enough computation
@@ -40,7 +40,7 @@ export function closureEvaluator(kernel) {
       const v = force(x);
       if (v.tag !== "Con" || v.signature !== fn.signature) throw Error("Non-constructor elimination");
       const signature = kernel.signature(fn.signature), c = signature.constructors[v.index];
-      // Nat's first-order constructor layout only.
+      // UNat's first-order constructor layout only.
       if (signature.parameters || signature.levels || signature.constructors.length !== 2 || c.dimensions || c.data
         || c.positions > 1 || v.args.length !== c.positions) throw Error("Unsupported inductive layout");
       let branch = fn.clauses[v.index];

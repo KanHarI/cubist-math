@@ -1,20 +1,20 @@
-import nat;
+import unat;
 import complex_perturbations;
 import complex_limits;
 import field_magnitude_close;
-use nat;
+use unat;
 
 // Dropping the first term keeps the same limit and the same sufficient bound.
 def complex_converges_successor(
-  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : Nat -> Complex(F),
+  F : U1, zero : F, addF : F -> F -> F, lt : F -> F -> U0, sequence : UNat -> Complex(F),
   value : Complex(F), converges : ComplexConverges(F, zero, addF, lt, sequence, value)
 ) :
-  ComplexConverges(F, zero, addF, lt, (fun (n : Nat) => sequence(succ(n))), value) {
+  ComplexConverges(F, zero, addF, lt, (fun (n : UNat) => sequence(succ(n))), value) {
   intro epsilon, positive;
   obtain (bound, close) := converges(epsilon, positive);
   exact (
     bound,
-    (fun (n : Nat, later : IndexLE(bound, n)) => close(succ(n), nat_le_step(bound, n, later)))
+    (fun (n : UNat, later : IndexLE(bound, n)) => close(succ(n), nat_le_step(bound, n, later)))
   );
 }
 
@@ -88,10 +88,11 @@ def complex_cauchy_from_refinements(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
   ring : CommutativeRing(F, zero, one, addF, mulF, negF), order : StrictOrder(F, lt),
   arithmetic : OrderedArithmetic(F, zero, one, addF, mulF, lt),
-  halving : Halving(F, zero, addF, lt), sequence : Nat -> Complex(F),
+  halving : Halving(F, zero, addF, lt), sequence : UNat -> Complex(F),
   refines : (
-    forall epsilon : F. lt(zero, epsilon) -> exists bound : Nat. forall n : Nat. forall extra : Nat.
-    IndexLE(bound, n) -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon)
+    forall epsilon : F. lt(zero, epsilon) -> exists bound : UNat. forall n : UNat.
+    forall extra : UNat. IndexLE(bound, n)
+    -> ComplexClose(F, addF, lt, sequence(n), sequence(n + extra), epsilon)
   )
 ) :
   ComplexCauchy(F, zero, addF, lt, sequence) {
@@ -99,12 +100,12 @@ def complex_cauchy_from_refinements(
   intro epsilon, positive;
   obtain (bound, close) := refines(half(epsilon), positiveHalf(epsilon, positive));
   let tail :
-    forall m : Nat. forall n : Nat. IndexLE(bound, m) -> IndexLE(bound, n)
+    forall m : UNat. forall n : UNat. IndexLE(bound, m) -> IndexLE(bound, n)
     -> ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon) {
     intro m, n, largeM, largeN;
     let first := close(m, n, largeM);
-    let second := transport close(n, m, largeN) along nat_add_comm(n, m) in (
-      (fun (k : Nat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))
+    let second := transport close(n, m, largeN) along unat_add_comm(n, m) in (
+      (fun (k : UNat) => ComplexClose(F, addF, lt, sequence(n), sequence(k), half(epsilon)))
     );
     let reversed :=
       complex_close_symmetry(F, addF, lt, sequence(n), sequence(m + n), half(epsilon), second);

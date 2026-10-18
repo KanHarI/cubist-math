@@ -1,4 +1,4 @@
-import nat;
+import unat;
 import complex_algebra;
 import puncture_periods;
 
@@ -8,7 +8,7 @@ import puncture_periods;
 // residue calculation are explicit inputs, not postulated analytic facts.
 def complex_puncture_period_formula(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : Nat, period : BouquetLoops(Fin(n))
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), n : UNat, period : BouquetLoops(Fin(n))
   -> Complex(F),
   periodLaws : LoopMapLaws(
     PunctureGraph(n), bouquet_base(Fin(n)), Complex(F), complex_zero(F, zero), complex_add(F, addF),

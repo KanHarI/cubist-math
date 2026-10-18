@@ -1,5 +1,5 @@
-import nat;
-use nat;
+import unat;
+use unat;
 
 // h-levels (work-plan L2.5a, the HoTT roadmap's D0a): contractible types,
 // propositions and sets, defined once for every universe below UU0, with
@@ -15,7 +15,7 @@ def IsProp(U < UU0, A : U) : U := forall x, y : A. x = y;
 
 // HasLevel(U, n, A): a proposition at level 0; at level n + 1, every path
 // type of A has level n.
-def HasLevel(U < UU0, n : Nat) := induction n return (U -> U) {
+def HasLevel(U < UU0, n : UNat) := induction n return (U -> U) {
     zero => (fun (A : U) => IsProp(U, A));
     succ h => (fun (A : U) => forall x, y : A. h(x = y));
   };
@@ -44,7 +44,7 @@ computable def prop_is_set(U < UU0, A : U, h : IsProp(U, A)) : IsSet(U, A) {
 }
 
 // Levels are cumulative: a type of level n has level n + 1.
-computable def level_up(U < UU0, n : Nat) :=
+computable def level_up(U < UU0, n : UNat) :=
   induction n as k return (forall A : U. HasLevel(U, k, A) -> HasLevel(U, succ(k), A)) {
     zero => (fun (A : U, h : HasLevel(U, 0, A)) => prop_is_set(U, A, h));
     succ step => (
@@ -53,18 +53,18 @@ computable def level_up(U < UU0, n : Nat) :=
   };
 
 // A proposition has every level.
-computable def prop_has_level(U < UU0, n : Nat) :=
+computable def prop_has_level(U < UU0, n : UNat) :=
   induction n as k return (forall A : U. IsProp(U, A) -> HasLevel(U, k, A)) {
     zero => (fun (A : U, h : IsProp(U, A)) => h);
     succ step => (fun (A : U, h : IsProp(U, A)) => level_up(U, k, A, step(A, h)));
   };
 
 // A contractible type has every level.
-computable def contr_has_level(U < UU0, n : Nat, A : U, c : IsContr(U, A)) :
+computable def contr_has_level(U < UU0, n : UNat, A : U, c : IsContr(U, A)) :
   HasLevel(U, n, A) := prop_has_level(U, n, A, contr_is_prop(U, A, c));
 
 // Each path type of a type of level n + 1 has level n, by definition.
-computable def path_has_level(U < UU0, n : Nat, A : U, h : HasLevel(U, succ(n), A), x, y : A) :
+computable def path_has_level(U < UU0, n : UNat, A : U, h : HasLevel(U, succ(n), A), x, y : A) :
   HasLevel(U, n, x = y) := h(x, y);
 
 // Being a proposition is a proposition: two proofs agree at every pair of
@@ -75,7 +75,7 @@ computable def is_prop_is_prop(U < UU0, A : U) : IsProp(U, IsProp(U, A)) {
 }
 
 // Having a level is a proposition, at every level.
-computable def has_level_is_prop(U < UU0, n : Nat) :=
+computable def has_level_is_prop(U < UU0, n : UNat) :=
   induction n as k return (forall A : U. IsProp(U, HasLevel(U, k, A))) {
     zero => (fun (A : U) => is_prop_is_prop(U, A));
     succ step => (
@@ -114,7 +114,7 @@ computable def pi_is_set(U < UU0, A : U, B : A -> U, h : forall x : A. IsSet(U, 
 // between the images: a path q between images is carried back along r and
 // straightened by e at its ends, and a path p of B, carried there and back,
 // is p again, by a square whose third side follows e along p.
-computable def retract_has_level(U < UU0, n : Nat) :=
+computable def retract_has_level(U < UU0, n : UNat) :=
   induction n as k return (
     forall A, B : U. forall s : B -> A. forall r : A -> B. (forall b : B. r(s(b)) = b)
     -> HasLevel(U, k, A) -> HasLevel(U, k, B)
@@ -145,7 +145,7 @@ computable def retract_has_level(U < UU0, n : Nat) :=
 // is a function into the paths between their values, and back, by function
 // extensionality, whose two directions compose to the identity by
 // conversion: so f = g is a retract of forall x. f(x) = g(x).
-computable def pi_has_level(U < UU0, n : Nat) :=
+computable def pi_has_level(U < UU0, n : UNat) :=
   induction n as k return (
     forall A : U. forall B : A -> U. (forall x : A. HasLevel(U, k, B(x)))
     -> HasLevel(U, k, forall x : A. B(x))
@@ -219,7 +219,7 @@ computable def prop_over(
 // level n between its elements: carried along the path from its start, as
 // path induction does, a path over a point is a path in its fiber.
 computable def pathp_has_level(
-  U < UU0, n : Nat, A : U, B : A -> U, h : forall a : A. HasLevel(U, succ(n), B(a)), a : A,
+  U < UU0, n : UNat, A : U, B : A -> U, h : forall a : A. HasLevel(U, succ(n), B(a)), a : A,
   b : B(a), c : A, p : a = c
 ) :
   forall d : B(c).
@@ -231,7 +231,7 @@ computable def pathp_has_level(
 // Pairs keep the level of their parts: at level 0, the parts' paths make a
 // path of pairs; at level n + 1, a path of pairs is a pair of a path and a
 // path over it, by conversion, and those have level n.
-computable def sigma_has_level(U < UU0, n : Nat) :=
+computable def sigma_has_level(U < UU0, n : UNat) :=
   induction n as k return (
     forall A : U. forall B : A -> U. HasLevel(U, k, A) -> (forall a : A. HasLevel(U, k, B(a)))
     -> HasLevel(U, k, exists a : A. B(a))
@@ -264,13 +264,13 @@ computable def sigma_has_level(U < UU0, n : Nat) :=
 
 // Products keep the level of their factors.
 computable def product_has_level(
-  U < UU0, n : Nat, A, B : U, hA : HasLevel(U, n, A), hB : HasLevel(U, n, B)
+  U < UU0, n : UNat, A, B : U, hA : HasLevel(U, n, A), hB : HasLevel(U, n, B)
 ) :
   HasLevel(U, n, A and B) := sigma_has_level(U, n, A, fun (a : A) => B, hA, fun (a : A) => hB);
 
 // A subtype, a family of propositions over A, keeps the level of A.
 computable def subtype_has_level(
-  U < UU0, n : Nat, A : U, B : A -> U, hA : HasLevel(U, n, A), hB : forall a : A. IsProp(U, B(a))
+  U < UU0, n : UNat, A : U, B : A -> U, hA : HasLevel(U, n, A), hB : forall a : A. IsProp(U, B(a))
 ) :
   HasLevel(U, n, exists a : A. B(a)) := sigma_has_level(
     U, n, A, B, hA, fun (a : A) => prop_has_level(U, n, B(a), hB(a))
@@ -382,21 +382,21 @@ computable def hedberg(U < UU0, A : U, decide : forall x, y : A. Decidable(U, x 
 
 // Natural numbers form a set, by Hedberg's theorem: equality is decided by
 // recursion on both numbers, since 0 is no successor and a successor
-// determines its predecessor (nat's nat_succ_injective).
-computable def nat_decide(m : Nat) :=
-  induction m as k return (forall n : Nat. (k = n) or ((k = n) -> Void)) {
-    zero => (fun (n : Nat) => induction n as j return ((0 = j) or ((0 = j) -> Void)) {
+// determines its predecessor (unat's unat_succ_injective).
+computable def unat_decide(m : UNat) :=
+  induction m as k return (forall n : UNat. (k = n) or ((k = n) -> Void)) {
+    zero => (fun (n : UNat) => induction n as j return ((0 = j) or ((0 = j) -> Void)) {
         zero => typed((0 = 0) or ((0 = 0) -> Void), left(refl(0)));
         succ unused => typed(
           (0 = succ(j)) or ((0 = succ(j)) -> Void),
-          right(fun (p : 0 = succ(j)) => transport tt along p in nat_is_zero)
+          right(fun (p : 0 = succ(j)) => transport tt along p in unat_is_zero)
         );
       });
     succ previous => (
-      fun (n : Nat) => induction n as j return ((succ(k) = j) or ((succ(k) = j) -> Void)) {
+      fun (n : UNat) => induction n as j return ((succ(k) = j) or ((succ(k) = j) -> Void)) {
         zero => typed(
           (succ(k) = 0) or ((succ(k) = 0) -> Void),
-          right(fun (p : succ(k) = 0) => transport tt along sym(p) in nat_is_zero)
+          right(fun (p : succ(k) = 0) => transport tt along sym(p) in unat_is_zero)
         );
         succ unused => match previous(j) return (
           (succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void)
@@ -407,11 +407,11 @@ computable def nat_decide(m : Nat) :=
           );
           right no => typed(
             (succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void),
-            right(fun (p : succ(k) = succ(j)) => no(nat_succ_injective(k, j, p)))
+            right(fun (p : succ(k) = succ(j)) => no(unat_succ_injective(k, j, p)))
           );
         };
       }
     );
   };
 
-computable def nat_is_set : IsSet(U0, Nat) := hedberg(U0, Nat, nat_decide);
+computable def unat_is_set : IsSet(U0, UNat) := hedberg(U0, UNat, unat_decide);

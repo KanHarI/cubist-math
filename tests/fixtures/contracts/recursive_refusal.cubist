@@ -1,7 +1,7 @@
 // G12-range (CB5): recursive type-unfolding refusals cover the responsible original reference.
 
 import hlevels;
-import nat;
+import unat;
 # test(generation.G12_range.refusal)
 # expect_error(E845)
 # expect_error_at(iter(n))
@@ -11,9 +11,9 @@ theory T(U < UU0) {
   M : set U;
   c : M;
   op(x : M) : M;
-  def iter(n : Nat) : M := match n {
+  def iter(n : UNat) : M := match n {
     zero => c;
     succ(k) => op(iter(k));
   };
-  law nope(n : Nat) : iter(n) = c;
+  law nope(n : UNat) : iter(n) = c;
 }

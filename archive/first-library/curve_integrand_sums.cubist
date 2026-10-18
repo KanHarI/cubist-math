@@ -1,11 +1,11 @@
-import nat;
+import unat;
 import curve_sample_sums;
 import contour_sums;
 
 // Right scalar multiplication, using commutativity of the coefficient ring.
 def contour_sum_scale(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F,
-  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, coefficient : F, n : Nat,
+  ring : CommutativeRing(F, zero, one, addF, mulF, negF), f : F -> F, coefficient : F, n : UNat,
   vertices : SampleVertices(F, n), tags : SampleTags(F, n)
 ) :
   contour_sum(

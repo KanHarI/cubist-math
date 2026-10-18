@@ -1,9 +1,9 @@
-import nat;
+import unat;
 import finite_spanning;
-use nat;
+use unat;
 
 // Individual generators have explicit unit-coordinate preimages.
-def coordinate_unit(K : AlgebraicField, n : Nat) :=
+def coordinate_unit(K : AlgebraicField, n : UNat) :=
   induction n as k return (Fin(k) -> Fin(k) -> af_carrier(K)) {
     zero => fun (i : Fin(0)) => typed((Fin(0) -> af_carrier(K)), absurd(i));
     succ previous => fun (i : Fin(succ(k))) => match i return (Fin(succ(k)) -> af_carrier(K)) {
@@ -13,7 +13,7 @@ def coordinate_unit(K : AlgebraicField, n : Nat) :=
   };
 
 def adjoin_first_value(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, f : LinearMap(K, CoordinateSpace(K, n), V),
   x : vector_carrier(K, V)
 ) :
   linear_map(
@@ -35,7 +35,7 @@ def adjoin_first_value(
 }
 
 def adjoin_tail_value(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, f : LinearMap(K, CoordinateSpace(K, n), V),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, f : LinearMap(K, CoordinateSpace(K, n), V),
   x : vector_carrier(K, V), a : Fin(n) -> af_carrier(K)
 ) :
   linear_map(
@@ -48,7 +48,7 @@ def adjoin_tail_value(
   );
 }
 
-def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
+def family_unit_value(K : AlgebraicField, V : VectorSpace(K), n : UNat) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, V). forall i : Fin(k).
     linear_map(K, CoordinateSpace(K, k), V, family_linear(K, V, k, v), coordinate_unit(K, k, i)) = v(
@@ -140,7 +140,7 @@ def linear_image_combine_mere(
 }
 
 def family_combination_in_image(
-  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), n : UNat
 ) :=
   induction n as k return (
     forall v : Fin(k) -> vector_carrier(K, W). forall a : Fin(k) -> af_carrier(K).
@@ -187,7 +187,7 @@ def family_combination_in_image(
   };
 
 def spanning_family_in_image(
-  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), n : Nat, v : Fin(n)
+  K : AlgebraicField, V, W : VectorSpace(K), f : LinearMap(K, V, W), n : UNat, v : Fin(n)
   -> vector_carrier(K, W), spanning : FiniteSpanningFamily(K, W, n, v),
   members : (
     forall i : Fin(n).

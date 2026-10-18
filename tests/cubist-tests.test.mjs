@@ -34,11 +34,11 @@ test("checked comments are written above their line, wrapped, and read back", ()
   const source = "// A note.\ndef wrong := 1;\nprint(typeof(2));\n";
   const long = `E606: ${"word ".repeat(40).trim()}`;
   const items = [{ line: 1, label: "Error", text: long }, { line: 1, label: "Warning", text: "W703: k is unused." },
-    { line: 2, label: "Output", text: "Nat" }];
+    { line: 2, label: "Output", text: "UNat" }];
   const text = inlined(source, items);
   assert.ok(text.split("\n").every(line => line.length <= 100));
   assert.match(text, /^\/\/ A note\.\n\/\/ Error: E606: word/);
-  assert.match(text, /\n\/\/ Output: Nat\nprint\(typeof\(2\)\);\n$/);
+  assert.match(text, /\n\/\/ Output: UNat\nprint\(typeof\(2\)\);\n$/);
   // Read back, each is at its line in the commented text.
   const lines = text.split("\n"), at = { 1: lines.indexOf("def wrong := 1;"), 2: lines.indexOf("print(typeof(2));") };
   assert.deepEqual(stated(text), items.map(item => ({ ...item, line: at[item.line] })));

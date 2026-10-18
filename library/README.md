@@ -19,28 +19,37 @@ follows.
   the assumptions listed for it there.
 - The library is self-contained: a module here imports only modules here
   (`web/module-resolution.mjs`). An archive module may import a library
-  module, as many import `nat`.
+  module, as many import `unat`.
 - Nothing is imported automatically: a module that uses the natural numbers,
   numerals included, imports `nat`.
 
-Public `Nat` remains unary during the binary migration. Import `unat` for
-the explicit unary name, `bnat` for binary arithmetic, or `bnat_notation`
-and `use bnat;` for decimal or binary literals, such as `5`, `1_000` or
-`0b101`. With that reader loaded, computed values print in decimal directly
-from their bits; otherwise they retain constructor spelling. Unreduced
-literals retain their original spelling. Conversion between the
-two carriers is explicit: `bnat_unary` supplies the maps and their inverse
-laws. `bnat_semiring` proves their semiring agreement, and `bnat_transport`
-constructs the universe path and proves its transport laws. `bnat_equality`
-supplies bitwise equality and setness; `bnat_order` proves comparison
-correctness. `bnat_peano` supplies dependent zero/successor recursion, and
-`bnat_recursion` supplies coherent strong recursion and factorial. The default
-`Nat` switch still requires the numeral and unary-client migration.
+Public `Nat` is the canonical binary carrier `BNat`. Use `import nat; use nat;`
+for decimal or binary literals (`5`, `1_000`, `0b101`), binary arithmetic,
+comparison, dependent Peano recursion and coherent strong recursion.
+`nat` calls the binary literal reader directly: the magnitude never passes
+through unary naturals. Computed values print in decimal from their bits;
+unreduced literals retain their spelling, including in mathematical displays.
+
+For structural unary induction, use `import unat; use unat;` and `UNat`.
+Its constructors remain `zero` and `succ`; its laws have the `unat_` prefix.
+Existing structural clients, lexical digits/offsets, list lengths and h-level
+indices use this explicit carrier. Integer and rational representations also
+remain unary until NUM2. Public `Nat` no longer matches on unary constructors;
+use `nat_peano` for its dependent zero/successor view. A unary numeral is
+qualified as `unat.(n)` outside an identity unary view. In mixed-carrier code,
+select the notation explicitly and use the unambiguous `bnat_*` operations;
+short names such as `zero` and `add` follow ordinary import shadowing.
+
+Conversion remains explicit: `bnat_unary` supplies both maps and inverse laws,
+`bnat_semiring` proves their semiring agreement, and `bnat_transport` supplies
+the universe path and transport laws. `bnat_equality` supplies bitwise equality
+and setness, `bnat_order` comparison correctness, `bnat_peano` dependent
+zero/successor recursion, and `bnat_recursion` strong recursion and factorial.
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |
-| [`nat`](nat.cubist) | The natural numbers, `Nat` with `zero` and `succ`, with addition, multiplication and order, and the laws of addition and multiplication: units, commutativity, associativity and distributivity; the predecessor, the injectivity of `succ`, that 0 is no successor, cancellation of addition and of multiplication by a successor, and trichotomy. Numerals and `+`, `*`, `<` and `<=` need it. | None |
-| [`unat`](unat.cubist) | The explicit unary name `UNat`, currently an alias of `Nat`, with `unat` notation for unary numerals, arithmetic and order. | None |
+| [`nat`](nat.cubist) | Public binary `Nat`, an alias of `BNat`, with direct arithmetic and order, decimal/`0b` notation, semiring and cancellation laws, setness, dependent Peano and strong recursion, and factorial. | None |
+| [`unat`](unat.cubist) | Structural unary `UNat` with `zero`/`succ`, unary notation, arithmetic, order and their laws, predecessor, successor injectivity, cancellation and trichotomy. | None |
 | [`bnat`](bnat.cubist) | Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws. The binary core has no imports. | None |
 | [`bnat_equality`](bnat_equality.cubist) | Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion. | None |
 | [`bnat_notation`](bnat_notation.cubist) | Decimal and `0b` literal parsing and the `bnat` notation for arithmetic and order. Parsing builds the binary magnitude directly; unary glyph digits and character offsets never hold the magnitude. | None |
@@ -53,7 +62,7 @@ correctness. `bnat_peano` supplies dependent zero/successor recursion, and
 | [`bnat_peano`](bnat_peano.cubist) | Dependent advance over binary offsets and the Peano eliminator; its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families. Homogeneous total-state iteration is used only in the successor proof. | None |
 | [`bnat_recursion`](bnat_recursion.cubist) | Binary strict-order decisions and successor decomposition; callbacks for every smaller value, coherent dependent strong recursion and its equation; binary factorial with zero/successor laws. Successful decrease checks keep binary witnesses. | None |
 | [`classical_axioms`](classical_axioms.cubist) | The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them. | `LEM`, `Choice`, `Truncate` |
-| [`hlevels`](hlevels.cubist) | Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `Nat`, is a set (Hedberg). | None |
+| [`hlevels`](hlevels.cubist) | Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `UNat`, is a set (Hedberg). | None |
 | [`h1_truncation`](h1_truncation.cubist) | The propositional truncation `Trunc(U, A)` as a declared type that computes: `merely`, that it is a proposition, maps between truncations, and elimination into a proposition of any universe below `UU0`. | None |
 | [`h1_classical`](h1_classical.cubist) | Excluded middle and choice stated over `Trunc`, as `LEM(Trunc, U)` and `Choice(Trunc, U)` give them; double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`. | `LEM[h1_truncation.Trunc]`, `Choice[h1_truncation.Trunc]` |
 | [`universe_automorphisms`](universe_automorphisms.cubist) | Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`, for the equivalences of [`contractible_maps`](contractible_maps.cubist), with equal types from [`univalence`](univalence.cubist)'s `glue_path`. Both directions without the truncations use no assumption. | Truncation; `LEM` only in the final corollary |

@@ -1,14 +1,14 @@
-import nat;
+import unat;
 import sample_tagged;
 import sample_subdivisions;
-use nat;
+use unat;
 
 // Concatenation preserves each tag's condition when the shared endpoints
 // agree. This includes a zero-edge prefix or suffix.
 def sample_tagged_join_step(
-  C : U1, condition : C -> C -> C -> U0, n : Nat,
+  C : U1, condition : C -> C -> C -> U0, n : UNat,
   previous : (
-    forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n). forall m : Nat.
+    forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n). forall m : UNat.
     forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
     (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
     -> SampleTagged(C, condition, n, vertices, tags)
@@ -17,7 +17,7 @@ def sample_tagged_join_step(
       C, condition, n + m, join_vertices(C, n, vertices, m, rightVertices),
       join_tags(C, n, tags, m, rightTags)
     )
-  ), vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)), m : Nat,
+  ), vertices : SampleVertices(C, succ(n)), tags : SampleTags(C, succ(n)), m : UNat,
   rightVertices : SampleVertices(C, m), rightTags : SampleTags(C, m),
   same : sample_last(C, succ(n), vertices) = sample_first(C, m, rightVertices),
   valid : SampleTagged(C, condition, succ(n), vertices, tags),
@@ -50,8 +50,8 @@ def sample_tagged_join_step(
   );
 }
 
-def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
-  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n). forall m : Nat.
+def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : UNat) :
+  forall vertices : SampleVertices(C, n). forall tags : SampleTags(C, n). forall m : UNat.
   forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
   (sample_last(C, n, vertices) = sample_first(C, m, rightVertices))
   -> SampleTagged(C, condition, n, vertices, tags)
@@ -61,7 +61,7 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
     join_tags(C, n, tags, m, rightTags)
   ) {
   exact induction n as k return (
-    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k). forall m : Nat.
+    forall vertices : SampleVertices(C, k). forall tags : SampleTags(C, k). forall m : UNat.
     forall rightVertices : SampleVertices(C, m). forall rightTags : SampleTags(C, m).
     (sample_last(C, k, vertices) = sample_first(C, m, rightVertices))
     -> SampleTagged(C, condition, k, vertices, tags)
@@ -72,7 +72,7 @@ def sample_tagged_join(C : U1, condition : C -> C -> C -> U0, n : Nat) :
     )
   ) {
     zero => fun (
-      vertices : C, tags : Unit, m : Nat, rightVertices : SampleVertices(C, m),
+      vertices : C, tags : Unit, m : UNat, rightVertices : SampleVertices(C, m),
       rightTags : SampleTags(C, m), same : vertices = sample_first(C, m, rightVertices),
       valid : Unit, rightValid : SampleTagged(C, condition, m, rightVertices, rightTags)
     ) => rightValid;

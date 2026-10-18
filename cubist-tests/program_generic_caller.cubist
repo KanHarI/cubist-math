@@ -1,10 +1,10 @@
 // From tests/cubical-program.test.mjs: calls of an imported generic
 // definition link to the definition itself.
 
-import nat;
+import unat;
 import program_generic_identity;
-use nat;
+use unat;
 
-def zero := identity(U0, Nat, 0);
+def zero := identity(U0, UNat, 0);
 
 def identity1 := identity(U1);

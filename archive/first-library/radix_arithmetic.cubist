@@ -1,10 +1,10 @@
-import nat;
+import unat;
 import radix_naturals;
 import paths_;
-use nat;
+use unat;
 
 // The carry cases use structural finite-digit increment, at any radix >= 2.
-def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) := radix_positive_rec(
+def radix_positive_succ(extra : UNat, p : RadixPositive(extra)) := radix_positive_rec(
   extra, RadixPositive(extra),
   fun (first : RadixDigit(succ(extra))) => match radix_digit_succ(succ(extra), first) return RadixPositive(
     extra
@@ -20,19 +20,19 @@ def radix_positive_succ(extra : Nat, p : RadixPositive(extra)) := radix_positive
   }, p
 );
 
-def radix_succ(extra : Nat, n : RadixNat(extra)) := match n return RadixNat(extra) {
+def radix_succ(extra : UNat, n : RadixNat(extra)) := match n return RadixNat(extra) {
     radix_nat_zero => radix_positive(extra, radix_one(extra));
     radix_nat_positive(p) => radix_positive(extra, radix_positive_succ(extra, p));
   };
 
 // Only small digit values drive these loops; whole numbers remain W trees.
-def radix_add_small(extra, count : Nat, p : RadixPositive(extra)) :=
+def radix_add_small(extra, count : UNat, p : RadixPositive(extra)) :=
   induction count return RadixPositive(extra) {
     zero => p;
     succ previous => radix_positive_succ(extra, previous);
   };
 
-def radix_positive_add(extra : Nat, a : RadixPositive(extra)) :
+def radix_positive_add(extra : UNat, a : RadixPositive(extra)) :
   RadixPositive(extra) -> RadixPositive(extra) {
   exact radix_positive_rec(
     extra, (RadixPositive(extra) -> RadixPositive(extra)),
@@ -54,7 +54,7 @@ def radix_positive_add(extra : Nat, a : RadixPositive(extra)) :
   );
 }
 
-def radix_add(extra : Nat, a, b : RadixNat(extra)) := match a return RadixNat(extra) {
+def radix_add(extra : UNat, a, b : RadixNat(extra)) := match a return RadixNat(extra) {
     radix_nat_zero => b;
     radix_nat_positive(p) => match b return RadixNat(extra) {
       radix_nat_zero => a;
@@ -62,13 +62,13 @@ def radix_add(extra : Nat, a, b : RadixNat(extra)) := match a return RadixNat(ex
     };
   };
 
-def radix_add_copies(extra, count : Nat, a, b : RadixPositive(extra)) :=
+def radix_add_copies(extra, count : UNat, a, b : RadixPositive(extra)) :=
   induction count return RadixPositive(extra) {
     zero => a;
     succ previous => radix_positive_add(extra, previous, b);
   };
 
-def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) :
+def radix_positive_mul(extra : UNat, a : RadixPositive(extra)) :
   RadixPositive(extra) -> RadixPositive(extra) {
   exact radix_positive_rec(
     extra, (RadixPositive(extra) -> RadixPositive(extra)),
@@ -85,7 +85,7 @@ def radix_positive_mul(extra : Nat, a : RadixPositive(extra)) :
   );
 }
 
-def radix_mul(extra : Nat, a, b : RadixNat(extra)) := match a return RadixNat(extra) {
+def radix_mul(extra : UNat, a, b : RadixNat(extra)) := match a return RadixNat(extra) {
     radix_nat_zero => radix_zero(extra);
     radix_nat_positive(p) => match b return RadixNat(extra) {
       radix_nat_zero => radix_zero(extra);
@@ -93,17 +93,17 @@ def radix_mul(extra : Nat, a, b : RadixNat(extra)) := match a return RadixNat(ex
     };
   };
 
-def radix_of_nat(extra, n : Nat) := induction n return RadixNat(extra) {
+def radix_of_nat(extra, n : UNat) := induction n return RadixNat(extra) {
     zero => radix_zero(extra);
     succ previous => radix_succ(extra, previous);
   };
 
-def radix_factorial(extra, n : Nat) := induction n as k return RadixNat(extra) {
+def radix_factorial(extra, n : UNat) := induction n as k return RadixNat(extra) {
     zero => radix_positive(extra, radix_one(extra));
     succ previous => radix_mul(extra, radix_of_nat(extra, succ(k)), previous);
   };
 
-def radix_factorial_step(extra, n : Nat) :
+def radix_factorial_step(extra, n : UNat) :
   radix_factorial(extra, succ(n)) = radix_mul(
     extra, radix_of_nat(extra, succ(n)), radix_factorial(extra, n)
   ) {
@@ -111,7 +111,7 @@ def radix_factorial_step(extra, n : Nat) :
 }
 
 def radix_factorial_value_step(
-  extra, n : Nat, value : RadixNat(extra), previous : radix_factorial(extra, n) = value
+  extra, n : UNat, value : RadixNat(extra), previous : radix_factorial(extra, n) = value
 ) :
   radix_factorial(extra, succ(n)) = radix_mul(extra, radix_of_nat(extra, succ(n)), value) {
   exact trans(
@@ -120,7 +120,7 @@ def radix_factorial_value_step(
   );
 }
 
-def radix_factorial_zero(extra : Nat) :
+def radix_factorial_zero(extra : UNat) :
   radix_factorial(extra, 0) = radix_positive(extra, radix_one(extra)) {
   rfl;
 }

@@ -1,12 +1,12 @@
 // control-recursion (control): inherited recursive operations and initial-model clients compute.
 
 import hlevels;
-import nat;
+import unat;
 theory T(U < UU0) {
   M : set U;
   c : M;
   op(x : M) : M;
-  def iter(n : Nat) : M := match n {
+  def iter(n : UNat) : M := match n {
     zero => c;
     succ(k) => op(iter(k));
   };

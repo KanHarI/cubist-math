@@ -1,12 +1,12 @@
-import nat;
+import unat;
 import finite_cancellation;
 import surjections;
 import primes;
 
 // Cardinality forgets the enumeration, retaining only its finite size.
-def HasCardinality(A : U0, n : Nat) := Mere(Bijection(Fin(n), A));
+def HasCardinality(A : U0, n : UNat) := Mere(Bijection(Fin(n), A));
 
-def has_cardinality_prop(A : U0, n : Nat) := mere_is_prop(Bijection(Fin(n), A));
+def has_cardinality_prop(A : U0, n : UNat) := mere_is_prop(Bijection(Fin(n), A));
 
 def bijective_map_bijection(
   A, B : U0, setB : IsSet(U0, B), f : A -> B, injective : Injective(A, B, f),
@@ -23,12 +23,12 @@ def bijective_map_bijection(
   exact (f, g, (fun (x : A) => injective(g(f(x)), x, right_(f(x)))), right_);
 }
 
-def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCardinality(A, m)) :
+def cardinality_unique(A : U0, n, m : UNat, hn : HasCardinality(A, n), hm : HasCardinality(A, m)) :
   n = m {
   let first : Bijection(Fin(n), A) -> n = m {
     intro e;
     exact mere_eliminate(
-      Bijection(Fin(m), A), (n = m), hedberg(U0, Nat, nat_eq_decidable, n, m),
+      Bijection(Fin(m), A), (n = m), hedberg(U0, UNat, nat_eq_decidable, n, m),
       (
         fun (d : Bijection(Fin(m), A)) => finite_cardinality_unique(
           n, m, compose_bijection(Fin(n), A, Fin(m), e, reverse_bijection(Fin(m), A, d))
@@ -37,13 +37,13 @@ def cardinality_unique(A : U0, n, m : Nat, hn : HasCardinality(A, n), hm : HasCa
     );
   }
   exact mere_eliminate(
-    Bijection(Fin(n), A), (n = m), hedberg(U0, Nat, nat_eq_decidable, n, m), first, hn
+    Bijection(Fin(n), A), (n = m), hedberg(U0, UNat, nat_eq_decidable, n, m), first, hn
   );
 }
 
 // Transport finite counts along a type equality, including one built by ua.
-def cardinality_path(A, B : U0, same : A =[U0] B, n : Nat, count : HasCardinality(A, n)) :=
+def cardinality_path(A, B : U0, same : A =[U0] B, n : UNat, count : HasCardinality(A, n)) :=
   transport count along same in (fun (X : U0) => HasCardinality(X, n));
 
 // An indexed family of pairwise different elements, without an exhaustion claim.
-def DistinctFamily(A : U0, n : Nat) := exists f : Fin(n) -> A. Injective(Fin(n), A, f);
+def DistinctFamily(A : U0, n : UNat) := exists f : Fin(n) -> A. Injective(Fin(n), A, f);

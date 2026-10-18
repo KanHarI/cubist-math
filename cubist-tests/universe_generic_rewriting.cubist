@@ -2,7 +2,7 @@
 // universe only where it is a bare variable.
 
 import primes;
-use nat;
+use unat;
 
 def Id(U < UU0, A : U) := A;
 
@@ -10,9 +10,9 @@ def id_unfold(U < UU0, A : U) : Id(U, A) = A := refl(A);
 
 def void_id(U < UU0) : Id(U, Void) = Void := refl(typed(U, Void));
 
-def plus_zero(U < UU0, n : Nat) : n + 0 = n := nat_add_zero(n);
+def plus_zero(U < UU0, n : UNat) : n + 0 = n := unat_add_zero(n);
 
-def zero_at(U < UU0, f : U -> Nat, A : U, h : f(A) = 0) : f(A) = 0 := h;
+def zero_at(U < UU0, f : U -> UNat, A : U, h : f(A) = 0) : f(A) = 0 := h;
 
 def next_rule(U < UU0, A : next(U)) : Id(next(U), A) = A := refl(A);
 
@@ -34,12 +34,12 @@ def by_set(A : U3) : Id(U3, A) = A {
   simp only [identities];
 }
 
-def level_free(n : Nat) : (n + 0) + 0 = n {
+def level_free(n : UNat) : (n + 0) + 0 = n {
   simp only [plus_zero];
 }
 
-def from_parameter(g : U1 -> Nat, h : g(U0) = 0) : g(U0) + 0 = 0 {
-  simp only [zero_at, nat_add_zero] with [h];
+def from_parameter(g : U1 -> UNat, h : g(U0) = 0) : g(U0) + 0 = 0 {
+  simp only [zero_at, unat_add_zero] with [h];
 }
 
 // Error: E434: A universe-generic rule is matched only where its universe is a bare variable;

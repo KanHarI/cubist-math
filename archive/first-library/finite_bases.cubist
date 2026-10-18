@@ -1,8 +1,8 @@
-import nat;
+import unat;
 import field_vector_spaces;
 import linear_maps;
 import quotient_sets;
-use nat;
+use unat;
 
 // Functions to an additive group form an additive group pointwise. This
 // construction needs no enumeration, decidability, or choice of the index set.
@@ -114,29 +114,31 @@ def FunctionSpace(K : AlgebraicField, I : U0, V : VectorSpace(K)) := vector_spac
 // Finite coordinates use a specified enumeration. A basis supplies a linear
 // isomorphism K^n -> V, hence actual and unique coordinates for every vector.
 // This is data, not an assertion that an arbitrary vector space has a basis.
-def CoordinateSpace(K : AlgebraicField, n : Nat) := FunctionSpace(K, Fin(n), ScalarSpace(K));
+def CoordinateSpace(K : AlgebraicField, n : UNat) := FunctionSpace(K, Fin(n), ScalarSpace(K));
 
-def FiniteBasis(K : AlgebraicField, V : VectorSpace(K), n : Nat) :=
+def FiniteBasis(K : AlgebraicField, V : VectorSpace(K), n : UNat) :=
   LinearIso(K, CoordinateSpace(K, n), V);
 
-def standard_basis(K : AlgebraicField, n : Nat) : FiniteBasis(K, CoordinateSpace(K, n), n) {
+def standard_basis(K : AlgebraicField, n : UNat) : FiniteBasis(K, CoordinateSpace(K, n), n) {
   exact linear_identity_iso(K, CoordinateSpace(K, n));
 }
 
-def basis_expansion(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)) :
+def basis_expansion(K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n)) :
   LinearMap(K, CoordinateSpace(K, n), V) {
   obtain (expand, coordinates, left_, right_) := basis;
   exact expand;
 }
 
-def basis_coordinates(K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)) :
+def basis_coordinates(
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n)
+) :
   LinearMap(K, V, CoordinateSpace(K, n)) {
   obtain (expand, coordinates, left_, right_) := basis;
   exact coordinates;
 }
 
 def basis_expansion_coordinates(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n),
   x : vector_carrier(K, V)
 ) :
   linear_map(
@@ -148,7 +150,7 @@ def basis_expansion_coordinates(
 }
 
 def basis_coordinates_expansion(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n),
   c : vector_carrier(K, CoordinateSpace(K, n))
 ) :
   linear_map(
@@ -160,7 +162,7 @@ def basis_coordinates_expansion(
 }
 
 def basis_coordinates_unique(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n),
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n),
   c : vector_carrier(K, CoordinateSpace(K, n)), x : vector_carrier(K, V),
   expands : linear_map(K, CoordinateSpace(K, n), V, basis_expansion(K, V, n, basis), c) = x
 ) :
@@ -172,7 +174,7 @@ def basis_coordinates_unique(
 }
 
 def basis_carrier_path(
-  K : AlgebraicField, V : VectorSpace(K), n : Nat, basis : FiniteBasis(K, V, n)
+  K : AlgebraicField, V : VectorSpace(K), n : UNat, basis : FiniteBasis(K, V, n)
 ) :
   (Fin(n) -> af_carrier(K)) =[U0] vector_carrier(K, V) {
   exact linear_iso_carrier_path(K, CoordinateSpace(K, n), V, basis);
@@ -180,7 +182,7 @@ def basis_carrier_path(
 
 // Degree witnesses retain their basis. The module extension_degree proves
 // that their size is unique and defines the basis-independent numeric degree.
-def ExtensionDegreeWitness(K : AlgebraicField, E : FieldExt(K), n : Nat) :=
+def ExtensionDegreeWitness(K : AlgebraicField, E : FieldExt(K), n : UNat) :=
   FiniteBasis(K, ExtensionVectorSpace(K, E), n);
 
 // Evaluation and constant functions are linear for any index set.
@@ -238,7 +240,7 @@ def scalar_space_basis(K : AlgebraicField) : FiniteBasis(K, ScalarSpace(K), 1) {
 // A path of vector spaces transports the entire basis, including its linear
 // maps and both roundtrips. No basis is picked afresh at the destination.
 def transport_finite_basis(
-  K : AlgebraicField, V, W : VectorSpace(K), p : V = W, n : Nat, basis : FiniteBasis(K, V, n)
+  K : AlgebraicField, V, W : VectorSpace(K), p : V = W, n : UNat, basis : FiniteBasis(K, V, n)
 ) :
   FiniteBasis(K, W, n) {
   exact transport basis along p in ((fun (X : VectorSpace(K)) => FiniteBasis(K, X, n)));

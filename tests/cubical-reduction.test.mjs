@@ -7,9 +7,9 @@ import { reduceView, reductionStep, checkReduction, reductionAt, reductionRule, 
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import { checkTestModule } from "./check-program.mjs";
 
-const module = await createCubical(), nat = naturalSort, zero = numeral(0);
+const module = await createCubical(), unat = naturalSort, zero = numeral(0);
 const variable = name => ({ tag: "Var", name });
-const lambda = (name, body) => ({ tag: "Lam", name, domain: nat, body });
+const lambda = (name, body) => ({ tag: "Lam", name, domain: unat, body });
 const app = (fn, arg) => ({ tag: "App", fn, arg });
 // The declarations are cubist-tests/reduction_demo.cubist.
 const programFor = async t => (await checkTestModule(t, "reduction_demo", { module })).program;
@@ -31,11 +31,11 @@ test("delta unfolds one closed kernel definition; beta leaves other definitions 
 test("type delta and beta are retained even when the inferred type uses an alias", async t => {
   const program = await programFor(t), original = program.inspect("reduction_demo__value");
   const delta = reduceView(program, original, "type", "delta");
-  assert.deepEqual(delta.view.type, nat);
+  assert.deepEqual(delta.view.type, unat);
   assert.deepEqual(delta.view.expression, original.expression);
-  const appliedType = app({ tag: "Lam", name: "A", domain: { tag: "U", level: 0 }, body: variable("A") }, nat);
+  const appliedType = app({ tag: "Lam", name: "A", domain: { tag: "U", level: 0 }, body: variable("A") }, unat);
   const beta = reduceView(program, { ...original, type: appliedType }, "type", "beta");
-  assert.deepEqual(beta.view.type, nat);
+  assert.deepEqual(beta.view.type, unat);
   assert.equal(reduceView(program, beta.view, "type", "delta").change, null);
 });
 
@@ -48,8 +48,8 @@ test("reduction must preserve definitional equality, not just inhabitation", asy
 test("term beta avoids capture and preserves named definitions under lambdas", async t => {
   const program = await programFor(t);
   const term = app(lambda("x", lambda("y", variable("x"))), variable("y"));
-  const view = { expression: term, type: { tag: "Pi", name: "z", domain: nat, body: nat },
-    context: [{ name: "y", type: nat }], dimensions: [] };
+  const view = { expression: term, type: { tag: "Pi", name: "z", domain: unat, body: unat },
+    context: [{ name: "y", type: unat }], dimensions: [] };
   const result = reduceView(program, view, "expression", "beta");
   assert.notEqual(result.view.expression.name, "y");
   assert.equal(result.view.expression.body.name, "y");
@@ -59,17 +59,17 @@ test("term beta avoids capture and preserves named definitions under lambdas", a
 
 test("beta avoids free interval capture and evaluates path application in its cube", async t => {
   const program = await programFor(t);
-  const pType = { tag: "Path", dim: "j", family: nat, left: zero, right: zero };
+  const pType = { tag: "Path", dim: "j", family: unat, left: zero, right: zero };
   const argument = { tag: "PApp", path: variable("p"), arg: [["i:1"]] };
-  const term = app(lambda("x", { tag: "PLam", dim: "i", family: nat, body: variable("x") }), argument);
-  const view = { expression: term, type: { tag: "Path", dim: "k", family: nat, left: argument, right: argument },
+  const term = app(lambda("x", { tag: "PLam", dim: "i", family: unat, body: variable("x") }), argument);
+  const view = { expression: term, type: { tag: "Path", dim: "k", family: unat, left: argument, right: argument },
     context: [{ name: "p", type: pType }], dimensions: [["i", 0]] };
   const reduced = reduceView(program, view, "expression", "beta").view;
   assert.notEqual(reduced.expression.dim, "i");
   assert.deepEqual(reduced.expression.body.arg, [["i:1"]]);
-  const pathApp = { tag: "PApp", path: { tag: "PLam", dim: "j", family: nat,
+  const pathApp = { tag: "PApp", path: { tag: "PLam", dim: "j", family: unat,
     body: { tag: "PApp", path: variable("p"), arg: [["j:1"]] } }, arg: [["i:1"]] };
-  const result = reduceView(program, { ...view, expression: pathApp, type: nat }, "expression", "beta");
+  const result = reduceView(program, { ...view, expression: pathApp, type: unat }, "expression", "beta");
   assert.deepEqual(result.view.expression.arg, [["i:1"]]);
 });
 

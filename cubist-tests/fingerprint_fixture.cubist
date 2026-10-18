@@ -3,14 +3,14 @@
 // definition and its use. The test edits a proof and moves the source, and
 // the fingerprints tell.
 
-import nat;
-use nat;
+import unat;
+use unat;
 
 def two : succ(1) = 2 {
   rfl;
 }
 
-def moved(x, y : Nat, p : x = y, q : y = x) : x = x {
+def moved(x, y : UNat, p : x = y, q : y = x) : x = x {
   rw [p];
   exact q;
 }
@@ -19,4 +19,4 @@ def mirror(U < UU0, A : U, x, y : A, p : x = y) : y = x {
   exact path(fun (i : Interval) => A, fun (i : Interval) => at(p, flip(i)));
 }
 
-def mirror_nat := mirror(U0, Nat);
+def mirror_nat := mirror(U0, UNat);
