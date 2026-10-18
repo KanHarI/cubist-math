@@ -175,7 +175,7 @@ static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out, level_memo **m
         return false;
     if (cache) {
         if (!*memo && !(*memo = calloc(LEVEL_MEMO_SIZE, sizeof **memo)))
-            return ck_fail(k, "Level memo allocation failed.");
+            return ck_fail(k, "Level normal form allocation failed.");
         level_memo *entry = &(*memo)[slot];
         if (!copy_nf(k, &entry->nf, out))
             return false;

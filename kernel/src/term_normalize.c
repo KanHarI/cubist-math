@@ -311,7 +311,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
         const cc_formula *face = cc_kernel_get_formula(k, n.payload);
         if (!face || face->sort != CC_FACE) {
             --k->recursion;
-            return ck_fail(k, "Unchecked partial face reached normalization."), 0;
+            return ck_fail(k, "Unchecked partial face reached reduction."), 0;
         }
         /* A wall exists only on its face. Generated transport corrections
          * can still mention coordinates fixed there: reduce those before
