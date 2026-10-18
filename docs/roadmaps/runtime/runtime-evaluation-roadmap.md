@@ -13,7 +13,7 @@ completed full normalizations by exact syntax identity. NUM0's source
 representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
-and factorial. The default-`Nat` migration is implemented below; its release checks pass and the PR awaits merge.
+and factorial. The default-`Nat` migration is implemented below; its release checks pass.
 NUM2 and EVAL3–EVAL8 remain.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
@@ -309,7 +309,7 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
-release validation passed and merge pending; the other rows remain. Sizes are relative scope, as in the work plan.
+release validation passed; the other rows remain. Sizes are relative scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
@@ -493,7 +493,7 @@ own bound without strict-decrease evidence. A step ignoring smaller results
 computes at a 64-bit bound without enumerating them. The `Below` construction
 can still walk through intervening predecessor bounds when a smaller result
 is requested; this is not a sublinear-time or memoization claim.
-**Default migration (2026-10-18; release validation passed, merge pending).** Public
+**Default migration (2026-10-18; release validation passed).** Public
 `Nat` now aliases `BNat`. Its facade uses direct binary operations and calls
 `bnat_literal` directly for decimal/`0b` input. The original unary declaration
 and proofs live in `unat`: structural clients import `unat`, use `UNat`, and

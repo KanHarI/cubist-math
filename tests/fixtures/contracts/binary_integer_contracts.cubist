@@ -104,3 +104,14 @@ evaluate integer_equal(bint(bnat.(18446744073709551617), bnat.(18446744073709551
 evaluate integer_equal(-bint(bnat.(18446744073709551617), bnat.(18446744073709551616)), -1) expecting bnat.(
   1
 );
+
+// Force the model's large-value proof, not only its statement or the decision.
+// A unary evaluation of either magnitude must not be needed for this certificate.
+# test(binary_integers.wide_law_certificate)
+# expect_axioms([])
+def integer_wide_commutativity :
+  binary_integers.add_comm(18446744073709551615, -9223372036854775808) = refl(
+    18446744073709551615 + (-9223372036854775808)
+  ) {
+  rfl;
+}
