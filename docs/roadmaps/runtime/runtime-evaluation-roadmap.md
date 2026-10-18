@@ -643,14 +643,22 @@ The archive remains a compatibility corpus, not a library dependency.
 
 ### NUM2: build the new binary-backed integers and rationals
 
+**Generic fraction layer (2026-10-18).**
+[fractions.cubist](../../../library/fractions.cubist) now holds the existing
+field-of-fractions construction independently of the integer instance.
+Its quotient relation, operations, field laws and decidable equality are
+unchanged. `rationals` imports this layer and instantiates it at `integers`.
+The integer and rational carriers and their numeral readers are still unary;
+their binary migration and embeddings remain the next NUM2 work.
+
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
 Construct `Q` as fractions over this `Z`, retaining its nonzero-denominator
 evidence and existing quotient semantics. Reuse the generic field-of-fractions
-construction in [rationals.cubist](../../../library/rationals.cubist), instantiated
+construction in [fractions.cubist](../../../library/fractions.cubist), instantiated
 at the new integer ring with its checked decidable equality, nontriviality
-and no-zero-divisor proofs. Separate its generic layer from the current
-integer instance and adapt numeral handling to avoid retaining a unary
+and no-zero-divisor proofs. Its generic layer is separate from the current
+integer instance; adapt numeral handling to avoid retaining a unary
 arithmetic dependency. Canonical fraction normalization is a separate
 feature; changing the natural representation does not itself put every
 rational in lowest terms.
