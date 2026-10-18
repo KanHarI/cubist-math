@@ -135,7 +135,17 @@ test("open quotient operations fully normalize within a bounded amount of kernel
   const smallQuotient = await readFile(new URL("fixtures/quotient-normalization.cubist", import.meta.url), "utf8");
   for (const [name, source, optimizations = {}] of [
     ["small_quotient", smallQuotient],
-    ["small_quotient_unshared", smallQuotient, {shareSyntax: false}],
+    // A unary descent isolates the stuck eliminator without the expansion
+    // cost of the binary operation's coherence proof when interning is off.
+    ["unary_quotient_unshared", `import quotients;
+      def Related(a, b : Unit) : U0 := Unit;
+      def Q : U0 := Quotient(U0, Unit, Related);
+      computable def copy(x : Q) : Q := descend(
+        U0, U0, Unit, Related, Q, quotient_is_set(U0, Unit, Related),
+        fun (a : Unit) => typed(Q, class(a)),
+        fun (a, b : Unit, r : Related(a, b)) => class_path(U0, Unit, Related, a, b, r), x
+      );
+      evaluate copy expecting _;`, {shareSyntax: false}],
     ["integer_multiplication", "import binary_integers; evaluate bint_mul expecting _;"],
     ["binary_fraction_one", `import fractions; import binary_integers;
       evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one).one expecting _;`],

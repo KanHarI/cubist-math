@@ -82,7 +82,9 @@ level-pair comparisons against independent arithmetic evaluation remain.
 using only `Unit`, with no integer arithmetic. The WebAssembly regression
 fully normalizes that operation, `bint_mul`, and the binary fraction field's
 `one` under a fixed test work budget.
-The small quotient also runs with syntax sharing disabled.
+A unary quotient descent also runs with syntax sharing disabled, exercising
+the stuck-eliminator case. The binary fixture's larger coherence proof exceeds
+this test's work budget without interning, so it remains a sharing-on case.
 The `_` expectation still requires a full normal form.
 
 ## Initial validation and measurements
