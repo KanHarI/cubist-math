@@ -25,6 +25,9 @@ The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
 budget failures. Generic quotient descent and binary-rational inverse full
 normalization remain open; these fixes do not complete NUM2.
+The [explicit normalization stack](../../reports/normalization-stack.md) covers
+only the existing full normalizer's traversal; joint EVAL3/EVAL4 evaluator
+integration and the remaining protected traversals are still open.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
