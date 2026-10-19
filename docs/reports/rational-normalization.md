@@ -103,6 +103,12 @@ they have not been repeated on top of #287.
 
 ## Partial reductions
 
+A later [counted rewrite trace](quotient-normalization-trace.md) records exact
+checkpoints at 1, 2, 5, 10, 20 and 50 rule applications on main `89f73ea1`,
+including a comparison with the expected path, sigma and universe rules.
+Unlike the historical work-budget snapshots below, these are contraction
+counts with reduction-cache shortcuts disabled.
+
 Temporary, reverted instrumentation recorded active normalizer frames and
 completed sibling results at fixed work budgets. Reconnecting those frames
 gave the following diagnostic partial graphs on `117a06cb` (the binary
