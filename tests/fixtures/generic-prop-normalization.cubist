@@ -1,0 +1,16 @@
+// Full normalization probe: see docs/reports/rational-normalization.md.
+// No arithmetic or concrete Prop-setness proof is needed for the costly case.
+import quotients;
+import propositions;
+
+def Same(a, b : Unit) : U0 := Unit;
+
+computable def to_unit(q : Quotient(U0, Unit, Same)) : Unit := descend(
+  U0, U0, Unit, Same, Unit, prop_is_set(U0, Unit, unit_is_prop), fun (a : Unit) => tt,
+  fun (a, b : Unit, r : Unit) => refl(tt), q
+);
+
+computable def to_prop(h : IsSet(U1, Prop(U0)), q : Quotient(U0, Unit, Same)) : Prop(U0) := descend(
+  U0, U1, Unit, Same, Prop(U0), h, fun (a : Unit) => typed(Prop(U0), (Unit, unit_is_prop)),
+  fun (a, b : Unit, r : Unit) => refl(typed(Prop(U0), (Unit, unit_is_prop))), q
+);

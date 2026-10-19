@@ -1,0 +1,442 @@
+diff --git a/Makefile b/Makefile
+index b1027e32..15291a37 100644
+--- a/Makefile
++++ b/Makefile
+@@ -15,7 +15,7 @@ lint:
+ EMCC ?= $(if $(wildcard .tools/emsdk/upstream/emscripten/emcc),.tools/emsdk/upstream/emscripten/emcc,emcc)
+ CUBICAL_DIR = kernel
+ CUBICAL_SRC = $(wildcard $(CUBICAL_DIR)/src/*.c)
+-CUBICAL_EXPORTS = '["_cb_abi_version","_cb_new","_cb_optimizations","_cb_step_budget","_cb_work","_cb_deadline_ms","_cb_checkpoint","_cb_rollback","_cb_commit_checkpoint","_cb_relocated","_cb_free","_cb_error","_cb_error_kind","_cb_mismatch","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_normalize","_cb_node","_cb_alpha_equal","_cb_formula_view","_cb_definition","_cb_head","_cb_position_clear","_cb_position_push","_cb_position_set","_cb_subterm","_cb_clear_error","_cb_instr","_cb_judgement_count","_cb_judgement","_cb_judgement_context","_cb_entry_count","_cb_entry","_cb_rename","_cb_equiv_type","_cb_fresh_symbol","_cb_endpoint_term","_cb_arena","_cb_extensions","_cb_signature","_cb_signature_constructor"]'
++CUBICAL_EXPORTS = '["_cb_trace_start","_cb_abi_version","_cb_new","_cb_optimizations","_cb_step_budget","_cb_work","_cb_deadline_ms","_cb_checkpoint","_cb_rollback","_cb_commit_checkpoint","_cb_relocated","_cb_free","_cb_error","_cb_error_kind","_cb_mismatch","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_normalize","_cb_node","_cb_alpha_equal","_cb_formula_view","_cb_definition","_cb_head","_cb_position_clear","_cb_position_push","_cb_position_set","_cb_subterm","_cb_clear_error","_cb_instr","_cb_judgement_count","_cb_judgement","_cb_judgement_context","_cb_entry_count","_cb_entry","_cb_rename","_cb_equiv_type","_cb_fresh_symbol","_cb_endpoint_term","_cb_arena","_cb_extensions","_cb_signature","_cb_signature_constructor"]'
+ .PHONY: cubical-wasm wasm-locked
+ # The compiler's flags, before and after the sources; the stamp records them.
+ WASM_CFLAGS = -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -I$(CUBICAL_DIR)/include -I$(CUBICAL_DIR)/src
+diff --git a/kernel/src/composition_compute.c b/kernel/src/composition_compute.c
+index 81e2b4ca..bc849c02 100644
+--- a/kernel/src/composition_compute.c
++++ b/kernel/src/composition_compute.c
+@@ -153,7 +153,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
+         if (!face || face->sort != CC_FACE)
+             return ck_fail(k, "Unchecked composition face reached reduction."), 0;
+         if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
+-            return ck_whnf(k, ck_endpoint_term(k, tube.child[0], dim, 1));
++            return ck_trace_then_whnf(k,"comp-face",term,ck_endpoint_term(k,tube.child[0],dim,1));
+         cursor = tube.child[1];
+     }
+     cc_term family = ck_whnf(k, n.child[0]);
+@@ -165,22 +165,24 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
+         if (!head)
+             return 0;
+         if (k->nodes[head].kind == CC_POINT && all_constructor(k, system, CC_POINT))
+-            return head;
++            return ck_trace_rewrite(k,"comp-unit",term,head);
+     }
+     if (type.kind == CC_SUM) {
++        if (ck_trace_enabled()) return ck_fail(k,"TRACE unsupported Sum composition"),0;
+         cc_term normalized = family == n.child[0] && system == n.child[1] ? term :
+             ck_make(k, CC_COMP, dim, family, system, base, 0);
+-        return ck_inductive_composition(k, normalized, family, system);
++        return ck_inductive_composition(k,normalized,family,system);
+     }
+     if (type.kind == CC_SORT) {
++        if (ck_trace_enabled()) return ck_fail(k,"TRACE unsupported declared-type composition"),0;
+         cc_term normalized = family == n.child[0] && system == n.child[1] ? term :
+             ck_make(k, CC_COMP, dim, family, system, base, 0);
+-        return ck_sort_composition(k, normalized, family, system);
++        return ck_sort_composition(k,normalized,family,system);
+     }
+     if (type.kind == CC_GLUE)
+-        return ck_whnf(k, ck_glue_composition(k, dim, family, system, base));
++        return ck_trace_then_whnf(k,"comp-glue",term,ck_glue_composition(k,dim,family,system,base));
+     if (type.kind == CC_U)
+-        return ck_whnf(k, ck_universe_composition(k, dim, system, base));
++        return ck_trace_then_whnf(k,"comp-universe",term,ck_universe_composition(k,dim,system,base));
+     if (type.kind == CC_SIGMA) {
+         cc_term first_system = map_tubes(k, system, CC_FST, 0, 0);
+         cc_term first_base = ck_make(k, CC_FST, 0, base, 0, 0, 0);
+@@ -196,7 +198,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
+         cc_term second_base = ck_make(k, CC_SND, 0, base, 0, 0, 0);
+         cc_term second = ck_make(k, CC_COMP, dim, second_family, second_system, second_base, 0);
+         cc_term target = ck_endpoint_term(k, family, dim, 1);
+-        return ck_make(k, CC_PAIR, 0, target, first, second, 0);
++        return ck_trace_rewrite(k,"comp-sigma",term,ck_make(k,CC_PAIR,0,target,first,second,0));
+     }
+     /* Composition at a level Π (G0 §2.11) is pointwise: levels never vary
+      * along the interval, so no filling is needed.
+@@ -208,7 +210,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
+         cc_term body_system = map_tubes(k, system, CC_LAPP, level, 0);
+         cc_term body_base = ck_make(k, CC_LAPP, 0, base, level, 0, 0);
+         cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);
+-        return ck_make(k, CC_LLAM, name, type.child[0], body, 0, 0);
++        return ck_trace_rewrite(k,"comp-level-pi",term,ck_make(k,CC_LLAM,name,type.child[0],body,0,0));
+     }
+     if (type.kind == CC_PI) {
+         uint32_t name = ck_fresh_symbol(k);
+@@ -232,7 +234,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
+         cc_term body_base = app(k, base, ck_endpoint_term(k, line, dim, 0));
+         cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);
+         cc_term domain = ck_endpoint_term(k, type.child[0], dim, 1);
+-        return ck_make(k, CC_LAM, name, domain, body, 0, 0);
++        return ck_trace_rewrite(k,"comp-pi",term,ck_make(k,CC_LAM,name,domain,body,0,0));
+     }
+     if (type.kind == CC_PATH) {
+         uint64_t avoid = ck_free_dims(k, term) | (UINT64_C(1) << dim) |
+@@ -256,7 +258,7 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
+         cc_term body_base = ck_make(k, CC_PAPP, arg, base, start_type, 0, 0);
+         cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);
+         cc_term end_family = ck_endpoint_term(k, body_family, dim, 1);
+-        return ck_make(k, CC_PLAM, direction, end_family, body, 0, 0);
++        return ck_trace_rewrite(k,"comp-path",term,ck_make(k,CC_PLAM,direction,end_family,body,0,0));
+     }
+     /* A neutral family has a neutral composition. */
+     return family == n.child[0] && system == n.child[1] ? term : ck_make(k, CC_COMP, dim, family, system, base, 0);
+diff --git a/kernel/src/term_internal.h b/kernel/src/term_internal.h
+index 209a042a..3e4542c2 100644
+--- a/kernel/src/term_internal.h
++++ b/kernel/src/term_internal.h
+@@ -334,4 +334,7 @@ cc_term ck_clause_tubes(cc_kernel *, cc_term, bool drop_empty);
+ cc_term ck_fill(cc_kernel *, unsigned, cc_term, cc_term, cc_term, const cc_formula *);
+ cc_term ck_glue_composition(cc_kernel *, unsigned, cc_term, cc_term, cc_term);
+ cc_term ck_universe_composition(cc_kernel *, unsigned, cc_term, cc_term);
++bool ck_trace_enabled(void);
++cc_term ck_trace_rewrite(cc_kernel *, const char *, cc_term, cc_term);
++cc_term ck_trace_then_whnf(cc_kernel *, const char *, cc_term, cc_term);
+ #endif
+diff --git a/kernel/src/term_normalize.c b/kernel/src/term_normalize.c
+index a7b6f2d3..b97a38b3 100644
+--- a/kernel/src/term_normalize.c
++++ b/kernel/src/term_normalize.c
+@@ -5,6 +5,58 @@
+  * Full normalization is only requested for an explicit inspection result. */
+ #include "term_internal.h"
+
++#include <stdio.h>
++/* TEMPORARY DIAGNOSTIC: records contractions, never returns partial judgements. */
++typedef struct { char mode; cc_term entry, current; cc_node node; } trace_frame;
++static trace_frame trace_frames[2200];
++static unsigned trace_depth, trace_count, trace_limit;
++static bool trace_enabled;
++bool ck_trace_enabled(void) { return trace_enabled; }
++static cc_term trace_whnf_impl(cc_kernel *, cc_term);
++static cc_term trace_normal_impl(cc_kernel *, cc_term);
++void ck_trace_start(cc_kernel *k, unsigned limit) {
++    trace_depth = trace_count = 0; trace_limit = limit; trace_enabled = limit != 0;
++    /* No multi-contraction cache shortcuts in a contraction-count trace. */
++    memset(k->weak_cache, 0, k->capacity * sizeof *k->weak_cache);
++    memset(k->normal_cache, 0, k->capacity * sizeof *k->normal_cache);
++}
++static void trace_current(cc_kernel *k, cc_term term, const cc_node *node) {
++    if (!trace_enabled || !trace_depth) return;
++    trace_frames[trace_depth-1].current = term;
++    trace_frames[trace_depth-1].node = node ? *node : k->nodes[term];
++}
++cc_term ck_trace_rewrite(cc_kernel *k, const char *rule, cc_term before, cc_term after) {
++    if (!trace_enabled || !after || k->error[0]) return after;
++    trace_current(k, after, NULL);
++    fprintf(stderr, "REWRITE %u %s %u %u work=%llu nodes=%zu\n", ++trace_count, rule, before, after,
++            (unsigned long long)k->work.query_steps, k->count);
++    if (trace_count == 1 || trace_count == 2 || trace_count == 5 || trace_count == 10 ||
++        trace_count == 20 || trace_count == 50 || trace_count == trace_limit) {
++        for (unsigned i=0; i<trace_depth; ++i) {
++            trace_frame f=trace_frames[i]; cc_node n=f.node;
++            fprintf(stderr,"STATE %u %u %c %u %u %u %u %u,%u,%u,%u\n", trace_count,i,f.mode,
++                    f.entry,f.current,n.kind,n.payload,n.child[0],n.child[1],n.child[2],n.child[3]);
++        }
++    }
++    if (trace_count == trace_limit) return ck_fail_as(k,CC_ERROR_RESOURCE,"Diagnostic contraction checkpoint reached."),0;
++    return after;
++}
++cc_term ck_trace_then_whnf(cc_kernel *k, const char *rule, cc_term before, cc_term after) {
++    cc_term next=ck_trace_rewrite(k,rule,before,after); return next ? ck_whnf(k,next) : 0;
++}
++static cc_term trace_call(cc_kernel *k, cc_term term, bool normal) {
++    if (!trace_enabled) return normal ? trace_normal_impl(k,term) : trace_whnf_impl(k,term);
++    if (!term || k->error[0]) return 0;
++    if (trace_depth >= 2200) return ck_fail_as(k,CC_ERROR_RESOURCE,"Diagnostic trace stack full."),0;
++    trace_frames[trace_depth++] = (trace_frame){normal?'N':'W',term,term,k->nodes[term]};
++    cc_term result=normal ? trace_normal_impl(k,term) : trace_whnf_impl(k,term);
++    trace_depth--;
++    return result;
++}
++cc_term ck_whnf(cc_kernel *k, cc_term t) { return trace_call(k,t,false); }
++cc_term ck_normal(cc_kernel *k, cc_term t) { return trace_call(k,t,true); }
++
++
+ static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
+     return ck_make(k, CC_APP, 0, f, x, 0, 0);
+ }
+@@ -29,19 +81,21 @@ static cc_term nonempty_system(cc_kernel *k, cc_term system, bool types) {
+
+ static cc_term weak(cc_kernel *k, cc_term term) {
+     cc_node n = k->nodes[term];
+-    if (n.kind == CC_HCOMP || n.kind == CC_TRANS)
+-        return ck_hit_reduce(k, term);
++    if (n.kind == CC_HCOMP || n.kind == CC_TRANS) {
++        if (trace_enabled) return ck_fail(k,"TRACE unsupported HIT rule"),0;
++        return ck_hit_reduce(k,term);
++    }
+     if (n.kind == CC_DEFREF) {
+         if (!n.payload || n.payload >= k->definition_count)
+             return ck_fail(k, "Unknown definition reached reduction."), 0;
+-        return ck_whnf(k, k->definitions[n.payload].value);
++        return ck_trace_then_whnf(k,"delta",term,k->definitions[n.payload].value);
+     }
+     if (n.kind == CC_GLUE || n.kind == CC_GLUE_TERM) {
+         unsigned slot = n.kind == CC_GLUE ? 1 : 2;
+         cc_term system = nonempty_system(k, n.child[slot], n.kind == CC_GLUE);
+         if (system != n.child[slot]) {
+             n.child[slot] = system;
+-            return ck_whnf(k, ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], 0));
++            return ck_trace_then_whnf(k,"glue-empty-faces",term,ck_make(k,n.kind,n.payload,n.child[0],n.child[1],n.child[2],0));
+         }
+         while (system) {
+             cc_node piece = k->nodes[system];
+@@ -49,7 +103,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+             if (!face || face->sort != CC_FACE)
+                 return ck_fail(k, "Unchecked Glue face reached reduction."), 0;
+             if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
+-                return ck_whnf(k, piece.child[0]);
++                return ck_trace_then_whnf(k,"glue-face",term,piece.child[0]);
+             system = piece.child[n.kind == CC_GLUE ? 2 : 1];
+         }
+     }
+@@ -78,7 +132,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+                 system = piece.child[1];
+             }
+             if (agrees)
+-                return ck_whnf(k, projection.child[1]);
++                return ck_trace_then_whnf(k,"glue-eta",term,projection.child[1]);
+         }
+     }
+     if (n.kind == CC_UNGLUE) {
+@@ -90,7 +144,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+             const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
+             if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative) {
+                 cc_term function = ck_make(k, CC_FST, 0, piece.child[1], 0, 0, 0);
+-                return ck_whnf(k, app(k, function, n.child[1]));
++                return ck_trace_then_whnf(k,"unglue-face",term,app(k,function,n.child[1]));
+             }
+             system = piece.child[2];
+         }
+@@ -98,7 +152,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         if (!value)
+             return 0;
+         if (k->nodes[value].kind == CC_GLUE_TERM)
+-            return ck_whnf(k, k->nodes[value].child[1]);
++            return ck_trace_then_whnf(k,"unglue-glue",term,k->nodes[value].child[1]);
+         return value == n.child[1] ? term : ck_make(k, CC_UNGLUE, 0, n.child[0], value, 0, 0);
+     }
+     if (n.kind == CC_APP) {
+@@ -106,13 +160,13 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         if (fn && k->nodes[fn].kind == CC_ELIM) {
+             bool reduced = false;
+             cc_term result = ck_eliminate(k, fn, n.child[1], true, &reduced);
+-            return reduced ? ck_whnf(k, result) : result;
++            return reduced ? ck_trace_then_whnf(k,"eliminator-iota",term,result) : result;
+         }
+         if (!fn)
+             return 0;
+         cc_node head = k->nodes[fn];
+         if (head.kind == CC_LAM)
+-            return ck_whnf(k, ck_substitute(k, head.child[1], head.payload, n.child[1]));
++            return ck_trace_then_whnf(k,"beta",term,ck_substitute(k,head.child[1],head.payload,n.child[1]));
+         return fn == n.child[0] ? term : app(k, fn, n.child[1]);
+     }
+     /* ∀-β (G0 §2.7): instantiation of a level lambda substitutes the level. */
+@@ -122,7 +176,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+             return 0;
+         cc_node head = k->nodes[fn];
+         if (head.kind == CC_LLAM)
+-            return ck_whnf(k, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
++            return ck_trace_then_whnf(k,"level-beta",term,ck_level_instantiate(k,head.child[1],head.payload,n.child[1]));
+         return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
+     }
+     if (n.kind == CC_PAIR) {
+@@ -134,7 +188,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         cc_node second = k->nodes[n.child[2]];
+         if (first.kind == CC_FST && second.kind == CC_SND &&
+             ck_alpha_equal(k, first.child[0], second.child[0]))
+-            return ck_whnf(k, first.child[0]);
++            return ck_trace_then_whnf(k,"pair-eta",term,first.child[0]);
+     }
+     if (n.kind == CC_FST || n.kind == CC_SND) {
+         cc_term pair = ck_whnf(k, n.child[0]);
+@@ -142,7 +196,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+             return 0;
+         cc_node head = k->nodes[pair];
+         if (head.kind == CC_PAIR)
+-            return ck_whnf(k, head.child[n.kind == CC_FST ? 1 : 2]);
++            return ck_trace_then_whnf(k,n.kind==CC_FST?"fst-pair":"snd-pair",term,head.child[n.kind==CC_FST?1:2]);
+         return pair == n.child[0] ? term : ck_make(k, n.kind, 0, pair, 0, 0, 0);
+     }
+
+@@ -152,7 +206,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+             return 0;
+         cc_node head = k->nodes[value];
+         if (head.kind == CC_INL || head.kind == CC_INR)
+-            return ck_whnf(k, app(k, n.child[head.kind == CC_INL ? 1 : 2], head.child[1]));
++            return ck_trace_then_whnf(k,"sum-iota",term,app(k,n.child[head.kind==CC_INL?1:2],head.child[1]));
+         return value == n.child[3] ? term : ck_make(k, CC_SUMREC, 0, n.child[0], n.child[1], n.child[2], value);
+     }
+     if (n.kind == CC_UNITREC) {
+@@ -160,7 +214,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         if (!value)
+             return 0;
+         if (k->nodes[value].kind == CC_POINT)
+-            return ck_whnf(k, n.child[1]);
++            return ck_trace_then_whnf(k,"unit-iota",term,n.child[1]);
+         return value == n.child[2] ? term : ck_make(k, CC_UNITREC, 0, n.child[0], n.child[1], value, 0);
+     }
+
+@@ -181,7 +235,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+             cc_term result = 0;
+             if (path && k->nodes[path].kind == CC_PLAM) {
+                 cc_node line = k->nodes[path];
+-                result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
++                result = ck_trace_then_whnf(k,"path-beta",term,ck_dimension_substitute(k,line.child[1],line.payload,&argument));
+             } else if (path) {
+                 ck_fail(k, "Unchecked path application reached reduction.");
+             }
+@@ -190,9 +244,9 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         }
+         cc_node type = k->nodes[n.child[1]];
+         if (!arg->length)
+-            return ck_whnf(k, type.child[1]);
++            return ck_trace_then_whnf(k,"path-left",term,type.child[1]);
+         if (arg->length == 1 && !arg->clauses[0].positive && !arg->clauses[0].negative)
+-            return ck_whnf(k, type.child[2]);
++            return ck_trace_then_whnf(k,"path-right",term,type.child[2]);
+         cc_formula argument;
+         cc_init(&argument, CC_INTERVAL);
+         if (!ck_formula_result(k, cc_copy(&argument, arg), "Interval copy failed."))
+@@ -201,7 +255,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         cc_term result = 0;
+         if (path && k->nodes[path].kind == CC_PLAM) {
+             cc_node line = k->nodes[path];
+-            result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
++            result = ck_trace_then_whnf(k,"path-beta",term,ck_dimension_substitute(k,line.child[1],line.payload,&argument));
+         } else if (path) {
+             result = path == n.child[0] ? term : ck_make(k, CC_PAPP, n.payload, path, n.child[1], 0, 0);
+         }
+@@ -213,7 +267,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         cc_node head = k->nodes[n.child[1]];
+         if (head.kind == CC_LAPP && k->nodes[head.child[1]].kind == CC_VAR &&
+             k->nodes[head.child[1]].payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
+-            return ck_whnf(k, head.child[0]);
++            return ck_trace_then_whnf(k,"eta",term,head.child[0]);
+         return term;
+     }
+     if (n.kind == CC_LAM || n.kind == CC_PLAM) {
+@@ -224,26 +278,27 @@ static cc_term weak(cc_kernel *k, cc_term term) {
+         if (n.kind == CC_LAM && head.kind == CC_APP) {
+             cc_node argument = k->nodes[head.child[1]];
+             if (argument.kind == CC_VAR && argument.payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
+-                return ck_whnf(k, head.child[0]);
++                return ck_trace_then_whnf(k,"eta",term,head.child[0]);
+         }
+         if (n.kind == CC_PLAM && head.kind == CC_PAPP) {
+             const cc_formula *arg = cc_kernel_get_formula(k, head.payload);
+             if (arg && n.payload < CC_DIMENSIONS && arg->length == 1 && !arg->clauses[0].negative &&
+                 arg->clauses[0].positive == (UINT64_C(1) << n.payload) &&
+                 !(ck_free_dims(k, head.child[0]) & (UINT64_C(1) << n.payload)))
+-                return ck_whnf(k, head.child[0]);
++                return ck_trace_then_whnf(k,"eta",term,head.child[0]);
+         }
+         return body == n.child[1] ? term : ck_make(k, n.kind, n.payload, n.child[0], body, 0, 0);
+     }
+-    if (n.kind == CC_COMP)
+-        return ck_reduce_composition(k, term);
++    if (n.kind == CC_COMP) {
++        return ck_reduce_composition(k,term);
++    }
+     return term;
+ }
+
+-cc_term ck_whnf(cc_kernel *k, cc_term term) {
++static cc_term trace_whnf_impl(cc_kernel *k, cc_term term) {
+     if (!term || term >= k->count || !ck_tick(k))
+         return 0;
+-    if (k->weak_cache[term])
++    if (!trace_enabled && k->weak_cache[term])
+         return k->weak_cache[term];
+     if (++k->recursion > 1024) {
+         --k->recursion;
+@@ -251,7 +306,7 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
+     }
+     cc_term result = weak(k, term);
+     --k->recursion;
+-    if (result && !k->error[0])
++    if (!trace_enabled && result && !k->error[0])
+         k->weak_cache[term] = result;
+     return result;
+ }
+@@ -289,15 +344,15 @@ static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
+         if (!agrees)
+             return term;
+     }
+-    return projection.child[1];
++    return ck_trace_rewrite(k,"normal-glue-eta",term,projection.child[1]);
+ }
+
+-cc_term ck_normal(cc_kernel *k, cc_term term) {
++static cc_term trace_normal_impl(cc_kernel *k, cc_term term) {
+     if (!term || term >= k->count)
+         return 0;
+     /* Charge hits too: a warm cache cannot bypass a budget or deadline.
+      * Misses take their entry step in ck_whnf, as before. */
+-    if (k->normal_cache[term])
++    if (!trace_enabled && k->normal_cache[term])
+         return ck_tick(k) ? k->normal_cache[term] : 0;
+     cc_term head = ck_whnf(k, term);
+     if (!head)
+@@ -307,6 +362,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
+         return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded."), 0;
+     }
+     cc_node n = k->nodes[head];
++    trace_current(k,head,&n);
+     if (n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM) {
+         const cc_formula *face = cc_kernel_get_formula(k, n.payload);
+         if (!face || face->sort != CC_FACE) {
+@@ -328,7 +384,14 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
+             }
+             unsigned parts = n.kind == CC_GLUE_SYSTEM ? 2 : 1;
+             for (unsigned i = 0; i < parts; ++i) {
++                cc_term original = n.child[i];
+                 n.child[i] = ck_restrict(k, n.child[i], common);
++                if (trace_enabled && n.child[i] && n.child[i] != original) {
++                    cc_term restricted = ck_make(k,n.kind,n.payload,n.child[0],n.child[1],n.child[2],n.child[3]);
++                    if (!ck_trace_rewrite(k,"face-restriction",head,restricted)) {
++                        --k->recursion; return 0;
++                    }
++                }
+                 if (!n.child[i]) {
+                     --k->recursion;
+                     return 0;
+@@ -338,6 +401,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
+     }
+     for (unsigned i = 0; i < ck_arity(n.kind); ++i)
+         if (n.child[i]) {
++            trace_current(k,head,&n);
+             n.child[i] = ck_normal(k, n.child[i]);
+             if (!n.child[i]) {
+                 --k->recursion;
+@@ -367,7 +431,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
+      * results remain usable, but never publish this node's partial result. */
+     if (!result || k->error[0])
+         return 0;
+-    k->normal_cache[term] = result;
++    if (!trace_enabled) k->normal_cache[term] = result;
+     return result;
+ }
+
+diff --git a/wasm/cubical_bridge.c b/wasm/cubical_bridge.c
+index e8dd7f48..4d05b256 100644
+--- a/wasm/cubical_bridge.c
++++ b/wasm/cubical_bridge.c
+@@ -477,3 +477,6 @@ uint32_t cb_entry(uint32_t token, uint32_t id, unsigned field) {
+         (uint32_t)clause.positive, (uint32_t)(clause.positive >> 32), (uint32_t)clause.negative, (uint32_t)(clause.negative >> 32)};
+     return fields[field];
+ }
++
++void ck_trace_start(cc_kernel *, unsigned);
++void cb_trace_start(uint32_t token, unsigned limit) { browser_session *s=lookup(token); if(s) ck_trace_start(s->kernel,limit); }
