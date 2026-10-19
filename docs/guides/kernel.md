@@ -71,5 +71,12 @@ implementation bugs, not a machine-checked metatheoretic soundness proof.
 
 The native interval representation uses 64 coordinate slots. Allocation errors,
 invalid scopes, and exhausted explicitly configured budgets reject checking;
-they never produce a successful judgement. Full cubical canonicity for every
+they never produce a successful judgement. `CC_ERROR_RESOURCE` (`resource` in
+JavaScript) identifies allocation, depth and representation limits separately
+from mismatches, step budgets and deadlines. Increasing the step budget does
+not retry these failures. The elaborator preserves an unresolved limit through
+inference and proof search, and negative-test contracts cannot count it as an
+expected refusal. Bounded conversion shortcuts may still use a cheaper
+alternative; a successful answer requires the ordinary checked derivation.
+Full cubical canonicity for every
 implemented constructor is not claimed by this project.

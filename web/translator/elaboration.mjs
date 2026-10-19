@@ -248,7 +248,7 @@ export class Scope {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
-    if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
+    if(index>=64)throw Object.assign(Error("At most 64 simultaneous cubical dimensions are supported."),{kind:"resource"});
     return this.with({dimensions:new Map(dimensions).set(name,index)});
   }
   // A name from the unit's supply that nothing here binds: a scope built
@@ -268,7 +268,7 @@ export class Scope {
     catch(error) {throw site?this.unit.locate(error,site):error;}
   }
   // A speculative check: {ok:true,term}, or {ok:false,failure,error} with
-  // failure "mismatch", "budget" or "deadline". No caller reads the message.
+  // failure "mismatch", "budget", "deadline" or "resource". No caller reads the message.
   attempt(term,type) {this.spend("queries");return this.checker.attempt(term,type,this.context,this.dimensions);}
   // Whether `term` has `type`. Only a mismatch answers no: running out of
   // steps or time ends the search that asked.

@@ -810,7 +810,7 @@ export class Translator {
         const binding=this.bindingName(d.name.text);
         publish(d,untranslated(d.name.text,binding,error.message,failureRoot(error,binding)));
         // `failure` classifies a checker rejection ("mismatch", "budget",
-        // "deadline" or "other"), so callers need not read the reason.
+        // "deadline", "resource" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
           syntax:d});
       }

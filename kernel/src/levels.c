@@ -31,12 +31,12 @@ static bool reserve_terms(cc_kernel *k, cc_level_nf *nf, uint32_t count) {
     uint32_t capacity = nf->capacity ? nf->capacity : 4;
     while (capacity < count) {
         if (capacity > UINT32_MAX / 2 || (size_t)capacity * 2 > SIZE_MAX / sizeof *nf->terms)
-            return ck_fail(k, "Level normal form too large.");
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normal form too large.");
         capacity *= 2;
     }
     cc_level_term *terms = realloc(nf->terms, (size_t)capacity * sizeof *terms);
     if (!terms)
-        return ck_fail(k, "Level normal form allocation failed.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normal form allocation failed.");
     nf->terms = terms;
     nf->capacity = capacity;
     return true;
@@ -47,7 +47,7 @@ static bool add(cc_kernel *k, cc_level_nf *nf, uint64_t successors) {
     if (!successors)
         return true;
     if (nf->constant + successors > CC_LEVEL_MAX)
-        return ck_fail(k, bound_exceeded);
+        return ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded);
     nf->constant += (uint32_t)successors;
     for (uint32_t i = 0; i < nf->count; ++i)
         nf->terms[i].offset += (uint32_t)successors;
@@ -70,7 +70,7 @@ static bool join(cc_kernel *k, cc_level_nf *a, const cc_level_nf *b) {
         size_t total = (size_t)a->count + b->count;
         cc_level_term *merged = malloc(total * sizeof *merged);
         if (!merged)
-            return ck_fail(k, "Level normal form allocation failed.");
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normal form allocation failed.");
         uint32_t i = 0, j = 0, n = 0;
         while (i < a->count || j < b->count) {
             if (j == b->count || (i < a->count && a->terms[i].key < b->terms[j].key))
@@ -129,14 +129,14 @@ static bool normal_uncached(cc_kernel *k, cc_term level, cc_level_nf *out, level
             return ck_fail(k, "A level successor counts at least one.");
         successors += k->nodes[level].payload;
         if (successors > CC_LEVEL_MAX)
-            return ck_fail(k, bound_exceeded);
+            return ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded);
         level = k->nodes[level].child[0];
     }
     cc_node n = k->nodes[level];
     switch (n.kind) {
     case CC_LCONST:
         if ((n.payload >> 16) > CC_TIER_MAX)
-            return ck_fail(k, bound_exceeded);
+            return ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded);
         out->tier = n.payload >> 16;
         out->constant = n.payload & 0xffffu;
         out->count = 0;
@@ -175,7 +175,7 @@ static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out, level_memo **m
         return false;
     if (cache) {
         if (!*memo && !(*memo = calloc(LEVEL_MEMO_SIZE, sizeof **memo)))
-            return ck_fail(k, "Level normal form allocation failed.");
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normal form allocation failed.");
         level_memo *entry = &(*memo)[slot];
         if (!copy_nf(k, &entry->nf, out))
             return false;
@@ -202,7 +202,7 @@ bool ck_level_normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
 
 cc_term ck_level_constant(cc_kernel *k, uint32_t tier, uint32_t value) {
     if (tier > CC_TIER_MAX || value > CC_LEVEL_MAX)
-        return ck_fail(k, bound_exceeded), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded), 0;
     return ck_make(k, CC_LCONST, tier << 16 | value, 0, 0, 0, 0);
 }
 
@@ -375,7 +375,7 @@ cc_term ck_canonical_levels(cc_kernel *k, cc_term term) {
     } else if (n.kind != CC_LCONST && n.kind != CC_LSUCC && n.kind != CC_LMAX && n.kind != CC_LBOUND) {
         if (++k->recursion > 1024) {
             --k->recursion;
-            return ck_fail(k, "Level normalization depth exceeded."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normalization depth exceeded."), 0;
         }
         cc_term child[4] = {n.child[0], n.child[1], n.child[2], n.child[3]};
         for (unsigned i = 0; i < ck_arity(n.kind) && result; ++i)

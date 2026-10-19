@@ -80,7 +80,7 @@ export function bindDimensions(term,dimensions=new Map()) {
   const occupied=new Set(inner.values());
   let dim=0;
   while(occupied.has(dim))dim++;
-  if(dim>=64)throw Error('Cubical prototype supports 64 simultaneously live dimensions.');
+  if(dim>=64)throw Object.assign(Error('Cubical prototype supports 64 simultaneously live dimensions.'),{kind:"resource"});
   inner.set(term.dim,dim);
   return {dim,inner};
 }

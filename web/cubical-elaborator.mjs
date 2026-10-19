@@ -1,3 +1,4 @@
+import { isResourceLimit } from "./resource-limits.mjs";
 import { termBinders } from "./translator/term-shape.mjs";
 import { displayFreeNames } from "./translator/display-names.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
@@ -11,7 +12,7 @@ import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { admitSignature } from "./cubical-signatures.mjs";
 
-const speculativeFailures = new Set(["mismatch", "budget", "deadline"]);
+const speculativeFailure = kind => kind === "mismatch" || isResourceLimit(kind);
 
 // Binder names the instruction driver made up, such as x'1 for a context
 // entry named apart from another x, taken back to their stems for display
@@ -496,7 +497,7 @@ export class NativeCubicalElaborator {
   // Every check and every inference is a derivation by the instruction
   // kernel: the term the elaborator wrote, at the type it expects, over its
   // context. The result is the derived term and its type, in the elaborator's
-  // names; a failure is a mismatch (or a budget or deadline) as the kernel
+  // names; a failure is a mismatch (or an exhausted resource) as the kernel
   // reports one, and a speculative check reads it as an answer. The term
   // checker is not consulted.
   checkSyntax(term, expected, context, dimensions, describe = true) {
@@ -517,8 +518,8 @@ export class NativeCubicalElaborator {
         : driver.infer(raw, assumptions, mask));
     } catch (error) {
       // The kernel's own errors pass as they are: a mismatch, or running out
-      // of time or budget. Anything else is the instruction kernel's refusal.
-      if (error instanceof KernelError && ["mismatch", "budget", "deadline"].includes(error.kind)) throw error;
+      // of time, steps or representation space. Anything else is the instruction kernel's refusal.
+      if (error instanceof KernelError && speculativeFailure(error.kind)) throw error;
       throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
     }
     // An assumption the driver had to name apart takes its own name back.
@@ -562,7 +563,7 @@ export class NativeCubicalElaborator {
         if (own !== symbol) type = graph.rename(type, false, own, symbol);
       }
     } catch (error) {
-      if (error instanceof KernelError && ["mismatch", "budget", "deadline"].includes(error.kind)) throw this.describeMismatch(error, dimensions);
+      if (error instanceof KernelError && speculativeFailure(error.kind)) throw this.describeMismatch(error, dimensions);
       throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
     }
     return this.syntax.decode(type, dimensions);
@@ -632,12 +633,12 @@ export class NativeCubicalElaborator {
   }
   // A speculative check answers with a value: {ok: true, term}, or
   // {ok: false, failure, error} when the kernel reports a type mismatch or
-  // runs out of steps or time. Any other rejection throws, as in check().
+  // runs out of resources. Any other rejection throws, as in check().
   attempt(term, expected, context = new Map(), dimensions = this.dimensions) {
     // Speculative failures are answers, not diagnostics: they are not described.
     try { return { ok: true, term: this.check(term, expected, context, dimensions, false) }; }
     catch (error) {
-      if (!speculativeFailures.has(error?.kind)) throw error;
+      if (!speculativeFailure(error?.kind)) throw error;
       return { ok: false, failure: error.kind, error };
     }
   }
@@ -666,9 +667,11 @@ export class NativeCubicalElaborator {
       // face 0, which need not be well typed and the driver may fail to
       // derive. They are never used: without them, the type is the same.
       const cleaned = withoutEmptyFaces(signature);
-      if (cleaned === signature) throw this.describeMismatch(error, new Map());
+      if (cleaned === signature || error.kind === "deadline") throw this.describeMismatch(error, new Map());
       try { ({ reference, admission } = this.admit(name, this.syntax.encode(body), this.syntax.encode(cleaned))); }
-      catch { throw this.describeMismatch(error, new Map()); }
+      catch (retryError) {
+        throw this.describeMismatch(isResourceLimit(retryError?.kind) ? retryError : error, new Map());
+      }
       type = withoutEmptyFaces(type);
     }
     this.definitionViews.set(name, { term, type, assumptions, admission, ...(parameters ? { parameters } : {}) });
@@ -690,6 +693,7 @@ export class NativeCubicalElaborator {
     try {
       reference = this.instructed(graph, () => graph.judgement(graph.define(name, driver.check(body, signature))).term);
     } catch (error) {
+      if (isResourceLimit(error?.kind)) throw error;
       throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
     } finally {
       // One driver per declaration: the next starts from a fresh one.

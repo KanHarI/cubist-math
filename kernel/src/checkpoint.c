@@ -75,7 +75,7 @@ bool cc_kernel_commit_checkpoint(cc_kernel *k) {
         return ck_fail(k, "A signature is still open; close it before committing.");
     size_t base = k->checkpoint_count, count = k->count - base;
     cc_term *map = calloc(count ? count : 1, sizeof *map);
-    if (!map) return ck_fail(k, "Checkpoint compaction allocation failed.");
+    if (!map) return ck_fail_as(k, CC_ERROR_RESOURCE, "Checkpoint compaction allocation failed.");
     /* Every new checked definition is a root. References are roots too, so
      * clients can recover their handles without re-registering definitions. */
     for (size_t i = k->checkpoint_definitions; i < k->definition_count; ++i) {

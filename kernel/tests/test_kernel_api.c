@@ -4,6 +4,7 @@
 #include "cubical_kernel.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -110,6 +111,57 @@ static void error_kinds(void) {
     cc_kernel_free(k);
 }
 
+/* A representation limit is not evidence of a type mismatch. It remains
+ * distinguishable after an attempted follow-up and is cleared by recovery. */
+static void resource_failures(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k);
+    cc_term base = info(k, unit).term, deep = base;
+    cc_kernel_checkpoint(k);
+    for (unsigned i = 1; i < 512; ++i) {
+        deep = cc_kernel_term(k, CC_SUM, 0, deep, base, 0, 0);
+        assert(deep);
+    }
+    assert(!cc_kernel_term(k, CC_SUM, 0, deep, base, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    cc_term found = 0, expected = 0;
+    assert(!cc_kernel_mismatch(k, &found, &expected));
+    assert(!cc_kernel_term(k, CC_U, 1, 0, 0, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE); /* retain the first cause */
+    cc_kernel_rollback(k);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    assert(cc_kernel_normalize(k, base) == base);
+    cc_term level = cc_kernel_term(k, CC_LCONST, UINT32_MAX, 0, 0, 0, 0);
+    cc_work_counters before, after;
+    cc_kernel_work(k, &before);
+    assert(!cc_instr_universe(k, level));
+    cc_kernel_work(k, &after);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    assert(after.rejected == before.rejected + 1);
+    assert(after.exhausted == before.exhausted); /* not a step-budget exhaustion */
+    cc_kernel_clear_error(k);
+    assert(cc_instr_point(k));
+    /* A valid antichain larger than the interval representation admits.
+     * All clauses have three distinct coordinates, so none subsumes another. */
+    cc_formula large;
+    cc_init(&large, CC_INTERVAL);
+    large.capacity = 4097;
+    large.clauses = calloc(large.capacity, sizeof *large.clauses);
+    assert(large.clauses);
+    for (unsigned a = 0; a < 32 && large.length < large.capacity; ++a)
+        for (unsigned b = a + 1; b < 32 && large.length < large.capacity; ++b)
+            for (unsigned c = b + 1; c < 32 && large.length < large.capacity; ++c)
+                large.clauses[large.length++].positive = (UINT64_C(1) << a) | (UINT64_C(1) << b) | (UINT64_C(1) << c);
+    assert(!cc_kernel_formula(k, &large));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    cc_clear(&large);
+    cc_kernel_clear_error(k);
+    assert(!cc_kernel_term(k, CC_U, 1, 0, 0, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_OTHER); /* malformed syntax */
+    cc_kernel_free(k);
+}
+
 /* The syntax hash graph is exact: identical syntax has one handle, beyond
  * any cache size, after a rollback reuses handles, and after compaction. */
 static void exact_sharing(void) {
@@ -147,6 +199,7 @@ int main(void) {
     definitions();
     exact_sharing();
     error_kinds();
+    resource_failures();
     cc_kernel *kernel = cc_kernel_new();
     assert(kernel);
     cc_judgement_id unit = cc_instr_unit(kernel), point = cc_instr_point(kernel);

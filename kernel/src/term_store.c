@@ -38,6 +38,14 @@ bool ck_fail(cc_kernel *k, const char *message) {
     return ck_fail_as(k, CC_ERROR_OTHER, message);
 }
 
+/* Lattice operations distinguish malformed input from allocation/work
+ * limits. Preserve that distinction when lifting their result to a query. */
+bool ck_formula_result(cc_kernel *k, cc_status status, const char *message) {
+    return status == CC_OK || ck_fail_as(k,
+        status == CC_ALLOCATION_FAILED || status == CC_LIMIT_EXCEEDED
+            ? CC_ERROR_RESOURCE : CC_ERROR_OTHER, message);
+}
+
 bool ck_tick(cc_kernel *k) {
     if (k->error[0])
         return false;
@@ -211,6 +219,8 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     if ((kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
         !cc_kernel_get_formula(k, payload))
         return ck_fail(k, "A formula handle names no registered formula."), 0;
+    if ((kind == CC_VAR || ck_term_binder(kind)) && payload == UINT32_MAX)
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Term symbol space exhausted."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. */
     if (k->optimizations & CC_SHARE_SYNTAX) {
@@ -230,25 +240,25 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         if (children[i] && k->nodes[children[i]].depth >= depth)
             depth = k->nodes[children[i]].depth + 1;
     if (depth > 512)
-        return ck_fail(k, "Native prototype syntax depth exceeds 512."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native prototype syntax depth exceeds 512."), 0;
     if (k->count >= UINT32_MAX)
-        return ck_fail(k, "Term handle space exhausted."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Term handle space exhausted."), 0;
     if (k->count >= k->capacity) {
         size_t capacity = k->capacity ? 2 * k->capacity : 256;
         if (capacity < k->capacity || capacity > SIZE_MAX / sizeof(cc_node))
-            return ck_fail(k, "Term arena capacity overflow."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Term arena capacity overflow."), 0;
         cc_node *nodes = realloc(k->nodes, capacity * sizeof *nodes);
         if (!nodes)
-            return ck_fail(k, "Term arena allocation failed."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Term arena allocation failed."), 0;
         k->nodes = nodes;
         cc_term *cache = realloc(k->weak_cache, capacity * sizeof *cache);
         if (!cache)
-            return ck_fail(k, "Normal cache allocation failed."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Normal cache allocation failed."), 0;
         memset(cache + k->capacity, 0, (capacity - k->capacity) * sizeof *cache);
         k->weak_cache = cache;
         cache = realloc(k->normal_cache, capacity * sizeof *cache);
         if (!cache)
-            return ck_fail(k, "Normal cache allocation failed."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Normal cache allocation failed."), 0;
         memset(cache + k->capacity, 0, (capacity - k->capacity) * sizeof *cache);
         k->normal_cache = cache;
         k->capacity = capacity;
@@ -269,8 +279,6 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     cc_term result = (cc_term)k->count++;
     k->nodes[result] = (cc_node){kind, payload, {a,b,c,d}, depth, symbols, dims};
     if ((kind == CC_VAR || ck_term_binder(kind)) && payload >= k->next_symbol) {
-        if (payload == UINT32_MAX)
-            return ck_fail(k, "Term symbol space exhausted."), 0;
         k->next_symbol = payload + 1;
     }
     ck_intern(k, result);
@@ -302,21 +310,21 @@ cc_formula_id ck_formula(cc_kernel *k, const cc_formula *f) {
         if (cc_equal(&k->formulas[i], f))
             return (cc_formula_id)i;
     if (k->formula_count >= UINT32_MAX)
-        return ck_fail(k, "Formula handle space exhausted."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Formula handle space exhausted."), 0;
     if (k->formula_count == k->formula_capacity || !k->formula_capacity) {
         size_t capacity = k->formula_capacity ? 2 * k->formula_capacity : 64;
         if (capacity < k->formula_capacity || capacity > SIZE_MAX / sizeof(cc_formula))
-            return ck_fail(k, "Formula arena capacity overflow."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Formula arena capacity overflow."), 0;
         cc_formula *formulas = realloc(k->formulas, capacity * sizeof *formulas);
         if (!formulas)
-            return ck_fail(k, "Formula arena allocation failed."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Formula arena allocation failed."), 0;
         k->formulas = formulas;
         k->formula_capacity = capacity;
     }
     cc_formula_id result = (cc_formula_id)k->formula_count;
     cc_init(&k->formulas[result], f->sort);
-    if (cc_copy(&k->formulas[result], f) != CC_OK)
-        return ck_fail(k, "Formula copy failed."), 0;
+    if (!ck_formula_result(k, cc_copy(&k->formulas[result], f), "Formula copy failed."))
+        return 0;
     ++k->formula_count;
     return result;
 }
@@ -341,7 +349,7 @@ cc_term ck_var(cc_kernel *k, uint32_t name) {
 
 uint32_t ck_fresh_symbol(cc_kernel *k) {
     if (k->next_symbol == UINT32_MAX) {
-        ck_fail(k, "Fresh symbol space exhausted.");
+        ck_fail_as(k, CC_ERROR_RESOURCE, "Fresh symbol space exhausted.");
         return 0;
     }
     return k->next_symbol++;

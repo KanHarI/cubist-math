@@ -70,8 +70,8 @@ static cc_term weak(cc_kernel *k, cc_term term) {
                 const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
                 cc_formula face;
                 cc_init(&face, CC_FACE);
-                if (cc_copy(&face, raw) != CC_OK)
-                    return ck_fail(k, "Glue eta face allocation failed."), 0;
+                if (!ck_formula_result(k, cc_copy(&face, raw), "Glue eta face allocation failed."))
+                    return 0;
                 for (size_t i = 0; i < face.length && agrees; ++i)
                     agrees = ck_alpha_equal(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
                 cc_clear(&face);
@@ -175,8 +175,8 @@ static cc_term weak(cc_kernel *k, cc_term term) {
              * neutral path still requires its independently checked type. */
             cc_formula argument;
             cc_init(&argument, CC_INTERVAL);
-            if (cc_copy(&argument, arg) != CC_OK)
-                return ck_fail(k, "Interval copy failed."), 0;
+            if (!ck_formula_result(k, cc_copy(&argument, arg), "Interval copy failed."))
+                return 0;
             cc_term path = ck_whnf(k, n.child[0]);
             cc_term result = 0;
             if (path && k->nodes[path].kind == CC_PLAM) {
@@ -195,8 +195,8 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return ck_whnf(k, type.child[2]);
         cc_formula argument;
         cc_init(&argument, CC_INTERVAL);
-        if (cc_copy(&argument, arg) != CC_OK)
-            return ck_fail(k, "Interval copy failed."), 0;
+        if (!ck_formula_result(k, cc_copy(&argument, arg), "Interval copy failed."))
+            return 0;
         cc_term path = ck_whnf(k, n.child[0]);
         cc_term result = 0;
         if (path && k->nodes[path].kind == CC_PLAM) {
@@ -247,7 +247,7 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
         return k->weak_cache[term];
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
     }
     cc_term result = weak(k, term);
     --k->recursion;
@@ -274,9 +274,9 @@ static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
         const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
         cc_formula face;
         cc_init(&face, CC_FACE);
-        if (!raw || cc_copy(&face, raw) != CC_OK) {
+        if (!ck_formula_result(k, raw ? cc_copy(&face, raw) : CC_BAD_INPUT, "Glue eta face allocation failed.")) {
             cc_clear(&face);
-            return ck_fail(k, "Glue eta face allocation failed."), 0;
+            return 0;
         }
         bool agrees = true;
         for (size_t i = 0; i < face.length && agrees; ++i) {
@@ -304,7 +304,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
         return 0;
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native normal-form depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded."), 0;
     }
     cc_node n = k->nodes[head];
     if (n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM) {
@@ -395,7 +395,7 @@ static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
         return cached != 0;
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native reduction recursion depth exceeded.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded.");
     }
     bool agrees = parts_agree(k, a, b);
     --k->recursion;
@@ -444,7 +444,7 @@ static cc_term glue_step(cc_kernel *k, cc_term term);
 cc_term ck_glue_step(cc_kernel *k, cc_term term) {
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
     }
     cc_term result = glue_step(k, term);
     --k->recursion;
@@ -474,9 +474,9 @@ static cc_term glue_step(cc_kernel *k, cc_term term) {
         const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
         cc_formula face;
         cc_init(&face, CC_FACE);
-        if (!raw || cc_copy(&face, raw) != CC_OK) {
+        if (!ck_formula_result(k, raw ? cc_copy(&face, raw) : CC_BAD_INPUT, "Glue eta face allocation failed.")) {
             cc_clear(&face);
-            return ck_fail(k, "Glue eta face allocation failed."), 0;
+            return 0;
         }
         bool agrees = true;
         for (size_t i = 0; i < face.length && agrees; ++i)

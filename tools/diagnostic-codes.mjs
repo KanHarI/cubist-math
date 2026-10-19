@@ -108,12 +108,29 @@ function javascriptMessages(file) {
   }
   return found;
 }
-// A kernel failure: ck_fail(k, "…"), ck_fail_as(k, KIND, "…") or a file's
-// own fail helper, with C's adjacent literals joined.
+// A failure helper's arguments, including a lattice status computed by a
+// nested call. C's adjacent string literals form one message.
 function kernelMessages(file) {
-  const source = readFileSync(join(root, file), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-  return [...source.matchAll(/\b(?:ck_fail_as|ck_fail|fail_as|fail)\s*\(\s*k\s*,\s*(?:[A-Z_]+\s*,\s*)?((?:"(?:[^"\\]|\\.)*"\s*)+)/g)]
-    .map(match => [...match[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)].map(part => part[1].replace(/\\(.)/g, "$1")).join(""));
+  const source = readFileSync(join(root, file), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, ""), found = [];
+  for (const match of source.matchAll(/\b(?:ck_formula_result|ck_fail_as|ck_fail|fail_as|fail)\s*\(\s*k\s*,/g)) {
+    for (let i = match.index + match[0].length, depth = 1; i < source.length && depth;) {
+      if (source[i] === "(") depth++;
+      else if (source[i] === ")") depth--;
+      else if (source[i] === '"') {
+        let { text, end } = literal(source, i);
+        for (let next; (next = /^\s*(?=")/.exec(source.slice(end)));) {
+          const part = literal(source, end + next[0].length);
+          text += part.text;
+          end = part.end;
+        }
+        if (sentence(text)) found.push(text);
+        i = end;
+        continue;
+      }
+      i++;
+    }
+  }
+  return found;
 }
 
 // Every message in the sources, each once, with the file it is first found in.

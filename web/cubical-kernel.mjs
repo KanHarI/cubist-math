@@ -23,10 +23,10 @@ export const MAX_QUERY_STEPS = 1280000000n;
 
 // A rejected kernel request. `kind` classifies it, from cc_error_kind, so no
 // caller needs to read the message: "mismatch" (a type is not convertible to
-// the expected one), "budget" or "deadline" (no judgement was made), "other".
+// the expected one), "budget", "deadline" or "resource" (no judgement was made), "other".
 // A mismatch also carries `mismatch`, the handles of the type found and the
 // type expected; they are valid until the next rollback.
-const errorKinds = ["none", "mismatch", "budget", "deadline", "other"];
+const errorKinds = ["none", "mismatch", "budget", "deadline", "other", "resource"];
 // A rejection is an answer the search reads, thousands of times a module;
 // its message says why, and a stack trace, which each would capture, says
 // only where the kernel was asked.
@@ -53,7 +53,7 @@ export class CubicalKernel {
         + `but this code expects version ${CUBICAL_ABI_VERSION}. Rebuild it with \`make wasm\`.`);
     this.module = module;
     this.handle = module._cb_new();
-    if (!this.handle) throw new Error("Could not allocate cubical kernel session.");
+    if (!this.handle) throw new KernelError("Could not allocate cubical kernel session.", "resource");
     this.names = new Map();
     this.symbolNames = new Map();
     // A node read's name: its payload's symbol's, which symbolName may give

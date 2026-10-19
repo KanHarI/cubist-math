@@ -60,8 +60,8 @@ cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_en
     cc_formula_id argument = status == CC_OK ? ck_formula(k, &point) : 0;
     cc_term result = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
     cc_clear(&point);
-    if (status != CC_OK)
-        return ck_fail(k, "Interval allocation failed."), 0;
+    if (!ck_formula_result(k, status, "Interval allocation failed."))
+        return 0;
     if (!result || !ck_instr_merge(k, p.context, dimension ? i.scope : 0, &context))
         return 0;
     return ck_instr_typing(k, ck_instr_make(k, CC_PAPP, argument, p.term, p.type, 0, 0), result, context);
@@ -253,7 +253,7 @@ cc_judgement_id cc_instr_system_tube(cc_kernel *k, cc_judgement_id system_id, cc
         if ((clause.positive | other.positive) & (clause.negative | other.negative))
             continue;
         if (index >= 64)
-            return ck_fail(k, "A tube may overlap only the first 64 tubes of a system."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "A tube may overlap only the first 64 tubes of a system."), 0;
         pending |= UINT64_C(1) << index;
     }
     uint32_t on_face = 0, adjacent = 0;

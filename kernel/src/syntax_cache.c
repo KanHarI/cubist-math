@@ -30,7 +30,7 @@ void ck_memo_put(cc_kernel *k, uint32_t operation, cc_term term, uint32_t name,
     if (!k->syntax_memo) {
         k->syntax_memo = calloc(CC_SYNTAX_MEMO_SIZE, sizeof *k->syntax_memo);
         if (!k->syntax_memo) {
-            ck_fail(k, "Syntax memo allocation failed.");
+            ck_fail_as(k, CC_ERROR_RESOURCE, "Syntax memo allocation failed.");
             return;
         }
     }

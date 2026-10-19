@@ -11,6 +11,7 @@ typedef struct {
     cc_formula formula;
     bool formula_open;
     const char *error;
+    cc_error_kind error_kind;
     uint8_t position[1024]; /* the highlighted position of the next step or replacement */
     size_t depth;
 } browser_session;
@@ -60,7 +61,8 @@ const char *cb_error(uint32_t token) {
 /* The class of cb_error's error: a cc_error_kind. */
 unsigned cb_error_kind(uint32_t token) {
     browser_session *s = lookup(token);
-    if (!s || s->error) return CC_ERROR_OTHER;
+    if (!s) return CC_ERROR_OTHER;
+    if (s->error) return s->error_kind;
     return cc_kernel_error_kind(s->kernel);
 }
 
@@ -150,6 +152,8 @@ int cb_formula_clause(uint32_t token, uint32_t pl, uint32_t ph, uint32_t nl, uin
     cc_formula input = {s->formula.sort, &clause, 1, 1};
     cc_status status = cc_join(&s->formula, &s->formula, &input);
     if (status != CC_OK) {
+        s->error_kind = status == CC_ALLOCATION_FAILED || status == CC_LIMIT_EXCEEDED
+            ? CC_ERROR_RESOURCE : CC_ERROR_OTHER;
         s->error = status == CC_LIMIT_EXCEEDED
             ? "Cubical lattice term-size or work budget exceeded."
             : "Could not allocate cubical formula.";
@@ -359,6 +363,7 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_RESTRICT: return cc_instr_restrict(k, a, b);
     }
     s->error = "Unknown instruction.";
+    s->error_kind = CC_ERROR_OTHER;
     return 0;
 }
 

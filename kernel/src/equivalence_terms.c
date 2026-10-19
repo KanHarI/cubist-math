@@ -64,14 +64,14 @@ cc_term ck_identity_equiv(cc_kernel *k, cc_term type) {
     cc_init(&vi, CC_INTERVAL);
     cc_init(&vj, CC_INTERVAL);
     cc_init(&meet, CC_INTERVAL);
-    bool valid = cc_generator(&vi, i, true) == CC_OK &&
-                 cc_generator(&vj, j, true) == CC_OK && cc_meet(&meet, &vi, &vj) == CC_OK;
+    cc_status status = cc_generator(&vi, i, true);
+    if (status == CC_OK) status = cc_generator(&vj, j, true);
+    if (status == CC_OK) status = cc_meet(&meet, &vi, &vj);
     cc_formula_id at_i = 0, at_meet = 0;
-    if (valid) {
+    if (ck_formula_result(k, status, "Singleton contraction interval allocation failed.")) {
         at_i = ck_formula(k, &vi);
         at_meet = ck_formula(k, &meet);
-    } else
-        ck_fail(k, "Singleton contraction interval allocation failed.");
+    }
     cc_clear(&vi);
     cc_clear(&vj);
     cc_clear(&meet);

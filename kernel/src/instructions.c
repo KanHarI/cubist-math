@@ -15,15 +15,15 @@ static void *reserve(cc_kernel *k, void *items, size_t *capacity, size_t needed,
     if (needed <= *capacity)
         return items;
     if (needed > UINT32_MAX)
-        return ck_fail(k, "Instruction store handle space exhausted."), NULL;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Instruction store handle space exhausted."), NULL;
     size_t next = *capacity ? *capacity : 64;
     while (next < needed)
         next *= 2;
     if (next > SIZE_MAX / size)
-        return ck_fail(k, "Instruction store allocation overflow."), NULL;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Instruction store allocation overflow."), NULL;
     void *grown = realloc(items, next * size);
     if (!grown)
-        return ck_fail(k, "Instruction store allocation failed."), NULL;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Instruction store allocation failed."), NULL;
     *capacity = next;
     return grown;
 }
@@ -116,7 +116,7 @@ bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, si
     if (!ready(k))
         return false;
     if (depth > 1024)
-        return ck_fail(k, "Position depth exceeded.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Position depth exceeded.");
     if (depth && !position)
         return ck_fail(k, "Missing position.");
     how.depth = (uint32_t)depth;
@@ -345,7 +345,7 @@ static void index_entry(cc_kernel *k, cc_entry_id id) {
         size_t capacity = 256;
         while (capacity < 4 * k->entry_count && capacity < SIZE_MAX / 8) capacity *= 2;
         uint32_t *table = calloc(capacity, sizeof *table);
-        if (!table) { ck_fail(k, "Entry index allocation failed."); return; }
+        if (!table) { ck_fail_as(k, CC_ERROR_RESOURCE, "Entry index allocation failed."); return; }
         free(k->entry_index);
         k->entry_index = table;
         k->entry_index_capacity = capacity;
@@ -396,8 +396,9 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
     if (!publish_set(k, 1, &scope) || !ck_instr_merge(k, t.context, scope, &scope))
         return 0;
     k->entries[id].scope = scope;
-    ++k->entry_count;
     index_entry(k, id);
+    if (k->error[0]) return 0;
+    ++k->entry_count;
     return id;
 }
 
@@ -432,8 +433,9 @@ cc_entry_id cc_instr_level(cc_kernel *k, uint32_t symbol) {
     if (!publish_set(k, 1, &scope))
         return 0;
     k->entries[id].scope = scope;
-    ++k->entry_count;
     index_entry(k, id);
+    if (k->error[0]) return 0;
+    ++k->entry_count;
     return id;
 }
 
@@ -577,7 +579,7 @@ cc_judgement_id cc_instr_universe(cc_kernel *k, cc_term level) {
     uint32_t context = 0;
     bool bound = level_context(k, &nf, &context);
     if (bound && nf.constant >= CC_LEVEL_MAX)
-        ck_fail(k, "A universe level exceeds the kernel's bound.");
+        ck_fail_as(k, CC_ERROR_RESOURCE, "A universe level exceeds the kernel's bound.");
     else if (bound) {
         canonical = ck_level_build(k, &nf);
         if (!ck_level_nf_succ(k, &nf))
@@ -959,7 +961,7 @@ bool ck_instr_level(cc_kernel *k, cc_term level, bool finite, cc_term *canonical
     if (finite && nf.tier)
         ck_fail(k, "A declared type's instance reads finite levels only, below ω (Q16).");
     else if (nf.constant >= CC_LEVEL_MAX)
-        ck_fail(k, "A universe level exceeds the kernel's bound.");
+        ck_fail_as(k, CC_ERROR_RESOURCE, "A universe level exceeds the kernel's bound.");
     else if (level_context(k, &nf, context))
         *canonical = ck_level_build(k, &nf);
     ck_level_nf_free(&nf);

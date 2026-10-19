@@ -24,7 +24,7 @@
 // against its parameter's type, as in a call without holes, so an unsolved
 // hole never reaches the kernel. Nothing is searched for: a hole is never
 // filled because some inhabitant of its type exists.
-import {propagateElaborationStop} from "./control.mjs";
+import {propagateElaborationStop,propagateLimit} from "./control.mjs";
 import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames} from "./core.mjs";
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -61,7 +61,6 @@ export function writtenOut(n, scope, holes = false) {
 }
 
 // Running out of fuel, steps or time ends the elaboration that asked.
-const isLimit = error => ["fuel", "budget", "deadline"].includes(error?.kind);
 
 // A definition's own parameters, {name, implicit}, as its source declares
 // them, or null: a function that is not a definition has none. A head that
@@ -370,8 +369,7 @@ class ArgumentSolver {
     const quiet = scope.withUnit(scope.unit.with({references:null,steps:null,observations}));
     try { return quiet.infer(t.term(node, quiet, null)).type; }
     catch (error) {
-      propagateElaborationStop(error);
-      if (isLimit(error)) throw error;
+      propagateLimit(error);
       return null;
     }
     finally { observations.discard(); }
@@ -425,8 +423,7 @@ class ArgumentSolver {
     let leftHead, rightHead;
     try { leftHead = at.nf(left); rightHead = at.nf(right); }
     catch (error) {
-      propagateElaborationStop(error);
-      if (isLimit(error)) throw error;
+      propagateLimit(error);
       return "stuck";
     }
     return this.unify(leftHead, rightHead, origin, polarity, bound, at, true);
