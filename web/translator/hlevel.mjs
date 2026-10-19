@@ -21,13 +21,14 @@
 // of the tactic's fuel. Every structural rule makes its obligations on
 // strictly smaller types; a rule's premise that repeats an obligation it is
 // proving is a cycle, and the rule is passed over.
-import { T, substituteTerm, substituteDimension, freeNames } from "./core.mjs";
+import { T, substituteTerm, substituteDimension, freeNames, homogeneousPath } from "./core.mjs";
 import { freeDimensions } from "./dimension-slots.mjs";
 import { interval as I } from "./lattice.mjs";
 import { transportToDependentPath } from "./path-over.mjs";
 import {naturalSort,numeral,numeralValue} from "./numerals.mjs";
 import { stem } from "./names.mjs";
 import {propagateLimit} from "./control.mjs";
+import {syntaxGraphBudget} from "./syntax-graph.mjs";
 export {numeralValue} from "./numerals.mjs";
 
 const LIBRARY = "hlevels";
@@ -42,12 +43,18 @@ const levelTerm = level => typeof level === "object" ? level.term : numeral(leve
 // A term with the administrative beta-redexes at its head reduced, as intro
 // leaves one around its goal: (fun x => B)(v) is B with v for x, and a
 // universe lambda at a level is its body at that level. Named definitions
-// stay folded.
-export function headBeta(term) {
+// stay folded. Count both contractions and spine traversal: a small raw
+// term can reproduce its own redex without reaching a weak head.
+export function headBeta(term, {budget = syntaxGraphBudget()} = {}) {
   for (;;) {
+    budget.tick();
     const spine = [];
     let head = term;
-    for (; head?.tag === "App" || head?.tag === "LApp"; head = head.fn) spine.unshift(head);
+    for (; head?.tag === "App" || head?.tag === "LApp"; head = head.fn) {
+      budget.tick();
+      spine.push(head);
+    }
+    spine.reverse();
     const [first, ...rest] = spine;
     if (!(first?.tag === "App" && head?.tag === "Lam" || first?.tag === "LApp" && head?.tag === "LLam")) return term;
     term = rest.reduce((reduced, node) => node.tag === "App" ? T.app(reduced, node.arg) : T.levelApply(reduced, node.level),
@@ -322,7 +329,7 @@ export class HLevelSearch {
     scope.spend("candidates");
     if (typeof level === "object")
       throw new HLevelUnproved(chain, `nothing in scope states that ${this.show(type)} has level ${this.show(level.term)}`);
-    const head = scope.nf(type);
+    const normal = scope.nf(type), head = homogeneousPath(normal) ?? normal;
     const unproved = reason => { throw new HLevelUnproved(chain, reason); };
     // The family of a Π or Σ over its own binder, and evidence for its body at
     // a fresh variable.
@@ -450,6 +457,7 @@ export { named as levelName };
 // target fiber. Higher squash clauses call this on a path whose fiber is
 // itself a path type; structure() reduces the required level accordingly.
 export function pathEvidence(search, path, scope) {
+  path = homogeneousPath(path) ?? path;
   const fiber = substituteDimension(path.family, path.dim, I.one);
   const sort = scope.nf(scope.infer(fiber).type);
   if (sort.tag !== "U") throw Error("The path's fiber must live in a universe.");

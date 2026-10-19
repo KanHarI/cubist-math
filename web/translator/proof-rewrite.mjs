@@ -3,9 +3,8 @@
 // Each function works at an elaboration scope (elaboration.mjs): its checker
 // queries, generated names and work counters are the scope's.
 import {propagateElaborationStop} from "./control.mjs";
-import {T,finiteLevel,levelNames} from "./core.mjs";
+import {T,finiteLevel,levelNames,homogeneousPath} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
-import {freeDimensions} from "./dimension-slots.mjs";
 
 // A bounded search gave up: too many nodes, candidates or rewrites, a cycle,
 // or a term too large to compare. Speculative callers such as premise search
@@ -39,11 +38,12 @@ const levelOccurrence = (term, name) => {
 // A level an instantiation accepts: below UU0 (G0 Q10).
 
 export function equalityRule(scope, term, reverse = false) {
-  const type = scope.nf(scope.infer(term).type);
+  const normal = scope.nf(scope.infer(term).type);
   // A universe-generic equality: rw matches its universe like simp does.
-  if (type.tag === "LPi" && scope.nf(T.levelApply(T.levelLambda(type.name, type.body), 0)).tag === "Path")
+  if (normal.tag === "LPi" && scope.nf(T.levelApply(T.levelLambda(normal.name, normal.body), 0)).tag === "Path")
     return simplificationRule(scope, term, reverse);
-  if (type.tag !== "Path" || freeDimensions(type.family).has(type.dim))
+  const type = homogeneousPath(normal);
+  if (!type)
     throw Error("rw requires a homogeneous equality proof.");
   if (!reverse) return {term, carrier:type.family, left:type.left, right:type.right};
   const dim = scope.fresh("rewrite_inverse");
@@ -76,8 +76,8 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
     type = scope.nf(T.app(T.lam(type.name,type.domain,type.body),T.variable(marker)));
     if (parameters.length > 16) throw Error("Simplification rule has too many parameters.");
   }
-  if (type.tag !== "Path" || freeDimensions(type.family).has(type.dim))
-    throw Error("simp only requires homogeneous equality lemmas.");
+  type = homogeneousPath(type);
+  if (!type) throw Error("simp only requires homogeneous equality lemmas.");
   const pattern = reverse ? type.right : type.left;
   const markers = new Set(parameters);
   const present=new Set();
@@ -113,8 +113,7 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
   }
   const premiseIndexes=new Set();
   for(let index=0;index<parameters.length;index++)if(!present.has(parameters[index])) {
-    const domain=domains[index];
-    if(domain.tag!=="Path"||freeDimensions(domain.family).has(domain.dim))
+    if(!homogeneousPath(domains[index]))
       throw Error("A simplification rule parameter is not determined by the matched side; supply arguments.");
     premiseIndexes.add(index);
   }
@@ -186,9 +185,8 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
           if(checked.failure!=="mismatch")throw checked.error;
         }
         if(!arg) {
-          const premise=at.nf(pi.domain);
-          if(premise.tag==="Path"&&!freeDimensions(premise.family).has(premise.dim)
-            &&at.equal(premise.left,premise.right)) {
+          const premise=homogeneousPath(at.nf(pi.domain));
+          if(premise&&at.equal(premise.left,premise.right)) {
             const dim=at.fresh("simp_premise");
             arg=at.check(T.line(dim,premise.family,premise.left),pi.domain);
           }

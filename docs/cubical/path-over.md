@@ -77,9 +77,9 @@ The bridge does not assert judgmental regularity of transport, or identify
 cubical paths with a separate strict identity type. The comparison is a proved
 equivalence with inverse paths, exactly as the cubical rules support.
 
-A remaining native conversion incompleteness was encountered when fully
-inlining the four filling proofs directly into the quasi-inverse contraction:
-the reference checker accepts this expanded term, but native checking reports
-an overlap disagreement. The modular theorem application used here checks in
-both implementations and does not rely on that expanded form. No checking
-rule was relaxed to accept the bridge.
+An earlier native conversion failure occurred when fully inlining the four
+filling proofs into the quasi-inverse contraction. The runtime elaborator audit
+rechecked that expanded form: the current native checker accepts it at U0 and
+U2, now covered by a regression. The modular theorem application retains
+sharing, but is no longer needed to avoid that historical checking failure.
+No checking rule was relaxed to accept the bridge.

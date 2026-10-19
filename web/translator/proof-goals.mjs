@@ -20,9 +20,8 @@
 // whose endpoints agree by conversion is proved by `reflexivity`. Filling
 // steps will join these with constructor congruence (A2) and congruence
 // lines (A3).
-import {T} from "./core.mjs";
+import {T,homogeneousPath} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
-import {freeDimensions} from "./dimension-slots.mjs";
 import {pathConcat} from "./path-algebra.mjs";
 import {equalityRule} from "./proof-rewrite.mjs";
 
@@ -35,8 +34,7 @@ export class Goal {
   at(scope) {return new Goal(this.target,scope);}
   // The Path head of a homogeneous equality goal, or null.
   equality() {
-    const path=this.scope.nf(this.target);
-    return path.tag==="Path"&&!freeDimensions(path.family).has(path.dim) ? path : null;
+    return homogeneousPath(this.scope.nf(this.target));
   }
 }
 
@@ -114,9 +112,9 @@ export function byConversion(goal) {
 // tactic's search time limit.
 export function composePaths(scope,left,right) {
   scope.checkDeadline();
-  const p=scope.nf(scope.infer(left).type);
-  const q=scope.nf(scope.infer(right).type);
-  if(p.tag!=="Path"||q.tag!=="Path"||freeDimensions(p.family).has(p.dim)||freeDimensions(q.family).has(q.dim))
+  const p=homogeneousPath(scope.nf(scope.infer(left).type));
+  const q=homogeneousPath(scope.nf(scope.infer(right).type));
+  if(!p||!q)
     throw Error("Expected homogeneous equality paths for composition.");
   scope.expect(p.family,q.family);
   if(!scope.equal(p.right,q.left))throw Error("Path endpoints do not match.");
@@ -130,9 +128,8 @@ export function composePaths(scope,left,right) {
 
 // Transport `value` along a checked path of types.
 export function transportTypePath(scope,path,value) {
-  const type=scope.nf(scope.infer(path).type);
-  if(type.tag!=="Path"||freeDimensions(type.family).has(type.dim)
-    ||scope.nf(type.family).tag!=="U")
+  const type=homogeneousPath(scope.nf(scope.infer(path).type));
+  if(!type||scope.nf(type.family).tag!=="U")
     throw Error("A general goal rewrite requires a checked path of types.");
   scope.check(value,type.left);
   const dim=scope.fresh("i");

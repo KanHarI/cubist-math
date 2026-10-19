@@ -133,21 +133,38 @@ export function betaReduce(term, budget = 256) {
     if (reduced.has(t)) return reduced.get(t);
     let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
     // A lambda applied, and a universe lambda instantiated at a level.
-    for (; budget > 0; budget--) {
-      if (result.tag === "App" && result.fn?.tag === "Lam") result = beta(substitute(result.fn.body, result.fn.name, result.arg));
-      else if (result.tag === "LApp" && result.fn?.tag === "LLam") result = beta(substitute(result.fn.body, result.fn.name, result.level));
+    for (; budget > 0;) {
+      if (result.tag === "App" && result.fn?.tag === "Lam") result = substitute(result.fn.body, result.fn.name, result.arg);
+      else if (result.tag === "LApp" && result.fn?.tag === "LLam") result = substitute(result.fn.body, result.fn.name, result.level);
       // A path lambda at a point: its body with the point for its dimension.
-      else if (result.tag === "PApp" && result.path?.tag === "PLam") result = beta(dsub(result.path.body, result.path.dim, result.arg));
+      else if (result.tag === "PApp" && result.path?.tag === "PLam") result = dsub(result.path.body, result.path.dim, result.arg);
       // A pair's projections.
-      else if (result.tag === "Fst" && result.pair?.tag === "Pair") result = beta(result.pair.first);
-      else if (result.tag === "Snd" && result.pair?.tag === "Pair") result = beta(result.pair.second);
+      else if (result.tag === "Fst" && result.pair?.tag === "Pair") result = result.pair.first;
+      else if (result.tag === "Snd" && result.pair?.tag === "Pair") result = result.pair.second;
       else break;
+      // Spend before following the contractum: it may expose another redex,
+      // or even reproduce itself in raw syntax that has not been checked.
+      --budget;
+      result = beta(result);
     }
     reduced.set(t, result);
     return result;
   };
   return beta(term);
 }
+// Recognize a constant path family after local beta/projection reduction.
+// Generated motives can mention the path coordinate only in an ignored
+// argument, even under another Path. Keep free-dimension analysis itself
+// syntactic: substitution and scope allocation still need those occurrences.
+// Callers use the returned, reduced family. A negative answer is
+// conservative; every constructed proof is checked.
+export function homogeneousPath(path) {
+  if(path.tag!=="Path")return null;
+  if(!dimensionNames(path.family).has(path.dim))return path;
+  const family=betaReduce(path.family);
+  return dimensionNames(family).has(path.dim)?null:{...path,family};
+}
+
 function substitute(t, n, value, dimension = false, memo = new WeakMap()) {
   if(memo.has(t))return memo.get(t);
   // A term that does not hold the name free is itself: kept, not copied, so

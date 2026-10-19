@@ -66,3 +66,47 @@ def local_point(A : U0, a : A, evidence : Unit -> IsSet(U0, A)) : Pointed(U0) {
   const { get } = await check(t, source);
   ok(get("local_point"));
 });
+
+test("a constant quotient motive generates no dependent transports in its squash clause", async t => {
+  const { program, get } = await check(t,`import quotients; import propositions;
+def Same(a, b : Unit) : U0 := Unit;
+computable def direct(x : Quotient(U0, Unit, Same)) : Prop(U0) :=
+  match x return Prop(U0) { class(a) => (Unit, unit_is_prop); }
+obligations { relate(a, b, r) @ i => typed(Prop(U0), (Unit, unit_is_prop)); };
+`);
+  ok(get("direct"));
+  assert.deepEqual(get("direct").axioms,[]);
+  // The old dependence test read the ignored argument of (λ_. Prop)(q),
+  // even under another Path, and emitted four compositions. Normalizing
+  // that checked definition exceeded the kernel's syntax-depth bound.
+  const pending=[program.checker.definitionViews.get("main__direct").term],seen=new WeakSet();
+  let eliminators=0;
+  while(pending.length) {
+    const term=pending.pop();
+    if(!term||typeof term!=="object"||seen.has(term))continue;
+    seen.add(term);
+    if(term.tag==="Elim")eliminators++;
+    assert.notEqual(term.tag,"Comp","a homogeneous squash clause needs no transport");
+    pending.push(...Object.values(term));
+  }
+  assert.equal(eliminators,1,"inspect the generated eliminator, not a reference to it");
+});
+
+test("hlevel recognizes a beta-constant path family as a structural goal", async t => {
+  const { program, get } = await check(t, `import hlevels;
+computable def constant_level(p : tt = tt) :
+  IsProp(U0, PathP(fun (i : Interval) => (fun (ignored : Unit) => Unit)(p @ i), tt, tt)) {
+  hlevel;
+}
+`);
+  ok(get("constant_level"));
+  assert.deepEqual(get("constant_level").axioms, []);
+  const pending = [program.checker.definitionViews.get("main__constant_level").term], seen = new WeakSet();
+  while (pending.length) {
+    const term = pending.pop();
+    if (!term || typeof term !== "object" || seen.has(term)) continue;
+    seen.add(term);
+    assert.notEqual(term.tag, "Comp", "a constant-family h-level goal needs no transport");
+    pending.push(...Object.values(term));
+  }
+});
