@@ -682,6 +682,8 @@ export const diagnostics = [
   ["K180", "An instance takes its recorded levels before its parameters."],
   ["K181", "The instance already has all its parameters."],
   ["K182", "The instance's parameters and levels are not the signature's."],
+  ["K183", "A parameter reads an erased universe parameter at another level than an earlier one; lift the lower parameter first."],
+  ["K184", "A parameter's type is not the signature's telescope at the earlier parameters."],
   // Kernel: instructions
   ["K201", "An equality has sides 0 and 1."],
   ["K202", "The type is not included in the target type."],
@@ -777,6 +779,11 @@ export const diagnostics = [
   ["K292", "A restriction's face is one consistent conjunction of endpoint equations."],
   ["K293", "A face entry is an assumption, not a variable or a dimension."],
   ["K294", "A split step needs a composition with a tube on a face of several clauses, or on the face 0."],
+  ["K295", "Not a Glue term under construction."],
+  ["K296", "Expected a typing judgement."],
+  ["K297", "Expected an equality judgement."],
+  ["K298", "Expected a dimension entry."],
+  ["K299", "Expected a term entry."],
   // Kernel: terms and computation
   ["K301", "A signature is still open; close it before committing."],
   ["K302", "Checkpoint compaction allocation failed."],
@@ -842,6 +849,10 @@ export const diagnostics = [
   ["K362", "Invalid interval variable."],
   ["K363", "Invalid face variable."],
   ["K364", "Face copy failed."],
+  ["K365", "Cubical lattice term-size or work budget exceeded."],
+  ["K366", "Invalid face substitution."],
+  ["K367", "Invalid Glue face substitution."],
+  ["K368", "Invalid interval substitution."],
   // Warnings
   ["W701", "None of … is used after this obtain: remove it."],
   ["W702", "… is never used after this let: remove it."],

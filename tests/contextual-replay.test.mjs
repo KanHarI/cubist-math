@@ -267,7 +267,7 @@ test("prefix resource exhaustion cannot select a nearby point or run a query",as
   const {program}=await setup(t,source);
   const point=[...program.scopePoints.values()].find(point=>point.origin.module==="main"
     &&point.origin.start===source.lastIndexOf("x")&&point.phase==="expression");
-  for(const kind of ["fuel","budget","deadline"]) {
+  for(const kind of ["fuel","budget","deadline","resource"]) {
     const session=new ContextualSession(program,point.id),term=Translator.prototype.term;
     Translator.prototype.term=function(node,scope,expected) {
       if(scope.checker.kernel.handle!==program.kernel.handle&&scope.unit.declaring?.name==="selected")
@@ -319,7 +319,7 @@ test("replay observes failed prefix directives before entering a later scope",as
   const events=program.scopeReplay.snapshot().events;
   assert.deepEqual(events.slice(0,2).map(event=>event.stage),["directive-start","directive-end"]);
   const evaluate=Translator.prototype.evaluate;
-  for(const kind of ["fuel","budget","deadline"]) {
+  for(const kind of ["fuel","budget","deadline","resource"]) {
     Translator.prototype.evaluate=function(){throw Object.assign(Error(`prefix directive ${kind}`),{kind});};
     let answer;
     try {answer=await query(target,"x","unavailable");}

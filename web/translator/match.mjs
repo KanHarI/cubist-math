@@ -11,6 +11,7 @@
 // comes from its goal, through motive abstraction (motives.mjs), and each of
 // its clauses is a proof block.
 // Untrusted: the kernel checks every clause at its clause type.
+import { isResourceLimit } from "../resource-limits.mjs";
 import {propagateElaborationStop} from "./control.mjs";
 import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -28,7 +29,7 @@ import {enterExpressionScope} from "./expression-scopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
-const resourceFailure=error=>["fuel","budget","deadline"].includes(error?.kind)||error instanceof SearchLimit;
+const resourceFailure=error=>isResourceLimit(error?.kind)||error instanceof SearchLimit;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.

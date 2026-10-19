@@ -37,7 +37,7 @@ static alpha_binding bind(cc_kernel *k, uint32_t left, uint32_t right,
         scope = entry->scope;
     } else {
         if (k->next_alpha_scope == UINT64_MAX)
-            ck_fail(k, "Alpha-comparison scope counter exhausted.");
+            ck_fail_as(k, CC_ERROR_RESOURCE, "Alpha-comparison scope counter exhausted.");
         scope = k->next_alpha_scope == UINT64_MAX ? UINT64_MAX : ++k->next_alpha_scope;
         if (entry) *entry = (cc_alpha_scope){left, right, parent, scope};
     }
@@ -263,7 +263,7 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
                    const alpha_binding *dims) {
     if (++k->recursion > 512) {
         --k->recursion;
-        return ck_fail(k, "Native conversion recursion depth exceeded.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native conversion recursion depth exceeded.");
     }
     /* A renaming matters only where its names occur free. Where neither side
      * has a renamed name free, the pair compares the same under every
@@ -297,7 +297,7 @@ static bool alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_binding *terms
         if (!k->alpha_memo) {
             k->alpha_memo = calloc(CC_ALPHA_MEMO_SIZE, sizeof *k->alpha_memo);
             if (!k->alpha_memo)
-                ck_fail(k, "Alpha-comparison memo allocation failed.");
+                ck_fail_as(k, CC_ERROR_RESOURCE, "Alpha-comparison memo allocation failed.");
         }
         if (k->alpha_memo) {
             /* The comparison may have reused the slot for other pairs. */
@@ -331,7 +331,8 @@ cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t fr
         return ck_fail(k, "Dimension outside the native range."), 0;
     cc_formula point;
     cc_init(&point, CC_INTERVAL);
-    cc_term renamed = cc_generator(&point, to, true) == CC_OK ? ck_dimension_substitute(k, term, from, &point) : 0;
+    cc_term renamed = ck_formula_result(k, cc_generator(&point, to, true), "Dimension renaming allocation failed.")
+        ? ck_dimension_substitute(k, term, from, &point) : 0;
     cc_clear(&point);
     return renamed;
 }

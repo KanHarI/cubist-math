@@ -27,7 +27,7 @@ import { interval as I } from "./lattice.mjs";
 import { transportToDependentPath } from "./path-over.mjs";
 import {naturalSort,numeral,numeralValue} from "./numerals.mjs";
 import { stem } from "./names.mjs";
-import {propagateElaborationStop} from "./control.mjs";
+import {propagateLimit} from "./control.mjs";
 export {numeralValue} from "./numerals.mjs";
 
 const LIBRARY = "hlevels";
@@ -398,8 +398,7 @@ export class HLevelSearch {
 // A level with the rule's universe parameters given their values.
 const substituteLevel = (level, values) => substituteAll({ tag: "U", level }, values).level;
 const failedCandidate=error=>{
-  propagateElaborationStop(error);
-  if(["fuel","budget","deadline"].includes(error?.kind))throw error;
+  propagateLimit(error);
   return false;
 };
 const attempt = check => { try { return check(); } catch(error) {return failedCandidate(error);} };

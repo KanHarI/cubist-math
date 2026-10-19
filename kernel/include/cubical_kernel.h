@@ -113,10 +113,14 @@ unsigned cc_kernel_extensions(const cc_kernel *);
 void cc_kernel_set_deadline_ms(cc_kernel *, double duration_ms);
 const char *cc_kernel_error(const cc_kernel *);
 /* The class of the recorded error, so callers need not read its text.
- * MISMATCH: a type is not the expected type, or not included in it. BUDGET, DEADLINE: the step budget or the deadline ran out, so no
- * judgement was made. OTHER: any other rejection. NONE: no error. */
+ * MISMATCH: a type is not the expected type, or not included in it.
+ * BUDGET, DEADLINE: the step budget or deadline ran out. RESOURCE: an
+ * allocation, depth or representation limit prevented an answer; increasing
+ * the step budget does not address it. OTHER: any other rejection. NONE: no
+ * error. Resource failures never establish a mismatch. */
 typedef enum {
-    CC_ERROR_NONE, CC_ERROR_MISMATCH, CC_ERROR_BUDGET, CC_ERROR_DEADLINE, CC_ERROR_OTHER
+    CC_ERROR_NONE, CC_ERROR_MISMATCH, CC_ERROR_BUDGET, CC_ERROR_DEADLINE, CC_ERROR_OTHER,
+    CC_ERROR_RESOURCE
 } cc_error_kind;
 cc_error_kind cc_kernel_error_kind(const cc_kernel *);
 /* For a MISMATCH error, the type that was found and the type it was expected

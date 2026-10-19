@@ -12,7 +12,7 @@ comma := ,
 SRC = $(wildcard src/*.c)
 HEADERS = $(sort $(wildcard include/*.h src/*.h))
 TESTS = test-lattice test-kernel-api test-comparison test-path-head \
-	test-checkpoint test-instructions test-levels test-work test-signatures test-isolation test-faces test-normalize
+	test-checkpoint test-allocations test-instructions test-levels test-work test-signatures test-isolation test-faces test-normalize
 PROGRAMS = lattice-cli bench-lattice $(TESTS)
 # The kernel's sources compile once per configuration, into objects every
 # program links, and each object records the headers it includes (-MMD), so
@@ -47,6 +47,8 @@ $(OUT)/configuration: | $(OUT)/obj
 	printf '%s\n' $(CONFIGURATION) > $@
 $(OUT)/obj/%.o: src/%.c | $(OUT)/obj $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/instructions-fault.o: src/instructions.c | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Dcalloc=cc_test_calloc -MMD -MP -c $< -o $@
 $(OUT)/obj/tests/%.o: tests/%.c | $(OUT)/obj/tests $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 # The link $(1) pointed at $(2), only when it points elsewhere, by renaming a
@@ -59,7 +61,7 @@ publish = [ "$$(readlink $(1) 2>/dev/null)" = "$(2)" ] || { ln -s $(2) $(1).$$$$
 # Each program is its source in tests/, named with underscores, linked with
 # the kernel's objects as one command once compiled and linked it.
 define PROGRAM
-$(OUT)/bin/$(1): $(OUT)/obj/tests/$(subst -,_,$(1)).o $(OBJ) | $(OUT)/bin
+$(OUT)/bin/$(1): $(OUT)/obj/tests/$(subst -,_,$(1)).o $(if $(filter test-allocations,$(1)),$(filter-out $(OUT)/obj/instructions.o,$(OBJ)) $(OUT)/obj/tests/instructions-fault.o,$(OBJ)) | $(OUT)/bin
 	$$(CC) $$(CPPFLAGS) $$(CFLAGS) $$(LDFLAGS) $$^ $$(LDLIBS) -o $$@
 $(BUILD)/$(1): $(OUT)/bin/$(1) FORCE
 	@$$(call publish,$$@,$(ID)/bin/$(1))

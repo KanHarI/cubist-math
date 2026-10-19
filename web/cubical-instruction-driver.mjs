@@ -8,6 +8,7 @@
 // default steers by its own guide, which asks the kernel for weak heads. The
 // kernel checks every instruction; a wrong search only fails, it cannot
 // prove anything.
+import { isResourceLimit } from "./resource-limits.mjs";
 import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
@@ -498,7 +499,7 @@ export class InstructionDriver {
           const value = this.convertTo(this.derive(term, inner), restricted);
           const start = this.focus(g.refl(g.endpoint(value, dimension, 0)), "other");
           const end = this.focus(g.refl(this.restrict(base, clause)), "other");
-          if (!this.agree(start, end)) throw new Error("Composition tube disagrees with its base.");
+          if (!this.agree(start, end) && !this.settle(start, end)) throw new Error("Composition tube disagrees with its base.");
           return { value, adjacency: g.transitivity(start.ref.id, g.symmetry(end.ref.id)) };
         });
         system = g.systemTube(system, face, value, adjacency);
@@ -588,7 +589,7 @@ export class InstructionDriver {
           const applied = this.convertTo(this.derive(k.term("App", 0, k.term("Fst", 0, equivalence), this.statement(value).term),
             joinScopes(this.scope(annotation), this.scope(value))), this.evidence(this.focus(restricted, "type")));
           const start = this.focus(g.refl(applied), "other"), end = this.focus(g.refl(restricted), "other");
-          if (!this.agree(start, end)) throw new Error("A Glue value's image disagrees with the base.");
+          if (!this.agree(start, end) && !this.settle(start, end)) throw new Error("A Glue value's image disagrees with the base.");
           return { value, image: g.transitivity(start.ref.id, g.symmetry(end.ref.id)) };
         });
         system = g.glueTermPiece(system, value, image);
@@ -744,7 +745,7 @@ export class InstructionDriver {
       there = this.convertTo(there, this.evidence(this.focus(here, "type")));
     const x = this.focus(g.refl(here), "other");
     const y = this.focus(g.refl(there), "other");
-    if (!this.agree(x, y)) throw new Error("Two pieces disagree where their faces meet.");
+    if (!this.agree(x, y) && !this.settle(x, y)) throw new Error("Two pieces disagree where their faces meet.");
     return g.transitivity(x.ref.id, g.symmetry(y.ref.id));
   }
 
@@ -816,7 +817,7 @@ export class InstructionDriver {
     const focus = this.focus(this.shape(this.focus(judgement, "type"), "Pi"), "type");
     this.shape(this.child(focus, 1), "U");
     const target = this.focus(this.graph.refl(domain), "other");
-    if (!this.agree(this.child(focus, 0), target)) throw new Error("The motive is a family over another type.");
+    if (!this.agree(this.child(focus, 0), target) && !this.settle(this.child(focus, 0), target)) throw new Error("The motive is a family over another type.");
     // The domain now reads as the target's reduct; rewrite it back to A.
     const back = this.graph.symmetry(target.ref.id);
     return this.graph.replace(focus.ref.id, "type", [0], back);
@@ -841,7 +842,7 @@ export class InstructionDriver {
     try { return build(scope); }
     catch (error) {
       const names = clause[0] | clause[1];
-      if (["budget", "deadline"].includes(error?.kind) ||
+      if (isResourceLimit(error?.kind) ||
           ![...Array(64).keys()].some(dim => names >> BigInt(dim) & 1n && this.typesMention(scope, dim)))
         throw error;
       return build(withFace(scope, clause));
@@ -926,7 +927,7 @@ export class InstructionDriver {
       // else is no progress, and the comparison goes on: the term is no
       // Glue eta redex, or its side conditions ran into the move's budget or
       // the depth of syntax.
-      if (error.kind === "deadline") throw error;
+      if (!(error instanceof KernelError) || error.kind === "deadline") throw error;
       this.glueStuck.add(before);
       return false;
     }
@@ -965,9 +966,22 @@ export class InstructionDriver {
         const typed = this.shape(this.focus(this.derive(this.subterm(other), scope), "type"), type);
         other.ref.id = this.graph.replace(other.ref.id, other.side, other.path, this.graph.eta(typed));
         return true;
-      } catch { /* No expansion here: the search goes on without it. */ }
+      } catch (error) {
+        if (isResourceLimit(error?.kind)) throw error;
+        // No expansion here: the search goes on without it.
+      }
     }
     return false;
+  }
+
+  // A failed lazy comparison is not yet a disagreement. Finish normalization
+  // or propagate its limit. Normal forms retain their original system faces,
+  // so the split move may still be needed to bring those systems together.
+  settle(a, b) {
+    for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" });
+    if (!this.alpha(this.subterm(a), this.subterm(b)) && [a, b].some(focus => this.splits(this.subterm(focus))))
+      this.agree(a, b);
+    return this.alpha(this.subterm(a), this.subterm(b));
   }
 
   // judgement : A, and evidence B : U(l), give judgement : B.
@@ -977,18 +991,12 @@ export class InstructionDriver {
     const a = this.focus(judgement, "type"), b = this.focus(g.refl(evidence), "other");
     const budget = { left: this.fuel };
     // A type mismatch, as the kernel reports one: the two types as they were.
-    // Running out of time or budget is no answer, and is passed on as it is.
-    const mismatch = error => ["budget", "deadline"].includes(error?.kind) ? error
+    // Running out of resources is no answer, and is passed on as it is.
+    const mismatch = error => isResourceLimit(error?.kind) ? error
       : Object.assign(new KernelError("Type mismatch.", "mismatch"), { mismatch: { found, expected: wanted }, search: error?.message });
     if (!this.agree(a, b, null, null, budget)) {
-      // Too long, or stuck: compare normal forms, when they can be computed.
-      // Normal forms keep each system's faces as they were written, so two
-      // whose compositions split their tubes otherwise are compared again,
-      // where the split move can bring their systems together.
-      try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
+      try { this.settle(a, b); }
       catch (error) { throw mismatch(error); }
-      if (!this.alpha(this.subterm(a), this.subterm(b)) && [a, b].some(focus => this.splits(this.subterm(focus))))
-        this.agree(a, b, null, null, { left: this.fuel });
     }
     if (!this.alpha(this.subterm(a), this.subterm(b))) {
       // Universes and families of universes are cumulative.

@@ -1027,6 +1027,8 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K180"><td><code>K180</code></td><td>An instance takes its recorded levels before its parameters.</td></tr>
                 <tr id="K181"><td><code>K181</code></td><td>The instance already has all its parameters.</td></tr>
                 <tr id="K182"><td><code>K182</code></td><td>The instance's parameters and levels are not the signature's.</td></tr>
+                <tr id="K183"><td><code>K183</code></td><td>A parameter reads an erased universe parameter at another level than an earlier one; lift the lower parameter first.</td></tr>
+                <tr id="K184"><td><code>K184</code></td><td>A parameter's type is not the signature's telescope at the earlier parameters.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k2">Kernel: instructions</h3>
@@ -1127,6 +1129,11 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K292"><td><code>K292</code></td><td>A restriction's face is one consistent conjunction of endpoint equations.</td></tr>
                 <tr id="K293"><td><code>K293</code></td><td>A face entry is an assumption, not a variable or a dimension.</td></tr>
                 <tr id="K294"><td><code>K294</code></td><td>A split step needs a composition with a tube on a face of several clauses, or on the face 0.</td></tr>
+                <tr id="K295"><td><code>K295</code></td><td>Not a Glue term under construction.</td></tr>
+                <tr id="K296"><td><code>K296</code></td><td>Expected a typing judgement.</td></tr>
+                <tr id="K297"><td><code>K297</code></td><td>Expected an equality judgement.</td></tr>
+                <tr id="K298"><td><code>K298</code></td><td>Expected a dimension entry.</td></tr>
+                <tr id="K299"><td><code>K299</code></td><td>Expected a term entry.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k3">Kernel: terms and computation</h3>
@@ -1197,6 +1204,10 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K362"><td><code>K362</code></td><td>Invalid interval variable.</td></tr>
                 <tr id="K363"><td><code>K363</code></td><td>Invalid face variable.</td></tr>
                 <tr id="K364"><td><code>K364</code></td><td>Face copy failed.</td></tr>
+                <tr id="K365"><td><code>K365</code></td><td>Cubical lattice term-size or work budget exceeded.</td></tr>
+                <tr id="K366"><td><code>K366</code></td><td>Invalid face substitution.</td></tr>
+                <tr id="K367"><td><code>K367</code></td><td>Invalid Glue face substitution.</td></tr>
+                <tr id="K368"><td><code>K368</code></td><td>Invalid interval substitution.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-w7">Warnings</h3>

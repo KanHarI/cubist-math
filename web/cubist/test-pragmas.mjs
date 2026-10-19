@@ -1,3 +1,4 @@
+import { isResourceLimit } from "../resource-limits.mjs";
 import {tokenize} from "./parser.mjs";
 import {lint} from "./lint.mjs";
 
@@ -58,7 +59,7 @@ export function observeTestCases(program,result,{main=program.main}={}) {
   const resource=error=>{
     const seen=new Set();
     while(error) {
-      if(["fuel","budget","deadline"].includes(error.failure))return true;
+      if(isResourceLimit(error.failure))return true;
       if(!error.blockedBy||seen.has(error.blockedBy))return false;
       seen.add(error.blockedBy);error=program.symbols[error.blockedBy];
     }

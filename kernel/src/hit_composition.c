@@ -24,9 +24,10 @@ static cc_formula_id join(cc_kernel *k, cc_formula_id a, cc_formula_id b, cc_sor
     cc_init(&result, sort);
     const cc_formula *left = cc_kernel_get_formula(k, a);
     const cc_formula *right = cc_kernel_get_formula(k, b);
-    if (!left || !right || cc_join(&result, left, right) != CC_OK) {
+    if (!ck_formula_result(k, left && right ? cc_join(&result, left, right) : CC_BAD_INPUT,
+                           "HIT join allocation failed.")) {
         cc_clear(&result);
-        return ck_fail(k, "HIT join allocation failed."), 0;
+        return 0;
     }
     cc_formula_id id = ck_formula(k, &result);
     cc_clear(&result);
@@ -38,13 +39,11 @@ static cc_formula_id reversed(cc_kernel *k, unsigned dim) {
     cc_formula reverse;
     cc_init(&coordinate, CC_INTERVAL);
     cc_init(&reverse, CC_INTERVAL);
-    bool valid = cc_generator(&coordinate, dim, true) == CC_OK &&
-                 cc_reverse(&reverse, &coordinate) == CC_OK;
-    cc_formula_id result = valid ? ck_formula(k, &reverse) : 0;
+    cc_status status = cc_generator(&coordinate, dim, true);
+    if (status == CC_OK) status = cc_reverse(&reverse, &coordinate);
+    cc_formula_id result = ck_formula_result(k, status, "HIT reversal allocation failed.") ? ck_formula(k, &reverse) : 0;
     cc_clear(&coordinate);
     cc_clear(&reverse);
-    if (!valid)
-        ck_fail(k, "HIT reversal allocation failed.");
     return result;
 }
 
@@ -52,9 +51,9 @@ static cc_formula_id endpoint(cc_kernel *k, cc_formula_id interval, unsigned end
     cc_formula face;
     cc_init(&face, CC_FACE);
     const cc_formula *r = cc_kernel_get_formula(k, interval);
-    if (!r || cc_endpoint(&face, r, end) != CC_OK) {
+    if (!ck_formula_result(k, r ? cc_endpoint(&face, r, end) : CC_BAD_INPUT, "HIT endpoint allocation failed.")) {
         cc_clear(&face);
-        return ck_fail(k, "HIT endpoint allocation failed."), 0;
+        return 0;
     }
     cc_formula_id result = ck_formula(k, &face);
     cc_clear(&face);
@@ -65,9 +64,9 @@ static cc_term substitute(cc_kernel *k, cc_term term, unsigned dim, cc_formula_i
     cc_formula copy;
     cc_init(&copy, CC_INTERVAL);
     const cc_formula *r = cc_kernel_get_formula(k, argument);
-    if (!r || cc_copy(&copy, r) != CC_OK) {
+    if (!ck_formula_result(k, r ? cc_copy(&copy, r) : CC_BAD_INPUT, "HIT substitution interval allocation failed.")) {
         cc_clear(&copy);
-        return ck_fail(k, "HIT substitution interval allocation failed."), 0;
+        return 0;
     }
     cc_term result = ck_dimension_substitute(k, term, dim, &copy);
     cc_clear(&copy);
@@ -136,9 +135,9 @@ cc_term ck_eliminate_hcomp(cc_kernel *k, cc_term eliminator, cc_term composition
     cc_term system = rename_tubes(k, box.child[1], box.payload, i);
     cc_formula coordinate;
     cc_init(&coordinate, CC_INTERVAL);
-    if (cc_generator(&coordinate, dim, true) != CC_OK) {
+    if (!ck_formula_result(k, cc_generator(&coordinate, dim, true), "HIT elimination filling allocation failed.")) {
         cc_clear(&coordinate);
-        return ck_fail(k, "HIT elimination filling allocation failed."), 0;
+        return 0;
     }
     cc_term fill = ck_fill(k, dim, box.child[0], system, box.child[2], &coordinate);
     cc_clear(&coordinate);
@@ -183,9 +182,10 @@ static cc_term transport_hcomp(cc_kernel *k, cc_term term, cc_term family, cc_te
 static cc_formula_id constant(cc_kernel *k, unsigned end) {
     cc_formula point;
     cc_init(&point, CC_INTERVAL);
-    cc_formula_id result = (!end || cc_one(&point) == CC_OK) ? ck_formula(k, &point) : 0;
+    cc_formula_id result = ck_formula_result(k, end ? cc_one(&point) : CC_OK,
+                                             "Interval constant allocation failed.") ? ck_formula(k, &point) : 0;
     cc_clear(&point);
-    return result ? result : (ck_fail(k, "Interval constant allocation failed."), 0);
+    return result;
 }
 
 /* The components Fst(Snd^m(t)) of a tuple in a constructor's telescope. */
@@ -275,9 +275,9 @@ static cc_term sort_transport(cc_kernel *k, cc_term term, cc_term family, cc_ter
     /* θ(i), the telescope's transport filler, and v := c_k(as(1))(θ(1)) @ rs. */
     cc_formula along;
     cc_init(&along, CC_INTERVAL);
-    if (cc_generator(&along, dim, true) != CC_OK) {
+    if (!ck_formula_result(k, cc_generator(&along, dim, true), "Transport filling allocation failed.")) {
         cc_clear(&along);
-        return ck_fail(k, "Transport filling allocation failed."), 0;
+        return 0;
     }
     cc_term line = ck_fill(k, dim, telescope, fixed, start, &along);
     cc_clear(&along);

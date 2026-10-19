@@ -18,9 +18,10 @@ static cc_term var(cc_kernel *k, uint32_t symbol) {
 static cc_term rename_dimension(cc_kernel *k, cc_term t, unsigned from, unsigned to) {
     cc_formula target;
     cc_init(&target, CC_INTERVAL);
-    cc_term result = cc_generator(&target, to, true) == CC_OK ? ck_dimension_substitute(k, t, from, &target) : 0;
+    cc_term result = ck_formula_result(k, cc_generator(&target, to, true), "Dimension renaming allocation failed.")
+        ? ck_dimension_substitute(k, t, from, &target) : 0;
     cc_clear(&target);
-    return result ? result : (k->error[0] ? 0 : (ck_fail(k, "Dimension renaming allocation failed."), 0));
+    return result;
 }
 
 /* The display of 3.6 at an instance: the positions of one constructor, each
@@ -57,7 +58,7 @@ static cc_term shown_positional(display *d, cc_term e, unsigned depth) {
 static cc_term shown_boundary(display *d, cc_term e, unsigned depth) {
     cc_kernel *k = d->k;
     if (depth > 256)
-        return ck_fail(k, "A boundary is nested too deeply."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A boundary is nested too deeply."), 0;
     cc_node n = k->nodes[e];
     if (n.kind == CC_PLAM) {
         /* A fresh dimension: the motive and clauses shown under it may use
@@ -114,7 +115,7 @@ static cc_term shown_boundary(display *d, cc_term e, unsigned depth) {
 static cc_term displayed(display *d, cc_term cube, cc_term y, unsigned depth) {
     cc_kernel *k = d->k;
     if (depth > 256)
-        return ck_fail(k, "A cube is nested too deeply."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A cube is nested too deeply."), 0;
     if (cube == d->instance || (k->nodes[cube].kind == CC_SORT && ck_alpha_equal(k, cube, d->instance)))
         return app(k, d->motive, y);
     cc_node c = k->nodes[cube];

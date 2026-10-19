@@ -37,10 +37,10 @@ static bool formula_at_one(cc_kernel *k, cc_formula *out, cc_formula_id id, unsi
     const cc_formula *input = cc_kernel_get_formula(k, id);
     cc_formula one;
     cc_init(&one, CC_INTERVAL);
-    bool valid = input && input->sort == CC_FACE && cc_one(&one) == CC_OK &&
-                 cc_face_substitute(out, input, dim, &one) == CC_OK;
+    cc_status status = input && input->sort == CC_FACE ? cc_one(&one) : CC_BAD_INPUT;
+    if (status == CC_OK) status = cc_face_substitute(out, input, dim, &one);
     cc_clear(&one);
-    return valid || ck_fail(k, "Glue endpoint face allocation failed.");
+    return ck_formula_result(k, status, "Glue endpoint face allocation failed.");
 }
 
 static cc_term projected_tubes(cc_kernel *k, cc_term system, cc_term type) {
@@ -62,8 +62,8 @@ static cc_term preservation(cc_kernel *k, unsigned dim, cc_term source, cc_term 
         return 0;
     cc_formula coordinate;
     cc_init(&coordinate, CC_INTERVAL);
-    if (cc_generator(&coordinate, dim, true) != CC_OK)
-        return ck_fail(k, "Preservation interval allocation failed."), 0;
+    if (!ck_formula_result(k, cc_generator(&coordinate, dim, true), "Preservation interval allocation failed."))
+        return 0;
     cc_term line = ck_fill(k, dim, source, system, base, &coordinate);
     cc_clear(&coordinate);
     cc_term image = app(k, first(k, equivalence), line);
@@ -113,9 +113,9 @@ static cc_term partial_fiber_points(cc_kernel *k, unsigned dim, cc_term glue,
         cc_formula delta;
         cc_init(&delta, CC_FACE);
         const cc_formula *phi = cc_kernel_get_formula(k, piece.payload);
-        if (cc_face_forall(&delta, dim, phi) != CC_OK) {
+        if (!ck_formula_result(k, cc_face_forall(&delta, dim, phi), "Glue universal face allocation failed.")) {
             cc_clear(&delta);
-            return ck_fail(k, "Glue universal face allocation failed."), 0;
+            return 0;
         }
         for (size_t i = 0; i < delta.length && !k->error[0]; ++i) {
             cc_clause overlap = {extent.positive | delta.clauses[i].positive,
@@ -136,9 +136,9 @@ static cc_term partial_fiber_points(cc_kernel *k, unsigned dim, cc_term glue,
         cc_formula phi;
         cc_init(&phi, CC_FACE);
         const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
-        if (cc_copy(&phi, raw) != CC_OK) {
+        if (!ck_formula_result(k, cc_copy(&phi, raw), "Glue boundary face allocation failed.")) {
             cc_clear(&phi);
-            return ck_fail(k, "Glue boundary face allocation failed."), 0;
+            return 0;
         }
         for (size_t i = 0; i < phi.length && !k->error[0]; ++i) {
             cc_clause overlap = {extent.positive | phi.clauses[i].positive,
@@ -181,12 +181,12 @@ cc_term ck_glue_composition(cc_kernel *k, unsigned dim, cc_term glue,
             if (count == capacity) {
                 size_t grown_capacity = capacity ? 2 * capacity : 8;
                 if (grown_capacity < capacity || grown_capacity > SIZE_MAX / sizeof *picks) {
-                    ck_fail(k, "Glue composition allocation overflow.");
+                    ck_fail_as(k, CC_ERROR_RESOURCE, "Glue composition allocation overflow.");
                     break;
                 }
                 glue_pick *grown = realloc(picks, grown_capacity * sizeof *picks);
                 if (!grown) {
-                    ck_fail(k, "Glue composition allocation failed.");
+                    ck_fail_as(k, CC_ERROR_RESOURCE, "Glue composition allocation failed.");
                     break;
                 }
                 picks = grown;
@@ -230,10 +230,12 @@ cc_term ck_universe_composition(cc_kernel *k, unsigned dim, cc_term system, cc_t
     cc_formula variable, reverse;
     cc_init(&variable, CC_INTERVAL);
     cc_init(&reverse, CC_INTERVAL);
-    if (cc_generator(&variable, dim, true) != CC_OK || cc_reverse(&reverse, &variable) != CC_OK) {
+    cc_status status = cc_generator(&variable, dim, true);
+    if (status == CC_OK) status = cc_reverse(&reverse, &variable);
+    if (!ck_formula_result(k, status, "Universe composition interval allocation failed.")) {
         cc_clear(&variable);
         cc_clear(&reverse);
-        return ck_fail(k, "Universe composition interval allocation failed."), 0;
+        return 0;
     }
     cc_term gluing = 0;
     for (cc_term cursor = system; cursor && !k->error[0];) {

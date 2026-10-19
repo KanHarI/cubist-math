@@ -80,12 +80,12 @@ static cc_signature *new_signature(cc_kernel *k, uint32_t *index) {
     if (!k->signature_count)
         k->signature_count = 1;
     if (k->signature_count >= UINT32_MAX)
-        return fail(k, "Signature table exhausted."), NULL;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Signature table exhausted."), NULL;
     if (k->signature_count == k->signature_capacity || !k->signatures) {
         size_t next = k->signature_capacity ? 2 * k->signature_capacity : 16;
         cc_signature *grown = realloc(k->signatures, next * sizeof *grown);
         if (!grown)
-            return fail(k, "Signature table allocation failed."), NULL;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Signature table allocation failed."), NULL;
         k->signatures = grown;
         k->signature_capacity = next;
     }
@@ -97,12 +97,12 @@ static cc_signature *new_signature(cc_kernel *k, uint32_t *index) {
 
 static bool add_constructor(cc_kernel *k, cc_signature *s, cc_constructor c) {
     if (s->constructor_count >= CC_SIGNATURE_CONSTRUCTORS)
-        return fail(k, "A signature has too many constructors.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A signature has too many constructors.");
     if (s->constructor_count == s->constructor_capacity) {
         uint32_t next = s->constructor_capacity ? 2 * s->constructor_capacity : 8;
         cc_constructor *grown = realloc(s->constructors, next * sizeof *grown);
         if (!grown)
-            return fail(k, "Constructor table allocation failed.");
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Constructor table allocation failed.");
         s->constructors = grown;
         s->constructor_capacity = next;
     }
@@ -167,7 +167,7 @@ static bool cube(shape *sh, cc_term c, uint32_t *depth, unsigned guard, unsigned
 static bool positional(shape *sh, cc_term e, unsigned depth) {
     cc_kernel *k = sh->k;
     if (depth > 256)
-        return fail(k, "A boundary is nested too deeply.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A boundary is nested too deeply.");
     cc_node n = node(k, e);
     if (n.kind != CC_LAM)
         return endpoint(sh, e, depth + 1);
@@ -209,7 +209,7 @@ static bool data_term(shape *sh, cc_term t) {
 static bool endpoint(shape *sh, cc_term e, unsigned depth) {
     cc_kernel *k = sh->k;
     if (depth > 256)
-        return fail(k, "A boundary is nested too deeply.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A boundary is nested too deeply.");
     if (!ck_tick(k))
         return false;
     cc_node n = node(k, e);
@@ -260,9 +260,9 @@ static bool endpoint(shape *sh, cc_term e, unsigned depth) {
 static bool cube(shape *sh, cc_term c, uint32_t *depth, unsigned guard, unsigned nesting) {
     cc_kernel *k = sh->k;
     if (guard > CC_CONSTRUCTOR_DIMENSIONS)
-        return fail(k, "A constructor has too many dimensions, or a position too deep a cube.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A constructor has too many dimensions, or a position too deep a cube.");
     if (nesting > 256)
-        return fail(k, "A boundary is nested too deeply.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A boundary is nested too deeply.");
     cc_node n = node(k, c);
     if (n.kind == CC_VAR && n.payload == sh->signature->sort_symbol) {
         *depth = 0;
@@ -292,7 +292,7 @@ static bool constructor_shape(shape *sh, cc_term t, cc_constructor *out) {
         if (reserved(sh, n.payload))
             return fail(k, "A constructor's argument reuses a name of the signature.");
         if (data + sh->positions >= CC_CONSTRUCTOR_ARGUMENTS)
-            return fail(k, "A constructor has too many arguments.");
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "A constructor has too many arguments.");
         if (mentions(sh, n.child[0])) {
             cc_term body = n.child[0];
             uint32_t arity = 0, depth = 0;
@@ -304,7 +304,7 @@ static bool constructor_shape(shape *sh, cc_term t, cc_constructor *out) {
                     return fail(k, "A position's arity mentions the sort, a constructor or a position: the sort "
                                    "occurs only at the end of a position (section 1.3).");
                 if (++arity > CC_CONSTRUCTOR_ARGUMENTS)
-                    return fail(k, "A position's arity is too long.");
+                    return ck_fail_as(k, CC_ERROR_RESOURCE, "A position's arity is too long.");
                 body = binder.child[1];
             }
             if (!cube(sh, body, &depth, 0, 0))
@@ -369,7 +369,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     if (f.context)
         return fail(k, "A signature's former type must be closed."), 0;
     if (modifier > CC_TRUNCATION_MAX + 2)
-        return fail(k, "A truncation level is at most the kernel's bound."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A truncation level is at most the kernel's bound."), 0;
     if (!sort_symbol)
         return fail(k, "A signature needs a sort symbol."), 0;
     /* The prenex: Π (xs < ω). Π (ps : Ps). U(ℓ). */
@@ -380,7 +380,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     while (node(k, t).kind == CC_LPI) {
         cc_node n = node(k, t);
         if (levels == CC_SIGNATURE_LEVELS)
-            return fail(k, "A signature has too many universe parameters."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "A signature has too many universe parameters."), 0;
         cc_node bound = node(k, n.child[0]);
         if (bound.kind != CC_LBOUND || bound.payload != 1)
             return fail(k, "A signature's universe parameters range below UU0: x < ω."), 0;
@@ -390,7 +390,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     while (node(k, t).kind == CC_PI) {
         cc_node n = node(k, t);
         if (parameters == CC_SIGNATURE_PARAMETERS)
-            return fail(k, "A signature has too many parameters."), 0;
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "A signature has too many parameters."), 0;
         symbols[levels + parameters] = n.payload;
         types[parameters++] = n.child[0];
         t = n.child[1];
@@ -436,7 +436,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     if (!s->symbols || !s->parameter_types) {
         release(s);
         --k->signature_count;
-        return fail(k, "Signature allocation failed."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Signature allocation failed."), 0;
     }
     memcpy(s->symbols, symbols, count * sizeof *symbols);
     memcpy(s->parameter_types, types, parameters * sizeof *types);

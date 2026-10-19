@@ -89,7 +89,7 @@ unsigned ck_fresh_dimension(cc_kernel *k, uint64_t avoid) {
     for (unsigned d = 0; d < CC_DIMENSIONS; ++d)
         if (!(avoid & (UINT64_C(1) << d)))
             return d;
-    ck_fail(k, "Native prototype has exhausted its 64 dimension names.");
+    ck_fail_as(k, CC_ERROR_RESOURCE, "Native prototype has exhausted its 64 dimension names.");
     return CC_DIMENSIONS;
 }
 
@@ -115,9 +115,9 @@ static cc_term substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term val
         unsigned fresh = ck_fresh_dimension(k, avoid);
         cc_formula variable;
         cc_init(&variable, CC_INTERVAL);
-        if (cc_generator(&variable, fresh, true) != CC_OK) {
+        if (!ck_formula_result(k, cc_generator(&variable, fresh, true), "Term substitution dimension allocation failed.")) {
             cc_clear(&variable);
-            return ck_fail(k, "Term substitution dimension allocation failed."), 0;
+            return 0;
         }
         if (n.kind != CC_HCOMP)
             n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
@@ -174,7 +174,7 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
         if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
         if (status != CC_OK) {
             cc_clear(&changed);
-            return ck_fail(k, status == CC_LIMIT_EXCEEDED
+            return ck_formula_result(k, status, status == CC_LIMIT_EXCEEDED
                 ? "Cubical lattice term-size or work budget exceeded."
                 : "Invalid face substitution."), 0;
         }
@@ -196,8 +196,8 @@ static cc_term dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
                                            (UINT64_C(1) << dim) | (UINT64_C(1) << n.payload));
         cc_formula variable;
         cc_init(&variable, CC_INTERVAL);
-        if (cc_generator(&variable, fresh, true) != CC_OK)
-            return ck_fail(k, "Fresh dimension allocation failed."), 0;
+        if (!ck_formula_result(k, cc_generator(&variable, fresh, true), "Fresh dimension allocation failed."))
+            return 0;
         if (n.kind != CC_HCOMP)
             n.child[0] = ck_dimension_substitute(k, n.child[0], n.payload, &variable);
         if (n.kind == CC_PLAM)
@@ -227,7 +227,7 @@ static cc_term dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
         if (status != CC_OK) {
             cc_clear(&changed);
-            return ck_fail(k, status == CC_LIMIT_EXCEEDED
+            return ck_formula_result(k, status, status == CC_LIMIT_EXCEEDED
                 ? "Cubical lattice term-size or work budget exceeded."
                 : "Invalid Glue face substitution."), 0;
         }
@@ -243,7 +243,7 @@ static cc_term dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
         if (!ck_deadline(k)) { cc_clear(&changed); return 0; }
         if (status != CC_OK) {
             cc_clear(&changed);
-            return ck_fail(k, status == CC_LIMIT_EXCEEDED
+            return ck_formula_result(k, status, status == CC_LIMIT_EXCEEDED
                 ? "Cubical lattice term-size or work budget exceeded."
                 : "Invalid interval substitution."), 0;
         }
@@ -287,9 +287,9 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
 cc_term ck_endpoint_term(cc_kernel *k, cc_term term, unsigned dim, unsigned endpoint) {
     cc_formula value;
     cc_init(&value, CC_INTERVAL);
-    if (endpoint && cc_one(&value) != CC_OK) {
+    if (!ck_formula_result(k, endpoint ? cc_one(&value) : CC_OK, "Endpoint allocation failed.")) {
         cc_clear(&value);
-        return ck_fail(k, "Endpoint allocation failed."), 0;
+        return 0;
     }
     cc_term result = ck_dimension_substitute(k, term, dim, &value);
     cc_clear(&value);
@@ -311,10 +311,8 @@ cc_formula_id ck_interval_variable(cc_kernel *k, unsigned dim) {
     cc_formula f;
     cc_init(&f, CC_INTERVAL);
     cc_formula_id result = 0;
-    if (cc_generator(&f, dim, true) == CC_OK)
+    if (ck_formula_result(k, cc_generator(&f, dim, true), "Invalid interval variable."))
         result = ck_formula(k, &f);
-    else
-        ck_fail(k, "Invalid interval variable.");
     cc_clear(&f);
     return result;
 }
@@ -323,10 +321,8 @@ cc_formula_id ck_endpoint_face(cc_kernel *k, unsigned dim, unsigned endpoint) {
     cc_formula f;
     cc_init(&f, CC_FACE);
     cc_formula_id result = 0;
-    if (cc_generator(&f, dim, endpoint != 0) == CC_OK)
+    if (ck_formula_result(k, cc_generator(&f, dim, endpoint != 0), "Invalid face variable."))
         result = ck_formula(k, &f);
-    else
-        ck_fail(k, "Invalid face variable.");
     cc_clear(&f);
     return result;
 }

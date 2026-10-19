@@ -267,6 +267,7 @@ bool ck_memo_get(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_ter
 void ck_memo_put(cc_kernel *, uint32_t operation, cc_term, uint32_t name, cc_term value, uint64_t result);
 bool ck_fail(cc_kernel *, const char *);
 bool ck_fail_as(cc_kernel *, cc_error_kind, const char *);
+bool ck_formula_result(cc_kernel *, cc_status, const char *);
 bool ck_tick(cc_kernel *);
 /* Start an operation (cubical_kernel.h, cc_kernel_work): charge its steps and
  * its error to its kind, count it, and give it a full budget. It leaves the
