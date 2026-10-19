@@ -1,0 +1,692 @@
+{
+  "metadata": {
+    "measuredAt": "2026-10-19",
+    "baseline": "All cases checked in a fresh process in checkout eb81c10d, whose kernel is identical to main 89f73ea1, plus the versioned fixture/probe additions, with the unused semiring import removed. Standard 512 syntax-depth and 1024 native recursion guards retained. Declaration commits clear reduction caches; decimal literal parsing is part of each measured normalization.",
+    "diagnostic": "Same fixture sources, kernel 89f73ea1 with only the following temporary syntax-depth guard patch. This was reverted and baseline WASM rebuilt after measurement. No production guard change is part of this PR.",
+    "diagnosticPatch": "diff --git a/kernel/src/term_store.c b/kernel/src/term_store.c\nindex 6d666892..0573129c 100644\n--- a/kernel/src/term_store.c\n+++ b/kernel/src/term_store.c\n@@ -239,8 +239,8 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,\n     for (unsigned i = 0; i < arity; ++i)\n         if (children[i] && k->nodes[children[i]].depth >= depth)\n             depth = k->nodes[children[i]].depth + 1;\n-    if (depth > 512)\n-        return ck_fail_as(k, CC_ERROR_RESOURCE, \"Native prototype syntax depth exceeds 512.\"), 0;\n+    if (depth > 2048)\n+        return ck_fail_as(k, CC_ERROR_RESOURCE, \"Diagnostic syntax depth exceeds 2048.\"), 0;\n     if (k->count >= UINT32_MAX)\n         return ck_fail_as(k, CC_ERROR_RESOURCE, \"Term handle space exhausted.\"), 0;\n     if (k->count >= k->capacity) {\n",
+    "notes": "Both logs record modified-tree paths. Failed queries have no complete normal-form size. Timings and process memory are exploratory single samples, not stable benchmark claims. The kernel probe does not test JavaScript decoding/printing; absence of a detected overflow in the diagnostic does not establish that recursive traversals are safe at that enlarged depth."
+  },
+  "baseline": [
+    {
+      "name": "add_left_32",
+      "bits": 32,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 53930,
+      "allocatedNodes": 13650,
+      "normalForm": {
+        "reachableNodes": 494,
+        "depth": 293
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 17276,
+        "bytes": 2754048
+      },
+      "normalizeMs": 1.9709589999999935,
+      "memoryAfterInspection": {
+        "rss": 150290432,
+        "heapTotal": 69812224,
+        "heapUsed": 47851056,
+        "external": 18996782,
+        "arrayBuffers": 31122
+      },
+      "processMaxRssKiB": 146768,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_right_32",
+      "bits": 32,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 45088,
+      "allocatedNodes": 11475,
+      "normalForm": {
+        "reachableNodes": 106,
+        "depth": 39
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 15101,
+        "bytes": 1836544
+      },
+      "normalizeMs": 1.494875000000036,
+      "memoryAfterInspection": {
+        "rss": 146718720,
+        "heapTotal": 66928640,
+        "heapUsed": 33161168,
+        "external": 18994711,
+        "arrayBuffers": 29051
+      },
+      "processMaxRssKiB": 143280,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_comm_32",
+      "bits": 32,
+      "fixture": "open-bnat-bitwise-proof.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 78387,
+      "allocatedNodes": 18891,
+      "normalForm": {
+        "reachableNodes": 1476,
+        "depth": 380
+      },
+      "arenaBefore": {
+        "nodes": 3882,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 22773,
+        "bytes": 2754048
+      },
+      "normalizeMs": 2.8595829999999864,
+      "memoryAfterInspection": {
+        "rss": 150093824,
+        "heapTotal": 69664768,
+        "heapUsed": 51309136,
+        "external": 18994711,
+        "arrayBuffers": 29051
+      },
+      "processMaxRssKiB": 146576,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_left_64",
+      "bits": 64,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "limited",
+      "kind": "resource",
+      "message": "Native prototype syntax depth exceeds 512.",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 206706,
+      "allocatedNodes": 45305,
+      "normalForm": null,
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 48931,
+        "bytes": 4851200
+      },
+      "normalizeMs": 7.595917000000043,
+      "memoryAfterInspection": {
+        "rss": 149618688,
+        "heapTotal": 66666496,
+        "heapUsed": 48200512,
+        "external": 18996982,
+        "arrayBuffers": 31322
+      },
+      "processMaxRssKiB": 146128,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_right_64",
+      "bits": 64,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 188908,
+      "allocatedNodes": 40913,
+      "normalForm": {
+        "reachableNodes": 138,
+        "depth": 71
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 44539,
+        "bytes": 4851200
+      },
+      "normalizeMs": 7.552917000000036,
+      "memoryAfterInspection": {
+        "rss": 144637952,
+        "heapTotal": 61685760,
+        "heapUsed": 33388416,
+        "external": 18990776,
+        "arrayBuffers": 25116
+      },
+      "processMaxRssKiB": 141248,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_comm_64",
+      "bits": 64,
+      "fixture": "open-bnat-bitwise-proof.cubist",
+      "status": "limited",
+      "kind": "resource",
+      "message": "Native prototype syntax depth exceeds 512.",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 212143,
+      "allocatedNodes": 45357,
+      "normalForm": null,
+      "arenaBefore": {
+        "nodes": 3882,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 49239,
+        "bytes": 4851200
+      },
+      "normalizeMs": 7.619500000000016,
+      "memoryAfterInspection": {
+        "rss": 153141248,
+        "heapTotal": 69664768,
+        "heapUsed": 49776760,
+        "external": 18994511,
+        "arrayBuffers": 28851
+      },
+      "processMaxRssKiB": 149552,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_left_128",
+      "bits": 128,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "limited",
+      "kind": "resource",
+      "message": "Native prototype syntax depth exceeds 512.",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 1562194,
+      "allocatedNodes": 163524,
+      "normalForm": null,
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 167150,
+        "bytes": 17434112
+      },
+      "normalizeMs": 53.40870799999999,
+      "memoryAfterInspection": {
+        "rss": 165855232,
+        "heapTotal": 66928640,
+        "heapUsed": 32984728,
+        "external": 30791191,
+        "arrayBuffers": 29051
+      },
+      "processMaxRssKiB": 161968,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_right_128",
+      "bits": 128,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 1466360,
+      "allocatedNodes": 155524,
+      "normalForm": {
+        "reachableNodes": 202,
+        "depth": 135
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 159150,
+        "bytes": 17434112
+      },
+      "normalizeMs": 46.019499999999994,
+      "memoryAfterInspection": {
+        "rss": 165117952,
+        "heapTotal": 65880064,
+        "heapUsed": 22833512,
+        "external": 30787256,
+        "arrayBuffers": 25116
+      },
+      "processMaxRssKiB": 161248,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_comm_128",
+      "bits": 128,
+      "fixture": "open-bnat-bitwise-proof.cubist",
+      "status": "limited",
+      "kind": "resource",
+      "message": "Native prototype syntax depth exceeds 512.",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 1560793,
+      "allocatedNodes": 163576,
+      "normalForm": null,
+      "arenaBefore": {
+        "nodes": 3882,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 167458,
+        "bytes": 17434112
+      },
+      "normalizeMs": 49.76000000000005,
+      "memoryAfterInspection": {
+        "rss": 168198144,
+        "heapTotal": 67829760,
+        "heapUsed": 23668568,
+        "external": 30787256,
+        "arrayBuffers": 25116
+      },
+      "processMaxRssKiB": 164256,
+      "revision": "eb81c10d06a982543238a09d5961c39636f89ebb",
+      "modified": true,
+      "workingTreeStatus": "A  docs/reports/open-bnat-normalization-baseline.json\nAM docs/reports/open-bnat-normalization-baseline.md\nMM docs/roadmaps/runtime/runtime-evaluation-roadmap.md\nA  tests/fixtures/open-bnat-addition.cubist\nAM tests/fixtures/open-bnat-bitwise-proof.cubist\nAM tools/open-bnat-normalization-probe.mjs",
+      "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+      "kernelSourceHash": "ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    }
+  ],
+  "diagnosticDepth2048": [
+    {
+      "name": "add_left_32",
+      "bits": 32,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 53930,
+      "allocatedNodes": 13650,
+      "normalForm": {
+        "reachableNodes": 494,
+        "depth": 293
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 17276,
+        "bytes": 2754048
+      },
+      "normalizeMs": 1.87987499999997,
+      "memoryAfterInspection": {
+        "rss": 146915328,
+        "heapTotal": 66666496,
+        "heapUsed": 34223912,
+        "external": 18994471,
+        "arrayBuffers": 28811
+      },
+      "processMaxRssKiB": 143472,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_right_32",
+      "bits": 32,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 45088,
+      "allocatedNodes": 11475,
+      "normalForm": {
+        "reachableNodes": 106,
+        "depth": 39
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 15101,
+        "bytes": 1836544
+      },
+      "normalizeMs": 1.6652920000000222,
+      "memoryAfterInspection": {
+        "rss": 145473536,
+        "heapTotal": 66666496,
+        "heapUsed": 48418080,
+        "external": 18996942,
+        "arrayBuffers": 31282
+      },
+      "processMaxRssKiB": 142064,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_comm_32",
+      "bits": 32,
+      "fixture": "open-bnat-bitwise-proof.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 78387,
+      "allocatedNodes": 18891,
+      "normalForm": {
+        "reachableNodes": 1476,
+        "depth": 380
+      },
+      "arenaBefore": {
+        "nodes": 3882,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 22773,
+        "bytes": 2754048
+      },
+      "normalizeMs": 3.0429579999999987,
+      "memoryAfterInspection": {
+        "rss": 150667264,
+        "heapTotal": 69402624,
+        "heapUsed": 51177296,
+        "external": 18994671,
+        "arrayBuffers": 29011
+      },
+      "processMaxRssKiB": 147152,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_left_64",
+      "bits": 64,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 209897,
+      "allocatedNodes": 45432,
+      "normalForm": {
+        "reachableNodes": 974,
+        "depth": 581
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 49058,
+        "bytes": 4851200
+      },
+      "normalizeMs": 13.189374999999984,
+      "memoryAfterInspection": {
+        "rss": 150421504,
+        "heapTotal": 66666496,
+        "heapUsed": 34222920,
+        "external": 18994671,
+        "arrayBuffers": 29011
+      },
+      "processMaxRssKiB": 146896,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_right_64",
+      "bits": 64,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 188908,
+      "allocatedNodes": 40913,
+      "normalForm": {
+        "reachableNodes": 138,
+        "depth": 71
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 44539,
+        "bytes": 4851200
+      },
+      "normalizeMs": 6.608500000000049,
+      "memoryAfterInspection": {
+        "rss": 149405696,
+        "heapTotal": 66928640,
+        "heapUsed": 33043592,
+        "external": 18996942,
+        "arrayBuffers": 31282
+      },
+      "processMaxRssKiB": 145904,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_comm_64",
+      "bits": 64,
+      "fixture": "open-bnat-bitwise-proof.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 266772,
+      "allocatedNodes": 55824,
+      "normalForm": {
+        "reachableNodes": 2852,
+        "depth": 732
+      },
+      "arenaBefore": {
+        "nodes": 3882,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 59706,
+        "bytes": 4851200
+      },
+      "normalizeMs": 9.213332999999977,
+      "memoryAfterInspection": {
+        "rss": 153550848,
+        "heapTotal": 69664768,
+        "heapUsed": 37780728,
+        "external": 18994671,
+        "arrayBuffers": 29011
+      },
+      "processMaxRssKiB": 149952,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_left_128",
+      "bits": 128,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 1573119,
+      "allocatedNodes": 164739,
+      "normalForm": {
+        "reachableNodes": 1934,
+        "depth": 1157
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 168365,
+        "bytes": 17434112
+      },
+      "normalizeMs": 70.58520800000002,
+      "memoryAfterInspection": {
+        "rss": 171360256,
+        "heapTotal": 73105408,
+        "heapUsed": 54347288,
+        "external": 30793422,
+        "arrayBuffers": 31282
+      },
+      "processMaxRssKiB": 167344,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_right_128",
+      "bits": 128,
+      "fixture": "open-bnat-addition.cubist",
+      "status": "normalized",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 1466360,
+      "allocatedNodes": 155524,
+      "normalForm": {
+        "reachableNodes": 202,
+        "depth": 135
+      },
+      "arenaBefore": {
+        "nodes": 3626,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 159150,
+        "bytes": 17434112
+      },
+      "normalizeMs": 47.79329200000001,
+      "memoryAfterInspection": {
+        "rss": 165036032,
+        "heapTotal": 66404352,
+        "heapUsed": 22893576,
+        "external": 30787216,
+        "arrayBuffers": 25076
+      },
+      "processMaxRssKiB": 161168,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    },
+    {
+      "name": "add_comm_128",
+      "bits": 128,
+      "fixture": "open-bnat-bitwise-proof.cubist",
+      "status": "limited",
+      "kind": "resource",
+      "message": "Native reduction recursion depth exceeded.",
+      "queryBudget": "10000000",
+      "deadlineMs": 30000,
+      "querySteps": 1635475,
+      "allocatedNodes": 177846,
+      "normalForm": null,
+      "arenaBefore": {
+        "nodes": 3882,
+        "bytes": 1377792
+      },
+      "arenaAfter": {
+        "nodes": 181728,
+        "bytes": 17434112
+      },
+      "normalizeMs": 51.29954100000003,
+      "memoryAfterInspection": {
+        "rss": 165265408,
+        "heapTotal": 66256896,
+        "heapUsed": 37681464,
+        "external": 30787216,
+        "arrayBuffers": 25076
+      },
+      "processMaxRssKiB": 161408,
+      "revision": "89f73ea1de04b363f39712e11d9f07bed04b95ac",
+      "modified": true,
+      "workingTreeStatus": " M kernel/src/term_store.c\n?? tests/fixtures/generic-prop-normalization.cubist\n?? tests/fixtures/open-bnat-addition.cubist\n?? tests/fixtures/open-bnat-bitwise-proof.cubist\n?? tools/open-bnat-normalization-probe.mjs\n?? tools/quotient-normalization-probe.mjs",
+      "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+      "kernelSourceHash": "6bf0d924294a66ccc72fde2290b6a3ec8b548cd7149789ef119760fa519a4c9c",
+      "node": "v24.13.0",
+      "platform": "darwin/arm64"
+    }
+  ]
+}
