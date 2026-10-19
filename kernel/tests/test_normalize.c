@@ -545,7 +545,108 @@ static void normal_glue_boundaries(unsigned optimizations) {
     cc_kernel_free(k);
 }
 
+/* Each alias is separately checked, closed and shallow. Thousands of tail
+ * delta steps must reach the point without spending native recursion depth.
+ * Cache publication retains completed aliases up to its bound, never a failed prefix. */
+static void weak_tail_aliases(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_judgement_id value = cc_instr_point(k);
+    cc_term point = info(k, value).term, prefix = 0, middle = 0, visited = 0, omitted = 0;
+    for (unsigned i = 1; i <= 21000; ++i) {
+        value = cc_instr_define(k, 100 + i, value);
+        cc_term source = info(k, value).term;
+        if (i == 1000)
+            middle = source;
+        if (i == 4000)
+            visited = source;
+        if (i == 4500)
+            omitted = source;
+        if (i != 4096)
+            continue;
+        prefix = source;
+        cc_kernel_set_step_budget(k, 200);
+        assert(!cc_kernel_whnf(k, source));
+        assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET && !k->recursion);
+        assert(!k->weak_cache[source] && !k->weak_cache[visited]);
+        cc_kernel_clear_error(k);
+        cc_kernel_set_step_budget(k, 100000);
+        uint64_t before = steps(k);
+        assert(cc_kernel_whnf(k, source) == point);
+        assert(steps(k) - before == 4097 && !k->recursion);
+        assert(k->weak_cache[middle] == point);
+        before = steps(k);
+        assert(cc_kernel_whnf(k, middle) == point && steps(k) - before == 1);
+        cc_term normal = cc_kernel_normalize(k, source);
+        assert(normal && k->nodes[normal].kind == CC_POINT && !k->error[0]);
+    }
+    cc_term source = info(k, value).term;
+    cc_kernel_set_step_budget(k, 16500);
+    assert(!cc_kernel_whnf(k, source));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET && !k->recursion);
+    assert(!k->weak_cache[source] && !k->weak_cache[omitted]);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 100000);
+    /* More than 16,384 uncached tails still compute. Only memo retention is
+     * capped: the outer query is cached, while this later alias is omitted. */
+    uint64_t before = steps(k);
+    assert(cc_kernel_whnf(k, source) == point && !k->error[0] && !k->recursion);
+    assert(steps(k) - before == 21000 - 4096 + 1);
+    assert(k->weak_cache[source] == point && !k->weak_cache[omitted]);
+    before = steps(k);
+    assert(cc_kernel_whnf(k, source) == point && steps(k) - before == 1);
+    assert(cc_kernel_whnf(k, omitted) == point && k->weak_cache[omitted] == point);
+    assert(cc_kernel_whnf(k, prefix) == point);
+    /* A new beta redex succeeds too, rather than relying only on a cache. */
+    cc_judgement_id unit = cc_instr_unit(k);
+    cc_entry_id x = cc_instr_extend(k, unit, 30000);
+    cc_judgement_id identity = cc_instr_lambda(k, x, cc_instr_variable(k, x));
+    cc_term application = info(k, cc_instr_apply(k, identity, cc_instr_point(k))).term;
+    assert(!k->weak_cache[application]);
+    assert(cc_kernel_whnf(k, application) == point && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+/* A finite checked chain alternating delta and beta fully normalizes. */
+static void weak_tail_beta(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k), value = cc_instr_point(k);
+    cc_term point = info(k, value).term;
+    cc_entry_id x = cc_instr_extend(k, unit, 100);
+    cc_judgement_id identity = cc_instr_lambda(k, x, cc_instr_variable(k, x));
+    for (unsigned i = 1; i <= 2000; ++i)
+        value = cc_instr_define(k, 100 + i, cc_instr_apply(k, identity, value));
+    cc_term source = info(k, value).term;
+    assert(cc_kernel_normalize(k, source) == point && !k->recursion);
+    cc_kernel_free(k);
+}
+
+/* Raw syntax queries may receive ill-typed self-application. The tail loop
+ * must exhaust its budget, never publish a cyclic "head" or leak recursion. */
+static void weak_tail_raw_cycle(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), x = raw(k, CC_VAR, 42, 0, 0);
+    cc_term self = raw(k, CC_LAM, 42, unit, raw(k, CC_APP, 0, x, x));
+    cc_term cycle = raw(k, CC_APP, 0, self, self);
+    cc_kernel_set_step_budget(k, 100000);
+    assert(!cc_kernel_whnf(k, cycle));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET && !k->recursion);
+    assert(!k->weak_cache[cycle]);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 1000);
+    cc_term point = info(k, cc_instr_point(k)).term;
+    assert(cc_kernel_whnf(k, point) == point && !k->error[0]);
+    cc_kernel_free(k);
+}
+
 int main(void) {
+    weak_tail_aliases(CC_SHARE_SYNTAX);
+    weak_tail_aliases(0);
+    weak_tail_beta();
+    weak_tail_raw_cycle();
     normalization_continuations();
     normal_glue_boundaries(CC_SHARE_SYNTAX);
     normal_glue_boundaries(0);
