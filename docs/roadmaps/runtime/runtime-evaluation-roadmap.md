@@ -914,6 +914,13 @@ as well as avoided syntax allocation.
 
 ### Rational full-normalization completion path
 
+The [nondependent quotient-descent change](../../reports/nondependent-quotient-descent.md)
+passes the unchanged generic quotient's fixed gate by generating its squash
+clause with the constant motive already known. It also enables a completed
+small-inverse reference under the normal work ceiling. This is a library
+computation change, not completion of the evaluator stages below: the new
+quotient-free setness-transport fixture and the wide rational remain open.
+
 Planned on 2026-10-19; none of the stages below is claimed complete by the
 diagnostic experiments. This is part of the existing runtime track and NUM2
 release work. The [reproduction](../../reports/rational-normalization.md)

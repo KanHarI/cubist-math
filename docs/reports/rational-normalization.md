@@ -5,6 +5,15 @@ unreleased; the default `Z`/`Q` migration is pending. The structural work is
 part of the [runtime roadmap](../roadmaps/runtime/runtime-evaluation-roadmap.md#rational-full-normalization-completion-path),
 not a separate language-feature or real-number project.
 
+Update on 2026-10-20: [nondependent quotient descent](nondependent-quotient-descent.md)
+now passes the unchanged generic-Prop fixture's 10M full-normalization gate.
+The small rational inverse also completes in a reference run at the normal
+maximum allowance; the wide inverse and numerical release remain open.
+The new report distinguishes the library computation change from the
+quotient-free setness-transport workload that remains for the evaluator.
+The measurements below describe the original definition unless stated
+otherwise.
+
 ## Small reproduction on main
 
 The [fixture](../../tests/fixtures/generic-prop-normalization.cubist) contains an
