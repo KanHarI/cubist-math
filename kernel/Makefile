@@ -47,8 +47,8 @@ $(OUT)/configuration: | $(OUT)/obj
 	printf '%s\n' $(CONFIGURATION) > $@
 $(OUT)/obj/%.o: src/%.c | $(OUT)/obj $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
-$(OUT)/obj/tests/instructions-fault.o: src/instructions.c | $(OUT)/obj/tests $(OUT)/configuration
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Dcalloc=cc_test_calloc -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/instructions-fault.o: src/instructions.c tests/allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/allocation_fault.h -MMD -MP -c $< -o $@
 $(OUT)/obj/tests/%.o: tests/%.c | $(OUT)/obj/tests $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 # The link $(1) pointed at $(2), only when it points elsewhere, by renaming a

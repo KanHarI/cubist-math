@@ -837,15 +837,20 @@ export class InstructionDriver {
   // that fails while a variable's type there mentions the clause's
   // dimensions, derived again on the clause (Γ, φ), each such variable at
   // its type there. A part that needs no restriction is derived as it
-  // always was. Running out of budget or time is no reason to try again.
+  // always was. Budgets and deadlines stop the attempt, but a representation
+  // limit may disappear on the smaller face. Preserve it if the retry fails.
   onFace(scope, clause, build) {
     try { return build(scope); }
     catch (error) {
       const names = clause[0] | clause[1];
-      if (isResourceLimit(error?.kind) ||
+      if ((isResourceLimit(error?.kind) && error.kind !== "resource") ||
           ![...Array(64).keys()].some(dim => names >> BigInt(dim) & 1n && this.typesMention(scope, dim)))
         throw error;
-      return build(withFace(scope, clause));
+      try { return build(withFace(scope, clause)); }
+      catch (retryError) {
+        if (error.kind === "resource" && !isResourceLimit(retryError?.kind)) throw error;
+        throw retryError;
+      }
     }
   }
 
@@ -977,8 +982,9 @@ export class InstructionDriver {
   // A failed lazy comparison is not yet a disagreement. Finish normalization
   // or propagate its limit. Normal forms retain their original system faces,
   // so the split move may still be needed to bring those systems together.
-  settle(a, b) {
-    for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" });
+  settle(a, b, normalizationFailure = error => error) {
+    try { for (const focus of [a, b]) this.reduce(focus, { path: [], rule: "normalize" }); }
+    catch (error) { throw normalizationFailure(error); }
     if (!this.alpha(this.subterm(a), this.subterm(b)) && [a, b].some(focus => this.splits(this.subterm(focus))))
       this.agree(a, b);
     return this.alpha(this.subterm(a), this.subterm(b));
@@ -995,8 +1001,7 @@ export class InstructionDriver {
     const mismatch = error => isResourceLimit(error?.kind) ? error
       : Object.assign(new KernelError("Type mismatch.", "mismatch"), { mismatch: { found, expected: wanted }, search: error?.message });
     if (!this.agree(a, b, null, null, budget)) {
-      try { this.settle(a, b); }
-      catch (error) { throw mismatch(error); }
+      this.settle(a, b, mismatch);
     }
     if (!this.alpha(this.subterm(a), this.subterm(b))) {
       // Universes and families of universes are cumulative.

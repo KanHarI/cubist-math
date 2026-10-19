@@ -1,3 +1,4 @@
+import { isResourceLimit } from "../resource-limits.mjs";
 // `inductive` declarations (work plan L2.1; docs/roadmaps/hott/h1-signature-
 // specification.md, section 9): a declaration is lowered to a signature in
 // normal form, admitted through the checker, and then used by name. This is
@@ -185,9 +186,9 @@ export function lowerInductive(translator, d, scope) {
   let record;
   try { record = checker.admitSignature(spec); }
   catch (error) {
-    propagateLimit(error);
+    propagateElaborationStop(error);
     // A declared universe below a data type's is lowering: name the argument.
-    if (declared !== null && (error.kind === "mismatch" || /universe|cumulative|not included/i.test(error.message))) {
+    if (!isResourceLimit(error?.kind) && declared !== null && (error.kind === "mismatch" || /universe|cumulative|not included/i.test(error.message))) {
       const lowered = sizes.find(size => !checker.levelWithin?.(size.level, declared));
       if (lowered) throw locate(Object.assign(Error(`${lowered.constructor}'s argument ${lowered.argument} lives in a universe above ${d.name.text}'s declared one: a declared type cannot lower its data (K2.5).`),
         { kind: error.kind, dataUniverse: { constructor: lowered.constructor, argument: lowered.argument } }), d.name);

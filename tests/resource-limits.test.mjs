@@ -150,12 +150,47 @@ test("a resource failure in cleaned admission is retained after an ordinary firs
   assert.equal(calls, 2);
 });
 
-test("face restriction cannot retry a resource failure as an ordinary refusal", t => {
+test("face restriction may recover from a representation limit, but retains an unresolved limit", t => {
   const { driver } = setup(t), failure = new KernelError("probe", "resource");
+  const scope = new Map(), clause = [1n, 0n];
   driver.typesMention = () => true;
   let calls = 0;
-  assert.throws(() => driver.onFace(new Map(), [1n, 0n], () => { calls++; throw failure; }), error => error === failure);
+  const result = driver.onFace(scope, clause, inner => {
+    if (++calls === 1) throw failure;
+    assert.notEqual(inner, scope, "the retry uses a restricted scope");
+    return "checked alternative";
+  });
+  assert.equal(result, "checked alternative");
+  assert.equal(calls, 2);
+  for (const kind of ["other", "mismatch", "budget", "deadline", "resource"]) {
+    calls = 0;
+    const retry = new KernelError("retry", kind);
+    assert.throws(() => driver.onFace(scope, clause, () => { throw ++calls === 1 ? failure : retry; }),
+      error => error === (["other", "mismatch"].includes(kind) ? failure : retry));
+    assert.equal(calls, 2);
+  }
+  driver.typesMention = () => false;
+  calls = 0;
+  assert.throws(() => driver.onFace(scope, clause, () => { calls++; throw failure; }), error => error === failure);
   assert.equal(calls, 1);
+  driver.typesMention = () => true;
+  for (const kind of ["fuel", "budget", "deadline"]) {
+    const stop = new KernelError("probe", kind);
+    calls = 0;
+    assert.throws(() => driver.onFace(scope, clause, () => { calls++; throw stop; }), error => error === stop);
+    assert.equal(calls, 1);
+  }
+});
+
+test("split comparison failures retain their identity after final normalization", t => {
+  const { driver } = setup(t), g = driver.graph;
+  driver.splits = () => true;
+  for (const failure of [new Error("probe"), new KernelError("probe", "other")]) {
+    let calls = 0;
+    driver.agree = () => { if (++calls === 1) return false; throw failure; };
+    assert.throws(() => driver.convertTo(g.point(), g.void()), error => error === failure);
+    assert.equal(calls, 2);
+  }
 });
 
 test("constructor instance inference retains the limit from an argument", async t => {
@@ -227,4 +262,18 @@ test("frontend dimension and signature bounds carry resource kinds", t => {
   assert.throws(() => new Scope({}, new Map(), new Map(), dimensions).bindDimension("new"), error => error.kind === "resource");
   assert.throws(() => modifierCode({ trunc: 15 }), error => error.kind === "resource");
   assert.throws(() => admitSignature(kernel, { name: "large", parameters: Array(65).fill({}) }), error => error.kind === "resource");
+});
+
+test("inductive admission limits retain their constructor location and original diagnosis", async t => {
+  const program = new CubicalProgram(module, async () => null);
+  t.after(() => program.dispose());
+  const failure = Object.assign(new KernelError("A universe level exceeds the kernel's bound.", "resource"), { constructor: "box" });
+  program.checker.admitSignature = () => { throw failure; };
+  const source = "inductive Box(A : U1) : U0 { box(x : A); }";
+  const result = await program.check(source, "main");
+  const output = result.outputs.find(output => output.name === "Box");
+  assert.equal(output.failure, "resource");
+  assert.match(output.reason, /A universe level exceeds the kernel's bound/);
+  assert.doesNotMatch(output.reason, /K2\.5/);
+  assert.deepEqual(failure.diagnostic.primary, { module: "main", start: source.indexOf("box"), end: source.indexOf("box") + 3 });
 });
