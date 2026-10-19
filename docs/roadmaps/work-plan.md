@@ -647,14 +647,16 @@ NUM0 supplies explicit `UNat`, canonical `BNat`, bit arithmetic,
 comparison and explicit conversions with both round trips. NUM1 supplies
 the commutative-semiring models, conversion homomorphisms and isomorphism,
 cancellation, nontriviality and no zero divisors. Its bitwise equality now
-supplies setness and avoids unary evaluation in model-law certificates;
+supplies setness and avoids unary evaluation in closed model-law certificates;
 comparison correctness and order propositionality also check. The universe
 path and its forward/reverse and operation transport laws check as well.
 The dependent Peano view, coherent strong recursion for arbitrary dependent
 families and binary factorial also check. Public `Nat` now aliases binary
 `BNat`; the unary declaration and structural clients use explicit `UNat`.
-Decimal I/O and both printers are migrated; release validation is pending. NUM2 and
-EVAL3–EVAL8 remain planned. The ordered-ring/field
+Decimal I/O and both printers are migrated; the default-Nat release checks
+pass. NUM2 is in progress: binary integer and rational constructions are
+developed, while rational certificate normalization and the default `Z`/`Q`
+migration remain. EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -699,6 +701,12 @@ no real-number construction or analysis is scheduled.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
   EVAL5 specifies observation and typed readback; a successful
   `euclid(4).1` does not close the failure of full `euclid(4)`.
+  The [rational full-normalization completion path](runtime/runtime-evaluation-roadmap.md#rational-full-normalization-completion-path)
+  also requires depth-independent traversal, applicable EVAL8 cubical
+  execution, complete proof/annotation readback and separate NUM proof
+  algorithm work. Its [small arithmetic-free reproduction](../reports/rational-normalization.md)
+  remains a required workload. A lazy rational data result does not complete
+  NUM2's full-normalization gate.
 - EVAL6's packed binary arithmetic follows NUM0–NUM2 and profiling; EVAL7's
   checked BNat search improvements are a separate computation pilot, keeping
   the archived algorithm fixed for evaluator comparisons and broader

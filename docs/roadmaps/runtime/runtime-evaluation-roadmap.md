@@ -25,6 +25,11 @@ The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
 budget failures. Generic quotient descent and binary-rational inverse full
 normalization remain open; these fixes do not complete NUM2.
+A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)
+now records the remaining failure. Its
+[completion path](#rational-full-normalization-completion-path) below assigns
+the structural work to EVAL3/EVAL4/EVAL8 and keeps full rational normalization
+separate from lazy data execution.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -895,6 +900,68 @@ capture/shadowing and unused-argument cases; `euclid(4).1 = 5` and
 `euclid(6).1` workload either completes or returns a controlled resource
 diagnostic, never a host stack overflow. Measure retained closure memory
 as well as avoided syntax allocation.
+
+#### Rational full-normalization completion path
+
+Planned on 2026-10-19; none of the stages below is claimed complete by the
+diagnostic experiments. This is part of the existing runtime track and NUM2
+release work. The [reproduction](../../reports/rational-normalization.md)
+isolates a small generic quotient map into `Prop(U0)` without arithmetic or
+a concrete setness proof. Partial results locate growth inside generated
+Glue/composition proofs. The wide rational additionally exposes unary
+expansion in mixed closed/open BNat law proofs.
+
+1. **EVAL3/EVAL4: shared execution.** Implement closures, environments,
+   memoized thunks and an explicit evaluation stack together. Compile
+   ordinary admitted constructor/eliminator metadata, including higher-order
+   recursive positions. Keep annotations and certificates available as
+   delayed computations. Preserve checked-input, assumption, cancellation,
+   work and memory accounting contracts. Use the Euclid projection acceptance
+   cases above to validate this stage; they do not close rational full
+   normalization.
+2. **EVAL4: depth-independent traversal and readback.** Follow the actual
+   substitution, scope/dimension, restriction, comparison and syntax-readback
+   paths that remain recursive. Replace native/host stack dependence with
+   explicit bounded work, preserving capture avoidance and shared graphs.
+   Separate intermediate growth from the depth of the required output.
+   Removing a depth guard is allowed only after its protected traversals have
+   resource-safe replacements; increasing 512 alone is not the fix. Acceptance
+   requires the 32/64/128-bit open binary-addition cases to normalize within
+   recorded work/memory bounds. Record the bitwise proof ladder separately,
+   including completed sizes and any remaining resource failures; there must
+   be no host overflow.
+3. **Applicable EVAL8 work: cubical execution.** Extend the correspondence
+   and implementation to term/level/dimension binders, paths and endpoints,
+   face restriction, composition, transport, Glue and higher elimination.
+   Represent shared delayed substitutions/restrictions without repeatedly
+   rebuilding proof syntax. Use the generic quotient example as a required
+   workload at this stage. Unsupported execution must be explicit or cross
+   a specified typed fallback boundary; it must not repeatedly restart the
+   same work. This semantic work is needed for the rational failure even if
+   EVAL5's user-facing observation interface has not shipped.
+4. **EVAL5/EVAL8: complete typed normalization.** Force every surviving proof
+   and annotation when a full normal form is requested, with explicit-stack
+   readback and bounded memory. Validate normal forms, eta, instruction
+   isolation, lifecycle and canonicity under the applicable EVAL8 gates.
+   Measure the completed generic quotient and rational certificates, not
+   just projections. If output itself is too large, report that separately
+   from avoidable evaluator work. No proof irrelevance or transport
+   regularity rule is introduced to make the workload pass.
+5. **NUM proof algorithms and release.** Replace the demonstrated unary
+   fallback in BNat arithmetic-law proofs with checked bitwise arguments
+   where needed, measuring that source change separately. Retain the
+   arithmetic-free quotient reproduction throughout: a library helper that
+   avoids it does not resolve the evaluator problem. Re-run full small and
+   wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
+   migration checks. Only then complete NUM2's release gates.
+
+The implementation order can overlap the source-proof and cubical work as
+dependencies allow. The ordinary-data evaluator alone is not predicted to
+fix Glue normalization, and an explicit stack alone cannot make an enormous
+required normal form small. Each implementation PR needs Claude Code Opus
+5.5 xhigh review (at most eight rounds), comparing new findings with prior
+reviews and preserving the existing computation rules. Reals and unrelated
+language-feature work remain outside this track.
 
 ### EVAL5: demand only the result being observed
 
