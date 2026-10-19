@@ -222,12 +222,12 @@ def functions_on_successor(A, B : U0) := typed(
   )
 );
 
-def impossible_bijection(A : U0, empty : A -> Void) := typed(
+def impossible_bijection(A : U0, empty_ : A -> Void) := typed(
   Bijection(A, Void),
   (
-    empty, empty_function(A),
-    (fun (a : A) => typed((empty_function(A, empty(a)) = a), absurd(empty(a)))),
-    (fun (v : Void) => typed((empty(empty_function(A, v)) = v), absurd(v)))
+    empty_, empty_function(A),
+    (fun (a : A) => typed((empty_function(A, empty_(a)) = a), absurd(empty_(a)))),
+    (fun (v : Void) => typed((empty_(empty_function(A, v)) = v), absurd(v)))
   )
 );
 

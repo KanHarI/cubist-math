@@ -93,6 +93,18 @@ test("plain evaluation stays scratch work and explicit expectations still reject
   assert.deepEqual(texts(await repl.run("evaluate 2 + 2 expecting 4;")), ["value: 4"]);
 });
 
+test("inhabitation directives check evidence and preserve the session after refusal", async t => {
+  const repl = await session(t);
+  assert.deepEqual(texts(await repl.run("evaluate nonempty (Void -> Void) by fun (x : Void) => x;")),
+    ["value: nonempty Void -> Void"]);
+  assert.match(texts(await repl.run("evaluate nonempty Void by tt;"))[0], /^error: E606:/);
+  assert.deepEqual(texts(await repl.run("evaluate nonempty Unit by tt;")), ["value: nonempty Unit"]);
+  assert.deepEqual(texts(await repl.run("evaluate // evidence follows\n nonempty Unit by tt;")), ["value: nonempty Unit"]);
+  assert.deepEqual(texts(await repl.run("evaluate empty Void by fun x => x;")), ["value: empty Void"]);
+  assert.match(texts(await repl.run("evaluate empty Unit by fun x => x;"))[0], /^error: E606:/);
+  assert.deepEqual(texts(await repl.run("evaluate // evidence follows\n empty Void by fun x => x;")), ["value: empty Void"]);
+});
+
 test("plain evaluation preserves selected notation and non-computing assumption diagnostics", async t => {
   const repl = await session(t);
   await repl.run("import binary_arithmetic; use binary;");

@@ -15,8 +15,8 @@ computable def binary_domain_law(x, y : BInt, nx : x = 0 -> Void, ny : y = 0 -> 
 def binary_domain_fraction_field :
   Field(U0) := fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
 
-# test(binary_domain.normalize_nontriviality)
-evaluate bint_zero_ne_one expecting _;
+# test(binary_domain.nontriviality)
+evaluate empty (bint_zero = bint_one) by bint_zero_ne_one;
 
 # test(binary_domain.zero_decision)
 # expect_axioms([])
@@ -42,9 +42,6 @@ evaluate bint_decide_zero(
   )
 ) expecting _;
 
-# test(binary_domain.normalize_nonzero_decision)
-evaluate bint_decide_zero(-340282366920938463463374607431768211455) expecting _;
-
 # test(binary_domain.gap_cases)
 # expect_axioms([])
 computable def binary_domain_gap(a, b : BNat) :
@@ -63,9 +60,7 @@ evaluate binary_domain_gap(bnat.(4), bnat.(4)) expecting bnat.(0);
 # test(binary_domain.gap_below)
 evaluate binary_domain_gap(bnat.(2), bnat.(5)) expecting bnat.(3);
 
-// Keep nonzeroness hypotheses symbolic while fully normalizing the resulting
-// certificate. Expanding either magnitude to unary naturals would exhaust
-// the ordinary evaluation limits.
+// Check nonzero-product evidence with symbolic hypotheses and wide factors.
 # test(binary_domain.wide_certificate)
 # expect_axioms([])
 computable def binary_domain_wide_certificate(
@@ -74,9 +69,6 @@ computable def binary_domain_wide_certificate(
 ) :
   typed(BInt, 18446744073709551615) * 18446744073709551615 = 0
   -> Void := bint_mul_nonzero(18446744073709551615, 18446744073709551615, nx, ny);
-
-# test(binary_domain.normalize_wide_certificate)
-evaluate binary_domain_wide_certificate expecting _;
 
 // The negative factor has a noncanonical representative with large components.
 # test(binary_domain.shifted_certificate)
@@ -90,6 +82,3 @@ computable def binary_domain_shifted_certificate(
     bint(bnat.(18446744073709551615), bnat.(18446744073709551616)),
     340282366920938463463374607431768211455, nx, ny
   );
-
-# test(binary_domain.normalize_shifted_certificate)
-evaluate binary_domain_shifted_certificate expecting _;

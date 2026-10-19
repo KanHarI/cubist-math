@@ -111,8 +111,10 @@ def finite_normal_separable_fixed_fixing_intermediate(
   let towerDegree := tower_law(R, Q, F, i, h, e, triangle, lower, upperN, upperM);
   let product : multiply_count(d, m) = d :=
     trans(sym(cong((fun (q : UNat) => multiply_count(q, m)), degreeN)), sym(towerDegree));
-  let nonempty := subgroup_carrier_unit(G, H);
-  obtain (k, positive) := inhabited_cardinality_positive(SubgroupCarrier(G, H), d, countH, nonempty);
+  let nonempty_ := subgroup_carrier_unit(G, H);
+  obtain (k, positive) := inhabited_cardinality_positive(
+    SubgroupCarrier(G, H), d, countH, nonempty_
+  );
   let productPositive :=
     transport product along positive in ((fun (q : UNat) => multiply_count(q, m) = q));
   let degreeOne := positive_product_unit(k, m, productPositive);

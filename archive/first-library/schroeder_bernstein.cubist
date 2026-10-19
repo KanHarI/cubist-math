@@ -89,7 +89,7 @@ def f_preimage(
   exact double_negation(
     Fiber(A, B, f, y), embedF(y),
     (
-      fun (empty : Fiber(A, B, f, y) -> Void) => bad(
+      fun (empty_ : Fiber(A, B, f, y) -> Void) => bad(
         fun (origin : A, n : UNat) => induction n as k return (
           (iterate(A, (fun (a : A) => g(f(a))), origin, k) = g(y)) -> Fiber(B, A, g, origin)
         ) {
@@ -97,7 +97,7 @@ def f_preimage(
           succ ih => fun (p : g(f(iterate(A, (fun (a : A) => g(f(a))), origin, k))) = g(y)) => typed(
             Fiber(B, A, g, origin),
             absurd(
-              empty(
+              empty_(
                 typed(
                   Fiber(A, B, f, y),
                   (

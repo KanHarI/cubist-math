@@ -373,9 +373,22 @@ export class Translator {
   }
   evaluate(d,scope) {
     scope.spend("queries");
-    const result=this.checker.verify(this.term(d.value,scope));
+    // Evidence checks use the stated type, or its negation, without fully
+    // normalizing the proof. Ascription keeps the stated type's dependencies.
+    let type,term;
+    if(d.assertion) {
+      const read=(node,expected=null)=>{
+        try {return this.term(node,scope,expected);}
+        catch(error) {throw scope.unit.locate(error,node);}
+      };
+      type=read(d.type);
+      const expected=d.assertion==="empty"?T.pi(scope.fresh(),type,T.void):type;
+      term=scope.ascribe(scope.check(read(d.value,expected),expected,d.value),expected);
+    } else term=this.term(d.value,scope);
+    const result=d.assertion?this.checker.infer(term):this.checker.verify(term);
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
+    if(d.assertion)return `${d.assertion} ${this.shownIn(type,scope)}`;
     // An expected value with holes is a pattern, matched part by part
     // (evaluation.mjs, L2.9a).
     if(hasHole(d.expected)) {

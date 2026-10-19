@@ -11,7 +11,7 @@ import { checkedHypothesisStarts, migrateInductionHypotheses } from "../tools/in
 
 const declarations = `import unat; use unat;
 inductive Tree { leaf; node(l : Tree, datum : UNat, r : Tree); }
-inductive Forest { empty; grow(children : UNat -> Forest); }
+inductive Forest { empty_forest; grow(children : UNat -> Forest); }
 inductive EmptyTree { tip; sprout(children : Void -> EmptyTree); }
 inductive Loopy { base; loop(x : Loopy) : x = x; }
 `;
@@ -23,7 +23,7 @@ computable def erase(t : Tree) : Unit { induction t {
   leaf => { exact tt; } node(l, datum, r) with ih_l, ih_r => { exact ih_r; }
 } }
 computable def omit(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, datum, r) => datum; };
-computable def depth(t : Forest) : UNat := induction t return UNat { empty => 0; grow(children) with below => succ(below(0)); };
+computable def depth(t : Forest) : UNat := induction t return UNat { empty_forest => 0; grow(children) with below => succ(below(0)); };
 computable def vacuous(t : EmptyTree) : Void -> Unit := induction t return (Void -> Unit) {
   tip => fun (v : Void) => absurd(v);
   sprout(children) with ih => fun (v : Void) => ih(v)(v);
@@ -51,7 +51,7 @@ evaluate(size(node(node(leaf, 2, leaf), 3, node(leaf, 4, leaf)))) expecting 9;
 evaluate(left_depth(node(node(leaf, 0, leaf), 0, leaf))) expecting 2;
 evaluate(right_depth(node(node(leaf, 0, leaf), 0, leaf))) expecting 1;
 evaluate(left_depth(copy(node(node(leaf, 0, leaf), 0, leaf)))) expecting 2;
-evaluate(depth(grow(fun (n : UNat) => empty))) expecting 1;
+evaluate(depth(grow(fun (n : UNat) => empty_forest))) expecting 1;
 evaluate(doubled(3)) expecting 6;
 `;
 
@@ -103,7 +103,7 @@ test("wrong counts and mixed spellings fail, while body unfolding and shadowing 
   const { get, result } = await checkProgram(t, declarations + `
 def few(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r) with h => 0; };
 def many(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, d, r) with h, j, k => 0; };
-def single(t : Forest) : UNat := induction t return UNat { empty => 0; grow(children) with a, b => 0; };
+def single(t : Forest) : UNat := induction t return UNat { empty_forest => 0; grow(children) with a, b => 0; };
 def no_recursive(t : Tree) : UNat := induction t return UNat { leaf with h => 0; node(l, d, r) => 0; };
 def arity(t : Tree) : UNat := match t { leaf => 0; node(l, d) => d; };
 def nullary(t : Tree) : UNat := match t { leaf(x) => 0; node(l, d, r) => d; };
