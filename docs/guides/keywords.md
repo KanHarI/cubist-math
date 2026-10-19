@@ -4,7 +4,7 @@ Language keywords, built-in forms and fixed generated interface names cannot
 be used for user declarations, parameters, binders, constructors, fields,
 pattern variables, labels or modules. This also applies to words whose
 grammar role is confined to one construct, including `def`, `law`, `set`,
-`prop`, `compose`, `print`, `witness` and `nonempty`.
+`prop`, `compose`, `print`, `witness`, `nonempty` and `empty`.
 
 The parser and source reader share the registry in
 [`web/cubist/parser.mjs`](../../web/cubist/parser.mjs). The

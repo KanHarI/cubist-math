@@ -38,7 +38,7 @@ export const consoleCommands = new Set(["/clear", "/restart"]);
 // `//` comments; a comment runs to the end of its line, so no word in one
 // counts.
 const gap = String.raw`(?:\s|\/\/[^\n]*(?:\n|$))+`;
-const nonemptyDirective = new RegExp(String.raw`^evaluate${gap}nonempty\b`);
+const evidenceDirective = new RegExp(String.raw`^evaluate${gap}(?:nonempty|empty)\b`);
 const termBrace = new RegExp(String.raw`(?:match|induction|with${gap}unfolding|(?:compose|fill)${gap}[A-Za-z_][A-Za-z_0-9]*${gap}in)(?![A-Za-z_0-9])`, "y");
 export function replStatements(input) {
   const statements = [];
@@ -137,7 +137,7 @@ export class ReplSession {
     if ((match = /^typeof\s+([\s\S]+)$/.exec(source))) return this.typeOf(match[1]);
     if ((match = /^import\s+([A-Za-z_][A-Za-z_0-9]*)$/.exec(source))) return this.import(match[1], text);
     if ((match = /^use\s+([\s\S]+)$/.exec(source))) return this.use(match[1], text);
-    if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source) && !nonemptyDirective.test(source))
+    if (/^evaluate\s/.test(source) && !/\bexpecting\b/.test(source) && !evidenceDirective.test(source))
       return this.evaluate(source.replace(/^evaluate\s+/, ""));
     if ((match = /^witness\s+([\s\S]+)$/.exec(source))) return this.witness(match[1]);
     if (/^let\s/.test(source)) return this.declare(`def${source.slice(3)};`, text);

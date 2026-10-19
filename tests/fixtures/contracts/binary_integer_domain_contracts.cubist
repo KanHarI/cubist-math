@@ -16,7 +16,7 @@ def binary_domain_fraction_field :
   Field(U0) := fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
 
 # test(binary_domain.nontriviality)
-evaluate nonempty (bint_zero = bint_one -> Void) by bint_zero_ne_one;
+evaluate empty (bint_zero = bint_one) by bint_zero_ne_one;
 
 # test(binary_domain.zero_decision)
 # expect_axioms([])

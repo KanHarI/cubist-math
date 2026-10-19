@@ -38,21 +38,21 @@ computable def empty_types_equal(A, B : U0, a : A -> Void, b : B -> Void) : A = 
 // From an automorphism to excluded middle. If P holds then P = Unit, so
 // F(P) = F(Unit), which is empty.
 computable def holds_then_image_empty(
-  F : U0 -> U0, empty : F(Unit) -> Void, P : U0, prop_ : IsProp(U0, P), p : P
+  F : U0 -> U0, empty_ : F(Unit) -> Void, P : U0, prop_ : IsProp(U0, P), p : P
 ) :
   F(P) -> Void {
   intro x;
-  exact empty(transport x along cong(F, inhabited_is_unit(P, prop_, p)) in ((fun (T : U0) => T)));
+  exact empty_(transport x along cong(F, inhabited_is_unit(P, prop_, p)) in ((fun (T : U0) => T)));
 }
 
 // If F(P) is empty then F(P) = F(Unit); the inverse G gives P = Unit.
 computable def image_empty_then_holds(
-  F, G : U0 -> U0, eta : forall X : U0. G(F(X)) = X, empty : F(Unit) -> Void, P : U0, none : F(P)
+  F, G : U0 -> U0, eta : forall X : U0. G(F(X)) = X, empty_ : F(Unit) -> Void, P : U0, none : F(P)
   -> Void
 ) :
   P {
   let same : P = Unit :=
-    trans(sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty)), eta(Unit)));
+    trans(sym(eta(P)), trans(cong(G, empty_types_equal(F(P), F(Unit), none, empty_)), eta(Unit)));
   exact transport tt along sym(same) in ((fun (T : U0) => T));
 }
 

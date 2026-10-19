@@ -35,8 +35,8 @@ def empty_cardinality_excludes(
   );
 
 def false_when_empty(b : Bool) := match b as c return ((Truth(c) -> Void) -> (c = no)) {
-    left u => fun (empty : Unit -> Void) => typed((typed(Bool, left(u)) = no), absurd(empty(tt)));
-    right u => fun (empty : Void -> Void) => cong(
+    left u => fun (empty_ : Unit -> Void) => typed((typed(Bool, left(u)) = no), absurd(empty_(tt)));
+    right u => fun (empty_ : Void -> Void) => cong(
       (fun (v : Unit) => typed(Bool, right(v))), sym(unit_equal(u))
     );
   };

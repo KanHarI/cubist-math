@@ -100,6 +100,9 @@ test("inhabitation directives check evidence and preserve the session after refu
   assert.match(texts(await repl.run("evaluate nonempty Void by tt;"))[0], /^error: E606:/);
   assert.deepEqual(texts(await repl.run("evaluate nonempty Unit by tt;")), ["value: nonempty Unit"]);
   assert.deepEqual(texts(await repl.run("evaluate // evidence follows\n nonempty Unit by tt;")), ["value: nonempty Unit"]);
+  assert.deepEqual(texts(await repl.run("evaluate empty Void by fun x => x;")), ["value: empty Void"]);
+  assert.match(texts(await repl.run("evaluate empty Unit by fun x => x;"))[0], /^error: E606:/);
+  assert.deepEqual(texts(await repl.run("evaluate // evidence follows\n empty Void by fun x => x;")), ["value: empty Void"]);
 });
 
 test("plain evaluation preserves selected notation and non-computing assumption diagnostics", async t => {

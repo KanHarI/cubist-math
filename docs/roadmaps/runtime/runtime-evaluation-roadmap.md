@@ -699,8 +699,9 @@ this source-level change does not alter the kernel or its resource limits.
 The domain contracts check assumption-free nonzero-product certificates with
 64/128-bit components and an instance of `fraction_field`. Disequalities are
 checked as inhabited types, rather than by fully normalizing their proof
-functions: `evaluate nonempty P by proof;` checks explicit evidence without
-requiring a particular proof normal form. Equality decisions retain checks of
+functions: `evaluate empty P by proof;` checks evidence of `P -> Void`, and
+`evaluate nonempty P by proof;` checks evidence of `P`. Neither requires a
+particular proof normal form. Equality decisions retain checks of
 their computed branch. These tests do not establish full rational-value
 normalization. A separate probe before the
 open-normalization fix,

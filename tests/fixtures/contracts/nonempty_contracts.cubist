@@ -2,6 +2,10 @@
 import propositions;
 use unat;
 
+def ConstantUnit(A : U0) : U0 := Unit;
+
+def ConstantVoid(A : U0) : U0 := Void;
+
 # test(nonempty.unit)
 evaluate nonempty Unit by tt;
 
@@ -38,7 +42,7 @@ evaluate nonempty tt by tt;
 
 # test(nonempty.assumption_in_type)
 # expect_error(E324)
-evaluate nonempty (Truncate(U0, Unit) -> Truncate(U0, Unit)) by fun (x : Truncate(U0, Unit)) => x;
+evaluate nonempty ConstantUnit(Truncate(U0, Unit)) by tt;
 
 # test(nonempty.assumption_in_evidence)
 # expect_error(E324)
@@ -52,3 +56,44 @@ evaluate nonempty (Unit -> Unit) by fun x => x;
 // This proof has a very large full normal form; inhabitation needs its checked type.
 # test(nonempty.quotient_foundation)
 evaluate nonempty IsSet(U1, Prop(U0)) by prop_type_is_set(U0);
+
+# test(nonempty.universe_refusal)
+# expect_error(E606)
+evaluate nonempty U0 by U0;
+
+# test(empty.void)
+evaluate empty Void by fun (x : Void) => x;
+
+# test(empty.other_refutation)
+evaluate empty Void by fun (x : Void) => absurd(x);
+
+# test(empty.disequality)
+evaluate empty (0 = 1) by unat_zero_ne_succ(0);
+
+# test(empty.inferred_lambda)
+evaluate empty Void by fun x => x;
+
+# test(empty.inhabited)
+# expect_error(E606)
+evaluate empty Unit by fun (x : Unit) => x;
+
+# test(empty.wrong_evidence)
+# expect_error(E606)
+evaluate empty Void by tt;
+
+# test(empty.value_is_not_type)
+# expect_error(E604)
+evaluate empty tt by fun (x : Void) => x;
+
+# test(empty.assumption_in_type)
+# expect_error(E324)
+evaluate empty ConstantVoid(Truncate(U0, Unit)) by fun (x : Void) => x;
+
+# test(empty.assumption_in_evidence)
+# expect_error(E324)
+evaluate empty (Unit -> Void) by fun (no : Unit -> Void) => TruncateElim(
+  U0, Unit, Void, fun (a, b : Void) => absurd(a), no, TruncateIntro(U0, Unit, tt)
+);
+
+# test(empty.after_refusals)
+evaluate empty Void by fun (x : Void) => x;

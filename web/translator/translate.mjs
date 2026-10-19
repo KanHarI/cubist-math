@@ -373,15 +373,18 @@ export class Translator {
   }
   evaluate(d,scope) {
     scope.spend("queries");
-    // Inhabitation checks a witness at the stated type, without expanding its
-    // proof body. The ordinary ascription checks both the type and witness.
-    const value=d.nonempty?{kind:"call",fn:{kind:"name",name:"typed"},args:[d.type,d.value],
-      start:d.value.start,end:d.value.end}:d.value;
-    const term=this.term(value,scope);
-    const result=d.nonempty?this.checker.infer(term):this.checker.verify(term);
+    // Evidence checks use the stated type, or its negation, without fully
+    // normalizing the proof. Ascription keeps the stated type's dependencies.
+    let type,term;
+    if(d.assertion) {
+      type=this.term(d.type,scope);
+      const expected=d.assertion==="empty"?T.pi(scope.fresh(),type,T.void):type;
+      term=scope.ascribe(scope.check(this.term(d.value,scope,expected),expected,d.value),expected);
+    } else term=this.term(d.value,scope);
+    const result=d.assertion?this.checker.infer(term):this.checker.verify(term);
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
-    if(d.nonempty)return `nonempty ${this.shownIn(result.type,scope)}`;
+    if(d.assertion)return `${d.assertion} ${this.shownIn(type,scope)}`;
     // An expected value with holes is a pattern, matched part by part
     // (evaluation.mjs, L2.9a).
     if(hasHole(d.expected)) {

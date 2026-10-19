@@ -32,14 +32,14 @@ def fired : s(b) = b {
 }
 
 inductive Stack(U < UU0, A : U) : U {
-  empty;
+  empty_stack;
   push(x : A, s : Stack(U, A));
   pop(x : A, s : Stack(U, A)) : push(x, s) = s;
 }
 
 def popped(A : U0, x : A, s : Stack(U0, A)) : push(x, s) = s := pop(x, s);
 
-def instance_matched(y : N) : typed(Stack(U0, N), push(y, empty)) = empty {
+def instance_matched(y : N) : typed(Stack(U0, N), push(y, empty_stack)) = empty_stack {
   simp only [popped];
 }
 

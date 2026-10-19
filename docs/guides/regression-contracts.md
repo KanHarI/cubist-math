@@ -54,8 +54,10 @@ work counters and DOM. Put checked `// Error:` comments after the pragmas and
 directly above the declaration so the comment reader attaches them to it.
 
 Use `evaluate nonempty P by proof;` to check assumption-free evidence of `P`
-without fully normalizing the proof. For disequalities, state `x = y -> Void`
-as `P`; different refutations need not have the same normal form. Decision
+without fully normalizing the proof. Its counterpart,
+`evaluate empty P by proof;`, checks evidence of `P -> Void`. For
+disequalities, use `evaluate empty (x = y) by proof;`; different refutations
+need not have the same normal form. Decision
 procedures can also be tested by inspecting their `left`/`right` branch.
 Reserve full-normal-form assertions for computations whose result matters.
 
