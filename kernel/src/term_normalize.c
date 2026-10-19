@@ -27,21 +27,28 @@ static cc_term nonempty_system(cc_kernel *k, cc_term system, bool types) {
     return ck_make(k, piece.kind, piece.payload, piece.child[0], piece.child[1], piece.child[2], 0);
 }
 
-static cc_term weak(cc_kernel *k, cc_term term) {
+/* Returning a continuation performs the same next weak-head request without
+ * retaining a native frame. Prerequisite head queries remain guarded calls. */
+static cc_term weak_again(cc_term *next, cc_term term) {
+    *next = term;
+    return 0;
+}
+
+static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
     cc_node n = k->nodes[term];
     if (n.kind == CC_HCOMP || n.kind == CC_TRANS)
         return ck_hit_reduce(k, term);
     if (n.kind == CC_DEFREF) {
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown definition reached reduction."), 0;
-        return ck_whnf(k, k->definitions[n.payload].value);
+        return weak_again(next, k->definitions[n.payload].value);
     }
     if (n.kind == CC_GLUE || n.kind == CC_GLUE_TERM) {
         unsigned slot = n.kind == CC_GLUE ? 1 : 2;
         cc_term system = nonempty_system(k, n.child[slot], n.kind == CC_GLUE);
         if (system != n.child[slot]) {
             n.child[slot] = system;
-            return ck_whnf(k, ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], 0));
+            return weak_again(next, ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], 0));
         }
         while (system) {
             cc_node piece = k->nodes[system];
@@ -49,7 +56,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             if (!face || face->sort != CC_FACE)
                 return ck_fail(k, "Unchecked Glue face reached reduction."), 0;
             if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
-                return ck_whnf(k, piece.child[0]);
+                return weak_again(next, piece.child[0]);
             system = piece.child[n.kind == CC_GLUE ? 2 : 1];
         }
     }
@@ -78,7 +85,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
                 system = piece.child[1];
             }
             if (agrees)
-                return ck_whnf(k, projection.child[1]);
+                return weak_again(next, projection.child[1]);
         }
     }
     if (n.kind == CC_UNGLUE) {
@@ -90,7 +97,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
             if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative) {
                 cc_term function = ck_make(k, CC_FST, 0, piece.child[1], 0, 0, 0);
-                return ck_whnf(k, app(k, function, n.child[1]));
+                return weak_again(next, app(k, function, n.child[1]));
             }
             system = piece.child[2];
         }
@@ -98,7 +105,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (!value)
             return 0;
         if (k->nodes[value].kind == CC_GLUE_TERM)
-            return ck_whnf(k, k->nodes[value].child[1]);
+            return weak_again(next, k->nodes[value].child[1]);
         return value == n.child[1] ? term : ck_make(k, CC_UNGLUE, 0, n.child[0], value, 0, 0);
     }
     if (n.kind == CC_APP) {
@@ -106,13 +113,13 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (fn && k->nodes[fn].kind == CC_ELIM) {
             bool reduced = false;
             cc_term result = ck_eliminate(k, fn, n.child[1], true, &reduced);
-            return reduced ? ck_whnf(k, result) : result;
+            return reduced ? weak_again(next, result) : result;
         }
         if (!fn)
             return 0;
         cc_node head = k->nodes[fn];
         if (head.kind == CC_LAM)
-            return ck_whnf(k, ck_substitute(k, head.child[1], head.payload, n.child[1]));
+            return weak_again(next, ck_substitute(k, head.child[1], head.payload, n.child[1]));
         return fn == n.child[0] ? term : app(k, fn, n.child[1]);
     }
     /* ∀-β (G0 §2.7): instantiation of a level lambda substitutes the level. */
@@ -122,7 +129,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return 0;
         cc_node head = k->nodes[fn];
         if (head.kind == CC_LLAM)
-            return ck_whnf(k, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
+            return weak_again(next, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
         return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
     }
     if (n.kind == CC_PAIR) {
@@ -134,7 +141,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         cc_node second = k->nodes[n.child[2]];
         if (first.kind == CC_FST && second.kind == CC_SND &&
             ck_alpha_equal(k, first.child[0], second.child[0]))
-            return ck_whnf(k, first.child[0]);
+            return weak_again(next, first.child[0]);
     }
     if (n.kind == CC_FST || n.kind == CC_SND) {
         cc_term pair = ck_whnf(k, n.child[0]);
@@ -142,7 +149,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return 0;
         cc_node head = k->nodes[pair];
         if (head.kind == CC_PAIR)
-            return ck_whnf(k, head.child[n.kind == CC_FST ? 1 : 2]);
+            return weak_again(next, head.child[n.kind == CC_FST ? 1 : 2]);
         return pair == n.child[0] ? term : ck_make(k, n.kind, 0, pair, 0, 0, 0);
     }
 
@@ -152,7 +159,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return 0;
         cc_node head = k->nodes[value];
         if (head.kind == CC_INL || head.kind == CC_INR)
-            return ck_whnf(k, app(k, n.child[head.kind == CC_INL ? 1 : 2], head.child[1]));
+            return weak_again(next, app(k, n.child[head.kind == CC_INL ? 1 : 2], head.child[1]));
         return value == n.child[3] ? term : ck_make(k, CC_SUMREC, 0, n.child[0], n.child[1], n.child[2], value);
     }
     if (n.kind == CC_UNITREC) {
@@ -160,7 +167,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (!value)
             return 0;
         if (k->nodes[value].kind == CC_POINT)
-            return ck_whnf(k, n.child[1]);
+            return weak_again(next, n.child[1]);
         return value == n.child[2] ? term : ck_make(k, CC_UNITREC, 0, n.child[0], n.child[1], value, 0);
     }
 
@@ -181,39 +188,40 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             cc_term result = 0;
             if (path && k->nodes[path].kind == CC_PLAM) {
                 cc_node line = k->nodes[path];
-                result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
+                result = ck_dimension_substitute(k, line.child[1], line.payload, &argument);
             } else if (path) {
                 ck_fail(k, "Unchecked path application reached reduction.");
             }
             cc_clear(&argument);
-            return result;
+            return weak_again(next, result);
         }
         cc_node type = k->nodes[n.child[1]];
         if (!arg->length)
-            return ck_whnf(k, type.child[1]);
+            return weak_again(next, type.child[1]);
         if (arg->length == 1 && !arg->clauses[0].positive && !arg->clauses[0].negative)
-            return ck_whnf(k, type.child[2]);
+            return weak_again(next, type.child[2]);
         cc_formula argument;
         cc_init(&argument, CC_INTERVAL);
         if (!ck_formula_result(k, cc_copy(&argument, arg), "Interval copy failed."))
             return 0;
         cc_term path = ck_whnf(k, n.child[0]);
         cc_term result = 0;
-        if (path && k->nodes[path].kind == CC_PLAM) {
+        bool beta = path && k->nodes[path].kind == CC_PLAM;
+        if (beta) {
             cc_node line = k->nodes[path];
-            result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
+            result = ck_dimension_substitute(k, line.child[1], line.payload, &argument);
         } else if (path) {
             result = path == n.child[0] ? term : ck_make(k, CC_PAPP, n.payload, path, n.child[1], 0, 0);
         }
         cc_clear(&argument);
-        return result;
+        return beta ? weak_again(next, result) : result;
     }
     /* ∀-η: λ (x < ω). f {x} is f when x is not free in f. */
     if (n.kind == CC_LLAM) {
         cc_node head = k->nodes[n.child[1]];
         if (head.kind == CC_LAPP && k->nodes[head.child[1]].kind == CC_VAR &&
             k->nodes[head.child[1]].payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
-            return ck_whnf(k, head.child[0]);
+            return weak_again(next, head.child[0]);
         return term;
     }
     if (n.kind == CC_LAM || n.kind == CC_PLAM) {
@@ -224,20 +232,75 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (n.kind == CC_LAM && head.kind == CC_APP) {
             cc_node argument = k->nodes[head.child[1]];
             if (argument.kind == CC_VAR && argument.payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
-                return ck_whnf(k, head.child[0]);
+                return weak_again(next, head.child[0]);
         }
         if (n.kind == CC_PLAM && head.kind == CC_PAPP) {
             const cc_formula *arg = cc_kernel_get_formula(k, head.payload);
             if (arg && n.payload < CC_DIMENSIONS && arg->length == 1 && !arg->clauses[0].negative &&
                 arg->clauses[0].positive == (UINT64_C(1) << n.payload) &&
                 !(ck_free_dims(k, head.child[0]) & (UINT64_C(1) << n.payload)))
-                return ck_whnf(k, head.child[0]);
+                return weak_again(next, head.child[0]);
         }
         return body == n.child[1] ? term : ck_make(k, n.kind, n.payload, n.child[0], body, 0, 0);
     }
     if (n.kind == CC_COMP)
         return ck_reduce_composition(k, term);
     return term;
+}
+
+/* Tail reductions keep only the handles awaiting a completed head, for the
+ * same cache publication that recursive returns used to perform. Failed work
+ * never publishes these entries. The bounded buffer is query-local. */
+#define WEAK_LOCAL_TAILS 32
+#define WEAK_MAX_TAILS 16384
+
+static cc_term weak_tails(cc_kernel *k, cc_term term) {
+    cc_term local[WEAK_LOCAL_TAILS], *pending = local;
+    size_t count = 0, capacity = WEAK_LOCAL_TAILS;
+    cc_term result = 0;
+    for (;;) {
+        cc_term next = 0;
+        result = weak(k, term, &next);
+        if (k->error[0] || !next)
+            break;
+        if (count == capacity) {
+            if (capacity == WEAK_MAX_TAILS) {
+                ck_fail_as(k, CC_ERROR_RESOURCE, "Weak-head continuation limit exceeded.");
+                break;
+            }
+            size_t grown = capacity * 2;
+            cc_term *buffer = pending == local ? malloc(grown * sizeof *buffer)
+                : realloc(pending, grown * sizeof *buffer);
+            if (!buffer) {
+                ck_fail_as(k, CC_ERROR_RESOURCE, "Normalization stack allocation failed.");
+                break;
+            }
+            if (pending == local)
+                memcpy(buffer, local, count * sizeof *buffer);
+            pending = buffer;
+            capacity = grown;
+        }
+        pending[count++] = term;
+        term = next;
+        if (term >= k->count || !ck_tick(k)) {
+            result = 0;
+            break;
+        }
+        if (k->weak_cache[term]) {
+            result = k->weak_cache[term];
+            break;
+        }
+    }
+    if (result && !k->error[0]) {
+        k->weak_cache[term] = result;
+        for (size_t i = 0; i < count; ++i)
+            k->weak_cache[pending[i]] = result;
+    } else {
+        result = 0;
+    }
+    if (pending != local)
+        free(pending);
+    return result;
 }
 
 cc_term ck_whnf(cc_kernel *k, cc_term term) {
@@ -249,10 +312,8 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
         --k->recursion;
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
     }
-    cc_term result = weak(k, term);
+    cc_term result = weak_tails(k, term);
     --k->recursion;
-    if (result && !k->error[0])
-        k->weak_cache[term] = result;
     return result;
 }
 

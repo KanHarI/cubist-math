@@ -83,6 +83,34 @@ void *cc_test_normal_realloc(void *pointer, size_t size) {
     return realloc(pointer, size);
 }
 
+static void stack_allocation_recovery(cc_kernel *k, cc_term source, cc_term expected,
+                                      cc_term (*query)(cc_kernel *, cc_term)) {
+    unsigned before = failures;
+    fail_normal_malloc = true;
+    assert(!query(k, source));
+    assert(failures == before + 1 && !fail_normal_malloc);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    assert(!strcmp(cc_kernel_error(k), "Normalization stack allocation failed."));
+    cc_kernel_clear_error(k);
+    /* Failing growth must also release the first successfully allocated
+     * block, without publishing its unfinished ancestor as a normal form. */
+    fail_normal_realloc = true;
+    assert(!query(k, source));
+    assert(failures == before + 2 && !fail_normal_realloc);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    assert(!strcmp(cc_kernel_error(k), "Normalization stack allocation failed."));
+    cc_kernel_clear_error(k);
+    unsigned allocated_before = normal_allocations;
+    cc_kernel_set_step_budget(k, 200);
+    assert(!query(k, source));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    assert(normal_allocations > allocated_before);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 1000000);
+    assert(query(k, source) == expected);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+}
+
 static void normalization_stack_failure(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
@@ -93,30 +121,22 @@ static void normalization_stack_failure(void) {
     }
     cc_judgement_info source;
     assert(cc_kernel_judgement(k, type, &source));
-    unsigned before = failures;
-    fail_normal_malloc = true;
-    assert(!cc_kernel_normalize(k, source.term));
-    assert(failures == before + 1 && !fail_normal_malloc);
-    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(cc_kernel_error(k), "Normalization stack allocation failed."));
-    cc_kernel_clear_error(k);
-    /* Failing growth must also release the first successfully allocated
-     * block, without publishing its unfinished ancestor as a normal form. */
-    fail_normal_realloc = true;
-    assert(!cc_kernel_normalize(k, source.term));
-    assert(failures == before + 2 && !fail_normal_realloc);
-    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(cc_kernel_error(k), "Normalization stack allocation failed."));
-    cc_kernel_clear_error(k);
-    unsigned allocated_before = normal_allocations;
-    cc_kernel_set_step_budget(k, 200);
-    assert(!cc_kernel_normalize(k, source.term));
-    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
-    assert(normal_allocations > allocated_before);
-    cc_kernel_clear_error(k);
-    cc_kernel_set_step_budget(k, 1000000);
-    assert(cc_kernel_normalize(k, source.term) == source.term);
-    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    stack_allocation_recovery(k, source.term, source.term, cc_kernel_normalize);
+    cc_kernel_free(k);
+}
+
+static void weak_tail_allocation_failure(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id value = cc_instr_point(k);
+    cc_judgement_info source, point;
+    assert(cc_kernel_judgement(k, value, &point));
+    for (unsigned i = 0; i < 400; ++i) {
+        value = cc_instr_define(k, 100 + i, value);
+        assert(value);
+    }
+    assert(cc_kernel_judgement(k, value, &source));
+    stack_allocation_recovery(k, source.term, point.term, cc_kernel_whnf);
     cc_kernel_free(k);
 }
 
@@ -125,6 +145,7 @@ int main(void) {
     entry_failure(true);
     symbol_failure();
     normalization_stack_failure();
+    weak_tail_allocation_failure();
     puts("allocation failure publication: ok");
     return 0;
 }
