@@ -988,9 +988,8 @@ export class Translator {
         const available=rules.filter(rule=>!activePremises.includes(rule.identity));
         const {transition}=this.simplifyEqualityGoal(new Goal(premise,at),available);
         at.unit.work.premiseRewriteSteps+=transition.trace.length;
-        const residual=at.nf(transition.next.target);
-        if(residual.tag==="Path"&&!freeDimensions(residual.family).has(residual.dim)
-          &&at.equal(residual.left,residual.right)) {
+        const residual=at.homogeneousPath(at.nf(transition.next.target));
+        if(residual&&at.equal(residual.left,residual.right)) {
           const base=at.check(T.line(at.fresh("i"),residual.family,residual.left),
             transition.next.target);
           const witness=at.check(transition.rebuild(base),premise);
@@ -1084,19 +1083,22 @@ export class Translator {
   // Retain the ordinary path term so applying it to a large interval need not
   // distribute the reversal inside the native checker.
   reversePath(scope,p,spelling) {
-    const type=scope.nf(scope.infer(p).type);
-    if(type.tag!=="Path")throw Error(spelling==="sym"?"sym requires a path.":"~p reverses a path; found no path.");
+    const normal=scope.nf(scope.infer(p).type);
+    if(normal.tag!=="Path")throw Error(spelling==="sym"?"sym requires a path.":"~p reverses a path; found no path.");
+    const type=scope.homogeneousPath(normal);
+    if(!type)throw Error("Path reversal requires a homogeneous path; use an explicit path abstraction for a dependent family.");
     if(p.tag==="PLam"&&!freeDimensions(p.body).has(p.dim)
       &&!freeDimensions(p.family).has(p.dim))return p;
-    // Cubist equality has a constant carrier (dependent Path reversal
-    // is checked by the core directly, rather than silently approximated).
+    // The recognized carrier is independent of the old path coordinate.
     const i=scope.fresh("i"),result=T.line(i,type.family,T.at(p,I.reverse(I.variable(i))));
     return this.checker.ascribe && this.checker.kernel?.optimizations?.compactPaths !== false ? scope.ascribe(result,T.path(i,type.family,type.right,type.left)) : result;
   }
   // trans(p, q) and p ++ q: the composite path.
   concatenatePaths(scope,p,q,spelling) {
-    const pt=scope.nf(scope.infer(p).type),qt=scope.nf(scope.infer(q).type);
-    if(pt.tag!=="Path"||qt.tag!=="Path")throw Error(spelling==="++"?"p ++ q concatenates paths; found no path.":"trans requires paths.");
+    const pn=scope.nf(scope.infer(p).type),qn=scope.nf(scope.infer(q).type);
+    if(pn.tag!=="Path"||qn.tag!=="Path")throw Error(spelling==="++"?"p ++ q concatenates paths; found no path.":"trans requires paths.");
+    const pt=scope.homogeneousPath(pn),qt=scope.homogeneousPath(qn);
+    if(!pt||!qt)throw Error("Expected homogeneous equality paths for composition.");
     scope.expect(pt.family,qt.family);
     if(!scope.equal(pt.right,qt.left))throw Error("Path endpoints do not match.");
     const i=scope.fresh("i"),j=scope.fresh("j");
@@ -1212,8 +1214,8 @@ export class Translator {
       }
       case "transport": {
         const family=tr(n.family,null),path=tr(n.path,null),value=tr(n.value,null);
-        const type=scope.nf(inferred(path).type);
-        if(type.tag!=="Path"||freeDimensions(type.family).has(type.dim))
+        const type=scope.homogeneousPath(scope.nf(inferred(path).type));
+        if(!type)
           throw Error("transport requires a homogeneous base path.");
         const dim=scope.fresh("i");
         return T.comp(dim,T.app(family,T.at(path,I.variable(dim))),[],value);
@@ -1222,8 +1224,8 @@ export class Translator {
         if(!expected)throw Error("lift needs an expected Path or PathP type; annotate the result type.");
         const target=scope.nf(expected);
         if(target.tag!=="Path")throw Error("lift needs an expected Path or PathP type; annotate the result type.");
-        const C=tr(n.family,null),p=tr(n.path,null),base=scope.nf(inferred(p).type);
-        if(base.tag!=="Path"||freeDimensions(base.family).has(base.dim))
+        const C=tr(n.family,null),p=tr(n.path,null),base=scope.homogeneousPath(scope.nf(inferred(p).type));
+        if(!base)
           throw Error("lift requires a homogeneous base path.");
         const dim=scope.fresh("i"),family=T.app(C,T.at(p,I.variable(dim)));
         const transported=T.comp(dim,family,[],target.left);

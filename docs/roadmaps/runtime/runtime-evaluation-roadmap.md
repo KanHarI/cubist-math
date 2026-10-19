@@ -21,6 +21,10 @@ normalize under their face conditions, shared universe levels avoid repeated
 expansion, and interrupted substitution queries report failure consistently.
 This addresses the open `bint_mul` failure found during NUM2 without changing
 the arithmetic definitions or raising kernel limits.
+The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
+addresses false dependence in constant path families and local reduction
+budget failures. Generic quotient descent and binary-rational inverse full
+normalization remain open; these fixes do not complete NUM2.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
