@@ -250,7 +250,9 @@ static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
 
 /* Tail reductions keep only the handles awaiting a completed head, for the
  * same cache publication that recursive returns used to perform. Failed work
- * never publishes these entries. The bounded buffer is query-local. */
+ * never publishes these entries. Each weak-head request owns its buffer.
+ * Once it is full, further tails still reduce but are not retained for caching;
+ * ticks and the deadline bound execution independently of this memo storage. */
 #define WEAK_LOCAL_TAILS 32
 #define WEAK_MAX_TAILS 16384
 
@@ -263,11 +265,7 @@ static cc_term weak_tails(cc_kernel *k, cc_term term) {
         result = weak(k, term, &next);
         if (k->error[0] || !next)
             break;
-        if (count == capacity) {
-            if (capacity == WEAK_MAX_TAILS) {
-                ck_fail_as(k, CC_ERROR_RESOURCE, "Weak-head continuation limit exceeded.");
-                break;
-            }
+        if (count == capacity && capacity < WEAK_MAX_TAILS) {
             size_t grown = capacity * 2;
             cc_term *buffer = pending == local ? malloc(grown * sizeof *buffer)
                 : realloc(pending, grown * sizeof *buffer);
@@ -280,7 +278,8 @@ static cc_term weak_tails(cc_kernel *k, cc_term term) {
             pending = buffer;
             capacity = grown;
         }
-        pending[count++] = term;
+        if (count < capacity)
+            pending[count++] = term;
         term = next;
         if (term >= k->count || !ck_tick(k)) {
             result = 0;

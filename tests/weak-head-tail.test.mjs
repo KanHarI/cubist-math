@@ -38,3 +38,27 @@ test("checked alias chains reduce within the ordinary WASM stack", async () => {
     }
   }
 });
+
+test("nested prerequisite heads retain a controlled WASM recursion failure", async () => {
+  const module = await createCubical();
+  for (const shareSyntax of [true, false]) {
+    const kernel = new CubicalKernel(module);
+    try {
+      kernel.setOptimizations({ shareSyntax });
+      const graph = new InstructionGraph(kernel), point = graph.point();
+      const unit = graph.unit(), entry = graph.extend(unit, "value");
+      const motive = graph.lambda(entry, unit);
+      const pointType = graph.step(graph.refl(graph.apply(motive, point)), "term", [], "beta");
+      const pointCase = graph.convert(point, pointType);
+      let value = point;
+      for (let i = 0; i < 1100; i++) {
+        const result = graph.unitElim(motive, pointCase, value);
+        const type = graph.step(graph.refl(graph.apply(motive, value)), "other", [], "beta");
+        value = graph.define(`nested${i}`, graph.convert(result, type));
+      }
+      assert.throws(() => kernel.head(graph.judgement(value).term),
+        error => error.kind === "resource" && error.message === "Native reduction recursion depth exceeded.");
+      assert.equal(kernel.head(graph.judgement(point).term), graph.judgement(point).term);
+    } finally { kernel.dispose(); }
+  }
+});

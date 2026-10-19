@@ -855,7 +855,6 @@ export const diagnostics = [
   ["K367", "Invalid Glue face substitution."],
   ["K368", "Invalid interval substitution."],
   ["K369", "Normalization stack allocation failed."],
-  ["K370", "Weak-head continuation limit exceeded."],
   // Warnings
   ["W701", "None of … is used after this obtain: remove it."],
   ["W702", "… is never used after this let: remove it."],
