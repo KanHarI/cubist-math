@@ -373,9 +373,15 @@ export class Translator {
   }
   evaluate(d,scope) {
     scope.spend("queries");
-    const result=this.checker.verify(this.term(d.value,scope));
+    // Inhabitation checks a witness at the stated type, without expanding its
+    // proof body. The ordinary ascription checks both the type and witness.
+    const value=d.nonempty?{kind:"call",fn:{kind:"name",name:"typed"},args:[d.type,d.value],
+      start:d.value.start,end:d.value.end}:d.value;
+    const term=this.term(value,scope);
+    const result=d.nonempty?this.checker.infer(term):this.checker.verify(term);
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
+    if(d.nonempty)return `nonempty ${this.shownIn(result.type,scope)}`;
     // An expected value with holes is a pattern, matched part by part
     // (evaluation.mjs, L2.9a).
     if(hasHole(d.expected)) {

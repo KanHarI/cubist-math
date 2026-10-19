@@ -1,0 +1,54 @@
+// Inhabitation checks explicit, assumption-free evidence without comparing proofs.
+import propositions;
+use unat;
+
+# test(nonempty.unit)
+evaluate nonempty Unit by tt;
+
+# test(nonempty.equality)
+evaluate nonempty (2 + 2 = 4) by refl(4);
+
+# test(nonempty.refutation)
+evaluate nonempty (Void -> Void) by fun (x : Void) => x;
+
+# test(nonempty.other_refutation)
+evaluate nonempty (Void -> Void) by fun (x : Void) => absurd(x);
+
+# test(nonempty.universe)
+evaluate nonempty U1 by Unit;
+
+# test(nonempty.dependent)
+evaluate nonempty (exists A : U0. A) by (Unit, tt);
+
+# test(nonempty.empty)
+# expect_error(E606)
+evaluate nonempty Void by tt;
+
+# test(nonempty.false_equality)
+# expect_error(E606)
+evaluate nonempty (2 = 3) by refl(2);
+
+# test(nonempty.false_refutation)
+# expect_error(E606)
+evaluate nonempty (Unit -> Void) by fun (x : Unit) => x;
+
+# test(nonempty.value_is_not_type)
+# expect_error(E604)
+evaluate nonempty tt by tt;
+
+# test(nonempty.assumption_in_type)
+# expect_error(E324)
+evaluate nonempty (Truncate(U0, Unit) -> Truncate(U0, Unit)) by fun (x : Truncate(U0, Unit)) => x;
+
+# test(nonempty.assumption_in_evidence)
+# expect_error(E324)
+evaluate nonempty ((Unit -> Void) -> Void) by fun (no : Unit -> Void) => TruncateElim(
+  U0, Unit, Void, fun (a, b : Void) => absurd(a), no, TruncateIntro(U0, Unit, tt)
+);
+
+# test(nonempty.after_refusals)
+evaluate nonempty (Unit -> Unit) by fun x => x;
+
+// This proof has a very large full normal form; inhabitation needs its checked type.
+# test(nonempty.quotient_foundation)
+evaluate nonempty IsSet(U1, Prop(U0)) by prop_type_is_set(U0);

@@ -53,6 +53,12 @@ retain JavaScript for host failures, source links, message goldens, unmigrated
 work counters and DOM. Put checked `// Error:` comments after the pragmas and
 directly above the declaration so the comment reader attaches them to it.
 
+Use `evaluate nonempty P by proof;` to check assumption-free evidence of `P`
+without fully normalizing the proof. For disequalities, state `x = y -> Void`
+as `P`; different refutations need not have the same normal form. Decision
+procedures can also be tested by inspecting their `left`/`right` branch.
+Reserve full-normal-form assertions for computations whose result matters.
+
 For exact diagnostic ranges, pair `# expect_error` with
 `# expect_error_at(iter(n))`. The balanced token sequence must occur exactly
 once in its target's written source; whitespace and comments are ignored.

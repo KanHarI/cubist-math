@@ -57,7 +57,7 @@ export const languageKeywords = new Set([
   "deriving", "morphisms", "free", "initial",
   "isomorphisms", "limits", "preadditive", "additive", "preabelian", "abelian",
   "paths", "decidable_equality", "irrelevance", "ind_prop", "rec",
-  "evaluate", "expecting", "print", "typeof", "inspect", "witness",
+  "evaluate", "expecting", "nonempty", "print", "typeof", "inspect", "witness",
   "simp_rule", "simp_set", "hlevel_rule", "priority",
   "sort", "law", "notation", "extends", "type", "set", "prop", "trunc", "numeral", "literal",
   "let", "obtain", "exact", "calc", "open", "use", "match", "rfl", "rw", "simp", "simpa", "intro", "ext", "hlevel", "induction",
@@ -1288,8 +1288,18 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const directive={kind:"simp_set",name:set,rules,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
       directives.push(directive);placeItem(directive);continue;
     }
-    // `evaluate term expecting value;` is a checked computation test.
+    // Evaluate a value, or check explicit evidence that a type is inhabited.
     if (t.text === "evaluate") {
+      if (peek() === "nonempty") {
+        take("nonempty");
+        const type = expr();
+        take("by");
+        const value = expr();
+        const end = take(";").end;
+        const directive = { kind: "evaluate", nonempty: true, type, value,
+          ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
+        directives.push(directive); placeItem(directive); continue;
+      }
       const value = expr();
       take("expecting");
       const expected = expr();

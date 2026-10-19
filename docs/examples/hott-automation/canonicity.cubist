@@ -123,3 +123,6 @@ computable def effective_class_computes :
 }
 
 evaluate unit_is_contr.1 expecting tt;
+
+// Inhabitation verifies a refutation without choosing its normal form.
+evaluate nonempty (Void -> Void) by fun (x : Void) => absurd(x);

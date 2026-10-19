@@ -696,9 +696,13 @@ quotient-effectiveness family parameterized by a large representative.
 The constructor, arithmetic, equality and domain laws add no assumptions;
 this source-level change does not alter the kernel or its resource limits.
 
-The domain contracts fully normalize nonzero-product certificates with
-64/128-bit components and check an instance of `fraction_field`. They do not
-establish full rational-value normalization. A separate probe before the
+The domain contracts check assumption-free nonzero-product certificates with
+64/128-bit components and an instance of `fraction_field`. Disequalities are
+checked as inhabited types, rather than by fully normalizing their proof
+functions: `evaluate nonempty P by proof;` checks explicit evidence without
+requiring a particular proof normal form. Equality decisions retain checks of
+their computed branch. These tests do not establish full rational-value
+normalization. A separate probe before the
 open-normalization fix,
 `evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
 bint_zero_ne_one).one expecting _;`, exhausted the term arena (`K347`) even

@@ -60,7 +60,7 @@ test("closed assumption-free results compute to canonical values (invariant 10)"
     assert.deepEqual(declaration.body.map(statement=>statement.kind),["rfl"],declaration.name.text);
     assert.equal(declaration.computable,true,`${declaration.name.text} is marked computable`);
   }
-  assert.equal(result.evaluations.length,3,"the evaluate directives check");
+  assert.equal(result.evaluations.length,4,"the evaluate directives check");
 });
 
 // Expected outcome of each probe in rejected-probes.cubist.rejected. `until`
