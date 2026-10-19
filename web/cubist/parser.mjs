@@ -1288,7 +1288,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const directive={kind:"simp_set",name:set,rules,...(uses.length?{uses:[...uses]}:{}),start:t.start,end};
       directives.push(directive);placeItem(directive);continue;
     }
-    // Evaluate a value, or check explicit evidence that a type is inhabited.
+    // Evaluate a value, or check evidence that a type is inhabited or empty.
     if (t.text === "evaluate") {
       if (["nonempty", "empty"].includes(peek())) {
         const assertion = take().text;

@@ -203,7 +203,7 @@ inductive Real = initial CauchyStructure;                  // stage H3
 theory CwF(U < UU0) deriving (morphisms, initial) { // later H3 strategy
   Con : set U;  Ty(g : Con) : set U;  Sub(d, g : Con) : set U;
   Tm(g : Con, a : Ty(g)) : set U;
-  empty : Con;  extend(g : Con, a : Ty(g)) : Con;
+  empty_context : Con;  extend(g : Con, a : Ty(g)) : Con;
   // substitution, weakening, variables, Π and their laws
 }
 initial Syntax : CwF(U0);                                  // proposed: stage H3

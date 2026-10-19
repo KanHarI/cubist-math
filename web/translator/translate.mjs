@@ -377,9 +377,13 @@ export class Translator {
     // normalizing the proof. Ascription keeps the stated type's dependencies.
     let type,term;
     if(d.assertion) {
-      type=this.term(d.type,scope);
+      const read=(node,expected=null)=>{
+        try {return this.term(node,scope,expected);}
+        catch(error) {throw scope.unit.locate(error,node);}
+      };
+      type=read(d.type);
       const expected=d.assertion==="empty"?T.pi(scope.fresh(),type,T.void):type;
-      term=scope.ascribe(scope.check(this.term(d.value,scope,expected),expected,d.value),expected);
+      term=scope.ascribe(scope.check(read(d.value,expected),expected,d.value),expected);
     } else term=this.term(d.value,scope);
     const result=d.assertion?this.checker.infer(term):this.checker.verify(term);
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
