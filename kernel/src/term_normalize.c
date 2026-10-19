@@ -256,40 +256,69 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
     return result;
 }
 
-/* Glue eta in a normal form, whose parts are normal. Restricting the base to
- * a piece's face can make a new redex, as p @ i at i = 0 is p's left
- * endpoint, so each piece is compared with the normal form of the base's
- * restriction. Still by syntax, as in weak(): conversion never decides a
- * reduction step. Returns the contraction, the term itself, or 0 on error. */
-static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
-    cc_node n = k->nodes[term];
-    cc_term projected = ck_whnf(k, n.child[1]);
-    if (!projected)
-        return 0;
-    cc_node projection = k->nodes[projected];
-    if (projection.kind != CC_UNGLUE || !ck_alpha_equal(k, n.child[0], projection.child[0]))
-        return k->error[0] ? 0 : term;
-    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
-        cc_node piece = k->nodes[system];
-        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
-        cc_formula face;
-        cc_init(&face, CC_FACE);
-        if (!ck_formula_result(k, raw ? cc_copy(&face, raw) : CC_BAD_INPUT, "Glue eta face allocation failed.")) {
-            cc_clear(&face);
-            return 0;
-        }
-        bool agrees = true;
-        for (size_t i = 0; i < face.length && agrees; ++i) {
-            cc_term restricted = ck_normal(k, ck_restrict(k, projection.child[1], face.clauses[i]));
-            agrees = restricted && ck_alpha_equal(k, piece.child[0], restricted);
-        }
-        cc_clear(&face);
-        if (k->error[0])
-            return 0;
-        if (!agrees)
-            return term;
+/* Full normalization owns an explicit continuation stack. Weak-head reduction,
+ * substitution and comparison retain their own guards; this does not remove
+ * the syntax-depth bound protecting those other traversals. A frame holds
+ * handles and node copies, never pointers into an arena that can move. */
+typedef struct {
+    cc_term term, rebuilt, value, system;
+    cc_node node;
+    size_t clause;
+    unsigned next, phase;
+} normal_frame;
+enum { NORMAL_ENTER, NORMAL_CHILDREN, NORMAL_CHILD_DONE, NORMAL_GLUE,
+       NORMAL_GLUE_DONE, NORMAL_REDUCE, NORMAL_REDUCED };
+#define NORMAL_LOCAL_FRAMES 32
+#define NORMAL_MAX_FRAMES 16384
+
+typedef struct {
+    normal_frame *frames;
+    size_t count, capacity;
+    normal_frame local[NORMAL_LOCAL_FRAMES];
+} normal_stack;
+
+static bool normal_push(cc_kernel *k, normal_stack *stack, cc_term term) {
+    if (stack->count == stack->capacity) {
+        if (stack->capacity == NORMAL_MAX_FRAMES)
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded.");
+        size_t capacity = stack->capacity * 2;
+        normal_frame *frames = stack->frames == stack->local
+            ? malloc(capacity * sizeof *frames)
+            : realloc(stack->frames, capacity * sizeof *frames);
+        if (!frames)
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Normalization stack allocation failed.");
+        if (stack->frames == stack->local)
+            memcpy(frames, stack->local, stack->count * sizeof *frames);
+        stack->frames = frames;
+        stack->capacity = capacity;
     }
-    return projection.child[1];
+    stack->frames[stack->count++] = (normal_frame){.term = term};
+    return true;
+}
+
+/* Normalize partial bodies only on the endpoints common to every clause of
+ * their face. Preserve disjunctions and piece order. The tail belongs to its
+ * own face, and a composition's direction never occurs in its tube faces. */
+static bool normal_restrict(cc_kernel *k, cc_node *node) {
+    if (node->kind != CC_TUBE && node->kind != CC_GLUE_SYSTEM)
+        return true;
+    const cc_formula *face = cc_kernel_get_formula(k, node->payload);
+    if (!face || face->sort != CC_FACE)
+        return ck_fail(k, "Unchecked partial face reached reduction.");
+    if (face->length) {
+        cc_clause common = face->clauses[0];
+        for (size_t i = 1; i < face->length; ++i) {
+            common.positive &= face->clauses[i].positive;
+            common.negative &= face->clauses[i].negative;
+        }
+        unsigned parts = node->kind == CC_GLUE_SYSTEM ? 2 : 1;
+        for (unsigned i = 0; i < parts; ++i) {
+            node->child[i] = ck_restrict(k, node->child[i], common);
+            if (!node->child[i])
+                return false;
+        }
+    }
+    return true;
 }
 
 cc_term ck_normal(cc_kernel *k, cc_term term) {
@@ -299,75 +328,140 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
      * Misses take their entry step in ck_whnf, as before. */
     if (k->normal_cache[term])
         return ck_tick(k) ? k->normal_cache[term] : 0;
-    cc_term head = ck_whnf(k, term);
-    if (!head)
-        return 0;
+    /* Protect any re-entry through other, still recursive reducer APIs.
+     * Traversing normal-form children does not consume native stack depth. */
     if (++k->recursion > 1024) {
         --k->recursion;
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded."), 0;
     }
-    cc_node n = k->nodes[head];
-    if (n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM) {
-        const cc_formula *face = cc_kernel_get_formula(k, n.payload);
-        if (!face || face->sort != CC_FACE) {
-            --k->recursion;
-            return ck_fail(k, "Unchecked partial face reached reduction."), 0;
-        }
-        /* A wall exists only on its face. Generated transport corrections
-         * can still mention coordinates fixed there: reduce those before
-         * normalizing the wall, rather than expanding their off-face values.
-         * For a disjunction, only endpoints common to every clause are
-         * available. Keep the face and its order, including under renaming.
-         * A tube face never mentions its composition's bound direction:
-         * SystemTube enforces this, and reduction picks fresh directions. */
-        if (face->length) {
-            cc_clause common = face->clauses[0];
-            for (size_t i = 1; i < face->length; ++i) {
-                common.positive &= face->clauses[i].positive;
-                common.negative &= face->clauses[i].negative;
+    normal_stack stack = {.capacity = NORMAL_LOCAL_FRAMES};
+    stack.frames = stack.local;
+    normal_push(k, &stack, term);
+    cc_term result = 0;
+    while (stack.count && !k->error[0]) {
+        normal_frame *frame = &stack.frames[stack.count - 1];
+        switch (frame->phase) {
+        case NORMAL_ENTER: {
+            if (!frame->term || frame->term >= k->count)
+                goto failed;
+            if (k->normal_cache[frame->term]) {
+                result = ck_tick(k) ? k->normal_cache[frame->term] : 0;
+                goto complete;
             }
-            unsigned parts = n.kind == CC_GLUE_SYSTEM ? 2 : 1;
-            for (unsigned i = 0; i < parts; ++i) {
-                n.child[i] = ck_restrict(k, n.child[i], common);
-                if (!n.child[i]) {
-                    --k->recursion;
-                    return 0;
+            cc_term head = ck_whnf(k, frame->term);
+            if (!head)
+                goto failed;
+            frame->node = k->nodes[head];
+            if (!normal_restrict(k, &frame->node))
+                goto failed;
+            frame->phase = NORMAL_CHILDREN;
+            break;
+        }
+        case NORMAL_CHILD_DONE:
+            frame->node.child[frame->next++] = result;
+            frame->phase = NORMAL_CHILDREN;
+            /* fall through */
+        case NORMAL_CHILDREN: {
+            while (frame->next < ck_arity(frame->node.kind) && !frame->node.child[frame->next])
+                ++frame->next;
+            if (frame->next < ck_arity(frame->node.kind)) {
+                frame->phase = NORMAL_CHILD_DONE;
+                normal_push(k, &stack, frame->node.child[frame->next]);
+                break;
+            }
+            cc_node n = frame->node;
+            frame->rebuilt = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
+            if (!frame->rebuilt)
+                goto failed;
+            frame->value = frame->rebuilt;
+            frame->phase = NORMAL_REDUCE;
+            if (n.kind == CC_GLUE_TERM) {
+                cc_term projected = ck_whnf(k, n.child[1]);
+                if (!projected)
+                    goto failed;
+                cc_node projection = k->nodes[projected];
+                if (projection.kind == CC_UNGLUE && ck_alpha_equal(k, n.child[0], projection.child[0])) {
+                    frame->value = projection.child[1];
+                    frame->system = n.child[2];
+                    frame->phase = NORMAL_GLUE;
                 }
             }
+            break;
         }
-    }
-    for (unsigned i = 0; i < ck_arity(n.kind); ++i)
-        if (n.child[i]) {
-            n.child[i] = ck_normal(k, n.child[i]);
-            if (!n.child[i]) {
-                --k->recursion;
-                return 0;
+        case NORMAL_GLUE_DONE:
+            /* Restricting the projected value can create redexes. Compare
+             * the completed normal form, never its intermediate weak head.
+             * These are syntax side conditions, not conversion calls. */
+            if (!ck_alpha_equal(k, k->nodes[frame->system].child[0], result)) {
+                frame->value = frame->rebuilt;
+                frame->phase = NORMAL_REDUCE;
+                break;
             }
+            frame->phase = NORMAL_GLUE;
+            /* fall through */
+        case NORMAL_GLUE: {
+            if (!frame->system) {
+                frame->phase = NORMAL_REDUCE;
+                break;
+            }
+            cc_node piece = k->nodes[frame->system];
+            const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
+            if (!face || face->sort != CC_FACE) {
+                ck_fail(k, "Unchecked Glue face reached reduction.");
+                goto failed;
+            }
+            if (frame->clause == face->length) {
+                frame->system = piece.child[1];
+                frame->clause = 0;
+                break;
+            }
+            /* Copy the clause before restriction can grow the formula arena;
+             * look the immutable face up again on the next continuation. */
+            cc_clause clause = face->clauses[frame->clause++];
+            cc_term restricted = ck_restrict(k, frame->value, clause);
+            if (!restricted)
+                goto failed;
+            frame->phase = NORMAL_GLUE_DONE;
+            normal_push(k, &stack, restricted);
+            break;
         }
-    cc_term result = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
-    cc_term rebuilt = result;
-    if (result && n.kind == CC_GLUE_TERM)
-        result = normal_glue_eta(k, result);
-    if (result)
-        result = ck_whnf(k, result);
-    /* Restricting a wall can expose a constructor and enable composition
-     * or an enclosing eliminator to compute. Its newly generated children
-     * still need full normalization; a weak head is not the final answer. */
-    if (result && result != rebuilt) {
-        /* With interning off, a stuck reduction can rebuild identical
-         * syntax at a new handle. Only a structural change needs another
-         * normalization pass; otherwise fresh copies would loop forever. */
-        if (!ck_alpha_equal(k, result, rebuilt))
-            result = k->error[0] ? 0 : ck_normal(k, result);
-        else
-            result = rebuilt;
+        case NORMAL_REDUCE:
+            result = ck_whnf(k, frame->value);
+            if (!result)
+                goto failed;
+            if (result != frame->rebuilt) {
+                /* With interning off, a stuck weak head may be a fresh copy.
+                 * Only a structural change warrants another full pass. */
+                if (!ck_alpha_equal(k, result, frame->rebuilt)) {
+                    if (k->error[0])
+                        goto failed;
+                    frame->phase = NORMAL_REDUCED;
+                    normal_push(k, &stack, result);
+                    break;
+                }
+                result = frame->rebuilt;
+            }
+            /* fall through */
+        case NORMAL_REDUCED:
+        complete:
+            if (!result || k->error[0])
+                goto failed;
+            /* Completed siblings survive a later failure. Never publish a
+             * partially rebuilt parent or an unfinished Glue side condition. */
+            k->normal_cache[frame->term] = result;
+            --stack.count;
+            break;
+        }
     }
+    if (k->error[0])
+        result = 0;
+    goto cleanup;
+failed:
+    result = 0;
+cleanup:
+    if (stack.frames != stack.local)
+        free(stack.frames);
     --k->recursion;
-    /* Recursive children can finish before a sibling fails. Their completed
-     * results remain usable, but never publish this node's partial result. */
-    if (!result || k->error[0])
-        return 0;
-    k->normal_cache[term] = result;
     return result;
 }
 

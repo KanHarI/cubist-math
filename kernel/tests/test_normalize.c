@@ -433,7 +433,122 @@ static void unshared_stuck_composition(void) {
     cc_kernel_free(k);
 }
 
+/* References keep each checked definition shallow while its expanded sum
+ * type is deep. Full traversal must reach the output syntax guard without
+ * exhausting the C call stack first. The guard itself is deliberately kept. */
+static void normalization_continuations(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k), type = unit;
+    cc_term prefix = 0, middle = 0;
+    for (unsigned i = 1; i <= 17000; ++i) {
+        type = cc_instr_define(k, 100 + i, cc_instr_sum(k, type, unit));
+        cc_term source = info(k, type).term;
+        if (i == 400)
+            prefix = source;
+        if (i == 2200) {
+            middle = source;
+            cc_kernel_set_step_budget(k, 200);
+            assert(!cc_kernel_normalize(k, source));
+            assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET && !k->recursion);
+            assert(!k->normal_cache[source]);
+            cc_kernel_clear_error(k);
+            cc_kernel_set_step_budget(k, 1000000);
+            assert(!cc_kernel_normalize(k, source));
+            assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+            assert(strstr(cc_kernel_error(k), "syntax depth exceeds 512"));
+            assert(!k->normal_cache[source] && !k->recursion);
+            cc_kernel_clear_error(k);
+            cc_term normal = cc_kernel_normalize(k, prefix);
+            assert(normal && k->nodes[normal].depth == 401);
+            for (unsigned j = 0; j < 400; ++j) {
+                cc_node n = k->nodes[normal];
+                assert(n.kind == CC_SUM && k->nodes[n.child[1]].kind == CC_UNIT);
+                normal = n.child[0];
+            }
+            assert(k->nodes[normal].kind == CC_UNIT);
+        }
+    }
+    /* The explicit stack has a finite frame/memory bound too. Exhausting it
+     * leaves neither a completed parent nor a poisoned subsequent query. */
+    cc_term source = info(k, type).term;
+    assert(!cc_kernel_normalize(k, source));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE && !k->recursion);
+    assert(strstr(cc_kernel_error(k), "normal-form depth exceeded"));
+    assert(!k->normal_cache[source] && !k->normal_cache[middle]);
+    cc_kernel_clear_error(k);
+    assert(cc_kernel_normalize(k, prefix) && !k->error[0]);
+    /* Also traverse a new, uncached deep graph after the resource failure. */
+    cc_judgement_id fresh = cc_instr_void(k);
+    for (unsigned i = 0; i < 400; ++i)
+        fresh = cc_instr_sum(k, unit, fresh);
+    cc_term cold = info(k, fresh).term;
+    assert(!k->normal_cache[cold]);
+    cc_term normal = cc_kernel_normalize(k, cold);
+    assert(normal && k->nodes[normal].depth == 401);
+    for (unsigned i = 0; i < 400; ++i) {
+        cc_node node = k->nodes[normal];
+        assert(node.kind == CC_SUM && k->nodes[node.child[0]].kind == CC_UNIT);
+        normal = node.child[1];
+    }
+    assert(k->nodes[normal].kind == CC_VOID && !k->error[0] && !k->recursion);
+    cc_kernel_free(k);
+}
+
+/* Glue eta must normalize a restricted neutral path at each disjunctive
+ * face. Substitution alone leaves PApp(p, 0), so the weak syntactic eta test
+ * cannot contract it. A mismatch on a later face must abandon the contraction. */
+static void normal_glue_boundaries(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term identity = ck_identity_equiv(k, unit);
+    cc_term family_piece = ck_make(k, CC_GLUE_SYSTEM, ck_endpoint_face(k, 2, 0), unit, identity, 0, 0);
+    cc_term family = raw(k, CC_GLUE, 0, unit, family_piece);
+    cc_term path = ck_make(k, CC_PATH, 2, family, point, ck_var(k, 100), 0);
+    /* (i /\ j)=0 gives the disjunction i=0 or j=0. Both clauses expose
+     * the left endpoint, but the unrestricted path remains neutral. */
+    cc_clause product = {3, 0};
+    cc_formula coordinate = {CC_INTERVAL, &product, 1, 1};
+    cc_formula_id ij = ck_formula(k, &coordinate);
+    cc_term glue = ck_dimension_substitute(k, family, 2, &coordinate);
+    cc_term value = raw(k, CC_PAPP, ij, ck_var(k, 101), path);
+    cc_formula_id either = k->nodes[k->nodes[glue].child[1]].payload;
+    assert(cc_kernel_get_formula(k, either)->length == 2);
+    cc_term wall = raw(k, CC_TUBE, either, point, 0);
+    cc_term projected = raw(k, CC_UNGLUE, 0, glue, value);
+    cc_term candidate = ck_make(k, CC_GLUE_TERM, 0, glue, projected, wall, 0);
+    assert(k->nodes[cc_kernel_whnf(k, candidate)].kind == CC_GLUE_TERM);
+    cc_term normal = cc_kernel_normalize(k, candidate);
+    assert(normal && ck_alpha_equal(k, normal, cc_kernel_normalize(k, value)));
+    assert(k->nodes[normal].kind == CC_PAPP);
+    /* Each negative disjunction agrees on one face and remains neutral on
+     * the other. Both coordinates make this insensitive to clause ordering:
+     * checking only the first OR only the last clause must fail this test.
+     * These deliberately mismatching raw candidates certify no typing. */
+    for (unsigned dim = 0; dim < 2; ++dim) {
+        cc_term partial = raw(k, CC_PAPP, ck_interval_variable(k, dim), ck_var(k, 101), path);
+        cc_term base = raw(k, CC_UNGLUE, 0, glue, partial);
+        cc_term bad = ck_make(k, CC_GLUE_TERM, 0, glue, base, wall, 0);
+        cc_term stuck = cc_kernel_normalize(k, bad);
+        assert(stuck && k->nodes[stuck].kind == CC_GLUE_TERM);
+    }
+    /* A separate malformed candidate has a bad last piece: a syntax query
+     * cannot use the previous successful side condition for this piece. */
+    cc_term wrong = raw(k, CC_TUBE, ck_endpoint_face(k, 1, 0), ck_var(k, 102), 0);
+    wrong = raw(k, CC_TUBE, ck_endpoint_face(k, 0, 0), point, wrong);
+    candidate = ck_make(k, CC_GLUE_TERM, 0, glue, projected, wrong, 0);
+    normal = cc_kernel_normalize(k, candidate);
+    assert(normal && k->nodes[normal].kind == CC_GLUE_TERM);
+    assert(!k->error[0] && !k->recursion);
+    cc_kernel_free(k);
+}
+
 int main(void) {
+    normalization_continuations();
+    normal_glue_boundaries(CC_SHARE_SYNTAX);
+    normal_glue_boundaries(0);
     shared_graph(CC_SHARE_SYNTAX);
     shared_graph(0);
     rollback_and_reuse();
