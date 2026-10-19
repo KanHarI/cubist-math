@@ -1,0 +1,48 @@
+// Diagnostic bitwise proof ladder for EVAL4, with no unary conversion.
+// These local proof definitions do not replace the library laws.
+import bnat_notation;
+use bnat;
+
+computable def direct_add_one(p : BPositive) :
+  bpositive_add(p, bp_one) = bpositive_succ(p) := match p {
+    bp_one => refl(bp_even(bp_one));
+    bp_even(q) => refl(bp_odd(q));
+    bp_odd(q) => refl(bp_even(bpositive_succ(q)));
+  };
+
+computable def direct_positive_add_comm(a, b : BPositive) :
+  bpositive_add(a, b) = bpositive_add(b, a) := match a {
+    bp_one => sym(direct_add_one(b));
+    bp_even(p) => match b {
+      bp_one => refl(bp_odd(p));
+      bp_even(q) => cong(bp_even, direct_positive_add_comm(p, q));
+      bp_odd(q) => cong(bp_odd, direct_positive_add_comm(p, q));
+    };
+    bp_odd(p) => match b {
+      bp_one => refl(bp_even(bpositive_succ(p)));
+      bp_even(q) => cong(bp_odd, direct_positive_add_comm(p, q));
+      bp_odd(q) => cong(
+        fun (r : BPositive) => bp_even(bpositive_succ(r)), direct_positive_add_comm(p, q)
+      );
+    };
+  };
+
+computable def direct_add_comm(a, b : BNat) : bnat_add(a, b) = bnat_add(b, a) := match a, b {
+    b_zero, b_zero => refl(b_zero);
+    b_zero, b_positive(q) => refl(b_positive(q));
+    b_positive(p), b_zero => refl(b_positive(p));
+    b_positive(p), b_positive(q) => cong(b_positive, direct_positive_add_comm(p, q));
+  };
+
+computable def add_comm_32(x : BNat) :
+  bnat_add(4294967295, x) = bnat_add(x, 4294967295) := direct_add_comm(4294967295, x);
+
+computable def add_comm_64(x : BNat) :
+  bnat_add(18446744073709551615, x) = bnat_add(x, 18446744073709551615) := direct_add_comm(
+    18446744073709551615, x
+  );
+
+computable def add_comm_128(x : BNat) :
+  bnat_add(340282366920938463463374607431768211455, x) = bnat_add(
+    x, 340282366920938463463374607431768211455
+  ) := direct_add_comm(340282366920938463463374607431768211455, x);

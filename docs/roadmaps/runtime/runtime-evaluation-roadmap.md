@@ -938,13 +938,16 @@ expansion in mixed closed/open BNat law proofs.
    Separate intermediate growth from the depth of the required output.
    Removing a depth guard is allowed only after its protected traversals have
    resource-safe replacements; increasing 512 alone is not the fix. Acceptance
-   requires first defining exact 32/64/128-bit open binary-addition fixtures and
-   recording their current-main outcomes and work/memory baselines, before
-   this depth-removal work starts. These are proposed cases, not measured
-   regressions yet. They must then normalize within stated bounds. Likewise,
-   commit the experimental bitwise proof ladder and measure its baseline
-   before using it as a separate acceptance test; record completed sizes and
-   any remaining resource failures, with no host overflow.
+   uses the [fixed 32/64/128-bit open-addition and bitwise-proof baseline](../../reports/open-bnat-normalization-baseline.md).
+   The larger left-addition and proof cases hit the current 512 syntax-depth
+   guard. A temporary diagnostic exposes compact completed addition outputs
+   and the 64-bit proof; the 128-bit proof then hits the separate native
+   recursion guard, with its complete output size still unknown. All nine
+   complete-function cases must normalize within the report's stated work,
+   deadline, memory and stack constraints, with no host overflow. Raising either
+   guard or a memory/stack limit is not a fix; retain the fixed fixtures through
+   the traversal changes. The kernel probe does not cover the separate
+   JavaScript decoding, printing, matching and comparison requirements.
 3. **Applicable EVAL8 work: cubical execution.** Extend the correspondence
    and implementation to term/level/dimension binders, paths and endpoints,
    face restriction, composition, transport, Glue and higher elimination.
