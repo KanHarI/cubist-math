@@ -172,6 +172,267 @@ static void scope_and_restriction(void) {
     cc_kernel_free(k);
 }
 
+/* Path beta substitutes a dimension through a shared graph too. Forty
+ * shared sums must not turn that substitution into 2^40 recursive visits. */
+static void shared_dimension_substitution(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_judgement_id universe = cc_instr_universe(k, ck_level_constant(k, 0, 0));
+    cc_judgement_id unit = cc_instr_unit(k), empty = cc_instr_void(k);
+    cc_entry_id i = cc_instr_dimension(k, 0);
+    cc_judgement_id path = cc_instr_path(k, i, universe, unit, empty);
+    cc_entry_id p = cc_instr_extend(k, path, 100);
+    cc_judgement_id type = cc_instr_path_apply(k, cc_instr_variable(k, p), i, 0);
+    for (unsigned n = 0; n < 40; ++n)
+        type = cc_instr_sum(k, type, type);
+    cc_term source = info(k, type).term;
+    cc_kernel_set_step_budget(k, 5000);
+    uint64_t before = steps(k);
+    cc_term left = cc_kernel_endpoint_term(k, source, 0, 0);
+    assert(left && steps(k) - before < 1000);
+    cc_term right = cc_kernel_endpoint_term(k, source, 0, 1);
+    assert(right && left != right);
+    cc_term l = cc_kernel_normalize(k, left), r = cc_kernel_normalize(k, right);
+    assert(l && r);
+    for (unsigned n = 0; n < 40; ++n) {
+        assert(k->nodes[l].kind == CC_SUM && k->nodes[r].kind == CC_SUM);
+        assert(k->nodes[l].child[0] == k->nodes[l].child[1]);
+        assert(k->nodes[r].child[0] == k->nodes[r].child[1]);
+        l = k->nodes[l].child[0]; r = k->nodes[r].child[0];
+    }
+    assert(k->nodes[l].kind == CC_UNIT && k->nodes[r].kind == CC_VOID);
+    before = steps(k);
+    cc_kernel_set_step_budget(k, 1);
+    assert(cc_kernel_endpoint_term(k, source, 0, 0) == left && steps(k) - before == 1);
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { }
+    assert(!cc_kernel_endpoint_term(k, source, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_deadline_ms(k, 0);
+    cc_kernel_set_step_budget(k, 5000);
+    assert(cc_kernel_endpoint_term(k, source, 0, 0) == left);
+    cc_kernel_free(k);
+}
+
+static void dimension_cache_scope_and_rollback(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 2, unit, point, point, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 100), path);
+    cc_term line = raw(k, CC_PLAM, 1, unit, at);
+    cc_formula j;
+    cc_init(&j, CC_INTERVAL);
+    assert(cc_generator(&j, 1, true) == CC_OK);
+    cc_term renamed = ck_dimension_substitute(k, line, 0, &j);
+    assert(renamed && k->nodes[renamed].payload != 1);
+    assert(ck_free_dims(k, renamed) & (UINT64_C(1) << 1));
+    assert(ck_dimension_substitute(k, line, 0, &j) == renamed);
+    cc_clear(&j);
+
+    cc_kernel_checkpoint(k);
+    cc_term old = cc_kernel_endpoint_term(k, at, 0, 0);
+    assert(old);
+    cc_kernel_rollback(k);
+    while (k->count <= old)
+        raw(k, CC_VAR, 1000 + (uint32_t)k->count, 0, 0);
+    cc_term again = cc_kernel_endpoint_term(k, at, 0, 0);
+    assert(again && again != old && cc_kernel_normalize(k, again) == point);
+    cc_kernel_free(k);
+}
+
+/* The replacement formula may itself live in the formula arena. A new
+ * formula in the first child can grow that arena before the second child
+ * uses the replacement, so recursive substitution must retain its value. */
+static void substitution_grows_formula_arena(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), empty = raw(k, CC_VOID, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 3, ck_universe_at(k, 0), unit, empty, 0);
+    cc_clause both = {3, 0};
+    cc_formula interval = {CC_INTERVAL, &both, 1, 1};
+    cc_term p = ck_var(k, 100);
+    cc_term first = raw(k, CC_PAPP, ck_formula(k, &interval), p, path);
+    cc_term second = raw(k, CC_PAPP, ck_interval_variable(k, 0), p, path);
+    cc_term source = raw(k, CC_SUM, 0, first, second);
+    cc_formula_id replacement = ck_interval_variable(k, 2);
+    for (uint64_t n = 1; k->formula_count < k->formula_capacity; ++n) {
+        cc_clause unused = {8 | n << 4, 0};
+        cc_formula fill = {CC_INTERVAL, &unused, 1, 1};
+        assert(ck_formula(k, &fill));
+    }
+    size_t capacity = k->formula_capacity;
+    cc_term result = ck_dimension_substitute(k, source, 0, cc_kernel_get_formula(k, replacement));
+    assert(result && k->formula_capacity > capacity);
+    cc_node pair = k->nodes[result];
+    const cc_formula *left = cc_kernel_get_formula(k, k->nodes[pair.child[0]].payload);
+    assert(left && left->length == 1 && left->clauses[0].positive == 6 && !left->clauses[0].negative);
+    assert(k->nodes[pair.child[1]].payload == replacement && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+static void cached_term_rename(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term x = raw(k, CC_VAR, 100, 0, 0), source = raw(k, CC_SUM, 0, x, x);
+    cc_term renamed = cc_kernel_rename(k, source, false, 100, 101);
+    assert(renamed && renamed != source);
+    uint64_t before = steps(k);
+    cc_kernel_set_step_budget(k, 1);
+    assert(cc_kernel_rename(k, source, false, 100, 101) == renamed);
+    assert(steps(k) - before == 1);
+    cc_kernel_set_deadline_ms(k, 0.01);
+    for (clock_t start = clock(); clock() - start < CLOCKS_PER_SEC / 100;) { }
+    assert(!cc_kernel_rename(k, source, false, 100, 101));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_DEADLINE);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_deadline_ms(k, 0);
+    assert(cc_kernel_rename(k, source, false, 100, 101) == renamed);
+    cc_kernel_free(k);
+}
+
+/* A failed free-name scan is not evidence that substitution does nothing.
+ * Public queries must return failure, then recover with enough budget. */
+static void interrupted_substitution(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term x = raw(k, CC_VAR, 100, 0, 0), unit = raw(k, CC_UNIT, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 2, ck_universe_at(k, 0), unit, unit, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), x, path);
+    cc_term term_graph = x, dimension_graph = at;
+    for (unsigned n = 0; n < 40; ++n) {
+        term_graph = raw(k, CC_SUM, 0, term_graph, term_graph);
+        dimension_graph = raw(k, CC_SUM, 0, dimension_graph, dimension_graph);
+    }
+    cc_kernel_set_step_budget(k, 1);
+    assert(!cc_kernel_rename(k, term_graph, false, 100, 101));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_clear_error(k);
+    assert(!cc_kernel_endpoint_term(k, dimension_graph, 0, 0));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 5000);
+    cc_term renamed = cc_kernel_rename(k, term_graph, false, 100, 101);
+    cc_term restricted = cc_kernel_endpoint_term(k, dimension_graph, 0, 0);
+    assert(renamed && restricted && renamed != term_graph && restricted != dimension_graph);
+    assert(!ck_term_free(k, renamed, 100) && ck_term_free(k, renamed, 101));
+    assert(!ck_free_dims(k, restricted) && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+/* Reduction-generated walls may still mention the coordinates fixed on
+ * their face. Their off-face computation is not part of the partial value.
+ * Disjunctive faces must retain their order and only common restrictions. */
+static void wall_faces(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), empty = raw(k, CC_VOID, 0, 0, 0);
+    cc_term path = ck_make(k, CC_PATH, 3, ck_universe_at(k, 0), unit, empty, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 100), path);
+    cc_formula_id i0 = ck_endpoint_face(k, 0, 0);
+    cc_term wall = raw(k, CC_TUBE, i0, at, 0);
+    cc_term result = cc_kernel_normalize(k, wall);
+    assert(result && k->nodes[result].payload == i0 && k->nodes[result].child[0] == unit);
+
+    cc_clause alternatives[] = {{0, 1}, {0, 2}};
+    cc_formula either = {CC_FACE, alternatives, 2, 2};
+    cc_formula_id disjunction = ck_formula(k, &either);
+    wall = raw(k, CC_TUBE, disjunction, at, 0);
+    result = cc_kernel_normalize(k, wall);
+    assert(result && k->nodes[result].payload == disjunction && k->nodes[result].child[0] == at);
+
+    cc_clause common[] = {{0, 3}, {0, 5}};
+    cc_formula shared = {CC_FACE, common, 2, 2};
+    cc_formula_id fixed_i = ck_formula(k, &shared);
+    wall = raw(k, CC_TUBE, fixed_i, at, 0);
+    result = cc_kernel_normalize(k, wall);
+    assert(result && k->nodes[result].payload == fixed_i && k->nodes[result].child[0] == unit);
+    /* Glue has partial types and equivalences on the same face. Its tail
+     * belongs to its own face, so must retain its own endpoint. */
+    cc_formula_id i1 = ck_endpoint_face(k, 0, 1);
+    cc_term tail = ck_make(k, CC_GLUE_SYSTEM, i1, at, at, 0, 0);
+    cc_term glue = ck_make(k, CC_GLUE_SYSTEM, fixed_i, at, at, tail, 0);
+    result = cc_kernel_normalize(k, glue);
+    assert(result && k->nodes[result].payload == fixed_i);
+    assert(k->nodes[result].child[0] == unit && k->nodes[result].child[1] == unit);
+    tail = k->nodes[result].child[2];
+    assert(k->nodes[tail].payload == i1);
+    assert(k->nodes[tail].child[0] == empty && k->nodes[tail].child[1] == empty);
+    /* Restrictions cannot escape into an unrestricted use of the term. */
+    assert(cc_kernel_normalize(k, at) == at);
+    cc_kernel_free(k);
+}
+
+/* A face restriction can expose the constructor needed by composition.
+ * The new constructor's arguments are compositions, not yet normal forms. */
+static void composition_after_restriction(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term sum = raw(k, CC_SUM, 0, unit, unit), left = raw(k, CC_INL, 0, sum, point);
+    cc_term path = ck_make(k, CC_PATH, 2, sum, left, left, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 100), path);
+    cc_term wall = raw(k, CC_TUBE, ck_endpoint_face(k, 0, 0), at, 0);
+    cc_term comp = ck_make(k, CC_COMP, 1, sum, wall, left, 0);
+    cc_term result = cc_kernel_normalize(k, comp);
+    assert(result && ck_alpha_equal(k, result, left));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result));
+    /* Each public query starts with a fresh recursion counter. */
+    k->recursion = 1024;
+    assert(cc_kernel_normalize(k, comp) == result && !k->recursion);
+    cc_kernel_free(k);
+}
+
+static void partial_scopes(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_term a = ck_var(k, 100), x = ck_var(k, 101), y = ck_var(k, 102);
+    cc_term along_type = ck_make(k, CC_PATH, 2, a, x, y, 0);
+    cc_term along = raw(k, CC_PAPP, ck_interval_variable(k, 1), ck_var(k, 103), along_type);
+    cc_term across_type = ck_make(k, CC_PATH, 2, a, along, along, 0);
+    cc_term across = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 104), across_type);
+    cc_formula_id j0 = ck_endpoint_face(k, 0, 0);
+    cc_term wall = raw(k, CC_TUBE, j0, across, 0);
+    cc_term comp = ck_make(k, CC_COMP, 1, a, wall, x, 0);
+    cc_term result = cc_kernel_normalize(k, comp);
+    assert(result && k->nodes[result].kind == CC_COMP && k->nodes[result].payload == 1);
+    cc_term body = k->nodes[k->nodes[result].child[1]].child[0];
+    assert(ck_alpha_equal(k, body, along) && ck_free_dims(k, body) == (UINT64_C(1) << 1));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result));
+
+    cc_term unit = raw(k, CC_UNIT, 0, 0, 0), point = raw(k, CC_POINT, 0, 0, 0);
+    cc_term piece = ck_make(k, CC_GLUE_SYSTEM, j0, unit, ck_var(k, 105), 0, 0);
+    cc_term glue = raw(k, CC_GLUE, 0, unit, piece);
+    cc_term path = ck_make(k, CC_PATH, 2, unit, point, point, 0);
+    cc_term at = raw(k, CC_PAPP, ck_interval_variable(k, 0), ck_var(k, 106), path);
+    cc_term partial = raw(k, CC_TUBE, j0, at, 0);
+    cc_term value = ck_make(k, CC_GLUE_TERM, 0, glue, ck_var(k, 107), partial, 0);
+    result = cc_kernel_normalize(k, value);
+    assert(result && k->nodes[result].kind == CC_GLUE_TERM);
+    partial = k->nodes[result].child[2];
+    assert(k->nodes[partial].payload == j0 && ck_alpha_equal(k, k->nodes[partial].child[0], point));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result) && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+static void unshared_stuck_composition(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, 0);
+    cc_term a = ck_var(k, 100), u = ck_var(k, 101), b = ck_var(k, 102);
+    cc_term tube = raw(k, CC_TUBE, ck_endpoint_face(k, 0, 0), u, 0);
+    cc_term comp = ck_make(k, CC_HCOMP, 1, a, tube, b, 0);
+    cc_kernel_set_step_budget(k, 1000);
+    cc_term result = cc_kernel_normalize(k, comp);
+    assert(result && ck_alpha_equal(k, result, comp));
+    assert(ck_alpha_equal(k, cc_kernel_normalize(k, result), result) && !k->error[0]);
+    cc_kernel_free(k);
+}
+
 int main(void) {
     shared_graph(CC_SHARE_SYNTAX);
     shared_graph(0);
@@ -179,5 +440,17 @@ int main(void) {
     compaction();
     failed_parent();
     scope_and_restriction();
+    shared_dimension_substitution(CC_SHARE_SYNTAX);
+    shared_dimension_substitution(0);
+    dimension_cache_scope_and_rollback();
+    substitution_grows_formula_arena();
+    cached_term_rename();
+    interrupted_substitution();
+    wall_faces();
+    composition_after_restriction(CC_SHARE_SYNTAX);
+    composition_after_restriction(0);
+    partial_scopes(CC_SHARE_SYNTAX);
+    partial_scopes(0);
+    unshared_stuck_composition();
     puts("full normalization cache: ok");
 }

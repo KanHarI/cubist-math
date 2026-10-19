@@ -147,11 +147,11 @@ static cc_term substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term val
 cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
     uint64_t result;
     if (ck_memo_get(k, 3, term, name, value, &result))
-        return (cc_term)result;
+        return ck_tick(k) ? (cc_term)result : 0;
     cc_term changed = substitute(k, term, name, value);
     if (changed)
         ck_memo_put(k, 3, term, name, value, changed);
-    return changed;
+    return k->error[0] ? 0 : changed;
 }
 
 static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
@@ -185,16 +185,8 @@ static cc_term tube_substitute(cc_kernel *k, cc_term term, unsigned dim,
     return ck_make(k, CC_TUBE, n.payload, n.child[0], n.child[1], 0, 0);
 }
 
-cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
-                                const cc_formula *value) {
-    if (!term)
-        return 0;
-    if (!ck_tick(k))
-        return 0;
-    if (dim >= CC_DIMENSIONS || !value || value->sort != CC_INTERVAL)
-        return ck_fail(k, "Invalid dimension substitution."), 0;
-    if (!(ck_free_dims(k, term) & (UINT64_C(1) << dim)))
-        return term;
+static cc_term dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
+                                    const cc_formula *value) {
     cc_node n = k->nodes[term];
     if (ck_dim_binder(n.kind) && n.payload >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension binder outside native range."), 0;
@@ -262,6 +254,34 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
     if (n.payload == original.payload && !memcmp(n.child, original.child, sizeof n.child))
         return term;
     return ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
+}
+
+cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim,
+                                const cc_formula *value) {
+    if (!term || !ck_tick(k))
+        return 0;
+    if (dim >= CC_DIMENSIONS || !value || value->sort != CC_INTERVAL)
+        return ck_fail(k, "Invalid dimension substitution."), 0;
+    uint64_t free = ck_free_dims(k, term);
+    if (k->error[0])
+        return 0;
+    if (!(free & (UINT64_C(1) << dim)))
+        return term;
+    /* The formula arena may move when a recursive substitution interns a
+     * formula. Its immutable clause storage stays put; retain the descriptor
+     * by value rather than a pointer into that arena. The exact interned
+     * formula, dimension and term identify the complete substitution. */
+    cc_formula stable = *value;
+    cc_formula_id formula = ck_formula(k, &stable);
+    if (!formula)
+        return 0;
+    uint64_t result;
+    if (ck_memo_get(k, 6, term, dim, formula, &result))
+        return (cc_term)result;
+    cc_term changed = dimension_substitute(k, term, dim, &stable);
+    if (changed)
+        ck_memo_put(k, 6, term, dim, formula, changed);
+    return k->error[0] ? 0 : changed;
 }
 
 cc_term ck_endpoint_term(cc_kernel *k, cc_term term, unsigned dim, unsigned endpoint) {

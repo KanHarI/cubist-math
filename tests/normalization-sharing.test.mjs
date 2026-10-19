@@ -4,6 +4,9 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel, KernelError } from "../web/cubical-kernel.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { readFile } from "node:fs/promises";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 async function setup(t) {
   const kernel = new CubicalKernel(await createCubical());
@@ -124,5 +127,38 @@ test("normalization and comparison propagate deadlines and programming errors", 
     kernel.alphaEqual = () => { throw error; };
     assert.throws(() => driver.normalizeBoth(left, right, null, null), caught => caught === error);
     kernel.alphaEqual = query;
+  }
+});
+
+test("open quotient operations fully normalize within a bounded amount of kernel work", async () => {
+  const module = await createCubical();
+  const smallQuotient = await readFile(new URL("fixtures/quotient-normalization.cubist", import.meta.url), "utf8");
+  for (const [name, source, optimizations = {}] of [
+    ["small_quotient", smallQuotient],
+    // A unary descent covers the stuck eliminator with interning off. The
+    // binary fixture exceeds this test's budget in that mode.
+    ["unary_quotient_unshared", `import quotients;
+      def Related(a, b : Unit) : U0 := Unit;
+      def Q : U0 := Quotient(U0, Unit, Related);
+      computable def copy(x : Q) : Q := descend(
+        U0, U0, Unit, Related, Q, quotient_is_set(U0, Unit, Related),
+        fun (a : Unit) => typed(Q, class(a)),
+        fun (a, b : Unit, r : Related(a, b)) => class_path(U0, Unit, Related, a, b, r), x
+      );
+      evaluate copy expecting _;`, {shareSyntax: false}],
+    ["integer_multiplication", "import binary_integers; evaluate bint_mul expecting _;"],
+    ["binary_fraction_one", `import fractions; import binary_integers;
+      evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one).one expecting _;`],
+  ]) {
+    const program = new CubicalProgram(module, sourceReader(), {collectReferences: false, optimizations});
+    // Bound regressions by deterministic work, including query retries. The
+    // previous implementation exhausted the arena on these small functions.
+    program.kernel.maxQuerySteps = 40000000n;
+    try {
+      const result = await program.check(source, name);
+      assert.deepEqual(result.gaps, [], name);
+      assert.equal(result.evaluations.length, 1, name);
+      assert.ok(result.evaluations[0].value.length > 0, name);
+    } finally { program.dispose(); }
   }
 });

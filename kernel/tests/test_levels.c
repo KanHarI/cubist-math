@@ -118,16 +118,51 @@ static void bounds_and_malformed(void) {
     expect_error(ck_level_equal(k, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), x), "Expected a level");
     expect_error(ck_level_equal(k, ck_make(k, CC_LBOUND, 1, 0, 0, 0, 0), x), "A bound is not a level");
     expect_error(ck_make(k, CC_U, 1, 0, 0, 0, 0) != 0, "payload must be zero");
-    /* A level shared as a DAG but exponential as a tree exhausts the budget. */
+}
+
+/* Compact levels stay compact when normalized or compared, including
+ * diamonds with different children (not just max(x,x)). */
+static void shared_levels(unsigned optimizations) {
+    cc_kernel_set_optimizations(k, optimizations);
     cc_term wide = lconst(0, 1);
     for (unsigned i = 0; i < 60; ++i)
         wide = lmax(wide, wide);
     uint64_t budget = k->budget;
-    k->budget = 100000;
-    assert(!ck_level_equal(k, wide, lconst(0, 1)));
+    k->budget = 2000;
+    assert(ck_level_equal(k, wide, lconst(0, 1)));
+    cc_term a = var(X), b = var(Y);
+    for (unsigned i = 0; i < 40; ++i) {
+        cc_term next_a = lmax(succ(a, 1), b), next_b = lmax(succ(b, 1), a);
+        a = next_a; b = next_b;
+    }
+    k->budget = 10000;
+    assert(ck_level_equal(k, a, lmax(succ(var(X), 40), succ(var(Y), 39))));
+    assert(ck_level_equal(k, b, lmax(succ(var(Y), 40), succ(var(X), 39))));
+    k->budget = 10;
+    assert(!ck_level_equal(k, a, b));
     assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET);
     cc_kernel_clear_error(k);
+    k->budget = 10000;
+    assert(!ck_level_equal(k, a, b) && !k->error[0]);
     k->budget = budget;
+    cc_kernel_set_optimizations(k, CC_SHARE_SYNTAX);
+}
+
+/* Arithmetic normal forms need not fit the depth of canonical term syntax.
+ * Caching must not impose that additional limit on equality/order queries. */
+static void wide_level_normal_form(void) {
+    cc_term parts[1024];
+    for (unsigned i = 0; i < 1024; ++i)
+        parts[i] = var(1000 + i);
+    for (unsigned n = 1024; n > 1; n /= 2)
+        for (unsigned i = 0; i < n / 2; ++i)
+            parts[i] = lmax(parts[2 * i], parts[2 * i + 1]);
+    cc_level_nf nf;
+    assert(ck_level_normal(k, parts[0], &nf));
+    assert(!nf.tier && !nf.constant && nf.count == 1024);
+    for (unsigned i = 0; i < 1024; ++i)
+        assert(nf.terms[i].key == 1000 + i && !nf.terms[i].offset);
+    ck_level_nf_free(&nf);
 }
 
 /* Brute force. A value is an ordinal below ω², (tier, n); a raw level is
@@ -203,6 +238,9 @@ int main(void) {
     specification_cases();
     canonical_forms();
     bounds_and_malformed();
+    shared_levels(CC_SHARE_SYNTAX);
+    shared_levels(0);
+    wide_level_normal_form();
     property();
     cc_kernel_free(k);
     return 0;

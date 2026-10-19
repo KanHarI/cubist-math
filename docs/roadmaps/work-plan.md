@@ -640,7 +640,10 @@ The version-3 baseline records its outcomes and work; see the runtime
 roadmap's EVAL1 measurements. EVAL2 in
 [#269](https://github.com/KanHarI/cubist-math/pull/269) caches completed full normalizations
 by exact syntax handle, with rollback/compaction invalidation and resource
-accounting. NUM0 supplies explicit `UNat`, canonical `BNat`, bit arithmetic,
+accounting. The [open quotient normalization audit](../reports/open-quotient-normalization.md)
+also addresses repeated dimension/level work, partial face normalization and
+interrupted substitution queries found while developing binary rationals.
+NUM0 supplies explicit `UNat`, canonical `BNat`, bit arithmetic,
 comparison and explicit conversions with both round trips. NUM1 supplies
 the commutative-semiring models, conversion homomorphisms and isomorphism,
 cancellation, nontriviality and no zero divisors. Its bitwise equality now

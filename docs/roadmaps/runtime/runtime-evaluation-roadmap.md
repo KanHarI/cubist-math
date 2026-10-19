@@ -15,6 +15,12 @@ agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
 NUM2 and EVAL3–EVAL8 remain.
+The [open quotient normalization fix and API audit](../../reports/open-quotient-normalization.md)
+extend EVAL2: dimension substitution preserves shared work, partial bodies
+normalize under their face conditions, shared universe levels avoid repeated
+expansion, and interrupted substitution queries report failure consistently.
+This addresses the open `bint_mul` failure found during NUM2 without changing
+the arithmetic definitions or raising kernel limits.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -692,21 +698,22 @@ this source-level change does not alter the kernel or its resource limits.
 
 The domain contracts fully normalize nonzero-product certificates with
 64/128-bit components and check an instance of `fraction_field`. They do not
-establish full rational-value normalization. A separate probe at this stage,
+establish full rational-value normalization. A separate probe before the
+open-normalization fix,
 `evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
-bint_zero_ne_one).one expecting _;`, exhausts the term arena (`K347`) even
+bint_zero_ne_one).one expecting _;`, exhausted the term arena (`K347`) even
 though its type checks and the individual nontriviality and product
 certificates fully normalize.
-Resolving this remains part of the NUM2 runtime work before the rational
-default migration; evaluator changes, if needed, belong to EVAL3–EVAL5.
-The probe is not a bounded regression test and should not be added to CI
-without first isolating and bounding the failing normalization.
+The [kernel normalization fix](../../reports/open-quotient-normalization.md)
+resolves this failure. This expression and the isolated quotient operation
+now have permanent full-normalization regressions under a fixed work budget.
+The rational API/default migration remains NUM2 work.
 
-Bounded follow-up probes localize the growth to full normalization of the
+The original bounded follow-up probes localized the growth to full normalization of the
 open integer multiplication function within the quotient's cross-multiplication
-relation. The raw fraction `(1, 1, nonzero proof)` normalizes in about 57 ms;
-`SameRatio`, `Frac`, `q_one`, and `bint_mul` each exceed a 10-second probe
-deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduces
+relation. The raw fraction `(1, 1, nonzero proof)` normalized in about 57 ms;
+`SameRatio`, `Frac`, `q_one`, and `bint_mul` each exceeded a 10-second probe
+deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduced
 on merged main after #280, before these domain changes. Closed large integer
 products still normalize. These timings are diagnostic observations on one
 machine, not benchmark thresholds or a change to normal evaluation limits.

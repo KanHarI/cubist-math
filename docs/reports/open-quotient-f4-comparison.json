@@ -1,0 +1,76 @@
+{
+  "workload": "f4_galois_group__f4_galois_is_cyclic_two",
+  "date": "2026-10-18",
+  "method": "Three alternating sequential pairs in fresh Node processes and clean checkouts. The baseline checkout has the same tree as main b4ee1b87; the after checkout includes merged main09c326ea and all kernel review fixes. No other local validation ran concurrently; the read-only Opus review client was active. These short samples completed without a sleep-sized pause. Times are local observations, not test thresholds.",
+  "command": "node tools/instruction-coverage.mjs --modules=f4_galois_group --select=f4_galois_is_cyclic_two --report=REPORT.json",
+  "before": {
+    "environment": {
+      "revision": "c68369d4e88fe0d3a01bfd96d01f15a056f2d9f0",
+      "modified": false,
+      "node": "v24.13.0",
+      "platform": "darwin arm64",
+      "cpu": "Apple M3 Pro",
+      "cpus": 12,
+      "memoryGiB": 36
+    },
+    "checkSeconds": [
+      2.7,
+      2.7,
+      2.8
+    ],
+    "medianCheckSeconds": 2.7,
+    "derivationMs": [
+      10.6,
+      11,
+      10.2
+    ],
+    "medianDerivationMs": 10.6,
+    "work": {
+      "instructions": 915,
+      "rejected": 0,
+      "instructionSteps": 148458,
+      "queries": 55,
+      "failedQueries": 0,
+      "querySteps": 51891,
+      "exhausted": 0,
+      "deadlines": 0
+    },
+    "allSuccessful": true,
+    "deterministicWork": true
+  },
+  "after": {
+    "environment": {
+      "revision": "081e71860dd7e19ef5ac6f72e7b4a19879e62da6",
+      "modified": false,
+      "node": "v24.13.0",
+      "platform": "darwin arm64",
+      "cpu": "Apple M3 Pro",
+      "cpus": 12,
+      "memoryGiB": 36
+    },
+    "checkSeconds": [
+      2.8,
+      2.8,
+      2.8
+    ],
+    "medianCheckSeconds": 2.8,
+    "derivationMs": [
+      10.5,
+      11.4,
+      10.6
+    ],
+    "medianDerivationMs": 10.6,
+    "work": {
+      "instructions": 915,
+      "rejected": 0,
+      "instructionSteps": 166942,
+      "queries": 55,
+      "failedQueries": 0,
+      "querySteps": 60380,
+      "exhausted": 0,
+      "deadlines": 0
+    },
+    "allSuccessful": true,
+    "deterministicWork": true
+  }
+}

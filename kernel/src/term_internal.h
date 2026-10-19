@@ -216,7 +216,7 @@ cc_entry_id ck_instr_dimension_entry(cc_kernel *, unsigned index);
 cc_entry_id ck_instr_face_entry(cc_kernel *, cc_clause);
 bool ck_instr_on_face(cc_kernel *, uint32_t set, cc_clause, uint32_t *out);
 /* Paths and composition (instruction_paths.c), for Glue's systems. */
-bool ck_instr_formula_context(cc_kernel *, const cc_formula *, uint32_t *out);
+bool ck_instr_formula_context(cc_kernel *, cc_formula_id, uint32_t *out);
 cc_term ck_instr_append_tube(cc_kernel *, cc_term tubes, cc_formula_id face, cc_term tube);
 cc_judgement_id ck_instr_system_fact(cc_kernel *, cc_term comp, cc_term type, uint32_t context, uint64_t pending);
 bool ck_instr_begin(cc_kernel *, cc_derivation, const uint8_t *position, size_t depth, cc_judgement_id *found);

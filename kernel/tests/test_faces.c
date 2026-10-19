@@ -249,10 +249,47 @@ static void split_systems(void) {
     cc_kernel_free(k);
 }
 
+/* SystemTube restricts a family before reading its face's context. The
+ * intermediate interval j & k is new even though the final interval is 0:
+ * i & j & k restricted first at i=1, then at j=0. Arena growth there must
+ * not invalidate the face descriptor used by trusted context checking. */
+static void system_tube_grows_formula_arena(void) {
+    k = cc_kernel_new();
+    assert(k);
+    OK(cc_instr_dimension(k, 0));
+    OK(cc_instr_dimension(k, 1));
+    OK(cc_instr_dimension(k, 2));
+    cc_entry_id direction = OK(cc_instr_dimension(k, 3)), path_dim = OK(cc_instr_dimension(k, 4));
+    cc_judgement_id unit = OK(cc_instr_unit(k)), point = OK(cc_instr_point(k));
+    cc_judgement_id line = OK(cc_instr_path_lambda(k, path_dim, unit));
+    cc_clause ijk = {7, 0};
+    cc_formula interval = {CC_INTERVAL, &ijk, 1, 1}, zero = {CC_INTERVAL, NULL, 0, 0};
+    cc_judgement_id family = OK(cc_instr_path_at(k, line, OK(cc_kernel_formula(k, &interval))));
+    cc_judgement_id at_zero = OK(cc_instr_path_at(k, line, OK(cc_kernel_formula(k, &zero))));
+    cc_judgement_id base_type = OK(cc_instr_step(k, OK(cc_instr_refl(k, family)), 1, NULL, 0, CC_STEP_PATH));
+    cc_judgement_id tube_type = OK(cc_instr_step(k, OK(cc_instr_refl(k, at_zero)), 1, NULL, 0, CC_STEP_PATH));
+    cc_judgement_id base = OK(cc_instr_convert(k, point, OK(cc_instr_symmetry(k, base_type))));
+    cc_judgement_id tube = OK(cc_instr_convert(k, point, OK(cc_instr_symmetry(k, tube_type))));
+    cc_judgement_id system = OK(cc_instr_system(k, direction, family, base));
+    cc_judgement_id agrees = OK(cc_instr_refl(k, tube));
+    cc_formula_id extent = face(2, (const unsigned[][2]){{0, 1}, {1, 0}}, false);
+    for (uint64_t n = 1; k->formula_count < k->formula_capacity; ++n) {
+        cc_clause unused = {8 | n << 4, 0};
+        cc_formula fill = {CC_INTERVAL, &unused, 1, 1};
+        OK(cc_kernel_formula(k, &fill));
+    }
+    size_t capacity = k->formula_capacity;
+    cc_judgement_id extended = OK(cc_instr_system_tube(k, system, extent, tube, agrees));
+    assert(k->formula_capacity > capacity && !faces(extended, NULL));
+    OK(cc_instr_comp(k, extended));
+    cc_kernel_free(k);
+}
+
 int main(void) {
     restricted_tubes();
     variables_on_a_face();
     split_systems();
+    system_tube_grows_formula_arena();
     printf("face entries: ok\n");
     return 0;
 }
