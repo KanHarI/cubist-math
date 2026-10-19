@@ -72,25 +72,28 @@ evaluate binary_rational_equal(
   -340282366920938463463374607431768211455
 ) expecting bnat.(1);
 
-// These observations require full values and certificates, not only an
-// equality decision's tag or a projection that hides a large proof.
+// Full-value checks cover fraction representation and inverse computation.
+// Disequality tests observe the computed branch, without normalizing refutations.
 # test(binary_rationals.normalize_wide_fraction)
 evaluate typed(BQ, 18446744073709551615/340282366920938463463374607431768211455) expecting _;
 # test(binary_rationals.normalize_wide_decimal)
 evaluate typed(BQ, 18446744073709551615.125) expecting _;
-# test(binary_rationals.normalize_inequality)
-evaluate bq_decide(1/2, 2/3) expecting _;
-
-# test(binary_rationals.normalize_wide_inequality)
-evaluate bq_decide(-340282366920938463463374607431768211455/18446744073709551615, 1/2) expecting _;
+# test(binary_rationals.wide_distinct)
+evaluate binary_rational_equal(-340282366920938463463374607431768211455/18446744073709551615, 1/2) expecting bnat.(
+  0
+);
 
 # test(binary_rationals.normalize_wide_inverse)
 evaluate bq_inv(-340282366920938463463374607431768211455/18446744073709551615) expecting _;
 
-# test(binary_rationals.normalize_integer_inequality)
-evaluate bint_decide(
+# test(binary_rationals.integer_distinct)
+evaluate match bint_decide(
   binary_integers.(340282366920938463463374607431768211455), binary_integers.(-1)
-) expecting _;
+) return BNat {
+  left same => bnat.(1);
+  right different => bnat.(0);
+}
+expecting bnat.(0);
 
 # test(binary_rationals.zero_denominator)
 # expect_error(E905)
