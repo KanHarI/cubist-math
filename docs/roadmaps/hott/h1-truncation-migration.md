@@ -101,6 +101,15 @@ the old and new values of `sequence_same_transitive` and
 `cauchy_same_equivalence`. Every assumption list, type text and value text
 is unchanged, which the refresh checked before writing them.
 
+On 2026-10-19, five `newValue.hash` pins were refreshed after the elaborator
+stopped generating transports along beta-constant families in `mere_map` and
+`mere_eliminate` squash clauses. The affected proofs are
+`sequence_same_symmetric`, `sequence_same_transitive`, `cauchy_same_equivalence`,
+`small_mere_eliminate` and `no_maximal_strict_successor`; their hashes include
+checked dependency closures. Every other pin, readable value and assumption
+list was checked unchanged before writing the hashes. All four migration
+comparisons pass; no mathematical source was changed.
+
 `tests/truncation-migration.test.mjs` checks G2 and G5–G7, the ledger file,
 coexistence with the legacy signatures and rejection of a false truncation
 former, and the CLI's pinned baseline for a module stored in `library/`.

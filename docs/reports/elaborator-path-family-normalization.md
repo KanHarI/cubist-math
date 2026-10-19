@@ -97,8 +97,9 @@ visible-coordinate reassignment, binder freshening, and symbolic simplification
 parameters. Restoring the old codec fails both the round-trip and binder tests.
 The E482 error-index row was checked in the browser.
 
-Five existing H1 migration-ledger value hashes were refreshed for the generated
-proof changes, including hashes of their checked dependency closures. All public
+Five existing H1 migration-ledger value hashes were refreshed because the generated
+`mere_map` and `mere_eliminate` squash clauses no longer transport along
+beta-constant families. Each hash includes the proof's checked dependency closure. All public
 type pins, readable value renderings and assumption/extension pins are unchanged;
 no migration example or library source was edited.
 
