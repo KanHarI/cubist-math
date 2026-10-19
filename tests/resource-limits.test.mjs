@@ -64,6 +64,32 @@ def recovered : Unit := tt;
   assert.deepEqual(report.expectedErrors, []);
 });
 
+for (const kind of ["fuel", "budget", "resource", "deadline"]) {
+  test(`inference scope reduction preserves ${kind} exhaustion`, async t => {
+    const program = new CubicalProgram(module, async () => null);
+    t.after(() => program.dispose());
+    const nf = program.checker.nf.bind(program.checker);
+    let interrupted = false;
+    program.checker.nf = (term, ...rest) => {
+      if (term.tag === "App" && term.fn.tag === "DefRef" && term.fn.name === "main__Ignored") {
+        interrupted = true;
+        throw new KernelError("scope reduction interrupted", kind);
+      }
+      return nf(term, ...rest);
+    };
+    const result = await program.check(`
+def Ignored(u : Unit) : U0 := Unit;
+def take_value{{B : U0}}(f : Unit -> B) : B := f(tt);
+def function_(u : Unit) : Ignored(u) := tt;
+def limited := take_value(function_);
+def recovered : Unit := tt;
+`, "main");
+    assert.ok(interrupted, "the candidate's head reduction was reached");
+    assert.equal(result.outputs.find(output => output.name === "limited").failure, kind);
+    assert.ok(result.outputs.find(output => output.name === "recovered").verified);
+  });
+}
+
 test("h-level cycle comparisons cannot turn a resource failure into a failed candidate", () => {
   const failure = new KernelError("Native prototype syntax depth exceeds 512.", "resource");
   const scope = { context: new Map(), evidence: [], spend() {}, equal() { throw failure; } };
