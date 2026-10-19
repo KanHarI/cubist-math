@@ -134,9 +134,12 @@ made these calls pass, concealing the missing reduction in inference.
 Only after the ordinary constraints stop making progress, a candidate that
 fails its occurs or scope check gets a bounded local reduction. If that still
 leaves offending names, a separate inference-only pass exposes native heads
-beneath type formers. It retains a head only when it removes those names,
-visits shared syntax once per dimension context, and never revisits a decoded
-head merely because its object identity changed. Candidate-local dimension
+beneath type formers, including a type former exposed by another definition
+such as `Wrap(u) := Unit -> Ignored(u)`. Its children are reduced without
+re-querying the type former's head. A head is retained only when the result
+removes the offending names. The fallback keeps a solution only if the entire
+constraint agrees. The pass visits shared syntax once per dimension context,
+and never revisits a decoded head merely because its object identity changed. Candidate-local dimension
 binders use the codec's scope allocation. Final occurs, scope and cumulative
 universe checks and kernel checking of inferred arguments remain unchanged.
 Fuel, budget, resource and deadline failures propagate instead of becoming

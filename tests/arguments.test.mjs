@@ -21,23 +21,27 @@ const implicit = testModule("implicit_parameters", { module });
 test("implicit result types discard ignored bound arguments before scope checks", async t => {
   const { verdicts, result } = await checkProgram(t, `
 def Ignored(u : Unit) : U0 := Unit;
+def Wrap(u : Unit) : U0 := Unit -> Ignored(u);
 def take_value{{B : U0}}(f : Unit -> B) : B := f(tt);
 def beta_function(u : Unit) : (fun (ignored : Unit) => Unit)(u) := tt;
 def delta_function(u : Unit) : Ignored(u) := tt;
 def nested_function(u : Unit) : Unit -> (fun (ignored : Unit) => Unit)(u) := fun (v : Unit) => tt;
 def nested_delta_function(u : Unit) : Unit -> Ignored(u) := fun (v : Unit) => tt;
+def wrapped_function(u : Unit) : Wrap(u) := fun (v : Unit) => tt;
 def beta_inferred := take_value(beta_function);
 def delta_inferred := take_value(delta_function);
 def nested_inferred := take_value(nested_function);
 def nested_delta_inferred := take_value(nested_delta_function);
+def wrapped_inferred := take_value(wrapped_function);
 def explicit_control := take_value{{Unit}}(delta_function);
 evaluate beta_inferred expecting tt;
 evaluate delta_inferred expecting tt;
 evaluate nested_inferred(tt) expecting tt;
 evaluate nested_delta_inferred(tt) expecting tt;
+evaluate wrapped_inferred(tt) expecting tt;
 `, { module });
   assert.deepEqual(result.gaps, []);
-  for (const name of ["beta_inferred", "delta_inferred", "nested_inferred", "nested_delta_inferred", "explicit_control"])
+  for (const name of ["beta_inferred", "delta_inferred", "nested_inferred", "nested_delta_inferred", "wrapped_inferred", "explicit_control"])
     assert.equal(verdicts[name], true, name);
 });
 
@@ -95,7 +99,9 @@ def take_value{{B : U1}}(f : Unit -> B) : B := f(tt);
 def function_(u : Unit) : (fun (ignored : Unit) => U0)(u) := Unit;
 def inferred := take_value(function_);
 `, { module });
+  assert.equal(get("function_").verified, true);
   assert.equal(get("inferred").verified, false);
+  assert.match(get("inferred").reason, /Give it explicitly/);
 });
 
 test("a named argument is a node of its call; a hole is a name", () => {

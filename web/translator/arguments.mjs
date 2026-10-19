@@ -23,7 +23,8 @@
 // checks every solution at its type, and every written argument is checked
 // against its parameter's type, as in a call without holes, so an unsolved
 // hole never reaches the kernel. Nothing is searched for: a hole is never
-// filled because some inhabitant of its type exists.
+// filled because some inhabitant of its type exists. A scope-blocked candidate
+// is reduced only as a last resort, after the other constraints have had their say.
 import {propagateElaborationStop,propagateLimit} from "./control.mjs";
 import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames,betaReduce,isTerm} from "./core.mjs";
 import {universeText} from "../cubical-levels.mjs";
@@ -493,11 +494,11 @@ class ArgumentSolver {
     if (this.approximating) {
       // Let other arguments preserve a named type before reducing a scope-
       // blocked candidate. Only the fallback phase may expose its definition.
-      const names = new Set([...freeNames(value)].filter(name => name === slot.variable || bound.has(name)));
+      const offending = new Set([...freeNames(value)].filter(name => name === slot.variable || bound.has(name)));
       const dimensions = new Set([...freeDimensions(value)].filter(dim => bound.has(dim) || !this.scope.dimensions.has(dim)));
-      const blocked = term => [...freeNames(term)].some(name => names.has(name))
+      const blocked = term => [...freeNames(term)].some(name => offending.has(name))
         || [...freeDimensions(term)].some(dim => dimensions.has(dim));
-      if (names.size || dimensions.size) {
+      if (offending.size || dimensions.size) {
         value = betaReduce(value);
         if (blocked(value)) value = reduceScopeCandidate(value, blocked, at);
       }
@@ -620,7 +621,10 @@ function reduceScopeCandidate(value, blocked, at) {
       if (!blocked(term)) return term;
       if (term.tag !== "Var" && !CANONICAL.has(term.tag)) {
         try {
-          const head = scope.nf(term);
+          let head = scope.nf(term);
+          // A newly exposed type former cannot reduce at its head again;
+          // its children may contain the ignored arguments we need to erase.
+          if (CANONICAL.has(head.tag) && blocked(head)) head = reduce(head, scope);
           if (!blocked(head)) result = head;
         } catch (error) { propagateLimit(error); }
       }
