@@ -361,6 +361,7 @@ export const diagnostics = [
   ["E479", "witness reads a closed truncation, a value of a truncated declared type such as Trunc(U, A); this is a value of …."],
   ["E480", "The truncation evaluates to …, which holds no constructor to read a witness from."],
   ["E481", "The truncation's witness lies under a composition whose type changes: it is built in …, not …."],
+  ["E482", "Path reversal requires a homogeneous path; use an explicit path abstraction for a dependent family."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

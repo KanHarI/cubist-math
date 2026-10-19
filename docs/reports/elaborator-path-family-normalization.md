@@ -35,6 +35,29 @@ capture avoidance. Every generated proof is checked by the native kernel
 against its original expected type. No judgmental transport regularity,
 proof irrelevance, kernel computation rule or library helper is introduced.
 
+The independent elaborator audit exposed related annotation and scope hazards:
+
+- Local reduction preserves unchanged syntax objects and memoizes its outputs.
+  Copying checked path applications loses the codec's native annotations.
+  Contraction can also create new applications, so `Scope.homogeneousPath`
+  derives a changed carrier before callers issue head queries. Simplification
+  rule patterns use pure recognition while their parameters are still symbolic;
+  their instantiated carriers are derived by `equalityRule`.
+- Decoding shares syntax using only the dimensions visible in a node, whereas
+  encoding keys by the full supplied dimension context. A decode/encode round
+  trip with an unused ambient dimension therefore lost checked path-application
+  annotations and could fail with K335. Decoding now also records the original
+  context's encoding entry, including on decode-cache hits. Moving a visible
+  coordinate still rebuilds the node.
+- A decoded path binder can reuse the name of an unused ambient coordinate.
+  Automatic clause goals now freshen that binder before opening the family,
+  derive the renamed family, and then reduce its head.
+
+Genuinely dependent reversal now reports E482 with an explicit-path-abstraction
+suggestion instead of an escaped-dimension failure. Dependent concatenation
+uses the existing homogeneous-composition diagnostic. Their documented rejection
+fixtures and the error index have been updated.
+
 The audit also found two reduction-control defects:
 
 - `betaReduce` spent its contraction budget after recursively reducing the
@@ -51,9 +74,10 @@ The audit also found two reduction-control defects:
 ## Evidence and limits
 
 A manual full-normalization probe of the direct quotient map failed at syntax
-depth 512 before the family fix, after 120,911,412 query steps and 10,294,987
-arena nodes. With the unnecessary compositions removed, it normalized in
-89,917,089 query steps with 17,010,711 arena nodes. A complete successful
+depth 512 before the family fix, after 120,911,412 query steps with a total of
+10,294,987 arena nodes. With the unnecessary compositions removed, it normalized
+in 89,917,089 query steps with a total of 17,010,711 arena nodes. Step counts
+are for the query; arena totals include the checked imports. A complete successful
 normal form is larger than a failed partial result: these numbers establish
 successful normalization, not a memory reduction. The underlying
 `prop_type_is_set(U0)` proof alone takes about 80 million query steps and
@@ -67,6 +91,17 @@ genuine dependence, and both local reducers. Restoring syntactic-only
 recognition fails all five focused regressions; restoring the old beta-budget
 accounting fails the exact-budget test.
 
+Additional regressions check constant quotient motives containing both existing
+and beta-created path applications, unused dimension contexts and cache hits,
+visible-coordinate reassignment, binder freshening, and symbolic simplification
+parameters. Restoring the old codec fails both the round-trip and binder tests.
+The E482 error-index row was checked in the browser.
+
+Five existing H1 migration-ledger value hashes were refreshed for the generated
+proof changes, including hashes of their checked dependency closures. All public
+type pins, readable value renderings and assumption/extension pins are unchanged;
+no migration example or library source was edited.
+
 The original generic quotient descent and binary-rational inverse full
 normalization remain unresolved. `quotient_induction` is compiled over a
 truly dependent motive `B`, so its dependent constructions are justified at
@@ -74,6 +109,13 @@ that point, even when a later client instantiates `B` with constant `Prop`.
 This patch does not remove them or complete NUM2. Separately skipping eager
 path-application annotation normalization was measured and did not resolve
 the generic descent failure.
+
+The independent audit also identified repeated copying in `withNativeReferences`
+as a further optimization lead. Its suggested global copy-on-write change to
+`mapSyntax` is unsuitable: binding display intentionally clones and mutates the
+result. A targeted change needs its own validation. The audit's possible
+syntactic scope rejection in argument unification has no reproduced source
+failure yet; neither lead is claimed fixed here.
 
 This audit follows the [kernel normalization audit](open-quotient-normalization.md).
 Validation and Claude Code Opus 5.5 xhigh review results are recorded in the PR.

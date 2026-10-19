@@ -20,7 +20,7 @@
 // whose endpoints agree by conversion is proved by `reflexivity`. Filling
 // steps will join these with constructor congruence (A2) and congruence
 // lines (A3).
-import {T,homogeneousPath} from "./core.mjs";
+import {T} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {pathConcat} from "./path-algebra.mjs";
 import {equalityRule} from "./proof-rewrite.mjs";
@@ -34,7 +34,7 @@ export class Goal {
   at(scope) {return new Goal(this.target,scope);}
   // The Path head of a homogeneous equality goal, or null.
   equality() {
-    return homogeneousPath(this.scope.nf(this.target));
+    return this.scope.homogeneousPath(this.scope.nf(this.target));
   }
 }
 
@@ -112,8 +112,8 @@ export function byConversion(goal) {
 // tactic's search time limit.
 export function composePaths(scope,left,right) {
   scope.checkDeadline();
-  const p=homogeneousPath(scope.nf(scope.infer(left).type));
-  const q=homogeneousPath(scope.nf(scope.infer(right).type));
+  const p=scope.homogeneousPath(scope.nf(scope.infer(left).type));
+  const q=scope.homogeneousPath(scope.nf(scope.infer(right).type));
   if(!p||!q)
     throw Error("Expected homogeneous equality paths for composition.");
   scope.expect(p.family,q.family);
@@ -128,7 +128,7 @@ export function composePaths(scope,left,right) {
 
 // Transport `value` along a checked path of types.
 export function transportTypePath(scope,path,value) {
-  const type=homogeneousPath(scope.nf(scope.infer(path).type));
+  const type=scope.homogeneousPath(scope.nf(scope.infer(path).type));
   if(!type||scope.nf(type.family).tag!=="U")
     throw Error("A general goal rewrite requires a checked path of types.");
   scope.check(value,type.left);

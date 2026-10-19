@@ -1467,7 +1467,8 @@ def PropLevel(n : Nat) := induction n as k return (U0 -> U0) {
 `q : PathP(fun (i : Interval) => B(p @ i), u, v)`, `path i => q @ flip(i)`
 checks against `PathP(fun (i : Interval) => B(p @ flip(i)), v, u)`, and
 `path i => f(p @ i, q @ i)` against `f(x, u) = f(y, v)`. The builtin `sym(q)`
-fails with "Unbound cubical dimension: d0".
+now reports E482, "Path reversal requires a homogeneous path", following the
+runtime elaborator audit. Explicit dependent reversal still checks as above.
 
 **Two planned transport rules cannot be registered.**
 `simp only [transport_constant]` and `simp only [transport_ap]` are rejected

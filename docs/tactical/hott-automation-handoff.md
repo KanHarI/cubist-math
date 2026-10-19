@@ -42,7 +42,7 @@ milestone-gated probes are:
 
 | Probe | Current reason | Expected to change with |
 | --- | --- | --- |
-| `rejected_sym_pathp` | "Unbound cubical dimension: d0" | E0 or A1a: check, or give a normal diagnostic |
+| `rejected_sym_pathp` | E482: path reversal requires a homogeneous path | E0 or A1a: support dependent reversal; the runtime audit supplied the normal diagnostic |
 | `rejected_rule_constant`, `rejected_rule_ap` | Rule parameter not determined by the matched side | A1 folded signatures |
 | `under_succ` | Unresolved equality goal | A2 |
 | `use_ru`, `use_ru_at_u0` | Unresolved equality goal | A1, including mixed-universe matching |

@@ -21,7 +21,7 @@
 // of the tactic's fuel. Every structural rule makes its obligations on
 // strictly smaller types; a rule's premise that repeats an obligation it is
 // proving is a cycle, and the rule is passed over.
-import { T, substituteTerm, substituteDimension, freeNames, homogeneousPath } from "./core.mjs";
+import { T, substituteTerm, substituteDimension, freeNames } from "./core.mjs";
 import { freeDimensions } from "./dimension-slots.mjs";
 import { interval as I } from "./lattice.mjs";
 import { transportToDependentPath } from "./path-over.mjs";
@@ -329,7 +329,7 @@ export class HLevelSearch {
     scope.spend("candidates");
     if (typeof level === "object")
       throw new HLevelUnproved(chain, `nothing in scope states that ${this.show(type)} has level ${this.show(level.term)}`);
-    const normal = scope.nf(type), head = homogeneousPath(normal) ?? normal;
+    const normal = scope.nf(type), head = scope.homogeneousPath(normal) ?? normal;
     const unproved = reason => { throw new HLevelUnproved(chain, reason); };
     // The family of a Π or Σ over its own binder, and evidence for its body at
     // a fresh variable.
@@ -457,11 +457,11 @@ export { named as levelName };
 // target fiber. Higher squash clauses call this on a path whose fiber is
 // itself a path type; structure() reduces the required level accordingly.
 export function pathEvidence(search, path, scope) {
-  path = homogeneousPath(path) ?? path;
+  path = scope.homogeneousPath(path) ?? path;
   const fiber = substituteDimension(path.family, path.dim, I.one);
-  const sort = scope.nf(scope.infer(fiber).type);
+  const checkedFiber = scope.infer(fiber), sort = scope.nf(checkedFiber.type);
   if (sort.tag !== "U") throw Error("The path's fiber must live in a universe.");
-  const prop = search.prove(0, sort.level, fiber);
+  const prop = search.prove(0, sort.level, checkedFiber.term);
   if (!freeDimensions(path.family).has(path.dim)) return T.app(T.app(prop, path.left), path.right);
   const transported = T.comp(path.dim, path.family, [], path.left);
   const equality = T.app(T.app(prop, transported), path.right);

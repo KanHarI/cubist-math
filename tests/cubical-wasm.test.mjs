@@ -261,6 +261,34 @@ test("a head the kernel refuses leaves no error behind to refuse the next instru
   assert.ok(derive(k, syntax.encode(left), syntax.encode(two)).expression);
 });
 
+test("checked path applications retain annotations through unused dimension contexts", t => {
+  const k = session(t), checker = new NativeCubicalElaborator(k), syntax = checker.syntax;
+  const context = new Map([["p", T.path("j", two, left, right)]]);
+  for (const arg of [I.zero, I.variable("i")]) {
+    const dimensions = new Map([["unused", 0], ["i", 63]]);
+    const checked = checker.checkSyntax(T.at(T.variable("p"), arg), null, context, dimensions);
+    assert.equal(syntax.encode(checked.term, dimensions), checked.expression);
+    assert.doesNotThrow(() => checker.nf(checked.term, dimensions));
+    // A decode-cache hit in another context must record that round trip too.
+    const extended = new Map(dimensions).set("also_unused", 1);
+    const again = syntax.decode(checked.expression, extended);
+    assert.equal(again, checked.term);
+    assert.equal(syntax.encode(again, extended), checked.expression);
+    assert.doesNotThrow(() => checker.nf(again, extended));
+    // Moving a visible coordinate still requires rebuilding the application.
+    if (arg === I.zero) continue;
+    const moved = new Map([["unused", 0], ["i", 2]]);
+    assert.notEqual(syntax.encode(again, moved), checked.expression);
+    assert.deepEqual(syntax.decode(syntax.encode(again, moved), moved), again);
+    // Inspection can omit a free index and use its fallback spelling for
+    // another slot. That is not the checked node's original context.
+    const incomplete = new Map([["d63", 0]]);
+    const shown = syntax.decode(checked.expression, incomplete);
+    assert.deepEqual(shown.arg, I.variable("d63"));
+    assert.notEqual(syntax.encode(shown, incomplete), checked.expression);
+  }
+});
+
 test("browser dimension allocation reuses slots without capturing outer coordinates", t => {
   const k = session(t), checker = new NativeCubicalElaborator(k);
   let type = T.unit, point = T.point;

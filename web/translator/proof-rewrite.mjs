@@ -42,7 +42,7 @@ export function equalityRule(scope, term, reverse = false) {
   // A universe-generic equality: rw matches its universe like simp does.
   if (normal.tag === "LPi" && scope.nf(T.levelApply(T.levelLambda(normal.name, normal.body), 0)).tag === "Path")
     return simplificationRule(scope, term, reverse);
-  const type = homogeneousPath(normal);
+  const type = scope.homogeneousPath(normal);
   if (!type)
     throw Error("rw requires a homogeneous equality proof.");
   if (!reverse) return {term, carrier:type.family, left:type.left, right:type.right};
@@ -76,6 +76,8 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
     type = scope.nf(T.app(T.lam(type.name,type.domain,type.body),T.variable(marker)));
     if (parameters.length > 16) throw Error("Simplification rule has too many parameters.");
   }
+  // These are pattern parameters, not assumptions in scope. Recognition is
+  // syntactic here; equalityRule derives the instantiated carrier below.
   type = homogeneousPath(type);
   if (!type) throw Error("simp only requires homogeneous equality lemmas.");
   const pattern = reverse ? type.right : type.left;
@@ -185,7 +187,7 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
           if(checked.failure!=="mismatch")throw checked.error;
         }
         if(!arg) {
-          const premise=homogeneousPath(at.nf(pi.domain));
+          const premise=at.homogeneousPath(at.nf(pi.domain));
           if(premise&&at.equal(premise.left,premise.right)) {
             const dim=at.fresh("simp_premise");
             arg=at.check(T.line(dim,premise.family,premise.left),pi.domain);

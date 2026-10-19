@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {T} from '../../web/translator/core.mjs';
 import {Scope,SourceUnit} from '../../web/translator/elaboration.mjs';
 import {Goal,Transition,steps,reflexivity,byConversion,composePaths,transportTypePath} from '../../web/translator/proof-goals.mjs';
-import {equalityRule} from '../../web/translator/proof-rewrite.mjs';
+import {equalityRule,simplificationRule} from '../../web/translator/proof-rewrite.mjs';
 import {Translator} from '../../web/translator/translate.mjs';
 import {builtinTerm} from '../../web/translator/builtins.mjs';
 
@@ -21,6 +21,18 @@ const checkedScope=t=>{
 const scope=t=>checkedScope(t)
   .bind('f',T.pi('n',two,two)).bind('x',two).bind('y',two).bind('p',T.path('i',two,x,y));
 const equal=(scope,left,right)=>new Goal(T.path(scope.fresh('i'),two,left,right),scope);
+
+test('a beta-constant simplification rule retains its uninstantiated parameters',t=>{
+  const A=T.variable('A'),a=T.variable('a'),p=T.variable('p');
+  const at=checkedScope(t).bind('f',T.pi('A',T.universe(0),T.pi('a',A,A)));
+  const image=(type,value)=>T.app(T.app(T.variable('f'),type),value);
+  const carrier=T.app(T.lam('ignored',A,A),T.at(p,[['i:1']]));
+  const proof=T.lam('A',T.universe(0),T.lam('a',A,
+    T.lam('p',T.path('j',A,a,a),T.line('i',carrier,image(A,a)))));
+  const point=image(T.unit,T.point),rule=simplificationRule(at,proof),concrete=rule.instantiate(point);
+  assert.ok(concrete);
+  assert.doesNotThrow(()=>at.check(concrete.term,T.path('i',T.unit,point,point)));
+});
 
 test('a transition extends its plan without changing the transition it came from',t=>{
   const at=scope(t),goal=equal(at,x,y);
@@ -101,8 +113,10 @@ test('reducing a motive that uses its argument preserves genuine dependence',t=>
   assert.equal(new Goal(target,at).equality(),null);
   const inner=at.bind('dependent',target),p=T.variable('dependent');
   const translator=new Translator({checker:inner.checker});
-  assert.throws(()=>translator.reversePath(inner,p,'sym'),/sym requires a path/);
-  assert.throws(()=>translator.concatenatePaths(inner,p,p,'trans'),/trans requires paths/);
+  for(const spelling of ['sym','~'])
+    assert.throws(()=>translator.reversePath(inner,p,spelling),/Path reversal requires a homogeneous path/);
+  for(const spelling of ['trans','++'])
+    assert.throws(()=>translator.concatenatePaths(inner,p,p,spelling),/Expected homogeneous equality paths for composition/);
   assert.throws(()=>equalityRule(inner,p),/homogeneous equality/);
 });
 

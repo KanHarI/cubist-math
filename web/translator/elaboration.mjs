@@ -5,7 +5,8 @@
 // authority: every term they help build is checked.
 import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
-import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
+import {T,freeNames,onFace,substituteTerm,substituteDimension,isTerm,homogeneousPath} from "./core.mjs";
+import {interval as I} from "./lattice.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
 import {BindingAdapter,SlotOutcomes,bindingResolution} from "../cubist/bindings.mjs";
@@ -278,6 +279,20 @@ export class Scope {
     throw result.error;
   }
   nf(term) {this.spend("queries");return this.checker.nf(term,this.dimensions);}
+  // A locally reduced carrier can contain fresh path applications. Derive
+  // it before callers ask head queries, which require checked annotations.
+  homogeneousPath(path) {
+    const homogeneous=homogeneousPath(path);
+    return homogeneous&&homogeneous!==path
+      ? {...homogeneous,family:this.infer(homogeneous.family).term} : homogeneous;
+  }
+  // Decoder binder names need not be fresh for dimensions unused by this
+  // path. Open its family under a fresh coordinate before reducing its head.
+  pathFamilyHead(path) {
+    const dim=this.fresh("i"),inner=this.bindDimension(dim);
+    const family=substituteDimension(path.family,path.dim,I.variable(dim));
+    return {...path,dim,family:inner.nf(inner.infer(family).term)};
+  }
   // The next clause's type of an eliminator (H1), from the kernel.
   clauseType(motive,clauses) {this.spend("queries");return this.checker.nextClauseType(motive,clauses,this.context,this.dimensions);}
   equal(left,right) {this.spend("queries");return this.checker.equal(left,right,this.context,this.dimensions,this.unit.names);}

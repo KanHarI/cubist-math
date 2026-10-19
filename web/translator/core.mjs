@@ -131,7 +131,16 @@ export function betaReduce(term, budget = 256) {
   const beta = t => {
     if (!t || typeof t !== "object") return t;
     if (reduced.has(t)) return reduced.get(t);
-    let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
+    // Keep unchanged syntax by identity: decoded nodes carry the codec's
+    // checked annotations and are shared by later kernel queries.
+    let result = t;
+    for (const [key, value] of Object.entries(t)) {
+      const changed = beta(value);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : {...t};
+        result[key] = changed;
+      }
+    }
     // A lambda applied, and a universe lambda instantiated at a level.
     for (; budget > 0;) {
       if (result.tag === "App" && result.fn?.tag === "Lam") result = substitute(result.fn.body, result.fn.name, result.arg);
@@ -148,6 +157,7 @@ export function betaReduce(term, budget = 256) {
       result = beta(result);
     }
     reduced.set(t, result);
+    if (result && typeof result === "object") reduced.set(result, result);
     return result;
   };
   return beta(term);

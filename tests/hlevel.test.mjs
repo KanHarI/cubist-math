@@ -110,3 +110,16 @@ computable def constant_level(p : tt = tt) :
     pending.push(...Object.values(term));
   }
 });
+
+test("reduced quotient motives retain checked path applications before head queries", async t => {
+  for (const carrier of ["P @ 0", "(fun (R : Unit = Unit) => R @ 0)(P)"]) {
+    const { get } = await check(t, `import quotients; import hlevels;
+def Same(a, b : Unit) : U0 := Unit;
+computable def direct(P : Unit = Unit, x : Quotient(U0, Unit, Same)) : ${carrier} :=
+  match x return ${carrier} { class(u) => tt; }
+obligations { relate(u, v, r) @ i => typed(${carrier}, tt); };
+`);
+    ok(get("direct"));
+    assert.deepEqual(get("direct").axioms, []);
+  }
+});

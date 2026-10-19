@@ -100,3 +100,11 @@ test("local reduction spends its budget before following newly exposed redexes",
   const self=T.lam("x",T.unit,app(v("x"),v("x"))),omega=app(self,self);
   assert.deepEqual(betaReduce(omega,4),omega);
 });
+
+test("local reduction preserves unchanged nodes and shares a contracted argument",()=>{
+  const endpoint=at(v("P"),I.zero);
+  const type=T.sigma("x",endpoint,endpoint);
+  assert.equal(betaReduce(type),type);
+  const redex=app(T.lam("ignored",two,type),left);
+  assert.equal(betaReduce(redex),type);
+});

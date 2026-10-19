@@ -60,7 +60,7 @@ def rejected_independent_fillers(
 
 // Rejected until a milestone lands; the test names the milestone.
 
-// E0 or A1a: reverse a dependent path, or report a normal diagnostic.
+// E0 or A1a: dependent reversal remains explicit; sym reports E482.
 def rejected_sym_pathp(
   A : U0, B : A -> U0, x, y : A, p : x = y, u : B(x), v : B(y),
   q : PathP(fun (i : Interval) => B(p @ i), u, v)
