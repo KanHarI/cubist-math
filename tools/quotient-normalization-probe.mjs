@@ -19,7 +19,7 @@ for (const name of ["to_unit", "to_prop"]) {
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   try {
     const checked = await program.check(source, "normalization_probe");
-    if (checked.gaps.length) throw new Error(JSON.stringify(checked.gaps));
+    if (!checked.complete) throw new Error(JSON.stringify(checked.gaps));
     const derived = program.checker.checkSyntax({ tag: "DefRef", name: `normalization_probe__${name}` },
       null, new Map(), new Map());
     const kernel = program.kernel;

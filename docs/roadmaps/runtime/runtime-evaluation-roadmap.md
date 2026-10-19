@@ -684,9 +684,12 @@ one, addition and multiplication are checked without assumptions. Its
 `binary_integers` notation reads decimal and `0b` magnitudes directly into
 binary pairs. Computed output still shows quotient representatives; this
 is not a canonical signed presentation. The public `Z`/`Q` APIs and generic
-`Ring.of_nat` compatibility path have not switched. The binary fraction instance
+`Ring.of_nat` compatibility path have not switched. A binary instantiation of
+generic `fraction_field` checks in a contract on main; there is no released
+binary-rational library instance yet. That library instance
 and integer-to-rational embedding, generic binary numeral interpretation, and
-the default migration remain open. This source
+the default migration remain open on main. Draft #283 develops the binary
+rational API; its full inverse normalization is still unresolved. This source
 representation work changes no evaluator or kernel code.
 
 **Shared integer domain proofs (2026-10-18).** `differences` derives absence
@@ -785,6 +788,14 @@ literals and rendering work on large binary magnitudes without allocation
 proportional to their unary value. Update consumers and notation for the
 new APIs; keep the archive checking under the documented imports and
 unary-natural compatibility policy.
+Full small and wide rational inverse contracts must normalize, including
+their surviving certificates and annotations, before releasing the binary
+rational API and switching the default `Z`/`Q`. Draft #283 remains blocked
+on these contracts. This is an outcome gate, not a requirement to finish
+every EVAL3–EVAL8 package: an earlier general kernel/elaborator fix can satisfy
+it, together with any needed NUM proof-algorithm change. The
+[completion path](#rational-full-normalization-completion-path)
+tracks the structural work currently planned to address the failures.
 Record the new library's source-representation gains separately from
 evaluator gains.
 
@@ -901,7 +912,7 @@ capture/shadowing and unused-argument cases; `euclid(4).1 = 5` and
 diagnostic, never a host stack overflow. Measure retained closure memory
 as well as avoided syntax allocation.
 
-#### Rational full-normalization completion path
+### Rational full-normalization completion path
 
 Planned on 2026-10-19; none of the stages below is claimed complete by the
 diagnostic experiments. This is part of the existing runtime track and NUM2
@@ -921,39 +932,47 @@ expansion in mixed closed/open BNat law proofs.
    normalization.
 2. **EVAL4: depth-independent traversal and readback.** Follow the actual
    substitution, scope/dimension, restriction, comparison and syntax-readback
-   paths that remain recursive. Replace native/host stack dependence with
+   paths that remain recursive, including JavaScript syntax decoding,
+   printing, `expecting` matching and driver alpha comparison. Replace native/host stack dependence with
    explicit bounded work, preserving capture avoidance and shared graphs.
    Separate intermediate growth from the depth of the required output.
    Removing a depth guard is allowed only after its protected traversals have
    resource-safe replacements; increasing 512 alone is not the fix. Acceptance
-   requires the 32/64/128-bit open binary-addition cases to normalize within
-   recorded work/memory bounds. Record the bitwise proof ladder separately,
-   including completed sizes and any remaining resource failures; there must
-   be no host overflow.
+   requires first defining exact 32/64/128-bit open binary-addition fixtures and
+   recording their current-main outcomes and work/memory baselines, before
+   this depth-removal work starts. These are proposed cases, not measured
+   regressions yet. They must then normalize within stated bounds. Likewise,
+   commit the experimental bitwise proof ladder and measure its baseline
+   before using it as a separate acceptance test; record completed sizes and
+   any remaining resource failures, with no host overflow.
 3. **Applicable EVAL8 work: cubical execution.** Extend the correspondence
    and implementation to term/level/dimension binders, paths and endpoints,
    face restriction, composition, transport, Glue and higher elimination.
    Represent shared delayed substitutions/restrictions without repeatedly
-   rebuilding proof syntax. Use the generic quotient example as a required
-   workload at this stage. Unsupported execution must be explicit or cross
+   rebuilding proof syntax. Use the generic quotient example and its fixed
+   budget [completion gate](../../reports/rational-normalization.md#what-counts-as-fixing-it)
+   at this stage. Unsupported execution must be explicit or cross
    a specified typed fallback boundary; it must not repeatedly restart the
-   same work. This semantic work is needed for the rational failure even if
+   same work. This semantic work is expected to be needed for the rational failure even if
    EVAL5's user-facing observation interface has not shipped.
 4. **EVAL5/EVAL8: complete typed normalization.** Force every surviving proof
    and annotation when a full normal form is requested, with explicit-stack
    readback and bounded memory. Validate normal forms, eta, instruction
    isolation, lifecycle and canonicity under the applicable EVAL8 gates.
-   Measure the completed generic quotient and rational certificates, not
-   just projections. If output itself is too large, report that separately
+   Measure the completed generic quotient with both parameterized and
+   concrete `prop_type_is_set(U0)` setness, and the rational certificates,
+   not just projections. If output itself is too large, report that separately
    from avoidable evaluator work. No proof irrelevance or transport
    regularity rule is introduced to make the workload pass.
 5. **NUM proof algorithms and release.** Replace the demonstrated unary
    fallback in BNat arithmetic-law proofs with checked bitwise arguments
    where needed, measuring that source change separately. Retain the
-   arithmetic-free quotient reproduction throughout: a library helper that
+   arithmetic-free quotient reproduction throughout: a caller-specific helper that
    avoids it does not resolve the evaluator problem. Re-run full small and
    wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
-   migration checks. Only then complete NUM2's release gates.
+   migration checks. Those results gate NUM2's binary-rational release and
+   default migration; construction work can proceed independently, and an
+   earlier general fix can satisfy the gates without all EVAL packages.
 
 The implementation order can overlap the source-proof and cubical work as
 dependencies allow. The ordinary-data evaluator alone is not predicted to
@@ -1065,7 +1084,11 @@ earlier under its narrower contract without making that claim.
 Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them, including
 numerical induction and recursion. NUM2's new binary-backed `Z` and `Q`
 follow the natural semiring foundations. These packages are independent
-of the closure evaluator.
+of the closure evaluator for their mathematical construction. NUM2's
+binary-rational release and default migration additionally require the full
+normalization contracts in its acceptance section. The
+[completion path](#rational-full-normalization-completion-path) coordinates
+the applicable EVAL work; it does not require finishing all EVAL packages.
 EVAL2 can proceed independently once its cache contract is clear. Design
 EVAL3/EVAL4 together, then specify EVAL5's observation interface and complete
 the relevant EVAL8 review before a runtime becomes a default path.

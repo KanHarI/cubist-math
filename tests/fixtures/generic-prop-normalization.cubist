@@ -1,3 +1,5 @@
+// Full normalization probe: see docs/reports/rational-normalization.md.
+// No arithmetic or concrete Prop-setness proof is needed for the costly case.
 import quotients;
 import propositions;
 

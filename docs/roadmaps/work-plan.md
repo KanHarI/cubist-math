@@ -654,9 +654,11 @@ The dependent Peano view, coherent strong recursion for arbitrary dependent
 families and binary factorial also check. Public `Nat` now aliases binary
 `BNat`; the unary declaration and structural clients use explicit `UNat`.
 Decimal I/O and both printers are migrated; the default-Nat release checks
-pass. NUM2 is in progress: binary integer and rational constructions are
-developed, while rational certificate normalization and the default `Z`/`Q`
-migration remain. EVAL3–EVAL8 remain planned. The ordered-ring/field
+pass. NUM2 is in progress: binary integers are on main, where a contract also
+checks the binary instantiation of generic `fraction_field`. Draft #283
+develops the binary-rational library API; its
+release and the default `Z`/`Q` migration remain blocked on full rational
+inverse normalization. EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -690,8 +692,11 @@ no real-number construction or analysis is scheduled.
   their ring/domain/field laws and embeddings within the new hierarchy;
   comparison maps and universe paths to the old integers and rationals
   are outside this track. Later numerical constructions default to `BNat`;
-  these foundations do not wait for a new runtime evaluator or
-  packed-integer specialization.
+  constructing these foundations does not wait for a new runtime evaluator
+  or packed-integer specialization. Releasing the binary-rational API and
+  switching default `Z`/`Q` additionally require NUM2's full normalization
+  contracts. They can be satisfied by a general fix before all EVAL packages
+  are complete; #283 remains draft while they fail.
 - NUM2 owns the new carriers and algebraic APIs. The
   [reals roadmap's R1](mathematics/reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
