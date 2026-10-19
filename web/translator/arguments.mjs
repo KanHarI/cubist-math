@@ -25,10 +25,12 @@
 // hole never reaches the kernel. Nothing is searched for: a hole is never
 // filled because some inhabitant of its type exists.
 import {propagateElaborationStop,propagateLimit} from "./control.mjs";
-import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames} from "./core.mjs";
+import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames,betaReduce,isTerm} from "./core.mjs";
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
-import {freeDimensions} from "./dimension-slots.mjs";
+import {freeDimensions,bindDimensions} from "./dimension-slots.mjs";
+import {dimensionScope} from "./term-shape.mjs";
+import {syntaxGraphBudget,dimensionContextKey} from "./syntax-graph.mjs";
 import {statement as hlevelStatement} from "./hlevel.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
 import {stem} from "./names.mjs";
@@ -487,11 +489,24 @@ class ArgumentSolver {
   // A hole's solution, when it is determined.
   solve(slot, value, polarity, bound, at, side) {
     value = this.zonk(value);
+    const original = value;
+    if (this.approximating) {
+      // Let other arguments preserve a named type before reducing a scope-
+      // blocked candidate. Only the fallback phase may expose its definition.
+      const names = new Set([...freeNames(value)].filter(name => name === slot.variable || bound.has(name)));
+      const dimensions = new Set([...freeDimensions(value)].filter(dim => bound.has(dim) || !this.scope.dimensions.has(dim)));
+      const blocked = term => [...freeNames(term)].some(name => names.has(name))
+        || [...freeDimensions(term)].some(dim => dimensions.has(dim));
+      if (names.size || dimensions.size) {
+        value = betaReduce(value);
+        if (blocked(value)) value = reduceScopeCandidate(value, blocked, at);
+      }
+    }
     const names = freeNames(value);
     // It would mention itself, or a variable bound inside the constraint.
     if (names.has(slot.variable)) return "stuck";
     const escaping = [...names].find(name => bound.has(name));
-    if (escaping) { this.escaping.set(slot.variable, value); return "stuck"; }
+    if (escaping) { this.escaping.set(slot.variable, original); return "stuck"; }
     if ([...freeDimensions(value)].some(dim => bound.has(dim) || !this.scope.dimensions.has(dim))) return "stuck";
     // A universe where a larger one would do as well is a bound, not a
     // solution, unless a bound on the other side is the same universe.
@@ -586,6 +601,48 @@ class ArgumentSolver {
         ...(n.origin?{origin:n.origin}:{}),...(n.synthetic?{synthetic:true}:{}), expressionSite: true, role: "inferred arguments",
         description: `Arguments of ${this.called} inferred: ${omitted.join(", ")}.`}, term);
   }
+}
+
+// A fallback scope check may need a definition beneath a type former.
+// Visit the shared syntax once per dimension context. Retain a native head
+// only if it removes the offending names; never revisit a decoded head as
+// apparent progress. Candidate-local binders are not offending names.
+function reduceScopeCandidate(value, blocked, at) {
+  const memo = new WeakMap(), budget = syntaxGraphBudget();
+  const reduce = (term, scope) => {
+    if (!term || typeof term !== "object") return term;
+    const key = dimensionContextKey(scope.dimensions);
+    const known = memo.get(term);
+    if (known?.has(key)) return known.get(key);
+    budget.tick();
+    let result = term;
+    if (isTerm(term)) {
+      if (!blocked(term)) return term;
+      if (term.tag !== "Var" && !CANONICAL.has(term.tag)) {
+        try {
+          const head = scope.nf(term);
+          if (!blocked(head)) result = head;
+        } catch (error) { propagateLimit(error); }
+      }
+    }
+    if (result === term) {
+      // Use the codec's binder allocation, including pruning dead outer
+      // dimensions, when a candidate contains a path or composition family.
+      const keys = dimensionScope.get(term.tag);
+      const inner = keys ? scope.with({dimensions: bindDimensions(term, scope.dimensions).inner}) : scope;
+      for (const [field, child] of Object.entries(term)) {
+        const changed = reduce(child, keys?.includes(field) ? inner : scope);
+        if (changed !== child) {
+          if (result === term) result = Array.isArray(term) ? [...term] : {...term};
+          result[field] = changed;
+        }
+      }
+    }
+    if (!known) memo.set(term, new Map([[key, result]]));
+    else known.set(key, result);
+    return result;
+  };
+  return betaReduce(reduce(value, at));
 }
 
 // Type formers: two with different heads are never equal.

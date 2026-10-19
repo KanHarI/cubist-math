@@ -18,6 +18,86 @@ const module = await createCubical();
 const cases = testModule("arguments", { module });
 const implicit = testModule("implicit_parameters", { module });
 
+test("implicit result types discard ignored bound arguments before scope checks", async t => {
+  const { verdicts, result } = await checkProgram(t, `
+def Ignored(u : Unit) : U0 := Unit;
+def take_value{{B : U0}}(f : Unit -> B) : B := f(tt);
+def beta_function(u : Unit) : (fun (ignored : Unit) => Unit)(u) := tt;
+def delta_function(u : Unit) : Ignored(u) := tt;
+def nested_function(u : Unit) : Unit -> (fun (ignored : Unit) => Unit)(u) := fun (v : Unit) => tt;
+def nested_delta_function(u : Unit) : Unit -> Ignored(u) := fun (v : Unit) => tt;
+def beta_inferred := take_value(beta_function);
+def delta_inferred := take_value(delta_function);
+def nested_inferred := take_value(nested_function);
+def nested_delta_inferred := take_value(nested_delta_function);
+def explicit_control := take_value{{Unit}}(delta_function);
+evaluate beta_inferred expecting tt;
+evaluate delta_inferred expecting tt;
+evaluate nested_inferred(tt) expecting tt;
+evaluate nested_delta_inferred(tt) expecting tt;
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  for (const name of ["beta_inferred", "delta_inferred", "nested_inferred", "nested_delta_inferred", "explicit_control"])
+    assert.equal(verdicts[name], true, name);
+});
+
+test("other arguments retain named types before scope reduction is attempted", async t => {
+  const { result } = await checkProgram(t, `
+def Alias : U0 := Unit -> Unit;
+def Const(A : U0, u : Unit) : U0 := A;
+def pick{{B : U0}}(f : Unit -> B, b : B) : B := b;
+def constant(u : Unit) : Const(Alias, u) := fun (v : Unit) => v;
+def alias_value : Alias := fun (v : Unit) => v;
+def picked := pick(constant, alias_value);
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  const inferred = result.links.filter(link => link.role === "inferred arguments");
+  assert.deepEqual(inferred.map(link => link.description), ["Arguments of pick inferred: B := Alias."]);
+});
+
+test("scope reduction under a candidate's own path binder keeps the dimension in scope", async t => {
+  const { result } = await checkProgram(t, `
+def Ignore2(v, u : Unit) : U0 := Unit;
+def take_value{{B : U0}}(f : Unit -> B) : B := f(tt);
+def function_(p : tt = tt, u : Unit) : PathP(fun (i : Interval) => Ignore2(p @ i, u), tt, tt) := path i => tt;
+def inferred(p : tt = tt) := take_value(function_(p));
+evaluate inferred(refl(tt)) expecting refl(tt);
+`, { module });
+  assert.deepEqual(result.gaps, []);
+});
+
+test("an unhelpful decoded head is not revisited during scope reduction", async t => {
+  let queries = 0;
+  const { get } = await checkProgram(t, `
+def Keeps(u : Unit) : U0 := u = u;
+def take_value{{B : U0}}(f : Unit -> B) : B := f(tt);
+def function_(u : Unit) : Keeps(u) := refl(u);
+def inferred := take_value(function_);
+`, { module, options: { onDeclarationStart: (name, declaration, checker) => {
+    if (declaration.name.text !== "inferred") return;
+    const nf = checker.nf.bind(checker);
+    checker.nf = (term, ...rest) => {
+      const head = nf(term, ...rest);
+      if (term.tag === "App" && term.fn.tag === "DefRef" && term.fn.name === "main__Keeps") {
+        queries++;
+        return structuredClone(head);
+      }
+      return head;
+    };
+  } } });
+  assert.match(get("inferred").reason, /mentions a variable bound inside an argument/);
+  assert.equal(queries, 1);
+});
+
+test("reducing an ignored argument does not choose an ambiguous universe", async t => {
+  const { get } = await checkProgram(t, `
+def take_value{{B : U1}}(f : Unit -> B) : B := f(tt);
+def function_(u : Unit) : (fun (ignored : Unit) => U0)(u) := Unit;
+def inferred := take_value(function_);
+`, { module });
+  assert.equal(get("inferred").verified, false);
+});
+
 test("a named argument is a node of its call; a hole is a name", () => {
   const { declarations: [declaration] } = parse("def d := f(_, x := a, b);");
   const [hole, named, plain] = declaration.value.args;

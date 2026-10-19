@@ -114,9 +114,47 @@ the generic descent failure.
 The independent audit also identified repeated copying in `withNativeReferences`
 as a further optimization lead. Its suggested global copy-on-write change to
 `mapSyntax` is unsuitable: binding display intentionally clones and mutates the
-result. A targeted change needs its own validation. The audit's possible
-syntactic scope rejection in argument unification has no reproduced source
-failure yet; neither lead is claimed fixed here.
+result. A targeted change needs its own validation.
+
+## Implicit-inference follow-up
+
+The audit's unification lead now has a source-level reproduction:
+
+```text
+def take_value{{B : U0}}(f : Unit -> B) : B := f(tt);
+def function_(u : Unit) : (fun (ignored : Unit) => Unit)(u) := tt;
+def inferred := take_value(function_);
+```
+
+The solver rejected `B` as mentioning the argument's local `u`, although
+the candidate reduces to `Unit`. A named definition `Ignored(u) := Unit`
+fails the same way. Supplying `B` explicitly or an expected result type
+made these calls pass, concealing the missing reduction in inference.
+
+Only after the ordinary constraints stop making progress, a candidate that
+fails its occurs or scope check gets a bounded local reduction. If that still
+leaves offending names, a separate inference-only pass exposes native heads
+beneath type formers. It retains a head only when it removes those names,
+visits shared syntax once per dimension context, and never revisits a decoded
+head merely because its object identity changed. Candidate-local dimension
+binders use the codec's scope allocation. Final occurs, scope and cumulative
+universe checks and kernel checking of inferred arguments remain unchanged.
+Fuel, budget, resource and deadline failures propagate instead of becoming
+inference refusals.
+
+Waiting until the fallback phase matters: another argument can determine a
+named type such as `Alias`, which an eager native head query would unfold.
+When only the blocked constraint determines the type, native head reduction
+can still unfold its name; provide the implicit argument or expected type
+explicitly to retain that name. This remains first-order inference, not a
+complete solver for arbitrary definitionally equal candidates.
+
+Regressions cover beta and named-definition cases at the head and beneath a
+function type, a candidate's own path binder, preservation of a name supplied
+by another argument, a fresh but unhelpful decoded head queried only once,
+refusal to choose an ambiguous universe after reduction, and all four
+resource-stop kinds. Existing fixtures continue to cover genuine dependence
+and the refusal to search for arbitrary inhabitants.
 
 This audit follows the [kernel normalization audit](open-quotient-normalization.md).
 Validation and Claude Code Opus 5.5 xhigh review results are recorded in the PR.
