@@ -153,8 +153,8 @@ scope, restriction and checkpoint recovery. Substitution depth limits remain.
 
 ### Sharing during substitution
 
-Free-name analysis and capture-avoiding substitution memoize exact immutable
-syntax keys. This prevents repeated traversal of a shared term as if it were
+Free-term-variable analysis and capture-avoiding substitution memoize exact
+immutable syntax keys. This prevents repeated traversal of a shared term as if it were
 an exponentially larger tree. The bounded direct-mapped table has 8192 entries;
 a hash collision only discards an optimization. It stores no typing judgements
 and cannot bypass checking a context or a face restriction. Its allocation is
@@ -162,9 +162,16 @@ included in the reported arena memory. Substitution also returns the original
 node immediately when the substituted variable or dimension does not occur.
 Dimension-substitution keys include the source handle, dimension and exact
 interned interval formula. Borrowed formula descriptors are retained by value
-across recursive interning; their immutable clause buffers remain stable.
+across interning; their immutable clause buffers remain stable.
 Interrupted substitutions return failure, and term/dimension memo hits charge
 the budget and deadline.
+
+Free-dimension analysis instead records its completed exact mask on the syntax
+node. Until completion, the mask conservatively contains every free dimension;
+it need not contain every bound dimension mentioned in the syntax. These facts
+survive memo eviction and are copied during checkpoint compaction. Substitution,
+its tube-list traversal and both dependency scans use explicit bounded stacks;
+composition, Glue and HIT tube helpers remain separate recursive traversals.
 
 Shared universe-level expressions use a separate, query-local cache of
 arithmetic normal forms, released on success and failure. It checks exact
@@ -182,8 +189,9 @@ free names, including under shadowing. Collisions only replace an older
 entry. A renaming is left out of the key, and the comparison, where neither
 side has a renamed name free: then the pair compares the same under every
 renaming. So a shared graph below differently named binders is compared once
-per node, not once per path to it. Each node carries masks of the term
-variables and dimensions it mentions, which rule most names out at once; the
+per node, not once per path to it. Each node carries a mask of mentioned term
+names and a conservative or completed exact mask of free dimensions. These
+rule most free names out at once; the
 rest are looked up exactly, and only for terms at least eight levels deep. An
 entry holds the comparison's result, equal or different, and no typing
 judgement; `tests/test_comparison.c` checks these properties.

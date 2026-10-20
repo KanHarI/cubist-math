@@ -277,7 +277,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
             dims |= k->nodes[children[i]].dims;
         }
     cc_term result = (cc_term)k->count++;
-    k->nodes[result] = (cc_node){kind, payload, {a,b,c,d}, depth, symbols, dims};
+    k->nodes[result] = (cc_node){kind, payload, {a,b,c,d}, depth, false, symbols, dims};
     if ((kind == CC_VAR || ck_term_binder(kind)) && payload >= k->next_symbol) {
         k->next_symbol = payload + 1;
     }

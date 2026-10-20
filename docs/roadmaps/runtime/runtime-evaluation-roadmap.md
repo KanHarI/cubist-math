@@ -31,6 +31,12 @@ the existing full normalizer's traversal. The
 [weak-head tail loop](../../reports/weak-head-tail.md) also removes native
 recursion for chains of definition unfolding and tail contractions;
 prerequisite head queries and composition helpers remain guarded native calls.
+The [bounded substitution traversals](../../reports/substitution-stack.md)
+move term/dimension substitution, capture-avoidance renaming and dependency
+scans onto explicit stacks, including tube lists inside substitution and
+free-dimension analysis. Composition, Glue and HIT tube helpers remain
+recursive. The syntax-depth guard remains; comparison, universe-level and
+frontend traversals still need bounded replacements.
 Joint EVAL3/EVAL4 evaluator integration and the remaining protected traversals
 are still open.
 A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)
