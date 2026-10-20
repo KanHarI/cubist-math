@@ -203,15 +203,15 @@ await browserTest(async ({ browser, base }) => {
   await elaboration.locator(".elaboration-declaration").nth(2).waitFor();
   assert.equal(await elaboration.locator(".elaboration-declaration").count(), 3);
   assert.match(await elaboration.textContent(), /intro n;\s*⊢ forall n : UNat\. exists m : UNat\. lt\(n, m\)\s*builds fun \(n : UNat\) => \?/);
-  assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel\.html$/);
+  assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel-overview\.html$/);
   // The kernel's check as a THTH-style forward derivation, with comments.
   const derivation = elaboration.locator(".derivation").first();
   assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ UNat : U0\s*2 SortBegin\(\)/);
   assert.match(await derivation.textContent(), /\/\/ \{n : UNat\}\s*\d+ CtxExt\(2\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
-  await page.goto(new URL("kernel.html", base).href);
+  await page.goto(new URL("reference/kernel-terms.html", base).href);
   assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
-  console.log("PASS elaboration panel and the kernel reference outline");
+  console.log("PASS elaboration panel and the kernel terms table");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status")?.textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);

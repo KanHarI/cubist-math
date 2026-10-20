@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Every kernel instruction: the premises it checks, the judgement it publishes, and the name it is shown under in a derivation, from context entries to composition, Glue, declared types and equality steps." />
+    <title>Cubist · 16. Kernel instructions: the typing rules</title>
+    <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../files.html">Files</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html" aria-current="true">Language reference</a>
+        <a href="../repl.html">REPL</a>
+        <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 16</p>
+        <h1>Kernel instructions: the typing rules</h1>
+        <p class="lead">Every kernel instruction: the premises it checks, the judgement it publishes, and the name it is shown under in a derivation, from context entries to composition, Glue, declared types and equality steps.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="theories.html">Theories and models</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li class="current"><a href="kernel-instructions.html" aria-current="page">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#instructions">How an instruction works</a></li>
+            <li><a href="#names">Instructions and their names</a></li>
+            <li><a href="#entries">Context entries</a></li>
+            <li><a href="#variables">Variables, endpoints, faces and definitions</a></li>
+            <li><a href="#universes">Universes and universe levels</a></li>
+            <li><a href="#functions">Functions and pairs</a></li>
+            <li><a href="#sums">Unit, Void and sums</a></li>
+            <li><a href="#paths">Paths</a></li>
+            <li><a href="#composition">Composition systems</a></li>
+            <li><a href="#glue">Glue</a></li>
+            <li><a href="#declared">Declared types</a></li>
+            <li><a href="#equality">Equality, conversion and rewriting</a></li>
+            <li><a href="#retired">Retired instructions</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="instructions">
+            <h2>How an instruction works</h2>
+            <p>An instruction is one C function, <code>cc_instr_…</code> in <code>kernel/include/cubical_kernel.h</code>. It takes earlier judgements and context entries by their numbers, and operands such as a level, a symbol, a face formula or a step rule; it checks its side conditions; and it publishes one judgement, or records an error and publishes nothing. Every side condition on a term is checked by <a href="kernel-terms.html#comparison">syntactic equality up to bound names</a>, on a term the instruction received or built by substitution or restriction; nothing is reduced or unfolded unless the instruction is <code>Step</code> and names the rule. An instruction does nothing while an error is recorded; <code>cc_kernel_clear_error</code> clears it.</p>
+            <p>The judgement's context is derived from the premises' contexts by merging, discharging and binding, as <a href="kernel-overview.html#contexts">chapter 14</a> describes, and the result is published with the instruction's record for the <a href="kernel-overview.html#graph">derivation graph</a>. In the tables below, <code>Γ ⊢ t : T</code> stands for a typing judgement given as a premise, <code>≡</code> for an equality judgement, and <code>≡α</code> for the syntactic check. An instruction's result context is the union of its premises' contexts, less what it discharges, unless the table says otherwise.</p>
+          </section>
+          <section id="names">
+            <h2>Instructions and their names</h2>
+            <p>The Elaboration panel and the workbench show each step under THTH's name for its rule; the table gives both names, with the step rules a <code>Step</code> is shown under in place of <code>Step</code>. The numbers are the instruction opcodes of <code>cc_instruction</code>; eleven are <a href="#retired">retired</a>.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Group</th><th>Instruction (opcode)</th><th>Shown as</th></tr></thead>
+              <tbody>
+                <tr><td>Entries</td><td><code>Extend</code>, <code>Level</code>, <code>Dimension</code> (not instructions; they return entries)</td><td><code>CtxExt</code>, <code>CtxExt</code>, <code>DimExt</code></td></tr>
+                <tr><td>Variables</td><td><code>Variable</code> (14), <code>Endpoint</code> (38), <code>Restrict</code> (74), <code>Define</code> (27), <code>Lookup</code> (28)</td><td><code>Vble</code>, <code>Endpoint</code>, <code>Restrict</code>, <code>Def</code>, <code>DefLookup</code></td></tr>
+                <tr><td>Universes</td><td><code>Universe</code> (1), <code>LevelPi</code> (61), <code>LevelLambda</code> (62), <code>LevelApply</code> (63)</td><td><code>UIntro</code>, <code>LevelForm</code>, <code>LevelIntro</code>, <code>LevelElim</code></td></tr>
+                <tr><td>Functions, pairs</td><td><code>Pi</code> (15), <code>Lambda</code> (16), <code>Apply</code> (17), <code>Sigma</code> (18), <code>Pair</code> (19), <code>First</code> (20), <code>Second</code> (21), <code>Domain</code> (22), <code>Family</code> (23)</td><td><code>PiForm</code>, <code>PiIntro</code>, <code>PiElim</code>, <code>SigmaForm</code>, <code>SigmaIntro</code>, <code>SigmaFst</code>, <code>SigmaSnd</code>, <code>Domain</code>, <code>Family</code></td></tr>
+                <tr><td>Unit, Void, sums</td><td><code>Unit</code> (6), <code>Point</code> (7), <code>UnitElim</code> (8), <code>Void</code> (9), <code>Abort</code> (10), <code>Sum</code> (11), <code>Inject</code> (12), <code>SumElim</code> (13)</td><td><code>UnitForm</code>, <code>UnitIntro</code>, <code>UnitElim</code>, <code>VoidForm</code>, <code>VoidElim</code>, <code>SumForm</code>, <code>SumIntro</code>, <code>SumElim</code></td></tr>
+                <tr><td>Paths</td><td><code>Path</code> (24), <code>PathLambda</code> (25), <code>PathApply</code> (26), <code>PathAt</code> (39)</td><td><code>PathForm</code>, <code>PathIntro</code>, <code>PathElim</code>, <code>PathElim</code></td></tr>
+                <tr><td>Composition</td><td><code>System</code> (40), <code>SystemTube</code> (41), <code>SystemOverlap</code> (43), <code>Comp</code> (42), <code>HComp</code> (51), <code>Trans</code> (52)</td><td><code>CompBase</code>, <code>CompTube</code>, <code>CompOverlap</code>, <code>Comp</code>, <code>HComp</code>, <code>Transp</code></td></tr>
+                <tr><td>Glue</td><td><code>GlueBase</code> (53), <code>GluePiece</code> (54), <code>GlueOverlap</code> (55), <code>Glue</code> (56), <code>GlueTermBase</code> (57), <code>GlueTermPiece</code> (58), <code>GlueTerm</code> (59), <code>Unglue</code> (60)</td><td><code>GlueBase</code>, <code>GluePiece</code>, <code>GlueOverlap</code>, <code>GlueForm</code>, <code>GlueIntroBase</code>, <code>GlueIntroPiece</code>, <code>GlueIntro</code>, <code>GlueElim</code></td></tr>
+                <tr><td>Declared types</td><td><code>SignatureBegin</code> (64), <code>SignatureConstructor</code> (65), <code>SignatureClose</code> (66), <code>SortBegin</code> (67), <code>SortLevel</code> (68), <code>SortParameter</code> (69), <code>Construct</code> (70), <code>Eliminator</code> (71), <code>EliminatorClause</code> (72), <code>EliminatorClose</code> (73)</td><td><code>SignatureBegin</code>, <code>SignatureCons</code>, <code>SignatureClose</code>, <code>SortBegin</code>, <code>SortLevel</code>, <code>SortParameter</code>, <code>ConIntro</code>, <code>ElimBegin</code>, <code>ElimClause</code>, <code>ElimClose</code></td></tr>
+                <tr><td>Equality</td><td><code>Refl</code> (29), <code>Step</code> (30), <code>Replace</code> (31), <code>Eta</code> (32), <code>Side</code> (33), <code>Symmetry</code> (34), <code>Transitivity</code> (35), <code>Convert</code> (36), <code>Lift</code> (37)</td><td><code>DefEqRefl</code>; <code>Beta</code>, <code>Delta</code>, <code>Iota</code>, <code>PathBeta</code>, <code>Normalize</code>, <code>Whnf</code> or <code>Face</code> by its rule; <code>HighSubs</code>, <code>Eta</code>, <code>DefEqExt</code>, <code>DefEqSwp</code>, <code>DefEqTrans</code>, <code>Conv</code>, <code>Lift</code></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="entries">
+            <h2>Context entries</h2>
+            <p>Three functions make entries rather than judgements, and return the entry's number.</p>
+            <ul>
+              <li><code>Extend(type, symbol)</code> makes the term entry <code>x : A</code> from a typing judgement <code>Γ ⊢ A : U(ℓ)</code> and a nonzero symbol. If the symbol already names an entry, that entry is returned when it is a term entry with the same source judgement or an equal type, and the call is refused otherwise. The entry's scope is <code>Γ</code> together with itself.</li>
+              <li><code>Level(symbol)</code> makes the level entry <code>x &lt; ω</code>, whose type is the bound <code>LBound(1)</code>; an existing level entry of that symbol is returned, and a term entry's symbol is refused.</li>
+              <li><code>Dimension(index)</code> returns the one dimension entry of an index below <code>64</code>.</li>
+            </ul>
+            <p>A face entry is made only by <code>Restrict</code>, below.</p>
+          </section>
+          <section id="variables">
+            <h2>Variables, endpoints, faces and definitions</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>Variable(x)</code></td><td>a term entry <code>x : A</code>; a level, dimension or face entry is refused</td><td><code>Γ, x : A ⊢ x : A</code>, in the entry's scope</td></tr>
+                <tr><td><code>Endpoint(j, i, ε)</code></td><td><code>Γ, i ⊢ t : T</code>, a dimension entry <code>i</code>, <code>ε</code> is <code>0</code> or <code>1</code>; <code>i</code> is discharged, so no other entry may depend on it</td><td><code>Γ ⊢ t[ε/i] : T[ε/i]</code></td></tr>
+                <tr><td><code>Restrict(j, φ)</code></td><td><code>Γ ⊢ t : T</code> and a face formula of one consistent clause with at least one equation</td><td><code>Γ, φ ⊢ t|φ : T|φ</code>, with the face entry of <code>φ</code> added; unlike <code>Endpoint</code> it succeeds while entries depend on the face's dimensions, and only a partial element on a face implying <code>φ</code> discharges the face entry</td></tr>
+                <tr><td><code>Define(symbol, j)</code></td><td>a closed typing judgement <code>⊢ t : T</code> (empty context) and a symbol no definition has</td><td><code>⊢ ref : T</code>, where <code>ref</code> is a new definition reference whose index names <code>(symbol, t, T)</code></td></tr>
+                <tr><td><code>Lookup(ref)</code></td><td>a reference node whose index names a definition</td><td><code>⊢ ref : T</code></td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="universes">
+            <h2>Universes and universe levels</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>Universe(ℓ)</code></td><td>a level whose variables are level entries and whose normal form's constant is below <code>65535</code></td><td><code>Γ ⊢ U(ℓ) : U(ℓ + 1)</code>, both levels in normal form, in the context of the level entries <code>ℓ</code> mentions</td></tr>
+                <tr><td><code>LevelPi(x, j)</code></td><td>a level entry <code>x</code> and <code>Γ, x &lt; ω ⊢ B : U(ℓ)</code>; <code>x</code> is discharged</td><td><code>Γ ⊢ Π (x &lt; ω). B : U(lim)</code>, where <code>lim</code> is <code>ω</code> when <code>x</code> occurs in the normal form of <code>ℓ</code>, and that normal form otherwise</td></tr>
+                <tr><td><code>LevelLambda(x, j)</code></td><td>a level entry <code>x</code> and <code>Γ, x &lt; ω ⊢ t : B</code>; <code>x</code> is discharged</td><td><code>Γ ⊢ λ (x &lt; ω). t : Π (x &lt; ω). B</code></td></tr>
+                <tr><td><code>LevelApply(j, ℓ)</code></td><td><code>Γ ⊢ f : Π (x &lt; ω). B</code> and a finite level <code>ℓ</code> (tier <code>0</code>; <code>ω</code> itself is refused) whose variables are level entries</td><td><code>Γ ⊢ f {ℓ} : B[ℓ/x]</code>, with <code>ℓ</code> and every level of the result in normal form</td></tr>
+              </tbody>
+            </table></div>
+            <p>A universe-generic declaration (<a href="universes.html#universe-variables">chapter 6</a>) is a <code>LevelLambda</code> whose type is a <code>LevelPi</code>; using it at <code>U2</code> is a <code>LevelApply</code> at the level <code>2</code>. A level variable ranges over the natural numbers only, so <code>LevelApply</code> refuses <code>ω</code>, the level of <code>UU0</code>.</p>
+          </section>
+          <section id="functions">
+            <h2>Functions and pairs</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>Pi(x, j)</code></td><td>a term entry <code>x : A</code>, with <code>A : U(ℓ₁)</code>, and <code>Γ, x : A ⊢ B : U(ℓ₂)</code>; <code>x</code> is bound</td><td><code>Γ ⊢ Π (x : A). B : U(max(ℓ₁, ℓ₂))</code></td></tr>
+                <tr><td><code>Lambda(x, j)</code></td><td>a term entry <code>x : A</code> and <code>Γ, x : A ⊢ b : B</code>; <code>x</code> is bound</td><td><code>Γ ⊢ λ (x : A). b : Π (x : A). B</code></td></tr>
+                <tr><td><code>Apply(f, a)</code></td><td><code>Γ₁ ⊢ f : Π (x : A). B</code> and <code>Γ₂ ⊢ a : A'</code> with <code>A' ≡α A</code></td><td><code>Γ₁ ∪ Γ₂ ⊢ f(a) : B[a/x]</code></td></tr>
+                <tr><td><code>Sigma(x, j)</code></td><td>as <code>Pi</code></td><td><code>Γ ⊢ Σ (x : A). B : U(max(ℓ₁, ℓ₂))</code></td></tr>
+                <tr><td><code>Pair(T, a, b)</code></td><td><code>Γ₁ ⊢ Σ (x : A). B : U(ℓ)</code>, <code>Γ₂ ⊢ a : A'</code> with <code>A' ≡α A</code>, and <code>Γ₃ ⊢ b : B'</code> with <code>B' ≡α B[a/x]</code></td><td><code>Γ₁ ∪ Γ₂ ∪ Γ₃ ⊢ (a, b) : Σ (x : A). B</code>, the pair carrying its type</td></tr>
+                <tr><td><code>First(p)</code>, <code>Second(p)</code></td><td><code>Γ ⊢ p : Σ (x : A). B</code></td><td><code>Γ ⊢ p.1 : A</code>; <code>Γ ⊢ p.2 : B[p.1/x]</code></td></tr>
+                <tr><td><code>Domain(j)</code></td><td><code>Γ ⊢ F : U(ℓ)</code>, <code>F</code> a <code>Π</code> or <code>Σ</code> type <code>(x : A). B</code></td><td><code>Γ ⊢ A : U(ℓ)</code></td></tr>
+                <tr><td><code>Family(j, a)</code></td><td>as <code>Domain</code>, and <code>Γ₂ ⊢ a : A'</code> with <code>A' ≡α A</code></td><td><code>Γ ∪ Γ₂ ⊢ B[a/x] : U(ℓ)</code></td></tr>
+              </tbody>
+            </table></div>
+            <p><code>Domain</code> and <code>Family</code> recover the parts of a type former as types in its universe, which cumulativity allows; the elaborator uses them to type a binder from a function type it already has. The type of a function is the <code>Π</code> type as written, so <code>Apply</code> compares the argument's type with the domain by syntax: an argument whose type is equal only by computation must first be converted (<a href="#equality">below</a>).</p>
+          </section>
+          <section id="sums">
+            <h2>Unit, Void and sums</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>Unit()</code>, <code>Point()</code>, <code>Void()</code></td><td>none</td><td><code>⊢ Unit : U0</code>; <code>⊢ tt : Unit</code>; <code>⊢ Void : U0</code></td></tr>
+                <tr><td><code>UnitElim(M, b, u)</code></td><td><code>M : Π (x : Unit). U(ℓ)</code>, <code>b : M(tt)</code> up to syntax, <code>u : Unit</code></td><td><code>unitrec(M, b, u) : M(u)</code></td></tr>
+                <tr><td><code>Abort(T, e)</code></td><td><code>T : U(ℓ)</code> and <code>e : Void</code></td><td><code>abort(T, e) : T</code></td></tr>
+                <tr><td><code>Sum(A, B)</code></td><td><code>A : U(ℓ₁)</code> and <code>B : U(ℓ₂)</code></td><td><code>A + B : U(max(ℓ₁, ℓ₂))</code></td></tr>
+                <tr><td><code>Inject(S, v, right)</code></td><td><code>S = A + B : U(ℓ)</code> and <code>v : A</code>, or <code>v : B</code> when <code>right</code></td><td><code>inl(v) : A + B</code> or <code>inr(v) : A + B</code>, the injection carrying the sum type</td></tr>
+                <tr><td><code>SumElim(M, l, r, v)</code></td><td><code>M : Π (z : A + B). U(ℓ)</code>, <code>l : Π (x : A). M(inl(x))</code>, <code>r : Π (y : B). M(inr(y))</code>, both up to syntax, and <code>v : A + B</code></td><td><code>sumrec(M, l, r, v) : M(v)</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>A motive is checked as a function type into a universe whose domain is the eliminated type, and a case's type is compared, up to bound names, with the type the motive gives it. The natural numbers are not here: <code>UNat</code> is a <a href="#declared">declared type</a>, and <code>induction</code> on it is its eliminator.</p>
+          </section>
+          <section id="paths">
+            <h2>Paths</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>Path(i, A, l, r)</code></td><td>a dimension entry <code>i</code>, <code>Γ₁, i ⊢ A : U(ℓ)</code>, <code>Γ₂ ⊢ l : A[0/i]</code> and <code>Γ₃ ⊢ r : A[1/i]</code>, the endpoint types up to syntax; <code>i</code> is bound in <code>A</code></td><td><code>Γ₁ ∪ Γ₂ ∪ Γ₃ ⊢ Path(i. A, l, r) : U(ℓ)</code></td></tr>
+                <tr><td><code>PathLambda(i, j)</code></td><td>a dimension entry <code>i</code> and <code>Γ, i ⊢ b : A</code>; <code>i</code> is bound</td><td><code>Γ ⊢ ⟨i⟩ b : Path(i. A, b[0/i], b[1/i])</code></td></tr>
+                <tr><td><code>PathApply(p, j, ε)</code></td><td><code>Γ ⊢ p : Path(i. A, l, r)</code> and a dimension entry <code>j</code>, or no entry and an endpoint <code>ε</code></td><td><code>Γ, j ⊢ p @ j : A[j/i]</code>, or <code>Γ ⊢ p @ ε : A[ε/i]</code>; the application carries the path's type as its annotation</td></tr>
+                <tr><td><code>PathAt(p, r)</code></td><td><code>Γ ⊢ p : Path(i. A, l, r)</code> and an interval expression <code>r</code></td><td><code>Γ, Δ ⊢ p @ r : A[r/i]</code>, <code>Δ</code> the dimension entries <code>r</code> uses, annotated as above</td></tr>
+              </tbody>
+            </table></div>
+            <p>Note what <code>PathApply</code> does not do: <code>p @ 0</code> is published at the type <code>A[0/i]</code>, not <code>l</code>. That <code>p @ 0</code> equals <code>l</code> is a <code>Step</code> with the <code>path</code> rule, which reads the endpoint from the annotation (<a href="kernel-computation.html#steps">chapter 17</a>). The annotation is what makes this possible when <code>p</code> is a variable, and it is why <a href="kernel-terms.html#paths-and-composition">chapter 15</a> describes it as the instructions' addition to the syntax.</p>
+          </section>
+          <section id="composition">
+            <h2>Composition systems</h2>
+            <p>A composition <code>comp^i A [φ ↦ u] a₀ : A[1/i]</code> is built one tube at a time, as a <strong>system judgement</strong> (<a href="kernel-overview.html#judgements">kind 3</a>) that holds the composition so far as its term and <code>A[1/i]</code> as its type, together with a <code>pending</code> set of earlier tubes the latest tube overlaps and has not yet been shown to agree with.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>System(i, A, a₀)</code></td><td>a dimension entry <code>i</code>, <code>Γ₁ ⊢ A : U(ℓ)</code> and <code>Γ₂ ⊢ a₀ : A'</code> with <code>A' ≡α A[0/i]</code>; <code>a₀</code> must not use <code>i</code></td><td>the system <code>comp^i A [] a₀</code>, with nothing pending</td></tr>
+                <tr><td><code>SystemTube(s, φ, u, e)</code></td><td>a system with nothing pending; a face formula of at most one clause. On the face <code>0</code>, any typing judgement <code>u</code> and no equality: the tube is never used. On a clause <code>φ</code>: it is consistent and does not mention <code>i</code>; <code>u</code> mentions none of its dimensions (it is already restricted); <code>u : A|φ</code>; and the equality <code>e</code> is <code>u[0/i] ≡ a₀|φ</code>, both sides up to syntax. Face entries that <code>φ</code> implies are discharged from <code>u</code>'s and <code>e</code>'s contexts</td><td>the system with the tube appended, and pending every earlier tube whose face is compatible with <code>φ</code>; a compatible tube at position <code>64</code> or above is a resource refusal</td></tr>
+                <tr><td><code>SystemOverlap(s, n, e)</code></td><td>the system's latest tube overlaps the tube at position <code>n</code>; <code>e</code> is <code>u|ψ ≡ v|ψ</code> on the conjunction <code>ψ</code> of the two faces, up to syntax, with the face entries <code>ψ</code> implies discharged</td><td>the system with position <code>n</code> no longer pending; also used for a Glue term's tubes</td></tr>
+                <tr><td><code>Comp(s)</code></td><td>a system with nothing pending; <code>i</code> is discharged</td><td><code>Γ ⊢ comp^i A [φ ↦ u] a₀ : A[1/i]</code></td></tr>
+                <tr><td><code>HComp(s)</code></td><td>as <code>Comp</code>, and <code>A</code> does not use <code>i</code> and its weak head is an instance of an admitted <em>higher</em> declared type</td><td><code>Γ ⊢ hcomp^i A [φ ↦ u] a₀ : A</code></td></tr>
+                <tr><td><code>Trans(s, φ)</code></td><td>as <code>Comp</code>, with <code>A</code>'s weak head an instance of a higher declared type, and the system's tubes exactly the clauses of <code>φ</code> in order, each tube's term <code>a₀</code> restricted to its clause, up to syntax</td><td><code>Γ, Δ ⊢ transp^i A φ a₀ : A[1/i]</code>, <code>Δ</code> the dimensions <code>φ</code> uses</td></tr>
+              </tbody>
+            </table></div>
+            <p>The source-level <code>comp(family, base, walls…)</code> (<a href="cubical.html#composition">chapter 11</a>) is a <code>System</code>, one <code>SystemTube</code> per wall with the agreement equalities the elaborator derives, the <code>SystemOverlap</code>s where walls meet, and a <code>Comp</code>. A wall written on a face of several clauses is split by the elaborator into one tube per clause. <code>HComp</code> and <code>Trans</code> close the same kind of system into the formal operations of a higher inductive type; an ordinary data type, one with no path constructor and no truncation, has neither, and composes by <code>Comp</code>, which computes on its constructors (<a href="kernel-computation.html#composition">chapter 17</a>).</p>
+          </section>
+          <section id="glue">
+            <h2>Glue</h2>
+            <p>A Glue type <code>Glue [φ ↦ (T, e)] A</code> and a Glue term are built the same way as a composition, piece by piece, as system judgements.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>GlueBase(A)</code></td><td><code>Γ ⊢ A : U(ℓ)</code></td><td>the system <code>Glue [] A : U(ℓ)</code></td></tr>
+                <tr><td><code>GluePiece(s, φ, T, e)</code></td><td>a Glue system with nothing pending, a face of at most one clause, <code>T : U(ℓ')</code> and <code>e : E</code>. On a clause: <code>T</code> and <code>e</code> mention none of its dimensions, <code>E ≡α Equiv(T, A|φ)</code>, the equivalence type as <code>cc_kernel_equiv_type</code> states it, and the face entries <code>φ</code> implies are discharged</td><td>the system with the piece appended, its universe raised to <code>U(max(ℓ, ℓ'))</code>, and pending the earlier pieces whose faces overlap, with the same position bound as tubes</td></tr>
+                <tr><td><code>GlueOverlap(s, n, t, e)</code></td><td>the latest piece overlaps piece <code>n</code>; <code>t</code> and <code>e</code> are equalities of the two types and of the two equivalences, each restricted to the overlap, up to syntax</td><td>the system with position <code>n</code> no longer pending</td></tr>
+                <tr><td><code>Glue(s)</code></td><td>a Glue system with nothing pending</td><td><code>Γ ⊢ Glue [φ ↦ (T, e)] A : U(ℓ)</code></td></tr>
+                <tr><td><code>GlueTermBase(G, a)</code></td><td><code>Γ₁ ⊢ G : U(ℓ)</code>, <code>G</code> a Glue type over <code>A</code>, and <code>Γ₂ ⊢ a : A'</code> with <code>A' ≡α A</code></td><td>the system <code>glue(a, []) : G</code></td></tr>
+                <tr><td><code>GlueTermPiece(s, t, e)</code></td><td>for the next piece <code>(φ, T, e')</code> of <code>G</code> in order: <code>t : T</code>, <code>t</code> mentioning none of the face's dimensions, and the equality <code>e</code> is <code>fst(e')(t) ≡ a|φ</code>; on the face <code>0</code>, only <code>t</code>'s typing. Overlaps are resolved with <code>SystemOverlap</code></td><td>the system with <code>[φ ↦ t]</code> appended</td></tr>
+                <tr><td><code>GlueTerm(s)</code></td><td>a Glue term system with nothing pending and one tube per piece of <code>G</code></td><td><code>Γ ⊢ glue(a, [φ ↦ t]) : G</code></td></tr>
+                <tr><td><code>Unglue(g)</code></td><td><code>Γ ⊢ g : G</code>, <code>G</code> a Glue type over <code>A</code></td><td><code>Γ ⊢ unglue(g) : A</code></td></tr>
+              </tbody>
+            </table></div>
+            <p><code>Equiv(A, B)</code> is <code>Σ (f : A → B). Π (y : B). IsContr(Fiber(f, y))</code> with <code>Fiber(f, y) = Σ (x : A). Path(B, y, f(x))</code> and <code>IsContr(F) = Σ (c : F). Π (p : F). Path(F, c, p)</code>: a function whose fibers are contractible, as the library's <a href="../proof.html?proof=contractible_maps">contractible_maps</a> defines it. No equivalence is primitive; <a href="cubical.html#glue">univalence</a> is built from these instructions.</p>
+          </section>
+          <section id="declared">
+            <h2>Declared types</h2>
+            <p>An <code>inductive</code> declaration (<a href="induction.html">chapter 8</a>) is admitted as a <strong>signature</strong>, one constructor at a time, from judgements derived by the ordinary instructions in a context of the signature's own entries. The kernel checks that each constructor type has the normal form the H1 specification requires, as written: data arguments, then recursive <em>positions</em>, then a result that is the sort or an iterated path type over it with boundaries built from earlier constructors and positions.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>SignatureBegin(F, modifier, s, recorded)</code></td><td>a closed <code>⊢ F : U(…)</code> where <code>F</code> is <code>Π (xs &lt; ω). Π (ps : Ps). U(ℓ)</code>: at most 24 universe parameters, each bounded by <code>ω</code>, then at most 64 term parameters, with distinct symbols other than the sort symbol <code>s</code>; a truncation modifier, <code>0</code> for none or <code>n + 2</code> for <code>trunc(n)</code>, at most <code>16</code>; and a bitmask of the <em>recorded</em> universe parameters, where every other one must be determined by a term parameter whose type ends in exactly <code>U(x)</code></td><td>a signature judgement (kind 4) whose term is the new signature's sort and whose type is <code>F</code></td></tr>
+                <tr><td><code>SignatureConstructor(s, T, c)</code></td><td>the signature's latest judgement, and <code>Γ ⊢ T : U(ℓ)</code> at the signature's level by normal form, where every entry of <code>Γ</code> is a universe or term parameter at its type, the sort entry, or an earlier constructor at its type; <code>T</code> mentions no erased universe parameter; and <code>T</code> has the normal form: at most 64 data and position arguments, each position's arity at most 64 binders over data types with a cube of at most 16 path layers over the sort, and a result cube of at most 16 layers whose boundaries are constructor expressions</td><td>the next signature judgement, with the constructor recorded</td></tr>
+                <tr><td><code>SignatureClose(s)</code></td><td>the latest judgement of an open signature</td><td>the signature's index, from <code>1</code>, after appending the truncation's squash constructor if any; an admitted signature never changes</td></tr>
+                <tr><td><code>SortBegin(index)</code></td><td>an admitted signature</td><td>an instance in progress (kind 5), or the complete instance when the signature has no recorded levels and no parameters</td></tr>
+                <tr><td><code>SortLevel(s, ℓ)</code></td><td>the next recorded universe level, a finite level in normal form with constant below <code>65535</code>, before any parameter</td><td>the next instance judgement</td></tr>
+                <tr><td><code>SortParameter(s, a)</code></td><td>the next term parameter's judgement <code>Γ ⊢ a : A</code></td><td>the next instance judgement; with the last, the complete instance: each erased level is read from the universe at the end of the type of the first parameter that determines it, every parameter's type must then equal the telescope's at those levels and the earlier parameters, so a second reading at another level is refused, and the result is <code>Γ ⊢ S{ls}(as) : U(ℓ[ρ])</code></td></tr>
+                <tr><td><code>Construct(I, k)</code></td><td>a complete instance <code>Γ ⊢ I : U(…)</code> and a constructor number</td><td><code>Γ ⊢ Con(k; I) : Tₖ</code>, the constructor's declared type with the instance for the sort, the recorded levels, the parameters, and <code>Con(m; I)</code> for each earlier constructor</td></tr>
+                <tr><td><code>Eliminator(M)</code></td><td><code>Γ ⊢ M : Π (z : I). U(ℓ)</code> over a complete instance of an admitted signature</td><td>an eliminator in progress (kind 6) whose type is the first clause's type, or <code>Π (z : I). M(z)</code> at once when the signature has no constructors</td></tr>
+                <tr><td><code>EliminatorClause(e, m)</code></td><td>a judgement <code>m</code> whose type equals, up to bound names, the type the eliminator in progress shows: <code>ClauseTypeₖ</code>, computed by substitution with no reduction, over the constructor's arguments, each position's displayed induction hypothesis, and a result cube whose boundaries show positions by their hypotheses and earlier constructors by their clauses</td><td>the eliminator with the clause added and the next clause's type, or <code>Π (z : I). M(z)</code> after the last</td></tr>
+                <tr><td><code>EliminatorClose(e)</code></td><td>an eliminator with a clause for every constructor, the squash included</td><td><code>Γ ⊢ Elim(M, ms) : Π (z : I). M(z)</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>The first three instructions depend on the signature table, which changes as they run, so they are never answered from the derivation memo. The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/roadmaps/hott/h1-signature-specification.md">H1 specification</a> states the normal form and the elimination rules in full; <code>induction</code> and <code>match</code> on a declared type elaborate to <code>Eliminator</code>, one <code>EliminatorClause</code> per clause and <code>EliminatorClose</code>, applied to the scrutinee with <code>Apply</code>.</p>
+          </section>
+          <section id="equality">
+            <h2>Equality, conversion and rewriting</h2>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Instruction</th><th>Premises and checks</th><th>Publishes</th></tr></thead>
+              <tbody>
+                <tr><td><code>Refl(j)</code></td><td><code>Γ ⊢ t : T</code></td><td><code>Γ ⊢ t ≡ t : T</code></td></tr>
+                <tr><td><code>Side(e, n)</code></td><td><code>Γ ⊢ a ≡ b : T</code> and a side <code>0</code> or <code>1</code></td><td><code>Γ ⊢ a : T</code> or <code>Γ ⊢ b : T</code></td></tr>
+                <tr><td><code>Symmetry(e)</code></td><td><code>Γ ⊢ a ≡ b : T</code></td><td><code>Γ ⊢ b ≡ a : T</code></td></tr>
+                <tr><td><code>Transitivity(e₁, e₂)</code></td><td><code>Γ₁ ⊢ a ≡ b : T</code> and <code>Γ₂ ⊢ b' ≡ c : T'</code> with <code>b' ≡α b</code> and <code>T' ≡α T</code></td><td><code>Γ₁ ∪ Γ₂ ⊢ a ≡ c : T</code></td></tr>
+                <tr><td><code>Convert(j, e)</code></td><td><code>Γ₁ ⊢ t : A</code> and <code>Γ₂ ⊢ A' ≡ B : U(ℓ)</code> with <code>A' ≡α A</code></td><td><code>Γ₁ ∪ Γ₂ ⊢ t : B</code></td></tr>
+                <tr><td><code>Lift(j, T)</code></td><td><code>Γ₁ ⊢ t : A</code> and <code>Γ₂ ⊢ B : U(ℓ)</code> with <code>A</code> <a href="kernel-terms.html#comparison">cumulatively included</a> in <code>B</code></td><td><code>Γ₁ ∪ Γ₂ ⊢ t : B</code></td></tr>
+                <tr><td><code>Eta(j)</code></td><td><code>Γ ⊢ t : T</code> with <code>T</code> a <code>Π</code>, level <code>Π</code>, <code>Σ</code>, path or Glue type</td><td><code>Γ ⊢ t ≡ t' : T</code>, where <code>t'</code> is <code>λ (z : A). t(z)</code>, <code>λ (z &lt; ω). t {z}</code>, <code>(t.1, t.2)</code>, <code>⟨j⟩ t @ j</code> with a fresh dimension, or <code>glue(unglue(t), [φ ↦ t])</code> with <code>t</code> on every piece</td></tr>
+                <tr><td><code>Step(j, side, position, rule)</code></td><td>a typing or equality judgement, a side (<code>0</code> the term, <code>1</code> an equality's other term, <code>2</code> the type), a position of at most 1024 child indices leading to a subterm, and a step rule that contracts that subterm (<a href="kernel-computation.html#steps">chapter 17</a>)</td><td>the same judgement with the contractum in place of the subterm, in the same context</td></tr>
+                <tr><td><code>Replace(j, side, position, e)</code></td><td>a typing or equality judgement and <code>Γ' ⊢ a ≡ b : T'</code>, where the subterm at the position is <code>a</code> up to syntax; a path application's annotation may be replaced only by a path type. Walking outward along the binders the position crosses, a binder whose bound name occurs free in <code>a</code>, <code>b</code> or a discharged entry's type must correspond to an entry of <code>Γ'</code> at the binder's type, and that entry is discharged; a subterm that uses a composition's bound dimension cannot be replaced</td><td>the judgement with <code>b</code> in place of <code>a</code>, in <code>Γ</code> together with what remains of <code>Γ'</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>A step on a typing judgement's term is subject reduction; on its type, it keeps a type. To derive <code>t ≡ t' : A</code> from <code>t : A</code>, the driver takes <code>Refl</code> and then steps on side <code>1</code>. Everything <a href="conversion.html">chapter 5</a> calls computation happens through these two instructions, each naming the position and the rule, so a derivation records exactly which redexes were contracted to accept a declaration, and nothing is contracted that the derivation does not show.</p>
+            <pre><code data-check="accept" data-elaborate>import unat;
+use unat;
+
+def one_plus_one : 1 + 1 = 2 { rfl; }</code></pre>
+            <p>The Elaboration panel shows the derivation: the numerals and <code>add</code> are built with <code>ConIntro</code>, <code>PiElim</code> and <code>DefLookup</code>, the path type with <code>DimExt</code> and <code>PathForm</code>, and the constant path with <code>PathIntro</code>. Then <code>Delta</code>, <code>Beta</code> and <code>Iota</code> steps rewrite the path's type, and <code>Eta</code> and <code>HighSubs</code> the ascription's domain, each at a stated position, until the two meet by syntax, and the ascription is applied with <code>PiElim</code>.</p>
+          </section>
+          <section id="retired">
+            <h2>Retired instructions</h2>
+            <p>Eleven opcodes remain in <code>cc_instruction</code> so that the numbers stay stable, and have no C entry point: the primitive natural numbers (<code>2</code> to <code>5</code>), pushouts (<code>44</code> to <code>47</code>) and W types (<code>48</code> to <code>50</code>). Each of those types is now a declaration in the library, admitted through the <a href="#declared">declared-type instructions</a> like any other.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="kernel-terms.html">← 15. Kernel terms: the arena and its primitives</a>
+            <a class="next" href="kernel-computation.html">17. Kernel computation: reduction, elimination and composition →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+    <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
+  </body>
+</html>

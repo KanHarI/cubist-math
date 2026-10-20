@@ -44,6 +44,10 @@
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li class="current"><a href="checking.html" aria-current="page">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
@@ -249,12 +253,12 @@ warning W703 at line 4:38 (copy): k is unused: the return type does not mention 
             <pre><code data-check="reject">import unat;
 
 def too_big := unat.(257);  // Error: Unary numerals are limited to 256. Import nat and use nat for binary naturals.</code></pre>
-            <p>The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">mathematician’s guide to the kernel</a> follows the C implementation as inference rules. It explains contexts, binding, the runtime limits and what must be trusted when a proof is verified.</p>
+            <p>Chapters <a href="kernel-overview.html">14</a> to <a href="kernel-computation.html">17</a> describe the kernel itself: its judgements and what must be trusted when a proof is verified, its terms, its instructions, and its computation rules. The <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">kernel guide</a> in the repository follows the C implementation function by function.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="assumptions.html">← 12. Excluded middle, choice and computability</a>
-            <a class="next" href="errors.html">14. Error messages →</a>
+            <a class="next" href="kernel-overview.html">14. The kernel: judgements, derivations and trust →</a>
           </nav>
         </article>
       </div>
