@@ -3,7 +3,8 @@
 The unchanged [generic quotient fixture](../../tests/fixtures/generic-prop-normalization.cubist)
 now completes within its fixed 10,000,000-step full-normalization gate.
 `descend` builds its own match with a constant motive, so the elaborator
-uses the supplied setness evidence directly in the generated squash clause.
+uses the supplied setness evidence through h-level search without transports
+in the generated squash clause.
 Previously it instantiated `quotient_induction`, whose genuinely dependent
 squash clause had already been generated with transports.
 
@@ -26,9 +27,10 @@ surviving annotations, under a fixed 10M budget and 30-second deadline.
 | `to_unit` | 5,117 / 1,156 | 2,699 / 587 |
 | `to_prop`, assumed setness | budget exhausted: 10,000,000 / 2,028,800 | 2,272 / 459 |
 
-Both measurements use main `ea92c7cb`; only the after measurement includes
-this library change. The before probe was rerun on that base and reproduced
-the earlier recorded counters exactly. No kernel limits
+Both measurements use main `eb1524a2`; only the after measurement includes
+this library change. Both were rerun after integrating #291/#292 and reproduce
+the earlier `ea92c7cb` counters exactly, including the after-change graph metrics.
+No kernel limits
 or reproduction definitions change. The regression in
 `tests/quotient-descent.test.mjs` fails with budget exhaustion when the old
 library definition is restored and passes with the new definition. Separate
@@ -39,13 +41,25 @@ The returned Unit function has 70 reachable nodes and depth 27; the Prop
 function has 62 nodes and depth 20. Both fresh programs report 1,836,544 bytes
 of arena allocation after normalization and finish before the 30-second
 deadline. These counts include annotations.
+Graph metrics use the same bounded, annotation-aware handle traversal as
+`tools/transport-normalization-probe.mjs`, applied to the generic fixture with
+the fixed probe's module names. The generic probe itself prints work and new
+node counts, rather than these graph metrics. The merged-base before-change
+Unit function has 103 reachable nodes and depth 34.
 
-All 23 targeted JavaScript tests pass, including every library module and its
+The initial PR head `8f5913dc` passed all seven CI jobs, including the full
+`npm test`, native compiler matrix, sanitizer, lint and browser checks. The
+merged base also passes the five quotient/weak-head regression tests. The
+separate static-site test reached a pre-existing stale REPL selector; see
+[the follow-up](pr-293-todo.md). It is not reported as passing.
+
+All 23 earlier targeted JavaScript tests pass, including every library module and its
 declared assumptions, quotient groups/universality, h-level generation and
 the prior open-normalization regressions. One test run had unusually long
 wall times. A subsequent serial comparison of the four original quotient
 workloads gives the following deterministic totals (instruction plus query
-work, including checking and retries):
+work, including checking and retries), measured on `ea92c7cb` before the main
+merge:
 
 | Workload | Before work | After work | Before / after arena nodes |
 | --- | ---: | ---: | ---: |
@@ -80,8 +94,9 @@ respectively after these queries. These are arena allocations, not process
 peak resident memory. The reference source combined a direct-match control,
 the generic map and the witness transport; its names and checking history
 differ from the fixed two-function fixture above and the five-case transport
-fixture below. Those fixtures also use the earlier `ea92c7cb` kernel, so the
-reference counters are not interchangeable with their counters.
+fixture below, so the reference counters are not interchangeable with their
+counters. The merged-base fixtures use the same kernel sources as `bf543532`;
+the historical `ea92c7cb` fixture runs used the earlier kernel.
 
 A direct nondependent match into Prop with assumed setness completed in
 1,253 steps, allocated 208 nodes and returned 62 reachable nodes of depth 20.
@@ -106,7 +121,9 @@ Graph inspection has a separate work/deadline bound. The setness and path
 cases remain evaluator workloads even though quotient descent now avoids
 generating them for constant motives.
 
-Baseline on `ea92c7cb` plus this library change, in fresh checked programs:
+Baseline on `eb1524a2` plus this library change, in fresh checked programs.
+Rerunning after the main merge reproduces every counter and graph metric
+from the earlier `ea92c7cb` baseline:
 
 | Case | Outcome | Work | New nodes | Output nodes / depth | Arena bytes |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -120,7 +137,7 @@ All five queries returned before their 30-second deadline. SHA-256 identities
 reported by the probe are:
 
 - Fixture: `7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0`.
-- WASM kernel: `ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b`.
+- Kernel sources used by the stamped build: `58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db`.
 - Sorted imported source entries: `d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6`.
 
 The completed references show both output growth and intermediate allocation.

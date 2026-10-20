@@ -23,8 +23,9 @@ This addresses the open `bint_mul` failure found during NUM2 without changing
 the arithmetic definitions or raising kernel limits.
 The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
-budget failures. Generic quotient descent and binary-rational inverse full
-normalization remain open; these fixes do not complete NUM2.
+budget failures. The [nondependent descent change](../../reports/nondependent-quotient-descent.md)
+closes the generic quotient gate. The quotient-free transport gates and
+binary-rational inverse release remain open; these fixes do not complete NUM2.
 The [explicit normalization stack](../../reports/normalization-stack.md) covers
 the existing full normalizer's traversal. The
 [weak-head tail loop](../../reports/weak-head-tail.md) also removes native
@@ -957,8 +958,10 @@ unary expansion in mixed closed/open BNat law proofs.
    uses the [fixed 32/64/128-bit open-addition and bitwise-proof baseline](../../reports/open-bnat-normalization-baseline.md).
    The larger left-addition and proof cases hit the current 512 syntax-depth
    guard. A temporary diagnostic exposes compact completed addition outputs
-   and the 64-bit proof; the 128-bit proof then hits the separate native
-   recursion guard, with its complete output size still unknown. All nine
+   and the 64-bit proof. With the explicit normalization stack, the same
+   diagnostic also completes the 128-bit proof at 5,604 nodes and depth 1,436;
+   see the [normalization-stack report](../../reports/normalization-stack.md).
+   Production guards remain unchanged. All nine
    complete-function cases must normalize within the report's stated work,
    deadline, memory and stack constraints, with no host overflow. Raising either
    guard or a memory/stack limit is not a fix; retain the fixed fixtures through
