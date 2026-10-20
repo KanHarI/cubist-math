@@ -180,6 +180,8 @@ export const diagnostics = [
   ["E248", "The checking worker is unavailable. Reload the page to restart it."],
   ["E249", "The inspected context is unavailable. Check the source and inspect the occurrence again."],
   ["E250", "Test pragmas require explicit test mode."],
+  ["E251", "Unknown workbench state."],
+  ["E252", "Unsupported workbench operation."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],
