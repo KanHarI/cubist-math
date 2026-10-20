@@ -82,7 +82,7 @@ such as an `as` name no motive mentions; checking reports the same warnings.
 - [`docs/README.md`](docs/README.md): documentation index and where to resume each development.
 - [`kernel/`](kernel/README.md): the trusted C kernel. Its typing rules are the instructions in `src/instructions.c`, with one file per group of computation rules.
 - [`docs/guides/cli.md`](docs/guides/cli.md): custom proofs, imports, commands, and CLI limitations.
-- [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to reading the kernel.
+- [`docs/guides/kernel.md`](docs/guides/kernel.md): a mathematician's guide to the kernel and reference for all AST primitives, instructions, reduction, elimination, and composition rules.
 - [`web/translator/`](web/translator): the translator from source to kernel syntax, with elaboration and the proof tactics; the browser, the CLI and the tests load these same files. Every check is the kernel's. Their tests are in `tests/translator/`.
 - [`archive/first-library/`](archive/first-library): the archived first `.cubist` library, still checked in CI. A rebuilt library replaces it area by area; see [`docs/library-results.md`](docs/library-results.md) and the [work plan](docs/roadmaps/work-plan.md).
 - [`cubist-tests/`](cubist-tests/README.md): the Cubist sources the test suite checks, each a module the proof workspace opens as `proof.html?proof=NAME`, so that a case's derivation can be inspected there.
