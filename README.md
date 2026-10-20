@@ -33,9 +33,11 @@ node cli/repl.mjs check euclid
 ```
 
 The website is static and checks proofs locally in a Web Worker. The kernel
-workbench offers folded notation, checked contexts, beta/delta reduction, and
-an assembly view of actual C opcodes. Open any checked expression from its
-source inspector to retain its names and return navigation.
+workbench offers folded notation, checked contexts, and an assembly view of
+actual C opcodes with manual, occurrence-specific kernel reductions. Open any
+checked expression from its source inspector, or start with
+`http://127.0.0.1:8088/workbench.html?view=ast`.
+See [workbench controls](web/README.md) for the individual reduction operations.
 
 ## Development checks
 

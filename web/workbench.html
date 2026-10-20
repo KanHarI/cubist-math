@@ -61,6 +61,40 @@
         <section id="assembly-view" hidden aria-label="Kernel abstract syntax tree">
           <p class="hint">The checked term as the kernel stores it: an abstract syntax tree of native nodes, typeset above. Each row is one node: its C constructor opcode, payload, and operands. %n are term handles local to this replay session; identical syntax is one node, listed once, so the tree is shared as a graph. Zero marks an unused operand or the end of a list.</p>
           <div id="assembly-math" class="assembly-math"></div>
+          <fieldset id="kernel-controls" disabled>
+            <legend>Reduce a native occurrence</legend>
+            <p class="hint">Choose a root, then follow its operands below. A path selects one occurrence even when several uses share a handle. The AST table links only inspect nodes; unfold a definition with δ before stepping inside its body.</p>
+            <div class="toolbar">
+              <label for="kernel-side">Root</label>
+              <select id="kernel-side"><option value="expression">Expression</option><option value="type">Judgement type</option></select>
+              <button id="kernel-root">Root</button><button id="kernel-parent">Parent</button>
+              <button id="kernel-show">Show selected node in AST</button>
+            </div>
+            <p id="kernel-selection" role="status"></p>
+            <div id="kernel-operands" class="toolbar" aria-label="Selected occurrence operands"></div>
+            <div class="toolbar">
+              <label for="kernel-rule">Operation</label>
+              <select id="kernel-rule">
+                <optgroup label="Targeted kernel rules">
+                  <option value="beta">β — function application</option>
+                  <option value="delta">δ — unfold definition</option>
+                  <option value="iota">ι — eliminator / projection</option>
+                  <option value="path">Path — application / endpoint</option>
+                  <option value="face">Face — composition boundary</option>
+                  <option value="glue">Glue — eta rule</option>
+                  <option value="split">Split — composition tube</option>
+                </optgroup>
+                <optgroup label="May perform many reductions">
+                  <option value="whnf">WHNF — weak head</option>
+                  <option value="normalize">Normalize — full normal form</option>
+                </optgroup>
+              </select>
+              <label for="kernel-budget">Work budget (ticks)</label>
+              <input id="kernel-budget" type="number" min="1" max="10000000" step="1" value="100000" />
+              <button id="kernel-apply">Apply operation</button>
+            </div>
+            <p class="hint">Each operation issues one checked kernel instruction at the selected path. WHNF and Normalize can perform many reductions; Glue can normalize its side conditions. The budget is per instruction and is not automatically increased. Back undoes an accepted operation; Kernel graph shows its derivation.</p>
+          </fieldset>
           <p id="assembly-status" role="status"></p>
           <div id="assembly-listing"></div>
           <div class="toolbar">
@@ -69,7 +103,7 @@
           </div>
         </section>
         <section id="graph-view" hidden aria-label="Kernel judgement graph">
-          <p class="hint">The inspected term derived again by the instruction kernel, one THTH-style rule per judgement. Each judgement lists the judgements it was derived from and those that use it; a step names the subterm it contracts. The graph shares repeated derivations, and <em>term</em> and <em>type</em> open a node of the syntax graph in the Kernel AST.</p>
+          <p class="hint">The checked term's instruction derivation, one THTH-style rule per judgement, including manual native steps. Each judgement lists the judgements it was derived from and those that use it; a step names the subterm it contracts. The graph shares repeated derivations, and <em>term</em> and <em>type</em> open a node of the syntax graph in the Kernel AST.</p>
           <p id="graph-status" role="status"></p>
           <div id="graph-listing"></div>
         </section>

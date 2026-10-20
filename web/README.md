@@ -11,6 +11,21 @@ option; raw syntax and native opcode assembly remain available. Beta and delta
 buttons highlight applicable occurrences, and every selected reduction is
 checked for definitional equality. **Un-highlight** clears visual selection.
 
+Open `http://127.0.0.1:8088/workbench.html?view=ast` for a standalone kernel
+example. In **Kernel AST**, choose Expression or Judgement type, then follow
+the numbered operands to select an occurrence. For the default `identity(2)`,
+follow operand 0, apply **δ**, return to the root, and apply **β**. The native
+instruction changes only that occurrence, even when its handle is shared.
+The table's handle links inspect nodes independently of this selection.
+
+The operation menu also exposes **ι**, **Path**, **Face**, **Glue** and **Split**.
+**WHNF** and **Normalize** may perform many reductions; Glue may normalize
+its side conditions. Each request has an explicit work budget in kernel ticks,
+without automatic budget increases. A refusal preserves the previous checked
+view; **Back** restores its judgement. **Kernel graph** includes the actual
+manual Step instructions, their premises and operand paths. These controls
+use the existing kernel rules and do not change normalization behavior.
+
 In `proof.html`, **Generated Cubist** beside Read and Edit shows a read-only
 frontend expansion from the last check. Select the current file or an imported
 module to see its generated theory, initial and free-model declarations in

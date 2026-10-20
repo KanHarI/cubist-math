@@ -7,11 +7,13 @@ import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { reduceView, checkReduction, reductionRule, termAtPath } from "./cubical-reduction.mjs";
-import { kernelAssembly, assemblyText, renderAssembly } from "./cubical-assembly.mjs";
+import { kernelAssembly, assemblyText, renderAssembly, operandNames, opcodeName } from "./cubical-assembly.mjs";
 import { judgementGraph, renderJudgementGraph } from "./cubical-graph-view.mjs";
+import { kernelOccurrence, kernelStep } from "./cubical-kernel-step.mjs";
 const $ = id => document.getElementById(id), history = [];
 let program, view, checked, selected, reductionMode = null, reductionLimit = 5000;
 let assemblyLimit = 400, assemblyView = null, listing = null, assemblyFocus = [], expandedDefinitions = new Set();
+let kernelPath = [];
 const enableReductions = enabled => document.querySelectorAll("[data-reduction]").forEach(button => { button.disabled = !enabled; });
 const options = () => ({ resolve: binding => view.symbols[binding], inspect: info => inspect(info.binding),
   identitySugar: $("identity-sugar").checked, truncationSugar: $("truncation-sugar").checked });
@@ -85,7 +87,9 @@ function display(updateSyntax = true) {
   $("back").disabled = !history.length;
 }
 function displayAssembly() {
+  $("kernel-controls").disabled = !checked;
   if (!checked) {
+    $("kernel-selection").textContent = ""; $("kernel-operands").replaceChildren();
     listing = null; $("assembly-listing").replaceChildren();
     $("assembly-status").textContent = "Return to Mathematical view and check the edited expression before inspecting its AST.";
     $("assembly-more").hidden = true; $("assembly-download").disabled = true; return;
@@ -109,7 +113,47 @@ function displayAssembly() {
     + (listing.pending ? ` · ${listing.pending.toLocaleString()} discovered operands remain; show more or follow a handle.` : ". Named definitions can be expanded individually.");
   $("assembly-more").hidden = !listing.pending;
   $("assembly-download").disabled = false;
+  displayOccurrence();
 }
+function displayOccurrence() {
+  if (!checked) return;
+  const side = $("kernel-side").value;
+  // A different view can have a shorter path. Return to its root explicitly.
+  let node;
+  try { node = kernelOccurrence(program.kernel, checked, side, kernelPath); }
+  catch { kernelPath = []; node = kernelOccurrence(program.kernel, checked, side, kernelPath); }
+  $("kernel-selection").textContent = `${side} [${kernelPath.join(", ")}] · %${node.handle} = ${opcodeName(node.kind)} · payload ${node.payload}`;
+  $("kernel-parent").disabled = !kernelPath.length;
+  $("kernel-operands").replaceChildren(...node.children.map((handle, index) => {
+    const button = document.createElement("button");
+    button.dataset.operand = index;
+    button.textContent = `${index} / ${"abcd"[index]} (${operandNames[node.kind]?.[index] ?? "unused"}) → ${handle ? "%" + handle : "0"}`;
+    button.disabled = !handle;
+    button.onclick = () => { kernelPath = [...kernelPath, index]; displayOccurrence(); };
+    return button;
+  }));
+}
+$("kernel-side").onchange = $("kernel-root").onclick = () => { kernelPath = []; displayOccurrence(); };
+$("kernel-parent").onclick = () => { kernelPath = kernelPath.slice(0, -1); displayOccurrence(); };
+$("kernel-show").onclick = () => jumpAssembly(kernelOccurrence(program.kernel, checked, $("kernel-side").value, kernelPath).handle);
+$("kernel-apply").onclick = () => {
+  if (!checked) return;
+  try {
+    const result = kernelStep(program, view, checked, $("kernel-side").value, kernelPath,
+      $("kernel-rule").value, $("kernel-budget").valueAsNumber);
+    history.push({ view, selected, checked, kernelPath: [...kernelPath], kernelSide: $("kernel-side").value });
+    ({ view, checked } = result);
+    const { before, after, judgement, side, path, rule } = result.change;
+    $("diagnostic").hidden = true;
+    $("status").textContent = `Cubical C checked · native Step judgement #${judgement}`;
+    $("reduction-status").textContent = `${rule} ${side} [${path.join(", ")}]: %${before} → %${after}.`
+      + (before === after ? " The selected syntax is unchanged." : "") + " Back undoes this operation.";
+    display();
+  } catch (error) {
+    $("diagnostic").hidden = false; $("diagnostic").textContent = error.message;
+    $("reduction-status").textContent = "Operation refused; the previous checked term and selected occurrence are retained.";
+  }
+};
 // The judgement graph of the checked view, derived in instruction mode. A
 // definition's body is derived on request, as its lookup's premise.
 let graphView = null, graphExpanded = new Set();
@@ -121,7 +165,9 @@ function displayGraph(focus = null) {
   }
   if (graphView !== view) { graphView = view; graphExpanded = new Set(); }
   try {
-    const graph = judgementGraph(program, view, checked, { expanded: graphExpanded });
+    const graph = judgementGraph(program, view, checked, {
+      expanded: graphExpanded, driver: program.checker.driver, root: checked.judgement,
+    });
     const rendered = renderJudgementGraph($("graph-listing"), graph, {
       jumpNode: handle => { $("workbench-view").value = "assembly"; display(false); jumpAssembly(handle); },
       expand: reference => { graphExpanded.add(reference); displayGraph(reference); },
@@ -171,8 +217,9 @@ function failure(error) {
 function inspect(binding, remember = true) {
   reductionMode = null;
   try {
-    if (remember && view) history.push({ view, selected });
+    if (remember && view) history.push({ view, selected, checked });
     view = program.inspect(binding); selected = binding;
+    kernelPath = [];
     $("reduction-status").textContent = "";
     validate(); display();
   } catch (error) { failure(error); }
@@ -181,8 +228,16 @@ $("back").onclick = () => {
   reductionMode = null;
   const previous = history.pop(); if (!previous) return;
   ({ view, selected } = previous);
+  kernelPath = previous.kernelPath ?? [];
+  if (previous.kernelSide) $("kernel-side").value = previous.kernelSide;
   $("reduction-status").textContent = "Restored the previous checked view.";
-  try { validate(); display(); } catch (error) { failure(error); }
+  try {
+    if (previous.checked) {
+      checked = previous.checked; enableReductions(true); $("diagnostic").hidden = true;
+      $("status").textContent = "Cubical C checked · restored previous judgement";
+    } else validate();
+    display();
+  } catch (error) { failure(error); }
 };
 $("unhighlight").onclick = () => {
   reductionMode = null;
@@ -218,7 +273,7 @@ function reduce(side, kind, path = null) {
         : `No function/path applications or pair projections to beta-reduce in the ${side}.`;
       return;
     }
-    history.push({ view, selected });
+    history.push({ view, selected, checked });
     // Preserve folding elsewhere, but never immediately refold the changed term.
     const folded = { ...(view.folded ?? foldedInspection(view)), [side]: result.view[side] };
     if (side === "expression") delete folded.reference;
