@@ -80,7 +80,7 @@ maps every source file and caching invariant to its mathematical responsibility.
 
 ## Arena handles and AST node layout
 
-All AST terms live in an append-only table `k->nodes` inside a `cc_kernel` arena ([term_internal.h](../../kernel/src/term_internal.h), [term_store.c](../../kernel/src/term_store.c)):
+All AST terms live in a table `k->nodes` inside a `cc_kernel` arena ([term_internal.h](../../kernel/src/term_internal.h), [term_store.c](../../kernel/src/term_store.c)), append-only between checkpoints: `cc_kernel_rollback` truncates it to the checkpoint, and `cc_kernel_commit_checkpoint` compacts the nodes made since it, so that their handles change and must be translated with `cc_kernel_relocated` ([checkpoint.c](../../kernel/src/checkpoint.c)). Both also truncate the derivation tables of the [instruction reference](#context-entries-judgements-and-derivation-sharing) and clear the reduction caches:
 
 ```c
 typedef struct {
@@ -94,12 +94,12 @@ typedef struct {
 } cc_node;
 ```
 
-- **Handles (`cc_term`):** Node `0` is the null/absent sentinel. Valid handles run from `1` to `k->count - 1`.
+- **Handles (`cc_term`):** Node `0` is the null/absent sentinel. Valid handles run from `1` to `k->count - 1`; a handle made after a checkpoint is valid until the next rollback or commit.
 - **Structural sharing (`CC_SHARE_SYNTAX`):** When syntax sharing is enabled (the default), `ck_make` hash-conses `(kind, payload, child[0..3])` in the `k->interned` table so structurally identical AST nodes share a single `cc_term` handle.
 - **Depth bound:** Every node records `depth = 1 + max_i(child[i].depth)`. Any construction exceeding depth `512` (a literal in `ck_make`; there is no named constant) fails with `CC_ERROR_RESOURCE`.
 - **Fast dependency bitmasks:**
-  - `symbols` is a 64-bit Bloom filter over variable and level symbols (`1ULL << (s % 64)`), unioned upward from children. If a symbol's bit is clear in `n.symbols`, that symbol cannot occur anywhere in `n` (bound or free), allowing substitution and comparison to skip subtrees in $O(1)$ time.
-  - `dims` is a 64-bit mask over the 64 interval dimensions (`0..63`). Initially it conservatively unions the dimensions mentioned in formulas and children; once `ck_free_dims` completes on a node, `dimensions_known` is set to `1` and `dims` holds the exact bitset of free dimensions.
+  - `symbols` is a 64-bit Bloom filter over the symbols of the `CC_VAR` nodes in a term, term and level variables alike (`1ULL << (s % 64)`), unioned upward from children; a binder's own name is recorded only where a variable with that name occurs under it. If a symbol's bit is clear in `n.symbols`, no variable with that symbol occurs in `n` (bound or free), allowing substitution and comparison to skip subtrees in $O(1)$ time.
+  - `dims` is a 64-bit mask over the 64 interval dimensions (`0..63`). Initially it conservatively unions the dimensions of the node's formula payload, its own bound dimension if it is a dimension binder, and its children's masks; once `ck_free_dims` completes on a node, `dimensions_known` is set to `1` and `dims` holds the exact bitset of free dimensions.
 
 ---
 
@@ -146,7 +146,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `1` (`payload == 0`, `child[0] = level`, `child[1..3] == 0`).
 - **Role:** Represents the universe type $\mathcal{U}(\ell)$ at level expression `child[0]`.
 - **Instructions:** Formed by `cc_instr_universe(k, level)`, which normalizes `level` to canonical level syntax $\ell$ and certifies $\Gamma \vdash \mathcal{U}(\ell) : \mathcal{U}(\ell + 1)$.
-- **Reduction & Cumulativity:** `ck_whnf` and `ck_normal` leave `CC_U(l)` as written; neither rewrites `child[0]`. Levels are put into canonical syntax only by the instructions that build them (`cc_instr_universe`, `cc_instr_level_apply`, `ck_level_instantiate`) and are compared by normal form in `ck_alpha_equal`. Under `cc_instr_lift`, $\mathcal{U}(\ell_1) \preceq \mathcal{U}(\ell_2)$ iff $\ell_1 \le \ell_2$ in level normal form (`ck_level_leq`).
+- **Reduction & Cumulativity:** `ck_whnf` and `ck_normal` leave `CC_U(l)` as written; neither rewrites `child[0]`. Levels are put into canonical syntax by the instructions that build universes and levels (`cc_instr_universe`; `ck_level_max` in `Pi`, `Sigma`, `Sum`, and `GluePiece`; `ck_level_limit` in `LevelPi`; `cc_instr_level_apply` and `ck_level_instantiate`; `ck_instr_level` for a sort instance) and are compared by normal form in `ck_alpha_equal`. Under `cc_instr_lift`, $\mathcal{U}(\ell_1) \preceq \mathcal{U}(\ell_2)$ iff $\ell_1 \le \ell_2$ in level normal form (`ck_level_leq`).
 - **Composition:** `comp^i U(l) [φ ↦ E(i)] A` reduces via `ck_universe_composition` to `Glue [φ ↦ (E(1), comp^i Equiv(E(1), E(1-i)) [] idEquiv(E(1)))] A`.
 
 #### `CC_LBOUND` (`43`) — Level variable bound $\text{LBound}(\text{tier})$
@@ -302,8 +302,9 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Role:** Evaluates a path $p$ (or a higher inductive path constructor spine) at an interval formula $r$. When built by `cc_instr_path_apply` or `cc_instr_path_at`, `child[1]` records $p$'s path type $\text{Path}_i(A(i), a_0, a_1)$ so endpoint reductions can read $a_0$ and $a_1$ even when $p$ is neutral.
 - **Comparison:** `ck_alpha_equal` compares `payload` ($r$, modulo bound dimension renaming) and `child[0]` ($p$), ignoring the optional type annotation `child[1]`.
 - **Reduction:**
-  1. **Endpoint boundary** (`CC_STEP_PATH`, `ck_expose`, `ck_whnf`, `ck_normal`): If $r = 0$ or $r = 1$ and `child[1]` is `CC_PATH(i, A, a0, a1)`, reduces immediately to `a0` (for $r = 0$) or `a1` (for $r = 1$).
-  2. **Path $\beta$** (`CC_STEP_PATH` when `child[0]` is syntactically `CC_PLAM(i, A, body)`; `ck_whnf` and `ck_normal` when its WHNF is): reduces to `ck_dimension_substitute(k, body, i, r)`. `ck_expose` does not contract a path application of a path lambda.
+  1. **Endpoint boundary** (`ck_expose`, `ck_whnf`, `ck_normal`): If $r = 0$ or $r = 1$ and `child[1]` is `CC_PATH(i, A, a0, a1)`, reduces immediately to `a0` (for $r = 0$) or `a1` (for $r = 1$), without reducing $p$.
+  2. **Path $\beta$** (`ck_whnf` and `ck_normal`, when the WHNF of `child[0]` is `CC_PLAM(i, A, body)`): reduces to `ck_dimension_substitute(k, body, i, r)`. `ck_expose` does not contract a path application of a path lambda.
+  3. **`Step(CC_STEP_PATH)`** tries the two rules in the opposite order, both syntactically: when `child[0]` is written as `CC_PLAM(i, A, body)`, it substitutes into `body` even at $r = 0$ or $r = 1$; only otherwise does it read the endpoint from the `CC_PATH` annotation.
 
 #### `CC_TUBE` (`20`) — Partial system tube cell $[\varphi \mapsto u, \text{next}]$
 - **Arity:** `2` (`payload = face_formula_id` $\varphi$ of sort `CC_FACE`, `child[0] = partial_term` $u$, `child[1] = next_tube` (optional `CC_TUBE` or `0`), `child[2..3] == 0`).
@@ -428,7 +429,7 @@ Only specific child slots of binder constructors bind their `payload` symbol or 
 
 - **`ck_alpha_equal(k, left, right)`:** Checks syntactic $\alpha$-equivalence on an explicit traversal stack (`alpha_frame`) memoized in `k->alpha_memo`:
   - Identical handles (`left == right`) with no active renamings on their free variables/dimensions succeed immediately.
-  - Universe levels (the level child of `CC_U`, and `CC_LCONST`/`CC_LSUCC`/`CC_LMAX` nodes) compare by arithmetic normal form (`level_alpha`, built on `ck_level_normal`), so $\max(\ell + 1, \ell) \equiv \ell + 1$ syntactically.
+  - Universe levels compare by arithmetic normal form (`level_alpha`, built on `ck_level_normal`) where the traversal reaches them: the level child of `CC_U`, the level argument of `CC_LAPP`, and the recorded levels of a `CC_SORT`, so $\mathcal{U}(\max(\ell + 1, \ell)) \equiv \mathcal{U}(\ell + 1)$ syntactically. Two level nodes compared directly (as the `cc_kernel_alpha_equal` query can) must first have the same kind, as any two nodes must: `LMax(LSucc(1, ℓ), ℓ)` and `LSucc(1, ℓ)` are then unequal, and only two `CC_LCONST`/`CC_LSUCC`/`CC_LMAX` nodes of one kind compare by normal form.
   - Term binders push `(left.payload, right.payload)` onto the active term-scope stack; dimension binders push `(left.payload, right.payload)` onto the dimension-scope stack.
   - Interval and face formula payloads on `CC_PAPP`, `CC_TUBE`, and `CC_GLUE_SYSTEM` are mapped through any active dimension renamings before comparing their canonical `cc_clause` arrays.
   - `CC_PAPP.child[1]` (the optional Path-type annotation) is ignored during syntactic comparison because `child[0]` (the path) and `payload` (the interval formula) uniquely determine the application.
@@ -446,7 +447,7 @@ Only specific child slots of binder constructors bind their `payload` symbol or 
 
 ### Context entries, judgements, and derivation sharing
 
-The kernel maintains three append-only tables for derivations ([term_internal.h](../../kernel/src/term_internal.h), [instructions.c](../../kernel/src/instructions.c)):
+The kernel maintains three tables for derivations ([term_internal.h](../../kernel/src/term_internal.h), [instructions.c](../../kernel/src/instructions.c)), append-only between checkpoints and truncated to the checkpoint by `cc_kernel_rollback` and `cc_kernel_commit_checkpoint` (judgements from before it stay valid; a definition's `Lookup` can be issued again):
 
 1. **Context entries (`k->entries[1 .. entry_count - 1]`, handle `cc_entry_id`):**
    Each `cc_entry` represents a single assumption in a context:
@@ -458,7 +459,8 @@ The kernel maintains three append-only tables for derivations ([term_internal.h]
 2. **Context sets (`k->context_sets`, indexed by `uint32_t`):**
    Each judgement stores only the sorted, deduplicated set of `cc_entry_id`s it actually depends on (`set == 0` is the empty context $\varnothing$).
    - **Merging (`ck_instr_merge`):** Takes the sorted union of two context sets, rejecting if two distinct dimension entries share the same dimension index.
-   - **Discharging (`ck_instr_discharge` / `ck_instr_bind`):** Removes a bound entry $e$ from the body's context set, rejecting if any remaining entry in the context still depends on $e$ (`contains(e_other.context, e)`), and merges $e.\text{context}$ (the dependencies of $e$'s own type).
+   - **Discharging (`ck_instr_discharge`):** Removes bound entries from a context set, rejecting if a remaining entry still depends on a removed one (`contains(e_other.context, e)`) or is a dimension entry with a removed dimension's index. `Endpoint`, `Comp`, `HComp`, `Trans`, `Replace`, and face discharge use it alone.
+   - **Binding (`ck_instr_bind`):** Discharges one entry $e$ and merges $e.\text{context}$ (the dependencies of $e$'s own type) back in; the binder instructions (`Pi`, `Lambda`, `Sigma`, `LevelPi`, `LevelLambda`, `Path`, `PathLambda`) use it.
    - **Face discharge (`ck_instr_on_face`):** When a partial element is checked on a clause $C$, `ck_instr_on_face` discharges every face entry $\psi$ in the premise's context whose equations are a subset of $C$ ($C \vdash \psi$). If a remaining variable's type depends on $\psi$, discharging fails.
 
 3. **Certified judgements (`k->facts[1 .. fact_count - 1]`, handle `cc_judgement_id`):**
@@ -782,8 +784,8 @@ These three functions return a `cc_entry_id` (or `0` on error):
   - `cc_instr_eliminator_clause(k, eliminator, clause)`
   - `cc_instr_eliminator_close(k, eliminator)`
 - **Checks & Multi-step Flow:**
-  1. `Eliminator` checks that `motive_id` is a typing judgement $\Gamma_M \vdash M : \Pi(z : I).\, \mathcal{U}(\ell)$ where $I$ is a complete instance `CC_SORT` of an admitted signature $S$, and publishes a `CC_FACT_ELIMINATOR` judgement (`pending = 0`) whose `type` is the expected type of clause $0$, $\text{ClauseType}_0(M)$.
-  2. For each constructor $k = 0 \dots n - 1$, `EliminatorClause` checks that `clause` ($\Gamma_k \vdash m_k : C_k$) has $C_k \equiv_\alpha \text{ClauseType}_k(M, m_0, \dots, m_{k-1})$ (where $\text{ClauseType}_k$ binds the constructor's data arguments, recursive position arguments $q_j$, displayed induction hypotheses $\bar{q}_j$, and path coordinates $i_1, \dots, i_d$ with displayed boundaries evaluated via earlier/current clauses), and advances `pending` to $k + 1$ with `type` set to $\text{ClauseType}_{k+1}$ (or $\Pi(z : I).\, M(z)$ when $k + 1 = n$).
+  1. `Eliminator` checks that `motive_id` is a typing judgement $\Gamma_M \vdash M : \Pi(z : I).\, \mathcal{U}(\ell)$ where $I$ is a complete instance `CC_SORT` of an admitted signature $S$, and publishes a `CC_FACT_ELIMINATOR` judgement (`pending = 0`) whose `type` is the expected type of clause $0$, $\text{ClauseType}_0(M)$ (or $\Pi(z : I).\, M(z)$ at once when $S$ has no constructors, so that `EliminatorClose` then succeeds with no clause).
+  2. For each constructor $k = 0 \dots n - 1$, `EliminatorClause` checks that `clause` ($\Gamma_k \vdash m_k : C_k$) has $C_k \equiv_\alpha \text{ClauseType}_k(M, m_0, \dots, m_{k-1})$ (where $\text{ClauseType}_k$ binds the constructor's data arguments, recursive position arguments $q_j$, displayed induction hypotheses $\bar{q}_j$, and path coordinates $i_1, \dots, i_d$, with displayed boundaries in which each position is shown by its displayed variable and each earlier constructor by its clause), and advances `pending` to $k + 1$ with `type` set to $\text{ClauseType}_{k+1}$ (or $\Pi(z : I).\, M(z)$ when $k + 1 = n$).
   3. `EliminatorClose` verifies `pending == s->constructor_count` (including the generated squash clause if truncated), reverses the accumulated clause list into forward constructor order, and publishes the `CC_FACT_TYPING` judgement:
      $$\Gamma \vdash \text{Elim}(\text{index},\; M,\; [m_0, \dots, m_{n-1}]) : \Pi(z : I).\, M(z)$$
 
@@ -860,8 +862,8 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 |---|---|---|
 | `CC_STEP_BETA` (`1`) | `App(Lam(x, A, b), a)`<br>`LApp(LLam(x, B, b), l)` | `ck_substitute(k, b, x, a)`<br>`ck_level_instantiate(k, b, x, l)` |
 | `CC_STEP_DELTA` (`2`) | `DefRef(idx)` | `k->definitions[idx].value` |
-| `CC_STEP_IOTA` (`3`) | `Fst(Pair(T, a, b))`<br>`Snd(Pair(T, a, b))`<br>`UnitRec(M, pt, Point)`<br>`SumRec(M, l, r, Inl(T, v))`<br>`SumRec(M, l, r, Inr(T, v))`<br>`App(Elim(sig, M, ms), c)` | `a`<br>`b`<br>`pt`<br>`App(l, v)`<br>`App(r, v)`<br>`ck_eliminate(k, Elim(sig, M, ms), c, false, &reduced)` when $c$ is already a constructor or path-applied constructor (`weak = false`) |
-| `CC_STEP_PATH` (`4`) | `PApp(r, PLam(i, A, b), _)`<br>`PApp(0, p, Path(i, A, l, r))`<br>`PApp(1, p, Path(i, A, l, r))` | `ck_dimension_substitute(k, b, i, r)`<br>`l` (uses stored Path-type annotation `child[1]`)<br>`r` (uses stored Path-type annotation `child[1]`) |
+| `CC_STEP_IOTA` (`3`) | `Fst(Pair(T, a, b))`<br>`Snd(Pair(T, a, b))`<br>`UnitRec(M, pt, Point)`<br>`SumRec(M, l, r, Inl(T, v))`<br>`SumRec(M, l, r, Inr(T, v))`<br>`App(Elim(sig, M, ms), c)` | `a`<br>`b`<br>`pt`<br>`App(l, v)`<br>`App(r, v)`<br>`ck_eliminate(k, Elim(sig, M, ms), c, false, &reduced)` when $c$ is already a constructor or path-applied constructor (`weak = false`): the clause method applied to the arguments and induction hypotheses, not $\beta$-reduced |
+| `CC_STEP_PATH` (`4`) | `PApp(r, PLam(i, A, b), _)`<br>`PApp(0, p, Path(i, A, l, r))`<br>`PApp(1, p, Path(i, A, l, r))` | `ck_dimension_substitute(k, b, i, r)` (tried first, at any $r$)<br>`l` (uses stored Path-type annotation `child[1]`, when `p` is not written as a path lambda)<br>`r` (likewise) |
 | `CC_STEP_NORMALIZE` (`5`) | Any term $s$ | `ck_normal(k, s)` |
 | `CC_STEP_WHNF` (`6`) | Any term $s$ | `ck_whnf(k, s)` |
 | `CC_STEP_FACE` (`7`) | `Comp(i, A, tubes, a0)` with `(1 ↦ u)` in `tubes`<br>`HComp(i, A, tubes, a0)` with `(1 ↦ u)` in `tubes`<br>`Trans(i, A, Tube(1, a0), a0)` | `ck_endpoint_term(k, u, i, 1)`<br>`ck_endpoint_term(k, u, i, 1)`<br>`a0` |
@@ -891,7 +893,7 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 
 ### 3. Compact head exposure (`ck_expose` in `term_expose.c`)
 
-When `ck_hit_reduce` looks for a constructor head, or a derivation wants one visible step without unfolding definitions, `ck_expose(k, term)` performs at most one of these contractions and otherwise returns the term unchanged: a top-face (`1`) tube on `Comp`/`HComp` (to $u(1)$) or on `Trans` (to its base); a `CC_PAPP` at `0` or `1` whose annotation is a `CC_PATH` (to the recorded endpoint); a `CC_APP` whose function's WHNF is a `CC_LAM` (to the substituted body); a `CC_FST`/`CC_SND` whose pair's WHNF is a `CC_PAIR` (to the component). It computes the head of the function or pair with `ck_whnf`, but it never unfolds a `CC_DEFREF` at the root, never contracts level applications, path lambdas, or Glue, and has no size bound and no arena rollback.
+When `ck_hit_reduce` looks for a constructor head (its only caller; no instruction uses it), `ck_expose(k, term)` performs at most one of these contractions and otherwise returns the term unchanged: a top-face (`1`) tube on `Comp`/`HComp` (to $u(1)$) or on `Trans` (to its base); a `CC_PAPP` at `0` or `1` whose annotation is a `CC_PATH` (to the recorded endpoint); a `CC_APP` whose function's WHNF is a `CC_LAM` (to the substituted body); a `CC_FST`/`CC_SND` whose pair's WHNF is a `CC_PAIR` (to the component). It computes the head of the function or pair with `ck_whnf`, but it never unfolds a `CC_DEFREF` at the root, never contracts level applications, path lambdas, or Glue, and has no size bound and no arena rollback.
 
 ### 4. Full normalization (`ck_normal` in `term_normalize.c`)
 
@@ -916,7 +918,7 @@ Let $E = \text{elim}_S(M, [m_0, \dots, m_{n-1}])$ be an admitted eliminator for 
      At the sort instance $I$, $\text{lift}_I(E, v) = E(v)$. At a path cube $B = \text{Path}_i(B'(i), b_0, b_1)$, it chooses a fresh dimension $h$ and constructs
      $$\text{lift}_B(E, v) = \langle h \rangle\, \text{lift}_{B'(h)}(E, v \mathbin{@}_B h).$$
      The `CC_PLAM` family annotation comes from the displayed path type computed by `displayed`; nested path cubes are lifted recursively until reaching $I$. Thus a path-valued position $q : \text{Path}_i(I, a, b)$ contributes $\langle h \rangle\, E(q \mathbin{@} h)$.
-   - Substitutes $t_1, \dots, t_a$, $q_1, \dots, q_b$, and $\bar{q}_1, \dots, \bar{q}_b$ into the $k$-th clause method $m_k$.
+   - Applies the $k$-th clause method to them, as a `CC_APP` spine $m_k(t_1, \dots, t_a, q_1, \dots, q_b, \bar{q}_1, \dots, \bar{q}_b)$: the $\bar{q}_j$ are built over fresh variables standing for the arguments, which are then substituted by the actual $t_i$ and $q_j$. The method's own $\lambda$-binders are not contracted: `Step(CC_STEP_IOTA)` returns this application, and separate $\beta$ steps (or `ck_whnf`) reduce it.
    - For each applied path coordinate $r_l$ ($1 \le l \le d$), computes the displayed path type annotation $P_l$ and applies `CC_PAPP(r_l, body, P_l)` (`ck_apply_at`).
 
 2. **Homogeneous composition ($s = \text{hcomp}^j\, S(\vec{p})\, [\psi \mapsto w(j)]\, w_0$, when `weak == true`):**
@@ -982,7 +984,7 @@ To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel fir
 For a higher sort $I(i) = S(\vec{p}(i))$ (`ck_hit_reduce`):
 
 1. **Degenerate and empty reductions:**
-   - $\text{hcomp}^i\, I\, [\varphi \mapsto u(i)]\, u_0$ drops `0`-face tubes; if no tubes remain, it stays neutral (`CC_HCOMP` is a canonical value constructor on higher sorts); if any tube has face `1`, it reduces to $u(1)$.
+   - $\text{hcomp}^i\, I\, [\varphi \mapsto u(i)]\, u_0$ drops `0`-face tubes; with no tube left it is returned as it is, a canonical value of the higher sort that does not reduce to $u_0$; if any tube has face `1`, it reduces to $u(1)$.
    - $\text{transp}^i\, I(i)\, 1\, u_0 \longrightarrow u_0$.
 
 2. **Commuting `Trans` past `HComp` (`transport_hcomp`):**
