@@ -151,7 +151,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 
 #### `CC_LBOUND` (`43`) — Level variable bound $\text{LBound}(\text{tier})$
 - **Arity:** `0` (`payload = tier > 0`, `child[0..3] == 0`).
-- **Role:** Binder domain marker representing the ordinal bound $\omega \cdot \text{tier}$ for a universe-level variable. Only `tier == 1` ($\ell < \omega$) is admitted by `cc_instr_level`. Stored as `child[0]` of `CC_LPI` and `CC_LLAM` and as `entry.type` of a level context entry.
+- **Role:** Binder domain marker representing the ordinal bound $\omega \cdot \text{tier}$ for a universe-level variable. Only `tier == 1` ($\ell < \omega$) occurs in checked syntax: `cc_instr_level` gives every level entry the type `CC_LBOUND(1)`, `cc_instr_signature_begin` refuses a universe parameter whose bound is any other node, and `ck_level_normal` rejects a bound where a level is expected (`"A bound is not a level."`). Stored as `child[0]` of `CC_LPI` and `CC_LLAM` and as `entry.type` of a level context entry.
 
 #### `CC_LCONST` (`44`) — Constant universe level $\omega \cdot \text{tier} + n$
 - **Arity:** `0` (`payload = (tier << 16) | n`, `child[0..3] == 0`).
@@ -159,7 +159,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 
 #### `CC_LSUCC` (`45`) — Shifted universe level $\ell + k$
 - **Arity:** `1` (`payload = k >= 1`, `child[0] = level`, `child[1..3] == 0`).
-- **Role:** Adds a positive finite offset $k \ge 1$ to `child[0]`. Rejected if `payload == 0`. In arithmetic normal form (`ck_level_normal`), shifting a finite level increments both the constant floor $c$ and every variable offset $k_i$ by $k$; shifting a transfinite level ($\text{tier} \ge 1$) increments its constant part $c$ by $k$ (failing with `CC_ERROR_RESOURCE` if the sum exceeds `CC_LEVEL_MAX`).
+- **Role:** Adds a positive finite offset $k \ge 1$ to `child[0]`. Rejected if `payload == 0`. In arithmetic normal form (`ck_level_normal`), shifting a finite level increments both the constant floor $c$ and every variable offset $k_i$ by $k$; shifting a transfinite level ($\text{tier} \ge 1$) increments its constant part $c$ by $k$. Either case fails with `CC_ERROR_RESOURCE` when the new constant, or the total count of a chain of `CC_LSUCC` nodes, exceeds `CC_LEVEL_MAX`.
 
 #### `CC_LMAX` (`46`) — Universe level maximum $\max(\ell_1, \ell_2)$
 - **Arity:** `2` (`payload == 0`, `child[0] = left`, `child[1] = right`, `child[2..3] == 0`).
@@ -420,7 +420,7 @@ Only specific child slots of binder constructors bind their `payload` symbol or 
    - Replaces free occurrences of interval coordinate `dim` ($i$) with the interval formula $r$ (`formula`) using the same worklist, memoized in `k->syntax_memo` (operation `6`).
    - In `CC_PAPP`, substitutes $r$ for $i$ inside `n.payload` via `cc_interval_substitute`.
    - In `CC_TUBE` and `CC_GLUE_SYSTEM`, substitutes $r$ for $i$ inside the face formula `n.payload` via `cc_face_substitute`.
-   - For a dimension binder (`CC_PATH`, `CC_PLAM`, `CC_COMP`, `CC_HCOMP`, `CC_TRANS`) whose bound dimension `n.payload` occurs in $r$, picks a fresh dimension $j \in 0..63$ (`ck_fresh_dimension` avoiding both the node and $r$), renames `n.payload` to $j$ inside the bound slots first, and then substitutes $r$ for `dim`.
+   - For a dimension binder (`CC_PATH`, `CC_PLAM`, `CC_COMP`, `CC_HCOMP`, `CC_TRANS`) whose bound dimension `n.payload` differs from `dim` and occurs in $r$, picks a fresh dimension $j \in 0..63$ (`ck_fresh_dimension` avoiding the node, $r$, and `dim`), renames `n.payload` to $j$ inside the bound slots first, and then substitutes $r$ for `dim`. A binder of `dim` itself keeps its name and shields its bound slots; substitution continues into its unbound slots (a `CC_PATH`'s endpoints, a composition's tube faces and base).
 4. **Face restriction (`ck_restrict(k, term, clause)`):**
    - Simplifies `term` under a single consistent face clause $C$.
    - For each dimension $d \in 0..63$ constrained by $C$ ($(d = 0)$ in `C.negative` or $(d = 1)$ in `C.positive`), substitutes $\bot$ (`0`) or $\top$ (`1`) for $d$ via `ck_endpoint_term`; that dimension substitution also rewrites the face formulas of tubes and Glue pieces, so nothing else is done.
@@ -545,7 +545,7 @@ These three functions return a `cc_entry_id` (or `0` on error):
 
 #### `CC_INSTR_LEVEL_APPLY` (`63`) — `cc_instr_level_apply(k, function, level)`
 - **Inputs:** Typing judgement `function` ($\Gamma \vdash f : \forall(x < \omega).\, B$), `cc_term level` ($\ell$).
-- **Checks:** `function` has type `CC_LPI(x, LBound(1), B)`; `level` normalizes to a **finite** level (`nf.tier == 0` and `nf.constant <= CC_LEVEL_MAX`) whose variables are level entries with context $\Gamma_\ell$; instantiates $B[x := \ell_{\text{canon}}]$ via `ck_level_instantiate`.
+- **Checks:** `function` has type `CC_LPI(x, LBound(1), B)`; `level` normalizes to a **finite** level (`nf.tier == 0`; this instruction checks no further bound on `nf.constant`, which `ck_level_normal` has already kept at most `CC_LEVEL_MAX`) whose variables are level entries with context $\Gamma_\ell$; instantiates $B[x := \ell_{\text{canon}}]$ via `ck_level_instantiate`.
 - **Result (`CC_FACT_TYPING`):** $\Gamma \cup \Gamma_\ell \vdash \text{LApp}(f, \ell_{\text{canon}}) : B[x := \ell_{\text{canon}}]$.
 
 ---
@@ -752,7 +752,7 @@ These three functions return a `cc_entry_id` (or `0` on error):
   - `type_id.type` is `CC_U(l_T)` with $\ell_T \equiv \ell$ in level normal form (`ck_level_equal`).
   - Every entry in $\Gamma$ is one of the signature's level parameters, term parameters (at its declared type), the sort entry `sort_symbol : U(l)`, or an earlier constructor `c_m : T_m` (`admission_context`).
   - $T$ mentions no erased universe parameter (`!(recorded >> j & 1)`).
-  - `constructor_shape` validates that $T$ has H1 normal form: $a$ non-recursive data arguments (not mentioning `sort_symbol` or earlier constructors), followed by $b$ strictly positive recursive position arguments $\Pi(\vec{y} : \vec{C}).\, B$ where $\vec{C}$ are data and $B$ is an iterated path cube over `sort_symbol` ($a + b \le 64$), ending in an iterated path cube of dimension $d \le 16$ over `sort_symbol` whose endpoint boundaries are well-formed constructor expressions over the parameters, data arguments, recursive arguments, and path coordinates.
+  - `constructor_shape` validates that $T$ has H1 normal form: $a$ non-recursive data arguments (not mentioning `sort_symbol`, an earlier constructor, or an earlier position), followed by $b$ strictly positive recursive position arguments $\Pi(\vec{y} : \vec{C}).\, B$ where $\vec{C}$ are data (at most `CC_CONSTRUCTOR_ARGUMENTS` $= 64$ binders per position) and $B$ is an iterated path cube over `sort_symbol` of at most `CC_CONSTRUCTOR_DIMENSIONS` $= 16$ layers ($a + b \le 64$), ending in an iterated path cube of dimension $d \le 16$ over `sort_symbol` whose endpoint boundaries are well-formed constructor expressions over the parameters, data arguments, recursive arguments, and path coordinates.
 - **Result (`CC_FACT_SIGNATURE`):** Appends the constructor to the signature and publishes the next `CC_FACT_SIGNATURE` judgement with `pending = constructor_count`.
 
 #### `CC_INSTR_SIGNATURE_CLOSE` (`66`) — `cc_instr_signature_close(k, signature_id)`
@@ -767,10 +767,10 @@ These three functions return a `cc_entry_id` (or `0` on error):
   - `cc_instr_sort_parameter(k, instance, parameter)`
 - **Checks & Multi-step Flow:**
   1. `SortBegin` checks that `index` names an admitted signature $S$.
-  2. `SortLevel` supplies each recorded universe level (in parameter order) as a finite level $\ell_r < \omega$, before any term parameters are given.
+  2. `SortLevel` supplies each recorded universe level (in parameter order) as a finite level $\ell_r < \omega$ whose normal form has a constant below `CC_LEVEL_MAX` (`ck_instr_finite_level`; unlike `LevelApply`, the constant `65535` itself is refused as a resource error), before any term parameters are given.
   3. `SortParameter` supplies each term parameter $\Gamma_i \vdash a_i : A_i$ in order.
   4. While levels or parameters remain, each step publishes a `CC_FACT_INSTANCE` judgement (`kind == 5`).
-  5. Once all recorded levels and all $m$ term parameters are supplied (`complete_instance`), the kernel reads each erased universe parameter $x_j$ from the final universe of its first determining parameter's actual type $A_i$, checks that every $A_i$ is $\alpha$-equal to the telescope type $P_i[\rho, a_0, \dots, a_{i-1}]$, and publishes the `CC_FACT_TYPING` judgement:
+  5. Once all recorded levels and all $m$ term parameters are supplied (`complete_instance`), the kernel reads each erased universe parameter $x_j$ from the final universe of its first determining parameter's actual type $A_i$ (again a finite level with constant below `CC_LEVEL_MAX`), checks that every $A_i$ is $\alpha$-equal to the telescope type $P_i[\rho, a_0, \dots, a_{i-1}]$, takes the sort's own level $\ell[\rho]$ to normal form (of any tier, with constant below `CC_LEVEL_MAX`; `ck_instr_level`), and publishes the `CC_FACT_TYPING` judgement:
      $$\Gamma \vdash \text{Sort}(\text{index},\; [a_0, \dots, a_{m-1}],\; [\ell_{r_0}, \dots]) : \mathcal{U}(\ell[\rho])$$
 
 #### `CC_INSTR_CONSTRUCT` (`70`) — `cc_instr_construct(k, instance, constructor)`
@@ -872,7 +872,7 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 
 ### 2. Weak-head normal form (`ck_whnf` in `term_normalize.c`)
 
-`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records every term it passes through so that the final head is cached for all of them. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call bounded by the `k->recursion` guard (`1024`); there is no explicit stack of elimination frames:
+`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records the terms it passes through, up to `WEAK_MAX_TAILS` (`16384`) of them, so that the final head is cached for all of those; later tails still reduce but are not cached. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call bounded by the `k->recursion` guard (`1024`); there is no explicit stack of elimination frames:
 
 1. **Definitions:** `CC_DEFREF(idx)` unfolds to `k->definitions[idx].value`.
 2. **Eliminations:** `CC_APP(f, a)` reduces $f$ to WHNF; on `CC_LAM(x, A, body)` it continues with `ck_substitute(k, body, x, a)`, on `CC_ELIM(sig, M, clauses)` it runs `ck_eliminate(k, Elim(sig, M, clauses), a, true, &reduced)` (`weak = true`, which reduces `a` to WHNF first), and otherwise it returns the neutral application. `CC_LAPP(f, l)` reduces $f$ and, on `CC_LLAM(x, B, body)`, continues with `ck_level_instantiate(k, body, x, l)`. `CC_FST`/`CC_SND` reduce the pair and, on `CC_PAIR(T, a, b)`, continue with `a` or `b`.
@@ -893,7 +893,7 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 
 ### 3. Compact head exposure (`ck_expose` in `term_expose.c`)
 
-When `ck_hit_reduce` looks for a constructor head (its only caller; no instruction uses it), `ck_expose(k, term)` performs at most one of these contractions and otherwise returns the term unchanged: a top-face (`1`) tube on `Comp`/`HComp` (to $u(1)$) or on `Trans` (to its base); a `CC_PAPP` at `0` or `1` whose annotation is a `CC_PATH` (to the recorded endpoint); a `CC_APP` whose function's WHNF is a `CC_LAM` (to the substituted body); a `CC_FST`/`CC_SND` whose pair's WHNF is a `CC_PAIR` (to the component). It computes the head of the function or pair with `ck_whnf`, but it never unfolds a `CC_DEFREF` at the root, never contracts level applications, path lambdas, or Glue, and has no size bound and no arena rollback.
+`ck_hit_reduce`, its only caller (no instruction uses it), applies `ck_expose(k, term)` to the `HComp` or `Trans` term itself, for the top-face rule; constructor heads are found by `ck_whnf` of the base. It performs at most one of these contractions and otherwise returns the term unchanged: a top-face (`1`) tube on `Comp`/`HComp` (to $u(1)$) or on `Trans` (to its base); a `CC_PAPP` at `0` or `1` whose annotation is a `CC_PATH` (to the recorded endpoint); a `CC_APP` whose function's WHNF is a `CC_LAM` (to the substituted body); a `CC_FST`/`CC_SND` whose pair's WHNF is a `CC_PAIR` (to the component). It computes the head of the function or pair with `ck_whnf`, but it never unfolds a `CC_DEFREF` at the root, never contracts level applications, path lambdas, or Glue, and has no size bound and no arena rollback.
 
 ### 4. Full normalization (`ck_normal` in `term_normalize.c`)
 
@@ -942,7 +942,7 @@ At $r = 0$, the added wall $(r = 0) \mapsto a_0$ has top face `1` and reduces im
 
 ### 2. Heterogeneous composition (`ck_reduce_composition` in `composition_compute.c`)
 
-To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel first checks whether any tube in the list has top face $\varphi = 1$; if so, it immediately returns $u(1)$ (`ck_endpoint_term(k, u, i, 1)`). Otherwise it reduces $A(i)$ to WHNF (`ck_whnf`; `ck_expose` is not used here) and dispatches on its head:
+To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel first checks whether any tube in the list has top face $\varphi = 1$; if so, it returns the weak head of $u(1)$ (`ck_whnf` of `ck_endpoint_term(k, u, i, 1)`), since `weak` takes what it returns as a finished head. Otherwise it reduces $A(i)$ to WHNF (`ck_whnf`; `ck_expose` is not used here) and dispatches on its head:
 
 | Type family $A(i)$ | Reduction of $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$ |
 |---|---|
@@ -965,8 +965,8 @@ To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel fir
   2. Project the base and tubes to $A(i)$ via `unglue`: $a_0 = \text{unglue}(u_0)$ and $a(i) = \text{unglue}(u(i))$.
   3. Compose in the base type $A(i)$: $a_1' = \text{comp}^i\, A(i)\, [\varphi \mapsto a(i)]\, a_0$.
   4. For each pick $(m, C)$, `partial_fiber_points` builds a partial element of the selected fiber
-     $$F_{m,C} = \left(\Sigma(x : T_m(1)).\, \text{Path}_k(A(1), a_1', w_m(1).1(x))\right)|_C.$$
-     (`ck_fiber_type` uses CCHM's orientation $\text{Fiber}_f(y) = \Sigma x.\, \text{Path}\, B\, y\, (f\,x)$.)
+     $$F_{m,C} = \Sigma(x : T_m(1)|_C).\, \text{Path}_k(A(1), a_1', (w_m(1)|_C).1(x)),$$
+     in which only the pick's type and equivalence are restricted to $C$; $A(1)$ and $a_1'$ are written unrestricted, and are restricted with each partial point below, whose whole pair, type annotation included, goes through `ck_restrict`. (`ck_fiber_type` uses CCHM's orientation $\text{Fiber}_f(y) = \Sigma x.\, \text{Path}\, B\, y\, (f\,x)$.)
      - Visit **every** Glue piece $n$ and define its universal face $\delta_n = \forall i.\, \psi_n$ (`cc_face_forall`). For each clause $D$ of $\delta_n$ compatible with $C$, compose $t_n' = \text{comp}^i\, T_n(i)\, [\varphi \mapsto u(i)]\, u_0$ and use Lemma 6 (`preservation`) to build $\alpha_n : \text{Path}_k(A(1), a_1', w_n(1).1(t_n'))$. Restrict $(t_n', \alpha_n)$ to $C \wedge D$ and add it to the partial fiber system; the pieces' agreement on their overlap makes this an element of $F_{m,C}$ there.
      - Visit each composition tube and each clause $D$ of its face compatible with $C$. Add $(u(1), \langle k \rangle\, a_1')$ restricted to $C \wedge D$; on this overlap, $a_1' = a(1)$.
      - Using the contractibility proof $w_m(1).2(a_1')$ with $w_m(1)$ restricted to $C$, `extend_fiber` extends this partial element, defined on $C \wedge ((\bigvee_n \delta_n) \vee \varphi)$, to a fiber element $(t_{m,C}, \alpha_{m,C})$ on $C$.
