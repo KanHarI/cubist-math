@@ -1,0 +1,841 @@
+{
+  "recordedOn": "2026-10-20",
+  "kernelRevision": "4132c05a",
+  "notes": [
+    "Historical records imported from local investigation logs; the original ad hoc runner scripts were not retained.",
+    "Selected literal and component records use pending #283 fractions/binary_rationals overlays; the minimal relation record uses main libraries only.",
+    "The initial Step record ticks=0 measured querySteps only, not instructionSteps; use the later manual trace instruction counters for that operation.",
+    "Component runs use fresh checked sessions after WHNF; the relation component queries share warmed caches.",
+    "Manual trace summary retains metadata, commands and costs; native excerpts are omitted. It is not a full copied workbench trace.",
+    "Counts from different entry/preparation paths are not before/after performance comparisons."
+  ],
+  "literal": [
+    {
+      "mode": "step",
+      "selected": {
+        "handle": 70132,
+        "id": 70132,
+        "kind": "App",
+        "payload": 0,
+        "children": [
+          70131,
+          574,
+          0,
+          0
+        ],
+        "text": "2/3",
+        "label": "CC_APP",
+        "operands": [
+          {
+            "handle": 70131,
+            "index": 0,
+            "role": "function",
+            "label": "CC_APP",
+            "kind": "App"
+          },
+          {
+            "handle": 574,
+            "index": 1,
+            "role": "argument",
+            "label": "CC_POINT",
+            "kind": "Point"
+          },
+          {
+            "handle": 0,
+            "index": 2,
+            "role": "unused",
+            "label": "unused",
+            "kind": null
+          },
+          {
+            "handle": 0,
+            "index": 3,
+            "role": "unused",
+            "label": "unused",
+            "kind": null
+          }
+        ]
+      }
+    },
+    {
+      "mode": "step",
+      "ticks": 0,
+      "nodes": 23699,
+      "ms": 7,
+      "err": {
+        "kind": "budget",
+        "message": "Kernel checking/reduction budget exhausted."
+      }
+    },
+    {
+      "mode": "normalize",
+      "selected": {
+        "handle": 70132,
+        "id": 70132,
+        "kind": "App",
+        "payload": 0,
+        "children": [
+          70131,
+          574,
+          0,
+          0
+        ],
+        "text": "2/3",
+        "label": "CC_APP",
+        "operands": [
+          {
+            "handle": 70131,
+            "index": 0,
+            "role": "function",
+            "label": "CC_APP",
+            "kind": "App"
+          },
+          {
+            "handle": 574,
+            "index": 1,
+            "role": "argument",
+            "label": "CC_POINT",
+            "kind": "Point"
+          },
+          {
+            "handle": 0,
+            "index": 2,
+            "role": "unused",
+            "label": "unused",
+            "kind": null
+          },
+          {
+            "handle": 0,
+            "index": 3,
+            "role": "unused",
+            "label": "unused",
+            "kind": null
+          }
+        ]
+      }
+    },
+    {
+      "mode": "normalize",
+      "ticks": 100000,
+      "nodes": 23699,
+      "ms": 7,
+      "result": 0,
+      "err": {
+        "kind": "budget",
+        "message": "Kernel checking/reduction budget exhausted."
+      }
+    },
+    {
+      "mode": "head",
+      "selected": {
+        "handle": 70132,
+        "id": 70132,
+        "kind": "App",
+        "payload": 0,
+        "children": [
+          70131,
+          574,
+          0,
+          0
+        ],
+        "text": "2/3",
+        "label": "CC_APP",
+        "operands": [
+          {
+            "handle": 70131,
+            "index": 0,
+            "role": "function",
+            "label": "CC_APP",
+            "kind": "App"
+          },
+          {
+            "handle": 574,
+            "index": 1,
+            "role": "argument",
+            "label": "CC_POINT",
+            "kind": "Point"
+          },
+          {
+            "handle": 0,
+            "index": 2,
+            "role": "unused",
+            "label": "unused",
+            "kind": null
+          },
+          {
+            "handle": 0,
+            "index": 3,
+            "role": "unused",
+            "label": "unused",
+            "kind": null
+          }
+        ]
+      }
+    },
+    {
+      "mode": "head",
+      "ticks": 297,
+      "nodes": 61,
+      "ms": 0,
+      "result": 73105
+    },
+    {
+      "head": {
+        "id": 73105,
+        "kind": "App",
+        "payload": 0,
+        "children": [
+          67273,
+          73104,
+          0,
+          0
+        ]
+      },
+      "text": "class((bint_of_nat(bnat_add(bnat_mul(0, 10), bnat_digit_value(2))) , (bint_of_nat(bnat_add(bnat_mul(10, 0), bnat_digit_value(3))) , \u03bb (p2796 : (bint_of_nat(bnat_add(bnat_mul(10, 0), bnat_digit_value(3))) =[Difference(U0, bnat_semiring, bnat_decide, bnat_add_cancel)] difference_zero(U0, bnat_semiring, bnat_decide, bnat_add_cancel))). (\u03bb (p612 : (1 =[UNat] 0)). [d0]. comp(unat_is_zero(at((\u03bb (ascription614 : (0 =[UNat] 1)). ascription614)(path(\u03bb d0. at(p612, d0:0))), d0:1)), \u22c6))((\u03bb (ascription2803 : (difference_zero_tag(U0, bnat_semiring, bnat_decide, bnat_add_cancel, bint_of_nat(bnat_add(bnat_mul(10, 0), bnat_digit_value(3)))) =[UNat] 0)). ascription2803)(path(\u03bb d0. [d1]. comp(UNat, face(d0:0, difference_zero_tag(U0, bnat_semiring, bnat_decide, bnat_add_cancel, bint_of_nat(bnat_add(bnat_mul(10, 0), bnat_digit_value(3))))), face(d0:1, at(difference_zero_tag_zero(U0, bnat_semiring, bnat_decide, bnat_add_cancel), d1:1)), at((\u03bb (ascription2798 : (difference_zero_tag(U0, bnat_semiring, bnat_decide, bnat_add_cancel, bint_of_nat(bnat_add(bnat_mul(10, 0), bnat_digit_value(3)))) =[UNat] difference_zero_tag(U0, bnat_semiring, bnat_decide, bnat_add_cancel, difference_zero(U0, bnat_semiring, bnat_decide, bnat_add_cancel)))). ascription2798)(path(\u03bb d0. difference_zero_tag(U0, bnat_semiring, bnat_decide, bnat_add_cancel, at(p2796, d0:1)))), d0:1))))))))"
+    },
+    {
+      "path": [],
+      "id": 73105,
+      "kind": "App",
+      "children": [
+        67273,
+        73104,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        0
+      ],
+      "id": 67273,
+      "kind": "Con",
+      "children": [
+        67270,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1
+      ],
+      "id": 73104,
+      "kind": "Pair",
+      "children": [
+        67266,
+        70809,
+        73103,
+        0
+      ]
+    },
+    {
+      "path": [
+        0,
+        0
+      ],
+      "id": 67270,
+      "kind": "Sort",
+      "children": [
+        67269,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        0
+      ],
+      "id": 67266,
+      "kind": "App",
+      "children": [
+        67264,
+        66996,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        1
+      ],
+      "id": 70809,
+      "kind": "App",
+      "children": [
+        66889,
+        70451,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        2
+      ],
+      "id": 73103,
+      "kind": "Pair",
+      "children": [
+        73090,
+        70819,
+        73025,
+        0
+      ]
+    },
+    {
+      "path": [
+        0,
+        0,
+        0
+      ],
+      "id": 67269,
+      "kind": "List",
+      "children": [
+        67266,
+        67268,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        0,
+        0
+      ],
+      "id": 67264,
+      "kind": "App",
+      "children": [
+        67262,
+        67213,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        0,
+        1
+      ],
+      "id": 66996,
+      "kind": "DefRef",
+      "name": "binary_integers__bint_zero_ne_one",
+      "children": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        1,
+        0
+      ],
+      "id": 66889,
+      "kind": "DefRef",
+      "name": "binary_integers__bint_of_nat",
+      "children": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "path": [
+        1,
+        1,
+        1
+      ],
+      "id": 70451,
+      "kind": "App",
+      "children": [
+        70380,
+        70450,
+        0,
+        0
+      ]
+    }
+  ],
+  "components": [
+    {
+      "label": "constructor/type",
+      "path": [
+        0
+      ],
+      "kind": "Con",
+      "ticks": 100000,
+      "nodes": 23739,
+      "ms": 7,
+      "result": 0,
+      "err": {
+        "kind": "budget",
+        "message": "Kernel checking/reduction budget exhausted."
+      }
+    },
+    {
+      "label": "pair type",
+      "path": [
+        1,
+        0
+      ],
+      "kind": "App",
+      "ticks": 7216,
+      "nodes": 1553,
+      "ms": 0,
+      "result": 74659
+    },
+    {
+      "label": "numerator",
+      "path": [
+        1,
+        1
+      ],
+      "kind": "App",
+      "ticks": 1719,
+      "nodes": 347,
+      "ms": 0,
+      "result": 73453
+    },
+    {
+      "label": "denominator",
+      "path": [
+        1,
+        2,
+        1
+      ],
+      "kind": "App",
+      "ticks": 977,
+      "nodes": 188,
+      "ms": 0,
+      "result": 73294
+    },
+    {
+      "label": "nonzero evidence",
+      "path": [
+        1,
+        2,
+        2
+      ],
+      "kind": "Lam",
+      "ticks": 64781,
+      "nodes": 14441,
+      "ms": 4,
+      "result": 87547
+    }
+  ],
+  "relation": [
+    {
+      "relation": "SameRatio(U0, binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one)"
+    },
+    {
+      "binders": [
+        {
+          "name": "f218",
+          "domain": 67266
+        },
+        {
+          "name": "g219",
+          "domain": 67266
+        }
+      ],
+      "body": {
+        "id": 73175,
+        "kind": "Path",
+        "payload": 0,
+        "children": [
+          67256,
+          73172,
+          73174,
+          0
+        ]
+      },
+      "text": "(CommRing.mul(U0, binary_integers, f218.1, g219.2.1) =[CommRing.R(U0, binary_integers)] CommRing.mul(U0, binary_integers, g219.1, f218.2.1))"
+    },
+    {
+      "label": "SameRatio",
+      "kind": "App",
+      "ticks": 100000,
+      "allocations": 23736,
+      "result": 0,
+      "err": "Kernel checking/reduction budget exhausted."
+    },
+    {
+      "label": "body child 0",
+      "kind": "App",
+      "ticks": 1,
+      "allocations": 0,
+      "result": 74653
+    },
+    {
+      "label": "body child 1",
+      "kind": "App",
+      "ticks": 100000,
+      "allocations": 24730,
+      "result": 0,
+      "err": "Kernel checking/reduction budget exhausted."
+    },
+    {
+      "label": "body child 2",
+      "kind": "App",
+      "ticks": 100000,
+      "allocations": 17839,
+      "result": 0,
+      "err": "Kernel checking/reduction budget exhausted."
+    }
+  ],
+  "mainOnlyRelation": {
+    "source": "import fractions;\nimport binary_integers;\ndef relation := SameRatio{{U0}}(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);\n",
+    "imports": [
+      "minimal",
+      "fractions",
+      "hlevels",
+      "unat",
+      "h1_truncation",
+      "quotients",
+      "propositions",
+      "univalence",
+      "contractible_maps",
+      "algebra",
+      "binary_integers",
+      "differences",
+      "semirings",
+      "bnat_models",
+      "bnat_semiring",
+      "bnat_arithmetic",
+      "bnat_unary",
+      "bnat",
+      "bnat_equality",
+      "unat_models",
+      "bnat_notation",
+      "lexemes",
+      "lists"
+    ],
+    "ticks": 100000,
+    "allocations": 24369,
+    "ms": 7,
+    "result": 0,
+    "err": {
+      "kind": "budget",
+      "message": "Kernel checking/reduction budget exhausted."
+    }
+  },
+  "manualTraceSummary": {
+    "startedAt": "2026-10-20T18:15:49.125Z",
+    "reportedBuild": {
+      "sources": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+      "outputs": "d62126fba68d36baaf46e186f830cda938d7759524b3afed6fca6d622350af2a"
+    },
+    "session": {
+      "main": "rational_probe",
+      "binding": "rational_probe__small_inverse",
+      "side": "expression",
+      "mainSource": {
+        "text": "import binary_rationals;\nuse binary_rationals;\n\n// Checked definitions only: opening this page does not normalize the values.\ncomputable def wide_inverse := bq_inv(-340282366920938463463374607431768211455/18446744073709551615);\ncomputable def small_inverse := bq_inv(-2/3);\n",
+        "omittedCharacters": 0
+      },
+      "sources": [
+        {
+          "name": "algebra",
+          "characters": 13507,
+          "sha256": "2508c48a05a3467bef134d61b84746a50b62e7a6681a09415dbce49a6b22d702"
+        },
+        {
+          "name": "binary_integers",
+          "characters": 11084,
+          "sha256": "d0935253d064534c28ffbdd60da475ebb068a4dac648aed3818c2bea6567ffbd"
+        },
+        {
+          "name": "binary_rationals",
+          "characters": 4007,
+          "sha256": "be79ab29b473af682cac7704430b44701bed0a855992296589be33dba492c11b"
+        },
+        {
+          "name": "bnat",
+          "characters": 5526,
+          "sha256": "42443938f8ca3c072e3c3ad8cb148eb6ee29ef75ccc408c1174033bf48b5c5c4"
+        },
+        {
+          "name": "bnat_arithmetic",
+          "characters": 6856,
+          "sha256": "1653d7e6bf35617764e37cd8dc34dcdb36cbe06c156ae577a5b81cb4cd3f534a"
+        },
+        {
+          "name": "bnat_equality",
+          "characters": 3029,
+          "sha256": "e784a0625628ce89a37b79adf47e95d707dae86fe34aec4fc5a26006556399e1"
+        },
+        {
+          "name": "bnat_models",
+          "characters": 1403,
+          "sha256": "36a32a6a29777991ba0ae138a514cf2d6f5f127f79a992cce61b28293fcb1908"
+        },
+        {
+          "name": "bnat_notation",
+          "characters": 1862,
+          "sha256": "b306eccb90279acdc3b17bd5efe4422a620dca66f130e2c8507d47a536ed0d4f"
+        },
+        {
+          "name": "bnat_semiring",
+          "characters": 8990,
+          "sha256": "697954a977ec8c9ba17955d9358e096e09cd2d2c4b688815aad8b150dfaa13a8"
+        },
+        {
+          "name": "bnat_unary",
+          "characters": 3003,
+          "sha256": "fa0f71bbcba2805af0b708ea6d0eb0cec5872e0ab34f8182f8d7ed83279f16a5"
+        },
+        {
+          "name": "contractible_maps",
+          "characters": 6672,
+          "sha256": "58e2d8a3a66c8fd2ac8b9b0aec7e0e6bf8eb2e02d972db1d4427026ba72d3d92"
+        },
+        {
+          "name": "differences",
+          "characters": 33693,
+          "sha256": "9b159e830cd9ddc933e4bed4b86917b163ce95a4268f11587f844ec77212b92c"
+        },
+        {
+          "name": "fractions",
+          "characters": 24755,
+          "sha256": "d646300c9b4245c4659c133212a89694a707094d719e8ed5d6759aa5813c12b2"
+        },
+        {
+          "name": "h1_truncation",
+          "characters": 915,
+          "sha256": "7ae7b46acc001ec312474658f8045327c22ab84d3fc87a17422a4ccdf13cf20d"
+        },
+        {
+          "name": "hlevels",
+          "characters": 18106,
+          "sha256": "2fcbb8fa9fb376dd501662b7ec1a9ffa4c22515583f5bb10f0f4a29d19fbcf10"
+        },
+        {
+          "name": "lexemes",
+          "characters": 3135,
+          "sha256": "5d475e8de0cc4750c81bccda6940e27b4087b657009191f305f912f2605ac03f"
+        },
+        {
+          "name": "lists",
+          "characters": 1871,
+          "sha256": "104ad66c0e0b46892d69a3cdef0c79fb80b211a16f8c45d8b6315f1020a4bcd4"
+        },
+        {
+          "name": "propositions",
+          "characters": 3369,
+          "sha256": "a3fb5cd36106b64e948d2d3d90d0f7e240b9393203223ffa468cc89e40b6fabb"
+        },
+        {
+          "name": "quotients",
+          "characters": 9259,
+          "sha256": "9bc9499da49184b6865758a262f53c5221db816bde566a5790dce64082ae6883"
+        },
+        {
+          "name": "rational_probe",
+          "characters": 274,
+          "sha256": "076a92993c5fe662e4d48c05d165ce6caf10bcdf4726d3d8c286b10c66f0dbaf"
+        },
+        {
+          "name": "semirings",
+          "characters": 868,
+          "sha256": "9e2923428a512fd103afa615df38b5f322ac7816d3400f32a3c112e3641552e8"
+        },
+        {
+          "name": "unat",
+          "characters": 8011,
+          "sha256": "24d2b6e9c989b891c25caea33600654bb6617c6b0791e8bbd9467e7bca34c693"
+        },
+        {
+          "name": "unat_models",
+          "characters": 525,
+          "sha256": "3f3e614ec594fed7cc37f4c4651e7cbfff3c8788b3af5f973063a38554b80714"
+        },
+        {
+          "name": "univalence",
+          "characters": 9667,
+          "sha256": "b38f8e195f696804d9c5ed5b1174549bf4de152f3f550e83421530d00e94440b"
+        }
+      ],
+      "kernelAbi": 3
+    },
+    "steps": [
+      {
+        "sequence": 2,
+        "atMs": 9697,
+        "command": "step",
+        "state": 0,
+        "side": "expression",
+        "path": [
+          1,
+          1
+        ],
+        "rule": "normalize",
+        "budget": 100000,
+        "status": "refused",
+        "error": {
+          "message": "Kernel checking/reduction budget exhausted.",
+          "kind": "budget",
+          "fatal": false
+        },
+        "cost": {
+          "elapsedMs": 8.3,
+          "work": {
+            "instructions": 1,
+            "rejected": 1,
+            "instructionSteps": 100000,
+            "queries": 0,
+            "failedQueries": 0,
+            "querySteps": 0,
+            "exhausted": 1,
+            "deadlines": 0
+          },
+          "allocatedNodes": 23699,
+          "arenaBytesDelta": 0
+        }
+      },
+      {
+        "sequence": 3,
+        "atMs": 9763,
+        "command": "step",
+        "state": 0,
+        "side": "expression",
+        "path": [
+          1,
+          1
+        ],
+        "rule": "whnf",
+        "budget": 100000,
+        "status": "accepted",
+        "resultState": 1,
+        "judgement": 98,
+        "change": {
+          "before": 70132,
+          "after": 73105,
+          "judgement": 98,
+          "side": "expression",
+          "path": [
+            1,
+            1
+          ],
+          "rule": "whnf"
+        },
+        "cost": {
+          "elapsedMs": 0.5,
+          "work": {
+            "instructions": 1,
+            "rejected": 0,
+            "instructionSteps": 2,
+            "queries": 0,
+            "failedQueries": 0,
+            "querySteps": 0,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "allocatedNodes": 2,
+          "arenaBytesDelta": 0
+        }
+      },
+      {
+        "sequence": 5,
+        "atMs": 10113,
+        "command": "step",
+        "state": 0,
+        "side": "expression",
+        "path": [
+          1,
+          1,
+          0,
+          1,
+          0
+        ],
+        "rule": "delta",
+        "budget": 100000,
+        "status": "accepted",
+        "resultState": 2,
+        "judgement": 99,
+        "change": {
+          "before": 67956,
+          "after": 67954,
+          "judgement": 99,
+          "side": "expression",
+          "path": [
+            1,
+            1,
+            0,
+            1,
+            0
+          ],
+          "rule": "delta"
+        },
+        "cost": {
+          "elapsedMs": 1.5,
+          "work": {
+            "instructions": 1,
+            "rejected": 0,
+            "instructionSteps": 1,
+            "queries": 0,
+            "failedQueries": 0,
+            "querySteps": 0,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "allocatedNodes": 5,
+          "arenaBytesDelta": 0
+        }
+      },
+      {
+        "sequence": 6,
+        "atMs": 10246,
+        "command": "step",
+        "state": 2,
+        "side": "expression",
+        "path": [
+          1,
+          1,
+          0,
+          1
+        ],
+        "rule": "beta",
+        "budget": 100000,
+        "status": "accepted",
+        "resultState": 3,
+        "judgement": 100,
+        "change": {
+          "before": 96747,
+          "after": 70226,
+          "judgement": 100,
+          "side": "expression",
+          "path": [
+            1,
+            1,
+            0,
+            1
+          ],
+          "rule": "beta"
+        },
+        "cost": {
+          "elapsedMs": 0,
+          "work": {
+            "instructions": 1,
+            "rejected": 0,
+            "instructionSteps": 37,
+            "queries": 0,
+            "failedQueries": 0,
+            "querySteps": 0,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "allocatedNodes": 4,
+          "arenaBytesDelta": 0
+        }
+      }
+    ]
+  }
+}

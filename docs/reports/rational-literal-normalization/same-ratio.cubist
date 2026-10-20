@@ -1,0 +1,4 @@
+import fractions;
+import binary_integers;
+
+def relation := SameRatio{{U0}}(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);

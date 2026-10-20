@@ -1,0 +1,49 @@
+{
+  "case": "SameRatio over binary_integers",
+  "status": "limited",
+  "kind": "budget",
+  "message": "Kernel checking/reduction budget exhausted.",
+  "queryBudget": "100000",
+  "deadlineMs": 30000,
+  "querySteps": 100000,
+  "allocatedNodes": 23604,
+  "arenaBefore": {
+    "nodes": 66422,
+    "bytes": 17444864
+  },
+  "arenaAfter": {
+    "nodes": 90026,
+    "bytes": 17444864
+  },
+  "elapsedMs": 5.487750000000233,
+  "revision": "6262df5a97a0f6f8096ae88af1ffae116b10257f",
+  "kernelSourceHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+  "fixtureSha256": "44959c15bf66d5e7c6c4b322d3ef0d5c44c8a2e7395ea81171fc45124f529da5",
+  "checkedSourceHashes": {
+    "algebra": "2508c48a05a3467bef134d61b84746a50b62e7a6681a09415dbce49a6b22d702",
+    "binary_integers": "d0935253d064534c28ffbdd60da475ebb068a4dac648aed3818c2bea6567ffbd",
+    "bnat": "42443938f8ca3c072e3c3ad8cb148eb6ee29ef75ccc408c1174033bf48b5c5c4",
+    "bnat_arithmetic": "1653d7e6bf35617764e37cd8dc34dcdb36cbe06c156ae577a5b81cb4cd3f534a",
+    "bnat_equality": "e784a0625628ce89a37b79adf47e95d707dae86fe34aec4fc5a26006556399e1",
+    "bnat_models": "36a32a6a29777991ba0ae138a514cf2d6f5f127f79a992cce61b28293fcb1908",
+    "bnat_notation": "b306eccb90279acdc3b17bd5efe4422a620dca66f130e2c8507d47a536ed0d4f",
+    "bnat_semiring": "697954a977ec8c9ba17955d9358e096e09cd2d2c4b688815aad8b150dfaa13a8",
+    "bnat_unary": "fa0f71bbcba2805af0b708ea6d0eb0cec5872e0ab34f8182f8d7ed83279f16a5",
+    "contractible_maps": "58e2d8a3a66c8fd2ac8b9b0aec7e0e6bf8eb2e02d972db1d4427026ba72d3d92",
+    "differences": "9b159e830cd9ddc933e4bed4b86917b163ce95a4268f11587f844ec77212b92c",
+    "fractions": "09b4abf64f76a5c0f0a0d4e20b206d6d3cc50a8b6633f610e62aa663be9da716",
+    "h1_truncation": "7ae7b46acc001ec312474658f8045327c22ab84d3fc87a17422a4ccdf13cf20d",
+    "hlevels": "2fcbb8fa9fb376dd501662b7ec1a9ffa4c22515583f5bb10f0f4a29d19fbcf10",
+    "lexemes": "5d475e8de0cc4750c81bccda6940e27b4087b657009191f305f912f2605ac03f",
+    "lists": "104ad66c0e0b46892d69a3cdef0c79fb80b211a16f8c45d8b6315f1020a4bcd4",
+    "propositions": "a3fb5cd36106b64e948d2d3d90d0f7e240b9393203223ffa468cc89e40b6fabb",
+    "quotients": "9bc9499da49184b6865758a262f53c5221db816bde566a5790dce64082ae6883",
+    "same_ratio_probe": "44959c15bf66d5e7c6c4b322d3ef0d5c44c8a2e7395ea81171fc45124f529da5",
+    "semirings": "9e2923428a512fd103afa615df38b5f322ac7816d3400f32a3c112e3641552e8",
+    "unat": "24d2b6e9c989b891c25caea33600654bb6617c6b0791e8bbd9467e7bca34c693",
+    "unat_models": "3f3e614ec594fed7cc37f4c4651e7cbfff3c8788b3af5f973063a38554b80714",
+    "univalence": "b38f8e195f696804d9c5ed5b1174549bf4de152f3f550e83421530d00e94440b"
+  },
+  "node": "v24.13.0",
+  "platform": "darwin/arm64"
+}
