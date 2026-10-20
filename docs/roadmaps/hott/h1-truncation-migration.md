@@ -193,7 +193,7 @@ resizing, before the archive is deleted.
 | Where | Files | Uses |
 | --- | --- | --- |
 | `library/` | 2 | `classical_axioms` states `ExcludedMiddle` and `AxiomOfChoice` over `Truncate` and checks `LEM(U)`/`Choice(U)` against them; `universe_automorphisms` proves excluded middle at `U0` equivalent to a `Truncate(U1, …)` statement, with `TruncateElim`, `TruncateIntro` and `TruncateProp`. `library/README.md` lists `Truncate` as `classical_axioms`'s dependency |
-| `cubist-tests/` | 15 | Direct uses in `program_assumptions`, `inspection_axiom_labels`, `assembly_generic_assumptions`, `universe_generic`, `inductive_assumptions` (E507 fixtures) and `truncation_rebuilt_classical` (`old` and `both`); the legacy labels in E324/E330 goldens of `computability`, `computability_evaluation` and `inductive_computable`, through the archive's `classical`; assumption parameters in the type renderings of six `*_invalid_*` goldens over archive developments |
+| `cubist-tests/` | 16 | Direct uses in `program_assumptions`, `inspection_axiom_labels`, `assembly_generic_assumptions`, `universe_generic`, `universe_generic_builtins` (the rejected `LEM(UU0, …)` and accepted `LEM(U1, …)` cases), `inductive_assumptions` (E507 fixtures) and `truncation_rebuilt_classical` (`old` and `both`); the legacy labels in E324/E330 goldens of `computability`, `computability_evaluation` and `inductive_computable`, through the archive's `classical`; assumption parameters in the type renderings of six `*_invalid_*` goldens over archive developments |
 | `tests/` | 31 | Exact assumption lists or patterns in the Artin, Galois, dimension, linear-algebra, finite-spanning, algebraic-extensions, polynomial, quotient, universe-generic, library, CLI, REPL, assembly, program, inspection, reduction, benchmark, declaration, contract, migration and browser tests; the E324 goldens of `tests/fixtures/contracts/nonempty_contracts.cubist`; the recorded labels of the three capture-bindings cost baselines |
 | Reference | 4 | `assumptions.html`: the truncation section and the statements of `LEM` and `Choice`, 40 mentions; `checking.html`, 2; `errors.html`, the E406 row; `terms.html`, the reserved names |
 | Guides | 2 | `docs/guides/cubist.md`: the list of library principles and the universe examples; `docs/guides/regression-contracts.md`: an `expect_axioms` example |
@@ -247,8 +247,12 @@ def Choice := axiom AxiomOfChoice;
   keeps `double_negation`, `decide_prop` and `resize_prop`; its duplicate
   statement definitions go. Existing assumed-result names can remain as
   aliases, such as `excluded_middle_assumed(U) := LEM(U)`, during migration.
-- `axiom` becomes a reserved word. No checked source uses it as a name; it
-  appears in comments only.
+- `axiom` becomes a reserved word. This reverses the 2026-09-25 decision
+  (`0961f336`) to remove the unimplemented keyword: the parser regression
+  in `tests/declarations.test.mjs` currently accepts `def axiom(n : UNat) := n;`.
+  Step 1 changes that case to a reserved-name rejection and adds acceptance
+  tests for `def Name := axiom Statement;`. The standalone declaration
+  `axiom assumed : UNat;` remains rejected; `opaque` remains an ordinary name.
 - Imports are transitive, so `import classical_axioms;` brings `Trunc` into
   scope, and a later import shadows an earlier one's names. Transitivity stays as it is
   for now, by direction of 2026-10-20; changing it is later work and no part
@@ -297,36 +301,60 @@ claimed as checked here.
 
 ### Steps
 
+Each step lands with its affected source, parser, inspection and assumption
+expectations updated together; no step relies on a later step to restore a
+passing test suite. The coupled changes within step 1 may be prepared
+separately, but its axiom switch, dependent library migration and label
+transition land together.
+
 1. **`axiom` expressions and `library/classical_axioms.cubist`.** The parser,
    translator and inspection learn the form; the reference's declarations and
    assumptions chapters document it; `classical_axioms` moves to `Trunc` and
-   `h1_classical` imports its types and assumptions. The
-   translator's `LEM`/`Choice` handlers with a truncation former are retired:
+   `h1_classical` imports its types and assumptions. In the same change,
+   `universe_automorphisms` is restated over `Trunc(U1, …)`, with
+   `mere_eliminate` into `Trunc(U0, A)`, so every consumer of the changed
+   `ExcludedMiddle` still checks. The translator's `LEM`/`Choice` handlers
+   with a truncation former are retired:
    the former's only job was to tell the rebuilt assumptions from the legacy
    ones, and any admitted proposition truncation could fill it, minting a
-   separately labelled copy. **Ledger transition happens here:** the
-   classical and Zorn comparisons pin rebuilt `LEM`/`Choice` labels and
-   proof dependencies that this change invalidates. Retire those affected
-   comparisons with their last passing revision recorded, preserving the
+   separately labelled copy. The legacy builtins are relabelled
+   `LEM[Truncate]` and `Choice[Truncate]` now, before the new axioms receive
+   the bare `LEM`/`Choice` labels; mixed archive/library programs must list
+   both distinctly from this first step. Update library and archive
+   assumption expectations together, including `tests/library.test.mjs`,
+   `tests/truncation-migration.test.mjs`, inspection and computability
+   goldens, affected baseline labels and checked reference examples, and
+   `library/README.md`. The `axiom` parser regression and the reference's
+   reserved-name list change here too.
+   **Ledger transition happens here:** the classical and Zorn comparisons
+   pin rebuilt and legacy `LEM`/`Choice` labels and proof dependencies that
+   this change invalidates. Retire those affected comparisons with their
+   last passing revision recorded, preserving the
    old ledger as evidence; update or retire synthetic former-based tests in
-   the same change. The unaffected field-logic and Cauchy comparisons remain
-   active until a later step changes their dependencies. Ordinary proof
+   the same change. Recheck the field-logic and Cauchy comparisons; retain
+   them only while their pins remain valid, retiring any affected comparison
+   in the same transition rather than postponing it. Ordinary proof
    migration checks remain strict.
-2. **Library and fixtures off the legacy assumptions.**
-   `universe_automorphisms` is restated over `Trunc(U1, …)`, with
-   `mere_eliminate` into `Trunc(U0, A)`. Fixtures that test the legacy
-   signatures themselves are restated over `Trunc` and the axioms;
-   `truncation_rebuilt_classical` loses its former cases; the computability
-   fixtures import `h1_classical`. Test expectations over library programs
-   lose their `Truncate` labels. Expectations over archive modules keep the
-   legacy labels until the archive retires. The ledger tests that construct
-   legacy baselines run them as archive sources, or retire before confinement.
-   The cost baselines are regenerated or marked historical.
-3. **Reference and guides.** The assumptions chapter presents `LEM` and
-   `Choice` as the library's axioms over `Trunc` and sends truncation to the
-   cubical chapter's declaration (`point`, `squash`, `mere_eliminate`); the
-   E406 row and the reserved names follow; the guide lists `Trunc` and the two
-   axioms among the library principles.
+2. **Remaining fixtures off the legacy assumptions.**
+   Fixtures that test the legacy signatures themselves are restated over
+   `Trunc` and the axioms;
+   `universe_generic_builtins` imports the library axioms and updates both
+   `D4`'s `UU0` rejection and `D4_small`'s accepted `U1` case to their new
+   signatures and diagnostics. Former-specific cases of
+   `truncation_rebuilt_classical` were already updated or retired in step 1;
+   its remaining legacy cases migrate here. The computability fixtures
+   import `h1_classical`, and their source and expected dependencies change
+   together. Expectations over archive modules retain the distinct legacy
+   labels introduced in step 1 until the archive retires. The ledger tests
+   that construct legacy baselines run them as archive sources, or retire
+   before confinement. Cost baselines invalidated by either transition are
+   regenerated or marked historical in that transition.
+3. **Remaining reference and guides.** Complete the documentation migration
+   after the signature, label and checked-example updates of step 1. The
+   assumptions chapter sends truncation to the cubical chapter's declaration
+   (`point`, `squash`, `mere_eliminate`); update the E406 explanation and
+   remaining legacy-name documentation. The guide lists `Trunc` and the two
+   library axioms among its principles.
 4. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
    `TruncateElim` and the builtin `LEM(U, …)` and `Choice(U, …)` are
    accepted only in archive modules, which the module reader distinguishes by
@@ -334,14 +362,16 @@ claimed as checked here.
    and the library's axioms. The archive's three call sites,
    `classical.double_negation`, `zorn_chain_complete` and `surjections`, keep
    the builtins: importing `classical_axioms` next to the archive's
-   `truncation` would shadow its `merely`, `mere_eliminate` and `IsProp`. The builtins are
-   relabelled `LEM[Truncate]` and `Choice[Truncate]`, so that a program mixing
-   archive and library classical results, as `h1_zorn_step` does, lists them
-   apart from the axioms. Update archive expectation labels and retire any
-   remaining ledger comparisons whose exact pins change in this same step,
-   recording their last passing revision. The alternative to a translator
-   check, a source test over the roots, is weaker: it reports after the fact and says nothing to a
-   REPL entry.
+   `truncation` would shadow its `merely`, `mere_eliminate` and `IsProp`.
+   Keep the `LEM[Truncate]` and `Choice[Truncate]` labels established in
+   step 1, so mixed programs such as `h1_zorn_step` continue to distinguish
+   them from library axioms. Check that the migrated
+   `universe_generic_builtins` no longer invokes the legacy builtin;
+   dedicated confinement tests cover its rejection outside the archive.
+   Retire any remaining ledger comparisons whose exact pins change in this
+   same step, recording their last passing revision. The alternative to a
+   translator check, a source test over the roots, is weaker: it reports
+   after the fact and says nothing to a REPL entry.
 5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
    `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
    legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
@@ -370,14 +400,19 @@ claimed as checked here.
 - **Labels.** The canonical `classical_axioms` definitions display the bare
   names `LEM` and `Choice`; other axioms display their module-qualified
   names. Internal identities include their defining module and declaration,
-  and aliases retain those identities. The legacy builtins are relabelled
-  `LEM[Truncate]` and `Choice[Truncate]` for their remaining archive life.
+  and aliases retain those identities. In step 1 the legacy builtins are
+  relabelled `LEM[Truncate]` and `Choice[Truncate]` for their remaining
+  archive life, before any new axiom uses a bare canonical label.
 - **Module names.** `h1_truncation` and `h1_classical` keep their prefixes
   while the archive's `truncation` and `classical` exist. Renaming them is one
   migration after R5; the axioms' labels do not depend on it. Open until then.
 - **Reserved names.** `axiom` joins the reserved words in step 1.
+  The existing parser test accepting it as an ordinary definition name
+  changes in that same step; the standalone `axiom Name : Type;` form
+  remains unsupported.
   That step also permits ordinary declarations of `LEM` and `Choice`, with
-  imported bindings resolved before the archive-only builtin fallback.
+  imported bindings resolved before the legacy builtin fallback. Step 4
+  restricts that fallback to archive modules.
   `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
   reserved through step 4, so that a historical source fails with the
   retirement error rather than an unknown name, and are freed in step 5.

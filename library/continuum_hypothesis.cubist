@@ -42,10 +42,12 @@ def DecidableGeneralizedContinuumHypothesis(U < UU0) :
   next(next(U)) := forall A : U. IsSet(U, A) -> CardinalLE(U, Nat, A)
   -> CardinalityDichotomy(next(U), A, PowerSet(U, A));
 
-// A separate constructive CH over binary sequences, following Bridges and
-// Palmgren, Constructive Mathematics, section 4 (Stanford Encyclopedia of
-// Philosophy). Full powersets and decidable powersets remain distinct.
-// https://plato.stanford.edu/entries/mathematics-constructive/#AxiChoConHyp
+// A separate constructive CH over binary sequences, following Bridges,
+// Palmgren and Ishihara, Constructive Mathematics, section 4 (Stanford
+// Encyclopedia of Philosophy). That section sketches its implication to
+// excluded middle; formalizing it here remains a follow-up. Full powersets
+// and decidable powersets remain distinct.
+// https://plato.stanford.edu/entries/mathematics-constructive/#AxioChoi
 def CantorContinuumHypothesis :
   U1 := forall A : U0. IsSet(U0, A) -> CardinalLE(U0, Nat, A) -> CardinalLE(U0, A, Cantor)
   -> (Equinumerous(U0, A, Nat) -> Void) -> Equinumerous(U0, A, Cantor);
