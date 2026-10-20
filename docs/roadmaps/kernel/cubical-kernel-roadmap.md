@@ -314,10 +314,12 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
     declarations are rebuilt or recorded by that retirement, not migrated in
     place; see the
     [removal plan](../hott/h1-truncation-migration.md#removing-the-legacy-assumptions).
-  - Status (2026-10-07): the policy is approved (specification Q12, Q17).
+  - Status (2026-10-21): the policy is approved (specification Q12, Q17).
     The exact ledger verifier, 17 pinned changes and the G2/G4–G7 fixtures
-    are implemented (K2.5). The rest of the archive remedies is pending, and
-    the archive keeps its other legacy assumptions.
+    are implemented (K2.5). Archive retirement supersedes the remaining
+    remedies. The legacy assumptions remain until that removal plan is
+    implemented; comparisons whose pins change retire in the relevant
+    transition, with their last passing revisions recorded.
 - [ ] **G3. Superseded by H2.** An identity type with strict J computation is
   the declared family `Id(A, a) : A -> type { refl }` at H2. Its J computes on
   `refl` because transport along a varying index stays a formal composition,

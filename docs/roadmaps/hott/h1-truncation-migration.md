@@ -135,8 +135,8 @@ the language. The archive's remaining remedies of specification section 8.4
 are not pursued: the archive retires ([I0.5](../archive-retirement.md)), and
 its uses of the legacy assumptions leave with it. Until then, archive modules
 are their only permitted consumers. The library's `Trunc` is the one
-truncation, and excluded middle and choice become declarations of a new
-form, `axiom`, in `library/axioms.cubist`, stated over it. The translator's
+truncation, and excluded middle and choice become named definitions using
+`axiom` in `library/classical_axioms.cubist`, stated over it. The translator's
 `LEM` and `Choice` builtins, with or without a truncation former, go with the
 legacy truncation (direction of 2026-10-20).
 
@@ -199,67 +199,127 @@ resizing, before the archive is deleted.
 | Guides | 2 | `docs/guides/cubist.md`: the list of library principles and the universe examples; `docs/guides/regression-contracts.md`: an `expect_axioms` example |
 | Implementation | 6 | `web/cubical-assumptions.mjs` (the types), `web/translator/builtins.mjs` (the handlers), `web/cubist/parser.mjs` (reserved names), `web/cubical-notation.mjs` (the `‖A‖` hook), `web/diagnostics.mjs` (E404–E406), `tools/migration-ledger.mjs` (the `LEGACY` set) |
 
-### Axioms as declarations
+### Axioms as definitions
 
-Excluded middle and choice are the only assumptions the language has once
-the legacy truncation is gone: `FunExt`, `ua` and `UnivalenceBeta` are
-derived and compute. They stop being builtins and become declarations of a
-new form, which the library states once:
+**Syntax revised on 2026-10-21:** an axiom uses an ordinary named definition,
+`def Name := axiom Statement;`. The existing statements in
+`library/classical_axioms.cubist` are restated over `Trunc` and reused; no
+separate `axiom Name(parameters) : Type;` declaration or `axioms.cubist`
+module is needed. Excluded middle and choice are the standard classical
+assumptions; `FunExt`, `ua` and `UnivalenceBeta` remain derived and compute.
+The planned source is:
 
 ```text
 import h1_truncation;
 
-axiom LEM(U < UU0, A : U, nn : (A -> Void) -> Void) : Trunc(U, A);
+def ExcludedMiddle(U < UU0) :=
+  forall A : U. ((A -> Void) -> Void) -> Trunc(U, A);
 
-axiom Choice(
-  U < UU0, A : U, B : A -> U, setA : IsSet(U, A), setFibers : (forall a : A. IsSet(U, B(a))),
-  inhabited : (forall a : A. Trunc(U, B(a)))
-) :
-  Trunc(U, forall a : A. B(a));
+def AxiomOfChoice(U < UU0) :=
+  forall A : U. forall B : A -> U.
+    IsSet(U, A) -> (forall a : A. IsSet(U, B(a))) ->
+    (forall a : A. Trunc(U, B(a))) -> Trunc(U, forall a : A. B(a));
+
+def LEM := axiom ExcludedMiddle;
+def Choice := axiom AxiomOfChoice;
 ```
 
-- An `axiom` has a parameter telescope and a result type, and no body. The
-  checker adds one context entry of that type, generic over the telescope's
-  universe binders, as `libraryAssumption` builds one today. The kernel
-  checks proofs abstracted over the context, as it always has, and trusts no
-  new rule. Universe arguments stay explicit.
+- `axiom F` takes a type, or a type family with a parameter telescope and a
+  type-valued body. It checks that family and universally closes its body
+  over the telescope, treating universe and ordinary parameters uniformly.
+  It uses the family's body, not the inferred type of the family itself.
+  Thus `axiom ExcludedMiddle` introduces one constant of type
+  `Pi (U < UU0). Pi (A : U). ((A -> Void) -> Void) -> Trunc(U, A)`.
+  A supplied type already has no family parameters to close.
+- Initially `axiom F` is the whole right-hand side of a named top-level
+  `def`; the enclosing definition supplies its identity. The checker adds
+  one context entry of the closed type, as `libraryAssumption` does today.
+  Aliases and applications share that entry. The kernel checks proofs
+  abstracted over the context and trusts no new rule. Universe arguments
+  remain explicit at applications, such as `LEM(U0, A, nn)`.
 - An axiom is a non-computing dependency, listed by its name. A
   `computable` declaration that depends on one is refused (E330), `evaluate`
   refuses its terms (E324), a declared type's parameters and constructors
   cannot use one (E507), and inspection shows it as it shows an assumption
   today.
-- `library/axioms.cubist` holds the two above and imports `h1_truncation`
-  for `Trunc`. `h1_classical` imports `axioms` and keeps the derived results,
-  `double_negation`, `decide_prop` and `resize_prop`, and the statements
-  `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with
-  `excluded_middle_assumed(U) := LEM(U)`.
+- `library/classical_axioms.cubist` holds the types and the two assumptions
+  above, importing `h1_truncation` for `Trunc`. `h1_classical` imports it and
+  keeps `double_negation`, `decide_prop` and `resize_prop`; its duplicate
+  statement definitions go. Existing assumed-result names can remain as
+  aliases, such as `excluded_middle_assumed(U) := LEM(U)`, during migration.
 - `axiom` becomes a reserved word. No checked source uses it as a name; it
   appears in comments only.
-- Imports are transitive, so `import axioms;` brings `Trunc` into scope, and
-  a later import shadows an earlier one's names. Transitivity stays as it is
+- Imports are transitive, so `import classical_axioms;` brings `Trunc` into
+  scope, and a later import shadows an earlier one's names. Transitivity stays as it is
   for now, by direction of 2026-10-20; changing it is later work and no part
   of this plan.
 
+### Continuum hypotheses: checked statements, planned assumptions
+
+Added on 2026-10-21, with no assumptions:
+
+- `finite_sets.cubist` defines `Fin(n)` over the public binary `Nat` and
+  proves setness. `powersets.cubist` defines `PowerSet(U, A) := A -> Prop(U)`
+  in `next(U)` and `DecidablePowerSet(U, A) := A -> Fin(2)` in `U`, and proves
+  setness of both. Identifying them would require excluded middle.
+- `continuum_hypothesis.cubist` states CH and GCH over full powersets.
+  Their intermediate sets live in `next(U)` and their statements in
+  `next(next(U))`; no resizing is implicit. GCH's infinitude is an explicit
+  mere injection from `Nat`.
+- The negative forms exclude strictly intermediate cardinalities. The
+  `DecidableContinuumHypothesis` and
+  `DecidableGeneralizedContinuumHypothesis` forms give a truncated
+  disjunction of equivalences to the interval's endpoints. Here
+  "Decidable" means this cardinality dichotomy, not `CH or not CH`.
+- Checked conditional proofs give `DecidableGCH -> GCH -> CH` and
+  `DecidableGCH -> DecidableCH -> CH`. `CantorContinuumHypothesis` separately
+  records the constructive binary-sequence formulation, with
+  `Cantor := DecidablePowerSet(U0, Nat)`.
+
+Once axiom expressions are implemented, optional assumptions can reuse
+these type families in the same way:
+
+```text
+def CH := axiom ContinuumHypothesis;
+def DecidableCH := axiom DecidableContinuumHypothesis;
+def GCH := axiom GeneralizedContinuumHypothesis;
+def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;
+```
+
+These lines are currently comments in the library, not admitted assumptions.
+The targets `DecidableCH -> LEM` and `DecidableGCH -> Choice` are follow-up
+proofs. [Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
+uses propositional resizing; adapting it must account explicitly for that
+requirement at these universe levels. No implication to LEM or choice is
+claimed as checked here.
+
 ### Steps
 
-1. **`axiom` declarations and `library/axioms.cubist`.** The parser,
+1. **`axiom` expressions and `library/classical_axioms.cubist`.** The parser,
    translator and inspection learn the form; the reference's declarations and
-   assumptions chapters document it; `h1_classical` moves onto `axioms`. The
+   assumptions chapters document it; `classical_axioms` moves to `Trunc` and
+   `h1_classical` imports its types and assumptions. The
    translator's `LEM`/`Choice` handlers with a truncation former are retired:
    the former's only job was to tell the rebuilt assumptions from the legacy
    ones, and any admitted proposition truncation could fill it, minting a
-   separately labelled copy.
-2. **Library and fixtures off the legacy assumptions.** `classical_axioms`
-   is deleted in favour of `h1_classical`, and its ledger comparison becomes
-   historical; `universe_automorphisms` is restated over `Trunc(U1, …)`, with
+   separately labelled copy. **Ledger transition happens here:** the
+   classical and Zorn comparisons pin rebuilt `LEM`/`Choice` labels and
+   proof dependencies that this change invalidates. Retire those affected
+   comparisons with their last passing revision recorded, preserving the
+   old ledger as evidence; update or retire synthetic former-based tests in
+   the same change. The unaffected field-logic and Cauchy comparisons remain
+   active until a later step changes their dependencies. Ordinary proof
+   migration checks remain strict.
+2. **Library and fixtures off the legacy assumptions.**
+   `universe_automorphisms` is restated over `Trunc(U1, …)`, with
    `mere_eliminate` into `Trunc(U0, A)`. Fixtures that test the legacy
    signatures themselves are restated over `Trunc` and the axioms;
    `truncation_rebuilt_classical` loses its former cases; the computability
    fixtures import `h1_classical`. Test expectations over library programs
    lose their `Truncate` labels. Expectations over archive modules keep the
    legacy labels until the archive retires. The ledger tests that construct
-   legacy baselines run them as archive sources, or retire in step 5. The
-   cost baselines are regenerated or marked historical.
+   legacy baselines run them as archive sources, or retire before confinement.
+   The cost baselines are regenerated or marked historical.
 3. **Reference and guides.** The assumptions chapter presents `LEM` and
    `Choice` as the library's axioms over `Trunc` and sends truncation to the
    cubical chapter's declaration (`point`, `squash`, `mere_eliminate`); the
@@ -271,20 +331,22 @@ axiom Choice(
    root (I1.1); elsewhere they are refused with an error that names `Trunc`
    and the library's axioms. The archive's three call sites,
    `classical.double_negation`, `zorn_chain_complete` and `surjections`, keep
-   the builtins: importing `axioms` next to the archive's `truncation` would
-   shadow its `merely`, `mere_eliminate` and `IsProp`. The builtins are
+   the builtins: importing `classical_axioms` next to the archive's
+   `truncation` would shadow its `merely`, `mere_eliminate` and `IsProp`. The builtins are
    relabelled `LEM[Truncate]` and `Choice[Truncate]`, so that a program mixing
    archive and library classical results, as `h1_zorn_step` does, lists them
-   apart from the axioms. The alternative to a translator check, a source test
-   over the roots, is weaker: it reports after the fact and says nothing to a
+   apart from the axioms. Update archive expectation labels and retire any
+   remaining ledger comparisons whose exact pins change in this same step,
+   recording their last passing revision. The alternative to a translator
+   check, a source test over the roots, is weaker: it reports after the fact and says nothing to a
    REPL entry.
 5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
    `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
    legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
-   diagnostics. The four documented ledger comparisons and
-   `truncation_rebuilt_classical`'s coexistence check end here: the removal
-   commit records the last revision at which they ran, and this record cites
-   it. The ledger file, its `assumptionsRemoved` lists and the `LEGACY` set
+   diagnostics. Any surviving archive-dependent comparisons and coexistence
+   checks end here, with their last passing revisions recorded. Comparisons
+   invalidated by steps 1 or 4 have already retired in those steps. The ledger
+   file, its `assumptionsRemoved` lists and the `LEGACY` set
    stay as the record of the pinned changes.
 
 ### Decisions
@@ -292,23 +354,28 @@ axiom Choice(
 - **Excluded middle and choice are library axioms, not builtins.** With one
   truncation there is nothing for a truncation former to distinguish, and a
   former that any admitted proposition truncation may fill mints a separately
-  labelled copy of the assumption, equivalent but noise. An `axiom` in
-  `library/axioms.cubist` states each once. Direction of 2026-10-20.
+  labelled copy of the assumption, equivalent but noise. A definition using
+  `axiom` in `library/classical_axioms.cubist` states each once. Direction of
+  2026-10-20, with the definition syntax revised on 2026-10-21.
 - **Where `axiom` is allowed.** Recommended: in any module. Every axiom is a
   listed non-computing dependency, `computable` refuses its dependents, and a
   result that wants a classical hypothesis still takes it as a parameter, as
-  `h1_classical`'s statements allow. The library's own rule, that
-  `axioms.cubist` is its only module with axioms, is a review rule. Accepting
-  `axiom` only under `library/` would be one condition on the module root, if
-  wanted later.
-- **Labels.** The library's axioms are listed by their bare names, `LEM` and
-  `Choice`, as the assumptions are today; an axiom declared elsewhere by its
-  module-qualified name. The legacy builtins are relabelled `LEM[Truncate]`
-  and `Choice[Truncate]` for their remaining archive life.
+  `h1_classical`'s statements allow. `classical_axioms` supplies the standard
+  LEM and choice assumptions; optional CH/GCH assumptions require explicit
+  declarations and reviewed expectation lists. The newly added continuum
+  modules currently admit none. The library tests continue checking each
+  module's exact assumption list.
+- **Labels.** The canonical `classical_axioms` definitions display the bare
+  names `LEM` and `Choice`; other axioms display their module-qualified
+  names. Internal identities include their defining module and declaration,
+  and aliases retain those identities. The legacy builtins are relabelled
+  `LEM[Truncate]` and `Choice[Truncate]` for their remaining archive life.
 - **Module names.** `h1_truncation` and `h1_classical` keep their prefixes
   while the archive's `truncation` and `classical` exist. Renaming them is one
   migration after R5; the axioms' labels do not depend on it. Open until then.
 - **Reserved names.** `axiom` joins the reserved words in step 1.
+  That step also permits ordinary declarations of `LEM` and `Choice`, with
+  imported bindings resolved before the archive-only builtin fallback.
   `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
   reserved through step 4, so that a historical source fails with the
   retirement error rather than an unknown name, and are freed in step 5.

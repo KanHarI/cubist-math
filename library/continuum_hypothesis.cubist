@@ -1,0 +1,119 @@
+import h1_truncation;
+import powersets;
+
+// Cantor space: binary sequences, or decidable subsets of the naturals.
+def Cantor : U0 := DecidablePowerSet(U0, Nat);
+
+// Cardinal comparisons assert mere existence, without selecting a map.
+def CardinalLE(U < UU0, A, B : U) :
+  U := Trunc(U, exists f : A -> B. forall x, y : A. (f(x) = f(y)) -> (x = y));
+
+def CardinalLT(U < UU0, A, B : U) : U := CardinalLE(U, A, B) and (CardinalLE(U, B, A) -> Void);
+
+def Equinumerous(U < UU0, A, B : U) : U := Trunc(U, ContrEquiv(U, A, B));
+
+// The negative statement rules out strictly intermediate cardinalities.
+def NoIntermediateCardinality(U < UU0, A, B : U) :
+  next(U) := forall X : U. IsSet(U, X) -> (CardinalLT(U, A, X) and CardinalLT(U, X, B)) -> Void;
+
+// The stronger statement gives a mere equivalence to one endpoint. The
+// outer truncation asserts a disjunction without selecting an equivalence.
+def CardinalityDichotomy(U < UU0, A, B : U) :
+  next(U) := forall X : U. IsSet(U, X) -> CardinalLE(U, A, X) -> CardinalLE(U, X, B)
+  -> Trunc(U, Equinumerous(U, X, A) or Equinumerous(U, X, B));
+
+// Full powersets live in next(U); intermediate sets are quantified there
+// too. No resizing or identification with binary characteristic functions
+// is built into either statement.
+def ContinuumHypothesis(U < UU0) :
+  next(next(U)) := NoIntermediateCardinality(next(U), Nat, PowerSet(U, Nat));
+
+// "Decidable" means the cardinality dichotomy, not CH or its negation.
+def DecidableContinuumHypothesis(U < UU0) :
+  next(next(U)) := CardinalityDichotomy(next(U), Nat, PowerSet(U, Nat));
+
+// Infinitude is stated positively as a mere injection from Nat. No
+// equivalence between this and "not finite" is assumed.
+def GeneralizedContinuumHypothesis(U < UU0) :
+  next(next(U)) := forall A : U. IsSet(U, A) -> CardinalLE(U, Nat, A)
+  -> NoIntermediateCardinality(next(U), A, PowerSet(U, A));
+
+def DecidableGeneralizedContinuumHypothesis(U < UU0) :
+  next(next(U)) := forall A : U. IsSet(U, A) -> CardinalLE(U, Nat, A)
+  -> CardinalityDichotomy(next(U), A, PowerSet(U, A));
+
+// A separate constructive CH over binary sequences, following Bridges and
+// Palmgren, Constructive Mathematics, section 4 (Stanford Encyclopedia of
+// Philosophy). Full powersets and decidable powersets remain distinct.
+// https://plato.stanford.edu/entries/mathematics-constructive/#AxiChoConHyp
+def CantorContinuumHypothesis :
+  U1 := forall A : U0. IsSet(U0, A) -> CardinalLE(U0, Nat, A) -> CardinalLE(U0, A, Cantor)
+  -> (Equinumerous(U0, A, Nat) -> Void) -> Equinumerous(U0, A, Cantor);
+
+computable def cardinal_le_refl(U < UU0, A : U) : CardinalLE(U, A, A) := merely(
+  U, exists f : A -> A. forall x, y : A. (f(x) = f(y)) -> (x = y),
+  (fun (x : A) => x, fun (x, y : A, p : x = y) => p)
+);
+
+computable def equinumerous_le(U < UU0, A, B : U, e : Equinumerous(U, A, B)) :
+  CardinalLE(U, A, B) := mere_map(
+    U, U, ContrEquiv(U, A, B), exists f : A -> B. forall x, y : A. (f(x) = f(y)) -> (x = y),
+    fun (w : ContrEquiv(U, A, B)) => (
+      w.1,
+      fun (x, y : A, p : w.1(x) = w.1(y)) => trans(
+        sym(equiv_inverse_retraction(U, A, B, w, x)),
+        trans(cong(equiv_inverse(U, A, B, w), p), equiv_inverse_retraction(U, A, B, w, y))
+      )
+    ), e
+  );
+
+computable def equinumerous_sym(U < UU0, A, B : U, e : Equinumerous(U, A, B)) :
+  Equinumerous(U, B, A) := mere_map(
+    U, U, ContrEquiv(U, A, B), ContrEquiv(U, B, A),
+    fun (w : ContrEquiv(U, A, B)) => inverse_equiv(
+      U, B, A, equiv_inverse(U, A, B, w), w.1, equiv_inverse_retraction(U, A, B, w),
+      equiv_inverse_section(U, A, B, w)
+    ), e
+  );
+
+computable def dichotomy_implies_no_intermediate(
+  U < UU0, A, B : U, dichotomy : CardinalityDichotomy(U, A, B)
+) :
+  NoIntermediateCardinality(U, A, B) {
+  intro X, setX, between;
+  exact mere_eliminate(
+    U, U, Equinumerous(U, X, A) or Equinumerous(U, X, B), Void, void_is_prop,
+    fun (side : Equinumerous(U, X, A) or Equinumerous(U, X, B)) => match side return Void {
+      left lower => between.1.2(equinumerous_le(U, X, A, lower));
+      right upper => between.2.2(equinumerous_le(U, B, X, equinumerous_sym(U, X, B, upper)));
+    }, dichotomy(X, setX, between.1.1, between.2.1)
+  );
+}
+
+computable def decidable_ch_implies_ch(U < UU0, ch : DecidableContinuumHypothesis(U)) :
+  ContinuumHypothesis(U) := dichotomy_implies_no_intermediate(next(U), Nat, PowerSet(U, Nat), ch);
+
+computable def decidable_gch_implies_gch(U < UU0, gch : DecidableGeneralizedContinuumHypothesis(U)) :
+  GeneralizedContinuumHypothesis(U) := fun (
+    A : U, setA : IsSet(U, A), infinite : CardinalLE(U, Nat, A)
+  ) => dichotomy_implies_no_intermediate(next(U), A, PowerSet(U, A), gch(A, setA, infinite));
+
+computable def gch_implies_ch(U < UU0, gch : GeneralizedContinuumHypothesis(U)) :
+  ContinuumHypothesis(U) := gch(Nat, nat_is_set, cardinal_le_refl(U, Nat));
+
+computable def decidable_gch_implies_decidable_ch(
+  U < UU0, gch : DecidableGeneralizedContinuumHypothesis(U)
+) :
+  DecidableContinuumHypothesis(U) := gch(Nat, nat_is_set, cardinal_le_refl(U, Nat));
+
+// These are statements and conditional theorems, with no assumed CH or GCH.
+// Once axiom expressions are supported, their proposed declarations are:
+// def CH := axiom ContinuumHypothesis;
+// def DecidableCH := axiom DecidableContinuumHypothesis;
+// def GCH := axiom GeneralizedContinuumHypothesis;
+// def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;
+// DecidableCH -> excluded middle and DecidableGCH -> choice are follow-ups.
+// See Kirst and Rech, The Generalised Continuum Hypothesis Implies the Axiom
+// of Choice in HoTT (2021); its resizing assumptions need an explicit account
+// when adapting the proof to these universe-indexed statements.
+// https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf
