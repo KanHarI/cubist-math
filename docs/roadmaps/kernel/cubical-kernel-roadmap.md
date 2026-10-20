@@ -309,6 +309,11 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - Acceptance: implicit downward resizing is rejected. For each archive
     result that used resizing, the rebuild records the universe changes and
     the assumptions removed or retained, separately from LEM and choice.
+  - Decided on 2026-10-20: the legacy assumptions are removed with the
+    archive's retirement (work plan I0.5). The archive's 47 resizing-dependent
+    declarations are rebuilt or recorded by that retirement, not migrated in
+    place; see the
+    [removal plan](../hott/h1-truncation-migration.md#removing-the-legacy-assumptions).
   - Status (2026-10-07): the policy is approved (specification Q12, Q17).
     The exact ledger verifier, 17 pinned changes and the G2/G4–G7 fixtures
     are implemented (K2.5). The rest of the archive remedies is pending, and

@@ -20,6 +20,10 @@ distinguishes the merged CB/RC stacks from the unmerged Hydra draft.
   After performance work, return to language development through categories,
   monads, algebraic homology and synthetic cohomology; broad mathematical
   rebuilding is deferred.
+- [Archive retirement](roadmaps/archive-retirement.md): the first library's
+  retirement (I0.5), its measured consumers, and the follow-ups other tasks
+  hand to it, starting with K2.5's removal of the legacy truncation
+  assumptions.
 - [Work-plan audit of 2026-09-28](roadmaps/historical/audits/2026-09-28-audit.md): the
   baseline revision and findings behind the current statuses.
 - [Historical plans and specifications](roadmaps/historical/README.md):
