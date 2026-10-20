@@ -906,6 +906,24 @@ def reverse(c : Circle) : Circle := match c {
   loop @ i =&gt; loop @ ~i;
 };</code></pre>
         </div>
+        <div class="quick-entry" id="quick-obligations">
+          <h4>Coherence obligations: <code>obligations</code></h4>
+          <p>Separates path and squash clauses from the computational point clauses of a <code>match</code>: write named clauses in <code>obligations { c(xs) @ i =&gt; … }</code>, or discharge omitted path and squash obligations with <code>obligations by rfl</code>, <code>obligations by { … }</code>, <code>obligations by term</code> or <code>obligations by hlevel with [h]</code>.
+            <a href="reference/cubical.html#obligations">Cubical paths →</a></p>
+          <pre><code data-check="accept">import unat;
+use unat;
+
+inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+
+def flatten(c : Circle) : UNat := match c {
+  base =&gt; 0;
+} obligations {
+  loop @ i =&gt; 0;
+};</code></pre>
+        </div>
         <div class="quick-entry" id="quick-quotients">
           <h4>Set quotients</h4>
           <p><code>import quotients;</code> gives <code>Quotient(U, A, R)</code>, with a <code>class</code> for each element and a path between related classes. A map into a set that respects the relation descends to it (<code>descend</code>, <code>descend2</code>), and for an equivalence relation valued in propositions, equal classes have related elements (<code>quotient_effective</code>).
