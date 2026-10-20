@@ -1460,9 +1460,9 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
    [removal plan](h1-truncation-migration.md#removing-the-legacy-assumptions).
 5. **`LEM` and `Choice` are restated over `Trunc`** when the rebuilt library
    adopts it. They remain non-computing assumptions. Under the removal plan
-   of 2026-10-20 this is their only form, `LEM(Trunc, U, …)` and
-   `Choice(Trunc, U, …)`; the former-less signatures over the legacy
-   truncation go with it.
+   of 2026-10-20 they become `axiom` declarations in `library/axioms.cubist`,
+   stated over `Trunc`; the builtin signatures, with or without a truncation
+   former, go with the legacy truncation.
 6. **The ordinary migration check stays strict.** Intentional changes of
    public universes, hypotheses or assumption lists are allowed only through
    the ledger of 8.5.

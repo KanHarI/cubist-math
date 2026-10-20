@@ -135,9 +135,10 @@ the language. The archive's remaining remedies of specification section 8.4
 are not pursued: the archive retires ([I0.5](../archive-retirement.md)), and
 its uses of the legacy assumptions leave with it. Until then, archive modules
 are their only permitted consumers. The library's `Trunc` is the one
-truncation; `LEM(Trunc, U, …)` and `Choice(Trunc, U, …)` are the classical
-assumptions, labelled `LEM[h1_truncation.Trunc]` and
-`Choice[h1_truncation.Trunc]` as today.
+truncation, and excluded middle and choice become declarations of a new
+form, `axiom`, in `library/axioms.cubist`, stated over it. The translator's
+`LEM` and `Choice` builtins, with or without a truncation former, go with the
+legacy truncation (direction of 2026-10-20).
 
 ### Measurement, 2026-10-20
 
@@ -198,51 +199,117 @@ resizing, before the archive is deleted.
 | Guides | 2 | `docs/guides/cubist.md`: the list of library principles and the universe examples; `docs/guides/regression-contracts.md`: an `expect_axioms` example |
 | Implementation | 6 | `web/cubical-assumptions.mjs` (the types), `web/translator/builtins.mjs` (the handlers), `web/cubist/parser.mjs` (reserved names), `web/cubical-notation.mjs` (the `‖A‖` hook), `web/diagnostics.mjs` (E404–E406), `tools/migration-ledger.mjs` (the `LEGACY` set) |
 
+### Axioms as declarations
+
+Excluded middle and choice are the only assumptions the language has once
+the legacy truncation is gone: `FunExt`, `ua` and `UnivalenceBeta` are
+derived and compute. They stop being builtins and become declarations of a
+new form, which the library states once:
+
+```text
+import h1_truncation;
+
+axiom LEM(U < UU0, A : U, nn : (A -> Void) -> Void) : Trunc(U, A);
+
+axiom Choice(
+  U < UU0, A : U, B : A -> U, setA : IsSet(U, A), setFibers : (forall a : A. IsSet(U, B(a))),
+  inhabited : (forall a : A. Trunc(U, B(a)))
+) :
+  Trunc(U, forall a : A. B(a));
+```
+
+- An `axiom` has a parameter telescope and a result type, and no body. The
+  checker adds one context entry of that type, generic over the telescope's
+  universe binders, as `libraryAssumption` builds one today. The kernel
+  checks proofs abstracted over the context, as it always has, and trusts no
+  new rule. Universe arguments stay explicit.
+- An axiom is a non-computing dependency, listed by its name. A
+  `computable` declaration that depends on one is refused (E330), `evaluate`
+  refuses its terms (E324), a declared type's parameters and constructors
+  cannot use one (E507), and inspection shows it as it shows an assumption
+  today.
+- `library/axioms.cubist` holds the two above and imports `h1_truncation`
+  for `Trunc`. `h1_classical` imports `axioms` and keeps the derived results,
+  `double_negation`, `decide_prop` and `resize_prop`, and the statements
+  `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with
+  `excluded_middle_assumed(U) := LEM(U)`.
+- `axiom` becomes a reserved word. No checked source uses it as a name; it
+  appears in comments only.
+- Imports are transitive, so `import axioms;` brings `Trunc` into scope, and
+  a later import shadows an earlier one's names. Transitivity stays as it is
+  for now, by direction of 2026-10-20; changing it is later work and no part
+  of this plan.
+
 ### Steps
 
-1. **Library and fixtures off the legacy assumptions.** `classical_axioms`
+1. **`axiom` declarations and `library/axioms.cubist`.** The parser,
+   translator and inspection learn the form; the reference's declarations and
+   assumptions chapters document it; `h1_classical` moves onto `axioms`. The
+   translator's `LEM`/`Choice` handlers with a truncation former are retired:
+   the former's only job was to tell the rebuilt assumptions from the legacy
+   ones, and any admitted proposition truncation could fill it, minting a
+   separately labelled copy.
+2. **Library and fixtures off the legacy assumptions.** `classical_axioms`
    is deleted in favour of `h1_classical`, and its ledger comparison becomes
    historical; `universe_automorphisms` is restated over `Trunc(U1, …)`, with
    `mere_eliminate` into `Trunc(U0, A)`. Fixtures that test the legacy
-   signatures themselves are restated over `Trunc`; `truncation_rebuilt_classical`
-   loses its `old` and `both` declarations; the computability fixtures import
-   `h1_classical` and their goldens name `LEM[h1_truncation.Trunc]`. Test
-   expectations over library programs change from `Truncate` labels to
-   `LEM[h1_truncation.Trunc]` or none. Expectations over archive modules
-   keep their legacy labels until the archive retires. The ledger tests that
-   construct legacy baselines run them as archive sources, or retire in
-   step 4. The cost baselines are regenerated or marked historical.
-2. **Reference and guides.** The assumptions chapter states `LEM` and
-   `Choice` over `Trunc` and sends truncation to the cubical chapter's
-   declaration (`point`, `squash`, `mere_eliminate`); the E406 row and the
-   reserved names follow; the guide lists `Trunc` among the library
-   principles with `LEM(Trunc, U, …)` and `Choice(Trunc, U, …)`.
-3. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
-   `TruncateElim` and the former-less `LEM(U, …)` and `Choice(U, …)` are
+   signatures themselves are restated over `Trunc` and the axioms;
+   `truncation_rebuilt_classical` loses its former cases; the computability
+   fixtures import `h1_classical`. Test expectations over library programs
+   lose their `Truncate` labels. Expectations over archive modules keep the
+   legacy labels until the archive retires. The ledger tests that construct
+   legacy baselines run them as archive sources, or retire in step 5. The
+   cost baselines are regenerated or marked historical.
+3. **Reference and guides.** The assumptions chapter presents `LEM` and
+   `Choice` as the library's axioms over `Trunc` and sends truncation to the
+   cubical chapter's declaration (`point`, `squash`, `mere_eliminate`); the
+   E406 row and the reserved names follow; the guide lists `Trunc` and the two
+   axioms among the library principles.
+4. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
+   `TruncateElim` and the builtin `LEM(U, …)` and `Choice(U, …)` are
    accepted only in archive modules, which the module reader distinguishes by
    root (I1.1); elsewhere they are refused with an error that names `Trunc`
-   and `LEM(Trunc, U, …)`. The alternative, a source test over the roots, is
-   weaker: it reports after the fact and says nothing to a REPL entry.
-4. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5). The
-   four assumption types, the legacy `LEM`/`Choice` signatures, the builtins,
-   the notation hook and the diagnostics go. The four documented ledger
-   comparisons and `truncation_rebuilt_classical`'s coexistence check end here:
-   the removal commit records the last revision at which they ran, and this
-   record cites it. The ledger file, its `assumptionsRemoved` lists and the
-   `LEGACY` set stay as the record of the pinned changes.
+   and the library's axioms. The archive's three call sites,
+   `classical.double_negation`, `zorn_chain_complete` and `surjections`, keep
+   the builtins: importing `axioms` next to the archive's `truncation` would
+   shadow its `merely`, `mere_eliminate` and `IsProp`. The builtins are
+   relabelled `LEM[Truncate]` and `Choice[Truncate]`, so that a program mixing
+   archive and library classical results, as `h1_zorn_step` does, lists them
+   apart from the axioms. The alternative to a translator check, a source test
+   over the roots, is weaker: it reports after the fact and says nothing to a
+   REPL entry.
+5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
+   `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
+   legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
+   diagnostics. The four documented ledger comparisons and
+   `truncation_rebuilt_classical`'s coexistence check end here: the removal
+   commit records the last revision at which they ran, and this record cites
+   it. The ledger file, its `assumptionsRemoved` lists and the `LEGACY` set
+   stay as the record of the pinned changes.
 
 ### Decisions
 
-- **The classical assumptions name their truncation.** `LEM(Trunc, U, …)`
-  and `Choice(Trunc, U, …)` are the only forms; the former check of
-  [classical signatures](#classical-signatures) keeps their meaning fixed.
-  Letting `LEM(U, …)` stand for them would hide which truncation is meant and
-  need an implicit import of `h1_truncation`. Chosen here, with the removal.
+- **Excluded middle and choice are library axioms, not builtins.** With one
+  truncation there is nothing for a truncation former to distinguish, and a
+  former that any admitted proposition truncation may fill mints a separately
+  labelled copy of the assumption, equivalent but noise. An `axiom` in
+  `library/axioms.cubist` states each once. Direction of 2026-10-20.
+- **Where `axiom` is allowed.** Recommended: in any module. Every axiom is a
+  listed non-computing dependency, `computable` refuses its dependents, and a
+  result that wants a classical hypothesis still takes it as a parameter, as
+  `h1_classical`'s statements allow. The library's own rule, that
+  `axioms.cubist` is its only module with axioms, is a review rule. Accepting
+  `axiom` only under `library/` would be one condition on the module root, if
+  wanted later.
+- **Labels.** The library's axioms are listed by their bare names, `LEM` and
+  `Choice`, as the assumptions are today; an axiom declared elsewhere by its
+  module-qualified name. The legacy builtins are relabelled `LEM[Truncate]`
+  and `Choice[Truncate]` for their remaining archive life.
 - **Module names.** `h1_truncation` and `h1_classical` keep their prefixes
   while the archive's `truncation` and `classical` exist. Renaming them is one
-  migration after R5, with the labels `LEM[h1_truncation.Trunc]` and
-  `Choice[h1_truncation.Trunc]` following; open until then.
-- **Reserved names.** `Truncate`, `TruncateIntro`, `TruncateProp` and
-  `TruncateElim` stay reserved through step 3, so that a historical source
-  fails with the retirement error rather than an unknown name, and are freed
-  in step 4. Open: whether to keep them reserved after.
+  migration after R5; the axioms' labels do not depend on it. Open until then.
+- **Reserved names.** `axiom` joins the reserved words in step 1.
+  `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
+  reserved through step 4, so that a historical source fails with the
+  retirement error rather than an unknown name, and are freed in step 5.
+  Open: whether to keep them reserved after.
