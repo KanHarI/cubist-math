@@ -259,9 +259,11 @@ def Choice := axiom AxiomOfChoice;
 Added on 2026-10-21, with no assumptions:
 
 - `finite_sets.cubist` defines `Fin(n)` over the public binary `Nat` and
-  proves setness. `powersets.cubist` defines `PowerSet(U, A) := A -> Prop(U)`
-  in `next(U)` and `DecidablePowerSet(U, A) := A -> Fin(2)` in `U`, and proves
-  setness of both. Identifying them would require excluded middle.
+  proves setness. `binary.cubist` specializes it to `Binary := Fin(2)`, with
+  `False`, `True` and the computable operations `Not`, `And`, `Or`, `Xor`
+  and `Nor`. `powersets.cubist` defines `PowerSet(U, A) := A -> Prop(U)`
+  in `next(U)` and `DecidablePowerSet(U, A) := A -> Binary` in `U`, and
+  proves setness of both. Identifying them would require excluded middle.
 - `continuum_hypothesis.cubist` states CH and GCH over full powersets.
   Their intermediate sets live in `next(U)` and their statements in
   `next(next(U))`; no resizing is implicit. GCH's infinitude is an explicit

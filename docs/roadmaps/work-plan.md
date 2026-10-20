@@ -454,9 +454,10 @@ library must keep is rebuilt at the universe it needs. The ordinary migration
 check stays strict for unrelated changes. The [ledger verifier and scoped migrations](hott/h1-truncation-migration.md) are implemented since 2026-09-30; the [removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions) sequences the remaining steps.
 
 **Continuum hypotheses (2026-10-21).** The library now has checked, assumption-free
-`finite_sets`, `powersets` and `continuum_hypothesis` modules: `Fin(n)`, full
-and decidable powersets, universe-indexed CH/GCH, and their stronger cardinality
-dichotomies. The basic implications among those statements are checked.
+`finite_sets`, `binary`, `powersets` and `continuum_hypothesis` modules:
+`Fin(n)`, Boolean operations on `Binary := Fin(2)`, full and decidable powersets,
+universe-indexed CH/GCH, and their stronger cardinality dichotomies.
+The basic implications among those statements are checked.
 The proposed axiom definitions and the proofs from DecidableCH to LEM and
 from DecidableGCH to choice remain follow-ups; see the
 [assumption study](hott/h1-truncation-migration.md#continuum-hypotheses-checked-statements-planned-assumptions).
