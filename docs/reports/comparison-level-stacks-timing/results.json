@@ -1,0 +1,2607 @@
+{
+  "purpose": "Investigate two slow observations from the local full-suite run; one serial matched pair, no portable throughput claim.",
+  "beforeCommit": "44c47c49e7de69999c7fcab3fe6d91b850023f13",
+  "afterCommit": "cbe28bc79114a16f5deb098e280aca246acb869f",
+  "shard": {
+    "before": [
+      {
+        "name": "arguments",
+        "ms": 436.142,
+        "observations": [
+          {
+            "work": {
+              "instructions": 48407,
+              "rejected": 122,
+              "instructionSteps": 115373,
+              "queries": 2728,
+              "failedQueries": 0,
+              "querySteps": 25788,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 5861,
+              "bytes": 1836544
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "2f94e172b2f59a044842bae5389d983b18259b3c04d5f96f10f5aea69e4632f5"
+      },
+      {
+        "name": "glue_",
+        "ms": 239.44045799999998,
+        "observations": [
+          {
+            "work": {
+              "instructions": 33300,
+              "rejected": 41,
+              "instructionSteps": 76774,
+              "queries": 1692,
+              "failedQueries": 0,
+              "querySteps": 17109,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 4632,
+              "bytes": 1377792
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "465019f0624f6a10b1bc9484ed6fd5298f7cb04bf1d79c9447204b390502a6d5"
+      },
+      {
+        "name": "automatic_clauses",
+        "ms": 423.23120900000015,
+        "observations": [
+          {
+            "work": {
+              "instructions": 73303,
+              "rejected": 1042,
+              "instructionSteps": 185577,
+              "queries": 3399,
+              "failedQueries": 0,
+              "querySteps": 40112,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 8068,
+              "bytes": 1838080
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "1b0d6de36cb9966a648caa6d7948fb03234a00eb1bbe538753b2e9688f59a5a7"
+      },
+      {
+        "name": "theories",
+        "ms": 2157.7353329999996,
+        "observations": [
+          {
+            "work": {
+              "instructions": 154637,
+              "rejected": 1352,
+              "instructionSteps": 586473,
+              "queries": 17860,
+              "failedQueries": 8,
+              "querySteps": 763407,
+              "exhausted": 8,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 26977,
+              "bytes": 4855808
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "32dbf5a4c130ad549bec9292248aa15ded176e57980b9b4f2d439a945d02cb9b"
+      },
+      {
+        "name": "theory_headers",
+        "ms": 1212.694,
+        "observations": [
+          {
+            "work": {
+              "instructions": 101809,
+              "rejected": 412,
+              "instructionSteps": 444821,
+              "queries": 9470,
+              "failedQueries": 5,
+              "querySteps": 473719,
+              "exhausted": 5,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 17528,
+              "bytes": 4855808
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "5b652a7daf358498c33294b094899e16d64655cb5d9d7ed7639881d72baaa64f"
+      },
+      {
+        "name": "theory_use",
+        "ms": 4568.103584,
+        "observations": [
+          {
+            "work": {
+              "instructions": 261582,
+              "rejected": 3184,
+              "instructionSteps": 975580,
+              "queries": 40463,
+              "failedQueries": 24,
+              "querySteps": 1722440,
+              "exhausted": 24,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 68162,
+              "bytes": 9056256
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "09bc0b137ad11993bf30cf1a4904be6d4d5d947e4ae3e385f82e55727e6f8513"
+      },
+      {
+        "name": "notation_literals",
+        "ms": 9000.269292,
+        "observations": [
+          {
+            "work": {
+              "instructions": 966299,
+              "rejected": 8638,
+              "instructionSteps": 3621342,
+              "queries": 70278,
+              "failedQueries": 47,
+              "querySteps": 3384167,
+              "exhausted": 51,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 109586,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "b76177be01324b1c2aadd295926b3dcf6fda67ce43ca18459be2c27479b14dfa"
+      },
+      {
+        "name": "binary_natural_foundation",
+        "ms": 595.9136249999974,
+        "observations": [
+          {
+            "work": {
+              "instructions": 72195,
+              "rejected": 60,
+              "instructionSteps": 604507,
+              "queries": 4733,
+              "failedQueries": 4,
+              "querySteps": 805329,
+              "exhausted": 5,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 50102,
+              "bytes": 19532800
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "1eb09dc8f73ea0e85c5c7aacacc70612d9a688478daa4bb273c39b167832e165"
+      },
+      {
+        "name": "binary_equality",
+        "ms": 5058.725917,
+        "observations": [
+          {
+            "work": {
+              "instructions": 320797,
+              "rejected": 3454,
+              "instructionSteps": 1104164,
+              "queries": 41555,
+              "failedQueries": 26,
+              "querySteps": 1797064,
+              "exhausted": 26,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 46087,
+              "bytes": 9056256
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "0a1df719a003f345fde238e9edee2f680471dfcb28e8889b950392582d4078f0"
+      },
+      {
+        "name": "rational_examples",
+        "ms": 8842.643624999997,
+        "observations": [
+          {
+            "work": {
+              "instructions": 958300,
+              "rejected": 8586,
+              "instructionSteps": 3580808,
+              "queries": 68470,
+              "failedQueries": 44,
+              "querySteps": 3298010,
+              "exhausted": 48,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 94448,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "fdfd7d7c6fe1e85b94684bfda36ba62ada0e121d4b1c4b656fd9529136a439c5"
+      },
+      {
+        "name": "hlevel_without_import",
+        "ms": 69.81733399999939,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14093,
+              "rejected": 6,
+              "instructionSteps": 27966,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1701,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "3956ca772f877903695ed7cd7ad6c605ab69170320dcfdfef588948087d791a0"
+      },
+      {
+        "name": "h1_acceptance_paths",
+        "ms": 2.5249580000017886,
+        "observations": [
+          {
+            "work": {
+              "instructions": 162,
+              "rejected": 5,
+              "instructionSteps": 412,
+              "queries": 6,
+              "failedQueries": 0,
+              "querySteps": 12,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 30,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "a6addeb49316a21927af95ffcd0dfdd1613b360bd2a32a1c23a506d9acacfff2"
+      },
+      {
+        "name": "projections",
+        "ms": 75.50929200000246,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14615,
+              "rejected": 6,
+              "instructionSteps": 28736,
+              "queries": 1035,
+              "failedQueries": 0,
+              "querySteps": 6274,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1930,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "a1ccb8f9faea5473b7aafd8146882727f7c9f7c998a37da7d13859e8b7ed7946"
+      },
+      {
+        "name": "universe_generic",
+        "ms": 82.86962499999936,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14872,
+              "rejected": 11,
+              "instructionSteps": 29541,
+              "queries": 1033,
+              "failedQueries": 0,
+              "querySteps": 6301,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 2032,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "b59d9183e2bd6df0db46be6f5716457d5e398d0a626c86904c350c1a09bc284d"
+      },
+      {
+        "name": "inductive_values",
+        "ms": 72.88341700000456,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14224,
+              "rejected": 8,
+              "instructionSteps": 28295,
+              "queries": 1026,
+              "failedQueries": 0,
+              "querySteps": 6219,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1747,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "0b39d42baab4ba01f1a34384137e44d2039090f30a5e60663010d1901221757d"
+      },
+      {
+        "name": "inductive_higher",
+        "ms": 2.5410830000037095,
+        "observations": [
+          {
+            "work": {
+              "instructions": 211,
+              "rejected": 7,
+              "instructionSteps": 542,
+              "queries": 6,
+              "failedQueries": 0,
+              "querySteps": 12,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 49,
+              "bytes": 736000
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "45c70bd66acaee543b98704ead7960b6a676b7f234a021b2dd02532130f5fef1"
+      },
+      {
+        "name": "inductive_square",
+        "ms": 2.2392090000066673,
+        "observations": [
+          {
+            "work": {
+              "instructions": 281,
+              "rejected": 5,
+              "instructionSteps": 683,
+              "queries": 9,
+              "failedQueries": 0,
+              "querySteps": 26,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 37,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "6a7bb73a35d2680928f4140492b7ec6a774da7fd15fad942e6f98e1de7d3ac58"
+      },
+      {
+        "name": "inductive_instance_from_position",
+        "ms": 1.596958000001905,
+        "observations": [
+          {
+            "work": {
+              "instructions": 90,
+              "rejected": 2,
+              "instructionSteps": 193,
+              "queries": 6,
+              "failedQueries": 0,
+              "querySteps": 12,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 24,
+              "bytes": 736000
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "d61c9105aedb125dda64961133648c618f19017533d9fb8620c55475aac0bf38"
+      },
+      {
+        "name": "inductive_imports",
+        "ms": 92.15016699999978,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14207,
+              "rejected": 8,
+              "instructionSteps": 28168,
+              "queries": 1020,
+              "failedQueries": 0,
+              "querySteps": 6207,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1740,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "34770e4716f4869a6be94fba0670a83635f8cb80a3f8862eb5aa6a9f8a54ca09"
+      },
+      {
+        "name": "inductive_projections",
+        "ms": 81.85658300000068,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14890,
+              "rejected": 13,
+              "instructionSteps": 29605,
+              "queries": 1069,
+              "failedQueries": 0,
+              "querySteps": 6348,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1840,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "97f919b6cbf367100159baa8ac1a662b3acd0a846d2f0a1e8cab81209d309ee1"
+      },
+      {
+        "name": "inductive_generated_names",
+        "ms": 4.97570899999846,
+        "observations": [
+          {
+            "work": {
+              "instructions": 392,
+              "rejected": 2,
+              "instructionSteps": 849,
+              "queries": 0,
+              "failedQueries": 0,
+              "querySteps": 0,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 240,
+              "bytes": 749568
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "5531f1becc9f6641a5cf0e22766efa79e4f1c7bc412a91825760618c29953599"
+      },
+      {
+        "name": "computability",
+        "ms": 517.5972499999989,
+        "observations": [
+          {
+            "work": {
+              "instructions": 86694,
+              "rejected": 103,
+              "instructionSteps": 206554,
+              "queries": 5145,
+              "failedQueries": 0,
+              "querySteps": 53823,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 11006,
+              "bytes": 2755584
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "6a179e9971c37482fb3f7d4a1e56f2ec4e5b491a130e9ed35d35377483c02475"
+      },
+      {
+        "name": "box_notation",
+        "ms": 5.549667000006593,
+        "observations": [
+          {
+            "work": {
+              "instructions": 671,
+              "rejected": 0,
+              "instructionSteps": 1417,
+              "queries": 24,
+              "failedQueries": 0,
+              "querySteps": 265,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 195,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "035d965ed72638ffd27c76dd363d182df11ff14769d1776d426845dae708e693"
+      },
+      {
+        "name": "ergonomics_rewrite_obligations",
+        "ms": 182.08995799999684,
+        "observations": [
+          {
+            "work": {
+              "instructions": 30053,
+              "rejected": 45,
+              "instructionSteps": 61879,
+              "queries": 1920,
+              "failedQueries": 0,
+              "querySteps": 13847,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3768,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "8e857cfeb405da0a501f7784b6152bca2c18c18d1faad8f14820c4d66fb4eb1f"
+      },
+      {
+        "name": "ergonomics_simp_child_order",
+        "ms": 78.22162499999831,
+        "observations": [
+          {
+            "work": {
+              "instructions": 15572,
+              "rejected": 60,
+              "instructionSteps": 30379,
+              "queries": 1064,
+              "failedQueries": 0,
+              "querySteps": 6287,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1852,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "77322329edb6bf521c0adda1cefb166abee74005baf5f0d1b4b8e33d079e8d80"
+      },
+      {
+        "name": "ergonomics_mixed_universes",
+        "ms": 73.83012500000041,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14172,
+              "rejected": 6,
+              "instructionSteps": 28252,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1765,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "d1204090cc0b66a4efd9c2f9d9677fa3f3793211f0cbea3bb0f06f4b98722a2e"
+      },
+      {
+        "name": "ergonomics_repeated_match",
+        "ms": 162.1370409999945,
+        "observations": [
+          {
+            "work": {
+              "instructions": 28722,
+              "rejected": 21,
+              "instructionSteps": 59225,
+              "queries": 1834,
+              "failedQueries": 0,
+              "querySteps": 13617,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3644,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "47d5fda701eaf2e53e7860f2f372be32242b97003964f864752096745c2bee66"
+      },
+      {
+        "name": "ergonomics_nested_premises",
+        "ms": 162.68083299999853,
+        "observations": [
+          {
+            "work": {
+              "instructions": 30066,
+              "rejected": 31,
+              "instructionSteps": 61849,
+              "queries": 1950,
+              "failedQueries": 0,
+              "querySteps": 14024,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3796,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "ef89bc86df32f82cec381f60b0d093ae267ebfa433bf02a64a069d63b0082fcb"
+      },
+      {
+        "name": "ergonomics_generic_tactic_links",
+        "ms": 71.44608399999561,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14584,
+              "rejected": 10,
+              "instructionSteps": 28740,
+              "queries": 1036,
+              "failedQueries": 0,
+              "querySteps": 6231,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1786,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "7fefccf9808679e60cbad4da8c90c91b65546abaecaf1e76566c89adae918cda"
+      },
+      {
+        "name": "ergonomics_search_time_scope",
+        "ms": 166.33891599999333,
+        "observations": [
+          {
+            "work": {
+              "instructions": 29210,
+              "rejected": 19,
+              "instructionSteps": 60017,
+              "queries": 1863,
+              "failedQueries": 0,
+              "querySteps": 13631,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3723,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "f94546287319aeafc5855f832f0f51270d16b2d28c3b665f8c6db8f33be78bbf"
+      },
+      {
+        "name": "ergonomics_rule_scope_rules",
+        "ms": 155.3162500000035,
+        "observations": [
+          {
+            "work": {
+              "instructions": 28795,
+              "rejected": 19,
+              "instructionSteps": 59274,
+              "queries": 1840,
+              "failedQueries": 0,
+              "querySteps": 13587,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3665,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "32231115cf604e3d949fd98b0f00650ce63d2a9b3931c2f28dda4ffdc2252e44"
+      },
+      {
+        "name": "ergonomics_simp_type_freeze_path_identity",
+        "ms": 175.1180830000012,
+        "observations": [
+          {
+            "work": {
+              "instructions": 32846,
+              "rejected": 195,
+              "instructionSteps": 69761,
+              "queries": 2042,
+              "failedQueries": 0,
+              "querySteps": 14905,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3721,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "3d12050e8d7ebc5157f3d1162e580c189cadbedfa4fcee946f5afae378b860c3"
+      },
+      {
+        "name": "ergonomics_simp_rules_a",
+        "ms": 157.87616600000183,
+        "observations": [
+          {
+            "work": {
+              "instructions": 28788,
+              "rejected": 19,
+              "instructionSteps": 59266,
+              "queries": 1841,
+              "failedQueries": 0,
+              "querySteps": 13599,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3667,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "5f62fb75f2b7ca543cac0f1e223fe3ebba49274b2995280da9384830733c3911"
+      },
+      {
+        "name": "ergonomics_simp_client_conflict",
+        "ms": 162.70370900000125,
+        "observations": [
+          {
+            "work": {
+              "instructions": 29409,
+              "rejected": 19,
+              "instructionSteps": 60290,
+              "queries": 1886,
+              "failedQueries": 0,
+              "querySteps": 13791,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3730,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "ebb91f8ce9ecd29f4b8c6d1872d3f91abde0eb5cbf4ee1d76a378b34ab05fed0"
+      },
+      {
+        "name": "ergonomics_tactic_sites",
+        "ms": 93.24633400000312,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14602,
+              "rejected": 10,
+              "instructionSteps": 28766,
+              "queries": 1036,
+              "failedQueries": 0,
+              "querySteps": 6231,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1783,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "cc9e3a404492582e00bd2eb6033bf50053c8bca370287714802fb84123decdfe"
+      },
+      {
+        "name": "fuel_search_spending",
+        "ms": 71.0967079999973,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14558,
+              "rejected": 6,
+              "instructionSteps": 28728,
+              "queries": 1044,
+              "failedQueries": 0,
+              "querySteps": 6279,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1781,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "1c06ff092acd463ce4415739697231a63b89111986f87357c3a0ac9372802254"
+      },
+      {
+        "name": "program_shadowing",
+        "ms": 71.62720800000534,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14115,
+              "rejected": 6,
+              "instructionSteps": 28020,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1709,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "043a3c69e64ad56b08b3d8d26d8b0c6ff5ac9e5349b2315e1ab2e6117a7c302b"
+      },
+      {
+        "name": "program_optimizations",
+        "ms": 70.37712499999907,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14465,
+              "rejected": 8,
+              "instructionSteps": 28663,
+              "queries": 1034,
+              "failedQueries": 0,
+              "querySteps": 6229,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1758,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "3dc95afa28a581becb8f669f5f1f2353414fb77fb283512b394f36d8c087195b"
+      },
+      {
+        "name": "program_untyped_generic",
+        "ms": 67.22087499999907,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14081,
+              "rejected": 6,
+              "instructionSteps": 27965,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1703,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "83fa12138c293b8a8bd7c7a150fd0dff987f00c09731dd4e7a77b316130e9025"
+      },
+      {
+        "name": "wasm_moving_maps",
+        "ms": 102.51445900000544,
+        "observations": [
+          {
+            "work": {
+              "instructions": 21193,
+              "rejected": 92,
+              "instructionSteps": 52459,
+              "queries": 1317,
+              "failedQueries": 0,
+              "querySteps": 9959,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 2417,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "020e0abeda3301ff2ed7adb3f5056d16b7766dca7f2315d3d1cfd4210d2471d1"
+      },
+      {
+        "name": "dimension_regression",
+        "ms": 4000.947125000006,
+        "observations": [
+          {
+            "work": {
+              "instructions": 552962,
+              "rejected": 2401,
+              "instructionSteps": 1664338,
+              "queries": 32974,
+              "failedQueries": 17,
+              "querySteps": 945428,
+              "exhausted": 19,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 46164,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "dff3b15dc9bb9b8813cdc289d18793d7261fc25ae62fefe11ee49dff833f73ce"
+      },
+      {
+        "name": "algebraic_extensions_invalid_embedding_claims",
+        "ms": 21381.660749999995,
+        "observations": [
+          {
+            "work": {
+              "instructions": 1888871,
+              "rejected": 12714,
+              "instructionSteps": 4699666,
+              "queries": 158661,
+              "failedQueries": 32,
+              "querySteps": 5042562,
+              "exhausted": 34,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 111576,
+              "bytes": 17457152
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "b4e92bba6bbc30481968e1356940df198116cbd4bdfebdc2334115f583f0c806"
+      },
+      {
+        "name": "finite_spanning_spanning_regression",
+        "ms": 4818.401083999997,
+        "observations": [
+          {
+            "work": {
+              "instructions": 655232,
+              "rejected": 2943,
+              "instructionSteps": 1869095,
+              "queries": 40006,
+              "failedQueries": 17,
+              "querySteps": 1169842,
+              "exhausted": 19,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 51384,
+              "bytes": 16396288
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "722d92958f116bf3f6d2031f1794d9ecedb99fec09facad48fe4666bffcec4b0"
+      },
+      {
+        "name": "linear_algebra_invalid_basis_selection",
+        "ms": 3724.279416000005,
+        "observations": [
+          {
+            "work": {
+              "instructions": 487186,
+              "rejected": 2363,
+              "instructionSteps": 1558613,
+              "queries": 26704,
+              "failedQueries": 14,
+              "querySteps": 745867,
+              "exhausted": 16,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 44675,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "2d6f8ae1e1918dd6ac0f99fd90241ba8bd2a98a32087e6585b3c249dd198f684"
+      },
+      {
+        "name": "polynomial_algebra_invalid_polynomial_claims",
+        "ms": 6239.163916000005,
+        "observations": [
+          {
+            "work": {
+              "instructions": 804917,
+              "rejected": 3866,
+              "instructionSteps": 2168284,
+              "queries": 53987,
+              "failedQueries": 17,
+              "querySteps": 1544617,
+              "exhausted": 19,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 60920,
+              "bytes": 16396288
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "c3ea8d6f71e0d4545485a6e35ac1a89cc4e4e5d3de3c7aff7379f23410064477"
+      },
+      {
+        "name": "quotient_universal_hom_universe_regression",
+        "ms": 729.4082920000073,
+        "observations": [
+          {
+            "work": {
+              "instructions": 113394,
+              "rejected": 121,
+              "instructionSteps": 282423,
+              "queries": 7822,
+              "failedQueries": 0,
+              "querySteps": 110377,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 15304,
+              "bytes": 3020800
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "c35614e0501aa7e13be861e213400ecb264bd484eda86d15d98d4e8909fa12de"
+      },
+      {
+        "name": "h1_zorn_step",
+        "ms": 943.8546670000069,
+        "observations": [
+          {
+            "work": {
+              "instructions": 173211,
+              "rejected": 830,
+              "instructionSteps": 360179,
+              "queries": 6286,
+              "failedQueries": 0,
+              "querySteps": 69423,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 16100,
+              "bytes": 3020800
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "2a19288511d169941a05d0e551be7184fdc65b65b8131aae38d43a3d4d988300"
+      },
+      {
+        "name": "truncation_strict_successor",
+        "ms": 866.4120000000112,
+        "observations": [
+          {
+            "work": {
+              "instructions": 173739,
+              "rejected": 838,
+              "instructionSteps": 361204,
+              "queries": 6287,
+              "failedQueries": 0,
+              "querySteps": 69430,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 16134,
+              "bytes": 3020800
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "852b6682f461d539dd542f9ac7cd18ee772298fa25e59b3a5b84c29c368e81ea"
+      },
+      {
+        "name": "translation_path_induction",
+        "ms": 74.78474999999162,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14374,
+              "rejected": 6,
+              "instructionSteps": 28750,
+              "queries": 1026,
+              "failedQueries": 0,
+              "querySteps": 6371,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1760,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "d14f8a974daf2d2e7fd6f99a45dc6a1a6122403c728f7ae4e6da30895808241f"
+      },
+      {
+        "name": "source_text_messages",
+        "ms": 74.52641700000095,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14262,
+              "rejected": 9,
+              "instructionSteps": 28510,
+              "queries": 1036,
+              "failedQueries": 0,
+              "querySteps": 6494,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1788,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "d76b1fce7f11c2098359af91d56a5cec2355183ae34b31612b251fd69bd0d592"
+      },
+      {
+        "name": "inspection_let_alias",
+        "ms": 72.47804099999485,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14104,
+              "rejected": 6,
+              "instructionSteps": 27986,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1712,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "e4187e5afc7c30120d59eb4b7217e3d43dcf4ffadeda1c61f1284b6656af30a6"
+      },
+      {
+        "name": "glue_printed",
+        "ms": 202.11508400000457,
+        "observations": [
+          {
+            "work": {
+              "instructions": 34341,
+              "rejected": 49,
+              "instructionSteps": 80077,
+              "queries": 1739,
+              "failedQueries": 0,
+              "querySteps": 18734,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 4912,
+              "bytes": 1377792
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "4193f2b4c6c7c7e244c77d37e0f844458461a0fbee77625f9adfc6eb2a887d1b"
+      },
+      {
+        "name": "f4_extension_loops_false",
+        "ms": 3290.2151250000024,
+        "observations": [
+          {
+            "work": {
+              "instructions": 446471,
+              "rejected": 1735,
+              "instructionSteps": 2555039,
+              "queries": 43647,
+              "failedQueries": 237,
+              "querySteps": 2465894,
+              "exhausted": 241,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 34272,
+              "bytes": 34222080
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "eea2106233b0a6d7a2fa45f8ffc2354258085d60fbbbb49d9052f2bebbcf8719"
+      },
+      {
+        "name": "declared_match_operator_call",
+        "ms": 3.9332089999952586,
+        "observations": [
+          {
+            "work": {
+              "instructions": 270,
+              "rejected": 2,
+              "instructionSteps": 523,
+              "queries": 25,
+              "failedQueries": 0,
+              "querySteps": 171,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 48,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5",
+        "sourceHash": "02d0202116f4b30a28429acc44d6cb0acfa2552b52f4ea09a95bdba62466e215"
+      }
+    ],
+    "after": [
+      {
+        "name": "arguments",
+        "ms": 413.999125,
+        "observations": [
+          {
+            "work": {
+              "instructions": 48407,
+              "rejected": 122,
+              "instructionSteps": 115373,
+              "queries": 2728,
+              "failedQueries": 0,
+              "querySteps": 25788,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 5861,
+              "bytes": 1836544
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "2f94e172b2f59a044842bae5389d983b18259b3c04d5f96f10f5aea69e4632f5"
+      },
+      {
+        "name": "glue_",
+        "ms": 234.97079199999996,
+        "observations": [
+          {
+            "work": {
+              "instructions": 33300,
+              "rejected": 41,
+              "instructionSteps": 76774,
+              "queries": 1692,
+              "failedQueries": 0,
+              "querySteps": 17109,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 4632,
+              "bytes": 1377792
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "465019f0624f6a10b1bc9484ed6fd5298f7cb04bf1d79c9447204b390502a6d5"
+      },
+      {
+        "name": "automatic_clauses",
+        "ms": 431.0720419999999,
+        "observations": [
+          {
+            "work": {
+              "instructions": 73303,
+              "rejected": 1042,
+              "instructionSteps": 185577,
+              "queries": 3399,
+              "failedQueries": 0,
+              "querySteps": 40112,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 8068,
+              "bytes": 1838080
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "1b0d6de36cb9966a648caa6d7948fb03234a00eb1bbe538753b2e9688f59a5a7"
+      },
+      {
+        "name": "theories",
+        "ms": 2073.337042,
+        "observations": [
+          {
+            "work": {
+              "instructions": 154637,
+              "rejected": 1352,
+              "instructionSteps": 586473,
+              "queries": 17860,
+              "failedQueries": 8,
+              "querySteps": 763407,
+              "exhausted": 8,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 26977,
+              "bytes": 4855808
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "32dbf5a4c130ad549bec9292248aa15ded176e57980b9b4f2d439a945d02cb9b"
+      },
+      {
+        "name": "theory_headers",
+        "ms": 1164.7784170000004,
+        "observations": [
+          {
+            "work": {
+              "instructions": 101809,
+              "rejected": 412,
+              "instructionSteps": 444821,
+              "queries": 9470,
+              "failedQueries": 5,
+              "querySteps": 473719,
+              "exhausted": 5,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 17528,
+              "bytes": 4855808
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "5b652a7daf358498c33294b094899e16d64655cb5d9d7ed7639881d72baaa64f"
+      },
+      {
+        "name": "theory_use",
+        "ms": 4373.911416000001,
+        "observations": [
+          {
+            "work": {
+              "instructions": 261582,
+              "rejected": 3184,
+              "instructionSteps": 975580,
+              "queries": 40463,
+              "failedQueries": 24,
+              "querySteps": 1722440,
+              "exhausted": 24,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 68162,
+              "bytes": 9056256
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "09bc0b137ad11993bf30cf1a4904be6d4d5d947e4ae3e385f82e55727e6f8513"
+      },
+      {
+        "name": "notation_literals",
+        "ms": 8425.159958000002,
+        "observations": [
+          {
+            "work": {
+              "instructions": 966299,
+              "rejected": 8638,
+              "instructionSteps": 3621342,
+              "queries": 70278,
+              "failedQueries": 47,
+              "querySteps": 3384167,
+              "exhausted": 51,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 109586,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "b76177be01324b1c2aadd295926b3dcf6fda67ce43ca18459be2c27479b14dfa"
+      },
+      {
+        "name": "binary_natural_foundation",
+        "ms": 563.1193749999984,
+        "observations": [
+          {
+            "work": {
+              "instructions": 72195,
+              "rejected": 60,
+              "instructionSteps": 604507,
+              "queries": 4733,
+              "failedQueries": 4,
+              "querySteps": 805329,
+              "exhausted": 5,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 50102,
+              "bytes": 19532800
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "1eb09dc8f73ea0e85c5c7aacacc70612d9a688478daa4bb273c39b167832e165"
+      },
+      {
+        "name": "binary_equality",
+        "ms": 4741.992459000001,
+        "observations": [
+          {
+            "work": {
+              "instructions": 320797,
+              "rejected": 3454,
+              "instructionSteps": 1104164,
+              "queries": 41555,
+              "failedQueries": 26,
+              "querySteps": 1797064,
+              "exhausted": 26,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 46087,
+              "bytes": 9056256
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "0a1df719a003f345fde238e9edee2f680471dfcb28e8889b950392582d4078f0"
+      },
+      {
+        "name": "rational_examples",
+        "ms": 8016.939417000001,
+        "observations": [
+          {
+            "work": {
+              "instructions": 958300,
+              "rejected": 8586,
+              "instructionSteps": 3580808,
+              "queries": 68470,
+              "failedQueries": 44,
+              "querySteps": 3298010,
+              "exhausted": 48,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 94448,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "fdfd7d7c6fe1e85b94684bfda36ba62ada0e121d4b1c4b656fd9529136a439c5"
+      },
+      {
+        "name": "hlevel_without_import",
+        "ms": 71.75587500000256,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14093,
+              "rejected": 6,
+              "instructionSteps": 27966,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1701,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "3956ca772f877903695ed7cd7ad6c605ab69170320dcfdfef588948087d791a0"
+      },
+      {
+        "name": "h1_acceptance_paths",
+        "ms": 3.184000000001106,
+        "observations": [
+          {
+            "work": {
+              "instructions": 162,
+              "rejected": 5,
+              "instructionSteps": 412,
+              "queries": 6,
+              "failedQueries": 0,
+              "querySteps": 12,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 30,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "a6addeb49316a21927af95ffcd0dfdd1613b360bd2a32a1c23a506d9acacfff2"
+      },
+      {
+        "name": "projections",
+        "ms": 74.39370800000324,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14615,
+              "rejected": 6,
+              "instructionSteps": 28736,
+              "queries": 1035,
+              "failedQueries": 0,
+              "querySteps": 6274,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1930,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "a1ccb8f9faea5473b7aafd8146882727f7c9f7c998a37da7d13859e8b7ed7946"
+      },
+      {
+        "name": "universe_generic",
+        "ms": 77.72891700000037,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14872,
+              "rejected": 11,
+              "instructionSteps": 29541,
+              "queries": 1033,
+              "failedQueries": 0,
+              "querySteps": 6301,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 2032,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "b59d9183e2bd6df0db46be6f5716457d5e398d0a626c86904c350c1a09bc284d"
+      },
+      {
+        "name": "inductive_values",
+        "ms": 66.63066700000127,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14224,
+              "rejected": 8,
+              "instructionSteps": 28295,
+              "queries": 1026,
+              "failedQueries": 0,
+              "querySteps": 6219,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1747,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "0b39d42baab4ba01f1a34384137e44d2039090f30a5e60663010d1901221757d"
+      },
+      {
+        "name": "inductive_higher",
+        "ms": 2.6850000000013097,
+        "observations": [
+          {
+            "work": {
+              "instructions": 211,
+              "rejected": 7,
+              "instructionSteps": 542,
+              "queries": 6,
+              "failedQueries": 0,
+              "querySteps": 12,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 49,
+              "bytes": 736000
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "45c70bd66acaee543b98704ead7960b6a676b7f234a021b2dd02532130f5fef1"
+      },
+      {
+        "name": "inductive_square",
+        "ms": 1.7064580000005662,
+        "observations": [
+          {
+            "work": {
+              "instructions": 281,
+              "rejected": 5,
+              "instructionSteps": 683,
+              "queries": 9,
+              "failedQueries": 0,
+              "querySteps": 26,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 37,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "6a7bb73a35d2680928f4140492b7ec6a774da7fd15fad942e6f98e1de7d3ac58"
+      },
+      {
+        "name": "inductive_instance_from_position",
+        "ms": 1.5334579999980633,
+        "observations": [
+          {
+            "work": {
+              "instructions": 90,
+              "rejected": 2,
+              "instructionSteps": 193,
+              "queries": 6,
+              "failedQueries": 0,
+              "querySteps": 12,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 24,
+              "bytes": 736000
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "d61c9105aedb125dda64961133648c618f19017533d9fb8620c55475aac0bf38"
+      },
+      {
+        "name": "inductive_imports",
+        "ms": 66.53970899999695,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14207,
+              "rejected": 8,
+              "instructionSteps": 28168,
+              "queries": 1020,
+              "failedQueries": 0,
+              "querySteps": 6207,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1740,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "34770e4716f4869a6be94fba0670a83635f8cb80a3f8862eb5aa6a9f8a54ca09"
+      },
+      {
+        "name": "inductive_projections",
+        "ms": 69.76920799999789,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14890,
+              "rejected": 13,
+              "instructionSteps": 29605,
+              "queries": 1069,
+              "failedQueries": 0,
+              "querySteps": 6348,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1840,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "97f919b6cbf367100159baa8ac1a662b3acd0a846d2f0a1e8cab81209d309ee1"
+      },
+      {
+        "name": "inductive_generated_names",
+        "ms": 4.21404099999927,
+        "observations": [
+          {
+            "work": {
+              "instructions": 392,
+              "rejected": 2,
+              "instructionSteps": 849,
+              "queries": 0,
+              "failedQueries": 0,
+              "querySteps": 0,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 240,
+              "bytes": 749568
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "5531f1becc9f6641a5cf0e22766efa79e4f1c7bc412a91825760618c29953599"
+      },
+      {
+        "name": "computability",
+        "ms": 473.4285830000008,
+        "observations": [
+          {
+            "work": {
+              "instructions": 86694,
+              "rejected": 103,
+              "instructionSteps": 206554,
+              "queries": 5145,
+              "failedQueries": 0,
+              "querySteps": 53823,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 11006,
+              "bytes": 2755584
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "6a179e9971c37482fb3f7d4a1e56f2ec4e5b491a130e9ed35d35377483c02475"
+      },
+      {
+        "name": "box_notation",
+        "ms": 5.996041999998852,
+        "observations": [
+          {
+            "work": {
+              "instructions": 671,
+              "rejected": 0,
+              "instructionSteps": 1417,
+              "queries": 24,
+              "failedQueries": 0,
+              "querySteps": 265,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 195,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "035d965ed72638ffd27c76dd363d182df11ff14769d1776d426845dae708e693"
+      },
+      {
+        "name": "ergonomics_rewrite_obligations",
+        "ms": 168.56354099999953,
+        "observations": [
+          {
+            "work": {
+              "instructions": 30053,
+              "rejected": 45,
+              "instructionSteps": 61879,
+              "queries": 1920,
+              "failedQueries": 0,
+              "querySteps": 13847,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3768,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "8e857cfeb405da0a501f7784b6152bca2c18c18d1faad8f14820c4d66fb4eb1f"
+      },
+      {
+        "name": "ergonomics_simp_child_order",
+        "ms": 73.78141700000197,
+        "observations": [
+          {
+            "work": {
+              "instructions": 15572,
+              "rejected": 60,
+              "instructionSteps": 30379,
+              "queries": 1064,
+              "failedQueries": 0,
+              "querySteps": 6287,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1852,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "77322329edb6bf521c0adda1cefb166abee74005baf5f0d1b4b8e33d079e8d80"
+      },
+      {
+        "name": "ergonomics_mixed_universes",
+        "ms": 67.81037500000093,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14172,
+              "rejected": 6,
+              "instructionSteps": 28252,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1765,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "d1204090cc0b66a4efd9c2f9d9677fa3f3793211f0cbea3bb0f06f4b98722a2e"
+      },
+      {
+        "name": "ergonomics_repeated_match",
+        "ms": 155.66604200000074,
+        "observations": [
+          {
+            "work": {
+              "instructions": 28722,
+              "rejected": 21,
+              "instructionSteps": 59225,
+              "queries": 1834,
+              "failedQueries": 0,
+              "querySteps": 13617,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3644,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "47d5fda701eaf2e53e7860f2f372be32242b97003964f864752096745c2bee66"
+      },
+      {
+        "name": "ergonomics_nested_premises",
+        "ms": 160.5007910000022,
+        "observations": [
+          {
+            "work": {
+              "instructions": 30066,
+              "rejected": 31,
+              "instructionSteps": 61849,
+              "queries": 1950,
+              "failedQueries": 0,
+              "querySteps": 14024,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3796,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "ef89bc86df32f82cec381f60b0d093ae267ebfa433bf02a64a069d63b0082fcb"
+      },
+      {
+        "name": "ergonomics_generic_tactic_links",
+        "ms": 66.26104200000191,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14584,
+              "rejected": 10,
+              "instructionSteps": 28740,
+              "queries": 1036,
+              "failedQueries": 0,
+              "querySteps": 6231,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1786,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "7fefccf9808679e60cbad4da8c90c91b65546abaecaf1e76566c89adae918cda"
+      },
+      {
+        "name": "ergonomics_search_time_scope",
+        "ms": 154.98675000000003,
+        "observations": [
+          {
+            "work": {
+              "instructions": 29210,
+              "rejected": 19,
+              "instructionSteps": 60017,
+              "queries": 1863,
+              "failedQueries": 0,
+              "querySteps": 13631,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3723,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "f94546287319aeafc5855f832f0f51270d16b2d28c3b665f8c6db8f33be78bbf"
+      },
+      {
+        "name": "ergonomics_rule_scope_rules",
+        "ms": 151.73120800000106,
+        "observations": [
+          {
+            "work": {
+              "instructions": 28795,
+              "rejected": 19,
+              "instructionSteps": 59274,
+              "queries": 1840,
+              "failedQueries": 0,
+              "querySteps": 13587,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3665,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "32231115cf604e3d949fd98b0f00650ce63d2a9b3931c2f28dda4ffdc2252e44"
+      },
+      {
+        "name": "ergonomics_simp_type_freeze_path_identity",
+        "ms": 167.80020800000057,
+        "observations": [
+          {
+            "work": {
+              "instructions": 32846,
+              "rejected": 195,
+              "instructionSteps": 69761,
+              "queries": 2042,
+              "failedQueries": 0,
+              "querySteps": 14905,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3721,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "3d12050e8d7ebc5157f3d1162e580c189cadbedfa4fcee946f5afae378b860c3"
+      },
+      {
+        "name": "ergonomics_simp_rules_a",
+        "ms": 147.2309580000001,
+        "observations": [
+          {
+            "work": {
+              "instructions": 28788,
+              "rejected": 19,
+              "instructionSteps": 59266,
+              "queries": 1841,
+              "failedQueries": 0,
+              "querySteps": 13599,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3667,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "5f62fb75f2b7ca543cac0f1e223fe3ebba49274b2995280da9384830733c3911"
+      },
+      {
+        "name": "ergonomics_simp_client_conflict",
+        "ms": 151.09229200000118,
+        "observations": [
+          {
+            "work": {
+              "instructions": 29409,
+              "rejected": 19,
+              "instructionSteps": 60290,
+              "queries": 1886,
+              "failedQueries": 0,
+              "querySteps": 13791,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 3730,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "ebb91f8ce9ecd29f4b8c6d1872d3f91abde0eb5cbf4ee1d76a378b34ab05fed0"
+      },
+      {
+        "name": "ergonomics_tactic_sites",
+        "ms": 65.28758300000482,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14602,
+              "rejected": 10,
+              "instructionSteps": 28766,
+              "queries": 1036,
+              "failedQueries": 0,
+              "querySteps": 6231,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1783,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "cc9e3a404492582e00bd2eb6033bf50053c8bca370287714802fb84123decdfe"
+      },
+      {
+        "name": "fuel_search_spending",
+        "ms": 65.45908300000156,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14558,
+              "rejected": 6,
+              "instructionSteps": 28728,
+              "queries": 1044,
+              "failedQueries": 0,
+              "querySteps": 6279,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1781,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "1c06ff092acd463ce4415739697231a63b89111986f87357c3a0ac9372802254"
+      },
+      {
+        "name": "program_shadowing",
+        "ms": 64.96562500000437,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14115,
+              "rejected": 6,
+              "instructionSteps": 28020,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1709,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "043a3c69e64ad56b08b3d8d26d8b0c6ff5ac9e5349b2315e1ab2e6117a7c302b"
+      },
+      {
+        "name": "program_optimizations",
+        "ms": 64.11991699999635,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14465,
+              "rejected": 8,
+              "instructionSteps": 28663,
+              "queries": 1034,
+              "failedQueries": 0,
+              "querySteps": 6229,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1758,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "3dc95afa28a581becb8f669f5f1f2353414fb77fb283512b394f36d8c087195b"
+      },
+      {
+        "name": "program_untyped_generic",
+        "ms": 63.83970799999952,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14081,
+              "rejected": 6,
+              "instructionSteps": 27965,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1703,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "83fa12138c293b8a8bd7c7a150fd0dff987f00c09731dd4e7a77b316130e9025"
+      },
+      {
+        "name": "wasm_moving_maps",
+        "ms": 99.3157080000019,
+        "observations": [
+          {
+            "work": {
+              "instructions": 21193,
+              "rejected": 92,
+              "instructionSteps": 52459,
+              "queries": 1317,
+              "failedQueries": 0,
+              "querySteps": 9959,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 2417,
+              "bytes": 1377024
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "020e0abeda3301ff2ed7adb3f5056d16b7766dca7f2315d3d1cfd4210d2471d1"
+      },
+      {
+        "name": "dimension_regression",
+        "ms": 3738.1938329999975,
+        "observations": [
+          {
+            "work": {
+              "instructions": 552962,
+              "rejected": 2401,
+              "instructionSteps": 1664338,
+              "queries": 32974,
+              "failedQueries": 17,
+              "querySteps": 945428,
+              "exhausted": 19,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 46164,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "dff3b15dc9bb9b8813cdc289d18793d7261fc25ae62fefe11ee49dff833f73ce"
+      },
+      {
+        "name": "algebraic_extensions_invalid_embedding_claims",
+        "ms": 15227.093416000003,
+        "observations": [
+          {
+            "work": {
+              "instructions": 1888871,
+              "rejected": 12714,
+              "instructionSteps": 4699666,
+              "queries": 158661,
+              "failedQueries": 32,
+              "querySteps": 5042562,
+              "exhausted": 34,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 111576,
+              "bytes": 17457152
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "b4e92bba6bbc30481968e1356940df198116cbd4bdfebdc2334115f583f0c806"
+      },
+      {
+        "name": "finite_spanning_spanning_regression",
+        "ms": 4765.238250000002,
+        "observations": [
+          {
+            "work": {
+              "instructions": 655232,
+              "rejected": 2943,
+              "instructionSteps": 1869095,
+              "queries": 40006,
+              "failedQueries": 17,
+              "querySteps": 1169842,
+              "exhausted": 19,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 51384,
+              "bytes": 16396288
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "722d92958f116bf3f6d2031f1794d9ecedb99fec09facad48fe4666bffcec4b0"
+      },
+      {
+        "name": "linear_algebra_invalid_basis_selection",
+        "ms": 3663.5602919999947,
+        "observations": [
+          {
+            "work": {
+              "instructions": 487186,
+              "rejected": 2363,
+              "instructionSteps": 1558613,
+              "queries": 26704,
+              "failedQueries": 14,
+              "querySteps": 745867,
+              "exhausted": 16,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 44675,
+              "bytes": 19542016
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "2d6f8ae1e1918dd6ac0f99fd90241ba8bd2a98a32087e6585b3c249dd198f684"
+      },
+      {
+        "name": "polynomial_algebra_invalid_polynomial_claims",
+        "ms": 5981.419416999997,
+        "observations": [
+          {
+            "work": {
+              "instructions": 804917,
+              "rejected": 3866,
+              "instructionSteps": 2168284,
+              "queries": 53987,
+              "failedQueries": 17,
+              "querySteps": 1544617,
+              "exhausted": 19,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 60920,
+              "bytes": 16396288
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "c3ea8d6f71e0d4545485a6e35ac1a89cc4e4e5d3de3c7aff7379f23410064477"
+      },
+      {
+        "name": "quotient_universal_hom_universe_regression",
+        "ms": 676.4662919999973,
+        "observations": [
+          {
+            "work": {
+              "instructions": 113394,
+              "rejected": 121,
+              "instructionSteps": 282423,
+              "queries": 7822,
+              "failedQueries": 0,
+              "querySteps": 110377,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 15304,
+              "bytes": 3020800
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "c35614e0501aa7e13be861e213400ecb264bd484eda86d15d98d4e8909fa12de"
+      },
+      {
+        "name": "h1_zorn_step",
+        "ms": 818.3657919999969,
+        "observations": [
+          {
+            "work": {
+              "instructions": 173211,
+              "rejected": 830,
+              "instructionSteps": 360179,
+              "queries": 6286,
+              "failedQueries": 0,
+              "querySteps": 69423,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 16100,
+              "bytes": 3020800
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "2a19288511d169941a05d0e551be7184fdc65b65b8131aae38d43a3d4d988300"
+      },
+      {
+        "name": "truncation_strict_successor",
+        "ms": 916.0087920000078,
+        "observations": [
+          {
+            "work": {
+              "instructions": 173739,
+              "rejected": 838,
+              "instructionSteps": 361204,
+              "queries": 6287,
+              "failedQueries": 0,
+              "querySteps": 69430,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 16134,
+              "bytes": 3020800
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "852b6682f461d539dd542f9ac7cd18ee772298fa25e59b3a5b84c29c368e81ea"
+      },
+      {
+        "name": "translation_path_induction",
+        "ms": 74.02979200000118,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14374,
+              "rejected": 6,
+              "instructionSteps": 28750,
+              "queries": 1026,
+              "failedQueries": 0,
+              "querySteps": 6371,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1760,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "d14f8a974daf2d2e7fd6f99a45dc6a1a6122403c728f7ae4e6da30895808241f"
+      },
+      {
+        "name": "source_text_messages",
+        "ms": 74.47149999999965,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14262,
+              "rejected": 9,
+              "instructionSteps": 28510,
+              "queries": 1036,
+              "failedQueries": 0,
+              "querySteps": 6494,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1788,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "d76b1fce7f11c2098359af91d56a5cec2355183ae34b31612b251fd69bd0d592"
+      },
+      {
+        "name": "inspection_let_alias",
+        "ms": 70.81724999999278,
+        "observations": [
+          {
+            "work": {
+              "instructions": 14104,
+              "rejected": 6,
+              "instructionSteps": 27986,
+              "queries": 1015,
+              "failedQueries": 0,
+              "querySteps": 6202,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 1712,
+              "bytes": 1147648
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "e4187e5afc7c30120d59eb4b7217e3d43dcf4ffadeda1c61f1284b6656af30a6"
+      },
+      {
+        "name": "glue_printed",
+        "ms": 224.10108300000138,
+        "observations": [
+          {
+            "work": {
+              "instructions": 34341,
+              "rejected": 49,
+              "instructionSteps": 80077,
+              "queries": 1739,
+              "failedQueries": 0,
+              "querySteps": 18734,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 4912,
+              "bytes": 1377792
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "4193f2b4c6c7c7e244c77d37e0f844458461a0fbee77625f9adfc6eb2a887d1b"
+      },
+      {
+        "name": "f4_extension_loops_false",
+        "ms": 3283.597167,
+        "observations": [
+          {
+            "work": {
+              "instructions": 446471,
+              "rejected": 1735,
+              "instructionSteps": 2555039,
+              "queries": 43647,
+              "failedQueries": 237,
+              "querySteps": 2465894,
+              "exhausted": 241,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 34272,
+              "bytes": 34222080
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "eea2106233b0a6d7a2fa45f8ffc2354258085d60fbbbb49d9052f2bebbcf8719"
+      },
+      {
+        "name": "declared_match_operator_call",
+        "ms": 5.233042000007117,
+        "observations": [
+          {
+            "work": {
+              "instructions": 270,
+              "rejected": 2,
+              "instructionSteps": 523,
+              "queries": 25,
+              "failedQueries": 0,
+              "querySteps": 171,
+              "exhausted": 0,
+              "deadlines": 0
+            },
+            "arena": {
+              "nodes": 48,
+              "bytes": 932608
+            }
+          }
+        ],
+        "kernelHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
+        "sourceHash": "02d0202116f4b30a28429acc44d6cb0acfa2552b52f4ea09a95bdba62466e215"
+      }
+    ]
+  },
+  "freeModel": {
+    "before": "\u2714 free generators are independent of the new type and its generated namespace (28647.040834ms)\n\u2139 tests 1\n\u2139 suites 0\n\u2139 pass 1\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 28804.4625\n",
+    "after": "\u2714 free generators are independent of the new type and its generated namespace (26310.869833ms)\n\u2139 tests 1\n\u2139 suites 0\n\u2139 pass 1\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 26423.771375\n"
+  }
+}

@@ -859,6 +859,8 @@ export const diagnostics = [
   ["K371", "Variable scan allocation failed."],
   ["K372", "Substitution stack allocation failed."],
   ["K373", "Substitution stack depth exceeded."],
+  ["K374", "Alpha-comparison stack allocation failed."],
+  ["K375", "Level traversal stack allocation failed."],
   // Warnings
   ["W701", "None of … is used after this obtain: remove it."],
   ["W702", "… is never used after this let: remove it."],
