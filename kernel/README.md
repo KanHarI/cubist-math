@@ -199,9 +199,11 @@ rule most free names out at once; the
 rest are looked up exactly, and only for terms at least eight levels deep. An
 entry holds the comparison's result, equal or different, and no typing
 judgement; `tests/test_comparison.c` checks these properties.
-Comparison and cumulativity now use explicit traversal loops. Binder
+Syntactic comparison and cumulativity now use explicit traversal loops. Binder
 environments use indices into live ancestor frames, while memo keys retain
 the unique scope identifiers. Comparison of composition tube lists preserves
 separate outer face and inner body scopes on that same worklist. See the
 [comparison and level traversal report](../docs/reports/comparison-level-stacks.md)
 for limits, failure tests, measurements and the remaining protected recursion.
+The reduction comparison used by Glue-step side conditions
+(`normal_agree`/`parts_agree`) still uses guarded native recursion.

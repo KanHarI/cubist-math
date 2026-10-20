@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 static unsigned mallocs, reallocs, fail_malloc, fail_realloc, fail_calloc;
+static bool fail_existing_realloc;
 void *cc_test_traversal_malloc(size_t size) {
     ++mallocs;
     if (fail_malloc && !--fail_malloc) return NULL;
@@ -12,7 +13,7 @@ void *cc_test_traversal_malloc(size_t size) {
 }
 void *cc_test_traversal_realloc(void *pointer, size_t size) {
     ++reallocs;
-    if (fail_realloc && !--fail_realloc) return NULL;
+    if (fail_realloc && (!fail_existing_realloc || pointer) && !--fail_realloc) return NULL;
     return realloc(pointer, size);
 }
 void *cc_test_traversal_calloc(size_t count, size_t size) {
@@ -92,23 +93,29 @@ static void tube_scopes(unsigned optimizations) {
     cc_kernel_free(k);
 }
 
-static cc_term arithmetic(cc_kernel *k) {
+static cc_term arithmetic(cc_kernel *k, bool deep_right) {
     cc_term t = ck_var(k, 7);
-    for (unsigned i = 0; i < 200; ++i)
-        t = node(k, CC_LMAX, 0, node(k, CC_LSUCC, 1, t, 0, 0), ck_var(k, 8), 0);
+    for (unsigned i = 0; i < 200; ++i) {
+        cc_term deeper = node(k, CC_LSUCC, 1, t, 0, 0), variable = ck_var(k, 8);
+        t = node(k, CC_LMAX, 0, deep_right ? variable : deeper, deep_right ? deeper : variable, 0);
+    }
     return t;
 }
-static void arithmetic_failures(unsigned optimizations) {
+static void arithmetic_failures(unsigned optimizations, bool deep_right) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     cc_kernel_set_optimizations(k, optimizations);
-    cc_term term = arithmetic(k);
+    cc_term term = arithmetic(k, deep_right);
     cc_level_nf nf;
     fail_malloc = 1;
     assert(!ck_level_normal(k, term, &nf) && !nf.terms && !fail_malloc);
     resource(k, "Level traversal stack allocation failed.");
+    /* Right descent keeps a separately allocated left NF in each ancestor.
+     * Skip initial realloc(NULL) buffers to fail the grown frame array. */
+    fail_existing_realloc = deep_right;
     fail_realloc = 1;
     assert(!ck_level_normal(k, term, &nf) && !nf.terms && !fail_realloc);
+    fail_existing_realloc = false;
     resource(k, "Level traversal stack allocation failed.");
     k->budget = 100;
     unsigned before = mallocs;
@@ -181,9 +188,10 @@ static void cumulative(unsigned optimizations) {
 /* Even an immediate canonical result must return failure if publishing its
  * completed memo entry fails. A nonzero handle alongside an error is not
  * a successful query result. */
-static void canonical_memo_failure(void) {
+static void canonical_memo_failure(unsigned optimizations) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
     cc_term unit = node(k, CC_UNIT, 0, 0, 0, 0);
     fail_calloc = 1;
     assert(!ck_canonical_levels(k, unit) && !fail_calloc);
@@ -197,11 +205,12 @@ int main(void) {
         unsigned options = sharing ? CC_SHARE_SYNTAX : 0;
         comparisons(options);
         tube_scopes(options);
-        arithmetic_failures(options);
+        arithmetic_failures(options, false);
+        arithmetic_failures(options, true);
         canonical_failures(options);
         cumulative(options);
+        canonical_memo_failure(options);
     }
-    canonical_memo_failure();
     puts("Comparison and level traversal stacks: ok");
     return 0;
 }

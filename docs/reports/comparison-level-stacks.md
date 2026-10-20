@@ -59,6 +59,10 @@ the explicit frame bounds; native-entry guards remain for calls from other
 kernel operations. The syntax guard keeps these input traversals below the
 explicit caps today, so tests exercise allocation and interruption paths,
 not unreachable frame-cap branches.
+Comparison and canonicalization now charge the shared native recursion
+counter once per call, rather than once per syntax node. A traversal reached
+from a deep caller can therefore complete where the old implementation
+returned a native-recursion resource error; the computation rules are unchanged.
 
 The WASM 2 MiB stack and 4 GiB memory limit, query budgets, deadlines and
 mathematical definitions are unchanged. Worklist storage is temporary heap
@@ -77,7 +81,9 @@ tests run with syntax sharing both enabled and disabled:
   A mismatch in its last face, or applying the inner renaming to outer faces,
   is rejected.
 - Two hundred nested maximum/successor operations produce the expected
-  constant and offsets for both variables.
+  constant and offsets for both variables. Both operand orders are tested:
+  right descent retains allocated left normal forms in ancestor frames
+  through spill, growth, budget interruption and memo-allocation failure.
 - Level canonicalization beneath 450 syntax nodes preserves the other
   children, produces the expected level variable and reuses its completed
   result.
@@ -92,8 +98,16 @@ tests run with syntax sharing both enabled and disabled:
 Ninety-seven targeted JavaScript tests pass: diagnostic discovery, quotient
 descent, normalization sharing, universe-generic definitions, cumulativity,
 the instruction driver, WASM kernel behavior and resource limits. The full
-JavaScript suite and the final native test for immediate memo publication are
-pending at the time this report is prepared.
+local JavaScript suite passes all 1,622 tests. At `cbe28bc7`,
+[CI](https://github.com/KanHarI/cubist-math/actions/runs/39375754378) passed all
+seven jobs, including four native compiler/OS combinations, ASan and UBSan,
+the 1,622 JavaScript tests, browser checks and mutation contracts. That run
+includes the immediate memo-publication failure case. CI's ASan supplies
+the failure-path memory-safety checks; local UBSan alone does not check leaks
+or double frees. The review follow-up reruns the full native and UBSan suites
+with the mirrored arithmetic case and immediate memo-publication failure
+in both sharing modes. Both pass. It changes tests and documentation only;
+the executable kernel sources remain identical to the measured implementation.
 
 ## Fixed measurements
 
@@ -103,10 +117,12 @@ pending at the time this report is prepared.
 - Before: `4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5`.
 - After: `ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4`.
 
-The fixed nine BNat cases, five quotient-free transport cases and two generic
-quotient cases have identical outcomes, work counts, allocations, reported
-arena sizes and completed graph sizes/depths. Input and dependency hashes
-match. Run the existing tools after building each checkout:
+The fixed nine BNat cases and five quotient-free transport cases have identical
+outcomes, work counts, allocations, reported arena sizes and completed graph
+sizes/depths. Their input and dependency hashes match. Both generic quotient
+cases retain identical outcomes, work and allocations; that probe does not
+record input hashes, arena capacities or completed graph sizes. Run the
+existing tools after building each checkout:
 
 ```sh
 node tools/open-bnat-normalization-probe.mjs
@@ -120,6 +136,8 @@ cheap transports complete; `moved_setness` and `moved_path` still exhaust
 preserve the gates; they do not close the remaining failures.
 
 Three serial before/after pairs also run the existing end-to-end controls:
+set the working directory to each checkout, using the probe from the after
+checkout in both runs.
 
 ```sh
 node /path/to/after/tools/substitution-cost-probe.mjs
@@ -143,13 +161,41 @@ Total-run medians are 17,894.5 ms before and 17,972.1 ms after (+0.4%).
 The sample ranges overlap. These macOS arm64 observations establish neither
 a portable speedup nor a regression bound.
 
+### Investigating full-suite timing
+
+The local full-suite run recorded fixture shard 1 at 287.9 seconds, compared
+with 78.6 seconds in the earlier substitution run, and a free-generator test
+at 52.1 versus 28.4 seconds. A separate serial before/after run checks those
+observations on the same two kernels. The [probe](comparison-level-stacks-timing/probe.mjs)
+retains shard 1's module order, assertions and shared-WASM lifecycle, and
+records each program's work and arena after its observations, before disposal.
+Run it from each built checkout; [raw results](comparison-level-stacks-timing/results.json)
+also include the isolated free-generator test logs.
+
+All 54 modules retain identical input hashes, instruction/query/failure
+counters and reported arena counts/capacities. The summed module times are
+82.0 seconds before and 72.8 seconds after. The isolated free-generator test
+passes in both checkouts, at 28.6 and 26.3 seconds:
+
+```sh
+node --test --test-concurrency=1 \
+  --test-name-pattern='free generators are independent of the new type and its generated namespace' \
+  tests/initial-models.test.mjs
+```
+
+The large slowdown was not reproduced. This single matched pair does not
+identify the cause of the earlier wall-clock observations or establish a
+general speedup; no kernel change was made in response to those timings.
+
 ## Remaining protected traversals
 
 The 512 syntax guard remains necessary. Recursive composition helpers
 (`ck_append_tube`, `ck_clause_tubes`, `remove_empty_tubes`, `map_tubes`,
 `substitute_tubes`), Glue's `projected_tubes`, HIT's `rename_tubes`,
+the Glue-step reduction comparison (`normal_agree`/`parts_agree`),
 prerequisite weak-head calls, and frontend decoding, printing, matching and
-driver comparison still need bounded traversal work. Comparing tube lists
+driver comparison still need bounded traversal work. The Glue-step comparison
+uses weak heads and still recurses under its 1,024 guard. Comparing tube lists
 here does not change those construction helpers.
 
 This still evaluates and compares materialized syntax. Shared cubical
