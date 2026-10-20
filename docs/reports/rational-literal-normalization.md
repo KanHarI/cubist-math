@@ -13,7 +13,8 @@ not replace their historical measurements or the runtime roadmap's
 
 ## Reproduce using only main's library
 
-The retained [source](rational-literal-normalization/same-ratio.cubist) is:
+The retained [probe](rational-literal-normalization/probe.mjs) checks this
+inline source:
 
 ```cubist
 import fractions;
@@ -35,21 +36,23 @@ full normal form. The normalizer receives a fixed 100,000-tick budget and a
 30-second deadline, with no automatic budget increase. Checking and obtaining
 the reference precede the measured query; their caches remain available.
 There are no `binary_rationals` imports, source overlays or unchecked
-replacement definitions. No disequality proof is compared with an expected
-normal form.
+replacement definitions. The probe asserts no expected normal form.
 
-On main `6262df5a97a0f6f8096ae88af1ffae116b10257f`, the source checks and the
+Using the kernel and library of main
+`6262df5a97a0f6f8096ae88af1ffae116b10257f`, the source checks and the
 query exhausts exactly **100,000 ticks**, allocating **23,604 nodes**.
 [results.json](rational-literal-normalization/results.json) records the
-revision, actual checked-source hashes, kernel source hash, arena counters
-and host environment. The stamped WASM build was verified against the
-checkout. A controlled resource stop is printed as `status: "limited"` and
+documentation checkout revision, actual checked-source hashes, probe hash,
+kernel source hash, arena counters and host environment. The recorded revision
+is the checkout base; the probe included uncommitted corrections identified
+by `probeSha256`. The stamped WASM build was verified against the checkout.
+A controlled resource stop is printed as `status: "limited"` and
 does not make this diagnostic command exit unsuccessfully; read the JSON
 outcome. Unexpected errors still fail the command. A successful future
 normalization will be reported as `status: "normalized"`.
 
 The earlier local main-library probe recorded 24,369 allocations. Its entry
-was a selected expression passed directly to `cb_normalize`, whereas the
+was an inspected expression passed directly to `cb_normalize`, whereas the
 retained probe derives a definition reference. Those are separate runs with
 different query preparation; the difference is not a performance improvement
 claim. Both reproduce exhaustion at the same budget. This is a small isolated
@@ -59,7 +62,8 @@ reproduction, not a claim of syntactic minimality.
 
 The 2026-10-20 workbench investigation used the kernel at `4132c05a` and the
 pending #283 `fractions` and `binary_rationals` source overlays, with other
-library imports from main. The kernel sources are unchanged at `6262df5a`.
+library imports from main. The kernel sources are unchanged at `6262df5a`:
+the recorded build hashes are both `ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4`.
 Its checked definition was `computable def small_inverse := bq_inv(-2/3);`.
 
 Selecting the positive `2/3` beneath negation gives native occurrence path
@@ -112,8 +116,10 @@ and the relation, schematically:
 f.numerator * g.denominator = g.numerator * f.denominator
 ```
 
-The multiplication is generic integer multiplication instantiated at
-`binary_integers`. Its operands remain projections from **bound variables**,
+The operation is generic ring multiplication (`CommRing.mul`) instantiated
+at `binary_integers`; projecting it from `difference_ring` gives
+`difference_mul` on the `Difference` quotient, the same operation `bint_mul`
+names. Its operands remain projections from **bound variables**,
 even though the enclosing literal is closed. Normalizing `SameRatio` itself
 exhausted 100,000 ticks. Later queries on each open multiplication also
 exhausted that budget. Those later queries shared warmed caches; their
@@ -122,31 +128,49 @@ allocation counts must not be compared as independent cold measurements.
 This identifies expensive retained relation syntax and reproduces its cost
 without the BQ parser. It rules out a literal-parser failure as a necessary
 cause of this budget exhaustion. It does not establish that every parser
-operation is optimal, identify the final root cause inside generic quotient
-multiplication, prove nontermination, or show that no larger budget finishes.
+operation is optimal, identify all remaining costs inside ring multiplication
+instantiated at `binary_integers`, or prove nontermination.
+
+There is already positive completion evidence on main. The
+[open quotient normalization report](open-quotient-normalization.md) records
+the earlier fix for open `bint_mul`. The `binary_fraction_one` regression in
+[normalization-sharing.test.mjs](../../tests/normalization-sharing.test.mjs)
+fully normalizes `fraction_field(binary_integers, bint_decide,
+bint_mul_nonzero, bint_zero_ne_one).one` with a 40M per-query cap. Its class
+constructor carries this same `SameRatio` instance, which the normalizer
+traverses. That test also fully normalizes `bint_mul`. The 100,000-tick
+failure is therefore a cost-scale observation; this report has not measured
+the relation's own completion cost in an isolated larger-budget query.
 
 The nonzero proof in this literal also has a substantial measured cost, but
-it completed at 100,000 ticks in isolation. It is different from the inverse
-result's nonzero proof discussed in the older report.
+it completed within the 100,000-tick budget (64,781 ticks) in isolation. It
+is different from the inverse result's nonzero proof discussed in the older
+report.
 
 ## Relation to the unresolved inverse failure
 
 The [nondependent quotient descent report](nondependent-quotient-descent.md#rational-release-remains-open)
 already records a completed `bq_inv(-2/3)` reference at **82,049,378 ticks**
-under the normal maximum allowance; that result still exceeded the stricter
-10M diagnostic budget. Failure to normalize the selected literal at 100,000
+on the historical `bf543532`-based diagnostic branch with the #283 library
+diff and nondependent descent change (kernel source hash `58bc1cca…`). That
+reference has not been rerun on `6262df5a`. It used the normal maximum
+allowance and still exceeded the stricter 10M diagnostic budget. Failure to
+normalize the selected literal at 100,000
 ticks does not contradict that result. The wide inverse and the fixed
 quotient-free transport gates remain unresolved in the recorded work.
 
-The next investigation is to isolate the open multiplication's retained
-proof/type normalization, compare its reduction checkpoints with the
-expected rules, and preserve the main-only reproduction when measuring
+The next investigation is to profile the remaining cost of ring multiplication
+instantiated at `binary_integers`, including retained proof/type normalization,
+alongside the existing completed controls. Compare its reduction checkpoints
+with the expected rules and preserve the main-only reproduction when measuring
 changes. Passing this 100,000-tick diagnostic alone will not close NUM2 or
 the existing small/wide inverse and transport acceptance gates.
 
 For further manual investigation, use the AST workbench's **Copy trace**
 after selecting a subtree and applying operations. It records paths, budgets,
-outcomes, native excerpts and costs since page load. A failed Normalize may
-warm caches: the retained manual sequence's subsequent WHNF took only two
+outcomes, native excerpts and costs since page load, retaining at most 100
+entries and 250,000 stored characters; dropped entries are counted. The
+failed Normalize warmed caches in the retained manual sequence: its
+subsequent WHNF reused the same constructor handle and took only two
 instruction ticks, which is not the fresh-session 297-query-tick measurement.
 These traces record manual operations, not every internal normalizer rewrite.

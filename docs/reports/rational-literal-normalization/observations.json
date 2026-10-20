@@ -7,7 +7,10 @@
     "The initial Step record ticks=0 measured querySteps only, not instructionSteps; use the later manual trace instruction counters for that operation.",
     "Component runs use fresh checked sessions after WHNF; the relation component queries share warmed caches.",
     "Manual trace summary retains metadata, commands and costs; native excerpts are omitted. It is not a full copied workbench trace.",
-    "Counts from different entry/preparation paths are not before/after performance comparisons."
+    "Counts from different entry/preparation paths are not before/after performance comparisons.",
+    "The relation records also use the pending fractions/binary_rationals overlays.",
+    "The minimal entry in mainOnlyRelation.imports names the ad hoc main module, not a library import.",
+    "Manual trace summary omits native excerpts and the browser-local page URL; it preserves all operations, including load and Back."
   ],
   "literal": [
     {
@@ -665,7 +668,18 @@
       ],
       "kernelAbi": 3
     },
-    "steps": [
+    "entries": [
+      {
+        "sequence": 1,
+        "atMs": 4,
+        "command": "load",
+        "main": "rational_probe",
+        "binding": "rational_probe__small_inverse",
+        "side": "expression",
+        "status": "accepted",
+        "resultState": 0,
+        "judgement": 96
+      },
       {
         "sequence": 2,
         "atMs": 9697,
@@ -741,6 +755,20 @@
           "allocatedNodes": 2,
           "arenaBytesDelta": 0
         }
+      },
+      {
+        "sequence": 4,
+        "atMs": 9880,
+        "command": "back",
+        "state": 1,
+        "status": "accepted",
+        "resultState": 0,
+        "side": "expression",
+        "path": [
+          1,
+          1
+        ],
+        "judgement": 96
       },
       {
         "sequence": 5,

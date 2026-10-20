@@ -11,7 +11,11 @@ import { assertFreshBuild, sourceHash } from "../../../tools/build-stamp.mjs";
 
 assertFreshBuild();
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const source = await readFile(new URL("same-ratio.cubist", import.meta.url), "utf8");
+const source = `import fractions;
+import binary_integers;
+
+def relation := SameRatio{{U0}}(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
+`;
 const sha256 = text => createHash("sha256").update(text).digest("hex");
 const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
 try {
@@ -42,6 +46,7 @@ try {
     arenaBefore: before.arena, arenaAfter: after.arena, elapsedMs,
     revision: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
     kernelSourceHash: sourceHash("kernel"), fixtureSha256: sha256(source),
+    probeSha256: sha256(await readFile(fileURLToPath(import.meta.url))),
     checkedSourceHashes: Object.fromEntries(Object.entries(program.sources).sort(([a], [b]) => a.localeCompare(b))
       .map(([name, text]) => [name, sha256(text)])),
     node: process.version, platform: `${process.platform}/${process.arch}` }, null, 2));

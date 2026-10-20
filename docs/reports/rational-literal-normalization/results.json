@@ -15,10 +15,11 @@
     "nodes": 90026,
     "bytes": 17444864
   },
-  "elapsedMs": 5.487750000000233,
-  "revision": "6262df5a97a0f6f8096ae88af1ffae116b10257f",
+  "elapsedMs": 5.531041000000187,
+  "revision": "57baa91d8ae66ae2377df44e01f89df13e2e244f",
   "kernelSourceHash": "ee8b2f32f6f15020809eec1457acbc3c0801adb18d78bb936cb9987400f22ce4",
   "fixtureSha256": "44959c15bf66d5e7c6c4b322d3ef0d5c44c8a2e7395ea81171fc45124f529da5",
+  "probeSha256": "1d42e98fa8a043152297d2d6eed587b17ebf949feb3e7039a5043b4991a9d751",
   "checkedSourceHashes": {
     "algebra": "2508c48a05a3467bef134d61b84746a50b62e7a6681a09415dbce49a6b22d702",
     "binary_integers": "d0935253d064534c28ffbdd60da475ebb068a4dac648aed3818c2bea6567ffbd",
