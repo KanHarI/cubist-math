@@ -14,6 +14,12 @@ quotient-free setness-transport workload that remains for the evaluator.
 The measurements below describe the original definition unless stated
 otherwise.
 
+Update on 2026-10-21: the [selected rational literal diagnosis](rational-literal-normalization.md)
+records the workbench's `2/3` failure at 100,000 ticks and a retained
+main-only `SameRatio` reproduction without the BQ parser. It distinguishes
+this smaller-budget observation from the completed small-inverse reference
+above and preserves the remaining inverse/transport gates.
+
 ## Small reproduction on main
 
 The [fixture](../../tests/fixtures/generic-prop-normalization.cubist) contains an

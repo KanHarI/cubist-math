@@ -49,6 +49,10 @@ now records the remaining failure. Its
 [completion path](#rational-full-normalization-completion-path) below assigns
 the structural work to EVAL3/EVAL4/EVAL8 and keeps full rational normalization
 separate from lazy data execution.
+The [selected rational literal diagnosis](../../reports/rational-literal-normalization.md)
+adds a fixed 100,000-tick `SameRatio` reproduction using main's library alone.
+It isolates expensive retained relation syntax without the BQ parser and
+does not close the existing inverse or transport gates.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
