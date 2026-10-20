@@ -522,22 +522,32 @@ export class NativeCubicalElaborator {
       if (error instanceof KernelError && speculativeFailure(error.kind)) throw error;
       throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
     }
-    // An assumption the driver had to name apart takes its own name back.
-    let { term: expression, type } = graph.judgement(judgement);
+    const renamings = [];
     for (const [symbol, entry] of driver.contextScope(assumptions, mask)) {
       if (typeof symbol !== "number") continue;
       const own = graph.entry(entry).symbol;
-      if (own !== symbol) {
-        expression = graph.rename(expression, false, own, symbol);
-        type = graph.rename(type, false, own, symbol);
-      }
+      if (own !== symbol) renamings.push([own, symbol]);
+    }
+    return this.viewOfJudgement(judgement, dimensions, renamings, graph.count - before);
+  }
+  // Read an already checked judgement without deriving it again. The workbench
+  // retains this certificate after each native Step, including its context.
+  // Its ID and handles must not be retained across checkpoint commit/rollback.
+  viewOfJudgement(judgement, dimensions, renamings = [], checkingSteps = 0) {
+    const graph = this.driver.graph;
+    let { term: expression, type, kind } = graph.judgement(judgement);
+    if (kind !== "typing") throw new TypeError("An inspected view needs a typing judgement.");
+    // An assumption the driver had to name apart takes its own name back.
+    for (const [own, symbol] of renamings) {
+      expression = graph.rename(expression, false, own, symbol);
+      type = graph.rename(type, false, own, symbol);
     }
     const arena = this.kernel.arena(), derivedHandles = this.kernel.derivedHandles ??= new Set();
     derivedHandles.add(expression).add(type);
     const names = this.kernel.variantStems?.size ? this.sourceNames ??= new SourceNames(this.kernel.variantStems) : null;
     const display = value => names ? names.apply(value) : value;
-    return { expression, typeHandle: type, term: display(this.syntax.decode(expression, dimensions)),
-      type: display(this.syntax.decode(type, dimensions)), checkingSteps: graph.count - before,
+    return { expression, typeHandle: type, judgement, renamings, term: display(this.syntax.decode(expression, dimensions)),
+      type: display(this.syntax.decode(type, dimensions)), checkingSteps,
       arenaNodes: arena.nodes, arenaBytes: arena.bytes };
   }
   // The type the kernel computes for the next clause of an eliminator, with

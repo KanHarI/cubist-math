@@ -113,3 +113,18 @@ test("selection notation exposes every occurrence, including annotations and inn
   const nested = cubicalMathTree(app(shared, zero), {}, 5000, { paths: true });
   assert.deepEqual(nested.fn.sourcePath, ["fn"]);
 });
+
+test("delta selection retains the function path through universe instantiation", async t => {
+  const program = await programFor(t);
+  await program.check("def poly(U < UU0, A : U, x : A) : A := x;", "universe_selection");
+  const reference = { tag: "DefRef", name: "universe_selection__poly" };
+  const term = app(app({ tag: "LApp", fn: reference, level: 0 }, unat), zero);
+  const tree = cubicalMathTree(term, {}, 5000, { paths: true });
+  const selected = tree.fn.fn.fn;
+  assert.deepEqual(selected.sourcePath, ["fn", "fn", "fn"]);
+  assert.deepEqual(reductionRule(termAtPath(term, selected.sourcePath), "delta"), { rule: "δ", name: reference.name });
+  const result = reduceView(program, { expression: term, type: unat, context: [], dimensions: [] },
+    "expression", "delta", selected.sourcePath);
+  assert.equal(result.view.expression.fn.fn.fn.tag, "LLam");
+  assert.deepEqual(result.view.expression.arg, zero);
+});
