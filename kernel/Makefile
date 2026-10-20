@@ -49,6 +49,8 @@ $(OUT)/obj/%.o: src/%.c | $(OUT)/obj $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 $(OUT)/obj/tests/instructions-fault.o: src/instructions.c tests/allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/allocation_fault.h -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/normalization-fault.o: src/term_normalize.c tests/normal_allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/normal_allocation_fault.h -MMD -MP -c $< -o $@
 $(OUT)/obj/tests/%.o: tests/%.c | $(OUT)/obj/tests $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 # The link $(1) pointed at $(2), only when it points elsewhere, by renaming a
@@ -61,7 +63,7 @@ publish = [ "$$(readlink $(1) 2>/dev/null)" = "$(2)" ] || { ln -s $(2) $(1).$$$$
 # Each program is its source in tests/, named with underscores, linked with
 # the kernel's objects as one command once compiled and linked it.
 define PROGRAM
-$(OUT)/bin/$(1): $(OUT)/obj/tests/$(subst -,_,$(1)).o $(if $(filter test-allocations,$(1)),$(filter-out $(OUT)/obj/instructions.o,$(OBJ)) $(OUT)/obj/tests/instructions-fault.o,$(OBJ)) | $(OUT)/bin
+$(OUT)/bin/$(1): $(OUT)/obj/tests/$(subst -,_,$(1)).o $(if $(filter test-allocations,$(1)),$(filter-out $(OUT)/obj/instructions.o $(OUT)/obj/term_normalize.o,$(OBJ)) $(OUT)/obj/tests/instructions-fault.o $(OUT)/obj/tests/normalization-fault.o,$(OBJ)) | $(OUT)/bin
 	$$(CC) $$(CPPFLAGS) $$(CFLAGS) $$(LDFLAGS) $$^ $$(LDLIBS) -o $$@
 $(BUILD)/$(1): $(OUT)/bin/$(1) FORCE
 	@$$(call publish,$$@,$(ID)/bin/$(1))

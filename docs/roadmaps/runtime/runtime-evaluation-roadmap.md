@@ -25,6 +25,13 @@ The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
 budget failures. Generic quotient descent and binary-rational inverse full
 normalization remain open; these fixes do not complete NUM2.
+The [explicit normalization stack](../../reports/normalization-stack.md) covers
+the existing full normalizer's traversal. The
+[weak-head tail loop](../../reports/weak-head-tail.md) also removes native
+recursion for chains of definition unfolding and tail contractions;
+prerequisite head queries and composition helpers remain guarded native calls.
+Joint EVAL3/EVAL4 evaluator integration and the remaining protected traversals
+are still open.
 A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)
 now records the remaining failure. Its
 [completion path](#rational-full-normalization-completion-path) below assigns
