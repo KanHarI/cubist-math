@@ -35,8 +35,12 @@ The [bounded substitution traversals](../../reports/substitution-stack.md)
 move term/dimension substitution, capture-avoidance renaming and dependency
 scans onto explicit stacks, including tube lists inside substitution and
 free-dimension analysis. Composition, Glue and HIT tube helpers remain
-recursive. The syntax-depth guard remains; comparison, universe-level and
-frontend traversals still need bounded replacements.
+recursive. The syntax-depth guard remains. The
+[comparison and level worklists](../../reports/comparison-level-stacks.md)
+replace native recursion in syntactic and tube-list comparison, cumulative
+type descent, level arithmetic and level canonicalization. Composition/Glue/HIT
+tube construction, prerequisite head queries and frontend traversals remain
+open, and the fixed four larger BNat cases still hit the syntax guard.
 Joint EVAL3/EVAL4 evaluator integration and the remaining protected traversals
 are still open.
 A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)

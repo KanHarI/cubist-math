@@ -113,75 +113,137 @@ static bool copy_nf(cc_kernel *k, cc_level_nf *out, const cc_level_nf *from) {
     return true;
 }
 
-static bool normal(cc_kernel *, cc_term, cc_level_nf *, level_memo **);
+/* Both level arithmetic and syntax canonicalization retain only bounded
+ * heap continuations. Their owning buffers never point into these frames. */
+static void *level_stack_grow(cc_kernel *k, void *frames, void *local, size_t *capacity,
+                              size_t count, size_t size) {
+    if (*capacity >= 16384) {
+        ck_fail_as(k, CC_ERROR_RESOURCE, "Level normalization depth exceeded.");
+        return NULL;
+    }
+    size_t next = *capacity * 2;
+    void *grown = frames == local ? malloc(next * size) : realloc(frames, next * size);
+    if (!grown) {
+        ck_fail_as(k, CC_ERROR_RESOURCE, "Level traversal stack allocation failed.");
+        return NULL;
+    }
+    if (frames == local) memcpy(grown, local, count * size);
+    *capacity = next;
+    return grown;
+}
 
-/* Recursion follows the syntax depth; successor chains remain iterative. */
-static bool normal_uncached(cc_kernel *k, cc_term level, cc_level_nf *out, level_memo **memo) {
-    uint64_t successors = 0;
+typedef struct {
+    cc_term term, left, right;
+    uint64_t successors;
+    cc_level_nf first;
+    unsigned next;
+    bool cache;
+} level_frame;
+
+static bool level_completed(cc_kernel *k, const level_frame *f, const cc_level_nf *out, level_memo **memo) {
+    if (k->error[0]) return false;
+    if (!f->cache) return true;
+    if (!*memo && !(*memo = calloc(LEVEL_MEMO_SIZE, sizeof **memo)))
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normal form allocation failed.");
+    level_memo *entry = &(*memo)[f->term % LEVEL_MEMO_SIZE];
+    if (!copy_nf(k, &entry->nf, out)) return false;
+    entry->term = f->term;
+    return true;
+}
+
+/* False means an immediate answer (or error); true leaves two maximum
+ * operands to visit. Successor chains keep their existing iterative path. */
+static bool level_ready(cc_kernel *k, cc_term level, cc_level_nf *out,
+                        level_memo **memo, level_frame *f) {
+    *f = (level_frame){.term = level,
+        .cache = level && level < k->count && k->nodes[level].depth >= 8};
+    if (f->cache && *memo && (*memo)[level % LEVEL_MEMO_SIZE].term == level) {
+        f->cache = false;
+        if (ck_tick(k)) copy_nf(k, out, &(*memo)[level % LEVEL_MEMO_SIZE].nf);
+        return false;
+    }
     for (;;) {
-        if (!level || level >= k->count)
-            return ck_fail(k, "Expected a level.");
-        if (!ck_tick(k))
-            return false;
-        if (k->nodes[level].kind != CC_LSUCC)
-            break;
-        if (!k->nodes[level].payload)
-            return ck_fail(k, "A level successor counts at least one.");
-        successors += k->nodes[level].payload;
-        if (successors > CC_LEVEL_MAX)
-            return ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded);
+        if (!level || level >= k->count) { ck_fail(k, "Expected a level."); return false; }
+        if (!ck_tick(k)) return false;
+        if (k->nodes[level].kind != CC_LSUCC) break;
+        if (!k->nodes[level].payload) { ck_fail(k, "A level successor counts at least one."); return false; }
+        f->successors += k->nodes[level].payload;
+        if (f->successors > CC_LEVEL_MAX) { ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded); return false; }
         level = k->nodes[level].child[0];
     }
     cc_node n = k->nodes[level];
     switch (n.kind) {
     case CC_LCONST:
-        if ((n.payload >> 16) > CC_TIER_MAX)
-            return ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded);
+        if ((n.payload >> 16) > CC_TIER_MAX) { ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded); return false; }
         out->tier = n.payload >> 16;
         out->constant = n.payload & 0xffffu;
         out->count = 0;
         break;
     case CC_VAR:
-        if (!reserve_terms(k, out, 1))
-            return false;
+        if (!reserve_terms(k, out, 1)) return false;
         out->tier = out->constant = 0;
         out->count = 1;
         out->terms[0] = (cc_level_term){n.payload, 0};
         break;
-    case CC_LMAX: {
-        cc_level_nf right = {0};
-        bool joined = normal(k, n.child[0], out, memo) && normal(k, n.child[1], &right, memo) && join(k, out, &right);
-        ck_level_nf_free(&right);
-        if (!joined)
-            return false;
-        break;
-    }
+    case CC_LMAX:
+        f->left = n.child[0]; f->right = n.child[1];
+        return true;
     case CC_LBOUND:
-        return ck_fail(k, "A bound is not a level.");
+        ck_fail(k, "A bound is not a level.");
+        return false;
     default:
-        return ck_fail(k, "Expected a level.");
+        ck_fail(k, "Expected a level.");
+        return false;
     }
-    return add(k, out, successors);
+    add(k, out, f->successors);
+    return false;
+}
+
+static bool level_traverse(cc_kernel *k, level_frame root, cc_level_nf *out, level_memo **memo) {
+    level_frame local[32], *frames = local;
+    size_t count = 1, capacity = sizeof local / sizeof *local;
+    cc_level_nf result = {0};
+    frames[0] = root;
+    while (count && !k->error[0]) {
+        level_frame *f = &frames[count - 1];
+        if (f->next == 2) {
+            bool joined = join(k, &f->first, &result);
+            ck_level_nf_free(&result);
+            if (!joined || !add(k, &f->first, f->successors)) break;
+            result = f->first;
+            f->first = (cc_level_nf){0};
+            if (!level_completed(k, f, &result, memo)) break;
+            --count;
+            continue;
+        }
+        if (f->next == 1) {
+            f->first = result;
+            result = (cc_level_nf){0};
+        }
+        cc_term operand = f->next++ ? f->right : f->left;
+        level_frame child;
+        if (!level_ready(k, operand, &result, memo, &child)) {
+            level_completed(k, &child, &result, memo);
+            continue;
+        }
+        if (count == capacity) {
+            level_frame *grown = level_stack_grow(k, frames, local, &capacity, count, sizeof *frames);
+            if (!grown) break;
+            frames = grown;
+        }
+        frames[count++] = child;
+    }
+    for (size_t i = 0; i < count; ++i) ck_level_nf_free(&frames[i].first);
+    if (frames != local) free(frames);
+    if (k->error[0]) { ck_level_nf_free(&result); return false; }
+    *out = result;
+    return true;
 }
 
 static bool normal(cc_kernel *k, cc_term level, cc_level_nf *out, level_memo **memo) {
-    /* Short levels need less work than allocating/copying a memo. Larger
-     * shared subgraphs must not be expanded once per path to a leaf. */
-    bool cache = level && level < k->count && k->nodes[level].depth >= 8;
-    size_t slot = level % LEVEL_MEMO_SIZE;
-    if (cache && *memo && (*memo)[slot].term == level)
-        return ck_tick(k) && copy_nf(k, out, &(*memo)[slot].nf);
-    if (!normal_uncached(k, level, out, memo))
-        return false;
-    if (cache) {
-        if (!*memo && !(*memo = calloc(LEVEL_MEMO_SIZE, sizeof **memo)))
-            return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normal form allocation failed.");
-        level_memo *entry = &(*memo)[slot];
-        if (!copy_nf(k, &entry->nf, out))
-            return false;
-        entry->term = level;
-    }
-    return true;
+    level_frame root;
+    return level_ready(k, level, out, memo, &root) ? level_traverse(k, root, out, memo)
+                                                 : level_completed(k, &root, out, memo);
 }
 
 bool ck_level_normal(cc_kernel *k, cc_term level, cc_level_nf *out) {
@@ -360,37 +422,74 @@ bool ck_level_nf_equal(const cc_level_nf *a, const cc_level_nf *b) {
 
 /* Every level of a term in normal form: each universe's level and each
  * instantiation's. Shared subterms are visited once. */
-cc_term ck_canonical_levels(cc_kernel *k, cc_term term) {
-    if (!term || k->error[0])
-        return 0;
+typedef struct {
+    cc_term term;
+    cc_node node;
+    unsigned next, waiting;
+} canonical_frame;
+
+static bool canonical_ready(cc_kernel *k, cc_term term, cc_term *result) {
+    if (!term || k->error[0]) { *result = 0; return false; }
     uint64_t cached;
-    if (ck_memo_get(k, 4, term, 0, 0, &cached))
-        return (cc_term)cached;
-    if (!ck_tick(k))
-        return 0;
+    if (ck_memo_get(k, 4, term, 0, 0, &cached)) { *result = (cc_term)cached; return false; }
+    if (!ck_tick(k)) { *result = 0; return false; }
     cc_node n = k->nodes[term];
-    cc_term result = term;
-    if (n.kind == CC_U) {
-        result = ck_universe(k, ck_level_canonical(k, n.child[0]));
-    } else if (n.kind != CC_LCONST && n.kind != CC_LSUCC && n.kind != CC_LMAX && n.kind != CC_LBOUND) {
-        if (++k->recursion > 1024) {
-            --k->recursion;
-            return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normalization depth exceeded."), 0;
-        }
-        cc_term child[4] = {n.child[0], n.child[1], n.child[2], n.child[3]};
-        for (unsigned i = 0; i < ck_arity(n.kind) && result; ++i)
-            if (child[i])
-                result = child[i] = n.kind == CC_LAPP && i == 1 ? ck_level_canonical(k, child[i])
-                                                                : ck_canonical_levels(k, child[i]);
+    if (n.kind == CC_U) *result = ck_universe(k, ck_level_canonical(k, n.child[0]));
+    else if (n.kind == CC_LCONST || n.kind == CC_LSUCC || n.kind == CC_LMAX ||
+             n.kind == CC_LBOUND || !ck_arity(n.kind)) *result = term;
+    else return true;
+    if (*result) ck_memo_put(k, 4, term, 0, 0, *result);
+    return false;
+}
+
+static cc_term canonical_traverse(cc_kernel *k, cc_term term) {
+    if (++k->recursion > 1024) {
         --k->recursion;
-        if (result && memcmp(child, n.child, sizeof child))
-            result = ck_make(k, n.kind, n.payload, child[0], child[1], child[2], child[3]);
-        else if (result)
-            result = term;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normalization depth exceeded."), 0;
     }
-    if (result)
-        ck_memo_put(k, 4, term, 0, 0, result);
-    return result;
+    canonical_frame local[32], *frames = local;
+    size_t count = 1, capacity = sizeof local / sizeof *local;
+    cc_term result = 0;
+    frames[0] = (canonical_frame){term, k->nodes[term], 0, 0};
+    while (count && !k->error[0]) {
+        canonical_frame *f = &frames[count - 1];
+        if (f->waiting) {
+            f->node.child[f->waiting - 1] = result;
+            f->waiting = 0;
+        }
+        if (f->next == ck_arity(f->node.kind)) {
+            cc_node n = f->node, original = k->nodes[f->term];
+            result = memcmp(n.child, original.child, sizeof n.child)
+                ? ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]) : f->term;
+            if (result) ck_memo_put(k, 4, f->term, 0, 0, result);
+            --count;
+            continue;
+        }
+        unsigned i = f->next++;
+        cc_term child = f->node.child[i];
+        if (!child) continue;
+        if (f->node.kind == CC_LAPP && i == 1) {
+            f->node.child[i] = ck_level_canonical(k, child);
+            continue;
+        }
+        f->waiting = i + 1;
+        if (!canonical_ready(k, child, &result)) continue;
+        if (count == capacity) {
+            canonical_frame *grown = level_stack_grow(k, frames, local, &capacity, count, sizeof *frames);
+            if (!grown) break;
+            frames = grown;
+        }
+        frames[count++] = (canonical_frame){child, k->nodes[child], 0, 0};
+    }
+    if (frames != local) free(frames);
+    --k->recursion;
+    return k->error[0] ? 0 : result;
+}
+
+cc_term ck_canonical_levels(cc_kernel *k, cc_term term) {
+    cc_term result;
+    if (canonical_ready(k, term, &result)) result = canonical_traverse(k, term);
+    return k->error[0] ? 0 : result;
 }
 
 /* Level substitution (§2.8): capture-avoiding, since level and term

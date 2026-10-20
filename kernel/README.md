@@ -178,6 +178,10 @@ arithmetic normal forms, released on success and failure. It checks exact
 handles and uses 256 slots, with collisions only losing completed work. It
 does not build canonical syntax, which could exceed the term-depth limit even
 when the arithmetic normal form fits. Short expressions bypass this cache.
+Maximum operands and syntax-level canonicalization use bounded explicit
+worklists. Pending arithmetic normal forms have separate owners, so growing
+the worklist cannot invalidate their buffers; all pending forms and the
+query-local memo are freed on failure.
 
 ### Sharing during comparison
 
@@ -195,3 +199,9 @@ rule most free names out at once; the
 rest are looked up exactly, and only for terms at least eight levels deep. An
 entry holds the comparison's result, equal or different, and no typing
 judgement; `tests/test_comparison.c` checks these properties.
+Comparison and cumulativity now use explicit traversal loops. Binder
+environments use indices into live ancestor frames, while memo keys retain
+the unique scope identifiers. Comparison of composition tube lists preserves
+separate outer face and inner body scopes on that same worklist. See the
+[comparison and level traversal report](../docs/reports/comparison-level-stacks.md)
+for limits, failure tests, measurements and the remaining protected recursion.
