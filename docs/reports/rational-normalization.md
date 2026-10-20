@@ -20,6 +20,11 @@ main-only `SameRatio` reproduction without the BQ parser. It distinguishes
 this smaller-budget observation from the completed small-inverse reference
 above and preserves the remaining inverse/transport gates.
 
+Update on 2026-10-21 (later): the [debugging plan](../roadmaps/runtime/rational-normalization-debug-plan.md)
+reproduces the small inverse on main alone at 71.5M ticks with a 1.15M-node
+normal form, attributes 67.6M of it to the `prop_type_is_set(U0)` evidence in
+the negative `bint_decide` certificate, and schedules the experiments.
+
 ## Small reproduction on main
 
 The [fixture](../../tests/fixtures/generic-prop-normalization.cubist) contains an

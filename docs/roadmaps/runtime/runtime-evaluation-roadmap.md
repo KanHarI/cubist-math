@@ -53,6 +53,11 @@ The [selected rational literal diagnosis](../../reports/rational-literal-normali
 adds a fixed 100,000-tick `SameRatio` reproduction using main's library alone.
 It isolates expensive retained relation syntax without the BQ parser and
 does not close the existing inverse or transport gates.
+The [debugging plan](rational-normalization-debug-plan.md) of 2026-10-21
+reproduces the small inverse on main alone, attributes its cost to the
+setness-of-propositions evidence inside the negative integer equality
+certificate and the two-argument quotient descent's induction, and orders
+the library, kernel and host experiments against fixed gates.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
