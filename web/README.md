@@ -27,6 +27,18 @@ Open it to see native constructors and operands without numeral shorthand.
 Branches load one level at a time; **Select** focuses that occurrence for a
 reduction, including normalization of only that subtree.
 
+**Copy trace** copies a JSON diagnostic log to paste into an issue or chat.
+It records operations from the current page load, including native paths,
+rules, budgets, successful/refused results, Back branches, and bounded raw
+AST excerpts before/after native steps. Costs include kernel work counters,
+arena growth and elapsed time for the Step and its readback. The log includes
+the page URL, identifies the checked source modules by SHA-256, and includes
+a bounded copy of the main source. It does not record internal WHNF/Normalize steps or
+expand definition bodies. Up to 100 recent events are retained with a size
+limit; dropped events and omitted syntax are marked. Copy works during a
+running operation and after a worker failure; denied clipboard access shows
+selectable text. Reloading starts a new trace.
+
 Buttons beside the selection offer **β**, **δ**, **ι**, **Path**, **Face**,
 **Glue** and **Split** according to the native node shape, plus **WHNF** and
 **Normalize** for the selected subtree. Relevant immediate-parent operations

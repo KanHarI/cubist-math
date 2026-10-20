@@ -9,7 +9,15 @@ import { reductionRule, termAtPath } from "./cubical-reduction.mjs";
 import { assemblyText, renderAssembly, opcodeName } from "./cubical-assembly.mjs";
 import { renderJudgementGraph } from "./cubical-graph-view.mjs";
 import { renderNativeTree } from "./cubical-ast-tree.mjs";
+import { WorkbenchTrace, traceAttempt, traceError } from "./cubical-workbench-trace.mjs";
 const $ = id => document.getElementById(id), history = [];
+const trace = new WorkbenchTrace();
+trace.metadata.page = location.href;
+// Best-effort server provenance, not a new kernel operation or a load gate.
+fetch("./dist/build-stamp.json", { cache: "no-store" }).then(response => response.ok ? response.json() : null)
+  .then(stamp => { if (stamp?.kernel) trace.metadata.reportedBuild = {
+    sources: stamp.kernel.sources, outputs: stamp.kernel.outputs,
+  }; }).catch(() => {});
 let view, checked, selected, state, busy = 0, workerFailure = null, reductionMode = null, reductionLimit = 5000;
 const requests = new WorkerRequests(new Worker("./cubical-workbench-worker.mjs", { type: "module" }), { onError: workerStopped });
 let assemblyLimit = 400, assemblyView = null, listing = null, assemblyFocus = [], expandedDefinitions = new Set();
@@ -54,11 +62,44 @@ function action(handler) {
   };
 }
 async function request(command, args = {}, progress) {
+  const input = { state, ...args }, entry = trace.begin(traceAttempt(command, input));
   busy++; availability();
-  try { return await requests.request(command, { state, ...args }, progress); }
-  catch (error) { if (error.fatal) workerStopped(error); throw error; }
-  finally { busy--; availability(); }
+  try {
+    const result = await requests.request(command, input, progress);
+    if (result.traceSession) trace.metadata.session = result.traceSession;
+    trace.finish(entry, { status: "accepted", resultState: result.id,
+      judgement: result.checked?.judgement, change: result.change,
+      detail: result.trace ?? result.traceInitial });
+    return result;
+  } catch (error) {
+    trace.finish(entry, { status: error.fatal || workerFailure ? "worker-failed" : "refused",
+      error: traceError(error), detail: error.trace });
+    if (error.fatal) workerStopped(error);
+    throw error;
+  } finally {
+    busy--; availability();
+    if (entry) $("trace-status").textContent = `${trace.sequence} trace events recorded since page load.`;
+  }
 }
+// Clipboard access stays on the page: it must work with a busy/dead worker,
+// and writeText must be called directly from the user's click for Safari.
+$("copy-trace").onclick = async () => {
+  const button = $("copy-trace");
+  button.disabled = true;
+  const text = trace.text({ state, binding: selected, checked: !!checked,
+    judgement: checked?.judgement, side: $("kernel-side").value, path: [...kernelPath],
+    selection: occurrence ? { handle: occurrence.handle, kind: occurrence.kind, preview: occurrence.text } : null,
+    workerFailed: workerFailure ? traceError(workerFailure) : null });
+  try {
+    await navigator.clipboard.writeText(text);
+    $("trace-fallback").hidden = true;
+    $("trace-status").textContent = `Copied ${trace.entries.length} trace events. Paste the trace into the conversation.`;
+  } catch {
+    $("trace-fallback").value = text; $("trace-fallback").hidden = false;
+    $("trace-fallback").focus(); $("trace-fallback").select();
+    $("trace-status").textContent = "Clipboard unavailable. Copy the selected trace below.";
+  } finally { button.disabled = false; }
+};
 function adopt(snapshot) {
   ({ view, checked, selected } = snapshot); state = snapshot.id;
   assemblyView = null; occurrence = null; treeKey = null;
@@ -359,6 +400,9 @@ async function inspect(binding, save = true) {
 $("back").onclick = action(async () => {
   reductionMode = null;
   const previous = history.pop(); if (!previous) return;
+  trace.finish(trace.begin({ command: "back", state }), { status: "accepted",
+    resultState: previous.id, side: previous.kernelSide, path: previous.kernelPath,
+    judgement: previous.checked?.judgement });
   adopt(previous);
   kernelPath = previous.kernelPath ?? [];
   if (previous.kernelSide) $("kernel-side").value = previous.kernelSide;

@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { WorkbenchSession } from "../web/cubical-workbench-session.mjs";
+import { traceSnapshot } from "../web/cubical-workbench-trace.mjs";
 
 const module = await createCubical();
 const payload = {
@@ -124,4 +125,37 @@ test("unfolding exposes beta actions at both the lambda and its containing appli
     assert.ok(!session.occurrence(unfolded.id, args.side, [...beta.path, 1]).actions.some(a => a.rule === "beta"),
       "an argument never offers beta of its parent");
   }
+});
+
+test("native trace records raw nodes, source identity, costs and retained state on refusal", async t => {
+  const { session, initial } = await fixture(t);
+  assert.equal(initial.traceSession.mainSource.text, payload.source);
+  const source = initial.traceSession.sources.find(s => s.name === payload.main);
+  const { createHash } = await import("node:crypto");
+  assert.equal(source.sha256, createHash("sha256").update(payload.source).digest("hex"));
+  assert.equal(initial.traceInitial.nodes[0].kind, "App");
+  const before = session.program.kernel.work();
+  const excerpt = traceSnapshot(session.program, session.state(initial.id), "expression", [], 1);
+  assert.equal(excerpt.nodes.length, 1);
+  assert.ok(excerpt.omittedDiscoveredNodes > 0);
+  assert.deepEqual(session.program.kernel.work(), before, "tracing reads never reduce or check");
+  const args = { state: initial.id, side: "expression", path: [0], rule: "delta", budget: 100000 };
+  const unfolded = await session.handle("step", args);
+  assert.equal(unfolded.trace.before.nodes[0].definition.name, "workbench__identity");
+  assert.equal(unfolded.trace.after.nodes[0].kind, "Lam");
+  assert.equal(unfolded.trace.after.state, unfolded.id);
+  assert.ok(unfolded.trace.cost.work.instructions > 0);
+  assert.ok(unfolded.trace.cost.elapsedMs >= 0);
+  await assert.rejects(session.handle("step", { ...args, path: [], rule: "normalize", budget: 1 }), error => {
+    assert.equal(error.kind, "budget");
+    assert.equal(error.trace.retainedState, initial.id);
+    assert.equal(error.trace.before.nodes[0].kind, "App");
+    assert.ok(error.trace.cost.work.exhausted > 0);
+    assert.ok(error.trace.cost.work.instructionSteps > 0);
+    assert.doesNotThrow(() => JSON.stringify(error.trace));
+    return true;
+  });
+  const type = await session.handle("step", { ...args, side: "type", path: [], rule: "whnf" });
+  assert.equal(type.trace.before.side, "type");
+  assert.equal(type.trace.before.selected, initial.checked.typeHandle);
 });

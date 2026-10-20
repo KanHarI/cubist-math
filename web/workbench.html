@@ -17,6 +17,7 @@
       <div class="toolbar">
         <button id="back" disabled>← Back</button>
         <button id="unhighlight">Un-highlight</button>
+        <button id="copy-trace" title="Copy manual operations, failures and native AST excerpts since this page load">Copy trace</button>
         <label for="workbench-view">View</label>
         <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel AST</option><option value="graph">Kernel graph</option></select>
         <button id="check" data-math-option disabled>Check edited expression</button>
@@ -24,6 +25,8 @@
         <label data-math-option><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
         <label data-math-option><input id="identity-sugar" type="checkbox" checked /> Equality as =<sub>T</sub></label>
       </div>
+      <p id="trace-status" class="hint" role="status">Manual operations are recorded from this page load.</p>
+      <textarea id="trace-fallback" hidden readonly rows="12" aria-label="Trace to copy manually"></textarea>
       <div id="diagnostic" role="alert" hidden></div>
       <p id="reduction-status" class="hint" role="status"></p>
       <button id="more-reduction-sites" hidden>Show more reduction sites</button>

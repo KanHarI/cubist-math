@@ -13,7 +13,7 @@ self.onmessage = ({ data: { id, command, args } }) => {
       self.postMessage({ id, result });
     } catch (error) {
       const fatal = aborted !== null || error instanceof WebAssembly.RuntimeError;
-      self.postMessage({ id, error: { message: aborted ?? error.message, kind: error.kind, fatal } });
+      self.postMessage({ id, error: { message: aborted ?? error.message, kind: error.kind, fatal, trace: error.trace } });
       if (fatal) self.close();
     }
   });

@@ -104,6 +104,26 @@ await browserTest(async ({ browser, base }) => {
   await page.locator("#back").click(); await settled(page);
   assert.match(await page.locator("#status").textContent(), /restored previous judgement/);
   assert.equal(await page.locator("#syntax").inputValue(), originalSyntax);
+  // Clipboard copies a diagnostic log, including refused attempts and Back.
+  // Use the actual clipboard API, then exercise the denied-access fallback.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.locator("#copy-trace").click();
+  await page.waitForFunction(() => document.querySelector("#trace-status").textContent.startsWith("Copied"));
+  const copiedTrace = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
+  assert.equal(copiedTrace.format, "cubist-workbench-trace");
+  assert.ok(copiedTrace.entries.some(e => e.command === "step" && e.status === "refused"));
+  assert.ok(copiedTrace.entries.some(e => e.command === "step" && e.rule === "beta" && e.status === "accepted"));
+  assert.ok(copiedTrace.entries.some(e => e.command === "back"));
+  assert.ok(copiedTrace.entries.find(e => e.command === "step" && e.rule === "delta").detail.before.nodes[0].definition);
+  await page.evaluate(() => Object.defineProperty(navigator.clipboard, "writeText", {
+    configurable: true, value: async () => { throw new DOMException("Denied", "NotAllowedError"); },
+  }));
+  await page.locator("#copy-trace").click();
+  await page.locator("#trace-fallback").waitFor({ state: "visible" });
+  assert.equal(JSON.parse(await page.locator("#trace-fallback").inputValue()).format, copiedTrace.format);
+  assert.equal(await page.locator("#trace-fallback").evaluate(el => el.selectionEnd - el.selectionStart),
+    (await page.locator("#trace-fallback").inputValue()).length);
+  await page.evaluate(() => delete navigator.clipboard.writeText);
   await page.locator("#workbench-view").selectOption("assembly"); await settled(page);
   await page.locator("#kernel-root").click(); await settled(page);
   await page.locator("#kernel-rule").selectOption("normalize"); await settled(page);
@@ -151,6 +171,7 @@ await browserTest(async ({ browser, base }) => {
           refusedPreview = true; throw Error("Injected preview failure");
         }
         if (command === "step" && args.rule === "face") throw new WebAssembly.RuntimeError("Injected fatal trap");
+        if (command === "step" && args.rule === "whnf") await new Promise(resolve => setTimeout(resolve, 1000));
         return session.handle(command, args);
       }
     ` });
@@ -163,12 +184,28 @@ await browserTest(async ({ browser, base }) => {
   assert.match(await broken.locator("#kernel-selection").textContent(), /expression \[\]/);
   await broken.locator('#kernel-operands [data-operand="1"]').click(); await settled(broken);
   assert.match(await broken.locator("#kernel-selection").textContent(), /expression \[1\]/);
+  await broken.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await broken.locator('#kernel-actions [data-kernel-rule="whnf"]').click();
+  await broken.waitForFunction(() => document.body.dataset.busy === "true");
+  await broken.locator("#copy-trace").click();
+  await broken.waitForFunction(() => document.querySelector("#trace-status").textContent.startsWith("Copied"));
+  const pendingTrace = JSON.parse(await broken.evaluate(() => navigator.clipboard.readText()));
+  assert.equal(pendingTrace.entries.at(-1).status, "running");
+  await settled(broken);
   await broken.locator("#kernel-rule").selectOption("face");
   await broken.locator("#kernel-apply").click(); await settled(broken);
   assert.match(await broken.locator("#status").textContent(), /Kernel worker stopped.*Reload/);
   assert.match(await broken.locator("#diagnostic").textContent(), /Injected fatal trap/);
   assert.equal(await broken.locator("#kernel-apply").isDisabled(), true);
   assert.equal(await broken.locator("#check").isDisabled(), true);
+  assert.equal(await broken.locator("#copy-trace").isDisabled(), false);
+  await broken.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await broken.locator("#copy-trace").click();
+  await broken.waitForFunction(() => document.querySelector("#trace-status").textContent.startsWith("Copied"));
+  const fatalTrace = JSON.parse(await broken.evaluate(() => navigator.clipboard.readText()));
+  assert.equal(fatalTrace.entries.at(-1).status, "worker-failed");
+  assert.match(fatalTrace.entries.at(-1).error.message, /Injected fatal trap/);
+  assert.ok(fatalTrace.current.workerFailed);
   assert.deepEqual(brokenErrors, []);
   await broken.close();
   // An example opened in the workspace keeps its source in #source=… while the

@@ -8,6 +8,7 @@ import { judgementGraph } from "./cubical-graph-view.mjs";
 import { checkReduction, reduceView } from "./cubical-reduction.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelText } from "./cubical-levels.mjs";
+import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
 export class WorkbenchSession {
   constructor(module) { this.module = module; this.states = []; }
@@ -52,7 +53,12 @@ export class WorkbenchSession {
       view = { ...view, expression: type.term, type: type.type,
         folded: view.folded ? { ...view.folded, expression: view.folded.type, type: type.type } : null };
     }
-    return this.publish(view, this.check(view), view.name);
+    const result = this.publish(view, this.check(view), view.name);
+    // Diagnostic metadata must never turn a checked load into a failure.
+    try { result.traceSession = await traceSources(this.program, payload); }
+    catch (error) { result.traceSession = { main: payload.main, binding: payload.binding, sourceMetadataError: error.message }; }
+    result.traceInitial = safeTrace(() => traceSnapshot(this.program, this.state(result.id), "expression", []));
+    return result;
   }
   occurrence(id, side, path) {
     const { view, checked } = this.state(id), { kernel, checker } = this.program;
@@ -112,8 +118,19 @@ export class WorkbenchSession {
       driver: this.program.checker.driver, root: checked.judgement,
     });
     if (command === "step") {
-      const result = kernelStep(this.program, view, checked, args.side, args.path, args.rule, args.budget);
-      return { ...this.publish(result.view, result.checked, selected), change: result.change };
+      const before = safeTrace(() => traceSnapshot(this.program, this.state(args.state), args.side, args.path));
+      const counters = safeTrace(() => traceCounters(this.program.kernel)), started = performance.now();
+      let result;
+      try { result = kernelStep(this.program, view, checked, args.side, args.path, args.rule, args.budget); }
+      catch (error) {
+        error.trace = { before, retainedState: args.state,
+          cost: safeTrace(() => traceCost(this.program.kernel, counters, started)) };
+        throw error;
+      }
+      const cost = safeTrace(() => traceCost(this.program.kernel, counters, started));
+      const next = this.publish(result.view, result.checked, selected);
+      return { ...next, change: result.change, trace: { before, cost,
+        after: safeTrace(() => traceSnapshot(this.program, this.state(next.id), args.side, args.path)) } };
     }
     if (command === "reduce") {
       const { side, kind, path } = args;
