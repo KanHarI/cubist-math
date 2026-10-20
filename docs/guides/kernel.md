@@ -248,7 +248,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 #### `CC_UNIT` (`14`) — Unit type $\mathbf{1}$
 - **Arity:** `0` (`payload == 0`, `child[0..3] == 0`).
 - **Instructions:** Formed by `cc_instr_unit(k)`, certifying $\vdash \mathbf{1} : \mathcal{U}_0$.
-- **Composition:** `comp^i Unit [φ ↦ u(i)] a0` reduces to `CC_POINT` ($\star$) when `whnf(a0)` and the WHNF of every non-empty tube body $u(i)$ is `CC_POINT`; otherwise it remains neutral.
+- **Composition:** When no tube has face `1` (that case comes first in `ck_reduce_composition`, for every family), `comp^i Unit [φ ↦ u(i)] a0` reduces to `CC_POINT` ($\star$) when `whnf(a0)` and the WHNF of every non-empty tube body $u(i)$ is `CC_POINT`; otherwise it remains neutral.
 
 #### `CC_POINT` (`15`) — Unit inhabitant $\star$
 - **Arity:** `0` (`payload == 0`, `child[0..3] == 0`).
@@ -270,7 +270,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 #### `CC_SUM` (`26`) — Disjoint sum type $A + B$
 - **Arity:** `2` (`payload == 0`, `child[0] = left_type` $A$, `child[1] = right_type` $B$, `child[2..3] == 0`).
 - **Instructions:** Formed by `cc_instr_sum(k, left, right)`, certifying $\Gamma \vdash A + B : \mathcal{U}(\max(\ell_A, \ell_B))$.
-- **Cumulativity & Composition:** `ck_syntactic_cumulative` has no rule for sums: $A_1 + B_1 \preceq A_2 + B_2$ only when the two types are $\alpha$-equal. In `ck_inductive_composition` ([inductive_composition.c](../../kernel/src/inductive_composition.c)), `comp^i (A(i) + B(i)) [φ ↦ u(i)] a0` reduces `a0` and every active tube body $u(i)$ to WHNF: if all are `CC_INL(_, v)` (or all are `CC_INR(_, v)`), it reduces to `Inl(A(1) + B(1), comp^i A(i) [φ ↦ v(i)] v0)` (or `Inr(A(1) + B(1), comp^i B(i) [φ ↦ v(i)] v0)`). If any head is neutral or tubes disagree on the constructor tag, the composition remains neutral.
+- **Cumulativity & Composition:** `ck_syntactic_cumulative` has no rule for sums: $A_1 + B_1 \preceq A_2 + B_2$ only when the two types are $\alpha$-equal. In `ck_inductive_composition` ([inductive_composition.c](../../kernel/src/inductive_composition.c)), `comp^i (A(i) + B(i)) [φ ↦ u(i)] a0` reduces `a0` and every active tube body $u(i)$ to WHNF: if all are `CC_INL(_, v)` (or all are `CC_INR(_, v)`), it reduces to `Inl(A(1) + B(1), comp^i A(i) [φ ↦ v(i)] v0)` (or `Inr(A(1) + B(1), comp^i B(i) [φ ↦ v(i)] v0)`). If any head is neutral or tubes disagree on the constructor tag, the composition remains neutral (unless a tube has face `1`, which `ck_reduce_composition` takes first).
 
 #### `CC_INL` (`27`) and `CC_INR` (`28`) — Left and right sum injections $\text{inl}_{A+B}(a), \text{inr}_{A+B}(b)$
 - **Arity:** `2` (`payload == 0`, `child[0] = sum_type` $A + B$, `child[1] = value`, `child[2..3] == 0`).
@@ -665,7 +665,7 @@ These three functions return a `cc_entry_id` (or `0` on error):
     3. $U \equiv_\alpha \text{ck\_restrict}(A, C)$.
     4. `adjacency_id` is a `CC_FACT_EQUALITY` with $e_0 \equiv_\alpha u[0/i]$ and $e_1 \equiv_\alpha \text{ck\_restrict}(a_0, C)$.
     5. Face entries in $\Gamma_u$ and $\Gamma_e$ entailed by $C$ are discharged via `ck_instr_on_face`.
-    6. Computes `pending` bitmask of all earlier non-empty tubes $k < 64$ whose clause $C_k$ is compatible with $C$ (`((C.positive | C_k.positive) & (C.negative | C_k.negative)) == 0`).
+    6. Computes the `pending` bitmask of all earlier non-empty tubes whose clause $C_k$ is compatible with $C$ (`((C.positive | C_k.positive) & (C.negative | C_k.negative)) == 0`). Positions count every earlier tube, `0`-face ones included; a compatible tube at position $64$ or above is refused with `CC_ERROR_RESOURCE` (`"A tube may overlap only the first 64 tubes of a system."`).
 - **Result (`CC_FACT_SYSTEM`):** Publishes the extended `CC_COMP` system with the new tube appended to `child[1]` and `pending` set to the bitmask of overlapping earlier tubes.
 
 #### `CC_INSTR_SYSTEM_OVERLAP` (`43`) — `cc_instr_system_overlap(k, system_id, position, agreement_id)`
@@ -699,7 +699,7 @@ These three functions return a `cc_entry_id` (or `0` on error):
 
 #### `CC_INSTR_GLUE_PIECE` (`54`) — `cc_instr_glue_piece(k, system_id, face, type_id, equivalence_id)`
 - **Inputs:** Glue system `system_id`, `cc_formula_id face` ($\varphi$), typing judgements `type_id` ($\Gamma_T \vdash T : \mathcal{U}(\ell_T)$) and `equivalence_id` ($\Gamma_e \vdash e : E$).
-- **Checks:** `system_id` is an open `CC_GLUE` system with `pending == 0`; `face` is `CC_FACE` with `length <= 1`. If `face` has a clause $C$: $C$ is consistent, $T$ and $e$ have no free dimensions in $C$, $E \equiv_\alpha \text{Equiv}(T, \text{ck\_restrict}(A, C))$, face assumptions entailed by $C$ are discharged from $\Gamma_T$ and $\Gamma_e$, and `pending` records earlier pieces whose clause overlaps $C$.
+- **Checks:** `system_id` is an open `CC_GLUE` system with `pending == 0`; `face` is `CC_FACE` with `length <= 1`. If `face` has a clause $C$: $C$ is consistent, $T$ and $e$ have no free dimensions in $C$, $E \equiv_\alpha \text{Equiv}(T, \text{ck\_restrict}(A, C))$, face assumptions entailed by $C$ are discharged from $\Gamma_T$ and $\Gamma_e$, and `pending` records earlier pieces whose clause overlaps $C$ (`overlapping`; an overlapping piece at position $64$ or above is refused with `CC_ERROR_RESOURCE`).
 - **Result (`CC_FACT_SYSTEM`):** Appends `CC_GLUE_SYSTEM(face, T, e, 0)` to `CC_GLUE.child[1]` and updates the system's universe type to $\mathcal{U}(\max(\ell_T, \ell))$.
 
 #### `CC_INSTR_GLUE_OVERLAP` (`55`) — `cc_instr_glue_overlap(k, system_id, position, types_id, equivalences_id)`
@@ -719,7 +719,7 @@ These three functions return a `cc_entry_id` (or `0` on error):
 
 #### `CC_INSTR_GLUE_TERM_PIECE` (`58`) — `cc_instr_glue_term_piece(k, system_id, value_id, image_id)`
 - **Inputs:** Glue term system `system_id`, typing judgement `value_id` ($\Gamma_v \vdash t : T'$), equality judgement `image_id` ($\Gamma_e \vdash e_0 \equiv e_1 : E$, or `0` if the piece's face is `0`).
-- **Checks:** `system_id` is an open `CC_GLUE_TERM` system with `pending == 0`. Selects the next unhandled piece $(\varphi \mapsto (T, e))$ of $G$. If $\varphi$ has clause $C$: verifies $t$ has no free dimensions in $C$, $T' \equiv_\alpha T$, $e_0 \equiv_\alpha \pi_1(e)(t)$, and $e_1 \equiv_\alpha \text{ck\_restrict}(a, C)$, discharges face entries entailed by $C$, and computes `pending` overlaps with earlier tubes (which are resolved using `cc_instr_system_overlap`).
+- **Checks:** `system_id` is an open `CC_GLUE_TERM` system with `pending == 0`. Selects the next unhandled piece $(\varphi \mapsto (T, e))$ of $G$. If $\varphi$ has clause $C$: verifies $t$ has no free dimensions in $C$, $T' \equiv_\alpha T$, $e_0 \equiv_\alpha \pi_1(e)(t)$, and $e_1 \equiv_\alpha \text{ck\_restrict}(a, C)$, discharges face entries entailed by $C$, and computes `pending` overlaps with earlier tubes (`overlapping`, with the same position bound; they are resolved using `cc_instr_system_overlap`).
 - **Result (`CC_FACT_SYSTEM`):** Appends `CC_TUBE(φ, t, 0)` to `CC_GLUE_TERM.child[2]`.
 
 #### `CC_INSTR_GLUE_TERM` (`59`) — `cc_instr_glue_term(k, system_id)`
