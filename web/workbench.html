@@ -63,15 +63,17 @@
           <div id="assembly-math" class="assembly-math"></div>
           <fieldset id="kernel-controls" disabled>
             <legend>Reduce a native occurrence</legend>
-            <p class="hint">Choose a root, then follow its operands below. A path selects one occurrence even when several uses share a handle. The AST table links only inspect nodes; unfold a definition with δ before stepping inside its body.</p>
+            <p class="hint">Select an operand to focus that occurrence. Buttons offer relevant reductions, including at the immediate parent when indicated. “Try” operations have side conditions that the kernel checks when applied. The highlighted AST row is the current occurrence; table handle links inspect other nodes.</p>
             <div class="toolbar">
               <label for="kernel-side">Root</label>
               <select id="kernel-side"><option value="expression">Expression</option><option value="type">Judgement type</option></select>
               <button id="kernel-root">Root</button><button id="kernel-parent">Parent</button>
               <button id="kernel-show">Show selected node in AST</button>
             </div>
+            <div id="kernel-preview" class="kernel-preview" aria-label="Selected subexpression"></div>
             <p id="kernel-selection" role="status"></p>
             <div id="kernel-operands" class="toolbar" aria-label="Selected occurrence operands"></div>
+            <div id="kernel-actions" class="toolbar" role="group" aria-label="Relevant reductions"></div>
             <div class="toolbar">
               <label for="kernel-rule">Operation</label>
               <select id="kernel-rule">
@@ -85,7 +87,7 @@
                   <option value="split">Split — composition tube</option>
                 </optgroup>
                 <optgroup label="May perform many reductions">
-                  <option value="whnf">WHNF — weak head</option>
+                  <option value="whnf">WHNF — weak head / cubical computation</option>
                   <option value="normalize">Normalize — full normal form</option>
                 </optgroup>
               </select>
@@ -93,7 +95,12 @@
               <input id="kernel-budget" type="number" min="1" max="10000000" step="1" value="100000" />
               <button id="kernel-apply">Apply operation</button>
             </div>
-            <p class="hint">Each operation issues one checked kernel instruction at the selected path. WHNF and Normalize can perform many reductions; Glue can normalize its side conditions. The budget is per instruction and is not automatically increased. Back undoes an accepted operation; Kernel graph shows its derivation.</p>
+            <details id="kernel-tree">
+              <summary>Native AST subtree</summary>
+              <p class="hint">The selected occurrence without numeral shorthand. Expand branches to read their native operands, or Select a node to operate on it. Definition references are leaves; δ unfolds them in the checked term.</p>
+              <div id="kernel-tree-content"></div>
+            </details>
+            <p class="hint">Each operation issues one checked kernel instruction at the selected path. WHNF computes composition, transport and Glue heads, and can eta-contract; Normalize also reduces inside terms. Both can perform many reductions. Glue is the targeted eta rule and can normalize its side conditions. Filling elaborates to composition; follow operands to inspect its tubes and partial elements. The budget is per instruction and is not automatically increased. Back undoes an accepted operation; Kernel graph shows its derivation.</p>
           </fieldset>
           <p id="assembly-status" role="status"></p>
           <div id="assembly-listing"></div>

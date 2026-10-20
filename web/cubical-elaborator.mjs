@@ -532,6 +532,7 @@ export class NativeCubicalElaborator {
   }
   // Read an already checked judgement without deriving it again. The workbench
   // retains this certificate after each native Step, including its context.
+  // Its ID and handles must not be retained across checkpoint commit/rollback.
   viewOfJudgement(judgement, dimensions, renamings = [], checkingSteps = 0) {
     const graph = this.driver.graph;
     let { term: expression, type, kind } = graph.judgement(judgement);

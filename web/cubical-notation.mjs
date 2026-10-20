@@ -113,7 +113,12 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
         const parsed=parsedLiteral(t,symbols);
         if(parsed)return {kind:"Number",value:parsed.text};
       }
-      if (paths && t.tag === "App") return { kind: "Call", fn: child(t.fn, "fn"), args: [child(t.arg, "arg")] };
+      // Keep every application edge while selecting reductions, including
+      // universe instantiations. Flattening an LApp loses its function path
+      // and makes a visible polymorphic definition impossible to unfold.
+      if (paths) return { kind: "Call", fn: child(t.fn, "fn"), args: [
+        t.tag === "App" ? child(t.arg, "arg") : { kind: "Universe", level: renameLevel(t.level, label) },
+      ] };
       const args = []; let fn = t;
       while ((fn.tag === "App" || fn.tag === "LApp") && remaining-- > 0) {
         args.unshift(fn.tag === "App" ? visit(fn.arg) : { kind: "Universe", level: renameLevel(fn.level, label) });

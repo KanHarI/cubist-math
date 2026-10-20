@@ -1,0 +1,127 @@
+import "./fresh-build.mjs";
+import test from "node:test";
+import assert from "node:assert/strict";
+import createCubical from "../web/dist/cubical.mjs";
+import { WorkbenchSession } from "../web/cubical-workbench-session.mjs";
+
+const module = await createCubical();
+const payload = {
+  format: "thth-cubical", version: 1, main: "workbench", sources: {},
+  source: "def identity(x : Unit) := x; def example := identity(tt);",
+  binding: "workbench__example", side: "expression",
+  // The workbench must replay source instead of trusting transferred claims.
+  expression: { tag: "Void" }, type: { tag: "Void" },
+};
+async function fixture(t) {
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  return { session, initial: await session.load(payload) };
+}
+
+test("workbench replay retains checked states across edits, failures and inspection", async t => {
+  const { session, initial } = await fixture(t);
+  assert.equal(initial.view.expression.tag, "App");
+  assert.equal(initial.view.type.tag, "Unit");
+  const args = { state: initial.id, side: "expression", path: [0], rule: "delta", budget: 100000 };
+  const unfolded = await session.handle("step", args);
+  const edited = await session.handle("check", { state: initial.id, term: { tag: "Point" } });
+  assert.equal(edited.view.expression.tag, "Point");
+  assert.equal(initial.view.expression.tag, "App");
+  assert.equal(session.state(initial.id).checked.judgement, initial.checked.judgement);
+  const count = session.states.length;
+  await assert.rejects(session.handle("inspect", { binding: "missing" }), /No checked/);
+  await assert.rejects(session.handle("step", { ...args, rule: "beta" }), /Beta/);
+  assert.equal(session.states.length, count, "refusals publish no state");
+  await session.handle("inspect", { binding: "workbench__identity" });
+  const reduced = await session.handle("step", { ...args, state: unfolded.id, path: [], rule: "beta" });
+  assert.equal(reduced.view.expression.tag, "Point");
+  const graph = await session.handle("graph", { state: reduced.id });
+  assert.equal(graph.rows[graph.root - 1].id, reduced.checked.judgement);
+  assert.equal(session.program.checker.driver.graph.judgement(reduced.checked.judgement).premises[0], unfolded.checked.judgement);
+});
+
+test("worker snapshots carry printing getters without changing program metadata", async t => {
+  const { session, initial } = await fixture(t);
+  const binding = "workbench__identity", info = session.program.symbols[binding];
+  assert.equal(Object.getOwnPropertyDescriptor(info, "printing").enumerable, false);
+  const printing = [{ literal: true, notation: null }];
+  session.program.checker.notationPrinting.set(binding, printing);
+  const snapshot = structuredClone(await session.handle("inspect", { binding: "workbench__example" }));
+  assert.deepEqual(snapshot.view.symbols[binding].printing, printing);
+  assert.equal(Object.getOwnPropertyDescriptor(info, "printing").enumerable, false);
+  assert.equal(initial.view.expression.tag, "App");
+});
+
+test("occurrence navigation names definitions and remains available after a budget refusal", async t => {
+  const { session, initial } = await fixture(t);
+  const root = await session.handle("occurrence", { state: initial.id, side: "expression", path: [] });
+  assert.equal(root.operands[0].label, "identity");
+  assert.equal(root.operands[0].role, "function");
+  assert.equal(root.operands[1].kind, "Point");
+  await assert.rejects(session.handle("step", {
+    state: initial.id, side: "expression", path: [], rule: "normalize", budget: 1,
+  }), /budget exhausted/);
+  const selected = await session.handle("occurrence", { state: initial.id, side: "expression", path: [0] });
+  assert.equal(selected.text, "identity");
+  assert.equal(selected.kind, "DefRef");
+});
+
+test("native previews handle universe operands and terms under a path binder", async t => {
+  const { session, initial } = await fixture(t);
+  const publish = (expression, type, context = []) => {
+    const view = { ...initial.view, expression, type, context };
+    return session.publish(view, session.check(view), initial.selected);
+  };
+  const universe = publish({ tag: "U", level: 0 }, { tag: "U", level: 1 });
+  const level = session.occurrence(universe.id, "expression", [0]);
+  assert.equal(level.kind, "LConst"); assert.equal(level.text, "0");
+  assert.deepEqual(level.actions, [], "a level operand offers no term reductions");
+  const unit = { tag: "Unit" }, point = { tag: "Point" };
+  const type = { tag: "Path", dim: "j", family: unit, left: point, right: point };
+  const path = publish({ tag: "PLam", dim: "i", family: unit,
+    body: { tag: "PApp", path: { tag: "Var", name: "p" }, arg: [["i:1"]] } }, type,
+    [{ name: "p", type }]);
+  const body = session.occurrence(path.id, "expression", [1]);
+  assert.equal(body.kind, "PApp"); assert.match(body.text, /at\(p,/);
+});
+
+test("subtree records expose native operands and math reductions publish checked snapshots", async t => {
+  const { session, initial } = await fixture(t);
+  const tree = await session.handle("subtree", { state: initial.id, side: "expression", path: [] });
+  assert.equal(tree.root.kind, "App");
+  assert.deepEqual(tree.children.map(node => node?.kind ?? null), ["DefRef", "Point", null, null]);
+  assert.match(tree.children[0].annotation, /workbench__identity/);
+  const next = await session.handle("reduce", {
+    state: initial.id, side: "expression", kind: "delta", path: ["fn"],
+  });
+  assert.equal(next.view.expression.fn.tag, "Lam");
+  assert.equal(initial.view.expression.fn.tag, "DefRef");
+  assert.equal(session.program.checker.driver.graph.judgement(next.checked.judgement).kind, "typing");
+});
+
+test("unfolding exposes beta actions at both the lambda and its containing application", async t => {
+  const { session, initial } = await fixture(t);
+  await session.program.check("def poly(U < UU0, A : U, x : A) : A := x;", "levels");
+  const term = { tag: "App", fn: { tag: "App",
+    fn: { tag: "LApp", fn: { tag: "DefRef", name: "levels__poly" }, level: 0 },
+    arg: { tag: "Unit" } }, arg: { tag: "Point" } };
+  const polymorphic = await session.handle("check", { state: initial.id, term });
+  for (const [state, path, lambda] of [[initial, [0], "Lam"], [polymorphic, [0, 0, 0], "LLam"]]) {
+    const args = { state: state.id, side: "expression", path, budget: 100000 };
+    const actions = session.occurrence(state.id, args.side, path).actions;
+    assert.ok(actions.some(action => action.rule === "delta"));
+    const unfolded = await session.handle("step", { ...args, rule: "delta" });
+    const selected = session.occurrence(unfolded.id, args.side, path);
+    assert.equal(selected.kind, lambda);
+    const beta = selected.actions.find(action => action.rule === "beta");
+    assert.equal(beta.label, "β reduce containing application");
+    assert.deepEqual(beta.path, path.slice(0, -1));
+    const root = session.occurrence(unfolded.id, args.side, beta.path);
+    assert.equal(root.actions.find(action => action.rule === "beta").label, "β reduce application");
+    const reduced = await session.handle("step", { ...args, state: unfolded.id, ...beta });
+    assert.deepEqual(reduced.change.path, beta.path);
+    assert.notEqual(reduced.change.before, reduced.change.after);
+    assert.ok(!session.occurrence(unfolded.id, args.side, [...beta.path, 1]).actions.some(a => a.rule === "beta"),
+      "an argument never offers beta of its parent");
+  }
+});

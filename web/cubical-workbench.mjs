@@ -1,23 +1,76 @@
 import { splitInspectionContext } from "./cubical-context.mjs";
 import { foldedInspection } from "./cubical-inspection.mjs";
-import createCubical from "./dist/cubical.mjs";
-import { CubicalProgram } from "./cubical-program.mjs";
+import { WorkerRequests } from "./worker-requests.mjs";
 import { readWorkbenchTransfer } from "./workbench-transfer.mjs";
 import { cubicalMathTree } from "./cubical-notation.mjs";
 import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
-import { reduceView, checkReduction, reductionRule, termAtPath } from "./cubical-reduction.mjs";
-import { kernelAssembly, assemblyText, renderAssembly, operandNames, opcodeName } from "./cubical-assembly.mjs";
-import { judgementGraph, renderJudgementGraph } from "./cubical-graph-view.mjs";
-import { kernelOccurrence, kernelStep } from "./cubical-kernel-step.mjs";
+import { reductionRule, termAtPath } from "./cubical-reduction.mjs";
+import { assemblyText, renderAssembly, opcodeName } from "./cubical-assembly.mjs";
+import { renderJudgementGraph } from "./cubical-graph-view.mjs";
+import { renderNativeTree } from "./cubical-ast-tree.mjs";
 const $ = id => document.getElementById(id), history = [];
-let program, view, checked, selected, reductionMode = null, reductionLimit = 5000;
+let view, checked, selected, state, busy = 0, workerFailure = null, reductionMode = null, reductionLimit = 5000;
+const requests = new WorkerRequests(new Worker("./cubical-workbench-worker.mjs", { type: "module" }), { onError: workerStopped });
 let assemblyLimit = 400, assemblyView = null, listing = null, assemblyFocus = [], expandedDefinitions = new Set();
 let kernelPath = [];
+let occurrence = null;
+let treeKey = null;
 const enableReductions = enabled => document.querySelectorAll("[data-reduction]").forEach(button => { button.disabled = !enabled; });
+function availability() {
+  const blocked = !!busy || !!workerFailure;
+  document.body.dataset.busy = String(!!busy);
+  document.body.setAttribute("aria-busy", String(!!busy));
+  $("kernel-controls").disabled = blocked || !checked;
+  $("workbench-view").disabled = blocked;
+  $("back").disabled = blocked || !history.length;
+  $("check").disabled = blocked || !view || $("syntax").value === syntaxDisplayLimitMessage;
+  $("syntax").disabled = blocked;
+  for (const id of ["unhighlight", "fold-names", "identity-sugar", "truncation-sugar", "assembly-more", "more-reduction-sites"])
+    $(id).disabled = blocked;
+  enableReductions(!blocked && !!checked);
+}
+function report(error) {
+  $("diagnostic").hidden = false;
+  $("diagnostic").textContent = error.message;
+  if (workerFailure) {
+    $("status").textContent = "Kernel worker stopped. Reload the page to start a new session.";
+    $("reduction-status").textContent = "";
+  }
+}
+function workerStopped(error) {
+  workerFailure = error;
+  requests.terminate(error);
+  availability();
+  report(error);
+}
+// DOM callbacks must report rejected worker/navigation requests. Kernel state
+// is preserved unless checking edited syntax itself fails.
+function action(handler) {
+  return (...args) => {
+    if (busy || workerFailure) return;
+    try { Promise.resolve(handler(...args)).catch(report); }
+    catch (error) { report(error); }
+  };
+}
+async function request(command, args = {}, progress) {
+  busy++; availability();
+  try { return await requests.request(command, { state, ...args }, progress); }
+  catch (error) { if (error.fatal) workerStopped(error); throw error; }
+  finally { busy--; availability(); }
+}
+function adopt(snapshot) {
+  ({ view, checked, selected } = snapshot); state = snapshot.id;
+  assemblyView = null; occurrence = null; treeKey = null;
+  $("kernel-actions").replaceChildren(); $("kernel-operands").replaceChildren();
+  $("kernel-preview").textContent = ""; $("kernel-selection").textContent = "";
+  $("kernel-tree-content").replaceChildren();
+  availability();
+}
+const remember = () => ({ view, checked, selected, id: state, kernelPath: [...kernelPath], kernelSide: $("kernel-side").value });
 const options = () => ({ resolve: binding => view.symbols[binding], inspect: info => inspect(info.binding),
   identitySugar: $("identity-sugar").checked, truncationSugar: $("truncation-sugar").checked });
-function display(updateSyntax = true) {
+async function display(updateSyntax = true) {
   const mode = $("workbench-view").value, assembly = mode === "assembly", kernelGraph = mode === "graph";
   $("mathematical-view").hidden = mode !== "math";
   $("assembly-view").hidden = !assembly;
@@ -32,7 +85,7 @@ function display(updateSyntax = true) {
   }
   if (assembly || kernelGraph) {
     $("more-reduction-sites").hidden = true;
-    if (assembly) displayAssembly(); else displayGraph();
+    if (assembly) await displayAssembly(); else await displayGraph();
     return;
   }
   const display = $("fold-names").checked ? view.folded ?? foldedInspection(view) : view;
@@ -86,10 +139,12 @@ function display(updateSyntax = true) {
   }
   $("back").disabled = !history.length;
 }
-function displayAssembly() {
+async function displayAssembly() {
   $("kernel-controls").disabled = !checked;
   if (!checked) {
     $("kernel-selection").textContent = ""; $("kernel-operands").replaceChildren();
+    $("kernel-preview").textContent = ""; $("kernel-actions").replaceChildren();
+    $("kernel-tree-content").replaceChildren(); treeKey = null; occurrence = null;
     listing = null; $("assembly-listing").replaceChildren();
     $("assembly-status").textContent = "Return to Mathematical view and check the edited expression before inspecting its AST.";
     $("assembly-more").hidden = true; $("assembly-download").disabled = true; return;
@@ -97,7 +152,7 @@ function displayAssembly() {
   if (assemblyView !== view) {
     assemblyView = view; assemblyLimit = 400; assemblyFocus = []; expandedDefinitions = new Set();
   }
-  listing = kernelAssembly(program, view, checked, { limit: assemblyLimit, focus: assemblyFocus, expanded: expandedDefinitions });
+  listing = await request("assembly", { options: { limit: assemblyLimit, focus: assemblyFocus, expanded: [...expandedDefinitions] } });
   // The term and its type, typeset, above the nodes that store them.
   $("assembly-math").replaceChildren(...[["Term", view.expression], ["Type", view.type]].map(([label, term]) => {
     const row = document.createElement("div"), name = document.createElement("span"), math = document.createElement("div");
@@ -106,58 +161,122 @@ function displayAssembly() {
     row.append(name, math);
     return row;
   }));
-  renderAssembly($("assembly-listing"), listing, { jump: jumpAssembly,
-    expand: (id, body) => { expandedDefinitions.add(id); assemblyFocus.unshift(body); displayAssembly(); jumpAssembly(body); },
+  renderAssembly($("assembly-listing"), listing, { jump: action(jumpAssembly),
+    expand: action(async (id, body) => { expandedDefinitions.add(id); assemblyFocus.unshift(body); await displayAssembly(); await jumpAssembly(body); }),
     inspect: binding => inspect(binding) });
   $("assembly-status").textContent = `${listing.nodes.length.toLocaleString()} native nodes shown`
     + (listing.pending ? ` · ${listing.pending.toLocaleString()} discovered operands remain; show more or follow a handle.` : ". Named definitions can be expanded individually.");
   $("assembly-more").hidden = !listing.pending;
   $("assembly-download").disabled = false;
-  displayOccurrence();
+  await displayOccurrence();
 }
-function displayOccurrence() {
+async function displayOccurrence() {
   if (!checked) return;
-  const side = $("kernel-side").value;
-  // A different view can have a shorter path. Return to its root explicitly.
-  let node;
-  try { node = kernelOccurrence(program.kernel, checked, side, kernelPath); }
-  catch { kernelPath = []; node = kernelOccurrence(program.kernel, checked, side, kernelPath); }
-  $("kernel-selection").textContent = `${side} [${kernelPath.join(", ")}] · %${node.handle} = ${opcodeName(node.kind)} · payload ${node.payload}`;
-  $("kernel-parent").disabled = !kernelPath.length;
-  $("kernel-operands").replaceChildren(...node.children.map((handle, index) => {
+  const side = $("kernel-side").value, path = [...kernelPath];
+  const node = await request("occurrence", { side, path });
+  occurrence = { ...node, side, path };
+  $("kernel-selection").textContent = `${side} [${path.join(", ")}] · ${node.label} · ${opcodeName(node.kind)} · %${node.handle}`;
+  $("kernel-preview").textContent = node.text;
+  $("kernel-actions").replaceChildren(...node.actions.map(({ rule, label, path: target }) => {
     const button = document.createElement("button");
-    button.dataset.operand = index;
-    button.textContent = `${index} / ${"abcd"[index]} (${operandNames[node.kind]?.[index] ?? "unused"}) → ${handle ? "%" + handle : "0"}`;
-    button.disabled = !handle;
-    button.onclick = () => { kernelPath = [...kernelPath, index]; displayOccurrence(); };
+    button.textContent = label; button.dataset.kernelRule = rule;
+    button.dataset.kernelPath = JSON.stringify(target);
+    if (rule === "delta") button.id = "kernel-delta";
+    button.title = `${rule} · ${side} [${target.join(", ")}] · uses the work budget below`;
+    button.onclick = action(() => applyNative(rule, target, side));
     return button;
   }));
+  $("kernel-parent").disabled = !kernelPath.length;
+  $("assembly-listing").querySelectorAll(".current-occurrence").forEach(row => row.classList.remove("current-occurrence"));
+  $(`assembly-node-${node.handle}`)?.classList.add("current-occurrence");
+  $("kernel-operands").replaceChildren(...node.operands.filter(operand => operand.handle).map(({ handle, index, role, label, kind }) => {
+    const row = document.createElement("div"), button = document.createElement("button");
+    row.className = "kernel-operand";
+    button.dataset.operand = index;
+    button.textContent = `${role}: ${label}`;
+    button.title = `Select operand ${index} / ${"abcd"[index]} · %${handle}`;
+    button.onclick = action(async () => { kernelPath = [...kernelPath, index]; await selectOccurrence(); });
+    row.append(button);
+    if (kind === "DefRef") {
+      const unfold = document.createElement("button");
+      unfold.textContent = `δ unfold ${label}`; unfold.dataset.unfoldOperand = index;
+      unfold.onclick = action(async () => {
+        kernelPath = [...kernelPath, index]; await selectOccurrence(); await applyNative("delta");
+      });
+      row.append(unfold);
+    }
+    return row;
+  }));
+  await displayTree().catch(report);
 }
-$("kernel-side").onchange = $("kernel-root").onclick = () => { kernelPath = []; displayOccurrence(); };
-$("kernel-parent").onclick = () => { kernelPath = kernelPath.slice(0, -1); displayOccurrence(); };
-$("kernel-show").onclick = () => jumpAssembly(kernelOccurrence(program.kernel, checked, $("kernel-side").value, kernelPath).handle);
-$("kernel-apply").onclick = () => {
-  if (!checked) return;
-  try {
-    const result = kernelStep(program, view, checked, $("kernel-side").value, kernelPath,
-      $("kernel-rule").value, $("kernel-budget").valueAsNumber);
-    history.push({ view, selected, checked, kernelPath: [...kernelPath], kernelSide: $("kernel-side").value });
-    ({ view, checked } = result);
-    const { before, after, judgement, side, path, rule } = result.change;
-    $("diagnostic").hidden = true;
-    $("status").textContent = `Cubical C checked · native Step judgement #${judgement}`;
-    $("reduction-status").textContent = `${rule} ${side} [${path.join(", ")}]: %${before} → %${after}.`
-      + (before === after ? " The selected syntax is unchanged." : "") + " Back undoes this operation.";
-    display();
-  } catch (error) {
-    $("diagnostic").hidden = false; $("diagnostic").textContent = error.message;
-    $("reduction-status").textContent = "Operation refused; the previous checked term and selected occurrence are retained.";
+async function selectOccurrence() {
+  $("diagnostic").hidden = true; $("reduction-status").textContent = "";
+  const previous = occurrence;
+  try { await displayOccurrence(); }
+  catch (error) {
+    if (previous) { kernelPath = previous.path; $("kernel-side").value = previous.side; }
+    throw error;
   }
-};
+}
+async function displayTree() {
+  if (!checked || !occurrence) return;
+  const treeState = state, { side, path } = occurrence, key = JSON.stringify([treeState, side, path]);
+  if (treeKey === key) return;
+  $("kernel-tree-content").replaceChildren(); treeKey = null;
+  if (!$("kernel-tree").open) return;
+  treeKey = key; $("kernel-tree-content").textContent = "Loading native operands…";
+  const load = path => request("subtree", { state: treeState, side, path });
+  try {
+    const tree = await load(path);
+    if (treeKey !== key) return;
+    renderNativeTree($("kernel-tree-content"), tree, { path, load, select: action(async path => {
+      if (state !== treeState) return;
+      kernelPath = path; $("kernel-side").value = side; await selectOccurrence();
+    }) });
+  } catch (error) {
+    if (treeKey === key) {
+      treeKey = null;
+      $("kernel-tree-content").textContent = error.message;
+    }
+    throw error;
+  }
+}
+$("kernel-tree").ontoggle = () => { if ($("kernel-tree").open) displayTree().catch(report); };
+$("kernel-side").onchange = $("kernel-root").onclick = action(async () => { kernelPath = []; await selectOccurrence(); });
+$("kernel-parent").onclick = action(async () => { kernelPath = kernelPath.slice(0, -1); await selectOccurrence(); });
+$("kernel-show").onclick = action(() => { if (occurrence) return jumpAssembly(occurrence.handle); });
+$("kernel-apply").onclick = action(() => applyNative($("kernel-rule").value));
+async function applyNative(rule, targetPath = kernelPath, targetSide = $("kernel-side").value) {
+  if (!checked || busy) return;
+  let result;
+  try {
+    $("status").textContent = `Running ${rule} in the kernel worker…`;
+    result = await request("step", { side: targetSide, path: targetPath, rule,
+      budget: $("kernel-budget").valueAsNumber });
+  } catch (error) {
+    if (workerFailure) { report(error); return; }
+    $("diagnostic").hidden = false; $("diagnostic").textContent = error.message;
+    $("status").textContent = "Cubical C checked · previous judgement retained";
+    $("reduction-status").textContent = "Operation refused; the previous checked term and selected occurrence are retained.";
+    return;
+  }
+  history.push(remember()); adopt(result);
+  const { before, after, judgement, side, path } = result.change;
+  kernelPath = [...path]; $("kernel-side").value = side;
+  $("diagnostic").hidden = true;
+  $("status").textContent = `Cubical C checked · native Step judgement #${judgement}`;
+  $("reduction-status").textContent = `${rule} ${side} [${path.join(", ")}]: %${before} → %${after}.`
+    + (before === after ? " The selected syntax is unchanged." : "") + " Back undoes this operation.";
+  try { await display(); }
+  catch (error) {
+    $("diagnostic").hidden = false;
+    $("diagnostic").textContent = `The operation was checked, but displaying its result failed: ${error.message}`;
+  }
+}
 // The judgement graph of the checked view, derived in instruction mode. A
 // definition's body is derived on request, as its lookup's premise.
 let graphView = null, graphExpanded = new Set();
-function displayGraph(focus = null) {
+async function displayGraph(focus = null) {
   $("graph-listing").replaceChildren();
   if (!checked) {
     $("graph-status").textContent = "Return to Mathematical view and check the edited expression before deriving its judgement graph.";
@@ -165,12 +284,10 @@ function displayGraph(focus = null) {
   }
   if (graphView !== view) { graphView = view; graphExpanded = new Set(); }
   try {
-    const graph = judgementGraph(program, view, checked, {
-      expanded: graphExpanded, driver: program.checker.driver, root: checked.judgement,
-    });
+    const graph = await request("graph", { options: { expanded: [...graphExpanded] } });
     const rendered = renderJudgementGraph($("graph-listing"), graph, {
-      jumpNode: handle => { $("workbench-view").value = "assembly"; display(false); jumpAssembly(handle); },
-      expand: reference => { graphExpanded.add(reference); displayGraph(reference); },
+      jumpNode: action(async handle => { $("workbench-view").value = "assembly"; await display(false); await jumpAssembly(handle); }),
+      expand: action(reference => { graphExpanded.add(reference); return displayGraph(reference); }),
     });
     const defined = focus && graph.rows.find(row => row.definition?.reference === focus)?.definition.root;
     if (defined) rendered.jump(defined);
@@ -182,52 +299,67 @@ function displayGraph(focus = null) {
     $("graph-status").textContent = `The instruction kernel could not derive this view: ${error.message}`;
   }
 }
-function jumpAssembly(handle) {
+async function jumpAssembly(handle) {
+  if (busy) return;
   let row = $(`assembly-node-${handle}`);
-  if (!row) { assemblyFocus.unshift(handle); displayAssembly(); row = $(`assembly-node-${handle}`); }
+  if (!row) { assemblyFocus.unshift(handle); await displayAssembly(); row = $(`assembly-node-${handle}`); }
   $("assembly-listing").querySelectorAll(".selected").forEach(node => node.classList.remove("selected"));
   row?.classList.add("selected"); row?.scrollIntoView({ block: "nearest" }); row?.focus({ preventScroll: true });
 }
-$("workbench-view").onchange = () => {
+$("workbench-view").onchange = action(async () => {
   reductionMode = null; $("reduction-status").textContent = "";
-  if (view) display(false);
-};
-$("assembly-more").onclick = () => { assemblyLimit *= 2; displayAssembly(); };
+  if (view) await display(false);
+});
+$("assembly-more").onclick = action(() => { assemblyLimit *= 2; return displayAssembly(); });
 $("assembly-download").onclick = () => {
   if (!listing) return;
   const url = URL.createObjectURL(new Blob([assemblyText(listing)], { type: "text/plain" }));
   const link = document.createElement("a"); link.href = url; link.download = `${selected ?? "kernel"}.ast.txt`; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
-function validate(term = view.expression) {
-  checked = program.checker.checkView(term, view.type, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
-  view.expression = checked.term;
+async function validate(term = view.expression) {
+  adopt(await request("check", { term }));
+  kernelPath = [];
   assemblyView = null;
   enableReductions(true); $("check").disabled = false;
   $("status").textContent = `Cubical C checked · ${checked.checkingSteps.toLocaleString()} checking steps · ${checked.arenaNodes.toLocaleString()} nodes`;
   $("diagnostic").hidden = true;
 }
 function failure(error) {
+  if (workerFailure) { report(error); return; }
   reductionMode = null;
   checked = null; enableReductions(false);
-  if (view) display(false);
+  $("kernel-controls").disabled = true;
+  if (view) display(false).catch(report);
   $("diagnostic").hidden = false; $("diagnostic").textContent = error.message;
   $("status").textContent = "Expression not checked";
 }
-function inspect(binding, remember = true) {
+async function inspect(binding, save = true) {
+  if (busy) return;
   reductionMode = null;
+  let next;
   try {
-    if (remember && view) history.push({ view, selected, checked });
-    view = program.inspect(binding); selected = binding;
-    kernelPath = [];
-    $("reduction-status").textContent = "";
-    validate(); display();
-  } catch (error) { failure(error); }
+    next = await request("inspect", { binding });
+  } catch (error) {
+    report(error);
+    if (!workerFailure && checked) $("status").textContent = "Inspection failed · previous checked judgement retained";
+    return;
+  }
+  if (save && view) history.push(remember());
+  adopt(next);
+  kernelPath = [];
+  $("reduction-status").textContent = "";
+  $("diagnostic").hidden = true; $("status").textContent = "Cubical C checked · inspected definition";
+  try { await display(); }
+  catch (error) {
+    report(error);
+    if (!workerFailure) $("status").textContent = "Definition checked · displaying the inspected view failed";
+  }
 }
-$("back").onclick = () => {
+$("back").onclick = action(async () => {
   reductionMode = null;
   const previous = history.pop(); if (!previous) return;
-  ({ view, selected } = previous);
+  adopt(previous);
   kernelPath = previous.kernelPath ?? [];
   if (previous.kernelSide) $("kernel-side").value = previous.kernelSide;
   $("reduction-status").textContent = "Restored the previous checked view.";
@@ -235,63 +367,56 @@ $("back").onclick = () => {
     if (previous.checked) {
       checked = previous.checked; enableReductions(true); $("diagnostic").hidden = true;
       $("status").textContent = "Cubical C checked · restored previous judgement";
-    } else validate();
-    display();
+    } else await validate();
+    await display();
   } catch (error) { failure(error); }
-};
-$("unhighlight").onclick = () => {
+});
+$("unhighlight").onclick = action(async () => {
   reductionMode = null;
   $("reduction-status").textContent = "";
-  if (view) display(false);
+  if (view) await display(false);
   getSelection()?.removeAllRanges();
   document.querySelectorAll(".highlight,.selected").forEach(node => node.classList.remove("highlight", "selected"));
-};
-for (const id of ["identity-sugar", "truncation-sugar", "fold-names"]) $(id).onchange = () => { if (view) display(false); };
+});
+for (const id of ["identity-sugar", "truncation-sugar", "fold-names"]) $(id).onchange = action(() => { if (view) return display(false); });
 $("syntax").oninput = () => {
   const wasSelecting = reductionMode !== null;
   reductionMode = null;
-  if (wasSelecting) display(false);
+  if (wasSelecting) display(false).catch(report);
   $("reduction-status").textContent = "";
   checked = null; enableReductions(false);
+  $("kernel-controls").disabled = true;
   $("check").disabled = false;
   $("status").textContent = "Edited syntax is not checked; displayed terms show the last checked version.";
 };
-$("check").onclick = () => { try { validate(JSON.parse($("syntax").value)); view.folded = null; display(); } catch (error) { failure(error); } };
-function reduce(side, kind, path = null) {
-  if (!checked) return;
+$("check").onclick = action(async () => { try { await validate(JSON.parse($("syntax").value)); await display(); } catch (error) { failure(error); } });
+async function reduce(side, kind, path = null) {
+  if (!checked || busy) return;
   reductionMode = null;
   try {
-    let result;
-    if (kind === "normalize") {
-      const dimensions = new Map(view.dimensions ?? []);
-      const original = program.checker.checkView(view[side], null, view.context.map(x => [x.name, x.type]), dimensions);
-      const term = program.checker.syntax.decode(program.kernel.normalize(original.expression), dimensions);
-      result = { ...checkReduction(program, view, side, term), change: { rule: "Normalized", name: side } };
-    } else result = reduceView(program, view, side, kind, path);
+    $("status").textContent = `Running ${kind} in the kernel worker…`;
+    const result = await request("reduce", { side, kind, path });
     if (!result.change) {
       $("reduction-status").textContent = kind === "delta" ? `No named definitions to unfold in the ${side}.`
         : `No function/path applications or pair projections to beta-reduce in the ${side}.`;
       return;
     }
-    history.push({ view, selected, checked });
-    // Preserve folding elsewhere, but never immediately refold the changed term.
-    const folded = { ...(view.folded ?? foldedInspection(view)), [side]: result.view[side] };
-    if (side === "expression") delete folded.reference;
-    view = { ...result.view, folded }; checked = result.checked;
+    history.push(remember()); adopt(result);
+    kernelPath = [];
     enableReductions(true); $("diagnostic").hidden = true;
     $("status").textContent = "Cubical C checked · reduction is definitionally equal to the previous term";
     const name = view.symbols[result.change.name]?.name ?? result.change.name;
     $("reduction-status").textContent = kind === "normalize" ? `Normalized ${side}.`
       : `${result.change.rule} ${side}: ${name}. Back undoes this step.`;
-    display();
+    await display();
   } catch (error) { failure(error); }
 }
 for (const side of ["expression", "type"]) {
-  for (const kind of ["beta", "delta"]) $(kind + "-" + side).onclick = () => {
+  for (const kind of ["beta", "delta"]) $(kind + "-" + side).onclick = action(() => {
     if (!checked) return;
-    reductionMode = { side, kind }; reductionLimit = 5000; display();
-  };
-  $(side === "expression" ? "normalize" : "normalize-type").onclick = () => reduce(side, "normalize");
+    reductionMode = { side, kind }; reductionLimit = 5000; return display();
+  });
+  $(side === "expression" ? "normalize" : "normalize-type").onclick = action(() => reduce(side, "normalize"));
   const select = event => {
     if (!checked || reductionMode?.side !== side) return;
     if (event.type === "keydown" && !["Enter", " "].includes(event.key)) return;
@@ -304,7 +429,7 @@ for (const side of ["expression", "type"]) {
   $(side).addEventListener("click", select, true);
   $(side).addEventListener("keydown", select, true);
 }
-$("more-reduction-sites").onclick = () => { if (reductionMode) { reductionLimit *= 2; display(); } };
+$("more-reduction-sites").onclick = action(() => { if (reductionMode) { reductionLimit *= 2; return display(); } });
 addEventListener("keydown", event => { if (event.key === "Escape" && reductionMode) $("unhighlight").click(); });
 try {
   const params = new URLSearchParams(location.search);
@@ -321,18 +446,10 @@ try {
     const address = new URL(payload.proofReturn, location.href);
     if (address.origin === location.origin && address.pathname.endsWith("/proof.html")) $("source-back").href = address.href;
   }
-  program = new CubicalProgram(await createCubical(), async name => {
-    if (typeof payload.sources?.[name] !== "string") throw new Error(`Missing source module ${name}.`);
-    return payload.sources[name];
-  });
-  await program.check(payload.source, payload.main, progress => { $("status").textContent = `Rechecking source · ${progress.completed} declarations`; });
-  // Ignore supplied expression/type claims. Reconstruct from replayed source.
-  view = program.inspect(payload.binding);
-  selected = view.name;
-  if (payload.side === "type") {
-    const type = program.checker.checkView(view.type, null, view.context.map(x => [x.name, x.type]), new Map(view.dimensions ?? []));
-    view = { ...view, expression: type.term, type: type.type, folded: view.folded ? { ...view.folded, expression: view.folded.type, type: type.type } : null };
-  }
-  validate(); display();
+  adopt(await request("load", payload, progress => {
+    $("status").textContent = `Checking source in worker · ${progress.completed}${progress.total ? "/" + progress.total : ""} declarations · ${progress.current ?? ""}`;
+  }));
+  $("status").textContent = `Cubical C checked · ${checked.arenaNodes.toLocaleString()} nodes`;
+  await display();
 } catch (error) { failure(error); }
-addEventListener("pagehide", () => program?.dispose());
+addEventListener("pagehide", () => requests.terminate());
