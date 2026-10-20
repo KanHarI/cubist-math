@@ -1,7 +1,7 @@
 # Bounded substitution and dependency traversals
 
 This EVAL4 change replaces native recursion in term substitution, dimension
-substitution, composition-tube traversal and free-variable/dimension analysis.
+substitution, tube lists within substitution, and free-variable/dimension analysis.
 It preserves the existing substitution rules and keeps the 512 syntax-depth
 guard. It does not complete EVAL4 or rational full normalization.
 
@@ -38,13 +38,16 @@ failed allocation; K373 reports the frame bound. Successful children can
 remain memoized after a parent fails; incomplete parents are not published.
 The operation, original term, substituted name and replacement remain the
 complete substitution memo key.
+The 512 syntax guard currently prevents reaching the 16,384-frame bound;
+K373 is retained for the eventual traversal work and is not exercised by a
+guard-reaching test in this change.
 
 ## Dependency analysis
 
 Free-term-variable analysis uses an explicit depth-first stack and retains
 its existing per-name memo, conservative symbol mask and short-circuiting.
 Free-dimension analysis uses a postorder stack and records the completed
-exact mask on the immutable syntax node. An unfinished scan leaves the
+exact mask on the syntax node, whose structure is immutable. An unfinished scan leaves the
 conservative mask intact. This prevents ordinary substitution-memo eviction
 from forcing the same dimension analysis repeatedly.
 
@@ -70,6 +73,14 @@ are:
 
 - Before: `58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db`.
 - After: `99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443`.
+
+These measurements precede the review's comment-only correction to the
+`cc_node.dims` invariant. The follow-up changes no executable kernel code;
+it also strengthens native tests and corrects documentation. After rebuilding,
+the WASM binary remains byte-for-byte identical (SHA-256
+`674c25ec422aee0194caa90f3d5edb50f5e39d20f3fe3c291cd9ab47db0591a2`).
+The source hash after the comment correction is
+`4c97694183f1aaa48bfdd19c91b26b2bd2ce0e38a654d3f84eaaa51c6752bec5`.
 
 The unchanged fixed probes use 10M work ticks and a 30-second deadline:
 
@@ -120,6 +131,35 @@ bound. Four controls retain identical final arena node counts; the unshared
 quotient retains 10,320 instead of 10,297 (+23). The script records arena
 capacity, which excludes temporary continuation storage.
 
+F4's final reported arena capacity grows from **16,396,288 to 31,076,352
+bytes (+89.5%)**, despite retaining the same 46,344 syntax nodes after checking.
+This is a measured memory regression. F4's query count also changes from
+57,289 to 56,853, failed queries from 247 to 240, and budget exhaustions from
+251 to 244. The unshared quotient issues 157,737 instructions instead of
+157,785, and 5,714 queries instead of 5,737. Lower internal query/instruction
+counts and identical completed outcomes do not make the resource results
+neutral.
+
+A separate [arena-growth trace](substitution-stack-f4-arena/results.json) identifies
+the extra capacity doubling in a weak-head query during
+`f4_galois_group.f4_loop_bit_roundtrip`. It exhausts its 4,000-tick budget
+with 262,177 nodes, crossing the 262,144-slot boundary; reported capacity
+grows from 19,542,016 to 34,222,080 bytes during that call. The call adds only
+1,527 nodes to 260,650 already allocated: the trace locates a threshold
+crossing after earlier allocations in the declaration. It logs selected
+capacity-growth events and does not measure the before run's peak. Later compaction
+leaves the larger node storage allocated, producing the final 31,076,352-byte
+measurement. The instrumented runs reproduce every total work counter and
+final arena count of the uninstrumented controls. Cheaper dependency scans
+letting bounded attempts progress further is a plausible explanation for the
+changed allocation history, not an isolated causal measurement. The trace
+identifies the allocating call; it does not establish the precise source of
+every changed query or instruction count. This change does not reclaim that
+retained capacity. Reproduce this diagnostic from each built checkout with
+`node /path/to/report/substitution-stack-f4-arena/probe.mjs`. Instrumentation
+observes native operation boundaries and the active declaration; its timing
+is discarded.
+
 ## Validation and remaining gates
 
 The native tests cover all 64 dimension names, annotation dependencies,
@@ -129,7 +169,11 @@ tested. Allocator injection interrupts the initial stack spill and later
 reallocation, then retries on the same kernel. Budget interruption, memo
 pressure, rollback and checked-definition compaction are also covered.
 
-The full native suites and undefined-behavior sanitization pass. Targeted
+The full native suites and undefined-behavior sanitization pass. The local
+JavaScript suite passes all 1,622 tests, including the evaluation-baseline
+normal-form digests and work-growth checks. That full run used `e18407fb`,
+before the documentation and native-test follow-ups; the rebuilt WASM is
+byte-identical, and all 15 targeted JavaScript checks pass afterward. Targeted
 JavaScript runs cover quotient normalization, generated h-level evidence,
 capture/refusal contracts and dimension-slot assignment. Diagnostic discovery
 retains the three existing formula-substitution messages after their code
@@ -144,8 +188,12 @@ transport controls retain their completed graphs; `moved_setness` and
 
 The existing WASM 2 MiB stack and 4 GiB memory ceiling, Node's default stack,
 normalization budgets and mathematical definitions are unchanged. Recursive
-alpha comparison, universe-level analysis, prerequisite weak-head queries
-and frontend decoding/printing remain separate traversal work. This change
+alpha comparison, universe-level analysis, prerequisite weak-head queries,
+and frontend decoding/printing remain separate traversal work. Composition
+helpers (`ck_append_tube`, `ck_clause_tubes`, `remove_empty_tubes`, `map_tubes`,
+`substitute_tubes`), Glue's `projected_tubes` and HIT's `rename_tubes` also
+remain recursive. The bounded tube-list work here is inside substitution
+and free-dimension analysis. This change
 does not introduce closures or delayed substitution values: substitution
 still produces syntax. Shared cubical evaluation and full typed readback
 remain subject to the unchanged transport and complete-rational gates.

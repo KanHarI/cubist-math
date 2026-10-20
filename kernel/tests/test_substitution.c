@@ -101,12 +101,14 @@ static void interruption_and_pressure(unsigned optimizations) {
     cc_kernel_clear_error(k);
     k->budget = 1000;
     expect(k, t, expected);
-    /* Evict the old fixed memo through unrelated real syntax queries. */
+    /* Exercise the shared memo through free-term-variable queries as well
+     * as the unrelated dimension scans, which no longer use that memo. */
     cc_formula_id coordinate = ck_interval_variable(k, 1);
     k->budget = 1000000;
     for (unsigned i = 0; i < 10000; ++i) {
         cc_term unrelated = node(k, CC_PAPP, coordinate, ck_var(k, 100 + i), 0, 0);
         expect(k, unrelated, UINT64_C(1) << 1);
+        assert(ck_term_free(k, unrelated, 100 + i) && !k->error[0]);
     }
     k->budget = 1;
     expect(k, t, expected);
@@ -202,6 +204,27 @@ static void capture_and_shadowing(unsigned optimizations) {
     assert(changed.child[0] == at_i);
     assert(ck_free_dims(k, changed.child[1]) == (UINT64_C(1) << k->nodes[out].payload));
     assert(ck_free_dims(k, out) == 1);
+
+    /* A term replacement can capture a composition direction too. HComp's
+     * type stays outside that binder; its tube bodies remain inside. */
+    const cc_term_kind compositions[] = {CC_COMP, CC_HCOMP};
+    for (size_t a = 0; a < sizeof compositions / sizeof *compositions; ++a) {
+        cc_term body = node(k, CC_SUM, 0, x, at_i, 0);
+        cc_formula_id outer_face = ck_endpoint_face(k, 0, 0);
+        cc_term sides = node(k, CC_TUBE, outer_face, body, 0, 0);
+        cc_term input = node(k, compositions[a], 0, body, sides, x);
+        out = ck_substitute(k, input, 78, at_i);
+        assert(out && k->nodes[out].payload != 0 && !k->error[0]);
+        uint64_t fresh = UINT64_C(1) << k->nodes[out].payload;
+        cc_node type = k->nodes[k->nodes[out].child[0]];
+        assert(type.child[0] == at_i);
+        assert(ck_free_dims(k, type.child[1]) == (compositions[a] == CC_HCOMP ? 1 : fresh));
+        cc_node side = k->nodes[k->nodes[out].child[1]];
+        assert(side.payload == outer_face);
+        cc_node inside = k->nodes[side.child[0]];
+        assert(inside.child[0] == at_i && ck_free_dims(k, inside.child[1]) == fresh);
+        assert(k->nodes[out].child[2] == at_i && ck_free_dims(k, out) == 1);
+    }
 
     /* Renaming the direction changes family/tube bodies, never endpoints,
      * faces or the starting lid. The later substitution still visits them. */
@@ -325,6 +348,7 @@ static void substitution_failures(unsigned optimizations, bool dimensions) {
 }
 
 int main(void) {
+    assert(sizeof(cc_node) == 48);
     for (unsigned sharing = 0; sharing < 2; ++sharing) {
         scopes(sharing ? CC_SHARE_SYNTAX : 0);
         interruption_and_pressure(sharing ? CC_SHARE_SYNTAX : 0);

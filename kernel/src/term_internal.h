@@ -12,13 +12,13 @@ typedef struct {
     cc_term child[4];
     unsigned depth;
     bool dimensions_known;
-    /* The names a node mentions, over-approximated, computed when it is made:
-     * bit s % 64 for each term variable symbol s below it, and bit d for each
-     * dimension d in a formula below it or bound by it. Once dimensions_known
-     * is set, dims is the exact free-dimension mask. Refinement never adds
-     * a bit, so a clear bit always proves
-     * the name absent: alpha comparison checks it before asking exactly
-     * whether a renamed name is free. */
+    /* symbols over-approximates mentioned term names, with bit s % 64 for
+     * symbol s. dims always contains every free dimension; it may also
+     * contain bound ones until dimensions_known makes it exact. A new node
+     * combines its children's current masks, including refined ones, so
+     * dims need not contain every dimension mentioned as bound in syntax.
+     * Refinement only removes bits. A clear dimension bit proves "not free",
+     * which is the property alpha comparison needs for scope pruning. */
     uint64_t symbols, dims;
 } cc_node;
 

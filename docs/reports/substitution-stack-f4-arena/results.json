@@ -1,0 +1,366 @@
+{
+  "description": "Native operation boundaries at which F4 reported arena capacity grows above 8MB. Diagnostic timing is not a benchmark.",
+  "source": "import f4_galois_correspondence;",
+  "before": {
+    "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+    "growth": [
+      {
+        "method": "_cb_instr",
+        "current": "structured_sets.structure_path_roundtrip",
+        "args": [
+          30,
+          359,
+          2,
+          5,
+          0
+        ],
+        "before": {
+          "nodes": 31162,
+          "bytes": 4855808
+        },
+        "after": {
+          "nodes": 94607,
+          "bytes": 9050112
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 0,
+        "instructionSteps": 250000,
+        "input": null
+      },
+      {
+        "method": "_cb_head",
+        "current": "field_extensions.extension_path_roundtrip",
+        "args": [
+          48270
+        ],
+        "before": {
+          "nodes": 49751,
+          "bytes": 8525824
+        },
+        "after": {
+          "nodes": 51184,
+          "bytes": 9050112
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 4000,
+        "instructionSteps": 0,
+        "input": {
+          "id": 48270,
+          "kind": "Comp",
+          "payload": 1,
+          "children": [
+            42300,
+            48260,
+            48261,
+            0
+          ]
+        }
+      },
+      {
+        "method": "_cb_instr",
+        "current": "field_extensions.extension_path_roundtrip",
+        "args": [
+          30,
+          349,
+          2,
+          5,
+          0
+        ],
+        "before": {
+          "nodes": 91794,
+          "bytes": 9050112
+        },
+        "after": {
+          "nodes": 154724,
+          "bytes": 19535872
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 0,
+        "instructionSteps": 250000,
+        "input": null
+      },
+      {
+        "method": "_cb_instr",
+        "current": "f4_galois.f4_2_not_1",
+        "args": [
+          27,
+          14411,
+          230,
+          0,
+          0
+        ],
+        "before": {
+          "nodes": 30316,
+          "bytes": 19535872
+        },
+        "after": {
+          "nodes": 30317,
+          "bytes": 19542016
+        },
+        "result": 248,
+        "errorKind": 0,
+        "querySteps": 0,
+        "instructionSteps": 1,
+        "input": null
+      },
+      {
+        "method": "_cb_head",
+        "current": "f4_galois_group.f4_loop_bit_roundtrip",
+        "args": [
+          76600
+        ],
+        "before": {
+          "nodes": 93763,
+          "bytes": 16396288
+        },
+        "after": {
+          "nodes": 95269,
+          "bytes": 17444864
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 4000,
+        "instructionSteps": 0,
+        "input": {
+          "id": 76600,
+          "kind": "App",
+          "payload": 0,
+          "children": [
+            76599,
+            20577,
+            0,
+            0
+          ]
+        }
+      }
+    ],
+    "work": {
+      "instructions": 640867,
+      "rejected": 2499,
+      "instructionSteps": 2774308,
+      "queries": 57289,
+      "failedQueries": 247,
+      "querySteps": 2985581,
+      "exhausted": 251,
+      "deadlines": 0
+    },
+    "arena": {
+      "nodes": 46344,
+      "bytes": 16396288
+    }
+  },
+  "after": {
+    "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+    "growth": [
+      {
+        "method": "_cb_instr",
+        "current": "structured_sets.structure_path_roundtrip",
+        "args": [
+          30,
+          359,
+          2,
+          5,
+          0
+        ],
+        "before": {
+          "nodes": 31279,
+          "bytes": 4855808
+        },
+        "after": {
+          "nodes": 98936,
+          "bytes": 9050112
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 0,
+        "instructionSteps": 250000,
+        "input": null
+      },
+      {
+        "method": "_cb_instr",
+        "current": "field_extensions.extension_path_roundtrip",
+        "args": [
+          30,
+          349,
+          2,
+          5,
+          0
+        ],
+        "before": {
+          "nodes": 42265,
+          "bytes": 8525824
+        },
+        "after": {
+          "nodes": 109835,
+          "bytes": 9050112
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 0,
+        "instructionSteps": 250000,
+        "input": null
+      },
+      {
+        "method": "_cb_head",
+        "current": "galois_paths.extension_concat_forward",
+        "args": [
+          65423
+        ],
+        "before": {
+          "nodes": 65424,
+          "bytes": 8525824
+        },
+        "after": {
+          "nodes": 65638,
+          "bytes": 10098688
+        },
+        "result": 65638,
+        "errorKind": 0,
+        "querySteps": 429,
+        "instructionSteps": 0,
+        "input": {
+          "id": 65423,
+          "kind": "Comp",
+          "payload": 5,
+          "children": [
+            64103,
+            65419,
+            65422,
+            0
+          ]
+        }
+      },
+      {
+        "method": "_cb_instr",
+        "current": "f4_galois.f4_2_not_1",
+        "args": [
+          27,
+          13859,
+          230,
+          0,
+          0
+        ],
+        "before": {
+          "nodes": 30316,
+          "bytes": 10098688
+        },
+        "after": {
+          "nodes": 30317,
+          "bytes": 10104832
+        },
+        "result": 248,
+        "errorKind": 0,
+        "querySteps": 0,
+        "instructionSteps": 1,
+        "input": null
+      },
+      {
+        "method": "_cb_head",
+        "current": "f4_galois.f4_loop_twice",
+        "args": [
+          128246
+        ],
+        "before": {
+          "nodes": 129812,
+          "bytes": 10104832
+        },
+        "after": {
+          "nodes": 131408,
+          "bytes": 17444864
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 4000,
+        "instructionSteps": 0,
+        "input": {
+          "id": 128246,
+          "kind": "Comp",
+          "payload": 1,
+          "children": [
+            31132,
+            128224,
+            128245,
+            0
+          ]
+        }
+      },
+      {
+        "method": "_cb_head",
+        "current": "f4_galois_group.f4_loop_bit_roundtrip",
+        "args": [
+          109500
+        ],
+        "before": {
+          "nodes": 129153,
+          "bytes": 16396288
+        },
+        "after": {
+          "nodes": 131250,
+          "bytes": 19542016
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 4000,
+        "instructionSteps": 0,
+        "input": {
+          "id": 109500,
+          "kind": "App",
+          "payload": 0,
+          "children": [
+            109499,
+            13522,
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "method": "_cb_head",
+        "current": "f4_galois_group.f4_loop_bit_roundtrip",
+        "args": [
+          259119
+        ],
+        "before": {
+          "nodes": 260650,
+          "bytes": 19542016
+        },
+        "after": {
+          "nodes": 262177,
+          "bytes": 34222080
+        },
+        "result": 0,
+        "errorKind": 2,
+        "querySteps": 4000,
+        "instructionSteps": 0,
+        "input": {
+          "id": 259119,
+          "kind": "Comp",
+          "payload": 1,
+          "children": [
+            54644,
+            259100,
+            259118,
+            0
+          ]
+        }
+      }
+    ],
+    "work": {
+      "instructions": 640867,
+      "rejected": 2499,
+      "instructionSteps": 2755368,
+      "queries": 56853,
+      "failedQueries": 240,
+      "querySteps": 2798072,
+      "exhausted": 244,
+      "deadlines": 0
+    },
+    "arena": {
+      "nodes": 46344,
+      "bytes": 31076352
+    }
+  }
+}
