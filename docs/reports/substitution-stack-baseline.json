@@ -1,0 +1,1702 @@
+{
+  "description": "Serial before/after measurements for bounded substitution traversals; no budgets or fixture sources changed.",
+  "beforeRevision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+  "baseRevision": "694882af",
+  "beforeSourcesMatchBase": true,
+  "afterHasUncommittedSourceChanges": true,
+  "probeCommands": [
+    "node tools/open-bnat-normalization-probe.mjs",
+    "node tools/transport-normalization-probe.mjs",
+    "node tools/quotient-normalization-probe.mjs",
+    "node /path/to/after/tools/substitution-cost-probe.mjs"
+  ],
+  "method": "Before then after, three serial timing pairs on the same macOS arm64 host. Each timing invocation loads one WASM module and uses a fresh program per case. Fixed normalization probes are separate runs. Work is instructionSteps + querySteps; timings include imports and checking. No timing threshold or portable speedup claim.",
+  "normalization": {
+    "before": {
+      "bnat": [
+        {
+          "name": "add_left_32",
+          "bits": 32,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 53930,
+          "allocatedNodes": 13650,
+          "normalForm": {
+            "reachableNodes": 494,
+            "depth": 293
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 17276,
+            "bytes": 2754048
+          },
+          "normalizeMs": 1.9439590000000067,
+          "memoryAfterInspection": {
+            "rss": 147144704,
+            "heapTotal": 66666496,
+            "heapUsed": 33557928,
+            "external": 18996685,
+            "arrayBuffers": 31025
+          },
+          "processMaxRssKiB": 143696,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_right_32",
+          "bits": 32,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 45088,
+          "allocatedNodes": 11475,
+          "normalForm": {
+            "reachableNodes": 106,
+            "depth": 39
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 15101,
+            "bytes": 1836544
+          },
+          "normalizeMs": 1.7307500000000005,
+          "memoryAfterInspection": {
+            "rss": 145801216,
+            "heapTotal": 66928640,
+            "heapUsed": 32904088,
+            "external": 18996685,
+            "arrayBuffers": 31025
+          },
+          "processMaxRssKiB": 142384,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_comm_32",
+          "bits": 32,
+          "fixture": "open-bnat-bitwise-proof.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 78387,
+          "allocatedNodes": 18891,
+          "normalForm": {
+            "reachableNodes": 1476,
+            "depth": 380
+          },
+          "arenaBefore": {
+            "nodes": 3882,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 22773,
+            "bytes": 2754048
+          },
+          "normalizeMs": 2.900457999999958,
+          "memoryAfterInspection": {
+            "rss": 149618688,
+            "heapTotal": 69402624,
+            "heapUsed": 51238888,
+            "external": 18994414,
+            "arrayBuffers": 28754
+          },
+          "processMaxRssKiB": 146112,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_left_64",
+          "bits": 64,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 206706,
+          "allocatedNodes": 45305,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 48931,
+            "bytes": 4851200
+          },
+          "normalizeMs": 7.5486250000000155,
+          "memoryAfterInspection": {
+            "rss": 149569536,
+            "heapTotal": 66928640,
+            "heapUsed": 48277000,
+            "external": 18994214,
+            "arrayBuffers": 28554
+          },
+          "processMaxRssKiB": 146064,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_right_64",
+          "bits": 64,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 188908,
+          "allocatedNodes": 40913,
+          "normalForm": {
+            "reachableNodes": 138,
+            "depth": 71
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 44539,
+            "bytes": 4851200
+          },
+          "normalizeMs": 6.852374999999995,
+          "memoryAfterInspection": {
+            "rss": 149651456,
+            "heapTotal": 66928640,
+            "heapUsed": 32982200,
+            "external": 18996485,
+            "arrayBuffers": 30825
+          },
+          "processMaxRssKiB": 146144,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_comm_64",
+          "bits": 64,
+          "fixture": "open-bnat-bitwise-proof.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 212143,
+          "allocatedNodes": 45357,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3882,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 49239,
+            "bytes": 4851200
+          },
+          "normalizeMs": 7.701999999999998,
+          "memoryAfterInspection": {
+            "rss": 149831680,
+            "heapTotal": 66519040,
+            "heapUsed": 35580080,
+            "external": 18990479,
+            "arrayBuffers": 24819
+          },
+          "processMaxRssKiB": 146320,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_left_128",
+          "bits": 128,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 1562194,
+          "allocatedNodes": 163524,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 167150,
+            "bytes": 17434112
+          },
+          "normalizeMs": 47.67820900000004,
+          "memoryAfterInspection": {
+            "rss": 163528704,
+            "heapTotal": 64569344,
+            "heapUsed": 29743768,
+            "external": 30786959,
+            "arrayBuffers": 24819
+          },
+          "processMaxRssKiB": 159696,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_right_128",
+          "bits": 128,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 1466360,
+          "allocatedNodes": 155524,
+          "normalForm": {
+            "reachableNodes": 202,
+            "depth": 135
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 159150,
+            "bytes": 17434112
+          },
+          "normalizeMs": 46.488291000000004,
+          "memoryAfterInspection": {
+            "rss": 165462016,
+            "heapTotal": 67977216,
+            "heapUsed": 33308320,
+            "external": 30790894,
+            "arrayBuffers": 28754
+          },
+          "processMaxRssKiB": 161584,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_comm_128",
+          "bits": 128,
+          "fixture": "open-bnat-bitwise-proof.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 1560793,
+          "allocatedNodes": 163576,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3882,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 167458,
+            "bytes": 17434112
+          },
+          "normalizeMs": 48.91758399999998,
+          "memoryAfterInspection": {
+            "rss": 167854080,
+            "heapTotal": 69664768,
+            "heapUsed": 49170952,
+            "external": 30790894,
+            "arrayBuffers": 28754
+          },
+          "processMaxRssKiB": 163920,
+          "revision": "c6ed71e5467839efa58c11f18faba32cdb6fd771",
+          "modified": false,
+          "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+          "kernelSourceHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ],
+      "transport": [
+        {
+          "case": "moved_value",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 2914,
+          "allocatedNodes": 958,
+          "arena": {
+            "nodes": 6961,
+            "bytes": 1836544
+          },
+          "normal": {
+            "nodes": 89,
+            "depth": 26
+          },
+          "ms": 0.2660410000000297,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_function",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 5723,
+          "allocatedNodes": 1913,
+          "arena": {
+            "nodes": 7916,
+            "bytes": 1836544
+          },
+          "normal": {
+            "nodes": 171,
+            "depth": 52
+          },
+          "ms": 0.3521250000000009,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_neutral",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 768,
+          "allocatedNodes": 184,
+          "arena": {
+            "nodes": 6187,
+            "bytes": 1836544
+          },
+          "normal": {
+            "nodes": 64,
+            "depth": 20
+          },
+          "ms": 0.0645000000000664,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_setness",
+          "budget": "10000000",
+          "status": "limited",
+          "kind": "budget",
+          "message": "Kernel checking/reduction budget exhausted.",
+          "querySteps": 10000000,
+          "allocatedNodes": 2526247,
+          "arena": {
+            "nodes": 2532250,
+            "bytes": 269092352
+          },
+          "normal": null,
+          "ms": 851.1178750000001,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_path",
+          "budget": "10000000",
+          "status": "limited",
+          "kind": "budget",
+          "message": "Kernel checking/reduction budget exhausted.",
+          "querySteps": 10000000,
+          "allocatedNodes": 2602450,
+          "arena": {
+            "nodes": 2608453,
+            "bytes": 269092352
+          },
+          "normal": null,
+          "ms": 863.6530419999999,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        }
+      ],
+      "quotient": [
+        {
+          "case": "to_unit",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 2699,
+          "allocatedNodes": 587
+        },
+        {
+          "case": "to_prop",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 2272,
+          "allocatedNodes": 459
+        }
+      ]
+    },
+    "after": {
+      "bnat": [
+        {
+          "name": "add_left_32",
+          "bits": 32,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 53027,
+          "allocatedNodes": 13650,
+          "normalForm": {
+            "reachableNodes": 494,
+            "depth": 293
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 17276,
+            "bytes": 2754048
+          },
+          "normalizeMs": 2.666334000000006,
+          "memoryAfterInspection": {
+            "rss": 147800064,
+            "heapTotal": 66666496,
+            "heapUsed": 33638232,
+            "external": 18997061,
+            "arrayBuffers": 31401
+          },
+          "processMaxRssKiB": 144336,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_right_32",
+          "bits": 32,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 44132,
+          "allocatedNodes": 11475,
+          "normalForm": {
+            "reachableNodes": 106,
+            "depth": 39
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 15101,
+            "bytes": 1836544
+          },
+          "normalizeMs": 2.2649999999999864,
+          "memoryAfterInspection": {
+            "rss": 146915328,
+            "heapTotal": 67190784,
+            "heapUsed": 33028000,
+            "external": 18994790,
+            "arrayBuffers": 29130
+          },
+          "processMaxRssKiB": 143472,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_comm_32",
+          "bits": 32,
+          "fixture": "open-bnat-bitwise-proof.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 76811,
+          "allocatedNodes": 18891,
+          "normalForm": {
+            "reachableNodes": 1476,
+            "depth": 380
+          },
+          "arenaBefore": {
+            "nodes": 3882,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 22773,
+            "bytes": 2754048
+          },
+          "normalizeMs": 4.011624999999981,
+          "memoryAfterInspection": {
+            "rss": 150618112,
+            "heapTotal": 69926912,
+            "heapUsed": 36355544,
+            "external": 18994590,
+            "arrayBuffers": 28930
+          },
+          "processMaxRssKiB": 147088,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_left_64",
+          "bits": 64,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 200695,
+          "allocatedNodes": 45305,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 48931,
+            "bytes": 4851200
+          },
+          "normalizeMs": 10.019000000000005,
+          "memoryAfterInspection": {
+            "rss": 150093824,
+            "heapTotal": 66666496,
+            "heapUsed": 33360776,
+            "external": 18994590,
+            "arrayBuffers": 28930
+          },
+          "processMaxRssKiB": 146576,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_right_64",
+          "bits": 64,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 182539,
+          "allocatedNodes": 40913,
+          "normalForm": {
+            "reachableNodes": 138,
+            "depth": 71
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 44539,
+            "bytes": 4851200
+          },
+          "normalizeMs": 9.128582999999992,
+          "memoryAfterInspection": {
+            "rss": 150929408,
+            "heapTotal": 66928640,
+            "heapUsed": 33133096,
+            "external": 18997061,
+            "arrayBuffers": 31401
+          },
+          "processMaxRssKiB": 147392,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_comm_64",
+          "bits": 64,
+          "fixture": "open-bnat-bitwise-proof.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 205977,
+          "allocatedNodes": 45357,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3882,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 49239,
+            "bytes": 4851200
+          },
+          "normalizeMs": 10.690207999999984,
+          "memoryAfterInspection": {
+            "rss": 150945792,
+            "heapTotal": 66781184,
+            "heapUsed": 35562432,
+            "external": 18990855,
+            "arrayBuffers": 25195
+          },
+          "processMaxRssKiB": 147408,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_left_128",
+          "bits": 128,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 1453205,
+          "allocatedNodes": 163524,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 167150,
+            "bytes": 17434112
+          },
+          "normalizeMs": 61.62379199999998,
+          "memoryAfterInspection": {
+            "rss": 165756928,
+            "heapTotal": 66404352,
+            "heapUsed": 33742112,
+            "external": 30791070,
+            "arrayBuffers": 28930
+          },
+          "processMaxRssKiB": 161872,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_right_128",
+          "bits": 128,
+          "fixture": "open-bnat-addition.cubist",
+          "status": "normalized",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 1359180,
+          "allocatedNodes": 155524,
+          "normalForm": {
+            "reachableNodes": 202,
+            "depth": 135
+          },
+          "arenaBefore": {
+            "nodes": 3626,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 159150,
+            "bytes": 17434112
+          },
+          "normalizeMs": 57.79325,
+          "memoryAfterInspection": {
+            "rss": 166674432,
+            "heapTotal": 66404352,
+            "heapUsed": 23202016,
+            "external": 30787335,
+            "arrayBuffers": 25195
+          },
+          "processMaxRssKiB": 162768,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "9d342d9c13f1000a9122618bd9aaeab1d5aa12aaa9a7c390b19a2753b581ec46",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "add_comm_128",
+          "bits": 128,
+          "fixture": "open-bnat-bitwise-proof.cubist",
+          "status": "limited",
+          "kind": "resource",
+          "message": "Native prototype syntax depth exceeds 512.",
+          "queryBudget": "10000000",
+          "deadlineMs": 30000,
+          "querySteps": 1452085,
+          "allocatedNodes": 163576,
+          "normalForm": null,
+          "arenaBefore": {
+            "nodes": 3882,
+            "bytes": 1377792
+          },
+          "arenaAfter": {
+            "nodes": 167458,
+            "bytes": 17434112
+          },
+          "normalizeMs": 59.984582999999986,
+          "memoryAfterInspection": {
+            "rss": 169050112,
+            "heapTotal": 69664768,
+            "heapUsed": 49384048,
+            "external": 30791270,
+            "arrayBuffers": 29130
+          },
+          "processMaxRssKiB": 165088,
+          "revision": "694882afa6133391d7fc71f063b5e4bec0ef3cc4",
+          "modified": true,
+          "fixtureSha256": "1bdbf245acd09c6c5d2cd08f4d5bd86a16a693b8666ae9f841393182d2fd1432",
+          "kernelSourceHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ],
+      "transport": [
+        {
+          "case": "moved_value",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 2893,
+          "allocatedNodes": 958,
+          "arena": {
+            "nodes": 6961,
+            "bytes": 1836544
+          },
+          "normal": {
+            "nodes": 89,
+            "depth": 26
+          },
+          "ms": 0.31887499999999136,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_function",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 5695,
+          "allocatedNodes": 1913,
+          "arena": {
+            "nodes": 7916,
+            "bytes": 1836544
+          },
+          "normal": {
+            "nodes": 171,
+            "depth": 52
+          },
+          "ms": 0.44074999999998,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_neutral",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 741,
+          "allocatedNodes": 184,
+          "arena": {
+            "nodes": 6187,
+            "bytes": 1836544
+          },
+          "normal": {
+            "nodes": 64,
+            "depth": 20
+          },
+          "ms": 0.07216600000003837,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_setness",
+          "budget": "10000000",
+          "status": "limited",
+          "kind": "budget",
+          "message": "Kernel checking/reduction budget exhausted.",
+          "querySteps": 10000000,
+          "allocatedNodes": 2765343,
+          "arena": {
+            "nodes": 2771346,
+            "bytes": 269092352
+          },
+          "normal": null,
+          "ms": 1093.5970829999999,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        },
+        {
+          "case": "moved_path",
+          "budget": "10000000",
+          "status": "limited",
+          "kind": "budget",
+          "message": "Kernel checking/reduction budget exhausted.",
+          "querySteps": 10000000,
+          "allocatedNodes": 2807511,
+          "arena": {
+            "nodes": 2813514,
+            "bytes": 269092352
+          },
+          "normal": null,
+          "ms": 1099.5910409999997,
+          "fixtureHash": "7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "dependencyHash": "d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6"
+        }
+      ],
+      "quotient": [
+        {
+          "case": "to_unit",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 2686,
+          "allocatedNodes": 587
+        },
+        {
+          "case": "to_prop",
+          "budget": "10000000",
+          "status": "normalized",
+          "querySteps": 2240,
+          "allocatedNodes": 459
+        }
+      ]
+    }
+  },
+  "cost": {
+    "before": [
+      [
+        {
+          "name": "f4_check",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 0,
+          "work": {
+            "instructions": 640867,
+            "rejected": 2499,
+            "instructionSteps": 2774308,
+            "queries": 57289,
+            "failedQueries": 247,
+            "querySteps": 2985581,
+            "exhausted": 251,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 46344,
+            "bytes": 16396288
+          },
+          "ms": 3096.879583,
+          "sourceHash": "eb1e3ce45627be31a0659bdd66915d90c23c8b3e96cb864c7ac880af7b875587",
+          "dependencyHash": "ec4bdfdc0b69c9fac7cf0a24424cc66450b59ff64849cbc8bb50d5be2e05dc43",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "small_quotient",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 59051,
+            "rejected": 436,
+            "instructionSteps": 153656,
+            "queries": 3228,
+            "failedQueries": 0,
+            "querySteps": 2803329,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 656411,
+            "bytes": 76154368
+          },
+          "ms": 1091.1525419999998,
+          "sourceHash": "1bae2286b92299ea970f0f6eb2b2264d99b2ffa1f85efa91256530ce88728f9b",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "unary_quotient_unshared",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 157785,
+            "rejected": 651,
+            "instructionSteps": 600190,
+            "queries": 5737,
+            "failedQueries": 0,
+            "querySteps": 100106,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 10297,
+            "bytes": 7996928
+          },
+          "ms": 553.5694999999996,
+          "sourceHash": "39d2eaeb12a9f4e5fac4963716a8f6fce8879dce1b3f3e248773cf1a3a78a411",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "integer_multiplication",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 805273,
+            "rejected": 7116,
+            "instructionSteps": 2218411,
+            "queries": 61082,
+            "failedQueries": 47,
+            "querySteps": 7264238,
+            "exhausted": 47,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 946836,
+            "bytes": 76165120
+          },
+          "ms": 6733.751125000001,
+          "sourceHash": "4cce3f0470fa6cb53d6052152734f73707c4e271c10dcde9e7e217a2f40772d0",
+          "dependencyHash": "1f7cf38a8fff4fc7f02d5ac4e6b0b28e994b7b93cb2d7be70603b7ccec157841",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "binary_fraction_one",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 924209,
+            "rejected": 8173,
+            "instructionSteps": 2850858,
+            "queries": 70766,
+            "failedQueries": 54,
+            "querySteps": 7137385,
+            "exhausted": 55,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 976040,
+            "bytes": 76165120
+          },
+          "ms": 7608.364667000002,
+          "sourceHash": "fb577cbdd618094a2898b23e1f553ea28589befb76e91a4096961cd4d13a1dc0",
+          "dependencyHash": "1fdc6bd1bca5ecc7291be6a79acbf06e016ac5300fdb5218c6184d1e639cb52e",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ],
+      [
+        {
+          "name": "f4_check",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 0,
+          "work": {
+            "instructions": 640867,
+            "rejected": 2499,
+            "instructionSteps": 2774308,
+            "queries": 57289,
+            "failedQueries": 247,
+            "querySteps": 2985581,
+            "exhausted": 251,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 46344,
+            "bytes": 16396288
+          },
+          "ms": 3138.6205,
+          "sourceHash": "eb1e3ce45627be31a0659bdd66915d90c23c8b3e96cb864c7ac880af7b875587",
+          "dependencyHash": "ec4bdfdc0b69c9fac7cf0a24424cc66450b59ff64849cbc8bb50d5be2e05dc43",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "small_quotient",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 59051,
+            "rejected": 436,
+            "instructionSteps": 153656,
+            "queries": 3228,
+            "failedQueries": 0,
+            "querySteps": 2803329,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 656411,
+            "bytes": 76154368
+          },
+          "ms": 1086.246541,
+          "sourceHash": "1bae2286b92299ea970f0f6eb2b2264d99b2ffa1f85efa91256530ce88728f9b",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "unary_quotient_unshared",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 157785,
+            "rejected": 651,
+            "instructionSteps": 600190,
+            "queries": 5737,
+            "failedQueries": 0,
+            "querySteps": 100106,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 10297,
+            "bytes": 7996928
+          },
+          "ms": 543.9644580000004,
+          "sourceHash": "39d2eaeb12a9f4e5fac4963716a8f6fce8879dce1b3f3e248773cf1a3a78a411",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "integer_multiplication",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 805273,
+            "rejected": 7116,
+            "instructionSteps": 2218411,
+            "queries": 61082,
+            "failedQueries": 47,
+            "querySteps": 7264238,
+            "exhausted": 47,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 946836,
+            "bytes": 76165120
+          },
+          "ms": 6312.725041999999,
+          "sourceHash": "4cce3f0470fa6cb53d6052152734f73707c4e271c10dcde9e7e217a2f40772d0",
+          "dependencyHash": "1f7cf38a8fff4fc7f02d5ac4e6b0b28e994b7b93cb2d7be70603b7ccec157841",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "binary_fraction_one",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 924209,
+            "rejected": 8173,
+            "instructionSteps": 2850858,
+            "queries": 70766,
+            "failedQueries": 54,
+            "querySteps": 7137385,
+            "exhausted": 55,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 976040,
+            "bytes": 76165120
+          },
+          "ms": 7054.371750000002,
+          "sourceHash": "fb577cbdd618094a2898b23e1f553ea28589befb76e91a4096961cd4d13a1dc0",
+          "dependencyHash": "1fdc6bd1bca5ecc7291be6a79acbf06e016ac5300fdb5218c6184d1e639cb52e",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ],
+      [
+        {
+          "name": "f4_check",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 0,
+          "work": {
+            "instructions": 640867,
+            "rejected": 2499,
+            "instructionSteps": 2774308,
+            "queries": 57289,
+            "failedQueries": 247,
+            "querySteps": 2985581,
+            "exhausted": 251,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 46344,
+            "bytes": 16396288
+          },
+          "ms": 3171.366042,
+          "sourceHash": "eb1e3ce45627be31a0659bdd66915d90c23c8b3e96cb864c7ac880af7b875587",
+          "dependencyHash": "ec4bdfdc0b69c9fac7cf0a24424cc66450b59ff64849cbc8bb50d5be2e05dc43",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "small_quotient",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 59051,
+            "rejected": 436,
+            "instructionSteps": 153656,
+            "queries": 3228,
+            "failedQueries": 0,
+            "querySteps": 2803329,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 656411,
+            "bytes": 76154368
+          },
+          "ms": 1049.2752080000005,
+          "sourceHash": "1bae2286b92299ea970f0f6eb2b2264d99b2ffa1f85efa91256530ce88728f9b",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "unary_quotient_unshared",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 157785,
+            "rejected": 651,
+            "instructionSteps": 600190,
+            "queries": 5737,
+            "failedQueries": 0,
+            "querySteps": 100106,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 10297,
+            "bytes": 7996928
+          },
+          "ms": 552.9901659999996,
+          "sourceHash": "39d2eaeb12a9f4e5fac4963716a8f6fce8879dce1b3f3e248773cf1a3a78a411",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "integer_multiplication",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 805273,
+            "rejected": 7116,
+            "instructionSteps": 2218411,
+            "queries": 61082,
+            "failedQueries": 47,
+            "querySteps": 7264238,
+            "exhausted": 47,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 946836,
+            "bytes": 76165120
+          },
+          "ms": 6161.548125,
+          "sourceHash": "4cce3f0470fa6cb53d6052152734f73707c4e271c10dcde9e7e217a2f40772d0",
+          "dependencyHash": "1f7cf38a8fff4fc7f02d5ac4e6b0b28e994b7b93cb2d7be70603b7ccec157841",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "binary_fraction_one",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 924209,
+            "rejected": 8173,
+            "instructionSteps": 2850858,
+            "queries": 70766,
+            "failedQueries": 54,
+            "querySteps": 7137385,
+            "exhausted": 55,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 976040,
+            "bytes": 76165120
+          },
+          "ms": 7051.993208000002,
+          "sourceHash": "fb577cbdd618094a2898b23e1f553ea28589befb76e91a4096961cd4d13a1dc0",
+          "dependencyHash": "1fdc6bd1bca5ecc7291be6a79acbf06e016ac5300fdb5218c6184d1e639cb52e",
+          "kernelHash": "58bc1ccacb5e75c531c3145038da2a40acc3b10270b856566aeef4692259e9db",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ]
+    ],
+    "after": [
+      [
+        {
+          "name": "f4_check",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 0,
+          "work": {
+            "instructions": 640867,
+            "rejected": 2499,
+            "instructionSteps": 2755368,
+            "queries": 56853,
+            "failedQueries": 240,
+            "querySteps": 2798072,
+            "exhausted": 244,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 46344,
+            "bytes": 31076352
+          },
+          "ms": 3223.471083,
+          "sourceHash": "eb1e3ce45627be31a0659bdd66915d90c23c8b3e96cb864c7ac880af7b875587",
+          "dependencyHash": "ec4bdfdc0b69c9fac7cf0a24424cc66450b59ff64849cbc8bb50d5be2e05dc43",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "small_quotient",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 59051,
+            "rejected": 436,
+            "instructionSteps": 153055,
+            "queries": 3228,
+            "failedQueries": 0,
+            "querySteps": 2433524,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 656411,
+            "bytes": 76154368
+          },
+          "ms": 1069.578916,
+          "sourceHash": "1bae2286b92299ea970f0f6eb2b2264d99b2ffa1f85efa91256530ce88728f9b",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "unary_quotient_unshared",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 157737,
+            "rejected": 651,
+            "instructionSteps": 597614,
+            "queries": 5714,
+            "failedQueries": 0,
+            "querySteps": 98616,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 10320,
+            "bytes": 7996928
+          },
+          "ms": 567.466958,
+          "sourceHash": "39d2eaeb12a9f4e5fac4963716a8f6fce8879dce1b3f3e248773cf1a3a78a411",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "integer_multiplication",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 805273,
+            "rejected": 7116,
+            "instructionSteps": 2205136,
+            "queries": 61082,
+            "failedQueries": 47,
+            "querySteps": 6362240,
+            "exhausted": 47,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 946836,
+            "bytes": 76165120
+          },
+          "ms": 6698.408833,
+          "sourceHash": "4cce3f0470fa6cb53d6052152734f73707c4e271c10dcde9e7e217a2f40772d0",
+          "dependencyHash": "1f7cf38a8fff4fc7f02d5ac4e6b0b28e994b7b93cb2d7be70603b7ccec157841",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "binary_fraction_one",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 924209,
+            "rejected": 8173,
+            "instructionSteps": 2835401,
+            "queries": 70766,
+            "failedQueries": 54,
+            "querySteps": 6449014,
+            "exhausted": 55,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 976040,
+            "bytes": 76165120
+          },
+          "ms": 7353.091999999999,
+          "sourceHash": "fb577cbdd618094a2898b23e1f553ea28589befb76e91a4096961cd4d13a1dc0",
+          "dependencyHash": "1fdc6bd1bca5ecc7291be6a79acbf06e016ac5300fdb5218c6184d1e639cb52e",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ],
+      [
+        {
+          "name": "f4_check",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 0,
+          "work": {
+            "instructions": 640867,
+            "rejected": 2499,
+            "instructionSteps": 2755368,
+            "queries": 56853,
+            "failedQueries": 240,
+            "querySteps": 2798072,
+            "exhausted": 244,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 46344,
+            "bytes": 31076352
+          },
+          "ms": 3238.497875,
+          "sourceHash": "eb1e3ce45627be31a0659bdd66915d90c23c8b3e96cb864c7ac880af7b875587",
+          "dependencyHash": "ec4bdfdc0b69c9fac7cf0a24424cc66450b59ff64849cbc8bb50d5be2e05dc43",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "small_quotient",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 59051,
+            "rejected": 436,
+            "instructionSteps": 153055,
+            "queries": 3228,
+            "failedQueries": 0,
+            "querySteps": 2433524,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 656411,
+            "bytes": 76154368
+          },
+          "ms": 1081.8680000000004,
+          "sourceHash": "1bae2286b92299ea970f0f6eb2b2264d99b2ffa1f85efa91256530ce88728f9b",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "unary_quotient_unshared",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 157737,
+            "rejected": 651,
+            "instructionSteps": 597614,
+            "queries": 5714,
+            "failedQueries": 0,
+            "querySteps": 98616,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 10320,
+            "bytes": 7996928
+          },
+          "ms": 566.22325,
+          "sourceHash": "39d2eaeb12a9f4e5fac4963716a8f6fce8879dce1b3f3e248773cf1a3a78a411",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "integer_multiplication",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 805273,
+            "rejected": 7116,
+            "instructionSteps": 2205136,
+            "queries": 61082,
+            "failedQueries": 47,
+            "querySteps": 6362240,
+            "exhausted": 47,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 946836,
+            "bytes": 76165120
+          },
+          "ms": 6347.825958,
+          "sourceHash": "4cce3f0470fa6cb53d6052152734f73707c4e271c10dcde9e7e217a2f40772d0",
+          "dependencyHash": "1f7cf38a8fff4fc7f02d5ac4e6b0b28e994b7b93cb2d7be70603b7ccec157841",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "binary_fraction_one",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 924209,
+            "rejected": 8173,
+            "instructionSteps": 2835401,
+            "queries": 70766,
+            "failedQueries": 54,
+            "querySteps": 6449014,
+            "exhausted": 55,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 976040,
+            "bytes": 76165120
+          },
+          "ms": 7079.298792,
+          "sourceHash": "fb577cbdd618094a2898b23e1f553ea28589befb76e91a4096961cd4d13a1dc0",
+          "dependencyHash": "1fdc6bd1bca5ecc7291be6a79acbf06e016ac5300fdb5218c6184d1e639cb52e",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ],
+      [
+        {
+          "name": "f4_check",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 0,
+          "work": {
+            "instructions": 640867,
+            "rejected": 2499,
+            "instructionSteps": 2755368,
+            "queries": 56853,
+            "failedQueries": 240,
+            "querySteps": 2798072,
+            "exhausted": 244,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 46344,
+            "bytes": 31076352
+          },
+          "ms": 3224.3806250000002,
+          "sourceHash": "eb1e3ce45627be31a0659bdd66915d90c23c8b3e96cb864c7ac880af7b875587",
+          "dependencyHash": "ec4bdfdc0b69c9fac7cf0a24424cc66450b59ff64849cbc8bb50d5be2e05dc43",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "small_quotient",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 59051,
+            "rejected": 436,
+            "instructionSteps": 153055,
+            "queries": 3228,
+            "failedQueries": 0,
+            "querySteps": 2433524,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 656411,
+            "bytes": 76154368
+          },
+          "ms": 1084.0278749999998,
+          "sourceHash": "1bae2286b92299ea970f0f6eb2b2264d99b2ffa1f85efa91256530ce88728f9b",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "unary_quotient_unshared",
+          "complete": true,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 157737,
+            "rejected": 651,
+            "instructionSteps": 597614,
+            "queries": 5714,
+            "failedQueries": 0,
+            "querySteps": 98616,
+            "exhausted": 0,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 10320,
+            "bytes": 7996928
+          },
+          "ms": 567.7459579999995,
+          "sourceHash": "39d2eaeb12a9f4e5fac4963716a8f6fce8879dce1b3f3e248773cf1a3a78a411",
+          "dependencyHash": "77ace5cfb66dd98a4185fcc5cc05e0dc97ec58920df10ce83386d880108f4cd1",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "integer_multiplication",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 805273,
+            "rejected": 7116,
+            "instructionSteps": 2205136,
+            "queries": 61082,
+            "failedQueries": 47,
+            "querySteps": 6362240,
+            "exhausted": 47,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 946836,
+            "bytes": 76165120
+          },
+          "ms": 6331.040790999999,
+          "sourceHash": "4cce3f0470fa6cb53d6052152734f73707c4e271c10dcde9e7e217a2f40772d0",
+          "dependencyHash": "1f7cf38a8fff4fc7f02d5ac4e6b0b28e994b7b93cb2d7be70603b7ccec157841",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        },
+        {
+          "name": "binary_fraction_one",
+          "complete": false,
+          "gaps": [],
+          "evaluations": 1,
+          "work": {
+            "instructions": 924209,
+            "rejected": 8173,
+            "instructionSteps": 2835401,
+            "queries": 70766,
+            "failedQueries": 54,
+            "querySteps": 6449014,
+            "exhausted": 55,
+            "deadlines": 0
+          },
+          "arena": {
+            "nodes": 976040,
+            "bytes": 76165120
+          },
+          "ms": 7144.792291,
+          "sourceHash": "fb577cbdd618094a2898b23e1f553ea28589befb76e91a4096961cd4d13a1dc0",
+          "dependencyHash": "1fdc6bd1bca5ecc7291be6a79acbf06e016ac5300fdb5218c6184d1e639cb52e",
+          "kernelHash": "99fde6aea96a719687de0895eecbf5b5f37f44d3dc493c268eba196f93fa2443",
+          "node": "v24.13.0",
+          "platform": "darwin/arm64"
+        }
+      ]
+    ]
+  }
+}

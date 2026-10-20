@@ -11,9 +11,12 @@ typedef struct {
     uint32_t payload;
     cc_term child[4];
     unsigned depth;
+    bool dimensions_known;
     /* The names a node mentions, over-approximated, computed when it is made:
      * bit s % 64 for each term variable symbol s below it, and bit d for each
-     * dimension d in a formula below it or bound by it. A clear bit proves
+     * dimension d in a formula below it or bound by it. Once dimensions_known
+     * is set, dims is the exact free-dimension mask. Refinement never adds
+     * a bit, so a clear bit always proves
      * the name absent: alpha comparison checks it before asking exactly
      * whether a renamed name is free. */
     uint64_t symbols, dims;
