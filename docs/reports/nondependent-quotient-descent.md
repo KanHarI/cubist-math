@@ -26,13 +26,19 @@ surviving annotations, under a fixed 10M budget and 30-second deadline.
 | `to_unit` | 5,117 / 1,156 | 2,699 / 587 |
 | `to_prop`, assumed setness | budget exhausted: 10,000,000 / 2,028,800 | 2,272 / 459 |
 
-The before measurement is the recorded main-kernel baseline; the after
-measurement uses main `ea92c7cb` plus this library change. No kernel limits
+Both measurements use main `ea92c7cb`; only the after measurement includes
+this library change. The before probe was rerun on that base and reproduced
+the earlier recorded counters exactly. No kernel limits
 or reproduction definitions change. The regression in
 `tests/quotient-descent.test.mjs` fails with budget exhaustion when the old
 library definition is restored and passes with the new definition. Separate
 checked `refl` proofs test class and relation computation for arbitrary
 universe levels and parameters.
+
+The returned Unit function has 70 reachable nodes and depth 27; the Prop
+function has 62 nodes and depth 20. Both fresh programs report 1,836,544 bytes
+of arena allocation after normalization and finish before the 30-second
+deadline. These counts include annotations.
 
 All 23 targeted JavaScript tests pass, including every library module and its
 declared assumptions, quotient groups/universality, h-level generation and
@@ -51,7 +57,8 @@ work, including checking and retries):
 All four evaluations complete on both versions. Final arena node counts
 include checking state and are not cumulative allocation counts. Elapsed
 totals were 16.66s before and 12.72s after; this single pair supplies no
-portable timing claim. The earlier large wall-time outliers did not recur.
+portable timing claim. The quotient workload's large wall-time outlier did
+not recur; the unusually slow h-level test was not rerun in this comparison.
 
 ## A completed reference for the old computation
 
@@ -72,8 +79,9 @@ they are not alpha-minimal sizes. The arena reports about 303MB and 2.15GB
 respectively after these queries. These are arena allocations, not process
 peak resident memory. The reference source combined a direct-match control,
 the generic map and the witness transport; its names and checking history
-differ from the fixed two-function fixture above, so its counters are not
-interchangeable with that fixture's counters.
+differ from the fixed two-function fixture above and the five-case transport
+fixture below. Those fixtures also use the earlier `ea92c7cb` kernel, so the
+reference counters are not interchangeable with their counters.
 
 A direct nondependent match into Prop with assumed setness completed in
 1,253 steps, allocated 208 nodes and returned 62 reachable nodes of depth 20.
@@ -91,17 +99,37 @@ node tools/transport-normalization-probe.mjs
 ```
 
 The tool checks the fixture in a fresh program for each case, fixes the query
-budget at 10M and deadline at 30 seconds, and records source/kernel hashes,
+budget at 10M and deadline at 30 seconds, and records source/kernel/dependency hashes,
 work, allocation, arena size and completed graph size. Controlled resource
 stops are JSON outcomes, not a successful-normalization assertion.
 Graph inspection has a separate work/deadline bound. The setness and path
 cases remain evaluator workloads even though quotient descent now avoids
 generating them for constant motives.
 
-The completed setness reference shows both real output growth and substantial
-intermediate allocation. It supports work on shared cubical evaluation and
-readback; it does not prove a different representation can produce a tiny
-full normal form under the existing rules.
+Baseline on `ea92c7cb` plus this library change, in fresh checked programs:
+
+| Case | Outcome | Work | New nodes | Output nodes / depth | Arena bytes |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `moved_value` | normalized | 2,914 | 958 | 89 / 26 | 1,836,544 |
+| `moved_function` | normalized | 5,723 | 1,913 | 171 / 52 | 1,836,544 |
+| `moved_neutral` | normalized | 768 | 184 | 64 / 20 | 1,836,544 |
+| `moved_setness` | budget exhausted | 10,000,000 | 2,526,247 | — | 269,092,352 |
+| `moved_path` | budget exhausted | 10,000,000 | 2,602,450 | — | 269,092,352 |
+
+All five queries returned before their 30-second deadline. SHA-256 identities
+reported by the probe are:
+
+- Fixture: `7b38505e74db872424dfa1559e9729133af63b6828417a3bb9d9a21b8123cee0`.
+- WASM kernel: `ebe45dfee79c351d2602961d51963b0ce34c00d4118cba00c3165ccb5f42f60b`.
+- Sorted imported source entries: `d75003c1095b033752415ec72ff518d208ee1e14f6f0d2c55ca9d5f0b9703af6`.
+
+The completed references show both output growth and intermediate allocation.
+Reachable output nodes are 8.1% of allocated nodes for the setness transport
+and 6.5% for the generic map, with approximately 50 and 112 work ticks per
+output node respectively. These measurements neither establish nor rule out
+enough savings from shared evaluation and readback to pass the retained
+transport gates. They do not prove that a different representation can
+produce a tiny full normal form under the existing rules.
 
 ## Rational release remains open
 
@@ -120,6 +148,11 @@ well beyond the requested deadline; the cause of that delay was not isolated,
 so this run supplies no portable timing comparison. No partial result is
 reported as a normal form. Mixed open/closed BNat law proofs and the remaining
 depth-sensitive traversals still require their own work.
+
+TODO: isolate the wide query's 309-second elapsed time against its requested
+30-second deadline, distinguishing time spent inside the kernel from host
+pauses or allocation delays. The current measurement does not identify a
+deadline-enforcement defect.
 
 This is a completed generic-quotient gate and a completed small rational
 reference, not completion of NUM2, EVAL3/EVAL4/EVAL8, or the default Z/Q

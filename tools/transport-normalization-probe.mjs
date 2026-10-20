@@ -18,6 +18,9 @@ for (const name of cases) {
   try {
     const checked = await program.check(source, "transport_probe");
     if (!checked.complete) throw new Error(JSON.stringify(checked.gaps));
+    const dependencies = Object.entries(program.sources).filter(([name]) => name !== "transport_probe")
+      .sort(([a], [b]) => a.localeCompare(b));
+    const dependencyHash = createHash("sha256").update(JSON.stringify(dependencies)).digest("hex");
     const expression = program.checker.checkSyntax({ tag: "DefRef", name: `transport_probe__${name}` },
       null, new Map(), new Map()).expression;
     const kernel = program.kernel;
@@ -58,7 +61,7 @@ for (const name of cases) {
     }
     console.log(JSON.stringify({ case: name, budget: String(steps), ...outcome,
       querySteps: after.work - before.work, allocatedNodes: after.arena.nodes - before.arena.nodes,
-      arena: after.arena, normal, ms, fixtureHash, kernelHash }));
+      arena: after.arena, normal, ms, fixtureHash, kernelHash, dependencyHash }));
   } finally {
     program.dispose();
   }

@@ -4,6 +4,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { checkProgram } from "./check-program.mjs";
 
+test("the retained quotient-free transport workloads type-check without assumptions", async t => {
+  const source = await readFile(new URL("./fixtures/constant-setness-transport.cubist", import.meta.url), "utf8");
+  const { result } = await checkProgram(t, source, { options: { collectReferences: false } });
+  assert.equal(result.complete, true, JSON.stringify(result.gaps));
+  assert.equal(result.outputs.length, 5);
+  for (const output of result.outputs) assert.deepEqual(output.axioms, []);
+});
+
 test("nondependent quotient descent preserves class and relation computation", async t => {
   const { result } = await checkProgram(t, `
 import quotients;

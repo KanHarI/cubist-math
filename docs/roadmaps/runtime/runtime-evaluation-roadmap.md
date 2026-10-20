@@ -917,17 +917,19 @@ as well as avoided syntax allocation.
 The [nondependent quotient-descent change](../../reports/nondependent-quotient-descent.md)
 passes the unchanged generic quotient's fixed gate by generating its squash
 clause with the constant motive already known. It also enables a completed
-small-inverse reference under the normal work ceiling. This is a library
+small-inverse reference on the #283 diagnostic branch under the normal work
+ceiling. This is a library
 computation change, not completion of the evaluator stages below: the new
 quotient-free setness-transport fixture and the wide rational remain open.
 
 Planned on 2026-10-19; none of the stages below is claimed complete by the
 diagnostic experiments. This is part of the existing runtime track and NUM2
-release work. The [reproduction](../../reports/rational-normalization.md)
-isolates a small generic quotient map into `Prop(U0)` without arithmetic or
-a concrete setness proof. Partial results locate growth inside generated
-Glue/composition proofs. The wide rational additionally exposes unary
-expansion in mixed closed/open BNat law proofs.
+release work. The original generic quotient reproduction is now a retained
+regression for the library fix. The [constant-transport reproduction](../../reports/nondependent-quotient-descent.md#the-evaluator-reproduction-remains)
+isolates the remaining Glue/composition workload without a quotient,
+arithmetic or a concrete setness proof. Its `moved_setness` and `moved_path`
+functions are the evaluator gates. The wide rational additionally exposes
+unary expansion in mixed closed/open BNat law proofs.
 
 1. **EVAL3/EVAL4: shared execution.** Implement closures, environments,
    memoized thunks and an explicit evaluation stack together. Compile
@@ -959,8 +961,8 @@ expansion in mixed closed/open BNat law proofs.
    and implementation to term/level/dimension binders, paths and endpoints,
    face restriction, composition, transport, Glue and higher elimination.
    Represent shared delayed substitutions/restrictions without repeatedly
-   rebuilding proof syntax. Use the generic quotient example and its fixed
-   budget [completion gate](../../reports/rational-normalization.md#what-counts-as-fixing-it)
+   rebuilding proof syntax. Use `moved_setness` and `moved_path` from the
+   constant-transport fixture and their fixed-budget [completion gate](../../reports/rational-normalization.md#what-counts-as-fixing-it)
    at this stage. Unsupported execution must be explicit or cross
    a specified typed fallback boundary; it must not repeatedly restart the
    same work. This semantic work is expected to be needed for the rational failure even if
@@ -969,16 +971,19 @@ expansion in mixed closed/open BNat law proofs.
    and annotation when a full normal form is requested, with explicit-stack
    readback and bounded memory. Validate normal forms, eta, instruction
    isolation, lifecycle and canonicity under the applicable EVAL8 gates.
-   Measure the completed generic quotient with both parameterized and
-   concrete `prop_type_is_set(U0)` setness, and the rational certificates,
-   not just projections. If output itself is too large, report that separately
+   Measure complete readback of both retained transport functions, and keep
+   the generic quotient regression passing. Measure the quotient with
+   concrete `prop_type_is_set(U0)` evidence as well: the parameterized case
+   is now cheap, but `related_to` still uses that concrete proof. Retain full
+   rational certificate measurements, not just projections. If output itself is too large, report that separately
    from avoidable evaluator work. No proof irrelevance or transport
    regularity rule is introduced to make the workload pass.
 5. **NUM proof algorithms and release.** Replace the demonstrated unary
    fallback in BNat arithmetic-law proofs with checked bitwise arguments
    where needed, measuring that source change separately. Retain the
-   arithmetic-free quotient reproduction throughout: a caller-specific helper that
-   avoids it does not resolve the evaluator problem. Re-run full small and
+   arithmetic-free quotient regression and the unchanged quotient-free
+   transport reproduction throughout. A library improvement does not by
+   itself satisfy the evaluator gates. Re-run full small and
    wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
    migration checks. Those results gate NUM2's binary-rational release and
    default migration; construction work can proceed independently, and an
