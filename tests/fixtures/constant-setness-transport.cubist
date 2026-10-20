@@ -1,0 +1,24 @@
+// Full-function normalization probes; no quotient or concrete setness proof.
+import propositions;
+
+computable def moved_setness(h : IsSet(U1, Prop(U0)), u : Prop(U0)) :
+  forall v : Prop(U0).
+  IsProp(U1, u = v) := comp(
+    fun (t : Interval) => forall v : Prop(U0). IsProp(U1, u = v), fun (v : Prop(U0)) => h(u, v)
+  );
+
+computable def moved_path(h : IsSet(U1, Prop(U0)), u, v : Prop(U0), p, q : u = v) :
+  comp(fun (t : Interval) => u = v, p) = q := moved_setness(
+    h, u, v, comp(fun (t : Interval) => u = v, p), q
+  );
+
+computable def moved_value(x : Prop(U0)) : Prop(U0) := comp(fun (i : Interval) => Prop(U0), x);
+
+computable def moved_function(f : Prop(U0) -> Prop(U0)) :
+  Prop(U0) -> Prop(U0) := comp(fun (i : Interval) => Prop(U0) -> Prop(U0), f);
+
+computable def moved_neutral(A : U1, h : IsSet(U1, A), u : A) :
+  forall v : A.
+  IsProp(U1, u = v) := comp(
+    fun (t : Interval) => forall v : A. IsProp(U1, u = v), fun (v : A) => h(u, v)
+  );

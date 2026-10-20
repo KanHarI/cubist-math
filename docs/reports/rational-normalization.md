@@ -5,6 +5,15 @@ unreleased; the default `Z`/`Q` migration is pending. The structural work is
 part of the [runtime roadmap](../roadmaps/runtime/runtime-evaluation-roadmap.md#rational-full-normalization-completion-path),
 not a separate language-feature or real-number project.
 
+Update on 2026-10-20: [nondependent quotient descent](nondependent-quotient-descent.md)
+now passes the unchanged generic-Prop fixture's 10M full-normalization gate.
+The small rational inverse also completes in a reference run at the normal
+maximum allowance; the wide inverse and numerical release remain open.
+The new report distinguishes the library computation change from the
+quotient-free setness-transport workload that remains for the evaluator.
+The measurements below describe the original definition unless stated
+otherwise.
+
 ## Small reproduction on main
 
 The [fixture](../../tests/fixtures/generic-prop-normalization.cubist) contains an
@@ -146,35 +155,45 @@ artifacts, not retained in this repository; the bounded probe above is the
 committed, reproducible experiment.
 
 The [elaborator audit](elaborator-path-family-normalization.md) already fixed
-false dependence for directly generated constant-motive matches. Generic
-`descend` is compiled with a genuinely dependent motive before specialization;
-that earlier fix does not remove its justified transports.
+false dependence for directly generated constant-motive matches. The old
+`descend` instantiated a genuinely dependent motive after its squash clause
+was generated; that earlier fix did not remove its justified transports.
+The new nondependent match generates the clause with a constant motive
+already visible and closes the generic quotient gate.
 
 ## What counts as fixing it
 
-Computing numerator/denominator projections, exposing a pair with a suspended
-proof, or checking `evaluate nonempty P by proof` does not complete the
-full-normalization contract. Keep the generic reproduction's source unchanged
-through the structural work. Its completion gate is full normalization within
-the probe's fixed 10,000,000-step budget, without increasing the arena/memory
-limit, with no retries, resource failure or host overflow. A depth guard may
-be replaced only after the bounded traversal replacements specified by
-EVAL4. The step unit here is the current kernel's query work; if a new
-evaluator accounts differently, re-baseline both cases (including the Unit
-control) and publish comparable work/memory bounds before claiming this gate.
-Record the 30-second deadline outcome separately because it
-depends on the machine. Report the completed normal-form size, depth, steps
-and retained memory. Check the result using the existing trusted rules on
-tractable differential cases before replacing a trusted reducer.
+The unchanged generic quotient fixture's fixed 10M full-normalization gate
+is now closed by the general `descend` library change. Keep that fixture and
+its regression test: it must continue to pass. Its completion is not proof
+that the evaluator's transport workload is resolved.
 
-A smaller, checked elaboration of the generated squash clause can count as
-a fix: the source fixture stays the same, while its generated term may
-change. The earlier audit proposed a direct square filler or a direct match
-in `descend`; those remain unvalidated candidates. They must preserve the
-dependent eliminator's computation and handle generic callers, with the
-same full-normalization checks. A caller-specific helper avoiding the
-fixture does not close this gate. Changes to universe composition rules,
-proof irrelevance or transport regularity are outside this plan.
+The retained evaluator gates are `moved_setness` and `moved_path` in
+[constant-setness-transport.cubist](../../tests/fixtures/constant-setness-transport.cubist),
+measured by `node tools/transport-normalization-probe.mjs`. Their source stays
+unchanged through evaluator work. Both functions must fully normalize within
+the fixed 10,000,000-step query budget, without retries, increased arena/memory
+limits, resource failure or host overflow; preserve the three cheap transport
+controls too. Computing a projection, exposing a suspended proof, or checking
+`evaluate nonempty P by proof` does not satisfy this gate.
+
+A depth guard may be replaced only after its protected traversals have the
+bounded replacements specified by EVAL4. Work units are native query ticks;
+if a new evaluator accounts differently, publish comparable work/memory
+bounds and re-baseline all five transport cases before claiming completion.
+Record the 30-second deadline outcome separately because it depends on the
+machine. Report completed graph size/depth, work and memory retained by the
+query, distinguishing arena capacity from reachable output. Validate results
+under existing trusted rules on tractable differential cases before replacing
+a trusted reducer.
+
+A smaller checked generic proof construction can improve library computation,
+as the direct match in `descend` now demonstrates. It cannot make the
+quotient-free evaluator gate pass by avoiding its explicit transport. The
+dependent eliminator's computation remains unchanged by that library fix.
+Changes to universe composition, proof irrelevance or judgmental transport
+regularity are outside this plan. Concrete `prop_type_is_set(U0)` evidence
+still needs measurement alongside the now-cheap parameterized quotient.
 
 The required end-to-end gates remain full small and wide rational inverses,
 all NUM2 contracts, and the explicit default `Z`/`Q` migration gates. The
