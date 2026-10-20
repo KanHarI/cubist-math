@@ -908,7 +908,7 @@ def reverse(c : Circle) : Circle := match c {
         </div>
         <div class="quick-entry" id="quick-obligations">
           <h4>Coherence obligations: <code>obligations</code></h4>
-          <p>Separates path and squash clauses from the computational point clauses of a <code>match</code>: write named clauses in <code>obligations { c(xs) @ i =&gt; … }</code>, or discharge omitted path and squash obligations with <code>obligations by rfl</code>, <code>obligations by { … }</code>, <code>obligations by term</code> or <code>obligations by hlevel with [h]</code>.
+          <p>Separates path and squash clauses from the computational point clauses of a <code>match</code>: write named clauses in <code>obligations { c(xs) @ i =&gt; … }</code>, or prove omitted declared path clauses with <code>obligations by rfl</code>, <code>obligations by { … }</code> or <code>obligations by term</code>. The squash clause of a truncated type is synthesized from h-level evidence, with hints from <code>obligations by hlevel with [h]</code>.
             <a href="reference/cubical.html#obligations">Cubical paths →</a></p>
           <pre><code data-check="accept">import unat;
 use unat;

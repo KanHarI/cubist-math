@@ -520,12 +520,12 @@ def discard(A : U0, x : Mere(A)) : Unit := match x {
               <tbody>
                 <tr><td><code>obligations { c(xs) @ i =&gt; … }</code></td><td>Named path or squash clauses: expressions ending in <code>;</code> in a <code>match</code> term, or proof blocks <code>{ … }</code> in a <code>match</code> or <code>induction</code> statement (with optional <code>with ih</code> in an <code>induction</code> statement).</td></tr>
                 <tr><td><code>obligations by rfl</code></td><td>Proves every omitted declared path clause by computation when its endpoints compute to the same value.</td></tr>
-                <tr><td><code>obligations by { … }</code></td><td>Proves the single omitted declared path clause with a proof block. Introduce constructor arguments with <code>intro</code>; put tactics such as <code>rw</code>, <code>simp</code>, <code>simpa</code> and <code>calc</code> inside the block.</td></tr>
-                <tr><td><code>obligations by term</code></td><td>Supplies a term for the single omitted declared path clause: a function from the constructor's arguments to the path between the endpoint values.</td></tr>
+                <tr><td><code>obligations by { … }</code></td><td>Proves the single omitted declared path clause with a proof block. Introduce the constructor's arguments, and the recursive results of its recursive arguments, with <code>intro</code>; put tactics such as <code>rw</code>, <code>simp</code>, <code>simpa</code> and <code>calc</code> inside the block.</td></tr>
+                <tr><td><code>obligations by term</code></td><td>Supplies a term for the single omitted declared path clause: a function from the constructor's arguments, and the recursive results of its recursive arguments, to the path between the endpoint values.</td></tr>
                 <tr><td><code>obligations by hlevel</code>, <code>obligations by hlevel with [h]</code></td><td>Synthesizes omitted declared path clauses (when the target fiber is a proposition) and the generated <code>TypeName.squash</code> clause using <a href="paths.html#hlevel"><code>hlevel</code></a>, with optional evidence hints.</td></tr>
               </tbody>
             </table></div>
-            <p>In <code>obligations { … }</code>, each clause binds the constructor's arguments and interval coordinates, and the kernel checks its endpoints against the point clauses at <code>0</code> and <code>1</code>. When a single declared path constructor is omitted and proved with <code>obligations by { … }</code> or <code>obligations by term</code>, the goal quantifies over the constructor's arguments and asks for a path (or <code>PathP</code>, for a dependent motive) between the endpoint values:</p>
+            <p>In <code>obligations { … }</code>, each clause binds the constructor's arguments and interval coordinates, and the kernel checks its endpoints against the point clauses at <code>0</code> and <code>1</code>. When a single declared path constructor is omitted and proved with <code>obligations by { … }</code> or <code>obligations by term</code>, the goal quantifies over the constructor's arguments, then over the recursive result of each recursive argument, and asks for a path (or <code>PathP</code>, for a dependent motive) between the endpoint values; a proof block introduces all of them before proving the path:</p>
             <pre><code data-check="accept">import unat;
 import hlevels;
 import quotients;
@@ -554,12 +554,27 @@ def by_proof_block(A : U0, R : A -&gt; A -&gt; U0, q : Quotient(U0, A, R)) : UNa
 
 def by_clause_term(A : U0, R : A -&gt; A -&gt; U0, q : Quotient(U0, A, R)) : UNat := match q {
   class(a) =&gt; 0;
-} obligations by (fun (a, b : A, r : R(a, b)) =&gt; path i =&gt; 0);</code></pre>
+} obligations by (fun (a, b : A, r : R(a, b)) =&gt; path i =&gt; 0);
+
+// turn's argument x is recursive: the goal binds x, then its recursive
+// result ih, and asks for the path ih = ih.
+inductive Rec : U0 {
+  pt;
+  turn(x : Rec) : x = x;
+}
+
+def recursive_obligation(x : Rec) : Unit := match x {
+  pt =&gt; tt;
+} obligations by {
+  intro y, ih;
+  rfl;
+};</code></pre>
             <h3 id="automatic-synthesis">Automatic synthesis of squash and path obligations</h3>
-            <p>A type declared with <code>: prop</code>, <code>: set</code> or <code>: trunc(n)</code> adds a canonical constructor <code>TypeName.squash</code> of dimension <span class="math">n + 2</span> (dimension 1 for <code>prop</code>, 2 for <code>set</code>, 3 for <code>trunc(1)</code>). Whenever <code>TypeName.squash</code> is omitted from a <code>match</code> or <code>induction</code> and <code>hlevels</code> is imported, the elaborator automatically synthesizes the <code>TypeName.squash</code> clause—whether the declared path constructors are written inside the <code>match</code>, placed in <code>obligations { … }</code>, or proved with <code>obligations by …</code>.</p>
+            <p>A type declared with <code>: prop</code>, <code>: set</code> or <code>: trunc(n)</code> adds a canonical constructor <code>TypeName.squash</code> of dimension <span class="math">n + 2</span> (dimension 1 for <code>prop</code>, 2 for <code>set</code>, 3 for <code>trunc(1)</code>). Whenever <code>TypeName.squash</code> is omitted from a <code>match</code> or <code>induction</code> and <code>hlevels</code> is imported, directly or through a module that imports it such as <code>quotients</code>, the elaborator automatically synthesizes the <code>TypeName.squash</code> clause, whether the declared path constructors are written inside the <code>match</code>, placed in <code>obligations { … }</code>, or proved with <code>obligations by …</code>.</p>
             <p>To build the missing clause, the elaborator binds the constructor's arguments, positions and recursive results, then runs the <a href="paths.html#hlevel"><code>hlevel</code></a> search to inhabit its top-dimensional path in the motive <code>B(z)</code>. Because each path dimension reduces the required level by one, eliminating a <code>: prop</code> requires <code>IsProp</code> of the motive fiber, eliminating a <code>: set</code> requires <code>IsSet</code> (<code>HasLevel(U, 1, …)</code>), and eliminating <code>: trunc(n)</code> requires <code>HasLevel(U, n + 1, …)</code>; for a dependent motive whose fiber varies along the path, the search lifts a transport equality into a <code>PathP</code>. It uses, in order:</p>
             <ul>
               <li><strong>Evidence in scope and hints:</strong> hypotheses, <code>let</code> bindings, and hints in <code>obligations by hlevel with […]</code>, lifted by cumulativity when a lower level is given (a contractible type or proposition has every higher level). Quantified family evidence such as <code>forall z : Q. IsSet(U, B(z))</code> is automatically specialized to the fiber <code>B(z)</code>.</li>
+              <li><strong>H-level statements:</strong> a type that is itself an h-level statement (<code>IsContr</code>, <code>IsProp</code>, <code>IsSet</code> or <code>HasLevel</code>) is a proposition, and so has every level.</li>
               <li><strong>Registered rules:</strong> lemmas registered with <a href="paths.html#hlevel"><code>hlevel_rule</code></a>, such as <code>prop_type_is_set</code> from <code>propositions</code>.</li>
               <li><strong>Type structure:</strong> <code>Unit</code>, <code>Void</code>, <code>UNat</code>, function types (<code>-&gt;</code>, <code>forall</code>), pair types (<code>and</code>, <code>exists</code>), path types (<code>=</code>, <code>PathP</code>), and any truncated inductive type's own <code>.squash</code> constructor.</li>
             </ul>
