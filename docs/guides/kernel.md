@@ -88,15 +88,15 @@ typedef struct {
     uint32_t payload;
     cc_term child[4];
     unsigned depth;
-    unsigned char dimensions_known;
+    bool dimensions_known;
     uint64_t symbols;
     uint64_t dims;
 } cc_node;
 ```
 
 - **Handles (`cc_term`):** Node `0` is the null/absent sentinel. Valid handles run from `1` to `k->count - 1`.
-- **Structural sharing (`CC_SHARE_SYNTAX`):** When syntax sharing is enabled (the default), `ck_make` hash-conses `(kind, payload, child[0..3])` in `k->syntax_buckets` so structurally identical AST nodes share a single `cc_term` handle.
-- **Depth bound (`CC_MAX_TERM_DEPTH`):** Every node records `depth = 1 + max_i(child[i].depth)`. Any construction exceeding depth `512` fails with `CC_ERROR_RESOURCE`.
+- **Structural sharing (`CC_SHARE_SYNTAX`):** When syntax sharing is enabled (the default), `ck_make` hash-conses `(kind, payload, child[0..3])` in the `k->interned` table so structurally identical AST nodes share a single `cc_term` handle.
+- **Depth bound:** Every node records `depth = 1 + max_i(child[i].depth)`. Any construction exceeding depth `512` (a literal in `ck_make`; there is no named constant) fails with `CC_ERROR_RESOURCE`.
 - **Fast dependency bitmasks:**
   - `symbols` is a 64-bit Bloom filter over variable and level symbols (`1ULL << (s % 64)`), unioned upward from children. If a symbol's bit is clear in `n.symbols`, that symbol cannot occur anywhere in `n` (bound or free), allowing substitution and comparison to skip subtrees in $O(1)$ time.
   - `dims` is a 64-bit mask over the 64 interval dimensions (`0..63`). Initially it conservatively unions the dimensions mentioned in formulas and children; once `ck_free_dims` completes on a node, `dimensions_known` is set to `1` and `dims` holds the exact bitset of free dimensions.
@@ -105,7 +105,7 @@ typedef struct {
 
 ## Interval and face formula algebra
 
-Interval expressions and face constraints are interned in `k->formulas` and referenced by `cc_formula_id` ([cubical.h](../../kernel/include/cubical.h), [formula.c](../../kernel/src/formula.c), [interval.c](../../kernel/src/interval.c), [faces.c](../../kernel/src/faces.c)). Both sorts share the same canonical disjunctive normal form (DNF) representation—an antichain of `cc_clause` structs ordered lexicographically and reduced by absorption—but their generators obey different algebraic laws:
+Interval expressions and face constraints are interned in `k->formulas` and referenced by `cc_formula_id` ([cubical.h](../../kernel/include/cubical.h), [formula.c](../../kernel/src/formula.c), [interval.c](../../kernel/src/interval.c), [faces.c](../../kernel/src/faces.c)). Both sorts share the same canonical disjunctive normal form (DNF) representation—an antichain of `cc_clause` structs, kept in insertion order, compared as sets (`cc_equal`), and reduced by absorption—but their generators obey different algebraic laws:
 
 ```c
 typedef struct {
@@ -119,19 +119,18 @@ typedef struct {
 | `CC_INTERVAL` | Coordinate $i$ | Reversed coordinate $1 - i$ | Allowed: $i \wedge (1 - i)$ is a valid interior meet |
 | `CC_FACE` | Endpoint equation $(i = 1)$ | Endpoint equation $(i = 0)$ | Impossible: $(i = 1) \wedge (i = 0) = \bot$ (clause is dropped) |
 
-- **Constants:** The empty clause list (`length == 0`) is $\bot$ (`0`, interned at ID `0`). A single clause with `positive == 0` and `negative == 0` is $\top$ (`1`, interned at ID `1`).
+- **Constants:** The empty clause list (`length == 0`) is $\bot$ (`0`). A single clause with `positive == 0` and `negative == 0` is $\top$ (`1`). Neither has a fixed `cc_formula_id`: `ck_formula` assigns IDs in registration order from `1`, and ID `0` names no formula (`cc_kernel_get_formula` returns `NULL`, and `ck_make` rejects a `CC_PAPP`, `CC_TUBE`, or `CC_GLUE_SYSTEM` whose payload is `0`).
 - **Lattice operations (`formula.c`):**
   - `cc_join(a, b)` ($a \vee b$) concatenates clauses and removes any clause $C'$ that contains another clause $C$ ($C \subseteq C' \implies C \vee C' = C$).
   - `cc_meet(a, b)` ($a \wedge b$) takes pairwise bitset unions of clauses (filtering out contradictory clauses when `sort == CC_FACE`) and applies absorption.
 - **Interval operations (`interval.c`):**
-  - `cc_reverse(r)` ($1 - r$) applies De Morgan duality by swapping meets and joins and swapping `positive` and `negative` bitsets.
-  - `cc_subst_interval(target, i, replacement)` computes $r[s/i]$ by replacing occurrences of $i$ in each clause with $s$ and occurrences of $1 - i$ with `cc_reverse(s)`.
+  - `cc_reverse(out, r)` ($1 - r$) applies De Morgan duality by swapping meets and joins and swapping `positive` and `negative` bitsets.
+  - `cc_interval_substitute(out, target, i, replacement)` computes $r[s/i]$ by replacing occurrences of $i$ in each clause with $s$ and occurrences of $1 - i$ with `cc_reverse(s)`.
 - **Face operations (`faces.c`):**
-  - `cc_endpoint(r, is_one)` converts an interval formula $r$ into the face formula $(r = 1)$ or $(r = 0)$ using De Morgan distribution over joins and meets.
-  - `cc_subst_face(phi, i, r)` computes $\varphi[r/i]$ by replacing $(i = 1)$ with `cc_endpoint(r, true)` and $(i = 0)$ with `cc_endpoint(r, false)`.
-  - `cc_restrict_face(phi, psi)` simplifies $\varphi$ under the assumption $\psi$.
+  - `cc_endpoint(out, r, endpoint)` converts an interval formula $r$ into the face formula $(r = 1)$ or $(r = 0)$ using De Morgan distribution over joins and meets.
+  - `cc_face_substitute(out, phi, i, r)` computes $\varphi[r/i]$ by replacing $(i = 1)$ with $(r = 1)$ and $(i = 0)$ with $(r = 0)$, both computed by `cc_endpoint`.
   - `cc_face_forall(i, phi)` computes universal quantification $\forall i.\, \varphi$ by keeping only the clauses of $\varphi$ in which neither $(i = 1)$ nor $(i = 0)$ occurs.
-  - `cc_entails(psi, phi)` ($\psi \vdash \varphi$) holds iff for every clause $C_\psi \in \psi$, there exists a clause $C_\varphi \in \varphi$ with $C_\varphi \subseteq C_\psi$.
+  - `cc_face_entails(psi, phi)` ($\psi \vdash \varphi$) holds iff for every clause $C_\psi \in \psi$, there exists a clause $C_\varphi \in \varphi$ with $C_\varphi \subseteq C_\psi$.
 
 ---
 
@@ -147,7 +146,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `1` (`payload == 0`, `child[0] = level`, `child[1..3] == 0`).
 - **Role:** Represents the universe type $\mathcal{U}(\ell)$ at level expression `child[0]`.
 - **Instructions:** Formed by `cc_instr_universe(k, level)`, which normalizes `level` to canonical level syntax $\ell$ and certifies $\Gamma \vdash \mathcal{U}(\ell) : \mathcal{U}(\ell + 1)$.
-- **Reduction & Cumulativity:** WHNF of `CC_U(l)` is `CC_U(l)`; full normalization (`ck_normal`) canonicalizes `child[0]`. Under `cc_instr_lift`, $\mathcal{U}(\ell_1) \preceq \mathcal{U}(\ell_2)$ iff $\ell_1 \le \ell_2$ in level normal form (`ck_level_leq`).
+- **Reduction & Cumulativity:** `ck_whnf` and `ck_normal` leave `CC_U(l)` as written; neither rewrites `child[0]`. Levels are put into canonical syntax only by the instructions that build them (`cc_instr_universe`, `cc_instr_level_apply`, `ck_level_instantiate`) and are compared by normal form in `ck_alpha_equal`. Under `cc_instr_lift`, $\mathcal{U}(\ell_1) \preceq \mathcal{U}(\ell_2)$ iff $\ell_1 \le \ell_2$ in level normal form (`ck_level_leq`).
 - **Composition:** `comp^i U(l) [φ ↦ E(i)] A` reduces via `ck_universe_composition` to `Glue [φ ↦ (E(1), comp^i Equiv(E(1), E(1-i)) [] idEquiv(E(1)))] A`.
 
 #### `CC_LBOUND` (`43`) — Level variable bound $\text{LBound}(\text{tier})$
@@ -160,11 +159,11 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 
 #### `CC_LSUCC` (`45`) — Shifted universe level $\ell + k$
 - **Arity:** `1` (`payload = k >= 1`, `child[0] = level`, `child[1..3] == 0`).
-- **Role:** Adds a positive finite offset $k \ge 1$ to `child[0]`. Rejected if `payload == 0`. In arithmetic normal form (`ck_level_nf`), shifting a finite level increments both the constant floor $c$ and every variable offset $k_i$ by $k$; shifting a transfinite level ($\text{tier} \ge 1$) increments its constant part $c$ by $k$ (failing with `CC_ERROR_RESOURCE` if the sum exceeds `CC_LEVEL_MAX`).
+- **Role:** Adds a positive finite offset $k \ge 1$ to `child[0]`. Rejected if `payload == 0`. In arithmetic normal form (`ck_level_normal`), shifting a finite level increments both the constant floor $c$ and every variable offset $k_i$ by $k$; shifting a transfinite level ($\text{tier} \ge 1$) increments its constant part $c$ by $k$ (failing with `CC_ERROR_RESOURCE` if the sum exceeds `CC_LEVEL_MAX`).
 
 #### `CC_LMAX` (`46`) — Universe level maximum $\max(\ell_1, \ell_2)$
 - **Arity:** `2` (`payload == 0`, `child[0] = left`, `child[1] = right`, `child[2..3] == 0`).
-- **Role:** Binary supremum of two universe levels. In arithmetic normal form (`ck_level_nf`), every level expression reduces to either:
+- **Role:** Binary supremum of two universe levels. In arithmetic normal form (`ck_level_normal`), every level expression reduces to either:
   - a **finite form** $(\text{tier} = 0,\; c,\; [(x_1, k_1), \dots, (x_m, k_m)])$ with strictly increasing symbols $x_1 < \dots < x_m$ and $k_i \le c$, denoting $\max(c, \max_i(x_i + k_i))$; or
   - a **transfinite form** $(\text{tier} \ge 1,\; c,\; [])$ denoting $\omega \cdot \text{tier} + c$, which absorbs all finite level variables ($x_i + k_i < \omega \le \omega \cdot \text{tier} + c$).
   Canonical syntax (`ck_level_build`) nests `CC_LMAX` right-associatively in symbol order, followed by `CC_LCONST(0, c)` when $c > \max_i(k_i)$ or $m = 0$.
@@ -184,7 +183,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 #### `CC_LAPP` (`49`) — Universe-level application $f\,\{\ell\}$
 - **Arity:** `2` (`payload == 0`, `child[0] = function`, `child[1] = level`, `child[2..3] == 0`).
 - **Instructions:** Eliminated by `cc_instr_level_apply(k, function, level)` for a finite level $\ell < \omega$ (`nf.tier == 0`), storing $\text{nf}(\ell)$ in `child[1]` and instantiating the codomain via `ck_level_instantiate`.
-- **Reduction ($\beta$):** `LApp(LLam(x, B, body), l)` contracts via `ck_level_instantiate(k, body, x, l)` under `Step(CC_STEP_BETA)`, `ck_expose`, `ck_whnf`, and `ck_normal`.
+- **Reduction ($\beta$):** `LApp(LLam(x, B, body), l)` contracts via `ck_level_instantiate(k, body, x, l)` under `Step(CC_STEP_BETA)`, `ck_whnf`, and `ck_normal` (`ck_expose` does not contract level applications).
 
 ---
 
@@ -194,12 +193,12 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `0` (`payload = symbol != 0`, `child[0..3] == 0`).
 - **Role:** Represents either a term variable $x : A$ or a universe-level variable $x < \omega$, distinguished by its context entry (`entry.level_variable`).
 - **Instructions:** `cc_instr_variable(k, entry)` certifies $\Gamma, x : A \vdash x : A$ for a term variable entry (and rejects level or dimension entries).
-- **Substitution & Reduction:** Replaced by `ck_subst` (or `ck_level_instantiate` inside levels) when `payload == symbol`. Irreducible in WHNF and normal form.
+- **Substitution & Reduction:** Replaced by `ck_substitute` (or `ck_level_instantiate` inside levels) when `payload == symbol`. Irreducible in WHNF and normal form.
 
 #### `CC_DEFREF` (`35`) — Admitted closed definition reference
 - **Arity:** `0` (`payload = def_index` in `1 .. k->definition_count - 1`, `child[0..3] == 0`).
 - **Role:** Folded handle to a checked, closed definition stored in `k->definitions[def_index]`.
-- **Security invariant:** Raw syntax construction (`cc_kernel_term`) always rejects `CC_DEFREF`. A `CC_DEFREF` node can only be created by `cc_instr_define(k, symbol, closed)` and recalled by `cc_instr_lookup(k, reference)`.
+- **Trust boundary:** Raw syntax construction (`cc_kernel_term`) accepts a `CC_DEFREF` node like any other inert syntax, and it certifies nothing. Only `cc_instr_define(k, symbol, closed)` publishes the judgement that mints a reference, and `cc_instr_lookup(k, reference)` publishes one only after checking `1 <= payload < k->definition_count`. Reducing a `CC_DEFREF` whose payload names no definition fails with `"Unknown definition reached reduction."`.
 - **Reduction ($\delta$):** Kept folded by syntactic comparison (`ck_alpha_equal`) and compact head exposure (`ck_expose`). Unfolded to `k->definitions[payload].value` by `Step(CC_STEP_DELTA)`, `ck_whnf`, and `ck_normal`.
 
 ---
@@ -223,14 +222,14 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Role:** Applies a function, an H1 constructor spine (`CC_CON`), or an H1 eliminator (`CC_ELIM`) to a term argument.
 - **Instructions:** Built by `cc_instr_apply(k, function, argument)`, which checks $f : \Pi(x : A).\, B$ and $a : A$ and produces $\Gamma \vdash f(a) : B[a/x]$.
 - **Reduction ($\beta$ and H1 $\iota$):**
-  - When `child[0]` is `CC_LAM(x, A, body)`, reduces to `ck_subst(k, body, x, a)` under `Step(CC_STEP_BETA)`, `ck_expose`, `ck_whnf`, and `ck_normal`.
+  - When `child[0]` is `CC_LAM(x, A, body)`, reduces to `ck_substitute(k, body, x, a)` under `Step(CC_STEP_BETA)`, `ck_expose`, `ck_whnf`, and `ck_normal`.
   - When `child[0]` is `CC_ELIM(sig, M, clauses)`, reduces via `ck_eliminate` under `Step(CC_STEP_IOTA)` (when `a` is already a constructor spine) and under `ck_whnf` / `ck_normal` (when `whnf(a)` is a constructor spine or an `hcomp`).
 
 #### `CC_SIGMA` (`6`) — Dependent pair type $\Sigma(x : A).\, B(x)$
 - **Arity:** `2` (`payload = symbol != 0`, `child[0] = domain` $A$, `child[1] = family` $B$, `child[2..3] == 0`).
 - **Binder scope:** Binds `symbol` in `child[1]`.
 - **Instructions:** Formed by `cc_instr_sigma(k, entry, family)`, producing $\Gamma \vdash \Sigma(x : A).\, B : \mathcal{U}(\max(\ell_A, \ell_B))$. Its parts can also be extracted via `cc_instr_domain` and `cc_instr_family`.
-- **Cumulativity & Composition:** Covariant in both `child[0]` and `child[1]` under `ck_syntactic_cumulative`. Composition `comp^i (Σ(x : F(i)). G(i, x)) [φ ↦ u(i)] a0` composes the first projection $c_1 = \text{comp}^i\, F(i)\, [\varphi \mapsto \pi_1(u(i))]\, \pi_1(a_0)$, fills $v(i) = \text{fill}^i\, F(i)\, [\varphi \mapsto \pi_1(u(i))]\, \pi_1(a_0)\, i$, composes the second projection $c_2 = \text{comp}^i\, G(i, v(i))\, [\varphi \mapsto \pi_2(u(i))]\, \pi_2(a_0)$, and returns `Pair(Sigma(1), c1, c2)`.
+- **Cumulativity & Composition:** Under `ck_syntactic_cumulative`, invariant in `child[0]` ($A_1 \equiv_\alpha A_2$) and covariant in `child[1]` ($B_1(x) \preceq B_2(x)$), exactly as for `CC_PI`. Composition `comp^i (Σ(x : F(i)). G(i, x)) [φ ↦ u(i)] a0` composes the first projection $c_1 = \text{comp}^i\, F(i)\, [\varphi \mapsto \pi_1(u(i))]\, \pi_1(a_0)$, fills $v(i) = \text{fill}^i\, F(i)\, [\varphi \mapsto \pi_1(u(i))]\, \pi_1(a_0)\, i$, composes the second projection $c_2 = \text{comp}^i\, G(i, v(i))\, [\varphi \mapsto \pi_2(u(i))]\, \pi_2(a_0)$, and returns `Pair(Sigma(1), c1, c2)`.
 
 #### `CC_PAIR` (`7`) — Dependent pair $(a, b)_{\Sigma(x:A).B(x)}$
 - **Arity:** `3` (`payload == 0`, `child[0] = sigma_type`, `child[1] = first` $a$, `child[2] = second` $b$, `child[3] == 0`).
@@ -271,7 +270,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 #### `CC_SUM` (`26`) — Disjoint sum type $A + B$
 - **Arity:** `2` (`payload == 0`, `child[0] = left_type` $A$, `child[1] = right_type` $B$, `child[2..3] == 0`).
 - **Instructions:** Formed by `cc_instr_sum(k, left, right)`, certifying $\Gamma \vdash A + B : \mathcal{U}(\max(\ell_A, \ell_B))$.
-- **Cumulativity & Composition:** Covariant in both `child[0]` and `child[1]` under `ck_syntactic_cumulative`. In `ck_sum_composition` ([inductive_composition.c](../../kernel/src/inductive_composition.c)), `comp^i (A(i) + B(i)) [φ ↦ u(i)] a0` exposes `a0` and every active tube body $u(i)$: if all are `CC_INL(_, v)` (or all are `CC_INR(_, v)`), it reduces to `Inl(A(1) + B(1), comp^i A(i) [φ ↦ v(i)] v0)` (or `Inr(A(1) + B(1), comp^i B(i) [φ ↦ v(i)] v0)`). If any head is neutral or tubes disagree on the constructor tag, the composition remains neutral.
+- **Cumulativity & Composition:** `ck_syntactic_cumulative` has no rule for sums: $A_1 + B_1 \preceq A_2 + B_2$ only when the two types are $\alpha$-equal. In `ck_inductive_composition` ([inductive_composition.c](../../kernel/src/inductive_composition.c)), `comp^i (A(i) + B(i)) [φ ↦ u(i)] a0` reduces `a0` and every active tube body $u(i)$ to WHNF: if all are `CC_INL(_, v)` (or all are `CC_INR(_, v)`), it reduces to `Inl(A(1) + B(1), comp^i A(i) [φ ↦ v(i)] v0)` (or `Inr(A(1) + B(1), comp^i B(i) [φ ↦ v(i)] v0)`). If any head is neutral or tubes disagree on the constructor tag, the composition remains neutral.
 
 #### `CC_INL` (`27`) and `CC_INR` (`28`) — Left and right sum injections $\text{inl}_{A+B}(a), \text{inr}_{A+B}(b)$
 - **Arity:** `2` (`payload == 0`, `child[0] = sum_type` $A + B$, `child[1] = value`, `child[2..3] == 0`).
@@ -290,7 +289,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `3` (`payload = dim < 64`, `child[0] = family` $A(i)$, `child[1] = left` $a_0$, `child[2] = right` $a_1$, `child[3] == 0`).
 - **Binder scope:** Binds interval dimension `dim` ($i$) in `child[0]` ($A(i)$) **only**; `child[1]` and `child[2]` are outside the scope of $i$.
 - **Instructions:** Formed by `cc_instr_path(k, dimension, family, left, right)`, checking $A(i) : \mathcal{U}(\ell)$, $a_0 : A(0)$, and $a_1 : A(1)$, discharging $i$ from $A(i)$'s context, and certifying $\text{Path}_i(A(i), a_0, a_1) : \mathcal{U}(\ell)$.
-- **Cumulativity & Composition:** Under `ck_syntactic_cumulative`, $\text{Path}_i(A_1(i), l_1, r_1) \preceq \text{Path}_i(A_2(i), l_2, r_2)$ iff $A_1(i) \preceq A_2(i)$, $l_1 \equiv_\alpha l_2$, and $r_1 \equiv_\alpha r_2$. Composition `comp^i (Path_j(P(i, j), l(i), r(i))) [φ ↦ u(i)] a0` picks a fresh dimension $k \ne i$ and reduces to $\langle k \rangle\, \text{comp}^i\, P(i, k)\, [\varphi \mapsto u(i) \mathbin{@} k,\; (k = 0) \mapsto l(i),\; (k = 1) \mapsto r(i)]\, (a_0 \mathbin{@} k)$.
+- **Cumulativity & Composition:** `ck_syntactic_cumulative` has no rule for path types: two path types are included only when $\alpha$-equal. Composition `comp^i (Path_j(P(i, j), l(i), r(i))) [φ ↦ u(i)] a0` picks a fresh dimension $k \ne i$ and reduces to $\langle k \rangle\, \text{comp}^i\, P(i, k)\, [\varphi \mapsto u(i) \mathbin{@} k,\; (k = 0) \mapsto l(i),\; (k = 1) \mapsto r(i)]\, (a_0 \mathbin{@} k)$.
 
 #### `CC_PLAM` (`17`) — Path abstraction $\langle i \rangle_{A(i)}\, b(i)$
 - **Arity:** `2` (`payload = dim < 64`, `child[0] = family` $A(i)$, `child[1] = body` $b(i)$, `child[2..3] == 0`).
@@ -302,9 +301,9 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `2` (`payload = interval_formula_id` $r$ of sort `CC_INTERVAL`, `child[0] = path` $p$, `child[1] = path_type` (optional, `0` in raw unannotated syntax), `child[2..3] == 0`).
 - **Role:** Evaluates a path $p$ (or a higher inductive path constructor spine) at an interval formula $r$. When built by `cc_instr_path_apply` or `cc_instr_path_at`, `child[1]` records $p$'s path type $\text{Path}_i(A(i), a_0, a_1)$ so endpoint reductions can read $a_0$ and $a_1$ even when $p$ is neutral.
 - **Comparison:** `ck_alpha_equal` compares `payload` ($r$, modulo bound dimension renaming) and `child[0]` ($p$), ignoring the optional type annotation `child[1]`.
-- **Reduction (`CC_STEP_PATH`, `ck_expose`, `ck_whnf`, `ck_normal`):**
-  1. **Endpoint boundary:** If $r = 0$ or $r = 1$ and `child[1]` is `CC_PATH(i, A, a0, a1)`, reduces immediately to `a0` (for $r = 0$) or `a1` (for $r = 1$).
-  2. **Path $\beta$:** If `child[0]` (or its WHNF) is `CC_PLAM(i, A, body)`, reduces to `ck_dim_subst(k, body, i, r)`.
+- **Reduction:**
+  1. **Endpoint boundary** (`CC_STEP_PATH`, `ck_expose`, `ck_whnf`, `ck_normal`): If $r = 0$ or $r = 1$ and `child[1]` is `CC_PATH(i, A, a0, a1)`, reduces immediately to `a0` (for $r = 0$) or `a1` (for $r = 1$).
+  2. **Path $\beta$** (`CC_STEP_PATH` when `child[0]` is syntactically `CC_PLAM(i, A, body)`; `ck_whnf` and `ck_normal` when its WHNF is): reduces to `ck_dimension_substitute(k, body, i, r)`. `ck_expose` does not contract a path application of a path lambda.
 
 #### `CC_TUBE` (`20`) — Partial system tube cell $[\varphi \mapsto u, \text{next}]$
 - **Arity:** `2` (`payload = face_formula_id` $\varphi$ of sort `CC_FACE`, `child[0] = partial_term` $u$, `child[1] = next_tube` (optional `CC_TUBE` or `0`), `child[2..3] == 0`).
@@ -321,11 +320,11 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `3` (`payload = dim < 64`, `child[0] = type` $A$, `child[1] = tubes` (optional `CC_TUBE` list or `0`), `child[2] = base` $a_0$, `child[3] == 0`).
 - **Binder scope:** Binds dimension `dim` ($i$) **only** in the body `t.child[0]` ($u(i)$) of each `CC_TUBE` in `child[1]`. Does **not** bind $i$ in `child[0]` ($A$), tube faces, or `child[2]` ($a_0$).
 - **Instructions:** Closed by `cc_instr_hcomp(k, system)` from a composition system whose family $A$ does not mention $i$ and whose WHNF head is an admitted H1 higher sort.
-- **Reduction:** Drops `0`-face tubes; reduces to $u(1)$ when any tube has face `1` (`Step(CC_STEP_FACE)`, `ck_expose`, `ck_hit_reduce`). When remaining tubes are non-trivial ($0 < \varphi < 1$), `CC_HCOMP` is a canonical value of the higher sort and is eliminated by H1 `CC_ELIM` (`ck_eliminate_hcomp`) and commuted with `CC_TRANS` (`transp_hcomp`).
+- **Reduction:** Drops `0`-face tubes; reduces to $u(1)$ when any tube has face `1` (`Step(CC_STEP_FACE)`, `ck_expose`, `ck_hit_reduce`). When remaining tubes are non-trivial ($0 < \varphi < 1$), `CC_HCOMP` is a canonical value of the higher sort and is eliminated by H1 `CC_ELIM` (`ck_eliminate_hcomp`) and commuted with `CC_TRANS` (`transport_hcomp`).
 
 #### `CC_TRANS` (`42`) — Higher-sort transport $\text{transp}^i\, A(i)\, \varphi\, a_0$
 - **Arity:** `3` (`payload = dim < 64`, `child[0] = family` $A(i)$, `child[1] = single_tube` `CC_TUBE(face = φ, term = a0, next = 0)`, `child[2] = base` $a_0$, `child[3] == 0`).
-- **Canonicalization:** `ck_make` enforces that `child[1]` is a single `CC_TUBE` (no `next` cell) whose body is overwritten with `child[2]` ($a_0$) and whose face $\varphi$ does not mention `dim` ($i$).
+- **Shape:** `ck_make` imposes no Trans-specific rule beyond requiring `child[1]`. The instruction `cc_instr_trans` builds `child[1]` as the single tube `CC_TUBE(φ, a0, 0)`, and every reduction reads only that tube's face $\varphi$; the base is `child[2]`.
 - **Binder scope:** Binds dimension `dim` ($i$) in `child[0]` ($A(i)$) **only**.
 - **Instructions:** Closed by `cc_instr_trans(k, system, face)` from a composition system over a family $A(i)$ of an admitted H1 higher sort whose tubes are $[C_m \mapsto a_0|_{C_m}]$ for the clauses $C_m$ of $\varphi$ in order.
 - **Reduction:** Reduces to `a0` when $\varphi = 1$ (`Step(CC_STEP_FACE)`, `ck_expose`, `ck_hit_reduce`); otherwise dispatches to `ck_hit_reduce` to commute past `hcomp` or transport point/path constructors with boundary correction.
@@ -337,7 +336,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 #### `CC_GLUE` (`31`) — Glue type $\text{Glue}\,[\varphi \mapsto (T, e)]\, A$
 - **Arity:** `2` (`payload == 0`, `child[0] = base_type` $A$, `child[1] = system` (optional `CC_GLUE_SYSTEM` list or `0`), `child[2..3] == 0`).
 - **Instructions:** Built piece-by-piece via `cc_instr_glue_base`, `cc_instr_glue_piece`, and `cc_instr_glue_overlap`, then closed into $\Gamma \vdash \text{Glue}\,[\varphi \mapsto (T, e)]\, A : \mathcal{U}(\ell)$ by `cc_instr_glue`.
-- **Reduction & Composition:** In `ck_whnf` and `ck_expose`, `0`-face pieces are dropped, and if any piece has top face `1`, the `CC_GLUE` node reduces directly to that piece's partial type $T$ (`piece.child[0]`). Composition in a `CC_GLUE` family computes via `ck_glue_composition` ([glue_compute.c](../../kernel/src/glue_compute.c)).
+- **Reduction & Composition:** In `ck_whnf`, `0`-face pieces are dropped, and if any piece has top face `1`, the `CC_GLUE` node reduces directly to that piece's partial type $T$ (`piece.child[0]`); `ck_expose` leaves Glue types untouched. Composition in a `CC_GLUE` family computes via `ck_glue_composition` ([glue_compute.c](../../kernel/src/glue_compute.c)).
 
 #### `CC_GLUE_SYSTEM` (`32`) — Glue piece cell $[\varphi \mapsto (T, e), \text{next}]$
 - **Arity:** `3` (`payload = face_formula_id` $\varphi$ of sort `CC_FACE`, `child[0] = partial_type` $T$, `child[1] = equivalence` $e$, `child[2] = next` (optional `CC_GLUE_SYSTEM` or `0`), `child[3] == 0`).
@@ -349,13 +348,13 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Reduction ($\beta$ and $\eta$):**
   - Drops `0`-face tubes; if any tube has top face `1`, reduces to that tube's body $t$ (`tube.child[0]`).
   - **Syntactic Glue $\eta$ in `ck_whnf`:** If `whnf(a)` is `CC_UNGLUE(G', p)` with `ck_alpha_equal(k, G, G')` and for every non-empty tube $(\varphi \mapsto t)$ and every clause $C \in \varphi$, `ck_alpha_equal(k, t, ck_restrict(k, p, C))`, reduces to $p$.
-  - **Targeted Glue $\eta$ in `Step(CC_STEP_GLUE)` (`ck_glue_step`):** Unwraps nested Glue steps on `a` to find `CC_UNGLUE(G', p)` and contracts to $p$ when $G|_C, G'|_C$ and $t|_C, p|_C$ agree on each clause $C \in \varphi$ via `normal_agree` (syntactically, by WHNF, congruently under a common head, or by full normal form).
+  - **Targeted Glue $\eta$ in `Step(CC_STEP_GLUE)` (`ck_glue_step`):** Unwraps nested Glue steps on `a` to find `CC_UNGLUE(G', p)` and contracts to $p$ when $G$ and $G'$ agree (compared whole) and $t|_C$ and $p|_C$ agree on each clause $C \in \varphi$, each comparison by `normal_agree` (syntactically, by WHNF, congruently under a common head, or by full normal form).
 
 #### `CC_UNGLUE` (`34`) — Glue base projection $\text{unglue}_G(g)$
 - **Arity:** `2` (`payload == 0`, `child[0] = glue_type` $G$, `child[1] = glue_val` $g$, `child[2..3] == 0`).
 - **Instructions:** Eliminated by `cc_instr_unglue(k, value)` from $g : G$, producing $\text{unglue}_G(g) : A$ where $A = G.\text{child}[0]$.
 - **Reduction ($\beta$):**
-  1. If $G$ (or `whnf(G)`) has a top-face (`1`) piece $(T, e)$, reduces to $\pi_1(e)(g)$ (`App(Fst(e), g)`).
+  1. If $G$, which must be a `CC_GLUE` node as written (`ck_whnf` does not reduce it first), has a top-face (`1`) piece $(T, e)$, reduces to $\pi_1(e)(g)$ (`App(Fst(e), g)`).
   2. Otherwise, if `whnf(g)` is `CC_GLUE_TERM(_, base, _)`, reduces to `base`.
 
 ---
@@ -388,7 +387,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 
 ### 8. Retired primitive tags
 
-The twelve enum constants `CC_NAT` (`10`), `CC_ZERO` (`11`), `CC_SUCC` (`12`), `CC_NATREC` (`13`), `CC_W` (`23`), `CC_SUP` (`24`), `CC_WREC` (`25`), `CC_PUSHOUT` (`36`), `CC_PUSH_LEFT` (`37`), `CC_PUSH_RIGHT` (`38`), `CC_PUSH_PATH` (`39`), and `CC_PUSH_ELIM` (`40`) are preserved in `cc_term_kind` solely to keep ABI numeric constants stable. `ck_arity` assigns them sentinel arity `5` (above the 4-child maximum), so `cc_kernel_term` rejects them with `"This primitive constructor has been retired; use a declared type (H1)."`
+The twelve enum constants `CC_NAT` (`10`), `CC_ZERO` (`11`), `CC_SUCC` (`12`), `CC_NATREC` (`13`), `CC_W` (`23`), `CC_SUP` (`24`), `CC_WREC` (`25`), `CC_PUSHOUT` (`36`), `CC_PUSH_LEFT` (`37`), `CC_PUSH_RIGHT` (`38`), `CC_PUSH_PATH` (`39`), and `CC_PUSH_ELIM` (`40`) are preserved in `cc_term_kind` solely to keep ABI numeric constants stable. `ck_arity` assigns them sentinel arity `5` (above the 4-child maximum), so `cc_kernel_term` rejects them with `"Unknown term constructor."`
 
 ---
 
@@ -410,26 +409,26 @@ Only specific child slots of binder constructors bind their `payload` symbol or 
 ### Capture-avoiding substitution and face restriction
 
 1. **Term substitution (`ck_substitute(k, target, symbol, replacement)`):**
-   - Traverses `target` on an explicit worklist stack (`subst_frame`) memoized in `k->subst_memo`.
+   - Traverses `target` on an explicit worklist stack (`substitution_frame`) memoized in the shared syntax memo `k->syntax_memo` (operation `3`).
    - Fast path: if `symbol`'s bit is clear in `target.symbols`, or `!ck_term_free(k, target, symbol)`, returns `target` immediately.
    - If `target` is a term binder (`CC_PI`, `CC_LAM`, `CC_SIGMA`, `CC_LPI`, `CC_LLAM`) with `n.payload == symbol`, the variable is shadowed in `child[1]` and only `child[0]` is substituted.
-   - If `n.payload != symbol` and `n.payload` occurs free in `replacement` while `symbol` occurs free in `child[1]`, `ck_substitute` allocates a fresh symbol (`ck_fresh_symbol`) not mentioned in `child[1]` or `replacement`, renames `n.payload` in `child[1]` first, and then substitutes `replacement`.
+   - If `n.payload != symbol` and `n.payload` occurs free in `replacement`, `ck_substitute` allocates a fresh symbol (`ck_fresh_symbol`, above every symbol any term has used), renames `n.payload` in `child[1]` first, and then substitutes `replacement`. A dimension binder whose bound dimension occurs free in `replacement` is likewise renamed to a fresh dimension first.
 2. **Level instantiation (`ck_level_instantiate(k, target, symbol, level)`):**
-   - Substitutes a finite level expression `level` for a level variable `symbol` across `target`, re-normalizing and rebuilding canonical level syntax inside `CC_U`, `CC_LAPP`, and `CC_SORT` level lists.
+   - Substitutes a finite level expression `level` for a level variable `symbol` across `target`, then rebuilding canonical level syntax for every `CC_U` level and `CC_LAPP` level argument (`ck_canonical_levels`); a level inside a `CC_SORT` level list is left as substituted, since comparison reads it by normal form.
 3. **Dimension substitution (`ck_dimension_substitute(k, target, dim, formula)`):**
-   - Replaces free occurrences of interval coordinate `dim` ($i$) with the interval formula $r$ (`formula`) using an explicit worklist memoized in `k->dim_subst_memo`.
-   - In `CC_PAPP`, substitutes $r$ for $i$ inside `n.payload` via `cc_subst_interval`.
-   - In `CC_TUBE` and `CC_GLUE_SYSTEM`, substitutes $r$ for $i$ inside the face formula `n.payload` via `cc_subst_face`.
+   - Replaces free occurrences of interval coordinate `dim` ($i$) with the interval formula $r$ (`formula`) using the same worklist, memoized in `k->syntax_memo` (operation `6`).
+   - In `CC_PAPP`, substitutes $r$ for $i$ inside `n.payload` via `cc_interval_substitute`.
+   - In `CC_TUBE` and `CC_GLUE_SYSTEM`, substitutes $r$ for $i$ inside the face formula `n.payload` via `cc_face_substitute`.
    - For a dimension binder (`CC_PATH`, `CC_PLAM`, `CC_COMP`, `CC_HCOMP`, `CC_TRANS`) whose bound dimension `n.payload` occurs in $r$, picks a fresh dimension $j \in 0..63$ (`ck_fresh_dimension` avoiding both the node and $r$), renames `n.payload` to $j$ inside the bound slots first, and then substitutes $r$ for `dim`.
 4. **Face restriction (`ck_restrict(k, term, clause)`):**
    - Simplifies `term` under a single consistent face clause $C$.
-   - For each dimension $d \in 0..63$ constrained by $C$ ($(d = 0)$ in `C.negative` or $(d = 1)$ in `C.positive`), substitutes $\bot$ (`0`) or $\top$ (`1`) for $d$ via `ck_endpoint_term` and restricts remaining face formulas via `cc_restrict_face`.
+   - For each dimension $d \in 0..63$ constrained by $C$ ($(d = 0)$ in `C.negative` or $(d = 1)$ in `C.positive`), substitutes $\bot$ (`0`) or $\top$ (`1`) for $d$ via `ck_endpoint_term`; that dimension substitution also rewrites the face formulas of tubes and Glue pieces, so nothing else is done.
 
 ### Syntactic comparison and cumulativity (`term_conversion.c`)
 
-- **`ck_alpha_equal(k, left, right)`:** Checks syntactic $\alpha$-equivalence on an explicit traversal stack (`cmp_frame`) memoized in `k->cmp_memo`:
+- **`ck_alpha_equal(k, left, right)`:** Checks syntactic $\alpha$-equivalence on an explicit traversal stack (`alpha_frame`) memoized in `k->alpha_memo`:
   - Identical handles (`left == right`) with no active renamings on their free variables/dimensions succeed immediately.
-  - Universe levels (`ck_is_level_expr`) compare by arithmetic normal form (`ck_level_equal`), so $\max(\ell + 1, \ell) \equiv \ell + 1$ syntactically.
+  - Universe levels (the level child of `CC_U`, and `CC_LCONST`/`CC_LSUCC`/`CC_LMAX` nodes) compare by arithmetic normal form (`level_alpha`, built on `ck_level_normal`), so $\max(\ell + 1, \ell) \equiv \ell + 1$ syntactically.
   - Term binders push `(left.payload, right.payload)` onto the active term-scope stack; dimension binders push `(left.payload, right.payload)` onto the dimension-scope stack.
   - Interval and face formula payloads on `CC_PAPP`, `CC_TUBE`, and `CC_GLUE_SYSTEM` are mapped through any active dimension renamings before comparing their canonical `cc_clause` arrays.
   - `CC_PAPP.child[1]` (the optional Path-type annotation) is ignored during syntactic comparison because `child[0]` (the path) and `payload` (the interval formula) uniquely determine the application.
@@ -438,9 +437,8 @@ Only specific child slots of binder constructors bind their `payload` symbol or 
   - $\mathcal{U}(\ell_1) \preceq \mathcal{U}(\ell_2) \iff \ell_1 \le \ell_2$ (`ck_level_leq`).
   - $\Pi(x : A_1).\, B_1(x) \preceq \Pi(x : A_2).\, B_2(x) \iff A_1 \equiv_\alpha A_2 \text{ and } B_1(x) \preceq B_2(x)$.
   - $\forall(\ell < \omega).\, B_1(\ell) \preceq \forall(\ell < \omega).\, B_2(\ell) \iff B_1(\ell) \preceq B_2(\ell)$.
-  - $\Sigma(x : A_1).\, B_1(x) \preceq \Sigma(x : A_2).\, B_2(x) \iff A_1 \preceq A_2 \text{ and } B_1(x) \preceq B_2(x)$.
-  - $A_1 + B_1 \preceq A_2 + B_2 \iff A_1 \preceq A_2 \text{ and } B_1 \preceq B_2$.
-  - $\text{Path}_i(A_1(i), l_1, r_1) \preceq \text{Path}_i(A_2(i), l_2, r_2) \iff A_1(i) \preceq A_2(i),\; l_1 \equiv_\alpha l_2,\; r_1 \equiv_\alpha r_2$.
+  - $\Sigma(x : A_1).\, B_1(x) \preceq \Sigma(x : A_2).\, B_2(x) \iff A_1 \equiv_\alpha A_2 \text{ and } B_1(x) \preceq B_2(x)$.
+  - No other former is included: sums, path types, Glue types, and sort instances are included only when $\alpha$-equal.
 
 ---
 
@@ -864,55 +862,48 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 | `CC_STEP_DELTA` (`2`) | `DefRef(idx)` | `k->definitions[idx].value` |
 | `CC_STEP_IOTA` (`3`) | `Fst(Pair(T, a, b))`<br>`Snd(Pair(T, a, b))`<br>`UnitRec(M, pt, Point)`<br>`SumRec(M, l, r, Inl(T, v))`<br>`SumRec(M, l, r, Inr(T, v))`<br>`App(Elim(sig, M, ms), c)` | `a`<br>`b`<br>`pt`<br>`App(l, v)`<br>`App(r, v)`<br>`ck_eliminate(k, Elim(sig, M, ms), c, false, &reduced)` when $c$ is already a constructor or path-applied constructor (`weak = false`) |
 | `CC_STEP_PATH` (`4`) | `PApp(r, PLam(i, A, b), _)`<br>`PApp(0, p, Path(i, A, l, r))`<br>`PApp(1, p, Path(i, A, l, r))` | `ck_dimension_substitute(k, b, i, r)`<br>`l` (uses stored Path-type annotation `child[1]`)<br>`r` (uses stored Path-type annotation `child[1]`) |
-| `CC_STEP_FACE` (`5`) | `Comp(i, A, tubes, a0)` with `(1 ↦ u)` in `tubes`<br>`HComp(i, A, tubes, a0)` with `(1 ↦ u)` in `tubes`<br>`Trans(i, A, Tube(1, a0), a0)` | `ck_endpoint_term(k, u, i, 1)`<br>`ck_endpoint_term(k, u, i, 1)`<br>`a0` |
-| `CC_STEP_GLUE` (`6`) | `GlueTerm(G, base, [φ ↦ t])` | Contracts via `ck_glue_step` to $b$ when `base` reduces to `Unglue(G', b)` (possibly through nested Glue steps) and for every clause $C$ of $\varphi$, $G|_C$ and $G'|_C$ agree and $t|_C$ and $b|_C$ agree under `normal_agree` |
-| `CC_STEP_SPLIT` (`7`) | `Comp` or `HComp` with multi-clause or `0`-face tubes | Splits each multi-clause tube $[\varphi_1 \vee \varphi_2 \mapsto u]$ into single-clause tubes $[\varphi_1 \mapsto u, \varphi_2 \mapsto u]$ and drops `0`-face tubes (`ck_clause_tubes`) |
-| `CC_STEP_WHNF` (`8`) | Any term $s$ | `ck_whnf(k, s)` |
-| `CC_STEP_NORMALIZE` (`9`) | Any term $s$ | `ck_normal(k, s)` |
+| `CC_STEP_NORMALIZE` (`5`) | Any term $s$ | `ck_normal(k, s)` |
+| `CC_STEP_WHNF` (`6`) | Any term $s$ | `ck_whnf(k, s)` |
+| `CC_STEP_FACE` (`7`) | `Comp(i, A, tubes, a0)` with `(1 ↦ u)` in `tubes`<br>`HComp(i, A, tubes, a0)` with `(1 ↦ u)` in `tubes`<br>`Trans(i, A, Tube(1, a0), a0)` | `ck_endpoint_term(k, u, i, 1)`<br>`ck_endpoint_term(k, u, i, 1)`<br>`a0` |
+| `CC_STEP_GLUE` (`8`) | `GlueTerm(G, base, [φ ↦ t])` | Contracts via `ck_glue_step` to $b$ when `base` reduces to `Unglue(G', b)` (possibly through nested Glue steps) and $G$ and $G'$ agree (compared whole) and, for every clause $C$ of $\varphi$, $t|_C$ and $b|_C$ agree under `normal_agree` |
+| `CC_STEP_SPLIT` (`9`) | `Comp` or `HComp` with multi-clause or `0`-face tubes | Splits each multi-clause tube $[\varphi_1 \vee \varphi_2 \mapsto u]$ into single-clause tubes $[\varphi_1 \mapsto u, \varphi_2 \mapsto u]$ and drops `0`-face tubes (`ck_clause_tubes`) |
 
 ### 2. Weak-head normal form (`ck_whnf` in `term_normalize.c`)
 
-`ck_whnf(k, term)` reduces a term to its weak-head normal form using a call-by-name loop with an explicit continuation stack of elimination frames (`weak_tails`: `WEAK_APP`, `WEAK_LAPP`, `WEAK_FST`, `WEAK_SND`, `WEAK_PAPP`), memoized in `k->weak_cache`:
+`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records every term it passes through so that the final head is cached for all of them. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call bounded by the `k->recursion` guard (`1024`); there is no explicit stack of elimination frames:
 
 1. **Definitions:** `CC_DEFREF(idx)` unfolds to `k->definitions[idx].value`.
-2. **Elimination spine:** While the current focus is `CC_APP`, `CC_LAPP`, `CC_FST`, `CC_SND`, or `CC_PAPP` at an interior formula ($r \ne 0, 1$), `ck_whnf` pushes an elimination frame onto `weak_tails` and loops on `child[0]`.
-3. **Path endpoints:** If the focus is `CC_PAPP(r, p, path_type)` with $r = 0$ or $r = 1$ and `path_type` is `CC_PATH(i, A, l, r_end)`, `ck_whnf` immediately returns `l` (for $r = 0$) or `r_end` (for $r = 1$) without needing to reduce a neutral path $p$. Otherwise it pushes `WEAK_PAPP` and reduces $p$.
+2. **Eliminations:** `CC_APP(f, a)` reduces $f$ to WHNF; on `CC_LAM(x, A, body)` it continues with `ck_substitute(k, body, x, a)`, on `CC_ELIM(sig, M, clauses)` it runs `ck_eliminate(k, Elim(sig, M, clauses), a, true, &reduced)` (`weak = true`, which reduces `a` to WHNF first), and otherwise it returns the neutral application. `CC_LAPP(f, l)` reduces $f$ and, on `CC_LLAM(x, B, body)`, continues with `ck_level_instantiate(k, body, x, l)`. `CC_FST`/`CC_SND` reduce the pair and, on `CC_PAIR(T, a, b)`, continue with `a` or `b`.
+3. **Path endpoints and path $\beta$:** `CC_PAPP(r, p, path_type)` with $r = 0$ or $r = 1$ and `path_type` a `CC_PATH(i, A, l, r_end)` continues with `l` or `r_end` without reducing a neutral $p$. Otherwise it reduces $p$ to WHNF and, on `CC_PLAM(i, A, body)`, continues with `ck_dimension_substitute(k, body, i, r)`. An unannotated `CC_PAPP` (raw syntax with `child[1] == 0`) reduces only when $p$'s WHNF is a path lambda; a neutral path there is an error (`"Unchecked path application reached reduction."`).
 4. **Recursors:**
    - `CC_UNITREC(M, pt, v)`: reduces $v$ to WHNF; if `whnf(v) == CC_POINT`, continues with `pt`.
    - `CC_SUMREC(M, l, r, s)`: reduces $s$ to WHNF; if `whnf(s)` is `CC_INL(_, v)` or `CC_INR(_, v)`, continues with `App(l, v)` or `App(r, v)`.
 5. **Glue reductions:**
    - `CC_GLUE(A, pieces)` and `CC_GLUE_TERM(G, a, tubes)`: drops any piece/tube with face `0`; if any piece/tube has top face `1`, reduces immediately to its `child[0]` ($T$ or $t$).
-   - `CC_UNGLUE(G, g)`: reduces $G$ to WHNF; if $G$ has a top-face (`1`) piece $(T, e)$, reduces to $\pi_1(e)(g)$; otherwise reduces $g$ to WHNF, and if `whnf(g)` is `CC_GLUE_TERM(_, base, _)`, continues with `base`.
+   - `CC_UNGLUE(G, g)`: $G$ must be a `CC_GLUE` node as written (it is not reduced); if it has a top-face (`1`) piece $(T, e)$, continues with $\pi_1(e)(g)$; otherwise reduces $g$ to WHNF, and if `whnf(g)` is `CC_GLUE_TERM(_, base, _)`, continues with `base`.
 6. **Syntactic $\eta$-contractions in `ck_whnf`:**
    - `Pair(T, Fst(p), Snd(p'))` $\to p$ when `ck_alpha_equal(k, p, p')`.
    - `Lam(x, A, App(f, Var(x)))` $\to f$ when $x \notin \text{fv}(f)$.
    - `LLam(x, B, LApp(f, Var(x)))` $\to f$ when $x \notin \text{fv}(f)$.
    - `PLam(i, A, PApp(i, p, _))` $\to p$ when $i \notin \text{fdims}(p)$.
    - `GlueTerm(G, b, tubes)` $\to p$ when `whnf(b)` is `Unglue(G', p)`, `ck_alpha_equal(k, G, G')`, and every non-empty tube $(\varphi \mapsto t)$ satisfies `ck_alpha_equal(k, t, ck_restrict(k, p, C))` on each clause $C \in \varphi$.
-7. **Cubical operations:** `CC_COMP` dispatches to `ck_reduce_composition`; `CC_HCOMP` and `CC_TRANS` dispatch to `ck_hit_reduce`. If those return a simplified term (`reduced != current`), `ck_whnf` continues reducing the result.
-8. **Popping the continuation spine:** Once the head is in WHNF:
-   - `WEAK_APP(arg)` on `CC_LAM(x, A, body)` substitutes `ck_substitute(k, body, x, arg)` and continues.
-   - `WEAK_APP(arg)` on `CC_ELIM(sig, M, clauses)` runs `ck_eliminate(k, Elim(sig, M, clauses), arg, true, &reduced)` (`weak = true`, which reduces `arg` to WHNF first).
-   - `WEAK_LAPP(lvl)` on `CC_LLAM(x, B, body)` instantiates `ck_level_instantiate(k, body, x, lvl)`.
-   - `WEAK_FST` / `WEAK_SND` on `CC_PAIR(T, a, b)` selects `a` or `b`.
-   - `WEAK_PAPP(r, path_type)` on `CC_PLAM(i, A, body)` substitutes `ck_dimension_substitute(k, body, i, r)`.
+7. **Cubical operations:** `CC_COMP` dispatches to `ck_reduce_composition`; `CC_HCOMP` and `CC_TRANS` dispatch to `ck_hit_reduce`. Each returns a head already in WHNF, or the neutral term.
 
 ### 3. Compact head exposure (`ck_expose` in `term_expose.c`)
 
-When composition rules inspect a type family or constructor head, full WHNF can inflate terms by unfolding large definitions. `ck_expose(k, term)` performs at most one structural contraction (beta, level-beta, projection, path-lambda beta, path-endpoint boundary, or top-face `1` tube on `Comp`/`HComp`/`Trans`/`Glue`) and accepts the result only if its arena node count stays within a compact growth bound (`added <= 64 + before_size`). Otherwise it rolls back the arena to a checkpoint and leaves the term unexposed.
+When `ck_hit_reduce` looks for a constructor head, or a derivation wants one visible step without unfolding definitions, `ck_expose(k, term)` performs at most one of these contractions and otherwise returns the term unchanged: a top-face (`1`) tube on `Comp`/`HComp` (to $u(1)$) or on `Trans` (to its base); a `CC_PAPP` at `0` or `1` whose annotation is a `CC_PATH` (to the recorded endpoint); a `CC_APP` whose function's WHNF is a `CC_LAM` (to the substituted body); a `CC_FST`/`CC_SND` whose pair's WHNF is a `CC_PAIR` (to the component). It computes the head of the function or pair with `ck_whnf`, but it never unfolds a `CC_DEFREF` at the root, never contracts level applications, path lambdas, or Glue, and has no size bound and no arena rollback.
 
 ### 4. Full normalization (`ck_normal` in `term_normalize.c`)
 
 `ck_normal(k, term)` computes a strong normal form under binders using an explicit worklist (`normal_stack`), memoized by exact handle in `k->normal_cache`:
 
 1. Reduces the current node via `ck_whnf`.
-2. Canonicalizes universe level expressions (`ck_is_level_expr`) to canonical right-nested `CC_LMAX`/`CC_LSUCC`/`CC_LCONST` syntax via `ck_level_canonical`.
-3. For partial bodies (`CC_TUBE` and `CC_GLUE_SYSTEM`), `normal_restrict` computes the intersection of endpoint equations common to **all** clauses of the piece's face formula $\varphi$:
+2. For partial bodies (`CC_TUBE` and `CC_GLUE_SYSTEM`), `normal_restrict` computes the intersection of endpoint equations common to **all** clauses of the piece's face formula $\varphi$:
    $$\text{common\_pos} = \bigcap_{C \in \varphi} C.\text{positive}, \qquad \text{common\_neg} = \bigcap_{C \in \varphi} C.\text{negative}$$
    and restricts the partial body (`child[0]`, and `child[1]` on `CC_GLUE_SYSTEM`) by that common clause before normalizing its children.
-4. Recursively normalizes all child slots (including under $\lambda$, $\Pi$, $\Sigma$, $\Lambda$, $\forall$, $\langle i \rangle$, and `Comp`/`HComp`/`Trans`).
-5. On rebuilding a `CC_GLUE_TERM`, checks Glue $\eta$ (`NORMAL_GLUE`) by comparing each normalized tube body against the normalized clause-restricted candidate `ck_normal(k, ck_restrict(k, p, C))`.
-6. If rebuilding a node changes any child and creates a new redex (for example, a restricted wall inside a composition became `1`, or a constructor argument simplified), `ck_normal` loops to normalize the rebuilt node.
+3. Recursively normalizes all child slots (including under $\lambda$, $\Pi$, $\Sigma$, $\Lambda$, $\forall$, $\langle i \rangle$, and `Comp`/`HComp`/`Trans`).
+4. On rebuilding a `CC_GLUE_TERM`, checks Glue $\eta$ (`NORMAL_GLUE`) by comparing each normalized tube body against the normalized clause-restricted candidate `ck_normal(k, ck_restrict(k, p, C))`.
+5. If rebuilding a node changes any child and creates a new redex (for example, a restricted wall inside a composition became `1`, or a constructor argument simplified), `ck_normal` loops to normalize the rebuilt node.
 
 ### 5. Dependent elimination of H1 declared types (`eliminators.c`)
 
@@ -946,7 +937,7 @@ At $r = 0$, the added wall $(r = 0) \mapsto a_0$ has top face `1` and reduces im
 
 ### 2. Heterogeneous composition (`ck_reduce_composition` in `composition_compute.c`)
 
-To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel first checks whether any tube in the list has top face $\varphi = 1$; if so, it immediately returns $u(1)$ (`ck_endpoint_term(k, u, i, 1)`). Otherwise it inspects the head of $A(i)$ (using `ck_expose` and falling back to `ck_whnf`):
+To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel first checks whether any tube in the list has top face $\varphi = 1$; if so, it immediately returns $u(1)$ (`ck_endpoint_term(k, u, i, 1)`). Otherwise it reduces $A(i)$ to WHNF (`ck_whnf`; `ck_expose` is not used here) and dispatches on its head:
 
 | Type family $A(i)$ | Reduction of $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$ |
 |---|---|
@@ -955,8 +946,8 @@ To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel fir
 | **Dependent function ($\Pi(y : F(i)).\, G(i, y)$)** | Pick a fresh variable $x : F(1)$ and fill **backward** in $F(1 - i)$ with no tubes: $v(i) = \text{fill}^i\, F(1 - i)\, [\,]\, x\, (1 - i)$. Return $\lambda(x : F(1)).\, \text{comp}^i\, G(i, v(i))\, [\varphi \mapsto u(i)(v(i))]\, (a_0(v(0)))$. |
 | **Universe-polymorphic ($\forall(\ell < \omega).\, G(i, \ell)$)** | Universe levels do not vary with interval coordinates: pick fresh $\ell < \omega$ and return $\Lambda(\ell < \omega).\, \text{comp}^i\, G(i, \ell)\, [\varphi \mapsto u(i)\,\{\ell\}]\, (a_0\,\{\ell\})$. |
 | **Path ($\text{Path}_j(P(i, j), l(i), r(i))$)** | Pick a fresh dimension $k \ne i$, apply `@ k` to every tube and to $a_0$, append the two endpoint tubes $(k = 0) \mapsto l(i)$ and $(k = 1) \mapsto r(i)$, and return $\langle k \rangle\, \text{comp}^i\, P(i, k)\, [\varphi \mapsto u(i) \mathbin{@} k,\; (k = 0) \mapsto l(i),\; (k = 1) \mapsto r(i)]\, (a_0 \mathbin{@} k)$. |
-| **Disjoint sum ($L(i) + R(i)$)** | ([inductive_composition.c](../../kernel/src/inductive_composition.c)) Expose $a_0$ and all non-empty tube bodies. If all are `Inl(_, v)` (or all are `Inr(_, v)`), push composition inside the injection: $\text{inl}_{L(1)+R(1)}\bigl(\text{comp}^i\, L(i)\, [\varphi \mapsto v(i)]\, v_0\bigr)$. If any head is neutral or heads disagree, remain neutral. |
-| **H1 data sort ($S(\vec{p}(i))$ with `!ck_signature_higher(s)`)** | ([inductive_composition.c](../../kernel/src/inductive_composition.c)) Expose $a_0$ and all non-empty tube bodies. If all are applications of the same point constructor $c_k(S(\vec{p}))(v_1, \dots, v_m)$, pack the constructor's parameter-substituted field types into a right-nested $\Sigma$-telescope $T(i) = \Sigma(x_1 : A_1(i)) \dots \Sigma(x_m : A_m(i)).\, \mathbf{1}$ (`ck_telescope`), pack each argument spine into a tuple in $T(i)$ (`ck_tuple`), compute $t_1 = \text{comp}^i\, T(i)\, [\varphi \mapsto \text{tuple}(u(i))]\, \text{tuple}(a_0)$, and reapply $c_k(S(\vec{p}(1)))$ to $\pi_1(t_1), \pi_1(\pi_2(t_1)), \dots$ (`ck_apply_components`). |
+| **Disjoint sum ($L(i) + R(i)$)** | ([inductive_composition.c](../../kernel/src/inductive_composition.c)) Reduce $a_0$ and all non-empty tube bodies to WHNF. If all are `Inl(_, v)` (or all are `Inr(_, v)`), push composition inside the injection: $\text{inl}_{L(1)+R(1)}\bigl(\text{comp}^i\, L(i)\, [\varphi \mapsto v(i)]\, v_0\bigr)$. If any head is neutral or heads disagree, remain neutral. |
+| **H1 data sort ($S(\vec{p}(i))$ with `!ck_signature_higher(s)`)** | ([inductive_composition.c](../../kernel/src/inductive_composition.c)) Reduce $a_0$ and all non-empty tube bodies to WHNF. If all are applications of the same point constructor $c_k(S(\vec{p}))(v_1, \dots, v_m)$, pack the constructor's parameter-substituted field types into a right-nested $\Sigma$-telescope $T(i) = \Sigma(x_1 : A_1(i)) \dots \Sigma(x_m : A_m(i)).\, \mathbf{1}$ (`ck_telescope`), pack each argument spine into a tuple in $T(i)$ (`ck_tuple`), compute $t_1 = \text{comp}^i\, T(i)\, [\varphi \mapsto \text{tuple}(u(i))]\, \text{tuple}(a_0)$, and reapply $c_k(S(\vec{p}(1)))$ to $\pi_1(t_1), \pi_1(\pi_2(t_1)), \dots$ (`ck_apply_components`). |
 | **H1 higher sort ($S(\vec{p}(i))$ with `ck_signature_higher(s)`)** | ([hit_composition.c](../../kernel/src/hit_composition.c)) Decompose heterogeneous `Comp` into `Trans` and `HComp` at $S(\vec{p}(1))$ (`ck_higher_composition`):<br>$$\text{comp}^i\, S(\vec{p}(i))\, [\varphi \mapsto u(i)]\, u_0 \;\longrightarrow\; \text{hcomp}^i\, S(\vec{p}(1))\, \bigl[\varphi \mapsto \text{squeeze}_i(S(\vec{p}), 0, u(i))\bigr]\, \bigl(\text{transp}^i\, S(\vec{p}(i))\, 0\, u_0\bigr)$$<br>where $\text{squeeze}_i(P, \psi, u) = \text{transp}^j\, P[i \vee j / i]\, (\psi \vee (i = 1))\, u$ transports $u(i) : P(i)$ forward along $i \vee j$ to $P(1)$. |
 | **Glue ($\text{Glue}\,[\psi(i) \mapsto (T(i), w(i))]\, A(i)$)** | ([glue_compute.c](../../kernel/src/glue_compute.c)) See [Glue and universe composition](#3-glue-and-universe-composition-glue_computec) below. |
 | **Universe ($\mathcal{U}(\ell)$)** | ([glue_compute.c](../../kernel/src/glue_compute.c)) Reduces to a `Glue` type over the base type $a_0$: see [Glue and universe composition](#3-glue-and-universe-composition-glue_computec) below. |
@@ -965,16 +956,16 @@ To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel fir
 
 - **Glue composition (`ck_glue_composition`):**
   Given $\text{comp}^i\, (\text{Glue}\,[\psi(i) \mapsto (T(i), w(i))]\, A(i))\, [\varphi \mapsto u(i)]\, u_0$:
-  1. Split multi-clause Glue pieces and composition tubes into single-clause pieces (`split_glue`, `ck_clause_tubes`).
+  1. Work clause by clause: each Glue piece's face at $i = 1$ (`formula_at_one`) and each composition tube's face are taken one clause at a time (`partial_fiber_points`), so a face of several clauses contributes one pick per clause.
   2. Project the base and tubes to $A(i)$ via `unglue`: $a_0 = \text{unglue}(u_0)$ and $a(i) = \text{unglue}(u(i))$.
   3. Compose in the base type $A(i)$: $a_1' = \text{comp}^i\, A(i)\, [\varphi \mapsto a(i)]\, a_0$.
   4. For each piece $(\psi \mapsto (T(i), w(i)))$:
      - Define the universal face $\delta = \forall i.\, \psi$ (`cc_face_forall`), on which the piece exists across the entire interval $i$.
-     - On $\delta$, transport $u_0$ along $T(i)$: $t_1' = \text{comp}^i\, T(i)\, [\varphi \mapsto u(i)]\, u_0$, and use Lemma 6 (`preservation`) to build a path $\alpha : \text{Path}_k(A(1),\, w_1.1(t_1'),\, a_1')$ agreeing with the constant path on $\varphi$.
-     - On $\varphi$, the tube $u(1)$ with the constant path $\langle k \rangle\, a(1)$ already inhabits the fiber $\text{Fiber}_{w_1.1}(a_1') = \Sigma(x : T(1)).\, \text{Path}_k(A(1), w_1.1(x), a_1')$.
+     - On $\delta$, transport $u_0$ along $T(i)$: $t_1' = \text{comp}^i\, T(i)\, [\varphi \mapsto u(i)]\, u_0$, and use Lemma 6 (`preservation`) to build a path $\alpha : \text{Path}_k(A(1),\, a_1',\, w_1.1(t_1'))$ (at $k = 0$ the composition of the images, at $k = 1$ the image of the composition) agreeing with the constant path on $\varphi$.
+     - On $\varphi$, the tube $u(1)$ with the constant path $\langle k \rangle\, a(1)$ already inhabits the fiber $\text{Fiber}_{w_1.1}(a_1') = \Sigma(x : T(1)).\, \text{Path}_k(A(1), a_1', w_1.1(x))$ (`ck_fiber_type` uses CCHM's orientation $\text{Fiber}_f(y) = \Sigma x.\, \text{Path}\, B\, y\, (f\,x)$).
      - Since $w(1)$ is an equivalence, its fibers are contractible (`w_1.2(a_1')`). `extend_fiber` extends the partial fiber element defined on $\delta \vee \varphi$ to a total fiber element $(t_1, \alpha_1)$ on $\psi(1)$.
-  5. Adjust $a_1'$ in $A(1)$ using the paths $\alpha_1(1 - i)$ on $\psi(1)$ and the constant path $a(1)$ on $\varphi$:
-     $$a_1 = \text{comp}^i\, A(1)\, \bigl[\psi(1) \mapsto \alpha_1(1 - i),\; \varphi \mapsto a(1)\bigr]\, a_1'$$
+  5. Adjust $a_1'$ in $A(1)$ along a fresh dimension $j$, using the paths $\alpha_1(j)$ on $\psi(1)$ and the constant path $a(1)$ on $\varphi$:
+     $$a_1 = \text{comp}^j\, A(1)\, \bigl[\psi(1) \mapsto \alpha_1(j),\; \varphi \mapsto a(1)\bigr]\, a_1'$$
   6. Return $\text{glue}_{\text{Glue}(1)}\bigl([\psi(1) \mapsto t_1],\, a_1\bigr)$.
 
 - **Universe composition (`ck_universe_composition`):**
@@ -989,11 +980,11 @@ For a higher sort $I(i) = S(\vec{p}(i))$ (`ck_hit_reduce`):
    - $\text{hcomp}^i\, I\, [\varphi \mapsto u(i)]\, u_0$ drops `0`-face tubes; if no tubes remain, it stays neutral (`CC_HCOMP` is a canonical value constructor on higher sorts); if any tube has face `1`, it reduces to $u(1)$.
    - $\text{transp}^i\, I(i)\, 1\, u_0 \longrightarrow u_0$.
 
-2. **Commuting `Trans` past `HComp` (`transp_hcomp`):**
-   When the base of a transport reduces to $\text{hcomp}^j\, I(0)\, [\psi \mapsto w(j)]\, w_0$ (renaming $j$ to a fresh dimension $k$ if $j = i$ or $j$ occurs free in $I(i)$ or $\varphi$), `Trans` distributes into the `HComp` walls and base:
+2. **Commuting `Trans` past `HComp` (`transport_hcomp`):**
+   When the base of a transport reduces to $\text{hcomp}^j\, I(0)\, [\psi \mapsto w(j)]\, w_0$ (always renaming $j$ to a fresh dimension $k$), `Trans` distributes into the `HComp` walls and base:
    $$\text{transp}^i\, I(i)\, \varphi\, \bigl(\text{hcomp}^k\, I(0)\, [\psi \mapsto w(k)]\, w_0\bigr) \;\longrightarrow\; \text{hcomp}^k\, I(1)\, \bigl[\psi \mapsto \text{transp}^i\, I(i)\, \varphi\, w(k)\bigr]\, \bigl(\text{transp}^i\, I(i)\, \varphi\, w_0\bigr)$$
 
-3. **Transport of point and path constructors (`transp_constructor`):**
+3. **Transport of point and path constructors (`sort_transport`):**
    When the base reduces to a constructor application $u_0 = c_m(I(0))(a_1, \dots, a_n) \mathbin{@} r_1 \dots \mathbin{@} r_d$:
    - Pack the parameter-substituted constructor field types into a telescope $T(i) = \Sigma(x_1 : A_1(i)) \dots \mathbf{1}$ and the arguments $a_1, \dots, a_n$ into a tuple $t_0 : T(0)$.
    - Compose the argument tuple with constant tube $[\varphi \mapsto t_0]$:
@@ -1030,7 +1021,7 @@ results with independent reference computations and reject malformed terms.
 implementation bugs, not a machine-checked metatheoretic soundness proof.
 
 The native interval representation uses 64 coordinate slots (`0..63`). Allocation errors,
-invalid scopes, term depth above `CC_MAX_TERM_DEPTH` (`512`), and exhausted explicitly configured budgets reject checking;
+invalid scopes, term depth above `512`, and exhausted explicitly configured budgets reject checking;
 they never produce a successful judgement. `CC_ERROR_RESOURCE` (`resource` in
 JavaScript) identifies allocation, depth, and representation limits separately
 from mismatches, step budgets, and deadlines. Increasing the step budget does
