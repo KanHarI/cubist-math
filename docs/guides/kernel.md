@@ -138,6 +138,8 @@ typedef struct {
 
 Every AST node is constructed via `cc_kernel_term(k, kind, payload, a, b, c, d)` (`ck_make` in [term_store.c](../../kernel/src/term_store.c)). Below is the complete specification of every `cc_term_kind` constant in [cubical_kernel.h](../../kernel/include/cubical_kernel.h) (ABI version `3`).
 
+Every **Composition** bullet below describes `ck_reduce_composition` ([composition_compute.c](../../kernel/src/composition_compute.c)) after its first rule, which precedes the dispatch on the family and holds for every type former: a tube on the face `1` makes `comp^i A(i) [1 ↦ u(i), …] a0` the weak head of $u(1)$ (`ck_whnf` of `ck_endpoint_term(k, u, i, 1)`), whatever `a0` and the family are. The bullets state what happens when no tube has that face.
+
 ### 1. Universes and universe levels (G0)
 
 Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built from constants, finite successors, binary maxima, and level variables bounded below $\omega$ ([levels.c](../../kernel/src/levels.c)). Levels are not standalone typed terms; they appear inside `CC_U`, `CC_LAPP`, and H1 `CC_SORT` level lists.
