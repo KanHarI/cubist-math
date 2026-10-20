@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The C kernel that checks every declaration: its judgements and contexts, the derivation graph, definitions, checkpoints, what is trusted, and how to read a derivation." />
+    <title>Cubist · 14. The kernel: judgements, derivations and trust</title>
+    <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../files.html">Files</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html" aria-current="true">Language reference</a>
+        <a href="../repl.html">REPL</a>
+        <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 14</p>
+        <h1>The kernel: judgements, derivations and trust</h1>
+        <p class="lead">The C kernel that checks every declaration: its judgements and contexts, the derivation graph, definitions, checkpoints, what is trusted, and how to read a derivation.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="theories.html">Theories and models</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li class="current"><a href="kernel-overview.html" aria-current="page">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#role">What the kernel is</a></li>
+            <li><a href="#judgements">Judgements</a></li>
+            <li><a href="#contexts">Contexts and their entries</a></li>
+            <li><a href="#graph">The derivation graph</a></li>
+            <li><a href="#definitions">Definitions and checkpoints</a></li>
+            <li><a href="#trust">What is trusted</a></li>
+            <li><a href="#budgets">Budgets, deadlines and limits</a></li>
+            <li><a href="#reading">Reading a derivation</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="role">
+            <h2>What the kernel is</h2>
+            <p>Every declaration of this reference was checked by one program: a kernel written in C11, under <code>kernel/</code> in the repository, compiled to WebAssembly for the browser and the command line. The <a href="../language.html">elaborator</a> turns Cubist source into kernel terms and chooses how to check them, but it is JavaScript and it is not trusted. It can only <em>propose</em>: it issues <strong>instructions</strong>, one typing rule at a time, and the kernel checks each one and answers with a <strong>judgement</strong>, or refuses. A declaration enters the kernel's registry of definitions only through the instruction <code>Define</code>, from a closed judgement derived this way, and only such a definition can be used by a later one.</p>
+            <p>The kernel is therefore an <strong>instruction kernel</strong>, in the style of THTH, the forward proof engine it descends from. It never searches: it does not decide for itself whether two types are equal, which definition to unfold, or where to reduce. Those decisions belong to the untrusted <em>driver</em> (<code>web/cubical-instruction-driver.mjs</code>), which names each step. The kernel compares terms by syntax alone, up to bound names, and reduces nothing unless an equality instruction names the position and the rule. The four chapters that follow describe what it stores (<a href="kernel-terms.html">chapter 15</a>), what it checks (<a href="kernel-instructions.html">chapter 16</a>) and what it computes when asked (<a href="kernel-computation.html">chapter 17</a>). The source is small enough to read: the public interface is <code>kernel/include/cubical_kernel.h</code>, the instructions are in <code>kernel/src/instructions.c</code> and the files beside it, and the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">kernel guide</a> in the repository follows the C function by function.</p>
+          </section>
+          <section id="judgements">
+            <h2>Judgements</h2>
+            <p>A judgement is a fact the kernel has certified. Two kinds carry mathematical meaning:</p>
+            <ul>
+              <li>a <strong>typing judgement</strong> <code>Γ ⊢ t : T</code>: in the context <code>Γ</code>, the term <code>t</code> has the type <code>T</code>;</li>
+              <li>an <strong>equality judgement</strong> <code>Γ ⊢ a ≡ b : T</code>: <code>a</code> and <code>b</code> are definitionally equal terms of type <code>T</code>.</li>
+            </ul>
+            <p>Four more kinds are judgements <em>in progress</em>, published by instructions that build something in several steps: a composition system (a <code>comp</code>, Glue type or Glue term with some of its tubes or pieces), an open declared-type signature, a declared-type instance whose levels and parameters are still being supplied, and an eliminator whose clauses are still being given. Each records what it still needs; only its own instructions continue it, and a rewriting instruction refuses it. The kernel numbers these kinds 1 to 6, and <code>cc_kernel_judgement</code> reads any of them back: its term, its other side for an equality, its type, and the instruction, premises and operands that derived it.</p>
+            <p>Equalities are built from reflexivity by targeted steps. <code>Refl</code> gives <code>t ≡ t</code>; <code>Step</code> contracts one redex at a <strong>position</strong>, a path of child indices from the root of one <strong>side</strong> of the judgement (its term, the other term of an equality, or its type) to the highlighted subterm, by a named rule; <code>Replace</code> rewrites a highlighted occurrence of <code>a</code> by <code>b</code> given <code>a ≡ b</code>. <code>Convert</code> moves <code>t : A</code> to <code>t : B</code> along <code>A ≡ B</code>, and <code>Lift</code> moves it to a larger universe. <a href="conversion.html">Chapter 5</a> describes definitional equality from the source language's side; here, every use of it is one of these instructions, recorded in the derivation.</p>
+          </section>
+          <section id="contexts">
+            <h2>Contexts and their entries</h2>
+            <p>A context is a set of <strong>entries</strong>, each one assumption:</p>
+            <ul>
+              <li>a <strong>term entry</strong> <code>x : A</code>, made by <code>Extend</code> from a judgement <code>Γ ⊢ A : U(ℓ)</code>; it records its symbol, its type, the level <code>ℓ</code>, the judgement that <code>A</code> is a type, and the entries <code>A</code> depends on;</li>
+              <li>a <strong>level entry</strong> <code>x &lt; ω</code>, made by <code>Level</code>: a universe variable ranging over the natural numbers, which only a level may mention (<a href="universes.html">chapter 6</a>);</li>
+              <li>a <strong>dimension entry</strong>, one for each interval coordinate <code>0</code> to <code>63</code>, made by <code>Dimension</code>;</li>
+              <li>a <strong>face entry</strong>, the assumption that one face formula holds, made only by <code>Restrict</code>; it depends on the dimension entries of its equations.</li>
+            </ul>
+            <p>The names of entries are numeric <strong>symbols</strong>; the readable spelling belongs to the elaborator, which allocates fresh symbols with <code>cc_kernel_fresh_symbol</code> so that its names and the kernel's own never collide. The same symbol at the same type, however that type was derived, is the same entry, so a context is canonical: one entry per name. Term and level entries share one name supply; a term entry's symbol cannot name a level entry, nor the reverse.</p>
+            <p>Each judgement keeps only the context it depends on, and a context is closed under its entries' own dependencies. Instructions combine contexts in three ways. <strong>Merging</strong> takes the union of two premises' contexts, refusing if two distinct dimension entries would carry the same index. <strong>Discharging</strong> removes the entry a binder binds, refusing if a remaining entry depends on it, or is a dimension entry with the same index; a binder discharges exactly one entry. A binder instruction (<code>Pi</code>, <code>Lambda</code>, <code>Sigma</code>, <code>LevelPi</code>, <code>LevelLambda</code>, <code>Path</code>, <code>PathLambda</code>) discharges its entry and merges back the context that the entry's own type needs; <code>Endpoint</code>, <code>Comp</code>, <code>HComp</code>, <code>Trans</code> and <code>Replace</code> discharge alone. A <strong>face entry</strong> is discharged only by an instruction that takes a partial element on a face implying it: a composition tube, a Glue piece, a Glue value, or their agreement on an overlap. No binder discharges a dimension that a face entry needs, and <code>Define</code> refuses a context that still holds one.</p>
+          </section>
+          <section id="graph">
+            <h2>The derivation graph</h2>
+            <p>Judgements and entries form a graph, as THTH's graph store did. Each judgement records the instruction that derived it, its premise judgements in argument order, the entry it bound or used, its operands (a level, a symbol or reference, an endpoint, a side and a step rule, or an injection's side), and, for a step or a replacement, the position. The same instruction on the same operands returns the same judgement: a stateless instruction is answered from this memo, in one budget step, instead of being derived again. Instructions whose result depends on the signature table, which changes as declared types are admitted, are never answered from the memo.</p>
+            <p>The <strong>Elaboration</strong> panel under an example of this reference shows the derivation as the kernel built it: one line per step, numbered, with the rule's name and the numbers of its premises, and above it a comment with the judgement or context it derives. Steps the elaborator added for its own bookkeeping are marked. <a href="#reading">Reading a derivation</a> below walks through one.</p>
+          </section>
+          <section id="definitions">
+            <h2>Definitions and checkpoints</h2>
+            <p><code>Define</code> takes a symbol and a closed typing judgement, one whose context is empty, and refuses an open judgement or a symbol already defined. It registers the term and its type, mints a <strong>reference</strong> node (<code>CC_DEFREF</code>) whose payload is the definition's index, and publishes the closed judgement that the reference has the type. <code>Lookup</code> recalls that judgement for any reference whose index names a definition. Checked terms keep references folded: the reference is one node, and conversion unfolds it only where a <code>Step</code> with the <code>delta</code> rule, or a weak-head or normal-form query, says so. Raw syntax may contain a reference node with any index, like any other inert node, but it certifies nothing, and reducing one whose index names no definition is an error.</p>
+            <p>The arena, the definitions and the judgement tables are append-only between <strong>checkpoints</strong>. <code>cc_kernel_checkpoint</code> marks the current sizes. <code>cc_kernel_rollback</code> discards everything made since the checkpoint, nodes, definitions, judgements, entries and open signatures, and clears the reduction caches. <code>cc_kernel_commit_checkpoint</code> keeps the definitions made since the checkpoint and the syntax they reach, compacts the arena so that the surviving nodes get new handles, translated by <code>cc_kernel_relocated</code>, and likewise truncates the judgement tables, so that a definition's <code>Lookup</code> can be issued again. The elaborator opens a checkpoint for each declaration it checks, commits it when the declaration is accepted and rolls it back otherwise, so a rejected declaration leaves nothing behind.</p>
+          </section>
+          <section id="trust">
+            <h2>What is trusted</h2>
+            <p>What must be trusted when a declaration is accepted is the C kernel: the instructions, the syntactic comparison they use, the substitution and restriction that build the terms they publish, and the reduction that <code>Step</code> and the queries perform. Nothing in JavaScript is trusted. The elaborator may be arbitrarily clever in choosing a derivation; if it chooses wrongly, the kernel refuses, and nothing is assumed.</p>
+            <p>The kernel also answers <strong>queries</strong>: the normal form or weak head of a term (<code>cc_kernel_normalize</code>, <code>cc_kernel_whnf</code>), syntactic equality up to bound names (<code>cc_kernel_alpha_equal</code>), a term with a free name or dimension renamed, and a term at an endpoint of a dimension. A query computes on syntax and certifies nothing, including under free names; the driver uses its answers to pick the instructions it issues, and the kernel recomputes whatever an instruction relies on. Building syntax (<code>cc_kernel_term</code>, <code>cc_kernel_formula</code>) is likewise no certificate: a node exists, and may be ill-typed, until a judgement mentions it.</p>
+            <p>The <a href="assumptions.html">assumptions</a> of a declaration are not kernel state: the kernel checks each declaration against the definitions it uses, and the elaborator reports which registered assumptions those definitions depend on. The kernel's tests, <code>make test</code>, <code>make sanitize</code> and the JavaScript tests that compare it with independent reference computations, are evidence against implementation bugs, not a machine-checked soundness proof; full cubical canonicity for every constructor is not claimed.</p>
+          </section>
+          <section id="budgets">
+            <h2>Budgets, deadlines and limits</h2>
+            <p>Every operation, an instruction or a query, starts with the <strong>step budget</strong> set by <code>cc_kernel_set_step_budget</code>. Each weak-head or normalization step, syntactic comparison, substitution into a node and level normal-form node takes one step, and an instruction takes one on entry, so an instruction answered from the memo still costs a step; work nested in an operation shares its budget. An operation that runs out records a <code>BUDGET</code> error and makes no judgement. An optional wall-clock <strong>deadline</strong> works the same way. <code>cc_kernel_work</code> reads cumulative counters that only grow: instructions started, rejected and their steps; queries, failed queries and their steps; operations exhausted or stopped by the deadline. The command-line checker prints the steps a check took after <code>Checked</code>.</p>
+            <p>A rejection has a <strong>kind</strong>: <code>MISMATCH</code> when a type is not the expected one, with the two types kept for diagnostics (<code>cc_kernel_mismatch</code>); <code>BUDGET</code> and <code>DEADLINE</code>; <code>RESOURCE</code> when an allocation, depth or representation limit prevented an answer, which raising the budget does not address; and <code>OTHER</code> for every other refusal. A resource failure never establishes a mismatch. The representation limits are: 64 interval dimensions; syntax depth 512; positions at most 1024 deep; universe levels with a finite part below 65535 and a tier at most 255; and, for declared types, 24 universe parameters, 64 term parameters, 256 constructors, 64 constructor arguments, 16 constructor dimensions and truncation level at most 14. Exceeding one rejects, and never accepts anything; the language chapter on <a href="checking.html#limits">limits</a> describes what the elaborator does with such a rejection.</p>
+          </section>
+          <section id="reading">
+            <h2>Reading a derivation</h2>
+            <p>Open the <strong>Elaboration</strong> panel under this example. For each declaration it shows the source, the type, the proof statements with their goals and the term each builds, the finished term, and under <strong>Kernel</strong> the derivation: the instruction kernel's steps, each one rule applied to earlier steps.</p>
+            <pre><code data-check="accept" data-elaborate>import unat;
+use unat;
+
+def swap(A, B : U0, p : A and B) : B and A := (p.2, p.1);
+
+def double(n : UNat) := n + n;
+
+def four : double(2) = 4 { rfl; }</code></pre>
+            <p>The derivation of <code>swap</code> starts with the universe (<code>UIntro</code>), extends the context with <code>A : U0</code> and <code>B : U0</code> (<code>CtxExt</code>) and reads them as variables (<code>Vble</code>), forms the two pair types (<code>SigmaForm</code>), extends the context with <code>p</code>, projects it (<code>SigmaSnd</code>, <code>SigmaFst</code>), pairs the projections (<code>SigmaIntro</code>) and abstracts the three variables (<code>PiIntro</code>), each abstraction discharging its entry. The steps marked <em>added by the elaborator</em> build the ascription that checks the body at the stated type: a function from <code>B × A</code> to itself, applied to the pair (<code>PiElim</code>). The rule names are THTH's, shown in the panel; <a href="kernel-instructions.html#names">chapter 16</a> lists each instruction with the name it is shown under.</p>
+            <p>The derivation of <code>four</code> shows how <code>rfl</code> is accepted. <code>refl(double(2))</code> is a constant path (<code>PathIntro</code>) whose type is <code>double(2) =[UNat] double(2)</code>, not <code>double(2) =[UNat] 4</code>. The elaborator rewrites that type one step at a time, each step a <code>Step</code> instruction shown under its rule's name and the position it contracts: <code>Delta</code> unfolds <code>double</code> in the right endpoint, <code>Beta</code> applies it, <code>Delta</code> and <code>Beta</code> unfold and apply <code>add</code>, and <code>Iota</code> computes the recursor on the numeral, twice, until the endpoint is <code>succ(succ(2))</code>. The ascription function's domain is rewritten to meet it (<code>Eta</code> of <code>succ</code>, then <code>HighSubs</code>), and the final <code>PiElim</code> applies the function to the path. No step compares two types by conversion inside the kernel: each rewrites one position by one rule, and the application type-checks by syntax alone.</p>
+            <p>The same facts are available outside the browser. The command-line checker's <code>inspect</code> prints the checked term, its type and its assumptions, and <code>print(inspect(…))</code> shows a term as the kernel checked it, in the inspector's notation for kernel terms: here the ascription that <code>:=</code> adds around a definition's body, a function from the stated type applied to the body.</p>
+            <pre><code data-check="accept" data-name="kernel">import unat;
+use unat;
+
+def swap(A, B : U0, p : A and B) : B and A := (p.2, p.1);
+
+def double(n : UNat) := n + n;
+
+def four : double(2) = 4 { rfl; }
+
+// Output: (λ (ascription : (double(2) =[UNat] 4)). ascription)(refl(double(2)))
+print(inspect(four));</code></pre>
+            <pre><code data-check="cli" data-files="kernel">$ node cli/repl.mjs
+&gt; check kernel.cubist
+Checked 3 declarations · … kernel steps
+&gt; inspect swap
+kernel__swap
+Expression: swap
+Type: Π (A : U0), Π (B : U0), ((A × B) → (B × A))
+Assumptions: none
+&gt; inspect four
+kernel__four
+Expression: four
+Type: (double(2) =[UNat] 4)
+Assumptions: none</code></pre>
+            <p><code>inspect</code> shows a definition by its name, since a checked definition is a folded reference; <code>Π</code>, <code>×</code> and <code>=[UNat]</code> are the inspector's notation for the kernel's <code>Pi</code>, <code>Sigma</code> and <code>Path</code> nodes, which <code>forall</code>, <code>and</code> and an equality type elaborate to. The <a href="../workbench.html">kernel workbench</a> shows the same terms as native nodes, with their handles and operands, and the judgement graph that derived them; <a href="kernel-terms.html">chapter 15</a> explains that listing.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="checking.html">← 13. Checking and inspection</a>
+            <a class="next" href="kernel-terms.html">15. Kernel terms: the arena and its primitives →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+    <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
+  </body>
+</html>
