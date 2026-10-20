@@ -101,6 +101,14 @@ inclusion is not downward resizing. The syntax encoding has an ABI version,
 `cc_kernel_abi_version()`; the JavaScript loader refuses a client written for
 another.
 
+See the [kernel and AST reference](../docs/guides/kernel.md) for the complete
+table of `cc_term_kind` AST primitives (payloads, child slots, arities, and
+term/dimension binder scopes), the forward judgement and instruction rules,
+single-step and weak-head/normal reduction (`Step`, `ck_whnf`, `ck_expose`,
+`ck_normal`), H1 dependent elimination (`ck_eliminate`), and the exact
+reduction rules for `comp`, `hcomp`, `transp`, and `ck_fill` at every type
+former.
+
 ## Running the checks
 
 From the repository root, run `make test`, `make sanitize`, and `make lint`.
