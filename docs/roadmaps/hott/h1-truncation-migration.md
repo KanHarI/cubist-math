@@ -193,10 +193,10 @@ resizing, before the archive is deleted.
 | Where | Files | Uses |
 | --- | --- | --- |
 | `library/` | 2 | `classical_axioms` states `ExcludedMiddle` and `AxiomOfChoice` over `Truncate` and checks `LEM(U)`/`Choice(U)` against them; `universe_automorphisms` proves excluded middle at `U0` equivalent to a `Truncate(U1, …)` statement, with `TruncateElim`, `TruncateIntro` and `TruncateProp`. `library/README.md` lists `Truncate` as `classical_axioms`'s dependency |
-| `cubist-tests/` | 16 | Direct uses in `program_assumptions`, `inspection_axiom_labels`, `assembly_generic_assumptions`, `universe_generic`, `universe_generic_builtins` (the rejected `LEM(UU0, …)` and accepted `LEM(U1, …)` cases), `inductive_assumptions` (E507 fixtures) and `truncation_rebuilt_classical` (`old` and `both`); the legacy labels in E324/E330 goldens of `computability`, `computability_evaluation` and `inductive_computable`, through the archive's `classical`; assumption parameters in the type renderings of six `*_invalid_*` goldens over archive developments |
+| `cubist-tests/` | 16 | Direct uses in `program_assumptions`, `inspection_axiom_labels`, `assembly_generic_assumptions`, `universe_generic`, `universe_generic_builtins` (the rejected `LEM(UU0, …)` and accepted `LEM(U1, …)` cases), `inductive_assumptions` (E507 fixtures) and `truncation_rebuilt_classical` (`old` and `both`); the legacy labels in E324/E330 goldens of `computability` and `computability_evaluation`, through the archive's `classical`, and of `inductive_computable`, through the library's `classical_axioms`; assumption parameters in the type renderings of six `*_invalid_*` goldens over archive developments |
 | `tests/` | 31 | Exact assumption lists or patterns in the Artin, Galois, dimension, linear-algebra, finite-spanning, algebraic-extensions, polynomial, quotient, universe-generic, library, CLI, REPL, assembly, program, inspection, reduction, benchmark, declaration, contract, migration and browser tests; the E324 goldens of `tests/fixtures/contracts/nonempty_contracts.cubist`; the recorded labels of the three capture-bindings cost baselines |
-| Reference | 4 | `assumptions.html`: the truncation section and the statements of `LEM` and `Choice`, 40 mentions; `checking.html`, 2; `errors.html`, the E406 row; `terms.html`, the reserved names |
-| Guides | 2 | `docs/guides/cubist.md`: the list of library principles and the universe examples; `docs/guides/regression-contracts.md`: an `expect_axioms` example |
+| Reference | 5 | `assumptions.html`: the truncation section and the statements of `LEM` and `Choice`, 40 mentions; `checking.html`, 2; `errors.html`, the E406 row; `terms.html`, the reserved names; `web/proof.html`, the quick reference's no-axiom text and checked `LEM`/`TruncateIntro` example |
+| Guides | 3 | `docs/guides/cubist.md`: the list of library principles, universe examples and obsolete standalone `axiom name(params) : T;` paragraph; `docs/guides/regression-contracts.md`: an `expect_axioms` example; `docs/guides/cli.md`: the claim that a source file cannot add assumptions |
 | Implementation | 6 | `web/cubical-assumptions.mjs` (the types), `web/translator/builtins.mjs` (the handlers), `web/cubist/parser.mjs` (reserved names), `web/cubical-notation.mjs` (the `‖A‖` hook), `web/diagnostics.mjs` (E404–E406), `tools/migration-ledger.mjs` (the `LEGACY` set) |
 
 ### Axioms as definitions
@@ -325,7 +325,16 @@ transition land together.
    `tests/truncation-migration.test.mjs`, inspection and computability
    goldens, affected baseline labels and checked reference examples, and
    `library/README.md`. The `axiom` parser regression and the reference's
-   reserved-name list change here too.
+   reserved-name list change here too. Update the no-user-assumptions text
+   in `docs/guides/cli.md` and `web/proof.html` to explain axiom expressions
+   in definitions, and replace the obsolete standalone-axiom paragraph in
+   `docs/guides/cubist.md` with that syntax.
+   Handle all of `truncation_rebuilt_classical` in this step, including
+   `old` and `both`: its `h1_classical` import now shadows the builtin.
+   Retire these cases or replace them with coexistence checks using an
+   imported archive proof and a rebuilt proof. Any direct legacy-builtin
+   probe must use a separate source without the library axiom imports and
+   be placed as an archive source, or retired, before step 4.
    **Ledger transition happens here:** the classical and Zorn comparisons
    pin rebuilt and legacy `LEM`/`Choice` labels and proof dependencies that
    this change invalidates. Retire those affected comparisons with their
@@ -340,9 +349,8 @@ transition land together.
    `Trunc` and the axioms;
    `universe_generic_builtins` imports the library axioms and updates both
    `D4`'s `UU0` rejection and `D4_small`'s accepted `U1` case to their new
-   signatures and diagnostics. Former-specific cases of
-   `truncation_rebuilt_classical` were already updated or retired in step 1;
-   its remaining legacy cases migrate here. The computability fixtures
+   signatures and diagnostics. The entire `truncation_rebuilt_classical`
+   transition was completed in step 1. The remaining computability fixtures
    import `h1_classical`, and their source and expected dependencies change
    together. Expectations over archive modules retain the distinct legacy
    labels introduced in step 1 until the archive retires. The ledger tests
@@ -353,8 +361,10 @@ transition land together.
    after the signature, label and checked-example updates of step 1. The
    assumptions chapter sends truncation to the cubical chapter's declaration
    (`point`, `squash`, `mere_eliminate`); update the E406 explanation and
-   remaining legacy-name documentation. The guide lists `Trunc` and the two
-   library axioms among its principles.
+   remaining legacy-name documentation. Migrate `web/proof.html`'s checked
+   quick-reference example to import `classical_axioms` and use `Trunc`
+   and `merely` before step 4 confines its old builtin calls. The guide lists
+   `Trunc` and the two library axioms among its principles.
 4. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
    `TruncateElim` and the builtin `LEM(U, …)` and `Choice(U, …)` are
    accepted only in archive modules, which the module reader distinguishes by
