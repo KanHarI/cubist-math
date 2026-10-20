@@ -911,8 +911,11 @@ Let $E = \text{elim}_S(M, [m_0, \dots, m_{n-1}])$ be an admitted eliminator for 
 
 1. **Constructor or path-constructor application ($s = c_k(I(\vec{p}))(t_1, \dots, t_a, q_1, \dots, q_b) \mathbin{@} r_1 \dots \mathbin{@} r_d$):**
    - Unpacks the constructor index $k$, the non-recursive arguments $t_1, \dots, t_a$, the recursive arguments $q_1, \dots, q_b$ (where $q_j : \Pi(\vec{y} : \vec{C}_j).\, B_j$), and the applied interval formulas $r_1, \dots, r_d$ ($0 \le d = \text{dimensions}$).
-   - For each recursive argument $q_j$, `lifted` builds the induction hypothesis:
-     $$\bar{q}_j = \lambda(y_1 : C_{j,1}) \dots \lambda(y_r : C_{j,r}).\; E\bigl(q_j(y_1, \dots, y_r)\bigr)$$
+   - For each recursive argument $q_j$, `lifted` lifts elimination through its result cube $B_j$ to build the induction hypothesis:
+     $$\bar{q}_j = \lambda(y_1 : C_{j,1}) \dots \lambda(y_r : C_{j,r}).\; \text{lift}_{B_j}\bigl(E, q_j(y_1, \dots, y_r)\bigr)$$
+     At the sort instance $I$, $\text{lift}_I(E, v) = E(v)$. At a path cube $B = \text{Path}_i(B'(i), b_0, b_1)$, it chooses a fresh dimension $h$ and constructs
+     $$\text{lift}_B(E, v) = \langle h \rangle\, \text{lift}_{B'(h)}(E, v \mathbin{@}_B h).$$
+     The `CC_PLAM` family annotation comes from the displayed path type computed by `displayed`; nested path cubes are lifted recursively until reaching $I$. Thus a path-valued position $q : \text{Path}_i(I, a, b)$ contributes $\langle h \rangle\, E(q \mathbin{@} h)$.
    - Substitutes $t_1, \dots, t_a$, $q_1, \dots, q_b$, and $\bar{q}_1, \dots, \bar{q}_b$ into the $k$-th clause method $m_k$.
    - For each applied path coordinate $r_l$ ($1 \le l \le d$), computes the displayed path type annotation $P_l$ and applies `CC_PAPP(r_l, body, P_l)` (`ck_apply_at`).
 
@@ -955,18 +958,20 @@ To compute $\text{comp}^i\, A(i)\, [\varphi \mapsto u(i)]\, a_0$, the kernel fir
 ### 3. Glue and universe composition (`glue_compute.c`)
 
 - **Glue composition (`ck_glue_composition`):**
-  Given $\text{comp}^i\, (\text{Glue}\,[\psi(i) \mapsto (T(i), w(i))]\, A(i))\, [\varphi \mapsto u(i)]\, u_0$:
-  1. Work clause by clause: each Glue piece's face at $i = 1$ (`formula_at_one`) and each composition tube's face are taken one clause at a time (`partial_fiber_points`), so a face of several clauses contributes one pick per clause.
+  Given $\text{comp}^i\, (\text{Glue}\,[\psi_m(i) \mapsto (T_m(i), w_m(i))]_m\, A(i))\, [\varphi \mapsto u(i)]\, u_0$:
+  1. Work clause by clause: each Glue piece's face at $i = 1$ (`formula_at_one`) contributes one pick $(m, C)$ for each clause $C$ of $\psi_m(1)$. Each pick uses $T_m(1)$ and $w_m(1)$ restricted to $C$.
   2. Project the base and tubes to $A(i)$ via `unglue`: $a_0 = \text{unglue}(u_0)$ and $a(i) = \text{unglue}(u(i))$.
   3. Compose in the base type $A(i)$: $a_1' = \text{comp}^i\, A(i)\, [\varphi \mapsto a(i)]\, a_0$.
-  4. For each piece $(\psi \mapsto (T(i), w(i)))$:
-     - Define the universal face $\delta = \forall i.\, \psi$ (`cc_face_forall`), on which the piece exists across the entire interval $i$.
-     - On $\delta$, transport $u_0$ along $T(i)$: $t_1' = \text{comp}^i\, T(i)\, [\varphi \mapsto u(i)]\, u_0$, and use Lemma 6 (`preservation`) to build a path $\alpha : \text{Path}_k(A(1),\, a_1',\, w_1.1(t_1'))$ (at $k = 0$ the composition of the images, at $k = 1$ the image of the composition) agreeing with the constant path on $\varphi$.
-     - On $\varphi$, the tube $u(1)$ with the constant path $\langle k \rangle\, a(1)$ already inhabits the fiber $\text{Fiber}_{w_1.1}(a_1') = \Sigma(x : T(1)).\, \text{Path}_k(A(1), a_1', w_1.1(x))$ (`ck_fiber_type` uses CCHM's orientation $\text{Fiber}_f(y) = \Sigma x.\, \text{Path}\, B\, y\, (f\,x)$).
-     - Since $w(1)$ is an equivalence, its fibers are contractible (`w_1.2(a_1')`). `extend_fiber` extends the partial fiber element defined on $\delta \vee \varphi$ to a total fiber element $(t_1, \alpha_1)$ on $\psi(1)$.
-  5. Adjust $a_1'$ in $A(1)$ along a fresh dimension $j$, using the paths $\alpha_1(j)$ on $\psi(1)$ and the constant path $a(1)$ on $\varphi$:
-     $$a_1 = \text{comp}^j\, A(1)\, \bigl[\psi(1) \mapsto \alpha_1(j),\; \varphi \mapsto a(1)\bigr]\, a_1'$$
-  6. Return $\text{glue}_{\text{Glue}(1)}\bigl([\psi(1) \mapsto t_1],\, a_1\bigr)$.
+  4. For each pick $(m, C)$, `partial_fiber_points` builds a partial element of the selected fiber
+     $$F_{m,C} = \left(\Sigma(x : T_m(1)).\, \text{Path}_k(A(1), a_1', w_m(1).1(x))\right)|_C.$$
+     (`ck_fiber_type` uses CCHM's orientation $\text{Fiber}_f(y) = \Sigma x.\, \text{Path}\, B\, y\, (f\,x)$.)
+     - Visit **every** Glue piece $n$ and define its universal face $\delta_n = \forall i.\, \psi_n$ (`cc_face_forall`). For each clause $D$ of $\delta_n$ compatible with $C$, compose $t_n' = \text{comp}^i\, T_n(i)\, [\varphi \mapsto u(i)]\, u_0$ and use Lemma 6 (`preservation`) to build $\alpha_n : \text{Path}_k(A(1), a_1', w_n(1).1(t_n'))$. Restrict $(t_n', \alpha_n)$ to $C \wedge D$ and add it to the partial fiber system; the pieces' agreement on their overlap makes this an element of $F_{m,C}$ there.
+     - Visit each composition tube and each clause $D$ of its face compatible with $C$. Add $(u(1), \langle k \rangle\, a_1')$ restricted to $C \wedge D$; on this overlap, $a_1' = a(1)$.
+     - Using the contractibility proof $w_m(1).2(a_1')$ with $w_m(1)$ restricted to $C$, `extend_fiber` extends this partial element, defined on $C \wedge ((\bigvee_n \delta_n) \vee \varphi)$, to a fiber element $(t_{m,C}, \alpha_{m,C})$ on $C$.
+     For example, a pick from $\psi_m = (i = 1)$ has $\delta_m = 0$, but still receives the constraint from another piece on $\psi_n = (j = 0)$, where $\delta_n = (j = 0)$.
+  5. Adjust $a_1'$ in $A(1)$ along a fresh dimension $j$, using one path wall per pick and the constant path $a(1)$ on each composition tube's face:
+     $$a_1 = \text{comp}^j\, A(1)\, \bigl[C \mapsto \alpha_{m,C}(j)\text{ for each pick }(m,C),\; \varphi \mapsto a(1)\bigr]\, a_1'$$
+  6. Return $\text{glue}_{\text{Glue}(1)}\bigl([C \mapsto t_{m,C}]_{(m,C)},\, a_1\bigr)$.
 
 - **Universe composition (`ck_universe_composition`):**
   Following CCHM §7.1, composition of a system of types $E(i) : \mathcal{U}(\ell)$ over a base type $A : \mathcal{U}(\ell)$ reduces to a `Glue` type by composing the identity equivalence $\text{idEquiv}(E(1))$ along the reversed line $\text{Equiv}(E(1), E(1 - i))$:
@@ -1003,7 +1008,9 @@ For a higher sort $I(i) = S(\vec{p}(i))$ (`ck_hit_reduce`):
 
 `cc_instr_define` (`CC_INSTR_DEFINE`) accepts an already checked, closed typing judgement ($\Gamma = \varnothing$).
 It rejects open judgements and duplicate definition symbols; only success
-adds the named reference to `k->definitions` and returns its `CC_DEFREF` handle.
+adds the named reference to `k->definitions` and returns a `cc_judgement_id`.
+Read that judgement with `cc_kernel_judgement`; its `term` field is the
+`cc_term` handle of the `CC_DEFREF` node, which can be passed to `cc_instr_lookup`.
 Conversion can expose its body via `Step(Delta)` or `ck_whnf` when required, while ordinary storage keeps the compact
 reference. The browser's folded view adds source labels and abbreviations;
 the assembly view shows the actual native `cc_term_kind` constructors, operands, and handles.
