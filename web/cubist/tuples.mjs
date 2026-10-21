@@ -6,6 +6,7 @@ export function expandedSyntax(tree) {
   return syntaxValue(tree, (key, value) => [
     "start", "end", "operatorStart", "operatorEnd", "definitionStart", "modifierStart", "valueStart", "valueEnd",
     "tupleStart", "tupleEnd", "syntheticTuplePair", "opens", "closes", "bodyStart", "qualifiedDots", "open", "close",
+    "markStart", "markEnd",
   ].includes(key) ? undefined : value);
 }
 

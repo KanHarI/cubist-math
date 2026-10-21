@@ -129,6 +129,8 @@ export const diagnostics = [
   // Reading the source (continued)
   ["E001", "Invalid test pragma: …"],
   ["E002", "Historical unary migration would capture existing binding …."],
+  ["E003", "Two ! marks apart ask for a weak head twice, which is once: write !! together for a full normal form."],
+  ["E004", "The demand mark … stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -364,6 +366,9 @@ export const diagnostics = [
   ["E480", "The truncation evaluates to …, which holds no constructor to read a witness from."],
   ["E481", "The truncation's witness lies under a composition whose type changes: it is built in …, not …."],
   ["E482", "Path reversal requires a homogeneous path; use an explicit path abstraction for a dependent family."],
+  ["E483", "The term evaluates to …, which does not match …: a part of type … is not …."],
+  ["E484", "A demand mark, ! or !!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; … is none of these."],
+  ["E485", "evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, or !!_ for its full normal form."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],
@@ -871,6 +876,9 @@ export const diagnostics = [
   ["W705", "… is unused in the body: write … instead of … … : …. …."],
   ["W706", "… is unused in the body: take it out of the group and write … for it."],
   ["W707", "… is unused: the return type does not mention it. Omit as …: induction … return …."],
+  ["W708", "The … before … asks for nothing more: it is under !!, whose part is fully normalized."],
+  ["W709", "The ! before … asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself."],
+  ["W710", "The !! before … asks for nothing more: an expression is compared by its full normal form."],
 ];
 
 // Legacy error producers still need message lookup. Warnings carry their code

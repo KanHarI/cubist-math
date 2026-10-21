@@ -1,7 +1,10 @@
 # Evaluation demand marks: `!` and `!!`
 
-Status: proposed on 2026-10-21, nothing implemented. This is the
-observation contract that EVAL5 of the
+Status: proposed on 2026-10-21 and decided the same day (DM0, the
+[decisions](#decisions) below). The marks in `evaluate … expecting` (DM1,
+DM2) are implemented in [#304](https://github.com/KanHarI/cubist-math/pull/304);
+the value form of printed values (DM3) is next. This is the observation
+contract that EVAL5 of the
 [runtime roadmap](runtime-evaluation-roadmap.md#eval5-demand-only-the-result-being-observed)
 requires before evaluation behavior changes. It proposes no kernel change
 and no new reduction: the two marks name the kernel's two existing reduction
@@ -15,9 +18,9 @@ normal form unchanged, so D1 still bounds every engine gate written with
 printing only. If it is adopted, the plan's statement that the
 `expecting _` contract changes only with D1 needs updating.
 
-## What evaluation does today
+## What evaluation did before the marks
 
-Every form of evaluation computes the full normal form. In a file,
+Before #304, every form of evaluation computed the full normal form. In a file,
 `evaluate term expecting value;` is the evaluation directive
 (`web/cubist/parser.mjs:1292-1308`): it calls the checker's `verify`
 (`web/translator/translate.mjs:388`), which asks the kernel to normalize the
@@ -152,7 +155,7 @@ a path lambda or a path constructor: `loop`, `relate(1, 3, tt)`,
 or truncated type a closed value can be a formal composition rather than a
 constructor: transport in `Circle` gives what today prints as
 `hcomp(Circle, base)`. A constructor pattern does not match it, as today,
-although `witness` reads through it; open question 6.
+although `witness` reads through it; decision 6.
 
 **A bare `_` is refused.** `evaluate e expecting _;` would demand nothing and
 check only the type, silently turning today's computability statement into
@@ -164,9 +167,11 @@ Printing is an observation too. The REPL's `evaluate e` and
 `print(evaluate(e));` print the **value form**: weak heads descended through
 constructor arguments, pair components and injection values, stopping at
 term, path and level lambdas, types, formal compositions and neutral heads,
-which are shown as suspended. A path constructor is a weak head like any
-constructor and is shown with its arguments. How a suspended part prints is
-open question 1 below.
+which are shown as suspended, by a marker naming the kind of head
+(`<fun>`, `<path>`, `<level fun>`, `<type>`, `<composition>`,
+`<neutral>`; decision 1). A path constructor is a weak head like any
+constructor and is shown with its arguments. The walk stops where the
+printer's output budget ends, so data past it is not computed.
 
 **`!p`.** The part is reduced to its weak head before `p` is matched. With
 `_`, the head query must succeed and nothing more is asked. At the top, the
@@ -189,7 +194,7 @@ terms by subject reduction but changes the driver's guard and must be
 reviewed as such, or re-derive each demanded part by elaborating its access
 path from the evaluated term (projections, and a `match` for a constructor's
 field), which checks it again at the cost of repeated elaboration. This is
-open question 3.
+decision 3.
 
 **What `!` does not say.** `!` makes no claim about a proof. The inverse's
 certificate is a lambda, so `!` on it checks nothing; only `!!` says that a
@@ -259,7 +264,7 @@ walk. No walk met a neutral head. The weak heads are:
 | formal composition | 3 | transport in `Circle` and in two truncations |
 
 In each of the 105 walks that reached a part, the normalize query refused
-that part, so open question 3 is not hypothetical. `!!` completes on every
+that part, so decision 3 is not hypothetical. `!!` completes on every
 example except seven. The four that depend on an assumption (`TruncateIntro`,
 `Truncate`, `LEM`, `ExcludedMiddle`) are refused by evaluation today
 (`E324`) and stay refused under every mark, although the kernel computes
@@ -367,33 +372,51 @@ the reference test checks, incorrect ones carrying their `// Error:`:
 
 | ID | Work | Depends on | Size |
 | --- | --- | --- | --- |
-| DM0 | This decision record, the open questions answered, the roadmap and work plan rows updated | — | S |
-| DM1 | Tokens `!` and `!!`, grammar in `evaluate`, `expecting` and `print(evaluate(…))`, formatter, lints, the bare-`_` and `! !p` refusals | DM0 | S |
-| DM2 | Demand-driven matcher over kernel handles: head queries on observed positions, reading parts by type, decoding only observed parts, `!!` and leaves on parts through the answer to open question 3, tested on `constructs.json` | DM1 | M |
-| DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints and `constructs.json` checked unmarked | DM2, open question 1 | M |
-| DM4 | Classification and migration of `expecting _` and of the fifteen printed tests and the reference examples, baseline re-recording with twins, roadmap and work plan text | DM2, DM3 | S |
+| DM0 | This decision record, the open questions answered, the roadmap and work plan rows updated. **Done** in #304 | — | S |
+| DM1 | Tokens `!` and `!!`, grammar in `evaluate`, `expecting` and `print(evaluate(…))`, formatter, lints, the bare-`_` and `! !p` refusals. **Done** in #304, but for `print(evaluate(…))`, which comes with DM3 | DM0 | S |
+| DM2 | Demand-driven matcher over kernel handles: head queries on observed positions, reading parts by type, decoding only observed parts, `!!` and leaves on parts through decision 3, tested on `constructs.json`. **Done** in #304 | DM1 | M |
+| DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints and `constructs.json` checked unmarked | DM2, decision 1 | M |
+| DM4 | Classification and migration of `expecting _` and of the fifteen printed tests and the reference examples, baseline re-recording with twins, roadmap and work plan text. `expecting _`, the pattern workload's twin and the patterns' text are done in #304 | DM2, DM3 | S |
 | DM5 | Report with the acceptance measurements, fresh-session fixed budgets and digests | DM2–DM4 | S |
-| DM6 | The language reference chapters, error entries, REPL help and quick reference listed above | DM1–DM4 | S |
+| DM6 | The language reference chapters, error entries, REPL help and quick reference listed above. Patterns and their marks, in chapters 12, 13, 17 and 18, are done in #304 | DM1–DM4 | S |
 
-## Open questions
+## Decisions
 
-1. **Printing a suspended part.** Print it as written under the printer's
-   output budget, or elide it with a marker and let the workbench expand it.
-   The second keeps printed values short; the first keeps them complete.
-2. **Expression leaves.** Keeping them as `!!` on their part preserves
-   exactness; a weaker rule, normalizing only as far as comparison needs,
-   would be a third demand and is not proposed.
-3. **Normalizing a part.** Widen the driver's guard to the parts of a derived
-   handle's weak head, or re-derive each demanded part by elaboration. The
-   first is cheaper; the second keeps the guard as it is.
-4. **`!` in terms.** The marks are read only in the positions above, so a
-   view could still bind a postfix `!`, as a factorial `n!`, in terms. Whether
-   to allow it, given that a pattern leaf starting with `!` is always a mark.
-5. **REPL bindings.** Whether `let x := !!e;` should exist; out of scope here.
-6. **Patterns through formal compositions.** A closed value of a higher
-   inductive or truncated type can be a formal composition whose base is a
-   constructor. `witness` reads through such compositions; a constructor
-   pattern does not, today or here. The composition does not compute to its
-   base (decision D2 of the debugging plan asks whether empty-system
-   compositions on declared sorts should), so whether a pattern may read
-   through it is to be decided before DM2.
+Decided on 2026-10-21, before DM1, answering the open questions as they
+were posed:
+
+1. **Printing a suspended part.** A marker names the kind of weak head the
+   value form stopped at: `<fun>` for a term lambda, `<path>` for a path
+   lambda, `<level fun>` for a level lambda, `<type>` for a type (a
+   universe, Π, Σ, a sum, a path type, a declared sort, Glue, a level Π),
+   `<composition>` for a formal composition (`hcomp`, `comp`, `transp`) and
+   `<neutral>` for a neutral head, which no closed, assumption-free term
+   should reach and is shown, not refused. A position a pattern never
+   observed, whose kind is not known, is `<unevaluated>`: an evaluation
+   shows its value as far as the pattern computed it, as
+   `(7, <unevaluated>)` for `evaluate euclid(3) expecting (7, _);`. Every
+   marker is in angle brackets, so nothing in them is a value. The value
+   form's walk stops where the printer's output budget ends. Suspended parts
+   are not retained, so nothing is forced after a later session operation:
+   a part is seen with `!!` or a pattern, evaluated again.
+2. **Expression leaves** stay a `!!` on their part, as proposed.
+3. **Normalizing a part.** The driver's guard is widened: the elaborator's
+   `derivedHead` records the weak head of a derived handle, and that head's
+   data parts (a pair's components, an injection's value, a constructor's
+   arguments), as derived, so that normalize accepts them. The weak head of
+   a closed, well-typed term is well-typed by subject reduction, and its
+   data parts are closed, well-typed subterms, so their normalization
+   terminates as the term's does; a query certifies nothing, so no
+   instruction's acceptance depends on it. The head of a handle that is not
+   derived records nothing.
+4. **`!` in terms.** Not allowed: the marks are read only after `evaluate`,
+   in `print(evaluate(…))` and at the start of a pattern's part; elsewhere a
+   mark is refused (`E004`), and inside an expression of a pattern too
+   (`E484`).
+5. **REPL bindings.** Out of scope.
+6. **Patterns through formal compositions.** A constructor pattern does not
+   read through a formal composition, as before: such a part is shown as
+   `<composition>`, and `!_` and `!!_` still check that it computes. Whether
+   an empty-system composition on a declared sort should compute to its base
+   is decision D2 of the debugging plan; if the kernel makes it so, patterns
+   match with no rule of their own.

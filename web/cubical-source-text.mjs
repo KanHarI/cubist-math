@@ -183,6 +183,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "LBound": return atom(universeText({ tag: "LConst", tier: t.tier, value: 0 }));
       case "Unit": case "Void": return atom(t.tag);
       case "Point": return atom("tt");
+      // A part an evaluation did not compute, or stopped at (evaluation.mjs).
+      case "Marker": return atom(t.text);
       case "Var": return atom(variable(t.name));
       case "DefRef": return atom(label(t.name));
       case "Pi": case "Sigma": {

@@ -33,7 +33,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {hasHole,mismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,isPattern,markInExpression,observe,typedMismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -385,26 +385,56 @@ export class Translator {
       const expected=d.assertion==="empty"?T.pi(scope.fresh(),type,T.void):type;
       term=scope.ascribe(scope.check(read(d.value,expected),expected,d.value),expected);
     } else term=this.term(d.value,scope);
-    const result=d.assertion?this.checker.infer(term):this.checker.verify(term);
+    // Nothing is computed yet: the expected value demands what it observes.
+    const result=d.assertion?this.checker.infer(term):this.checker.evaluated(term);
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
     if(d.assertion)return `${d.assertion} ${this.shownIn(type,scope)}`;
-    // An expected value with holes is a pattern, matched part by part
-    // (evaluation.mjs, L2.9a).
-    if(hasHole(d.expected)) {
-      const source=node=>scope.unit.source.slice(node.start,node.end).trim();
-      const found=mismatch(d.expected,result.normal,result.type,scope,
-        (node,type)=>{scope.spend("queries");return this.checker.verify(this.term(node,scope,type)).normal;},source);
-      if(found)throw valueMismatch(this.shownIn(result.normal,scope),source(d.expected),this.shownIn(found.value,scope),source(found.pattern));
-      return this.shownIn(result.normal,scope);
+    const source=node=>node.text??scope.unit.source.slice(node.start,node.end).trim();
+    // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!.
+    const expected=d.mark?{kind:"demand",mark:d.mark,value:d.expected,text:`${d.mark}${source(d.expected)}`,
+      start:d.expected.start,end:d.expected.end}:d.expected;
+    if(isHole(expected))throw scope.unit.locate(bareHole(),expected);
+    // An expected value with holes or demand marks is a pattern, matched
+    // part by part, each computed only as far as the pattern observes it
+    // (evaluation.mjs, L2.9a and EVAL5's demand marks). The value is shown
+    // as far as it was computed.
+    if(isPattern(expected)) {
+      const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source));
+      const text=this.shownIn(shown,scope);
+      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope),source(failed.pattern));
+      if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
+      return text;
     }
+    // An expected value without either is an expression: both full normal
+    // forms are computed and compared.
+    const normal=this.checker.normalForm(result.expression);
     scope.spend("queries");
-    const expected=this.checker.verify(this.term(d.expected,scope));
-    if(!scope.equal(result.type,expected.type))
-      throw Error(`The evaluated term has type ${this.shownIn(result.type,scope)}, but the expected value has type ${this.shownIn(expected.type,scope)}.`);
-    if(!scope.equal(result.normal,expected.normal))
-      throw Error(`The term evaluates to ${this.shownIn(result.normal,scope)}, not ${this.shownIn(expected.normal,scope)}.`);
-    return this.shownIn(result.normal,scope);
+    const value=this.checker.verify(this.term(d.expected,scope));
+    if(!scope.equal(result.type,value.type))
+      throw Error(`The evaluated term has type ${this.shownIn(result.type,scope)}, but the expected value has type ${this.shownIn(value.type,scope)}.`);
+    if(!scope.equal(normal,value.normal))
+      throw Error(`The term evaluates to ${this.shownIn(normal,scope)}, not ${this.shownIn(value.normal,scope)}.`);
+    return this.shownIn(normal,scope);
+  }
+  // The kernel queries a pattern's demands ask (evaluation.mjs's observe):
+  // each a query of the evaluation's, and a failure located at the part of
+  // the pattern that demanded it.
+  demandQueries(scope,source) {
+    const checker=this.checker;
+    const asked=(node,query)=>{
+      scope.spend("queries");
+      try {return query();}
+      catch(error) {throw scope.unit.locate(error,node);}
+    };
+    return {
+      head:(handle,node)=>asked(node,()=>checker.derivedHead(handle)),
+      normal:(handle,node)=>asked(node,()=>checker.normalForm(handle)),
+      spine:handle=>checker.kernel.spine(handle),
+      decoded:handle=>checker.decoded(handle),
+      elaborate:(node,type)=>{scope.spend("queries");return checker.verify(this.term(node,scope,type)).normal;},
+      source,
+    };
   }
   // `print(evaluate(e));` shows the normal form of a closed, assumption-free
   // term, as `evaluate` computes one; `print(typeof(e));` its type; and
@@ -1568,6 +1598,8 @@ export class Translator {
         const checked=scope.check(term,type,n.statements.at(-1));
         return scope.ascribe(checked,type);
       }
+      // A demand mark belongs to an expected pattern's part, never a term's.
+      case "demand":throw markInExpression(scope.unit.source.slice(n.start,n.end).trim());
       default:throw Error(`Untranslated syntax: ${n.kind}`);
     }
   }

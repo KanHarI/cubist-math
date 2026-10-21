@@ -55,7 +55,9 @@ export function stripped(source) {
 export function reported(source, result, main) {
   const lineAt = offset => source.slice(0, offset).split("\n").length - 1;
   const prints = (result.prints ?? []).filter(print => print.module === main);
+  const evaluations = (result.evaluations ?? []).filter(evaluation => evaluation.module === main && evaluation.start !== undefined);
   const starts = [...result.outputs.map(output => lineAt(output.start)), ...prints.map(print => lineAt(print.start)),
+    ...evaluations.map(evaluation => lineAt(evaluation.start)),
     ...(result.gaps ?? []).filter(gap => (gap.directive || gap.duplicate) && gap.module === main && gap.start !== undefined).map(gap => lineAt(gap.start))]
     .sort((a, b) => a - b);
   const labelled = (code, message) => normal(code ? `${code}: ${message}` : message);

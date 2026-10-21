@@ -44,7 +44,11 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Version 4 relocates the fixed unary workloads to UNat/unat. Algorithms,
 // contracts and counters stay comparable; free-name and display digests do
 // not, because the checked carrier and public law identities were renamed.
-export const version = 4;
+// Version 5 matches patterns on demand (EVAL5's demand marks,
+// docs/roadmaps/runtime/evaluation-demand-marks.md): a pattern's parts are
+// computed only as far as it observes them, in the new demand phase, and
+// the pattern workload's !! twin keeps the full normalization measured.
+export const version = 5;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // The archived Euclid construction and its prerequisites stay fixed for
@@ -55,8 +59,11 @@ export const workloads = [
   { id: "euclid-3", setup: euclid, entry: "evaluate euclid(3);" },
   { id: "euclid-3-print", setup: euclid, entry: "print(evaluate(euclid(3)));" },
   { id: "euclid-4", setup: euclid, entry: "evaluate euclid(4);" },
-  // An expected-value pattern matches the full normal form: its hole saves nothing.
+  // An expected-value pattern computes what it observes: its hole computes
+  // nothing, but the prime it compares is too deep to build. Its !! twin
+  // matches the full normal form, as every pattern did before EVAL5.
   { id: "euclid-4-pattern", setup: euclid, entry: "evaluate euclid(4) expecting (5, _);" },
+  { id: "euclid-4-pattern-normal", setup: euclid, entry: "evaluate euclid(4) expecting !!(5, _);" },
   // Prime projections.
   { id: "euclid-3-prime", setup: euclid, entry: "evaluate euclid(3).1;" },
   { id: "euclid-3-prime-expected", setup: euclid, entry: "evaluate euclid(3).1 expecting 7;" },
@@ -92,13 +99,15 @@ export const contracts = {
   repl: "REPL evaluate: one checked normalization, printed without a redundant self-comparison",
   print: "print(evaluate(e)): the full normal form, printed",
   expected: "evaluate e expecting v: the full normal form, compared with v's",
-  pattern: "evaluate e expecting p, p with holes: the full normal form, matched part by part",
+  pattern: "evaluate e expecting p, p with holes or marks: each part computed as far as p observes it",
+  normal: "evaluate e expecting !!p: the full normal form, matched part by part",
   scratch: "closure experiment: the demanded natural only; untrusted, certifies nothing",
 };
 export const contractOf = workload => workload.series === "scratch" ? "scratch"
   : /^print\s*\(/.test(workload.entry) ? "print"
   : !/\bexpecting\b/.test(workload.entry) ? "repl"
-  : /\bexpecting\b[\s\S]*\b_\b/.test(workload.entry) ? "pattern" : "expected";
+  : /\bexpecting\s*!!/.test(workload.entry) ? "normal"
+  : /\bexpecting\b[\s\S]*(?:\b_\b|!)/.test(workload.entry) ? "pattern" : "expected";
 
 // Where an entry's time and work go. Each phase is a boundary of the code
 // that runs it, observed by wrapping that method of the session's program;
@@ -108,8 +117,9 @@ export const phases = {
   elaborate: "Translator.term: elaborating source terms, with the kernel queries elaboration asks",
   check: "checker.checkSyntax, inside verify: checking the elaborated term",
   normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
-  decode: "checker.syntax.decode of a normal form, inside verify: kernel syntax into terms",
-  inventory: "checker.verify's own work: the closedness, assumption and kernel-extension inventory",
+  decode: "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
+  demand: "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
+  inventory: "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
   render: "checker.displayText, outside other phases: printing a value or message",
   other: "the rest of the entry: parsing, module and session bookkeeping, transactions",
@@ -213,11 +223,11 @@ export function normalDigest(term) {
 
 // Observe a program's phases while `run` runs: each phase's own calls,
 // failures, time, kernel work and arena growth, the run's peak arena, and
-// the normal form of the term it evaluated: the first verified at the
-// entry's top level, before any expected value or pattern.
+// the normal form of the term it evaluated, the first checked for
+// evaluation at the entry's top level, when the entry computed it.
 async function profiled(program, run, { depth = false } = {}) {
   const kernel = program.kernel, checker = program.checker, totals = {}, stack = [], restore = [], depths = {};
-  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null;
+  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null, term = null;
   const read = () => { const r = reading(kernel); peakNodes = Math.max(peakNodes, r.nodes); peakBytes = Math.max(peakBytes, r.bytes); return r; };
   const open = name => { const frame = { name, start: read(), inner: zero }; stack.push(frame); return frame; };
   const close = (frame, failed) => {
@@ -251,10 +261,19 @@ async function profiled(program, run, { depth = false } = {}) {
     restore.push(() => { if (own) owner[method] = original; else delete owner[method]; });
   };
   wrap(Translator.prototype, "term", "elaborate", () => top() === "other");
-  wrap(checker, "verify", "inventory", () => true, result => { if (!evaluated && top() === "other") evaluated = result.normal; });
+  wrap(checker, "evaluated", "inventory", () => true, result => { if (term === null && top() === "other") term = result.expression; });
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
+  wrap(checker, "derivedHead", "demand", () => top() === "other");
   wrap(kernel, "normalize", "normalize", () => top() !== "normalize", result => { normal = result; });
-  wrap(checker.syntax, "decode", "decode", id => top() === "inventory" && id === normal);
+  wrap(checker.syntax, "decode", "decode", id => top() !== "decode" && id === normal);
+  // normalForm is normalize and decode, observed by those phases.
+  const normalForm = checker.normalForm;
+  checker.normalForm = function (handle) {
+    const result = normalForm.call(this, handle);
+    if (!evaluated && handle === term) evaluated = result;
+    return result;
+  };
+  restore.push(() => { delete checker.normalForm; });
   wrap(checker, "equal", "compare", () => top() === "other");
   wrap(checker, "displayText", "render", () => top() === "other");
   const frame = open("other");

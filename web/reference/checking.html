@@ -221,6 +221,7 @@ print(witness(above_two));</code></pre>
               <li>a variable of <code>forall</code> or <code>exists</code> that its body does not mention, which can be written with <a href="paths.html#exists-and"><code>-&gt;</code> or <code>and</code></a>;</li>
               <li>a <a href="proof-blocks.html#let"><code>let</code></a> or <code>obtain</code> whose names nothing after it in its block uses.</li>
             </ul>
+            <p>It also warns about an <a href="assumptions.html#evaluate">evaluation's demand mark</a> that asks for nothing more than its part computes already.</p>
             <p>A name the syntax requires is never reported, even when it is unused: a parameter, a <code>fun</code> binder, a constructor argument or coordinate in a clause, an induction hypothesis, or a name given to <code>intro</code>. Nor is a <code>let</code> or <code>obtain</code> before an <code>hlevel</code> or a <code>match</code> in the same block, because those can use hypotheses without naming them. A warning does not affect checking: the declaration is checked and can be used.</p>
             <pre><code data-check="accept" data-name="unused">import unat;
 use unat;

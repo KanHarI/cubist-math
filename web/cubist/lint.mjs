@@ -1,6 +1,7 @@
 import { parse, scan } from "./parser.mjs";
 
-// Warnings for bindings that are never used and can simply be removed:
+// Warnings for evaluation demand marks that ask for nothing more (below), and
+// for bindings that are never used and can simply be removed:
 //   induction v as k   when neither the return type nor the successor clause uses k;
 //   induction v as z   on a declared type, when the return type does not mention z;
 //   match v as z       when the return type does not mention z;
@@ -99,6 +100,34 @@ export function lint(source, ast = parse(source)) {
     for (const value of Object.values(node)) if (value && typeof value === "object") visit(value);
   };
   visit(ast.declarations);
+  // Demand marks that ask for nothing more than their part already computes
+  // (docs/roadmaps/runtime/evaluation-demand-marks.md): ! before a part that
+  // computes its weak head itself, a pair, an injection, a constructor or an
+  // expression; !! before an expression, which is compared by its full
+  // normal form; and any mark under !!, whose part is fully normalized.
+  const hole = node => node?.kind === "name" && node.name === "_";
+  const pattern = node => node && typeof node === "object" && (hole(node) || node.kind === "demand"
+    || Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && pattern(value)));
+  const typed = node => node.kind === "call" && node.fn?.kind === "name" && node.fn.name === "typed";
+  const marked = (mark, at, value, normalized) => {
+    if (normalized) warn(at, "W708", `The ${mark} before ${text(value)} asks for nothing more: it is under !!, whose part is fully normalized.`);
+    else if (mark === "!" && !hole(value) && !typed(value))
+      warn(at, "W709", `The ! before ${text(value)} asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.`);
+    else if (mark === "!!" && !pattern(value))
+      warn(at, "W710", `The !! before ${text(value)} asks for nothing more: an expression is compared by its full normal form.`);
+    marks(value, normalized || mark === "!!");
+  };
+  // The parts of a pattern: a pair's components and a call's arguments. A
+  // mark inside any other expression is refused by the checker (E484).
+  const marks = (node, normalized) => {
+    if (node?.kind === "demand") marked(node.mark, { start: node.markStart, end: node.markEnd }, node.value, normalized);
+    else if (node?.kind === "pair") [node.left, node.right].forEach(part => marks(part, normalized));
+    else if (node?.kind === "call") node.args.forEach(part => marks(part, normalized));
+  };
+  for (const directive of ast.directives ?? []) if (directive.kind === "evaluate" && directive.expected) {
+    if (directive.mark) marked(directive.mark, { start: directive.markStart, end: directive.markEnd }, directive.expected, false);
+    else marks(directive.expected, false);
+  }
   // Each warning with its declaration and its line and column.
   const lineStarts = [0];
   for (let i = 0; i < source.length; i++) if (source[i] === "\n") lineStarts.push(i + 1);

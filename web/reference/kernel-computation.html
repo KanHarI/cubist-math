@@ -143,6 +143,7 @@ No applicable reduction.</code></pre>
               <li><strong>Path applications.</strong> <code>p @ r</code> with <code>r</code> equal to <code>0</code> or <code>1</code> and a path-type annotation reduces to the recorded endpoint without reducing <code>p</code>. Otherwise it reduces <code>p</code>, and substitutes <code>r</code> into the body when the head is a path abstraction. An application without an annotation reduces only when its path's weak head is an abstraction; a neutral path there is an error, since its endpoints are unknown.</li>
               <li><strong>η-contractions.</strong> A lambda whose body applies a term to its own variable, a level lambda likewise, a path abstraction whose body applies a path to its own dimension, and a pair of the two projections of one term, contract to that term when it does not mention the bound name.</li>
             </ol>
+            <p>In source, the demand mark <code>!</code> of an <a href="assumptions.html#evaluate">evaluation's pattern</a> asks for this weak head, through the query <code>cc_kernel_whnf</code>, η-contractions included, and <code>!!</code> for the <a href="#normal">normal form</a>.</p>
             <p><code>ck_expose</code> is a narrower helper used only by the higher-inductive rules: at most one contraction of a top-face composition, an annotated endpoint, an application of a lambda, or a projection of a pair, without unfolding a definition at the root.</p>
           </section>
           <section id="normal">

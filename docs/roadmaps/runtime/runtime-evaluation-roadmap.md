@@ -741,7 +741,8 @@ their computed branch. These tests do not establish full rational-value
 normalization. A separate probe before the
 open-normalization fix,
 `evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
-bint_zero_ne_one).one expecting _;`, exhausted the term arena (`K347`) even
+bint_zero_ne_one).one expecting _;`, written `expecting !!_` since #304,
+exhausted the term arena (`K347`) even
 though its type checks and the individual nontriviality and product
 certificates fully normalize.
 The [kernel normalization fix](../../reports/open-quotient-normalization.md)
@@ -1024,12 +1025,13 @@ language-feature work remain outside this track.
 
 ### EVAL5: demand only the result being observed
 
-The [evaluation demand marks](evaluation-demand-marks.md) note of 2026-10-21
-proposes this package's observation contract: unmarked positions are forced
-as far as the pattern or printer observes them, `!` requests a weak head and
-`!!` a full normal form, naming the kernel's two existing queries. It is a
-proposal; nothing below is changed by it until DM0 is decided. Its
-measurements show that the prime of `euclid(4)` itself exceeds the
+The [evaluation demand marks](evaluation-demand-marks.md) note of 2026-10-21,
+decided the same day, is this package's observation contract: unmarked
+positions are forced as far as the pattern or printer observes them, `!`
+requests a weak head and `!!` a full normal form, naming the kernel's two
+existing queries. [#304](https://github.com/KanHarI/cubist-math/pull/304)
+implements it for expected-value patterns; printed values (DM3) are next.
+Its measurements show that the prime of `euclid(4)` itself exceeds the
 syntax-depth guard (`K344`) under head queries, so the Euclid acceptance
 below needs an evaluator change as well as an observation contract.
 
@@ -1045,13 +1047,14 @@ Expected-value patterns (L2.9a) and the closed-truncation REPL command
 `witness TERM;` (L2.9b) are implemented in
 [#181](https://github.com/KanHarI/cubist-math/pull/181) and
 [#182](https://github.com/KanHarI/cubist-math/pull/182), after this roadmap's
-investigation. Patterns currently match `result.normal`, after full
-normalization: a `_` hole saves no evaluation work. Thus the existing form
-`evaluate euclid(4) expecting (5, _)` still encounters the normalization
-failure, with the same counters as plain `euclid(4)` in the baseline.
-EVAL5 must specify any observation mode that lets this pattern
-avoid forcing the certificate, including its checking and failure contract,
-before changing evaluation behavior. Preserve exact expected-value checks,
+investigation. Until #304, patterns matched `result.normal`, after full
+normalization, so a `_` hole saved no evaluation work, and
+`evaluate euclid(4) expecting (5, _)` failed with the same counters as plain
+`euclid(4)` in the baseline. Since #304 a pattern computes each part only as
+far as it observes it: that pattern no longer forces the certificate, but it
+still fails with `K344` at the prime, which is itself too deep, and its
+`!!(5, _)` twin keeps the full normalization measured. The demand marks
+note specifies the observation mode, its checking and its failure contract. Preserve exact expected-value checks,
 the distinction from full normalization and witness readout's checked type.
 
 **Acceptance:** users can inspect the number and certificates of a Euclid

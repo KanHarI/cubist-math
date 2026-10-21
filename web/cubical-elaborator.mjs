@@ -753,9 +753,46 @@ export class NativeCubicalElaborator {
   }
 
   verify(term, expected = null, assumptions = []) {
+    const checked = this.evaluated(term, expected, assumptions);
+    return { ...checked, normal: this.normalForm(checked.expression) };
+  }
+  // A term checked for evaluation, with its assumptions and kernel
+  // extensions, and nothing computed: `expression` is the derived handle
+  // that derivedHead and normalForm compute from.
+  evaluated(term, expected = null, assumptions = []) {
     const checked = this.checkSyntax(term, expected, new Map(assumptions), this.dimensions);
-    const normal = this.syntax.decode(this.kernel.normalize(checked.expression), this.dimensions);
-    return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
+    return { ...checked, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
   }
+  // The normal form of a derived handle, decoded.
+  normalForm(handle) {
+    return this.syntax.decode(this.kernel.normalize(handle), this.dimensions);
+  }
+  // The weak head of a handle, computed once a declaration, as nf's are. The
+  // head of a derived handle, and its data parts (a pair's components, an
+  // injection's value, a constructor's arguments), are recorded as derived,
+  // so that the kernel's normalize accepts them: the evaluation demand marks
+  // normalize the parts a pattern reaches, as `!!` and expression leaves ask
+  // (docs/roadmaps/runtime/evaluation-demand-marks.md, decision 3).
+  // The guard admits normalization only of terms whose reduction
+  // terminates, and these are such terms: the weak head of a closed,
+  // well-typed term is well-typed by subject reduction, and its data parts
+  // are closed, well-typed subterms of it. A query certifies nothing, so no
+  // instruction's acceptance depends on it.
+  derivedHead(handle) {
+    this.kernel.checkDeadline();
+    let head = this.syntax.heads.get(handle);
+    if (head === undefined) { head = this.kernel.head(handle); this.syntax.heads.set(handle, head, Math.max(handle, head)); }
+    const derived = this.kernel.derivedHandles;
+    if (derived?.has(handle)) {
+      derived.add(head);
+      const { root, args } = this.kernel.spine(head);
+      if (root.kind === "Con") args.forEach(part => derived.add(part));
+      else if (!args.length && root.kind === "Pair") derived.add(root.children[1]).add(root.children[2]);
+      else if (!args.length && (root.kind === "Inl" || root.kind === "Inr")) derived.add(root.children[1]);
+    }
+    return head;
+  }
+  // A handle's term as the kernel holds it, nothing reduced.
+  decoded(handle) { return this.syntax.decode(handle, this.dimensions); }
 }
