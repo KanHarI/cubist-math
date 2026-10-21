@@ -265,11 +265,16 @@ async function profiled(program, run, { depth = false } = {}) {
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
   wrap(checker, "derivedHead", "demand", () => top() === "other");
   wrap(kernel, "normalize", "normalize", () => top() !== "normalize", result => { normal = result; });
-  wrap(checker.syntax, "decode", "decode", id => top() !== "decode" && id === normal);
+  // Only the readback of a normal form, inside normalForm, is decode's: the
+  // same handle decoded elsewhere, by a check or a comparison, is not.
+  let readback = false;
+  wrap(checker.syntax, "decode", "decode", id => readback && top() !== "decode" && id === normal);
   // normalForm is normalize and decode, observed by those phases.
   const normalForm = checker.normalForm;
   checker.normalForm = function (handle) {
-    const result = normalForm.call(this, handle);
+    readback = true;
+    let result;
+    try { result = normalForm.call(this, handle); } finally { readback = false; }
     if (!evaluated && handle === term) evaluated = result;
     return result;
   };

@@ -143,8 +143,14 @@ const once = compute => { let done = false, value; return () => done ? value : (
 //     names;
 //   spine(handle), decoded(handle): a term as the kernel holds it, nothing
 //     computed;
-//   elaborate(node, type), source(node), as mismatch takes them.
+//   elaborate(node, type), source(node), as mismatch takes them;
+//   locate(error, node): the error, located at the pattern node whose
+//     demand failed, unless a part inside it already located it.
 export function observe(pattern, handle, type, scope, at, head = null) {
+  try { return observed(pattern, handle, type, scope, at, head); }
+  catch (error) { throw at.locate(error, pattern); }
+}
+function observed(pattern, handle, type, scope, at, head) {
   if (isHole(pattern)) return { shown: head === null ? unevaluated : shownHead(head, at) };
   if (pattern.kind === "demand") {
     if (pattern.mark === "!") return observe(pattern.value, handle, type, scope, at, head ?? at.head(handle, pattern));

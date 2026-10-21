@@ -105,15 +105,22 @@ export function lint(source, ast = parse(source)) {
   // computes its weak head itself, a pair, an injection, a constructor or an
   // expression; !! before an expression, which is compared by its full
   // normal form; and any mark under !!, whose part is fully normalized.
+  // What a part computes by itself, read from its syntax alone: a hole
+  // nothing, typed(T, p) what p does, and anything else at least the part's
+  // weak head. Only an expression surely computes the full normal form: a
+  // name or a call may be a constructor, which computes the weak head and
+  // reads its arguments, and a pair leaves its type uncomputed.
   const hole = node => node?.kind === "name" && node.name === "_";
-  const pattern = node => node && typeof node === "object" && (hole(node) || node.kind === "demand"
-    || Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && pattern(value)));
-  const typed = node => node.kind === "call" && node.fn?.kind === "name" && node.fn.name === "typed";
+  const typedPart = node => node?.kind === "call" && node.fn?.kind === "name" && node.fn.name === "typed"
+    && node.args.length === 2 ? node.args[1] : null;
+  const computesHead = node => typedPart(node) ? computesHead(typedPart(node)) : !hole(node);
+  const expression = node => typedPart(node) ? expression(typedPart(node))
+    : !hole(node) && !["name", "call", "pair", "demand"].includes(node.kind);
   const marked = (mark, at, value, normalized) => {
     if (normalized) warn(at, "W708", `The ${mark} before ${text(value)} asks for nothing more: it is under !!, whose part is fully normalized.`);
-    else if (mark === "!" && !hole(value) && !typed(value))
+    else if (mark === "!" && computesHead(value))
       warn(at, "W709", `The ! before ${text(value)} asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.`);
-    else if (mark === "!!" && !pattern(value))
+    else if (mark === "!!" && expression(value))
       warn(at, "W710", `The !! before ${text(value)} asks for nothing more: an expression is compared by its full normal form.`);
     marks(value, normalized || mark === "!!");
   };
