@@ -1024,6 +1024,15 @@ language-feature work remain outside this track.
 
 ### EVAL5: demand only the result being observed
 
+The [evaluation demand marks](evaluation-demand-marks.md) note of 2026-10-21
+proposes this package's observation contract: unmarked positions are forced
+as far as the pattern or printer observes them, `!` requests a weak head and
+`!!` a full normal form, naming the kernel's two existing queries. It is a
+proposal; nothing below is changed by it until DM0 is decided. Its
+measurements show that the prime of `euclid(4)` itself exceeds the
+syntax-depth guard (`K344`) under head queries, so the Euclid acceptance
+below needs an evaluator change as well as an observation contract.
+
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
 or explicit full-normalization demand. Printing must respect its output
