@@ -1,6 +1,7 @@
 // A contextual session retains source and binding correspondence only.
 // Every request reconstructs the full ordered prefix in a new kernel, runs
 // synchronously at the selected entry, then unwinds and disposes that kernel.
+import { isResourceLimit } from "./resource-limits.mjs";
 import {CubicalProgram} from "./cubical-program.mjs";
 import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayPolicy} from "./cubical-replay-inputs.mjs";
 import {parse,reservedReferences} from "./cubist/parser.mjs";
@@ -17,7 +18,6 @@ import {Goal} from "./translator/proof-goals.mjs";
 import {Scope} from "./translator/elaboration.mjs";
 import {replStatements} from "./repl-session.mjs";
 
-const limits=new Set(["fuel","budget","deadline"]);
 const freeze=value=>{
   if(value&&typeof value==="object"&&!Object.isFrozen(value)) {
     Object.values(value).forEach(freeze);Object.freeze(value);
@@ -336,7 +336,7 @@ export class ContextualSession {
           failure:result.failure??"context",stage:"prefix"});
       }}));
       const result=await replay.check(inputs.modules[inputs.main].text,inputs.main);
-      const stopped=result.outputs.concat(result.imports,result.gaps).find(output=>limits.has(output.failure));
+      const stopped=result.outputs.concat(result.imports,result.gaps).find(output=>isResourceLimit(output.failure));
       answer=stopped?{kind:"unavailable",text:stopped.reason,failure:stopped.failure,stage:"prefix"}
         :unavailable("Replay did not reach the selected scope point.");
     } catch(error) {

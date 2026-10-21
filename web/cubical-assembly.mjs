@@ -26,7 +26,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     { label: "Expression", handle: checked.expression },
     { label: "Checked type", handle: syntax.encode(view.type, dimensions) },
   ];
-  const inferredType = syntax.encode(checked.type, dimensions);
+  const inferredType = checked.typeHandle ?? syntax.encode(checked.type, dimensions);
   if (inferredType !== roots[1].handle) roots.push({ label: "Inferred type", handle: inferredType });
   const context = view.context.map(entry => ({ name: entry.name, label: entry.label ?? entry.name,
     symbol: kernel.symbol(entry.name), handle: syntax.encode(entry.type, dimensions) }));

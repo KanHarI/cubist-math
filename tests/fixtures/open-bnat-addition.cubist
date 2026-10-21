@@ -1,0 +1,18 @@
+// Fixed open-addition inputs for the EVAL4 depth baseline.
+// This fixture checks; the diagnostic tool separately requests full normalization.
+import bnat_notation;
+use bnat;
+
+computable def add_left_32(x : BNat) : BNat := bnat_add(4294967295, x);
+
+computable def add_right_32(x : BNat) : BNat := bnat_add(x, 4294967295);
+
+computable def add_left_64(x : BNat) : BNat := bnat_add(18446744073709551615, x);
+
+computable def add_right_64(x : BNat) : BNat := bnat_add(x, 18446744073709551615);
+
+computable def add_left_128(x : BNat) :
+  BNat := bnat_add(340282366920938463463374607431768211455, x);
+
+computable def add_right_128(x : BNat) :
+  BNat := bnat_add(x, 340282366920938463463374607431768211455);

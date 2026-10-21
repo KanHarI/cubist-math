@@ -4,7 +4,6 @@
 // number of arguments match no builtin, and the call is an ordinary one.
 import {T,fill,finiteLevel,onFace} from "./core.mjs";
 import {interval as I,face as F} from "./lattice.mjs";
-import {freeDimensions} from "./dimension-slots.mjs";
 import {equiv,withNativeReferences} from "./equivalence.mjs";
 import {halfAdjointEquiv,publicUnivalencePath,publicUnivalenceBeta} from "./public-equivalence.mjs";
 import {dependentPathToTransport,transportToDependentPath} from "./path-over.mjs";
@@ -317,8 +316,8 @@ function apd({n,scope,tr,inferred}) {
 function apd_path({n,scope,tr,inferred}) {
   if(n.args.length!==2)return;
   const fn=tr(n.args[0],null),p=tr(n.args[1],null);
-  const ft=scope.nf(inferred(fn).type),pt=scope.nf(inferred(p).type);
-  if(ft.tag!=="Pi"||pt.tag!=="Path"||freeDimensions(pt.family).has(pt.dim))
+  const ft=scope.nf(inferred(fn).type),pt=scope.homogeneousPath(scope.nf(inferred(p).type));
+  if(ft.tag!=="Pi"||!pt)
     throw Error("apd_path needs a dependent function and a homogeneous path.");
   scope.expect(pt.family,ft.domain);
   const dim=scope.fresh("i"),index=T.at(p,I.variable(dim));
@@ -337,8 +336,8 @@ function transport({n,scope,tr,inferred}) {
 function path_induction({n,scope,tr,inferred}) {
   if(n.args.length!==6)return;
   const [A,C,d,x,y,p]=n.args.map(a=>tr(a,null)),i=scope.fresh("i"),j=scope.fresh("j");
-  const pt=scope.nf(inferred(p).type);
-  if(pt.tag!=="Path"||!scope.equal(pt.family,A)||!scope.equal(pt.left,x)||!scope.equal(pt.right,y))throw Error("Path induction endpoints/carrier do not match.");
+  const pt=scope.homogeneousPath(scope.nf(inferred(p).type));
+  if(!pt||!scope.equal(pt.family,A)||!scope.equal(pt.left,x)||!scope.equal(pt.right,y))throw Error("Path induction endpoints/carrier do not match.");
   const segment=T.line(j,A,T.at(p,I.meet(I.variable(i),I.variable(j))));
   const family=T.app(T.app(T.app(C,x),T.at(p,I.variable(i))),segment);
   return T.comp(i,family,[],T.app(d,x));

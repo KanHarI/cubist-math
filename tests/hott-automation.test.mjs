@@ -74,7 +74,7 @@ const rejectedProbes = {
   rejected_sequential_line:{reason:/^Type mismatch: found .+, expected .+\./},
   rejected_convertible_rule_refl:{reason:/^Type mismatch: found .+, expected .+\./},
   rejected_independent_fillers:{reason:/^Type mismatch: found .+, expected .+\./},
-  rejected_sym_pathp:{reason:/Unbound cubical dimension/,until:"E0 or A1a"},
+  rejected_sym_pathp:{reason:/Path reversal requires a homogeneous path/,until:"E0 or A1a"},
   rejected_rule_constant:{reason:/not determined by the matched side/,until:"A1"},
   rejected_rule_ap:{reason:/not determined by the matched side/,until:"A1"},
   use_ru:{reason:/unresolved equality goal/,until:"A1"},

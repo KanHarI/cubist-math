@@ -23,6 +23,38 @@ normalize under their face conditions, shared universe levels avoid repeated
 expansion, and interrupted substitution queries report failure consistently.
 This addresses the open `bint_mul` failure found during NUM2 without changing
 the arithmetic definitions or raising kernel limits.
+The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
+addresses false dependence in constant path families and local reduction
+budget failures. The [nondependent descent change](../../reports/nondependent-quotient-descent.md)
+closes the generic quotient gate. The quotient-free transport gates and
+binary-rational inverse release remain open; these fixes do not complete NUM2.
+The [explicit normalization stack](../../reports/normalization-stack.md) covers
+the existing full normalizer's traversal. The
+[weak-head tail loop](../../reports/weak-head-tail.md) also removes native
+recursion for chains of definition unfolding and tail contractions;
+prerequisite head queries and composition helpers remain guarded native calls.
+The [bounded substitution traversals](../../reports/substitution-stack.md)
+move term/dimension substitution, capture-avoidance renaming and dependency
+scans onto explicit stacks, including tube lists inside substitution and
+free-dimension analysis. Composition, Glue and HIT tube helpers remain
+recursive. The syntax-depth guard remains. The
+[comparison and level worklists](../../reports/comparison-level-stacks.md)
+replace native recursion in syntactic and tube-list comparison, cumulative
+type descent, level arithmetic and level canonicalization. Composition/Glue/HIT
+tube construction, the Glue-step reduction comparison (`normal_agree`/
+`parts_agree`), prerequisite head queries and frontend traversals remain
+open, and the fixed four larger BNat cases still hit the syntax guard.
+Joint EVAL3/EVAL4 evaluator integration and the remaining protected traversals
+are still open.
+A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)
+now records the remaining failure. Its
+[completion path](#rational-full-normalization-completion-path) below assigns
+the structural work to EVAL3/EVAL4/EVAL8 and keeps full rational normalization
+separate from lazy data execution.
+The [selected rational literal diagnosis](../../reports/rational-literal-normalization.md)
+adds a fixed 100,000-tick `SameRatio` reproduction using main's library alone.
+It isolates expensive retained relation syntax without the BQ parser and
+does not close the existing inverse or transport gates.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -698,9 +730,14 @@ quotient-effectiveness family parameterized by a large representative.
 The constructor, arithmetic, equality and domain laws add no assumptions;
 this source-level change does not alter the kernel or its resource limits.
 
-The domain contracts fully normalize nonzero-product certificates with
-64/128-bit components and check an instance of `fraction_field`. They do not
-establish full rational-value normalization. A separate probe before the
+The domain contracts check assumption-free nonzero-product certificates with
+64/128-bit components and an instance of `fraction_field`. Disequalities are
+checked as inhabited types, rather than by fully normalizing their proof
+functions: `evaluate empty P by proof;` checks evidence of `P -> Void`, and
+`evaluate nonempty P by proof;` checks evidence of `P`. Neither requires a
+particular proof normal form. Equality decisions retain checks of
+their computed branch. These tests do not establish full rational-value
+normalization. A separate probe before the
 open-normalization fix,
 `evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
 bint_zero_ne_one).one expecting _;`, exhausted the term arena (`K347`) even
@@ -793,6 +830,14 @@ literals and rendering work on large binary magnitudes without allocation
 proportional to their unary value. Update consumers and notation for the
 new APIs; keep the archive checking under the documented imports and
 unary-natural compatibility policy.
+Full small and wide rational inverse contracts must normalize, including
+their surviving certificates and annotations, before releasing the binary
+rational API and switching the default `Z`/`Q`. Draft #283 remains blocked
+on these contracts. This is an outcome gate, not a requirement to finish
+every EVAL3–EVAL8 package: an earlier general kernel/elaborator fix can satisfy
+it, together with any needed NUM proof-algorithm change. The
+[completion path](#rational-full-normalization-completion-path)
+tracks the structural work currently planned to address the failures.
 Record the new library's source-representation gains separately from
 evaluator gains.
 
@@ -909,6 +954,93 @@ capture/shadowing and unused-argument cases; `euclid(4).1 = 5` and
 diagnostic, never a host stack overflow. Measure retained closure memory
 as well as avoided syntax allocation.
 
+### Rational full-normalization completion path
+
+The [nondependent quotient-descent change](../../reports/nondependent-quotient-descent.md)
+passes the unchanged generic quotient's fixed gate by generating its squash
+clause with the constant motive already known. It also enables a completed
+small-inverse reference on the #283 diagnostic branch under the normal work
+ceiling. This is a library
+computation change, not completion of the evaluator stages below: the new
+quotient-free setness-transport fixture and the wide rational remain open.
+
+Planned on 2026-10-19; none of the stages below is claimed complete by the
+diagnostic experiments. This is part of the existing runtime track and NUM2
+release work. The original generic quotient reproduction is now a retained
+regression for the library fix. The [constant-transport reproduction](../../reports/nondependent-quotient-descent.md#the-evaluator-reproduction-remains)
+isolates the remaining Glue/composition workload without a quotient,
+arithmetic or a concrete setness proof. Its `moved_setness` and `moved_path`
+functions are the evaluator gates. The wide rational additionally exposes
+unary expansion in mixed closed/open BNat law proofs.
+
+1. **EVAL3/EVAL4: shared execution.** Implement closures, environments,
+   memoized thunks and an explicit evaluation stack together. Compile
+   ordinary admitted constructor/eliminator metadata, including higher-order
+   recursive positions. Keep annotations and certificates available as
+   delayed computations. Preserve checked-input, assumption, cancellation,
+   work and memory accounting contracts. Use the Euclid projection acceptance
+   cases above to validate this stage; they do not close rational full
+   normalization.
+2. **EVAL4: depth-independent traversal and readback.** Follow the actual
+   substitution, scope/dimension, restriction, comparison and syntax-readback
+   paths that remain recursive, including JavaScript syntax decoding,
+   printing, `expecting` matching and driver alpha comparison. Replace native/host stack dependence with
+   explicit bounded work, preserving capture avoidance and shared graphs.
+   Separate intermediate growth from the depth of the required output.
+   Removing a depth guard is allowed only after its protected traversals have
+   resource-safe replacements; increasing 512 alone is not the fix. Acceptance
+   uses the [fixed 32/64/128-bit open-addition and bitwise-proof baseline](../../reports/open-bnat-normalization-baseline.md).
+   The larger left-addition and proof cases hit the current 512 syntax-depth
+   guard. A temporary diagnostic exposes compact completed addition outputs
+   and the 64-bit proof. With the explicit normalization stack, the same
+   diagnostic also completes the 128-bit proof at 5,604 nodes and depth 1,436;
+   see the [normalization-stack report](../../reports/normalization-stack.md).
+   Production guards remain unchanged. All nine
+   complete-function cases must normalize within the report's stated work,
+   deadline, memory and stack constraints, with no host overflow. Raising either
+   guard or a memory/stack limit is not a fix; retain the fixed fixtures through
+   the traversal changes. The kernel probe does not cover the separate
+   JavaScript decoding, printing, matching and comparison requirements.
+3. **Applicable EVAL8 work: cubical execution.** Extend the correspondence
+   and implementation to term/level/dimension binders, paths and endpoints,
+   face restriction, composition, transport, Glue and higher elimination.
+   Represent shared delayed substitutions/restrictions without repeatedly
+   rebuilding proof syntax. Use `moved_setness` and `moved_path` from the
+   constant-transport fixture and their fixed-budget [completion gate](../../reports/rational-normalization.md#what-counts-as-fixing-it)
+   at this stage. Unsupported execution must be explicit or cross
+   a specified typed fallback boundary; it must not repeatedly restart the
+   same work. This semantic work is expected to be needed for the rational failure even if
+   EVAL5's user-facing observation interface has not shipped.
+4. **EVAL5/EVAL8: complete typed normalization.** Force every surviving proof
+   and annotation when a full normal form is requested, with explicit-stack
+   readback and bounded memory. Validate normal forms, eta, instruction
+   isolation, lifecycle and canonicity under the applicable EVAL8 gates.
+   Measure complete readback of both retained transport functions, and keep
+   the generic quotient regression passing. Measure the quotient with
+   concrete `prop_type_is_set(U0)` evidence as well: the parameterized case
+   is now cheap, but `related_to` still uses that concrete proof. Retain full
+   rational certificate measurements, not just projections. If output itself is too large, report that separately
+   from avoidable evaluator work. No proof irrelevance or transport
+   regularity rule is introduced to make the workload pass.
+5. **NUM proof algorithms and release.** Replace the demonstrated unary
+   fallback in BNat arithmetic-law proofs with checked bitwise arguments
+   where needed, measuring that source change separately. Retain the
+   arithmetic-free quotient regression and the unchanged quotient-free
+   transport reproduction throughout. A library improvement does not by
+   itself satisfy the evaluator gates. Re-run full small and
+   wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
+   migration checks. Those results gate NUM2's binary-rational release and
+   default migration; construction work can proceed independently, and an
+   earlier general fix can satisfy the gates without all EVAL packages.
+
+The implementation order can overlap the source-proof and cubical work as
+dependencies allow. The ordinary-data evaluator alone is not predicted to
+fix Glue normalization, and an explicit stack alone cannot make an enormous
+required normal form small. Each implementation PR needs Claude Code Opus
+5.5 xhigh review (at most eight rounds), comparing new findings with prior
+reviews and preserving the existing computation rules. Reals and unrelated
+language-feature work remain outside this track.
+
 ### EVAL5: demand only the result being observed
 
 Provide typed readback for demanded data and a separately specified way to
@@ -1011,7 +1143,11 @@ earlier under its narrower contract without making that claim.
 Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them, including
 numerical induction and recursion. NUM2's new binary-backed `Z` and `Q`
 follow the natural semiring foundations. These packages are independent
-of the closure evaluator.
+of the closure evaluator for their mathematical construction. NUM2's
+binary-rational release and default migration additionally require the full
+normalization contracts in its acceptance section. The
+[completion path](#rational-full-normalization-completion-path) coordinates
+the applicable EVAL work; it does not require finishing all EVAL packages.
 EVAL2 can proceed independently once its cache contract is clear. Design
 EVAL3/EVAL4 together, then specify EVAL5's observation interface and complete
 the relevant EVAL8 review before a runtime becomes a default path.

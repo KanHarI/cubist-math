@@ -9,7 +9,7 @@
   </head>
   <body>
     <header><a class="brand" href="index.html">⊢ Cubist <span>Kernel workbench</span></a>
-      <nav aria-label="Main navigation"><a href="index.html">Proof highlights</a><a href="files.html">Files</a><a href="kernel.html">Kernel reference</a><a href="language.html">Language reference</a><a href="repl.html">REPL</a><a href="https://github.com/KanHarI/cubist-math">GitHub repository</a><a id="source-back" href="proof.html">← Back to Cubist</a></nav>
+      <nav aria-label="Main navigation"><a href="index.html">Proof highlights</a><a href="files.html">Files</a><a href="reference/kernel-overview.html">Kernel reference</a><a href="language.html">Language reference</a><a href="repl.html">REPL</a><a href="https://github.com/KanHarI/cubist-math">GitHub repository</a><a id="source-back" href="proof.html">← Back to Cubist</a></nav>
     </header>
     <main>
       <h1>Checked cubical terms</h1>
@@ -17,6 +17,7 @@
       <div class="toolbar">
         <button id="back" disabled>← Back</button>
         <button id="unhighlight">Un-highlight</button>
+        <button id="copy-trace" title="Copy manual operations, failures and native AST excerpts since this page load">Copy trace</button>
         <label for="workbench-view">View</label>
         <select id="workbench-view"><option value="math">Mathematical</option><option value="assembly">Kernel AST</option><option value="graph">Kernel graph</option></select>
         <button id="check" data-math-option disabled>Check edited expression</button>
@@ -24,6 +25,8 @@
         <label data-math-option><input id="truncation-sugar" type="checkbox" checked /> Truncation ‖A‖</label>
         <label data-math-option><input id="identity-sugar" type="checkbox" checked /> Equality as =<sub>T</sub></label>
       </div>
+      <p id="trace-status" class="hint" role="status">Manual operations are recorded from this page load.</p>
+      <textarea id="trace-fallback" hidden readonly rows="12" aria-label="Trace to copy manually"></textarea>
       <div id="diagnostic" role="alert" hidden></div>
       <p id="reduction-status" class="hint" role="status"></p>
       <button id="more-reduction-sites" hidden>Show more reduction sites</button>
@@ -61,6 +64,47 @@
         <section id="assembly-view" hidden aria-label="Kernel abstract syntax tree">
           <p class="hint">The checked term as the kernel stores it: an abstract syntax tree of native nodes, typeset above. Each row is one node: its C constructor opcode, payload, and operands. %n are term handles local to this replay session; identical syntax is one node, listed once, so the tree is shared as a graph. Zero marks an unused operand or the end of a list.</p>
           <div id="assembly-math" class="assembly-math"></div>
+          <fieldset id="kernel-controls" disabled>
+            <legend>Reduce a native occurrence</legend>
+            <p class="hint">Select an operand to focus that occurrence. Buttons offer relevant reductions, including at the immediate parent when indicated. “Try” operations have side conditions that the kernel checks when applied. The highlighted AST row is the current occurrence; table handle links inspect other nodes.</p>
+            <div class="toolbar">
+              <label for="kernel-side">Root</label>
+              <select id="kernel-side"><option value="expression">Expression</option><option value="type">Judgement type</option></select>
+              <button id="kernel-root">Root</button><button id="kernel-parent">Parent</button>
+              <button id="kernel-show">Show selected node in AST</button>
+            </div>
+            <div id="kernel-preview" class="kernel-preview" aria-label="Selected subexpression"></div>
+            <p id="kernel-selection" role="status"></p>
+            <div id="kernel-operands" class="toolbar" aria-label="Selected occurrence operands"></div>
+            <div id="kernel-actions" class="toolbar" role="group" aria-label="Relevant reductions"></div>
+            <div class="toolbar">
+              <label for="kernel-rule">Operation</label>
+              <select id="kernel-rule">
+                <optgroup label="Targeted kernel rules">
+                  <option value="beta">β — function application</option>
+                  <option value="delta">δ — unfold definition</option>
+                  <option value="iota">ι — eliminator / projection</option>
+                  <option value="path">Path — application / endpoint</option>
+                  <option value="face">Face — composition boundary</option>
+                  <option value="glue">Glue — eta rule</option>
+                  <option value="split">Split — composition tube</option>
+                </optgroup>
+                <optgroup label="May perform many reductions">
+                  <option value="whnf">WHNF — weak head / cubical computation</option>
+                  <option value="normalize">Normalize — full normal form</option>
+                </optgroup>
+              </select>
+              <label for="kernel-budget">Work budget (ticks)</label>
+              <input id="kernel-budget" type="number" min="1" max="10000000" step="1" value="100000" />
+              <button id="kernel-apply">Apply operation</button>
+            </div>
+            <details id="kernel-tree">
+              <summary>Native AST subtree</summary>
+              <p class="hint">The selected occurrence without numeral shorthand. Expand branches to read their native operands, or Select a node to operate on it. Definition references are leaves; δ unfolds them in the checked term.</p>
+              <div id="kernel-tree-content"></div>
+            </details>
+            <p class="hint">Each operation issues one checked kernel instruction at the selected path. WHNF computes composition, transport and Glue heads, and can eta-contract; Normalize also reduces inside terms. Both can perform many reductions. Glue is the targeted eta rule and can normalize its side conditions. Filling elaborates to composition; follow operands to inspect its tubes and partial elements. The budget is per instruction and is not automatically increased. Back undoes an accepted operation; Kernel graph shows its derivation.</p>
+          </fieldset>
           <p id="assembly-status" role="status"></p>
           <div id="assembly-listing"></div>
           <div class="toolbar">
@@ -69,7 +113,7 @@
           </div>
         </section>
         <section id="graph-view" hidden aria-label="Kernel judgement graph">
-          <p class="hint">The inspected term derived again by the instruction kernel, one THTH-style rule per judgement. Each judgement lists the judgements it was derived from and those that use it; a step names the subterm it contracts. The graph shares repeated derivations, and <em>term</em> and <em>type</em> open a node of the syntax graph in the Kernel AST.</p>
+          <p class="hint">The checked term's instruction derivation, one THTH-style rule per judgement, including manual native steps. Each judgement lists the judgements it was derived from and those that use it; a step names the subterm it contracts. The graph shares repeated derivations, and <em>term</em> and <em>type</em> open a node of the syntax graph in the Kernel AST.</p>
           <p id="graph-status" role="status"></p>
           <div id="graph-listing"></div>
         </section>

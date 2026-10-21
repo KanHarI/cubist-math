@@ -125,7 +125,7 @@ const element = (tag, className, text) => {
   if (text !== undefined) node.textContent = text;
   return node;
 };
-const kernelPage = new URL("../kernel.html", import.meta.url).href;
+const kernelPage = new URL("kernel-overview.html", import.meta.url).href;
 function sourceCode(text) {
   const code = element("code");
   render(code, text);
@@ -138,7 +138,7 @@ function derivationList({ steps, truncated }) {
   const section = element("div", "kernel-derivation");
   const legend = element("p", "derivation-note");
   const reference = element("a", null, "kernel reference");
-  reference.href = new URL("../kernel.html#instructions", import.meta.url).href;
+  reference.href = new URL("kernel-instructions.html#names", import.meta.url).href;
   legend.append(`The instruction kernel’s derivation: each of the ${steps.length} steps is one rule applied to earlier steps, `
     + "and the comment above it is the judgement or context it derives. A reduction step names the position it contracts. The ",
     reference, " explains the rules.");

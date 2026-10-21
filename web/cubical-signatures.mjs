@@ -18,7 +18,7 @@ export function modifierCode(modifier) {
   if (modifier === "set") return 2;
   const n = modifier?.trunc;
   if (Number.isInteger(n) && n >= -1 && n <= TRUNCATION_MAX) return n + 2;
-  if (Number.isInteger(n) && n > TRUNCATION_MAX) throw new Error(`trunc(n) is supported up to n = ${TRUNCATION_MAX}.`);
+  if (Number.isInteger(n) && n > TRUNCATION_MAX) throw Object.assign(new Error(`trunc(n) is supported up to n = ${TRUNCATION_MAX}.`), { kind: "resource" });
   throw new Error("A sort is type, set, prop or trunc(n) for an integer n ≥ -1.");
 }
 
@@ -42,7 +42,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
                                               driver = kernel.instructionDriver ??= new InstructionDriver(kernel) } = {}) {
   if (kernel.signatures.has(spec.name)) throw new Error(`The declared type ${spec.name} already exists.`);
   const g = driver.graph, levels = spec.levels ?? [], parameters = spec.parameters ?? [];
-  if (levels.length > 24 || parameters.length > 64) throw new Error("A signature has too many parameters.");
+  if (levels.length > 24 || parameters.length > 64) throw Object.assign(new Error("A signature has too many parameters."), { kind: "resource" });
   // Level entries first, then each parameter bound at its derived type.
   let scope = new Map([["dims", 0n]]);
   const levelEntries = levels.map(({ name }) => {

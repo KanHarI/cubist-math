@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="The kernel's syntax: the term arena and its handles, interval and face formulas, every primitive node with its children, payload and binder scope, substitution, restriction and comparison." />
+    <title>Cubist · 15. Kernel terms: the arena and its primitives</title>
+    <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../files.html">Files</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html" aria-current="true">Language reference</a>
+        <a href="../repl.html">REPL</a>
+        <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 15</p>
+        <h1>Kernel terms: the arena and its primitives</h1>
+        <p class="lead">The kernel's syntax: the term arena and its handles, interval and face formulas, every primitive node with its children, payload and binder scope, substitution, restriction and comparison.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="theories.html">Theories and models</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li class="current"><a href="kernel-terms.html" aria-current="page">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#arena">The term arena</a></li>
+            <li><a href="#formulas">Interval and face formulas</a></li>
+            <li><a href="#opcodes">Every primitive</a></li>
+            <li><a href="#groups">The primitives by group</a></li>
+            <li><a href="#binders">Binder scopes</a></li>
+            <li><a href="#substitution">Substitution and restriction</a></li>
+            <li><a href="#comparison">Comparison, levels and cumulativity</a></li>
+            <li><a href="#listing">Reading an arena listing</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="arena">
+            <h2>The term arena</h2>
+            <p>Every kernel term is a <strong>node</strong> in one arena, and a term is named by its <strong>handle</strong>, a positive integer (<code>cc_term</code>); the handle <code>0</code> means absent, or an error. A node is immutable and holds its <strong>kind</strong>, one of the primitives below (<code>cc_term_kind</code>); a <strong>payload</strong>, one 32-bit number whose meaning depends on the kind: a variable's symbol, a binder's bound symbol or dimension, a formula, a definition, signature or constructor index, or a level constant; and up to four <strong>children</strong>, the handles of its operand terms in slots <code>a</code>, <code>b</code>, <code>c</code>, <code>d</code>. A missing child is <code>0</code>, and only the slots the table below marks optional may be missing. Nodes are built by <code>cc_kernel_term(kind, payload, a, b, c, d)</code>, read back by <code>cc_kernel_node</code>, and the <a href="../workbench.html">kernel workbench</a> and the command-line checker's <code>assembly</code> print them as the <a href="#listing">listing</a> at the end of this chapter.</p>
+            <p>Building a node certifies nothing: it is inert syntax until a judgement mentions it (<a href="kernel-overview.html#trust">chapter 14</a>). The arena does refuse a few malformed shapes outright: a retired kind, a missing child in a required slot, a child handle that does not exist, a universe node with a payload (an older encoding), and a formula payload that names no registered formula. Three facts about nodes matter when reading the kernel:</p>
+            <ul>
+              <li><strong>Sharing.</strong> With <code>CC_SHARE_SYNTAX</code>, on by default, identical syntax is one node: building a node with the same kind, payload and children as an existing one returns the existing handle. So two handles are equal exactly when the terms are identical, a stronger relation than equality up to bound names; the kernel's comparison (<a href="#comparison">below</a>) uses it as a fast path only.</li>
+              <li><strong>Depth.</strong> Each node records its depth, one more than its deepest child; a term deeper than 512 is refused as a resource limit. The large traversals, substitution, comparison and normalization, run on explicit stacks rather than by native recursion; weak-head reduction and a few list walks recurse natively under a depth guard of 1024.</li>
+              <li><strong>Dependency masks.</strong> Each node carries two 64-bit masks: <code>symbols</code>, a Bloom filter over the symbols of the variables occurring in it, and <code>dims</code>, the interval dimensions it may mention. A clear bit proves absence, so substitution and comparison skip subterms without visiting them; the dimension mask is refined to exactly the free dimensions the first time a term's free dimensions are computed.</li>
+            </ul>
+            <p>Between checkpoints the arena only grows (<a href="kernel-overview.html#definitions">chapter 14</a>). Rollback truncates it, and commit compacts it, so a handle made after a checkpoint is valid until the next rollback or commit.</p>
+          </section>
+          <section id="formulas">
+            <h2>Interval and face formulas</h2>
+            <p>Two kinds of formula appear as payloads: <strong>interval expressions</strong> such as <code>i</code>, <code>~i</code>, <code>i &amp; j</code> and <code>i | j</code> (<a href="cubical.html#meets-and-joins">chapter 11</a>), and <strong>face formulas</strong>, disjunctions of conjunctions of endpoint equations such as <code>(i = 0) ∨ (i = 1 ∧ j = 0)</code>. They are registered with <code>cc_kernel_formula</code>, numbered from <code>1</code> in order of registration, and stored once each; a formula payload is this number. Both kinds share one representation, a <strong>disjunctive normal form</strong>: a list of clauses, each a pair of 64-bit sets of dimensions, <code>positive</code> and <code>negative</code>, kept without any clause that contains another (absorption) and compared as sets. The empty list is the constant <code>0</code>; the single empty clause is the constant <code>1</code>. The two sorts read the same bits differently:</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Sort</th><th>Bit <code>i</code> in <code>positive</code></th><th>Bit <code>i</code> in <code>negative</code></th><th>Both bits in one clause</th></tr></thead>
+              <tbody>
+                <tr><td>interval</td><td>the coordinate <code>i</code></td><td>the reversed coordinate <code>~i</code></td><td>allowed: <code>i &amp; ~i</code> is a meet, not <code>0</code></td></tr>
+                <tr><td>face</td><td>the equation <code>i = 1</code></td><td>the equation <code>i = 0</code></td><td>contradictory: the clause is dropped</td></tr>
+              </tbody>
+            </table></div>
+            <p>The interval expressions form a free De Morgan algebra, not a Boolean one: <code>i &amp; ~i</code> is not <code>0</code>, and reversal (<code>cc_reverse</code>) exchanges meets with joins and each coordinate with its reversal. Substituting an interval expression for a coordinate (<code>cc_interval_substitute</code>) replaces <code>i</code> by the expression and <code>~i</code> by its reversal in every clause. The face operations are built on these: <code>cc_endpoint</code> turns an interval expression <code>r</code> into the face <code>r = 1</code> (one clause per monomial, each factor equal to <code>1</code>) or <code>r = 0</code> (every monomial has a factor equal to <code>0</code>); <code>cc_face_substitute</code> replaces <code>i = 1</code> and <code>i = 0</code> in a face by <code>r = 1</code> and <code>r = 0</code>; <code>cc_face_forall</code>, the universal quantification <code>∀i. φ</code>, keeps exactly the clauses of <code>φ</code> that do not mention <code>i</code> (so <code>∀i. (i = 0) ∨ (i = 1)</code> is <code>0</code>, not <code>1</code>); and <code>cc_face_entails</code> decides <code>ψ ⊢ φ</code> as: every clause of <code>ψ</code> contains some clause of <code>φ</code>. A formula may hold at most 4096 clauses, and an operation whose expansion would exceed a work bound is refused as a resource limit, never silently simplified.</p>
+          </section>
+          <section id="opcodes">
+            <h2>Every primitive</h2>
+            <p>The table lists every value of <code>cc_term_kind</code>, by its number in the enumeration (the opcode the workbench shows in brackets), with its children in slot order, its payload, which child slots its payload binds in, and the Cubist construct that elaborates to it. Twelve numbers are <strong>retired</strong>: the former primitive natural numbers, W types and pushouts are now declared types, and their kinds are kept only so that the numbers stay stable; building one is refused. The encoding has an ABI version, <code>3</code>, which a client built for another version must not share handles with.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Kind</th><th>№</th><th>Children (<code>a</code>, <code>b</code>, <code>c</code>, <code>d</code>)</th><th>Payload</th><th>Binds in</th><th>In Cubist</th></tr></thead>
+              <tbody>
+                <tr><td><code>CC_U</code></td><td>1</td><td>level</td><td>—</td><td>—</td><td><code>U0</code>, <code>U(ℓ)</code>: a universe</td></tr>
+                <tr><td><code>CC_VAR</code></td><td>2</td><td>—</td><td>symbol</td><td>—</td><td>a variable, of a term or a universe level</td></tr>
+                <tr><td><code>CC_PI</code></td><td>3</td><td>domain, body</td><td>bound symbol</td><td><code>b</code></td><td><code>forall x : A. B</code>, <code>A -&gt; B</code></td></tr>
+                <tr><td><code>CC_LAM</code></td><td>4</td><td>domain, body</td><td>bound symbol</td><td><code>b</code></td><td><code>fun (x : A) =&gt; b</code></td></tr>
+                <tr><td><code>CC_APP</code></td><td>5</td><td>function, argument</td><td>—</td><td>—</td><td><code>f(a)</code>, a constructor's or eliminator's argument</td></tr>
+                <tr><td><code>CC_SIGMA</code></td><td>6</td><td>domain, body</td><td>bound symbol</td><td><code>b</code></td><td><code>exists x : A. B</code>, <code>A and B</code></td></tr>
+                <tr><td><code>CC_PAIR</code></td><td>7</td><td>type, first, second</td><td>—</td><td>—</td><td><code>(a, b)</code>, with its <code>Σ</code> type</td></tr>
+                <tr><td><code>CC_FST</code></td><td>8</td><td>pair</td><td>—</td><td>—</td><td><code>p.1</code></td></tr>
+                <tr><td><code>CC_SND</code></td><td>9</td><td>pair</td><td>—</td><td>—</td><td><code>p.2</code></td></tr>
+                <tr><td><code>CC_NAT</code></td><td>10</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_ZERO</code></td><td>11</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_SUCC</code></td><td>12</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_NATREC</code></td><td>13</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_UNIT</code></td><td>14</td><td>—</td><td>—</td><td>—</td><td><code>Unit</code></td></tr>
+                <tr><td><code>CC_POINT</code></td><td>15</td><td>—</td><td>—</td><td>—</td><td><code>tt</code></td></tr>
+                <tr><td><code>CC_PATH</code></td><td>16</td><td>family, left, right</td><td>dimension</td><td><code>a</code></td><td><code>x = y</code>, <code>PathP(fun i =&gt; A, x, y)</code></td></tr>
+                <tr><td><code>CC_PLAM</code></td><td>17</td><td>family, body</td><td>dimension</td><td><code>a</code>, <code>b</code></td><td><code>path i =&gt; t</code>; a constant one is shown as <code>refl</code></td></tr>
+                <tr><td><code>CC_PAPP</code></td><td>18</td><td>path, annotation (optional)</td><td>interval formula</td><td>—</td><td><code>p @ r</code>; the annotation is the path's type</td></tr>
+                <tr><td><code>CC_COMP</code></td><td>19</td><td>family, tubes (optional), base</td><td>dimension</td><td><code>a</code>, tube terms</td><td><code>comp(…)</code>, <code>transport</code>, <code>trans</code></td></tr>
+                <tr><td><code>CC_TUBE</code></td><td>20</td><td>term, next tube (optional)</td><td>face formula</td><td>—</td><td>a wall <code>face(i, 0, …)</code>, one cell of a list</td></tr>
+                <tr><td><code>CC_VOID</code></td><td>21</td><td>—</td><td>—</td><td>—</td><td><code>Void</code></td></tr>
+                <tr><td><code>CC_ABORT</code></td><td>22</td><td>type, impossible</td><td>—</td><td>—</td><td>the eliminator of <code>Void</code></td></tr>
+                <tr><td><code>CC_W</code></td><td>23</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_SUP</code></td><td>24</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_WREC</code></td><td>25</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_SUM</code></td><td>26</td><td>left, right</td><td>—</td><td>—</td><td><code>A or B</code></td></tr>
+                <tr><td><code>CC_INL</code></td><td>27</td><td>sum type, value</td><td>—</td><td>—</td><td><code>left(a)</code></td></tr>
+                <tr><td><code>CC_INR</code></td><td>28</td><td>sum type, value</td><td>—</td><td>—</td><td><code>right(b)</code></td></tr>
+                <tr><td><code>CC_SUMREC</code></td><td>29</td><td>motive, left case, right case, value</td><td>—</td><td>—</td><td><code>match</code> on <code>A or B</code></td></tr>
+                <tr><td><code>CC_UNITREC</code></td><td>30</td><td>motive, point case, value</td><td>—</td><td>—</td><td><code>match</code> on <code>Unit</code></td></tr>
+                <tr><td><code>CC_GLUE</code></td><td>31</td><td>base, system (optional)</td><td>—</td><td>—</td><td><code>Glue(A, face(…), …)</code></td></tr>
+                <tr><td><code>CC_GLUE_SYSTEM</code></td><td>32</td><td>type, equivalence, next (optional)</td><td>face formula</td><td>—</td><td>a piece <code>face(i, 0, T, e)</code></td></tr>
+                <tr><td><code>CC_GLUE_TERM</code></td><td>33</td><td>Glue type, base, tubes (optional)</td><td>—</td><td>—</td><td><code>glue(a, face(…), …)</code></td></tr>
+                <tr><td><code>CC_UNGLUE</code></td><td>34</td><td>Glue type, value</td><td>—</td><td>—</td><td><code>unglue(g)</code></td></tr>
+                <tr><td><code>CC_DEFREF</code></td><td>35</td><td>—</td><td>definition index</td><td>—</td><td>the name of a checked definition</td></tr>
+                <tr><td><code>CC_PUSHOUT</code></td><td>36</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_PUSH_LEFT</code></td><td>37</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_PUSH_RIGHT</code></td><td>38</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_PUSH_PATH</code></td><td>39</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_PUSH_ELIM</code></td><td>40</td><td colspan="4">retired; refused</td></tr>
+                <tr><td><code>CC_HCOMP</code></td><td>41</td><td>type, tubes (optional), base</td><td>dimension</td><td>tube terms only</td><td>formal composition in a higher inductive type</td></tr>
+                <tr><td><code>CC_TRANS</code></td><td>42</td><td>family, face tube, base</td><td>dimension</td><td><code>a</code></td><td>transport in a higher inductive type</td></tr>
+                <tr><td><code>CC_LBOUND</code></td><td>43</td><td>—</td><td>tier; only <code>1</code>, the bound <code>ω</code>, occurs</td><td>—</td><td>the type of a universe variable <code>U &lt; UU0</code></td></tr>
+                <tr><td><code>CC_LCONST</code></td><td>44</td><td>—</td><td>tier · 65536 + n</td><td>—</td><td>a constant level: <code>U3</code>'s is <code>3</code>, <code>UU0</code>'s is <code>ω</code></td></tr>
+                <tr><td><code>CC_LSUCC</code></td><td>45</td><td>level</td><td>count, at least <code>1</code></td><td>—</td><td><code>next(U)</code></td></tr>
+                <tr><td><code>CC_LMAX</code></td><td>46</td><td>left, right</td><td>—</td><td>—</td><td><code>max(U, V)</code></td></tr>
+                <tr><td><code>CC_LPI</code></td><td>47</td><td>bound, body</td><td>bound symbol</td><td><code>b</code></td><td>the type of a universe-generic declaration</td></tr>
+                <tr><td><code>CC_LLAM</code></td><td>48</td><td>bound, body</td><td>bound symbol</td><td><code>b</code></td><td>its term</td></tr>
+                <tr><td><code>CC_LAPP</code></td><td>49</td><td>function, level</td><td>—</td><td>—</td><td>its instance at a level</td></tr>
+                <tr><td><code>CC_SORT</code></td><td>50</td><td>parameters (list, optional), recorded levels (list, optional)</td><td>signature index</td><td>—</td><td>an instance of a declared type: <code>UNat</code>, <code>Trunc(U0, A)</code></td></tr>
+                <tr><td><code>CC_CON</code></td><td>51</td><td>instance</td><td>constructor number</td><td>—</td><td>a constructor: <code>zero</code>, <code>succ</code></td></tr>
+                <tr><td><code>CC_ELIM</code></td><td>52</td><td>motive, clauses (list, optional)</td><td>signature index</td><td>—</td><td><code>induction</code> and <code>match</code> on a declared type</td></tr>
+                <tr><td><code>CC_LIST</code></td><td>53</td><td>item, next (optional)</td><td>—</td><td>—</td><td>a cell of a parameter, level or clause list</td></tr>
+              </tbody>
+            </table></div>
+          </section>
+          <section id="groups">
+            <h2>The primitives by group</h2>
+            <h3 id="universes-and-levels">Universes and levels</h3>
+            <p>A universe <code>CC_U</code> has one child, its level, and no payload. Levels are not terms: a level node occurs only as the child of a universe, as the level argument of <code>CC_LAPP</code>, in the recorded levels of a <code>CC_SORT</code>, and as the operand of the instructions that take a level. A level denotes an ordinal below <code>ω²</code>: <code>CC_LCONST</code> is the constant <code>ω · tier + n</code>, with the tier in the payload's high 16 bits and <code>n</code> in its low 16 bits (so <code>U0</code>'s level has payload <code>0</code> and <code>UU0</code>'s has payload <code>65536</code>); <code>CC_LSUCC</code> adds its payload, at least <code>1</code>, to its child; <code>CC_LMAX</code> is the larger of its children; a <code>CC_VAR</code> whose symbol names a level entry is a universe variable, ranging over the natural numbers. <code>CC_LBOUND</code> is the binder domain of a level binder, the bound <code>ω</code> with payload <code>1</code>, and the type of a level entry; <code>CC_LPI</code> and <code>CC_LLAM</code> bind a level variable in their body, and <code>CC_LAPP</code> instantiates a level function at a finite level (<a href="universes.html">chapter 6</a>). Every level an instruction publishes is in <a href="#comparison">normal form</a>.</p>
+            <h3 id="variables-and-definitions">Variables and definitions</h3>
+            <p><code>CC_VAR</code> is a variable, term or level; which one it is depends on the context entry its symbol names, not on the node. <code>CC_DEFREF</code> is a checked definition, by its index in the kernel's registry; the inspector prints it as the definition's name. It is kept folded by comparison and by the single-step exposure of heads, and unfolded only by a <code>delta</code> step or by the weak-head and normal-form queries (<a href="kernel-computation.html">chapter 17</a>).</p>
+            <h3 id="functions-pairs-sums">Functions, pairs, sums, Unit and Void</h3>
+            <p><code>CC_PI</code>, <code>CC_LAM</code> and <code>CC_SIGMA</code> each hold a domain in slot <code>a</code> and a body in slot <code>b</code>, where their payload symbol is bound. <code>CC_APP</code> applies a function, and also a constructor <code>CC_CON</code> to its data and recursive arguments and an eliminator <code>CC_ELIM</code> to its scrutinee. <code>CC_PAIR</code> carries its <code>Σ</code> type in slot <code>a</code>, so that a pair's type can be read off it without reconstruction. The recursors <code>CC_SUMREC</code> and <code>CC_UNITREC</code> take a motive, their cases and the value, in that order; <code>CC_ABORT</code> takes the type to produce and the impossible value. Sums, Unit and Void are primitive; natural numbers are not: <code>UNat</code> is a declared type, as the listing below shows.</p>
+            <h3 id="paths-and-composition">Paths, tubes and composition</h3>
+            <p>A path type <code>CC_PATH</code> binds its dimension in the family (slot <code>a</code>) only; its endpoints are outside the binder. A path abstraction <code>CC_PLAM</code> binds its dimension in both the family and the body. A path application <code>CC_PAPP</code> applies the path in slot <code>a</code> at the interval formula in its payload; slot <code>b</code> is an optional <strong>annotation</strong>, the path's type, which the instructions record so that an application at <code>0</code> or <code>1</code> can be reduced to the recorded endpoint even when the path is a variable. Raw syntax may omit it; comparison ignores it, since the path and the formula determine the application.</p>
+            <p>A composition <code>CC_COMP</code> holds the family in slot <code>a</code>, a list of <strong>tubes</strong> in slot <code>b</code> and the base in slot <code>c</code>. A tube <code>CC_TUBE</code> is one cell of that list: the partial term, the next cell or <code>0</code>, and in its payload the face formula on which the term is given. The composition's dimension is bound in the family and in every tube's term, but not in the tube faces or the base. <code>CC_HCOMP</code>, the formal composition of a higher inductive type, has the same shape with a constant type in slot <code>a</code>, where its dimension is not bound. <code>CC_TRANS</code>, transport in a higher inductive type, binds its dimension in the family only; its slot <code>b</code> is a single tube whose face is the formula on which the family is constant and whose term is a copy of the base, and every reduction reads only that face.</p>
+            <h3 id="glue">Glue</h3>
+            <p>A Glue type <code>CC_GLUE</code> holds its base type and a list of <strong>pieces</strong>; a piece <code>CC_GLUE_SYSTEM</code> holds a partial type, an equivalence from it to the base on the piece's face, and the next piece. A Glue element <code>CC_GLUE_TERM</code> holds its Glue type, its base value and a list of tubes, one value per piece in the same order; <code>CC_UNGLUE</code> projects a value of a Glue type to the base, carrying the Glue type with it (<a href="cubical.html#glue">chapter 11</a>).</p>
+            <h3 id="declared-types">Declared types</h3>
+            <p>A declared type's instance <code>CC_SORT</code> names an admitted signature by index and carries two lists, its term parameters and its <em>recorded</em> universe levels, each a chain of <code>CC_LIST</code> cells or <code>0</code> when empty. A universe parameter is recorded unless a term parameter's type determines it, in which case it is <em>erased</em> and read back from that parameter (<a href="induction.html">chapter 8</a>). A constructor <code>CC_CON</code> names its number and the instance; its arguments are applied with <code>CC_APP</code> and its path coordinates with <code>CC_PAPP</code>, so a point of the circle's loop is <code>loop @ i</code> with the constructor as the path. An eliminator <code>CC_ELIM</code> holds the motive and the list of clause methods, one per constructor, the truncation's squash clause included; applied to a scrutinee with <code>CC_APP</code>, it computes on constructors and on formal compositions (<a href="kernel-computation.html#elimination">chapter 17</a>).</p>
+          </section>
+          <section id="binders">
+            <h2>Binder scopes</h2>
+            <p>Only these kinds bind a name, and each binds its payload in exactly the slots shown; everything else is free.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Kind</th><th>Payload</th><th>Slot <code>a</code></th><th>Slot <code>b</code></th><th>Slot <code>c</code></th></tr></thead>
+              <tbody>
+                <tr><td><code>CC_PI</code>, <code>CC_LAM</code>, <code>CC_SIGMA</code>, <code>CC_LPI</code>, <code>CC_LLAM</code></td><td>symbol</td><td>free (the domain or bound)</td><td><strong>bound</strong></td><td>—</td></tr>
+                <tr><td><code>CC_PATH</code></td><td>dimension</td><td><strong>bound</strong> (the family)</td><td>free (left endpoint)</td><td>free (right endpoint)</td></tr>
+                <tr><td><code>CC_PLAM</code></td><td>dimension</td><td><strong>bound</strong> (the family)</td><td><strong>bound</strong> (the body)</td><td>—</td></tr>
+                <tr><td><code>CC_COMP</code></td><td>dimension</td><td><strong>bound</strong> (the family)</td><td><strong>bound in each tube's term</strong>, free in the tube faces</td><td>free (the base)</td></tr>
+                <tr><td><code>CC_HCOMP</code></td><td>dimension</td><td>free (the type is constant)</td><td><strong>bound in each tube's term</strong>, free in the tube faces</td><td>free (the base)</td></tr>
+                <tr><td><code>CC_TRANS</code></td><td>dimension</td><td><strong>bound</strong> (the family)</td><td>free (the face tube)</td><td>free (the base)</td></tr>
+              </tbody>
+            </table></div>
+            <p>A bound symbol is a plain symbol, not an index: the kernel renames when it must. Term variables and dimensions are separate namespaces, and dimensions are the numbers <code>0</code> to <code>63</code>.</p>
+          </section>
+          <section id="substitution">
+            <h2>Substitution and restriction</h2>
+            <p>Three operations build the terms that instructions publish, all capture-avoiding and all memoized on the immutable syntax.</p>
+            <ul>
+              <li><strong>Term substitution</strong> <code>t[a/x]</code> replaces the free occurrences of the symbol <code>x</code>. A term binder of <code>x</code> itself shadows it: only its domain is substituted. A term binder of another symbol <code>y</code> that occurs free in <code>a</code> is renamed first, to a fresh symbol above every symbol any term has used, so <code>a</code> is never captured; a dimension binder whose dimension occurs free in <code>a</code> is likewise renamed to a fresh dimension.</li>
+              <li><strong>Level instantiation</strong> <code>t[ℓ/x]</code> for a level variable is a term substitution followed by rebuilding every level that a universe or a level application holds in normal form, so that an instance of a universe-generic definition is the term a direct derivation at that level would give.</li>
+              <li><strong>Dimension substitution</strong> <code>t[r/i]</code> replaces the free coordinate <code>i</code> by an interval expression <code>r</code>: in a path application's formula by interval substitution, in a tube's or piece's face by face substitution, and under a dimension binder of another dimension that occurs in <code>r</code> after renaming that binder to a fresh dimension. A binder of <code>i</code> itself shields its bound slots, and the substitution continues into its free ones.</li>
+              <li><strong>Restriction</strong> <code>t|φ</code> to one consistent face clause substitutes <code>0</code> or <code>1</code> for each dimension the clause constrains, which also rewrites the faces of tubes and pieces inside <code>t</code>; nothing else is done, so a restricted tube whose face becomes <code>1</code> is a redex, not a simplification made here.</li>
+            </ul>
+            <p>Every instruction that states a side condition on a term it did not receive, such as the type of a tube on its face or the endpoint of a path, builds that term by these operations and compares it by syntax; the driver must have derived the same term.</p>
+          </section>
+          <section id="comparison">
+            <h2>Comparison, levels and cumulativity</h2>
+            <p>The one comparison the instructions use is <strong>syntactic equality up to bound names</strong> (<code>cc_kernel_alpha_equal</code> as a query; <code>ck_alpha_equal</code> inside). It reduces and unfolds nothing. Two terms are equal when they have the same kind and payload where the payload is not a binder, equal children in every slot, bound names that correspond pairwise under the binders crossed, formulas that are equal clause sets after the dimension renamings in force, and <strong>levels</strong> that have the same normal form: under a universe, as a level application's argument, and in the recorded levels of an instance, so that <code>U(max(ℓ + 1, ℓ))</code> and <code>U(ℓ + 1)</code> are equal types. Two standalone level nodes compared directly, as a query may, must first have the same kind like any two nodes; only then do two constants, successors or maxima compare by normal form. A definition reference compares by its index, folded. A path application's annotation is ignored.</p>
+            <p>A <strong>level's normal form</strong> is either finite, a tier-0 constant <code>c</code> together with an offset <code>k ≤ c</code> for each variable it mentions, denoting <code>max(c, x₁ + k₁, …)</code>, or a constant of tier <code>1</code> or above, which absorbs every variable. Two levels are equal for every assignment of their variables exactly when their normal forms coincide, and one is at most another for every assignment exactly when its constant and each offset are no larger, so equality and order are computed, never searched for. The instructions publish levels in a canonical syntax of this normal form: the maximum, nested to the right in symbol order, of each <code>x + k</code>, followed by the constant when it exceeds every offset or there is no variable.</p>
+            <p><strong>Cumulativity</strong> is a separate, equally syntactic relation that only the <code>Lift</code> instruction uses: <code>U(ℓ₁)</code> is included in <code>U(ℓ₂)</code> when <code>ℓ₁ ≤ ℓ₂</code>; a <code>Π</code>, <code>Σ</code> or level <code>Π</code> is included in another of the same kind with an equal domain and an included body; and every other type is included only in an equal one. Sums, path types, Glue types and declared types have no inclusion of their own (<a href="universes.html#universes">chapter 6</a>).</p>
+          </section>
+          <section id="listing">
+            <h2>Reading an arena listing</h2>
+            <p>The command-line checker's <code>assembly</code> prints a definition's nodes as the arena holds them: the handle, the kind with its opcode in brackets, the payload, the four child handles, and after <code>;</code> what the payload means. The <a href="../workbench.html">kernel workbench</a> shows the same nodes with their judgement graph.</p>
+            <pre><code data-check="accept" data-name="terms">import unat;
+use unat;
+
+def swap(A, B : U0, p : A and B) : B and A := (p.2, p.1);
+
+def three_path : 3 = 3 := path i =&gt; 3;</code></pre>
+            <pre><code data-check="cli" data-files="terms">$ node cli/repl.mjs
+&gt; check terms.cubist
+Checked 2 declarations · … kernel steps
+&gt; assembly swap
+; Expression: %…
+; Checked type: %…
+%… = CC_LAM [4] payload=… a=%… b=%… c=0 d=0 ; symbol #…: A (…)
+%… = CC_PI [3] payload=… a=%… b=%… c=0 d=0 ; symbol #…: A (…)
+%… = CC_U [1] payload=0 a=%… b=0 c=0 d=0 ; universe; its level is operand a
+%… = CC_LAM [4] payload=… a=%… b=%… c=0 d=0 ; symbol #…: B (…)
+%… = CC_PI [3] payload=… a=%… b=%… c=0 d=0 ; symbol #…: B (…)
+%… = CC_LCONST [44] payload=0 a=0 b=0 c=0 d=0 ; level 0
+%… = CC_LAM [4] payload=… a=%… b=%… c=0 d=0 ; symbol #…: p (…)
+%… = CC_PI [3] payload=… a=%… b=%… c=0 d=0 ; symbol #…: p (…)
+%… = CC_SIGMA [6] payload=… a=%… b=%… c=0 d=0 ; symbol #…: …
+%… = CC_APP [5] payload=0 a=%… b=%… c=0 d=0
+%… = CC_SIGMA [6] payload=… a=%… b=%… c=0 d=0 ; symbol #…: …
+%… = CC_VAR [2] payload=… a=0 b=0 c=0 d=0 ; symbol #…: A (…)
+%… = CC_VAR [2] payload=… a=0 b=0 c=0 d=0 ; symbol #…: B (…)
+%… = CC_LAM [4] payload=… a=%… b=%… c=0 d=0 ; symbol #…: ascription…
+%… = CC_PAIR [7] payload=0 a=%… b=%… c=%… d=0
+%… = CC_VAR [2] payload=… a=0 b=0 c=0 d=0 ; symbol #…: ascription…
+%… = CC_SND [9] payload=0 a=%… b=0 c=0 d=0
+%… = CC_FST [8] payload=0 a=%… b=0 c=0 d=0
+%… = CC_VAR [2] payload=… a=0 b=0 c=0 d=0 ; symbol #…: p (…)
+&gt; assembly three_path
+; Expression: %…
+; Checked type: %…
+%… = CC_APP [5] payload=0 a=%… b=%… c=0 d=0
+%… = CC_PATH [16] payload=0 a=%… b=%… c=%… d=0 ; dimension #0
+%… = CC_LAM [4] payload=… a=%… b=%… c=0 d=0 ; symbol #…: ascription…
+%… = CC_PLAM [17] payload=0 a=%… b=%… c=0 d=0 ; dimension #0
+%… = CC_SORT [50] payload=… a=0 b=0 c=0 d=0 ; signature #…: unat__UNat
+%… = CC_APP [5] payload=0 a=%… b=%… c=0 d=0
+%… = CC_VAR [2] payload=… a=0 b=0 c=0 d=0 ; symbol #…: ascription…
+%… = CC_CON [51] payload=1 a=%… b=0 c=0 d=0 ; constructor 1
+%… = CC_APP [5] payload=0 a=%… b=%… c=0 d=0
+%… = CC_APP [5] payload=0 a=%… b=%… c=0 d=0
+%… = CC_CON [51] payload=0 a=%… b=0 c=0 d=0 ; constructor 0</code></pre>
+            <p>In <code>swap</code>, the expression is a <code>CC_LAM</code> whose domain is the universe <code>CC_U</code> over the level constant <code>0</code>, and whose body is the next lambda; its checked type is the matching <code>CC_PI</code>. The two <code>CC_SIGMA</code> nodes are <code>A × B</code> and <code>B × A</code>; <code>p.2</code> and <code>p.1</code> are <code>CC_SND</code> and <code>CC_FST</code> of the variable <code>p</code>, and the <code>CC_PAIR</code> carries <code>B × A</code> as its type. The extra <code>CC_LAM</code> over <code>ascription</code> and the <code>CC_APP</code> that applies it are the ascription the elaborator adds to check a definition's body at its stated type. In <code>three_path</code>, the type is a <code>CC_PATH</code> whose family is the <code>CC_SORT</code> <code>UNat</code>, bound in dimension <code>0</code>, and whose endpoints are the numeral <code>3</code>: the constructor <code>succ</code> (<code>CC_CON</code> number <code>1</code>) applied three times with <code>CC_APP</code> to <code>zero</code> (number <code>0</code>). The path itself is a <code>CC_PLAM</code> whose body is that numeral, which the inspector shows as <code>refl(3)</code>. The two numerals are one node, <code>%…</code>: identical syntax is shared.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="kernel-overview.html">← 14. The kernel: judgements, derivations and trust</a>
+            <a class="next" href="kernel-instructions.html">16. Kernel instructions: the typing rules →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+    <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
+  </body>
+</html>

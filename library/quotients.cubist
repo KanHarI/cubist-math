@@ -85,15 +85,19 @@ def Respects(U, V < UU0, A : U, R : A -> A -> U, B : V, f : A -> B) :
 
 // The universal property: a map into a set that respects the relation
 // descends to the quotient, computes on classes, and is the only map that
-// does.
+// does. Compile the constant motive here: specializing the dependent
+// induction principle later retains transports in its generated squash
+// clause, even though this map needs only the supplied setness witness.
 computable def descend(
   U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), f : A -> B,
   respects : Respects(U, V, A, R, B, f), q : Quotient(U, A, R)
 ) :
-  B := quotient_induction(
-    U, V, A, R, fun (z : Quotient(U, A, R)) => B, fun (z : Quotient(U, A, R)) => set_, f, respects,
-    q
-  );
+  B := match q return B {
+    class(a) => f(a);
+  }
+obligations {
+  relate(a, b, r) @ i => respects(a, b, r) @ i;
+};
 
 computable def descend_class(
   U, V < UU0, A : U, R : A -> A -> U, B : V, set_ : IsSet(V, B), f : A -> B,

@@ -35,9 +35,8 @@ cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
 cc_formula_id ck_clause_formula(cc_kernel *k, cc_clause clause) {
     cc_formula phi;
     cc_init(&phi, CC_FACE);
-    if (cc_insert(&phi, clause) != CC_OK) {
+    if (!ck_formula_result(k, cc_insert(&phi, clause), "Composition face allocation failed.")) {
         cc_clear(&phi);
-        ck_fail(k, "Composition face allocation failed.");
         return 0;
     }
     cc_formula_id id = ck_formula(k, &phi);

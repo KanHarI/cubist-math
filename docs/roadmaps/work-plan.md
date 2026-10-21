@@ -75,16 +75,20 @@ and complex analysis, Galois theory and RH stay paused; reaching a language
 milestone does not resume them. Their old B-package IDs are retained in the
 [deferred library backlog](#deferred-library-backlog).
 
-**The archive is a reference.** The first library in `archive/first-library/`
-is not rebuilt as it is and is not relied on. Where the library implements a
-part of it, that part is removed from the archive and its dependents import
-the library instead; the archive keeps checking completely. So far `nat`'s
-arithmetic (from `primes`) and `sets` (for `hlevels`) are gone. What the
-library builds differently stays until it is migrated: the archive's
-`truncation` and `classical` rest on the legacy `Truncate` assumptions
-(K2.5's remaining remedies), its `set_quotients` are predicate
-quotients over them, and its `equivalences` are bijections and half-adjoint
-equivalences, where the library has contractible maps.
+**The archive is a reference, to be retired.** The first library in
+`archive/first-library/` is not rebuilt as it is and is not relied on. Where
+the library implements a part of it, that part is removed from the archive and
+its dependents import the library instead; the archive keeps checking
+completely until it retires. So far `nat`'s arithmetic (from `primes`) and
+`sets` (for `hlevels`) are gone. What the library builds differently is not
+migrated in place: the archive's `truncation` and `classical` rest on the
+legacy `Truncate` assumptions, which K2.5 removes with the archive, its
+`set_quotients` are predicate quotients over them, and its `equivalences` are
+bijections and half-adjoint equivalences, where the library has contractible
+maps. [Archive retirement](archive-retirement.md) (I0.5, direction adopted on
+2026-10-20) owns the follow-ups: confining new dependencies, deciding per
+results-catalog area what the library rebuilds before deletion, and moving or
+retiring the fixtures, tests, tools and docs that read the archive.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -294,6 +298,7 @@ and `univalence` exhaust the kernel's step budget.
 | I0.2 | Archive the first library | Done: 368 sources in `archive/first-library/`; keep it as regression evidence. Its prelude `nat` moved to `library/` on 2026-10-04, and `sets` gave way to the library's `hlevels` on 2026-10-05 |
 | I0.3 | Start `library/` | Done: the modules listed above, self-contained since 2026-10-04; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
+| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
 | D0.2 | Reference chapters and quick reference | Chapter 5 done with G0. Chapter 6 rewritten on 2026-09-30, when H1 became the default: declarations, parameters, `match`, structural recursion, dependent matches, path and truncation clauses, with the library's Nat, `add` and W quoted as checked, inspectable excerpts. An H1 chapter waits for D2.1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct (`inductive` and `match` on declared types added on 2026-09-30) |
@@ -393,7 +398,7 @@ has an explicit spelling.
 | K2.4a | **Historical:** representation replay and differential fixtures X1–X8. Their release gate, oracle, translation and tools were retired on 2026-10-02 after Nat, W and pushouts became source declarations; sums stay native. The [historical evidence](historical/h1-differential-evidence.md) retains what ran and its limits. The unfinished replay criterion is not an active obligation | Retired contract | — |
 | K2.4b | **Completed by a replacement approach:** Nat and W primitives retired on 2026-09-30, pushouts on 2026-10-01, using H1 source declarations. The former τ replay criterion was superseded; its old oracle was removed. See the [source-type API](historical/h1-program-types.md) | H1 | — |
 | K2.4c | Wider retirement of the sum, W and pushout instructions. **Decided** on 2026-10-01: sums stay native at every level, and pushouts are an H1 declaration in `pushout.cubist`, their instructions retired as W's were on 2026-09-30. Nothing remains to retire. A W type or pushout over `UU`-tier types needs a separate fixed-universe declaration | — | — |
-| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](hott/h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided, and the policy approved, on 2026-09-27. **Implemented:** the exact ledger verifier, 17 pinned changes and G2/G4–G7 fixtures; see the [scoped migration record](hott/h1-truncation-migration.md). Two of the migrated slices, `h1_cauchy_quotient` and `h1_zorn_step`, build on archive developments and moved to `cubist-tests/` when the library became self-contained (2026-10-04). **Migration pending:** the rest of the archive remedies; the two H2-dependent tower declarations remain deferred; removing every legacy truncation assumption is not an H1 prerequisite | K2.1; implementation with K2.3/L2.1 | M |
+| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](hott/h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided, and the policy approved, on 2026-09-27. **Implemented:** the exact ledger verifier, 17 pinned changes and G2/G4–G7 fixtures; see the [scoped migration record](hott/h1-truncation-migration.md). Two of the migrated slices, `h1_cauchy_quotient` and `h1_zorn_step`, build on archive developments and moved to `cubist-tests/` when the library became self-contained (2026-10-04). **Decided on 2026-10-20:** the legacy `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` assumptions, and the `LEM`/`Choice` signatures stated over them, are removed ([removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions)): excluded middle and choice become `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;` in `library/classical_axioms.cubist`, reusing its type families restated over `Trunc` (syntax revised on 2026-10-21); the library, fixtures, reference and guides move to them; the legacy signatures are then accepted only in archive modules; and they are deleted with the archive ([I0.5](archive-retirement.md)). The rest of the archive remedies is not pursued: a universe-preserving `Truncate` fails the same 47 declarations in 20 modules as in September (measured 2026-10-20), and the retirement rebuilds or records those results rather than migrating them in place; the two H2-dependent tower declarations go with them | K2.1; implementation with K2.3/L2.1; completion with I0.5 | M |
 | L2.1 | One-sort `inductive` declarations and signature diagnostics. **Released** on 2026-10-02: the header's result position, lowering with data before positions, universe classification and the least level, uses of the type and its constructors, precise refusals. Reference chapter 6 teaches them since 2026-09-30 (D2.1). Excluded by the specification: a composite boundary such as `Torus2`'s `trans(p, q) = trans(q, p)` (its 1.4, Q3; the square torus is admitted), and proof-first `: set`/`: prop`, which is L2.3b | K2.3 | L |
 | L2.2a | Explicit `match`, motives, structural recursion and path clauses. **Released, first slice:** the expression `match v [as z] [return T] { c(xs) @ i => … }`, each clause checked against the kernel's clause type; dependent motives; path clauses and hand-written squash clauses with `T.squash`; recursion on a constructor's argument with the other arguments fixed, in a definition whose whole body is the match, where the matched parameter stands for the clause's constructor. The H1 winding-number fixture computes in source. **Released, second slice** (written on 2026-09-29): the closing proof statement `match v { c(xs) @ i => { … } … }`, its motive the goal over `v` through the A5 motive service. A hypothesis whose type mentions `v` is generalized and bound again, under its own name, in each clause. There a variable `v` names the constructor, and a local definition made from either is made again from their values; a recursive call passes its own value for each generalized parameter. **Released, third slice** (written on 2026-09-29): recursion whose other arguments vary. When a recursive call changes another parameter, or passes one whose type mentions the matched parameter, the match, in either form, takes its motive from the motive service, over the declaration's other parameters but those the matched parameter's type depends on; each clause binds them again under their own names, and a call passes values of its own for them. It passes those the matched parameter's type depends on, and universe parameters, unchanged. Name resolution decides, so no spelling of a call or a binder changes it; a match whose calls pass the other parameters unchanged, or that never calls itself, is elaborated as written. The motive over the other parameters also stands when the match as written fails before any call and that motive makes one, as when a dependent parameter is used at its refined type first. Only the elaboration kept spends the declaration's fuel. A goal shows a parameter bound again under its source name, without the one it supersedes. Acceptance cases: an accumulator, computed and proved equal to addition; a call spelled with an operator; parameters before the matched one, dependent (used before the call too), shadowed and taken apart by a nested match; a squash clause over a generalized parameter; fuel and searches recorded once. **Released, fourth slice** on 2026-10-04 (`web/translator/patterns.mjs`): several values, `match xs, ys { nil, _ => …; … }`, in both forms; nested patterns, `cons(x, cons(y, rest))`; a variable or `_` in a constructor's place, and a constructor without arguments by its name inside a pattern; clauses tried in order, the first that fits taking a case, with a missing case and a clause never reached refused. Compiled value by value into matches on one value each, which elaborate as before, so recursion on the first value taken apart still works. The expression form takes its motive from the motive service when its expected type mentions the matched variable, binding the hypotheses about it again in each clause; and a match whose first elaboration fails as written is kept elaborated over the declaration's other parameters, recursive call or not. Evidence: `cubist-tests/patterns.cubist`, the reference's [patterns](../../web/reference/induction.html#patterns). **`cases` retired** on 2026-10-04: the match statement takes a sum apart, `left(a) => { … } right(b) => { … }`, each clause proving the goal at its side through the motive service; a goal that depends on the value only through a redex that drops it, as after `intro`, is the motive itself, as `cases` made it. The 26 `cases` statements, 24 in 11 archive modules and two in test sources, became matches: at the migration's commit (1118c1a), where `cases` still parses, `node tools/verify-proof-migration.mjs --base main` reports identical terms for all 50 modules compared, 39 of them dependents. `cases` is refused with its match form (E164), and a historical source reads `cases` as `match` (`web/cubist/legacy-syntax.mjs`). Evidence: `cubist-tests/sum_match.cubist`, the reference's [taking a sum apart](../../web/reference/proof-blocks.html#sums). **Induction hypotheses separated** on 2026-10-11 ([decision](historical/induction-hypothesis-syntax.md)): an induction clause names the constructor's fields in parentheses and its hypotheses after `with`, `c(xs) @ i with hs => …`, in both forms; the appended spelling is still read, a clause cannot mix the two, printed proofs write `with`, and `tools/migrate-induction-hypotheses.mjs` migrates checked declarations with identical terms. No kernel rule changed. Evidence: `tests/induction-hypotheses.test.mjs`, the reference's [induction](../../web/reference/induction.html#induction) | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
 | L2.2b | Automatic clauses and explicit `obligations`. **Released** with H1 on 2026-10-02: dependent set and groupoid squash clauses derive from checked h-level evidence; expression and statement forms accept explicit obligations. E4/E11 and evidence/refusal/inspection regressions are in `tests/automatic-clauses.test.mjs`. The broader h-level solver remains independent of this package | L2.2a, L2.5b; checked h-level evidence | M |
@@ -440,11 +445,22 @@ Reject lowering and mismatched level instances; preserve G0's distinction
 between a sort's universe and its parameter telescope's universe.
 
 **K2.5/G2.** Native `Trunc(U, A) : U` preserves the universe. The archive's
-`Truncate : U -> U0` has resizing and is not a drop-in replacement. Keep
-legacy assumptions available to archive checks until each intentional
-migration is justified. Record changed public universes, removed assumptions
-and affected consumers; do not add resizing to the rebuilt foundation.
-The ordinary migration check stays strict for unrelated changes. The [ledger verifier and scoped migrations](hott/h1-truncation-migration.md) are implemented since 2026-09-30; the archive keeps its legacy assumptions.
+`Truncate : U -> U0` has resizing and is not a drop-in replacement. Do not add
+resizing to the rebuilt foundation. Decided on 2026-10-20: the legacy
+truncation assumptions are removed rather than kept for intentional archive
+migrations. The archive is their only permitted consumer until it retires
+(I0.5), and no further archive remedy is carried out in place; a result the
+library must keep is rebuilt at the universe it needs. The ordinary migration
+check stays strict for unrelated changes. The [ledger verifier and scoped migrations](hott/h1-truncation-migration.md) are implemented since 2026-09-30; the [removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions) sequences the remaining steps.
+
+**Continuum hypotheses (2026-10-21).** The library now has checked, assumption-free
+`finite_sets`, `binary`, `powersets` and `continuum_hypothesis` modules:
+`Fin(n)`, Boolean operations on `Binary := Fin(2)`, full and decidable powersets,
+universe-indexed CH/GCH, and their stronger cardinality dichotomies.
+The basic implications among those statements are checked.
+The proposed axiom definitions and the proofs from DecidableCH to LEM and
+from DecidableGCH to choice remain follow-ups; see the
+[assumption study](hott/h1-truncation-migration.md#continuum-hypotheses-checked-statements-planned-assumptions).
 
 **Release fixtures,** updated 2026-09-30: declared Nat, sum, W
 and pushout comparisons (K2.4a implemented, with the X2 remainder in its evidence record); a circle with computed winding
@@ -647,14 +663,18 @@ NUM0 supplies explicit `UNat`, canonical `BNat`, bit arithmetic,
 comparison and explicit conversions with both round trips. NUM1 supplies
 the commutative-semiring models, conversion homomorphisms and isomorphism,
 cancellation, nontriviality and no zero divisors. Its bitwise equality now
-supplies setness and avoids unary evaluation in model-law certificates;
+supplies setness and avoids unary evaluation in closed model-law certificates;
 comparison correctness and order propositionality also check. The universe
 path and its forward/reverse and operation transport laws check as well.
 The dependent Peano view, coherent strong recursion for arbitrary dependent
 families and binary factorial also check. Public `Nat` now aliases binary
 `BNat`; the unary declaration and structural clients use explicit `UNat`.
-Decimal I/O and both printers are migrated; release validation is pending. NUM2 and
-EVAL3–EVAL8 remain planned. The ordered-ring/field
+Decimal I/O and both printers are migrated; the default-Nat release checks
+pass. NUM2 is in progress: binary integers are on main, where a contract also
+checks the binary instantiation of generic `fraction_field`. Draft #283
+develops the binary-rational library API; its
+release and the default `Z`/`Q` migration remain blocked on full rational
+inverse normalization. EVAL3–EVAL8 remain planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -688,8 +708,11 @@ no real-number construction or analysis is scheduled.
   their ring/domain/field laws and embeddings within the new hierarchy;
   comparison maps and universe paths to the old integers and rationals
   are outside this track. Later numerical constructions default to `BNat`;
-  these foundations do not wait for a new runtime evaluator or
-  packed-integer specialization.
+  constructing these foundations does not wait for a new runtime evaluator
+  or packed-integer specialization. Releasing the binary-rational API and
+  switching default `Z`/`Q` additionally require NUM2's full normalization
+  contracts. They can be satisfied by a general fix before all EVAL packages
+  are complete; #283 remains draft while they fail.
 - NUM2 owns the new carriers and algebraic APIs. The
   [reals roadmap's R1](mathematics/reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
@@ -699,6 +722,12 @@ no real-number construction or analysis is scheduled.
 - Design EVAL3's lazy closure evaluator and EVAL4's explicit stack together.
   EVAL5 specifies observation and typed readback; a successful
   `euclid(4).1` does not close the failure of full `euclid(4)`.
+  The [rational full-normalization completion path](runtime/runtime-evaluation-roadmap.md#rational-full-normalization-completion-path)
+  also requires depth-independent traversal, applicable EVAL8 cubical
+  execution, complete proof/annotation readback and separate NUM proof
+  algorithm work. Its [small arithmetic-free reproduction](../reports/rational-normalization.md)
+  remains a required workload. A lazy rational data result does not complete
+  NUM2's full-normalization gate.
 - EVAL6's packed binary arithmetic follows NUM0–NUM2 and profiling; EVAL7's
   checked BNat search improvements are a separate computation pilot, keeping
   the archived algorithm fixed for evaluator comparisons and broader
@@ -867,7 +896,8 @@ computations use NUM2 and the remaining evaluator work as needed. H2/H3,
 variable-level truncation and universe extensions retain their independent
 design and soundness gates. Ordinary families or complex shapes do not by
 themselves require indexed or inductive-inductive kernel declarations. Worker
-cancellation, K2.5's archive remedies and the remaining HoTT packages stay
+cancellation, K2.5's legacy truncation removal with the archive retirement
+(I0.5) and the remaining HoTT packages stay
 visible; prioritize their slices when the testbed exercises them. Paused
 analysis, Galois and RH remain paused. The public `Nat` transition and bounded
 ordered-interface scope are decided below; neither resumes the reals roadmap.

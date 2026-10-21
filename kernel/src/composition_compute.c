@@ -39,8 +39,8 @@ cc_term ck_clause_tubes(cc_kernel *k, cc_term system, bool drop_empty) {
     /* Interning a clause can move the stored formulas: copy the face first. */
     cc_formula face;
     cc_init(&face, CC_FACE);
-    if (cc_copy(&face, stored) != CC_OK)
-        return ck_fail(k, "Face copy failed."), 0;
+    if (!ck_formula_result(k, cc_copy(&face, stored), "Face copy failed."))
+        return 0;
     for (size_t c = face.length; c-- > 0 && !k->error[0];) {
         cc_formula clause = {CC_FACE, &face.clauses[c], 1, 1};
         cc_formula_id id = ck_formula(k, &clause);
@@ -109,18 +109,17 @@ cc_term ck_fill(cc_kernel *k, unsigned dim, cc_term family, cc_term system,
     cc_init(&variable, CC_INTERVAL);
     cc_init(&along, CC_INTERVAL);
     cc_init(&wall, CC_FACE);
-    bool valid = cc_generator(&variable, direction, true) == CC_OK &&
-                 cc_meet(&along, r, &variable) == CC_OK &&
-                 cc_endpoint(&wall, r, 0) == CC_OK;
+    cc_status status = cc_generator(&variable, direction, true);
+    if (status == CC_OK) status = cc_meet(&along, r, &variable);
+    if (status == CC_OK) status = cc_endpoint(&wall, r, 0);
     cc_term result = 0;
-    if (valid) {
+    if (ck_formula_result(k, status, "Composition filling formula allocation failed.")) {
         cc_term moved_family = ck_dimension_substitute(k, family, dim, &along);
         cc_term moved_system = substitute_tubes(k, system, dim, &along);
         cc_formula_id face = ck_formula(k, &wall);
         moved_system = ck_append_tube(k, moved_system, face, base);
         result = ck_make(k, CC_COMP, direction, moved_family, moved_system, base, 0);
-    } else
-        ck_fail(k, "Composition filling formula allocation failed.");
+    }
     cc_clear(&variable);
     cc_clear(&along);
     cc_clear(&wall);
@@ -187,8 +186,8 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_term first_base = ck_make(k, CC_FST, 0, base, 0, 0, 0);
         cc_formula r;
         cc_init(&r, CC_INTERVAL);
-        if (cc_generator(&r, dim, true) != CC_OK)
-            return ck_fail(k, "Filling direction allocation failed."), 0;
+        if (!ck_formula_result(k, cc_generator(&r, dim, true), "Filling direction allocation failed."))
+            return 0;
         cc_term first_line = ck_fill(k, dim, type.child[0], first_system, first_base, &r);
         cc_clear(&r);
         cc_term first = ck_make(k, CC_COMP, dim, type.child[0], first_system, first_base, 0);
@@ -217,10 +216,12 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_formula variable, backwards;
         cc_init(&variable, CC_INTERVAL);
         cc_init(&backwards, CC_INTERVAL);
-        if (cc_generator(&variable, dim, true) != CC_OK || cc_reverse(&backwards, &variable) != CC_OK) {
+        cc_status status = cc_generator(&variable, dim, true);
+        if (status == CC_OK) status = cc_reverse(&backwards, &variable);
+        if (!ck_formula_result(k, status, "Backward filling direction allocation failed.")) {
             cc_clear(&variable);
             cc_clear(&backwards);
-            return ck_fail(k, "Backward filling direction allocation failed."), 0;
+            return 0;
         }
         cc_term backwards_domain = ck_dimension_substitute(k, type.child[0], dim, &backwards);
         cc_term line = ck_fill(k, dim, backwards_domain, 0, argument, &backwards);
@@ -241,8 +242,8 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
             return 0;
         cc_formula variable;
         cc_init(&variable, CC_INTERVAL);
-        if (cc_generator(&variable, direction, true) != CC_OK)
-            return ck_fail(k, "Path composition direction allocation failed."), 0;
+        if (!ck_formula_result(k, cc_generator(&variable, direction, true), "Path composition direction allocation failed."))
+            return 0;
         cc_formula_id arg = ck_formula(k, &variable);
         cc_term body_family = ck_dimension_substitute(k, type.child[0], type.payload, &variable);
         cc_clear(&variable);

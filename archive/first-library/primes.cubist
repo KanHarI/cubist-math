@@ -384,11 +384,11 @@ def least_bounded_witness(
     exists i : UNat. ((i <= n) and (P(i) and (forall j : UNat. ((succ(j) <= i) -> (P(j) -> Void)))))
   ) {
     left witness_ => witness_;
-    right empty => typed(
+    right empty_ => typed(
       (
         exists i : UNat.
         ((i <= n) and (P(i) and (forall j : UNat. ((succ(j) <= i) -> (P(j) -> Void)))))
-      ), absurd(empty(n, unat_le_refl(n), pn))
+      ), absurd(empty_(n, unat_le_refl(n), pn))
     );
   };
 
@@ -417,10 +417,10 @@ def nontrivial_divisibility_decidable(d, n : UNat) :=
         };
       };
     };
-    right empty => typed(
+    right empty_ => typed(
       (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
       right((fun (w : Divides(succ(succ(d)), n)) => unpack w as (q, p) return Void {
-            empty(
+            empty_(
               q,
               path_induction(
                 UNat,

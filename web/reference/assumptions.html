@@ -44,6 +44,10 @@
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li class="current"><a href="assumptions.html" aria-current="page">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
@@ -275,7 +279,13 @@ use unat;
 def numbers : List(U0, UNat) := cons(1, cons(2, cons(3, nil)));
 
 evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_, nil): cons(2, cons(3, nil)) is not nil.</code></pre>
-            <p>Evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints. <code>computable</code>, <code>evaluate</code> and <code>expecting</code> are reserved keywords: no declaration or binder takes their names.</p>
+            <p>Expected-value evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints.</p>
+            <p><code>evaluate nonempty P by proof;</code> instead checks that the supplied evidence inhabits <code>P</code> and that neither the evidence nor its type depends on assumptions. The counterpart <code>evaluate empty P by proof;</code> checks evidence of <code>P -&gt; Void</code>, under the same rules. Neither form searches for a proof or fully normalizes its body. This is useful for disequalities, whose proofs are functions into <code>Void</code>: different proofs need not have identical normal forms.</p>
+            <pre><code data-check="accept">evaluate nonempty Unit by tt;
+evaluate nonempty (Void -&gt; Void) by fun (x : Void) =&gt; x;
+evaluate nonempty (Void -&gt; Void) by fun (x : Void) =&gt; absurd(x);
+evaluate empty Void by fun (x : Void) =&gt; x;</code></pre>
+            <p>Success is reported as <code>nonempty P</code> or <code>empty P</code>. The directive defines no name, and incorrect evidence makes the module incomplete. <code>computable</code>, <code>evaluate</code>, <code>expecting</code>, <code>nonempty</code> and <code>empty</code> are reserved keywords.</p>
             <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
           </section>
 

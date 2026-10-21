@@ -143,7 +143,7 @@ for(const target of ["def second : Void := tt;","evaluate tt expecting Unit;"])
     assert.deepEqual(report.expectedErrors,[]);
   });
 
-for(const failure of ["deadline","budget","fuel"])
+for(const failure of ["deadline","budget","fuel","resource"])
   test(`resource dependency cascades remain prerequisites: ${failure}`,async t=>{
     const {program,result}=await checked(t,"def first : Void := tt; # test(uses) def uses := first; def unannotated := first;");
     program.symbols.main__first.failure=failure;

@@ -123,11 +123,12 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
             return 0;
         cc_formula point;
         cc_init(&point, CC_INTERVAL);
-        cc_formula_id argument = cc_generator(&point, fresh, true) == CC_OK ? ck_formula(k, &point) : 0;
+        cc_formula_id argument = ck_formula_result(k, cc_generator(&point, fresh, true), "Interval allocation failed.")
+            ? ck_formula(k, &point) : 0;
         cc_term family = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
         cc_clear(&point);
         if (!family)
-            return ck_fail(k, "Interval allocation failed."), 0;
+            return 0;
         expanded = ck_instr_make(k, CC_PLAM, fresh, family, ck_instr_make(k, CC_PAPP, argument, t.term, t.type, 0, 0), 0, 0);
     } else if (type.kind == CC_GLUE) {
         cc_term pieces = eta_pieces(k, type.child[1], t.term);
@@ -179,7 +180,7 @@ static cc_term rebuild(cc_kernel *k, cc_term term, const uint8_t *position, size
         return replacement;
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Position depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Position depth exceeded."), 0;
     }
     cc_node n = k->nodes[term];
     n.child[position[0]] = rebuild(k, n.child[position[0]], position + 1, depth - 1, replacement);
@@ -254,8 +255,8 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
         if (path.kind == CC_PLAM) {
             cc_formula point;
             cc_init(&point, CC_INTERVAL);
-            if (cc_copy(&point, argument) != CC_OK)
-                return ck_fail(k, "Interval copy failed."), 0;
+            if (!ck_formula_result(k, cc_copy(&point, argument), "Interval copy failed."))
+                return 0;
             cc_term result = ck_dimension_substitute(k, path.child[1], path.payload, &point);
             cc_clear(&point);
             return result;
@@ -408,7 +409,7 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
     cc_entry_id *removed = depth ? malloc(depth * sizeof *removed) : NULL;
     cc_judgement_id result = 0;
     if ((depth && (!crossed || !removed)) || !terms) {
-        ck_fail(k, "Replacement allocation failed.");
+        ck_fail_as(k, CC_ERROR_RESOURCE, "Replacement allocation failed.");
         goto done;
     }
     cc_term target = locate(k, root, position, depth, crossed);

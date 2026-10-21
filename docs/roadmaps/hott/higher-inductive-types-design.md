@@ -368,7 +368,7 @@ inductive Vec(A : U) : Nat -> type {
 inductive Id(A : U, a : A) : A -> type { refl : Id(A, a, a); }
 
 inductive Ty { base; arrow(a, b : Ty); }
-inductive Ctx { empty; extend(g : Ctx, a : Ty); }
+inductive Ctx { empty_context; extend(g : Ctx, a : Ty); }
 inductive Var : Ctx -> Ty -> type {
   here(g : Ctx, a : Ty) : Var(extend(g, a), a);
   there(g : Ctx, a, b : Ty, v : Var(g, a)) : Var(extend(g, b), a);
@@ -496,7 +496,7 @@ def J_on_refl(A : U, a : A, C : forall b : A. Id(A, a, b) -> U, base : C(a, refl
   J(A, a, C, base, a, refl) = base { rfl; }                       // J computes on refl
 
 def Sem(a : Ty) : U = match a { base => Nat; arrow(a, b) => Sem(a) -> Sem(b); };
-def Env(g : Ctx) : U = match g { empty => Unit; extend(g, a) => Env(g) and Sem(a); };
+def Env(g : Ctx) : U = match g { empty_context => Unit; extend(g, a) => Env(g) and Sem(a); };
 
 computable def eval(g : Ctx, a : Ty, t : Tm(g, a), env : Env(g)) : Sem(a) = match t {
   var(g, a, v) => lookup(g, a, v, env);

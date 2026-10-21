@@ -1,0 +1,33 @@
+import finite_sets;
+use nat;
+
+def Binary : U0 := Fin(2);
+
+// Both bounds compute to Unit, so tt proves 0 < 2 and 1 < 2.
+computable def False : Binary := (0, tt);
+
+computable def True : Binary := (1, tt);
+
+// A Binary's natural-number component is either zero or positive.
+// Its bound excludes every positive value except one.
+computable def Not(x : Binary) : Binary := match x.1 {
+    b_zero => True;
+    b_positive(p) => False;
+  };
+
+computable def And(x, y : Binary) : Binary := match x.1 {
+    b_zero => False;
+    b_positive(p) => y;
+  };
+
+computable def Or(x, y : Binary) : Binary := match x.1 {
+    b_zero => y;
+    b_positive(p) => True;
+  };
+
+computable def Xor(x, y : Binary) : Binary := match x.1 {
+    b_zero => y;
+    b_positive(p) => Not(y);
+  };
+
+computable def Nor(x, y : Binary) : Binary := Not(Or(x, y));

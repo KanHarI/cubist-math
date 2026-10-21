@@ -27,21 +27,28 @@ static cc_term nonempty_system(cc_kernel *k, cc_term system, bool types) {
     return ck_make(k, piece.kind, piece.payload, piece.child[0], piece.child[1], piece.child[2], 0);
 }
 
-static cc_term weak(cc_kernel *k, cc_term term) {
+/* Returning a continuation performs the same next weak-head request without
+ * retaining a native frame. Prerequisite head queries remain guarded calls. */
+static cc_term weak_again(cc_term *next, cc_term term) {
+    *next = term;
+    return 0;
+}
+
+static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
     cc_node n = k->nodes[term];
     if (n.kind == CC_HCOMP || n.kind == CC_TRANS)
         return ck_hit_reduce(k, term);
     if (n.kind == CC_DEFREF) {
         if (!n.payload || n.payload >= k->definition_count)
             return ck_fail(k, "Unknown definition reached reduction."), 0;
-        return ck_whnf(k, k->definitions[n.payload].value);
+        return weak_again(next, k->definitions[n.payload].value);
     }
     if (n.kind == CC_GLUE || n.kind == CC_GLUE_TERM) {
         unsigned slot = n.kind == CC_GLUE ? 1 : 2;
         cc_term system = nonempty_system(k, n.child[slot], n.kind == CC_GLUE);
         if (system != n.child[slot]) {
             n.child[slot] = system;
-            return ck_whnf(k, ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], 0));
+            return weak_again(next, ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], 0));
         }
         while (system) {
             cc_node piece = k->nodes[system];
@@ -49,7 +56,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             if (!face || face->sort != CC_FACE)
                 return ck_fail(k, "Unchecked Glue face reached reduction."), 0;
             if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative)
-                return ck_whnf(k, piece.child[0]);
+                return weak_again(next, piece.child[0]);
             system = piece.child[n.kind == CC_GLUE ? 2 : 1];
         }
     }
@@ -70,15 +77,15 @@ static cc_term weak(cc_kernel *k, cc_term term) {
                 const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
                 cc_formula face;
                 cc_init(&face, CC_FACE);
-                if (cc_copy(&face, raw) != CC_OK)
-                    return ck_fail(k, "Glue eta face allocation failed."), 0;
+                if (!ck_formula_result(k, cc_copy(&face, raw), "Glue eta face allocation failed."))
+                    return 0;
                 for (size_t i = 0; i < face.length && agrees; ++i)
                     agrees = ck_alpha_equal(k, piece.child[0], ck_restrict(k, projection.child[1], face.clauses[i]));
                 cc_clear(&face);
                 system = piece.child[1];
             }
             if (agrees)
-                return ck_whnf(k, projection.child[1]);
+                return weak_again(next, projection.child[1]);
         }
     }
     if (n.kind == CC_UNGLUE) {
@@ -90,7 +97,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
             if (face->length == 1 && !face->clauses[0].positive && !face->clauses[0].negative) {
                 cc_term function = ck_make(k, CC_FST, 0, piece.child[1], 0, 0, 0);
-                return ck_whnf(k, app(k, function, n.child[1]));
+                return weak_again(next, app(k, function, n.child[1]));
             }
             system = piece.child[2];
         }
@@ -98,7 +105,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (!value)
             return 0;
         if (k->nodes[value].kind == CC_GLUE_TERM)
-            return ck_whnf(k, k->nodes[value].child[1]);
+            return weak_again(next, k->nodes[value].child[1]);
         return value == n.child[1] ? term : ck_make(k, CC_UNGLUE, 0, n.child[0], value, 0, 0);
     }
     if (n.kind == CC_APP) {
@@ -106,13 +113,13 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (fn && k->nodes[fn].kind == CC_ELIM) {
             bool reduced = false;
             cc_term result = ck_eliminate(k, fn, n.child[1], true, &reduced);
-            return reduced ? ck_whnf(k, result) : result;
+            return reduced ? weak_again(next, result) : result;
         }
         if (!fn)
             return 0;
         cc_node head = k->nodes[fn];
         if (head.kind == CC_LAM)
-            return ck_whnf(k, ck_substitute(k, head.child[1], head.payload, n.child[1]));
+            return weak_again(next, ck_substitute(k, head.child[1], head.payload, n.child[1]));
         return fn == n.child[0] ? term : app(k, fn, n.child[1]);
     }
     /* ∀-β (G0 §2.7): instantiation of a level lambda substitutes the level. */
@@ -122,7 +129,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return 0;
         cc_node head = k->nodes[fn];
         if (head.kind == CC_LLAM)
-            return ck_whnf(k, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
+            return weak_again(next, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
         return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
     }
     if (n.kind == CC_PAIR) {
@@ -134,7 +141,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         cc_node second = k->nodes[n.child[2]];
         if (first.kind == CC_FST && second.kind == CC_SND &&
             ck_alpha_equal(k, first.child[0], second.child[0]))
-            return ck_whnf(k, first.child[0]);
+            return weak_again(next, first.child[0]);
     }
     if (n.kind == CC_FST || n.kind == CC_SND) {
         cc_term pair = ck_whnf(k, n.child[0]);
@@ -142,7 +149,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return 0;
         cc_node head = k->nodes[pair];
         if (head.kind == CC_PAIR)
-            return ck_whnf(k, head.child[n.kind == CC_FST ? 1 : 2]);
+            return weak_again(next, head.child[n.kind == CC_FST ? 1 : 2]);
         return pair == n.child[0] ? term : ck_make(k, n.kind, 0, pair, 0, 0, 0);
     }
 
@@ -152,7 +159,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
             return 0;
         cc_node head = k->nodes[value];
         if (head.kind == CC_INL || head.kind == CC_INR)
-            return ck_whnf(k, app(k, n.child[head.kind == CC_INL ? 1 : 2], head.child[1]));
+            return weak_again(next, app(k, n.child[head.kind == CC_INL ? 1 : 2], head.child[1]));
         return value == n.child[3] ? term : ck_make(k, CC_SUMREC, 0, n.child[0], n.child[1], n.child[2], value);
     }
     if (n.kind == CC_UNITREC) {
@@ -160,7 +167,7 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (!value)
             return 0;
         if (k->nodes[value].kind == CC_POINT)
-            return ck_whnf(k, n.child[1]);
+            return weak_again(next, n.child[1]);
         return value == n.child[2] ? term : ck_make(k, CC_UNITREC, 0, n.child[0], n.child[1], value, 0);
     }
 
@@ -175,45 +182,46 @@ static cc_term weak(cc_kernel *k, cc_term term) {
              * neutral path still requires its independently checked type. */
             cc_formula argument;
             cc_init(&argument, CC_INTERVAL);
-            if (cc_copy(&argument, arg) != CC_OK)
-                return ck_fail(k, "Interval copy failed."), 0;
+            if (!ck_formula_result(k, cc_copy(&argument, arg), "Interval copy failed."))
+                return 0;
             cc_term path = ck_whnf(k, n.child[0]);
             cc_term result = 0;
             if (path && k->nodes[path].kind == CC_PLAM) {
                 cc_node line = k->nodes[path];
-                result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
+                result = ck_dimension_substitute(k, line.child[1], line.payload, &argument);
             } else if (path) {
                 ck_fail(k, "Unchecked path application reached reduction.");
             }
             cc_clear(&argument);
-            return result;
+            return weak_again(next, result);
         }
         cc_node type = k->nodes[n.child[1]];
         if (!arg->length)
-            return ck_whnf(k, type.child[1]);
+            return weak_again(next, type.child[1]);
         if (arg->length == 1 && !arg->clauses[0].positive && !arg->clauses[0].negative)
-            return ck_whnf(k, type.child[2]);
+            return weak_again(next, type.child[2]);
         cc_formula argument;
         cc_init(&argument, CC_INTERVAL);
-        if (cc_copy(&argument, arg) != CC_OK)
-            return ck_fail(k, "Interval copy failed."), 0;
+        if (!ck_formula_result(k, cc_copy(&argument, arg), "Interval copy failed."))
+            return 0;
         cc_term path = ck_whnf(k, n.child[0]);
         cc_term result = 0;
-        if (path && k->nodes[path].kind == CC_PLAM) {
+        bool beta = path && k->nodes[path].kind == CC_PLAM;
+        if (beta) {
             cc_node line = k->nodes[path];
-            result = ck_whnf(k, ck_dimension_substitute(k, line.child[1], line.payload, &argument));
+            result = ck_dimension_substitute(k, line.child[1], line.payload, &argument);
         } else if (path) {
             result = path == n.child[0] ? term : ck_make(k, CC_PAPP, n.payload, path, n.child[1], 0, 0);
         }
         cc_clear(&argument);
-        return result;
+        return beta ? weak_again(next, result) : result;
     }
     /* ∀-η: λ (x < ω). f {x} is f when x is not free in f. */
     if (n.kind == CC_LLAM) {
         cc_node head = k->nodes[n.child[1]];
         if (head.kind == CC_LAPP && k->nodes[head.child[1]].kind == CC_VAR &&
             k->nodes[head.child[1]].payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
-            return ck_whnf(k, head.child[0]);
+            return weak_again(next, head.child[0]);
         return term;
     }
     if (n.kind == CC_LAM || n.kind == CC_PLAM) {
@@ -224,20 +232,74 @@ static cc_term weak(cc_kernel *k, cc_term term) {
         if (n.kind == CC_LAM && head.kind == CC_APP) {
             cc_node argument = k->nodes[head.child[1]];
             if (argument.kind == CC_VAR && argument.payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
-                return ck_whnf(k, head.child[0]);
+                return weak_again(next, head.child[0]);
         }
         if (n.kind == CC_PLAM && head.kind == CC_PAPP) {
             const cc_formula *arg = cc_kernel_get_formula(k, head.payload);
             if (arg && n.payload < CC_DIMENSIONS && arg->length == 1 && !arg->clauses[0].negative &&
                 arg->clauses[0].positive == (UINT64_C(1) << n.payload) &&
                 !(ck_free_dims(k, head.child[0]) & (UINT64_C(1) << n.payload)))
-                return ck_whnf(k, head.child[0]);
+                return weak_again(next, head.child[0]);
         }
         return body == n.child[1] ? term : ck_make(k, n.kind, n.payload, n.child[0], body, 0, 0);
     }
     if (n.kind == CC_COMP)
         return ck_reduce_composition(k, term);
     return term;
+}
+
+/* Tail reductions keep only the handles awaiting a completed head, for the
+ * same cache publication that recursive returns used to perform. Failed work
+ * never publishes these entries. Each weak-head request owns its buffer.
+ * Once it is full, further tails still reduce but are not retained for caching;
+ * ticks and the deadline bound execution independently of this memo storage. */
+#define WEAK_LOCAL_TAILS 32
+#define WEAK_MAX_TAILS 16384
+
+static cc_term weak_tails(cc_kernel *k, cc_term term) {
+    cc_term local[WEAK_LOCAL_TAILS], *pending = local;
+    size_t count = 0, capacity = WEAK_LOCAL_TAILS;
+    cc_term result = 0;
+    for (;;) {
+        cc_term next = 0;
+        result = weak(k, term, &next);
+        if (k->error[0] || !next)
+            break;
+        if (count == capacity && capacity < WEAK_MAX_TAILS) {
+            size_t grown = capacity * 2;
+            cc_term *buffer = pending == local ? malloc(grown * sizeof *buffer)
+                : realloc(pending, grown * sizeof *buffer);
+            if (!buffer) {
+                ck_fail_as(k, CC_ERROR_RESOURCE, "Normalization stack allocation failed.");
+                break;
+            }
+            if (pending == local)
+                memcpy(buffer, local, count * sizeof *buffer);
+            pending = buffer;
+            capacity = grown;
+        }
+        if (count < capacity)
+            pending[count++] = term;
+        term = next;
+        if (term >= k->count || !ck_tick(k)) {
+            result = 0;
+            break;
+        }
+        if (k->weak_cache[term]) {
+            result = k->weak_cache[term];
+            break;
+        }
+    }
+    if (result && !k->error[0]) {
+        k->weak_cache[term] = result;
+        for (size_t i = 0; i < count; ++i)
+            k->weak_cache[pending[i]] = result;
+    } else {
+        result = 0;
+    }
+    if (pending != local)
+        free(pending);
+    return result;
 }
 
 cc_term ck_whnf(cc_kernel *k, cc_term term) {
@@ -247,49 +309,76 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
         return k->weak_cache[term];
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
     }
-    cc_term result = weak(k, term);
+    cc_term result = weak_tails(k, term);
     --k->recursion;
-    if (result && !k->error[0])
-        k->weak_cache[term] = result;
     return result;
 }
 
-/* Glue eta in a normal form, whose parts are normal. Restricting the base to
- * a piece's face can make a new redex, as p @ i at i = 0 is p's left
- * endpoint, so each piece is compared with the normal form of the base's
- * restriction. Still by syntax, as in weak(): conversion never decides a
- * reduction step. Returns the contraction, the term itself, or 0 on error. */
-static cc_term normal_glue_eta(cc_kernel *k, cc_term term) {
-    cc_node n = k->nodes[term];
-    cc_term projected = ck_whnf(k, n.child[1]);
-    if (!projected)
-        return 0;
-    cc_node projection = k->nodes[projected];
-    if (projection.kind != CC_UNGLUE || !ck_alpha_equal(k, n.child[0], projection.child[0]))
-        return k->error[0] ? 0 : term;
-    for (cc_term system = n.child[2]; system; system = k->nodes[system].child[1]) {
-        cc_node piece = k->nodes[system];
-        const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
-        cc_formula face;
-        cc_init(&face, CC_FACE);
-        if (!raw || cc_copy(&face, raw) != CC_OK) {
-            cc_clear(&face);
-            return ck_fail(k, "Glue eta face allocation failed."), 0;
-        }
-        bool agrees = true;
-        for (size_t i = 0; i < face.length && agrees; ++i) {
-            cc_term restricted = ck_normal(k, ck_restrict(k, projection.child[1], face.clauses[i]));
-            agrees = restricted && ck_alpha_equal(k, piece.child[0], restricted);
-        }
-        cc_clear(&face);
-        if (k->error[0])
-            return 0;
-        if (!agrees)
-            return term;
+/* Full normalization owns an explicit continuation stack. Weak-head reduction,
+ * substitution and comparison retain their own guards; this does not remove
+ * the syntax-depth bound protecting those other traversals. A frame holds
+ * handles and node copies, never pointers into an arena that can move. */
+typedef struct {
+    cc_term term, rebuilt, value, system;
+    cc_node node;
+    size_t clause;
+    unsigned next, phase;
+} normal_frame;
+enum { NORMAL_ENTER, NORMAL_CHILDREN, NORMAL_CHILD_DONE, NORMAL_GLUE,
+       NORMAL_GLUE_DONE, NORMAL_REDUCE, NORMAL_REDUCED };
+#define NORMAL_LOCAL_FRAMES 32
+#define NORMAL_MAX_FRAMES 16384
+
+typedef struct {
+    normal_frame *frames;
+    size_t count, capacity;
+    normal_frame local[NORMAL_LOCAL_FRAMES];
+} normal_stack;
+
+static bool normal_push(cc_kernel *k, normal_stack *stack, cc_term term) {
+    if (stack->count == stack->capacity) {
+        if (stack->capacity == NORMAL_MAX_FRAMES)
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded.");
+        size_t capacity = stack->capacity * 2;
+        normal_frame *frames = stack->frames == stack->local
+            ? malloc(capacity * sizeof *frames)
+            : realloc(stack->frames, capacity * sizeof *frames);
+        if (!frames)
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Normalization stack allocation failed.");
+        if (stack->frames == stack->local)
+            memcpy(frames, stack->local, stack->count * sizeof *frames);
+        stack->frames = frames;
+        stack->capacity = capacity;
     }
-    return projection.child[1];
+    stack->frames[stack->count++] = (normal_frame){.term = term};
+    return true;
+}
+
+/* Normalize partial bodies only on the endpoints common to every clause of
+ * their face. Preserve disjunctions and piece order. The tail belongs to its
+ * own face, and a composition's direction never occurs in its tube faces. */
+static bool normal_restrict(cc_kernel *k, cc_node *node) {
+    if (node->kind != CC_TUBE && node->kind != CC_GLUE_SYSTEM)
+        return true;
+    const cc_formula *face = cc_kernel_get_formula(k, node->payload);
+    if (!face || face->sort != CC_FACE)
+        return ck_fail(k, "Unchecked partial face reached reduction.");
+    if (face->length) {
+        cc_clause common = face->clauses[0];
+        for (size_t i = 1; i < face->length; ++i) {
+            common.positive &= face->clauses[i].positive;
+            common.negative &= face->clauses[i].negative;
+        }
+        unsigned parts = node->kind == CC_GLUE_SYSTEM ? 2 : 1;
+        for (unsigned i = 0; i < parts; ++i) {
+            node->child[i] = ck_restrict(k, node->child[i], common);
+            if (!node->child[i])
+                return false;
+        }
+    }
+    return true;
 }
 
 cc_term ck_normal(cc_kernel *k, cc_term term) {
@@ -299,75 +388,140 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
      * Misses take their entry step in ck_whnf, as before. */
     if (k->normal_cache[term])
         return ck_tick(k) ? k->normal_cache[term] : 0;
-    cc_term head = ck_whnf(k, term);
-    if (!head)
-        return 0;
+    /* Protect any re-entry through other, still recursive reducer APIs.
+     * Traversing normal-form children does not consume native stack depth. */
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native normal-form depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded."), 0;
     }
-    cc_node n = k->nodes[head];
-    if (n.kind == CC_TUBE || n.kind == CC_GLUE_SYSTEM) {
-        const cc_formula *face = cc_kernel_get_formula(k, n.payload);
-        if (!face || face->sort != CC_FACE) {
-            --k->recursion;
-            return ck_fail(k, "Unchecked partial face reached reduction."), 0;
-        }
-        /* A wall exists only on its face. Generated transport corrections
-         * can still mention coordinates fixed there: reduce those before
-         * normalizing the wall, rather than expanding their off-face values.
-         * For a disjunction, only endpoints common to every clause are
-         * available. Keep the face and its order, including under renaming.
-         * A tube face never mentions its composition's bound direction:
-         * SystemTube enforces this, and reduction picks fresh directions. */
-        if (face->length) {
-            cc_clause common = face->clauses[0];
-            for (size_t i = 1; i < face->length; ++i) {
-                common.positive &= face->clauses[i].positive;
-                common.negative &= face->clauses[i].negative;
+    normal_stack stack = {.capacity = NORMAL_LOCAL_FRAMES};
+    stack.frames = stack.local;
+    normal_push(k, &stack, term);
+    cc_term result = 0;
+    while (stack.count && !k->error[0]) {
+        normal_frame *frame = &stack.frames[stack.count - 1];
+        switch (frame->phase) {
+        case NORMAL_ENTER: {
+            if (!frame->term || frame->term >= k->count)
+                goto failed;
+            if (k->normal_cache[frame->term]) {
+                result = ck_tick(k) ? k->normal_cache[frame->term] : 0;
+                goto complete;
             }
-            unsigned parts = n.kind == CC_GLUE_SYSTEM ? 2 : 1;
-            for (unsigned i = 0; i < parts; ++i) {
-                n.child[i] = ck_restrict(k, n.child[i], common);
-                if (!n.child[i]) {
-                    --k->recursion;
-                    return 0;
+            cc_term head = ck_whnf(k, frame->term);
+            if (!head)
+                goto failed;
+            frame->node = k->nodes[head];
+            if (!normal_restrict(k, &frame->node))
+                goto failed;
+            frame->phase = NORMAL_CHILDREN;
+            break;
+        }
+        case NORMAL_CHILD_DONE:
+            frame->node.child[frame->next++] = result;
+            frame->phase = NORMAL_CHILDREN;
+            /* fall through */
+        case NORMAL_CHILDREN: {
+            while (frame->next < ck_arity(frame->node.kind) && !frame->node.child[frame->next])
+                ++frame->next;
+            if (frame->next < ck_arity(frame->node.kind)) {
+                frame->phase = NORMAL_CHILD_DONE;
+                normal_push(k, &stack, frame->node.child[frame->next]);
+                break;
+            }
+            cc_node n = frame->node;
+            frame->rebuilt = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
+            if (!frame->rebuilt)
+                goto failed;
+            frame->value = frame->rebuilt;
+            frame->phase = NORMAL_REDUCE;
+            if (n.kind == CC_GLUE_TERM) {
+                cc_term projected = ck_whnf(k, n.child[1]);
+                if (!projected)
+                    goto failed;
+                cc_node projection = k->nodes[projected];
+                if (projection.kind == CC_UNGLUE && ck_alpha_equal(k, n.child[0], projection.child[0])) {
+                    frame->value = projection.child[1];
+                    frame->system = n.child[2];
+                    frame->phase = NORMAL_GLUE;
                 }
             }
+            break;
         }
-    }
-    for (unsigned i = 0; i < ck_arity(n.kind); ++i)
-        if (n.child[i]) {
-            n.child[i] = ck_normal(k, n.child[i]);
-            if (!n.child[i]) {
-                --k->recursion;
-                return 0;
+        case NORMAL_GLUE_DONE:
+            /* Restricting the projected value can create redexes. Compare
+             * the completed normal form, never its intermediate weak head.
+             * These are syntax side conditions, not conversion calls. */
+            if (!ck_alpha_equal(k, k->nodes[frame->system].child[0], result)) {
+                frame->value = frame->rebuilt;
+                frame->phase = NORMAL_REDUCE;
+                break;
             }
+            frame->phase = NORMAL_GLUE;
+            /* fall through */
+        case NORMAL_GLUE: {
+            if (!frame->system) {
+                frame->phase = NORMAL_REDUCE;
+                break;
+            }
+            cc_node piece = k->nodes[frame->system];
+            const cc_formula *face = cc_kernel_get_formula(k, piece.payload);
+            if (!face || face->sort != CC_FACE) {
+                ck_fail(k, "Unchecked Glue face reached reduction.");
+                goto failed;
+            }
+            if (frame->clause == face->length) {
+                frame->system = piece.child[1];
+                frame->clause = 0;
+                break;
+            }
+            /* Copy the clause before restriction can grow the formula arena;
+             * look the immutable face up again on the next continuation. */
+            cc_clause clause = face->clauses[frame->clause++];
+            cc_term restricted = ck_restrict(k, frame->value, clause);
+            if (!restricted)
+                goto failed;
+            frame->phase = NORMAL_GLUE_DONE;
+            normal_push(k, &stack, restricted);
+            break;
         }
-    cc_term result = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
-    cc_term rebuilt = result;
-    if (result && n.kind == CC_GLUE_TERM)
-        result = normal_glue_eta(k, result);
-    if (result)
-        result = ck_whnf(k, result);
-    /* Restricting a wall can expose a constructor and enable composition
-     * or an enclosing eliminator to compute. Its newly generated children
-     * still need full normalization; a weak head is not the final answer. */
-    if (result && result != rebuilt) {
-        /* With interning off, a stuck reduction can rebuild identical
-         * syntax at a new handle. Only a structural change needs another
-         * normalization pass; otherwise fresh copies would loop forever. */
-        if (!ck_alpha_equal(k, result, rebuilt))
-            result = k->error[0] ? 0 : ck_normal(k, result);
-        else
-            result = rebuilt;
+        case NORMAL_REDUCE:
+            result = ck_whnf(k, frame->value);
+            if (!result)
+                goto failed;
+            if (result != frame->rebuilt) {
+                /* With interning off, a stuck weak head may be a fresh copy.
+                 * Only a structural change warrants another full pass. */
+                if (!ck_alpha_equal(k, result, frame->rebuilt)) {
+                    if (k->error[0])
+                        goto failed;
+                    frame->phase = NORMAL_REDUCED;
+                    normal_push(k, &stack, result);
+                    break;
+                }
+                result = frame->rebuilt;
+            }
+            /* fall through */
+        case NORMAL_REDUCED:
+        complete:
+            if (!result || k->error[0])
+                goto failed;
+            /* Completed siblings survive a later failure. Never publish a
+             * partially rebuilt parent or an unfinished Glue side condition. */
+            k->normal_cache[frame->term] = result;
+            --stack.count;
+            break;
+        }
     }
+    if (k->error[0])
+        result = 0;
+    goto cleanup;
+failed:
+    result = 0;
+cleanup:
+    if (stack.frames != stack.local)
+        free(stack.frames);
     --k->recursion;
-    /* Recursive children can finish before a sibling fails. Their completed
-     * results remain usable, but never publish this node's partial result. */
-    if (!result || k->error[0])
-        return 0;
-    k->normal_cache[term] = result;
     return result;
 }
 
@@ -395,7 +549,7 @@ static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
         return cached != 0;
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native reduction recursion depth exceeded.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded.");
     }
     bool agrees = parts_agree(k, a, b);
     --k->recursion;
@@ -444,7 +598,7 @@ static cc_term glue_step(cc_kernel *k, cc_term term);
 cc_term ck_glue_step(cc_kernel *k, cc_term term) {
     if (++k->recursion > 1024) {
         --k->recursion;
-        return ck_fail(k, "Native reduction recursion depth exceeded."), 0;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
     }
     cc_term result = glue_step(k, term);
     --k->recursion;
@@ -474,9 +628,9 @@ static cc_term glue_step(cc_kernel *k, cc_term term) {
         const cc_formula *raw = cc_kernel_get_formula(k, piece.payload);
         cc_formula face;
         cc_init(&face, CC_FACE);
-        if (!raw || cc_copy(&face, raw) != CC_OK) {
+        if (!ck_formula_result(k, raw ? cc_copy(&face, raw) : CC_BAD_INPUT, "Glue eta face allocation failed.")) {
             cc_clear(&face);
-            return ck_fail(k, "Glue eta face allocation failed."), 0;
+            return 0;
         }
         bool agrees = true;
         for (size_t i = 0; i < face.length && agrees; ++i)

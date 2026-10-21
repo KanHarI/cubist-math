@@ -44,6 +44,10 @@
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
@@ -521,9 +525,9 @@ initial F : Field(U0);  // Error: The equational strategy does not yet generate 
 // A truncated law also fails without any implemented members.
 theory Inhabited(U &lt; UU0) {
   M : set U;
-  law nonempty : Trunc(U, M);
+  law inhabited : Trunc(U, M);
 }
-initial I : Inhabited(U0);  // Error: The law nonempty is not an equation between operation terms: the equational strategy does not support this law.</code></pre>
+initial I : Inhabited(U0);  // Error: The law inhabited is not an equation between operation terms: the equational strategy does not support this law.</code></pre>
           </section>
           <section id="library-algebra">
             <h2>The library's algebra</h2>

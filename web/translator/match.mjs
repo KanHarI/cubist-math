@@ -11,6 +11,7 @@
 // comes from its goal, through motive abstraction (motives.mjs), and each of
 // its clauses is a proof block.
 // Untrusted: the kernel checks every clause at its clause type.
+import { isResourceLimit } from "../resource-limits.mjs";
 import {propagateElaborationStop} from "./control.mjs";
 import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
@@ -28,7 +29,7 @@ import {enterExpressionScope} from "./expression-scopes.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
-const resourceFailure=error=>["fuel","budget","deadline"].includes(error?.kind)||error instanceof SearchLimit;
+const resourceFailure=error=>isResourceLimit(error?.kind)||error instanceof SearchLimit;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
@@ -559,7 +560,7 @@ function automaticClauseAt(translator, scope, type, name, node, proof, index) {
         const variable = at.fresh(target.name), inner = at.bind(variable, target.domain);
         return T.pi(variable, target.domain, goalType(inner, substituteTerm(target.body, target.name, T.variable(variable))));
       }
-      return target.tag === "Path" ? {...target, family:at.bindDimension(target.dim).nf(target.family)} : target;
+      return target.tag === "Path" ? at.pathFamilyHead(target) : target;
     };
     return finish(translator.block(proof.body, new Goal(goalType(scope, type), scope)));
   }
@@ -572,7 +573,7 @@ function automaticClauseAt(translator, scope, type, name, node, proof, index) {
     if (proof?.kind === "tactic" && proof.body[0].kind !== "hlevel") {
       const path = at.nf(target);
       return translator.block(proof.body, path.tag === "Path"
-        ? goal.with({...path,family:at.bindDimension(path.dim).nf(path.family)}) : goal);
+        ? goal.with(at.pathFamilyHead(path)) : goal);
     }
     if (!at.checker.kernel.definitions.has("hlevels__HasLevel"))
       throw scope.unit.locate(Error(`Cannot generate ${name}: import hlevels and supply h-level evidence for the motive, or give the clause explicitly.`), node);

@@ -1,7 +1,7 @@
 import "../fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {T,substituteTerm} from "../../web/translator/core.mjs";
+import {T,substituteTerm,betaReduce} from "../../web/translator/core.mjs";
 import {interval as I} from "../../web/translator/lattice.mjs";
 import {checkKernel} from "./kernel-check.mjs";
 // The kernel's check, with a refusal as an exception.
@@ -85,4 +85,26 @@ test("shared syntax substituted below different binders keeps each scope",()=>{
   assert.equal(changed.arg.name,"z");
   assert.equal(changed.fn.body.fn.name,"y");
   assert.equal(changed.arg.body.fn.name,"y");
+});
+
+test("local reduction spends its budget before following newly exposed redexes",()=>{
+  const identity=T.lam("u",T.unit,v("u"));
+  const twice=T.lam("f",T.pi("u",T.unit,T.unit),app(v("f"),app(v("f"),T.point)));
+  const term=app(twice,identity);
+  const partial=betaReduce(term,1);
+  assert.deepEqual(partial,app(identity,app(identity,T.point)));
+  assert.deepEqual(betaReduce(term,3),T.point);
+  kernel.verify(partial,T.unit);
+  // The helper also accepts unchecked syntax. A self-reproducing redex
+  // must return a residual at the bound, rather than recurse indefinitely.
+  const self=T.lam("x",T.unit,app(v("x"),v("x"))),omega=app(self,self);
+  assert.deepEqual(betaReduce(omega,4),omega);
+});
+
+test("local reduction preserves unchanged nodes and shares a contracted argument",()=>{
+  const endpoint=at(v("P"),I.zero);
+  const type=T.sigma("x",endpoint,endpoint);
+  assert.equal(betaReduce(type),type);
+  const redex=app(T.lam("ignored",two,type),left);
+  assert.equal(betaReduce(redex),type);
 });

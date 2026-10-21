@@ -32,7 +32,7 @@ their original evidence; this status audit does not rerun those reviews.
 | Track | Implemented | Still open |
 | --- | --- | --- |
 | Kernel and universes | Instruction-kernel stages 1–5; checker retirement; G0; face restriction; checking/bridge optimizations #194–#197 | Remaining stage-6 performance/certificate work; optional E1/E2 |
-| Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand; archive truncation remedies |
+| Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand; legacy truncation removal (K2.5), completed by the archive retirement (I0.5) |
 | Proof ergonomics | Rewriting, simplification, `let`, holes, inference, implicit parameters, cubical shorthand, two h-level solver slices, evaluation patterns/readout, box notation and squares | Folded path rules, constructor descent, induction tooling, broader dependent rewriting, solver and square-migration remainders |
 | Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
@@ -78,7 +78,9 @@ these language strands. See
   approved mathematical arguments. These remain active references after release.
 - [Truncation migrations](hott/h1-truncation-migration.md) and their
   [ledger](hott/h1-truncation-ledger.json): 17 pinned changes and an implemented
-  verifier; the rest of K2.5 remains unfinished.
+  verifier. Decided on 2026-10-20: the legacy assumptions are removed with the
+  archive ([removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions)),
+  and the remaining archive remedies are not pursued.
 
 ## High-level abstractions
 
@@ -128,7 +130,10 @@ EVAL0 and EVAL1 are implemented; EVAL2–EVAL8 and NUM0–NUM2 remain planned.
 
 [mathematics/](mathematics/) contains the library-development tracks.
 The first library is archived. Its checked results remain regression
-evidence, not a claim that the new library has rebuilt those areas.
+evidence, not a claim that the new library has rebuilt those areas. The
+archive itself is to be retired: [archive retirement](archive-retirement.md)
+(I0.5, direction adopted on 2026-10-20) owns the follow-ups, including the
+per-area decisions on what the library rebuilds before the archive is deleted.
 
 | Roadmap | Checked progress | Remaining scope |
 | --- | --- | --- |

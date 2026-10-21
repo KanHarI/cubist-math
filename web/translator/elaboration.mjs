@@ -5,7 +5,8 @@
 // authority: every term they help build is checked.
 import {propagateElaborationStop} from "./control.mjs";
 import {NameSupply} from "./names.mjs";
-import {T,freeNames,onFace,substituteTerm,isTerm} from "./core.mjs";
+import {T,freeNames,onFace,substituteTerm,substituteDimension,isTerm,homogeneousPath} from "./core.mjs";
+import {interval as I} from "./lattice.mjs";
 import {SearchFuel,DECLARATION_FUEL,emptySearchRecord} from "./fuel.mjs";
 import {ObservationFrame} from "./observations.mjs";
 import {BindingAdapter,SlotOutcomes,bindingResolution} from "../cubist/bindings.mjs";
@@ -248,7 +249,7 @@ export class Scope {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     let index=0;while([...dimensions.values()].includes(index))index++;
-    if(index>=64)throw Error("At most 64 simultaneous cubical dimensions are supported.");
+    if(index>=64)throw Object.assign(Error("At most 64 simultaneous cubical dimensions are supported."),{kind:"resource"});
     return this.with({dimensions:new Map(dimensions).set(name,index)});
   }
   // A name from the unit's supply that nothing here binds: a scope built
@@ -268,7 +269,7 @@ export class Scope {
     catch(error) {throw site?this.unit.locate(error,site):error;}
   }
   // A speculative check: {ok:true,term}, or {ok:false,failure,error} with
-  // failure "mismatch", "budget" or "deadline". No caller reads the message.
+  // failure "mismatch", "budget", "deadline" or "resource". No caller reads the message.
   attempt(term,type) {this.spend("queries");return this.checker.attempt(term,type,this.context,this.dimensions);}
   // Whether `term` has `type`. Only a mismatch answers no: running out of
   // steps or time ends the search that asked.
@@ -278,6 +279,20 @@ export class Scope {
     throw result.error;
   }
   nf(term) {this.spend("queries");return this.checker.nf(term,this.dimensions);}
+  // A locally reduced carrier can contain fresh path applications. Derive
+  // it before callers ask head queries, which require checked annotations.
+  homogeneousPath(path) {
+    const homogeneous=homogeneousPath(path);
+    return homogeneous&&homogeneous!==path
+      ? {...homogeneous,family:this.infer(homogeneous.family).term} : homogeneous;
+  }
+  // Decoder binder names need not be fresh for dimensions unused by this
+  // path. Open its family under a fresh coordinate before reducing its head.
+  pathFamilyHead(path) {
+    const dim=this.fresh("i"),inner=this.bindDimension(dim);
+    const family=substituteDimension(path.family,path.dim,I.variable(dim));
+    return {...path,dim,family:inner.nf(inner.infer(family).term)};
+  }
   // The next clause's type of an eliminator (H1), from the kernel.
   clauseType(motive,clauses) {this.spend("queries");return this.checker.nextClauseType(motive,clauses,this.context,this.dimensions);}
   equal(left,right) {this.spend("queries");return this.checker.equal(left,right,this.context,this.dimensions,this.unit.names);}

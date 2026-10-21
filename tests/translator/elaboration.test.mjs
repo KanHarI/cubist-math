@@ -39,6 +39,19 @@ test('a derived unit shares its name supply and replaces only the given fields',
   assert.equal(error.message,'Bad. at 1:1');
 });
 
+test('opening a decoded path family freshens a coordinate already in scope',t=>{
+  const checker=kernelChecker();t.after(()=>checker.kernel.dispose());
+  const scope=new Scope(new SourceUnit({checker}))
+    .bind('P',T.path('j',T.universe(0),T.unit,T.unit)).bindDimension('d0');
+  const family=T.app(T.lam('ignored',T.unit,T.at(T.variable('P'),[['d0:1']])),T.point);
+  const path=T.path('d0',family,T.point,T.point);
+  const reduced=scope.pathFamilyHead(path);
+  assert.notEqual(reduced.dim,'d0');
+  assert.deepEqual(reduced.family.arg,[[`${reduced.dim}:1`]]);
+  assert.doesNotThrow(()=>scope.check(reduced,T.universe(0)));
+  assert.ok(scope.dimensions.has('d0'),'the outer scope is unchanged');
+});
+
 test('elaborating a module twice yields the same generated names and inference queries',()=>{
   const source=`def twice(f : Unit -> Unit, n : Unit) := f(f(n));
     def id_(A : U0) : A -> A { intro x; exact x; }

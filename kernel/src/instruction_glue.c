@@ -55,7 +55,7 @@ static bool overlapping(cc_kernel *k, cc_term cursor, unsigned next, cc_clause c
         if ((clause.positive | other.positive) & (clause.negative | other.negative))
             continue;
         if (index >= 64)
-            return ck_fail(k, "A piece may overlap only the first 64 pieces.");
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "A piece may overlap only the first 64 pieces.");
         *out |= UINT64_C(1) << index;
     }
     return true;

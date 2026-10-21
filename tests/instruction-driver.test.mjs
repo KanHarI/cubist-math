@@ -623,11 +623,13 @@ test("the glue move waits for enclosing reductions, and reduces nothing beyond i
   assert.equal(program.checker.checkView(T.line("i", T.unit, left), T.path("i", T.unit, left, right), [["y", naturalSort]]).term.tag, "PLam");
   assert.ok(!made.some(move => move.startsWith("glue:")), made.join(" "));
   // Compared directly, the two Glue terms differ; the glue move is tried, and
-  // is stuck without reaching the depth of syntax.
+  // is stuck. Final conversion then tries normalization: its depth limit is
+  // preserved, rather than disguised as a type mismatch.
   let error = null;
   try { program.checker.checkView(T.line("i", G, deep), T.path("i", G, deep, y), [["y", naturalSort]]); }
   catch (thrown) { error = thrown; }
-  assert.ok(error && !/syntax depth/.test(error.message), error?.message);
+  assert.equal(error?.kind, "resource", error?.message);
+  assert.match(error.message, /syntax depth/);
   assert.ok(made.some(move => move.startsWith("glue:") && move.endsWith(":stuck")), made.join(" "));
 });
 

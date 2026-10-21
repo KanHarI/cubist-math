@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {T} from '../../web/translator/core.mjs';
 import {interval as I} from '../../web/translator/lattice.mjs';
-import {equiv,strictIsomorphismEquivalence,univalencePath} from '../../web/translator/equivalence.mjs';
+import {equiv,equivalenceFromInverse,strictIsomorphismEquivalence,univalencePath} from '../../web/translator/equivalence.mjs';
 import {checkKernel} from './kernel-check.mjs';
 import {dependentPathToTransport,transportToDependentPath,
   dependentPathTransportSection,dependentPathTransportRetraction,
@@ -46,6 +46,15 @@ test('dependent path / transport bridge supplies checked contractible fibers',()
   const {args,S,E,context}=generic(0);
   const result=checkClosed(dependentPathTransportEquivalence(...args),equiv(S,E),context);
   assert(result.ok,result.error);
+});
+
+test('fully inlined path / transport proofs also supply checked contractible fibers',()=>{
+  for(const level of [0,2]) {
+    const {args,S,E,f,g,context}=generic(level);
+    const expanded=equivalenceFromInverse(S,E,f,g,
+      dependentPathTransportSection(...args),dependentPathTransportRetraction(...args));
+    checkClosed(expanded,equiv(S,E),context);
+  }
 });
 
 

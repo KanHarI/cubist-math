@@ -1,9 +1,10 @@
+import { isResourceLimit } from "../resource-limits.mjs";
 // `inductive` declarations (work plan L2.1; docs/roadmaps/hott/h1-signature-
 // specification.md, section 9): a declaration is lowered to a signature in
 // normal form, admitted through the checker, and then used by name. This is
 // untrusted elaboration: the kernel checks the normal form, positivity and
 // universes, and derives every constructor type again.
-import {propagateElaborationStop} from "./control.mjs";
+import {propagateElaborationStop,propagateLimit} from "./control.mjs";
 import {T,finiteLevel,freeNames,substituteTerm,substituteDimension,betaReduce} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {repeatedName,bindingStem} from "./names.mjs";
@@ -187,7 +188,7 @@ export function lowerInductive(translator, d, scope) {
   catch (error) {
     propagateElaborationStop(error);
     // A declared universe below a data type's is lowering: name the argument.
-    if (declared !== null && (error.kind === "mismatch" || /universe|cumulative|not included/i.test(error.message))) {
+    if (!isResourceLimit(error?.kind) && declared !== null && (error.kind === "mismatch" || /universe|cumulative|not included/i.test(error.message))) {
       const lowered = sizes.find(size => !checker.levelWithin?.(size.level, declared));
       if (lowered) throw locate(Object.assign(Error(`${lowered.constructor}'s argument ${lowered.argument} lives in a universe above ${d.name.text}'s declared one: a declared type cannot lower its data (K2.5).`),
         { kind: error.kind, dataUniverse: { constructor: lowered.constructor, argument: lowered.argument } }), d.name);
@@ -315,7 +316,7 @@ export function resolveInductive(translator, node, value, args, scope, expected)
         try {
           const type = scope.nf(scope.infer(translator.term(arg, quiet, null)).type);
           if (type.tag === "Sort" && type.signature === inductive.binding) { instance = type; break; }
-        } catch (control) {propagateElaborationStop(control); /* Not inferable alone: the next argument may be. */ }
+        } catch (control) {propagateLimit(control); /* Not inferable alone: the next argument may be. */ }
         finally { observations.discard(); }
       }
     }

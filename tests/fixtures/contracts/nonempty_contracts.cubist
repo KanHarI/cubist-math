@@ -1,0 +1,129 @@
+// Inhabitation checks explicit, assumption-free evidence without comparing proofs.
+import propositions;
+use unat;
+
+def ConstantUnit(A : U0) : U0 := Unit;
+
+def ConstantVoid(A : U0) : U0 := Void;
+
+# test(nonempty.unit)
+evaluate nonempty Unit by tt;
+
+# test(nonempty.equality)
+evaluate nonempty (2 + 2 = 4) by refl(4);
+
+# test(nonempty.refutation)
+evaluate nonempty (Void -> Void) by fun (x : Void) => x;
+
+# test(nonempty.other_refutation)
+evaluate nonempty (Void -> Void) by fun (x : Void) => absurd(x);
+
+# test(nonempty.universe)
+evaluate nonempty U1 by Unit;
+
+# test(nonempty.dependent)
+evaluate nonempty (exists A : U0. A) by (Unit, tt);
+
+# test(nonempty.empty)
+# expect_error(E606)
+// Error: E606: Type mismatch: found Unit, expected Void.
+evaluate nonempty Void by tt;
+
+# test(nonempty.false_equality)
+# expect_error(E606)
+// Error: E606: Type mismatch: found 2 = 2, expected 2 = 3.
+evaluate nonempty (2 = 3) by refl(2);
+
+# test(nonempty.false_refutation)
+# expect_error(E606)
+// Error: E606: Type mismatch: found Unit -> Unit, expected Unit -> Void.
+evaluate nonempty (Unit -> Void) by fun (x : Unit) => x;
+
+# test(nonempty.value_is_not_type)
+# expect_error(E604)
+// Error: E604: Instruction kernel: Expected U, found Unit.
+evaluate nonempty tt by tt;
+
+# test(nonempty.assumption_in_type)
+# expect_error(E324)
+// Error: E324: The evaluated term depends on non-computing assumptions: Truncate. Path to Truncate:
+//   Truncate.
+evaluate nonempty ConstantUnit(Truncate(U0, Unit)) by tt;
+
+# test(nonempty.assumption_in_evidence)
+# expect_error(E324)
+// Error: E324: The evaluated term depends on non-computing assumptions: Truncate, TruncateElim,
+//   TruncateIntro. Path to Truncate: Truncate.
+evaluate nonempty ((Unit -> Void) -> Void) by fun (no : Unit -> Void) => TruncateElim(
+  U0, Unit, Void, fun (a, b : Void) => absurd(a), no, TruncateIntro(U0, Unit, tt)
+);
+
+# test(nonempty.after_refusals)
+evaluate nonempty (Unit -> Unit) by fun x => x;
+
+// This proof has a very large full normal form; inhabitation needs its checked type.
+# test(nonempty.quotient_foundation)
+evaluate nonempty IsSet(U1, Prop(U0)) by prop_type_is_set(U0);
+
+# test(nonempty.universe_refusal)
+# expect_error(E606)
+// Error: E606: Type mismatch: found U1, expected U0.
+evaluate nonempty U0 by U0;
+
+# test(empty.void)
+evaluate empty Void by fun (x : Void) => x;
+
+# test(empty.other_refutation)
+evaluate empty Void by fun (x : Void) => absurd(x);
+
+# test(empty.disequality)
+evaluate empty (0 = 1) by unat_zero_ne_succ(0);
+
+# test(empty.inferred_lambda)
+evaluate empty Void by fun x => x;
+
+# test(empty.inhabited)
+# expect_error(E606)
+// Error: E606: Type mismatch: found Unit -> Unit, expected Unit -> Void.
+evaluate empty Unit by fun (x : Unit) => x;
+
+# test(empty.wrong_evidence)
+# expect_error(E606)
+// Error: E606: Type mismatch: found Unit, expected Void -> Void.
+evaluate empty Void by tt;
+
+# test(empty.value_is_not_type)
+# expect_error(E604)
+// Error: E604: Instruction kernel: Expected U, found Unit.
+evaluate empty tt by fun (x : Void) => x;
+
+# test(empty.assumption_in_type)
+# expect_error(E324)
+// Error: E324: The evaluated term depends on non-computing assumptions: Truncate. Path to Truncate:
+//   Truncate.
+evaluate empty ConstantVoid(Truncate(U0, Unit)) by fun (x : Void) => x;
+
+# test(empty.assumption_in_evidence)
+# expect_error(E324)
+// Error: E324: The evaluated term depends on non-computing assumptions: Truncate, TruncateElim,
+//   TruncateIntro. Path to Truncate: Truncate.
+evaluate empty (Unit -> Void) by fun (no : Unit -> Void) => TruncateElim(
+  U0, Unit, Void, fun (a, b : Void) => absurd(a), no, TruncateIntro(U0, Unit, tt)
+);
+
+# test(empty.after_refusals)
+evaluate empty Void by fun (x : Void) => x;
+
+# test(nonempty.type_hole)
+# expect_error(E385)
+# expect_error_at(_)
+// Error: E385: A hole _ stands for an argument of a call, which the call's other arguments or the
+//   type expected of it determine; anywhere else, write the term.
+evaluate nonempty _ by tt;
+
+# test(empty.proof_hole)
+# expect_error(E385)
+# expect_error_at(_)
+// Error: E385: A hole _ stands for an argument of a call, which the call's other arguments or the
+//   type expected of it determine; anywhere else, write the term.
+evaluate empty Void by _;

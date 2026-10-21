@@ -44,6 +44,10 @@
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
@@ -89,7 +93,7 @@ inductive List(U &lt; UU0, A : U) : U {
   cons(head : A, tail : List(U, A));
 }
 
-def empty : List(U0, UNat) := nil;
+def empty_list : List(U0, UNat) := nil;
 def numbers : List(U0, UNat) := cons(2, cons(3, nil));
 def empty_again := typed(List(U0, UNat), nil);</code></pre>
             <p><code>List(U0, UNat)</code> is a type. <code>nil</code> builds an empty list, and <code>cons(head, tail)</code> prepends an element. Write the universe and type arguments when applying <code>List</code>. The constructors take only their declared arguments; their instance is inferred from the expected type. A result annotation, a function argument type, or <code>typed</code> can supply it. In <code>numbers</code>, the expected type also reaches the nested constructors.</p>

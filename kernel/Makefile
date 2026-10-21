@@ -11,8 +11,8 @@ SANITIZERS ?= address,undefined
 comma := ,
 SRC = $(wildcard src/*.c)
 HEADERS = $(sort $(wildcard include/*.h src/*.h))
-TESTS = test-lattice test-kernel-api test-comparison test-path-head \
-	test-checkpoint test-instructions test-levels test-work test-signatures test-isolation test-faces test-normalize
+TESTS = test-lattice test-kernel-api test-comparison test-path-head test-substitution test-traversals \
+	test-checkpoint test-allocations test-instructions test-levels test-work test-signatures test-isolation test-faces test-normalize
 PROGRAMS = lattice-cli bench-lattice $(TESTS)
 # The kernel's sources compile once per configuration, into objects every
 # program links, and each object records the headers it includes (-MMD), so
@@ -47,6 +47,18 @@ $(OUT)/configuration: | $(OUT)/obj
 	printf '%s\n' $(CONFIGURATION) > $@
 $(OUT)/obj/%.o: src/%.c | $(OUT)/obj $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/instructions-fault.o: src/instructions.c tests/allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/allocation_fault.h -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/normalization-fault.o: src/term_normalize.c tests/normal_allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/normal_allocation_fault.h -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/substitution-fault.o: src/term_substitution.c tests/substitution_allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/substitution_allocation_fault.h -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/comparison-fault.o: src/term_conversion.c tests/traversal_allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/traversal_allocation_fault.h -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/levels-fault.o: src/levels.c tests/traversal_allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/traversal_allocation_fault.h -MMD -MP -c $< -o $@
+$(OUT)/obj/tests/syntax-cache-fault.o: src/syntax_cache.c tests/traversal_allocation_fault.h | $(OUT)/obj/tests $(OUT)/configuration
+	$(CC) $(CPPFLAGS) $(CFLAGS) -include tests/traversal_allocation_fault.h -MMD -MP -c $< -o $@
 $(OUT)/obj/tests/%.o: tests/%.c | $(OUT)/obj/tests $(OUT)/configuration
 	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
 # The link $(1) pointed at $(2), only when it points elsewhere, by renaming a
@@ -58,8 +70,15 @@ $(OUT)/obj/tests/%.o: tests/%.c | $(OUT)/obj/tests $(OUT)/configuration
 publish = [ "$$(readlink $(1) 2>/dev/null)" = "$(2)" ] || { ln -s $(2) $(1).$$$$ && mv -f $(1).$$$$ $(1); }
 # Each program is its source in tests/, named with underscores, linked with
 # the kernel's objects as one command once compiled and linked it.
+fault_sources_test-allocations = instructions term_normalize
+fault_objects_test-allocations = instructions-fault normalization-fault
+fault_sources_test-substitution = term_substitution
+fault_objects_test-substitution = substitution-fault
+fault_sources_test-traversals = term_conversion levels syntax_cache
+fault_objects_test-traversals = comparison-fault levels-fault syntax-cache-fault
+program_objects = $(filter-out $(addprefix $(OUT)/obj/,$(addsuffix .o,$(fault_sources_$(1)))),$(OBJ)) $(addprefix $(OUT)/obj/tests/,$(addsuffix .o,$(fault_objects_$(1))))
 define PROGRAM
-$(OUT)/bin/$(1): $(OUT)/obj/tests/$(subst -,_,$(1)).o $(OBJ) | $(OUT)/bin
+$(OUT)/bin/$(1): $(OUT)/obj/tests/$(subst -,_,$(1)).o $(call program_objects,$(1)) | $(OUT)/bin
 	$$(CC) $$(CPPFLAGS) $$(CFLAGS) $$(LDFLAGS) $$^ $$(LDLIBS) -o $$@
 $(BUILD)/$(1): $(OUT)/bin/$(1) FORCE
 	@$$(call publish,$$@,$(ID)/bin/$(1))

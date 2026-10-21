@@ -246,15 +246,22 @@ export class CubicalSyntax {
     });
   }
   decode(id, dimensions = new Map()) {
+    const encodingKey = dimensionContextKey(dimensions);
     // A node's decoding depends only on the names of its free dimensions, so
     // it is decoded, and cached, under those alone. A binder inside may then
     // reuse the name of a dimension the node does not mention.
     const free = this.freeDimensions(id);
+    const assigned = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
+    const completeContext = (free & ~assigned) === 0n;
     if ([...dimensions.values()].some(index => !(free & 1n << BigInt(index))))
       dimensions = new Map([...dimensions].filter(([, index]) => free & 1n << BigInt(index)));
     // In no dimension context, as most nodes are, the node alone.
     const cacheKey = dimensions.size ? JSON.stringify([id,dimensionContextKey(dimensions)]) : id;
-    if (this.decoded.has(cacheKey)) return this.decoded.get(cacheKey);
+    if (this.decoded.has(cacheKey)) {
+      const result = this.decoded.get(cacheKey);
+      if (completeContext) this.encoded.setNode(result, encodingKey, id);
+      return result;
+    }
     const { kind: tag, payload, children: c } = this.kernel.node(id);
     const child = i => this.decode(c[i], dimensions);
     let dim = `d${payload}`;
@@ -343,6 +350,13 @@ export class CubicalSyntax {
     };
     freeze(result);
     this.encoded.setNode(result, dimensionContextKey(dimensions), id);
+    // Encoding uses the caller's full context. Decoding ignores unused
+    // dimensions for sharing, but must also preserve the checked node in
+    // that original context, including when a later decode hits the cache.
+    // An inspection context can omit indices and use fallback names; those
+    // names need not encode back to the original slots. New binder contexts
+    // likewise still require derivation before head queries.
+    if (completeContext) this.encoded.setNode(result, encodingKey, id);
     this.decoded.set(cacheKey, result, id);
     return result;
   }}
