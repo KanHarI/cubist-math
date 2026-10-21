@@ -63,8 +63,8 @@ counters. The rational definitions are the debugging plan's main-only
 reproduction: `small_inverse` is `q_inv` of 2/3 and `small_inverse_neg` of
 −2/3, without #283, whose `bq_inv(-2/3)` they stand for. The walk is the
 value form proposed below, taken by head queries: weak heads through pairs,
-injections and constructor arguments, stopping at lambdas, path lambdas,
-types, formal compositions and neutral heads.
+injections and constructor arguments, stopping at term, path and level
+lambdas, types, formal compositions and neutral heads.
 
 | Definition | Weak head | Value-form walk | Full normal form |
 | --- | --- | --- | ---: |
@@ -144,11 +144,15 @@ deciding the match needs:
   expected-value checks are preserved, and a leaf is a `!!` on its part.
 
 A part is read by its type, never by its weak head's node kind: after eta a
-function's weak head can be a constructor (`succ` above) or another head, so
-a constructor pattern applies only at the declared type, as
-`evaluation.mjs` already requires. At a higher inductive or truncated type a
-weak head can be a formal composition rather than a constructor; a
-constructor pattern does not match it, as today.
+function's weak head can be a constructor (`succ` above, or `squash` for
+`mere_is_prop(U0, UNat)`), so a constructor pattern applies only at the
+declared type, as `evaluation.mjs` already requires. A path's weak head is
+a path lambda or a path constructor: `loop`, `relate(1, 3, tt)`,
+`squash(point(1), point(2))`, a free model's law path. At a higher inductive
+or truncated type a closed value can be a formal composition rather than a
+constructor: transport in `Circle` gives what today prints as
+`hcomp(Circle, base)`. A constructor pattern does not match it, as today,
+although `witness` reads through it; open question 6.
 
 **A bare `_` is refused.** `evaluate e expecting _;` would demand nothing and
 check only the type, silently turning today's computability statement into
@@ -159,9 +163,10 @@ its top still demands that head.
 Printing is an observation too. The REPL's `evaluate e` and
 `print(evaluate(e));` print the **value form**: weak heads descended through
 constructor arguments, pair components and injection values, stopping at
-term lambdas, path lambdas, types, formal compositions and neutral heads,
-which are shown as suspended. How a suspended part prints is open question 1
-below.
+term, path and level lambdas, types, formal compositions and neutral heads,
+which are shown as suspended. A path constructor is a weak head like any
+constructor and is shown with its arguments. How a suspended part prints is
+open question 1 below.
 
 **`!p`.** The part is reduced to its weak head before `p` is matched. With
 `_`, the head query must succeed and nothing more is asked. At the top, the
@@ -218,6 +223,60 @@ and in a pattern as the check that a part reaches some canonical head without
 naming it. `!!` keeps the normalization engine testable from source: every
 full-normalization gate in the NUM2 contracts is written with it, so the
 lazy default cannot silently weaken a gate.
+
+## Coverage of the language
+
+[`constructs.json`](evaluation-demand-marks/constructs.json) holds one closed
+example of every construct that yields a term to evaluate, with its weak
+head on main `0b914137`; `node probe.mjs constructs` runs it at a fixed
+budget of 20M ticks. It has 197 examples:
+
+- 64 declaration forms: every `def` form, `computable def`, implicit and
+  universe-generic parameters, recursion, inductive and higher inductive
+  types with point, path and square constructors, truncations and
+  quotients, theories with their models, fields, parents, homomorphisms and
+  isomorphisms, `initial`, `free`, `notation` and `section`;
+- 98 term forms: lambdas, application, named arguments and holes, pairs,
+  projections, `unpack`, injections, every `match` and `induction` form,
+  path and interval forms and the path builtins, boxes and `comp` and `fill`
+  at each type former, Glue, `FunExt`, `ua` and `UnivalenceBeta`, the
+  assumption builtins, universes and type formers, literals and operators;
+- 26 proof-block statements, as the definitions they build;
+- 9 evaluation directives and REPL forms.
+
+Every example elaborates, has a weak head, and completes its value-form
+walk. No walk met a neutral head. The weak heads are:
+
+| Weak head | Examples | Among them |
+| --- | ---: | --- |
+| constructor, applied or alone | 104 | numerals, `cons`, `class`, `b_positive`, and seven path constructors: `loop` (also from `path i => loop @ i`), `relate(1, 3, tt)`, a square, both squashes, a free model's law path |
+| path lambda | 30 | `refl`, `++`, `cong`, `ua`, `FunExt`, proofs by `rfl`, `calc`, `rw` and `simp` |
+| lambda | 16 | functions, partial applications, laws |
+| pair | 12 | tuples, dependent pairs, theory models |
+| `tt`, `left`, `right` | 10 | including `comp` at `Unit` and at a sum |
+| type | 18 | universes, Π, Σ, sums, paths, declared sorts, `Unit` from `3 > 2`, the empty Glue of `comp` in a universe, a level Π |
+| level lambda | 4 | `List`, `Monoid`, universe-generic definitions unapplied |
+| formal composition | 3 | transport in `Circle` and in two truncations |
+
+In each of the 105 walks that reached a part, the normalize query refused
+that part, so open question 3 is not hypothetical. `!!` completes on every
+example except seven. The four that depend on an assumption (`TruncateIntro`,
+`Truncate`, `LEM`, `ExcludedMiddle`) are refused by evaluation today
+(`E324`) and stay refused under every mark, although the kernel computes
+their heads. Three exceed the fixed 20M budget although today's evaluation,
+with its growing budget, completes them: `rationals.(2/3)`,
+`rationals.(0.5)` and the theory value `integers.additive_`. Their
+value-form walks cost 3,060, 4,366 and 21,999 ticks.
+
+The constructs with no closed example need no mark, since the marks apply
+to terms:
+- `import`, rule registrations and test pragmas;
+- interval points and face formulas, which occur only under a path binder or
+  in a box;
+- `hcomp` and `transp`, which have no source syntax;
+- the forms that never reduce: `print(typeof(…))`, `print(inspect(…))`, the
+  REPL's `typeof` and `let`, and the CLI's `beta` and `delta`;
+- `evaluate nonempty` and `empty`, which only infer.
 
 ## Migration
 
@@ -293,6 +352,9 @@ the reference test checks, incorrect ones carrying their `// Error:`:
   `print(evaluate(!(fun (n : UNat) => succ(n))));` prints `succ`.
 - Every contract and Cubist test keeps its outcome after classification, and
   the baseline fixture carries both twins.
+- Every example in `constructs.json` evaluates unmarked, under `!` and under
+  `!!`: `!` gives the weak head recorded there, unmarked printing completes,
+  and the four assumption examples are refused with `E324`.
 - A lazy result is visibly distinct from a full normal form in the REPL, the
   CLI and the workbench's copied trace, as EVAL5's acceptance requires, and
   forcing a suspended part after a later session operation is either safe or
@@ -307,8 +369,8 @@ the reference test checks, incorrect ones carrying their `// Error:`:
 | --- | --- | --- | --- |
 | DM0 | This decision record, the open questions answered, the roadmap and work plan rows updated | — | S |
 | DM1 | Tokens `!` and `!!`, grammar in `evaluate`, `expecting` and `print(evaluate(…))`, formatter, lints, the bare-`_` and `! !p` refusals | DM0 | S |
-| DM2 | Demand-driven matcher over kernel handles: head queries on observed positions, reading parts by type, decoding only observed parts, `!!` and leaves on parts through the answer to open question 3 | DM1 | M |
-| DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints checked unmarked | DM2, open question 1 | M |
+| DM2 | Demand-driven matcher over kernel handles: head queries on observed positions, reading parts by type, decoding only observed parts, `!!` and leaves on parts through the answer to open question 3, tested on `constructs.json` | DM1 | M |
+| DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints and `constructs.json` checked unmarked | DM2, open question 1 | M |
 | DM4 | Classification and migration of `expecting _` and of the fifteen printed tests and the reference examples, baseline re-recording with twins, roadmap and work plan text | DM2, DM3 | S |
 | DM5 | Report with the acceptance measurements, fresh-session fixed budgets and digests | DM2–DM4 | S |
 | DM6 | The language reference chapters, error entries, REPL help and quick reference listed above | DM1–DM4 | S |
@@ -328,3 +390,10 @@ the reference test checks, incorrect ones carrying their `// Error:`:
    view could still bind a postfix `!`, as a factorial `n!`, in terms. Whether
    to allow it, given that a pattern leaf starting with `!` is always a mark.
 5. **REPL bindings.** Whether `let x := !!e;` should exist; out of scope here.
+6. **Patterns through formal compositions.** A closed value of a higher
+   inductive or truncated type can be a formal composition whose base is a
+   constructor. `witness` reads through such compositions; a constructor
+   pattern does not, today or here. The composition does not compute to its
+   base (decision D2 of the debugging plan asks whether empty-system
+   compositions on declared sorts should), so whether a pattern may read
+   through it is to be decided before DM2.
