@@ -156,6 +156,50 @@ evaluate mixed expecting !_;`, { module });
   assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.code), ["K344", "E324"]);
 });
 
+test("a typed pattern's lazy comparison asks a part shared under other binders once", async t => {
+  // b0 is Unit only after a step, so no two types below are alpha-equal,
+  // and each repeats its predecessor, under the binder of its own pair.
+  const lines = ["def a0 := Unit;", "def b0 := (fun (X : U0) => X)(Unit);"];
+  for (let level = 1; level <= 18; level++) lines.push(`def a${level} := a${level - 1} and a${level - 1};`,
+    `def b${level} := b${level - 1} and b${level - 1};`);
+  lines.push("def identity_ : a18 -> a18 := fun (x : a18) => x;", "evaluate identity_ expecting typed(b18 -> b18, _);");
+  const program = new CubicalProgram(module, sourceReader());
+  t.after(() => program.dispose());
+  // The guide's questions, counted while the typed pattern asks them.
+  const checker = program.checker, { differ } = checker;
+  let calls = 0, asked = 0;
+  checker.differ = function (...rest) {
+    asked++;
+    const driver = this.driver, { guide } = driver;
+    driver.guide = function (...parts) { calls++; return guide.apply(this, parts); };
+    try { return differ.apply(this, rest); }
+    finally { driver.guide = guide; }
+  };
+  const result = await program.check(lines.join("\n"), "main");
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  assert.equal(asked, 1);
+  assert.ok(calls > 0 && calls < 1000, `${calls} questions to the guide`);
+});
+
+test("a typed pattern's lazy comparison stops at a depth, where conversion decides", async t => {
+  // 4096 levels of succ on each side, built differently, so that nothing
+  // short of comparing them all tells them equal.
+  const { program } = await checkProgram(t, `import unat;
+use unat;
+def d := 2 * 256;
+def o := 256 * 2;
+def deep := d + d + d + d + d + d + d + d;
+def other := o + o + o + o + o + o + o + o;
+def deep_type := Unit or (deep = deep);
+def other_type := Unit or (other = other);
+def void_type := Void or (other = other);`, { module });
+  const checker = program.checker, at = name => ({ tag: "DefRef", name: `main__${name}` });
+  assert.equal(checker.differ(at("deep"), at("other")), false);
+  assert.equal(checker.differ(at("deep_type"), at("other_type")), false);
+  // A difference beside the deep parts is still found.
+  assert.equal(checker.differ(at("deep_type"), at("void_type")), true);
+});
+
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
   // The prime of euclid(4) has two successor heads, and its third is too deep
   // to compute (K344): any query of the ignored part, however indirect,
