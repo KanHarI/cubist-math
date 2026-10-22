@@ -629,6 +629,16 @@ export class NativeCubicalElaborator {
     if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head, Math.max(node, head)); }
     return this.syntax.decode(head, dimensions);
   }
+  // Whether two closed terms differ, as the driver's guide finds it: their
+  // weak heads compared part by part, under the guide's fuel, with nothing
+  // normalized. A conversion that fails normalizes both terms first
+  // (InstructionDriver.settle), so this answers where a difference shows
+  // without that; false means only that none showed. A query, which
+  // certifies nothing.
+  differ(left, right, dimensions = this.dimensions) {
+    this.kernel.checkDeadline();
+    return this.driver.equal(this.syntax.encode(left, dimensions), this.syntax.encode(right, dimensions), null, null) === false;
+  }
   equal(left, right, context = new Map(), dimensions = this.dimensions, names = this.names) {
     const type = this.infer(left, context, dimensions).type;
     // This binder scopes over both terms. A generated name is not a live

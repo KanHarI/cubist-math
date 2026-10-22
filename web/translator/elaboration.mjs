@@ -296,6 +296,7 @@ export class Scope {
   // The next clause's type of an eliminator (H1), from the kernel.
   clauseType(motive,clauses) {this.spend("queries");return this.checker.nextClauseType(motive,clauses,this.context,this.dimensions);}
   equal(left,right) {this.spend("queries");return this.checker.equal(left,right,this.context,this.dimensions,this.unit.names);}
+  differ(left,right) {this.spend("queries");return this.checker.differ(left,right,this.dimensions);}
   expect(actual,expected) {this.spend("queries");return this.checker.expect(actual,expected,this.context,this.dimensions,this.unit.names);}
   // Keep a declared signature on a checked term; the identity is itself checked.
   ascribe(term,type) {return this.checker.ascribe?.(term,type,this.unit.names)??term;}

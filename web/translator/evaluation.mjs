@@ -65,18 +65,12 @@ export const bareHole = () =>
 // writing the term for a hole would not make its place one.
 const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : holeInExpression)(source(pattern));
 
-// Whether a typed pattern's annotation is the part's type. Types whose weak
-// heads are different type formers, or different declared types, differ:
-// conversion would decide that only after normalizing both, computing parts
-// of the type, as a dependent pair's ignored component, that the pattern
-// leaves unobserved. Other types are compared by conversion.
-const formers = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Sort", "LPi"]);
-function sameType(annotation, type, scope) {
-  const left = scope.nf(annotation), right = scope.nf(type);
-  if (formers.has(left.tag) && formers.has(right.tag)
-    && (left.tag !== right.tag || left.tag === "Sort" && left.signature !== right.signature)) return false;
-  return scope.equal(annotation, type);
-}
+// Whether a typed pattern's annotation is the part's type. Types that differ
+// in their weak heads, compared part by part, differ: a failed conversion
+// would decide that only after normalizing both, computing parts of the
+// type, as a dependent pair's ignored component, that the pattern leaves
+// unobserved. Other types are compared by conversion.
+const sameType = (annotation, type, scope) => !scope.differ(annotation, type) && scope.equal(annotation, type);
 
 // The first part of the normal form `value` that does not match `pattern`,
 // as { value, pattern }, or null when it matches: a pattern under `!!`,
