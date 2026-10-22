@@ -1,4 +1,4 @@
-import { parse, scan } from "./parser.mjs";
+import { parse, scan, builtinNames, primitiveNames, isUniverseConstant } from "./parser.mjs";
 
 // Warnings for evaluation demand marks that ask for nothing more (below), and
 // for bindings that are never used and can simply be removed:
@@ -109,13 +109,17 @@ export function lint(source, ast = parse(source)) {
   // nothing, typed(T, p) what p does, and anything else at least the part's
   // weak head. Only an expression surely computes the full normal form: a
   // name or a call may be a constructor, which computes the weak head and
-  // reads its arguments, and a pair leaves its type uncomputed.
+  // reads its arguments, unless it is a builtin's, as tt or refl(tt), which
+  // no constructor is; and a pair leaves its type uncomputed.
   const hole = node => node?.kind === "name" && node.name === "_";
+  const builtin = node => node?.kind === "name"
+    && (builtinNames.has(node.name) || primitiveNames.includes(node.name) || isUniverseConstant(node.name));
   const typedPart = node => node?.kind === "call" && node.fn?.kind === "name" && node.fn.name === "typed"
     && node.args.length === 2 ? node.args[1] : null;
   const computesHead = node => typedPart(node) ? computesHead(typedPart(node)) : !hole(node);
   const expression = node => typedPart(node) ? expression(typedPart(node))
-    : !hole(node) && !["name", "call", "pair", "demand"].includes(node.kind);
+    : node.kind === "name" ? builtin(node) : node.kind === "call" ? builtin(node.fn)
+    : !["pair", "demand"].includes(node.kind);
   // Removing marks must leave the expected value a pattern, or it would be
   // compared exactly instead: ! and !! are reported only where a hole keeps
   // it one. A mark under !! leaves that !!.

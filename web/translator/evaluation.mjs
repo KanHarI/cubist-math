@@ -13,7 +13,7 @@
 //     signature, and a constructor written alone, c, matches c with no
 //     arguments;
 //   typed(T, p) matches what p matches, where T is the part's type, by
-//     conversion: neither is normalized;
+//     their weak heads, then conversion: neither is normalized;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
 // A pair, an injection and a constructor compute the part's weak head and
@@ -65,6 +65,19 @@ export const bareHole = () =>
 // writing the term for a hole would not make its place one.
 const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : holeInExpression)(source(pattern));
 
+// Whether a typed pattern's annotation is the part's type. Types whose weak
+// heads are different type formers, or different declared types, differ:
+// conversion would decide that only after normalizing both, computing parts
+// of the type, as a dependent pair's ignored component, that the pattern
+// leaves unobserved. Other types are compared by conversion.
+const formers = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Sort", "LPi"]);
+function sameType(annotation, type, scope) {
+  const left = scope.nf(annotation), right = scope.nf(type);
+  if (formers.has(left.tag) && formers.has(right.tag)
+    && (left.tag !== right.tag || left.tag === "Sort" && left.signature !== right.signature)) return false;
+  return scope.equal(annotation, type);
+}
+
 // The first part of the normal form `value` that does not match `pattern`,
 // as { value, pattern }, or null when it matches: a pattern under `!!`,
 // whose marks change nothing. `type` is the value's type, and `at` gives
@@ -87,7 +100,7 @@ function mismatched(pattern, value, type, scope, at) {
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
     if (isPattern(args[0])) throw misplaced(args[0], at.source);
-    return scope.equal(at.annotation(args[0]), type) ? mismatch(args[1], value, type, scope, at) : { ...fails, type };
+    return sameType(at.annotation(args[0]), type, scope) ? mismatch(args[1], value, type, scope, at) : { ...fails, type };
   }
   if (pattern.kind === "pair" && head.tag === "Sigma") {
     if (value.tag !== "Pair") return fails;
@@ -156,8 +169,7 @@ const once = compute => { let done = false, value; return () => done ? value : (
 //     computed;
 //   elaborate(node, type): a leaf elaborated at a type, and its normal form;
 //   annotation(node): a typed pattern's type, elaborated and checked, and
-//     not normalized, as conversion compares it with the part's type
-//     without computing the parts the pattern leaves unobserved;
+//     not normalized: sameType compares it with the part's type;
 //   source(node): a node's text;
 //   locate(error, node): the error, located at the pattern node whose
 //     demand failed, unless a part inside it already located it.
@@ -181,7 +193,7 @@ function observed(pattern, handle, type, scope, at, head) {
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
     if (isPattern(args[0])) throw misplaced(args[0], at.source);
-    if (!scope.equal(at.annotation(args[0]), type()))
+    if (!sameType(at.annotation(args[0]), type(), scope))
       return { shown: head === null ? unevaluated : shownHead(head, at), failed: { type: type(), pattern } };
     return observe(args[1], handle, type, scope, at, head);
   }

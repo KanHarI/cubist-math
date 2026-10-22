@@ -385,15 +385,18 @@ export class Translator {
       const expected=d.assertion==="empty"?T.pi(scope.fresh(),type,T.void):type;
       term=scope.ascribe(scope.check(read(d.value,expected),expected,d.value),expected);
     } else term=this.term(d.value,scope);
-    // Nothing is computed yet: the expected value demands what it observes.
+    const source=node=>node.text??scope.unit.source.slice(node.start,node.end).trim();
+    // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!.
+    const expected=d.assertion?null:d.mark?{kind:"demand",mark:d.mark,value:d.expected,text:`${d.mark}${source(d.expected)}`,
+      start:d.expected.start,end:d.expected.end}:d.expected;
+    // A pattern demands what it observes, so nothing is computed before the
+    // assumptions are checked; an exact expected value computes the full
+    // normal form first, as it did before demand marks.
     const result=d.assertion?this.checker.infer(term):this.checker.evaluated(term);
+    const normal=expected&&!isPattern(expected)?this.checker.normalForm(result.expression):null;
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
     if(d.assertion)return `${d.assertion} ${this.shownIn(type,scope)}`;
-    const source=node=>node.text??scope.unit.source.slice(node.start,node.end).trim();
-    // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!.
-    const expected=d.mark?{kind:"demand",mark:d.mark,value:d.expected,text:`${d.mark}${source(d.expected)}`,
-      start:d.expected.start,end:d.expected.end}:d.expected;
     if(isHole(expected))throw scope.unit.locate(bareHole(),expected);
     // An expected value with holes or demand marks is a pattern, matched
     // part by part, each computed only as far as the pattern observes it
@@ -408,7 +411,6 @@ export class Translator {
     }
     // An expected value without either is an expression: both full normal
     // forms are computed and compared.
-    const normal=this.checker.normalForm(result.expression);
     scope.spend("queries");
     const value=this.checker.verify(this.term(d.expected,scope));
     if(!scope.equal(result.type,value.type))

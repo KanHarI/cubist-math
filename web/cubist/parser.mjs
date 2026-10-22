@@ -72,7 +72,7 @@ export const languageKeywords = new Set([
 ]);
 // Unit, Void and tt have fixed meanings in law and literal checking.
 // Universe constants are refused separately by name().
-const primitiveNames = ["Unit", "Void", "tt"];
+export const primitiveNames = ["Unit", "Void", "tt"];
 export const reservedNames = new Set([...languageKeywords, ...primitiveNames]);
 export const isUniverseConstant = name => /^U+[0-9]+$/.test(name);
 

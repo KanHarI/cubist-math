@@ -23,7 +23,8 @@ const module = await createCubical();
 // A program that records what evaluation asks the kernel: for each term
 // checked for evaluation that names a definition, whether the whole term was
 // normalized while it was the latest, the normal form the kernel gave, read
-// back here, and the term then displayed; and every handle a weak head or a
+// back here, and the term then displayed, or, for a term shown without its
+// normal form, the root of its weak head; and every handle a weak head or a
 // normal form was asked of.
 function recordedProgram(t) {
   const program = new CubicalProgram(module, sourceReader());
@@ -35,6 +36,14 @@ function recordedProgram(t) {
   checker.displayText = function (term, ...rest) {
     const latest = evaluations.at(-1);
     if (latest?.normalized && !("shown" in latest)) latest.shown = term;
+    // A value shown without its normal form, and the root of the weak head
+    // the kernel computes for the term, asked here apart from derivedHead
+    // while the term's handles are live.
+    if (latest && !latest.normalized && !("displayed" in latest)) {
+      latest.displayed = term;
+      try { latest.root = checker.decoded(kernel.spine(head.call(kernel, latest.handle)).root.id); }
+      catch { latest.root = null; }
+    }
     return displayText.call(this, term, ...rest);
   };
   checker.evaluated = function (term, ...rest) {
@@ -136,6 +145,15 @@ evaluate far
   // the pair's normal form is a level deeper than its first component's.
   assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]),
     [["K344", "2 * 255"], ["K344", "2 * 255"], ["K344", "!!(_, _\n  )"]]);
+});
+
+test("an exact expected value computes the normal form before the assumptions are checked, and a pattern after", async t => {
+  const { result } = await checkProgram(t, `import unat;
+use unat;
+def mixed := TruncateIntro(U0, UNat, 2 * 256);
+evaluate mixed expecting mixed;
+evaluate mixed expecting !_;`, { module });
+  assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.code), ["K344", "E324"]);
 });
 
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
@@ -272,8 +290,11 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
     assert.equal(formatCubist(shown), shown);
   }
   // A name or a call may be a constructor, which computes only a weak head,
-  // so !! before one is not redundant; typed(T, p) asks what p asks.
-  assert.deepEqual(lint("evaluate v expecting (_, !!tok, !!succ(2), !!(1, 2), !typed(Unit, _));"), []);
+  // so !! before one is not redundant, unless it is a builtin's; typed(T, p)
+  // asks what p asks.
+  assert.deepEqual(lint("evaluate v expecting (_, !!tok, !!succ(2), !!(1, 2), !typed(Unit, _), !!left(tt));"), []);
+  assert.deepEqual(lint("evaluate v expecting (_, !!tt, !!Unit, !!refl(tt), !!U0);").map(warning => warning.code),
+    ["W710", "W710", "W710", "W710"]);
   assert.deepEqual(lint("evaluate v expecting (!typed(Unit, tt), !!typed(UNat, 4), !!nat.(2 + 3), _);").map(warning => warning.code),
     ["W709", "W710", "W710"]);
   // Without a hole, removing the marks would compare the value whole: they
@@ -333,8 +354,16 @@ for (const setup of Object.keys(corpus.setups)) {
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
       assert.equal(wholeNormalized, mark === "!!_", `${item.id} ${mark}: the whole term ${mark === "!!_" ? "is" : "is not"} normalized`);
-      if (mark === "!_") assert.ok(shownHead(item.whnf)(value), `${item.id}: ${value} is not ${item.whnf}`);
-      else {
+      if (mark === "!_") {
+        assert.ok(shownHead(item.whnf)(value), `${item.id}: ${value} is not ${item.whnf}`);
+        // A constructor shown is the one at the kernel's own weak head.
+        if (item.whnf.startsWith("Con")) {
+          let constructor = evaluation.displayed;
+          while (constructor?.tag === "App") constructor = constructor.fn;
+          assert.equal(constructor?.tag, "Con", `${item.id}: ${value} shows a constructor`);
+          assert.deepEqual(constructor, evaluation.root, `${item.id}: ${value} shows the kernel's constructor`);
+        }
+      } else {
         // What !!_ shows is the normal form the kernel computed, up to the
         // names of bound variables.
         assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a full normal form`);

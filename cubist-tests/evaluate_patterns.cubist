@@ -28,13 +28,19 @@ evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _)))
 // typed(T, p) states the part's type.
 evaluate pairs expecting (typed(UNat, _), right(4));
 
-// T is compared with the part's type by conversion, and neither is
-// normalized: the normal form of deep = deep fails with K344.
+// T is compared with the part's type by their weak heads, then by
+// conversion, and neither is normalized: the normal form of deep = deep
+// fails with K344.
 def deep := 2 * 256;
 
 def reflexive : exists x : UNat. x = x := (deep, refl(deep));
 
 evaluate reflexive expecting (_, typed(deep = deep, _));
+
+// A type of another former differs at its weak head.
+// Error: E483: The term evaluates to (<unevaluated>, <unevaluated>), which does not match (_,
+//   typed(Unit, _)): a part of type deep = deep is not typed(Unit, _).
+evaluate reflexive expecting (_, typed(Unit, _));
 
 // A constructor's argument is read at its field's declared type, with the
 // arguments before it substituted: box's field is at U1, though Unit
