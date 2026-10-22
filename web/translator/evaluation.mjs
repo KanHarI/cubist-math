@@ -115,8 +115,10 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
 }
 
 // The kinds of weak head a value can stop at, as a shown value marks them.
+// An eliminator not applied to a value is a function: eta makes
+// fun (n : UNat) => induction n … one.
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
-const headMarker = kind => marker(kind === "Lam" ? "<fun>" : kind === "PLam" ? "<path>" : kind === "LLam" ? "<level fun>"
+const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : kind === "PLam" ? "<path>" : kind === "LLam" ? "<level fun>"
   : typeKinds.has(kind) ? "<type>" : ["Comp", "HComp", "Trans"].includes(kind) ? "<composition>" : "<neutral>");
 // A value as far as it was computed: a weak head with its parts shown as
 // `parts` gives them, by their places. A head that is no constructor, pair,

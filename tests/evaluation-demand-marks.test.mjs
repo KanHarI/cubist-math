@@ -69,6 +69,7 @@ def numbers : List(U0, UNat) := cons(1, cons(2, nil));
 def successor := fun (n : UNat) => succ(n);
 def twice := fun (n : UNat) => n + n;
 def far : UNat and UNat := (1, 2 * 256);
+def copy := fun (n : UNat) => induction n return UNat { zero => 0; succ h => succ(h); };
 evaluate pairs expecting (3, _);
 evaluate pairs expecting !_;
 evaluate pairs expecting !!_;
@@ -79,6 +80,7 @@ evaluate successor expecting !_;
 evaluate twice expecting !_;
 evaluate UNat expecting !_;
 evaluate far expecting (1, succ(_));
+evaluate copy expecting !_;
 `, { module });
   assert.deepEqual(result.gaps.map(gap => gap.reason), []);
   assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), [
@@ -93,6 +95,8 @@ evaluate far expecting (1, succ(_));
     "<fun>",
     "<type>",
     "(1, succ(<unevaluated>))",
+    // Eta makes it the eliminator alone, a function too.
+    "<fun>",
   ]);
 });
 
