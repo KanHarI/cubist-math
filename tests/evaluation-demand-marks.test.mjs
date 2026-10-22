@@ -200,6 +200,18 @@ def void_type := Void or (other = other);`, { module });
   assert.equal(checker.differ(at("deep_type"), at("void_type")), true);
 });
 
+test("a part the depth cut short is asked again where it is met with more depth left", async t => {
+  // a0 and b0 differ one part down. Met first at the bottom of a499 and
+  // b499, past the depth, they are unknown there, and differ beside them.
+  const lines = ["import unat;", "use unat;", "def deep := 2 * 256;", "def a0 := Unit or (deep = deep);", "def b0 := Void or (deep = deep);"];
+  for (let level = 1; level < 500; level++) lines.push(`def a${level} := Unit or a${level - 1};`, `def b${level} := Unit or b${level - 1};`);
+  lines.push("def a_ := a499 or a0;", "def b_ := b499 or b0;");
+  const { program, result } = await checkProgram(t, lines.join("\n"), { module });
+  assert.ok(result.outputs.length > 1000 && result.outputs.every(output => output.verified));
+  const at = name => ({ tag: "DefRef", name: `main__${name}` });
+  assert.equal(program.checker.differ(at("a_"), at("b_")), true);
+});
+
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
   // The prime of euclid(4) has two successor heads, and its third is too deep
   // to compute (K344): any query of the ignored part, however indirect,

@@ -1021,7 +1021,7 @@ export class InstructionDriver {
   // Whether two subterms are equal: true, false, or null when it cannot tell.
   // A guide for the search only: the driver's own (guide, below).
   equal(x, y, terms, dims) {
-    return this.guide(x, y, terms, dims, { left: GUIDE_FUEL, depth: Infinity });
+    return this.guide(x, y, terms, dims, { left: GUIDE_FUEL, depth: Infinity, cuts: 0 });
   }
   // Whether two closed terms differ, as the guide finds them without its
   // fuel, to GUIDE_DEPTH parts deep, with `steps` for each weak head, and
@@ -1033,7 +1033,7 @@ export class InstructionDriver {
   differ(x, y, steps) {
     const saved = { guesses: this.guesses, heads: this.heads, headSteps: this.headSteps };
     Object.assign(this, { guesses: new Map(), heads: new Map(), headSteps: steps });
-    try { return this.guide(x, y, null, null, { left: Infinity, depth: GUIDE_DEPTH }) === false; }
+    try { return this.guide(x, y, null, null, { left: Infinity, depth: GUIDE_DEPTH, cuts: 0 }) === false; }
     finally { Object.assign(this, saved); }
   }
 
@@ -1042,8 +1042,9 @@ export class InstructionDriver {
   // alpha-equal before or after taking heads; different when the heads are
   // constructors or neutral terms that differ, since normal forms are unique;
   // unknown when eta could relate them, a head is a cubical construction, or
-  // the fuel runs out. Shared by one question: `fuel.left` pairs, and
-  // `fuel.depth` levels of parts below this one.
+  // the fuel runs out. Shared by one question: `fuel.left` pairs,
+  // `fuel.depth` levels of parts below this one, and `fuel.cuts`, the parts
+  // the depth has cut off so far.
   guide(x, y, terms, dims, fuel) {
     if (this.alpha(x, y, terms, dims)) return true;
     if (--fuel.left < 0) return null;
@@ -1056,24 +1057,30 @@ export class InstructionDriver {
     if (dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
       freeDimensionMask(this.kernel, y, this.freeDims));
     const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`;
-    if (this.guesses.has(key)) return this.guesses.get(key);
+    // An unknown the depth cut short is kept with the depth it had, and holds
+    // only where no more is left: a shallower visit asks again.
+    if (this.guesses.has(key)) {
+      const known = this.guesses.get(key);
+      if (known?.depth === undefined) return known;
+      if (fuel.depth <= known.depth) return null;
+    }
+    const cuts = fuel.cuts;
     // A path at an endpoint of its annotated type is that endpoint, as the
     // path step takes it, with nothing computed.
     const ex = this.annotatedEndpoint(x), ey = this.annotatedEndpoint(y);
-    if (ex || ey) {
-      if (fuel.depth <= 0) return null;
-      fuel.depth--;
-      const answer = this.guide(ex || x, ey || y, terms, dims, fuel);
-      fuel.depth++;
-      if (answer !== null || fuel.left >= 0) this.guesses.set(key, answer);
-      return answer;
-    }
-    const hx = this.headOf(x), hy = this.headOf(y);
     let answer = null;
-    if (hx && hy) answer = (hx !== x || hy !== y) && this.alpha(hx, hy, terms, dims) ? true
-      : this.compareHeads(this.node(hx), this.node(hy), terms, dims, fuel);
+    if (ex || ey) {
+      if (fuel.depth <= 0) { fuel.cuts++; return null; }
+      fuel.depth--;
+      answer = this.guide(ex || x, ey || y, terms, dims, fuel);
+      fuel.depth++;
+    } else {
+      const hx = this.headOf(x), hy = this.headOf(y);
+      if (hx && hy) answer = (hx !== x || hy !== y) && this.alpha(hx, hy, terms, dims) ? true
+        : this.compareHeads(this.node(hx), this.node(hy), terms, dims, fuel);
+    }
     // An answer cut short by the fuel is not kept: another question may have more.
-    if (answer !== null || fuel.left >= 0) this.guesses.set(key, answer);
+    if (answer !== null || fuel.left >= 0) this.guesses.set(key, answer === null && fuel.cuts !== cuts ? { depth: fuel.depth } : answer);
     return answer;
   }
   annotatedEndpoint(term) {
@@ -1104,7 +1111,8 @@ export class InstructionDriver {
       if (dimensionBound(nx.kind, i)) innerDims = { left: nx.payload, right: ny.payload, next: dims };
       // A part past the depth is unknown; the others may still differ.
       let answer = null;
-      if (fuel.depth > 0) {
+      if (fuel.depth <= 0) fuel.cuts++;
+      else {
         fuel.depth--;
         answer = this.guide(a, b, innerTerms, innerDims, fuel);
         fuel.depth++;
