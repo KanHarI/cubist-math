@@ -12,8 +12,8 @@
 //     parts that match the p's, each read at its field's type in c's
 //     signature, and a constructor written alone, c, matches c with no
 //     arguments;
-//   typed(T, p) matches what p matches, where T is the part's type, by
-//     their weak heads, then conversion: neither is normalized;
+//   typed(T, p) matches what p matches, where T is the part's type,
+//     compared by their weak heads, part by part, then by conversion;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
 // A pair, an injection and a constructor compute the part's weak head and
@@ -69,7 +69,8 @@ const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : ho
 // in their weak heads, compared part by part, differ: a failed conversion
 // would decide that only after normalizing both, computing parts of the
 // type, as a dependent pair's ignored component, that the pattern leaves
-// unobserved. Other types are compared by conversion.
+// unobserved. Types the comparison cannot tell apart, as where eta or a
+// cubical construction relates them, are compared by conversion.
 const sameType = (annotation, type, scope) => !scope.differ(annotation, type) && scope.equal(annotation, type);
 
 // The first part of the normal form `value` that does not match `pattern`,

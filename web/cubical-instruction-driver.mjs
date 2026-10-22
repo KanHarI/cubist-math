@@ -1018,6 +1018,19 @@ export class InstructionDriver {
   equal(x, y, terms, dims) {
     return this.guide(x, y, terms, dims, { left: GUIDE_FUEL });
   }
+  // Whether two closed terms differ, as the guide finds them without its
+  // fuel, with `steps` for each weak head, and with answers and heads of
+  // this question's own, so that neither the search's limits nor what it
+  // cached apply. A query, outside any instruction: the evaluation demand
+  // marks compare a typed pattern's annotation so, as a failed conversion
+  // would first normalize both terms (settle). False when the guide finds
+  // them equal or cannot tell.
+  differ(x, y, steps) {
+    const saved = { guesses: this.guesses, heads: this.heads, headSteps: this.headSteps };
+    Object.assign(this, { guesses: new Map(), heads: new Map(), headSteps: steps });
+    try { return this.guide(x, y, null, null, { left: Infinity }) === false; }
+    finally { Object.assign(this, saved); }
+  }
 
   // The driver's own guide: two terms compared lazily through their weak head
   // normal forms, the kernel's trusted reduction asked as a query. Equal when
@@ -1053,7 +1066,7 @@ export class InstructionDriver {
     return point.endpoint !== undefined && type.kind === "Path" ? type.children[1 + point.endpoint] : 0;
   }
   headOf(term) {
-    if (!this.heads.has(term)) this.heads.set(term, this.graph.head(term, GUIDE_HEAD_STEPS));
+    if (!this.heads.has(term)) this.heads.set(term, this.graph.head(term, this.headSteps ?? GUIDE_HEAD_STEPS));
     return this.heads.get(term);
   }
   compareHeads(nx, ny, terms, dims, fuel) {

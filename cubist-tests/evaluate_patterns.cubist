@@ -50,6 +50,18 @@ def either : exists x : UNat. Unit or (x = x) := (deep, left(tt));
 //   = deep), _).
 evaluate either expecting (_, typed(Void or (deep = deep), _));
 
+// A part whose weak head takes many steps, as void_at(128), is compared
+// the same way.
+def void_at(n : UNat) : U0 := induction n return U0 {
+    zero => Void;
+    succ h => h;
+  };
+
+// Error: E483: The term evaluates to (<unevaluated>, <unevaluated>), which does not match (_,
+//   typed(void_at(128) or (deep = deep), _)): a part of type Unit or deep = deep is not
+//   typed(void_at(128) or (deep = deep), _).
+evaluate either expecting (_, typed(void_at(128) or (deep = deep), _));
+
 // A constructor's argument is read at its field's declared type, with the
 // arguments before it substituted: box's field is at U1, though Unit
 // alone is at U0, and tagged's second field is at its first.
