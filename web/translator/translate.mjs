@@ -433,6 +433,7 @@ export class Translator {
       spine:handle=>checker.kernel.spine(handle),
       decoded:handle=>checker.decoded(handle),
       elaborate:(node,type)=>{scope.spend("queries");return checker.verify(this.term(node,scope,type)).normal;},
+      annotation:node=>{scope.spend("queries");return checker.evaluated(this.term(node,scope)).term;},
       locate:(error,node)=>scope.unit.locate(error,node),
       source,
     };

@@ -10,6 +10,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { normalDigest } from "../tools/evaluation-baseline.mjs";
+import { reported } from "../tools/inline-errors.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
 // `!` asks for a part's weak head and `!!` for its full normal form, and an
@@ -210,6 +211,25 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   assert.equal(checker.displayText(checker.normalForm(inner)), "unat.(2)");
 });
 
+test("normalize accepts no annotation of a derived handle's weak head that was not derived already", async t => {
+  const { program } = await checkProgram(t, `import unat;
+use unat;
+def nested_ : ((UNat and UNat) or Unit) and UNat := (left((1, 2)), 2 + 1);`, { module });
+  const checker = program.checker, kernel = checker.kernel;
+  const { expression, typeHandle } = checker.checkSyntax({ tag: "DefRef", name: "main__nested_" }, null, new Map(), new Map());
+  // The outer pair's annotation is the checked type itself; the injection's,
+  // the inner pair's and the constructor's sort are only parts of it.
+  const pair = kernel.node(checker.derivedHead(expression));
+  assert.equal(pair.children[0], typeHandle);
+  const injection = kernel.node(checker.derivedHead(pair.children[1]));
+  const inner = kernel.node(checker.derivedHead(injection.children[1]));
+  const { root: constructor } = kernel.spine(checker.derivedHead(pair.children[2]));
+  assert.deepEqual([injection.kind, inner.kind, constructor.kind], ["Inl", "Pair", "Con"]);
+  for (const annotation of [injection.children[0], inner.children[0], constructor.children[0]])
+    assert.throws(() => kernel.normalize(annotation), /instruction derived/);
+  assert.equal(checker.displayText(checker.normalForm(inner.children[1])), "unat.(1)");
+});
+
 test("the head of a derived path or level lambda admits nothing under its binder", async t => {
   const { program } = await checkProgram(t, `import unat;
 use unat;
@@ -222,6 +242,22 @@ def level_(U < UU0, A : U, x : A) : A := x;`, { module });
     assert.equal(head.kind, kind, name);
     for (const handle of head.children.filter(Boolean)) assert.throws(() => kernel.normalize(handle), /instruction derived/, name);
   }
+});
+
+test("a warning in a failed evaluation is written above that evaluation, and an error located inside it above its line", async t => {
+  const source = `import unat;
+use unat;
+
+def pairs : UNat and UNat := (3, 4);
+
+evaluate pairs expecting !(
+  2 * 255,
+  _
+);
+`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(reported(source, result, "main").map(({ line, label, text }) => [line, label, text.slice(0, 4)]),
+    [[5, "Warning", "W709"], [6, "Error", "K344"]]);
 });
 
 test("demand marks format tightly and lint what asks for nothing more", () => {

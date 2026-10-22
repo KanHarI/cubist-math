@@ -12,7 +12,8 @@
 //     parts that match the p's, each read at its field's type in c's
 //     signature, and a constructor written alone, c, matches c with no
 //     arguments;
-//   typed(T, p) matches what p matches, where T is the part's type;
+//   typed(T, p) matches what p matches, where T is the part's type, by
+//     conversion: neither is normalized;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
 // A pair, an injection and a constructor compute the part's weak head and
@@ -66,17 +67,16 @@ const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : ho
 
 // The first part of the normal form `value` that does not match `pattern`,
 // as { value, pattern }, or null when it matches: a pattern under `!!`,
-// whose marks change nothing. `type` is the value's type;
-// `elaborate(node, type)` elaborates a leaf at a type and gives its normal
-// form, and `source(node)` is a node's text. A failure is located at the
-// part of the pattern that met it.
-export function mismatch(pattern, value, type, scope, elaborate, source) {
-  try { return mismatched(pattern, value, type, scope, elaborate, source); }
+// whose marks change nothing. `type` is the value's type, and `at` gives
+// elaborate, annotation and source, as observe takes them. A failure is
+// located at the part of the pattern that met it.
+export function mismatch(pattern, value, type, scope, at) {
+  try { return mismatched(pattern, value, type, scope, at); }
   catch (error) { throw scope.unit.locate(error, pattern); }
 }
-function mismatched(pattern, value, type, scope, elaborate, source) {
+function mismatched(pattern, value, type, scope, at) {
   if (isHole(pattern)) return null;
-  if (pattern.kind === "demand") return mismatch(pattern.value, value, type, scope, elaborate, source);
+  if (pattern.kind === "demand") return mismatch(pattern.value, value, type, scope, at);
   const fails = { value, pattern };
   const head = scope.nf(type);
   const call = pattern.kind === "call" && pattern.fn?.kind === "name" ? pattern.fn.name
@@ -86,17 +86,17 @@ function mismatched(pattern, value, type, scope, elaborate, source) {
   if (pattern.kind === "call") writtenOut(pattern, scope, true);
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
-    if (isPattern(args[0])) throw misplaced(args[0], source);
-    return scope.equal(elaborate(args[0], null), type) ? mismatch(args[1], value, type, scope, elaborate, source) : { ...fails, type };
+    if (isPattern(args[0])) throw misplaced(args[0], at.source);
+    return scope.equal(at.annotation(args[0]), type) ? mismatch(args[1], value, type, scope, at) : { ...fails, type };
   }
   if (pattern.kind === "pair" && head.tag === "Sigma") {
     if (value.tag !== "Pair") return fails;
-    return mismatch(pattern.left, value.first, head.domain, scope, elaborate, source)
-      ?? mismatch(pattern.right, value.second, substituteTerm(head.body, head.name, value.first), scope, elaborate, source);
+    return mismatch(pattern.left, value.first, head.domain, scope, at)
+      ?? mismatch(pattern.right, value.second, substituteTerm(head.body, head.name, value.first), scope, at);
   }
   if ((builtin === "left" || builtin === "right") && args.length === 1 && head.tag === "Sum") {
     if (value.tag !== (builtin === "left" ? "Inl" : "Inr")) return fails;
-    return mismatch(args[0], value.value, builtin === "left" ? head.left : head.right, scope, elaborate, source);
+    return mismatch(args[0], value.value, builtin === "left" ? head.left : head.right, scope, at);
   }
   const bound = call && scope.env.get(call);
   if (bound?.tag === "InductiveConstructor" && head.tag === "Sort" && bound.inductive?.binding === head.signature) {
@@ -113,14 +113,14 @@ function mismatched(pattern, value, type, scope, elaborate, source) {
     let fn = T.constructor(bound.index, head, bound.source);
     for (const [kernelIndex, sourceIndex] of bound.order.entries()) {
       const field = scope.nf(scope.infer(fn).type).domain;
-      const found = mismatch(args[sourceIndex], parts[kernelIndex], field, scope, elaborate, source);
+      const found = mismatch(args[sourceIndex], parts[kernelIndex], field, scope, at);
       if (found) return found;
       fn = T.app(fn, parts[kernelIndex]);
     }
     return null;
   }
-  if (isPattern(pattern)) throw misplaced(pattern, source);
-  return scope.equal(value, elaborate(pattern, type)) ? null : fails;
+  if (isPattern(pattern)) throw misplaced(pattern, at.source);
+  return scope.equal(value, at.elaborate(pattern, type)) ? null : fails;
 }
 
 // The kinds of weak head a value can stop at, as a shown value marks them.
@@ -154,7 +154,11 @@ const once = compute => { let done = false, value; return () => done ? value : (
 //     names;
 //   spine(handle), decoded(handle): a term as the kernel holds it, nothing
 //     computed;
-//   elaborate(node, type), source(node), as mismatch takes them;
+//   elaborate(node, type): a leaf elaborated at a type, and its normal form;
+//   annotation(node): a typed pattern's type, elaborated and checked, and
+//     not normalized, as conversion compares it with the part's type
+//     without computing the parts the pattern leaves unobserved;
+//   source(node): a node's text;
 //   locate(error, node): the error, located at the pattern node whose
 //     demand failed, unless a part inside it already located it.
 export function observe(pattern, handle, type, scope, at, head = null) {
@@ -166,7 +170,7 @@ function observed(pattern, handle, type, scope, at, head) {
   if (pattern.kind === "demand") {
     if (pattern.mark === "!") return observe(pattern.value, handle, type, scope, at, head ?? at.head(handle, pattern));
     const normal = at.normal(handle, pattern);
-    const found = isHole(pattern.value) ? null : mismatch(pattern.value, normal, type(), scope, at.elaborate, at.source);
+    const found = isHole(pattern.value) ? null : mismatch(pattern.value, normal, type(), scope, at);
     return { shown: normal, failed: found && (found.type ? { type: found.type, pattern: found.pattern } : { shown: found.value, pattern: found.pattern }) };
   }
   const call = pattern.kind === "call" && pattern.fn?.kind === "name" ? pattern.fn.name
@@ -177,7 +181,7 @@ function observed(pattern, handle, type, scope, at, head) {
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
     if (isPattern(args[0])) throw misplaced(args[0], at.source);
-    if (!scope.equal(at.elaborate(args[0], null), type()))
+    if (!scope.equal(at.annotation(args[0]), type()))
       return { shown: head === null ? unevaluated : shownHead(head, at), failed: { type: type(), pattern } };
     return observe(args[1], handle, type, scope, at, head);
   }

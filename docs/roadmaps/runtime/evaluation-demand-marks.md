@@ -141,7 +141,9 @@ deciding the match needs:
   components; `left(p)`, `right(p)` and a constructor pattern `c(p, …)`
   demand the weak head, require that head, and continue into the arguments
   in the kernel's order, each read at its field's type as today.
-- `typed(T, p)` is `p` read at `T`.
+- `typed(T, p)` is `p` read at `T`. `T` is compared with the part's type by
+  conversion, and neither is normalized, so the annotation computes nothing
+  of a part the pattern leaves unobserved.
 - An expression leaf, as `5` or `nat.(2 + 3)`, demands the part's full normal
   form and compares it with the leaf's, exactly as today: exact
   expected-value checks are preserved, and a leaf is a `!!` on its part.
