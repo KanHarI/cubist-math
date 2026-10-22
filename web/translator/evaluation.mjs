@@ -60,12 +60,21 @@ export const markInExpression = expression =>
 export const bareHole = () =>
   Error("evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, or !!_ for its full normal form.");
 
+// A hole or a mark where no part can be read: a mark is refused first, as
+// writing the term for a hole would not make its place one.
+const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : holeInExpression)(source(pattern));
+
 // The first part of the normal form `value` that does not match `pattern`,
 // as { value, pattern }, or null when it matches: a pattern under `!!`,
 // whose marks change nothing. `type` is the value's type;
 // `elaborate(node, type)` elaborates a leaf at a type and gives its normal
-// form, and `source(node)` is a node's text.
+// form, and `source(node)` is a node's text. A failure is located at the
+// part of the pattern that met it.
 export function mismatch(pattern, value, type, scope, elaborate, source) {
+  try { return mismatched(pattern, value, type, scope, elaborate, source); }
+  catch (error) { throw scope.unit.locate(error, pattern); }
+}
+function mismatched(pattern, value, type, scope, elaborate, source) {
   if (isHole(pattern)) return null;
   if (pattern.kind === "demand") return mismatch(pattern.value, value, type, scope, elaborate, source);
   const fails = { value, pattern };
@@ -77,7 +86,7 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
   if (pattern.kind === "call") writtenOut(pattern, scope, true);
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
-    if (isPattern(args[0])) throw (hasHole(args[0]) ? holeInExpression : markInExpression)(source(args[0]));
+    if (isPattern(args[0])) throw misplaced(args[0], source);
     return scope.equal(elaborate(args[0], null), type) ? mismatch(args[1], value, type, scope, elaborate, source) : { ...fails, type };
   }
   if (pattern.kind === "pair" && head.tag === "Sigma") {
@@ -110,7 +119,7 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
     }
     return null;
   }
-  if (isPattern(pattern)) throw (hasHole(pattern) ? holeInExpression : markInExpression)(source(pattern));
+  if (isPattern(pattern)) throw misplaced(pattern, source);
   return scope.equal(value, elaborate(pattern, type)) ? null : fails;
 }
 
@@ -167,7 +176,7 @@ function observed(pattern, handle, type, scope, at, head) {
   if (pattern.kind === "call") writtenOut(pattern, scope, true);
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
-    if (isPattern(args[0])) throw (hasHole(args[0]) ? holeInExpression : markInExpression)(at.source(args[0]));
+    if (isPattern(args[0])) throw misplaced(args[0], at.source);
     if (!scope.equal(at.elaborate(args[0], null), type()))
       return { shown: head === null ? unevaluated : shownHead(head, at), failed: { type: type(), pattern } };
     return observe(args[1], handle, type, scope, at, head);
@@ -216,7 +225,7 @@ function observed(pattern, handle, type, scope, at, head) {
     }
     return result(null);
   }
-  if (isPattern(pattern)) throw (hasHole(pattern) ? holeInExpression : markInExpression)(at.source(pattern));
+  if (isPattern(pattern)) throw misplaced(pattern, at.source);
   // An expression: elaborated first, so that one in error computes nothing.
   const expected = at.elaborate(pattern, type()), normal = at.normal(handle, pattern);
   return { shown: normal, failed: scope.equal(normal, expected) ? null : { shown: normal, pattern } };

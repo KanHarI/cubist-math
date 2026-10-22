@@ -9,6 +9,7 @@ import { lint } from "../web/cubist/lint.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { normalDigest } from "../tools/evaluation-baseline.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
 // `!` asks for a part's weak head and `!!` for its full normal form, and an
@@ -20,12 +21,21 @@ const module = await createCubical();
 
 // A program that records what evaluation asks the kernel: for each term
 // checked for evaluation that names a definition, whether the whole term was
-// normalized while it was the latest; and every handle a weak head or a normal form was asked of.
+// normalized while it was the latest, the normal form the kernel gave, read
+// back here, and the term then displayed; and every handle a weak head or a
+// normal form was asked of.
 function recordedProgram(t) {
   const program = new CubicalProgram(module, sourceReader());
   t.after(() => program.dispose());
   const { checker, kernel } = program, evaluations = [], asked = [];
-  const { evaluated } = checker, { head, normalize } = kernel;
+  const { evaluated, displayText } = checker, { head, normalize } = kernel;
+  // The first term displayed after the latest evaluation's normalization is
+  // its value; later ones are other directives'.
+  checker.displayText = function (term, ...rest) {
+    const latest = evaluations.at(-1);
+    if (latest?.normalized && !("shown" in latest)) latest.shown = term;
+    return displayText.call(this, term, ...rest);
+  };
   checker.evaluated = function (term, ...rest) {
     const result = evaluated.call(this, term, ...rest);
     if (term.tag === "DefRef") evaluations.push({ name: term.name, handle: result.expression, normalized: false, heads: [] });
@@ -39,9 +49,10 @@ function recordedProgram(t) {
   kernel.normalize = function (handle) {
     // Directives run in turn, and a later one may check the same term to the
     // same handle: the normalization is the latest evaluation's.
-    if (evaluations.at(-1)?.handle === handle) evaluations.at(-1).normalized = true;
     asked.push({ query: "normalize", handle });
-    return normalize.call(this, handle);
+    const result = normalize.call(this, handle);
+    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, normal: checker.decoded(result) });
+    return result;
   };
   return { program, evaluations, asked };
 }
@@ -111,9 +122,38 @@ evaluate far
 evaluate far
   expecting (_, !!_
   );
+def ones : UNat and UNat := (1, 1);
+evaluate ones
+  expecting !!(
+    2 * 255, _);
+evaluate far
+  expecting !!(_, _
+  );
 `;
   const { result } = await checkProgram(t, source, { module });
-  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]), [["K344", "2 * 255"]]);
+  // The leaf under !! fails its comparison; the !! of far fails itself, as
+  // the pair's normal form is a level deeper than its first component's.
+  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]),
+    [["K344", "2 * 255"], ["K344", "2 * 255"], ["K344", "!!(_, _\n  )"]]);
+});
+
+test("an ignored component whose weak head fails does not fail the pattern", async t => {
+  // The prime of euclid(4) has two successor heads, and its third is too deep
+  // to compute (K344): any query of the ignored part, however indirect,
+  // fails the evaluation.
+  const { result } = await checkProgram(t, `import euclid;
+use unat;
+def pred(n : UNat) : UNat := match n {
+  zero => zero;
+  succ(k) => k;
+};
+def value : UNat and UNat := (1, pred(pred(euclid(4).1)));
+evaluate value expecting (1, _);
+evaluate value expecting (!_, _);
+evaluate value expecting (_, !_);
+`, { module });
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(1, <unevaluated>)", "(succ(<unevaluated>), <unevaluated>)"]);
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["K344"]);
 });
 
 test("an unobserved part is asked nothing: no query reaches a pair's ignored component", async t => {
@@ -159,14 +199,29 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   assert.equal(checker.displayText(checker.normalForm(first)), "unat.(3)");
   assert.equal(checker.normalForm(second).tag, "Lam");
   // Nothing below the data parts is admitted: not a lambda's domain or body,
-  // nor the parts of a part, until that part's own head is asked.
-  const lambda = kernel.node(second);
+  // even once the lambda's own head is asked, nor the parts of a part,
+  // until that part's own head is asked.
+  const lambda = kernel.node(checker.derivedHead(second));
   assert.equal(lambda.kind, "Lam");
   for (const handle of lambda.children.slice(0, 2)) assert.throws(() => kernel.normalize(handle), /instruction derived/);
   const [inner] = kernel.spine(kernel.head(first)).args;
   assert.throws(() => kernel.normalize(inner), /instruction derived/);
   assert.equal(kernel.spine(checker.derivedHead(first)).args[0], inner);
   assert.equal(checker.displayText(checker.normalForm(inner)), "unat.(2)");
+});
+
+test("the head of a derived path or level lambda admits nothing under its binder", async t => {
+  const { program } = await checkProgram(t, `import unat;
+use unat;
+def path_ : 1 + 1 = 2 := path i => 2;
+def level_(U < UU0, A : U, x : A) : A := x;`, { module });
+  const checker = program.checker, kernel = checker.kernel;
+  for (const [name, kind] of [["main__path_", "PLam"], ["main__level_", "LLam"]]) {
+    const { expression } = checker.checkSyntax({ tag: "DefRef", name }, null, new Map(), new Map());
+    const head = kernel.node(checker.derivedHead(expression));
+    assert.equal(head.kind, kind, name);
+    for (const handle of head.children.filter(Boolean)) assert.throws(() => kernel.normalize(handle), /instruction derived/, name);
+  }
 });
 
 test("demand marks format tightly and lint what asks for nothing more", () => {
@@ -183,8 +238,11 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
   // A name or a call may be a constructor, which computes only a weak head,
   // so !! before one is not redundant; typed(T, p) asks what p asks.
   assert.deepEqual(lint("evaluate v expecting (_, !!tok, !!succ(2), !!(1, 2), !typed(Unit, _));"), []);
-  assert.deepEqual(lint("evaluate v expecting (!typed(Unit, tt), !!typed(UNat, 4), !!nat.(2 + 3));").map(warning => warning.code),
+  assert.deepEqual(lint("evaluate v expecting (!typed(Unit, tt), !!typed(UNat, 4), !!nat.(2 + 3), _);").map(warning => warning.code),
     ["W709", "W710", "W710"]);
+  // Without a hole, removing the marks would compare the value whole: they
+  // are not reported.
+  assert.deepEqual(lint("evaluate v expecting !tok; evaluate v expecting (!!3, !!4); evaluate !!v expecting 3;"), []);
   assert.deepEqual(lint(formatted).map(warning => warning.code), ["W708", "W708", "W708"]);
   assert.deepEqual(lint("evaluate e expecting (!5, !!3, !!(4, !_), !_, !!_, !typed(Unit, _));").map(warning => warning.code),
     ["W709", "W710", "W708"]);
@@ -227,12 +285,11 @@ for (const setup of Object.keys(corpus.setups)) {
     const outcomes = new Map([...outcome].map(([start, value]) => [lineOf(start), value]));
     // Each directive checks its probe once for evaluation, in order: whether
     // it normalized the whole term is the directive's demand.
-    const normalized = new Map(items.map((_, index) => [index, evaluations.filter(evaluation => evaluation.name === `main__probe_${index}`)
-      .map(evaluation => evaluation.normalized)]));
+    const checked = new Map(items.map((_, index) => [index, evaluations.filter(evaluation => evaluation.name === `main__probe_${index}`)]));
     for (const [line, [item, mark]] of at) {
       const value = outcomes.get(line), index = items.indexOf(item), position = [...at.values()].filter(([other]) => other === item)
         .findIndex(([, other]) => other === mark);
-      const wholeNormalized = normalized.get(index)[position];
+      const evaluation = checked.get(index)[position], wholeNormalized = evaluation?.normalized;
       if (item.refused) {
         assert.deepEqual(value, { refused: item.refused }, `${item.id} ${mark}`);
         assert.notEqual(wholeNormalized, true, `${item.id} ${mark}: refused before computing`);
@@ -241,7 +298,12 @@ for (const setup of Object.keys(corpus.setups)) {
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
       assert.equal(wholeNormalized, mark === "!!_", `${item.id} ${mark}: the whole term ${mark === "!!_" ? "is" : "is not"} normalized`);
       if (mark === "!_") assert.ok(shownHead(item.whnf)(value), `${item.id}: ${value} is not ${item.whnf}`);
-      else assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a full normal form`);
+      else {
+        // What !!_ shows is the normal form the kernel computed, up to the
+        // names of bound variables.
+        assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a full normal form`);
+        assert.equal(normalDigest(evaluation.shown), normalDigest(evaluation.normal), `${item.id}: the kernel's normal form is shown`);
+      }
     }
   });
 }

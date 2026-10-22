@@ -102,6 +102,13 @@ evaluate pairs expecting !!(3, !_);
 //   pair's component, an injection's value or a constructor's argument; 1 + !2 is none of these.
 evaluate pairs expecting (1 + !2, _);
 
+def unit_identity := fun (x : Unit) => x;
+
+// Error: E484: A demand mark, ! or !!, starts a part of an expected value: the whole value, a
+//   pair's component, an injection's value or a constructor's argument; fun (x : Unit) => !_ is
+//   none of these.
+evaluate unit_identity expecting fun (x : Unit) => !_;
+
 // A mismatch names the part that differs, and shows the value as far as it
 // was computed.
 // Error: E477: The term evaluates to (3, <unevaluated>), which does not match (4, _): 3 is not 4.

@@ -116,11 +116,15 @@ export function lint(source, ast = parse(source)) {
   const computesHead = node => typedPart(node) ? computesHead(typedPart(node)) : !hole(node);
   const expression = node => typedPart(node) ? expression(typedPart(node))
     : !hole(node) && !["name", "call", "pair", "demand"].includes(node.kind);
+  // Removing marks must leave the expected value a pattern, or it would be
+  // compared exactly instead: ! and !! are reported only where a hole keeps
+  // it one. A mark under !! leaves that !!.
+  let holed = false;
   const marked = (mark, at, value, normalized) => {
     if (normalized) warn(at, "W708", `The ${mark} before ${text(value)} asks for nothing more: it is under !!, whose part is fully normalized.`);
-    else if (mark === "!" && computesHead(value))
+    else if (holed && mark === "!" && computesHead(value))
       warn(at, "W709", `The ! before ${text(value)} asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.`);
-    else if (mark === "!!" && expression(value))
+    else if (holed && mark === "!!" && expression(value))
       warn(at, "W710", `The !! before ${text(value)} asks for nothing more: an expression is compared by its full normal form.`);
     marks(value, normalized || mark === "!!");
   };
@@ -131,7 +135,10 @@ export function lint(source, ast = parse(source)) {
     else if (node?.kind === "pair") [node.left, node.right].forEach(part => marks(part, normalized));
     else if (node?.kind === "call") node.args.forEach(part => marks(part, normalized));
   };
+  const holes = node => !!node && typeof node === "object" && (hole(node)
+    || Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && holes(value)));
   for (const directive of ast.directives ?? []) if (directive.kind === "evaluate" && directive.expected) {
+    holed = holes(directive.expected);
     if (directive.mark) marked(directive.mark, { start: directive.markStart, end: directive.markEnd }, directive.expected, false);
     else marks(directive.expected, false);
   }
