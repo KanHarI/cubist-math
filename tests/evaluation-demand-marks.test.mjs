@@ -77,7 +77,9 @@ test("! and !! are tokens, read only right after evaluate and in an expected pat
   // Two marks apart would read as !! but ask for a weak head.
   assert.throws(() => parse("evaluate e expecting ! !_;"), /Two ! marks apart/);
   assert.throws(() => parse("evaluate ! !e expecting _;"), /Two ! marks apart/);
-  for (const source of ["def x := !3;", "evaluate !(!e) expecting _;", "print(evaluate(!e));"])
+  // print(evaluate(…)) takes a mark before its term, and nowhere else.
+  assert.equal(parse("print(evaluate(!!e));").directives[0].mark, "!!");
+  for (const source of ["def x := !3;", "evaluate !(!e) expecting _;", "print(typeof(!e));", "print(evaluate(f(!e)));"])
     assert.throws(() => parse(source), /The demand mark ! stands right after evaluate/, source);
 });
 

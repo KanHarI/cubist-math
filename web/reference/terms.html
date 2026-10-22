@@ -131,7 +131,7 @@ forall A : U0. (A -&gt; A) -&gt; A -&gt; A
 (UNat -&gt; UNat) -&gt; UNat -&gt; UNat
 &gt; typeof add_two;
 UNat -&gt; UNat
-&gt; evaluate add_two;
+&gt; evaluate !!add_two;
 fun (a : UNat) =&gt; succ(succ(a))</code></pre>
             <p><code>apply_twice(UNat)</code> is a function of the other two parameters, and <code>add_two</code>, with a function supplied too, waits only for the number. Evaluating it shows the function it is: it applies <code>succ</code> twice.</p>
             <p>Only a function can be applied:</p>

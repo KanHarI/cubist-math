@@ -321,7 +321,10 @@ In #305 all 87 keep their text unmarked, and the fifteen are the only
 prints marked.
 The reference's seven printed examples are classified the same way: the
 cubical chapter's `join_by_box` prints a function and becomes `!!`; the
-checking, kernel computation and theories chapters print numbers.
+checking, kernel computation and theories chapters print numbers. So are
+its REPL transcripts: the first-proof and terms chapters evaluate proofs,
+functions and the types `2 < 7` and `7 < 2` to show the terms they are,
+and those nine entries become `evaluate !!…`.
 
 **Baseline.** The evaluation baseline's `repl`, `print` and `pattern`
 workloads are re-recorded with `--write`, each with a `!!` twin so that the
