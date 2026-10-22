@@ -179,10 +179,12 @@ which are shown as suspended, by a marker naming the kind of head
 constructor and is shown with its arguments, and an eliminator not yet
 applied to a value, which eta makes of `fun (n : UNat) => induction n …`,
 is a function. The walk stops where the printer's output budget ends, at
-4,000 heads, so data past it is not computed and is shown as `…`. Each head
-the walk computes is shallow, so it can show data whose normal form is too
-deep to build: `print(evaluate((1, 2 * 256)))`, at type `UNat and UNat`,
-shows `(1, 512)`, where `!!` stops with `K344`.
+4,000 heads, and at the depth of the kernel's own syntax, 512 levels
+(`K344`), as deep as any printer is given a term; data past either is not
+computed and is shown as `…`. Each head the walk computes is shallow, so it
+can show data whose normal form is too deep to build:
+`print(evaluate((2 * 255, 2 * 255)))`, at type `UNat and UNat`, shows
+`(510, 510)`, where `!!` stops with `K344`.
 
 **`!p`.** The part is reduced to its weak head before `p` is matched. With
 `_`, the head query must succeed and nothing more is asked. At the top, the

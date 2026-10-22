@@ -138,15 +138,16 @@ const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "G
 const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : kind === "PLam" ? "<path>" : kind === "LLam" ? "<level fun>"
   : typeKinds.has(kind) ? "<type>" : ["Comp", "HComp", "Trans"].includes(kind) ? "<composition>" : "<neutral>");
 // A value as far as it was computed: a weak head with its parts shown as
-// `parts(index, handle)` gives them, by their places and handles, from the
-// left. A head that is no constructor, pair, injection or tt is shown by its
-// marker.
+// `parts(index, handle, below)` gives them, by their places and handles,
+// from the left; `below` is how many levels under the head's own a part is
+// shown (a constructor's first argument is under every application). A head
+// that is no constructor, pair, injection or tt is shown by its marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
-  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg)), at.decoded(root.id));
+  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg, args.length - index)), at.decoded(root.id));
   if (args.length) return marker("<neutral>");
-  if (root.kind === "Pair") { const first = parts(0, root.children[1]); return { tag: "Pair", first, second: parts(1, root.children[2]) }; }
-  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1]) };
+  if (root.kind === "Pair") { const first = parts(0, root.children[1], 1); return { tag: "Pair", first, second: parts(1, root.children[2], 1) }; }
+  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1], 1) };
   if (root.kind === "Point") return { tag: "Point" };
   return headMarker(root.kind);
 }
@@ -155,12 +156,26 @@ const once = compute => { let done = false, value; return () => done ? value : (
 // The value form of a term (DM3): its weak head, and the value forms of the
 // parts of a constructor, a pair or an injection, from the left; any other
 // head is shown by its marker. A printer shows at most `budget` nodes, so
-// the walk computes at most that many heads, and shows a part past them
-// as …, uncomputed. `at` is as observe takes it; `node`, the source a
-// failure is located at.
-export function valueForm(handle, at, node, budget = 4000) {
-  const form = handle => budget-- > 0 ? shownHead(at.head(handle, node), at, (_, part) => form(part)) : marker("…");
-  return form(handle);
+// the walk computes at most that many heads; and it shows nothing deeper
+// than the kernel's own syntax, `depth` levels (K344), which is as deep as
+// any printer is given a term. A part past either is shown as …,
+// uncomputed. The walk keeps its own stack, as a value's parts can nest
+// deeper than JavaScript's. `at` is as observe takes it; `node`, the source
+// a failure is located at.
+export function valueForm(handle, at, node, budget = 4000, depth = 512) {
+  const value = {}, pending = [[handle, value, 1]];
+  while (pending.length) {
+    const [part, place, level] = pending.pop(), parts = [];
+    if (budget-- <= 0 || level > depth) { Object.assign(place, marker("…")); continue; }
+    Object.assign(place, shownHead(at.head(part, node), at, (_, inner, below) => {
+      const shown = {};
+      parts.push([inner, shown, level + below]);
+      return shown;
+    }));
+    // The leftmost part is computed first.
+    pending.push(...parts.reverse());
+  }
+  return value;
 }
 
 // Match a part on demand: `handle` is the part's kernel term, which only the

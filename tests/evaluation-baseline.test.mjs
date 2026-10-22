@@ -133,9 +133,12 @@ test("the depth failures are reproduced, with the work done before them", async 
   assert.equal(evaluated.outcome.normal, printed.outcome.normal);
   assert.equal((await cold("multiply-2-254-normal")).outcome.text, "508");
   assert.equal((await cold("multiply-2-256-print-normal")).outcome.code, "K344");
-  // The value form builds a numeral one shallow head at a time, so it shows
-  // the numeral whose normal form is too deep to build.
-  assert.equal((await cold("multiply-2-256-print")).outcome.text, "512");
+  // The value form builds a numeral one shallow head at a time, to the
+  // kernel's depth of 512 levels, so it shows 512's successors down to
+  // there, where !! fails.
+  const deep = await cold("multiply-2-256-print");
+  assert.equal(deep.outcome.status, "value");
+  assert.match(deep.outcome.text, /^succ\(succ\(succ\(/);
   assert.equal((await cold("multiply-2-255")).outcome.text, "510");
 });
 

@@ -262,7 +262,7 @@ test("print(evaluate(e)) shows the value form, !e the weak head as it is, and !!
 use unat;
 def double(n : UNat) := n + n;
 def pair_ : UNat and (UNat -> UNat) := (double(3), double);
-def far : UNat and UNat := (1, 2 * 256);
+def far : UNat and UNat := (2 * 255, 2 * 255);
 print(evaluate(pair_));
 print(evaluate(!pair_));
 print(evaluate(!!pair_));
@@ -285,9 +285,9 @@ print(evaluate(!!far));
     "succ",
     "succ",
     "<fun>",
-    // Each weak head of the numeral is shallow, so the value form reaches
-    // a numeral whose normal form is too deep to build.
-    "(1, 512)",
+    // Each weak head of the numerals is shallow, so the value form reaches
+    // a pair whose normal form is too deep to build.
+    "(510, 510)",
   ]);
   assert.deepEqual(result.gaps.map(gap => gap.code), ["K344"]);
 });
@@ -308,6 +308,23 @@ ${source}`, { module });
   // 250 elements of 102 heads each are past the budget of 4,000 heads.
   assert.ok(some.queries - none.queries <= 4100, `the walk asked ${some.queries - none.queries} queries`);
   assert.match(some.text, /^cons\(100, cons\(100, /);
+});
+
+test("the value form shows no part deeper than the kernel's terms, however deep the value", async t => {
+  const run = async source => {
+    const { program, result } = await checkProgram(t, `import unat;
+use unat;
+def d := 2 * 256;
+def deep := d + d + d + d + d + d + d + d;
+${source}`, { module });
+    assert.deepEqual(result.gaps.map(gap => gap.reason), [], source);
+    return { queries: Number(program.kernel.work().queries), text: result.prints[0]?.text };
+  };
+  // 4096 levels of succ: the walk keeps its own stack, and computes heads
+  // only to 512 levels, where the kernel's own terms end.
+  const none = await run(""), deep = await run("print(evaluate(deep));");
+  assert.match(deep.text, /^succ\(succ\(succ\(/);
+  assert.ok(deep.queries - none.queries <= 600, `the walk asked ${deep.queries - none.queries} queries`);
 });
 
 test("the REPL reads the marks after evaluate and before a term alone", async () => {
