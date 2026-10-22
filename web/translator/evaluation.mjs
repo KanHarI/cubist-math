@@ -144,7 +144,7 @@ const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : 
 // that is no constructor, pair, injection or tt is shown by its marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
-  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg, args.length - index)), at.decoded(root.id));
+  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg, args.length - index)), at.constructor(root.id));
   if (args.length) return marker("<neutral>");
   if (root.kind === "Pair") { const first = parts(0, root.children[1], 1); return { tag: "Pair", first, second: parts(1, root.children[2], 1) }; }
   if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1], 1) };
@@ -188,7 +188,8 @@ export function valueForm(handle, at, node, budget = 4000, depth = 512) {
 //     decoded, each a query for the pattern node `node`, which a failure
 //     names;
 //   spine(handle), decoded(handle): a term as the kernel holds it, nothing
-//     computed;
+//     computed; constructor(handle), a constructor as a display shows it,
+//     without its type's parameters;
 //   elaborate(node, type): a leaf elaborated at a type, and its normal form;
 //   annotation(node): a typed pattern's type, elaborated and checked, and
 //     not normalized: sameType compares it with the part's type;

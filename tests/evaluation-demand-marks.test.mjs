@@ -223,6 +223,24 @@ test("a part the depth cut short is asked again where it is met with more depth 
   assert.equal(program.checker.differ(at("c_"), at("d_")), true);
 });
 
+test("a constructor is shown without its type's parameters, however large", async t => {
+  // Tag's parameter, as the kernel holds it, is twelve nested applications
+  // of twice to succ, unreduced: a display that reduced it would build
+  // 4096 applications of succ.
+  const twice = "(fun (f : UNat -> UNat) => fun (x : UNat) => f(f(x)))";
+  let parameter = "succ";
+  for (let i = 0; i < 12; i++) parameter = `${twice}(${parameter})`;
+  const { result } = await checkProgram(t, `import unat;
+use unat;
+inductive Tag(f : UNat -> UNat) : U0 {
+  tag;
+}
+def tagged : Tag(${parameter}) := tag;
+evaluate tagged expecting !_;`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["tag"]);
+});
+
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
   // The prime of euclid(4) has two successor heads, and its third is too deep
   // to compute (K344): any query of the ignored part, however indirect,
@@ -519,7 +537,8 @@ for (const setup of Object.keys(corpus.setups)) {
           let constructor = evaluation.displayed;
           while (constructor?.tag === "App") constructor = constructor.fn;
           assert.equal(constructor?.tag, "Con", `${item.id}: ${value} shows a constructor`);
-          assert.deepEqual(constructor, evaluation.root, `${item.id}: ${value} shows the kernel's constructor`);
+          const { root } = evaluation, identity = con => [con?.index, con?.name, con?.sort?.signature];
+          assert.deepEqual(identity(constructor), identity(root), `${item.id}: ${value} shows the kernel's constructor`);
         }
       } else if (mark === "!!_") {
         // What !!_ shows is the normal form the kernel computed, up to the

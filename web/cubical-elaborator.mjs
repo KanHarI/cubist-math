@@ -805,4 +805,13 @@ export class NativeCubicalElaborator {
   }
   // A handle's term as the kernel holds it, nothing reduced.
   decoded(handle) { return this.syntax.decode(handle, this.dimensions); }
+  // A constructor as a display shows it: its name and its declared type's
+  // signature, without the type's parameters, which no display of the
+  // constructor shows and which can be large, unreduced, and deep.
+  shownConstructor(handle) {
+    const node = this.kernel.node(handle), sort = this.kernel.node(node.children[0]);
+    if (sort.kind !== "Sort") return this.decoded(handle);
+    const record = this.syntax.signatureRecord(sort.payload), name = record.constructors[node.payload];
+    return { tag: "Con", index: node.payload, ...(name ? { name } : {}), sort: { tag: "Sort", signature: record.name, parameters: [], levels: [] } };
+  }
 }
