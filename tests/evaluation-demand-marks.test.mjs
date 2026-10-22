@@ -203,13 +203,18 @@ def void_type := Void or (other = other);`, { module });
 test("a part the depth cut short is asked again where it is met with more depth left", async t => {
   // a0 and b0 differ one part down. Met first at the bottom of a499 and
   // b499, past the depth, they are unknown there, and differ beside them.
-  const lines = ["import unat;", "use unat;", "def deep := 2 * 256;", "def a0 := Unit or (deep = deep);", "def b0 := Void or (deep = deep);"];
-  for (let level = 1; level < 500; level++) lines.push(`def a${level} := Unit or a${level - 1};`, `def b${level} := Unit or b${level - 1};`);
-  lines.push("def a_ := a499 or a0;", "def b_ := b499 or b0;");
+  // So do c0 and d0, which hold a0 and b0, met first below c497 and d497,
+  // where only the unknown kept for a0 and b0 is reused.
+  const lines = ["import unat;", "use unat;", "def deep := 2 * 256;", "def a0 := Unit or (deep = deep);", "def b0 := Void or (deep = deep);",
+    "def c0 := a0 or Unit;", "def d0 := b0 or Unit;"];
+  for (let level = 1; level < 500; level++) lines.push(`def a${level} := Unit or a${level - 1};`, `def b${level} := Unit or b${level - 1};`,
+    `def c${level} := Unit or c${level - 1};`, `def d${level} := Unit or d${level - 1};`);
+  lines.push("def a_ := a499 or a0;", "def b_ := b499 or b0;", "def c_ := (a498 or c497) or c0;", "def d_ := (b498 or d497) or d0;");
   const { program, result } = await checkProgram(t, lines.join("\n"), { module });
-  assert.ok(result.outputs.length > 1000 && result.outputs.every(output => output.verified));
+  assert.ok(result.outputs.length > 2000 && result.outputs.every(output => output.verified));
   const at = name => ({ tag: "DefRef", name: `main__${name}` });
   assert.equal(program.checker.differ(at("a_"), at("b_")), true);
+  assert.equal(program.checker.differ(at("c_"), at("d_")), true);
 });
 
 test("an ignored component whose weak head fails does not fail the pattern", async t => {

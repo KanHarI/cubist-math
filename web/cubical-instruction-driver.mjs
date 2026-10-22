@@ -1058,11 +1058,12 @@ export class InstructionDriver {
       freeDimensionMask(this.kernel, y, this.freeDims));
     const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`;
     // An unknown the depth cut short is kept with the depth it had, and holds
-    // only where no more is left: a shallower visit asks again.
+    // only where no more is left: a shallower visit asks again. Reused, it
+    // is a cut too, so that the questions it is part of hold no further.
     if (this.guesses.has(key)) {
       const known = this.guesses.get(key);
       if (known?.depth === undefined) return known;
-      if (fuel.depth <= known.depth) return null;
+      if (fuel.depth <= known.depth) { fuel.cuts++; return null; }
     }
     const cuts = fuel.cuts;
     // A path at an endpoint of its annotated type is that endpoint, as the
