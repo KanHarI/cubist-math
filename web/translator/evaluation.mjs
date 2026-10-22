@@ -142,7 +142,7 @@ const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : 
 // injection or tt is shown by its marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
-  if (root.kind === "Con") return args.reduce((fn, _, index) => T.app(fn, parts(index)), at.decoded(root.id));
+  if (root.kind === "Con") return args.reduce((fn, _, index) => T.app(fn, parts(index)), at.constructor(root.id));
   if (args.length) return marker("<neutral>");
   if (root.kind === "Pair") return { tag: "Pair", first: parts(0), second: parts(1) };
   if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0) };
@@ -161,7 +161,8 @@ const once = compute => { let done = false, value; return () => done ? value : (
 //     decoded, each a query for the pattern node `node`, which a failure
 //     names;
 //   spine(handle), decoded(handle): a term as the kernel holds it, nothing
-//     computed;
+//     computed; constructor(handle), a constructor as a display shows it,
+//     without its type's parameters;
 //   elaborate(node, type): a leaf elaborated at a type, and its normal form;
 //   annotation(node): a typed pattern's type, elaborated and checked, and
 //     not normalized: sameType compares it with the part's type;
