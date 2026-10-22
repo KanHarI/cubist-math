@@ -48,14 +48,18 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // docs/roadmaps/runtime/evaluation-demand-marks.md): a pattern's parts are
 // computed only as far as it observes them, in the new demand phase, and
 // the pattern workload's !! twin keeps the full normalization measured.
-export const version = 5;
+// Version 6 shows REPL and print values as their value forms (DM3): those
+// workloads compute as far as their values are shown, and each has a !!
+// twin, ID-normal, that keeps the full normalization measured.
+export const version = 6;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // The archived Euclid construction and its prerequisites stay fixed for
 // evaluator comparisons (archive/first-library/euclid.cubist, primes.cubist):
 // a change to their algorithm starts a separate series.
-export const workloads = [
-  // Full results: plain REPL evaluation and print both normalize once (EVAL1).
+const fixed = [
+  // Full results: plain REPL evaluation and print both show the value form,
+  // and their !! twins normalize once (EVAL1).
   { id: "euclid-3", setup: euclid, entry: "evaluate euclid(3);" },
   { id: "euclid-3-print", setup: euclid, entry: "print(evaluate(euclid(3)));" },
   { id: "euclid-4", setup: euclid, entry: "evaluate euclid(4);" },
@@ -93,20 +97,28 @@ export const workloads = [
   // series, on the definition `probe := euclid(n)` the kernel checked.
   ...[3, 4, 5, 6].map(n => ({ id: `scratch-euclid-${n}-prime`, series: "scratch", setup: euclid, entry: `def probe := euclid(${n});` })),
 ];
+// Each REPL and print workload, followed by its !! twin.
+export const workloads = fixed.flatMap(workload => {
+  const normal = workload.series === "scratch" ? null : /^evaluate (?!.*\bexpecting\b)/.test(workload.entry)
+    ? workload.entry.replace(/^evaluate /, "evaluate !!") : workload.entry.replace(/^print\(evaluate\(/, "print(evaluate(!!");
+  return normal && normal !== workload.entry ? [workload, { ...workload, id: `${workload.id}-normal`, entry: normal }] : [workload];
+});
 
 // What each workload's result is, and what it promises.
 export const contracts = {
-  repl: "REPL evaluate: one checked normalization, printed without a redundant self-comparison",
-  print: "print(evaluate(e)): the full normal form, printed",
+  repl: "REPL evaluate: the value form, computed as far as it is shown",
+  replNormal: "REPL evaluate !!e: one checked normalization, printed without a redundant self-comparison",
+  print: "print(evaluate(e)): the value form, computed as far as it is shown",
+  printNormal: "print(evaluate(!!e)): the full normal form, printed",
   expected: "evaluate e expecting v: the full normal form, compared with v's",
   pattern: "evaluate e expecting p, p with holes or marks: each part computed as far as p observes it",
-  normal: "evaluate e expecting !!p: the full normal form, matched part by part",
+  patternNormal: "evaluate e expecting !!p: the full normal form, matched part by part",
   scratch: "closure experiment: the demanded natural only; untrusted, certifies nothing",
 };
 export const contractOf = workload => workload.series === "scratch" ? "scratch"
-  : /^print\s*\(/.test(workload.entry) ? "print"
-  : !/\bexpecting\b/.test(workload.entry) ? "repl"
-  : /\bexpecting\s*!!/.test(workload.entry) ? "normal"
+  : /^print\s*\(/.test(workload.entry) ? (/^print\(evaluate\(!!/.test(workload.entry) ? "printNormal" : "print")
+  : !/\bexpecting\b/.test(workload.entry) ? (/^evaluate !!/.test(workload.entry) ? "replNormal" : "repl")
+  : /\bexpecting\s*!!/.test(workload.entry) ? "patternNormal"
   : /\bexpecting\b[\s\S]*(?:\b_\b|!)/.test(workload.entry) ? "pattern" : "expected";
 
 // Where an entry's time and work go. Each phase is a boundary of the code

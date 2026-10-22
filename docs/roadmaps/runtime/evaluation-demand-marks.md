@@ -2,8 +2,10 @@
 
 Status: proposed on 2026-10-21 and decided the same day (DM0, the
 [decisions](#decisions) below). The marks in `evaluate … expecting` (DM1,
-DM2) are implemented in [#304](https://github.com/KanHarI/cubist-math/pull/304);
-the value form of printed values (DM3) is next. This is the observation
+DM2) are implemented in [#304](https://github.com/KanHarI/cubist-math/pull/304),
+and the value form of printed values (DM3), with the migration (DM4) and
+the reference (DM6), in [#305](https://github.com/KanHarI/cubist-math/pull/305);
+the report (DM5) is next. This is the observation
 contract that EVAL5 of the
 [runtime roadmap](runtime-evaluation-roadmap.md#eval5-demand-only-the-result-being-observed)
 requires before evaluation behavior changes. It proposes no kernel change
@@ -174,8 +176,13 @@ term, path and level lambdas, types, formal compositions and neutral heads,
 which are shown as suspended, by a marker naming the kind of head
 (`<fun>`, `<path>`, `<level fun>`, `<type>`, `<composition>`,
 `<neutral>`; decision 1). A path constructor is a weak head like any
-constructor and is shown with its arguments. The walk stops where the
-printer's output budget ends, so data past it is not computed.
+constructor and is shown with its arguments, and an eliminator not yet
+applied to a value, which eta makes of `fun (n : UNat) => induction n …`,
+is a function. The walk stops where the printer's output budget ends, at
+4,000 heads, so data past it is not computed and is shown as `…`. Each head
+the walk computes is shallow, so it can show data whose normal form is too
+deep to build: `print(evaluate((1, 2 * 256)))`, at type `UNat and UNat`,
+shows `(1, 512)`, where `!!` stops with `K344`.
 
 **`!p`.** The part is reduced to its weak head before `p` is matched. With
 `_`, the head query must succeed and nothing more is asked. At the top, the
@@ -308,6 +315,8 @@ suspend: functions in 13 printer tests (`box_notation`, `glue_printed`,
 and the path `refl(1)` in `quotient_effectiveness`. These test the normal
 form and become `print(evaluate(!!e))`. The other 87 print data; DM3 runs
 them unmarked, and each keeps its text or is classified like the fifteen.
+In #305 all 87 keep their text unmarked, and the fifteen are the only
+prints marked.
 The reference's seven printed examples are classified the same way: the
 cubical chapter's `join_by_box` prints a function and becomes `!!`; the
 checking, kernel computation and theories chapters print numbers.
@@ -377,12 +386,12 @@ the reference test checks, incorrect ones carrying their `// Error:`:
 | ID | Work | Depends on | Size |
 | --- | --- | --- | --- |
 | DM0 | This decision record, the open questions answered, the roadmap and work plan rows updated. **Done** in #304 | — | S |
-| DM1 | Tokens `!` and `!!`, grammar in `evaluate`, `expecting` and `print(evaluate(…))`, formatter, lints, the bare-`_` and `! !p` refusals. **Done** in #304, but for `print(evaluate(…))`, which comes with DM3 | DM0 | S |
+| DM1 | Tokens `!` and `!!`, grammar in `evaluate`, `expecting` and `print(evaluate(…))`, formatter, lints, the bare-`_` and `! !p` refusals. **Done** in #304, and in `print(evaluate(…))` and the REPL in #305 | DM0 | S |
 | DM2 | Demand-driven matcher over kernel handles: head queries on observed positions, reading parts by type, decoding only observed parts, `!!` and leaves on parts through decision 3, tested on `constructs.json`. **Done** in #304 | DM1 | M |
-| DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints and `constructs.json` checked unmarked | DM2, decision 1 | M |
-| DM4 | Classification and migration of `expecting _` and of the fifteen printed tests and the reference examples, baseline re-recording with twins, roadmap and work plan text. `expecting _`, the pattern workload's twin and the patterns' text are done in #304 | DM2, DM3 | S |
+| DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints and `constructs.json` checked unmarked. **Done** in #305; the workbench shows no evaluation, and its trace already names its WHNF and Normalize steps | DM2, decision 1 | M |
+| DM4 | Classification and migration of `expecting _` and of the fifteen printed tests and the reference examples, baseline re-recording with twins, roadmap and work plan text. **Done**: `expecting _`, the pattern workload's twin and the patterns' text in #304, the rest in #305 | DM2, DM3 | S |
 | DM5 | Report with the acceptance measurements, fresh-session fixed budgets and digests | DM2–DM4 | S |
-| DM6 | The language reference chapters, error entries, REPL help and quick reference listed above. Patterns and their marks, in chapters 12, 13, 17 and 18, are done in #304 | DM1–DM4 | S |
+| DM6 | The language reference chapters, error entries, REPL help and quick reference listed above. **Done**: patterns and their marks, in chapters 12, 13, 17 and 18, in #304, and printing, the REPL help, the REPL page and the quick reference in #305 | DM1–DM4 | S |
 
 ## Decisions
 

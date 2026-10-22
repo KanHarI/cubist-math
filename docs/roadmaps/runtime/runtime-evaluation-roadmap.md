@@ -1030,7 +1030,10 @@ decided the same day, is this package's observation contract: unmarked
 positions are forced as far as the pattern or printer observes them, `!`
 requests a weak head and `!!` a full normal form, naming the kernel's two
 existing queries. [#304](https://github.com/KanHarI/cubist-math/pull/304)
-implements it for expected-value patterns; printed values (DM3) are next.
+implements it for expected-value patterns, and
+[#305](https://github.com/KanHarI/cubist-math/pull/305) for printed values:
+the REPL's `evaluate e` and `print(evaluate(e))` show the value form, with
+a marker such as `<fun>` where a function, a path or a type stops it.
 Its measurements show that the prime of `euclid(4)` itself exceeds the
 syntax-depth guard (`K344`) under head queries, so the Euclid acceptance
 below needs an evaluator change as well as an observation contract.

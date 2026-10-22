@@ -33,7 +33,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,isPattern,markInExpression,observe,typedMismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,isPattern,markInExpression,observe,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -440,21 +440,35 @@ export class Translator {
       source,
     };
   }
-  // `print(evaluate(e));` shows the normal form of a closed, assumption-free
-  // term, as `evaluate` computes one; `print(typeof(e));` its type; and
+  // `print(evaluate(e));` shows the value form of a closed, assumption-free
+  // term, and `print(evaluate(!!e));` its normal form; `print(typeof(e));`
+  // its type; and
   // `print(inspect(e));` the term the kernel checked, in kernel notation. A
   // name shows what the CLI's inspect shows: a definition's checked body, or
   // a declared type's signature and its eliminator's clause types.
   printed(d,scope) {
     if(d.show==="evaluate"||d.show==="witness") {
       scope.spend("queries");
-      const result=this.checker.verify(this.term(d.value,scope));
+      const result=this.checker.evaluated(this.term(d.value,scope));
+      // A full normal form, which !! and a witness read, is computed before
+      // the assumptions are checked, as print did before demand marks; a
+      // value form and a weak head compute nothing until they are.
+      const normal=d.mark==="!!"||d.show==="witness"?this.checker.normalForm(result.expression):null;
       const assumptions=result.native.axioms;
       if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
-      if(d.show==="evaluate")return this.shownIn(result.normal,scope);
+      // print(evaluate(e)); shows the value form, computed as far as it is
+      // shown (evaluation.mjs, DM3); print(evaluate(!e)); the weak head as
+      // the kernel leaves it, its arguments uncomputed; and
+      // print(evaluate(!!e)); the full normal form.
+      if(d.show==="evaluate") {
+        if(d.mark==="!!")return this.shownIn(normal,scope);
+        const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
+        if(d.mark==="!")return this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope);
+        return this.shownIn(valueForm(result.expression,at,d.value),scope);
+      }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
-      const {witness,type}=witnessOf(result.normal,result.type,scope,term=>this.shownIn(term,scope));
+      const {witness,type}=witnessOf(normal,result.type,scope,term=>this.shownIn(term,scope));
       return `${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`;
     }
     const result=scope.infer(this.term(d.value,scope));

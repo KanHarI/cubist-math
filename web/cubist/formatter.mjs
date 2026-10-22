@@ -155,10 +155,10 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
     if (node.qualifiedDot) projectionDots.add(node.qualifiedDot.start);
     for (const dot of node.qualifiedDots ?? []) projectionDots.add(dot.start);
     if (node.kind === "unary" || node.kind === "negation" && !node.qualifier) prefixOperators.add(node.operatorStart);
-    // A demand mark is tight before its part: !_, !!(a, _), evaluate !e;
-    // but not before another mark, which it would read as one: ! !!_ is not
-    // !!!_.
-    if ((node.kind === "demand" || node.kind === "evaluate" && node.mark) && !tokenAfter.get(node.markEnd)?.text.startsWith("!"))
+    // A demand mark is tight before its part: !_, !!(a, _), evaluate !e,
+    // print(evaluate(!!e)); but not before another mark, which it would read
+    // as one: ! !!_ is not !!!_.
+    if ((node.kind === "demand" || ["evaluate", "print"].includes(node.kind) && node.mark) && !tokenAfter.get(node.markEnd)?.text.startsWith("!"))
       prefixOperators.add(node.markStart);
     // A selection's or a qualified operator's dots are tight: G.(e), x G.(+) y.
     if (["select", "operatorOf"].includes(node.kind) || node.kind === "negation" && node.dot) projectionDots.add(node.dot.start);

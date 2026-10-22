@@ -344,7 +344,7 @@ def filler_by_box(A : U0, x, y, z : A, p : x = y, q : y = z) :
 
 // Output: fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; path i =&gt; compose j in A from p @ i { on i =
 //   0 =&gt; x; on i = 1 =&gt; q @ j; }
-print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; join_by_box(A, x, y, z, p, q)));</code></pre>
+print(evaluate(!!fun (A : U0, x, y, z : A, p : x = y, q : y = z) =&gt; join_by_box(A, x, y, z, p, q)));</code></pre>
             <p>A face is an equation <code>i = 0</code> or <code>i = 1</code>, or a formula made from these with <code>and</code>, <code>or</code> and parentheses. <code>and</code> binds more tightly than <code>or</code>: <code>i = 0 and k = 1 or i = 1</code> means <code>(i = 0 and k = 1) or i = 1</code>. The constants <code>0</code> and <code>1</code> mean the empty face and the whole face. These are coordinate conditions; they have no equality carrier annotation <code>=[T]</code>. For a loop, one wall can cover both endpoint faces:</p>
             <pre><code data-check="accept">def loop_by_box(A : U0, x : A, p : x = x) : x = x :=
   path i =&gt; compose j in A from p @ i {

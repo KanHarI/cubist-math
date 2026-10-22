@@ -16,7 +16,10 @@ import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
   typeof TERM;             Show the type of a term
-  evaluate TERM;           Show the value of a closed term that uses no assumption
+  evaluate TERM;           Show the value of a closed term that uses no assumption,
+                           computed as far as shown; <fun>, <type> and the like
+                           mark what is not computed
+  evaluate !TERM;          Show its weak head; evaluate !!TERM; its normal form
   witness TERM;            Show the witness a closed truncation holds, with its type
   import MODULE;           Load a module into the session
   /modules [TEXT]          List the modules import can load, or those whose names contain TEXT

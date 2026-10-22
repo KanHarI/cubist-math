@@ -1335,18 +1335,22 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     }
     // `print(evaluate(term));`, `print(typeof(term));` and
     // `print(inspect(term));` show what a closed term computes to, its type,
-    // and the term the kernel checked.
+    // and the term the kernel checked. A demand mark may start evaluate's
+    // term: print(evaluate(!!term)).
     if (t.text === "print" && peek() === "(") {
       take("(");
       const show = take();
       if (!["evaluate", "typeof", "inspect", "witness"].includes(show.text))
         throw Object.assign(new Error("print shows evaluate(term), typeof(term), inspect(term) or witness(term)."), { offset: show.start });
       take("(");
+      const mark = show.text === "evaluate" && ["!", "!!"].includes(peek()) ? demandMark() : null;
       const value = expr();
       take(")");
       take(")");
       const end = take(";").end;
-      const directive = { kind: "print", show: show.text, value, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
+      const directive = { kind: "print", show: show.text, value,
+        ...(mark ? { mark: mark.text, markStart: mark.start, markEnd: mark.end } : {}),
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       directives.push(directive); placeItem(directive); continue;
     }
     // `theory T(U < UU0) [extends P, label : Q(f := g notation x + y)] {

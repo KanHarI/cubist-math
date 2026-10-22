@@ -147,13 +147,17 @@ evaluate far
     [["K344", "2 * 255"], ["K344", "2 * 255"], ["K344", "!!(_, _\n  )"]]);
 });
 
-test("an exact expected value computes the normal form before the assumptions are checked, and a pattern after", async t => {
+test("an exact expected value or a printed normal form is computed before the assumptions are checked, and a pattern or a value form after", async t => {
   const { result } = await checkProgram(t, `import unat;
 use unat;
 def mixed := TruncateIntro(U0, UNat, 2 * 256);
 evaluate mixed expecting mixed;
-evaluate mixed expecting !_;`, { module });
-  assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.code), ["K344", "E324"]);
+evaluate mixed expecting !_;
+print(evaluate(!!mixed));
+print(witness(mixed));
+print(evaluate(mixed));
+print(evaluate(!mixed));`, { module });
+  assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.code), ["K344", "E324", "K344", "K344", "E324", "E324"]);
 });
 
 test("a typed pattern's lazy comparison asks a part shared under other binders once", async t => {
@@ -251,6 +255,77 @@ test("an unobserved part is asked nothing: no query reaches a pair's ignored com
     assert.deepEqual(asked.slice(first).filter(item => item.handle === ignored || item.query === "normalize" && item.handle === evaluation.handle), [], pattern);
     assert.equal(evaluation.normalized, false, pattern);
   }
+});
+
+test("print(evaluate(e)) shows the value form, !e the weak head as it is, and !!e the full normal form", async t => {
+  const { result } = await checkProgram(t, `import unat;
+use unat;
+def double(n : UNat) := n + n;
+def pair_ : UNat and (UNat -> UNat) := (double(3), double);
+def far : UNat and UNat := (1, 2 * 256);
+print(evaluate(pair_));
+print(evaluate(!pair_));
+print(evaluate(!!pair_));
+print(evaluate(UNat));
+print(evaluate(refl(1)));
+print(evaluate(fun (n : UNat) => succ(n)));
+print(evaluate(!(fun (n : UNat) => succ(n))));
+print(evaluate(fun (n : UNat) => induction n return UNat { zero => 0; succ h => succ(h); }));
+print(evaluate(far));
+print(evaluate(!!far));
+`, { module });
+  assert.deepEqual(result.prints.map(print => print.text), [
+    "(6, <fun>)",
+    "(double(3), double)",
+    "(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })",
+    "<type>",
+    "<path>",
+    // Eta makes the successor function the constructor, whose value it is,
+    // and an induction on its variable the eliminator alone, a function.
+    "succ",
+    "succ",
+    "<fun>",
+    // Each weak head of the numeral is shallow, so the value form reaches
+    // a numeral whose normal form is too deep to build.
+    "(1, 512)",
+  ]);
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["K344"]);
+});
+
+test("the value form computes no more heads than the printer shows", async t => {
+  const queries = async source => {
+    const { program, result } = await checkProgram(t, `import lists;
+use unat;
+def hundreds(n : UNat) : List(U0, UNat) := match n {
+  zero => nil;
+  succ(k) => cons(100, hundreds(k));
+};
+${source}`, { module });
+    assert.deepEqual(result.gaps.map(gap => gap.reason), [], source);
+    return { queries: Number(program.kernel.work().queries), text: result.prints[0]?.text };
+  };
+  const none = await queries(""), some = await queries("print(evaluate(hundreds(250)));");
+  // 250 elements of 102 heads each are past the budget of 4,000 heads.
+  assert.ok(some.queries - none.queries <= 4100, `the walk asked ${some.queries - none.queries} queries`);
+  assert.match(some.text, /^cons\(100, cons\(100, /);
+});
+
+test("the REPL reads the marks after evaluate and before a term alone", async () => {
+  const { ReplSession } = await import("../web/repl-session.mjs");
+  const program = new CubicalProgram(module, sourceReader());
+  try {
+    const session = new ReplSession(program);
+    await session.run("import unat; use unat; let f := fun (n : UNat) => n + 1;");
+    const shown = async entry => (await session.run(entry)).map(result => result.text).join("\n");
+    assert.equal(await shown("evaluate f;"), "<fun>");
+    assert.equal(await shown("f;"), "<fun>");
+    // A lambda is its own weak head, shown as it is.
+    assert.equal(await shown("evaluate !f;"), "fun (n : UNat) => n + 1");
+    assert.equal(await shown("evaluate!f;"), "fun (n : UNat) => n + 1");
+    assert.equal(await shown("evaluate !!f;"), "fun (n : UNat) => induction n return UNat { zero => 1; succ h => succ(h); }");
+    assert.equal(await shown("!!f;"), await shown("evaluate !!f;"));
+    assert.equal(await shown("evaluate f(2);"), "3");
+  } finally { program.dispose(); }
 });
 
 test("an unobserved part is not computed: the queries a pattern asks cost what it observes", async t => {
@@ -368,8 +443,8 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 
 // One closed example of every construct with a term to evaluate, and its
 // weak head on main, from the demand marks note. Each evaluates under !_,
-// shown as its recorded head, and under !!_, except the assumptions, which
-// evaluation refuses. Three examples whose full normal forms cost about 30
+// shown as its recorded head, under !!_, and printed, as its value form,
+// except the assumptions, which evaluation refuses. Three examples whose full normal forms cost about 30
 // seconds each are evaluated under !_ only; the note records that they
 // complete.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/runtime/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
@@ -386,7 +461,7 @@ const shownHead = whnf => {
 for (const setup of Object.keys(corpus.setups)) {
   const items = corpus.constructs.filter(item => item.setup === setup);
   if (!items.length) continue;
-  test(`every construct of setup ${setup} evaluates under !_ and !!_`, async t => {
+  test(`every construct of setup ${setup} evaluates under !_ and !!_ and prints`, async t => {
     // Each directive's line names its construct.
     const lines = [corpus.setups[setup], ""], at = new Map();
     items.forEach((item, index) => {
@@ -395,9 +470,12 @@ for (const setup of Object.keys(corpus.setups)) {
         at.set(lines.join("\n").split("\n").length + 1, [item, mark]);
         lines.push(`evaluate probe_${index} expecting ${mark};`);
       }
+      at.set(lines.join("\n").split("\n").length + 1, [item, "print"]);
+      lines.push(`print(evaluate(probe_${index}));`);
     });
     const { program, evaluations } = recordedProgram(t), result = await program.check(lines.join("\n"), "main");
     const outcome = new Map([...result.evaluations.map(evaluation => [evaluation.start, evaluation.value]),
+      ...result.prints.map(print => [print.start, print.text]),
       ...result.gaps.filter(gap => gap.directive).map(gap => [gap.declarationStart, { refused: gap.code }])]);
     const source = lines.join("\n"), lineOf = offset => source.slice(0, offset).split("\n").length;
     const outcomes = new Map([...outcome].map(([start, value]) => [lineOf(start), value]));
@@ -424,12 +502,14 @@ for (const setup of Object.keys(corpus.setups)) {
           assert.equal(constructor?.tag, "Con", `${item.id}: ${value} shows a constructor`);
           assert.deepEqual(constructor, evaluation.root, `${item.id}: ${value} shows the kernel's constructor`);
         }
-      } else {
+      } else if (mark === "!!_") {
         // What !!_ shows is the normal form the kernel computed, up to the
         // names of bound variables.
         assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a full normal form`);
         assert.equal(normalDigest(evaluation.shown), normalDigest(evaluation.normal), `${item.id}: the kernel's normal form is shown`);
       }
+      // The value form computes every part it shows: none is unevaluated.
+      else assert.doesNotMatch(value, /<unevaluated>|<neutral>/, `${item.id}: a value form`);
     }
   });
 }

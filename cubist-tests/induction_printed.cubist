@@ -24,7 +24,7 @@ def size(t : Tree) : UNat := match t {
 
 // Output: fun (x : Tree) => induction x return UNat { leaf => 1; node(l, r) with l_rec, r_rec =>
 //   succ(l_rec); }
-print(evaluate(size));
+print(evaluate(!!size));
 
 def size_again := fun (x : Tree) => induction x return UNat {
     leaf => 1;
@@ -45,7 +45,7 @@ def length(xs : List(U0, UNat)) : UNat := induction xs return UNat {
 // says what __U stands for.
 // Output: fun (x : List(__U, UNat)) => induction x return UNat { nil => 0; cons(head, tail) with ih
 //   => succ(ih); }
-print(evaluate(length));
+print(evaluate(!!length));
 
 // Error: E372: __U stands for a universe that the printer could not show: write the universe in its
 //   place, such as U0 or a universe variable.

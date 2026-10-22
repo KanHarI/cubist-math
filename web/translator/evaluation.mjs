@@ -138,18 +138,30 @@ const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "G
 const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : kind === "PLam" ? "<path>" : kind === "LLam" ? "<level fun>"
   : typeKinds.has(kind) ? "<type>" : ["Comp", "HComp", "Trans"].includes(kind) ? "<composition>" : "<neutral>");
 // A value as far as it was computed: a weak head with its parts shown as
-// `parts` gives them, by their places. A head that is no constructor, pair,
-// injection or tt is shown by its marker.
+// `parts(index, handle)` gives them, by their places and handles, from the
+// left. A head that is no constructor, pair, injection or tt is shown by its
+// marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
-  if (root.kind === "Con") return args.reduce((fn, _, index) => T.app(fn, parts(index)), at.decoded(root.id));
+  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg)), at.decoded(root.id));
   if (args.length) return marker("<neutral>");
-  if (root.kind === "Pair") return { tag: "Pair", first: parts(0), second: parts(1) };
-  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0) };
+  if (root.kind === "Pair") { const first = parts(0, root.children[1]); return { tag: "Pair", first, second: parts(1, root.children[2]) }; }
+  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1]) };
   if (root.kind === "Point") return { tag: "Point" };
   return headMarker(root.kind);
 }
 const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
+
+// The value form of a term (DM3): its weak head, and the value forms of the
+// parts of a constructor, a pair or an injection, from the left; any other
+// head is shown by its marker. A printer shows at most `budget` nodes, so
+// the walk computes at most that many heads, and shows a part past them
+// as …, uncomputed. `at` is as observe takes it; `node`, the source a
+// failure is located at.
+export function valueForm(handle, at, node, budget = 4000) {
+  const form = handle => budget-- > 0 ? shownHead(at.head(handle, node), at, (_, part) => form(part)) : marker("…");
+  return form(handle);
+}
 
 // Match a part on demand: `handle` is the part's kernel term, which only the
 // pattern's demands compute, `type()` gives its type, and `head`, when
