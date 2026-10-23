@@ -12,6 +12,7 @@ import { checkProgram } from "./check-program.mjs";
 import { normalDigest } from "../tools/evaluation-baseline.mjs";
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
+import { sharedDigest } from "../docs/roadmaps/runtime/evaluation-demand-marks/shared-digest.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
 // `!` asks for a part's weak head and `!!` for its full normal form, and an
@@ -684,3 +685,41 @@ for (const setup of Object.keys(corpus.setups)) {
     }
   });
 }
+
+// The acceptance report (docs/roadmaps/runtime/evaluation-demand-marks/
+// report.md) compares normal forms by a digest over the kernel's shared
+// nodes, as normal forms too large to decode need. It must tell terms apart
+// exactly as the baseline's digest of their decodings does: up to the names
+// of bound variables and dimensions, and no further.
+test("the report's digest tells terms apart as the baseline's digest of their decodings does", async t => {
+  const terms = {
+    first: "fun (x : UNat) => fun (y : UNat) => x",
+    first_renamed: "fun (y : UNat) => fun (x : UNat) => y",
+    second: "fun (x : UNat) => fun (y : UNat) => y",
+    at_zero: "fun (A : U0, x : A, p : x = x) => p @ 0",
+    at_one: "fun (A : U0, x : A, p : x = x) => p @ 1",
+    lower: "fun (A : U0, x : A, p : x = x) => typed(x = x, path i => p @ (i & ~i))",
+    lower_renamed: "fun (A : U0, x : A, p : x = x) => typed(x = x, path j => p @ (j & ~j))",
+    upper: "fun (A : U0, x : A, p : x = x) => typed(x = x, path i => p @ (i | ~i))",
+    carry: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (i : Interval) => P(p @ i), u)",
+    carry_renamed: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (j : Interval) => P(p @ j), u)",
+    carry_back: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (i : Interval) => P(p @ ~i), u)",
+    two: "2",
+    three: "3",
+  };
+  const source = `import unat;\nuse unat;\n${Object.entries(terms).map(([name, term]) => `def ${name} := ${term};`).join("\n")}`;
+  const { program, verdicts } = await checkProgram(t, source, { module });
+  const { kernel, checker } = program, digests = {};
+  for (const name of Object.keys(terms)) {
+    assert.equal(verdicts[name], true, name);
+    const { value } = kernel.definition(kernel.definitions.get(`main__${name}`));
+    digests[name] = { shared: sharedDigest(program, value).normalDigest, decoded: normalDigest(checker.syntax.decode(value, checker.dimensions)) };
+  }
+  const names = Object.keys(terms);
+  for (const left of names) for (const right of names)
+    assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
+  // The pairs that matter, so that the check is not vacuous.
+  const same = (left, right) => digests[left].decoded === digests[right].decoded;
+  assert.ok(same("first", "first_renamed") && same("lower", "lower_renamed") && same("carry", "carry_renamed"));
+  assert.ok(!same("first", "second") && !same("at_zero", "at_one") && !same("lower", "upper") && !same("carry", "carry_back") && !same("two", "three"));
+});

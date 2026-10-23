@@ -16,10 +16,14 @@ fixed budget of 100M query ticks. For each entry the script records:
 - how many times it normalized a term.
 
 For the last normalization it also records that normalization's own ticks,
-the normal form's distinct nodes and its digest. The digest is taken up to
-the names of bound variables, as `tools/evaluation-baseline.mjs`'s
-`normalDigest` takes it, but over the kernel's shared nodes: unshared, these
-normal forms are too large to walk.
+the normal form's distinct nodes and its digest.
+
+The digest, [`shared-digest.mjs`](shared-digest.mjs), is taken over the
+kernel's shared nodes: unshared, these normal forms are too large to walk.
+It tells terms apart as `tools/evaluation-baseline.mjs`'s `normalDigest` of
+their decodings does, up to the names of bound variables and dimensions.
+`tests/evaluation-demand-marks.test.mjs` checks this on terms that differ in
+a binder, a formula, a constant and a composition's family.
 
 Repeated runs give identical counters. With `--root=CHECKOUT`, the script
 measures another checkout, here main, with the spelling each case had before
@@ -37,15 +41,15 @@ the same way on both sides.
 | Case | Entry on the branch | Branch | Main |
 | --- | --- | --- | --- |
 | Value form | `evaluate small_inverse;` | `class((class((3, 0)), class((2, 0)), <fun>))`, 28,085 ticks, 13 queries, no normalization | the full normal form, 71,027,452 ticks |
-| Normal form | `evaluate small_inverse expecting !!_;` | 71,027,452 ticks, 1 query; 628,072 nodes, digest `9438f5da7180c36b` | the same: ticks, queries, nodes, digest and text |
+| Normal form | `evaluate small_inverse expecting !!_;` | 71,027,452 ticks, 1 query; 628,072 nodes, digest `613c3d124f0873df` | the same: ticks, queries, nodes, digest and text |
 | Lazy pattern | `evaluate euclid(3) expecting (7, _);` | `(7, <unevaluated>)`, 149,523 ticks, 4 queries | 223,521 ticks, the whole value normalized (1,377 nodes) |
 | Weak head | `evaluate !euclid(4);` | the pair, its components as they are, 133 ticks, 1 query | — |
 | Prime of `euclid(4)` | `evaluate euclid(4) expecting (5, _);` | `K344`, 652,154 ticks | `K344`, 662,737 ticks |
 | Bare hole | `evaluate euclid(3) expecting _;` | refused with `E485`, no query | accepted: 223,501 ticks, the whole value normalized |
 | Eta | `print(evaluate(!(fun (n : UNat) => succ(n))));` | `succ`, 3 ticks | — |
-| `rationals.(2/3)` | `… expecting !!_;` | 71,001,788 ticks, 158 queries; 599,928 nodes, `9ff869c58647b164` | the same |
-| `rationals.(0.5)` | `… expecting !!_;` | 72,209,323 ticks, 158 queries; 601,468 nodes, `8f274d8fede8969b` | the same |
-| `integers.additive_` | `… expecting !!_;` | 73,120,014 ticks, 7 queries; 1,012,063 nodes, `b9facc4c3e1d8678` | the same |
+| `rationals.(2/3)` | `… expecting !!_;` | 71,001,788 ticks, 158 queries; 599,928 nodes, `d91bb3503270a456` | the same |
+| `rationals.(0.5)` | `… expecting !!_;` | 72,209,323 ticks, 158 queries; 601,468 nodes, `e436794fced7eb6d` | the same |
+| `integers.additive_` | `… expecting !!_;` | 73,120,014 ticks, 7 queries; 1,012,063 nodes, `541910eab1814a36` | the same |
 
 The rational cases run in the debugging plan's main-only reproduction,
 [`probe-sources.mjs`](probe-sources.mjs)'s `rational`. The Euclid cases import
