@@ -174,7 +174,8 @@ print(evaluate(induction 1 return UNat { zero => 0; succ(k, h) => h; }));
 
 test("printed induction preserves source field order and emits with", async t => {
   for (const name of ["size", "copy"]) {
-    const { result } = await checkProgram(t, declarations + examples + `print(evaluate(${name}));`);
+    // A function's full normal form: its value form is <fun>.
+    const { result } = await checkProgram(t, declarations + examples + `print(evaluate(!!${name}));`);
     const printed = result.prints[0].text;
     assert.match(printed, /node\(l, datum, r\) with \w+, \w+/);
     const { result: readback } = await checkProgram(t, declarations + examples + `def again := ${printed}; def same : ${name} = again { rfl; }`);

@@ -72,8 +72,22 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
   }
 });
 
-test("plain REPL evaluation normalizes once without self-comparison and agrees with print", async () => {
-  const repl = await cold("euclid-3"), print = await cold("euclid-3-print");
+test("REPL evaluation and print show the value form, normalizing nothing", async () => {
+  const repl = await cold("euclid-3"), print = await cold("euclid-3-print"), normal = await cold("euclid-3-normal");
+  assert.equal(repl.outcome.sha256, print.outcome.sha256);
+  assert.match(repl.outcome.text, /^\(7, /);
+  assert.match(repl.outcome.text, /<fun>/);
+  assert.equal(repl.outcome.normal, undefined);
+  for (const run of [repl, print]) {
+    assert.equal(run.phases.normalize, undefined);
+    assert.equal(run.phases.compare, undefined);
+    assert.ok(run.phases.demand.calls > 0);
+    assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
+  }
+});
+
+test("REPL evaluation of !!e normalizes once without self-comparison and agrees with print", async () => {
+  const repl = await cold("euclid-3-normal"), print = await cold("euclid-3-print-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
   assert.ok(repl.outcome.normal);
   assert.equal(repl.outcome.normal, print.outcome.normal);
@@ -93,24 +107,39 @@ test("plain REPL evaluation normalizes once without self-comparison and agrees w
 });
 
 test("the depth failures are reproduced, with the work done before them", async () => {
-  for (const id of ["euclid-4", "euclid-4-pattern", "euclid-4-prime", "euclid-4-prime-print", "euclid-5-prime"]) {
+  for (const id of ["euclid-4-normal", "euclid-4-pattern", "euclid-4-pattern-normal", "euclid-4-prime-normal",
+    "euclid-4-prime-print-normal", "euclid-5-prime-normal"]) {
     const run = await cold(id);
     assert.equal(run.outcome.code, "K344", id);
     assert.equal(run.phases.normalize.failures, 1, id);
     assert.ok(run.phases.normalize.querySteps > 0 && run.phases.normalize.nodes > 10000, `${id} counts the failed normalization's work`);
     assert.equal(run.phases.compare, undefined, `${id} fails before any comparison`);
   }
+  // The value form fails at a head too deep to build, the prime's.
+  for (const id of ["euclid-4", "euclid-4-prime", "euclid-4-prime-print", "euclid-5-prime"]) {
+    const run = await cold(id);
+    assert.equal(run.outcome.code, "K344", id);
+    assert.equal(run.phases.demand.failures, 1, id);
+    assert.equal(run.phases.normalize, undefined, id);
+  }
   // A unary 510 fits at the syntax-depth limit. Plain evaluation must not
   // introduce another wrapper through a redundant equality comparison.
-  const printed = await cold("multiply-2-255-print"), evaluated = await cold("multiply-2-255");
+  const printed = await cold("multiply-2-255-print-normal"), evaluated = await cold("multiply-2-255-normal");
   assert.equal(printed.outcome.text, "510");
   assert.equal(evaluated.outcome.text, "510");
   assert.equal(evaluated.phases.normalize.calls, 1);
   assert.equal(evaluated.phases.normalize.failures, 0);
   assert.equal(evaluated.phases.compare, undefined);
   assert.equal(evaluated.outcome.normal, printed.outcome.normal);
-  assert.equal((await cold("multiply-2-254")).outcome.text, "508");
-  assert.equal((await cold("multiply-2-256-print")).outcome.code, "K344");
+  assert.equal((await cold("multiply-2-254-normal")).outcome.text, "508");
+  assert.equal((await cold("multiply-2-256-print-normal")).outcome.code, "K344");
+  // The value form builds a numeral one shallow head at a time, to the
+  // kernel's depth of 512 levels, so it shows 512's successors down to
+  // there, where !! fails.
+  const deep = await cold("multiply-2-256-print");
+  assert.equal(deep.outcome.status, "value");
+  assert.match(deep.outcome.text, /^succ\(succ\(succ\(/);
+  assert.equal((await cold("multiply-2-255")).outcome.text, "510");
 });
 
 test("counters are deterministic: a new program repeats a run's", async () => {

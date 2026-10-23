@@ -33,7 +33,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,isPattern,markInExpression,observe,typedMismatch,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -425,7 +425,7 @@ export class Translator {
   // each a query of the evaluation's, and a failure located at the part of
   // the pattern that demanded it.
   demandQueries(scope,source) {
-    const checker=this.checker;
+    const checker=this.checker,orders=new Map();
     const asked=(node,query)=>{
       scope.spend("queries");
       try {return query();}
@@ -438,27 +438,51 @@ export class Translator {
       decoded:handle=>checker.decoded(handle),
       constructor:handle=>checker.shownConstructor(handle),
       glueSystem:handle=>checker.glueSystem(handle),
+      // A constructor's fields in the order the printer shows them, read once
+      // per declared type.
+      fieldOrder:constructor=>{
+        const signature=constructor.sort?.signature;
+        if(!orders.has(signature))orders.set(signature,checker.displayNames?.[signature]?.constructors);
+        return orders.get(signature)?.[constructor.index]?.order??null;
+      },
       elaborate:(node,type)=>{scope.spend("queries");return checker.verify(this.term(node,scope,type)).normal;},
       annotation:node=>{scope.spend("queries");return checker.evaluated(this.term(node,scope)).term;},
       locate:(error,node)=>scope.unit.locate(error,node),
       source,
     };
   }
-  // `print(evaluate(e));` shows the normal form of a closed, assumption-free
-  // term, as `evaluate` computes one; `print(typeof(e));` its type; and
+  // `print(evaluate(e));` shows the value form of a closed, assumption-free
+  // term, and `print(evaluate(!!e));` its normal form; `print(typeof(e));`
+  // its type; and
   // `print(inspect(e));` the term the kernel checked, in kernel notation. A
   // name shows what the CLI's inspect shows: a definition's checked body, or
   // a declared type's signature and its eliminator's clause types.
   printed(d,scope) {
     if(d.show==="evaluate"||d.show==="witness") {
       scope.spend("queries");
-      const result=this.checker.verify(this.term(d.value,scope));
+      const result=this.checker.evaluated(this.term(d.value,scope));
+      // A full normal form, which !! and a witness read, is computed before
+      // the assumptions are checked, as print did before demand marks; a
+      // value form and a weak head compute nothing until they are.
+      const normal=d.mark==="!!"||d.show==="witness"?this.checker.normalForm(result.expression):null;
       const assumptions=result.native.axioms;
       if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
-      if(d.show==="evaluate")return this.shownIn(result.normal,scope);
+      // print(evaluate(e)); shows the value form, computed as far as it is
+      // shown (evaluation.mjs, DM3); print(evaluate(!e)); the weak head as
+      // the kernel leaves it, its arguments uncomputed; and
+      // print(evaluate(!!e)); the full normal form.
+      if(d.show==="evaluate") {
+        if(d.mark==="!!")return this.shownIn(normal,scope);
+        const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
+        // A weak head and a value form are shown as computed, reducing
+        // nothing more for display; a value form whole, within the budget
+        // its walk kept.
+        if(d.mark==="!")return this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0});
+        return this.shownIn(valueForm(result.expression,at,d.value),scope,{width:Infinity,reduce:0});
+      }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
-      const {witness,type}=witnessOf(result.normal,result.type,scope,term=>this.shownIn(term,scope));
+      const {witness,type}=witnessOf(normal,result.type,scope,term=>this.shownIn(term,scope));
       return `${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`;
     }
     const result=scope.infer(this.term(d.value,scope));
@@ -491,7 +515,7 @@ export class Translator {
   // A term as read where `scope`'s notation is selected (L2.10d).
   shownIn(term,scope,{width=1000,reduce=256}={}) {
     const notation=notationForScope(scope);
-    return this.checker.displayText?.(term,width,4000,notation,reduce)??sourceText(term,{},4000,notation);
+    return this.checker.displayText?.(term,width,printedNodes,notation,reduce)??sourceText(term,{},printedNodes,notation);
   }
   // Terms in one scope that a message shows, named together: a variable
   // reads alike in each, apart from every label any of them prints. Closed

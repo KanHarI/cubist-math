@@ -138,22 +138,68 @@ const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "G
 const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : kind === "PLam" ? "<path>" : kind === "LLam" ? "<level fun>"
   : typeKinds.has(kind) ? "<type>" : ["Comp", "HComp", "Trans"].includes(kind) ? "<composition>" : "<neutral>");
 // A value as far as it was computed: a weak head with its parts shown as
-// `parts` gives them, by their places. A head that is no constructor, pair,
-// injection, tt or glue value is shown by its marker.
+// `parts(index, handle, below)` gives them, by their places and handles,
+// from the left; `below` is how many levels under the head's own a part is
+// shown (a constructor's first argument is under every application). A head
+// that is no constructor, pair, injection, tt or glue value is shown by its
+// marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
-  if (root.kind === "Con") return args.reduce((fn, _, index) => T.app(fn, parts(index)), at.constructor(root.id));
+  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg, args.length - index)), at.constructor(root.id));
   if (args.length) return marker("<neutral>");
-  if (root.kind === "Pair") return { tag: "Pair", first: parts(0), second: parts(1) };
-  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0) };
+  if (root.kind === "Pair") { const first = parts(0, root.children[1], 1); return { tag: "Pair", first, second: parts(1, root.children[2], 1) }; }
+  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1], 1) };
   if (root.kind === "Point") return { tag: "Point" };
   // A glue value is an introduction too: its base, and the term on each
   // face of its system.
   if (root.kind === "GlueTerm")
-    return { tag: "GlueTerm", base: parts(0), system: at.glueSystem(root.id).map(({ face }, index) => ({ face, term: parts(index + 1) })) };
+    return { tag: "GlueTerm", base: parts(0, root.children[1], 1),
+      system: at.glueSystem(root.id).map(({ face, term }, index) => ({ face, term: parts(index + 1, term, 2) })) };
   return headMarker(root.kind);
 }
 const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
+
+// The printer's budget, in the nodes it prints (cubical-source-text.mjs): a
+// value form is shown whole within it, never cut at a width.
+export const printedNodes = 4000;
+
+// The value form of a term (DM3): its weak head, and the value forms of the
+// parts of a constructor, a pair or an injection; any other head is shown by
+// its marker. Its parts are computed in the order the printer shows them, a
+// constructor's fields in source order, and each head is charged as the
+// printer charges it, an applied constructor twice, for the application and
+// the name; a head is computed only while two remain. So the printer shows
+// every part the walk computed, within the same budget. And the walk shows
+// nothing deeper than the kernel's own syntax, `depth` levels (K344), which
+// is as deep as any printer is given a term. A part past either is shown as
+// …, uncomputed. The walk keeps its own stack, as a value's parts can nest
+// deeper than JavaScript's. `at` is as observe takes it, with fieldOrder;
+// `node`, the source a failure is located at.
+export function valueForm(handle, at, node, budget = printedNodes, depth = 512) {
+  const value = {}, pending = [[handle, value, 1]];
+  while (pending.length) {
+    const [part, place, level] = pending.pop(), parts = [];
+    if (budget < 2 || level > depth) { budget--; Object.assign(place, marker("…")); continue; }
+    const shown = shownHead(at.head(part, node), at, (_, inner, below) => {
+      const slot = {};
+      parts.push([inner, slot, level + below]);
+      return slot;
+    });
+    Object.assign(place, shown);
+    let constructor = shown;
+    while (constructor.tag === "App") constructor = constructor.fn;
+    const applied = constructor.tag === "Con" && parts.length > 0;
+    budget -= applied ? 2 : 1;
+    // A constructor's fields, as the printer reorders them from the
+    // kernel's order to the source's.
+    const order = applied ? at.fieldOrder(constructor) : null;
+    const shownOrder = order && parts.length >= order.length
+      ? [...order.map((_, sourceIndex) => parts[order.indexOf(sourceIndex)]), ...parts.slice(order.length)] : parts;
+    // The first part shown is computed first.
+    pending.push(...shownOrder.reverse());
+  }
+  return value;
+}
 
 // Match a part on demand: `handle` is the part's kernel term, which only the
 // pattern's demands compute, `type()` gives its type, and `head`, when
