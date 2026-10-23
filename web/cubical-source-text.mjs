@@ -104,6 +104,14 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     if (!mentions(outside, name)) return name;
     for (let i = 1; ; i++) if (!mentions(whole, numberedName(name, i))) return numberedName(name, i);
   };
+  // A function as a lambda: a folded normal form keeps a motive or a clause
+  // that is a definition as its name (docs/roadmaps/runtime/folded-normal-forms.md),
+  // shown applied to a new name, as `return Shape(z)` for the motive Shape.
+  const lambda = (term, stem, near) => {
+    if (!term || term.tag === "Lam") return term;
+    const name = apart(stem, near, near);
+    return { tag: "Lam", name, domain: null, body: { tag: "App", fn: term, arg: { tag: "Var", name } } };
+  };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   // An operation printed with its notation's operator, at its level: ^
@@ -141,7 +149,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // recursive result, the eliminator is an induction, and that clause names
   // its hypotheses after with: `cons(head, tail) with ih => …`.
   const declaredMatch = (elim, value) => {
-    const constructors = symbols[elim.signature]?.constructors, motive = elim.motive;
+    const constructors = symbols[elim.signature]?.constructors, motive = lambda(elim.motive, "z", { tag: "App", fn: elim, arg: value });
     if (!constructors || constructors.length !== elim.clauses?.length || motive?.tag !== "Lam") return null;
     const clauses = [];
     for (const [c, clause] of elim.clauses.entries()) {
@@ -231,7 +239,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           + `succ ${h} => ${successor}; }`, LEVEL.binder];
       }
       case "SumRec": {
-        const { motive, left, right } = t;
+        const motive = lambda(t.motive, "z", t), left = lambda(t.left, "a", t), right = lambda(t.right, "b", t);
         if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
         // `as z` is written only where the return type uses z, as the linter asks.
         const named = mentions(motive.body, motive.name);

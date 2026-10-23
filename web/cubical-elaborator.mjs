@@ -776,9 +776,11 @@ export class NativeCubicalElaborator {
     return { ...checked, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
   }
-  // The normal form of a derived handle, decoded.
-  normalForm(handle) {
-    return this.syntax.decode(this.kernel.normalize(handle), this.dimensions);
+  // The normal form of a derived handle, decoded: folded, a stuck
+  // definition kept as written, unless the full one is asked for
+  // (docs/roadmaps/runtime/folded-normal-forms.md).
+  normalForm(handle, { full = false } = {}) {
+    return this.syntax.decode(full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle), this.dimensions);
   }
   // The weak head of a handle, computed once a declaration, as nf's are. The
   // head of a derived handle, and its data parts (a pair's components, an

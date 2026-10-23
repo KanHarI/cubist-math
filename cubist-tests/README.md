@@ -21,7 +21,8 @@ workbench's Kernel graph.
   shows in an `// Output: …` comment above it, which the tool writes and the
   test compares in the same way: `print(evaluate(e));` shows a closed
   term's value form, its data computed and a marker such as `<fun>` where a
-  function stops it, `print(evaluate(!!e));` its full normal form,
+  function stops it, `print(evaluate(!!e));` its normal form, a stuck
+  definition named, `print(evaluate(!!!e));` its full normal form,
   `print(typeof(e));` its type and `print(inspect(e));` the term the kernel
   checked, in kernel notation.
 - A module's JavaScript test, where it has one, checks what neither a

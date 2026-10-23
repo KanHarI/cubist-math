@@ -994,7 +994,9 @@ unary expansion in mixed closed/open BNat law proofs.
    same work. This semantic work is expected to be needed for the rational failure even if
    EVAL5's user-facing observation interface has not shipped.
 4. **EVAL5/EVAL8: complete typed normalization.** Force every surviving proof
-   and annotation when a full normal form is requested, with explicit-stack
+   and annotation when a full normal form is requested (`!!!` since the
+   [folded normal forms](folded-normal-forms.md); `!!` keeps a stuck
+   definition folded), with explicit-stack
    readback and bounded memory. Validate normal forms, eta, instruction
    isolation, lifecycle and canonicity under the applicable EVAL8 gates.
    Measure complete readback of both retained transport functions, and keep

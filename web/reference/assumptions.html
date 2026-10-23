@@ -279,7 +279,7 @@ use unat;
 def numbers : List(U0, UNat) := cons(1, cons(2, cons(3, nil)));
 
 evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(&lt;unevaluated&gt;, cons(&lt;unevaluated&gt;, &lt;unevaluated&gt;)), which does not match cons(_, nil): cons(&lt;unevaluated&gt;, &lt;unevaluated&gt;) is not nil.</code></pre>
-            <p>Two <strong>demand marks</strong> ask for more than a pattern observes, by analogy with Haskell's <code>$!</code> and <code>$!!</code>. <code>!p</code> computes the part's weak head, its outermost constructor, pair, injection, function or type, before matching <code>p</code>, and <code>!!p</code> computes its full normal form. A mark applies to the whole part after it, and two marks apart, <code>! !p</code>, are refused, so that a space never weakens <code>!!</code>. <code>!_</code> thus checks that a part has a weak head without computing inside it, and <code>!!_</code> that it has a full normal form. Written right after <code>evaluate</code>, as in <code>evaluate !!e expecting p;</code>, a mark applies to the whole pattern. A bare <code>evaluate e expecting _;</code> would compute nothing, and is refused.</p>
+            <p>Three <strong>demand marks</strong> ask for more than a pattern observes, by analogy with Haskell's <code>$!</code> and <code>$!!</code>. <code>!p</code> computes the part's weak head, its outermost constructor, pair, injection, function or type, before matching <code>p</code>. <code>!!p</code> computes its normal form, in which data computes in full and a definition whose value is no data, such as a lemma applied to a variable under a proof's binder, stays as written, with its arguments normalized. <code>!!!p</code> computes its full normal form, which unfolds every definition. A mark applies to the whole part after it, and marks apart, <code>! !p</code>, are refused, so that a space never weakens a mark. <code>!_</code> thus checks that a part has a weak head without computing inside it, <code>!!_</code> that it has a normal form, and <code>!!!_</code> that it has a full normal form. Written right after <code>evaluate</code>, as in <code>evaluate !!e expecting p;</code>, a mark applies to the whole pattern. A bare <code>evaluate e expecting _;</code> would compute nothing, and is refused.</p>
             <pre><code data-check="accept">import unat;
 use unat;
 
@@ -301,18 +301,31 @@ use unat;
 
 def three : UNat := 3;
 
-evaluate three expecting _;  // Error: evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, or !!_ for its full normal form.</code></pre>
-            <p>A weak head is the kernel's <a href="kernel-computation.html#whnf">weak-head normal form</a>, which contracts a function by η: the weak head of <code>fun (n : UNat) =&gt; succ(n)</code> is the constructor <code>succ</code>, and that of <code>fun (n : UNat) =&gt; n + n</code> is the function itself. <code>!</code> therefore says nothing about a proof that is a function, such as a certificate that a number is nonzero: its weak head is that function. Only <code>!!</code> states that a certificate computes.</p>
-            <p>Each computation a pattern asks for runs under the evaluation's step budget and time limit, and one that runs out, or builds syntax deeper than the kernel allows, fails the evaluation as it would anywhere, at the part of the pattern that asked for it. A part no pattern observes asks nothing, so it cannot fail. A mark that asks for nothing more is a <a href="errors.html#warnings">warning</a>: any mark under <code>!!</code>, and, where a hole keeps the expected value a pattern without the mark, <code>!</code> before a pair, an injection, a constructor or an expression, which compute at least their part's weak head, and <code>!!</code> before an expression, which is compared by its full normal form. A mark that alone makes the expected value a pattern is not reported: without it, the value would be compared whole instead.</p>
+evaluate three expecting _;  // Error: evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form.</code></pre>
+            <p>A weak head is the kernel's <a href="kernel-computation.html#whnf">weak-head normal form</a>, which contracts a function by η: the weak head of <code>fun (n : UNat) =&gt; succ(n)</code> is the constructor <code>succ</code>, and that of <code>fun (n : UNat) =&gt; n + n</code> is the function itself. <code>!</code> therefore says nothing about a proof that is a function, such as a certificate that a number is nonzero: its weak head is that function. <code>!!</code> computes the certificate's body as far as its own definitions are not stuck, and names those that are; only <code>!!!</code> unfolds them all.</p>
+            <pre><code data-check="repl">&gt; import rationals;
+Imported rationals.
+&gt; use unat;
+Selected unat.
+&gt; evaluate !!rationals.(2/3);
+class((class((2, 0)), class((3, 0)), int_succ_nonzero(2)))</code></pre>
+            <p>The literal's data, two integers, is computed, and its certificate that the denominator is not zero is named. Under <code>!!!</code> that certificate unfolds, through <code>quotient_effective</code>, into a normal form of more than a million nodes.</p>
+            <p>Each computation a pattern asks for runs under the evaluation's step budget and time limit, and one that runs out, or builds syntax deeper than the kernel allows, fails the evaluation as it would anywhere, at the part of the pattern that asked for it. A part no pattern observes asks nothing, so it cannot fail. A mark that asks for nothing more is a <a href="errors.html#warnings">warning</a>: a mark under <code>!!</code> or <code>!!!</code> that asks for no more than it, and, where a hole keeps the expected value a pattern without the mark, <code>!</code> before a pair, an injection, a constructor or an expression, which compute at least their part's weak head, and <code>!!</code> before an expression, which is compared by its normal form. A <code>!!!</code> inside a <code>!!</code> part asks for what that part's normal form does not hold, and is refused. A mark that alone makes the expected value a pattern is not reported: without it, the value would be compared whole instead.</p>
             <pre><code data-check="accept">import unat;
 use unat;
 
 def pairs : UNat and UNat := (3, 4);
 
 evaluate pairs expecting !(3, _);  // Warning: The ! before (3, _) asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.
-evaluate pairs expecting (!!3, _);  // Warning: The !! before 3 asks for nothing more: an expression is compared by its full normal form.
-evaluate pairs expecting !!(3, !_);  // Warning: The ! before _ asks for nothing more: it is under !!, whose part is fully normalized.</code></pre>
-            <p>Full normal forms, of an expression or under <code>!!</code>, unfold every definition and ignore <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints.</p>
+evaluate pairs expecting (!!3, _);  // Warning: The !! before 3 asks for nothing more: an expression is compared by its normal form.
+evaluate pairs expecting !!(3, !_);  // Warning: The ! before _ asks for nothing more: it is under !!, which normalizes its part.</code></pre>
+            <pre><code data-check="reject">import unat;
+use unat;
+
+def pairs : UNat and UNat := (3, 4);
+
+evaluate pairs expecting !!(3, !!!_);  // Error: A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part.</code></pre>
+            <p>A normal form, of an expression or under <code>!!</code>, unfolds a definition only where its value is data, so a proof stays named where it is stuck, and is compared with another by conversion; a full normal form, under <code>!!!</code>, unfolds every definition (<a href="kernel-computation.html#normal">normal form</a>). Neither reads <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints.</p>
             <p><code>evaluate nonempty P by proof;</code> instead checks that the supplied evidence inhabits <code>P</code> and that neither the evidence nor its type depends on assumptions. The counterpart <code>evaluate empty P by proof;</code> checks evidence of <code>P -&gt; Void</code>, under the same rules. Neither form searches for a proof or fully normalizes its body. This is useful for disequalities, whose proofs are functions into <code>Void</code>: different proofs need not have identical normal forms.</p>
             <pre><code data-check="accept">evaluate nonempty Unit by tt;
 evaluate nonempty (Void -&gt; Void) by fun (x : Void) =&gt; x;

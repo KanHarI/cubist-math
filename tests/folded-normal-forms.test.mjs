@@ -54,3 +54,32 @@ test("the folded normal form is asked of derived terms only", async t => {
   const raw = program.kernel.term("Unit", 0);
   assert.throws(() => program.kernel.normalizeFolded(raw), /Normalize a term or type an instruction derived/);
 });
+
+// The marks (FN2): !! computes the folded normal form, !!! the full one; an
+// exact expected value is compared by the folded normal forms of both sides.
+test("!! prints a literal folded, and an exact rational value is compared folded", async t => {
+  const { program, result } = await checkProgram(t, `import rationals;
+use unat;
+
+print(evaluate(!!rationals.(2/3)));
+evaluate rationals.(2/3) expecting rationals.(2/3);
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  assert.deepEqual(result.prints.map(print => print.text), ["class((class((2, 0)), class((3, 0)), int_succ_nonzero(2)))"]);
+  // Both sides' full normal forms are 70M ticks each.
+  assert.ok(program.kernel.work().querySteps < 10000000n, String(program.kernel.work().querySteps));
+});
+
+test("a !!! inside a !! part is refused, and !!! alone asks for the full normal form", async t => {
+  const { result } = await checkProgram(t, `import unat;
+use unat;
+
+def double(n : UNat) := n + n;
+def pair_ : UNat and (UNat -> UNat) := (double(3), double);
+evaluate pair_ expecting !!(6, !!!_);
+evaluate pair_ expecting (6, !!!_);
+print(evaluate(!!!pair_));
+`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["E486"]);
+  assert.deepEqual(result.prints.map(print => print.text), ["(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })"]);
+});

@@ -109,6 +109,12 @@ Haskell's bang pattern and `$!` for weak head normal form and `$!!` and
 | `!` | its weak head, whether or not anything observes it | `cc_kernel_whnf` |
 | `!!` | its full normal form | `cc_kernel_normalize` |
 
+Since the [folded normal forms](folded-normal-forms.md) (FN2), `!!` asks for
+the folded normal form, `cc_kernel_normalize_folded`, which keeps a
+definition whose value is no data as written, and a fourth level, `!!!`,
+for the full normal form, `cc_kernel_normalize`, which `!!` asked for
+before. The rest of this note describes `!!` as it was decided.
+
 Grammar, in a file:
 
 ```text

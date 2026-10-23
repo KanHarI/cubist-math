@@ -14,7 +14,8 @@ export const replHelp = [
   "evaluate TERM;        the value of a term, computed as far as it is shown:",
   "                      <fun>, <type>, <path> and the like mark what it does not compute",
   "evaluate !TERM;       the term's weak head, its arguments as they are",
-  "evaluate !!TERM;      the term's full normal form",
+  "evaluate !!TERM;      the term's normal form, stuck definitions kept by name",
+  "evaluate !!!TERM;     the term's full normal form, every definition unfolded",
   "witness TERM;         the witness a closed truncation holds, with its type",
   "TERM;                 a term alone is evaluated",
   "print(inspect(TERM)); the term the kernel checks, in kernel notation",
@@ -237,7 +238,8 @@ export class ReplSession {
   }
 
   // The print path checks closedness and assumptions, and computes the
-  // value form, or with `!` the weak head and with `!!` the normal form. An
+  // value form, or with `!` the weak head, with `!!` the normal form and with
+  // `!!!` the full normal form. An
   // explicit `expecting` directive still checks its expected value.
   async evaluate(term) {
     const result = await this.entry(`print(evaluate(${term}));`), failures = this.failures(result);

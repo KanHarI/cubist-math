@@ -51,7 +51,10 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Version 6 shows REPL and print values as their value forms (DM3): those
 // workloads compute as far as their values are shown, and each has a !!
 // twin, ID-normal, that keeps the full normalization measured.
-export const version = 6;
+// Version 7 folds stuck definitions under !! (folded normal forms,
+// docs/roadmaps/runtime/folded-normal-forms.md): the twins ask for !!!, the
+// full normal form they measured as !!, so their counters do not change.
+export const version = 7;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // The archived Euclid construction and its prerequisites stay fixed for
@@ -59,15 +62,15 @@ const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // a change to their algorithm starts a separate series.
 const fixed = [
   // Full results: plain REPL evaluation and print both show the value form,
-  // and their !! twins normalize once (EVAL1).
+  // and their !!! twins normalize once (EVAL1).
   { id: "euclid-3", setup: euclid, entry: "evaluate euclid(3);" },
   { id: "euclid-3-print", setup: euclid, entry: "print(evaluate(euclid(3)));" },
   { id: "euclid-4", setup: euclid, entry: "evaluate euclid(4);" },
   // An expected-value pattern computes what it observes: its hole computes
-  // nothing, but the prime it compares is too deep to build. Its !! twin
+  // nothing, but the prime it compares is too deep to build. Its !!! twin
   // matches the full normal form, as every pattern did before EVAL5.
   { id: "euclid-4-pattern", setup: euclid, entry: "evaluate euclid(4) expecting (5, _);" },
-  { id: "euclid-4-pattern-normal", setup: euclid, entry: "evaluate euclid(4) expecting !!(5, _);" },
+  { id: "euclid-4-pattern-normal", setup: euclid, entry: "evaluate euclid(4) expecting !!!(5, _);" },
   // Prime projections.
   { id: "euclid-3-prime", setup: euclid, entry: "evaluate euclid(3).1;" },
   { id: "euclid-3-prime-expected", setup: euclid, entry: "evaluate euclid(3).1 expecting 7;" },
@@ -97,28 +100,28 @@ const fixed = [
   // series, on the definition `probe := euclid(n)` the kernel checked.
   ...[3, 4, 5, 6].map(n => ({ id: `scratch-euclid-${n}-prime`, series: "scratch", setup: euclid, entry: `def probe := euclid(${n});` })),
 ];
-// Each REPL and print workload, followed by its !! twin.
+// Each REPL and print workload, followed by its !!! twin.
 export const workloads = fixed.flatMap(workload => {
   const normal = workload.series === "scratch" ? null : /^evaluate (?!.*\bexpecting\b)/.test(workload.entry)
-    ? workload.entry.replace(/^evaluate /, "evaluate !!") : workload.entry.replace(/^print\(evaluate\(/, "print(evaluate(!!");
+    ? workload.entry.replace(/^evaluate /, "evaluate !!!") : workload.entry.replace(/^print\(evaluate\(/, "print(evaluate(!!!");
   return normal && normal !== workload.entry ? [workload, { ...workload, id: `${workload.id}-normal`, entry: normal }] : [workload];
 });
 
 // What each workload's result is, and what it promises.
 export const contracts = {
   repl: "REPL evaluate: the value form, computed as far as it is shown",
-  replNormal: "REPL evaluate !!e: one checked normalization, printed without a redundant self-comparison",
+  replNormal: "REPL evaluate !!!e: one checked normalization, printed without a redundant self-comparison",
   print: "print(evaluate(e)): the value form, computed as far as it is shown",
-  printNormal: "print(evaluate(!!e)): the full normal form, printed",
-  expected: "evaluate e expecting v: the full normal form, compared with v's",
+  printNormal: "print(evaluate(!!!e)): the full normal form, printed",
+  expected: "evaluate e expecting v: the normal form, stuck definitions folded, compared with v's",
   pattern: "evaluate e expecting p, p with holes or marks: each part computed as far as p observes it",
-  patternNormal: "evaluate e expecting !!p: the full normal form, matched part by part",
+  patternNormal: "evaluate e expecting !!!p: the full normal form, matched part by part",
   scratch: "closure experiment: the demanded natural only; untrusted, certifies nothing",
 };
 export const contractOf = workload => workload.series === "scratch" ? "scratch"
-  : /^print\s*\(/.test(workload.entry) ? (/^print\(evaluate\(!!/.test(workload.entry) ? "printNormal" : "print")
-  : !/\bexpecting\b/.test(workload.entry) ? (/^evaluate !!/.test(workload.entry) ? "replNormal" : "repl")
-  : /\bexpecting\s*!!/.test(workload.entry) ? "patternNormal"
+  : /^print\s*\(/.test(workload.entry) ? (/^print\(evaluate\(!!!/.test(workload.entry) ? "printNormal" : "print")
+  : !/\bexpecting\b/.test(workload.entry) ? (/^evaluate !!!/.test(workload.entry) ? "replNormal" : "repl")
+  : /\bexpecting\s*!!!/.test(workload.entry) ? "patternNormal"
   : /\bexpecting\b[\s\S]*(?:\b_\b|!)/.test(workload.entry) ? "pattern" : "expected";
 
 // Where an entry's time and work go. Each phase is a boundary of the code
@@ -361,16 +364,18 @@ async function profiled(program, run, { depth = false } = {}) {
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
   wrap(checker, "derivedHead", "demand", () => top() === "other");
   wrap(kernel, "normalize", "normalize", () => top() !== "normalize", result => { normal = result; });
+  // The folded normal form (folded-normal-forms.md) is a normalization too.
+  wrap(kernel, "normalizeFolded", "normalize", () => top() !== "normalize", result => { normal = result; });
   // Only the readback of a normal form, inside normalForm, is decode's: the
   // same handle decoded elsewhere, by a check or a comparison, is not.
   let readback = false;
   wrap(checker.syntax, "decode", "decode", id => readback && top() !== "decode" && id === normal);
   // normalForm is normalize and decode, observed by those phases.
   const normalForm = checker.normalForm;
-  checker.normalForm = function (handle) {
+  checker.normalForm = function (handle, ...rest) {
     readback = true;
     let result;
-    try { result = normalForm.call(this, handle); } finally { readback = false; }
+    try { result = normalForm.call(this, handle, ...rest); } finally { readback = false; }
     if (!evaluated && handle === term) evaluated = result;
     return result;
   };
@@ -563,7 +568,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         + "(web/repl-session.mjs, as the CLI does) and its entry once cold, then the warm runs in the same session. A further "
         + "process times the cold entry with no phase observed, for the observation's cost. An outcome's text is a preview past 160 "
         + "characters, with the whole text's length and hash. A value form, which a REPL or print workload shows, is its whole "
-        + "text, never cut at a width; a full normal form, which its !! twin shows, is displayed to at most 1000 characters, so "
+        + "text, never cut at a width; a full normal form, which its !!! twin shows, is displayed to at most 1000 characters, so "
         + "an outcome whose entry normalizes the whole term also digests that normal form, its bound variables and dimensions "
         + "numbered by binding depth. "
         + "Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the "

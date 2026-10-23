@@ -115,7 +115,7 @@ evaluate successor expecting !_;
 
 // A bare hole would compute nothing.
 // Error: E485: evaluate e expecting _; would compute nothing: write !_ to compute the value's weak
-//   head, or !!_ for its full normal form.
+//   head, !!_ for its normal form, or !!!_ for its full normal form.
 evaluate pairs expecting _;
 
 // A mark asks for nothing more where a part computes as much already.
@@ -123,22 +123,29 @@ evaluate pairs expecting _;
 //   an expression computes its part's weak head itself.
 evaluate pairs expecting !(3, _);
 
-// Warning: W710: The !! before 3 asks for nothing more: an expression is compared by its full
-//   normal form.
+// Warning: W710: The !! before 3 asks for nothing more: an expression is compared by its normal
+//   form.
 evaluate pairs expecting (!!3, _);
 
-// Warning: W708: The ! before _ asks for nothing more: it is under !!, whose part is fully
-//   normalized.
+// Warning: W708: The ! before _ asks for nothing more: it is under !!, which normalizes its part.
 evaluate pairs expecting !!(3, !_);
 
+// !!! asks for the full normal form, and under !! for what that part's
+// normal form does not hold.
+evaluate pairs expecting !!!_;
+
+// Error: E486: A !!! inside a !! part asks for a full normal form, which the !! part's normal form
+//   does not hold: write !!! on the outer part.
+evaluate pairs expecting !!(3, !!!_);
+
 // A mark starts a part of the pattern, never one inside an expression.
-// Error: E484: A demand mark, ! or !!, starts a part of an expected value: the whole value, a
+// Error: E484: A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a
 //   pair's component, an injection's value or a constructor's argument; 1 + !2 is none of these.
 evaluate pairs expecting (1 + !2, _);
 
 def unit_identity := fun (x : Unit) => x;
 
-// Error: E484: A demand mark, ! or !!, starts a part of an expected value: the whole value, a
+// Error: E484: A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a
 //   pair's component, an injection's value or a constructor's argument; fun (x : Unit) => !_ is
 //   none of these.
 evaluate unit_identity expecting fun (x : Unit) => !_;
