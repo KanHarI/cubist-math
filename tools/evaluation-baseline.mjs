@@ -241,9 +241,12 @@ export function normalDigest(term) {
 // digests each object once for each way its free names are bound around it,
 // a bound name by its distance to its binder, and a node from its parts'
 // digests, as JSON so that no field runs into another. The count of the
-// decoding's distinct objects, arrays among them, is returned with it.
+// decoding's distinct objects, arrays among them, is returned with it, and
+// the count of its distinct parts up to the names of bound variables and
+// dimensions: an object met under bindings that give it different digests
+// counts once for each, and objects alike up to those names count once.
 export function sharedNormalDigest(term) {
-  const free = new Map(), digests = new Map(), objects = new Set();
+  const free = new Map(), digests = new Map(), objects = new Set(), distinct = new Set();
   const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
   const isFormula = value => Array.isArray(value) && value.length > 0 && value.every(Array.isArray);
   // The term and dimension names a value mentions free, as a binder's
@@ -311,10 +314,11 @@ export function sharedNormalDigest(term) {
     const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
     if (!known) digests.set(value, known = new Map());
     known.set(key, result);
+    distinct.add(result);
     return result;
   };
   // The root's digest hashed once more: a scalar root's is its text.
-  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size };
+  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size, distinct: distinct.size };
 }
 
 // Observe a program's phases while `run` runs: each phase's own calls,

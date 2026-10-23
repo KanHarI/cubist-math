@@ -15,12 +15,11 @@ and no new reduction: the two marks name the kernel's two existing reduction
 queries.
 
 It does not resolve decision D1 of the
-[rational normalization debugging plan](https://github.com/KanHarI/cubist-math/pull/302).
+[rational normalization debugging plan](rational-normalization-debug-plan.md).
 D1 asks what a full normal form unfolds, and `!!` below keeps today's full
 normal form unchanged, so D1 still bounds every engine gate written with
 `!!`. This note takes full normalization out of inspection, patterns and
-printing only. If it is adopted, the plan's statement that the
-`expecting _` contract changes only with D1 needs updating.
+printing only. The plan now states its contract as `expecting !!_`.
 
 ## What evaluation did before the marks
 

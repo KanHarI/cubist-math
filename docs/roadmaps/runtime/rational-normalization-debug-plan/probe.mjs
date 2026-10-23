@@ -5,38 +5,24 @@
 //   node probe.mjs normalize <name,...> [budget]   one query per name; graph metrics on success
 //   node probe.mjs ladder <name> <budget,...>      the same name at rising budgets, stopping at success
 //   node probe.mjs survey <name,...> [budget]      composition residue classification of a completed normal form
-// Names are the definitions in the inline source below.
+//   node probe.mjs canonical <name,...> [budget]   the normal form's decoding: its distinct parts up to bound names
+// Names are the definitions of the two fixtures below; a query checks the
+// whole fixture that defines its name. A query's ticks depend on the rest
+// of its fixture by a few percent, its normal form not at all: compare ticks
+// only between runs of one fixture, whose hash each record carries.
 import { createHash } from "node:crypto";
 import createCubical from "../../../../web/dist/cubical.mjs";
 import { CubicalProgram } from "../../../../web/cubical-program.mjs";
 import { sourceReader } from "../../../../tools/module-sources.mjs";
 import { assertFreshBuild, sourceHash } from "../../../../tools/build-stamp.mjs";
+import { sharedNormalDigest } from "../../../../tools/evaluation-baseline.mjs";
+import { sources } from "../evaluation-demand-marks/probe-sources.mjs";
 
 assertFreshBuild();
-const source = `import fractions;
-import binary_integers;
-use bnat;
-
-def binary_rationals : Field(U0) := fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
-
-def BQ : U0 := binary_rationals.R;
-
-// The literal 2/3 as #283's parser builds it: a compact zero decision on the denominator.
-computable def two_thirds : BQ := match bint_decide_zero(bint_of_nat(3)) return BQ {
-    left same => binary_rationals.zero;
-    right nonzero => class((bint_of_nat(2), bint_of_nat(3), nonzero));
-  };
-
-computable def minus_two_thirds : BQ := binary_rationals.neg(two_thirds);
-
-computable def small_inverse : BQ := q_inv{{U0}}(
-  binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, two_thirds
-);
-
-computable def small_inverse_neg : BQ := q_inv{{U0}}(
-  binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, minus_two_thirds
-);
-
+// `binary`: the binary rationals without #283, the demand marks' report's
+// fixture, with this plan's further queries. `two_thirds` is the literal as
+// #283's parser builds it, with a compact zero decision on the denominator.
+const binary = `${sources.rational}
 def q_inv_open := q_inv{{U0}}(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
 
 computable def wide : BQ := match bint_decide_zero(bint_of_nat(18446744073709551615)) return BQ {
@@ -125,8 +111,47 @@ def m_set := difference_is_set{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel
 def m_add_left := fun (p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) =>
   difference_add_pairs_left{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, p, s, q, r);
 `;
+// `unary`: main's public rationals and integers, over UNat.
+const unary = `import rationals;
+import integers;
+use unat;
+
+def q_two_thirds := rationals.(2/3);
+
+def q_half := rationals.(0.5);
+
+def q_one := rationals.one;
+
+// A literal's nonzero certificate, open in the equation it refutes.
+def q_nonzero_open := int_succ_nonzero(2);
+
+def q_effective_open := quotient_effective(
+  U0, UNat and UNat, SameDifference, same_difference_props, same_difference_refl,
+  same_difference_sym, same_difference_trans, (succ(2), 0), (0, 0)
+);
+
+def z_decision := int_decide(int(2, 0), int_zero);
+
+// The additive group and the operations and laws it carries.
+def z_additive := integers.additive_;
+
+def z_add := integers.add;
+
+def z_zero_add := integers.zero_add;
+
+def z_neg_add := integers.neg_add;
+
+def z_add_comm := integers.add_comm;
+
+def z_add_assoc := integers.add_assoc;
+`;
+const fixtures = { binary, unary };
 const sha256 = text => createHash("sha256").update(text).digest("hex");
-const identity = { kernelSourceHash: sourceHash("kernel"), fixtureSha256: sha256(source) };
+const fixtureOf = name => {
+  const found = Object.keys(fixtures).filter(key => new RegExp(`^(computable )?def ${name} `, "m").test(fixtures[key]));
+  if (found.length !== 1) throw new Error(`${name} is defined in ${found.length} fixtures`);
+  return found[0];
+};
 const [mode = "normalize", namesText = "small_inverse", budgetsText] = process.argv.slice(2);
 const names = namesText.split(",");
 const budgets = (budgetsText ?? "100000000").split(",").map(BigInt);
@@ -135,7 +160,7 @@ const module = await createCubical();
 
 async function fresh(name) {
   const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
-  const checked = await program.check(source, "probe");
+  const checked = await program.check(fixtures[fixtureOf(name)], "probe");
   if (!checked.complete) throw new Error(JSON.stringify(checked.gaps.map(g => [g.name, g.code, g.reason])));
   const expression = program.checker.checkSyntax({ tag: "DefRef", name: `probe__${name}` }, null, new Map(), new Map()).expression;
   return { program, kernel: program.kernel, expression };
@@ -251,10 +276,15 @@ for (const name of names) {
     const { program, kernel, expression } = await fresh(name);
     let record;
     try {
-      const measured = measure(kernel, expression, steps);
-      record = { case: name, mode, ...measured.record, ...identity };
+      const measured = measure(kernel, expression, steps), fixture = fixtureOf(name);
+      record = { case: name, mode, ...measured.record, kernelSourceHash: sourceHash("kernel"), fixture, fixtureSha256: sha256(fixtures[fixture]) };
       if (measured.result && mode === "survey") Object.assign(record, survey(kernel, measured.result));
       else if (measured.result) record.normal = graph(kernel, measured.result);
+      // Decoded as the REPL reads it: annotations decoding drops are not counted.
+      if (measured.result && mode === "canonical") {
+        const { objects, distinct } = sharedNormalDigest(program.checker.syntax.decode(measured.result, program.checker.dimensions));
+        record.decoding = { objects, distinct };
+      }
       console.log(JSON.stringify(record));
     } finally {
       program.dispose();

@@ -1056,6 +1056,27 @@ test("the report's digest reads a shared object once", () => {
   }
 });
 
+// Parts alike up to the names of bound variables and dimensions count once
+// among the distinct parts, and one object met under bindings that give it
+// two digests counts twice.
+test("the report's digest counts distinct parts up to bound names", () => {
+  const type = { tag: "Var", name: "A" }, path = { tag: "Var", name: "p" }, x = { tag: "Var", name: "x" };
+  const identity = name => ({ tag: "Lam", name, domain: type, body: { tag: "Var", name } });
+  const loop = dim => ({ tag: "PLam", dim, family: type, body: { tag: "PApp", path, arg: [[`${dim}:1`]] } });
+  const counts = value => { const { objects, distinct } = sharedNormalDigest(value); return { objects, distinct }; };
+  // App, both lambdas and their variables, and A; the lambdas alike, and their variables.
+  assert.deepEqual(counts({ tag: "App", fn: identity("x"), arg: identity("y") }), { objects: 6, distinct: 4 });
+  // App, both paths, A, both applications, p, and both formulas with their
+  // clauses; the paths alike, their applications and their formulas.
+  assert.deepEqual(counts({ tag: "App", fn: loop("i"), arg: loop("j") }), { objects: 11, distinct: 6 });
+  // x bound under the lambda and free beside it.
+  assert.deepEqual(counts({ tag: "App", fn: { tag: "Lam", name: "x", domain: type, body: x }, arg: x }), { objects: 4, distinct: 5 });
+  // Applications alike up to their bound names, whose free names sort in
+  // different orders: a before m, and q after it.
+  const m = { tag: "Var", name: "m" }, apply = name => ({ tag: "Lam", name, domain: type, body: { tag: "App", fn: { tag: "Var", name }, arg: m } });
+  assert.deepEqual(counts({ tag: "App", fn: apply("a"), arg: apply("q") }), { objects: 9, distinct: 6 });
+});
+
 // Two constructors of one module, and constructors of one name in two.
 test("the report's digest tells constructors apart by name and module across programs", async t => {
   const values = [];
