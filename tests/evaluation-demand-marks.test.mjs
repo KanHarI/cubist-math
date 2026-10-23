@@ -374,6 +374,30 @@ print(evaluate(p));`, { module });
   assert.deepEqual(result.prints.map(print => print.text), ["((fun (x : UNat) => succ(x))(2), 0)", "(3, 0)"]);
 });
 
+test("the value form stops exactly where the printer's 4,000 nodes end", async t => {
+  // A row of twenty units costs 22 nodes as the printer counts them: wide
+  // applied, which is two, and twenty tt; with its cons, two more, 24. A head
+  // is computed while two of the 4,000 remain: 166 rows cost 3,984, the
+  // 167th's cons and wide 4 more, and 11 of its units bring the 16 left to
+  // 1. Its other nine units and the list's tail are shown as …, uncomputed.
+  // The list nests about 190 levels, short of the depth of 512.
+  const { result } = await checkProgram(t, `import lists;
+use unat;
+inductive Wide : U0 {
+  wide(a1 : Unit, a2 : Unit, a3 : Unit, a4 : Unit, a5 : Unit, a6 : Unit, a7 : Unit, a8 : Unit, a9 : Unit, a10 : Unit, a11 : Unit, a12 : Unit, a13 : Unit, a14 : Unit, a15 : Unit, a16 : Unit, a17 : Unit, a18 : Unit, a19 : Unit, a20 : Unit);
+}
+def rows(n : UNat) : List(U0, Wide) := match n {
+  zero => nil;
+  succ(k) => cons(wide(tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt, tt), rows(k));
+};
+print(evaluate(rows(8 * 250)));`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  const text = result.prints[0].text;
+  assert.equal(text.match(/\btt\b/g).length, 166 * 20 + 11);
+  assert.equal(text.match(/…/g).length, 10);
+  assert.match(text, /, tt, …, …, …, …, …, …, …, …, …\), …\)/);
+});
+
 test("the value form computes no more heads than the printer shows", async t => {
   const queries = async source => {
     const { program, result } = await checkProgram(t, `import lists;
