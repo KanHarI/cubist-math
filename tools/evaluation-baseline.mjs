@@ -233,6 +233,90 @@ export function normalDigest(term) {
   return hash.digest("hex").slice(0, 16);
 }
 
+// normalDigest's comparison, for terms whose decodings share too much to
+// walk as trees, as the evaluation demand marks' report compares normal forms
+// (docs/roadmaps/runtime/evaluation-demand-marks/report.mjs): two decoded
+// terms get equal digests exactly when normalDigest gives them equal ones.
+// It reads them as normalDigest does, with its binders and formulas, but
+// digests each object once for each way its free names are bound around it,
+// a bound name by its distance to its binder, and a node from its parts'
+// digests, as JSON so that no field runs into another. The count of the
+// decoding's distinct objects, arrays among them, is returned with it.
+export function sharedNormalDigest(term) {
+  const free = new Map(), digests = new Map(), objects = new Set();
+  const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
+  const isFormula = value => Array.isArray(value) && value.length > 0 && value.every(Array.isArray);
+  // The term and dimension names a value mentions free, as a binder's
+  // fields are read: its own name is bound in the fields it binds.
+  const freeNames = value => {
+    if (value === null || typeof value !== "object") return { terms: [], dims: [] };
+    if (free.has(value)) return free.get(value);
+    objects.add(value);
+    const terms = new Set(), dims = new Set(), add = ({ terms: t, dims: d }, term = null, dim = null) => {
+      for (const name of t) if (name !== term) terms.add(name);
+      for (const name of d) if (name !== dim) dims.add(name);
+    };
+    if (isFormula(value)) for (const clause of value) { objects.add(clause); for (const literal of clause) dims.add(dimensionOf(literal)); }
+    else if (Array.isArray(value)) value.forEach(item => add(freeNames(item)));
+    else if (value.tag === "Var") terms.add(value.name);
+    else {
+      const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
+      const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
+      for (const [key, item] of Object.entries(value)) {
+        if (key === "tag" || key === binder) continue;
+        if (!binds.includes(key)) add(freeNames(item));
+        else if (binder === "name") add(freeNames(item), value.name);
+        else if (key !== "system") add(freeNames(item), null, value.dim);
+        else {
+          objects.add(item);
+          for (const tube of item) { objects.add(tube); add(freeNames(tube.face)); add(freeNames(tube.term), null, value.dim); }
+        }
+      }
+    }
+    const result = { terms: [...terms].sort(), dims: [...dims].sort() };
+    free.set(value, result);
+    return result;
+  };
+  const scopes = { terms: { names: new Map(), depth: 0 }, dims: { names: new Map(), depth: 0 } };
+  const under = (scope, name, visit) => {
+    const had = scope.names.has(name), outer = scope.names.get(name);
+    scope.names.set(name, scope.depth++);
+    const result = visit();
+    scope.depth--;
+    if (had) scope.names.set(name, outer); else scope.names.delete(name);
+    return result;
+  };
+  const named = (scope, name) => scope.names.has(name) ? ["bound", scope.depth - scope.names.get(name) - 1] : ["free", name];
+  const literal = text => [named(scopes.dims, dimensionOf(text)), text.slice(text.lastIndexOf(":") + 1)];
+  const sorted = values => values.map(value => JSON.stringify(value)).sort();
+  const digest = value => {
+    if (value === null || typeof value !== "object") return JSON.stringify(["value", JSON.stringify(value) ?? "undefined"]);
+    const { terms, dims } = freeNames(value);
+    const key = JSON.stringify([terms.map(name => named(scopes.terms, name)), dims.map(name => named(scopes.dims, name))]);
+    let known = digests.get(value);
+    if (known?.has(key)) return known.get(key);
+    let fields;
+    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => sorted(clause.map(literal))))];
+    else if (Array.isArray(value)) fields = ["array", value.map(digest)];
+    else if (value.tag === "Var") fields = ["Var", named(scopes.terms, value.name)];
+    else {
+      const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
+      const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
+      fields = ["node", value.tag ?? "", Object.entries(value).filter(([key]) => key !== "tag" && key !== binder).map(([key, item]) =>
+        [key, !binds.includes(key) ? digest(item)
+          : binder === "name" ? under(scopes.terms, value.name, () => digest(item))
+          : key !== "system" ? under(scopes.dims, value.dim, () => digest(item))
+          : item.map(tube => ["face", digest(tube.face), "term", under(scopes.dims, value.dim, () => digest(tube.term))])])];
+    }
+    const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
+    if (!known) digests.set(value, known = new Map());
+    known.set(key, result);
+    return result;
+  };
+  // The root's digest hashed once more: a scalar root's is its text.
+  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size };
+}
+
 // Observe a program's phases while `run` runs: each phase's own calls,
 // failures, time, kernel work and arena growth, the run's peak arena, and
 // the normal form of the term it evaluated, the first checked for

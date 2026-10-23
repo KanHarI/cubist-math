@@ -9,7 +9,7 @@ import { lint } from "../web/cubist/lint.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { normalDigest } from "../tools/evaluation-baseline.mjs";
+import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 
@@ -589,8 +589,9 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // weak head on main, from the demand marks note. Each evaluates under !_,
 // shown as its recorded head, under !!_, and printed, as its value form,
 // except the assumptions, which evaluation refuses. Three examples whose full normal forms cost about 30
-// seconds each are evaluated under !_ only; the note records that they
-// complete.
+// seconds each are evaluated under !_ only; the DM5 report
+// (docs/roadmaps/runtime/evaluation-demand-marks/report.md) records that
+// they complete.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/runtime/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
@@ -683,3 +684,388 @@ for (const setup of Object.keys(corpus.setups)) {
     }
   });
 }
+
+// The acceptance report (docs/roadmaps/runtime/evaluation-demand-marks/
+// report.md) compares normal forms by sharedNormalDigest, which reads each
+// shared object of a decoding once for each way its free names are bound, as
+// normal forms too large to walk as trees need. It must tell terms apart
+// exactly as normalDigest does: up to the names of bound variables and
+// dimensions and the slots the kernel gives them, and no further, across
+// programs as well as within one.
+const digested = (program, value) => {
+  const decoded = program.checker.syntax.decode(value, program.checker.dimensions);
+  return { shared: sharedNormalDigest(decoded).digest, decoded: normalDigest(decoded) };
+};
+const definitionValue = (program, name, owner = "main") => program.kernel.definition(program.kernel.definitions.get(`${owner}__${name}`)).value;
+test("the report's digest tells terms apart as the baseline's digest of their decodings does", async t => {
+  const square = "fun (A : U0, x : A, s : refl(x) = refl(x)) => typed(refl(x) = refl(x), ";
+  const terms = {
+    first: "fun (x : UNat) => fun (y : UNat) => x",
+    first_renamed: "fun (y : UNat) => fun (x : UNat) => y",
+    second: "fun (x : UNat) => fun (y : UNat) => y",
+    at_zero: "fun (A : U0, x : A, p : x = x) => p @ 0",
+    at_one: "fun (A : U0, x : A, p : x = x) => p @ 1",
+    lower: "fun (A : U0, x : A, p : x = x) => typed(x = x, path i => p @ (i & ~i))",
+    lower_renamed: "fun (A : U0, x : A, p : x = x) => typed(x = x, path j => p @ (j & ~j))",
+    upper: "fun (A : U0, x : A, p : x = x) => typed(x = x, path i => p @ (i | ~i))",
+    rows: `${square}path i => path j => s @ i @ j)`,
+    rows_renamed: `${square}path j => path i => s @ j @ i)`,
+    columns: `${square}path i => path j => s @ j @ i)`,
+    carry: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (i : Interval) => P(p @ i), u)",
+    carry_renamed: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (j : Interval) => P(p @ j), u)",
+    carry_back: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (i : Interval) => P(p @ ~i), u)",
+    two: "2",
+    three: "3",
+  };
+  const source = `import unat;\nuse unat;\n${Object.entries(terms).map(([name, term]) => `def ${name} := ${term};`).join("\n")}`;
+  const { program, verdicts } = await checkProgram(t, source, { module });
+  const { syntax } = program.checker, digests = {};
+  for (const name of Object.keys(terms)) {
+    assert.equal(verdicts[name], true, name);
+    digests[name] = digested(program, definitionValue(program, name));
+  }
+  // Terms as the kernel's normal forms may hold them, with their dimensions
+  // in any slots, built directly: alike but for their slots, or different in
+  // the binder a formula names, once in a part shared under both binders.
+  const { kernel } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
+  const family = raw("Var", kernel.symbol("A")), path = raw("Var", kernel.symbol("p"));
+  const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), path);
+  const plam = (slot, body) => raw("PLam", slot, family, body);
+  const built = {
+    outer: plam(3, plam(5, at(3))),
+    outer_moved: plam(5, plam(3, at(5))),
+    inner: plam(3, plam(5, at(5))),
+    shared_inner: plam(3, plam(5, raw("App", 0, at(3), plam(3, at(3))))),
+    shared_outer: plam(3, plam(5, raw("App", 0, at(3), plam(4, at(3))))),
+  };
+  for (const [name, value] of Object.entries(built)) digests[name] = digested(program, value);
+  const names = Object.keys(digests);
+  for (const left of names) for (const right of names)
+    assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
+  // The pairs that matter, so that the check is not vacuous.
+  const same = (left, right) => digests[left].decoded === digests[right].decoded;
+  for (const [left, right] of [["first", "first_renamed"], ["lower", "lower_renamed"], ["rows", "rows_renamed"], ["carry", "carry_renamed"],
+    ["outer", "outer_moved"]])
+    assert.ok(same(left, right), `${left} and ${right} are the same term`);
+  for (const [left, right] of [["first", "second"], ["at_zero", "at_one"], ["lower", "upper"], ["rows", "columns"], ["carry", "carry_back"], ["two", "three"],
+    ["outer", "inner"], ["shared_inner", "shared_outer"]])
+    assert.ok(!same(left, right), `${left} and ${right} differ`);
+});
+
+// Every part decoding reads, in terms built directly as the kernel holds
+// them: pairs that differ in that part alone, and pairs alike but for the
+// names or slots of what a binder binds.
+test("the report's digest reads every part decoding reads", async t => {
+  const { program, verdicts } = await checkProgram(t, "import unat;\nuse unat;\ndef two := 2;\ndef three := 3;\ninductive Flag {\n  lit;\n  unlit;\n}\n", { module });
+  assert.deepEqual([verdicts.two, verdicts.three], [true, true]);
+  const { kernel, checker: { syntax } } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
+  const v = name => raw("Var", kernel.symbol(name)), level = value => raw("LConst", value);
+  const face = (slot, bit = 1) => syntax.formula([[`d:${bit}`]], "face", new Map([["d", slot]]));
+  const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), v("p"));
+  const list = items => items.reduceRight((next, item) => raw("List", 0, item, next), 0);
+  const flag = kernel.signatures.get("main__Flag").index, unat = kernel.signatures.get("unat__UNat").index;
+  const sort = (signature, parameters, levels) => raw("Sort", signature, list(parameters), list(levels));
+  const glue = (type, equiv, at) => raw("Glue", 0, v("a"), raw("GlueSystem", at, type, equiv, 0));
+  const glueTerm = (as, term, at) => raw("GlueTerm", 0, as, v("b"), raw("Tube", at, term, 0));
+  const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => raw("Lam", kernel.symbol(name), v("A"), body);
+  const formula = (clauses, outer, inner) => raw("PApp", syntax.formula(clauses, "interval", new Map([["d", outer], ["e", inner]])), v("p"));
+  const both = (outer, inner) => formula([["d:1", "e:1"]], outer, inner), either = (outer, inner) => formula([["d:1"], ["e:1"]], outer, inner);
+  const comp = term => raw("Comp", 3, v("A"), tube(face(4), term), v("b"));
+  const faced = (kind, slot) => raw(kind, 3, v("A"), tube(face(slot), v("t")), v("b"));
+  const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
+  const terms = {
+    free_a: v("a"), free_b: v("b"),
+    two: kernel.definitions.get("main__two"), three: kernel.definitions.get("main__three"),
+    level_0: raw("U", 0, level(0)), level_1: raw("U", 0, level(1)),
+    successor_1: raw("U", 0, raw("LSucc", 1, level(0))), successor_2: raw("U", 0, raw("LSucc", 2, level(0))),
+    level_lambda: levelLambda("LLam", "l", "l"), level_lambda_renamed: levelLambda("LLam", "m", "m"), level_lambda_free: levelLambda("LLam", "l", "m"),
+    level_pi: levelLambda("LPi", "l", "l"), level_pi_renamed: levelLambda("LPi", "m", "m"),
+    glue: glue(v("t"), v("e"), face(3)), glue_type: glue(v("u"), v("e"), face(3)), glue_equiv: glue(v("t"), v("f"), face(3)), glue_face: glue(v("t"), v("e"), face(4)),
+    glue_term: glueTerm(v("a"), v("t"), face(3)), glue_term_as: glueTerm(v("c"), v("t"), face(3)), glue_term_part: glueTerm(v("a"), v("u"), face(3)),
+    glue_term_face: glueTerm(v("a"), v("t"), face(3, 0)),
+    comp: raw("Comp", 3, v("A"), tube(face(4), at(3)), v("b")), comp_moved: raw("Comp", 5, v("A"), tube(face(4), at(5)), v("b")),
+    comp_tube: raw("Comp", 3, v("A"), tube(face(4), at(4)), v("b")), comp_face: raw("Comp", 3, v("A"), tube(face(4, 0), at(3)), v("b")),
+    hcomp: raw("HComp", 5, at(5), tube(face(4), at(5)), v("b")), hcomp_moved: raw("HComp", 6, at(5), tube(face(4), at(6)), v("b")),
+    trans: raw("Trans", 3, at(3), tube(face(4), v("b")), v("b")), trans_moved: raw("Trans", 5, at(5), tube(face(4), v("b")), v("b")),
+    trans_face: raw("Trans", 3, at(3), tube(face(4, 0), v("b")), v("b")),
+    sort: sort(flag, [v("a")], [level(0)]), sort_signature: sort(unat, [v("a")], [level(0)]), sort_parameter: sort(flag, [v("b")], [level(0)]),
+    sort_level: sort(flag, [v("a")], [level(1)]),
+    // A variable is a parameter or a level: where the parameters end matters.
+    sort_variables: sort(flag, [v("a"), v("b")], []), sort_split: sort(flag, [v("a")], [v("b")]),
+    constructor: raw("Con", 0, sort(flag, [], [])), constructor_index: raw("Con", 1, sort(flag, [], [])),
+    elim: raw("Elim", flag, v("m"), list([v("a"), v("b")])), elim_signature: raw("Elim", unat, v("m"), list([v("a"), v("b")])),
+    elim_clause: raw("Elim", flag, v("m"), list([v("a"), v("c")])),
+    // One variable node met under binders of its name and of others: the
+    // inner x shadows the outer one, and z does not.
+    shadowed: lambda("x", lambda("y", raw("App", 0, v("x"), lambda("x", v("x"))))),
+    unshadowed: lambda("x", lambda("y", raw("App", 0, v("x"), lambda("z", v("x"))))),
+    // What a binder does not bind: a lambda's domain, a path's endpoints, a
+    // composition's and a transport's base.
+    domain: raw("Lam", kernel.symbol("x"), v("x"), v("x")), domain_renamed: raw("Lam", kernel.symbol("y"), v("x"), v("y")),
+    pi: raw("Pi", kernel.symbol("x"), v("A"), v("x")), pi_renamed: raw("Pi", kernel.symbol("y"), v("A"), v("y")),
+    sigma: raw("Sigma", kernel.symbol("x"), v("A"), v("x")), sigma_renamed: raw("Sigma", kernel.symbol("y"), v("A"), v("y")),
+    path_type: raw("Path", 3, at(3), at(3), v("a")), path_type_moved: raw("Path", 5, at(5), at(3), v("a")),
+    path_family: raw("PLam", 3, at(3), v("a")), path_family_moved: raw("PLam", 5, at(5), v("a")),
+    comp_base: raw("Comp", 3, v("A"), 0, at(3)), comp_base_moved: raw("Comp", 5, v("A"), 0, at(3)),
+    trans_base: raw("Trans", 3, v("A"), tube(face(4), at(3)), at(3)), trans_base_moved: raw("Trans", 5, v("A"), tube(face(4), at(3)), at(3)),
+    // A clause's literals in either order of their binders, and high slots.
+    both: raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), both(3, 5))), both_moved: raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), both(3, 5))),
+    either: raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), either(3, 5))), either_moved: raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), either(3, 5))),
+    slot_33: at(33), slot_34: at(34), high: raw("PLam", 33, v("A"), at(33)), high_moved: raw("PLam", 40, v("A"), at(40)),
+    // What decoding ignores: a path application's annotation, a level
+    // binder's bound, a transport descriptor's term.
+    annotated: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("T")),
+    annotated_other: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("U")),
+    level_bound: raw("LLam", kernel.symbol("l"), raw("LBound", 2), raw("U", 0, raw("Var", kernel.symbol("l")))),
+    trans_descriptor: raw("Trans", 3, at(3), tube(face(4), v("c")), v("b")),
+    // An outer binding read again after an inner binder of its name.
+    restored: lambda("x", raw("App", 0, lambda("x", v("x")), v("x"))), restored_renamed: lambda("x", raw("App", 0, lambda("y", v("y")), v("x"))),
+    restored_dimension: raw("PLam", 3, v("A"), raw("App", 0, raw("PLam", 3, v("A"), at(3)), at(3))),
+    restored_dimension_renamed: raw("PLam", 3, v("A"), raw("App", 0, raw("PLam", 5, v("A"), at(5)), at(3))),
+    // A system's faces are outside its binder.
+    comp_face_outside: raw("Comp", 3, v("A"), tube(face(3), v("t")), v("b")), comp_face_outside_moved: raw("Comp", 5, v("A"), tube(face(3), v("t")), v("b")),
+    hcomp_face_outside: raw("HComp", 3, v("A"), tube(face(3), v("t")), v("b")), hcomp_face_outside_moved: raw("HComp", 5, v("A"), tube(face(3), v("t")), v("b")),
+    // One composition met under more binders, its tube naming an outer
+    // variable or dimension, against one naming the inner binder's.
+    shared_tube: lambda("x", raw("App", 0, comp(v("x")), lambda("y", comp(v("x"))))),
+    shared_tube_inner: lambda("x", raw("App", 0, comp(v("x")), lambda("y", comp(v("y"))))),
+    shared_tube_dimension: raw("PLam", 6, v("A"), raw("App", 0, comp(at(6)), raw("PLam", 7, v("A"), comp(at(6))))),
+    shared_tube_dimension_inner: raw("PLam", 6, v("A"), raw("App", 0, comp(at(6)), raw("PLam", 7, v("A"), comp(at(7))))),
+    // A closed part met at two depths, against a renamed copy below.
+    closed_shared: raw("App", 0, lambda("x", v("x")), lambda("y", lambda("x", v("x")))),
+    closed_copied: raw("App", 0, lambda("x", v("x")), lambda("y", lambda("z", v("z")))),
+    closed_shared_dimension: raw("App", 0, raw("PLam", 3, v("A"), at(3)), raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), at(3)))),
+    closed_copied_dimension: raw("App", 0, raw("PLam", 3, v("A"), at(3)), raw("PLam", 5, v("A"), raw("PLam", 7, v("A"), at(7)))),
+    // One variable or dimension met at one depth in two places, bound by the
+    // inner binder in the second, against one bound by the outer binder.
+    rebound: raw("App", 0, lambda("x", lambda("y", v("x"))), lambda("z", lambda("x", v("x")))),
+    rebound_outer: raw("App", 0, lambda("x", lambda("y", v("x"))), lambda("z", lambda("w", v("z")))),
+    rebound_dimension: raw("App", 0, raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), at(3))), raw("PLam", 4, v("A"), raw("PLam", 3, v("A"), at(3)))),
+    rebound_dimension_outer: raw("App", 0, raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), at(3))), raw("PLam", 4, v("A"), raw("PLam", 6, v("A"), at(4)))),
+    // A variable and a dimension of one name: neither's binder binds the other.
+    homonym: raw("PLam", 3, v("A"), v("d3")), homonym_moved: raw("PLam", 4, v("A"), v("d3")),
+    homonym_dimension: raw("PLam", 3, v("A"), lambda("d3", at(3))), homonym_dimension_renamed: raw("PLam", 3, v("A"), lambda("x", at(3))),
+    // A system met under another binder, only its face naming a dimension.
+    shared_face: raw("PLam", 6, v("A"), raw("App", 0, faced("Comp", 6), raw("PLam", 7, v("A"), faced("Comp", 6)))),
+    shared_face_inner: raw("PLam", 6, v("A"), raw("App", 0, faced("Comp", 6), raw("PLam", 7, v("A"), faced("Comp", 7)))),
+    shared_face_hcomp: raw("PLam", 6, v("A"), raw("App", 0, faced("HComp", 6), raw("PLam", 7, v("A"), faced("HComp", 6)))),
+    shared_face_hcomp_inner: raw("PLam", 6, v("A"), raw("App", 0, faced("HComp", 6), raw("PLam", 7, v("A"), faced("HComp", 7)))),
+    // Systems of two tubes.
+    two_tubes: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(5), v("t"))), v("b")),
+    two_tubes_term: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(5), v("u"))), v("b")),
+    two_tubes_face: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(6), v("t"))), v("b")),
+    two_tubes_reversed: raw("Comp", 3, v("A"), raw("Tube", face(5), v("t"), tube(face(4), at(3))), v("b")),
+    one_tube: raw("Comp", 3, v("A"), tube(face(4), at(3)), v("b")),
+    one_tube_twice: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(4), at(3))), v("b")),
+    // A term of every other kind, for the changes below.
+    application: raw("App", 0, v("f"), v("a")), first_of: raw("Fst", 0, v("q")), second_of: raw("Snd", 0, v("q")),
+    pair: raw("Pair", 0, v("A"), v("a"), v("b")), abort: raw("Abort", 0, v("A"), v("i")), sum: raw("Sum", 0, v("A"), v("B")),
+    left_of: raw("Inl", 0, v("A"), v("a")), right_of: raw("Inr", 0, v("A"), v("a")), sum_rec: raw("SumRec", 0, v("m"), v("l"), v("r"), v("s")),
+    unit_rec: raw("UnitRec", 0, v("m"), v("o"), v("u")), unglue: raw("Unglue", 0, v("A"), v("g")), level_application: raw("LApp", 0, v("f"), level(2)),
+    level_max: raw("U", 0, raw("LMax", 0, level(0), level(1))), level_tier: raw("U", 0, raw("LConst", (1 << 16) | 3)), level_bound_term: raw("LBound", 2),
+    unit: raw("Unit", 0), point: raw("Point", 0), void: raw("Void", 0), path_of: raw("Path", 3, v("A"), v("a"), v("b")),
+  };
+  const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
+  // It counts every distinct object of the decoding, arrays among them.
+  for (const [name, value] of Object.entries(terms)) {
+    const decoded = syntax.decode(value, program.checker.dimensions);
+    assert.equal(sharedNormalDigest(decoded).objects, distinctObjects(decoded), `${name} counts its objects`);
+  }
+  const names = Object.keys(digests);
+  for (const left of names) for (const right of names)
+    assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
+  const same = (left, right) => digests[left].decoded === digests[right].decoded;
+  for (const [left, right] of [["level_lambda", "level_lambda_renamed"], ["level_pi", "level_pi_renamed"], ["comp", "comp_moved"],
+    ["hcomp", "hcomp_moved"], ["trans", "trans_moved"], ["domain", "domain_renamed"], ["pi", "pi_renamed"], ["sigma", "sigma_renamed"],
+    ["path_type", "path_type_moved"], ["path_family", "path_family_moved"], ["comp_base", "comp_base_moved"], ["trans_base", "trans_base_moved"],
+    ["both", "both_moved"], ["either", "either_moved"], ["high", "high_moved"], ["restored", "restored_renamed"],
+    ["restored_dimension", "restored_dimension_renamed"], ["comp_face_outside", "comp_face_outside_moved"], ["hcomp_face_outside", "hcomp_face_outside_moved"],
+    ["closed_shared", "closed_copied"], ["closed_shared_dimension", "closed_copied_dimension"], ["homonym", "homonym_moved"],
+    ["homonym_dimension", "homonym_dimension_renamed"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
+    assert.ok(same(left, right), `${left} and ${right} are the same term`);
+  for (const [left, right] of [["free_a", "free_b"], ["two", "three"], ["level_0", "level_1"], ["successor_1", "successor_2"],
+    ["level_lambda", "level_lambda_free"], ["level_lambda", "level_pi"], ["glue", "glue_type"], ["glue", "glue_equiv"], ["glue", "glue_face"],
+    ["glue_term", "glue_term_as"], ["glue_term", "glue_term_part"], ["glue_term", "glue_term_face"], ["comp", "comp_tube"], ["comp", "comp_face"],
+    ["trans", "trans_face"], ["sort", "sort_signature"], ["sort", "sort_parameter"], ["sort", "sort_level"], ["sort_variables", "sort_split"],
+    ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"], ["shadowed", "unshadowed"], ["slot_33", "slot_34"],
+    ["both", "either"], ["shared_tube", "shared_tube_inner"], ["shared_tube_dimension", "shared_tube_dimension_inner"],
+    ["shared_face", "shared_face_inner"], ["shared_face_hcomp", "shared_face_hcomp_inner"], ["two_tubes", "two_tubes_term"],
+    ["two_tubes", "two_tubes_face"], ["two_tubes", "comp"], ["two_tubes", "two_tubes_reversed"], ["one_tube", "one_tube_twice"], ["rebound", "rebound_outer"],
+    ["rebound_dimension", "rebound_dimension_outer"]])
+    assert.ok(!same(left, right), `${left} and ${right} differ`);
+  // Every term with one part of its decoding changed: each primitive to
+  // another, each object to a fresh variable, each array one item shorter.
+  // normalDigest reads every part, so a part the shared digest skipped
+  // would make the two disagree on some change.
+  let changes = 0;
+  for (const [name, value] of Object.entries(terms)) {
+    const decoded = syntax.decode(value, program.checker.dimensions), shared = sharedNormalDigest(decoded).digest, reference = normalDigest(decoded);
+    for (const changed of oneChange(decoded)) {
+      // A change no decoding gives, as a system that is no list, both refuse.
+      const attempt = digest => { try { return digest(changed); } catch (error) { return error; } };
+      const sharedChanged = attempt(value => sharedNormalDigest(value).digest), referenceChanged = attempt(normalDigest);
+      assert.equal(sharedChanged instanceof Error, referenceChanged instanceof Error, `${name} changed: ${JSON.stringify(changed).slice(0, 200)}`);
+      if (referenceChanged instanceof Error) continue;
+      changes++;
+      assert.equal(sharedChanged === shared, referenceChanged === reference, `${name} changed: ${JSON.stringify(changed).slice(0, 200)}`);
+    }
+  }
+  assert.ok(changes > 1000, `${changes} changes`);
+  // Every term beneath every context of up to two binders, each a
+  // variable's or a dimension's, of a name the term holds or of a fresh
+  // name: a name free in the term is bound by a binder of its kind and left
+  // free by one of the other, the inner of two binders of a name shadows the
+  // outer, and two contexts of one depth bind it at different distances.
+  // Met once outside the context too, so that the copy outside fills the
+  // memo first. And the copies beneath every context in one value, whose
+  // digest is that of the value with nothing shared: the memo gives no part
+  // the digest it has under another binding.
+  let contexts = 0;
+  for (const [name, value] of Object.entries(terms)) {
+    const decoded = syntax.decode(value, program.checker.dimensions), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
+    const binders = [...new Set([...termNames, ...dimensionNames, "fresh′"])].flatMap(bound => [
+      part => ({ tag: "Lam", name: bound, domain: { tag: "Var", name: "A" }, body: part }),
+      part => ({ tag: "PLam", dim: bound, family: { tag: "Var", name: "A" }, body: part })]);
+    const within = [part => part, ...binders, ...binders.flatMap(outer => binders.map(inner => part => outer(inner(part))))];
+    agree(within.map(context => ({ tag: "App", fn: decoded, arg: context(decoded) })), `${name} met beneath binders`);
+    const all = within.map(context => context(decoded));
+    assert.equal(sharedNormalDigest(all).digest, sharedNormalDigest(unshared(all)).digest, `${name} met beneath every context at once`);
+    contexts += within.length;
+  }
+  assert.ok(contexts > 10000, `${contexts} contexts`);
+});
+
+// The shared digests of some values tell them apart as the baseline's
+// digests of them do.
+function agree(values, label) {
+  const sharedOf = new Map(), decodedOf = new Map();
+  for (const value of values) {
+    const shared = sharedNormalDigest(value).digest, decoded = normalDigest(value);
+    assert.equal(sharedOf.get(decoded) ?? shared, shared, label);
+    assert.equal(decodedOf.get(shared) ?? decoded, decoded, label);
+    sharedOf.set(decoded, shared);
+    decodedOf.set(shared, decoded);
+  }
+}
+
+// A value with each of its objects copied wherever it occurs.
+function unshared(value) {
+  if (value === null || typeof value !== "object") return value;
+  return Array.isArray(value) ? value.map(unshared) : Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unshared(item)]));
+}
+
+// The number of distinct objects a value holds, itself and arrays among them.
+function distinctObjects(value) {
+  const seen = new Set(), pending = [value];
+  while (pending.length) {
+    const item = pending.pop();
+    if (item === null || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+    pending.push(...Object.values(item));
+  }
+  return seen.size;
+}
+
+// The names a decoded value holds anywhere: variables' and binders' names,
+// and the dimensions its formulas and dimension binders name.
+function namesIn(value) {
+  const terms = new Set(), dims = new Set(), seen = new Set(), pending = [value];
+  while (pending.length) {
+    const item = pending.pop();
+    if (item === null || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+    if (Array.isArray(item) && item.length && item.every(Array.isArray))
+      for (const clause of item) for (const literal of clause) dims.add(literal.slice(0, literal.lastIndexOf(":")));
+    if (item.tag === "Var" || typeof item.name === "string") terms.add(item.name);
+    if (typeof item.dim === "string") dims.add(item.dim);
+    pending.push(...Object.values(item));
+  }
+  return { terms, dims };
+}
+
+// A value with one part changed, each way once.
+function* oneChange(value) {
+  if (value === null || typeof value !== "object") {
+    yield typeof value === "number" ? value + 1000 : typeof value === "string" ? `${value}′` : value === undefined ? null : undefined;
+    return;
+  }
+  yield { tag: "Var", name: "fresh′" };
+  if (Array.isArray(value)) {
+    if (value.length) yield value.slice(1);
+    for (const [index, item] of value.entries()) for (const changed of oneChange(item)) yield value.map((other, at) => at === index ? changed : other);
+  } else for (const [key, item] of Object.entries(value)) for (const changed of oneChange(item)) yield { ...value, [key]: changed };
+}
+
+// Both digests read any value decoding gives as it is: a field by its name
+// and value, so values decoding does not give are compared alike too.
+test("the report's digest compares plain values as normalDigest does", () => {
+  const values = {
+    field_a: { tag: "T", a: 1 }, field_b: { tag: "T", b: 1 }, field_null: { tag: "T", a: null }, field_undefined: { tag: "T", a: undefined },
+    untagged: { a: 1 }, text: { tag: "T", a: "1" }, list: [1, 2], list_reversed: [2, 1], nested: [[1], 2],
+    // Fields and roots that are no object, alike in their first characters,
+    // or alike in their text but not their type.
+    field_undefined_text: { tag: "T", a: "undefined" }, field_null_text: { tag: "T", a: "null" },
+    text_1: "abcdefg1", text_2: "abcdefg2", number_0: 12345670, number_1: 12345671, number_text: "12345670",
+    undefined_root: undefined, undefined_text: "undefined", null_root: null, null_text: "null", boolean: true, boolean_text: "true",
+  };
+  const digests = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, { shared: sharedNormalDigest(value).digest, decoded: normalDigest(value) }]));
+  for (const left of Object.keys(values)) for (const right of Object.keys(values)) {
+    assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
+    if (left !== right) assert.notEqual(digests[left].decoded, digests[right].decoded, `${left} and ${right} differ`);
+  }
+});
+
+// It reads each shared object once for each binding of its free names. In
+// values of 2^22 paths, read through getters that count, a part is met
+// beneath binders it does not mention, beneath binders of the names it binds
+// itself, by a lambda, a path or a composition's system, and beneath binders
+// of its free names at one distance and other depths, each of a variable and
+// of a dimension. Each value is read in a few reads a node, where a walk of
+// its paths, or a memo keyed by the binders or the depth around a part, or by
+// the names the part binds, would make more.
+test("the report's digest reads a shared object once", () => {
+  const levels = 22, type = { tag: "Var", name: "A" };
+  const at = (path, dim) => ({ tag: "PApp", path: { tag: "Var", name: path }, arg: [[`${dim}:1`]] });
+  const system = term => [{ face: [["k:1"]], term }];
+  // A binder whose body is read, by a getter when it is one.
+  const binder = (tag, name, body, domain = type) => Object.freeze(Object.defineProperties(tag === "Lam" ? { tag, name, domain } : { tag, dim: name, family: type },
+    { body: typeof body === "function" ? { get: body, enumerable: true } : { value: body, enumerable: true } }));
+  // Free x and i, outside the binders of a lambda that holds them.
+  const near = at("x", "i");
+  // Each level applies one branch to another, each binding the level below.
+  const shapes = {
+    unused: { base: { tag: "Var", name: "x" }, branches: (level, read) =>
+      [binder("Lam", `u${level}`, read), binder("Lam", `w${level}`, binder("PLam", `e${level}`, read))] },
+    closed: {
+      base: { tag: "App", fn: { tag: "App", fn: binder("Lam", "x", { tag: "Var", name: "x" }), arg: binder("PLam", "i", at("p", "i")) },
+        arg: { tag: "App", fn: { tag: "Comp", dim: "i", family: type, system: system(at("p", "i")), base: { tag: "Var", name: "b" } },
+          arg: { tag: "HComp", dim: "i", family: type, system: system(at("q", "i")), base: { tag: "Var", name: "b" } } } },
+      branches: (level, read) => [binder("Lam", "x", binder("PLam", "i", read)), binder("Lam", "y", binder("PLam", "j", read))] },
+    rebound: { base: at("x", "i"), branches: (level, read) =>
+      [binder("Lam", "x", binder("PLam", "i", read), near), binder("Lam", "y", binder("PLam", "j", binder("Lam", "x", binder("PLam", "i", read), near)), near)] },
+  };
+  for (const [name, { base, branches }] of Object.entries(shapes)) {
+    let reads = 0, value = base;
+    for (let level = 0; level < levels; level++) {
+      const part = value, [fn, arg] = branches(level, () => { reads++; return part; });
+      value = Object.freeze({ tag: "App", fn, arg });
+    }
+    const { objects } = sharedNormalDigest(value), read = reads;
+    assert.equal(objects, distinctObjects(value), name);
+    assert.ok(read <= 4 * levels, `${name}: ${read} reads`);
+  }
+});
+
+// Two constructors of one module, and constructors of one name in two.
+test("the report's digest tells constructors apart by name and module across programs", async t => {
+  const values = [];
+  for (const [owner, constructor] of [["main", "first_flag"], ["main", "second_flag"], ["left", "lit"], ["right", "lit"]]) {
+    const { program, verdicts } = await checkProgram(t, `inductive Flag {\n  ${constructor};\n}\n\ndef flag := ${constructor};`, { module, name: owner });
+    assert.equal(verdicts.flag, true, `${owner} ${constructor}`);
+    values.push(digested(program, definitionValue(program, "flag", owner)));
+  }
+  for (const [left, right] of [[0, 1], [2, 3]]) {
+    assert.notEqual(values[left].decoded, values[right].decoded);
+    assert.notEqual(values[left].shared, values[right].shared);
+  }
+});

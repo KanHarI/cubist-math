@@ -5,7 +5,9 @@ Status: proposed on 2026-10-21 and decided the same day (DM0, the
 DM2) are implemented in [#304](https://github.com/KanHarI/cubist-math/pull/304),
 and the value form of printed values (DM3), with the migration (DM4) and
 the reference (DM6), in [#305](https://github.com/KanHarI/cubist-math/pull/305);
-the report (DM5) is next. This is the observation
+the [acceptance report](evaluation-demand-marks/report.md) (DM5), in
+[#306](https://github.com/KanHarI/cubist-math/pull/306), measures them
+against main. This is the observation
 contract that EVAL5 of the
 [runtime roadmap](runtime-evaluation-roadmap.md#eval5-demand-only-the-result-being-observed)
 requires before evaluation behavior changes. It proposes no kernel change
@@ -400,7 +402,7 @@ the reference test checks, incorrect ones carrying their `// Error:`:
 | DM2 | Demand-driven matcher over kernel handles: head queries on observed positions, reading parts by type, decoding only observed parts, `!!` and leaves on parts through decision 3, tested on `constructs.json`. **Done** in #304 | DM1 | M |
 | DM3 | Value-form printer with suspended parts for the REPL, CLI and workbench; the 87 data prints and `constructs.json` checked unmarked. **Done** in #305; the workbench shows no evaluation, and its trace already names its WHNF and Normalize steps | DM2, decision 1 | M |
 | DM4 | Classification and migration of `expecting _` and of the fifteen printed tests and the reference examples, baseline re-recording with twins, roadmap and work plan text. **Done**: `expecting _`, the pattern workload's twin and the patterns' text in #304, the rest in #305 | DM2, DM3 | S |
-| DM5 | Report with the acceptance measurements, fresh-session fixed budgets and digests | DM2–DM4 | S |
+| DM5 | Report with the acceptance measurements, fresh-session fixed budgets and digests. **Done** in #306: [report.md](evaluation-demand-marks/report.md), with [`report.mjs`](evaluation-demand-marks/report.mjs); it found the search's guide pruned in #304, since fixed there | DM2–DM4 | S |
 | DM6 | The language reference chapters, error entries, REPL help and quick reference listed above. **Done**: patterns and their marks, in chapters 12, 13, 17 and 18, in #304, and printing, the REPL help, the REPL page and the quick reference in #305 | DM1–DM4 | S |
 
 ## Decisions
