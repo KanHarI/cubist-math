@@ -589,8 +589,9 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // weak head on main, from the demand marks note. Each evaluates under !_,
 // shown as its recorded head, under !!_, and printed, as its value form,
 // except the assumptions, which evaluation refuses. Three examples whose full normal forms cost about 30
-// seconds each are evaluated under !_ only; the note records that they
-// complete.
+// seconds each are evaluated under !_ only; the DM5 report
+// (docs/roadmaps/runtime/evaluation-demand-marks/report.md) records that
+// they complete.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/runtime/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);

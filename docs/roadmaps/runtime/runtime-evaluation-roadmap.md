@@ -1036,7 +1036,12 @@ the REPL's `evaluate e` and `print(evaluate(e))` show the value form, with
 a marker such as `<fun>` where a function, a path or a type stops it.
 Its measurements show that the prime of `euclid(4)` itself exceeds the
 syntax-depth guard (`K344`) under head queries, so the Euclid acceptance
-below needs an evaluator change as well as an observation contract.
+below needs an evaluator change as well as an observation contract. The
+[acceptance report](evaluation-demand-marks/report.md) measures both PRs
+against main. `evaluate small_inverse;` shows its value in 28,085 ticks,
+where main normalizes it in 71,027,452. `expecting !!_` reproduces main's
+counters and normal form exactly. `euclid(4)` against `(5, _)` still stops
+with `K344`.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
