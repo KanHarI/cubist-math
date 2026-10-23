@@ -20,6 +20,13 @@ computation, with mathematical proofs validating those features. The
 than the shortest route to a homology or cohomology theorem. The packages
 below remain unfinished until their own acceptance evidence is delivered.
 
+**Simplicial direction proposed on 2026-10-24:** a separate directed layer
+alongside cubical equality, preserving ordinary universes, setness and
+assumption scopes. The [simplicial roadmap](hott/simplicial-types.md) records
+the agreed `x ->[C] y` spelling, proposed shape syntax and open semantic
+gates. Ordinary categories and UA0–UA6 continue independently; this does
+not change the runtime priority or claim a conservative extension is proved.
+
 ## At a glance
 
 Roadmap status reconciled on 2026-10-17 against main `e729c2d5`, including
@@ -39,6 +46,7 @@ their original evidence; this status audit does not rerun those reviews.
 | Evaluation/numbers | EVAL0 measurement harness and recorded outcomes; EVAL1 one-pass REPL evaluation (#266) | EVAL2–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
 | Library/reference | Seventeen self-contained foundation modules, including the universe-smallness proofs; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
+| [Simplicial types](hott/simplicial-types.md) | Design only; arrow spelling agreed | ST0–ST6: preservation and model, shared ordinary arrow syntax, directed shapes/extensions, synthetic categories, coherent diagrams and higher algebra |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
 | [Frontend/bindings](historical/capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs | No CB packages remain; preserve the semantic and resource gates |
 | [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed implementation slices remain; verify the #264 assertion-reporting fix in remote mutation CI. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
@@ -70,6 +78,9 @@ these language strands. See
 
 - [HoTT automation](hott/hott-automation-roadmap.md): remaining path, induction,
   equivalence, transport, h-level and structure-identity work.
+- [Simplicial types](hott/simplicial-types.md): proposed directed shapes and
+  extensions alongside cubical equality, with explicit ordinary-fragment
+  preservation gates, Cubist syntax and staged categorical applications.
 - [Higher inductive-inductive types](hott/higher-inductive-types-design.md):
   H1 delivered; H2 indexed families, H3 companion sorts and H4 remain planned.
 - [H1 specification](hott/h1-signature-specification.md),

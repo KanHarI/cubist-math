@@ -30,6 +30,12 @@ capability interface, uniqueness and universal proofs in L2.6 remain unimplement
 Everything here is elaboration: a theory expands to ordinary definitions,
 which the kernel checks like any other. No kernel rule changes.
 
+The proposed [simplicial extension](../hott/simplicial-types.md) adds a
+separate design track. Its ordinary/directed scope and embedding must be
+specified and validated before theories use directed types; the
+[theory boundary below](#theories-and-the-proposed-simplicial-extension)
+preserves this document's existing model and morphism contracts.
+
 A revision of the syntax, with theory families and the combination of
 independent theories, was decided on 2026-10-05
 ([L2.4c](#revision-l24c)) and implemented in six slices on 2026-10-06.
@@ -680,6 +686,47 @@ The decided [L2.6 contract](#initial-and-free-models-l26) additionally
 requires `deriving (morphisms, free)`, or the weaker `morphisms, initial`,
 for initial/free instances. These capabilities include their universal
 proofs and can fail; ordinary recursion alone is not an initial capability.
+
+## Theories and the proposed simplicial extension
+
+Direction recorded on 2026-10-24; unimplemented. The
+[simplicial roadmap](../hott/simplicial-types.md) owns ST0–ST6, the proposed
+syntax and the semantic gates. It does not change L2.4's implementation
+status or sequence the existing category work behind a new kernel.
+
+Theory declarations continue to elaborate to dependent records built from
+Σ and Π, checked by the kernel. Ordinary `U`, `IsSet`, `HasLevel`,
+`set U`, `prop U` and H1 keep their current meanings. ST0 must specify the
+ordinary and directed scopes and their embedding, including where a model's
+record is formed. Merely accepting the new syntax proves no conservativity
+result and gives no permission to reinterpret an existing theory's carrier.
+
+Laws remain proposition-valued. A path or higher cell carrying information
+is an operation or other data field, with its coherence obligations; it is
+not discarded as a law. A higher model therefore needs a specified coherent
+structure, not just removal of `set` from the current record. Segalness and
+Rezk completeness can serve as properties only after their definitions and
+propositionhood are established and the law checker can recognize the
+checked evidence.
+
+The current restrictions on generated `T.Hom` and `T.Iso` still apply.
+Neither a directed carrier nor extension types make the morphism generator
+complete for higher or mixed-variance signatures. ST4 separately selects a
+reviewed class of theories, constructs its directed object of models and
+proves that synthetic arrows correspond to the intended generated `T.Hom`
+where supported, with compatibility for identities, composition and
+forgetful maps. Pointed-space and loop-structure pilots with untruncated
+carriers instead need explicitly defined coherent morphism records until
+generator support has its own justification. Equality
+of models, equivalence or isomorphism, and a general morphism remain distinct
+notions until the relevant comparison theorem identifies them.
+
+The accepted direction for `x ->[C] y` is shared arrow notation with an
+explicit category, as specified in the
+[notation roadmap](notation.md#category-arrow-notation-and-directed-shapes).
+ST1 can elaborate it to an ordinary category's `C.Arr(x, y)` independently
+of ST2's native directed extension types. The shared spelling does not
+establish the ST4 comparison theorem or give every theory a category.
 
 ## Elaboration
 
