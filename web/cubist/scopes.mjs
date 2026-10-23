@@ -118,7 +118,7 @@ const targetNames = target => !target ? [] : target.kind === "name" ? [target]
   : target.kind === "pair" ? [...targetNames(target.left), ...targetNames(target.right)] : [];
 // Every other kind binds nothing.
 export const UNBINDING = new Set([
-  "transport", "lift", "binary", "binaryNumber", "block", "calc", "call", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
+  "transport", "lift", "binary", "binaryNumber", "block", "calc", "call", "demand", "evaluate", "exact", "free", "hlevel", "hlevel_rule",
   "initial", "matchStatement", "member", "name", "namedArgument", "negation", "notation", "number", "operatorOf", "over",
   "pair", "pathApply", "pattern", "print", "projection", "prop", "bindingReference", "rfl", "rw", "set", "simp_rule", "simp_set",
   "simpaOnly", "tactic", "term", "theory", "trunc", "unary", "withUnfolding",

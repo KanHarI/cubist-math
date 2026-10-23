@@ -455,8 +455,10 @@ export class NativeCubicalElaborator {
   // Without a notation, a term prints in the one selected where the message
   // that shows it arises: the declaration's (`notation`, set as each is
   // translated, L2.10j).
-  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
-    return this.printed(readableDimensions([displayTerm(term)])[0], width, limit, notation);
+  // `reduce` bounds the beta reductions made for display: 0 shows the term
+  // as it is.
+  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
+    return this.printed(readableDimensions([displayTerm(term, reduce)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
@@ -629,6 +631,16 @@ export class NativeCubicalElaborator {
     if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head, Math.max(node, head)); }
     return this.syntax.decode(head, dimensions);
   }
+  // Whether two closed terms differ, as the driver's guide finds it: their
+  // weak heads compared part by part, each with the session's step budget,
+  // with nothing normalized. A conversion that fails normalizes both terms
+  // first (InstructionDriver.settle), so this answers where a difference
+  // shows without that; false means only that none showed. A query, which
+  // certifies nothing.
+  differ(left, right, dimensions = this.dimensions) {
+    this.kernel.checkDeadline();
+    return this.driver.differ(this.syntax.encode(left, dimensions), this.syntax.encode(right, dimensions), this.kernel.stepBudget);
+  }
   equal(left, right, context = new Map(), dimensions = this.dimensions, names = this.names) {
     const type = this.infer(left, context, dimensions).type;
     // This binder scopes over both terms. A generated name is not a live
@@ -753,9 +765,66 @@ export class NativeCubicalElaborator {
   }
 
   verify(term, expected = null, assumptions = []) {
+    const checked = this.evaluated(term, expected, assumptions);
+    return { ...checked, normal: this.normalForm(checked.expression) };
+  }
+  // A term checked for evaluation, with its assumptions and kernel
+  // extensions, and nothing computed: `expression` is the derived handle
+  // that derivedHead and normalForm compute from.
+  evaluated(term, expected = null, assumptions = []) {
     const checked = this.checkSyntax(term, expected, new Map(assumptions), this.dimensions);
-    const normal = this.syntax.decode(this.kernel.normalize(checked.expression), this.dimensions);
-    return { ...checked, normal, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
+    return { ...checked, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
+  }
+  // The normal form of a derived handle, decoded.
+  normalForm(handle) {
+    return this.syntax.decode(this.kernel.normalize(handle), this.dimensions);
+  }
+  // The weak head of a handle, computed once a declaration, as nf's are. The
+  // head of a derived handle, and its data parts (a pair's components, an
+  // injection's value, a constructor's arguments), are recorded as derived,
+  // so that the kernel's normalize accepts them: the evaluation demand marks
+  // normalize the parts a pattern reaches, as `!!` and expression leaves ask
+  // (docs/roadmaps/runtime/evaluation-demand-marks.md, decision 3).
+  // The guard admits normalization only of terms whose reduction
+  // terminates, and these are such terms: the weak head of a closed,
+  // well-typed term is well-typed by subject reduction, and its data parts
+  // are closed, well-typed subterms of it. A query certifies nothing, so no
+  // instruction's acceptance depends on it.
+  derivedHead(handle) {
+    this.kernel.checkDeadline();
+    let head = this.syntax.heads.get(handle);
+    if (head === undefined) { head = this.kernel.head(handle); this.syntax.heads.set(handle, head, Math.max(handle, head)); }
+    const derived = this.kernel.derivedHandles;
+    if (derived?.has(handle)) {
+      derived.add(head);
+      const { root, args } = this.kernel.spine(head);
+      if (root.kind === "Con") args.forEach(part => derived.add(part));
+      else if (!args.length && root.kind === "Pair") derived.add(root.children[1]).add(root.children[2]);
+      else if (!args.length && (root.kind === "Inl" || root.kind === "Inr")) derived.add(root.children[1]);
+    }
+    return head;
+  }
+  // A handle's term as the kernel holds it, nothing reduced.
+  decoded(handle) { return this.syntax.decode(handle, this.dimensions); }
+  // A constructor as a display shows it: its name and its declared type's
+  // signature, without the type's parameters, which no display of the
+  // constructor shows and which can be large, unreduced, and deep.
+  // A glue value's system as a display shows it: each part's face, decoded,
+  // and its term's handle, which is computed only where it is shown.
+  glueSystem(handle) {
+    const system = [];
+    for (let part = this.kernel.node(handle).children[2]; part;) {
+      const tube = this.kernel.node(part);
+      system.push({ face: this.syntax.decodeFormula(tube.payload, this.dimensions), term: tube.children[0] });
+      part = tube.children[1];
+    }
+    return system;
+  }
+  shownConstructor(handle) {
+    const node = this.kernel.node(handle), sort = this.kernel.node(node.children[0]);
+    if (sort.kind !== "Sort") return this.decoded(handle);
+    const record = this.syntax.signatureRecord(sort.payload), name = record.constructors[node.payload];
+    return { tag: "Con", index: node.payload, ...(name ? { name } : {}), sort: { tag: "Sort", signature: record.name, parameters: [], levels: [] } };
   }
 }

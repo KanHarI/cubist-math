@@ -94,6 +94,8 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "LBound") return { kind: "Universe", level: { tag: "LConst", tier: t.tier, value: 0 } };
     if (["Unit", "Void"].includes(t.tag)) return name(t.tag);
     if (t.tag === "Point") return name("⋆");
+    // A part an evaluation did not compute, or stopped at (evaluation.mjs).
+    if (t.tag === "Marker") return name(t.text);
     if (["Pi", "Sigma"].includes(t.tag)) {
       if (!free(t.body, t.name)) return { kind: t.tag === "Pi" ? "Arrow" : "Product", left: child(t.domain, "domain"), right: child(t.body, "body") };
       const domain = child(t.domain, "domain"), binder = underBinder(t.name, t.body, () => child(t.body, "body"));
