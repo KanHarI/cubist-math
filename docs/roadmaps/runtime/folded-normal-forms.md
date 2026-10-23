@@ -53,9 +53,12 @@ definition stays as it was written:
    composition stuck on a variable is not unfolded.
 5. A part that reached its head through no definition is taken in turn,
    as in the full normal form. A stuck head, an eliminator or composition
-   that does not compute, is taken as the term whose step gave it: the head
-   holds its stuck parts reduced, `unitrec(…, abort(…))` where the term had
-   `unitrec(…, stuck(x))`, and the term keeps them as written, so they fold.
+   that does not compute, that its last step rebuilt in place is taken as
+   that step's term: the head holds its stuck parts reduced,
+   `unitrec(…, abort(…))` where the term had `unitrec(…, stuck(x))`, and the
+   term keeps them as written, so they fold. A head the step computed, as a
+   transport of a path constructor computes a formal composition, is taken
+   as computed.
 6. Only eta contracts a whole once its parts are folded; reducing it again
    would unfold what was folded.
 
