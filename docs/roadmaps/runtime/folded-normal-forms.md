@@ -26,14 +26,28 @@ normal form of every lemma it uses, instantiated at every use. On main:
 | the wide inverse | `K337` at 393,274,446 ticks |
 
 Since the demand marks, `evaluate e;`, printing and patterns compute only
-what they show or observe. What still computes a full normal form is
-`expecting !!_` and a `!!` part of a pattern
-(`web/translator/evaluation.mjs:230-233`), an exact expected value, on both
-sides (`web/translator/translate.mjs:396` and `:417`),
-`print(evaluate(!!e))` and `witness` (`translate.mjs:467`), and the views
-that normalize a declaration on request (`translate.mjs:847`,
-`web/cubical-program.mjs:703`, `web/cubical-workbench-session.mjs:142`).
-Each prints the proof in full, or fails on its size.
+what they show or observe. What still computes a full normal form, in the
+language:
+
+- `expecting !!_` and a `!!` part of a pattern
+  (`web/translator/evaluation.mjs:230-233`), and an expression leaf of a
+  pattern, both its value and the expression (`evaluation.mjs:293`, through
+  `translate.mjs:448`);
+- an exact expected value, on both sides (`web/translator/translate.mjs:396`
+  and `:417`);
+- `print(evaluate(!!e))` and `witness` (`translate.mjs:467`);
+- the views that normalize a declaration on request (`translate.mjs:847`,
+  `web/cubical-program.mjs:703`, `web/cubical-workbench-session.mjs:142`);
+- a selected literal's parse answer, a numeral (`translate.mjs:366`), and a
+  notation's carrier (`web/translator/named-notation.mjs:41`), both read
+  from their normal forms.
+
+Each prints the proof in full, or fails on its size, where one is inside.
+The trusted engine normalizes too: conversion's fallback runs `normalize`
+steps (`settle`, `web/cubical-instruction-driver.mjs:989-995`, through
+Step's `CC_STEP_NORMALIZE`, `kernel/src/instruction_equality.c:270-271`),
+and the Glue step's side conditions compare normal forms
+(`parts_agree`, `kernel/src/term_normalize.c:579-580`).
 
 ## The folded normal form
 
@@ -78,12 +92,19 @@ Its properties, which FN1's tests state:
 - It is convertible with the term: every step is a reduction, and a folded
   definition is its own unfolding. A check that compares folded normal forms
   by conversion answers as one comparing full ones.
-- Closed data is the same as in the full normal form. A constructor's sort
-  annotation is a type, and a function in it, such as a quotient's relation,
-  stays folded.
+- A closed first-order value, built of constructors, pairs, injections and
+  points all the way down, is the same as in the full normal form. A
+  function, a proof or a type among its parts stays named: `(f, tt)` stays
+  `(f, tt)` where the full normal form unfolds `f`, and a constructor's sort
+  annotation, a type, keeps a function in it, such as a quotient's relation,
+  folded.
 - It does not depend on what was computed before: the reduction that finds
-  the definition to fold reads no cache, and folding twice gives the same
-  term.
+  the definition to fold reads no cache, so asking for the same term twice
+  gives the same answer.
+- It is not idempotent, and need not be: the term asked for is unfolded, so
+  a folded normal form that is a definition's name unfolds when asked for
+  in turn. `fun (x : Void) => f((fun (y : Void) => y)(x))` folds to `f`, by
+  eta once its argument is folded, and `f` folds to its own lambda.
 - It certifies nothing. Like the full normal form, it is an inspection
   query on a term an instruction derived, and no instruction's acceptance
   depends on it.
@@ -97,11 +118,18 @@ Its properties, which FN1's tests state:
 | `!!!` | the full normal form | `cc_kernel_normalize` |
 
 `!!!` is read wherever `!!` is: right after `evaluate`, at the start of a
-part of an expected pattern, and in `print(evaluate(!!!e))`. An exact
-expected value, `witness`, and the views that normalize on request compute
-the folded normal form. Step's `CC_STEP_NORMALIZE`
-(`kernel/src/instruction_equality.c:270-271`) and the diagnostic probes keep
-the full one: what a Step instruction accepts does not change.
+part of an expected pattern, and in `print(evaluate(!!!e))`. The other
+callers above are assigned one by one:
+
+| Caller | Normal form |
+| --- | --- |
+| an exact expected value, both sides | folded |
+| an expression leaf of a pattern | folded |
+| the views that normalize on request | folded |
+| a literal's parse answer, a notation's carrier | folded: a numeral and a sort, data and a type, the same either way |
+| `witness` | full: it reads a constructor under formal compositions, whose bases a folded normal form may keep named |
+| conversion's `settle`, Step's `CC_STEP_NORMALIZE`, the Glue step's `parts_agree` | full, unchanged: trusted, and what an instruction accepts does not change |
+| the diagnostic probes | full, unchanged |
 
 ## Measurements
 
@@ -137,30 +165,40 @@ Recommended, and taken unless the user changes them:
 4. **Exact expected values compare folded normal forms by conversion**, as
    they compared full ones. The answer is the same, since both are
    convertible with the terms.
-5. **The evaluation baseline's `-normal` workloads move to `!!!_`**, so
-   that they keep measuring the full normal form, which the runtime
-   roadmap's evaluator gates measure.
+5. **Every gate that measures the full normal form moves to `!!!`.** Each
+   use of `!!` in a fixture, contract, probe or test is classified as a
+   display, which folding serves, or a gate, which must keep the full normal
+   form: the evaluation baseline's `-normal` workloads, which the runtime
+   roadmap's evaluator gates measure, `tests/fixtures/quotient-normalization.cubist`,
+   `normalize_zero_decision` in `tests/fixtures/contracts/binary_integer_domain_contracts.cubist`,
+   the sharing regressions of `tests/normalization-sharing.test.mjs` and the
+   substitution probe that reuses them, and any test that compares a
+   pattern's cost with the full normal form's.
 
 ## Work
 
 - **FN1. The kernel query.** `cc_kernel_normalize_folded` in
   `kernel/src/term_normalize.c`, sharing the full normalizer's explicit
   stack, with a cache of its own that every checkpoint clears, and its
-  bridge export. Native tests: closed data equal to the full normal form, a
-  stuck definition folded with its arguments folded, the term asked for
-  unfolded, a definition reached through a beta step folded, eta, budget and
-  deadline, rollback and commit, and the full normal form unchanged. The
+  bridge export. Native tests: closed first-order data equal to the full
+  normal form, a stuck definition folded with its arguments folded, the term
+  asked for unfolded, a definition reached through a beta step folded, eta,
+  the example above that folding is not idempotent, budget and deadline,
+  rollback and commit, and the full normal form unchanged. The
   kernel reference chapter on normalization documents it.
 - **FN2. The marks.** `!!` computes the folded normal form; `!!!` is lexed,
-  parsed, formatted and linted as `!!` is and computes the full one. Exact
-  expected values, `witness` and the normalizing views compute the folded
-  normal form. The language reference, the error reference (E485 names
-  both), the demand marks note and the runtime roadmap's stage 4 say so.
-  The baseline's `-normal` workloads move to `!!!_`, and the corpus test
+  parsed, formatted and linted as `!!` is and computes the full one. The
+  callers are routed as the table above assigns them: exact expected
+  values, expression leaves and the normalizing views fold, and `witness`
+  keeps the full normal form. The language reference, the error reference
+  (E485 names both), the demand marks note and the runtime roadmap's stage 4
+  say so. Every gate of decision 5 moves to `!!!`, and the corpus test
   covers the constructs whose full normal forms it leaves out under `!!_`.
 
 **Acceptance.** The measurements above, re-measured with FN1 and recorded
 in FN2; every contract and Cubist test passing; the evaluation baseline's
-counters unchanged for every workload but those whose mark changed; and
-#283's binary-rational contracts re-run on top, with its three bare
-`expecting _;` lines rebased.
+counters unchanged for every workload that still asks for the full normal
+form, its `-normal` twins among them, and re-recorded, each change
+explained, for those whose normalization now folds, an exact expected value
+or an expression leaf; and #283's binary-rational contracts re-run on top,
+with its three bare `expecting _;` lines rebased.
