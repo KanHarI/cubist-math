@@ -213,7 +213,10 @@ function graph(kernel, root, visitBound = 60000000, ms = 300000) {
 // For each Comp, Trans and HComp in a completed normal form: does its family
 // mention its own dimension (shadowing ignored, so "constant" is a lower
 // bound), is its system empty, and what are the family, face and value heads?
-function survey(kernel, root) {
+// A family headed by a declared sort is named by its sort, and the value heads
+// are also counted by family, since a data sort's composition is stuck by its
+// base or tubes and a higher sort's by its family.
+function survey(kernel, root, syntax) {
   const formulaMemo = new Map(), termMemo = new Map();
   const formulaMentions = (fid, dim) => {
     const key = `${fid}:${dim}`;
@@ -256,15 +259,18 @@ function survey(kernel, root) {
     const node = kernel.node(id);
     if (node.kind === "Comp" || node.kind === "Trans" || node.kind === "HComp") {
       const row = tally[node.kind] ??= { total: 0, constantFamily: 0, emptySystem: 0, constantAndEmpty: 0,
-        familyHeads: {}, faces: {}, valueHeads: {} };
+        familyHeads: {}, faces: {}, valueHeads: {}, valueHeadsByFamily: {} };
+      const family = kernel.node(node.children[0]);
+      const familyKey = family.kind === "Sort" ? `Sort ${syntax.signatureRecord(family.payload).name}` : family.kind;
       const constant = !mentions(node.children[0], node.payload), empty = !node.children[1];
       row.total++;
       if (constant) row.constantFamily++;
       if (empty) row.emptySystem++;
       if (constant && empty) row.constantAndEmpty++;
-      count(row.familyHeads, kernel.node(node.children[0]).kind);
+      count(row.familyHeads, familyKey);
       if (node.kind === "Trans") count(row.faces, faceShape(node.children[1]));
       count(row.valueHeads, kernel.node(node.children[2]).kind);
+      count(row.valueHeadsByFamily[familyKey] ??= {}, kernel.node(node.children[2]).kind);
     }
     for (const c of node.children) if (c) pending.push(c);
   }
@@ -278,7 +284,7 @@ for (const name of names) {
     try {
       const measured = measure(kernel, expression, steps), fixture = fixtureOf(name);
       record = { case: name, mode, ...measured.record, kernelSourceHash: sourceHash("kernel"), fixture, fixtureSha256: sha256(fixtures[fixture]) };
-      if (measured.result && mode === "survey") Object.assign(record, survey(kernel, measured.result));
+      if (measured.result && mode === "survey") Object.assign(record, survey(kernel, measured.result, program.checker.syntax));
       else if (measured.result) record.normal = graph(kernel, measured.result);
       // Decoded as the REPL reads it: annotations decoding drops are not counted.
       if (measured.result && mode === "canonical") {

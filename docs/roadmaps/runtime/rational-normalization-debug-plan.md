@@ -198,24 +198,27 @@ annotation; the integer operations pay it directly.
 
 The survey mode classifies every `Comp`, `Trans` and `HComp` node in a
 completed normal form by whether its family mentions its own dimension
-(shadowing ignored, so constant counts are lower bounds) and whether its
-system is empty:
+(shadowing ignored, so constant counts are lower bounds), whether its
+system is empty, and its family's head, a declared sort by name:
 
 | Normal form | Kind | Total | Constant family | Empty system | Family heads | Notes |
 | --- | --- | ---: | ---: | ---: | --- | --- |
-| `bint_mul` | `Trans` | 21,973 | 21,973 | 0 | `Sort` | faces: 12,391 bottom, 9,582 other, none top; values: 21,662 `Trans`, 260 `App`, 51 `PApp` |
-| `bint_mul` | `HComp` | 11,242 | 11,242 | 5,602 | `Sort` | 5,602 both constant and empty; values: 5,736 `HComp`, 5,442 `Trans`, 55 `PApp`, 9 `App` |
-| `bint_mul` | `Comp` | 2,537 | 2,294 | 375 | `Sort` 2,294, `App` 243 | 132 both constant and empty |
+| `bint_mul` | `Trans` | 21,973 | 21,973 | 0 | `Quotient` | faces: 12,391 bottom, 9,582 other, none top; values: 21,662 `Trans`, 260 `App`, 51 `PApp` |
+| `bint_mul` | `HComp` | 11,242 | 11,242 | 5,602 | `Quotient` | 5,602 both constant and empty; values: 5,736 `HComp`, 5,442 `Trans`, 55 `PApp`, 9 `App` |
+| `bint_mul` | `Comp` | 2,537 | 2,294 | 375 | `BNat` 1,342, `UNat` 952, `App` 243 | 132 both constant and empty; values over `BNat`: 523 `App`, 452 `Comp`, 367 `PApp`; over `UNat`: 434 `PApp`, 395 `Comp`, 123 `App` |
 | `prop_type_is_set(U0)` | `Comp` | 532,172 | 445,772 | 208,842 | `Fst` | 143,133 both constant and empty |
 
-Every stuck family head is neutral: a declared sort applied to the quotient's
-parameters, the first projection of a bound proposition, or an application
-left stuck on one. The kernel's
-rules are consistent with the project's contract: a composition over a
-neutral family stays neutral (`ck_reduce_composition`,
-`composition_compute.c:261-262`), transport of a neutral value at a declared
-higher sort stays as written (`sort_transport`, `hit_composition.c`, when
-`ck_constructor_application` finds no constructor), and
+Each residue is stuck by the rule for its family. Over the quotient, a
+higher sort, transport of a neutral value stays as written
+(`sort_transport`, `hit_composition.c`, when `ck_constructor_application`
+finds no constructor). Over the data sorts `BNat` and `UNat`, a composition
+computes only when its base and every tube are the same constructor
+(`data_sort_composition`, `inductive_composition.c:104-137`), and none of
+these bases is a constructor: they are compositions, path applications and
+applications. Over a neutral family, the first projection of a bound
+proposition or an application stuck on one, the composition stays neutral
+(`ck_reduce_composition`, `composition_compute.c:261-262`). All three are
+consistent with the project's contract, and
 [path-algebra.md](../../cubical/path-algebra.md) states that transport in a
 neutral type is not assumed to reduce definitionally. No `Trans` face is
 top, so no `transp` at face 1 is left unreduced. Two things are worth a
@@ -264,8 +267,8 @@ certificate is 1,045,246 of its 1,116,794, and the sort annotation the rest.
 `rationals.one` takes `int_zero_ne_one` instead and costs the annotation
 alone, as the binary field's `one` does. So the 3.5M "floor" of 1.1 is the
 binary rationals' only because #283's literal decides its denominator with
-`bint_decide_zero`; B1 must reach `int_succ_nonzero` too, and T6 holds it to
-that.
+`bint_decide_zero`. Under D1 the certificate stays folded, as
+`int_succ_nonzero(unat.(2))`; B8 cuts its full normal form to 265,250 nodes.
 
 The integers' additive group costs 73M for another reason. Its operations
 are cheap (`add` is 65k nodes), but its laws are proofs by quotient
@@ -273,10 +276,13 @@ induction, stuck when open: `zero_add` and `neg_add` are one
 `difference_equation` (one `quotient_induction_prop`), `add_comm` two
 (`difference_equation2`) and `add_assoc` three (`difference_equation3`,
 `differences.cubist:207-253`). Each stuck induction's normal form holds the
-inner proof once as its clause `f` and twice more instantiated at the
-endpoints of the relation, `f(a)` and `f(b)`, in the generated squash clause
-`prop_over(…, f(a), f(b))` (`quotients.cubist:69-80`), with the setness
-evidence beside them: about 5× per level, 62k, 294k and 1,460,386 nodes.
+inner proof once as its class clause `f` and twice more instantiated at the
+endpoints of the relation, `f(a)` and `f(b)`, in its relate clause: the path
+`prop_over(…, f(a), f(b))` that `quotient_induction_prop` supplies as
+`respects` (`quotients.cubist:76-79`), which the `relate` obligation
+returns (`:46`). The setness evidence `prop_is_set(V, P(z), props(z))`
+(`:75`) is what the elaborator's generated squash clause uses. About 5× per
+level: 62k, 294k and 1,460,386 nodes.
 `add_assoc` is 1.46M of the group's 1.8M. This is the mechanism of 1.4 one
 level up, and it is not a defect of the lemma: a relate clause holds both
 endpoints by its type, so under D1's contract the copies are the normal
@@ -289,38 +295,45 @@ and the factor between levels waits on D1.
 The `canonical` mode decodes the completed normal form as the REPL reads it
 and counts its parts with `sharedNormalDigest`
 (`tools/evaluation-baseline.mjs`), the comparison the demand marks' report
-uses: an object counts once for each distinct digest it gets, and objects
-alike up to the names of bound variables and dimensions count once.
-Decoding gives one object per kernel node and dimension context, adds arrays
-for formulas and systems, and drops a path application's annotation, a level
-binder's bound and a transport descriptor's term, so the counts are of the
-decoding, not of the kernel's nodes:
+uses: an object counts once for each distinct digest it gets, objects alike
+up to the names of bound variables and dimensions count once, and the parts
+the digest reads inline, a formula's clauses, a system and its tubes, count
+as the objects they are. Decoding gives one object per kernel node and
+dimension context, adds arrays for formulas and systems, and drops a path
+application's annotation, a level binder's bound and a transport
+descriptor's term, so the counts are of the decoding:
 
-| Normal form | Kernel nodes | Decoded objects | Distinct up to bound names | Duplication, objects / nodes |
+| Normal form | Kernel nodes | Decoded objects | Distinct up to bound names | Kernel nodes per distinct part |
 | --- | ---: | ---: | ---: | ---: |
-| `small_inverse` | 1,149,838 | 2,898,283 | 471,081 | 6.2× / 2.4× |
-| `prop_type_is_set(U0)` | 1,034,925 | 2,710,021 | 341,833 | 7.9× / 3.0× |
-| `bint_mul` | 96,657 | 151,353 | 71,854 | 2.1× / 1.3× |
-| `two_thirds` | 97,457 | 152,446 | 72,428 | 2.1× / 1.3× |
+| `small_inverse` | 1,149,838 | 2,898,283 | 1,022,821 | 1.12 |
+| `prop_type_is_set(U0)` | 1,034,925 | 2,710,021 | 855,772 | 1.21 |
+| `bint_mul` | 96,657 | 151,353 | 92,795 | 1.04 |
+| `two_thirds` | 97,457 | 152,446 | 93,473 | 1.04 |
 
-Between a quarter and a sixth of the large proofs, and half of an operation,
-is distinct up to bound names; the rest are alpha-equal copies the kernel's
-exact-symbol interning cannot share. This is A.3's first answer, and it
-bounds B4: sharing modulo binders can cut these outputs by a factor between
-2.4 and 8, which is less than T1 needs in ticks (7×) and does not touch
-what is genuinely instantiated. The count over kernel nodes with every
-annotation, if B4 is pursued, is the rest of A.3.
+The kernel's outputs are not duplicated up to bound names: about as many of
+their parts are distinct as they have nodes, within a fifth. The decoding's
+1.6 to 3.2 objects per distinct part are its own copies, one per dimension
+context and per array. The million nodes are distinct structure, mostly the
+compositions of 1.5. This is A.3's first answer, and it bounds B4 on output
+size at about 1.2×; whether a cache keyed modulo binders would save
+intermediate work, which never reaches the output, is not measured.
 
 ## 2. Targets and gates
 
 | Target | Today | Gate |
 | --- | ---: | --- |
-| T1 small inverse, `q_inv(2/3)` and `q_inv(-2/3)`, fresh program | about 71M ticks, 1.15M output nodes | full normal form under the fixed 10M diagnostic budget; the retained `rational-literal-normalization/probe.mjs` unchanged |
+| T1 small inverse, `q_inv(2/3)` and `q_inv(-2/3)`, fresh program | about 71M ticks, 1.15M output nodes | full normal form under the fixed 10M diagnostic budget: this plan's `probe.mjs normalize small_inverse,small_inverse_neg 10000000` reports `normalized` for both; the older `rational-literal-normalization/probe.mjs`, a `SameRatio` diagnostic at 100,000 ticks, unchanged |
 | T2 open inverse `q_inv_open` and the wide inverse | `K344` at 80M; `K337` at 393M or the 400M budget | both complete under the default growing budget without K336, K337 or the syntax guard; `binary_rationals.normalize_wide_inverse` passes in #283's contract within CI's time |
 | T3 rational value, `bint_mul`, `bint_add`, the field's `one` | 3.5M ticks, 97k nodes | provisional: under 1M ticks and 20k nodes each, to be re-based from B2's first measurement; alpha-equal output wherever only the kernel changed |
 | T4 evaluator gates `moved_setness`, `moved_path` | 10M exhausted | unchanged from the roadmap; a library fix does not claim them |
 | T5 host | historical 309 s against a 30 s deadline | either reproduced and attributed, or recorded as not reproducible on `6d1bd75b` with the evidence in 1.1 |
-| T6 main's rationals: `rationals.(2/3)`, `rationals.(0.5)`, `integers.additive_` | 70M ticks, 1.12M nodes for a literal; 73M, 1.8M for the group | the literals under the fixed 10M diagnostic budget by B1, `rationals.one` no larger than today; the group under 10M, which 1.7 expects to need D1 |
+| T6 main's rationals: `rationals.(2/3)`, `rationals.(0.5)`, `integers.additive_` | 70M ticks, 1.12M nodes for a literal; 73M, 1.8M for the group | each full normal form under the fixed 10M diagnostic budget, `rationals.one` no larger than today; B8 brings a literal to 11.5M, and the group waits on its laws (1.7) |
+
+Since D1 (section 4) these are the targets of the full normal form, which
+`!!!` computes. The folded normal form of `!!` meets T1, T2 and T6 in D1's
+prototype: the small inverse in 65,051 ticks with 979 nodes, the open and
+wide inverses in 173,391 and 1,423,460 ticks, and a literal of main's
+rationals in 43,932 ticks with 936 nodes.
 
 Non-negotiable throughout: no new axiom, proof irrelevance or transport
 regularity rule; no raised depth guard, recursion guard, budget or memory
@@ -359,9 +372,10 @@ fixtures stay fixed through the changes they measure.
    (`runtime-composition-stacks`, `runtime-dimension-analysis`,
    `runtime-fraction-normalization-probe`, `runtime-cubical-readback`,
    `runtime-depth-probe`, `runtime-path-level-witness`,
-   `runtime-rational-current-gate`, `runtime-closure-evaluation`): read each
-   diff, retain anything that bears on B1 to B7 as a documented patch under
-   `docs/reports`, and discard the rest.
+   `runtime-rational-current-gate`, `runtime-closure-evaluation`). Their
+   diffs were saved as patches outside the repository on 2026-10-23 and the
+   worktrees removed; an experiment that needs one retains it as a
+   documented patch under `docs/reports`.
 
 ### Phase B: one experiment per hypothesis, each measured against its gate
 
@@ -370,7 +384,12 @@ measurement, and what result would refute it. Library experiments change what
 a certificate computes to, never what a statement means.
 
 **B1. Compact negative certificates for integer equality (library).**
-Hypothesis: T1 is the `quotient_effective` certificate, and both the
+Not pursued (2026-10-23). Under D1 a certificate stays folded, so B1 would
+only shrink `!!!` of a literal or a decision, and it would do so by routing
+two clean certificates around `quotient_effective`, a correct and standard
+lemma, through a computable tag. B8 attacks the size where it is. The
+experiment is kept as written in case full normal forms of literals ever
+matter. Hypothesis: T1 is the `quotient_effective` certificate, and both the
 inverse and main's literals complete under 10M once their certificates
 avoid it. Change, in two parts:
 
@@ -402,11 +421,18 @@ compared are `descend(U, V, A, R, B, set_, f(a), respects_second(a))` and
 `descend(…, f(c), respects_second(c))`; a path between the two descents
 follows from a path between their data in `exists g : A -> B. Respects(g)`,
 built from `ext` on `respects_first` and from `Respects` being a proposition
-(`pi_is_prop` over `set_`), applied by `cong` to `descend`. No squash clause
-and no `pi_is_set` are generated. Measure: `multiplication`, `addition`,
-`relation`, `two_thirds`, with the output kind tally. Refuted if the
-`Trans`/`HComp` counts persist; then the residue is in the generated
-`relate` obligation of `descend` itself and the next step is the
+(`pi_is_prop` over `set_`), applied by `cong` to `descend`. That alone
+leaves the outer `descend` into `Quotient(…) -> B`, with its explicit
+`pi_is_set` evidence (`quotients.cubist:142-145`) and the squash clause
+generated for it, so B2 restructures the descent pointwise as well: descend
+the first argument into `B` itself, at a fixed `y`, with
+`fun a => descend(…, f(a), respects_second(a))(y)` as the map and the
+congruence path applied at `y` as its respects proof. Neither `pi_is_set`
+nor `maps_agreeing_on_classes` is generated. Measure: `multiplication`,
+`addition`, `relation`, `two_thirds`, with the output kind tally, after the
+congruence alone and after the pointwise descent. Refuted if the
+`Trans`/`HComp` counts persist after both; then the residue is in the
+`relate` obligation of `descend` itself, and the next step is the
 elaborator's clause generation. Keep `tests/quotient-descent.test.mjs`
 and the `binary_fraction_one` and `integer_multiplication` cases of
 `tests/normalization-sharing.test.mjs` passing with unchanged outcomes.
@@ -422,20 +448,26 @@ did for `descend`'s constant motive. Measure `z_zero_add`, `z_add_comm` and
 `z_add_assoc` with the same tally, before and after; the factor between
 levels is D1's to change.
 
-**B3. Reduction caches that survive a commit (kernel).**
-Hypothesis: the per-declaration 3.5M in 1.6 is avoidable without any rule
-change. Change: on a compacting commit, relocate `weak_cache` and
-`normal_cache` entries whose key and value both survive through the existing
-relocation map (`cc_kernel_relocated`), instead of clearing them; keep
-clearing on rollback, where definitions are truncated. Isolation must hold
-exactly as `kernel/tests/test_isolation.c` states it: a cached reduction is
+**B3. Normal forms of closed definitions retained across commits (kernel).**
+Hypothesis: the per-declaration cost of 1.6 is avoidable without any rule
+change. A cache entry is no root: a compacting commit discards a normal form
+nothing else reaches, so relocating the entries whose key and value survive
+(`cc_kernel_relocated`) would drop exactly the expensive results. Change:
+retain the normal form of a closed definition, full or folded, as a root of
+its definition, filled on first use, kept by every commit, dropped by a
+rollback that truncates the definition, and bounded in total retained nodes
+so that one large normal form cannot hold the arena. Isolation must hold as
+`kernel/tests/test_isolation.c` states it: a retained reduction is
 computation, not a judgement, and never changes whether an instruction is
-accepted. Measure: a program with two rational `evaluate` lines, the second
-one's query ticks; the evaluation baseline's warm samples. Refuted if the
+accepted. Measure: a program with two `!!!_` lines on one closed rational
+term, the second one's query ticks; the evaluation baseline's warm samples.
+Refuted if the second line does not fall below 1% of the first, or if the
 baseline digests or any native test change.
 
 **B4. Sharing modulo bound names (kernel), only if A.3 shows duplication.**
-Hypothesis: a large fraction of the 1.15M nodes are alpha-equal copies
+Not pursued on output size: 1.8 measures 1.04 to 1.21 kernel nodes per
+distinct part. Whether a cache keyed modulo binders saves intermediate work
+is a separate question, unmeasured. Hypothesis: a large fraction of the 1.15M nodes are alpha-equal copies
 differing only in binder symbols. Change options, in order of intrusiveness:
 canonical binder symbols in `ck_make` for closed binders; a normal-form cache
 keyed by an annotation-aware canonical hash alongside the exact-handle one.
@@ -443,15 +475,22 @@ The earlier "stable local binder names" experiment was measured only against
 the old 10M gate on the pre-descend fixture and did not count duplicates; do
 not repeat it without A.3's number. Refuted if canonical distinct nodes are
 within a small factor of exact nodes: then the size is genuine instantiation,
-and only B1, B2 and the contract decision D1 can reduce it.
+and only B2, B8 and the contract decision D1 can reduce it.
 
 **B5. The remaining depth of the open and wide inverses (kernel, EVAL4).**
-After B1, re-run `q_inv_open` and `wide_inverse` at 100M and 400M. If the
+For their full normal forms, re-run `q_inv_open` and `wide_inverse` at
+100M and 400M after B8. If the
 open function still reaches the syntax guard, measure its required output
 depth with a temporary guard-free diagnostic as the
 [normalization-stack report](../../reports/normalization-stack.md) did, and
-separate output depth from intermediate depth. If the wide inverse still
-exceeds the budget, isolate the wide decision alone
+separate output depth from intermediate depth. If the wide inverse stops on
+a resource guard, `K337` (the normal form's 16,384 continuation frames,
+`normal_push`, `term_normalize.c:343`) as on 2026-10-23 or `K336` (native
+recursion above 1024, `ck_whnf`), record the frames and the recursion at
+the stop with the same temporary diagnostic and separate the continuation
+depth the output needs from the depth its intermediate reductions reach;
+T2 requires eliminating both. If it exceeds the budget instead, isolate the
+wide decision alone
 (`bint_decide_zero(bint_of_nat(18446744073709551615))` and
 `bnat_decide(340282366920938463463374607431768211455, 0)`) and attribute to
 the BNat lemma that expands, as the
@@ -474,18 +513,61 @@ prepare the analysis against the H1 specification 3.4 and 3.5 and CHM
 whether any instruction (`Step`, `Eta`, the Glue step) would change its
 acceptance.
 
+**B8. A direct proof that the propositions form a set (library).**
+Hypothesis: most of `prop_type_is_set(U0)`'s 532,172 compositions come from
+the shape of its proof, a retract of paths in `Prop(U)` onto a Σ-type of a
+path between the carriers and a path over it, proved a proposition by
+`sigma_has_level` and `pathp_has_level`, and not from univalence itself,
+which `path_into_prop_is_prop` alone carries in 66,614 nodes. Change: a
+proof with fewer layers between univalence and the statement. Statements do
+not change. Measure: `setness` under `normalize` and `survey`, and the
+literal `q_two_thirds`. Kept if the full normal form is several times
+smaller and the proof no harder to read; refuted if the composition count
+stays within a factor of two, which would place the size in univalence
+without regularity, where only D1 and B3 help.
+
+Measured on 2026-10-23, and kept. The direct proof reads the statement as
+it is: two paths `v, w : x = y` in `Prop(U)` have paths between their
+types, equal by `path_into_prop_is_prop` since the types are propositions,
+and paths over those between their evidence, equal over that equality by
+`prop_over` since evidence lives in a proposition. The one new lemma,
+`prop_over_unique`, says two paths over one path in a family of
+propositions agree, by one homogeneous composition in the family, as
+`prop_is_set` is proved. It needs no `retract_has_level`, no
+`sigma_has_level` and no `pathp_has_level`, whose composition transports a
+whole level statement through a Π-type. With it in the library, full normal
+forms in the retained fixtures:
+
+| Query | Current proof | Direct proof |
+| --- | ---: | ---: |
+| `prop_type_is_set(U0)` | 68,490,929 ticks, 1,034,925 nodes | 8,405,329 ticks, 183,370 nodes |
+| `quotient_effective(U0, …, (2, 0), (0, 0))` | 67,097,974 ticks, 1,055,202 nodes | 9,012,310 ticks, 203,648 nodes |
+| `small_inverse` | 70,725,782 ticks, 1,149,838 nodes | 12,527,818 ticks, 298,294 nodes |
+| `rationals.(2/3)` | 70,301,825 ticks, 1,116,794 nodes | 11,540,727 ticks, 265,250 nodes |
+| `rationals.(0.5)` | 70,471,677 ticks, 1,118,334 nodes | 11,578,269 ticks, 266,790 nodes |
+| `int_decide(int(2, 0), int_zero)` | 69,185,916 ticks, 1,045,010 nodes | 8,856,410 ticks, 193,470 nodes |
+
+The proof's compositions fall from 532,172 to 87,869, all over a
+proposition's carrier. What remains is univalence: `prop_over_unique` is
+66 nodes open and the evidence step 374, while `path_into_prop_is_prop`, the
+standard retract of a path into a proposition onto the equivalence it
+gives, makes up nearly all of the 183,370.
+
 ### Phase C: fixes, in this order, one PR each
 
 1. Phase A artifacts.
-2. B1, with the inverse gate T1 and all 32 binary-rational contracts of #283
-   re-run on top of it; #283 stays draft until T2 also passes. #283 predates
-   the demand marks: its three bare `expecting _;` lines are `E485` on main.
-   Rebase them as `expecting !!_;`, so that they keep measuring full
+2. D1: the folded normal form as a kernel query, then `!!` computing it and
+   `!!!` the full normal form, with all 32 binary-rational contracts of #283
+   re-run on top of it. #283 predates the demand marks: its three bare
+   `expecting _;` lines are `E485` on main. Rebase them as `expecting !!_;`,
+   or `expecting !!!_;` where a contract means to measure full
    normalization, before re-running.
-3. B2, with T3 re-based from its measurement and the quotient regressions.
+3. B8, kept (section 3, B8): the direct proof of `prop_type_is_set` and
+   `prop_over_unique`, with the library's tests.
 4. B3, with the baseline digests and native suites.
-5. B5 and B6 on the wide inverse; then #283's `normalize_wide_inverse`.
-6. B4 and B7 only after their decision points.
+5. B2, with T3 re-based from its measurement and the quotient regressions.
+6. B5 and B6 on the wide inverse's full normal form.
+7. B7 only after D2. B1 and B4 are not pursued.
 
 Each PR gets an exhaustive first review over named risk areas (certificate
 soundness and computation for library changes; isolation, cache lifecycle,
@@ -494,23 +576,33 @@ they claim), CI dispatched once after local verification, and a report under
 `docs/reports` with source, kernel and probe hashes, fresh-session fixed
 budgets, and graph metrics.
 
-## 4. Decisions needed
+## 4. Decisions
 
-**D1. What a full normal form unfolds.** Today `weak` unfolds every
-definition reference, so the normal form computed by `expecting !!_`, by an
-exact expected value or by `witness` contains the normal form of every lemma
-body a stuck proof mentions, instantiated at every use. B1 to B4 reduce
-that within the contract. The
-[evaluation demand marks](evaluation-demand-marks.md) took full
-normalization out of display, inspection and patterns, and left `!!` naming
-the kernel's full normal form unchanged; they do not decide D1. The
-alternative, keeping a definition application folded when its unfolding is
-stuck on a neutral argument, would now change only what `!!_`, exact checks
-and `witness` compute and print, and the roadmap's stage 4 still says to
-force every surviving proof and annotation. Decide whether the contract
-stays, because it bounds what the kernel levers can achieve: with it, a
-stuck h-level proof's normal form is as large as its instantiation tree,
-which 1.8 measures at 2.4 to 3 times its distinct parts.
+**D1. What a full normal form unfolds.** Decided on 2026-10-23: `!!`
+computes the folded normal form, and a new mark `!!!` the full normal form
+`weak` gives today, which unfolds every definition reference. In the folded
+normal form, the term asked for is unfolded, and inside it a definition,
+applied or projected, is computed only when its weak head is data: a
+constructor applied, a pair, an injection, a point, or a variable's
+application. A definition whose head is a function, a path, a type, or an
+eliminator or composition stuck on a variable stays as written, with its
+arguments' folded normal forms. Closed data therefore computes in full, as
+before, and proofs stay named. A prototype of the kernel query, on 2026-10-23
+against the full normal forms of section 1:
+
+| Query | Full normal form | Folded normal form |
+| --- | ---: | ---: |
+| `prop_type_is_set(U0)` | 68,490,929 ticks, 1,034,925 nodes | 4,696 ticks, 100 nodes |
+| `integers.additive_` | 73,159,138 ticks, 1,799,676 nodes | 45,542 ticks, 1,139 nodes |
+| `rationals.(2/3)` | 70,301,825 ticks, 1,116,794 nodes | 43,932 ticks, 936 nodes |
+| `small_inverse` | 70,725,782 ticks, 1,149,838 nodes | 65,051 ticks, 979 nodes |
+| `q_inv_open` | `K344` at 80,182,616 ticks | 173,391 ticks, 981 nodes |
+| `wide_inverse` | `K337` at 393,274,446 ticks | 1,423,460 ticks, 1,103 nodes |
+
+`rationals.(2/3)` reads
+`class((class((unat.(2), unat.(0))), class((unat.(3), unat.(0))), int_succ_nonzero(unat.(2))))`.
+The roadmap's stage 4, which forces every surviving proof and annotation,
+becomes `!!!`'s contract.
 
 **D2. Rules for empty-system compositions on declared sorts (B7).** A
 computation rule, not a regularity rule for `Path`, but still a change to
@@ -520,9 +612,9 @@ through a formal composition and shows it as `<composition>` (the demand
 marks note, decision 6), and with such a rule those patterns would match
 with no rule of their own.
 
-**D3. Library certificate shapes (B1, B2).** Public statements do not
-change; the certificates that `bint_decide`, `q_decide`, `int_succ_nonzero`
-and `descend2` compute to do. Confirm that this is acceptable for the computability
+**D3. Library certificate shapes (B2, B8).** Public statements do not
+change; the certificates that `descend2` and `prop_type_is_set` compute to
+do. Confirm that this is acceptable for the computability
 contract: closed decisions still return `left` or `right` with a checked
 proof, only a smaller one.
 
@@ -530,7 +622,8 @@ proof, only a smaller one.
 
 It does not claim the evaluator gates `moved_setness` and `moved_path`,
 which keep measuring the quotient-free transport workload for EVAL3 to EVAL8.
-It does not change the `expecting !!_` contract unless D1 does; a bare
+Under D1, `expecting !!_` computes the folded normal form and
+`expecting !!!_` the full one, which the targets of section 2 measure; a bare
 `expecting _` has been `E485` since #304. It does not
 compare warm-cache numbers with fresh ones, and it does not count a budget
 exhaustion as evidence of divergence.

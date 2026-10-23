@@ -245,6 +245,8 @@ export function normalDigest(term) {
 // the count of its distinct parts up to the names of bound variables and
 // dimensions: an object met under bindings that give it different digests
 // counts once for each, and objects alike up to those names count once.
+// The parts digest reads inline, a formula's clauses, a system and its
+// tubes, count as the objects they are.
 export function sharedNormalDigest(term) {
   const free = new Map(), digests = new Map(), objects = new Set(), distinct = new Set();
   const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
@@ -292,6 +294,8 @@ export function sharedNormalDigest(term) {
   const named = (scope, name) => scope.names.has(name) ? ["bound", scope.depth - scope.names.get(name) - 1] : ["free", name];
   const literal = text => [named(scopes.dims, dimensionOf(text)), text.slice(text.lastIndexOf(":") + 1)];
   const sorted = values => values.map(value => JSON.stringify(value)).sort();
+  // A part read inline, counted among the distinct parts; its fields unchanged.
+  const inline = (kind, fields) => (distinct.add(createHash("sha256").update(JSON.stringify([kind, fields])).digest("hex")), fields);
   const digest = value => {
     if (value === null || typeof value !== "object") return JSON.stringify(["value", JSON.stringify(value) ?? "undefined"]);
     const { terms, dims } = freeNames(value);
@@ -299,7 +303,7 @@ export function sharedNormalDigest(term) {
     let known = digests.get(value);
     if (known?.has(key)) return known.get(key);
     let fields;
-    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => sorted(clause.map(literal))))];
+    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => inline("clause", sorted(clause.map(literal)))))];
     else if (Array.isArray(value)) fields = ["array", value.map(digest)];
     else if (value.tag === "Var") fields = ["Var", named(scopes.terms, value.name)];
     else {
@@ -309,7 +313,7 @@ export function sharedNormalDigest(term) {
         [key, !binds.includes(key) ? digest(item)
           : binder === "name" ? under(scopes.terms, value.name, () => digest(item))
           : key !== "system" ? under(scopes.dims, value.dim, () => digest(item))
-          : item.map(tube => ["face", digest(tube.face), "term", under(scopes.dims, value.dim, () => digest(tube.term))])])];
+          : inline("system", item.map(tube => inline("tube", ["face", digest(tube.face), "term", under(scopes.dims, value.dim, () => digest(tube.term))])))])];
     }
     const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
     if (!known) digests.set(value, known = new Map());

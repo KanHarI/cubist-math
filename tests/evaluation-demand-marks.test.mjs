@@ -1067,8 +1067,18 @@ test("the report's digest counts distinct parts up to bound names", () => {
   // App, both lambdas and their variables, and A; the lambdas alike, and their variables.
   assert.deepEqual(counts({ tag: "App", fn: identity("x"), arg: identity("y") }), { objects: 6, distinct: 4 });
   // App, both paths, A, both applications, p, and both formulas with their
-  // clauses; the paths alike, their applications and their formulas.
-  assert.deepEqual(counts({ tag: "App", fn: loop("i"), arg: loop("j") }), { objects: 11, distinct: 6 });
+  // clauses; the paths alike, their applications, formulas and clauses.
+  assert.deepEqual(counts({ tag: "App", fn: loop("i"), arg: loop("j") }), { objects: 11, distinct: 7 });
+  // A system and its tubes count as objects do. An empty system: the
+  // composition, A, the system and b, each distinct.
+  const b = { tag: "Var", name: "b" };
+  assert.deepEqual(counts({ tag: "Comp", dim: "i", family: type, system: [], base: b }), { objects: 4, distinct: 4 });
+  // Two compositions alike up to their binders, each with a tube on k whose
+  // term names its binder: twenty objects, and App, the composition, A, the
+  // system, the tube, its face formula and clause, its term's application,
+  // p, formula and clause, and b distinct.
+  const comp = dim => ({ tag: "Comp", dim, family: type, system: [{ face: [["k:1"]], term: { tag: "PApp", path, arg: [[`${dim}:1`]] } }], base: b });
+  assert.deepEqual(counts({ tag: "App", fn: comp("i"), arg: comp("j") }), { objects: 20, distinct: 12 });
   // x bound under the lambda and free beside it.
   assert.deepEqual(counts({ tag: "App", fn: { tag: "Lam", name: "x", domain: type, body: x }, arg: x }), { objects: 4, distinct: 5 });
   // Applications alike up to their bound names, whose free names sort in
