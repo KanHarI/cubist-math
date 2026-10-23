@@ -836,6 +836,15 @@ test("the report's digest reads every part decoding reads", async t => {
     closed_copied: raw("App", 0, lambda("x", v("x")), lambda("y", lambda("z", v("z")))),
     closed_shared_dimension: raw("App", 0, raw("PLam", 3, v("A"), at(3)), raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), at(3)))),
     closed_copied_dimension: raw("App", 0, raw("PLam", 3, v("A"), at(3)), raw("PLam", 5, v("A"), raw("PLam", 7, v("A"), at(7)))),
+    // One variable or dimension met at one depth in two places, bound by the
+    // inner binder in the second, against one bound by the outer binder.
+    rebound: raw("App", 0, lambda("x", lambda("y", v("x"))), lambda("z", lambda("x", v("x")))),
+    rebound_outer: raw("App", 0, lambda("x", lambda("y", v("x"))), lambda("z", lambda("w", v("z")))),
+    rebound_dimension: raw("App", 0, raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), at(3))), raw("PLam", 4, v("A"), raw("PLam", 3, v("A"), at(3)))),
+    rebound_dimension_outer: raw("App", 0, raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), at(3))), raw("PLam", 4, v("A"), raw("PLam", 6, v("A"), at(4)))),
+    // A variable and a dimension of one name: neither's binder binds the other.
+    homonym: raw("PLam", 3, v("A"), v("d3")), homonym_moved: raw("PLam", 4, v("A"), v("d3")),
+    homonym_dimension: raw("PLam", 3, v("A"), lambda("d3", at(3))), homonym_dimension_renamed: raw("PLam", 3, v("A"), lambda("x", at(3))),
     // A system met under another binder, only its face naming a dimension.
     shared_face: raw("PLam", 6, v("A"), raw("App", 0, faced("Comp", 6), raw("PLam", 7, v("A"), faced("Comp", 6)))),
     shared_face_inner: raw("PLam", 6, v("A"), raw("App", 0, faced("Comp", 6), raw("PLam", 7, v("A"), faced("Comp", 7)))),
@@ -877,7 +886,8 @@ test("the report's digest reads every part decoding reads", async t => {
     ["path_type", "path_type_moved"], ["path_family", "path_family_moved"], ["comp_base", "comp_base_moved"], ["trans_base", "trans_base_moved"],
     ["both", "both_moved"], ["either", "either_moved"], ["high", "high_moved"], ["restored", "restored_renamed"],
     ["restored_dimension", "restored_dimension_renamed"], ["comp_face_outside", "comp_face_outside_moved"], ["hcomp_face_outside", "hcomp_face_outside_moved"],
-    ["closed_shared", "closed_copied"], ["closed_shared_dimension", "closed_copied_dimension"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
+    ["closed_shared", "closed_copied"], ["closed_shared_dimension", "closed_copied_dimension"], ["homonym", "homonym_moved"],
+    ["homonym_dimension", "homonym_dimension_renamed"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
     assert.ok(same(left, right), `${left} and ${right} are the same term`);
   for (const [left, right] of [["free_a", "free_b"], ["two", "three"], ["level_0", "level_1"], ["successor_1", "successor_2"],
     ["level_lambda", "level_lambda_free"], ["level_lambda", "level_pi"], ["glue", "glue_type"], ["glue", "glue_equiv"], ["glue", "glue_face"],
@@ -886,7 +896,8 @@ test("the report's digest reads every part decoding reads", async t => {
     ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"], ["shadowed", "unshadowed"], ["slot_33", "slot_34"],
     ["both", "either"], ["shared_tube", "shared_tube_inner"], ["shared_tube_dimension", "shared_tube_dimension_inner"],
     ["shared_face", "shared_face_inner"], ["shared_face_hcomp", "shared_face_hcomp_inner"], ["two_tubes", "two_tubes_term"],
-    ["two_tubes", "two_tubes_face"], ["two_tubes", "comp"], ["two_tubes", "two_tubes_reversed"], ["one_tube", "one_tube_twice"]])
+    ["two_tubes", "two_tubes_face"], ["two_tubes", "comp"], ["two_tubes", "two_tubes_reversed"], ["one_tube", "one_tube_twice"], ["rebound", "rebound_outer"],
+    ["rebound_dimension", "rebound_dimension_outer"]])
     assert.ok(!same(left, right), `${left} and ${right} differ`);
   // Every term with one part of its decoding changed: each primitive to
   // another, each object to a fresh variable, each array one item shorter.
@@ -906,25 +917,48 @@ test("the report's digest reads every part decoding reads", async t => {
     }
   }
   assert.ok(changes > 1000, `${changes} changes`);
-  // Every term met twice, once beneath a binder of each name it holds, a
-  // variable's or a dimension's, against a binder of a fresh name: where
-  // the name is free in the term, only the first binds it in the second
-  // copy, wherever in the term it is, so the shared copy's memo key must
-  // hold the name's binding.
-  let wrapped = 0;
-  const twice = (part, binder) => ({ tag: "App", fn: part, arg: binder(part) });
+  // Every term beneath every context of up to two binders, each a
+  // variable's or a dimension's, of a name the term holds or of a fresh
+  // name: a name free in the term is bound by a binder of its kind and left
+  // free by one of the other, the inner of two binders of a name shadows the
+  // outer, and two contexts of one depth bind it at different distances.
+  // Met once outside the context too, so that the copy outside fills the
+  // memo first. And the copies beneath every context in one value, whose
+  // digest is that of the value with nothing shared: the memo gives no part
+  // the digest it has under another binding.
+  let contexts = 0;
   for (const [name, value] of Object.entries(terms)) {
     const decoded = syntax.decode(value, program.checker.dimensions), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
-    const binders = [...[...termNames, "fresh′"].map(bound => part => ({ tag: "Lam", name: bound, domain: { tag: "Var", name: "A" }, body: part })),
-      ...[...dimensionNames, "fresh′"].map(bound => part => ({ tag: "PLam", dim: bound, family: { tag: "Var", name: "A" }, body: part }))];
-    const results = binders.map(binder => twice(decoded, binder)).map(value => ({ shared: sharedNormalDigest(value).digest, decoded: normalDigest(value) }));
-    for (const left of results) for (const right of results) {
-      wrapped++;
-      assert.equal(left.shared === right.shared, left.decoded === right.decoded, `${name} met beneath binders`);
-    }
+    const binders = [...new Set([...termNames, ...dimensionNames, "fresh′"])].flatMap(bound => [
+      part => ({ tag: "Lam", name: bound, domain: { tag: "Var", name: "A" }, body: part }),
+      part => ({ tag: "PLam", dim: bound, family: { tag: "Var", name: "A" }, body: part })]);
+    const within = [part => part, ...binders, ...binders.flatMap(outer => binders.map(inner => part => outer(inner(part))))];
+    agree(within.map(context => ({ tag: "App", fn: decoded, arg: context(decoded) })), `${name} met beneath binders`);
+    const all = within.map(context => context(decoded));
+    assert.equal(sharedNormalDigest(all).digest, sharedNormalDigest(unshared(all)).digest, `${name} met beneath every context at once`);
+    contexts += within.length;
   }
-  assert.ok(wrapped > 1000, `${wrapped} comparisons`);
+  assert.ok(contexts > 10000, `${contexts} contexts`);
 });
+
+// The shared digests of some values tell them apart as the baseline's
+// digests of them do.
+function agree(values, label) {
+  const sharedOf = new Map(), decodedOf = new Map();
+  for (const value of values) {
+    const shared = sharedNormalDigest(value).digest, decoded = normalDigest(value);
+    assert.equal(sharedOf.get(decoded) ?? shared, shared, label);
+    assert.equal(decodedOf.get(shared) ?? decoded, decoded, label);
+    sharedOf.set(decoded, shared);
+    decodedOf.set(shared, decoded);
+  }
+}
+
+// A value with each of its objects copied wherever it occurs.
+function unshared(value) {
+  if (value === null || typeof value !== "object") return value;
+  return Array.isArray(value) ? value.map(unshared) : Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unshared(item)]));
+}
 
 // The names a decoded value holds anywhere: variables' and binders' names,
 // and the dimensions its formulas and dimension binders name.
