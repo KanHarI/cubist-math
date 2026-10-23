@@ -696,7 +696,7 @@ const digested = (program, value) => {
   const decoded = program.checker.syntax.decode(value, program.checker.dimensions);
   return { shared: sharedNormalDigest(decoded).digest, decoded: normalDigest(decoded) };
 };
-const definitionValue = (program, name) => program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).value;
+const definitionValue = (program, name, owner = "main") => program.kernel.definition(program.kernel.definitions.get(`${owner}__${name}`)).value;
 test("the report's digest tells terms apart as the baseline's digest of their decodings does", async t => {
   const square = "fun (A : U0, x : A, s : refl(x) = refl(x)) => typed(refl(x) = refl(x), ";
   const terms = {
@@ -1011,9 +1011,10 @@ test("the report's digest compares plain values as normalDigest does", () => {
 
 // It reads each shared object once for each binding of its free names: a
 // value of 2^22 paths, each part met beneath binders it does not mention, a
-// variable's and a dimension's, and read through getters that count, is read
-// in a few reads a node, where a walk of its paths, or a memo keyed by every
-// binder around a part, would make millions.
+// variable's on one branch and a dimension's and a variable's on the other,
+// and read through getters that count, is read in a few reads a node, where
+// a walk of its paths, or a memo keyed by the binders or the depth around a
+// part, would make many more.
 test("the report's digest reads a shared object once", () => {
   let reads = 0, value = { tag: "Var", name: "x" };
   const levels = 22, type = { tag: "Var", name: "A" };
@@ -1021,20 +1022,23 @@ test("the report's digest reads a shared object once", () => {
     const part = value, body = { get: () => { reads++; return part; }, enumerable: true };
     const lambda = Object.freeze(Object.defineProperties({ tag: "Lam", name: `u${level}`, domain: type }, { body }));
     const path = Object.freeze(Object.defineProperties({ tag: "PLam", dim: `e${level}`, family: type }, { body }));
-    value = Object.freeze({ tag: "App", fn: lambda, arg: path });
+    value = Object.freeze({ tag: "App", fn: lambda, arg: Object.freeze({ tag: "Lam", name: `w${level}`, domain: type, body: path }) });
   }
   const { objects } = sharedNormalDigest(value);
-  assert.equal(objects, 3 * levels + 2);
+  assert.equal(objects, 4 * levels + 2);
   assert.ok(reads <= 4 * levels, `${reads} reads`);
 });
 
-test("the report's digest tells constructors apart by name across programs", async t => {
+// Two constructors of one module, and constructors of one name in two.
+test("the report's digest tells constructors apart by name and module across programs", async t => {
   const values = [];
-  for (const constructor of ["first_flag", "second_flag"]) {
-    const { program, verdicts } = await checkProgram(t, `inductive Flag {\n  ${constructor};\n}\n\ndef flag := ${constructor};`, { module });
-    assert.equal(verdicts.flag, true, constructor);
-    values.push(digested(program, definitionValue(program, "flag")));
+  for (const [owner, constructor] of [["main", "first_flag"], ["main", "second_flag"], ["left", "lit"], ["right", "lit"]]) {
+    const { program, verdicts } = await checkProgram(t, `inductive Flag {\n  ${constructor};\n}\n\ndef flag := ${constructor};`, { module, name: owner });
+    assert.equal(verdicts.flag, true, `${owner} ${constructor}`);
+    values.push(digested(program, definitionValue(program, "flag", owner)));
   }
-  assert.notEqual(values[0].decoded, values[1].decoded);
-  assert.notEqual(values[0].shared, values[1].shared);
+  for (const [left, right] of [[0, 1], [2, 3]]) {
+    assert.notEqual(values[left].decoded, values[right].decoded);
+    assert.notEqual(values[left].shared, values[right].shared);
+  }
 });
