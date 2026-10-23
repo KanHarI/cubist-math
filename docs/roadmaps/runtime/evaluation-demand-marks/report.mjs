@@ -6,8 +6,9 @@
 // normalized a term, how many times and how many of those failed, and for
 // the last normalization, the whole value's under `!!_` after any its
 // elaboration asked for, its ticks alone and either its failure or the
-// normal form's distinct nodes and digest (sharedDigest, in
-// shared-digest.mjs).
+// distinct objects of the normal form's decoding and its digest
+// (tools/evaluation-baseline.mjs's sharedNormalDigest, which compares as its
+// normalDigest does).
 // Usage: node report.mjs [--root=CHECKOUT] [budget] [case ...]. --root
 // measures another checkout, as main, with the spelling each case had there
 // before the marks (`expecting _` for `expecting !!_`); a case with no such
@@ -15,7 +16,7 @@
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { sources } from "./probe-sources.mjs";
-import { sharedDigest } from "./shared-digest.mjs";
+import { sharedNormalDigest } from "../../../../tools/evaluation-baseline.mjs";
 
 const option = process.argv.find(arg => arg.startsWith("--root="));
 const root = option ? pathToFileURL(`${option.slice("--root=".length).replace(/\/$/, "")}/`) : new URL("../../../../", import.meta.url);
@@ -71,7 +72,8 @@ for (const item of cases) {
       const before = work(), ticks = () => Number(work().querySteps - before.querySteps);
       try {
         const result = normalize.call(this, handle);
-        normal = { normalTicks: ticks(), ...sharedDigest(program, result) };
+        const normalTicks = ticks(), { digest, objects } = sharedNormalDigest(program.checker.syntax.decode(result, program.checker.dimensions));
+        normal = { normalTicks, normalObjects: objects, normalDigest: digest };
         return result;
       } catch (error) {
         failedNormalizations++;

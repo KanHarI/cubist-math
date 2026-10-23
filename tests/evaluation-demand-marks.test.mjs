@@ -9,10 +9,9 @@ import { lint } from "../web/cubist/lint.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { normalDigest } from "../tools/evaluation-baseline.mjs";
+import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
-import { sharedDigest } from "../docs/roadmaps/runtime/evaluation-demand-marks/shared-digest.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
 // `!` asks for a part's weak head and `!!` for its full normal form, and an
@@ -687,13 +686,16 @@ for (const setup of Object.keys(corpus.setups)) {
 }
 
 // The acceptance report (docs/roadmaps/runtime/evaluation-demand-marks/
-// report.md) compares normal forms by a digest over the kernel's shared
-// nodes, as normal forms too large to decode need. It must tell terms apart
-// exactly as the baseline's digest of their decodings does: up to the names
-// of bound variables and dimensions and the slots the kernel gives them, and
-// no further, across programs as well as within one.
-const digested = (program, value) => ({ shared: sharedDigest(program, value).normalDigest,
-  decoded: normalDigest(program.checker.syntax.decode(value, program.checker.dimensions)) });
+// report.md) compares normal forms by sharedNormalDigest, which reads each
+// shared object of a decoding once for each way its free names are bound, as
+// normal forms too large to walk as trees need. It must tell terms apart
+// exactly as normalDigest does: up to the names of bound variables and
+// dimensions and the slots the kernel gives them, and no further, across
+// programs as well as within one.
+const digested = (program, value) => {
+  const decoded = program.checker.syntax.decode(value, program.checker.dimensions);
+  return { shared: sharedNormalDigest(decoded).digest, decoded: normalDigest(decoded) };
+};
 const definitionValue = (program, name) => program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).value;
 test("the report's digest tells terms apart as the baseline's digest of their decodings does", async t => {
   const square = "fun (A : U0, x : A, s : refl(x) = refl(x)) => typed(refl(x) = refl(x), ";
@@ -765,7 +767,9 @@ test("the report's digest reads every part decoding reads", async t => {
   const sort = (signature, parameters, levels) => raw("Sort", signature, list(parameters), list(levels));
   const glue = (type, equiv, at) => raw("Glue", 0, v("a"), raw("GlueSystem", at, type, equiv, 0));
   const glueTerm = (as, term, at) => raw("GlueTerm", 0, as, v("b"), raw("Tube", at, term, 0));
-  const tube = (at, term) => raw("Tube", at, term, 0);
+  const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => raw("Lam", kernel.symbol(name), v("A"), body);
+  const formula = (clauses, outer, inner) => raw("PApp", syntax.formula(clauses, "interval", new Map([["d", outer], ["e", inner]])), v("p"));
+  const both = (outer, inner) => formula([["d:1", "e:1"]], outer, inner), either = (outer, inner) => formula([["d:1"], ["e:1"]], outer, inner);
   const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
   const terms = {
     free_a: v("a"), free_b: v("b"),
@@ -789,6 +793,29 @@ test("the report's digest reads every part decoding reads", async t => {
     constructor: raw("Con", 0, sort(flag, [], [])), constructor_index: raw("Con", 1, sort(flag, [], [])),
     elim: raw("Elim", flag, v("m"), list([v("a"), v("b")])), elim_signature: raw("Elim", unat, v("m"), list([v("a"), v("b")])),
     elim_clause: raw("Elim", flag, v("m"), list([v("a"), v("c")])),
+    // One variable node met under binders of its name and of others: the
+    // inner x shadows the outer one, and z does not.
+    shadowed: lambda("x", lambda("y", raw("App", 0, v("x"), lambda("x", v("x"))))),
+    unshadowed: lambda("x", lambda("y", raw("App", 0, v("x"), lambda("z", v("x"))))),
+    // What a binder does not bind: a lambda's domain, a path's endpoints, a
+    // composition's and a transport's base.
+    domain: raw("Lam", kernel.symbol("x"), v("x"), v("x")), domain_renamed: raw("Lam", kernel.symbol("y"), v("x"), v("y")),
+    pi: raw("Pi", kernel.symbol("x"), v("A"), v("x")), pi_renamed: raw("Pi", kernel.symbol("y"), v("A"), v("y")),
+    sigma: raw("Sigma", kernel.symbol("x"), v("A"), v("x")), sigma_renamed: raw("Sigma", kernel.symbol("y"), v("A"), v("y")),
+    path_type: raw("Path", 3, at(3), at(3), v("a")), path_type_moved: raw("Path", 5, at(5), at(3), v("a")),
+    path_family: raw("PLam", 3, at(3), v("a")), path_family_moved: raw("PLam", 5, at(5), v("a")),
+    comp_base: raw("Comp", 3, v("A"), 0, at(3)), comp_base_moved: raw("Comp", 5, v("A"), 0, at(3)),
+    trans_base: raw("Trans", 3, v("A"), tube(face(4), at(3)), at(3)), trans_base_moved: raw("Trans", 5, v("A"), tube(face(4), at(3)), at(3)),
+    // A clause's literals in either order of their binders, and high slots.
+    both: raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), both(3, 5))), both_moved: raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), both(3, 5))),
+    either: raw("PLam", 3, v("A"), raw("PLam", 5, v("A"), either(3, 5))), either_moved: raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), either(3, 5))),
+    slot_33: at(33), slot_34: at(34), high: raw("PLam", 33, v("A"), at(33)), high_moved: raw("PLam", 40, v("A"), at(40)),
+    // What decoding ignores: a path application's annotation, a level
+    // binder's bound, a transport descriptor's term.
+    annotated: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("T")),
+    annotated_other: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("U")),
+    level_bound: raw("LLam", kernel.symbol("l"), raw("LBound", 2), raw("U", 0, raw("Var", kernel.symbol("l")))),
+    trans_descriptor: raw("Trans", 3, at(3), tube(face(4), v("c")), v("b")),
   };
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
   const names = Object.keys(digests);
@@ -796,14 +823,31 @@ test("the report's digest reads every part decoding reads", async t => {
     assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
   const same = (left, right) => digests[left].decoded === digests[right].decoded;
   for (const [left, right] of [["level_lambda", "level_lambda_renamed"], ["level_pi", "level_pi_renamed"], ["comp", "comp_moved"],
-    ["hcomp", "hcomp_moved"], ["trans", "trans_moved"]])
+    ["hcomp", "hcomp_moved"], ["trans", "trans_moved"], ["domain", "domain_renamed"], ["pi", "pi_renamed"], ["sigma", "sigma_renamed"],
+    ["path_type", "path_type_moved"], ["path_family", "path_family_moved"], ["comp_base", "comp_base_moved"], ["trans_base", "trans_base_moved"],
+    ["both", "both_moved"], ["either", "either_moved"], ["high", "high_moved"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
     assert.ok(same(left, right), `${left} and ${right} are the same term`);
   for (const [left, right] of [["free_a", "free_b"], ["two", "three"], ["level_0", "level_1"], ["successor_1", "successor_2"],
     ["level_lambda", "level_lambda_free"], ["level_lambda", "level_pi"], ["glue", "glue_type"], ["glue", "glue_equiv"], ["glue", "glue_face"],
     ["glue_term", "glue_term_as"], ["glue_term", "glue_term_part"], ["glue_term", "glue_term_face"], ["comp", "comp_tube"], ["comp", "comp_face"],
     ["trans", "trans_face"], ["sort", "sort_signature"], ["sort", "sort_parameter"], ["sort", "sort_level"], ["sort_variables", "sort_split"],
-    ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"]])
+    ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"], ["shadowed", "unshadowed"], ["slot_33", "slot_34"],
+    ["both", "either"]])
     assert.ok(!same(left, right), `${left} and ${right} differ`);
+});
+
+// Both digests read any value decoding gives as it is: a field by its name
+// and value, so values decoding does not give are compared alike too.
+test("the report's digest compares plain values as normalDigest does", () => {
+  const values = {
+    field_a: { tag: "T", a: 1 }, field_b: { tag: "T", b: 1 }, field_null: { tag: "T", a: null }, field_undefined: { tag: "T", a: undefined },
+    untagged: { a: 1 }, text: { tag: "T", a: "1" }, list: [1, 2], list_reversed: [2, 1], nested: [[1], 2],
+  };
+  const digests = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, { shared: sharedNormalDigest(value).digest, decoded: normalDigest(value) }]));
+  for (const left of Object.keys(values)) for (const right of Object.keys(values)) {
+    assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
+    if (left !== right) assert.notEqual(digests[left].decoded, digests[right].decoded, `${left} and ${right} differ`);
+  }
 });
 
 test("the report's digest tells constructors apart by name across programs", async t => {
