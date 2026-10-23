@@ -373,9 +373,12 @@ static bool definition_spine(const cc_kernel *k, cc_term term) {
     return k->nodes[term].kind == CC_DEFREF;
 }
 
-/* Whether a weak head is stuck on an eliminator: an elimination, projection
- * of one, or composition that does not compute. */
-static bool stuck_head(const cc_kernel *k, cc_term head) {
+/* Whether a weak head is an elimination stuck on a value that is no
+ * constructor: an eliminator applied, a recursor, an abort or an unglue, or
+ * a projection or application of one. Its last step rebuilt it in place, the
+ * stuck value reduced. A composition is none: its step also drops the tubes
+ * on empty faces, which its head keeps dropped. */
+static bool stuck_elimination(const cc_kernel *k, cc_term head) {
     bool applied = false;
     while (spine_node(k->nodes[head].kind)) {
         head = k->nodes[head].child[0];
@@ -385,7 +388,7 @@ static bool stuck_head(const cc_kernel *k, cc_term head) {
     case CC_ELIM:
         return applied;
     case CC_NATREC: case CC_WREC: case CC_SUMREC: case CC_UNITREC: case CC_PUSH_ELIM:
-    case CC_ABORT: case CC_UNGLUE: case CC_COMP: case CC_HCOMP: case CC_TRANS:
+    case CC_ABORT: case CC_UNGLUE:
         return true;
     default:
         return false;
@@ -415,9 +418,9 @@ static bool computed_data(const cc_kernel *k, cc_term head) {
  * when the head is no data. Only these steps are watched, not those that
  * compute a head for one of them: λ y. f(y) is f by eta there, so its
  * application to x reaches f's body without passing through f(x). `last` is
- * the term whose step gave the head: a stuck head rebuilt in place has its
- * stuck parts replaced by their weak heads, where `last` has them as
- * written. No weak
+ * the term whose step gave the head: a stuck elimination rebuilt in place has
+ * its stuck value replaced by its weak head, where `last` has it as written.
+ * No weak
  * cache is read here, so the spine found does not depend on what was
  * computed before. */
 static cc_term folding_head(cc_kernel *k, cc_term term, cc_term *spine, cc_term *last) {
@@ -527,12 +530,12 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
                 frame->phase = NORMAL_CHILDREN;
                 break;
             }
-            /* A stuck head that its last step rebuilt in place, its stuck
-             * parts reduced, is taken as that step's term, so that a
-             * definition stuck inside it folds as written there. A head the
-             * step computed, as a transport computes a formal composition,
-             * is taken as computed. */
-            bool rebuilt = fold && last && stuck_head(k, head) && k->nodes[last].kind == k->nodes[head].kind;
+            /* A stuck elimination that its last step rebuilt in place, its
+             * stuck value reduced, is taken as that step's term, so that a
+             * definition stuck inside it folds as written there. Any other
+             * head is taken as computed: a transport's formal composition,
+             * or a composition with its empty tubes dropped. */
+            bool rebuilt = fold && last && stuck_elimination(k, head) && k->nodes[last].kind == k->nodes[head].kind;
             frame->node = k->nodes[rebuilt ? last : head];
             if (!normal_restrict(k, &frame->node))
                 goto failed;
