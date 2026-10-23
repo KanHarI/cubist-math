@@ -241,9 +241,15 @@ export function normalDigest(term) {
 // digests each object once for each way its free names are bound around it,
 // a bound name by its distance to its binder, and a node from its parts'
 // digests, as JSON so that no field runs into another. The count of the
-// decoding's distinct objects, arrays among them, is returned with it.
+// decoding's distinct objects, arrays among them, is returned with it, and
+// the count of its distinct parts up to the names of bound variables and
+// dimensions: an object met under bindings that give it different digests
+// counts once for each, and objects alike up to those names count once.
+// The parts digest reads inline, a formula's clauses, a system and its
+// tubes, count as the objects they are, a system and a tube as an array and
+// an object read alone would.
 export function sharedNormalDigest(term) {
-  const free = new Map(), digests = new Map(), objects = new Set();
+  const free = new Map(), digests = new Map(), objects = new Set(), distinct = new Set();
   const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
   const isFormula = value => Array.isArray(value) && value.length > 0 && value.every(Array.isArray);
   // The term and dimension names a value mentions free, as a binder's
@@ -289,6 +295,13 @@ export function sharedNormalDigest(term) {
   const named = (scope, name) => scope.names.has(name) ? ["bound", scope.depth - scope.names.get(name) - 1] : ["free", name];
   const literal = text => [named(scopes.dims, dimensionOf(text)), text.slice(text.lastIndexOf(":") + 1)];
   const sorted = values => values.map(value => JSON.stringify(value)).sort();
+  // A part read inline, counted among the distinct parts by the digest it
+  // would have read alone.
+  const counted = fields => {
+    const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
+    distinct.add(result);
+    return result;
+  };
   const digest = value => {
     if (value === null || typeof value !== "object") return JSON.stringify(["value", JSON.stringify(value) ?? "undefined"]);
     const { terms, dims } = freeNames(value);
@@ -296,7 +309,21 @@ export function sharedNormalDigest(term) {
     let known = digests.get(value);
     if (known?.has(key)) return known.get(key);
     let fields;
-    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => sorted(clause.map(literal))))];
+    // A composition's system, its tube terms under the binder: each tube
+    // counted as the object { face, term } and the system as their array.
+    const tubes = (system, dim) => {
+      const entries = system.map(tube => {
+        const face = digest(tube.face), term = under(scopes.dims, dim, () => digest(tube.term));
+        return { entry: ["face", face, "term", term], tube: counted(["node", "", [["face", face], ["term", term]]]) };
+      });
+      counted(["array", entries.map(({ tube }) => tube)]);
+      return entries.map(({ entry }) => entry);
+    };
+    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => {
+      const literals = sorted(clause.map(literal));
+      counted(["clause", literals]);
+      return literals;
+    }))];
     else if (Array.isArray(value)) fields = ["array", value.map(digest)];
     else if (value.tag === "Var") fields = ["Var", named(scopes.terms, value.name)];
     else {
@@ -306,15 +333,16 @@ export function sharedNormalDigest(term) {
         [key, !binds.includes(key) ? digest(item)
           : binder === "name" ? under(scopes.terms, value.name, () => digest(item))
           : key !== "system" ? under(scopes.dims, value.dim, () => digest(item))
-          : item.map(tube => ["face", digest(tube.face), "term", under(scopes.dims, value.dim, () => digest(tube.term))])])];
+          : tubes(item, value.dim)])];
     }
     const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
     if (!known) digests.set(value, known = new Map());
     known.set(key, result);
+    distinct.add(result);
     return result;
   };
   // The root's digest hashed once more: a scalar root's is its text.
-  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size };
+  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size, distinct: distinct.size };
 }
 
 // Observe a program's phases while `run` runs: each phase's own calls,

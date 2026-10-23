@@ -1,7 +1,8 @@
 // The sources the probe (probe.mjs) and the acceptance report (report.mjs)
 // define their cases in.
 export const sources = {
-  // #302's main-only reproduction of the small inverse, without #283.
+  // The rational normalization debugging plan's main-only reproduction of the
+  // small inverse, without #283; that plan's probe adds its further queries.
   rational: `import fractions;
 import binary_integers;
 use bnat;
