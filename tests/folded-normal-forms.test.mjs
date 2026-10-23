@@ -83,3 +83,26 @@ print(evaluate(!!!pair_));
   assert.deepEqual(result.gaps.map(gap => gap.code), ["E486"]);
   assert.deepEqual(result.prints.map(print => print.text), ["(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })"]);
 });
+
+// Each caller asks for the normal form its table row in the note assigns:
+// an exact value, folded; a witness, full; !! folded and !!! full.
+test("exact values fold, and !!! and witness ask for the full normal form", async t => {
+  const { program } = await checkProgram(t, "", { module });
+  const kernel = program.kernel, asked = [];
+  for (const query of ["normalize", "normalizeFolded"]) {
+    const original = kernel[query].bind(kernel);
+    kernel[query] = handle => { asked.push(query); return original(handle); };
+  }
+  // Each source a module of its own name, which reuseModules keeps apart.
+  let runs = 0;
+  const run = async source => {
+    asked.length = 0;
+    const result = await program.check(`import h1_truncation;\nuse unat;\n${source}`, `routing_${runs++}`, () => {}, { reuseModules: true });
+    assert.deepEqual(result.gaps, [], source);
+    return [...new Set(asked)];
+  };
+  assert.deepEqual(await run("evaluate 2 + 2 expecting 4;"), ["normalizeFolded"]);
+  assert.deepEqual(await run("evaluate 2 + 2 expecting !!_;"), ["normalizeFolded"]);
+  assert.deepEqual(await run("evaluate 2 + 2 expecting !!!_;"), ["normalize"]);
+  assert.deepEqual(await run("print(witness(typed(Trunc(U0, UNat), point(3))));"), ["normalize"]);
+});

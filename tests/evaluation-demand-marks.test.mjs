@@ -494,7 +494,7 @@ test("an unobserved part is not computed: the queries a pattern asks cost what i
     return Number(program.kernel.work().querySteps);
   };
   const none = await ticks(""), head = await ticks("evaluate value expecting !_;");
-  const prime = await ticks("evaluate value expecting (7, _);"), full = await ticks("evaluate value expecting !!_;");
+  const prime = await ticks("evaluate value expecting (7, _);"), full = await ticks("evaluate value expecting !!!_;");
   assert.ok(head - none < 1000, `a weak head costs ${head - none} ticks`);
   assert.ok(prime - none < full - none, `the prime costs ${prime - none} ticks, the full normal form ${full - none}`);
 });

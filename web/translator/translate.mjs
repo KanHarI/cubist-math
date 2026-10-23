@@ -468,9 +468,11 @@ export class Translator {
       const result=this.checker.evaluated(this.term(d.value,scope));
       // A normal form, which !!, !!! and a witness read, is computed before
       // the assumptions are checked, as print did before demand marks; a
-      // value form and a weak head compute nothing until they are. Only !!!
-      // asks for the full normal form.
-      const normal=d.mark==="!!"||d.mark==="!!!"||d.show==="witness"?this.checker.normalForm(result.expression,{full:d.mark==="!!!"}):null;
+      // value form and a weak head compute nothing until they are. !!! and a
+      // witness ask for the full normal form: a witness is a constructor
+      // read under formal compositions, whose bases a folded normal form may
+      // keep named (folded-normal-forms.md).
+      const normal=d.mark==="!!"||d.mark==="!!!"||d.show==="witness"?this.checker.normalForm(result.expression,{full:d.mark==="!!!"||d.show==="witness"}):null;
       const assumptions=result.native.axioms;
       if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
       // print(evaluate(e)); shows the value form, computed as far as it is
