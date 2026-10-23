@@ -3,9 +3,10 @@
 // as the CLI runs it (web/repl-session.mjs), with the probe's fixed query
 // budget. For each it records the entry's first result and its SHA-256, the
 // query ticks and queries the entry alone spent, and, where the entry
-// normalized a term, how many times, and for the last normalization, the
-// whole value's under `!!_` after any its elaboration asked for, its ticks
-// alone, the normal form's distinct nodes and its digest (sharedDigest, in
+// normalized a term, how many times and how many of those failed, and for
+// the last normalization, the whole value's under `!!_` after any its
+// elaboration asked for, its ticks alone and either its failure or the
+// normal form's distinct nodes and digest (sharedDigest, in
 // shared-digest.mjs).
 // Usage: node report.mjs [--root=CHECKOUT] [budget] [case ...]. --root
 // measures another checkout, as main, with the spelling each case had there
@@ -59,15 +60,24 @@ for (const item of cases) {
     kernel.stepBudget = budget;
     kernel.maxQuerySteps = budget;
     kernel.setStepBudget(budget);
-    // The entry's whole-term normalizations, each digested while its handle
-    // holds: a committed or abandoned entry moves its nodes.
-    let normalizations = 0, normal = null;
+    // The entry's whole-term normalizations: every attempt is counted, and
+    // the last is described, by the normal form's digest, taken while its
+    // handle holds (a committed or abandoned entry moves its nodes), or by
+    // its failure.
+    let normalizations = 0, failedNormalizations = 0, normal = null;
     const { normalize } = kernel, work = () => kernel.work();
     kernel.normalize = function (handle) {
-      const before = work(), result = normalize.call(this, handle), after = work();
       normalizations++;
-      normal = { normalTicks: Number(after.querySteps - before.querySteps), ...sharedDigest(program, result) };
-      return result;
+      const before = work(), ticks = () => Number(work().querySteps - before.querySteps);
+      try {
+        const result = normalize.call(this, handle);
+        normal = { normalTicks: ticks(), ...sharedDigest(program, result) };
+        return result;
+      } catch (error) {
+        failedNormalizations++;
+        normal = { normalTicks: ticks(), normalFailure: error.message };
+        throw error;
+      }
     };
     const before = work();
     const [result] = await session.run(entry);
@@ -76,7 +86,7 @@ for (const item of cases) {
       outcome: result.kind, text: result.text.length > 160 ? `${result.text.slice(0, 159)}…` : result.text,
       length: result.text.length, sha256: sha256(result.text),
       queryTicks: Number(after.querySteps - before.querySteps), queries: Number(after.queries - before.queries),
-      normalizations, ...normal };
+      normalizations, failedNormalizations, ...normal };
     console.log(JSON.stringify(record));
   } finally { program.dispose(); }
 }

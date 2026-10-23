@@ -13,10 +13,11 @@ fixed budget of 100M query ticks. For each entry the script records:
 
 - the first result's text, its length and its SHA-256;
 - the query ticks and queries the entry alone spent;
-- how many times it normalized a term.
+- how many times it normalized a term, and how many of those failed.
 
-For the last normalization it also records that normalization's own ticks,
-the distinct nodes its decoding reads, and its digest.
+For the last normalization it also records that normalization's own ticks.
+If that normalization failed, it records the failure; otherwise it records
+the distinct nodes the normal form's decoding reads, and its digest.
 
 The digest, [`shared-digest.mjs`](shared-digest.mjs), is taken over the
 kernel's shared nodes: unshared, these normal forms are too large to walk.
@@ -47,7 +48,7 @@ the same way on both sides.
 | Normal form | `evaluate small_inverse expecting !!_;` | 71,027,452 ticks, 1 query; 623,777 nodes, digest `a8ab6d0fa89dd3bf` | the same: ticks, queries, nodes, digest and text |
 | Lazy pattern | `evaluate euclid(3) expecting (7, _);` | `(7, <unevaluated>)`, 149,523 ticks, 4 queries | 223,521 ticks, the whole value normalized (1,286 nodes) |
 | Weak head | `evaluate !euclid(4);` | the pair, its components as they are, 133 ticks, 1 query | — |
-| Prime of `euclid(4)` | `evaluate euclid(4) expecting (5, _);` | `K344`, 652,154 ticks | `K344`, 662,737 ticks |
+| Prime of `euclid(4)` | `evaluate euclid(4) expecting (5, _);` | `K344` normalizing the first component, after 651,994 of the entry's 652,154 ticks | `K344` normalizing the whole value, 662,737 ticks |
 | Bare hole | `evaluate euclid(3) expecting _;` | refused with `E485`, no query | accepted: 223,501 ticks, the whole value normalized |
 | Eta | `print(evaluate(!(fun (n : UNat) => succ(n))));` | `succ`, 3 ticks | — |
 | `rationals.(2/3)` | `… expecting !!_;` | 71,001,788 ticks, 158 queries; 598,812 nodes, `1f803453570747cb` | the same |
@@ -76,9 +77,10 @@ holds as follows.
     expected `7`, never the certificate. It costs 149,523 ticks where main
     normalizes the whole value for 223,521.
   - `!euclid(4)` prints the pair in 133 ticks.
-  - `euclid(4)` against `(5, _)` still stops with `K344`. Its prime's head is
-    deeper than the kernel's syntax-depth guard on both sides, as the note
-    says the marks cannot change.
+  - `euclid(4)` against `(5, _)` still stops with `K344`. The branch fails
+    normalizing the prime, the first component, and main fails normalizing
+    the whole value. The prime is deeper than the kernel's syntax-depth
+    guard, and the note says the marks cannot change that.
 - **Bare hole and eta.**
   - A bare `_` is refused with `E485: evaluate e expecting _; would compute
     nothing: write !_ to compute the value's weak head, or !!_ for its full

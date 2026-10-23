@@ -750,6 +750,62 @@ test("the report's digest tells terms apart as the baseline's digest of their de
     assert.ok(!same(left, right), `${left} and ${right} differ`);
 });
 
+// Every part decoding reads, in terms built directly as the kernel holds
+// them: pairs that differ in that part alone, and pairs alike but for the
+// names or slots of what a binder binds.
+test("the report's digest reads every part decoding reads", async t => {
+  const { program, verdicts } = await checkProgram(t, "import unat;\nuse unat;\ndef two := 2;\ndef three := 3;\ninductive Flag {\n  lit;\n  unlit;\n}\n", { module });
+  assert.deepEqual([verdicts.two, verdicts.three], [true, true]);
+  const { kernel, checker: { syntax } } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
+  const v = name => raw("Var", kernel.symbol(name)), level = value => raw("LConst", value);
+  const face = (slot, bit = 1) => syntax.formula([[`d:${bit}`]], "face", new Map([["d", slot]]));
+  const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), v("p"));
+  const list = items => items.reduceRight((next, item) => raw("List", 0, item, next), 0);
+  const flag = kernel.signatures.get("main__Flag").index, unat = kernel.signatures.get("unat__UNat").index;
+  const sort = (signature, parameters, levels) => raw("Sort", signature, list(parameters), list(levels));
+  const glue = (type, equiv, at) => raw("Glue", 0, v("a"), raw("GlueSystem", at, type, equiv, 0));
+  const glueTerm = (as, term, at) => raw("GlueTerm", 0, as, v("b"), raw("Tube", at, term, 0));
+  const tube = (at, term) => raw("Tube", at, term, 0);
+  const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
+  const terms = {
+    free_a: v("a"), free_b: v("b"),
+    two: kernel.definitions.get("main__two"), three: kernel.definitions.get("main__three"),
+    level_0: raw("U", 0, level(0)), level_1: raw("U", 0, level(1)),
+    successor_1: raw("U", 0, raw("LSucc", 1, level(0))), successor_2: raw("U", 0, raw("LSucc", 2, level(0))),
+    level_lambda: levelLambda("LLam", "l", "l"), level_lambda_renamed: levelLambda("LLam", "m", "m"), level_lambda_free: levelLambda("LLam", "l", "m"),
+    level_pi: levelLambda("LPi", "l", "l"), level_pi_renamed: levelLambda("LPi", "m", "m"),
+    glue: glue(v("t"), v("e"), face(3)), glue_type: glue(v("u"), v("e"), face(3)), glue_equiv: glue(v("t"), v("f"), face(3)), glue_face: glue(v("t"), v("e"), face(4)),
+    glue_term: glueTerm(v("a"), v("t"), face(3)), glue_term_as: glueTerm(v("c"), v("t"), face(3)), glue_term_part: glueTerm(v("a"), v("u"), face(3)),
+    glue_term_face: glueTerm(v("a"), v("t"), face(3, 0)),
+    comp: raw("Comp", 3, v("A"), tube(face(4), at(3)), v("b")), comp_moved: raw("Comp", 5, v("A"), tube(face(4), at(5)), v("b")),
+    comp_tube: raw("Comp", 3, v("A"), tube(face(4), at(4)), v("b")), comp_face: raw("Comp", 3, v("A"), tube(face(4, 0), at(3)), v("b")),
+    hcomp: raw("HComp", 5, at(5), tube(face(4), at(5)), v("b")), hcomp_moved: raw("HComp", 6, at(5), tube(face(4), at(6)), v("b")),
+    trans: raw("Trans", 3, at(3), tube(face(4), v("b")), v("b")), trans_moved: raw("Trans", 5, at(5), tube(face(4), v("b")), v("b")),
+    trans_face: raw("Trans", 3, at(3), tube(face(4, 0), v("b")), v("b")),
+    sort: sort(flag, [v("a")], [level(0)]), sort_signature: sort(unat, [v("a")], [level(0)]), sort_parameter: sort(flag, [v("b")], [level(0)]),
+    sort_level: sort(flag, [v("a")], [level(1)]),
+    // A variable is a parameter or a level: where the parameters end matters.
+    sort_variables: sort(flag, [v("a"), v("b")], []), sort_split: sort(flag, [v("a")], [v("b")]),
+    constructor: raw("Con", 0, sort(flag, [], [])), constructor_index: raw("Con", 1, sort(flag, [], [])),
+    elim: raw("Elim", flag, v("m"), list([v("a"), v("b")])), elim_signature: raw("Elim", unat, v("m"), list([v("a"), v("b")])),
+    elim_clause: raw("Elim", flag, v("m"), list([v("a"), v("c")])),
+  };
+  const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
+  const names = Object.keys(digests);
+  for (const left of names) for (const right of names)
+    assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
+  const same = (left, right) => digests[left].decoded === digests[right].decoded;
+  for (const [left, right] of [["level_lambda", "level_lambda_renamed"], ["level_pi", "level_pi_renamed"], ["comp", "comp_moved"],
+    ["hcomp", "hcomp_moved"], ["trans", "trans_moved"]])
+    assert.ok(same(left, right), `${left} and ${right} are the same term`);
+  for (const [left, right] of [["free_a", "free_b"], ["two", "three"], ["level_0", "level_1"], ["successor_1", "successor_2"],
+    ["level_lambda", "level_lambda_free"], ["level_lambda", "level_pi"], ["glue", "glue_type"], ["glue", "glue_equiv"], ["glue", "glue_face"],
+    ["glue_term", "glue_term_as"], ["glue_term", "glue_term_part"], ["glue_term", "glue_term_face"], ["comp", "comp_tube"], ["comp", "comp_face"],
+    ["trans", "trans_face"], ["sort", "sort_signature"], ["sort", "sort_parameter"], ["sort", "sort_level"], ["sort_variables", "sort_split"],
+    ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"]])
+    assert.ok(!same(left, right), `${left} and ${right} differ`);
+});
+
 test("the report's digest tells constructors apart by name across programs", async t => {
   const values = [];
   for (const constructor of ["first_flag", "second_flag"]) {
