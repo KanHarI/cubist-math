@@ -727,6 +727,16 @@ static void folded_normal_forms(unsigned optimizations) {
     cc_term kept = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, recursor));
     assert(kept && ck_alpha_equal(k, kept, raw(k, CC_APP, 0, g, recursor)));
 
+    /* A stuck composition is taken as its weak head, with the tubes on empty
+     * faces dropped: folding never normalizes such a tube's body, here an
+     * unknown definition that would fail. */
+    cc_formula empty_face = {CC_FACE, NULL, 0, 0};
+    cc_term dropped = raw(k, CC_TUBE, ck_formula(k, &empty_face), raw(k, CC_DEFREF, 9999, 0, 0), 0);
+    cc_term composition = cc_kernel_term(k, CC_COMP, 3, raw(k, CC_VAR, 615, 0, 0), dropped, x, 0);
+    assert(composition && cc_kernel_normalize(k, composition));
+    cc_term without = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, composition));
+    assert(without && !k->error[0] && !k->nodes[k->nodes[without].child[1]].child[1]);
+
     /* Eta contracts a lambda whose body becomes an application to its own
      * variable only once normal: λ z. fst((two(x)(z), tt)) is two(x). */
     cc_term projected_pair = raw(k, CC_FST, 0, cc_kernel_term(k, CC_PAIR, 0, unit_type, raw(k, CC_APP, 0, partial, z), point, 0), 0);

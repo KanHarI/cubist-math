@@ -66,13 +66,14 @@ definition stays as it was written:
    folded normal forms: a function, a path, a type, or an eliminator or
    composition stuck on a variable is not unfolded.
 5. A part that reached its head through no definition is taken in turn,
-   as in the full normal form. A stuck head, an eliminator or composition
-   that does not compute, that its last step rebuilt in place is taken as
-   that step's term: the head holds its stuck parts reduced,
-   `unitrec(…, abort(…))` where the term had `unitrec(…, stuck(x))`, and the
-   term keeps them as written, so they fold. A head the step computed, as a
-   transport of a path constructor computes a formal composition, is taken
-   as computed.
+   as in the full normal form. A stuck elimination, an eliminator, recursor,
+   abort or unglue on a value that is no constructor, that its last step
+   rebuilt in place is taken as that step's term: the head holds the stuck
+   value reduced, `unitrec(…, abort(…))` where the term had
+   `unitrec(…, stuck(x))`, and the term keeps it as written, so it folds.
+   Any other head is taken as computed: a transport of a path constructor
+   computes a formal composition, and a stuck composition drops its tubes
+   on empty faces, whose bodies are then never normalized.
 6. Only eta contracts a whole once its parts are folded; reducing it again
    would unfold what was folded.
 
@@ -185,7 +186,8 @@ Recommended, and taken unless the user changes them:
   bridge export. Native tests: closed first-order data equal to the full
   normal form, a stuck definition folded with its arguments folded, the term
   asked for unfolded, a definition reached through a beta step folded, eta,
-  the example above that folding is not idempotent, budget and deadline,
+  the example above that folding is not idempotent, a stuck composition
+  whose tube on an empty face is never normalized, budget and deadline,
   rollback and commit, and the full normal form unchanged. The
   kernel reference chapter on normalization documents it.
 - **FN2. The marks.** `!!` computes the folded normal form; `!!!` is lexed,
