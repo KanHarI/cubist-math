@@ -405,7 +405,9 @@ export class Translator {
     if(isPattern(expected)) {
       const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source));
       const text=this.shownIn(shown,scope);
-      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope),source(failed.pattern));
+      // A part's type is shown as it is, reducing nothing for display: its
+      // parameters may be large unreduced, as no comparison computed them.
+      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope,{reduce:0}),source(failed.pattern));
       if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
       return text;
     }
@@ -486,9 +488,9 @@ export class Translator {
     finally {this.checker.notation=previous;}
   }
   // A term as read where `scope`'s notation is selected (L2.10d).
-  shownIn(term,scope) {
+  shownIn(term,scope,{width=1000,reduce=256}={}) {
     const notation=notationForScope(scope);
-    return this.checker.displayText?.(term,1000,4000,notation)??sourceText(term,{},4000,notation);
+    return this.checker.displayText?.(term,width,4000,notation,reduce)??sourceText(term,{},4000,notation);
   }
   // Terms in one scope that a message shows, named together: a variable
   // reads alike in each, apart from every label any of them prints. Closed

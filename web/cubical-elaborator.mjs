@@ -455,8 +455,10 @@ export class NativeCubicalElaborator {
   // Without a notation, a term prints in the one selected where the message
   // that shows it arises: the declaration's (`notation`, set as each is
   // translated, L2.10j).
-  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
-    return this.printed(readableDimensions([displayTerm(term)])[0], width, limit, notation);
+  // `reduce` bounds the beta reductions made for display: 0 shows the term
+  // as it is.
+  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
+    return this.printed(readableDimensions([displayTerm(term, reduce)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
