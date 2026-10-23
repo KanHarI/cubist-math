@@ -240,10 +240,10 @@ export function normalDigest(term) {
 // It reads them as normalDigest does, with its binders and formulas, but
 // digests each object once for each way its free names are bound around it,
 // a bound name by its distance to its binder, and a node from its parts'
-// digests, as JSON so that no field runs into another. Its count of the
-// distinct objects it read is returned with it.
+// digests, as JSON so that no field runs into another. The count of the
+// decoding's distinct objects, arrays among them, is returned with it.
 export function sharedNormalDigest(term) {
-  const free = new Map(), digests = new Map();
+  const free = new Map(), digests = new Map(), objects = new Set();
   const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
   const isFormula = value => Array.isArray(value) && value.length > 0 && value.every(Array.isArray);
   // The term and dimension names a value mentions free, as a binder's
@@ -251,11 +251,12 @@ export function sharedNormalDigest(term) {
   const freeNames = value => {
     if (value === null || typeof value !== "object") return { terms: [], dims: [] };
     if (free.has(value)) return free.get(value);
+    objects.add(value);
     const terms = new Set(), dims = new Set(), add = ({ terms: t, dims: d }, term = null, dim = null) => {
       for (const name of t) if (name !== term) terms.add(name);
       for (const name of d) if (name !== dim) dims.add(name);
     };
-    if (isFormula(value)) for (const clause of value) for (const literal of clause) dims.add(dimensionOf(literal));
+    if (isFormula(value)) for (const clause of value) { objects.add(clause); for (const literal of clause) dims.add(dimensionOf(literal)); }
     else if (Array.isArray(value)) value.forEach(item => add(freeNames(item)));
     else if (value.tag === "Var") terms.add(value.name);
     else {
@@ -266,7 +267,10 @@ export function sharedNormalDigest(term) {
         if (!binds.includes(key)) add(freeNames(item));
         else if (binder === "name") add(freeNames(item), value.name);
         else if (key !== "system") add(freeNames(item), null, value.dim);
-        else for (const tube of item) { add(freeNames(tube.face)); add(freeNames(tube.term), null, value.dim); }
+        else {
+          objects.add(item);
+          for (const tube of item) { objects.add(tube); add(freeNames(tube.face)); add(freeNames(tube.term), null, value.dim); }
+        }
       }
     }
     const result = { terms: [...terms].sort(), dims: [...dims].sort() };
@@ -309,7 +313,8 @@ export function sharedNormalDigest(term) {
     known.set(key, result);
     return result;
   };
-  return { digest: digest(term).slice(0, 16), objects: digests.size };
+  // The root's digest hashed once more: a scalar root's is its text.
+  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size };
 }
 
 // Observe a program's phases while `run` runs: each phase's own calls,

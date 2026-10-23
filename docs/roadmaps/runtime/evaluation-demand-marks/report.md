@@ -17,7 +17,8 @@ fixed budget of 100M query ticks. For each entry the script records:
 
 For the last normalization it also records that normalization's own ticks.
 If that normalization failed, it records the failure; otherwise it records
-the distinct objects of the normal form's decoding, and its digest.
+the distinct objects of the normal form's decoding (arrays among them), and
+its digest.
 
 The digest is `sharedNormalDigest` of the normal form's decoding, from
 `tools/evaluation-baseline.mjs`. It compares terms exactly as that file's
@@ -44,15 +45,15 @@ the same way on both sides.
 | Case | Entry on the branch | Branch | Main |
 | --- | --- | --- | --- |
 | Value form | `evaluate small_inverse;` | `class((class((3, 0)), class((2, 0)), <fun>))`, 28,085 ticks, 13 queries, no normalization | the full normal form, 71,027,452 ticks |
-| Normal form | `evaluate small_inverse expecting !!_;` | 71,027,452 ticks, 1 query; 1,201,940 objects, digest `f0ee5f70f5840dbd` | the same: ticks, queries, objects, digest and text |
-| Lazy pattern | `evaluate euclid(3) expecting (7, _);` | `(7, <unevaluated>)`, 149,523 ticks, 4 queries | 223,521 ticks, the whole value normalized (1,523 objects) |
+| Normal form | `evaluate small_inverse expecting !!_;` | 71,027,452 ticks, 1 query; 2,898,283 objects, digest `e3862859aa604076` | the same: ticks, queries, objects, digest and text |
+| Lazy pattern | `evaluate euclid(3) expecting (7, _);` | `(7, <unevaluated>)`, 149,523 ticks, 4 queries | 223,521 ticks, the whole value normalized (1,971 objects) |
 | Weak head | `evaluate !euclid(4);` | the pair, its components as they are, 133 ticks, 1 query | — |
 | Prime of `euclid(4)` | `evaluate euclid(4) expecting (5, _);` | `K344` normalizing the first component, after 651,994 of the entry's 652,154 ticks | `K344` normalizing the whole value, 662,737 ticks |
 | Bare hole | `evaluate euclid(3) expecting _;` | refused with `E485`, no query | accepted: 223,501 ticks, the whole value normalized |
 | Eta | `print(evaluate(!(fun (n : UNat) => succ(n))));` | `succ`, 3 ticks | — |
-| `rationals.(2/3)` | `… expecting !!_;` | 71,001,788 ticks, 158 queries; 1,169,429 objects, `263a4d60d2d8f433` | the same |
-| `rationals.(0.5)` | `… expecting !!_;` | 72,209,323 ticks, 158 queries; 1,171,053 objects, `4afd3a8ded425b8d` | the same |
-| `integers.additive_` | `… expecting !!_;` | 73,120,014 ticks, 7 queries; 1,894,458 objects, `8f759a0a2d55d1b5` | the same |
+| `rationals.(2/3)` | `… expecting !!_;` | 71,001,788 ticks, 158 queries; 2,853,781 objects, `8dff0fb0f91b2a9c` | the same |
+| `rationals.(0.5)` | `… expecting !!_;` | 72,209,323 ticks, 158 queries; 2,855,531 objects, `376ba440da51ef3e` | the same |
+| `integers.additive_` | `… expecting !!_;` | 73,120,014 ticks, 7 queries; 3,061,849 objects, `71f8a824cff38363` | the same |
 
 The rational cases run in the debugging plan's main-only reproduction,
 [`probe-sources.mjs`](probe-sources.mjs)'s `rational`. The Euclid cases import

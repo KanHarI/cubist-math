@@ -770,6 +770,7 @@ test("the report's digest reads every part decoding reads", async t => {
   const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => raw("Lam", kernel.symbol(name), v("A"), body);
   const formula = (clauses, outer, inner) => raw("PApp", syntax.formula(clauses, "interval", new Map([["d", outer], ["e", inner]])), v("p"));
   const both = (outer, inner) => formula([["d:1", "e:1"]], outer, inner), either = (outer, inner) => formula([["d:1"], ["e:1"]], outer, inner);
+  const comp = term => raw("Comp", 3, v("A"), tube(face(4), term), v("b"));
   const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
   const terms = {
     free_a: v("a"), free_b: v("b"),
@@ -816,8 +817,32 @@ test("the report's digest reads every part decoding reads", async t => {
     annotated_other: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("U")),
     level_bound: raw("LLam", kernel.symbol("l"), raw("LBound", 2), raw("U", 0, raw("Var", kernel.symbol("l")))),
     trans_descriptor: raw("Trans", 3, at(3), tube(face(4), v("c")), v("b")),
+    // An outer binding read again after an inner binder of its name.
+    restored: lambda("x", raw("App", 0, lambda("x", v("x")), v("x"))), restored_renamed: lambda("x", raw("App", 0, lambda("y", v("y")), v("x"))),
+    restored_dimension: raw("PLam", 3, v("A"), raw("App", 0, raw("PLam", 3, v("A"), at(3)), at(3))),
+    restored_dimension_renamed: raw("PLam", 3, v("A"), raw("App", 0, raw("PLam", 5, v("A"), at(5)), at(3))),
+    // A system's faces are outside its binder.
+    comp_face_outside: raw("Comp", 3, v("A"), tube(face(3), v("t")), v("b")), comp_face_outside_moved: raw("Comp", 5, v("A"), tube(face(3), v("t")), v("b")),
+    hcomp_face_outside: raw("HComp", 3, v("A"), tube(face(3), v("t")), v("b")), hcomp_face_outside_moved: raw("HComp", 5, v("A"), tube(face(3), v("t")), v("b")),
+    // One composition met under more binders, its tube naming an outer
+    // variable or dimension, against one naming the inner binder's.
+    shared_tube: lambda("x", raw("App", 0, comp(v("x")), lambda("y", comp(v("x"))))),
+    shared_tube_inner: lambda("x", raw("App", 0, comp(v("x")), lambda("y", comp(v("y"))))),
+    shared_tube_dimension: raw("PLam", 6, v("A"), raw("App", 0, comp(at(6)), raw("PLam", 7, v("A"), comp(at(6))))),
+    shared_tube_dimension_inner: raw("PLam", 6, v("A"), raw("App", 0, comp(at(6)), raw("PLam", 7, v("A"), comp(at(7))))),
   };
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
+  // It counts every distinct object of the decoding, arrays among them.
+  for (const [name, value] of Object.entries(terms)) {
+    const decoded = syntax.decode(value, program.checker.dimensions), seen = new Set(), pending = [decoded];
+    while (pending.length) {
+      const item = pending.pop();
+      if (item === null || typeof item !== "object" || seen.has(item)) continue;
+      seen.add(item);
+      pending.push(...Object.values(item));
+    }
+    assert.equal(sharedNormalDigest(decoded).objects, seen.size, `${name} counts its objects`);
+  }
   const names = Object.keys(digests);
   for (const left of names) for (const right of names)
     assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
@@ -825,14 +850,15 @@ test("the report's digest reads every part decoding reads", async t => {
   for (const [left, right] of [["level_lambda", "level_lambda_renamed"], ["level_pi", "level_pi_renamed"], ["comp", "comp_moved"],
     ["hcomp", "hcomp_moved"], ["trans", "trans_moved"], ["domain", "domain_renamed"], ["pi", "pi_renamed"], ["sigma", "sigma_renamed"],
     ["path_type", "path_type_moved"], ["path_family", "path_family_moved"], ["comp_base", "comp_base_moved"], ["trans_base", "trans_base_moved"],
-    ["both", "both_moved"], ["either", "either_moved"], ["high", "high_moved"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
+    ["both", "both_moved"], ["either", "either_moved"], ["high", "high_moved"], ["restored", "restored_renamed"],
+    ["restored_dimension", "restored_dimension_renamed"], ["comp_face_outside", "comp_face_outside_moved"], ["hcomp_face_outside", "hcomp_face_outside_moved"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
     assert.ok(same(left, right), `${left} and ${right} are the same term`);
   for (const [left, right] of [["free_a", "free_b"], ["two", "three"], ["level_0", "level_1"], ["successor_1", "successor_2"],
     ["level_lambda", "level_lambda_free"], ["level_lambda", "level_pi"], ["glue", "glue_type"], ["glue", "glue_equiv"], ["glue", "glue_face"],
     ["glue_term", "glue_term_as"], ["glue_term", "glue_term_part"], ["glue_term", "glue_term_face"], ["comp", "comp_tube"], ["comp", "comp_face"],
     ["trans", "trans_face"], ["sort", "sort_signature"], ["sort", "sort_parameter"], ["sort", "sort_level"], ["sort_variables", "sort_split"],
     ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"], ["shadowed", "unshadowed"], ["slot_33", "slot_34"],
-    ["both", "either"]])
+    ["both", "either"], ["shared_tube", "shared_tube_inner"], ["shared_tube_dimension", "shared_tube_dimension_inner"]])
     assert.ok(!same(left, right), `${left} and ${right} differ`);
 });
 
@@ -842,12 +868,29 @@ test("the report's digest compares plain values as normalDigest does", () => {
   const values = {
     field_a: { tag: "T", a: 1 }, field_b: { tag: "T", b: 1 }, field_null: { tag: "T", a: null }, field_undefined: { tag: "T", a: undefined },
     untagged: { a: 1 }, text: { tag: "T", a: "1" }, list: [1, 2], list_reversed: [2, 1], nested: [[1], 2],
+    // Roots that are no object, alike in their first characters.
+    text_1: "abcdefg1", text_2: "abcdefg2", number_0: 12345670, number_1: 12345671,
   };
   const digests = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, { shared: sharedNormalDigest(value).digest, decoded: normalDigest(value) }]));
   for (const left of Object.keys(values)) for (const right of Object.keys(values)) {
     assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
     if (left !== right) assert.notEqual(digests[left].decoded, digests[right].decoded, `${left} and ${right} differ`);
   }
+});
+
+// It reads each shared object once: a value of 2^22 paths, each node read
+// through getters that count, is read in a few reads a node, where a walk of
+// its paths would make millions.
+test("the report's digest reads a shared object once", () => {
+  let reads = 0, value = { tag: "Var", name: "x" };
+  const levels = 22;
+  for (let level = 0; level < levels; level++) {
+    const part = value, read = () => { reads++; return part; };
+    value = Object.freeze(Object.defineProperties({ tag: "App" }, { fn: { get: read, enumerable: true }, arg: { get: read, enumerable: true } }));
+  }
+  const { objects } = sharedNormalDigest(value);
+  assert.equal(objects, levels + 1);
+  assert.ok(reads <= 4 * levels, `${reads} reads`);
 });
 
 test("the report's digest tells constructors apart by name across programs", async t => {
