@@ -245,6 +245,15 @@ evaluate tagged expecting typed(Unit, _);`, { module });
   assert.match(result.gaps[0].reason, /a part of type Tag\(\(fun \(f : UNat -> UNat, x : UNat\) => f\(f\(x\)\)\)/);
 });
 
+test("a glue value is shown as the introduction it is, on an empty or a false face", async t => {
+  const { result } = await checkProgram(t, `import contractible_maps;
+evaluate typed(Glue(Unit), glue(tt)) expecting !_;
+evaluate typed(Glue(Unit, face_when(0, Unit, id_contr_equiv(U0, Unit))), glue(tt, face_when(0, tt))) expecting !_;`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  // The kernel keeps no part on a false face.
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["glue(<unevaluated>)", "glue(<unevaluated>)"]);
+});
+
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
   // The prime of euclid(4) has two successor heads, and its third is too deep
   // to compute (K344): any query of the ignored part, however indirect,
@@ -396,6 +405,18 @@ print(evaluate(rows(8 * 250)));`, { module });
   assert.equal(text.match(/\btt\b/g).length, 166 * 20 + 11);
   assert.equal(text.match(/…/g).length, 10);
   assert.match(text, /, tt, …, …, …, …, …, …, …, …, …\), …\)/);
+});
+
+test("a glue value's value form is the introduction, with its base computed", async t => {
+  const { result } = await checkProgram(t, `import contractible_maps;
+import unat;
+use unat;
+def g : Glue(UNat) := glue(1 + 1);
+print(evaluate(g));
+print(evaluate(!g));
+print(evaluate(!!g));`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  assert.deepEqual(result.prints.map(print => print.text), ["glue(2)", "glue(1 + 1)", "glue(2)"]);
 });
 
 test("the value form computes no more heads than the printer shows", async t => {

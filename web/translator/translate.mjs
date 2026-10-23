@@ -437,6 +437,7 @@ export class Translator {
       spine:handle=>checker.kernel.spine(handle),
       decoded:handle=>checker.decoded(handle),
       constructor:handle=>checker.shownConstructor(handle),
+      glueSystem:handle=>checker.glueSystem(handle),
       // A constructor's fields in the order the printer shows them, read once
       // per declared type.
       fieldOrder:constructor=>{

@@ -141,7 +141,8 @@ const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : 
 // `parts(index, handle, below)` gives them, by their places and handles,
 // from the left; `below` is how many levels under the head's own a part is
 // shown (a constructor's first argument is under every application). A head
-// that is no constructor, pair, injection or tt is shown by its marker.
+// that is no constructor, pair, injection, tt or glue value is shown by its
+// marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
   if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg, args.length - index)), at.constructor(root.id));
@@ -149,6 +150,11 @@ function shownHead(head, at, parts = () => unevaluated) {
   if (root.kind === "Pair") { const first = parts(0, root.children[1], 1); return { tag: "Pair", first, second: parts(1, root.children[2], 1) }; }
   if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1], 1) };
   if (root.kind === "Point") return { tag: "Point" };
+  // A glue value is an introduction too: its base, and the term on each
+  // face of its system.
+  if (root.kind === "GlueTerm")
+    return { tag: "GlueTerm", base: parts(0, root.children[1], 1),
+      system: at.glueSystem(root.id).map(({ face, term }, index) => ({ face, term: parts(index + 1, term, 2) })) };
   return headMarker(root.kind);
 }
 const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
@@ -206,7 +212,8 @@ export function valueForm(handle, at, node, budget = printedNodes, depth = 512) 
 //     names;
 //   spine(handle), decoded(handle): a term as the kernel holds it, nothing
 //     computed; constructor(handle), a constructor as a display shows it,
-//     without its type's parameters;
+//     without its type's parameters; glueSystem(handle), a glue value's
+//     faces and the handles of its terms;
 //   elaborate(node, type): a leaf elaborated at a type, and its normal form;
 //   annotation(node): a typed pattern's type, elaborated and checked, and
 //     not normalized: sameType compares it with the part's type;

@@ -810,6 +810,17 @@ export class NativeCubicalElaborator {
   // A constructor as a display shows it: its name and its declared type's
   // signature, without the type's parameters, which no display of the
   // constructor shows and which can be large, unreduced, and deep.
+  // A glue value's system as a display shows it: each part's face, decoded,
+  // and its term's handle, which is computed only where it is shown.
+  glueSystem(handle) {
+    const system = [];
+    for (let part = this.kernel.node(handle).children[2]; part;) {
+      const tube = this.kernel.node(part);
+      system.push({ face: this.syntax.decodeFormula(tube.payload, this.dimensions), term: tube.children[0] });
+      part = tube.children[1];
+    }
+    return system;
+  }
   shownConstructor(handle) {
     const node = this.kernel.node(handle), sort = this.kernel.node(node.children[0]);
     if (sort.kind !== "Sort") return this.decoded(handle);
