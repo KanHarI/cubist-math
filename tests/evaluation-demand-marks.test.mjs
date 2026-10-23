@@ -996,8 +996,11 @@ test("the report's digest compares plain values as normalDigest does", () => {
   const values = {
     field_a: { tag: "T", a: 1 }, field_b: { tag: "T", b: 1 }, field_null: { tag: "T", a: null }, field_undefined: { tag: "T", a: undefined },
     untagged: { a: 1 }, text: { tag: "T", a: "1" }, list: [1, 2], list_reversed: [2, 1], nested: [[1], 2],
-    // Roots that are no object, alike in their first characters.
-    text_1: "abcdefg1", text_2: "abcdefg2", number_0: 12345670, number_1: 12345671,
+    // Fields and roots that are no object, alike in their first characters,
+    // or alike in their text but not their type.
+    field_undefined_text: { tag: "T", a: "undefined" }, field_null_text: { tag: "T", a: "null" },
+    text_1: "abcdefg1", text_2: "abcdefg2", number_0: 12345670, number_1: 12345671, number_text: "12345670",
+    undefined_root: undefined, undefined_text: "undefined", null_root: null, null_text: "null", boolean: true, boolean_text: "true",
   };
   const digests = Object.fromEntries(Object.entries(values).map(([name, value]) => [name, { shared: sharedNormalDigest(value).digest, decoded: normalDigest(value) }]));
   for (const left of Object.keys(values)) for (const right of Object.keys(values)) {
