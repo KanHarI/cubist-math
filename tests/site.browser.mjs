@@ -122,10 +122,10 @@ await browserTest(async ({ browser, base }) => {
   // A read-only REPL transcript forks into the REPL bar, with the example
   // before it loaded, and can be continued there.
   await page.goto(new URL("reference/first-proof.html", base).href);
-  await page.locator("pre.repl-transcript", { hasText: "evaluate lt_succ;" })
+  await page.locator("pre.repl-transcript", { hasText: "evaluate !!lt_succ;" })
     .locator("xpath=following-sibling::div[contains(@class, 'example-bar')][1]").locator(".repl-fork").click();
   await page.waitForFunction(() => document.querySelectorAll(".repl-dock .repl-result").length >= 4 && !document.querySelector(".repl-form.busy"));
-  await enter("evaluate exists_greater_number(10)");
+  await enter("evaluate !!exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
   console.log("PASS read-only REPL transcripts fork into the REPL bar");
   await page.goto(new URL("proof.html?proof=unat", base).href);
@@ -203,15 +203,15 @@ await browserTest(async ({ browser, base }) => {
   await elaboration.locator(".elaboration-declaration").nth(2).waitFor();
   assert.equal(await elaboration.locator(".elaboration-declaration").count(), 3);
   assert.match(await elaboration.textContent(), /intro n;\s*⊢ forall n : UNat\. exists m : UNat\. lt\(n, m\)\s*builds fun \(n : UNat\) => \?/);
-  assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel\.html$/);
+  assert.match(await elaboration.getByRole("link", { name: "For more info" }).first().getAttribute("href"), /kernel-overview\.html$/);
   // The kernel's check as a THTH-style forward derivation, with comments.
   const derivation = elaboration.locator(".derivation").first();
   assert.match(await derivation.textContent(), /\/\/ \{\} ⊢ UNat : U0\s*2 SortBegin\(\)/);
   assert.match(await derivation.textContent(), /\/\/ \{n : UNat\}\s*\d+ CtxExt\(2\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
-  await page.goto(new URL("kernel.html", base).href);
+  await page.goto(new URL("reference/kernel-terms.html", base).href);
   assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
-  console.log("PASS elaboration panel and the kernel reference outline");
+  console.log("PASS elaboration panel and the kernel terms table");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status")?.textContent.includes("checked"));
   assert.equal(await page.locator("#diagnostic").isVisible(), false);

@@ -1,0 +1,23 @@
+import propositions;
+import binary;
+use nat;
+
+// A subset is a proposition-valued predicate. Its proposition universe is
+// explicit; the full powerset lives one universe above the carrier.
+def PowerSet(U < UU0, A : U) : next(U) := A -> Prop(U);
+
+// Binary characteristic functions describe decidable subsets. Identifying
+// these with all proposition-valued subsets would require excluded middle.
+def DecidablePowerSet(U < UU0, A : U) : U := A -> Binary;
+
+computable def powerset_is_set(U < UU0, A : U) : IsSet(next(U), PowerSet(U, A)) := pi_is_set(
+  next(U), A, fun (a : A) => Prop(U), fun (a : A) => prop_type_is_set(U)
+);
+
+computable def decidable_powerset_is_set(U < UU0, A : U) :
+  IsSet(U, DecidablePowerSet(U, A)) := pi_is_set(
+    U, A, fun (a : A) => Binary, fun (a : A) => fin_is_set(2)
+  );
+
+hlevel_rule powerset_is_set;
+hlevel_rule decidable_powerset_is_set;

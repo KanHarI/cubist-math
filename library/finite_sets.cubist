@@ -1,0 +1,11 @@
+import nat;
+use nat;
+
+// The first n natural numbers, with proposition-valued bound evidence.
+def Fin(n : Nat) : U0 := exists k : Nat. k < n;
+
+computable def fin_is_set(n : Nat) : IsSet(U0, Fin(n)) := subtype_has_level(
+  U0, unat.(1), Nat, fun (k : Nat) => k < n, nat_is_set, fun (k : Nat) => bnat_lt_is_prop(k, n)
+);
+
+hlevel_rule fin_is_set;

@@ -1812,7 +1812,7 @@
   },
   {
    "path": "cubist-tests/evaluate_patterns.cubist",
-   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, other expressions by normal form, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor."
+   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, each part computed only as far as the pattern observes it, other expressions by full normal form, the demand marks `!` and `!!`, the refused bare `_` and the marks' warnings, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor."
   },
   {
    "path": "cubist-tests/f4_extension_loops_false.cubist",
@@ -2423,6 +2423,10 @@
    "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. The shared no-zero-divisor proof is instantiated as `bint_mul_nonzero`; `bint_decide_zero` supplies compact nonzero certificates. Computed values remain quotient representatives; the public `Z` migration follows in NUM2."
   },
   {
+   "path": "library/binary.cubist",
+   "summary": "`Binary := Fin(2)`, its values `False` and `True`, and computable Boolean operations `Not`, `And`, `Or`, `Xor` and `Nor`."
+  },
+  {
    "path": "library/bnat_arithmetic.cubist",
    "summary": "Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits."
   },
@@ -2471,12 +2475,20 @@
    "summary": "The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them."
   },
   {
+   "path": "library/continuum_hypothesis.cubist",
+   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses; axiom declarations and the implications to excluded middle and choice remain follow-ups."
+  },
+  {
    "path": "library/contractible_maps.cubist",
    "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. An equivalence has an inverse with both inverse laws (`equiv_inverse`), and every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
   },
   {
    "path": "library/differences.cubist",
    "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, an injective semiring embedding, compact zero-decision certificates, and no-zero-divisor laws from multiplicative cancellation and additive trichotomy. Unary and binary integers instantiate this shared construction."
+  },
+  {
+   "path": "library/finite_sets.cubist",
+   "summary": "`Fin(n)`, the natural numbers strictly below `n`, with checked setness. Uses public binary `Nat`."
   },
   {
    "path": "library/fractions.cubist",
@@ -2513,6 +2525,10 @@
   {
    "path": "library/ordered_algebra.cubist",
    "summary": "`OrderedRing` extends `Ring` with a proposition-valued, cotransitive, tight strict order compatible with addition and positive multiplication, including constructive reflection of positive products to apartness of each factor from zero. `OrderedCommRing` extends both `OrderedRing` and `CommRing`; `OrderedField` extends `OrderedCommRing` with inverses of elements apart from zero. Non-strict order is the negation of reverse strict order. `ordered_inv` extracts the unique inverse from its truncated law. Apartness is a truncated positive-or-negative sign, stronger constructively than mere inequality with zero. No decidable order or completeness is assumed; ordered integer/rational models are not yet provided."
+  },
+  {
+   "path": "library/powersets.cubist",
+   "summary": "Generic proposition-valued `PowerSet(U, A) : next(U)` and binary `DecidablePowerSet(U, A) : U`, using `Binary` for characteristic functions, with checked setness of both. No identification between full and decidable powersets is assumed."
   },
   {
    "path": "library/propositions.cubist",

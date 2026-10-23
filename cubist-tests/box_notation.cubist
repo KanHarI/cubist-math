@@ -26,4 +26,4 @@ def corners(A : U0, x : A, p : x = x) : x = x := path i => compose j in A from p
 // A composition that the kernel cannot reduce prints as its box.
 // Output: fun (A : U0, x, y, z : A, p : x = y, q : y = z) => path i => compose j in A from p @ i {
 //   on i = 0 => x; on i = 1 => q @ j; }
-print(evaluate(fun (A : U0, x, y, z : A, p : x = y, q : y = z) => joined(A, x, y, z, p, q)));
+print(evaluate(!!fun (A : U0, x, y, z : A, p : x = y, q : y = z) => joined(A, x, y, z, p, q)));

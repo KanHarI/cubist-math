@@ -1,47 +1,90 @@
-// Patterns on the expected side of evaluate (L2.9a; the proof-ergonomics
-// roadmap's computability milestone): `evaluate e expecting p;` where p has
-// holes. The evaluated term's normal form, closed and free of assumptions,
-// is matched against p part by part:
-//   _ matches anything;
+// Patterns on the expected side of evaluate (L2.9a), with demand marks
+// (EVAL5; docs/roadmaps/runtime/evaluation-demand-marks.md):
+// `evaluate e expecting p;` where p has holes or marks. The evaluated term,
+// closed and free of assumptions, is matched against p part by part, and
+// each part is computed only as far as p observes it:
+//   _ matches anything and computes nothing;
+//   !p computes the part's weak head, then matches p;
+//   !!p computes the part's full normal form, then matches p against it;
 //   (p, q) matches a pair whose components match p and q;
 //   left(p) and right(p) match a sum's injections;
 //   c(p, …), a constructor of the part's declared type, matches c applied to
 //     parts that match the p's, each read at its field's type in c's
 //     signature, and a constructor written alone, c, matches c with no
 //     arguments;
-//   typed(T, p) matches what p matches, where T is the part's type;
+//   typed(T, p) matches what p matches, where T is the part's type,
+//     compared by their weak heads, part by part, then by conversion;
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
+// A pair, an injection and a constructor compute the part's weak head and
+// read it; an expression computes the part's full normal form. A part is
+// read by its type, never by its weak head's kind: after eta a function's
+// weak head can be a constructor. A bare `_` would compute nothing, and is
+// refused where the whole value is expected (translate.mjs).
 // left, right and typed are the builtins, reserved names no module binds,
 // and a builtin's or a constructor's arguments are written out as
 // elaboration requires, a hole aside: a hole elsewhere in the pattern does
 // not change what any part of it says.
 // The pattern is no term, so nothing about it reaches the kernel but the
-// expressions elaborated at its leaves; the value is the kernel's.
+// queries its marks and parts ask and the expressions elaborated at its
+// leaves; the value is the kernel's.
 import {T,substituteTerm} from "./core.mjs";
 import {isHole,writtenOut} from "./arguments.mjs";
 
-// Whether an expected value is a pattern: whether a hole is in it.
-export function hasHole(node) {
+const within = (node, found) => {
   if (!node || typeof node !== "object") return false;
-  if (Array.isArray(node)) return node.some(hasHole);
-  if (isHole(node)) return true;
-  return Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && hasHole(value));
-}
+  if (Array.isArray(node)) return node.some(item => within(item, found));
+  if (found(node)) return true;
+  return Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && within(value, found));
+};
+// Whether an expected value is a pattern: whether a hole or a demand mark is
+// in it. One that is neither is compared whole, as an expression.
+export const hasHole = node => within(node, isHole);
+export const hasMark = node => within(node, item => item.kind === "demand");
+export const isPattern = node => hasHole(node) || hasMark(node);
+
+// A marker in a shown value: a part evaluation did not compute, or one
+// whose weak head it computed and does not show (cubical-source-text.mjs).
+export const marker = text => ({ tag: "Marker", text });
+const unevaluated = marker("<unevaluated>");
 
 // A value that does not match a pattern: the part of the value, and the part
-// of the pattern it fails; and a hole where no part can be read.
+// of the pattern it fails; and a hole or a mark where no part can be read.
 export const valueMismatch = (shown, pattern, part, expected) =>
   Error(`The term evaluates to ${shown}, which does not match ${pattern}: ${part} is not ${expected}.`);
+export const typedMismatch = (shown, pattern, type, expected) =>
+  Error(`The term evaluates to ${shown}, which does not match ${pattern}: a part of type ${type} is not ${expected}.`);
 export const holeInExpression = expression =>
   Error(`A hole in an expected value stands for a pair's component, an injection's value or a constructor's argument; ${expression} is none of these, so write it out.`);
+export const markInExpression = expression =>
+  Error(`A demand mark, ! or !!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; ${expression} is none of these.`);
+export const bareHole = () =>
+  Error("evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, or !!_ for its full normal form.");
 
-// The first part of `value` that does not match `pattern`, as
-// { value, pattern }, or null when it matches. `type` is the value's type;
-// `elaborate(node, type)` elaborates a leaf at a type and gives its normal
-// form, and `source(node)` is a node's text.
-export function mismatch(pattern, value, type, scope, elaborate, source) {
+// A hole or a mark where no part can be read: a mark is refused first, as
+// writing the term for a hole would not make its place one.
+const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : holeInExpression)(source(pattern));
+
+// Whether a typed pattern's annotation is the part's type. Types that differ
+// in their weak heads, compared part by part, differ: a failed conversion
+// would decide that only after normalizing both, computing parts of the
+// type, as a dependent pair's ignored component, that the pattern leaves
+// unobserved. Types the comparison cannot tell apart, as where eta or a
+// cubical construction relates them, are compared by conversion.
+const sameType = (annotation, type, scope) => !scope.differ(annotation, type) && scope.equal(annotation, type);
+
+// The first part of the normal form `value` that does not match `pattern`,
+// as { value, pattern }, or null when it matches: a pattern under `!!`,
+// whose marks change nothing. `type` is the value's type, and `at` gives
+// elaborate, annotation and source, as observe takes them. A failure is
+// located at the part of the pattern that met it.
+export function mismatch(pattern, value, type, scope, at) {
+  try { return mismatched(pattern, value, type, scope, at); }
+  catch (error) { throw scope.unit.locate(error, pattern); }
+}
+function mismatched(pattern, value, type, scope, at) {
   if (isHole(pattern)) return null;
+  if (pattern.kind === "demand") return mismatch(pattern.value, value, type, scope, at);
   const fails = { value, pattern };
   const head = scope.nf(type);
   const call = pattern.kind === "call" && pattern.fn?.kind === "name" ? pattern.fn.name
@@ -51,17 +94,17 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
   if (pattern.kind === "call") writtenOut(pattern, scope, true);
   // typed(T, p) is p, read at T, which is the part's type.
   if (builtin === "typed" && args.length === 2) {
-    if (hasHole(args[0])) throw holeInExpression(source(args[0]));
-    return scope.equal(elaborate(args[0], null), type) ? mismatch(args[1], value, type, scope, elaborate, source) : fails;
+    if (isPattern(args[0])) throw misplaced(args[0], at.source);
+    return sameType(at.annotation(args[0]), type, scope) ? mismatch(args[1], value, type, scope, at) : { ...fails, type };
   }
   if (pattern.kind === "pair" && head.tag === "Sigma") {
     if (value.tag !== "Pair") return fails;
-    return mismatch(pattern.left, value.first, head.domain, scope, elaborate, source)
-      ?? mismatch(pattern.right, value.second, substituteTerm(head.body, head.name, value.first), scope, elaborate, source);
+    return mismatch(pattern.left, value.first, head.domain, scope, at)
+      ?? mismatch(pattern.right, value.second, substituteTerm(head.body, head.name, value.first), scope, at);
   }
   if ((builtin === "left" || builtin === "right") && args.length === 1 && head.tag === "Sum") {
     if (value.tag !== (builtin === "left" ? "Inl" : "Inr")) return fails;
-    return mismatch(args[0], value.value, builtin === "left" ? head.left : head.right, scope, elaborate, source);
+    return mismatch(args[0], value.value, builtin === "left" ? head.left : head.right, scope, at);
   }
   const bound = call && scope.env.get(call);
   if (bound?.tag === "InductiveConstructor" && head.tag === "Sort" && bound.inductive?.binding === head.signature) {
@@ -78,14 +121,177 @@ export function mismatch(pattern, value, type, scope, elaborate, source) {
     let fn = T.constructor(bound.index, head, bound.source);
     for (const [kernelIndex, sourceIndex] of bound.order.entries()) {
       const field = scope.nf(scope.infer(fn).type).domain;
-      const found = mismatch(args[sourceIndex], parts[kernelIndex], field, scope, elaborate, source);
+      const found = mismatch(args[sourceIndex], parts[kernelIndex], field, scope, at);
       if (found) return found;
       fn = T.app(fn, parts[kernelIndex]);
     }
     return null;
   }
-  if (hasHole(pattern)) throw holeInExpression(source(pattern));
-  return scope.equal(value, elaborate(pattern, type)) ? null : fails;
+  if (isPattern(pattern)) throw misplaced(pattern, at.source);
+  return scope.equal(value, at.elaborate(pattern, type)) ? null : fails;
+}
+
+// The kinds of weak head a value can stop at, as a shown value marks them.
+// An eliminator not applied to a value is a function: eta makes
+// fun (n : UNat) => induction n … one.
+const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
+const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : kind === "PLam" ? "<path>" : kind === "LLam" ? "<level fun>"
+  : typeKinds.has(kind) ? "<type>" : ["Comp", "HComp", "Trans"].includes(kind) ? "<composition>" : "<neutral>");
+// A value as far as it was computed: a weak head with its parts shown as
+// `parts(index, handle, below)` gives them, by their places and handles,
+// from the left; `below` is how many levels under the head's own a part is
+// shown (a constructor's first argument is under every application). A head
+// that is no constructor, pair, injection, tt or glue value is shown by its
+// marker.
+function shownHead(head, at, parts = () => unevaluated) {
+  const { root, args } = at.spine(head);
+  if (root.kind === "Con") return args.reduce((fn, arg, index) => T.app(fn, parts(index, arg, args.length - index)), at.constructor(root.id));
+  if (args.length) return marker("<neutral>");
+  if (root.kind === "Pair") { const first = parts(0, root.children[1], 1); return { tag: "Pair", first, second: parts(1, root.children[2], 1) }; }
+  if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0, root.children[1], 1) };
+  if (root.kind === "Point") return { tag: "Point" };
+  // A glue value is an introduction too: its base, and the term on each
+  // face of its system.
+  if (root.kind === "GlueTerm")
+    return { tag: "GlueTerm", base: parts(0, root.children[1], 1),
+      system: at.glueSystem(root.id).map(({ face, term }, index) => ({ face, term: parts(index + 1, term, 2) })) };
+  return headMarker(root.kind);
+}
+const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
+
+// The printer's budget, in the nodes it prints (cubical-source-text.mjs): a
+// value form is shown whole within it, never cut at a width.
+export const printedNodes = 4000;
+
+// The value form of a term (DM3): its weak head, and the value forms of the
+// parts of a constructor, a pair or an injection; any other head is shown by
+// its marker. Its parts are computed in the order the printer shows them, a
+// constructor's fields in source order, and each head is charged as the
+// printer charges it, an applied constructor twice, for the application and
+// the name; a head is computed only while two remain. So the printer shows
+// every part the walk computed, within the same budget. And the walk shows
+// nothing deeper than the kernel's own syntax, `depth` levels (K344), which
+// is as deep as any printer is given a term. A part past either is shown as
+// …, uncomputed. The walk keeps its own stack, as a value's parts can nest
+// deeper than JavaScript's. `at` is as observe takes it, with fieldOrder;
+// `node`, the source a failure is located at.
+export function valueForm(handle, at, node, budget = printedNodes, depth = 512) {
+  const value = {}, pending = [[handle, value, 1]];
+  while (pending.length) {
+    const [part, place, level] = pending.pop(), parts = [];
+    if (budget < 2 || level > depth) { budget--; Object.assign(place, marker("…")); continue; }
+    const shown = shownHead(at.head(part, node), at, (_, inner, below) => {
+      const slot = {};
+      parts.push([inner, slot, level + below]);
+      return slot;
+    });
+    Object.assign(place, shown);
+    let constructor = shown;
+    while (constructor.tag === "App") constructor = constructor.fn;
+    const applied = constructor.tag === "Con" && parts.length > 0;
+    budget -= applied ? 2 : 1;
+    // A constructor's fields, as the printer reorders them from the
+    // kernel's order to the source's.
+    const order = applied ? at.fieldOrder(constructor) : null;
+    const shownOrder = order && parts.length >= order.length
+      ? [...order.map((_, sourceIndex) => parts[order.indexOf(sourceIndex)]), ...parts.slice(order.length)] : parts;
+    // The first part shown is computed first.
+    pending.push(...shownOrder.reverse());
+  }
+  return value;
+}
+
+// Match a part on demand: `handle` is the part's kernel term, which only the
+// pattern's demands compute, `type()` gives its type, and `head`, when
+// known, its weak head. The result is { shown, failed }: the part as far as
+// it was computed, with markers for the rest, and the first failure, as
+// { shown, pattern } for a value that does not match or { type, pattern }
+// for a part of another type, or none. `at` asks the kernel:
+//   head(handle, node), normal(handle, node): a weak head, a normal form
+//     decoded, each a query for the pattern node `node`, which a failure
+//     names;
+//   spine(handle), decoded(handle): a term as the kernel holds it, nothing
+//     computed; constructor(handle), a constructor as a display shows it,
+//     without its type's parameters; glueSystem(handle), a glue value's
+//     faces and the handles of its terms;
+//   elaborate(node, type): a leaf elaborated at a type, and its normal form;
+//   annotation(node): a typed pattern's type, elaborated and checked, and
+//     not normalized: sameType compares it with the part's type;
+//   source(node): a node's text;
+//   locate(error, node): the error, located at the pattern node whose
+//     demand failed, unless a part inside it already located it.
+export function observe(pattern, handle, type, scope, at, head = null) {
+  try { return observed(pattern, handle, type, scope, at, head); }
+  catch (error) { throw at.locate(error, pattern); }
+}
+function observed(pattern, handle, type, scope, at, head) {
+  if (isHole(pattern)) return { shown: head === null ? unevaluated : shownHead(head, at) };
+  if (pattern.kind === "demand") {
+    if (pattern.mark === "!") return observe(pattern.value, handle, type, scope, at, head ?? at.head(handle, pattern));
+    const normal = at.normal(handle, pattern);
+    const found = isHole(pattern.value) ? null : mismatch(pattern.value, normal, type(), scope, at);
+    return { shown: normal, failed: found && (found.type ? { type: found.type, pattern: found.pattern } : { shown: found.value, pattern: found.pattern }) };
+  }
+  const call = pattern.kind === "call" && pattern.fn?.kind === "name" ? pattern.fn.name
+    : pattern.kind === "name" ? pattern.name : null;
+  const args = pattern.kind === "call" ? pattern.args : [];
+  const builtin = call && !scope.env.has(call) ? call : null;
+  if (pattern.kind === "call") writtenOut(pattern, scope, true);
+  // typed(T, p) is p, read at T, which is the part's type.
+  if (builtin === "typed" && args.length === 2) {
+    if (isPattern(args[0])) throw misplaced(args[0], at.source);
+    if (!sameType(at.annotation(args[0]), type(), scope))
+      return { shown: head === null ? unevaluated : shownHead(head, at), failed: { type: type(), pattern } };
+    return observe(args[1], handle, type, scope, at, head);
+  }
+  // The part's weak head, read; a value of another shape fails the pattern.
+  const read = () => {
+    head ??= at.head(handle, pattern);
+    return at.spine(head);
+  };
+  const differs = () => { const shown = shownHead(head, at); return { shown, failed: { shown, pattern } }; };
+  const typeHead = pattern.kind === "pair" || builtin === "left" || builtin === "right" || scope.env.get(call)?.tag === "InductiveConstructor"
+    ? scope.nf(type()) : null;
+  if (pattern.kind === "pair" && typeHead.tag === "Sigma") {
+    const { root, args: applied } = read();
+    if (root.kind !== "Pair" || applied.length) return differs();
+    const [, first, second] = root.children;
+    const left = observe(pattern.left, first, () => typeHead.domain, scope, at);
+    if (left.failed) return { shown: { tag: "Pair", first: left.shown, second: unevaluated }, failed: left.failed };
+    const right = observe(pattern.right, second, once(() => substituteTerm(typeHead.body, typeHead.name, at.decoded(first))), scope, at);
+    return { shown: { tag: "Pair", first: left.shown, second: right.shown }, failed: right.failed };
+  }
+  if ((builtin === "left" || builtin === "right") && args.length === 1 && typeHead.tag === "Sum") {
+    const { root, args: applied } = read();
+    if (root.kind !== (builtin === "left" ? "Inl" : "Inr") || applied.length) return differs();
+    const inner = observe(args[0], root.children[1], () => builtin === "left" ? typeHead.left : typeHead.right, scope, at);
+    return { shown: { tag: root.kind, value: inner.shown }, failed: inner.failed };
+  }
+  const bound = call && scope.env.get(call);
+  if (bound?.tag === "InductiveConstructor" && typeHead.tag === "Sort" && bound.inductive?.binding === typeHead.signature) {
+    const { root, args: parts } = read();
+    if (root.kind !== "Con" || root.payload !== bound.index || parts.length !== bound.order.length
+      || args.length !== bound.order.length) return differs();
+    // The kernel holds a constructor's arguments in its own order. Each is
+    // read at its field's type: the constructor's type at this instance,
+    // instantiated with the arguments before it as the kernel holds them,
+    // computed only as far as a field's pattern reads its type.
+    const shown = [];
+    const result = failed => ({ shown: shownHead(head, at, index => shown[index] ?? unevaluated), failed });
+    let fnType = once(() => scope.infer(T.constructor(bound.index, typeHead, bound.source)).type);
+    for (const [kernelIndex, sourceIndex] of bound.order.entries()) {
+      const before = fnType, pi = once(() => scope.nf(before())), part = parts[kernelIndex];
+      const found = observe(args[sourceIndex], part, () => pi().domain, scope, at);
+      shown[kernelIndex] = found.shown;
+      if (found.failed) return result(found.failed);
+      fnType = once(() => substituteTerm(pi().body, pi().name, at.decoded(part)));
+    }
+    return result(null);
+  }
+  if (isPattern(pattern)) throw misplaced(pattern, at.source);
+  // An expression: elaborated first, so that one in error computes nothing.
+  const expected = at.elaborate(pattern, type()), normal = at.normal(handle, pattern);
+  return { shown: normal, failed: scope.equal(normal, expected) ? null : { shown: normal, pattern } };
 }
 
 // A closed truncation's witness (L2.9b): its normal form is a truncated

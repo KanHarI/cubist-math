@@ -262,6 +262,14 @@ export class CubicalKernel {
     if (!id) throw this.failure();
     return id;
   }
+  // A term's application spine: its root node, read, and the handles of
+  // the arguments applied to it, in order.
+  spine(handle) {
+    const args = [];
+    let node = this.node(handle);
+    while (node.kind === "App") { args.push(node.children[1]); node = this.node(node.children[0]); }
+    return { root: node, args: args.reverse() };
+  }
   definition(reference) {
     this.assertOpen();
     uint32(reference, "Definition handle");

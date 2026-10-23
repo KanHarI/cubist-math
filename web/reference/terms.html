@@ -44,6 +44,10 @@
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
             <li><a href="errors.html">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
@@ -127,7 +131,7 @@ forall A : U0. (A -&gt; A) -&gt; A -&gt; A
 (UNat -&gt; UNat) -&gt; UNat -&gt; UNat
 &gt; typeof add_two;
 UNat -&gt; UNat
-&gt; evaluate add_two;
+&gt; evaluate !!add_two;
 fun (a : UNat) =&gt; succ(succ(a))</code></pre>
             <p><code>apply_twice(UNat)</code> is a function of the other two parameters, and <code>add_two</code>, with a function supplied too, waits only for the number. Evaluating it shows the function it is: it applies <code>succ</code> twice.</p>
             <p>Only a function can be applied:</p>

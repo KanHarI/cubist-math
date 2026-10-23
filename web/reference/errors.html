@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Every error message shown in this reference, what it means, and what to do." />
-    <title>Cubist · 14. Error messages</title>
+    <title>Cubist · 18. Error messages</title>
     <link rel="stylesheet" href="../language.css" />
     <link rel="stylesheet" href="../repl.css" />
   </head>
@@ -23,7 +23,7 @@
     </header>
     <main>
       <div class="introduction">
-        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 14</p>
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 18</p>
         <h1>Error messages</h1>
         <p class="lead">Every error message shown in this reference, what it means, and what to do.</p>
       </div>
@@ -44,6 +44,10 @@
             <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
             <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
             <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li><a href="kernel-computation.html">Kernel computation: reduction, elimination and composition</a></li>
             <li class="current"><a href="errors.html" aria-current="page">Error messages</a></li>
           </ol>
           <h2>In this chapter</h2>
@@ -157,6 +161,7 @@
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
                 <tr id="E337"><td class="code"><code>E337</code></td><td data-message="No checked definition to unfold:">“No checked definition to unfold: <var>name</var>”</td><td>Hints name top-level checked definitions only.</td><td><a href="conversion.html#unfolding-hints">unfolding hints</a></td></tr>
+                <tr id="K344"><td class="code"><code>K344</code></td><td data-message="Native prototype syntax depth exceeds 512.">“Native prototype syntax depth exceeds 512.”</td><td>The kernel builds no term more than 512 nodes deep, and a computation that would build one stops. A unary numeral of 512 or more is that deep. Compute less of the term, as an evaluation's pattern that does not observe the deep part, or use binary numbers.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -275,13 +280,14 @@
                 <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
                 <tr id="E330"><td class="code"><code>E330</code></td><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
                 <tr id="E324"><td class="code"><code>E324</code></td><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
-                <tr id="E326"><td class="code"><code>E326</code> <code>E477</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”, “The term evaluates to <var>a</var>, which does not match <var>p</var>: <var>c</var> is not <var>q</var>.”</td><td>The normal forms differ; the message shows both. Against a pattern, it names the first part of the value that does not match, and the part of the pattern it fails.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+                <tr id="E326"><td class="code"><code>E326</code> <code>E477</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”, “The term evaluates to <var>a</var>, which does not match <var>p</var>: <var>c</var> is not <var>q</var>.”</td><td>The normal forms differ; the message shows both. Against a pattern, it names the first part of the value that does not match, and the part of the pattern it fails; the value is shown as far as the pattern computed it, <code>&lt;unevaluated&gt;</code> marking a part it did not.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
+                <tr id="E485"><td class="code"><code>E485</code></td><td data-message="evaluate e expecting _; would compute nothing:">“evaluate e expecting _; would compute nothing: …”</td><td>A bare hole matches anything and computes nothing, so it would state only the term's type. Write <code>!_</code> to check that the term has a weak head, or <code>!!_</code> that it has a full normal form.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
               </tbody>
             </table></div>
           </section>
           <section id="warnings">
             <h2>Warnings</h2>
-            <p>A warning does not reject anything: the declaration is checked. It marks a binding that is never used and can be removed; see <a href="checking.html#warnings">warnings</a>.</p>
+            <p>A warning does not reject anything: the declaration is checked. It marks a binding that is never used and can be removed, or an evaluation's demand mark that asks for nothing more; see <a href="checking.html#warnings">warnings</a>.</p>
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
@@ -289,6 +295,7 @@
                 <tr id="W704"><td class="code"><code>W704</code></td><td data-message="is unused: the return type does not mention it.">“<var>z</var> is unused: the return type does not mention it. …”</td><td>The result type is the same for every value. Omit <code>as z</code>.</td><td><a href="terms.html#match">match</a></td></tr>
                 <tr id="W705"><td class="code"><code>W705</code></td><td data-message="is unused in the body: write">“<var>x</var> is unused in the body: write <var>A</var> -&gt; … instead of forall <var>x</var> : <var>A</var>. ….”</td><td>The quantified variable is never mentioned. Write <code>A -&gt; B</code> for <code>forall x : A. B</code>, and <code>A and B</code> for <code>exists x : A. B</code>; they are the same types.</td><td><a href="paths.html#exists-and">exists and and</a></td></tr>
                 <tr id="W702"><td class="code"><code>W702</code></td><td data-message="is never used after this">“<var>name</var> is never used after this let: remove it.”</td><td>Nothing later in the block uses the name. Remove the statement.</td><td><a href="proof-blocks.html#let">let</a></td></tr>
+                <tr id="W708"><td class="code"><code>W708</code> <code>W709</code> <code>W710</code></td><td data-message="asks for nothing more">“The <var>mark</var> before <var>p</var> asks for nothing more: …”</td><td>An evaluation's demand mark computes no more than its part already does: a pair, an injection, a constructor or an expression computes the part's weak head, an expression its full normal form, and everything under <code>!!</code> is fully normalized. Remove the mark.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
               </tbody>
             </table></div>
           </section>
@@ -433,6 +440,8 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
               <tbody>
                 <tr id="E001"><td><code>E001</code></td><td>Invalid test pragma: …</td></tr>
                 <tr id="E002"><td><code>E002</code></td><td>Historical unary migration would capture existing binding ….</td></tr>
+                <tr id="E003"><td><code>E003</code></td><td>Two ! marks apart ask for a weak head twice, which is once: write !! together for a full normal form.</td></tr>
+                <tr id="E004"><td><code>E004</code></td><td>The demand mark … stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e2">Files, modules and tools</h3>
@@ -683,6 +692,9 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E480"><td><code>E480</code></td><td>The truncation evaluates to …, which holds no constructor to read a witness from.</td></tr>
                 <tr id="E481"><td><code>E481</code></td><td>The truncation's witness lies under a composition whose type changes: it is built in …, not ….</td></tr>
                 <tr id="E482"><td><code>E482</code></td><td>Path reversal requires a homogeneous path; use an explicit path abstraction for a dependent family.</td></tr>
+                <tr id="E483"><td><code>E483</code></td><td>The term evaluates to …, which does not match …: a part of type … is not ….</td></tr>
+                <tr id="E484"><td><code>E484</code></td><td>A demand mark, ! or !!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; … is none of these.</td></tr>
+                <tr><td><a href="#E485"><code>E485</code></a></td><td>evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, or !!_ for its full normal form.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>
@@ -1190,7 +1202,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K341"><td><code>K341</code></td><td>Missing syntax child.</td></tr>
                 <tr id="K342"><td><code>K342</code></td><td>Invalid syntax child handle.</td></tr>
                 <tr id="K343"><td><code>K343</code></td><td>A formula handle names no registered formula.</td></tr>
-                <tr id="K344"><td><code>K344</code></td><td>Native prototype syntax depth exceeds 512.</td></tr>
+                <tr><td><a href="#K344"><code>K344</code></a></td><td>Native prototype syntax depth exceeds 512.</td></tr>
                 <tr id="K345"><td><code>K345</code></td><td>Term handle space exhausted.</td></tr>
                 <tr id="K346"><td><code>K346</code></td><td>Term arena capacity overflow.</td></tr>
                 <tr id="K347"><td><code>K347</code></td><td>Term arena allocation failed.</td></tr>
@@ -1235,11 +1247,14 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#W705"><code>W705</code></a></td><td>… is unused in the body: write … instead of … … : …. ….</td></tr>
                 <tr id="W706"><td><code>W706</code></td><td>… is unused in the body: take it out of the group and write … for it.</td></tr>
                 <tr id="W707"><td><code>W707</code></td><td>… is unused: the return type does not mention it. Omit as …: induction … return ….</td></tr>
+                <tr><td><a href="#W708"><code>W708</code></a></td><td>The … before … asks for nothing more: it is under !!, whose part is fully normalized.</td></tr>
+                <tr id="W709"><td><code>W709</code></td><td>The ! before … asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.</td></tr>
+                <tr id="W710"><td><code>W710</code></td><td>The !! before … asks for nothing more: an expression is compared by its full normal form.</td></tr>
               </tbody>
             </table></div>
           </section>
           <nav class="pager" aria-label="Chapter navigation">
-            <a class="previous" href="checking.html">← 13. Checking and inspection</a>
+            <a class="previous" href="kernel-computation.html">← 17. Kernel computation: reduction, elimination and composition</a>
           </nav>
         </article>
       </div>

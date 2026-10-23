@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="What the kernel computes when asked: the single-step rules, weak-head and normal forms, dependent elimination of declared types, and composition, transport and filling at every type former." />
+    <title>Cubist · 17. Kernel computation: reduction, elimination and composition</title>
+    <link rel="stylesheet" href="../language.css" />
+    <link rel="stylesheet" href="../repl.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#reference">Skip to chapter</a>
+    <header>
+      <a class="brand" href="../index.html"><span aria-hidden="true">⊢</span> Cubist</a>
+      <nav aria-label="Main navigation">
+        <a href="../proof.html">Proof workspace</a>
+        <a href="../files.html">Files</a>
+        <a href="../workbench.html">Kernel workbench</a>
+        <a href="../language.html" aria-current="true">Language reference</a>
+        <a href="../repl.html">REPL</a>
+        <a href="https://github.com/KanHarI/cubist-math">GitHub repository</a>
+      </nav>
+    </header>
+    <main>
+      <div class="introduction">
+        <p class="eyebrow">LANGUAGE REFERENCE · CHAPTER 17</p>
+        <h1>Kernel computation: reduction, elimination and composition</h1>
+        <p class="lead">What the kernel computes when asked: the single-step rules, weak-head and normal forms, dependent elimination of declared types, and composition, transport and filling at every type former.</p>
+      </div>
+      <div class="reference-layout">
+        <aside class="contents" aria-label="Chapters and sections">
+          <h2><a href="../language.html">Chapters</a></h2>
+          <ol class="chapters">
+            <li><a href="types.html">Types and values</a></li>
+            <li><a href="first-proof.html">A first proof and files</a></li>
+            <li><a href="terms.html">Functions, pairs and sums</a></li>
+            <li><a href="proof-blocks.html">Proof blocks</a></li>
+            <li><a href="conversion.html">Computation and conversion</a></li>
+            <li><a href="universes.html">Universes</a></li>
+            <li><a href="paths.html">Equality and paths</a></li>
+            <li><a href="induction.html">Natural numbers and inductive types</a></li>
+            <li><a href="rewriting.html">Equational reasoning and simplification</a></li>
+            <li><a href="theories.html">Theories and models</a></li>
+            <li><a href="cubical.html">Cubical paths and higher inductive types</a></li>
+            <li><a href="assumptions.html">Excluded middle, choice and computability</a></li>
+            <li><a href="checking.html">Checking and inspection</a></li>
+            <li><a href="kernel-overview.html">The kernel: judgements, derivations and trust</a></li>
+            <li><a href="kernel-terms.html">Kernel terms: the arena and its primitives</a></li>
+            <li><a href="kernel-instructions.html">Kernel instructions: the typing rules</a></li>
+            <li class="current"><a href="kernel-computation.html" aria-current="page">Kernel computation: reduction, elimination and composition</a></li>
+            <li><a href="errors.html">Error messages</a></li>
+          </ol>
+          <h2>In this chapter</h2>
+          <ul class="sections">
+            <li><a href="#when">When the kernel computes</a></li>
+            <li><a href="#steps">The single-step rules</a></li>
+            <li><a href="#whnf">Weak-head normal form</a></li>
+            <li><a href="#normal">Normal form</a></li>
+            <li><a href="#elimination">Elimination of declared types</a></li>
+            <li><a href="#filling">Filling</a></li>
+            <li><a href="#composition">Composition at each type former</a></li>
+            <li><a href="#glue">Glue and the universe</a></li>
+            <li><a href="#higher">Higher inductive types</a></li>
+          </ul>
+        </aside>
+        <article id="reference">
+          <section id="when">
+            <h2>When the kernel computes</h2>
+            <p>The kernel reduces a term in exactly three situations. A <code>Step</code> instruction contracts one subterm by a named rule (<a href="kernel-instructions.html#equality">chapter 16</a>). The <strong>weak-head</strong> query <code>cc_kernel_whnf</code> and the <strong>normal-form</strong> query <code>cc_kernel_normalize</code> compute on syntax for inspection and for the driver's search; they certify nothing, and two of the step rules, <code>whnf</code> and <code>normalize</code>, let a derivation take their result as a contraction. And a few instructions look at a weak head to decide a shape, never to decide an equality: <code>HComp</code> and <code>Trans</code> ask whether the family is an instance of a higher declared type.</p>
+            <p><a href="conversion.html">Chapter 5</a> describes computation as the source language sees it, with <code>evaluate</code> showing normal forms. This chapter gives the rules the C implements: what each contracts, in which order the rules are tried, and what the result is. The functions named are those of <code>kernel/src</code>; the <a href="https://github.com/KanHarI/cubist-math/blob/main/docs/guides/kernel.md">kernel guide</a> states each formula in full.</p>
+            <pre><code data-check="accept" data-name="reductions">import unat;
+use unat;
+
+def double(n : UNat) := n + n;
+
+def four := double(2);
+
+def three_path : 3 = 3 := path i =&gt; 3;
+
+def const_family(X : U0) := UNat;
+
+def moved : UNat := transport 3 along refl(Unit) in const_family;
+
+def two_or_three(b : Unit or Unit) : UNat :=
+  match b return UNat { left u =&gt; 2; right u =&gt; 3; };
+
+// Output: 4
+print(evaluate(four));
+// Output: 3
+print(evaluate(three_path @ 1));
+// Output: 3
+print(evaluate(moved));
+// Output: 3
+print(evaluate(two_or_three(right(tt))));
+// Output: (λ (ascription : UNat). ascription)([i]. comp(const_family(at(refl(Unit), i:1)), 3))
+print(inspect(moved));</code></pre>
+            <p>Each of these normal forms is reached by the rules below: <code>four</code> by unfolding and applying <code>double</code> and <code>add</code> and computing the recursor; <code>three_path @ 1</code> by the path rule at an endpoint; <code>moved</code>, a composition over a family that does not vary, by the composition rules; and the <code>match</code> by the sum recursor on a constructor.</p>
+          </section>
+          <section id="steps">
+            <h2>The single-step rules</h2>
+            <p>A <code>Step</code> contracts the subterm at its position by one of these rules (<code>contract</code> in <code>kernel/src/instruction_equality.c</code>). The first four and the face rule are purely syntactic: they look at the subterm as written and reduce nothing else. The redex must have the stated shape, or the step is refused.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Rule</th><th>Redex, as written</th><th>Contractum</th></tr></thead>
+              <tbody>
+                <tr><td><code>beta</code></td><td><code>(λ (x : A). b)(a)</code>; <code>(λ (x &lt; ω). b) {ℓ}</code></td><td><code>b[a/x]</code>; <code>b[ℓ/x]</code> with every level of the result in normal form</td></tr>
+                <tr><td><code>delta</code></td><td>a definition reference</td><td>the definition's checked body</td></tr>
+                <tr><td><code>iota</code></td><td><code>(a, b).1</code>, <code>(a, b).2</code>; <code>unitrec(M, b, tt)</code>; <code>sumrec(M, l, r, inl(v))</code>, <code>sumrec(M, l, r, inr(v))</code>; an eliminator applied to a constructor, at dimensions or not</td><td><code>a</code>, <code>b</code>; <code>b</code>; <code>l(v)</code>, <code>r(v)</code>; the clause method applied to the arguments and the induction hypotheses, not <code>β</code>-reduced (<a href="#elimination">below</a>)</td></tr>
+                <tr><td><code>path</code></td><td><code>(⟨i⟩ b) @ r</code>, tried first at any <code>r</code>; otherwise <code>p @ 0</code> or <code>p @ 1</code> whose annotation is <code>Path(i. A, l, r)</code></td><td><code>b[r/i]</code>; <code>l</code> or <code>r</code>, read from the annotation</td></tr>
+                <tr><td><code>normalize</code></td><td>any term</td><td>its normal form</td></tr>
+                <tr><td><code>whnf</code></td><td>any term</td><td>its weak-head normal form</td></tr>
+                <tr><td><code>face</code></td><td><code>comp</code> or <code>hcomp</code> with a tube on the face <code>1</code>; <code>transp</code> on the face <code>1</code></td><td>that tube's term at the end of the direction, <code>u[1/i]</code>; the base</td></tr>
+                <tr><td><code>glue</code></td><td><code>glue(b', [φ ↦ t])</code> whose base <code>b'</code> reduces to <code>unglue(b)</code>, possibly through nested Glue steps</td><td><code>b</code>, when the two Glue types agree and <code>t</code> and <code>b</code> agree on each clause of <code>φ</code>, each agreement decided by syntax after reducing only as far as that takes</td></tr>
+                <tr><td><code>split</code></td><td><code>comp</code> or <code>hcomp</code> with a tube on a face of several clauses, or on the face <code>0</code></td><td>the same with one tube per clause, each the same term, and no tube on <code>0</code></td></tr>
+              </tbody>
+            </table></div>
+            <p>Note the order inside the <code>path</code> rule: a path written as an abstraction is substituted into even at an endpoint, and only a path that is not one has its endpoint read from the annotation. Weak-head reduction, below, does the opposite. The <code>iota</code> rule for a declared type returns an application of the clause method, which further <code>beta</code> steps reduce; <a href="kernel-overview.html#reading">chapter 14</a>'s example shows the two steps in a derivation.</p>
+            <p>The command-line checker's <code>beta</code> and <code>delta</code> commands issue these steps at the first applicable position of the inspected expression, checked by the kernel:</p>
+            <pre><code data-check="cli" data-files="reductions">$ node cli/repl.mjs
+&gt; check reductions.cubist
+Checked 6 declarations · … kernel steps
+&gt; inspect four
+reductions__four
+Expression: double(2)
+Type: UNat
+&gt; delta expression
+reductions__four
+Expression: (λ (n… : UNat). add(n…, n…))(2)
+&gt; beta expression
+reductions__four
+Expression: add(2, 2)
+&gt; beta expression
+No applicable reduction.</code></pre>
+          </section>
+          <section id="whnf">
+            <h2>Weak-head normal form</h2>
+            <p><code>ck_whnf</code> reduces a term until its head is a constructor, a binder, a neutral application or a formal operation that does not compute, by call-by-name: an application reduces its function first, not its argument, and an eliminator reduces its scrutinee, not its branches. Results are memoized by handle. One head step is performed by the worker <code>weak</code>, which either returns a finished head or hands the next term to a driver loop; reducing the head of an eliminated subterm, the function of an application, the pair of a projection or the path of a path application, is a nested call bounded by a recursion guard of 1024. The cases, in the order the code tries them:</p>
+            <ol>
+              <li><strong>Formal operations.</strong> <code>hcomp</code> and <code>transp</code> go to the <a href="#higher">higher-inductive rules</a>; <code>comp</code> goes to the <a href="#composition">composition rules</a>. Each returns a finished head.</li>
+              <li><strong>Definitions.</strong> A reference unfolds to its checked body; a reference naming no definition is an error.</li>
+              <li><strong>Glue.</strong> A Glue type or term drops its pieces or tubes on the face <code>0</code>, and reduces to a piece's type or a tube's term when its face is <code>1</code>. A Glue term <code>glue(b', [φ ↦ t])</code> whose base's weak head is <code>unglue(b)</code> at the same Glue type, up to syntax, reduces to <code>b</code> when every <code>t</code> is, by syntax, <code>b</code> restricted to each clause of its face: Glue <code>η</code> with syntactic side conditions. <code>unglue(g)</code>, whose Glue type must be written as such, reduces to the function of the piece's equivalence, its first component, applied to <code>g</code> when a piece has face <code>1</code>, and otherwise to the base of <code>g</code>'s weak head when that is a Glue term.</li>
+              <li><strong>Applications.</strong> <code>f(a)</code> reduces <code>f</code>; a lambda is applied by substitution, an eliminator <a href="#elimination">eliminates</a> the weak head of <code>a</code>, and anything else is neutral. <code>f {ℓ}</code> likewise applies a level lambda by instantiation. A projection reduces its pair and takes the component when the head is a pair.</li>
+              <li><strong>Recursors.</strong> <code>unitrec</code> reduces its value and takes the point case on <code>tt</code>; <code>sumrec</code> reduces its value and applies the matching case on an injection.</li>
+              <li><strong>Path applications.</strong> <code>p @ r</code> with <code>r</code> equal to <code>0</code> or <code>1</code> and a path-type annotation reduces to the recorded endpoint without reducing <code>p</code>. Otherwise it reduces <code>p</code>, and substitutes <code>r</code> into the body when the head is a path abstraction. An application without an annotation reduces only when its path's weak head is an abstraction; a neutral path there is an error, since its endpoints are unknown.</li>
+              <li><strong>η-contractions.</strong> A lambda whose body applies a term to its own variable, a level lambda likewise, a path abstraction whose body applies a path to its own dimension, and a pair of the two projections of one term, contract to that term when it does not mention the bound name.</li>
+            </ol>
+            <p>In source, the demand mark <code>!</code> of an <a href="assumptions.html#evaluate">evaluation's pattern</a> asks for this weak head, through the query <code>cc_kernel_whnf</code>, η-contractions included, and <code>!!</code> for the <a href="#normal">normal form</a>.</p>
+            <p><code>ck_expose</code> is a narrower helper used only by the higher-inductive rules: at most one contraction of a top-face composition, an annotated endpoint, an application of a lambda, or a projection of a pair, without unfolding a definition at the root.</p>
+          </section>
+          <section id="normal">
+            <h2>Normal form</h2>
+            <p><code>ck_normal</code> computes a strong normal form under every binder, with an explicit stack and a memo by handle. Each node is reduced to weak-head form, then its children are normalized and the node rebuilt; if the rebuilt node is a new redex, as when a composition's family became a constructor type, it is reduced again. Two details are particular to cubical terms. A partial term, a composition tube or a Glue piece, is first <strong>restricted</strong> to the endpoint equations common to every clause of its face, so that what is shown on <code>i = 0</code> has <code>0</code> for <code>i</code>; a composition's own direction never occurs in its tube faces, so this never captures it. And a rebuilt Glue term is checked for Glue <code>η</code> against the normalized restrictions of its unglued base, since restricting can create the redex that makes the pieces agree.</p>
+            <p>A normal form is what <code>evaluate</code> prints, and what the <code>normalize</code> step takes as a contraction. The weak-head and normal-form caches are cleared by every rollback and commit, since they may point forward to nodes those discard.</p>
+          </section>
+          <section id="elimination">
+            <h2>Elimination of declared types</h2>
+            <p>An eliminator <code>Elim(M, ms)</code> of a declared type, applied to a scrutinee <code>s</code>, computes in two cases (<code>ck_eliminate</code> in <code>kernel/src/eliminators.c</code>). The <code>iota</code> step takes <code>s</code> as written; weak-head reduction first reduces <code>s</code> to its weak head.</p>
+            <ol>
+              <li><strong>A constructor</strong>, <code>c(t₁, …, tₐ, q₁, …, q_b) @ r₁ … @ r_d</code>: data arguments, recursive arguments, and interval coordinates for a path constructor. For each recursive argument <code>q</code>, of type <code>Π (ys : Cs). B</code> with <code>B</code> a cube over the type, the <strong>induction hypothesis</strong> is <code>λ ys. lift(E, q(ys))</code>, where lifting through the type is the eliminator applied, and through a path type <code>Path(i. B', b₀, b₁)</code> is <code>⟨h⟩ lift(E, v @ h)</code> for a fresh dimension <code>h</code>, so a path-valued position <code>q</code> contributes <code>⟨h⟩ E(q @ h)</code>. The result is the clause method applied to <code>t₁, …, tₐ, q₁, …, q_b</code> and the hypotheses, as an application spine whose lambdas are not contracted, then applied to each coordinate <code>r</code> with the displayed path type as annotation. The <code>iota</code> step returns this application; weak-head reduction continues reducing it.</li>
+              <li><strong>A formal composition</strong> <code>hcomp^j I [ψ ↦ w] w₀</code>, under weak-head reduction only: with a fresh dimension <code>k</code>, let <code>hfill(k) = hcomp^j I [ψ ↦ w(j ∧ k), (k = 0) ↦ w₀] w₀</code>; the result is <code>comp^k M(hfill(k)) [ψ ↦ E(w(k))] E(w₀)</code>, the eliminator applied to each wall and to the base, composed in the motive over the filler.</li>
+            </ol>
+            <p>Anything else, a variable or a neutral term, leaves the application as it is. The clause types that <code>EliminatorClause</code> checks (<a href="kernel-instructions.html#declared">chapter 16</a>) are computed by the same display: each position shown by its hypothesis, each earlier constructor by its clause.</p>
+          </section>
+          <section id="filling">
+            <h2>Filling</h2>
+            <p>The kernel has no primitive filler. Given a composition problem in direction <code>i</code> over <code>A(i)</code> with tubes <code>[φ ↦ u(i)]</code> and base <code>a₀</code>, the filler at an interval expression <code>r</code> is a composition in a fresh direction <code>j</code> with one more wall (<code>ck_fill</code>):</p>
+            <p class="math"><code>fill^i A [φ ↦ u] a₀ r = comp^j A(r ∧ j) [φ ↦ u(r ∧ j), (r = 0) ↦ a₀] a₀</code></p>
+            <p>At <code>r = 0</code> the added wall has face <code>1</code> and the composition is <code>a₀</code>; at <code>r = 1</code> it is <code>comp^j A(j) [φ ↦ u(j)] a₀</code>, the composition itself. The <code>Σ</code>, <code>Π</code> and higher-inductive rules below use it.</p>
+          </section>
+          <section id="composition">
+            <h2>Composition at each type former</h2>
+            <p>To reduce <code>comp^i A [φ ↦ u] a₀</code> (<code>ck_reduce_composition</code> in <code>kernel/src/composition_compute.c</code>), the kernel first drops the tubes on the face <code>0</code>, and if any tube has the face <code>1</code> it returns the weak head of that tube's term at <code>i = 1</code>, whatever the family is. Otherwise it reduces the family to its weak head and dispatches on it; a neutral family gives a neutral composition. Below, <code>v(i)</code> abbreviates a filler and <code>A(1)</code> the family at <code>i = 1</code>.</p>
+            <div class="table-scroll"><table>
+              <thead><tr><th>Family</th><th>Reduction of <code>comp^i A [φ ↦ u] a₀</code></th></tr></thead>
+              <tbody>
+                <tr><td><code>Unit</code></td><td><code>tt</code> when the weak heads of <code>a₀</code> and of every tube's term are <code>tt</code>; otherwise neutral.</td></tr>
+                <tr><td><code>Σ (x : F(i)). G(i, x)</code></td><td>Compose the first components, <code>c₁ = comp^i F [φ ↦ u.1] a₀.1</code>, fill them, <code>v(i) = fill^i F [φ ↦ u.1] a₀.1 i</code>, compose the second components in the family at the filler, <code>c₂ = comp^i G(i, v(i)) [φ ↦ u.2] a₀.2</code>, and return <code>(c₁, c₂)</code> at the pair type at <code>i = 1</code>.</td></tr>
+                <tr><td><code>Π (y : F(i)). G(i, y)</code></td><td>For a fresh variable <code>x : F(1)</code>, fill backward with no tubes, <code>v(i) = fill^i F(1 − i) [] x (1 − i)</code>, so that <code>v(1) = x</code>, and return <code>λ (x : F(1)). comp^i G(i, v(i)) [φ ↦ u(v(i))] (a₀(v(0)))</code>.</td></tr>
+                <tr><td><code>Π (x &lt; ω). G(i, x)</code></td><td>Levels do not vary along the interval: for a fresh level variable <code>y</code>, <code>λ (y &lt; ω). comp^i G(i, y) [φ ↦ u {y}] (a₀ {y})</code>.</td></tr>
+                <tr><td><code>Path(j. P(i, j), l(i), r(i))</code></td><td>For a fresh dimension <code>k</code>, apply every tube and the base at <code>k</code>, add the walls <code>(k = 0) ↦ l(i)</code> and <code>(k = 1) ↦ r(i)</code>, and return <code>⟨k⟩ comp^i P(i, k) [φ ↦ u @ k, (k = 0) ↦ l(i), (k = 1) ↦ r(i)] (a₀ @ k)</code>.</td></tr>
+                <tr><td><code>L(i) + R(i)</code></td><td>Reduce <code>a₀</code> and every tube's term to weak heads. When all are <code>inl</code>, or all <code>inr</code>, push the composition inside: <code>inl(comp^i L [φ ↦ v] v₀)</code> with the injected values; otherwise neutral.</td></tr>
+                <tr><td>a data declared type <code>S(ps(i))</code></td><td>One with no path constructor and no truncation. Reduce <code>a₀</code> and every tube's term to weak heads. When all are the same constructor applied to arguments, pack the constructor's argument types into a telescope <code>Σ (x₁ : A₁(i)). … Unit</code>, each argument spine into a tuple, compose the tuples, and apply the constructor at <code>S(ps(1))</code> to the components of the result; otherwise neutral. Transport in such a type is the composition with the tube <code>φ ↦ a₀</code>.</td></tr>
+                <tr><td>a higher declared type <code>S(ps(i))</code></td><td>Decompose into the formal operations (<a href="#higher">below</a>): <code>hcomp^i S(ps(1)) [φ ↦ squeeze(u)] (transp^i S(ps(i)) 0 a₀)</code>, where <code>squeeze(u) = transp^j S(ps(i ∨ j)) (i = 1) u</code> moves each wall to the end of the direction.</td></tr>
+                <tr><td><code>Glue [ψ ↦ (T, w)] A</code></td><td>The Glue rule (<a href="#glue">below</a>).</td></tr>
+                <tr><td><code>U(ℓ)</code></td><td>The universe rule (<a href="#glue">below</a>).</td></tr>
+              </tbody>
+            </table></div>
+            <p>A rule never takes a tube's constructor from the base: when a wall is neutral, the composition stays neutral. <code>moved</code> in the example above is <code>comp^i const_family(refl(Unit) @ i) [] 3</code>, which <code>print(inspect(moved))</code> shows as <code>[i]. comp(…)</code> under the ascription; its family reduces to the declared type <code>UNat</code>, a data type, so the composition of the single constructor spine <code>3</code> with no tubes is <code>3</code>.</p>
+          </section>
+          <section id="glue">
+            <h2>Glue and the universe</h2>
+            <p>Composition in a Glue type <code>Glue [ψ(i) ↦ (T(i), w(i))] A(i)</code> (<code>ck_glue_composition</code> in <code>kernel/src/glue_compute.c</code>) follows CCHM section 6.2, built only from compositions, fillers and the supplied equivalences; no inverse is chosen and no new rule is assumed.</p>
+            <ol>
+              <li>Project the base and the tubes to <code>A</code> with <code>unglue</code>, and compose there: <code>a₁' = comp^i A [φ ↦ unglue(u)] unglue(a₀)</code>.</li>
+              <li>For each piece and each clause <code>C</code> of its face at <code>i = 1</code>, a <em>pick</em> <code>(T|C, w|C)</code>, build a partial element of the fiber <code>Σ (x : T(1)|C). Path(A(1), a₁', (w(1)|C).1(x))</code>: on each clause <code>D</code> of <code>∀i. ψ</code> for every piece, the pair of the composition in that piece's type and the path that the equivalence preserves composition (CCHM's lemma 6); on each clause of the composition's own face, the pair of <code>u(1)</code> and the constant path. The equivalence's contractibility proof at <code>a₁'</code> extends this partial element to a fiber element <code>(t, α)</code> on <code>C</code>.</li>
+              <li>Correct <code>a₁'</code> along a fresh dimension, with each pick's path <code>α</code> as a wall on its clause and the constant <code>unglue(u(1))</code> on the composition's faces, to <code>a₁</code>.</li>
+              <li>Return <code>glue(a₁, [C ↦ t])</code> at the Glue type at <code>i = 1</code>.</li>
+            </ol>
+            <p>Composition in a universe, <code>comp^i U(ℓ) [φ ↦ E(i)] A</code>, follows CCHM section 7.1: it is the Glue type <code>Glue [φ ↦ (E(1), comp^i Equiv(E(1), E(1 − i)) [] idEquiv(E(1)))] A</code>, whose equivalences are the identity equivalence of <code>E(1)</code> transported along the reversed line of types. This is how a path of types transports: <code>transport</code> along a path built with <code>Glue</code> (<a href="cubical.html#glue">chapter 11</a>) composes in the universe and then unglues.</p>
+          </section>
+          <section id="higher">
+            <h2>Higher inductive types</h2>
+            <p>A declared type with a path constructor or a truncation is a <strong>higher</strong> type, and its formal operations <code>hcomp</code> and <code>transp</code> are canonical values that compute only in these cases (<code>ck_hit_reduce</code> in <code>kernel/src/hit_composition.c</code>):</p>
+            <ul>
+              <li><code>hcomp^i I [φ ↦ u] a₀</code> drops its tubes on the face <code>0</code> and reduces to <code>u[1/i]</code> when a tube has the face <code>1</code>; with no tube left it stays as it is, a value that does not reduce to <code>a₀</code>. An eliminator applied to it computes by the <a href="#elimination">composition case</a> above.</li>
+              <li><code>transp^i I(i) 1 a₀</code>, on the face <code>1</code>, is <code>a₀</code>.</li>
+              <li><code>transp^i I(i) φ (hcomp^j I(0) [ψ ↦ w] w₀)</code> distributes: <code>hcomp^k I(1) [ψ ↦ transp^i I(i) φ w(k)] (transp^i I(i) φ w₀)</code>, with <code>j</code> renamed to a fresh <code>k</code>.</li>
+              <li><code>transp^i I(i) φ (c(a₁, …, aₙ) @ r₁ … @ r_d)</code>, on a constructor: pack the arguments into a tuple <code>t₀</code> in the constructor's telescope at <code>i = 0</code>, compose it with the constant tube, <code>t₁ = comp^i T(i) [φ ↦ t₀] t₀</code>, and apply the constructor at <code>I(1)</code> to the components of <code>t₁</code> and to the coordinates. For a point constructor this is the result. For a path constructor the boundary must be corrected: transporting the arguments changes the endpoints on each face <code>r = 0</code>, <code>r = 1</code>, so the result is wrapped in an <code>hcomp</code> along a fresh dimension <code>h</code> whose walls, on each such face, are the boundary piece at the filler of the arguments, squeezed to the end of <code>i</code> and reversed in <code>h</code>, and whose wall on <code>φ</code> is <code>a₀</code>. At <code>h = 0</code> the wall meets the transported constructor's endpoint; at <code>h = 1</code> it is the transport of the original endpoint, so transport commutes with each face.</li>
+            </ul>
+            <p>Together with the decomposition of <code>comp</code> into <code>transp</code> and <code>hcomp</code> in the table above, these rules give every higher inductive type of the library, the circle, truncations, quotients and pushouts, its computation: a path constructor at an endpoint reduces to its boundary by the <code>path</code> rule, since the elaborator annotates the application with the constructor's path type, and an eliminator computes on constructors and on formal compositions.</p>
+          </section>
+
+          <nav class="pager" aria-label="Chapter navigation">
+            <a class="previous" href="kernel-instructions.html">← 16. Kernel instructions: the typing rules</a>
+            <a class="next" href="errors.html">18. Error messages →</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+    <footer>Cubist · Language reference · <a href="../language.html">All chapters</a> · <a href="../proof.html">Proof workspace</a></footer>
+    <script type="module" src="examples.mjs"></script>
+    <script type="module" src="repl-dock.mjs"></script>
+  </body>
+</html>

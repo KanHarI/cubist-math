@@ -212,7 +212,7 @@ export class CubicalProgram {
           ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
           ...(directive.failure?{failure:directive.failure}:{}),...(directive.diagnostic?{diagnostic:directive.diagnostic}:{})});
       else if(directive.kind==="evaluate")
-        this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
+        this.evaluations.push({module:name,name:directive.name,value:directive.normalText,start:directive.start});
       else if(directive.kind==="print")
         this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start});
     }

@@ -13,4 +13,4 @@ computable def select_first(x, y : Q) : Q := descend2(
   fun (a, b, d : Unit, r : Related(b, d)) => refl(typed(Q, class(a))), x, y
 );
 
-evaluate select_first expecting _;
+evaluate select_first expecting !!_;
