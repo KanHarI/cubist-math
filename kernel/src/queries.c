@@ -21,6 +21,14 @@ cc_term cc_kernel_normalize(cc_kernel *k, cc_term term) {
     return ck_normal(k, term);
 }
 
+cc_term cc_kernel_normalize_folded(cc_kernel *k, cc_term term) {
+    if (!k || !term || term >= k->count || k->error[0])
+        return 0;
+    ck_operation(k, CC_WORK_QUERY);
+    k->recursion = 0;
+    return ck_normal_folded(k, term);
+}
+
 cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;

@@ -325,6 +325,9 @@ typedef struct {
     cc_node node;
     size_t clause;
     unsigned next, phase;
+    /* A folded definition application, and the inner part of one's spine:
+     * rebuilt from their normalized arguments, never reduced. */
+    bool folded, spine;
 } normal_frame;
 enum { NORMAL_ENTER, NORMAL_CHILDREN, NORMAL_CHILD_DONE, NORMAL_GLUE,
        NORMAL_GLUE_DONE, NORMAL_REDUCE, NORMAL_REDUCED };
@@ -337,7 +340,7 @@ typedef struct {
     normal_frame local[NORMAL_LOCAL_FRAMES];
 } normal_stack;
 
-static bool normal_push(cc_kernel *k, normal_stack *stack, cc_term term) {
+static bool normal_push(cc_kernel *k, normal_stack *stack, cc_term term, bool spine) {
     if (stack->count == stack->capacity) {
         if (stack->capacity == NORMAL_MAX_FRAMES)
             return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded.");
@@ -352,8 +355,95 @@ static bool normal_push(cc_kernel *k, normal_stack *stack, cc_term term) {
         stack->frames = frames;
         stack->capacity = capacity;
     }
-    stack->frames[stack->count++] = (normal_frame){.term = term};
+    stack->frames[stack->count++] = (normal_frame){.term = term, .spine = spine};
     return true;
+}
+
+/* The nodes of an application spine: applications, level applications,
+ * projections and path applications, each applied to the part in its first
+ * child. */
+static bool spine_node(cc_term_kind kind) {
+    return kind == CC_APP || kind == CC_LAPP || kind == CC_FST || kind == CC_SND || kind == CC_PAPP;
+}
+
+/* Whether a term is a definition, applied or projected. */
+static bool definition_spine(const cc_kernel *k, cc_term term) {
+    while (spine_node(k->nodes[term].kind))
+        term = k->nodes[term].child[0];
+    return k->nodes[term].kind == CC_DEFREF;
+}
+
+/* Whether a weak head is stuck on an eliminator: an elimination, projection
+ * of one, or composition that does not compute. */
+static bool stuck_head(const cc_kernel *k, cc_term head) {
+    bool applied = false;
+    while (spine_node(k->nodes[head].kind)) {
+        head = k->nodes[head].child[0];
+        applied = true;
+    }
+    switch (k->nodes[head].kind) {
+    case CC_ELIM:
+        return applied;
+    case CC_NATREC: case CC_WREC: case CC_SUMREC: case CC_UNITREC: case CC_PUSH_ELIM:
+    case CC_ABORT: case CC_UNGLUE: case CC_COMP: case CC_HCOMP: case CC_TRANS:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/* Whether a weak head is data: a constructor applied, a pair, an injection,
+ * a point or a glued element, or a variable applied or projected, as opposed
+ * to a function, a path, a type, or an eliminator or composition stuck. */
+static bool computed_data(const cc_kernel *k, cc_term head) {
+    cc_term root = head;
+    while (spine_node(k->nodes[root].kind))
+        root = k->nodes[root].child[0];
+    if (k->nodes[root].kind == CC_VAR || k->nodes[root].kind == CC_CON)
+        return true;
+    switch (k->nodes[head].kind) {
+    case CC_PAIR: case CC_INL: case CC_INR: case CC_POINT: case CC_ZERO: case CC_SUCC: case CC_SUP:
+    case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_GLUE_TERM:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/* The weak head, by the steps ck_whnf takes, and the first definition spine
+ * among the terms those steps pass through, where a folded normal form stops
+ * when the head is no data. Only these steps are watched, not those that
+ * compute a head for one of them: λ y. f(y) is f by eta there, so its
+ * application to x reaches f's body without passing through f(x). `last` is
+ * the term whose step gave the head: a stuck head has its stuck parts
+ * replaced by their weak heads, where `last` has them as written. No weak
+ * cache is read here, so the spine found does not depend on what was
+ * computed before. */
+static cc_term folding_head(cc_kernel *k, cc_term term, cc_term *spine, cc_term *last) {
+    *spine = 0;
+    if (!ck_tick(k))
+        return 0;
+    if (++k->recursion > 1024) {
+        --k->recursion;
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
+    }
+    cc_term result = 0;
+    for (;;) {
+        if (!*spine && definition_spine(k, term))
+            *spine = term;
+        cc_term next = 0;
+        *last = term;
+        result = weak(k, term, &next);
+        if (k->error[0] || !next)
+            break;
+        term = next;
+        if (term >= k->count || !ck_tick(k)) {
+            result = 0;
+            break;
+        }
+    }
+    --k->recursion;
+    return k->error[0] ? 0 : result;
 }
 
 /* Normalize partial bodies only on the endpoints common to every clause of
@@ -381,13 +471,24 @@ static bool normal_restrict(cc_kernel *k, cc_node *node) {
     return true;
 }
 
-cc_term ck_normal(cc_kernel *k, cc_term term) {
+/* The full normal form, or, folding, the folded one: there a definition
+ * applied or projected whose weak head is stuck on an eliminator stays as it
+ * was written, its arguments normalized, folded too. Each has its cache. */
+static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
     if (!term || term >= k->count)
         return 0;
+    if (fold && !k->folded_cache) {
+        k->folded_cache = calloc(k->capacity, sizeof *k->folded_cache);
+        if (!k->folded_cache)
+            return ck_fail_as(k, CC_ERROR_RESOURCE, "Normal cache allocation failed."), 0;
+    }
+    /* Each cache is looked up again after any allocation, which can move it. */
+#define CACHE (fold ? k->folded_cache : k->normal_cache)
     /* Charge hits too: a warm cache cannot bypass a budget or deadline.
-     * Misses take their entry step in ck_whnf, as before. */
-    if (k->normal_cache[term])
-        return ck_tick(k) ? k->normal_cache[term] : 0;
+     * Misses take their entry step in ck_whnf, as before. A folded query's
+     * term is unfolded, so the folded cache never answers it. */
+    if (!fold && CACHE[term])
+        return ck_tick(k) ? CACHE[term] : 0;
     /* Protect any re-entry through other, still recursive reducer APIs.
      * Traversing normal-form children does not consume native stack depth. */
     if (++k->recursion > 1024) {
@@ -396,7 +497,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
     }
     normal_stack stack = {.capacity = NORMAL_LOCAL_FRAMES};
     stack.frames = stack.local;
-    normal_push(k, &stack, term);
+    normal_push(k, &stack, term, false);
     cc_term result = 0;
     while (stack.count && !k->error[0]) {
         normal_frame *frame = &stack.frames[stack.count - 1];
@@ -404,14 +505,30 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
         case NORMAL_ENTER: {
             if (!frame->term || frame->term >= k->count)
                 goto failed;
-            if (k->normal_cache[frame->term]) {
-                result = ck_tick(k) ? k->normal_cache[frame->term] : 0;
+            if (frame->spine) {
+                frame->node = k->nodes[frame->term];
+                frame->phase = NORMAL_CHILDREN;
+                break;
+            }
+            /* Folding, the term asked for is unfolded, and only it: its result
+             * is not the one its occurrences inside other terms have. */
+            bool root = fold && stack.count == 1;
+            if (!root && CACHE[frame->term]) {
+                result = ck_tick(k) ? CACHE[frame->term] : 0;
                 goto complete;
             }
-            cc_term head = ck_whnf(k, frame->term);
+            cc_term spine = 0, last = 0, head = fold ? folding_head(k, frame->term, &spine, &last) : ck_whnf(k, frame->term);
             if (!head)
                 goto failed;
-            frame->node = k->nodes[head];
+            if (spine && !root && !computed_data(k, head)) {
+                frame->node = k->nodes[spine];
+                frame->folded = true;
+                frame->phase = NORMAL_CHILDREN;
+                break;
+            }
+            /* A stuck head is taken as the step before it wrote it, so that a
+             * definition stuck inside it folds as written there. */
+            frame->node = k->nodes[fold && stuck_head(k, head) ? last : head];
             if (!normal_restrict(k, &frame->node))
                 goto failed;
             frame->phase = NORMAL_CHILDREN;
@@ -426,13 +543,18 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
                 ++frame->next;
             if (frame->next < ck_arity(frame->node.kind)) {
                 frame->phase = NORMAL_CHILD_DONE;
-                normal_push(k, &stack, frame->node.child[frame->next]);
+                bool spine = (frame->folded || frame->spine) && frame->next == 0 && spine_node(frame->node.kind);
+                normal_push(k, &stack, frame->node.child[frame->next], spine);
                 break;
             }
             cc_node n = frame->node;
             frame->rebuilt = ck_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
             if (!frame->rebuilt)
                 goto failed;
+            if (frame->folded || frame->spine) {
+                result = frame->rebuilt;
+                goto complete;
+            }
             frame->value = frame->rebuilt;
             frame->phase = NORMAL_REDUCE;
             if (n.kind == CC_GLUE_TERM) {
@@ -482,10 +604,29 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
             if (!restricted)
                 goto failed;
             frame->phase = NORMAL_GLUE_DONE;
-            normal_push(k, &stack, restricted);
+            normal_push(k, &stack, restricted, false);
             break;
         }
         case NORMAL_REDUCE:
+            /* Folding, the parts are final and only eta contracts the whole:
+             * a weak head would unfold the definitions folded inside it. */
+            if (fold) {
+                cc_term next = 0, kind = k->nodes[frame->value].kind;
+                if (frame->value == frame->rebuilt && (kind == CC_LAM || kind == CC_PLAM || kind == CC_LLAM || kind == CC_PAIR)) {
+                    weak(k, frame->value, &next);
+                    if (k->error[0])
+                        goto failed;
+                } else if (frame->value != frame->rebuilt) {
+                    next = frame->value;
+                }
+                if (!next) {
+                    result = frame->rebuilt;
+                    goto complete;
+                }
+                frame->phase = NORMAL_REDUCED;
+                normal_push(k, &stack, next, false);
+                break;
+            }
             result = ck_whnf(k, frame->value);
             if (!result)
                 goto failed;
@@ -496,7 +637,7 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
                     if (k->error[0])
                         goto failed;
                     frame->phase = NORMAL_REDUCED;
-                    normal_push(k, &stack, result);
+                    normal_push(k, &stack, result, false);
                     break;
                 }
                 result = frame->rebuilt;
@@ -507,8 +648,10 @@ cc_term ck_normal(cc_kernel *k, cc_term term) {
             if (!result || k->error[0])
                 goto failed;
             /* Completed siblings survive a later failure. Never publish a
-             * partially rebuilt parent or an unfinished Glue side condition. */
-            k->normal_cache[frame->term] = result;
+             * partially rebuilt parent or an unfinished Glue side condition.
+             * A spine's part is no normal form of its own. */
+            if (!frame->spine && !(fold && stack.count == 1))
+                CACHE[frame->term] = result;
             --stack.count;
             break;
         }
@@ -523,6 +666,15 @@ cleanup:
         free(stack.frames);
     --k->recursion;
     return result;
+#undef CACHE
+}
+
+cc_term ck_normal(cc_kernel *k, cc_term term) {
+    return normal(k, term, false);
+}
+
+cc_term ck_normal_folded(cc_kernel *k, cc_term term) {
+    return normal(k, term, true);
 }
 
 /* Heads whose normal form may still contract by eta once their parts are

@@ -196,6 +196,13 @@ uint32_t cb_normalize(uint32_t token, uint32_t term) {
     return cc_kernel_normalize(s->kernel, term);
 }
 
+uint32_t cb_normalize_folded(uint32_t token, uint32_t term) {
+    browser_session *s = lookup(token);
+    if (!s || !term) return 0;
+    cc_kernel_clear_error(s->kernel);
+    return cc_kernel_normalize_folded(s->kernel, term);
+}
+
 /* -1 is failure, distinct from a successful inequality answer. */
 int cb_alpha_equal(uint32_t token, uint32_t left, uint32_t right) {
     browser_session *s = lookup(token);
