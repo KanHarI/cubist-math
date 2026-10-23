@@ -771,6 +771,7 @@ test("the report's digest reads every part decoding reads", async t => {
   const formula = (clauses, outer, inner) => raw("PApp", syntax.formula(clauses, "interval", new Map([["d", outer], ["e", inner]])), v("p"));
   const both = (outer, inner) => formula([["d:1", "e:1"]], outer, inner), either = (outer, inner) => formula([["d:1"], ["e:1"]], outer, inner);
   const comp = term => raw("Comp", 3, v("A"), tube(face(4), term), v("b"));
+  const faced = (kind, slot) => raw(kind, 3, v("A"), tube(face(slot), v("t")), v("b"));
   const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
   const terms = {
     free_a: v("a"), free_b: v("b"),
@@ -830,6 +831,27 @@ test("the report's digest reads every part decoding reads", async t => {
     shared_tube_inner: lambda("x", raw("App", 0, comp(v("x")), lambda("y", comp(v("y"))))),
     shared_tube_dimension: raw("PLam", 6, v("A"), raw("App", 0, comp(at(6)), raw("PLam", 7, v("A"), comp(at(6))))),
     shared_tube_dimension_inner: raw("PLam", 6, v("A"), raw("App", 0, comp(at(6)), raw("PLam", 7, v("A"), comp(at(7))))),
+    // A closed part met at two depths, against a renamed copy below.
+    closed_shared: raw("App", 0, lambda("x", v("x")), lambda("y", lambda("x", v("x")))),
+    closed_copied: raw("App", 0, lambda("x", v("x")), lambda("y", lambda("z", v("z")))),
+    closed_shared_dimension: raw("App", 0, raw("PLam", 3, v("A"), at(3)), raw("PLam", 5, v("A"), raw("PLam", 3, v("A"), at(3)))),
+    closed_copied_dimension: raw("App", 0, raw("PLam", 3, v("A"), at(3)), raw("PLam", 5, v("A"), raw("PLam", 7, v("A"), at(7)))),
+    // A system met under another binder, only its face naming a dimension.
+    shared_face: raw("PLam", 6, v("A"), raw("App", 0, faced("Comp", 6), raw("PLam", 7, v("A"), faced("Comp", 6)))),
+    shared_face_inner: raw("PLam", 6, v("A"), raw("App", 0, faced("Comp", 6), raw("PLam", 7, v("A"), faced("Comp", 7)))),
+    shared_face_hcomp: raw("PLam", 6, v("A"), raw("App", 0, faced("HComp", 6), raw("PLam", 7, v("A"), faced("HComp", 6)))),
+    shared_face_hcomp_inner: raw("PLam", 6, v("A"), raw("App", 0, faced("HComp", 6), raw("PLam", 7, v("A"), faced("HComp", 7)))),
+    // Systems of two tubes.
+    two_tubes: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(5), v("t"))), v("b")),
+    two_tubes_term: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(5), v("u"))), v("b")),
+    two_tubes_face: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(6), v("t"))), v("b")),
+    // A term of every other kind, for the changes below.
+    application: raw("App", 0, v("f"), v("a")), first_of: raw("Fst", 0, v("q")), second_of: raw("Snd", 0, v("q")),
+    pair: raw("Pair", 0, v("A"), v("a"), v("b")), abort: raw("Abort", 0, v("A"), v("i")), sum: raw("Sum", 0, v("A"), v("B")),
+    left_of: raw("Inl", 0, v("A"), v("a")), right_of: raw("Inr", 0, v("A"), v("a")), sum_rec: raw("SumRec", 0, v("m"), v("l"), v("r"), v("s")),
+    unit_rec: raw("UnitRec", 0, v("m"), v("o"), v("u")), unglue: raw("Unglue", 0, v("A"), v("g")), level_application: raw("LApp", 0, v("f"), level(2)),
+    level_max: raw("U", 0, raw("LMax", 0, level(0), level(1))), level_tier: raw("U", 0, raw("LConst", (1 << 16) | 3)), level_bound_term: raw("LBound", 2),
+    unit: raw("Unit", 0), point: raw("Point", 0), void: raw("Void", 0), path_of: raw("Path", 3, v("A"), v("a"), v("b")),
   };
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
   // It counts every distinct object of the decoding, arrays among them.
@@ -851,16 +873,50 @@ test("the report's digest reads every part decoding reads", async t => {
     ["hcomp", "hcomp_moved"], ["trans", "trans_moved"], ["domain", "domain_renamed"], ["pi", "pi_renamed"], ["sigma", "sigma_renamed"],
     ["path_type", "path_type_moved"], ["path_family", "path_family_moved"], ["comp_base", "comp_base_moved"], ["trans_base", "trans_base_moved"],
     ["both", "both_moved"], ["either", "either_moved"], ["high", "high_moved"], ["restored", "restored_renamed"],
-    ["restored_dimension", "restored_dimension_renamed"], ["comp_face_outside", "comp_face_outside_moved"], ["hcomp_face_outside", "hcomp_face_outside_moved"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
+    ["restored_dimension", "restored_dimension_renamed"], ["comp_face_outside", "comp_face_outside_moved"], ["hcomp_face_outside", "hcomp_face_outside_moved"],
+    ["closed_shared", "closed_copied"], ["closed_shared_dimension", "closed_copied_dimension"], ["annotated", "annotated_other"], ["level_bound", "level_lambda"], ["trans_descriptor", "trans"]])
     assert.ok(same(left, right), `${left} and ${right} are the same term`);
   for (const [left, right] of [["free_a", "free_b"], ["two", "three"], ["level_0", "level_1"], ["successor_1", "successor_2"],
     ["level_lambda", "level_lambda_free"], ["level_lambda", "level_pi"], ["glue", "glue_type"], ["glue", "glue_equiv"], ["glue", "glue_face"],
     ["glue_term", "glue_term_as"], ["glue_term", "glue_term_part"], ["glue_term", "glue_term_face"], ["comp", "comp_tube"], ["comp", "comp_face"],
     ["trans", "trans_face"], ["sort", "sort_signature"], ["sort", "sort_parameter"], ["sort", "sort_level"], ["sort_variables", "sort_split"],
     ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"], ["shadowed", "unshadowed"], ["slot_33", "slot_34"],
-    ["both", "either"], ["shared_tube", "shared_tube_inner"], ["shared_tube_dimension", "shared_tube_dimension_inner"]])
+    ["both", "either"], ["shared_tube", "shared_tube_inner"], ["shared_tube_dimension", "shared_tube_dimension_inner"],
+    ["shared_face", "shared_face_inner"], ["shared_face_hcomp", "shared_face_hcomp_inner"], ["two_tubes", "two_tubes_term"],
+    ["two_tubes", "two_tubes_face"], ["two_tubes", "comp"]])
     assert.ok(!same(left, right), `${left} and ${right} differ`);
+  // Every term with one part of its decoding changed: each primitive to
+  // another, each object to a fresh variable, each array one item shorter.
+  // normalDigest reads every part, so a part the shared digest skipped
+  // would make the two disagree on some change.
+  let changes = 0;
+  for (const [name, value] of Object.entries(terms)) {
+    const decoded = syntax.decode(value, program.checker.dimensions), shared = sharedNormalDigest(decoded).digest, reference = normalDigest(decoded);
+    for (const changed of oneChange(decoded)) {
+      // A change no decoding gives, as a system that is no list, both refuse.
+      const attempt = digest => { try { return digest(changed); } catch (error) { return error; } };
+      const sharedChanged = attempt(value => sharedNormalDigest(value).digest), referenceChanged = attempt(normalDigest);
+      assert.equal(sharedChanged instanceof Error, referenceChanged instanceof Error, `${name} changed: ${JSON.stringify(changed).slice(0, 200)}`);
+      if (referenceChanged instanceof Error) continue;
+      changes++;
+      assert.equal(sharedChanged === shared, referenceChanged === reference, `${name} changed: ${JSON.stringify(changed).slice(0, 200)}`);
+    }
+  }
+  assert.ok(changes > 1000, `${changes} changes`);
 });
+
+// A value with one part changed, each way once.
+function* oneChange(value) {
+  if (value === null || typeof value !== "object") {
+    yield typeof value === "number" ? value + 1000 : typeof value === "string" ? `${value}′` : value === undefined ? null : undefined;
+    return;
+  }
+  yield { tag: "Var", name: "fresh′" };
+  if (Array.isArray(value)) {
+    if (value.length) yield value.slice(1);
+    for (const [index, item] of value.entries()) for (const changed of oneChange(item)) yield value.map((other, at) => at === index ? changed : other);
+  } else for (const [key, item] of Object.entries(value)) for (const changed of oneChange(item)) yield { ...value, [key]: changed };
+}
 
 // Both digests read any value decoding gives as it is: a field by its name
 // and value, so values decoding does not give are compared alike too.

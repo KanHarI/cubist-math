@@ -26,7 +26,8 @@ The digest is `sharedNormalDigest` of the normal form's decoding, from
 Unlike `normalDigest`, it reads each object the decoding shares once for
 each way its free names are bound: unshared, these normal forms are too large
 to walk. `tests/evaluation-demand-marks.test.mjs` checks that the two agree.
-It uses terms built to differ in each part decoding reads, and terms alike
+It covers every one-part change to the decoding of terms of every kind. It
+also covers terms that share parts under different binders, and terms alike
 but for their binders' names and slots.
 
 Repeated runs give identical counters. With `--root=CHECKOUT`, the script
