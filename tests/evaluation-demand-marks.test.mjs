@@ -1079,6 +1079,15 @@ test("the report's digest counts distinct parts up to bound names", () => {
   // p, formula and clause, and b distinct.
   const comp = dim => ({ tag: "Comp", dim, family: type, system: [{ face: [["k:1"]], term: { tag: "PApp", path, arg: [[`${dim}:1`]] } }], base: b });
   assert.deepEqual(counts({ tag: "App", fn: comp("i"), arg: comp("j") }), { objects: 20, distinct: 12 });
+  // A composition's system counts as the same array a Glue term's does, and
+  // its tubes as the same objects: empty, the system once among seven
+  // objects; with one tube on k each, the system, the tube, its formula and
+  // clause once each among fourteen.
+  const t = { tag: "Var", name: "t" };
+  const mixed = system => ({ tag: "App", fn: { tag: "Comp", dim: "i", family: type, system: system(), base: b },
+    arg: { tag: "GlueTerm", as: type, base: b, system: system() } });
+  assert.deepEqual(counts(mixed(() => [])), { objects: 7, distinct: 6 });
+  assert.deepEqual(counts(mixed(() => [{ face: [["k:1"]], term: t }])), { objects: 14, distinct: 10 });
   // x bound under the lambda and free beside it.
   assert.deepEqual(counts({ tag: "App", fn: { tag: "Lam", name: "x", domain: type, body: x }, arg: x }), { objects: 4, distinct: 5 });
   // Applications alike up to their bound names, whose free names sort in

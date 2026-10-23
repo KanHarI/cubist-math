@@ -19,7 +19,12 @@ It does not resolve decision D1 of the
 D1 asks what a full normal form unfolds, and `!!` below keeps today's full
 normal form unchanged, so D1 still bounds every engine gate written with
 `!!`. This note takes full normalization out of inspection, patterns and
-printing only. The plan now states its contract as `expecting !!_`.
+printing only. Update of 2026-10-23: D1 is decided. `!!` is to compute a
+folded normal form, which keeps a stuck definition as written, and a new
+`!!!` the full normal form this note gives `!!`
+([folded normal forms](https://github.com/KanHarI/cubist-math/pull/307)).
+Gates that measure full normalization move to `!!!_` when that lands; until
+then `!!` is as below.
 
 ## What evaluation did before the marks
 

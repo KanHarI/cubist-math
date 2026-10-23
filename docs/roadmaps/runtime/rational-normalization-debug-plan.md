@@ -203,20 +203,27 @@ system is empty, and its family's head, a declared sort by name:
 
 | Normal form | Kind | Total | Constant family | Empty system | Family heads | Notes |
 | --- | --- | ---: | ---: | ---: | --- | --- |
-| `bint_mul` | `Trans` | 21,973 | 21,973 | 0 | `Quotient` | faces: 12,391 bottom, 9,582 other, none top; values: 21,662 `Trans`, 260 `App`, 51 `PApp` |
-| `bint_mul` | `HComp` | 11,242 | 11,242 | 5,602 | `Quotient` | 5,602 both constant and empty; values: 5,736 `HComp`, 5,442 `Trans`, 55 `PApp`, 9 `App` |
-| `bint_mul` | `Comp` | 2,537 | 2,294 | 375 | `BNat` 1,342, `UNat` 952, `App` 243 | 132 both constant and empty; values over `BNat`: 523 `App`, 452 `Comp`, 367 `PApp`; over `UNat`: 434 `PApp`, 395 `Comp`, 123 `App` |
-| `prop_type_is_set(U0)` | `Comp` | 532,172 | 445,772 | 208,842 | `Fst` | 143,133 both constant and empty |
+| `bint_mul` | `Trans` | 21,973 | 21,973 | 0 | `Quotient` | faces: 12,391 bottom, 9,582 other, none top; bases: 21,662 `Trans`, 260 stuck eliminations, 51 variables |
+| `bint_mul` | `HComp` | 11,242 | 11,242 | 5,602 | `Quotient` | 5,602 both constant and empty; bases: 5,736 `HComp`, 5,442 `Trans`, 64 constructor applications |
+| `bint_mul` | `Comp` | 2,537 | 2,294 | 375 | `BNat` 1,342, `UNat` 952, `App` 243 | 132 both constant and empty; bases over `BNat`: 768 stuck eliminations, 452 `Comp`, 118 `SumRec`, 4 variables; over `UNat`: 513 stuck eliminations, 395 `Comp`, 43 constructor applications, 1 variable; over `App`: 243 stuck eliminations |
+| `prop_type_is_set(U0)` | `Comp` | 532,172 | 445,772 | 208,842 | `Fst` | 143,133 both constant and empty; bases: 521,785 `Comp`, 9,882 variables, 505 `Unglue` |
+
+A base is read by the root of its application spine, so a constructor
+applied counts as one, and a stuck elimination is an eliminator applied to
+a value that is no constructor.
 
 Each residue is stuck by the rule for its family. Over the quotient, a
 higher sort, transport of a neutral value stays as written
 (`sort_transport`, `hit_composition.c`, when `ck_constructor_application`
-finds no constructor). Over the data sorts `BNat` and `UNat`, a composition
+finds no constructor), and a homogeneous composition stays a formal
+composition, a value of the higher type, whatever its base: 64 have a
+constructor base. Over the data sorts `BNat` and `UNat`, a composition
 computes only when its base and every tube are the same constructor
-(`data_sort_composition`, `inductive_composition.c:104-137`), and none of
-these bases is a constructor: they are compositions, path applications and
-applications. Over a neutral family, the first projection of a bound
-proposition or an application stuck on one, the composition stays neutral
+(`data_sort_composition`, `inductive_composition.c:104-137`). Of these
+2,294, 2,251 have a base that is no constructor, and 43 a constructor base
+with a tube that is none: 39 a stuck elimination and 4 a composition. Over
+a neutral family, the first projection of a bound proposition or an
+application stuck on one, the composition stays neutral
 (`ck_reduce_composition`, `composition_compute.c:261-262`). All three are
 consistent with the project's contract, and
 [path-algebra.md](../../cubical/path-algebra.md) states that transport in a
@@ -297,26 +304,26 @@ and counts its parts with `sharedNormalDigest`
 (`tools/evaluation-baseline.mjs`), the comparison the demand marks' report
 uses: an object counts once for each distinct digest it gets, objects alike
 up to the names of bound variables and dimensions count once, and the parts
-the digest reads inline, a formula's clauses, a system and its tubes, count
-as the objects they are. Decoding gives one object per kernel node and
-dimension context, adds arrays for formulas and systems, and drops a path
+the digest reads inline count as they would alone, a formula's clauses as
+arrays, a composition's system as the array of its tubes, a tube as an
+object. Decoding gives one object per kernel node and dimension context,
+adds arrays for formulas, clauses and systems, and drops a path
 application's annotation, a level binder's bound and a transport
-descriptor's term, so the counts are of the decoding:
+descriptor's term, so the counts are the decoding's:
 
-| Normal form | Kernel nodes | Decoded objects | Distinct up to bound names | Kernel nodes per distinct part |
+| Normal form | Kernel nodes | Decoded objects | Distinct up to bound names | Decoded objects per distinct part |
 | --- | ---: | ---: | ---: | ---: |
-| `small_inverse` | 1,149,838 | 2,898,283 | 1,022,821 | 1.12 |
-| `prop_type_is_set(U0)` | 1,034,925 | 2,710,021 | 855,772 | 1.21 |
-| `bint_mul` | 96,657 | 151,353 | 92,795 | 1.04 |
-| `two_thirds` | 97,457 | 152,446 | 93,473 | 1.04 |
+| `small_inverse` | 1,149,838 | 2,898,283 | 1,022,791 | 2.83 |
+| `prop_type_is_set(U0)` | 1,034,925 | 2,710,021 | 855,743 | 3.17 |
+| `bint_mul` | 96,657 | 151,353 | 92,794 | 1.63 |
+| `two_thirds` | 97,457 | 152,446 | 93,472 | 1.63 |
 
-The kernel's outputs are not duplicated up to bound names: about as many of
-their parts are distinct as they have nodes, within a fifth. The decoding's
-1.6 to 3.2 objects per distinct part are its own copies, one per dimension
-context and per array. The million nodes are distinct structure, mostly the
-compositions of 1.5. This is A.3's first answer, and it bounds B4 on output
-size at about 1.2×; whether a cache keyed modulo binders would save
-intermediate work, which never reaches the output, is not measured.
+This measures the decoding, not the kernel: the decoding's systems are
+arrays where the kernel links tube nodes, and its annotations are not the
+kernel's, so these counts bound nothing about the kernel's sharing. Whether
+the kernel's outputs repeat parts up to bound names is unmeasured; A.3's
+count over kernel nodes with every annotation is what answers it, and B4
+waits on it.
 
 ## 2. Targets and gates
 
@@ -454,20 +461,27 @@ change. A cache entry is no root: a compacting commit discards a normal form
 nothing else reaches, so relocating the entries whose key and value survive
 (`cc_kernel_relocated`) would drop exactly the expensive results. Change:
 retain the normal form of a closed definition, full or folded, as a root of
-its definition, filled on first use, kept by every commit, dropped by a
-rollback that truncates the definition, and bounded in total retained nodes
-so that one large normal form cannot hold the arena. Isolation must hold as
+its definition, filled on first use, kept by every commit, and bounded in
+total retained nodes so that one large normal form cannot hold the arena.
+A rollback drops every entry filled since its checkpoint, not only those of
+truncated definitions: a definition that survives can have its first
+normal form computed inside the transaction, in nodes the rollback
+discards. The checkpoint records which entries it saw filled, and a
+rollback clears them. Isolation must hold as
 `kernel/tests/test_isolation.c` states it: a retained reduction is
 computation, not a judgement, and never changes whether an instruction is
 accepted. Measure: a program with two `!!!_` lines on one closed rational
 term, the second one's query ticks; the evaluation baseline's warm samples.
+Native tests include a surviving definition first normalized inside a
+transaction that rolls back, whose entry must not outlive its nodes.
 Refuted if the second line does not fall below 1% of the first, or if the
 baseline digests or any native test change.
 
 **B4. Sharing modulo bound names (kernel), only if A.3 shows duplication.**
-Not pursued on output size: 1.8 measures 1.04 to 1.21 kernel nodes per
-distinct part. Whether a cache keyed modulo binders saves intermediate work
-is a separate question, unmeasured. Hypothesis: a large fraction of the 1.15M nodes are alpha-equal copies
+Waits on A.3's count over kernel nodes: 1.8 measures the decoding, which
+bounds nothing about the kernel's sharing. Whether a cache keyed modulo
+binders saves intermediate work is a separate question, unmeasured.
+Hypothesis: a large fraction of the 1.15M nodes are alpha-equal copies
 differing only in binder symbols. Change options, in order of intrusiveness:
 canonical binder symbols in `ck_make` for closed binders; a normal-form cache
 keyed by an annotation-aware canonical hash alongside the exact-handle one.
@@ -567,7 +581,8 @@ gives, makes up nearly all of the 183,370.
 4. B3, with the baseline digests and native suites.
 5. B2, with T3 re-based from its measurement and the quotient regressions.
 6. B5 and B6 on the wide inverse's full normal form.
-7. B7 only after D2. B1 and B4 are not pursued.
+7. B4 after A.3's count over kernel nodes, and B7 after D2. B1 is not
+   pursued.
 
 Each PR gets an exhaustive first review over named risk areas (certificate
 soundness and computation for library changes; isolation, cache lifecycle,
@@ -583,8 +598,8 @@ computes the folded normal form, and a new mark `!!!` the full normal form
 `weak` gives today, which unfolds every definition reference. In the folded
 normal form, the term asked for is unfolded, and inside it a definition,
 applied or projected, is computed only when its weak head is data: a
-constructor applied, a pair, an injection, a point, or a variable's
-application. A definition whose head is a function, a path, a type, or an
+constructor applied, a pair, an injection, a point, a glued element such as
+`glue(2)`, or a variable's application. A definition whose head is a function, a path, a type, or an
 eliminator or composition stuck on a variable stays as written, with its
 arguments' folded normal forms. Closed data therefore computes in full, as
 before, and proofs stay named. A prototype of the kernel query, on 2026-10-23

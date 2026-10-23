@@ -215,8 +215,16 @@ function graph(kernel, root, visitBound = 60000000, ms = 300000) {
 // bound), is its system empty, and what are the family, face and value heads?
 // A family headed by a declared sort is named by its sort, and the value heads
 // are also counted by family, since a data sort's composition is stuck by its
-// base or tubes and a higher sort's by its family.
+// base or tubes and a higher sort's by its family. A value or tube term is
+// read by the root of its application spine, so that a constructor applied
+// counts as a constructor; where the base is one, the first tube term that is
+// none is what blocks.
 function survey(kernel, root, syntax) {
+  const rootKind = id => {
+    let node = kernel.node(id);
+    while (["App", "Fst", "Snd", "PApp", "LApp"].includes(node.kind)) node = kernel.node(node.children[0]);
+    return node.kind;
+  };
   const formulaMemo = new Map(), termMemo = new Map();
   const formulaMentions = (fid, dim) => {
     const key = `${fid}:${dim}`;
@@ -259,7 +267,7 @@ function survey(kernel, root, syntax) {
     const node = kernel.node(id);
     if (node.kind === "Comp" || node.kind === "Trans" || node.kind === "HComp") {
       const row = tally[node.kind] ??= { total: 0, constantFamily: 0, emptySystem: 0, constantAndEmpty: 0,
-        familyHeads: {}, faces: {}, valueHeads: {}, valueHeadsByFamily: {} };
+        familyHeads: {}, faces: {}, valueHeads: {}, valueHeadsByFamily: {}, baseRootsByFamily: {}, blockingTubesByFamily: {} };
       const family = kernel.node(node.children[0]);
       const familyKey = family.kind === "Sort" ? `Sort ${syntax.signatureRecord(family.payload).name}` : family.kind;
       const constant = !mentions(node.children[0], node.payload), empty = !node.children[1];
@@ -271,6 +279,16 @@ function survey(kernel, root, syntax) {
       if (node.kind === "Trans") count(row.faces, faceShape(node.children[1]));
       count(row.valueHeads, kernel.node(node.children[2]).kind);
       count(row.valueHeadsByFamily[familyKey] ??= {}, kernel.node(node.children[2]).kind);
+      const baseRoot = rootKind(node.children[2]);
+      count(row.baseRootsByFamily[familyKey] ??= {}, baseRoot);
+      if (baseRoot === "Con" && node.kind !== "Trans") {
+        let blocking = "none";
+        for (let tube = node.children[1]; tube; tube = kernel.node(tube).children[1]) {
+          const kind = rootKind(kernel.node(tube).children[0]);
+          if (kind !== "Con") { blocking = kind; break; }
+        }
+        count(row.blockingTubesByFamily[familyKey] ??= {}, blocking);
+      }
     }
     for (const c of node.children) if (c) pending.push(c);
   }

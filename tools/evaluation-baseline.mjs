@@ -246,7 +246,8 @@ export function normalDigest(term) {
 // dimensions: an object met under bindings that give it different digests
 // counts once for each, and objects alike up to those names count once.
 // The parts digest reads inline, a formula's clauses, a system and its
-// tubes, count as the objects they are.
+// tubes, count as the objects they are, a system and a tube as an array and
+// an object read alone would.
 export function sharedNormalDigest(term) {
   const free = new Map(), digests = new Map(), objects = new Set(), distinct = new Set();
   const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
@@ -294,8 +295,13 @@ export function sharedNormalDigest(term) {
   const named = (scope, name) => scope.names.has(name) ? ["bound", scope.depth - scope.names.get(name) - 1] : ["free", name];
   const literal = text => [named(scopes.dims, dimensionOf(text)), text.slice(text.lastIndexOf(":") + 1)];
   const sorted = values => values.map(value => JSON.stringify(value)).sort();
-  // A part read inline, counted among the distinct parts; its fields unchanged.
-  const inline = (kind, fields) => (distinct.add(createHash("sha256").update(JSON.stringify([kind, fields])).digest("hex")), fields);
+  // A part read inline, counted among the distinct parts by the digest it
+  // would have read alone.
+  const counted = fields => {
+    const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
+    distinct.add(result);
+    return result;
+  };
   const digest = value => {
     if (value === null || typeof value !== "object") return JSON.stringify(["value", JSON.stringify(value) ?? "undefined"]);
     const { terms, dims } = freeNames(value);
@@ -303,7 +309,21 @@ export function sharedNormalDigest(term) {
     let known = digests.get(value);
     if (known?.has(key)) return known.get(key);
     let fields;
-    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => inline("clause", sorted(clause.map(literal)))))];
+    // A composition's system, its tube terms under the binder: each tube
+    // counted as the object { face, term } and the system as their array.
+    const tubes = (system, dim) => {
+      const entries = system.map(tube => {
+        const face = digest(tube.face), term = under(scopes.dims, dim, () => digest(tube.term));
+        return { entry: ["face", face, "term", term], tube: counted(["node", "", [["face", face], ["term", term]]]) };
+      });
+      counted(["array", entries.map(({ tube }) => tube)]);
+      return entries.map(({ entry }) => entry);
+    };
+    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => {
+      const literals = sorted(clause.map(literal));
+      counted(["clause", literals]);
+      return literals;
+    }))];
     else if (Array.isArray(value)) fields = ["array", value.map(digest)];
     else if (value.tag === "Var") fields = ["Var", named(scopes.terms, value.name)];
     else {
@@ -313,7 +333,7 @@ export function sharedNormalDigest(term) {
         [key, !binds.includes(key) ? digest(item)
           : binder === "name" ? under(scopes.terms, value.name, () => digest(item))
           : key !== "system" ? under(scopes.dims, value.dim, () => digest(item))
-          : inline("system", item.map(tube => inline("tube", ["face", digest(tube.face), "term", under(scopes.dims, value.dim, () => digest(tube.term))])))])];
+          : tubes(item, value.dim)])];
     }
     const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
     if (!known) digests.set(value, known = new Map());
