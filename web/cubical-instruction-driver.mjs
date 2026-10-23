@@ -1033,7 +1033,7 @@ export class InstructionDriver {
   differ(x, y, steps) {
     const saved = { guesses: this.guesses, heads: this.heads, headSteps: this.headSteps };
     Object.assign(this, { guesses: new Map(), heads: new Map(), headSteps: steps });
-    try { return this.guide(x, y, null, null, { left: Infinity, depth: GUIDE_DEPTH, cuts: 0 }) === false; }
+    try { return this.guide(x, y, null, null, { left: Infinity, depth: GUIDE_DEPTH, cuts: 0, prune: true }) === false; }
     finally { Object.assign(this, saved); }
   }
 
@@ -1043,8 +1043,9 @@ export class InstructionDriver {
   // constructors or neutral terms that differ, since normal forms are unique;
   // unknown when eta could relate them, a head is a cubical construction, or
   // the fuel runs out. Shared by one question: `fuel.left` pairs,
-  // `fuel.depth` levels of parts below this one, and `fuel.cuts`, the parts
-  // the depth has cut off so far.
+  // `fuel.depth` levels of parts below this one, `fuel.cuts`, the parts
+  // the depth has cut off so far, and `fuel.prune`, whether bindings neither
+  // side mentions are dropped from its questions.
   guide(x, y, terms, dims, fuel) {
     if (this.alpha(x, y, terms, dims)) return true;
     if (--fuel.left < 0) return null;
@@ -1053,8 +1054,11 @@ export class InstructionDriver {
     if (++this.guideCalls % 1024 === 0) this.kernel.checkDeadline();
     // Bindings neither side mentions are no part of the question, as in
     // alpha: a part met again under other binders is the same question.
-    if (terms) terms = this.pruneSymbols(terms, this.freeTermSymbols(x), this.freeTermSymbols(y));
-    if (dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
+    // Only differ prunes: the search's guide, with more answers kept, would
+    // spend its fuel elsewhere and steer the search, and what it asks the
+    // kernel, otherwise.
+    if (fuel.prune && terms) terms = this.pruneSymbols(terms, this.freeTermSymbols(x), this.freeTermSymbols(y));
+    if (fuel.prune && dims) dims = this.prune(dims, freeDimensionMask(this.kernel, x, this.freeDims),
       freeDimensionMask(this.kernel, y, this.freeDims));
     const key = `${x},${y},${this.chainId(terms)},${this.chainId(dims)}`;
     // An unknown the depth cut short is kept with the depth it had, and holds
