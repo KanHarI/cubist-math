@@ -683,6 +683,19 @@ static void folded_normal_forms(unsigned optimizations) {
     assert(asked && ck_alpha_equal(k, asked, cc_kernel_normalize(k, applied)));
     cc_term lambda = cc_kernel_normalize_folded(k, stuck);
     assert(lambda && ck_alpha_equal(k, lambda, cc_kernel_normalize(k, stuck)) && k->nodes[lambda].kind == CC_LAM);
+    /* Folding is not idempotent: λ x. stuck((λ y. y)(x)) folds to stuck, by
+     * eta once its argument is folded, and stuck, the term asked for, then
+     * unfolds to its lambda. */
+    cc_term identity_void = raw(k, CC_LAM, 613, void_type, raw(k, CC_VAR, 613, 0, 0));
+    cc_term wrapped_eta = raw(k, CC_LAM, 614, void_type,
+        raw(k, CC_APP, 0, stuck, raw(k, CC_APP, 0, identity_void, raw(k, CC_VAR, 614, 0, 0))));
+    cc_term once = cc_kernel_normalize_folded(k, wrapped_eta);
+    assert(once && ck_alpha_equal(k, once, stuck));
+    cc_term twice_folded = cc_kernel_normalize_folded(k, once);
+    assert(twice_folded && k->nodes[twice_folded].kind == CC_LAM && !ck_alpha_equal(k, twice_folded, once));
+    /* Asking for the same term again gives the same answer. */
+    assert(ck_alpha_equal(k, cc_kernel_normalize_folded(k, wrapped_eta), once));
+
     /* A part whose head is data is computed: a point, or a variable's
      * application, here x, the identity's application unfolded. */
     cc_term computed = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, identity, point)));
