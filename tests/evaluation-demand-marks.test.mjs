@@ -868,14 +868,8 @@ test("the report's digest reads every part decoding reads", async t => {
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
   // It counts every distinct object of the decoding, arrays among them.
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions), seen = new Set(), pending = [decoded];
-    while (pending.length) {
-      const item = pending.pop();
-      if (item === null || typeof item !== "object" || seen.has(item)) continue;
-      seen.add(item);
-      pending.push(...Object.values(item));
-    }
-    assert.equal(sharedNormalDigest(decoded).objects, seen.size, `${name} counts its objects`);
+    const decoded = syntax.decode(value, program.checker.dimensions);
+    assert.equal(sharedNormalDigest(decoded).objects, distinctObjects(decoded), `${name} counts its objects`);
   }
   const names = Object.keys(digests);
   for (const left of names) for (const right of names)
@@ -960,6 +954,18 @@ function unshared(value) {
   return Array.isArray(value) ? value.map(unshared) : Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unshared(item)]));
 }
 
+// The number of distinct objects a value holds, itself and arrays among them.
+function distinctObjects(value) {
+  const seen = new Set(), pending = [value];
+  while (pending.length) {
+    const item = pending.pop();
+    if (item === null || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+    pending.push(...Object.values(item));
+  }
+  return seen.size;
+}
+
 // The names a decoded value holds anywhere: variables' and binders' names,
 // and the dimensions its formulas and dimension binders name.
 function namesIn(value) {
@@ -1009,24 +1015,37 @@ test("the report's digest compares plain values as normalDigest does", () => {
   }
 });
 
-// It reads each shared object once for each binding of its free names: a
-// value of 2^22 paths, each part met beneath binders it does not mention, a
-// variable's on one branch and a dimension's and a variable's on the other,
-// and read through getters that count, is read in a few reads a node, where
-// a walk of its paths, or a memo keyed by the binders or the depth around a
-// part, would make many more.
+// It reads each shared object once for each binding of its free names. In
+// values of 2^22 paths, read through getters that count, a part is met
+// beneath binders it does not mention, beneath binders of the names it binds
+// itself, and beneath binders of its free names at one distance and other
+// depths, each of a variable and of a dimension. Each value is read in a few
+// reads a node, where a walk of its paths, or a memo keyed by the binders or
+// the depth around a part, or by the names the part binds, would make more.
 test("the report's digest reads a shared object once", () => {
-  let reads = 0, value = { tag: "Var", name: "x" };
-  const levels = 22, type = { tag: "Var", name: "A" };
-  for (let level = 0; level < levels; level++) {
-    const part = value, body = { get: () => { reads++; return part; }, enumerable: true };
-    const lambda = Object.freeze(Object.defineProperties({ tag: "Lam", name: `u${level}`, domain: type }, { body }));
-    const path = Object.freeze(Object.defineProperties({ tag: "PLam", dim: `e${level}`, family: type }, { body }));
-    value = Object.freeze({ tag: "App", fn: lambda, arg: Object.freeze({ tag: "Lam", name: `w${level}`, domain: type, body: path }) });
+  const levels = 22, type = { tag: "Var", name: "A" }, at = (path, dim) => ({ tag: "PApp", path: { tag: "Var", name: path }, at: [[`${dim}:1`]] });
+  // A binder whose body is read, by a getter when it is one.
+  const binder = (tag, name, body) => Object.freeze(Object.defineProperties(tag === "Lam" ? { tag, name, domain: type } : { tag, dim: name, family: type },
+    { body: typeof body === "function" ? { get: body, enumerable: true } : { value: body, enumerable: true } }));
+  // Each level applies one branch to another, each binding the level below.
+  const shapes = {
+    unused: { base: { tag: "Var", name: "x" }, branches: (level, read) =>
+      [binder("Lam", `u${level}`, read), binder("Lam", `w${level}`, binder("PLam", `e${level}`, read))] },
+    closed: { base: { tag: "App", fn: binder("Lam", "x", { tag: "Var", name: "x" }), arg: binder("PLam", "i", at("p", "i")) }, branches: (level, read) =>
+      [binder("Lam", "x", binder("PLam", "i", read)), binder("Lam", "y", binder("PLam", "j", read))] },
+    rebound: { base: at("x", "i"), branches: (level, read) =>
+      [binder("Lam", "x", binder("PLam", "i", read)), binder("Lam", "y", binder("PLam", "j", binder("Lam", "x", binder("PLam", "i", read))))] },
+  };
+  for (const [name, { base, branches }] of Object.entries(shapes)) {
+    let reads = 0, value = base;
+    for (let level = 0; level < levels; level++) {
+      const part = value, [fn, arg] = branches(level, () => { reads++; return part; });
+      value = Object.freeze({ tag: "App", fn, arg });
+    }
+    const { objects } = sharedNormalDigest(value), read = reads;
+    assert.equal(objects, distinctObjects(value), name);
+    assert.ok(read <= 4 * levels, `${name}: ${read} reads`);
   }
-  const { objects } = sharedNormalDigest(value);
-  assert.equal(objects, 4 * levels + 2);
-  assert.ok(reads <= 4 * levels, `${reads} reads`);
 });
 
 // Two constructors of one module, and constructors of one name in two.
