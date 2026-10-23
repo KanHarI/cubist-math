@@ -22,6 +22,15 @@ interface usable and support its stated fragment. Repeated boilerplate or
 failed inference feeds the shared language design instead of becoming a
 collection of theorem-specific workarounds.
 
+The [simplicial roadmap](../hott/simplicial-types.md), proposed on
+2026-10-24, is a later source of coherent categorical interfaces. HA0–HA6
+keep their existing dependencies: ordinary categories and algebraic homology
+do not wait for the directed kernel, and HA4's first synthetic cohomology
+constructions require cubical paths, H1 and univalence. Existing `U`,
+`IsSet` and `set` keep their meanings. ST1's agreed but unimplemented
+`x ->[C] y` may name an ordinary module or complex arrow through `C.Arr`;
+L2.12's shared composition, `map` and `at` interfaces remain frontend work.
+
 ## Why Cubist
 
 - **Univalence removes the bookkeeping of "up to isomorphism".**
@@ -164,6 +173,15 @@ The categories roadmap's diagrams, maps of graphs
   pullbacks and pushouts in the category of modules.
 - **HA6.** Each stage of a CW complex is a pushout. An infinite complex is
   a sequential `Colim` over `Nat`, which HA6 defers.
+
+ST4–ST5 later propose a checked category of spaces and coherent diagrams
+over shapes with relations, extending what these graph constructions can
+express. Possible applications are coherent functoriality of cohomology and
+families of homotopy limits. They require comparison with the ordinary
+constructions and proofs of the claimed universal properties; they are not
+prerequisites or completed consequences of HA4. ST6's higher algebra likewise
+needs an explicit coherence notion, not removal of setness from a module or
+chain-complex declaration. None of this changes the choice restrictions above.
 
 ## Milestones
 

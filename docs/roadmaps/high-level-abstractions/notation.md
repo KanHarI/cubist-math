@@ -18,6 +18,11 @@ selections and operand recipes, and qualifying a shadowed notation's name
 in printing. L2.10f–h are later work. This is an elaborator and tooling
 change, with no kernel rule changes.
 
+The [simplicial roadmap](../hott/simplicial-types.md) adds the proposed
+[category-arrow and shape notation](#category-arrow-notation-and-directed-shapes)
+below. Its ST1 ordinary arrow notation is independent of the directed kernel
+extension and does not change L2.10's delivered syntax or remaining priorities.
+
 ## Why now
 
 Before L2.10, building the integers and rationals exposed these
@@ -1052,6 +1057,47 @@ inside a section.
 | No name-based operators | After L2.10j, `x + y` or `3` outside any view, `use` or section is an error that suggests `use nat;`, even where a function named `add` or a type named `Nat` is in scope. |
 | Mixed decimal and binary literals | Under `use nat;`, `binary.(0b1101)` is the `BinaryNat` that `0b1101` was before L2.10j, definitionally; a bare `0b1101` there is refused; a printed binary value is qualified outside the `binary` view. |
 | Partial inverse | A field's `inv` requires evidence that its argument is not zero; the `inverses` law passes the law check as a truncation; `Field.Hom` is generated as before; the rationals' literals need no evidence. |
+
+## Category arrow notation and directed shapes
+
+Direction accepted on 2026-10-24; unimplemented. The
+[simplicial roadmap](../hott/simplicial-types.md) owns the stage gates and
+full syntax proposal. ST1 introduces `x ->[C] y` with an explicit category
+`C`. A checked category interface determines its arrow family: for an
+ordinary category it elaborates to `C.Arr(x, y)`; native directed categories
+can later expose their extension-defined arrows through the same interface.
+The category is supplied by the author, not selected by the objects' types.
+Using one spelling does not identify the two representations without a
+comparison theorem.
+
+Ordinary `A -> B` remains a function type, and `x =[A] y` remains cubical
+equality. ST1 must fix precedence and associativity, retain the explicit
+category through binding and printing, reject an inapplicable category
+interface, and round-trip arrow types alongside ordinary functions and
+equalities. This work needs no directed kernel primitive. It does not
+change the reserved generated member `T.Hom` into a user-defined global
+arrow family.
+
+The proposed `shape`, `extension` and `cell` spellings are tentative ST2
+syntax, gated by ST0's model and preservation contract. Their coordinates
+are directed: a separate sort in the sketch, with ST0 deciding between a
+sort and a type. Neither they nor a shape alias is an ordinary type in `U`.
+If adopted, these words and `Directed` become reserved names, and keywords
+take priority over library names on any collision. Shape restrictions and
+boundary clauses use a dedicated tope language: geometric `<=` and `=` do
+not invoke a model's order notation or construct cubical paths.
+Coordinate `0` and `1` are fixed endpoints, independent of a selected
+numerical notation. An extension type states a boundary requirement; its
+introduction must supply a body and check the strict boundary equations
+and overlaps. It does not fill a shape.
+
+If `@` is shared with shape application, the checked head fixes the coordinate
+sort. Binding-aware source retention, substitution, inspection and printing
+must preserve that sort and the restricted context. Cubical `path`, reversal,
+`compose` and `fill` retain their existing meanings; directed composition
+requires the later Segal structure. Full directed syntax examples and their
+acceptance obligations belong to the central roadmap, rather than to L2.10's
+ordinary notation rules.
 
 ## Deferred work
 
