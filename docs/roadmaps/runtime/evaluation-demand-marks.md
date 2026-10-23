@@ -169,7 +169,8 @@ its top still demands that head.
 
 Printing is an observation too. The REPL's `evaluate e` and
 `print(evaluate(e));` print the **value form**: weak heads descended through
-constructor arguments, pair components and injection values, stopping at
+constructor arguments, pair components, injection values and a glue value's
+base and faces, stopping at
 term, path and level lambdas, types, formal compositions and neutral heads,
 which are shown as suspended, by a marker naming the kind of head
 (`<fun>`, `<path>`, `<level fun>`, `<type>`, `<composition>`,

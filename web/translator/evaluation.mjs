@@ -139,7 +139,7 @@ const headMarker = kind => marker(kind === "Lam" || kind === "Elim" ? "<fun>" : 
   : typeKinds.has(kind) ? "<type>" : ["Comp", "HComp", "Trans"].includes(kind) ? "<composition>" : "<neutral>");
 // A value as far as it was computed: a weak head with its parts shown as
 // `parts` gives them, by their places. A head that is no constructor, pair,
-// injection or tt is shown by its marker.
+// injection, tt or glue value is shown by its marker.
 function shownHead(head, at, parts = () => unevaluated) {
   const { root, args } = at.spine(head);
   if (root.kind === "Con") return args.reduce((fn, _, index) => T.app(fn, parts(index)), at.constructor(root.id));
@@ -147,6 +147,10 @@ function shownHead(head, at, parts = () => unevaluated) {
   if (root.kind === "Pair") return { tag: "Pair", first: parts(0), second: parts(1) };
   if (root.kind === "Inl" || root.kind === "Inr") return { tag: root.kind, value: parts(0) };
   if (root.kind === "Point") return { tag: "Point" };
+  // A glue value is an introduction too: its base, and the term on each
+  // face of its system.
+  if (root.kind === "GlueTerm")
+    return { tag: "GlueTerm", base: parts(0), system: at.glueSystem(root.id).map(({ face }, index) => ({ face, term: parts(index + 1) })) };
   return headMarker(root.kind);
 }
 const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
@@ -162,7 +166,8 @@ const once = compute => { let done = false, value; return () => done ? value : (
 //     names;
 //   spine(handle), decoded(handle): a term as the kernel holds it, nothing
 //     computed; constructor(handle), a constructor as a display shows it,
-//     without its type's parameters;
+//     without its type's parameters; glueSystem(handle), a glue value's
+//     faces and the handles of its terms;
 //   elaborate(node, type): a leaf elaborated at a type, and its normal form;
 //   annotation(node): a typed pattern's type, elaborated and checked, and
 //     not normalized: sameType compares it with the part's type;

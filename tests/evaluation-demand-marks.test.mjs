@@ -238,6 +238,15 @@ evaluate tagged expecting typed(Unit, _);`, { module });
   assert.match(result.gaps[0].reason, /a part of type Tag\(\(fun \(f : UNat -> UNat, x : UNat\) => f\(f\(x\)\)\)/);
 });
 
+test("a glue value is shown as the introduction it is, on an empty or a false face", async t => {
+  const { result } = await checkProgram(t, `import contractible_maps;
+evaluate typed(Glue(Unit), glue(tt)) expecting !_;
+evaluate typed(Glue(Unit, face_when(0, Unit, id_contr_equiv(U0, Unit))), glue(tt, face_when(0, tt))) expecting !_;`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  // The kernel keeps no part on a false face.
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["glue(<unevaluated>)", "glue(<unevaluated>)"]);
+});
+
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
   // The prime of euclid(4) has two successor heads, and its third is too deep
   // to compute (K344): any query of the ignored part, however indirect,
