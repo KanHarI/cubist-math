@@ -845,6 +845,9 @@ test("the report's digest reads every part decoding reads", async t => {
     two_tubes: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(5), v("t"))), v("b")),
     two_tubes_term: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(5), v("u"))), v("b")),
     two_tubes_face: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(6), v("t"))), v("b")),
+    two_tubes_reversed: raw("Comp", 3, v("A"), raw("Tube", face(5), v("t"), tube(face(4), at(3))), v("b")),
+    one_tube: raw("Comp", 3, v("A"), tube(face(4), at(3)), v("b")),
+    one_tube_twice: raw("Comp", 3, v("A"), raw("Tube", face(4), at(3), tube(face(4), at(3))), v("b")),
     // A term of every other kind, for the changes below.
     application: raw("App", 0, v("f"), v("a")), first_of: raw("Fst", 0, v("q")), second_of: raw("Snd", 0, v("q")),
     pair: raw("Pair", 0, v("A"), v("a"), v("b")), abort: raw("Abort", 0, v("A"), v("i")), sum: raw("Sum", 0, v("A"), v("B")),
@@ -883,7 +886,7 @@ test("the report's digest reads every part decoding reads", async t => {
     ["constructor", "constructor_index"], ["elim", "elim_signature"], ["elim", "elim_clause"], ["shadowed", "unshadowed"], ["slot_33", "slot_34"],
     ["both", "either"], ["shared_tube", "shared_tube_inner"], ["shared_tube_dimension", "shared_tube_dimension_inner"],
     ["shared_face", "shared_face_inner"], ["shared_face_hcomp", "shared_face_hcomp_inner"], ["two_tubes", "two_tubes_term"],
-    ["two_tubes", "two_tubes_face"], ["two_tubes", "comp"]])
+    ["two_tubes", "two_tubes_face"], ["two_tubes", "comp"], ["two_tubes", "two_tubes_reversed"], ["one_tube", "one_tube_twice"]])
     assert.ok(!same(left, right), `${left} and ${right} differ`);
   // Every term with one part of its decoding changed: each primitive to
   // another, each object to a fresh variable, each array one item shorter.
@@ -903,7 +906,42 @@ test("the report's digest reads every part decoding reads", async t => {
     }
   }
   assert.ok(changes > 1000, `${changes} changes`);
+  // Every term met twice, once beneath a binder of each name it holds, a
+  // variable's or a dimension's, against a binder of a fresh name: where
+  // the name is free in the term, only the first binds it in the second
+  // copy, wherever in the term it is, so the shared copy's memo key must
+  // hold the name's binding.
+  let wrapped = 0;
+  const twice = (part, binder) => ({ tag: "App", fn: part, arg: binder(part) });
+  for (const [name, value] of Object.entries(terms)) {
+    const decoded = syntax.decode(value, program.checker.dimensions), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
+    const binders = [...[...termNames, "fresh′"].map(bound => part => ({ tag: "Lam", name: bound, domain: { tag: "Var", name: "A" }, body: part })),
+      ...[...dimensionNames, "fresh′"].map(bound => part => ({ tag: "PLam", dim: bound, family: { tag: "Var", name: "A" }, body: part }))];
+    const results = binders.map(binder => twice(decoded, binder)).map(value => ({ shared: sharedNormalDigest(value).digest, decoded: normalDigest(value) }));
+    for (const left of results) for (const right of results) {
+      wrapped++;
+      assert.equal(left.shared === right.shared, left.decoded === right.decoded, `${name} met beneath binders`);
+    }
+  }
+  assert.ok(wrapped > 1000, `${wrapped} comparisons`);
 });
+
+// The names a decoded value holds anywhere: variables' and binders' names,
+// and the dimensions its formulas and dimension binders name.
+function namesIn(value) {
+  const terms = new Set(), dims = new Set(), seen = new Set(), pending = [value];
+  while (pending.length) {
+    const item = pending.pop();
+    if (item === null || typeof item !== "object" || seen.has(item)) continue;
+    seen.add(item);
+    if (Array.isArray(item) && item.length && item.every(Array.isArray))
+      for (const clause of item) for (const literal of clause) dims.add(literal.slice(0, literal.lastIndexOf(":")));
+    if (item.tag === "Var" || typeof item.name === "string") terms.add(item.name);
+    if (typeof item.dim === "string") dims.add(item.dim);
+    pending.push(...Object.values(item));
+  }
+  return { terms, dims };
+}
 
 // A value with one part changed, each way once.
 function* oneChange(value) {
@@ -934,18 +972,22 @@ test("the report's digest compares plain values as normalDigest does", () => {
   }
 });
 
-// It reads each shared object once: a value of 2^22 paths, each node read
-// through getters that count, is read in a few reads a node, where a walk of
-// its paths would make millions.
+// It reads each shared object once for each binding of its free names: a
+// value of 2^22 paths, each part met beneath binders it does not mention, a
+// variable's and a dimension's, and read through getters that count, is read
+// in a few reads a node, where a walk of its paths, or a memo keyed by every
+// binder around a part, would make millions.
 test("the report's digest reads a shared object once", () => {
   let reads = 0, value = { tag: "Var", name: "x" };
-  const levels = 22;
+  const levels = 22, type = { tag: "Var", name: "A" };
   for (let level = 0; level < levels; level++) {
-    const part = value, read = () => { reads++; return part; };
-    value = Object.freeze(Object.defineProperties({ tag: "App" }, { fn: { get: read, enumerable: true }, arg: { get: read, enumerable: true } }));
+    const part = value, body = { get: () => { reads++; return part; }, enumerable: true };
+    const lambda = Object.freeze(Object.defineProperties({ tag: "Lam", name: `u${level}`, domain: type }, { body }));
+    const path = Object.freeze(Object.defineProperties({ tag: "PLam", dim: `e${level}`, family: type }, { body }));
+    value = Object.freeze({ tag: "App", fn: lambda, arg: path });
   }
   const { objects } = sharedNormalDigest(value);
-  assert.equal(objects, levels + 1);
+  assert.equal(objects, 3 * levels + 2);
   assert.ok(reads <= 4 * levels, `${reads} reads`);
 });
 

@@ -27,8 +27,9 @@ Unlike `normalDigest`, it reads each object the decoding shares once for
 each way its free names are bound: unshared, these normal forms are too large
 to walk. `tests/evaluation-demand-marks.test.mjs` checks that the two agree.
 It covers every one-part change to the decoding of terms of every kind. It
-also covers terms that share parts under different binders, and terms alike
-but for their binders' names and slots.
+also covers each of those terms met again beneath a binder of each name it
+holds, terms that share parts under different binders, and terms alike but
+for their binders' names and slots.
 
 Repeated runs give identical counters. With `--root=CHECKOUT`, the script
 measures another checkout, here main, with the spelling each case had before
