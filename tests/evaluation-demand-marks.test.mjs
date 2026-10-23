@@ -1018,23 +1018,31 @@ test("the report's digest compares plain values as normalDigest does", () => {
 // It reads each shared object once for each binding of its free names. In
 // values of 2^22 paths, read through getters that count, a part is met
 // beneath binders it does not mention, beneath binders of the names it binds
-// itself, and beneath binders of its free names at one distance and other
-// depths, each of a variable and of a dimension. Each value is read in a few
-// reads a node, where a walk of its paths, or a memo keyed by the binders or
-// the depth around a part, or by the names the part binds, would make more.
+// itself, by a lambda, a path or a composition's system, and beneath binders
+// of its free names at one distance and other depths, each of a variable and
+// of a dimension. Each value is read in a few reads a node, where a walk of
+// its paths, or a memo keyed by the binders or the depth around a part, or by
+// the names the part binds, would make more.
 test("the report's digest reads a shared object once", () => {
-  const levels = 22, type = { tag: "Var", name: "A" }, at = (path, dim) => ({ tag: "PApp", path: { tag: "Var", name: path }, at: [[`${dim}:1`]] });
+  const levels = 22, type = { tag: "Var", name: "A" };
+  const at = (path, dim) => ({ tag: "PApp", path: { tag: "Var", name: path }, arg: [[`${dim}:1`]] });
+  const system = term => [{ face: [["k:1"]], term }];
   // A binder whose body is read, by a getter when it is one.
-  const binder = (tag, name, body) => Object.freeze(Object.defineProperties(tag === "Lam" ? { tag, name, domain: type } : { tag, dim: name, family: type },
+  const binder = (tag, name, body, domain = type) => Object.freeze(Object.defineProperties(tag === "Lam" ? { tag, name, domain } : { tag, dim: name, family: type },
     { body: typeof body === "function" ? { get: body, enumerable: true } : { value: body, enumerable: true } }));
+  // Free x and i, outside the binders of a lambda that holds them.
+  const near = at("x", "i");
   // Each level applies one branch to another, each binding the level below.
   const shapes = {
     unused: { base: { tag: "Var", name: "x" }, branches: (level, read) =>
       [binder("Lam", `u${level}`, read), binder("Lam", `w${level}`, binder("PLam", `e${level}`, read))] },
-    closed: { base: { tag: "App", fn: binder("Lam", "x", { tag: "Var", name: "x" }), arg: binder("PLam", "i", at("p", "i")) }, branches: (level, read) =>
-      [binder("Lam", "x", binder("PLam", "i", read)), binder("Lam", "y", binder("PLam", "j", read))] },
+    closed: {
+      base: { tag: "App", fn: { tag: "App", fn: binder("Lam", "x", { tag: "Var", name: "x" }), arg: binder("PLam", "i", at("p", "i")) },
+        arg: { tag: "App", fn: { tag: "Comp", dim: "i", family: type, system: system(at("p", "i")), base: { tag: "Var", name: "b" } },
+          arg: { tag: "HComp", dim: "i", family: type, system: system(at("q", "i")), base: { tag: "Var", name: "b" } } } },
+      branches: (level, read) => [binder("Lam", "x", binder("PLam", "i", read)), binder("Lam", "y", binder("PLam", "j", read))] },
     rebound: { base: at("x", "i"), branches: (level, read) =>
-      [binder("Lam", "x", binder("PLam", "i", read)), binder("Lam", "y", binder("PLam", "j", binder("Lam", "x", binder("PLam", "i", read))))] },
+      [binder("Lam", "x", binder("PLam", "i", read), near), binder("Lam", "y", binder("PLam", "j", binder("Lam", "x", binder("PLam", "i", read), near)), near)] },
   };
   for (const [name, { base, branches }] of Object.entries(shapes)) {
     let reads = 0, value = base;
