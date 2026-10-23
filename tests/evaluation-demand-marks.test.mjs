@@ -11,6 +11,7 @@ import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { normalDigest } from "../tools/evaluation-baseline.mjs";
 import { reported } from "../tools/inline-errors.mjs";
+import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
 // `!` asks for a part's weak head and `!!` for its full normal form, and an
@@ -312,6 +313,64 @@ print(evaluate(!!far));
   assert.deepEqual(result.gaps.map(gap => gap.code), ["K344"]);
 });
 
+test("the printer shows every part the value form computed, in the order it shows them", async t => {
+  const { program } = await checkProgram(t, `import unat;
+use unat;
+inductive Tree : U0 {
+  leaf;
+  node(l : Tree, datum : UNat, r : Tree);
+}
+def grow(n : UNat) : Tree := match n {
+  zero => leaf;
+  succ(k) => node(grow(k), 0, grow(k));
+};
+def wide := node(grow(12), 7, grow(12));`, { module });
+  const { checker } = program, kernel = checker.kernel;
+  const at = { head: handle => checker.derivedHead(handle), spine: handle => kernel.spine(handle),
+    constructor: handle => checker.shownConstructor(handle),
+    fieldOrder: constructor => checker.displayNames[constructor.sort.signature]?.constructors?.[constructor.index]?.order ?? null };
+  const { expression } = checker.evaluated({ tag: "DefRef", name: "main__wide" });
+  const form = valueForm(expression, at, null);
+  // 2 * 4096 nodes are past the budget: the printer's own limit cuts
+  // nothing the walk computed, so lifting it changes nothing.
+  const shown = checker.printed(form, Infinity, printedNodes);
+  assert.equal(shown, checker.printed(form, Infinity, Infinity));
+  assert.match(shown, /^node\(node\(node\(/);
+  // The fields are computed in source order: the left subtree spends the
+  // budget, so the datum after it is not computed, though the kernel holds
+  // it first.
+  assert.match(shown, /, …, …\)$/);
+});
+
+test("a field the printer does not reach is not computed, though the kernel holds it first", async t => {
+  const { result } = await checkProgram(t, `import euclid;
+use unat;
+inductive Tree : U0 {
+  leaf;
+  node(l : Tree, datum : UNat, r : Tree);
+}
+def grow(n : UNat) : Tree := match n {
+  zero => leaf;
+  succ(k) => node(grow(k), 0, grow(k));
+};
+def far : (Tree and Tree) and UNat := ((grow(10), grow(9)), euclid(4).1);
+print(evaluate(node(grow(12), euclid(4).1, leaf)));
+print(evaluate(far));`, { module });
+  // euclid(4)'s prime has a weak head too deep to build (K344), and neither
+  // print reaches it.
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  assert.equal(result.prints.length, 2);
+});
+
+test("print(evaluate(!e)) shows the weak head as the kernel leaves it, reducing nothing for display", async t => {
+  const { result } = await checkProgram(t, `import unat;
+use unat;
+def p : UNat and UNat := ((fun (x : UNat) => succ(x))(2), 0);
+print(evaluate(!p));
+print(evaluate(p));`, { module });
+  assert.deepEqual(result.prints.map(print => print.text), ["((fun (x : UNat) => succ(x))(2), 0)", "(3, 0)"]);
+});
+
 test("the value form computes no more heads than the printer shows", async t => {
   const queries = async source => {
     const { program, result } = await checkProgram(t, `import lists;
@@ -495,6 +554,17 @@ const shownHead = whnf => {
   assert.ok(expected, `no shown head for ${whnf}`);
   return shown => shown === expected;
 };
+// The value form of a term with that weak head: a marker for a head that is
+// no data, and otherwise the data with its parts computed.
+const printedHead = whnf => {
+  const [, kind] = /^(\w+)/.exec(whnf);
+  if (kind === "Con") return shown => !shown.startsWith("<");
+  if (kind === "Pair") return shown => shown.startsWith("(");
+  if (kind === "Inl" || kind === "Inr") return shown => shown.startsWith(kind === "Inl" ? "left(" : "right(");
+  const expected = { Point: "tt", Lam: "<fun>", PLam: "<path>", LLam: "<level fun>", HComp: "<composition>" }[kind]
+    ?? (typeKinds.has(kind) ? "<type>" : null);
+  return shown => shown === expected;
+};
 for (const setup of Object.keys(corpus.setups)) {
   const items = corpus.constructs.filter(item => item.setup === setup);
   if (!items.length) continue;
@@ -546,8 +616,22 @@ for (const setup of Object.keys(corpus.setups)) {
         assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a full normal form`);
         assert.equal(normalDigest(evaluation.shown), normalDigest(evaluation.normal), `${item.id}: the kernel's normal form is shown`);
       }
-      // The value form computes every part it shows: none is unevaluated.
-      else assert.doesNotMatch(value, /<unevaluated>|<neutral>/, `${item.id}: a value form`);
+      else {
+        // The value form computes every part it shows: none is unevaluated,
+        // and its head is the kernel's, a constructor the one at its weak head.
+        assert.doesNotMatch(value, /<unevaluated>|<neutral>/, `${item.id}: a value form`);
+        assert.ok(printedHead(item.whnf)(value), `${item.id}: ${value} is not the value form of ${item.whnf}`);
+        if (item.whnf.startsWith("Con")) {
+          let constructor = evaluation.displayed;
+          while (constructor?.tag === "App") constructor = constructor.fn;
+          const { root } = evaluation, identity = con => [con?.index, con?.name, con?.sort?.signature];
+          assert.deepEqual(identity(constructor), identity(root), `${item.id}: ${value} shows the kernel's constructor`);
+        }
+        // Where it marks nothing, it is the full normal form.
+        const normal = outcomes.get([...at].find(([, [other, kind]]) => other === item && kind === "!!_")?.[0]);
+        if (!/[<…]/.test(value) && typeof normal === "string" && !normal.includes("…"))
+          assert.equal(value, normal, `${item.id}: the value form of data is its normal form`);
+      }
     }
   });
 }

@@ -178,10 +178,14 @@ which are shown as suspended, by a marker naming the kind of head
 `<neutral>`; decision 1). A path constructor is a weak head like any
 constructor and is shown with its arguments, and an eliminator not yet
 applied to a value, which eta makes of `fun (n : UNat) => induction n …`,
-is a function. The walk stops where the printer's output budget ends, at
-4,000 heads, and at the depth of the kernel's own syntax, 512 levels
-(`K344`), as deep as any printer is given a term; data past either is not
-computed and is shown as `…`. Each head the walk computes is shallow, so it
+is a function. The walk computes parts in the order the printer shows
+them, a constructor's fields in source order, and charges each as the
+printer does, an applied constructor twice; it stops where the printer's
+budget of 4,000 nodes ends, so the printer shows every part it computed, and
+a value form is shown whole, never cut at a width. It stops too at the depth
+of the kernel's own syntax, 512 levels (`K344`), as deep as any printer is
+given a term; data past either is not computed and is shown as `…`. A
+constructor is shown by its name, without its type's parameters. Each head the walk computes is shallow, so it
 can show data whose normal form is too deep to build:
 `print(evaluate((2 * 255, 2 * 255)))`, at type `UNat and UNat`, shows
 `(510, 510)`, where `!!` stops with `K344`.

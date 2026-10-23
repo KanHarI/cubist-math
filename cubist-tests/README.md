@@ -19,9 +19,11 @@ workbench's Kernel graph.
   the tool keeps every comment but its own.
 - A value, a type or an elaborated term is a print directive, with what it
   shows in an `// Output: …` comment above it, which the tool writes and the
-  test compares in the same way: `print(evaluate(e));` shows the normal form
-  of a closed term, `print(typeof(e));` its type and `print(inspect(e));`
-  the term the kernel checked, in kernel notation.
+  test compares in the same way: `print(evaluate(e));` shows a closed
+  term's value form, its data computed and a marker such as `<fun>` where a
+  function stops it, `print(evaluate(!!e));` its full normal form,
+  `print(typeof(e));` its type and `print(inspect(e));` the term the kernel
+  checked, in kernel notation.
 - A module's JavaScript test, where it has one, checks what neither a
   verdict nor a print shows (the fuel spent, the goals shown), with
   `testModule` or `checkTestModule` from

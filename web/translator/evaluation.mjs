@@ -153,27 +153,44 @@ function shownHead(head, at, parts = () => unevaluated) {
 }
 const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
 
+// The printer's budget, in the nodes it prints (cubical-source-text.mjs): a
+// value form is shown whole within it, never cut at a width.
+export const printedNodes = 4000;
+
 // The value form of a term (DM3): its weak head, and the value forms of the
-// parts of a constructor, a pair or an injection, from the left; any other
-// head is shown by its marker. A printer shows at most `budget` nodes, so
-// the walk computes at most that many heads; and it shows nothing deeper
-// than the kernel's own syntax, `depth` levels (K344), which is as deep as
-// any printer is given a term. A part past either is shown as …,
-// uncomputed. The walk keeps its own stack, as a value's parts can nest
-// deeper than JavaScript's. `at` is as observe takes it; `node`, the source
-// a failure is located at.
-export function valueForm(handle, at, node, budget = 4000, depth = 512) {
+// parts of a constructor, a pair or an injection; any other head is shown by
+// its marker. Its parts are computed in the order the printer shows them, a
+// constructor's fields in source order, and each head is charged as the
+// printer charges it, an applied constructor twice, for the application and
+// the name; a head is computed only while two remain. So the printer shows
+// every part the walk computed, within the same budget. And the walk shows
+// nothing deeper than the kernel's own syntax, `depth` levels (K344), which
+// is as deep as any printer is given a term. A part past either is shown as
+// …, uncomputed. The walk keeps its own stack, as a value's parts can nest
+// deeper than JavaScript's. `at` is as observe takes it, with fieldOrder;
+// `node`, the source a failure is located at.
+export function valueForm(handle, at, node, budget = printedNodes, depth = 512) {
   const value = {}, pending = [[handle, value, 1]];
   while (pending.length) {
     const [part, place, level] = pending.pop(), parts = [];
-    if (budget-- <= 0 || level > depth) { Object.assign(place, marker("…")); continue; }
-    Object.assign(place, shownHead(at.head(part, node), at, (_, inner, below) => {
-      const shown = {};
-      parts.push([inner, shown, level + below]);
-      return shown;
-    }));
-    // The leftmost part is computed first.
-    pending.push(...parts.reverse());
+    if (budget < 2 || level > depth) { budget--; Object.assign(place, marker("…")); continue; }
+    const shown = shownHead(at.head(part, node), at, (_, inner, below) => {
+      const slot = {};
+      parts.push([inner, slot, level + below]);
+      return slot;
+    });
+    Object.assign(place, shown);
+    let constructor = shown;
+    while (constructor.tag === "App") constructor = constructor.fn;
+    const applied = constructor.tag === "Con" && parts.length > 0;
+    budget -= applied ? 2 : 1;
+    // A constructor's fields, as the printer reorders them from the
+    // kernel's order to the source's.
+    const order = applied ? at.fieldOrder(constructor) : null;
+    const shownOrder = order && parts.length >= order.length
+      ? [...order.map((_, sourceIndex) => parts[order.indexOf(sourceIndex)]), ...parts.slice(order.length)] : parts;
+    // The first part shown is computed first.
+    pending.push(...shownOrder.reverse());
   }
   return value;
 }
