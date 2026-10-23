@@ -28,8 +28,9 @@ Two statements, both inside Cubist:
    and quasigroups over the theory of magmas.** Dually, the category of groups
    is equivalent to an explicit category of compatible monoid and quasigroup
    models over a shared magma (UA6), and every concrete group, the cyclic
-   group of order three say, gives such a model. A coherent pullback universal
-   property in synthetic `Cat∞` is the later comparison described below.
+   group of order three say, gives such a model. That this category is a
+   pullback, by its universal property in a synthetic category of
+   categories, is a later comparison (ST6), described in decision 7.
 
 Today a `theory` declaration elaborates away: its models are a Σ record, its
 homomorphisms a generated record, and the theory itself is not a value
@@ -143,20 +144,23 @@ theory Algebra(U < UU0, C : Clone(U)) {
   application, with both laws by `refl`.
 - `free_algebra(U, C, n) : Algebra(U, C)` is `C.T(n)` acting by substitution,
   with the projections as generators. Its universal property is proved
-  generically: `extension(U, C, n, X, v)` extends a choice of n elements of
-  any model to a homomorphism from the free model, `extension_generator`
-  evaluates it on generators, and `extension_unique` shows any homomorphism
-  agreeing on generators equals it, by the law that substituting projections
-  changes nothing. This is the content of L2.6's free-model capability,
-  obtained once for every clone rather than derived per theory.
+  generically: `free_extension(U, C, n, X, v)` extends an assignment of n
+  elements of any model to a homomorphism from the free model,
+  `free_extension_generator` evaluates it on generators, and
+  `free_extension_unique` shows any homomorphism agreeing on generators
+  equals it, by the law that substituting projections changes nothing.
+  This is the content of L2.6's free-model capability, obtained once for
+  every clone rather than derived per theory.
 - `Algebra.Hom` is the generated homomorphisms. `hom_ext` proves two equal
   when their maps are, preservation being a proposition over set carriers,
   and the identity and associativity laws of the generated `id` and `compose`
   follow by `refl` on maps. So for every clone, the objects, arrows,
   identities, composition and laws of its category of models exist. Packaging
   them as a `Precategory` waits for L3.4; univalence waits for L2.4b.
-- `fold` is a reserved generated name (E175), hence `extension`. A function
-  extensionality path passed to `cong` needs a `typed` ascription.
+- `fold` is a reserved generated name (E175), and the probe named the map
+  `extension`. That word is a proposed ST2 keyword, and keywords take
+  priority over library names, so the library uses `free_extension`. A
+  function extensionality path passed to `cong` needs a `typed` ascription.
 
 ### Probe 3: a concrete group in both forms
 
@@ -263,11 +267,12 @@ families.
    univalent categories form no set (those from the terminal category into
    `Group.cat` are the groups). UA6 therefore proves an equivalence of
    categories with L3.4's functors, not an `IsPullback` certificate.
-   ST6 later proposes a coherent pullback universal property in synthetic
-   `Cat∞`. It needs ST4's checked interpretations of these model categories,
-   a comparison with this explicit construction, and the mapping-space
-   universal property, including its compatibility with the forgetful
-   functors. The UA6 equivalence alone supplies none of that automatically.
+   ST6 later proposes the pullback universal property in a synthetic
+   category of categories. It needs ST4's checked interpretations of these
+   model categories, a comparison with this explicit construction, and the
+   mapping-space universal property, including its compatibility with the
+   forgetful functors. The UA6 equivalence alone supplies none of that
+   automatically.
 8. **Universes.** `Clone(U) : next(U)` and `Group(U) : next(U)`; the
    equivalence of probe 1 is in `ContrEquiv(next(U), …)`. Statement 2 is at
    each fixed `U`. Decision 7's pullback precategory has objects in
@@ -282,12 +287,12 @@ families.
 | Milestone | Content | Acceptance | Depends on |
 | --- | --- | --- | --- |
 | **UA0** Prerequisites | L2.4d morphism opt-ins; L3.4 `Precategory`, functors, equivalences of categories, `T.cat` with theory parameters; L3.5 `IsPushout`; L2.4b structure identity; L2.6 `free` with its universal equivalence, and E881 lifted for implemented members | Theirs | — |
-| **UA1** Clones and their models | Probe 2 in the library: `Clone`, `full_clone`, `Fin`, `Algebra(U, C)`, `free_algebra`, `extension` with its generator and uniqueness laws, `hom_ext` and the category laws; fixtures for each; `deriving (morphisms)` on `Clone` and `Algebra` once L2.4d lands | The library's statements check; `Clone.cat` and `Algebra.cat` once UA0's L3.4 exists | None of UA0 for the statements; L2.4d and L3.4 for the categories |
+| **UA1** Clones and their models | Probe 2 in the library: `Clone`, `full_clone`, `Fin`, `Algebra(U, C)`, `free_algebra`, `free_extension` with its generator and uniqueness laws, `hom_ext` and the category laws; fixtures for each; `deriving (morphisms)` on `Clone` and `Algebra` once L2.4d lands | The library's statements check; `Clone.cat` and `Algebra.cat` once UA0's L3.4 exists | None of UA0 for the statements; L2.4d and L3.4 for the categories |
 | **UA2** Groups as pullback models | Probe 1 and probe 3 in `library/algebra.cubist` and fixtures: `AssociativeLoop`, the equivalence with `Group(U)`, the `Hom` correspondence, the Σ-with-path pullback and its equivalence with `AssociativeLoop(U)`, the cyclic group as an element | `evaluate` of divisions and recovered inverses on the integers and on `C3`; the `Hom` correspondence composes with identities | None of UA0 |
 | **UA3** The clone of a theory | `T.clone` from L2.6's free models; `Algebra(U, T.clone) ≃ T(U)` for `Magma`, `Monoid`, `Quasigroup` and `Group`; the free magma (binary trees) and free monoid (lists) built by hand and shown equal to the generated clones | `Group.clone.T(1) ≃ Z`, the library's integers, as the free group on one generator; `Monoid.clone.T(n) ≃ List(Fin(n))` | UA1; L2.6 with E881 lifted |
 | **UA4** Interpretations | `T.In(C)` for the four theories, `Clone.Hom(T.clone, C) ≃ T.In(C)`, and the principle that an equation valid in every set model holds in `T.clone` | A clone homomorphism `Monoid.clone -> Group.clone` built from an interpretation; the equation `left_div(x, one) * y = left_div(x, y)` transported into `AssociativeLoop.clone` | UA3 |
 | **UA5** Group as a pushout of clones | `IsPushout(Clone.cat, …)` for every `R extends P, Q {}` with an empty body whose shared members are exactly an ancestor's, then the square of statement 2; `Group.clone ≅ AssociativeLoop.clone`; the equality by univalence of `Clone.cat` | The equality `Group.clone = Monoid.clone ⊔ Quasigroup.clone` over `Magma.clone` checks; `IsPushout` is a proposition and the pushout object is unique up to equality | UA4; L3.5; L2.4b |
-| **UA6** Categories of models as pullbacks | Explicit shared-carrier `Precategory` (decision 7), its comparison with the Σ-with-path presentation, and `Group.cat` equivalent to it; `Algebra.cat(T.clone) ≃ T.cat`; the semantics functor on the square of statement 2. The synthetic `Cat∞` universal property is a separate ST6 target | `C3` and the integers transported across both equivalences, with their divisions evaluated; arrow comparisons preserve identities and composition | UA2, UA3, UA4; L3.4; no directed-kernel dependency |
+| **UA6** Categories of models as pullbacks | Explicit shared-carrier `Precategory` (decision 7), its comparison with the Σ-with-path presentation, and `Group.cat` equivalent to it; `Algebra.cat(T.clone) ≃ T.cat`; the semantics functor on the square of statement 2. Its pullback universal property in a synthetic category of categories is a separate ST6 target | `C3` and the integers transported across both equivalences, with their divisions evaluated; arrow comparisons preserve identities and composition | UA2, UA3, UA4; L3.4; no directed-kernel dependency |
 
 ## Order
 

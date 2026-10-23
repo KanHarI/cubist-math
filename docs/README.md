@@ -63,9 +63,9 @@ distinguishes the merged CB/RC stacks from the unmerged Hydra draft.
   - [simplicial types](roadmaps/hott/simplicial-types.md): proposed on
     2026-10-24. Separate directed shapes/extensions, shared `x ->[C] y`
     notation and synthetic category theory, with explicit preservation of
-    ordinary universes and setness. No kernel implementation or proven
-    conservativity; ordinary category and universal-algebra work remain
-    independent.
+    ordinary universes and setness and computing directed rules. No kernel
+    implementation or proven conservativity; ordinary category and
+    universal-algebra work remain independent.
 
 ## Mathematical roadmaps
 

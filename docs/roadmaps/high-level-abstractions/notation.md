@@ -1080,13 +1080,16 @@ arrow family.
 
 The proposed `shape`, `extension` and `cell` spellings are tentative ST2
 syntax, gated by ST0's model and preservation contract. Their coordinates
-have a separate directed shape sort; neither that sort nor a shape alias is
-an ordinary type in `U`. Shape restrictions and boundary clauses use a
-dedicated tope language: geometric `<=` and `=` do not invoke a model's
-order notation or construct cubical paths. Coordinate `0` and `1` are fixed
-endpoints, independent of a selected numerical notation. An extension type
-states a boundary requirement; its introduction must supply a body and
-check the strict boundary equations and overlaps. It does not fill a shape.
+are directed: a separate sort in the sketch, with ST0 deciding between a
+sort and a type. Neither they nor a shape alias is an ordinary type in `U`.
+If adopted, these words and `Directed` become reserved names, and keywords
+take priority over library names on any collision. Shape restrictions and
+boundary clauses use a dedicated tope language: geometric `<=` and `=` do
+not invoke a model's order notation or construct cubical paths.
+Coordinate `0` and `1` are fixed endpoints, independent of a selected
+numerical notation. An extension type states a boundary requirement; its
+introduction must supply a body and check the strict boundary equations
+and overlaps. It does not fill a shape.
 
 If `@` is shared with shape application, the checked head fixes the coordinate
 sort. Binding-aware source retention, substitution, inspection and printing

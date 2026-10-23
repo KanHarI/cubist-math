@@ -22,10 +22,11 @@ below remain unfinished until their own acceptance evidence is delivered.
 
 **Simplicial direction proposed on 2026-10-24:** a separate directed layer
 alongside cubical equality, preserving ordinary universes, setness and
-assumption scopes. The [simplicial roadmap](hott/simplicial-types.md) records
-the agreed `x ->[C] y` spelling, proposed shape syntax and open semantic
-gates. Ordinary categories and UA0–UA6 continue independently; this does
-not change the runtime priority or claim a conservative extension is proved.
+assumption scopes, with computing rules for the new layer. The
+[simplicial roadmap](hott/simplicial-types.md) records the agreed
+`x ->[C] y` spelling, proposed shape syntax and open semantic gates.
+Ordinary categories and UA0–UA6 continue independently; this does not
+change the runtime priority or claim a conservative extension is proved.
 
 ## At a glance
 

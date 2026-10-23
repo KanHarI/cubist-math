@@ -715,10 +715,11 @@ complete for higher or mixed-variance signatures. ST4 separately selects a
 reviewed class of theories, constructs its directed object of models and
 proves that synthetic arrows correspond to the intended generated `T.Hom`
 where supported, with compatibility for identities, composition and
-forgetful maps. Pointed-space and loop-structure pilots with untruncated
-carriers instead need explicitly defined coherent morphism records until
-generator support has its own justification. Equality
-of models, equivalence or isomorphism, and a general morphism remain distinct
+forgetful maps. Pilots for pointed types, and for pointed types with a
+loop `loop : base = base`, have untruncated carriers `M : U`; they check
+today but get no `T.Hom`, so they need explicitly defined coherent morphism
+records until generator support has its own justification. Equality of
+models, equivalence or isomorphism, and a general morphism remain distinct
 notions until the relevant comparison theorem identifies them.
 
 The accepted direction for `x ->[C] y` is shared arrow notation with an

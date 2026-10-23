@@ -60,7 +60,8 @@ direction, not status.
 
 **Simplicial direction, proposed on 2026-10-24.** Add a separate directed
 layer alongside cubical equality, with explicit preservation of ordinary
-universes, setness and assumption scopes. `x ->[C] y` is the agreed arrow
+universes, setness and assumption scopes, and computing rules for the new
+layer. `x ->[C] y` is the agreed arrow
 spelling; no new syntax or kernel rule is implemented. The
 [simplicial track](#simplicial-types-track) records its semantic gates and
 later mathematical targets. Ordinary category and universal-algebra work
@@ -664,12 +665,16 @@ The [simplicial roadmap](hott/simplicial-types.md) owns ST0–ST6. All remain
 proposed and unimplemented. This is a separate foundational track alongside
 G0/H1 and the ordinary category packages, not a migration of existing `set U`
 or `IsSet` uses. Its preservation contract distinguishes old derivations,
-old computation, old meaning, combined soundness and conservativity; none
-of the latter obligations follows just from passing regression tests.
+old computation, old meaning, combined soundness, computation of new
+results and conservativity; none of the latter obligations follows just
+from passing regression tests. New rules must compute: a postulated
+directed principle delivers no ST package.
 
 - **ST0:** settle the ordinary/directed contexts, universes, shape geometry,
-  explicit embeddings and mixed rules; review their semantic and operational
-  preservation obligations before enabling a combined kernel for proofs.
+  whether directed coordinates form a sort or a type, explicit embeddings
+  and mixed rules with their computation; review their semantic and
+  operational preservation obligations before enabling a combined kernel
+  for proofs.
 - **ST1:** pair shared `x ->[C] y` notation with L2.12/L3.4's ordinary
   categorical interfaces. It can ship independently of the directed kernel.
 - **ST2/ST3:** after the ST0 gate, implement shapes, extensions and cells,
@@ -995,9 +1000,12 @@ scheduled packages from advancing.
    implementation has not started. Variable-degree truncation remains a
    separate HA4 design question. Neither decision blocks the first
    categorical, monadic or low-degree synthetic pilots.
-5. **Simplicial foundations:** ST0 must select the shape algebra, specify
+5. **Simplicial foundations:** ST0 must select the shape algebra, decide
+   whether directed coordinates form a sort or a type, specify
    ordinary/directed modes or universes and their embeddings, and validate
-   mixed rules before ST2. The `shape`/`extension`/`cell` grammar is tentative.
+   mixed rules and their computation before ST2. The
+   `shape`/`extension`/`cell` grammar is tentative; if adopted, its words
+   are reserved, and keywords take priority over library names.
    The arrow spelling `x ->[C] y` is agreed, with ST1's resolution and
    precedence still to specify. This does not block ordinary mathematics;
    shared spelling does not identify ordinary `U` with directed `Spaces`.

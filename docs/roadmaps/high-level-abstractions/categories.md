@@ -45,8 +45,9 @@ the identity or truncation monad. All these extensions remain planned.
 
 The 2026-10-24 discussion selected `x ->[C] y` as the shared arrow-type
 spelling; it is not implemented. For an ordinary `Precategory`, it elaborates
-to `C.Arr(x, y)`. A later directed category uses its extension type. The
-category annotation is explicit in both cases; the selected interfaces and
+to `C.Arr(x, y)`. For a later directed type `C`, it is the extension type
+of directed-interval maps from `x` to `y`. The category annotation is
+explicit in both cases; the selected interfaces and
 any adapters between presentations must be checked. Cubical equality
 `x =[A] y` and the function-type arrow `A -> B` keep their meanings.
 
