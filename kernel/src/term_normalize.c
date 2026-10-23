@@ -415,8 +415,9 @@ static bool computed_data(const cc_kernel *k, cc_term head) {
  * when the head is no data. Only these steps are watched, not those that
  * compute a head for one of them: λ y. f(y) is f by eta there, so its
  * application to x reaches f's body without passing through f(x). `last` is
- * the term whose step gave the head: a stuck head has its stuck parts
- * replaced by their weak heads, where `last` has them as written. No weak
+ * the term whose step gave the head: a stuck head rebuilt in place has its
+ * stuck parts replaced by their weak heads, where `last` has them as
+ * written. No weak
  * cache is read here, so the spine found does not depend on what was
  * computed before. */
 static cc_term folding_head(cc_kernel *k, cc_term term, cc_term *spine, cc_term *last) {
@@ -526,9 +527,13 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
                 frame->phase = NORMAL_CHILDREN;
                 break;
             }
-            /* A stuck head is taken as the step before it wrote it, so that a
-             * definition stuck inside it folds as written there. */
-            frame->node = k->nodes[fold && stuck_head(k, head) ? last : head];
+            /* A stuck head that its last step rebuilt in place, its stuck
+             * parts reduced, is taken as that step's term, so that a
+             * definition stuck inside it folds as written there. A head the
+             * step computed, as a transport computes a formal composition,
+             * is taken as computed. */
+            bool rebuilt = fold && last && stuck_head(k, head) && k->nodes[last].kind == k->nodes[head].kind;
+            frame->node = k->nodes[rebuilt ? last : head];
             if (!normal_restrict(k, &frame->node))
                 goto failed;
             frame->phase = NORMAL_CHILDREN;
