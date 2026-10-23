@@ -224,7 +224,7 @@ test("a part the depth cut short is asked again where it is met with more depth 
   assert.equal(program.checker.differ(at("c_"), at("d_")), true);
 });
 
-test("a constructor is shown without its type's parameters, however large", async t => {
+test("a constructor is shown without its type's parameters, and a type as it is, however large", async t => {
   // Tag's parameter, as the kernel holds it, is twelve nested applications
   // of twice to succ, unreduced: a display that reduced it would build
   // 4096 applications of succ.
@@ -237,9 +237,12 @@ inductive Tag(f : UNat -> UNat) : U0 {
   tag;
 }
 def tagged : Tag(${parameter}) := tag;
-evaluate tagged expecting !_;`, { module });
-  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+evaluate tagged expecting !_;
+evaluate tagged expecting typed(Unit, _);`, { module });
   assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["tag"]);
+  // Nor is its type, where a typed pattern names another.
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["E483"]);
+  assert.match(result.gaps[0].reason, /a part of type Tag\(\(fun \(f : UNat -> UNat, x : UNat\) => f\(f\(x\)\)\)/);
 });
 
 test("an ignored component whose weak head fails does not fail the pattern", async t => {

@@ -405,7 +405,9 @@ export class Translator {
     if(isPattern(expected)) {
       const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source));
       const text=this.shownIn(shown,scope);
-      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope),source(failed.pattern));
+      // A part's type is shown as it is, reducing nothing for display: its
+      // parameters may be large unreduced, as no comparison computed them.
+      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope,{reduce:0}),source(failed.pattern));
       if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
       return text;
     }
