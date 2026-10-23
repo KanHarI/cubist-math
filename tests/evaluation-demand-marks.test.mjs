@@ -690,8 +690,13 @@ for (const setup of Object.keys(corpus.setups)) {
 // report.md) compares normal forms by a digest over the kernel's shared
 // nodes, as normal forms too large to decode need. It must tell terms apart
 // exactly as the baseline's digest of their decodings does: up to the names
-// of bound variables and dimensions, and no further.
+// of bound variables and dimensions and the slots the kernel gives them, and
+// no further, across programs as well as within one.
+const digested = (program, value) => ({ shared: sharedDigest(program, value).normalDigest,
+  decoded: normalDigest(program.checker.syntax.decode(value, program.checker.dimensions)) });
+const definitionValue = (program, name) => program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).value;
 test("the report's digest tells terms apart as the baseline's digest of their decodings does", async t => {
+  const square = "fun (A : U0, x : A, s : refl(x) = refl(x)) => typed(refl(x) = refl(x), ";
   const terms = {
     first: "fun (x : UNat) => fun (y : UNat) => x",
     first_renamed: "fun (y : UNat) => fun (x : UNat) => y",
@@ -701,6 +706,9 @@ test("the report's digest tells terms apart as the baseline's digest of their de
     lower: "fun (A : U0, x : A, p : x = x) => typed(x = x, path i => p @ (i & ~i))",
     lower_renamed: "fun (A : U0, x : A, p : x = x) => typed(x = x, path j => p @ (j & ~j))",
     upper: "fun (A : U0, x : A, p : x = x) => typed(x = x, path i => p @ (i | ~i))",
+    rows: `${square}path i => path j => s @ i @ j)`,
+    rows_renamed: `${square}path j => path i => s @ j @ i)`,
+    columns: `${square}path i => path j => s @ j @ i)`,
     carry: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (i : Interval) => P(p @ i), u)",
     carry_renamed: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (j : Interval) => P(p @ j), u)",
     carry_back: "fun (A : U0, P : A -> U0, x : A, p : x = x, u : P(x)) => comp(fun (i : Interval) => P(p @ ~i), u)",
@@ -709,17 +717,46 @@ test("the report's digest tells terms apart as the baseline's digest of their de
   };
   const source = `import unat;\nuse unat;\n${Object.entries(terms).map(([name, term]) => `def ${name} := ${term};`).join("\n")}`;
   const { program, verdicts } = await checkProgram(t, source, { module });
-  const { kernel, checker } = program, digests = {};
+  const { syntax } = program.checker, digests = {};
   for (const name of Object.keys(terms)) {
     assert.equal(verdicts[name], true, name);
-    const { value } = kernel.definition(kernel.definitions.get(`main__${name}`));
-    digests[name] = { shared: sharedDigest(program, value).normalDigest, decoded: normalDigest(checker.syntax.decode(value, checker.dimensions)) };
+    digests[name] = digested(program, definitionValue(program, name));
   }
-  const names = Object.keys(terms);
+  // Terms as the kernel's normal forms may hold them, with their dimensions
+  // in any slots, built directly: alike but for their slots, or different in
+  // the binder a formula names, once in a part shared under both binders.
+  const { kernel } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
+  const family = raw("Var", kernel.symbol("A")), path = raw("Var", kernel.symbol("p"));
+  const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), path);
+  const plam = (slot, body) => raw("PLam", slot, family, body);
+  const built = {
+    outer: plam(3, plam(5, at(3))),
+    outer_moved: plam(5, plam(3, at(5))),
+    inner: plam(3, plam(5, at(5))),
+    shared_inner: plam(3, plam(5, raw("App", 0, at(3), plam(3, at(3))))),
+    shared_outer: plam(3, plam(5, raw("App", 0, at(3), plam(4, at(3))))),
+  };
+  for (const [name, value] of Object.entries(built)) digests[name] = digested(program, value);
+  const names = Object.keys(digests);
   for (const left of names) for (const right of names)
     assert.equal(digests[left].shared === digests[right].shared, digests[left].decoded === digests[right].decoded, `${left} and ${right}`);
   // The pairs that matter, so that the check is not vacuous.
   const same = (left, right) => digests[left].decoded === digests[right].decoded;
-  assert.ok(same("first", "first_renamed") && same("lower", "lower_renamed") && same("carry", "carry_renamed"));
-  assert.ok(!same("first", "second") && !same("at_zero", "at_one") && !same("lower", "upper") && !same("carry", "carry_back") && !same("two", "three"));
+  for (const [left, right] of [["first", "first_renamed"], ["lower", "lower_renamed"], ["rows", "rows_renamed"], ["carry", "carry_renamed"],
+    ["outer", "outer_moved"]])
+    assert.ok(same(left, right), `${left} and ${right} are the same term`);
+  for (const [left, right] of [["first", "second"], ["at_zero", "at_one"], ["lower", "upper"], ["rows", "columns"], ["carry", "carry_back"], ["two", "three"],
+    ["outer", "inner"], ["shared_inner", "shared_outer"]])
+    assert.ok(!same(left, right), `${left} and ${right} differ`);
+});
+
+test("the report's digest tells constructors apart by name across programs", async t => {
+  const values = [];
+  for (const constructor of ["first_flag", "second_flag"]) {
+    const { program, verdicts } = await checkProgram(t, `inductive Flag {\n  ${constructor};\n}\n\ndef flag := ${constructor};`, { module });
+    assert.equal(verdicts.flag, true, constructor);
+    values.push(digested(program, definitionValue(program, "flag")));
+  }
+  assert.notEqual(values[0].decoded, values[1].decoded);
+  assert.notEqual(values[0].shared, values[1].shared);
 });
