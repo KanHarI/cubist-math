@@ -31,8 +31,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const label = binding => symbols[binding]?.name
     ?? localName(binding);
   // Terms share subterms, so each scan visits a node once.
-  const freeNames = displayFreeNames();
-  const mentions = (term, variable) => freeNames(term).has(variable);
+  const free = displayFreeNames();
+  const mentions = (term, variable) => free(term).has(variable);
   // The names a term prints for what no binder binds: its definitions', its
   // types' and its constructors'. A folded normal form keeps definitions
   // inside binders (docs/roadmaps/runtime/folded-normal-forms.md), so a
@@ -47,24 +47,14 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       if (value.tag === "DefRef") names.add(label(value.name));
       else if (value.tag === "Sort") names.add(label(value.signature));
       else if (value.tag === "Con" && value.name) names.add(value.name);
-      // An eliminator prints the domain its folded motive's type gives,
-      // which is no part of it, or its type's name.
-      else if (value.tag === "Elim") {
-        names.add(label(value.signature));
-        if (value.motive?.tag !== "Lam") for (const name of scan(motiveDomain(value.motive))) names.add(name);
-      }
+      // An eliminator written as a function shows its type as the domain.
+      else if (value.tag === "Elim") names.add(label(value.signature));
       for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
       return names;
     };
     return scan;
   })();
-  // Whether a free variable of a term other than `except` is shown as
-  // `name` where the printer is: a renamed binder shows its new name.
-  const printsFree = (term, name, except = null) => {
-    for (const free of freeNames(term)) if (free !== except && variable(free) === name) return true;
-    return false;
-  };
-  const taken = (term, name) => mentions(term, name) || printsFree(term, name) || printedNames(term).has(name) || varies(term, name);
+  const taken = (term, name) => mentions(term, name) || printedNames(term).has(name) || varies(term, name);
   const numeral = numeralValue;
   // A dimension occurs in a term through interval literals `i:1` and `i:0`.
   const varies = (t, dim, seen = new Set()) => {
@@ -136,20 +126,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // definition's, a type's or a constructor's or uses as a dimension, gets
   // a numbered variant, one `whole` neither mentions, prints nor uses.
   const apart = (name, outside, whole) => {
-    if (!mentions(outside, name) && !printsFree(whole, name) && !printedNames(whole).has(name) && !varies(whole, name)) return name;
+    if (!mentions(outside, name) && !printedNames(whole).has(name) && !varies(whole, name)) return name;
     for (let i = 1; ; i++) if (!taken(whole, numberedName(name, i))) return numberedName(name, i);
   };
-  // The name a binder the term has is shown by: its own, unless its scope
-  // prints a definition, a type or a constructor of that name, as a domain
-  // the printer recovers for a folded motive does (displayTerm keeps names
-  // apart from those the term itself shows), or `used` holds it.
-  const shownBinder = (name, scope, used = null) => {
-    if (!printedNames(scope).has(name) && !printsFree(scope, name, name) && !used?.has(name)) return name;
-    for (let i = 1; ; i++) if (!taken(scope, numberedName(name, i)) && !used?.has(numberedName(name, i))) return numberedName(name, i);
-  };
-  // Names bound in turn, each shown as `shown` gives it.
-  const binding = (names, shown, fn) =>
-    names.reduceRight((inner, name, i) => () => under(name, () => renaming(name, shown[i], inner)), fn)();
   // A function as a lambda: a folded normal form keeps a motive or a clause
   // that is a definition as its name (docs/roadmaps/runtime/folded-normal-forms.md),
   // shown applied to a new name, as `return Shape(z)` for the motive Shape.
@@ -157,47 +136,6 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     if (!term || term.tag === "Lam") return term;
     const name = apart(stem, near, near);
     return { tag: "Lam", name, domain: null, body: { tag: "App", fn: term, arg: { tag: "Var", name } } };
-  };
-  // A type with a definition at its head, as an alias of a function type,
-  // that definition's value applied (symbols' value), until it is a type
-  // former a spine reads or no definition heads it, within a few unfoldings.
-  const formers = new Set(["Pi", "LPi", "Sigma", "Path"]);
-  const exposed = type => {
-    for (let unfoldings = 0; type && !formers.has(type.tag) && unfoldings < 16; unfoldings++) {
-      let head = type;
-      while (head.tag === "App" || head.tag === "LApp") head = head.fn;
-      const value = head.tag === "DefRef" ? symbols[head.name]?.value?.() : null;
-      if (!value) break;
-      const headed = spine => spine.tag === "App" || spine.tag === "LApp" ? { ...spine, fn: headed(spine.fn) } : value;
-      type = betaReduce(headed(type));
-    }
-    return type;
-  };
-  // A motive's domain: a function's own, or, for a definition applied,
-  // projected or applied to a dimension, as a folded normal form keeps a
-  // motive, the domain of the type the definition's checked type (symbols'
-  // type) gives that spine: an argument or a level substituted, a pair's
-  // first component's type or its second's with the first substituted, a
-  // path's family at the point.
-  const spines = new Set(["App", "LApp", "Fst", "Snd", "PApp"]);
-  const motiveDomain = motive => {
-    if (motive?.tag === "Lam") return motive.domain;
-    const spine = [];
-    let head = motive;
-    while (spines.has(head?.tag)) { spine.unshift(head); head = head.fn ?? head.pair ?? head.path; }
-    let type = head?.tag === "DefRef" ? symbols[head.name]?.type?.() : null;
-    for (const node of spine) {
-      type = exposed(type);
-      const needed = { App: "Pi", LApp: "LPi", Fst: "Sigma", Snd: "Sigma", PApp: "Path" }[node.tag];
-      if (type?.tag !== needed) return null;
-      type = node.tag === "App" ? substituteTerm(type.body, type.name, node.arg)
-        : node.tag === "LApp" ? substituteTerm(type.body, type.name, node.level)
-        : node.tag === "Fst" ? type.domain
-        : node.tag === "Snd" ? substituteTerm(type.body, type.name, { tag: "Fst", pair: node.pair })
-        : substituteDimension(type.family, type.dim, node.arg);
-    }
-    type = exposed(type);
-    return type?.tag === "Pi" ? type.domain : null;
   };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
@@ -253,17 +191,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         used.add(name);
         return name;
       };
-      // Each name is kept with the one it is shown by.
       const take = (into, stem) => {
-        if (body?.tag === "Lam") {
-          const shown = shownBinder(body.name, body.body, used);
-          into.push([body.name, shown]);
-          used.add(shown);
-          body = body.body;
-          return;
-        }
+        if (body?.tag === "Lam") { into.push(body.name); used.add(body.name); body = body.body; return; }
         const name = fresh(stem);
-        into.push([name, name]);
+        into.push(name);
         body = { tag: "App", fn: body, arg: { tag: "Var", name } };
       };
       for (let i = 0; i < data + positions; i++) take(args, "x");
@@ -282,16 +213,16 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       clauses.push({ name, args: fields, results, dims, body });
     }
     // `as z` is written only where the return type uses z, as the linter asks.
-    const named = mentions(motive.body, motive.name), z = shownBinder(motive.name, motive.body);
-    const hypotheses = clause => clause.results.some(([result]) => mentions(clause.body, result));
+    const named = mentions(motive.body, motive.name);
+    const hypotheses = clause => clause.results.some(result => mentions(clause.body, result));
     const shown = clauses.map(clause => {
-      const { name, args, results, dims, body } = clause, bound = [...args, ...results];
-      return `${name}${args.length ? `(${args.map(([, shown]) => shown).join(", ")})` : ""}${dims.map(dim => ` @ ${dim}`).join("")}`
-        + `${hypotheses(clause) ? ` with ${results.map(([, shown]) => shown).join(", ")}` : ""} => `
-        + `${binding(bound.map(([name]) => name), bound.map(([, shown]) => shown), () => show(body))};`;
+      const { name, args, results, dims, body } = clause;
+      return `${name}${args.length ? `(${args.join(", ")})` : ""}${dims.map(dim => ` @ ${dim}`).join("")}`
+        + `${hypotheses(clause) ? ` with ${results.join(", ")}` : ""} => `
+        + `${under([...args, ...results], () => show(body))};`;
     });
-    return `${clauses.some(hypotheses) ? "induction" : "match"} ${show(value)}${named ? ` as ${z}` : ""} `
-      + `return ${binding([motive.name], [z], () => show(motive.body))} { ${shown.join(" ")} }`;
+    return `${clauses.some(hypotheses) ? "induction" : "match"} ${show(value)}${named ? ` as ${motive.name}` : ""} `
+      + `return ${under(motive.name, () => show(motive.body))} { ${shown.join(" ")} }`;
   };
   // The text of a term and the precedence level of its outermost form.
   function print(t) {
@@ -308,10 +239,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "DefRef": return atom(label(t.name));
       case "Pi": case "Sigma": {
         const pi = t.tag === "Pi";
-        if (mentions(t.body, t.name)) {
-          const name = shownBinder(t.name, t.body);
-          return [`${pi ? "forall" : "exists"} ${name} : ${show(t.domain)}. ${binding([t.name], [name], () => show(t.body))}`, LEVEL.binder];
-        }
+        if (mentions(t.body, t.name))
+          return [`${pi ? "forall" : "exists"} ${t.name} : ${show(t.domain)}. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
         const level = pi ? LEVEL.arrow : LEVEL.and;
         return [`${sub(t.domain, level + 1)} ${pi ? "->" : "and"} ${under(t.name, () => sub(t.body, level))}`, level];
       }
@@ -322,18 +251,17 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "Lam": {
         // fun (x, y : A, z : B) => body, each domain in the scope of the
         // binders before it
-        const groups = [], names = [], shown = [];
+        const groups = [], names = [];
         let body = t;
         while (body.tag === "Lam") {
-          const last = groups.at(-1), domain = binding(names, shown, () => show(body.domain)), name = shownBinder(body.name, body.body);
-          if (last?.domain === domain && !last.bound.some(name => mentions(body.domain, name))) { last.names.push(name); last.bound.push(body.name); }
-          else groups.push({ names: [name], bound: [body.name], domain });
+          const last = groups.at(-1), domain = under(names, () => show(body.domain));
+          if (last?.domain === domain && !last.names.some(name => mentions(body.domain, name))) last.names.push(body.name);
+          else groups.push({ names: [body.name], domain });
           names.push(body.name);
-          shown.push(name);
           body = body.body;
         }
         const binders = groups.map(group => `${group.names.join(", ")} : ${group.domain}`).join(", ");
-        return [`fun (${binders}) => ${binding(names, shown, () => show(body))}`, LEVEL.binder];
+        return [`fun (${binders}) => ${under(names, () => show(body))}`, LEVEL.binder];
       }
       // Eliminators print as the source forms that build them. The motive's
       // bound name is shown as the one the branches bind: `as k` binds both.
@@ -357,22 +285,21 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
         // `as z` is written only where the return type uses z, as the linter asks.
         const named = mentions(motive.body, motive.name);
-        const [z, a, b] = [motive, left, right].map(branch => shownBinder(branch.name, branch.body));
-        return [`match ${show(t.value)}${named ? ` as ${z}` : ""} return ${binding([motive.name], [z], () => show(motive.body))} { `
-          + `left ${a} => ${binding([left.name], [a], () => show(left.body))}; `
-          + `right ${b} => ${binding([right.name], [b], () => show(right.body))}; }`, LEVEL.binder];
+        return [`match ${show(t.value)}${named ? ` as ${motive.name}` : ""} return ${under(motive.name, () => show(motive.body))} { `
+          + `left ${left.name} => ${under(left.name, () => show(left.body))}; `
+          + `right ${right.name} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
       }
       // A declared type's eliminator on its own, as evaluation leaves a
       // function by cases after eta reduction, is the function that applies
       // it: fun (n : Nat) => induction n …, or fun (x : T) => match x …, which
       // the application case below prints.
-      // A folded motive, a definition applied, has the domain its checked
-      // type gives after those arguments; without the type, a type without
-      // parameters is its own domain, and the function of any other is
-      // written untyped, its type given by where it is checked.
+      // A motive's domain, which typedMotives gives a folded motive before
+      // names are settled; without one, a type without parameters is its
+      // own domain, and the function of any other is written untyped, its
+      // type given by where it is checked.
       case "Elim": {
-        const domain = motiveDomain(t.motive)
-          ?? (symbols[t.signature]?.slots?.length === 0 ? { tag: "Sort", signature: t.signature, parameters: [], levels: [] } : null);
+        const domain = t.motive?.tag === "Lam" ? t.motive.domain
+          : symbols[t.signature]?.slots?.length === 0 ? { tag: "Sort", signature: t.signature, parameters: [], levels: [] } : null;
         const nat = t.signature === "unat__UNat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
         const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
         const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
@@ -542,4 +469,88 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     }
   }
   return show(term);
+}
+
+// A folded normal form keeps an eliminator's motive that is a definition by
+// its name (docs/roadmaps/runtime/folded-normal-forms.md), and so without a
+// domain. Before the display settles names, each such motive is written as a
+// function of the domain its type gives, λ (z : D). motive(z), so that the
+// eliminator prints typed where its function is written, and the names the
+// display chooses keep apart from those the domain prints. `definitions`
+// gives a definition's checked type and value, each decoded. A motive whose
+// domain cannot be read is left as it is.
+export function typedMotives(term, definitions) {
+  const used = new Set(), seen = new WeakSet();
+  const collect = t => {
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (typeof t.name === "string") used.add(t.name);
+    Object.values(t).forEach(collect);
+  };
+  collect(term);
+  let next = 0;
+  const fresh = () => { let name; do name = `z${++next}`; while (used.has(name)); used.add(name); return name; };
+  // A spine applies, projects or applies to a dimension the term at its
+  // root; a type former is what each of those reads.
+  const root = node => node.fn ?? node.pair ?? node.path;
+  const spines = new Set(["App", "LApp", "Fst", "Snd", "PApp"]);
+  const formers = new Set(["Pi", "LPi", "Sigma", "Path"]);
+  // A type with a definition at its root, as an alias of a function type or
+  // a pair's component, has that definition's value there, reduced, until it
+  // is a type former or no definition is at its root, within a few unfoldings.
+  const exposed = type => {
+    for (let unfoldings = 0; type && !formers.has(type.tag) && unfoldings < 16; unfoldings++) {
+      let head = type;
+      while (spines.has(head.tag)) head = root(head);
+      const value = head.tag === "DefRef" ? definitions.value(head.name) : null;
+      if (!value) break;
+      const rooted = node => !spines.has(node.tag) ? value
+        : { ...node, [node.fn ? "fn" : node.pair ? "pair" : "path"]: rooted(root(node)) };
+      type = betaReduce(rooted(type));
+    }
+    return type;
+  };
+  // The domain of the type a definition's checked type gives the spine over
+  // it: an argument or a level substituted, a pair's first component's type
+  // or its second's with the first substituted, a path's family at the point.
+  const domain = motive => {
+    const spine = [];
+    let head = motive;
+    while (spines.has(head?.tag)) { spine.unshift(head); head = root(head); }
+    let type = head?.tag === "DefRef" ? definitions.type(head.name) : null;
+    for (const node of spine) {
+      type = exposed(type);
+      if (type?.tag !== { App: "Pi", LApp: "LPi", Fst: "Sigma", Snd: "Sigma", PApp: "Path" }[node.tag]) return null;
+      type = node.tag === "App" ? substituteTerm(type.body, type.name, node.arg)
+        : node.tag === "LApp" ? substituteTerm(type.body, type.name, node.level)
+        : node.tag === "Fst" ? type.domain
+        : node.tag === "Snd" ? substituteTerm(type.body, type.name, { tag: "Fst", pair: node.pair })
+        : substituteDimension(type.family, type.dim, node.arg);
+    }
+    type = exposed(type);
+    return type?.tag === "Pi" ? type.domain : null;
+  };
+  const typed = new WeakMap();
+  const go = t => {
+    if (!t || typeof t !== "object") return t;
+    if (typed.has(t)) return typed.get(t);
+    let result = t;
+    for (const [key, value] of Object.entries(t)) {
+      const changed = go(value);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
+        result[key] = changed;
+      }
+    }
+    if (result.tag === "Elim" && result.motive && result.motive.tag !== "Lam") {
+      const of = domain(result.motive);
+      if (of) {
+        const name = fresh();
+        result = { ...result, motive: { tag: "Lam", name, domain: of, body: { tag: "App", fn: result.motive, arg: { tag: "Var", name } } } };
+      }
+    }
+    typed.set(t, result);
+    return result;
+  };
+  return go(term);
 }
