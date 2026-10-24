@@ -328,6 +328,41 @@ def g : Unit -> Opt(Unit) -> Unit := fun (z : Unit) => fun (x : Opt(Unit)) => ma
   assert.deepEqual(back.gaps, []);
 });
 
+// A definition named as a dimension the term names, here i, read from a
+// recovered domain, is shown by its value: no source spelling tells it from
+// the dimension, which keeps its name. Bound again by path i, the text checks.
+test("a definition shown by a dimension's name is shown by its value", async t => {
+  const declarations = `inductive Tag(A : U0) {
+  tag;
+}
+
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+def i : U0 := Unit;
+def Around(t : Tag(i)) : U0 := Circle;
+def g : Tag(i) -> Circle := fun t => match t as v return Around(v) { tag => base; };
+`;
+  const { program, result } = await checkProgram(t, declarations, { module });
+  assert.deepEqual(result.gaps, []);
+  const { kernel, checker } = program;
+  const domain = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__Around")).type).domain;
+  const circle = { tag: "Sort", signature: "main__Circle", parameters: [], levels: [] };
+  const loop = { tag: "PApp", path: { tag: "Con", index: 1, sort: circle }, arg: [["i:1"]] };
+  const term = { tag: "Lam", name: "x", domain, body: { tag: "App", arg: { tag: "Var", name: "x" },
+    fn: { tag: "Elim", signature: "main__Tag", motive: { tag: "DefRef", name: "main__Around" }, clauses: [loop] } } };
+  const dimensions = new Map([["i", 0]]);
+  const { expression } = checker.checkSyntax(term, null, new Map(), dimensions);
+  const normal = checker.syntax.decode(kernel.normalizeFolded(expression), dimensions);
+  const shown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => loop @ i; }";
+  assert.equal(checker.displayText(normal, 1000, 1000), shown);
+  assert.equal(checker.displayGoal(new Map(), normal, null, 1000).goal, shown);
+  const { result: back } = await checkProgram(t, `${declarations}def back : g = g := path i => ${shown};\n`, { module });
+  assert.deepEqual(back.gaps, []);
+});
+
 // The printer's first name for a folded function's argument keeps apart
 // from a dimension its body uses: under path x, an eliminator whose clause
 // is p @ x takes x1, not x.

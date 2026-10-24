@@ -5,7 +5,7 @@ import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
-import { sourceText, typedMotives } from "./cubical-source-text.mjs";
+import { apartFromDimensions, sourceText, typedMotives } from "./cubical-source-text.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
@@ -456,7 +456,8 @@ export class NativeCubicalElaborator {
         ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}),
         ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
   }
-  // A term with each folded motive given its domain (typedMotives), from the
+  // A term with each folded motive given its domain (typedMotives), and no
+  // definition shown by a dimension's name (apartFromDimensions), from the
   // checked types and values of definitions, each decoded once.
   typedMotives(term) {
     const decoded = new Map();
@@ -468,7 +469,8 @@ export class NativeCubicalElaborator {
       }
       return decoded.get(key);
     };
-    return typedMotives(term, { type: part("type"), value: part("value") });
+    const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name) };
+    return apartFromDimensions(typedMotives(term, definitions), definitions);
   }
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
