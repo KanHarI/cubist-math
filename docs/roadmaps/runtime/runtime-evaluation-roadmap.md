@@ -1050,6 +1050,14 @@ where main normalizes it in 71,027,452. `expecting !!_` reproduces main's
 counters and normal form exactly. `euclid(4)` against `(5, _)` still stops
 with `K344`.
 
+The [folded normal forms](folded-normal-forms.md) note of 2026-10-23,
+decision D1 of the rational normalization debugging plan, changes what `!!`
+computes: a folded normal form, in which closed data computes in full and a
+definition whose head is no data stays as written, so a stuck proof is
+named, not unfolded. `!!!` names the full normal form, which stage 4 below
+measures. `rationals.(2/3) expecting !!_` falls from 70,301,825 ticks and
+1,116,794 nodes to 43,932 ticks and 936.
+
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
 or explicit full-normalization demand. Printing must respect its output
