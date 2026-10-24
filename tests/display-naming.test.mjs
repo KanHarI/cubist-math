@@ -95,6 +95,8 @@ def Around(t : Tag(j)) : U0 := Circle;
 def Inside(t : Tag(d0)) : U0 := Unit;
 def Beside(t : Tag(z1)) : U0 := Unit;
 def choose(m, n : UNat) : UNat := m;
+def zero_of(u : Unit) : UNat := 0;
+def one_of(u : Unit) : UNat := 1;
 def keep2(f : Opt(Unit) -> Unit) : Opt(Unit) -> Unit := f;
 def LM(U < UU0, b : LBox(U)) : U0 := Unit;
 def BoxM(b : Box(fun (c : Circle) => match c return Circle { base => base; } obligations by loop)) : U0 := Unit;
@@ -108,6 +110,9 @@ def stepper(p : UNat, ih : forall k : UNat. (p = p) and (k = k)) : forall k : UN
 const cases = [
   // A clause folded to a definition named as the branch's stem.
   ["sum_clause", "def sum_clause : (Unit or Unit) -> Unit := fun (s : Unit or Unit) => match s return Unit { left u => a(u); right v => b(v); };"],
+  // Clauses folded to definitions that tell left from right by computing.
+  ["sum_pick", "def sum_pick : (Unit or Unit) -> UNat := fun (s : Unit or Unit) => match s return UNat { left u => zero_of(u); right v => one_of(v); };",
+    [["left(tt)", 0], ["right(tt)", 1]]],
   // A motive folded to a definition named as the motive's stem.
   ["sum_motive", "def sum_motive : forall s : Unit or Unit. z(s) := fun (s : Unit or Unit) => match s as w return z(w) { left u => u; right v => v; };"],
   // Induction with folded motives, one named as the predecessor's stem.
