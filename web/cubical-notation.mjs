@@ -24,10 +24,29 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   }
   const outer = value => !boundNames.has(value) && scope.has(value);
   const label = value => boundNames.get(value) ?? scope.get(value) ?? symbols[value]?.name ?? value;
+  // The names a term shows for what no binder binds: its definitions', its
+  // types' and its constructors'. A folded normal form keeps definitions
+  // under binders, and a binder spelled as one would read as it.
+  const printed = (() => {
+    const memo = new WeakMap(), empty = new Set();
+    const scan = value => {
+      if (!value || typeof value !== "object") return empty;
+      if (memo.has(value)) return memo.get(value);
+      const names = new Set();
+      memo.set(value, names);
+      if (value.tag === "DefRef") names.add(symbols[value.name]?.name ?? value.name);
+      else if (value.tag === "Sort") names.add(symbols[value.signature]?.name ?? value.signature);
+      else if (value.tag === "Con" && value.name) names.add(value.name);
+      for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
+      return names;
+    };
+    return scan;
+  })();
   const underBinder = (variable, body, renderBody) => {
     let spelling = symbols[variable]?.name ?? variable;
     while ([...boundNames].some(([key, name]) => key !== variable && name === spelling)
-      || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))) spelling += "′";
+      || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))
+      || printed(body).has(spelling)) spelling += "′";
     const previous = boundNames.get(variable); boundNames.set(variable, spelling);
     const result = renderBody();
     if (previous === undefined) boundNames.delete(variable); else boundNames.set(variable, previous);

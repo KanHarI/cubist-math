@@ -293,6 +293,41 @@ evaluate back(2) expecting 2;
   assert.deepEqual(back.gaps, []);
 });
 
+// The kernel-notation view of a normal form keeps a definition kept by name
+// apart from a parameter of that name; and the display keeps a binder it
+// names apart from a dimension the term names, here z1, which the term
+// leaves free: bound again by path z1, the printed text checks.
+test("a normal form's views keep binders apart from definitions and dimensions", async t => {
+  const declarations = `inductive Opt(A : U0) {
+  none;
+  some(x : A);
+}
+
+def x(A : U0) : U0 := A;
+def both(y : U0 -> U0) : (U0 -> U0) and (U0 -> U0) := (x, y);
+def f(x : U0 -> U0) : (U0 -> U0) and (U0 -> U0) := both(x);
+def F(o : Opt(Unit)) : U0 := Unit;
+def familyPath : F = F := refl(F);
+def g : Unit -> Opt(Unit) -> Unit := fun (z : Unit) => fun (x : Opt(Unit)) => match x as w return F(w) { none => tt; some(y) => y; };
+`;
+  const { program, result } = await checkProgram(t, declarations, { module });
+  assert.deepEqual(result.gaps, []);
+  assert.equal(program.inspect("main__f", { normalize: true }).expressionText, "λ (x′ : (U0 → U0)). (x , x′)");
+  const { kernel, checker } = program;
+  const domain = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__F")).type).domain, dimensions = new Map([["z1", 0]]);
+  const motive = { tag: "PApp", path: { tag: "DefRef", name: "main__familyPath" }, arg: [["z1:1"]] };
+  const clauses = [{ tag: "Point" }, { tag: "Lam", name: "y", domain: { tag: "Unit" }, body: { tag: "Var", name: "y" } }];
+  const term = { tag: "Lam", name: "z2", domain: { tag: "Unit" }, body: { tag: "Lam", name: "x", domain,
+    body: { tag: "App", fn: { tag: "Elim", signature: "main__Opt", motive, clauses }, arg: { tag: "Var", name: "x" } } } };
+  const { expression } = checker.checkSyntax(term, null, new Map(), dimensions);
+  const normal = checker.syntax.decode(kernel.normalizeFolded(expression), dimensions);
+  const shown = "fun (z : Unit) => fun (x : Opt(Unit)) => match x as z2 return (familyPath @ z1)(z2) { none => tt; some(y) => y; }";
+  assert.equal(checker.displayText(normal, 1000, 1000), shown);
+  assert.equal(checker.displayGoal(new Map(), normal, null, 1000).goal, shown);
+  const { result: back } = await checkProgram(t, `${declarations}def back : g = g := path z1 => ${shown};\n`, { module });
+  assert.deepEqual(back.gaps, []);
+});
+
 // The printer's first name for a folded function's argument keeps apart
 // from a dimension its body uses: under path x, an eliminator whose clause
 // is p @ x takes x1, not x.
