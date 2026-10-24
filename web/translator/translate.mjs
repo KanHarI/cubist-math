@@ -413,8 +413,8 @@ export class Translator {
       if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
       return text;
     }
-    // An expected value without either is an expression: both full normal
-    // forms are computed and compared.
+    // An expected value without either is an expression: both normal forms
+    // are computed, stuck definitions folded, and compared by conversion.
     scope.spend("queries");
     const value=this.checker.verify(this.term(d.expected,scope));
     if(!scope.equal(result.type,value.type))

@@ -5,7 +5,9 @@
 // each part is computed only as far as p observes it:
 //   _ matches anything and computes nothing;
 //   !p computes the part's weak head, then matches p;
-//   !!p computes the part's full normal form, then matches p against it;
+//   !!p computes the part's normal form, stuck definitions folded
+//     (docs/roadmaps/runtime/folded-normal-forms.md), then matches p
+//     against it, and !!!p likewise its full normal form;
 //   (p, q) matches a pair whose components match p and q;
 //   left(p) and right(p) match a sum's injections;
 //   c(p, …), a constructor of the part's declared type, matches c applied to
@@ -17,7 +19,7 @@
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
 // A pair, an injection and a constructor compute the part's weak head and
-// read it; an expression computes the part's full normal form. A part is
+// read it; an expression computes the part's normal form, folded. A part is
 // read by its type, never by its weak head's kind: after eta a function's
 // weak head can be a constructor. A bare `_` would compute nothing, and is
 // refused where the whole value is expected (translate.mjs).

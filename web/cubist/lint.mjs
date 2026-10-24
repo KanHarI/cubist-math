@@ -109,7 +109,7 @@ export function lint(source, ast = parse(source)) {
   // under !! asks for more, which the checker refuses (E486).
   // What a part computes by itself, read from its syntax alone: a hole
   // nothing, typed(T, p) what p does, and anything else at least the part's
-  // weak head. Only an expression surely computes the full normal form: a
+  // weak head. Only an expression surely computes the normal form: a
   // name or a call may be a constructor, which computes the weak head and
   // reads its arguments, unless it is a builtin's, as tt or refl(tt), which
   // no constructor is; and a pair leaves its type uncomputed.
