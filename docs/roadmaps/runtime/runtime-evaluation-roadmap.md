@@ -769,10 +769,14 @@ reader. Unary values hold only individual glyph digits and source positions.
 
 Initial contracts check the field and embeddings without assumptions,
 arithmetic/equality decisions, 64/128-bit fraction components, large decimals,
-and full rational-value normalization. Fully normalizing the negative
-certificate from `bq_decide(1/2, 2/3)` still reaches the kernel's syntax-depth
-limit; this is under investigation and remains a failing regression. The new
-API is not release-validated. Public `Z`/`Q`, generic ring numeral
+and the normal forms of wide values and an inverse under `!!_`, the
+[folded normal form](folded-normal-forms.md), which computes their data in full
+and keeps their certificates named. Their full normal forms are not gated:
+measured on 2026-10-24 in fresh programs, `!!!_` of the wide inverse stops at
+the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
+`bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
+(`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
+The new API is not release-validated. Public `Z`/`Q`, generic ring numeral
 interpretation and numerical rendering still require their migration; no
 canonical signed or lowest-terms presentation is claimed.
 
