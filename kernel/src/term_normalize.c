@@ -395,11 +395,25 @@ static bool stuck_elimination(const cc_kernel *k, cc_term head) {
     }
 }
 
-/* The kind at the root of a term's application spine. */
-static cc_term_kind spine_root_kind(const cc_kernel *k, cc_term term) {
-    while (spine_node(k->nodes[term].kind))
-        term = k->nodes[term].child[0];
-    return k->nodes[term].kind;
+/* Whether a step rebuilt `last` as `head` in place: an application or
+ * projection over the very same root, or the same node with at most one
+ * part changed, its stuck value. Another eliminator at the root, even of the
+ * same kind, is another computation. */
+static bool rebuilt_in_place(const cc_kernel *k, cc_term last, cc_term head) {
+    cc_node a = k->nodes[last], b = k->nodes[head];
+    if (a.kind != b.kind || a.payload != b.payload)
+        return false;
+    if (spine_node(a.kind)) {
+        while (spine_node(k->nodes[last].kind))
+            last = k->nodes[last].child[0];
+        while (spine_node(k->nodes[head].kind))
+            head = k->nodes[head].child[0];
+        return last == head;
+    }
+    unsigned changed = 0;
+    for (unsigned i = 0; i < 4; ++i)
+        changed += a.child[i] != b.child[i];
+    return changed <= 1;
 }
 
 /* Whether a weak head is data: a constructor applied, a pair, an injection,
@@ -539,13 +553,12 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
             }
             /* A stuck elimination that its last step rebuilt in place, its
              * stuck value reduced, is taken as that step's term, so that a
-             * definition stuck inside it folds as written there: the same
-             * node over the same root. Any other head is taken as computed:
-             * a transport's formal composition, a composition with its empty
-             * tubes dropped, or an eliminator a definition's step exposed,
-             * as f(x) is where f is eta an eliminator. */
-            bool rebuilt = fold && last && stuck_elimination(k, head) && k->nodes[last].kind == k->nodes[head].kind
-                && spine_root_kind(k, last) == spine_root_kind(k, head);
+             * definition stuck inside it folds as written there. Any other
+             * head is taken as computed: a transport's formal composition, a
+             * composition with its empty tubes dropped, or an eliminator
+             * another step exposed, as f(x) does where f is an eliminator by
+             * eta, or a match that computes f. */
+            bool rebuilt = fold && last && stuck_elimination(k, head) && rebuilt_in_place(k, last, head);
             frame->node = k->nodes[rebuilt ? last : head];
             if (!normal_restrict(k, &frame->node))
                 goto failed;
