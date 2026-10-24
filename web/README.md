@@ -98,8 +98,9 @@ path (the elaborator's `displayText`, `displayTexts` and `displayGoal`):
    motive, a definition kept by name, as a function of the domain its checked
    type gives, `λ (z : D). M(z)`.
 2. `displayTerm` (`cubical-elaborator.mjs`) settles every binder's name, apart
-   from every definition, type and constructor the term prints, and
-   `readableDimensions` names its dimensions apart from every printed name.
+   from every definition, type and constructor the term prints and every
+   dimension it names, and `readableDimensions` names the dimensions decoding
+   left unnamed apart from every printed name.
 3. `sourceText` prints. It renames no binder the term has; the names it
    invents, a clause's arguments or an eliminator's argument, keep apart from
    what their scope prints.
@@ -111,6 +112,12 @@ were settled and renamed binders itself to make room for it; each round found
 the capture again under another kind of binder (a match clause, a lambda
 chain, a universe binder, a dimension). Moving the domain ahead of the naming
 removed the printer's renaming and fixed them together.
+
+The kernel-notation views, an inspection's `expressionText` and the
+workbench's, print with `cubicalText` (`cubical-notation.mjs`), which names its
+binders itself, apart from the definitions, types and constructors their
+bodies show; a folded normal form keeps definitions under binders, which a
+full one never did.
 
 A printer change is tested by reading its output back: print the value, check
 the text at the value's type in a fresh program, and where two names could

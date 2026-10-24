@@ -498,11 +498,19 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
 // the display had already named, x among them (see sourceText). The term it
 // returns says what the input says; only the motive is eta-expanded.
 export function typedMotives(term, definitions) {
+  // Every name the term has, a dimension's too, so that a new binder is
+  // none of them.
   const used = new Set(), seen = new WeakSet();
   const collect = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) used.add(literal[1]);
+      return;
+    }
     if (!t || typeof t !== "object" || seen.has(t)) return;
     seen.add(t);
     if (typeof t.name === "string") used.add(t.name);
+    if (typeof t.dim === "string") used.add(t.dim);
     Object.values(t).forEach(collect);
   };
   collect(term);

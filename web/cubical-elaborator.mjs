@@ -176,6 +176,26 @@ export function printedLabels(term) {
   return labels;
 }
 
+// The dimensions a term names, bound or free: a variable shown by one of
+// these names would read as the dimension where both are in scope, and
+// readableDimensions renames only the dimensions decoding left unnamed.
+export function dimensionNames(term) {
+  const names = new Set(), seen = new WeakSet();
+  const visit = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) names.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (typeof t.dim === "string") names.add(t.dim);
+    Object.values(t).forEach(visit);
+  };
+  visit(term);
+  return names;
+}
+
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
 // shows the stem numbered from 1, n1. The copy is a tree, so a term that
@@ -220,7 +240,7 @@ function scopedNames(term, names, limit = 2000) {
   // Free variables, such as a goal's context, show their stems when no two
   // share one, and the names given them as given; binders then avoid those
   // names.
-  const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
+  const outer = [...free(term)], count = new Map(), labels = new Set([...printedLabels(term), ...dimensionNames(term)]);
   const given = outer.filter(name => names.has(name)), loose = outer.filter(name => !names.has(name));
   const avoid = new Set([...labels, ...given.map(name => names.get(name))]);
   for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
@@ -249,7 +269,7 @@ function globalNames(shown, given) {
   };
   collect(shown);
   const fixed = new Set([...names].filter(name => given.has(name) && !bound.has(name))), loose = [...names].filter(name => !fixed.has(name));
-  const count = new Map(), labels = printedLabels(shown), avoid = new Set([...labels, ...[...fixed].map(name => given.get(name))]);
+  const count = new Map(), labels = new Set([...printedLabels(shown), ...dimensionNames(shown)]), avoid = new Set([...labels, ...[...fixed].map(name => given.get(name))]);
   for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
   const renames = apartFromLabels(new Map(loose.map(name => [name, count.get(stem(name)) === 1
     && !(names.has(stem(name)) && stem(name) !== name) && !avoid.has(stem(name)) ? stem(name) : name])), avoid);
