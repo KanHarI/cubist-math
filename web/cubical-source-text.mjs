@@ -170,7 +170,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       const args = [], results = [], dims = [];
       let body = clause;
       // A clause binds its constructor's data and positions, a recursive
-      // result for each position, then its dimensions; explicitBinders
+      // result for each position, then its dimensions; spelledOut
       // spells out a clause that binds fewer (display-naming.mjs).
       const take = into => {
         if (body?.tag !== "Lam") return false;
@@ -225,7 +225,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "LPi": return [`forall ${t.name} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "LLam": return [`fun (${t.name} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "Lam": {
-        // A binder of no domain, as explicitBinders gives a function whose
+        // A binder of no domain, as spelledOut gives a function whose
         // domain no type it reads gives, stands alone: fun x => body, its
         // type given by where it is checked.
         if (!t.domain) return [`fun ${t.name} => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
@@ -269,7 +269,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       }
       // A declared type's eliminator on its own, as evaluation leaves a
       // function by cases after eta reduction, is the function that applies
-      // it, fun (x : T) => match x …, which explicitBinders writes into the
+      // it, fun (x : T) => match x …, which spelledOut writes into the
       // term; one that reaches the printer unwritten is shown as it is.
       case "Elim": return fallback(t);
       case "App": case "LApp": {

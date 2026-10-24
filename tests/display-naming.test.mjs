@@ -55,6 +55,10 @@ inductive LBox(U < UU0) {
   lbox;
 }
 
+inductive Box(f : Circle -> Circle) {
+  box;
+}
+
 // Named as the display's binder stems.
 def x : U0 := Unit;
 def z(s : Unit or Unit) : U0 := Unit;
@@ -65,6 +69,8 @@ def b(u : Unit) : Unit := u;
 
 // Named as the display's dimension names.
 def i(u : Unit) : base = base := path e => loop @ ~e;
+def d1 : base = base := path e => loop @ ~e;
+def k1(c : Circle) : Circle := match c return Circle { base => base; } obligations by loop;
 def j : U0 := Unit;
 def d0 : U0 := Unit;
 def z1 : U0 := Unit;
@@ -91,6 +97,7 @@ def Beside(t : Tag(z1)) : U0 := Unit;
 def choose(m, n : UNat) : UNat := m;
 def keep2(f : Opt(Unit) -> Unit) : Opt(Unit) -> Unit := f;
 def LM(U < UU0, b : LBox(U)) : U0 := Unit;
+def BoxM(b : Box(fun (c : Circle) => match c return Circle { base => base; } obligations by loop)) : U0 := Unit;
 def dfam : exists A : U0. A -> U0 := (Opt(Unit), Fits);
 def stepper(p : UNat, ih : forall k : UNat. (p = p) and (k = k)) : forall k : UNat. (succ(p) = succ(p)) and (k = k) :=
   fun (k : UNat) => (refl(succ(p)), refl(k));
@@ -116,6 +123,11 @@ const cases = [
   // dimension's stem; shown where the context names i, i is unfolded, and
   // the path applied reduced.
   ["path_clause", "def path_clause : (Circle -> Circle) and Unit := (fun (c : Circle) => match c return Circle { base => base; loop @ e => i(tt) @ e; }, tt);"],
+  // A path clause folded to d1, whose value is ascribed: shown where the
+  // context names d1, it unfolds, and the ascription and path reduce.
+  ["d1_clause", "def d1_clause : (Circle -> Circle) and Unit := (fun (c : Circle) => match c return Circle { base => base; loop @ e => d1 @ e; }, tt);"],
+  // A function named as a dimension whose value has a clause to spell out.
+  ["k1_pair", "def k1_pair : (Circle -> Circle) and Unit := (k1, tt);"],
   // A clause folded whole: two new arguments, told apart by computing.
   ["two2_clause", "def two2_clause : Two2 -> UNat := fun (t : Two2) => match t return UNat { two2(p, q) => choose(p, q); };", [["two2(1, 2)", 1]]],
   // A truncation's squash clause folded past its arguments: hypotheses
@@ -148,6 +160,9 @@ const cases = [
   ["lm_refl", "def lm_refl : lm = lm := refl(fun (b : LBox(U0)) => match b as w return LM(U0, w) { lbox => tt; });"],
   ["dm", "def dm(o : dfam.1) : dfam.2(o) := match o as w return dfam.2(w) { none => tt; some(y) => y; };"],
   ["dm_refl", "def dm_refl : dm = dm := refl(fun (o : dfam.1) => match o as w return dfam.2(w) { none => tt; some(y) => y; });"],
+  // A recovered domain with an eliminator in it, spelled out in turn.
+  ["bm", "def bm(b : Box(fun (c : Circle) => match c return Circle { base => base; } obligations by loop)) : BoxM(b) := match b as w return BoxM(w) { box => tt; };"],
+  ["bm_refl", "def bm_refl : bm = bm := refl(fun (b : Box(fun (c : Circle) => match c return Circle { base => base; } obligations by loop)) => match b as w return BoxM(w) { box => tt; });"],
   // An eliminator applied to its value and more.
   ["twice", "def twice : Opt(Unit) -> Unit := fun (o : Opt(Unit)) => (match o as w return Twice(w) { none => fun (u : Unit) => u; some(y) => fun (u : Unit) => y; })(tt);"],
   // Recovered domains print definitions named as binders around them.
@@ -195,7 +210,7 @@ test("shown where the context names a dimension, each reads back bound by it", a
   const { program } = await shown(t);
   const { kernel, checker } = program;
   const back = [];
-  for (const dimension of ["i", "j", "d0", "z1"]) {
+  for (const dimension of ["i", "j", "d0", "z1", "d1", "k1"]) {
     const context = new Map([[dimension, 0]]);
     for (const [name] of cases) {
       const { expression } = checker.checkSyntax({ tag: "DefRef", name: `main__${name}` }, null, new Map(), context);
@@ -334,4 +349,29 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   const shared = { tag: "Lam", name: "o", domain: sort, body: { tag: "Pair", first: { tag: "App", fn: elim, arg: { tag: "Var", name: "o" } }, second: elim } };
   const [both] = forSource([shared], { definitions, symbols });
   assert.equal(sourceText(both, symbols), "fun (o : N) => (match o return T { zero => p @ x; }, fun (x1 : N) => match x1 return T { zero => p @ x; })");
+  // A motive that reduces to a function gives its domain: here of a type
+  // with a parameter, whose domain only the function tells.
+  const typed = { ...symbols, main__P: { name: "P", slots: ["parameter"], constructors: [{ name: "pz", data: 0, positions: 0, dimensions: 0 }] } };
+  const pUnit = { tag: "Sort", signature: "main__P", parameters: [{ tag: "Unit" }], levels: [] };
+  const redex = { tag: "App", fn: { tag: "Lam", name: "u", domain: { tag: "Unit" }, body: { tag: "Lam", name: "m", domain: pUnit, body: { tag: "DefRef", name: "main__T" } } }, arg: { tag: "Point" } };
+  const [reduced] = forSource([{ tag: "Elim", signature: "main__P", motive: redex, clauses: [{ tag: "Point" }] }], { definitions, symbols: typed });
+  assert.equal(sourceText(reduced, typed), "fun (x : P(Unit)) => match x return T { pz => tt; }");
+  // Terms shown together get new names apart from all of them: the source
+  // Nat eliminators of a large tuple take n, n1, …, none n5, which the other
+  // term's variable is, and shows as n.
+  const nat = { tag: "Sort", signature: "unat__UNat", parameters: [], levels: [] };
+  let tuple = Array.from({ length: 256 }, (_, k) => ({ tag: "Elim", signature: "unat__UNat",
+    motive: { tag: "Lam", name: "m", domain: nat, body: { tag: "Var", name: `T${k}` } }, clauses: [{ tag: "Var", name: `z${k}` }, { tag: "Var", name: `s${k}` }] }));
+  while (tuple.length > 1) tuple = Array.from({ length: Math.ceil(tuple.length / 2) }, (_, k) => ({ tag: "Pair", first: tuple[2 * k], second: tuple[2 * k + 1] ?? tuple[2 * k] }));
+  const [, alone] = forSource([tuple[0], { tag: "Var", name: "n5" }], { definitions, symbols, names: new Map([["n5", "n"]]) });
+  assert.equal(sourceText(alone, symbols), "n");
+  // A definition named as a dimension of the context, q, applied: its value,
+  // a function of a path, leaves a redex at each level of the spine above
+  // it, each reduced: q(tt) @ j is p @ ~j.
+  const unfolding = { ...definitions, value: name => name === "main__q" ? { tag: "Lam", name: "u", domain: { tag: "Unit" },
+    body: { tag: "PLam", dim: "e", family: null, body: { tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["e:0"]] } } } : null,
+    label: name => name === "main__q" ? "q" : definitions.label(name) };
+  const applied = { tag: "PApp", path: { tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Point" } }, arg: [["j:1"]] };
+  const [spelled] = forSource([applied], { definitions: unfolding, symbols, dimensions: ["q", "j"] });
+  assert.equal(sourceText(spelled, symbols), "p @ ~j");
 });
