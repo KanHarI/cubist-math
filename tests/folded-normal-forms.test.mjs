@@ -141,6 +141,8 @@ def le(o : Opt(Unit)) : LFits(U0, o) := match o as w return LFits(U0, w) { none 
 def Family : U1 := Opt(Unit) -> U0;
 def AFits : Family := fun (o : Opt(Unit)) => Unit;
 def ae(o : Opt(Unit)) : AFits(o) := match o as w return AFits(w) { none => tt; some(x) => x; };
+def families : (Opt(Unit) -> U0) and Unit := (fun (o : Opt(Unit)) => Unit, tt);
+def pe(o : Opt(Unit)) : families.1(o) := match o as w return families.1(w) { none => tt; some(y) => y; };
 `;
   const cases = [
     ["(Unit or Unit) -> Unit", "fun (s : Unit or Unit) => match s return Unit { left x => a(x); right y => y; }",
@@ -171,6 +173,9 @@ def ae(o : Opt(Unit)) : AFits(o) := match o as w return AFits(w) { none => tt; s
       "refl(fun (x : Opt(Unit)) => match x as z return LFits(U0, z) { none => tt; some(x) => x; })"],
     ["ae = ae", "refl(fun (o : Opt(Unit)) => match o as w return AFits(w) { none => tt; some(x) => x; })",
       "refl(fun (x : Opt(Unit)) => match x as z return AFits(z) { none => tt; some(x) => x; })"],
+    // And for one that is a definition projected.
+    ["pe = pe", "refl(fun (o : Opt(Unit)) => match o as w return families.1(w) { none => tt; some(y) => y; })",
+      "refl(fun (x : Opt(Unit)) => match x as z return families.1(z) { none => tt; some(y) => y; })"],
   ];
   const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
     `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });
@@ -181,9 +186,10 @@ def ae(o : Opt(Unit)) : AFits(o) := match o as w return AFits(w) { none => tt; s
   assert.deepEqual(back.gaps, []);
 });
 
-// A recovered domain is printed too, so the names chosen around it keep
-// apart from it: here x is a definition, which a binder x would capture.
-test("an invented name keeps apart from the definitions a recovered domain prints", async t => {
+// A recovered domain is printed too, so the names around it keep apart from
+// it, invented ones and the term's own binders alike: here x is a
+// definition, which a binder x would capture.
+test("names keep apart from the definitions a recovered domain prints", async t => {
   const declarations = `inductive Tag(A : U0) {
   tag;
 }
@@ -191,15 +197,24 @@ test("an invented name keeps apart from the definitions a recovered domain print
 def x : U0 := Unit;
 def Outer(t : Tag(x)) : U0 := Tag(x) -> Unit;
 def Inner(t : Tag(x)) : U0 := Unit;
+def Fn : U0 := Tag(x) -> Unit;
 `;
-  const type = "forall t : Tag(x). Outer(t)";
-  const value = "fun (t : Tag(x)) => match t as w return Outer(w) { tag => fun (s : Tag(x)) => match s as v return Inner(v) { tag => tt; }; }";
-  const { result } = await checkProgram(t, `${declarations}def nested : ${type} := ${value};\nprint(evaluate(!!nested));\n`, { module });
+  const cases = [
+    ["forall t : Tag(x). Outer(t)",
+      "fun (t : Tag(x)) => match t as w return Outer(w) { tag => fun (s : Tag(x)) => match s as v return Inner(v) { tag => tt; }; }",
+      "fun (x1 : Tag(x)) => match x1 as z return Outer(z) { tag => fun (x1 : Tag(x)) => match x1 as z return Inner(z) { tag => tt; }; }"],
+    // The argument x is the term's own binder: it is shown as x1, and the
+    // invented name inside keeps apart from that.
+    ["forall x : Unit. Fn", "fun (x : Unit) => fun t => match t as v return Inner(v) { tag => x; }",
+      "fun (x1 : Unit) => fun (x2 : Tag(x)) => match x2 as z return Inner(z) { tag => x1; }"],
+  ];
+  const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
+    `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });
   assert.deepEqual(result.gaps, []);
-  const [shown] = result.prints.map(print => print.text);
-  assert.doesNotMatch(shown, /\(x : /, shown);
-  const { result: back } = await checkProgram(t, `${declarations}def back : ${type} := ${shown};\n`, { module });
-  assert.deepEqual(back.gaps, [], shown);
+  assert.deepEqual(result.prints.map(print => print.text), cases.map(([, , shown]) => shown));
+  const { result: back } = await checkProgram(t, declarations + cases.map(([type, , shown], i) =>
+    `def back_${i} : ${type} := ${shown};\n`).join(""), { module });
+  assert.deepEqual(back.gaps, []);
 });
 
 // The printer's first name for a folded function's argument keeps apart
