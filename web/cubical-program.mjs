@@ -729,8 +729,8 @@ export class CubicalProgram {
     const presentation = simplifiedType === view.type ? view
       : checkReduction(this, view, "type", simplifiedType).view;
     view.folded = foldedInspection(presentation, aliases);
-    view.expressionText = cubicalText(view.folded.expression, symbols);
-    view.typeText = cubicalText(view.folded.type, symbols);
+    view.expressionText = cubicalText(view.folded.expression, symbols, { dimensions: [...dimensions.keys()] });
+    view.typeText = cubicalText(view.folded.type, symbols, { dimensions: [...dimensions.keys()] });
     if (info?.verified && !local) {
       const module = info.sourceModule ?? this.main;
       const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === info.name);
