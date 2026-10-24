@@ -159,3 +159,17 @@ test("native trace records raw nodes, source identity, costs and retained state 
   assert.equal(type.trace.before.side, "type");
   assert.equal(type.trace.before.selected, initial.checked.typeHandle);
 });
+
+// The workbench's normalize shows the folded normal form, as every normal
+// form shown on request is (docs/roadmaps/runtime/folded-normal-forms.md):
+// identity(tt) computes, and identity, a function, stays named.
+test("workbench normalization keeps a named function folded and checks the result", async t => {
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  const initial = await session.load({ ...payload, source: "def identity(x : Unit) := x; def example : (Unit -> Unit) and Unit := (identity, identity(tt));" });
+  const next = await session.handle("reduce", { state: initial.id, side: "expression", kind: "normalize", path: [] });
+  assert.equal(next.change.rule, "Normalized");
+  assert.equal(next.view.expression.first.tag, "DefRef");
+  assert.equal(next.view.expression.second.tag, "Point");
+  assert.equal(session.program.checker.driver.graph.judgement(next.checked.judgement).kind, "typing");
+});

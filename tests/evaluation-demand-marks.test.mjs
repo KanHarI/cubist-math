@@ -14,7 +14,8 @@ import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
-// `!` asks for a part's weak head and `!!` for its full normal form, and an
+// `!` asks for a part's weak head, `!!` for its normal form, stuck
+// definitions folded, and `!!!` for its full normal form, and an
 // unmarked part of a pattern is computed only as far as the pattern observes
 // it. The cases with messages are cubist-tests/evaluate_patterns.cubist;
 // here, the tokens, the values evaluations report, what is left uncomputed,
@@ -31,7 +32,7 @@ function recordedProgram(t) {
   const program = new CubicalProgram(module, sourceReader());
   t.after(() => program.dispose());
   const { checker, kernel } = program, evaluations = [], asked = [];
-  const { evaluated, displayText } = checker, { head, normalize } = kernel;
+  const { evaluated, displayText } = checker, { head, normalize, normalizeFolded } = kernel;
   // The first term displayed after the latest evaluation's normalization is
   // its value; later ones are other directives'.
   checker.displayText = function (term, ...rest) {
@@ -57,31 +58,38 @@ function recordedProgram(t) {
     asked.push({ query: "head", handle, result });
     return result;
   };
-  kernel.normalize = function (handle) {
-    // Directives run in turn, and a later one may check the same term to the
-    // same handle: the normalization is the latest evaluation's.
-    asked.push({ query: "normalize", handle });
-    const result = normalize.call(this, handle);
-    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, normal: checker.decoded(result) });
+  // Directives run in turn, and a later one may check the same term to the
+  // same handle: the normalization is the latest evaluation's, folded or full
+  // (docs/roadmaps/runtime/folded-normal-forms.md).
+  const normalizing = (query, folded) => function (handle) {
+    asked.push({ query, handle });
+    const result = query === "normalize" ? normalize.call(this, handle) : normalizeFolded.call(this, handle);
+    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, folded, normal: checker.decoded(result) });
     return result;
   };
+  kernel.normalize = normalizing("normalize", false);
+  kernel.normalizeFolded = normalizing("normalizeFolded", true);
   return { program, evaluations, asked };
 }
 
-test("! and !! are tokens, read only right after evaluate and in an expected pattern", () => {
-  assert.deepEqual(tokenize("!!_ !_ ! !").slice(0, -1).map(token => token.text), ["!!", "_", "!", "_", "!", "!"]);
-  const [directive] = parse("evaluate !!e expecting (!_, cons(1, !!_));").directives;
+test("!, !! and !!! are tokens, read only right after evaluate and in an expected pattern", () => {
+  assert.deepEqual(tokenize("!!!_ !!_ !_ ! !").slice(0, -1).map(token => token.text), ["!!!", "_", "!!", "_", "!", "_", "!", "!"]);
+  assert.deepEqual(tokenize("!!!!").slice(0, -1).map(token => token.text), ["!!!", "!"]);
+  const [directive] = parse("evaluate !!e expecting (!_, cons(1, !!!_));").directives;
   assert.equal(directive.mark, "!!");
   assert.equal(directive.expected.left.kind, "demand");
   assert.equal(directive.expected.left.mark, "!");
-  assert.equal(directive.expected.right.args[1].mark, "!!");
-  // Two marks apart would read as !! but ask for a weak head.
-  assert.throws(() => parse("evaluate e expecting ! !_;"), /Two ! marks apart/);
-  assert.throws(() => parse("evaluate ! !e expecting _;"), /Two ! marks apart/);
+  assert.equal(directive.expected.right.args[1].mark, "!!!");
+  // Marks apart would read as one but ask for less: each is refused.
+  for (const source of ["evaluate e expecting ! !_;", "evaluate ! !e expecting _;", "evaluate e expecting !! !_;",
+    "evaluate e expecting ! !!_;", "evaluate !!! !e expecting _;", "evaluate e expecting !!!!_;"])
+    assert.throws(() => parse(source), /Two demand marks in a row, .+, ask for one demand/, source);
   // print(evaluate(…)) takes a mark before its term, and nowhere else.
   assert.equal(parse("print(evaluate(!!e));").directives[0].mark, "!!");
+  assert.equal(parse("print(evaluate(!!!e));").directives[0].mark, "!!!");
   for (const source of ["def x := !3;", "evaluate !(!e) expecting _;", "print(typeof(!e));", "print(evaluate(f(!e)));"])
     assert.throws(() => parse(source), /The demand mark ! stands right after evaluate/, source);
+  assert.throws(() => parse("print(typeof(!!!e));"), /The demand mark !!! stands right after evaluate/);
 });
 
 test("a pattern computes what it observes, and the value is shown as far as it was computed", async t => {
@@ -290,7 +298,7 @@ test("an unobserved part is asked nothing: no query reaches a pair's ignored com
   }
 });
 
-test("print(evaluate(e)) shows the value form, !e the weak head as it is, and !!e the full normal form", async t => {
+test("print(evaluate(e)) shows the value form, !e the weak head as it is, !!e the normal form and !!!e the full one", async t => {
   const { result } = await checkProgram(t, `import unat;
 use unat;
 def double(n : UNat) := n + n;
@@ -299,6 +307,7 @@ def far : UNat and UNat := (2 * 255, 2 * 255);
 print(evaluate(pair_));
 print(evaluate(!pair_));
 print(evaluate(!!pair_));
+print(evaluate(!!!pair_));
 print(evaluate(UNat));
 print(evaluate(refl(1)));
 print(evaluate(fun (n : UNat) => succ(n)));
@@ -310,6 +319,9 @@ print(evaluate(!!far));
   assert.deepEqual(result.prints.map(print => print.text), [
     "(6, <fun>)",
     "(double(3), double)",
+    // The data computes; the function stays named, its value no data, and
+    // only !!! unfolds it.
+    "(6, double)",
     "(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })",
     "<type>",
     "<path>",
@@ -466,8 +478,12 @@ test("the REPL reads the marks after evaluate and before a term alone", async ()
     // A lambda is its own weak head, shown as it is.
     assert.equal(await shown("evaluate !f;"), "fun (n : UNat) => n + 1");
     assert.equal(await shown("evaluate!f;"), "fun (n : UNat) => n + 1");
-    assert.equal(await shown("evaluate !!f;"), "fun (n : UNat) => induction n return UNat { zero => 1; succ h => succ(h); }");
+    // The term asked for is unfolded; n + 1, stuck on n, stays as written
+    // under !!, and !!! unfolds it.
+    assert.equal(await shown("evaluate !!f;"), "fun (n : UNat) => n + 1");
     assert.equal(await shown("!!f;"), await shown("evaluate !!f;"));
+    assert.equal(await shown("evaluate !!!f;"), "fun (n : UNat) => induction n return UNat { zero => 1; succ h => succ(h); }");
+    assert.equal(await shown("!!!f;"), await shown("evaluate !!!f;"));
     assert.equal(await shown("evaluate f(2);"), "3");
   } finally { program.dispose(); }
 });
@@ -479,7 +495,7 @@ test("an unobserved part is not computed: the queries a pattern asks cost what i
     return Number(program.kernel.work().querySteps);
   };
   const none = await ticks(""), head = await ticks("evaluate value expecting !_;");
-  const prime = await ticks("evaluate value expecting (7, _);"), full = await ticks("evaluate value expecting !!_;");
+  const prime = await ticks("evaluate value expecting (7, _);"), full = await ticks("evaluate value expecting !!!_;");
   assert.ok(head - none < 1000, `a weak head costs ${head - none} ticks`);
   assert.ok(prime - none < full - none, `the prime costs ${prime - none} ticks, the full normal form ${full - none}`);
 });
@@ -563,12 +579,11 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
   const formatted = formatCubist(source);
   assert.equal(formatted, "evaluate !!e expecting (!_, cons(!!_, !(1, _)));\n");
   assert.equal(formatCubist(formatted), formatted);
-  // A mark before another stays apart from it: ! !!_ is not !!!_.
-  for (const [written, shown] of [["evaluate tt expecting ! !!_;", "evaluate tt expecting ! !!_;\n"],
-    ["evaluate tt expecting (!  !!_, !! !_);", "evaluate tt expecting (! !!_, !! !_);\n"]]) {
-    assert.equal(formatCubist(written), shown);
-    assert.equal(formatCubist(shown), shown);
-  }
+  const full = "evaluate  !!! e expecting ( !!! _ , ( !! _ , _ ) ) ;\n";
+  assert.equal(formatCubist(full), "evaluate !!!e expecting (!!!_, !!_, _);\n");
+  // Marks in a row are refused, so that no spacing turns ! !!_ into !!!_.
+  for (const written of ["evaluate tt expecting ! !!_;", "evaluate tt expecting (!  !!_, !! !_);"])
+    assert.throws(() => formatCubist(written), /Two demand marks in a row/, written);
   // A name or a call may be a constructor, which computes only a weak head,
   // so !! before one is not redundant, unless it is a builtin's; typed(T, p)
   // asks what p asks.
@@ -583,15 +598,24 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
   assert.deepEqual(lint(formatted).map(warning => warning.code), ["W708", "W708", "W708"]);
   assert.deepEqual(lint("evaluate e expecting (!5, !!3, !!(4, !_), !_, !!_, !typed(Unit, _));").map(warning => warning.code),
     ["W709", "W710", "W708"]);
+  // Under !!!, every mark asks for nothing more; under !!, a !!! asks for
+  // more, which the checker refuses (E486), and !!! before an expression
+  // asks for its full normal form.
+  assert.deepEqual(lint("evaluate e expecting !!!(!!_, !_, _); evaluate e expecting (!!(!!!_, _), !!!3, _);").map(warning => warning.code),
+    ["W708", "W708"]);
+  assert.match(lint("evaluate e expecting !!!(!!_, _);")[0].message, /it is under !!!, which normalizes its part/);
+  // Nor is a mark of a refused combination reported: removing the inner !!!
+  // or the !! of !!!(!!(!!!_), _) would make the refused entry check.
+  assert.deepEqual(lint("evaluate e expecting !!!(!!(!!!_), _); evaluate e expecting (!!_, !!(tt, !!!_));"), []);
 });
 
 // One closed example of every construct with a term to evaluate, and its
 // weak head on main, from the demand marks note. Each evaluates under !_,
 // shown as its recorded head, under !!_, and printed, as its value form,
 // except the assumptions, which evaluation refuses. Three examples whose full normal forms cost about 30
-// seconds each are evaluated under !_ only; the DM5 report
+// seconds each are not evaluated under !!!_; the DM5 report
 // (docs/roadmaps/runtime/evaluation-demand-marks/report.md) records that
-// they complete.
+// they complete. Their folded normal forms, under !!_, are quick.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/runtime/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
@@ -617,12 +641,12 @@ const printedHead = whnf => {
 for (const setup of Object.keys(corpus.setups)) {
   const items = corpus.constructs.filter(item => item.setup === setup);
   if (!items.length) continue;
-  test(`every construct of setup ${setup} evaluates under !_ and !!_ and prints`, async t => {
+  test(`every construct of setup ${setup} evaluates under !_, !!_ and !!!_ and prints`, async t => {
     // Each directive's line names its construct.
     const lines = [corpus.setups[setup], ""], at = new Map();
     items.forEach((item, index) => {
       lines.push(`def probe_${index} := ${item.term};`);
-      for (const mark of slowNormalForms.has(item.id) ? ["!_"] : ["!_", "!!_"]) {
+      for (const mark of slowNormalForms.has(item.id) ? ["!_", "!!_"] : ["!_", "!!_", "!!!_"]) {
         at.set(lines.join("\n").split("\n").length + 1, [item, mark]);
         lines.push(`evaluate probe_${index} expecting ${mark};`);
       }
@@ -648,7 +672,9 @@ for (const setup of Object.keys(corpus.setups)) {
         continue;
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
-      assert.equal(wholeNormalized, mark === "!!_", `${item.id} ${mark}: the whole term ${mark === "!!_" ? "is" : "is not"} normalized`);
+      const normalizes = mark === "!!_" || mark === "!!!_";
+      assert.equal(wholeNormalized, normalizes, `${item.id} ${mark}: the whole term ${normalizes ? "is" : "is not"} normalized`);
+      if (normalizes) assert.equal(evaluation.folded, mark === "!!_", `${item.id} ${mark}: ${mark === "!!_" ? "folded" : "full"}`);
       if (mark === "!_") {
         assert.ok(shownHead(item.whnf)(value), `${item.id}: ${value} is not ${item.whnf}`);
         // A constructor shown is the one at the kernel's own weak head.
@@ -659,11 +685,13 @@ for (const setup of Object.keys(corpus.setups)) {
           const { root } = evaluation, identity = con => [con?.index, con?.name, con?.sort?.signature];
           assert.deepEqual(identity(constructor), identity(root), `${item.id}: ${value} shows the kernel's constructor`);
         }
-      } else if (mark === "!!_") {
-        // What !!_ shows is the normal form the kernel computed, up to the
-        // names of bound variables.
-        assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a full normal form`);
-        assert.equal(normalDigest(evaluation.shown), normalDigest(evaluation.normal), `${item.id}: the kernel's normal form is shown`);
+      } else if (mark === "!!_" || mark === "!!!_") {
+        // What !!_ and !!!_ show is the normal form the kernel computed,
+        // folded or full, up to the names of bound variables.
+        assert.doesNotMatch(value, /<unevaluated>|<fun>|<type>/, `${item.id}: a normal form`);
+        // Compared as graphs: a folded normal form can share a part, such as
+        // a theory's record, that a tree would repeat many times.
+        assert.equal(sharedNormalDigest(evaluation.shown).digest, sharedNormalDigest(evaluation.normal).digest, `${item.id}: the kernel's normal form is shown`);
       }
       else {
         // The value form computes every part it shows: none is unevaluated,
@@ -676,7 +704,7 @@ for (const setup of Object.keys(corpus.setups)) {
           const { root } = evaluation, identity = con => [con?.index, con?.name, con?.sort?.signature];
           assert.deepEqual(identity(constructor), identity(root), `${item.id}: ${value} shows the kernel's constructor`);
         }
-        // Where it marks nothing, it is the full normal form.
+        // Where it marks nothing, it is the normal form, folded and full alike.
         const normal = outcomes.get([...at].find(([, [other, kind]]) => other === item && kind === "!!_")?.[0]);
         if (!/[<…]/.test(value) && typeof normal === "string" && !normal.includes("…"))
           assert.equal(value, normal, `${item.id}: the value form of data is its normal form`);

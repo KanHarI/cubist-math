@@ -3,15 +3,16 @@
 // as the CLI runs it (web/repl-session.mjs), with the probe's fixed query
 // budget. For each it records the entry's first result and its SHA-256, the
 // query ticks and queries the entry alone spent, and, where the entry
-// normalized a term, how many times and how many of those failed, and for
-// the last normalization, the whole value's under `!!_` after any its
+// normalized a term, fully or folded, how many times and how many of those
+// failed, and for the last normalization, its mode, the whole value's under `!!_` after any its
 // elaboration asked for, its ticks alone and either its failure or the
 // distinct objects of the normal form's decoding and its digest
 // (tools/evaluation-baseline.mjs's sharedNormalDigest, which compares as its
 // normalDigest does).
 // Usage: node report.mjs [--root=CHECKOUT] [budget] [case ...]. --root
 // measures another checkout, as main, with the spelling each case had there
-// before the marks (`expecting _` for `expecting !!_`); a case with no such
+// before the marks (`expecting _` for `expecting !!_`, written `!!!_` since
+// the folded normal forms gave `!!` the folded one); a case with no such
 // spelling is skipped. Named cases run alone. Results are JSON lines.
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
@@ -34,7 +35,7 @@ const rationals = "import rationals;\nuse unat;\n", integers = "import integers;
 // Each acceptance case: its setup, its entry, and the entry main had for it.
 const cases = [
   { id: "small-inverse-value", setup: sources.rational, entry: "evaluate small_inverse;", main: "evaluate small_inverse;" },
-  { id: "small-inverse-normal", setup: sources.rational, entry: "evaluate small_inverse expecting !!_;", main: "evaluate small_inverse expecting _;" },
+  { id: "small-inverse-normal", setup: sources.rational, entry: "evaluate small_inverse expecting !!!_;", main: "evaluate small_inverse expecting _;" },
   { id: "euclid-3-pattern", setup: euclid, entry: "evaluate euclid(3) expecting (7, _);", main: "evaluate euclid(3) expecting (7, _);" },
   { id: "euclid-4-head", setup: euclid, entry: "evaluate !euclid(4);" },
   { id: "euclid-4-pattern", setup: euclid, entry: "evaluate euclid(4) expecting (5, _);", main: "evaluate euclid(4) expecting (5, _);" },
@@ -43,7 +44,7 @@ const cases = [
   // The constructs whose full normal forms the corpus test leaves out.
   ...[["rational-literal-normal", rationals, "rationals.(2/3)"], ["decimal-literal-normal", rationals, "rationals.(0.5)"],
     ["theory-parent-normal", integers, "integers.additive_"]].map(([id, setup, term]) =>
-    ({ id, setup, entry: `evaluate ${term} expecting !!_;`, main: `evaluate ${term} expecting _;` })),
+    ({ id, setup, entry: `evaluate ${term} expecting !!!_;`, main: `evaluate ${term} expecting _;` })),
 ];
 
 const sha256 = text => createHash("sha256").update(text).digest("hex");
@@ -65,22 +66,27 @@ for (const item of cases) {
     // the last is described, by the normal form's digest, taken while its
     // handle holds (a committed or abandoned entry moves its nodes), or by
     // its failure.
+    // Both queries are counted, the full normal form's and the folded one's
+    // (docs/roadmaps/runtime/folded-normal-forms.md), and the last is named.
     let normalizations = 0, failedNormalizations = 0, normal = null;
-    const { normalize } = kernel, work = () => kernel.work();
-    kernel.normalize = function (handle) {
-      normalizations++;
-      const before = work(), ticks = () => Number(work().querySteps - before.querySteps);
-      try {
-        const result = normalize.call(this, handle);
-        const normalTicks = ticks(), { digest, objects } = sharedNormalDigest(program.checker.syntax.decode(result, program.checker.dimensions));
-        normal = { normalTicks, normalObjects: objects, normalDigest: digest };
-        return result;
-      } catch (error) {
-        failedNormalizations++;
-        normal = { normalTicks: ticks(), normalFailure: error.message };
-        throw error;
-      }
-    };
+    const work = () => kernel.work();
+    for (const [query, normalMode] of [["normalize", "full"], ["normalizeFolded", "folded"]]) {
+      const original = kernel[query];
+      kernel[query] = function (handle) {
+        normalizations++;
+        const before = work(), ticks = () => Number(work().querySteps - before.querySteps);
+        try {
+          const result = original.call(this, handle);
+          const normalTicks = ticks(), { digest, objects } = sharedNormalDigest(program.checker.syntax.decode(result, program.checker.dimensions));
+          normal = { normalMode, normalTicks, normalObjects: objects, normalDigest: digest };
+          return result;
+        } catch (error) {
+          failedNormalizations++;
+          normal = { normalMode, normalTicks: ticks(), normalFailure: error.message };
+          throw error;
+        }
+      };
+    }
     const before = work();
     const [result] = await session.run(entry);
     const after = work();

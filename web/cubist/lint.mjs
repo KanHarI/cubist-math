@@ -103,11 +103,13 @@ export function lint(source, ast = parse(source)) {
   // Demand marks that ask for nothing more than their part already computes
   // (docs/roadmaps/runtime/evaluation-demand-marks.md): ! before a part that
   // computes its weak head itself, a pair, an injection, a constructor or an
-  // expression; !! before an expression, which is compared by its full
-  // normal form; and any mark under !!, whose part is fully normalized.
+  // expression; !! before an expression, which is compared by its normal
+  // form; and a mark under !! or !!! that asks for no more than it, whose
+  // part is normalized (docs/roadmaps/runtime/folded-normal-forms.md). A !!!
+  // under !! asks for more, which the checker refuses (E486).
   // What a part computes by itself, read from its syntax alone: a hole
   // nothing, typed(T, p) what p does, and anything else at least the part's
-  // weak head. Only an expression surely computes the full normal form: a
+  // weak head. Only an expression surely computes the normal form: a
   // name or a call may be a constructor, which computes the weak head and
   // reads its arguments, unless it is a builtin's, as tt or refl(tt), which
   // no constructor is; and a pair leaves its type uncomputed.
@@ -122,29 +124,36 @@ export function lint(source, ast = parse(source)) {
     : !["pair", "demand"].includes(node.kind);
   // Removing marks must leave the expected value a pattern, or it would be
   // compared exactly instead: ! and !! are reported only where a hole keeps
-  // it one. A mark under !! leaves that !!.
+  // it one. A mark under !! or !!! leaves that mark. `normalized` is the
+  // mark a part is under, the stronger of two, and `folded` whether a !! is
+  // above it: a !!! under a !!, and that !!, are refused by the checker
+  // (E486), so neither is reported as asking for nothing more.
   let holed = false;
-  const marked = (mark, at, value, normalized) => {
-    if (normalized) warn(at, "W708", `The ${mark} before ${text(value)} asks for nothing more: it is under !!, whose part is fully normalized.`);
-    else if (holed && mark === "!" && computesHead(value))
+  const has = (node, mark) => !!node && typeof node === "object" && (node.kind === "demand" && node.mark === mark
+    || Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && has(value, mark)));
+  const marked = (mark, at, value, normalized, folded) => {
+    if (mark === "!!!" && folded || mark === "!!" && has(value, "!!!")) {}
+    else if (normalized && normalized.length >= mark.length)
+      warn(at, "W708", `The ${mark} before ${text(value)} asks for nothing more: it is under ${normalized}, which normalizes its part.`);
+    else if (!normalized && holed && mark === "!" && computesHead(value))
       warn(at, "W709", `The ! before ${text(value)} asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.`);
-    else if (holed && mark === "!!" && expression(value))
-      warn(at, "W710", `The !! before ${text(value)} asks for nothing more: an expression is compared by its full normal form.`);
-    marks(value, normalized || mark === "!!");
+    else if (!normalized && holed && mark === "!!" && expression(value))
+      warn(at, "W710", `The !! before ${text(value)} asks for nothing more: an expression is compared by its normal form.`);
+    marks(value, mark.length > 1 && mark.length > (normalized?.length ?? 0) ? mark : normalized, folded || mark === "!!");
   };
   // The parts of a pattern: a pair's components and a call's arguments. A
   // mark inside any other expression is refused by the checker (E484).
-  const marks = (node, normalized) => {
-    if (node?.kind === "demand") marked(node.mark, { start: node.markStart, end: node.markEnd }, node.value, normalized);
-    else if (node?.kind === "pair") [node.left, node.right].forEach(part => marks(part, normalized));
-    else if (node?.kind === "call") node.args.forEach(part => marks(part, normalized));
+  const marks = (node, normalized, folded) => {
+    if (node?.kind === "demand") marked(node.mark, { start: node.markStart, end: node.markEnd }, node.value, normalized, folded);
+    else if (node?.kind === "pair") [node.left, node.right].forEach(part => marks(part, normalized, folded));
+    else if (node?.kind === "call") node.args.forEach(part => marks(part, normalized, folded));
   };
   const holes = node => !!node && typeof node === "object" && (hole(node)
     || Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && holes(value)));
   for (const directive of ast.directives ?? []) if (directive.kind === "evaluate" && directive.expected) {
     holed = holes(directive.expected);
-    if (directive.mark) marked(directive.mark, { start: directive.markStart, end: directive.markEnd }, directive.expected, false);
-    else marks(directive.expected, false);
+    if (directive.mark) marked(directive.mark, { start: directive.markStart, end: directive.markEnd }, directive.expected, null, false);
+    else marks(directive.expected, null, false);
   }
   // Each warning with its declaration and its line and column.
   const lineStarts = [0];

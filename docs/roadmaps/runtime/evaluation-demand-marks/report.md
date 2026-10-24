@@ -35,7 +35,10 @@ and slots.
 
 Repeated runs give identical counters. With `--root=CHECKOUT`, the script
 measures another checkout, here main, with the spelling each case had before
-the marks: `expecting _` for `expecting !!_`. A case main cannot spell is
+the marks: `expecting _` for `expecting !!_`. Since the
+[folded normal forms](../folded-normal-forms.md), `!!` computes the folded
+normal form, and the script writes these entries `!!!_`, which computes
+what `!!_` did when this report was measured. A case main cannot spell is
 measured on the branch only.
 
 The counters are not the

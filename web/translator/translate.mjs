@@ -33,7 +33,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -373,6 +373,11 @@ export class Translator {
   }
   evaluate(d,scope) {
     scope.spend("queries");
+    // A !!! inside a !! part is refused before anything is computed, the
+    // term's elaboration too, which a literal's reader computes in, and at
+    // its own mark: parentheses around the part move its start.
+    const full=!d.assertion&&d.expected&&fullInsideFolded(d.mark?{kind:"demand",mark:d.mark,value:d.expected}:d.expected);
+    if(full)throw scope.unit.locate(fullUnderFolded(),{start:full.markStart,end:full.markEnd});
     // Evidence checks use the stated type, or its negation, without fully
     // normalizing the proof. Ascription keeps the stated type's dependencies.
     let type,term;
@@ -386,12 +391,14 @@ export class Translator {
       term=scope.ascribe(scope.check(read(d.value,expected),expected,d.value),expected);
     } else term=this.term(d.value,scope);
     const source=node=>node.text??scope.unit.source.slice(node.start,node.end).trim();
-    // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!.
+    // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!
+    // and !!!.
     const expected=d.assertion?null:d.mark?{kind:"demand",mark:d.mark,value:d.expected,text:`${d.mark}${source(d.expected)}`,
       start:d.expected.start,end:d.expected.end}:d.expected;
     // A pattern demands what it observes, so nothing is computed before the
-    // assumptions are checked; an exact expected value computes the full
-    // normal form first, as it did before demand marks.
+    // assumptions are checked; an exact expected value computes its normal
+    // form first, stuck definitions folded, as it computed the full one
+    // before folded normal forms (docs/roadmaps/runtime/folded-normal-forms.md).
     const result=d.assertion?this.checker.infer(term):this.checker.evaluated(term);
     const normal=expected&&!isPattern(expected)?this.checker.normalForm(result.expression):null;
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
@@ -411,8 +418,8 @@ export class Translator {
       if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
       return text;
     }
-    // An expected value without either is an expression: both full normal
-    // forms are computed and compared.
+    // An expected value without either is an expression: both normal forms
+    // are computed, stuck definitions folded, and compared by conversion.
     scope.spend("queries");
     const value=this.checker.verify(this.term(d.expected,scope));
     if(!scope.equal(result.type,value.type))
@@ -433,7 +440,9 @@ export class Translator {
     };
     return {
       head:(handle,node)=>asked(node,()=>checker.derivedHead(handle)),
-      normal:(handle,node)=>asked(node,()=>checker.normalForm(handle)),
+      // !!! asks for the full normal form; !! and an expression's leaf for
+      // the folded one.
+      normal:(handle,node)=>asked(node,()=>checker.normalForm(handle,{full:node?.mark==="!!!"})),
       spine:handle=>checker.kernel.spine(handle),
       decoded:handle=>checker.decoded(handle),
       constructor:handle=>checker.shownConstructor(handle),
@@ -452,7 +461,8 @@ export class Translator {
     };
   }
   // `print(evaluate(e));` shows the value form of a closed, assumption-free
-  // term, and `print(evaluate(!!e));` its normal form; `print(typeof(e));`
+  // term, `print(evaluate(!!e));` its normal form, stuck definitions folded,
+  // and `print(evaluate(!!!e));` its full normal form; `print(typeof(e));`
   // its type; and
   // `print(inspect(e));` the term the kernel checked, in kernel notation. A
   // name shows what the CLI's inspect shows: a definition's checked body, or
@@ -461,18 +471,21 @@ export class Translator {
     if(d.show==="evaluate"||d.show==="witness") {
       scope.spend("queries");
       const result=this.checker.evaluated(this.term(d.value,scope));
-      // A full normal form, which !! and a witness read, is computed before
+      // A normal form, which !!, !!! and a witness read, is computed before
       // the assumptions are checked, as print did before demand marks; a
-      // value form and a weak head compute nothing until they are.
-      const normal=d.mark==="!!"||d.show==="witness"?this.checker.normalForm(result.expression):null;
+      // value form and a weak head compute nothing until they are. !!! and a
+      // witness ask for the full normal form: a witness is a constructor
+      // read under formal compositions, whose bases a folded normal form may
+      // keep named (folded-normal-forms.md).
+      const normal=d.mark==="!!"||d.mark==="!!!"||d.show==="witness"?this.checker.normalForm(result.expression,{full:d.mark==="!!!"||d.show==="witness"}):null;
       const assumptions=result.native.axioms;
       if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
       // print(evaluate(e)); shows the value form, computed as far as it is
       // shown (evaluation.mjs, DM3); print(evaluate(!e)); the weak head as
       // the kernel leaves it, its arguments uncomputed; and
-      // print(evaluate(!!e)); the full normal form.
+      // print(evaluate(!!e)); and print(evaluate(!!!e)); the normal form.
       if(d.show==="evaluate") {
-        if(d.mark==="!!")return this.shownIn(normal,scope);
+        if(d.mark==="!!"||d.mark==="!!!")return this.shownIn(normal,scope);
         const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
         // A weak head and a value form are shown as computed, reducing
         // nothing more for display; a value form whole, within the budget

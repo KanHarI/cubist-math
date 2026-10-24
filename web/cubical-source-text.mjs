@@ -4,6 +4,7 @@ import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 import {binaryDigits as binary, parsedLiteral} from "./translator/numeral-printing.mjs";
+import { betaReduce, substituteDimension, substituteTerm } from "./translator/core.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -25,6 +26,16 @@ const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/":
 // (L2.10d): an operation prints with its notation's operator only where
 // that notation is selected, and is qualified, as nat.(x + y), elsewhere,
 // even where nothing is selected (L2.10j).
+// Names are settled before this printer runs, by displayTerm and
+// readableDimensions (cubical-elaborator.mjs), which keep every binder and
+// every dimension apart from what the term prints. The printer does not
+// rename a binder the term has; it chooses only the names it invents, with
+// `apart`, from the scope it can see. So whatever a display adds to a term
+// that can print a name, as a folded motive's domain, is added before the
+// names are settled (typedMotives below), not here: adding it here put a
+// printed name under binders already named, and #310's review found that
+// capture again for each binder kind, a lambda, a universe, a dimension,
+// that per-binder renaming in the printer missed (web/README.md).
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
   const label = binding => symbols[binding]?.name
@@ -32,6 +43,28 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // Terms share subterms, so each scan visits a node once.
   const free = displayFreeNames();
   const mentions = (term, variable) => free(term).has(variable);
+  // The names a term prints for what no binder binds: its definitions', its
+  // types' and its constructors'. A folded normal form keeps definitions
+  // inside binders (docs/roadmaps/runtime/folded-normal-forms.md), so a
+  // binder of one of these names would capture it in the text.
+  const printedNames = (() => {
+    const memo = new WeakMap(), empty = new Set();
+    const scan = value => {
+      if (!value || typeof value !== "object") return empty;
+      if (memo.has(value)) return memo.get(value);
+      const names = new Set();
+      memo.set(value, names);
+      if (value.tag === "DefRef") names.add(label(value.name));
+      else if (value.tag === "Sort") names.add(label(value.signature));
+      else if (value.tag === "Con" && value.name) names.add(value.name);
+      // An eliminator written as a function shows its type as the domain.
+      else if (value.tag === "Elim") names.add(label(value.signature));
+      for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
+      return names;
+    };
+    return scan;
+  })();
+  const taken = (term, name) => mentions(term, name) || printedNames(term).has(name) || varies(term, name);
   const numeral = numeralValue;
   // A dimension occurs in a term through interval literals `i:1` and `i:0`.
   const varies = (t, dim, seen = new Set()) => {
@@ -99,10 +132,22 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     }
   };
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
-  // A bound name that also occurs in `outside` gets a numbered variant.
+  // A bound name that also occurs in `outside`, or that `whole` prints as a
+  // definition's, a type's or a constructor's or uses as a dimension, gets
+  // a numbered variant, one `whole` neither mentions, prints nor uses. Only
+  // names the printer invents are chosen so; `whole` is all their scope
+  // shows, since the printer adds nothing a name can print to it.
   const apart = (name, outside, whole) => {
-    if (!mentions(outside, name)) return name;
-    for (let i = 1; ; i++) if (!mentions(whole, numberedName(name, i))) return numberedName(name, i);
+    if (!mentions(outside, name) && !printedNames(whole).has(name) && !varies(whole, name)) return name;
+    for (let i = 1; ; i++) if (!taken(whole, numberedName(name, i))) return numberedName(name, i);
+  };
+  // A function as a lambda: a folded normal form keeps a motive or a clause
+  // that is a definition as its name (docs/roadmaps/runtime/folded-normal-forms.md),
+  // shown applied to a new name, as `return Shape(z)` for the motive Shape.
+  const lambda = (term, stem, near) => {
+    if (!term || term.tag === "Lam") return term;
+    const name = apart(stem, near, near);
+    return { tag: "Lam", name, domain: null, body: { tag: "App", fn: term, arg: { tag: "Var", name } } };
   };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
@@ -141,24 +186,41 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // recursive result, the eliminator is an induction, and that clause names
   // its hypotheses after with: `cons(head, tail) with ih => …`.
   const declaredMatch = (elim, value) => {
-    const constructors = symbols[elim.signature]?.constructors, motive = elim.motive;
+    const constructors = symbols[elim.signature]?.constructors, motive = lambda(elim.motive, "z", { tag: "App", fn: elim, arg: value });
     if (!constructors || constructors.length !== elim.clauses?.length || motive?.tag !== "Lam") return null;
     const clauses = [];
     for (const [c, clause] of elim.clauses.entries()) {
       const { name, data, positions, dimensions, order } = constructors[c];
-      const args = [], results = [], dims = [];
+      const args = [], results = [], dims = [], used = new Set();
       let body = clause;
       // A clause that evaluation eta-reduced, as `succ` for fun (ih) =>
-      // succ(ih), is applied to new names instead.
+      // succ(ih), or that a folded normal form keeps as a definition, is
+      // applied to new names instead, apart from the clause's names before
+      // them, which its rest no longer mentions.
+      const fresh = stem => {
+        let name = apart(stem, body, body);
+        for (let n = 1; used.has(name); n++) name = taken(body, numberedName(stem, n)) ? name : numberedName(stem, n);
+        used.add(name);
+        return name;
+      };
       const take = (into, stem) => {
-        if (body?.tag === "Lam") { into.push(body.name); body = body.body; return; }
-        const name = apart(stem, body, body);
+        if (body?.tag === "Lam") { into.push(body.name); used.add(body.name); body = body.body; return; }
+        const name = fresh(stem);
         into.push(name);
         body = { tag: "App", fn: body, arg: { tag: "Var", name } };
       };
       for (let i = 0; i < data + positions; i++) take(args, "x");
       for (let i = 0; i < positions; i++) take(results, "ih");
-      for (let i = 0; i < dimensions; i++) { if (body?.tag !== "PLam") return null; dims.push(body.dim); body = body.body; }
+      // A path constructor's clause takes its dimensions, applied likewise
+      // to new ones where it is no path abstraction.
+      for (let i = 0; i < dimensions; i++) {
+        if (body?.tag === "PLam") { dims.push(body.dim); used.add(body.dim); body = body.body; continue; }
+        let dim = "i";
+        for (let n = 1; taken(body, dim) || used.has(dim); n++) dim = numberedName("i", n);
+        used.add(dim);
+        dims.push(dim);
+        body = { tag: "PApp", path: body, arg: [[`${dim}:1`]] };
+      }
       const fields = order ? order.map((_, sourceIndex) => args[order.indexOf(sourceIndex)]) : args;
       clauses.push({ name, args: fields, results, dims, body });
     }
@@ -231,7 +293,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           + `succ ${h} => ${successor}; }`, LEVEL.binder];
       }
       case "SumRec": {
-        const { motive, left, right } = t;
+        const motive = lambda(t.motive, "z", t), left = lambda(t.left, "a", t), right = lambda(t.right, "b", t);
         if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
         // `as z` is written only where the return type uses z, as the linter asks.
         const named = mentions(motive.body, motive.name);
@@ -243,12 +305,18 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // function by cases after eta reduction, is the function that applies
       // it: fun (n : Nat) => induction n …, or fun (x : T) => match x …, which
       // the application case below prints.
+      // A motive's domain, which typedMotives gives a folded motive before
+      // names are settled; without one, a type without parameters is its
+      // own domain, and the function of any other is written untyped, its
+      // type given by where it is checked.
       case "Elim": {
-        if (t.motive?.tag !== "Lam") return fallback(t);
+        const domain = t.motive?.tag === "Lam" ? t.motive.domain
+          : symbols[t.signature]?.slots?.length === 0 ? { tag: "Sort", signature: t.signature, parameters: [], levels: [] } : null;
         const nat = t.signature === "unat__UNat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
         const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
         const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
-        return text ? [`fun (${x} : ${show(t.motive.domain)}) => ${text}`, LEVEL.binder] : fallback(t);
+        if (!text) return fallback(t);
+        return [`fun ${domain ? `(${x} : ${show(domain)})` : x} => ${text}`, LEVEL.binder];
       }
       case "App": case "LApp": {
         const number=numeral(t);
@@ -259,21 +327,30 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
         // spelling. Eta reduction may leave its successor clause curried.
-        if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="unat__UNat"
-          &&t.fn.motive?.tag==="Lam"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
+        const motive=t.tag==="App"&&t.fn.tag==="Elim"?lambda(t.fn.motive,"k",t):null;
+        if(motive?.tag==="Lam"&&t.fn.signature==="unat__UNat"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
           let step=t.fn.clauses[1];
           if(step.body.tag!=="Lam") {
-            const h=apart("h",t,t);
-            step={...step,body:{tag:"Lam",name:h,domain:t.fn.motive.body,
+            // The hypothesis is bound under the predecessor: it keeps apart
+            // from the predecessor's name and from what the clause shows.
+            const scope={tag:"Pair",first:step.body,second:{tag:"Var",name:step.name}},h=apart("h",scope,scope);
+            step={...step,body:{tag:"Lam",name:h,domain:motive.body,
               body:{tag:"App",fn:step.body,arg:{tag:"Var",name:h}}}};
           }
-          return print({tag:"NatInduction",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
+          return print({tag:"NatInduction",motive,zero:t.fn.clauses[0],step,value:t.arg});
         }
         if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.
         const args = [];
         let head = t;
         while (head.tag === "App" || head.tag === "LApp") { args.unshift(head.tag === "App" ? head.arg : { tag: "U", level: head.level }); head = head.fn; }
+        // An eliminator applied to its value and more prints as the match
+        // or induction on the value, applied to the rest: its function alone
+        // would be written untyped where no type reaches it.
+        if (head.tag === "Elim" && args.length > 1) {
+          const [text, level] = print({ tag: "App", fn: head, arg: args[0] });
+          return atom(`${level < LEVEL.atom ? `(${text})` : text}(${args.slice(1).map(show).join(", ")})`);
+        }
         // The notation that prints this function: the selected one's
         // entry, or the first declared (L2.10d).
         const entries = head.tag === "DefRef" ? symbols[head.name]?.printing : undefined;
@@ -406,4 +483,148 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     }
   }
   return show(term);
+}
+
+// A folded normal form keeps an eliminator's motive that is a definition by
+// its name (docs/roadmaps/runtime/folded-normal-forms.md), and so without a
+// domain. Before the display settles names, each such motive is written as a
+// function of the domain its type gives, λ (z : D). motive(z), so that the
+// eliminator prints typed where its function is written, and the names the
+// display chooses keep apart from those the domain prints. `definitions`
+// gives a definition's checked type and value, each decoded. A motive whose
+// domain cannot be read is left as it is.
+// This runs before displayTerm, never after: a domain the printer added
+// itself would print names, as Tag(x) prints the definition x, under binders
+// the display had already named, x among them (see sourceText). The term it
+// returns says what the input says; only the motive is eta-expanded.
+export function typedMotives(term, definitions) {
+  // Every name the term has, a dimension's too, so that a new binder is
+  // none of them.
+  const used = new Set(), seen = new WeakSet();
+  const collect = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) used.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (typeof t.name === "string") used.add(t.name);
+    if (typeof t.dim === "string") used.add(t.dim);
+    Object.values(t).forEach(collect);
+  };
+  collect(term);
+  let next = 0;
+  const fresh = () => { let name; do name = `z${++next}`; while (used.has(name)); used.add(name); return name; };
+  // A spine applies, projects or applies to a dimension the term at its
+  // root; a type former is what each of those reads.
+  const root = node => node.fn ?? node.pair ?? node.path;
+  const spines = new Set(["App", "LApp", "Fst", "Snd", "PApp"]);
+  const formers = new Set(["Pi", "LPi", "Sigma", "Path"]);
+  // A type with a definition at its root, as an alias of a function type or
+  // a pair's component, has that definition's value there, reduced, until it
+  // is a type former or no definition is at its root, within a few unfoldings.
+  const exposed = type => {
+    for (let unfoldings = 0; type; unfoldings++) {
+      // A substitution can leave a redex at the root, a function of types
+      // applied: reduced first, as after each unfolding.
+      type = betaReduce(type);
+      if (formers.has(type.tag) || unfoldings >= 16) break;
+      let head = type;
+      while (spines.has(head.tag)) head = root(head);
+      const value = head.tag === "DefRef" ? definitions.value(head.name) : null;
+      if (!value) break;
+      const rooted = node => !spines.has(node.tag) ? value
+        : { ...node, [node.fn ? "fn" : node.pair ? "pair" : "path"]: rooted(root(node)) };
+      type = rooted(type);
+    }
+    return type;
+  };
+  // The domain of the type a definition's checked type gives the spine over
+  // it: an argument or a level substituted, a pair's first component's type
+  // or its second's with the first substituted, a path's family at the point.
+  const domain = motive => {
+    const spine = [];
+    let head = motive;
+    while (spines.has(head?.tag)) { spine.unshift(head); head = root(head); }
+    let type = head?.tag === "DefRef" ? definitions.type(head.name) : null;
+    for (const node of spine) {
+      type = exposed(type);
+      if (type?.tag !== { App: "Pi", LApp: "LPi", Fst: "Sigma", Snd: "Sigma", PApp: "Path" }[node.tag]) return null;
+      type = node.tag === "App" ? substituteTerm(type.body, type.name, node.arg)
+        : node.tag === "LApp" ? substituteTerm(type.body, type.name, node.level)
+        : node.tag === "Fst" ? type.domain
+        : node.tag === "Snd" ? substituteTerm(type.body, type.name, { tag: "Fst", pair: node.pair })
+        : substituteDimension(type.family, type.dim, node.arg);
+    }
+    type = exposed(type);
+    return type?.tag === "Pi" ? type.domain : null;
+  };
+  const typed = new WeakMap();
+  const go = t => {
+    if (!t || typeof t !== "object") return t;
+    if (typed.has(t)) return typed.get(t);
+    let result = t;
+    for (const [key, value] of Object.entries(t)) {
+      const changed = go(value);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
+        result[key] = changed;
+      }
+    }
+    if (result.tag === "Elim" && result.motive && result.motive.tag !== "Lam") {
+      const of = domain(result.motive);
+      if (of) {
+        const name = fresh();
+        result = { ...result, motive: { tag: "Lam", name, domain: of, body: { tag: "App", fn: result.motive, arg: { tag: "Var", name } } } };
+      }
+    }
+    typed.set(t, result);
+    return result;
+  };
+  return go(term);
+}
+
+// A definition shown by a dimension's name, as a definition i where a term
+// names a dimension i, would read as that dimension; no source spelling
+// qualifies it, and a dimension the context names keeps its name. Such a
+// definition is shown by its value, which it equals by unfolding. This runs
+// with typedMotives, after it: a recovered domain can bring the definition
+// in. `definitions` gives a definition's decoded value and its label;
+// `ambient` names the dimensions of the context the term is shown in, which
+// the term need not use.
+export function apartFromDimensions(term, definitions, ambient = []) {
+  const dimensions = new Set(ambient), seen = new WeakSet();
+  const collect = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) dimensions.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (typeof t.dim === "string") dimensions.add(t.dim);
+    Object.values(t).forEach(collect);
+  };
+  collect(term);
+  if (!dimensions.size) return term;
+  const shown = new WeakMap();
+  const go = (t, depth = 0) => {
+    if (!t || typeof t !== "object") return t;
+    if (shown.has(t)) return shown.get(t);
+    let result = t;
+    if (t.tag === "DefRef" && dimensions.has(definitions.label(t.name)) && depth < 16) {
+      const value = definitions.value(t.name);
+      if (value) result = go(value, depth + 1);
+    } else for (const [key, value] of Object.entries(t)) {
+      const changed = go(value, depth);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
+        result[key] = changed;
+      }
+    }
+    shown.set(t, result);
+    return result;
+  };
+  return go(term);
 }
