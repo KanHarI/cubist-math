@@ -205,7 +205,12 @@ Recommended, and taken unless the user changes them:
   marks in a row are refused, so that no spacing turns `! !!` into `!!!`,
   and a `!!!` inside a `!!` part, which that part's normal form cannot
   honor, is refused too (E486). A folded motive or clause prints applied to
-  a new name, as `match value as z return Shape(z) { … }`. The callers are
+  a new name, as `match value as z return Shape(z) { … }`, and a folded
+  motive is given the domain its definition's checked type gives before
+  the display settles names, so that a function by cases prints typed and
+  no name the domain prints is captured; adding it in the printer, after
+  the names were settled, leaked one capture per binder kind
+  ([web/README.md](../../../web/README.md#displaying-terms)). The callers are
   routed as the table above assigns them: exact expected values, expression
   leaves and the normalizing views fold, and `witness` keeps the full normal
   form. The language reference, the error reference (E485 names both), the

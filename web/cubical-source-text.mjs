@@ -26,6 +26,16 @@ const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/":
 // (L2.10d): an operation prints with its notation's operator only where
 // that notation is selected, and is qualified, as nat.(x + y), elsewhere,
 // even where nothing is selected (L2.10j).
+// Names are settled before this printer runs, by displayTerm and
+// readableDimensions (cubical-elaborator.mjs), which keep every binder and
+// every dimension apart from what the term prints. The printer does not
+// rename a binder the term has; it chooses only the names it invents, with
+// `apart`, from the scope it can see. So whatever a display adds to a term
+// that can print a name, as a folded motive's domain, is added before the
+// names are settled (typedMotives below), not here: adding it here put a
+// printed name under binders already named, and #310's review found that
+// capture again for each binder kind, a lambda, a universe, a dimension,
+// that per-binder renaming in the printer missed (web/README.md).
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
   const label = binding => symbols[binding]?.name
@@ -124,7 +134,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
   // A bound name that also occurs in `outside`, or that `whole` prints as a
   // definition's, a type's or a constructor's or uses as a dimension, gets
-  // a numbered variant, one `whole` neither mentions, prints nor uses.
+  // a numbered variant, one `whole` neither mentions, prints nor uses. Only
+  // names the printer invents are chosen so; `whole` is all their scope
+  // shows, since the printer adds nothing a name can print to it.
   const apart = (name, outside, whole) => {
     if (!mentions(outside, name) && !printedNames(whole).has(name) && !varies(whole, name)) return name;
     for (let i = 1; ; i++) if (!taken(whole, numberedName(name, i))) return numberedName(name, i);
@@ -479,6 +491,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
 // display chooses keep apart from those the domain prints. `definitions`
 // gives a definition's checked type and value, each decoded. A motive whose
 // domain cannot be read is left as it is.
+// This runs before displayTerm, never after: a domain the printer added
+// itself would print names, as Tag(x) prints the definition x, under binders
+// the display had already named, x among them (see sourceText). The term it
+// returns says what the input says; only the motive is eta-expanded.
 export function typedMotives(term, definitions) {
   const used = new Set(), seen = new WeakSet();
   const collect = t => {

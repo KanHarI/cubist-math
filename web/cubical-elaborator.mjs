@@ -76,6 +76,11 @@ const namedBinders = new Set(["Var", ...termBinders]);
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
 // names would clash. The result is never checked or stored.
+// This is where a display's names are settled, apart from every label the
+// term prints, and readableDimensions settles its dimensions after it. A
+// display that adds to the term what can print a name does so before both,
+// as typedMotives does for folded motives (cubical-source-text.mjs); the
+// printer only prints (web/README.md).
 // `names` maps free variables to the names they show, where the caller knows
 // their source names, as an inspection does: a stem cannot tell the source's
 // x1 (x1_4) from x1_ (x1_4 too). Every other name keeps apart from those.
@@ -471,6 +476,8 @@ export class NativeCubicalElaborator {
   // translated, L2.10j).
   // `reduce` bounds the beta reductions made for display: 0 shows the term
   // as it is.
+  // Each display path (displayText, displayTexts, displayGoal) types folded
+  // motives first, then settles names, then prints: in that order only.
   displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
     return this.printed(readableDimensions([displayTerm(this.typedMotives(term), reduce)])[0], width, limit, notation);
   }
