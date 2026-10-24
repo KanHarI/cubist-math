@@ -105,6 +105,8 @@ test("exact values fold, and !!! and witness ask for the full normal form", asyn
   assert.deepEqual(await run("evaluate 2 + 2 expecting !!_;"), ["normalizeFolded"]);
   assert.deepEqual(await run("evaluate 2 + 2 expecting !!!_;"), ["normalize"]);
   assert.deepEqual(await run("print(witness(typed(Trunc(U0, UNat), point(3))));"), ["normalize"]);
+});
+
 // The term asked for is unfolded even where one step takes it to a stuck
 // elimination: f is eta its eliminator, so f(x) steps straight to it, and
 // the folded normal form shows that eliminator, as the weak head does.
