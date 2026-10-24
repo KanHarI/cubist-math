@@ -642,6 +642,202 @@ static void weak_tail_raw_cycle(void) {
     cc_kernel_free(k);
 }
 
+/* The folded normal form computes data in full and keeps a definition whose
+ * weak head is no data as written, its arguments folded; the term asked for
+ * is unfolded. Its answer does not depend on the weak cache, and it leaves
+ * the full normal form and its cache as they were. */
+static void folded_normal_forms(unsigned optimizations) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_kernel_set_optimizations(k, optimizations);
+    cc_judgement_id unit = cc_instr_unit(k), empty = cc_instr_void(k);
+    /* stuck := λ (s : Void). abort(Unit, s), stuck on a variable s. */
+    cc_entry_id s = cc_instr_extend(k, empty, 502);
+    cc_judgement_id body = cc_instr_abort(k, unit, cc_instr_variable(k, s));
+    cc_term stuck = info(k, cc_instr_define(k, 503, cc_instr_lambda(k, s, body))).term;
+    /* two := λ (a : Unit) (b : Void). abort(Unit, b), and id := λ v. v. */
+    cc_entry_id a = cc_instr_extend(k, unit, 504), b = cc_instr_extend(k, empty, 505);
+    cc_judgement_id inner = cc_instr_abort(k, unit, cc_instr_variable(k, b));
+    cc_term two = info(k, cc_instr_define(k, 506, cc_instr_lambda(k, a, cc_instr_lambda(k, b, inner)))).term;
+    cc_entry_id v = cc_instr_extend(k, unit, 507);
+    cc_term identity = info(k, cc_instr_define(k, 508, cc_instr_lambda(k, v, cc_instr_variable(k, v)))).term;
+    cc_term point = info(k, cc_instr_point(k)).term, void_type = info(k, empty).term, unit_type = info(k, unit).term;
+    cc_term x = raw(k, CC_VAR, 600, 0, 0), g = raw(k, CC_VAR, 601, 0, 0);
+    cc_term applied = raw(k, CC_APP, 0, stuck, x);
+    cc_kernel_set_step_budget(k, 100000);
+    /* The folded memo, allocated by the first folded query, is arena memory:
+     * exactly one handle per node, once the other memos exist. */
+    size_t nodes, before, after, capacity;
+    assert(cc_kernel_normalize(k, applied) && cc_kernel_normalize(k, raw(k, CC_APP, 0, g, applied)));
+    cc_kernel_arena(k, &nodes, &before);
+    capacity = k->capacity;
+    assert(!k->folded_cache && cc_kernel_normalize_folded(k, applied) && k->folded_cache);
+    cc_kernel_arena(k, &nodes, &after);
+    assert(k->capacity == capacity && after == before + capacity * sizeof(cc_term));
+
+    /* A part stuck on an eliminator: folded as written, where the full normal
+     * form unfolds it. */
+    cc_term wrapped = raw(k, CC_APP, 0, g, applied);
+    cc_term full = cc_kernel_normalize(k, wrapped);
+    assert(full && k->nodes[k->nodes[full].child[1]].kind == CC_ABORT);
+    cc_term folded = cc_kernel_normalize_folded(k, wrapped);
+    assert(folded && ck_alpha_equal(k, folded, wrapped) && !k->recursion);
+    /* Each query keeps its own cache. */
+    assert(cc_kernel_normalize(k, wrapped) == full && k->normal_cache[wrapped] == full);
+    assert(k->folded_cache[applied] && ck_alpha_equal(k, k->folded_cache[applied], applied));
+
+    /* The term asked for is unfolded: the application alone is the
+     * eliminator, and the definition alone its lambda. */
+    cc_term asked = cc_kernel_normalize_folded(k, applied);
+    assert(asked && ck_alpha_equal(k, asked, cc_kernel_normalize(k, applied)));
+    cc_term lambda = cc_kernel_normalize_folded(k, stuck);
+    assert(lambda && ck_alpha_equal(k, lambda, cc_kernel_normalize(k, stuck)) && k->nodes[lambda].kind == CC_LAM);
+    /* Folding is not idempotent: λ x. stuck((λ y. y)(x)) folds to stuck, by
+     * eta once its argument is folded, and stuck, the term asked for, then
+     * unfolds to its lambda. */
+    cc_term identity_void = raw(k, CC_LAM, 613, void_type, raw(k, CC_VAR, 613, 0, 0));
+    cc_term wrapped_eta = raw(k, CC_LAM, 614, void_type,
+        raw(k, CC_APP, 0, stuck, raw(k, CC_APP, 0, identity_void, raw(k, CC_VAR, 614, 0, 0))));
+    cc_term once = cc_kernel_normalize_folded(k, wrapped_eta);
+    assert(once && ck_alpha_equal(k, once, stuck));
+    cc_term twice_folded = cc_kernel_normalize_folded(k, once);
+    assert(twice_folded && k->nodes[twice_folded].kind == CC_LAM && !ck_alpha_equal(k, twice_folded, once));
+    /* Asking for the same term again gives the same answer. */
+    assert(ck_alpha_equal(k, cc_kernel_normalize_folded(k, wrapped_eta), once));
+
+    /* A part whose head is data is computed: a point, or a variable's
+     * application, here x, the identity's application unfolded. */
+    cc_term computed = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, identity, point)));
+    assert(computed && ck_alpha_equal(k, computed, raw(k, CC_APP, 0, g, point)));
+    cc_term unfolded = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, identity, x)));
+    assert(unfolded && ck_alpha_equal(k, unfolded, raw(k, CC_APP, 0, g, x)));
+
+    /* A part that reaches the definition through a beta step folds there:
+     * (λ y. two(y, y))(x) folds as two(x, x). */
+    cc_term y = raw(k, CC_VAR, 602, 0, 0);
+    cc_term twice = raw(k, CC_APP, 0, raw(k, CC_APP, 0, two, y), y);
+    cc_term redex = raw(k, CC_APP, 0, raw(k, CC_LAM, 602, void_type, twice), x);
+    cc_term outer = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, redex));
+    assert(outer && ck_alpha_equal(k, outer, raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, raw(k, CC_APP, 0, two, x), x))));
+
+    /* Eta contracts a lambda whose folded body applies a folded function. */
+    cc_term z = raw(k, CC_VAR, 603, 0, 0), partial = raw(k, CC_APP, 0, two, x);
+    cc_term expanded = raw(k, CC_LAM, 603, void_type, raw(k, CC_APP, 0, partial, z));
+    cc_term contracted = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, expanded));
+    assert(contracted && ck_alpha_equal(k, contracted, raw(k, CC_APP, 0, g, partial)));
+
+    /* An eliminator written in a part, stuck on a definition stuck in turn,
+     * keeps that definition folded: unitrec's weak head holds abort(…, x),
+     * the step before it stuck(x). */
+    cc_entry_id m = cc_instr_extend(k, unit, 512);
+    cc_term motive = info(k, cc_instr_lambda(k, m, cc_instr_unit(k))).term;
+    cc_term recursor = cc_kernel_term(k, CC_UNITREC, 0, motive, point, applied, 0);
+    assert(recursor);
+    cc_term kept = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, recursor));
+    assert(kept && ck_alpha_equal(k, kept, raw(k, CC_APP, 0, g, recursor)));
+
+    /* A stuck composition is taken as its weak head, with the tubes on empty
+     * faces dropped: folding never normalizes such a tube's body, here an
+     * unknown definition that would fail. */
+    cc_formula empty_face = {CC_FACE, NULL, 0, 0};
+    cc_term dropped = raw(k, CC_TUBE, ck_formula(k, &empty_face), raw(k, CC_DEFREF, 9999, 0, 0), 0);
+    cc_term composition = cc_kernel_term(k, CC_COMP, 3, raw(k, CC_VAR, 615, 0, 0), dropped, x, 0);
+    assert(composition && cc_kernel_normalize(k, composition));
+    cc_term without = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, composition));
+    assert(without && !k->error[0] && !k->nodes[k->nodes[without].child[1]].child[1]);
+
+    /* Eta contracts a lambda whose body becomes an application to its own
+     * variable only once normal: λ z. fst((two(x)(z), tt)) is two(x). */
+    cc_term projected_pair = raw(k, CC_FST, 0, cc_kernel_term(k, CC_PAIR, 0, unit_type, raw(k, CC_APP, 0, partial, z), point, 0), 0);
+    cc_term late_eta = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, raw(k, CC_LAM, 603, void_type, projected_pair)));
+    assert(late_eta && ck_alpha_equal(k, late_eta, raw(k, CC_APP, 0, g, partial)));
+
+    /* A warm weak cache changes nothing: the fold point is found by steps,
+     * not read from a cached head that skips the definition. */
+    cc_term w = raw(k, CC_VAR, 604, 0, 0);
+    cc_term warmed = raw(k, CC_APP, 0, raw(k, CC_LAM, 602, void_type, twice), w);
+    assert(cc_kernel_whnf(k, warmed) && k->weak_cache[warmed]);
+    cc_term warm = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, warmed));
+    assert(warm && ck_alpha_equal(k, warm, raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, raw(k, CC_APP, 0, two, w), w))));
+
+    /* The inner parts of a folded spine are no normal forms of their own: a
+     * record projected and applied folds, and the record alone, data, is
+     * then computed into its components, not answered from that spine. */
+    cc_judgement_id stuck_value = cc_instr_lookup(k, stuck);
+    cc_entry_id e = cc_instr_extend(k, empty, 509);
+    cc_entry_id fe = cc_instr_extend(k, cc_instr_pi(k, e, cc_instr_unit(k)), 510);
+    cc_judgement_id sigma = cc_instr_sigma(k, fe, cc_instr_unit(k));
+    cc_term record = info(k, cc_instr_define(k, 511, cc_instr_pair(k, sigma, stuck_value, cc_instr_point(k)))).term;
+    cc_term projected = raw(k, CC_APP, 0, raw(k, CC_FST, 0, record, 0), x);
+    cc_term through = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, projected));
+    assert(through && ck_alpha_equal(k, through, raw(k, CC_APP, 0, g, projected)));
+    cc_term alone = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, record));
+    assert(alone && k->nodes[k->nodes[alone].child[1]].kind == CC_PAIR);
+
+    /* The folded memo grows with the arena. */
+    for (unsigned i = 0; i < 20000; ++i)
+        raw(k, CC_VAR, 3000 + i, 0, 0);
+    cc_term grown = raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 2999, 0, 0));
+    assert(cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, grown)) && k->folded_cache[grown]);
+
+    /* A budget stops it like the full query, publishing nothing. */
+    cc_term late = raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 605, 0, 0)));
+    cc_kernel_set_step_budget(k, 2);
+    assert(!cc_kernel_normalize_folded(k, late));
+    assert(cc_kernel_error_kind(k) == CC_ERROR_BUDGET && !k->recursion && !k->folded_cache[late]);
+    cc_kernel_clear_error(k);
+    cc_kernel_set_step_budget(k, 100000);
+
+    /* A rollback drops what a folded query allocated and cached. */
+    cc_kernel_checkpoint(k);
+    size_t base = k->count;
+    cc_term part = raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 606, 0, 0));
+    assert(cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, part)) && k->folded_cache[part]);
+    cc_kernel_rollback(k);
+    assert(k->count == base);
+    for (size_t i = 0; i < base; ++i)
+        assert(!k->folded_cache[i] && !k->normal_cache[i]);
+    cc_term again = raw(k, CC_APP, 0, g, raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 606, 0, 0)));
+    assert(ck_alpha_equal(k, cc_kernel_normalize_folded(k, again), again));
+    cc_kernel_free(k);
+}
+
+/* A compacting commit clears the folded memo: entries that point forward to
+ * nodes the commit discards must not answer for the syntax that refills
+ * their handles. */
+static void folded_compaction(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k), empty = cc_instr_void(k);
+    cc_entry_id s = cc_instr_extend(k, empty, 502);
+    cc_judgement_id body = cc_instr_abort(k, unit, cc_instr_variable(k, s));
+    cc_term stuck = info(k, cc_instr_define(k, 503, cc_instr_lambda(k, s, body))).term;
+    cc_term g = raw(k, CC_VAR, 601, 0, 0);
+    cc_kernel_checkpoint(k);
+    for (unsigned i = 0; i < 300; ++i)
+        raw(k, CC_VAR, 1000 + i, 0, 0);
+    cc_term part = raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 700, 0, 0));
+    cc_term folded = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, part));
+    assert(folded && k->folded_cache[part]);
+    size_t allocated = k->count;
+    assert(cc_kernel_commit_checkpoint(k));
+    assert(k->count < allocated && part >= k->count);
+    /* Cleared through every handle the commit saw, not only those it kept. */
+    for (size_t i = 0; i < allocated; ++i)
+        assert(!k->folded_cache[i]);
+    /* The discarded cached handle reused by other syntax, (λ u. u)(tt),
+     * folded as a part: it computes, and no stale entry answers for it. */
+    cc_term unit_type = info(k, unit).term, point = info(k, cc_instr_point(k)).term;
+    cc_term identity = raw(k, CC_LAM, 702, unit_type, raw(k, CC_VAR, 702, 0, 0));
+    while (k->count < part)
+        raw(k, CC_VAR, 2000 + (uint32_t)k->count, 0, 0);
+    cc_term reused = raw(k, CC_APP, 0, identity, point);
+    assert(reused == part);
+    cc_term again = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, reused));
+    assert(again && ck_alpha_equal(k, again, raw(k, CC_APP, 0, g, point)));
+    cc_kernel_free(k);
+}
+
 int main(void) {
     weak_tail_aliases(CC_SHARE_SYNTAX);
     weak_tail_aliases(0);
@@ -668,5 +864,8 @@ int main(void) {
     partial_scopes(CC_SHARE_SYNTAX);
     partial_scopes(0);
     unshared_stuck_composition();
+    folded_normal_forms(CC_SHARE_SYNTAX);
+    folded_normal_forms(0);
+    folded_compaction();
     puts("full normalization cache: ok");
 }

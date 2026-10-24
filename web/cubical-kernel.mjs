@@ -256,6 +256,16 @@ export class CubicalKernel {
     if (!id) throw this.failure();
     return id;
   }
+  // The folded normal form of a derived term (cc_kernel_normalize_folded).
+  normalizeFolded(derivedHandle) {
+    this.assertOpen();
+    uint32(derivedHandle, "Derived handle");
+    if (!this.derivedHandles?.has(derivedHandle))
+      throw new KernelError("Normalize a term or type an instruction derived.");
+    const id = this.withGrowingBudget(() => this.module._cb_normalize_folded(this.handle, derivedHandle)) >>> 0;
+    if (!id) throw this.failure();
+    return id;
+  }
   head(handle) {
     this.assertOpen();
     const id = this.withGrowingBudget(() => this.module._cb_head(this.handle, uint32(handle, "Term handle"))) >>> 0;

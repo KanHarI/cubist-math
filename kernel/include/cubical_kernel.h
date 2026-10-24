@@ -552,6 +552,15 @@ cc_term cc_kernel_whnf(cc_kernel *, cc_term);
  * terminates. */
 cc_term cc_kernel_normalize(cc_kernel *, cc_term);
 
+/* The folded normal form: the normal form, except that inside the term asked
+ * for, which is itself unfolded, a definition applied or projected whose
+ * weak head is no data (a function, a path, a type, or an elimination or
+ * composition stuck on a variable) stays as written, with its arguments'
+ * folded normal forms; data, a constructor applied, a pair, an injection,
+ * a point, a glued element or a variable applied, computes. Inspection only,
+ * as normalize. */
+cc_term cc_kernel_normalize_folded(cc_kernel *, cc_term);
+
 /* Syntactic equality up to bound names and the existing level/interval
  * algebra, with no reduction or unfolding. This query certifies no judgement.
  * False means failure; only on success is the equality answer written. */

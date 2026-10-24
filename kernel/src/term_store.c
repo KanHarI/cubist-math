@@ -135,6 +135,7 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->alpha_scopes);
     free(k->weak_cache);
     free(k->normal_cache);
+    free(k->folded_cache);
     free(k->interned);
     free(k->nodes);
     free(k);
@@ -261,6 +262,13 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
             return ck_fail_as(k, CC_ERROR_RESOURCE, "Normal cache allocation failed."), 0;
         memset(cache + k->capacity, 0, (capacity - k->capacity) * sizeof *cache);
         k->normal_cache = cache;
+        if (k->folded_cache) {
+            cache = realloc(k->folded_cache, capacity * sizeof *cache);
+            if (!cache)
+                return ck_fail_as(k, CC_ERROR_RESOURCE, "Normal cache allocation failed."), 0;
+            memset(cache + k->capacity, 0, (capacity - k->capacity) * sizeof *cache);
+            k->folded_cache = cache;
+        }
         k->capacity = capacity;
     }
     uint64_t symbols = kind == CC_VAR ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
