@@ -41,6 +41,33 @@ instances. This integration uses the same interfaces; it does not introduce
 a second monad implementation or make free constructions a prerequisite for
 the identity or truncation monad. All these extensions remain planned.
 
+## Shared arrow syntax and simplicial scope
+
+The 2026-10-24 discussion selected `x ->[C] y` as the shared arrow-type
+spelling; it is not implemented. For an ordinary `Precategory`, it elaborates
+to `C.Arr(x, y)`. For a later directed type `C`, it is the extension type
+of directed-interval maps from `x` to `y`. The category annotation is
+explicit in both cases; the selected interfaces and
+any adapters between presentations must be checked. Cubical equality
+`x =[A] y` and the function-type arrow `A -> B` keep their meanings.
+
+[Simplicial types](../hott/simplicial-types.md) owns the proposed extension.
+ST1's ordinary arrow syntax is frontend work independent of that kernel
+extension. L2.12's implicit arguments and notation support L3.4's shared
+ergonomics: `use C`, composition with inferred endpoints, a functor's `map`
+and a natural transformation's `at`.
+Only the arrow spelling is agreed; the adapters and further syntax remain
+proposals. L3.4 remains the proposed ordinary `Precategory` and `Category`
+package, and L3.5 keeps its graph-diagram scope. Neither waits for the directed
+kernel, and existing `U`, `IsSet` and `set` retain their meanings.
+
+ST2's shape and extension rules follow ST0's semantic design gate. ST4
+proposes comparisons with directed categories of spaces and models; ST5
+proposes coherent diagrams beyond the graph fragment below. Those require
+new proofs, rather than identifying `T.cat` with a synthetic category by
+notation. No conservativity theorem or implemented simplicial capability is
+claimed by these cross-links.
+
 ## Why
 
 **Every theory derives its morphisms, whether it uses them or not.** A
@@ -100,8 +127,9 @@ None of them has a `T.Iso` today.
 ## Decisions
 
 These are proposed, except the decided initial/free capability policy in
-L2.6. The categorical roadmap is consolidated with that contract in #187;
-the homological-algebra track remains in #198.
+L2.6 and the shared arrow spelling above. The categorical roadmap is
+consolidated with that contract in #187; the homological-algebra track
+remains in #198.
 
 The [reserved-name policy](../../guides/keywords.md) applies across this
 roadmap and #187/#198. `deriving` and its capability words, including
@@ -352,6 +380,9 @@ still require collision checks before any declarations are published.
     - **Out of scope.** Colimits of types over such shapes need identity
       and composition cells, which a graph does not give
       ([Boulier, Colimits in HoTT](https://homotopytypetheory.org/2016/01/08/colimits-in-hott/)).
+      ST5's coherent diagrams are a separate proposed extension of this
+      scope, after the directed category of spaces and its ordinary-type
+      comparison; they do not change the meaning of these graph colimits.
 
     The rest of L3.5:
     - **Shapes:** `Terminal`, `Product`, `Equalizer` and `Pullback` as
@@ -673,8 +704,8 @@ def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
 | L2.4e | `morphisms where …` with standardness | L2.4d; first metric or topological client |
 | L2.6 | `deriving (morphisms, free)` and weaker `initial`; H1 strategy, checked uniqueness/universal proofs, extra-law obligations and honest failures; see the five slices in core theories | L2.4d; L2.11 for general propositional laws; H1 for the first strategy |
 | L2.11 | Laws checked by the `hlevel` solver | L2.5b |
-| L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones | L4.1b |
-| L3.4 | `Precategory`, `IsUnivalent`, `Category`, `op`, functors, natural transformations, the `category` simp set; `T.cat` | L2.11, L2.12, L2.4d |
+| L2.12 | Implicit arguments in theory operations and derived operations; notation over the explicit ones, supporting L3.4's composition, `map` and `at` ergonomics alongside ST1's ordinary `x ->[C] y` syntax | L4.1b; no directed-kernel dependency |
+| L3.4 | Ordinary `Precategory`, `IsUnivalent`, `Category`, `op`, functors, natural transformations, the `category` simp set; `T.cat`; later synthetic comparisons belong to ST4 | L2.11, L2.12, L2.4d; no directed-kernel dependency |
 | L3.5 | Generic `IsInitial`, `IsTerminal`, `IsLimit`, `IsColimit` and predicates for the concrete shapes; chosen universal constructions; `Graph`, `Diagram`, `Cones`, `IsLimit` and the algebraic `Limit` over diagrams that are maps of graphs, finite or infinite; concrete shapes converted to `Limit`; colimits by duality, and of types as the higher inductive `Colim`; `ext` into limits; `deriving (limits)` | L3.4; L3.1 for the contractibility presentation |
 | L3.6 | `Preadditive`, `IsAdditive`, `IsPreabelian`, `IsAbelian`; `deriving (… additive …)` to `abelian`; lifting operations through set quotients; `Module(U, R)` in the library | L3.5; L2.4b for the properties to be propositions |
 
@@ -703,7 +734,11 @@ def product_of_naturals : U0 := Lim(U0, discrete(Nat), TypeDiagram.make(
 - **L2.11:** a universal property stated with `IsContrMap`, and equations
   in a parameter's carrier, check as laws.
 - **L2.12:** composition written `g ∘ f` with inferred objects, and a
-  monad's `bind` with inferred types.
+  monad's `bind` with inferred types; integration with L3.4's `use C`,
+  `F.map(f)` and `α.at(x)` keeps their explicit checked expansions.
+  ST1 checks `x ->[C] y` against
+  `C.Arr(x, y)`, rejects mismatched endpoints, and preserves the parsing of
+  equality and function types.
 - **L3.4:**
   - `Monoid.cat` with associativity by the `category` simp set;
   - the opposite of the opposite is the category itself;

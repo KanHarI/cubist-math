@@ -30,6 +30,12 @@ extended; the
 [work plan](../work-plan.md#the-instruction-kernel-and-this-plan) records that
 decision and sequences these items with the language and library work.
 
+The separate [simplicial roadmap](../hott/simplicial-types.md), proposed on
+2026-10-24, owns ST0–ST6. Its
+[kernel boundary](#proposed-simplicial-extension) below adds review
+obligations without changing the delivered G0/H1 status or the priority
+order of the items here.
+
 ## Governing requirement: computability is expressible and preserved
 
 Every closed term that checks without truncation or any other assumption must
@@ -357,6 +363,45 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
      any resource limit. Compare checking time and proof size with the current
      guarded implementation.
 
+## Proposed simplicial extension
+
+Unimplemented. The [simplicial roadmap](../hott/simplicial-types.md) owns the
+rule design and later categorical stages. ST1's ordinary category-arrow
+notation is elaboration and needs no kernel extension. ST2's directed shapes
+and extension types require a separate trusted extension after ST0's gate.
+
+ST0 must specify ordinary and directed scopes, the embedding between them,
+the universes available in each and substitution across that boundary. The
+existing ordinary `U`, `IsSet`, `HasLevel`, `set U`, `prop U` and H1 retain
+their meanings. This preservation requirement is not an established
+conservativity theorem. The model and computation arguments must validate
+the selected interaction before implementation is enabled for proofs. The
+[governing requirement](#governing-requirement-computability-is-expressible-and-preserved)
+applies to the new rules: each ships with its computation, and closed
+assumption-free directed results reduce to canonical values. Directed
+univalence and any modality are computing rules or constructions; a
+postulate is at most a tracked assumption and delivers no ST package.
+
+The current De Morgan interval remains the homotopy direction. Directed
+coordinates need their own sort or type (an ST0 decision), ordered topes
+and restricted contexts;
+the endpoint-only face representation does not already provide them.
+Extension-type formation, introduction, application, conversion and strict
+boundary rules must be explicit checked instructions. Cubical composition
+and transport for a new type former remain required, while generic Kan
+composition, reversal or transport must not be granted in the directed
+direction. The extension rules themselves do not produce fillers.
+
+The review must cover substitution and binding for both kinds of coordinate,
+tope entailment and overlap checking, mixed contexts, composition at
+extension types, universe/Glue interaction and the compatibility of H1's
+existing cubical constructors and eliminators. Native/JavaScript syntax,
+the ABI, serialization and cache keys must preserve coordinate kinds and
+restricted contexts. Semantic evidence for a related calculus does not by
+itself validate this combination of rules. The central roadmap records the
+required model, computation and rejection cases; G5's interval optimization
+does not discharge these new obligations.
+
 ## Validation
 
 | Item | Must be rejected or preserved |
@@ -367,6 +412,7 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
 | G3 (as H2's `Id`) | J computes on `refl`; checked connection to `Path`; no UIP or collapse of nontrivial loops |
 | G4 if pursued | Neutral values of declared data types transport along constant families by conversion; neutral types and other type formers do not; the archive's judgements change only where the rule applies |
 | G5 if pursued | Missing, oversized or incorrect certificates rejected; interval equality distinguished from face entailment; dimension scope and binder renaming preserved; checking time and proof size compared with the guarded implementation |
+| ST2, only after ST0 | The ordinary/directed scope and embedding satisfy the reviewed model and preservation contract; coordinate kinds, restricted contexts and strict boundaries are checked; every new rule computes, with `evaluate` checks on closed directed results; no generic directed Kan operations; cubical composition, Glue and H1 compatibility validated; the central simplicial roadmap's positive and rejection cases pass |
 | Every item | Closed assumption-free results normalize to canonical values; removed, retained and new assumptions recorded as non-computing dependencies |
 
 Each item also needs `make test`, `make CC=clang sanitize`,
