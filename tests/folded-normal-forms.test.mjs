@@ -72,18 +72,99 @@ evaluate rationals.(2/3) expecting rationals.(2/3);
   assert.ok(program.kernel.work().querySteps < 10000000n, String(program.kernel.work().querySteps));
 });
 
+// Anywhere inside a !! part, under another mark too, and before anything is
+// computed: far's first component, 512, is too deep for a full normal form
+// (K344), which E486 comes before. Each is located at its own mark, even
+// inside parentheses.
 test("a !!! inside a !! part is refused, and !!! alone asks for the full normal form", async t => {
-  const { result } = await checkProgram(t, `import unat;
+  const source = `import unat;
 use unat;
 
 def double(n : UNat) := n + n;
 def pair_ : UNat and (UNat -> UNat) := (double(3), double);
+def far : UNat and (Unit and Unit) := (2 * 256, (tt, tt));
 evaluate pair_ expecting !!(6, !!!_);
 evaluate pair_ expecting (6, !!!_);
+evaluate typed(Unit and Unit, (tt, tt)) expecting !!!(!!(!!!_), _);
+evaluate far expecting (!!!_, !!(tt, !!!_));
+evaluate pair_ expecting !!(6, (
+  !!!_
+));
 print(evaluate(!!!pair_));
-`, { module });
-  assert.deepEqual(result.gaps.map(gap => gap.code), ["E486"]);
+`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]), Array(4).fill(["E486", "!!!"]));
+  assert.deepEqual(result.gaps.map(gap => source.slice(0, gap.start).split("\n").length), [7, 9, 10, 12]);
   assert.deepEqual(result.prints.map(print => print.text), ["(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })"]);
+});
+
+// A folded normal form keeps a clause, a motive or a path clause that is a
+// definition by its name; the printer applies it to new names, which keep
+// apart from the definitions the text shows, and the text reads back at the
+// value's type.
+test("a folded function by cases prints as source that reads back", async t => {
+  const declarations = `import unat;
+use unat;
+
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+inductive Opt(A : U0) {
+  none;
+  some(x : A);
+}
+
+def a(x : Unit) : Unit := x;
+def z(s : Unit or Unit) : U0 := Unit;
+def Shape(n : UNat) : U0 := Unit;
+def Fits(o : Opt(Unit)) : U0 := Unit;
+def rev : base = base := path i => loop @ ~i;
+`;
+  const cases = [
+    ["(Unit or Unit) -> Unit", "fun (s : Unit or Unit) => match s return Unit { left x => a(x); right y => y; }",
+      "fun (s : Unit or Unit) => match s return Unit { left a1 => a(a1); right y => y; }"],
+    ["forall s : Unit or Unit. z(s)", "fun (s : Unit or Unit) => match s as w return z(w) { left x => x; right y => y; }",
+      "fun (s : Unit or Unit) => match s as z1 return z(z1) { left x => x; right y => y; }"],
+    ["forall n : UNat. Shape(n)", "fun (n : UNat) => induction n as k return Shape(k) { zero => tt; succ h => h; }",
+      "fun (n : UNat) => induction n as k return Shape(k) { zero => tt; succ h => h; }"],
+    ["(Circle -> Circle) and Unit", "(fun (c : Circle) => match c return Circle { base => base; loop @ i => rev @ i; }, tt)",
+      "(fun (x : Circle) => match x return Circle { base => base; loop @ i => rev @ i; }, tt)"],
+    ["forall o : Opt(Unit). Fits(o)", "fun (o : Opt(Unit)) => match o as w return Fits(w) { none => tt; some(x) => x; }",
+      "fun x => match x as z return Fits(z) { none => tt; some(x) => x; }"],
+  ];
+  const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
+    `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });
+  assert.deepEqual(result.gaps, []);
+  assert.deepEqual(result.prints.map(print => print.text), cases.map(([, , shown]) => shown));
+  const { result: back } = await checkProgram(t, declarations + cases.map(([type, , shown], i) =>
+    `def back_${i} : ${type} := ${shown};\n`).join(""), { module });
+  assert.deepEqual(back.gaps, []);
+});
+
+// An exact value and a pattern's leaf are compared with the value's folded
+// normal form by conversion: a and b are distinct definitions of one
+// function, so pa and pb fold apart, to (a, 1) and (b, 1).
+test("an expected value is compared with a folded normal form by conversion", async t => {
+  const source = `import unat;
+use unat;
+
+def a(n : UNat) : UNat := n;
+def b(n : UNat) : UNat := n;
+def c(n : UNat) : UNat := n + 1;
+def pa : (UNat -> UNat) and UNat := (a, 1);
+def pb : (UNat -> UNat) and UNat := (b, 1);
+def pc : (UNat -> UNat) and UNat := (c, 1);
+def nested : ((UNat -> UNat) and UNat) and UNat := (pa, 1);
+evaluate pa expecting pb;
+evaluate nested expecting (pb, _);
+evaluate pa expecting pc;
+evaluate nested expecting (pc, _);
+`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(a, 1)", "((a, 1), <unevaluated>)"]);
+  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(0, gap.start).split("\n").length]), [["E326", 13], ["E477", 14]]);
 });
 
 // Each caller asks for the normal form its table row in the note assigns:

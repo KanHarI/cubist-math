@@ -76,6 +76,14 @@ export const bareHole = () =>
 // would ask for what it does not hold (docs/roadmaps/runtime/folded-normal-forms.md).
 export const fullUnderFolded = () =>
   Error("A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part.");
+// The first !!! inside a !! part, anywhere in an expected value, under any
+// other mark too: the whole value is read for it before anything is
+// computed, since a part matched against a normal form reads no marks.
+export const fullInsideFolded = expected => {
+  const full = node => node.kind === "demand" && node.mark === "!!!";
+  const folded = first(expected, node => node.kind === "demand" && node.mark === "!!" && first(node.value, full));
+  return folded ? first(folded.value, full) : null;
+};
 
 // A hole or a mark where no part can be read: a mark is refused first, as
 // writing the term for a hole would not make its place one.
@@ -91,7 +99,8 @@ const sameType = (annotation, type, scope) => !scope.differ(annotation, type) &&
 
 // The first part of the normal form `value` that does not match `pattern`,
 // as { value, pattern }, or null when it matches: a pattern under `!!` or
-// `!!!`, whose marks change nothing (a !!! under !! is refused before). `type` is the value's type, and `at` gives
+// `!!!`, whose marks change nothing (a !!! under !! is refused before, by
+// fullInsideFolded). `type` is the value's type, and `at` gives
 // elaborate, annotation and source, as observe takes them. A failure is
 // located at the part of the pattern that met it.
 export function mismatch(pattern, value, type, scope, at) {
@@ -244,8 +253,6 @@ function observed(pattern, handle, type, scope, at, head) {
   if (isHole(pattern)) return { shown: head === null ? unevaluated : shownHead(head, at) };
   if (pattern.kind === "demand") {
     if (pattern.mark === "!") return observe(pattern.value, handle, type, scope, at, head ?? at.head(handle, pattern));
-    const deeper = pattern.mark === "!!" ? first(pattern.value, node => node.kind === "demand" && node.mark === "!!!") : null;
-    if (deeper) throw at.locate(fullUnderFolded(), deeper);
     const normal = at.normal(handle, pattern);
     const found = isHole(pattern.value) ? null : mismatch(pattern.value, normal, type(), scope, at);
     return { shown: normal, failed: found && (found.type ? { type: found.type, pattern: found.pattern } : { shown: found.value, pattern: found.pattern }) };

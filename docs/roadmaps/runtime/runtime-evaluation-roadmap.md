@@ -1071,7 +1071,8 @@ normalization, so a `_` hole saved no evaluation work, and
 `euclid(4)` in the baseline. Since #304 a pattern computes each part only as
 far as it observes it: that pattern no longer forces the certificate, but it
 still fails with `K344` at the prime, which is itself too deep, and its
-`!!(5, _)` twin keeps the full normalization measured. The demand marks
+`!!!(5, _)` twin (`!!(5, _)` before folded normal forms) keeps the full
+normalization measured. The demand marks
 note specifies the observation mode, its checking and its failure contract. Preserve exact expected-value checks,
 the distinction from full normalization and witness readout's checked type.
 

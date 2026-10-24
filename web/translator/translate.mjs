@@ -33,7 +33,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -394,6 +394,10 @@ export class Translator {
     // assumptions are checked; an exact expected value computes its normal
     // form first, stuck definitions folded, as it computed the full one
     // before folded normal forms (docs/roadmaps/runtime/folded-normal-forms.md).
+    // A !!! inside a !! part is refused before anything is computed, at
+    // its own mark: parentheses around the part move its start.
+    const full=expected&&fullInsideFolded(expected);
+    if(full)throw scope.unit.locate(fullUnderFolded(),{start:full.markStart,end:full.markEnd});
     const result=d.assertion?this.checker.infer(term):this.checker.evaluated(term);
     const normal=expected&&!isPattern(expected)?this.checker.normalForm(result.expression):null;
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
