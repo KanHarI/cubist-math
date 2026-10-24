@@ -1812,7 +1812,7 @@
   },
   {
    "path": "cubist-tests/evaluate_patterns.cubist",
-   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, each part computed only as far as the pattern observes it, other expressions by full normal form, the demand marks `!` and `!!`, the refused bare `_` and the marks' warnings, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor."
+   "summary": "`evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, each part computed only as far as the pattern observes it, other expressions by their normal forms, stuck definitions folded, the demand marks `!`, `!!` and `!!!`, the refused bare `_` and the marks' warnings, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor."
   },
   {
    "path": "cubist-tests/f4_extension_loops_false.cubist",
