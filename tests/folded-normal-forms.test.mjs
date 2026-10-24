@@ -2,6 +2,8 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 
 // The folded normal form (docs/roadmaps/runtime/folded-normal-forms.md),
@@ -84,4 +86,33 @@ def chooser := match zero return N -> N { zero => f; succ(k) => f; };
     assert.equal(root(kernel.normalizeFolded(expression)), "Elim");
     assert.equal(root(kernel.normalize(expression)), "Elim");
   }
+});
+
+// The folded normal form does not depend on syntax interning. f's
+// eliminator, read back and checked again, is f's own node with interning
+// and a copy without; applied to box(f(x)) it computes f's eliminator at x,
+// which is no rebuild of it in place, in either mode.
+test("interning does not change a folded normal form", async t => {
+  const shown = [];
+  for (const shareSyntax of [true, false]) {
+    const program = new CubicalProgram(module, sourceReader(), { collectReferences: false, optimizations: { shareSyntax } });
+    t.after(() => program.dispose());
+    const result = await program.check(`inductive Box {
+  box(g : Unit -> Unit);
+}
+
+def f(s : Box) := match s return Unit -> Unit { box(g) => g; };
+`, "main");
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program, f = kernel.definition(kernel.definitions.get("main__f"));
+    const domain = checker.syntax.decode(f.type).domain, value = checker.syntax.decode(f.value);
+    const eliminator = value.tag === "Lam" && value.body.tag === "App" ? value.body.fn : value;
+    assert.equal(eliminator.tag, "Elim");
+    const x = { tag: "Var", name: "x" };
+    const boxed = { tag: "App", fn: { tag: "Con", index: 0, sort: domain }, arg: { tag: "App", fn: { tag: "DefRef", name: "main__f" }, arg: x } };
+    const term = { tag: "App", fn: { tag: "App", fn: eliminator, arg: boxed }, arg: { tag: "Point" } };
+    const { expression } = checker.checkSyntax(term, null, new Map([["x", domain]]), new Map());
+    shown.push(checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression)), 1000, 1000, {}, 0));
+  }
+  assert.equal(shown[0], shown[1]);
 });
