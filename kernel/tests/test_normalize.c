@@ -821,15 +821,20 @@ static void folded_compaction(void) {
     assert(folded && k->folded_cache[part]);
     size_t allocated = k->count;
     assert(cc_kernel_commit_checkpoint(k));
-    assert(k->count < allocated);
-    for (size_t i = 0; i < k->count; ++i)
+    assert(k->count < allocated && part >= k->count);
+    /* Cleared through every handle the commit saw, not only those it kept. */
+    for (size_t i = 0; i < allocated; ++i)
         assert(!k->folded_cache[i]);
-    /* Refill the discarded handles with other syntax, and fold again. */
-    while (k->count <= allocated)
+    /* The discarded cached handle reused by other syntax, (λ u. u)(tt),
+     * folded as a part: it computes, and no stale entry answers for it. */
+    cc_term unit_type = info(k, unit).term, point = info(k, cc_instr_point(k)).term;
+    cc_term identity = raw(k, CC_LAM, 702, unit_type, raw(k, CC_VAR, 702, 0, 0));
+    while (k->count < part)
         raw(k, CC_VAR, 2000 + (uint32_t)k->count, 0, 0);
-    cc_term other = raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 701, 0, 0));
-    cc_term again = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, other));
-    assert(again && ck_alpha_equal(k, again, raw(k, CC_APP, 0, g, other)));
+    cc_term reused = raw(k, CC_APP, 0, identity, point);
+    assert(reused == part);
+    cc_term again = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, reused));
+    assert(again && ck_alpha_equal(k, again, raw(k, CC_APP, 0, g, point)));
     cc_kernel_free(k);
 }
 
