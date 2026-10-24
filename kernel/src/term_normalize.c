@@ -399,19 +399,33 @@ static bool stuck_elimination(const cc_kernel *k, cc_term head) {
  * part: the same node, with at most one part changed. An eliminator applied
  * is stuck on its scrutinee, so there the eliminator itself must be the
  * one `last` applied, unreduced: an eliminator that a definition or a match
- * computed is another computation. Each part is compared with the weak head
- * the step took of it, never with another term, so interning cannot make a
+ * computed is another computation. Where the step took the weak head of the
+ * function an application or projection is of, that weak head may have been
+ * computed in many steps, so that function must itself be rebuilt in place
+ * by one step, down the spine: f(x, tt), where f is an eliminator by eta, is
+ * no rebuild of f(x) applied to tt. Each part is compared with the weak head
+ * a step took of it, never with another term, so interning cannot make a
  * computed part look unchanged. */
-static bool rebuilt_in_place(const cc_kernel *k, cc_term last, cc_term head) {
-    cc_node a = k->nodes[last], b = k->nodes[head];
-    if (a.kind != b.kind || a.payload != b.payload)
-        return false;
-    if (b.kind == CC_APP && k->nodes[b.child[0]].kind == CC_ELIM && a.child[0] != b.child[0])
-        return false;
-    unsigned changed = 0;
-    for (unsigned i = 0; i < 4; ++i)
-        changed += a.child[i] != b.child[i];
-    return changed <= 1;
+static bool rebuilt_in_place(cc_kernel *k, cc_term last, cc_term head) {
+    for (;;) {
+        cc_node a = k->nodes[last], b = k->nodes[head];
+        if (a.kind != b.kind || a.payload != b.payload)
+            return false;
+        unsigned changed = 0;
+        for (unsigned i = 0; i < 4; ++i)
+            changed += a.child[i] != b.child[i];
+        if (changed > 1)
+            return false;
+        if (!spine_node(b.kind) || a.child[0] == b.child[0])
+            return true;
+        if (k->nodes[b.child[0]].kind == CC_ELIM)
+            return false;
+        cc_term next = 0, part = weak(k, a.child[0], &next);
+        if (!part || next)
+            return false;
+        last = a.child[0];
+        head = part;
+    }
 }
 
 /* Whether a weak head is data: a constructor applied, a pair, an injection,
@@ -555,8 +569,10 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
              * head is taken as computed: a transport's formal composition, a
              * composition with its empty tubes dropped, or an eliminator a
              * step computed, as f(x) does where f is an eliminator by eta, or
-             * a match that computes f. */
+             * a match that computes f, and f(x) applied or projected. */
             bool rebuilt = fold && last && stuck_elimination(k, head) && rebuilt_in_place(k, last, head);
+            if (k->error[0])
+                goto failed;
             frame->node = k->nodes[rebuilt ? last : head];
             if (!normal_restrict(k, &frame->node))
                 goto failed;

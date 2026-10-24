@@ -68,8 +68,10 @@ definition stays as it was written:
 5. A part that reached its head through no definition is taken in turn,
    as in the full normal form. A stuck elimination, an eliminator, recursor,
    abort or unglue on a value that is no constructor, that its last step
-   rebuilt in place, with only its stuck part changed and an eliminator
-   applied left as it was, is taken as that step's term: the head holds the stuck value reduced,
+   rebuilt in place, with only its stuck part changed, an eliminator
+   applied left as it was, and the function it is applied to or projected
+   from, if that changed, rebuilt in place by one step of its own, is taken
+   as that step's term: the head holds the stuck value reduced,
    `unitrec(…, abort(…))` where the term had `unitrec(…, stuck(x))`, and the
    term keeps it as written, so it folds. Any other head is taken as
    computed: a transport of a path constructor computes a formal
@@ -78,7 +80,8 @@ definition stays as it was written:
    exposed is shown, not the term before: `f(x)`, where `f` is an
    eliminator by eta, and a match that computes `f`, applied to `x`, both
    step to `f`'s eliminator, which is another root than theirs, even of the
-   same kind.
+   same kind, and so does `f(x)` applied, projected or applied to a
+   dimension, whose step computes `f(x)`'s head in steps of its own.
 6. Only eta contracts a whole once its parts are folded; reducing it again
    would unfold what was folded.
 
