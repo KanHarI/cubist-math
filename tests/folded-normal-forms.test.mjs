@@ -54,3 +54,25 @@ test("the folded normal form is asked of derived terms only", async t => {
   const raw = program.kernel.term("Unit", 0);
   assert.throws(() => program.kernel.normalizeFolded(raw), /Normalize a term or type an instruction derived/);
 });
+
+// The term asked for is unfolded even where one step takes it to a stuck
+// elimination: f is eta its eliminator, so f(x) steps straight to it, and
+// the folded normal form shows that eliminator, as the weak head does.
+test("the term asked for is unfolded where a definition is eta an eliminator", async t => {
+  const { program, verdicts } = await checkProgram(t, `inductive N {
+  zero;
+  succ(k : N);
+}
+
+def f(n : N) := match n return N { zero => zero; succ(k) => k; };
+`, { module });
+  assert.equal(verdicts.f, true);
+  const { kernel, checker } = program;
+  const f = kernel.definitions.get("main__f"), domain = checker.syntax.decode(kernel.definition(f).type).domain;
+  const applied = { tag: "App", fn: { tag: "DefRef", name: "main__f" }, arg: { tag: "Var", name: "x" } };
+  const { expression } = checker.checkSyntax(applied, null, new Map([["x", domain]]), new Map());
+  const root = handle => kernel.spine(handle).root.kind;
+  assert.equal(root(kernel.head(expression)), "Elim");
+  assert.equal(root(kernel.normalizeFolded(expression)), "Elim");
+  assert.equal(root(kernel.normalize(expression)), "Elim");
+});
