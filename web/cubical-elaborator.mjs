@@ -5,7 +5,7 @@ import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
-import { sourceText } from "./cubical-source-text.mjs";
+import { sourceText, typedMotives } from "./cubical-source-text.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
@@ -422,20 +422,28 @@ export class NativeCubicalElaborator {
   // assumptions their labels. A definition with implicit parameters says how
   // many, and how many assumptions come before them, so that a call shows
   // them in double braces, as the source writes it. A theory's projection
-  // names its field, so that T.f(m) shows as m.f. A checked definition's
-  // type and value are read on demand, for a printer that needs a folded
-  // motive's domain (cubical-source-text.mjs).
+  // names its field, so that T.f(m) shows as m.f.
   get displayNames() {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
-      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name), type: () => this.definitionPart(name, "type"), value: () => this.definitionPart(name, "value"),
+      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name), 
         ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}),
         ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
   }
-  definitionPart(name, part) {
-    const reference = this.kernel.definitions.get(name);
-    return reference ? this.syntax.decode(this.kernel.definition(reference)[part]) : null;
+  // A term with each folded motive given its domain (typedMotives), from the
+  // checked types and values of definitions, each decoded once.
+  typedMotives(term) {
+    const decoded = new Map();
+    const part = which => name => {
+      const key = `${which} ${name}`;
+      if (!decoded.has(key)) {
+        const reference = this.kernel.definitions.get(name);
+        decoded.set(key, reference ? this.syntax.decode(this.kernel.definition(reference)[which]) : null);
+      }
+      return decoded.get(key);
+    };
+    return typedMotives(term, { type: part("type"), value: part("value") });
   }
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
@@ -464,7 +472,7 @@ export class NativeCubicalElaborator {
   // `reduce` bounds the beta reductions made for display: 0 shows the term
   // as it is.
   displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
-    return this.printed(readableDimensions([displayTerm(term, reduce)])[0], width, limit, notation);
+    return this.printed(readableDimensions([displayTerm(this.typedMotives(term), reduce)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
@@ -475,7 +483,7 @@ export class NativeCubicalElaborator {
   // in all of them, apart from every label any of them prints. `names` gives
   // free variables their names, as displayTerm takes them.
   displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map()) {
-    return readableDimensions(displayTerm(terms, 256, names)).map(term => this.printed(term, width, limit, notation));
+    return readableDimensions(displayTerm(terms.map(term => this.typedMotives(term)), 256, names)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
@@ -493,7 +501,7 @@ export class NativeCubicalElaborator {
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    let shown = displayTerm(chained, reduce ? 256 : 0);
+    let shown = displayTerm(this.typedMotives(chained), reduce ? 256 : 0);
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       // A universe variable's entry is its bound: U < UU0.
