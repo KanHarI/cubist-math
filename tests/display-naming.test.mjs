@@ -59,6 +59,11 @@ inductive Box(f : Circle -> Circle) {
   box;
 }
 
+inductive Tree {
+  leaf;
+  node(l : Tree, value : UNat, r : Tree);
+}
+
 // Named as the display's binder stems.
 def x : U0 := Unit;
 def z(s : Unit or Unit) : U0 := Unit;
@@ -96,6 +101,7 @@ def Inside(t : Tag(d0)) : U0 := Unit;
 def Beside(t : Tag(z1)) : U0 := Unit;
 def choose(m, n : UNat) : UNat := m;
 def zero_of(u : Unit) : UNat := 0;
+def combine(l : Tree, value : UNat, r : Tree, il, ir : UNat) : UNat := value + il + il + ir + ir + ir;
 def one_of(u : Unit) : UNat := 1;
 def keep2(f : Opt(Unit) -> Unit) : Opt(Unit) -> Unit := f;
 def LM(U < UU0, b : LBox(U)) : U0 := Unit;
@@ -133,6 +139,10 @@ const cases = [
   ["d1_clause", "def d1_clause : (Circle -> Circle) and Unit := (fun (c : Circle) => match c return Circle { base => base; loop @ e => d1 @ e; }, tt);"],
   // A function named as a dimension whose value has a clause to spell out.
   ["k1_pair", "def k1_pair : (Circle -> Circle) and Unit := (k1, tt);"],
+  // A clause folded whole over data and recursive fields: arguments in the
+  // constructor's order, then hypotheses, told apart by computing.
+  ["tree_sum", "def tree_sum(t : Tree) : UNat := induction t return UNat { leaf => 0; node(l, value, r) with il, ir => combine(l, value, r, il, ir); };",
+    [["node(node(leaf, 1, leaf), 2, leaf)", 4], ["node(leaf, 2, node(leaf, 1, leaf))", 5]]],
   // A clause folded whole: two new arguments, told apart by computing.
   ["two2_clause", "def two2_clause : Two2 -> UNat := fun (t : Two2) => match t return UNat { two2(p, q) => choose(p, q); };", [["two2(1, 2)", 1]]],
   // A truncation's squash clause folded past its arguments: hypotheses
