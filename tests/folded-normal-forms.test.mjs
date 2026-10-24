@@ -146,6 +146,8 @@ def pe(o : Opt(Unit)) : families.1(o) := match o as w return families.1(w) { non
 def Types : U1 and Unit := (Opt(Unit) -> U0, tt);
 def TFits : Types.1 := fun (o : Opt(Unit)) => Unit;
 def pt(o : Opt(Unit)) : TFits(o) := match o as w return TFits(w) { none => tt; some(y) => y; };
+def keep(F : U0 -> U1, g : F(Unit)) : F(Unit) := g;
+def pk(o : Opt(Unit)) : keep(fun (A : U0) => Opt(A) -> U0, Fits)(o) := match o as w return keep(fun (A : U0) => Opt(A) -> U0, Fits)(w) { none => tt; some(y) => y; };
 `;
   const cases = [
     ["(Unit or Unit) -> Unit", "fun (s : Unit or Unit) => match s return Unit { left x => a(x); right y => y; }",
@@ -182,6 +184,10 @@ def pt(o : Opt(Unit)) : TFits(o) := match o as w return TFits(w) { none => tt; s
     // And for one whose type is a pair's component, an alias projected.
     ["pt = pt", "refl(fun (o : Opt(Unit)) => match o as w return TFits(w) { none => tt; some(y) => y; })",
       "refl(fun (x : Opt(Unit)) => match x as z return TFits(z) { none => tt; some(y) => y; })"],
+    // And for one whose type is a function of types applied, a redex once
+    // keep's arguments are substituted.
+    ["pk = pk", "refl(fun (o : Opt(Unit)) => match o as w return keep(fun (A : U0) => Opt(A) -> U0, Fits)(w) { none => tt; some(y) => y; })",
+      "refl(fun (x : Opt(Unit)) => match x as z return keep(fun (A : U0) => Opt(A) -> U0, Fits, z) { none => tt; some(y) => y; })"],
   ];
   const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
     `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });
@@ -261,6 +267,28 @@ evaluate sample(0, 1, tag) expecting 0;
   assert.equal(shown, "fun (x1, x2 : UNat) => fun (x2 : Tag(x)) => match x2 as z return Inner(z) { tag => x1; }");
   const { result: back } = await checkProgram(t, `${declarations}def back : UNat -> UNat -> Fn := ${shown};
 evaluate back(0, 1, tag) expecting 0;
+`, { module });
+  assert.deepEqual(back.gaps, []);
+});
+
+// A successor clause whose hypothesis was folded away is applied to a new
+// name, under the predecessor: h is the predecessor's, so it takes h1, and
+// the printed function computes what the original does.
+test("a curried successor clause keeps its new hypothesis apart from the predecessor", async t => {
+  const declarations = `import unat;
+use unat;
+
+def foo(a, b, c : UNat) : UNat := a + b + c;
+`;
+  const { result } = await checkProgram(t, `${declarations}def f(n : UNat) : UNat := induction n as h return UNat { zero => 0; succ ih => foo(h, h, ih); };
+print(evaluate(!!f));
+evaluate f(2) expecting 2;
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  const [shown] = result.prints.map(print => print.text);
+  assert.equal(shown, "fun (n : UNat) => induction n as h return UNat { zero => 0; succ h1 => foo(h, h, h1); }");
+  const { result: back } = await checkProgram(t, `${declarations}def back : UNat -> UNat := ${shown};
+evaluate back(2) expecting 2;
 `, { module });
   assert.deepEqual(back.gaps, []);
 });

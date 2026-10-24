@@ -331,7 +331,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if(motive?.tag==="Lam"&&t.fn.signature==="unat__UNat"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
           let step=t.fn.clauses[1];
           if(step.body.tag!=="Lam") {
-            const h=apart("h",t,t);
+            // The hypothesis is bound under the predecessor: it keeps apart
+            // from the predecessor's name and from what the clause shows.
+            const scope={tag:"Pair",first:step.body,second:{tag:"Var",name:step.name}},h=apart("h",scope,scope);
             step={...step,body:{tag:"Lam",name:h,domain:motive.body,
               body:{tag:"App",fn:step.body,arg:{tag:"Var",name:h}}}};
           }
@@ -515,14 +517,18 @@ export function typedMotives(term, definitions) {
   // a pair's component, has that definition's value there, reduced, until it
   // is a type former or no definition is at its root, within a few unfoldings.
   const exposed = type => {
-    for (let unfoldings = 0; type && !formers.has(type.tag) && unfoldings < 16; unfoldings++) {
+    for (let unfoldings = 0; type; unfoldings++) {
+      // A substitution can leave a redex at the root, a function of types
+      // applied: reduced first, as after each unfolding.
+      type = betaReduce(type);
+      if (formers.has(type.tag) || unfoldings >= 16) break;
       let head = type;
       while (spines.has(head.tag)) head = root(head);
       const value = head.tag === "DefRef" ? definitions.value(head.name) : null;
       if (!value) break;
       const rooted = node => !spines.has(node.tag) ? value
         : { ...node, [node.fn ? "fn" : node.pair ? "pair" : "path"]: rooted(root(node)) };
-      type = betaReduce(rooted(type));
+      type = rooted(type);
     }
     return type;
   };
