@@ -88,3 +88,32 @@ The full language reference is `language.html`, an index of chapter pages in
 them is checked by `tests/reference-examples.test.mjs`, and
 `tests/reference-structure.test.mjs` checks their navigation and links. The test runner accepts module names, `.cubist` paths, and
 individual JavaScript test files. See the root README for commands.
+
+## Displaying terms
+
+A term becomes source text in three passes, in this order, on every display
+path (the elaborator's `displayText`, `displayTexts` and `displayGoal`):
+
+1. `typedMotives` (`cubical-source-text.mjs`) writes each eliminator's folded
+   motive, a definition kept by name, as a function of the domain its checked
+   type gives, `λ (z : D). M(z)`.
+2. `displayTerm` (`cubical-elaborator.mjs`) settles every binder's name, apart
+   from every definition, type and constructor the term prints, and
+   `readableDimensions` names its dimensions apart from every printed name.
+3. `sourceText` prints. It renames no binder the term has; the names it
+   invents, a clause's arguments or an eliminator's argument, keep apart from
+   what their scope prints.
+
+Whatever a display adds to a term that can print a name, a domain, a binder or
+a label, enters the term before the second pass. In #310's review, rounds 2
+to 7, the printer added a folded motive's recovered domain after the names
+were settled and renamed binders itself to make room for it; each round found
+the capture again under another kind of binder (a match clause, a lambda
+chain, a universe binder, a dimension). Moving the domain ahead of the naming
+removed the printer's renaming and fixed them together.
+
+A printer change is tested by reading its output back: print the value, check
+the text at the value's type in a fresh program, and where two names could
+trade meanings, evaluate the copy against the original
+(`tests/folded-normal-forms.test.mjs`). Comparing printed text alone does not
+catch a capture.
