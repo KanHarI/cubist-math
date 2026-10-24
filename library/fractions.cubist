@@ -270,6 +270,41 @@ section {{U < UU0}}(
 
   computable def q_one : Frac := class(frac_one);
 
+  // The coefficient ring embeds as fractions with denominator one.
+  computable def frac_embed(x : R) : Fraction := (x, one, one_nonzero);
+
+  computable def q_embed(x : R) : Frac := class(frac_embed(x));
+
+  computable def q_embed_zero : q_embed(zero) = q_zero := refl(q_zero);
+
+  computable def q_embed_one : q_embed(one) = q_one := refl(q_one);
+
+  computable def q_embed_add(x, y : R) : q_embed(x + y) = q_add(q_embed(x), q_embed(y)) := sym(
+    frac_path(
+      frac_add(frac_embed(x), frac_embed(y)), frac_embed(x + y),
+      same_ratio_equal(
+        frac_add(frac_embed(x), frac_embed(y)), frac_embed(x + y),
+        trans(cong(fun (z : R) => z + y * one, mul_one(x)), cong(fun (z : R) => x + z, mul_one(y))),
+        mul_one(one)
+      )
+    )
+  );
+
+  computable def q_embed_mul(x, y : R) : q_embed(x * y) = q_mul(q_embed(x), q_embed(y)) := sym(
+    frac_path(
+      frac_mul(frac_embed(x), frac_embed(y)), frac_embed(x * y),
+      same_ratio_equal(
+        frac_mul(frac_embed(x), frac_embed(y)), frac_embed(x * y), refl(x * y), mul_one(one)
+      )
+    )
+  );
+
+  computable def q_embed_neg(x : R) : q_embed(neg(x)) = q_neg(q_embed(x)) := refl(q_embed(neg(x)));
+
+  computable def q_embed_injective(x, y : R, p : q_embed(x) = q_embed(y)) : x = y := trans(
+    sym(mul_one(x)), trans(frac_effective(frac_embed(x), frac_embed(y), p), mul_one(y))
+  );
+
   // An equation in the field of fractions holds when it holds at classes.
   computable def frac_equation(
     F, G : Frac -> Frac, e : (forall f : Fraction. F(class(f)) = G(class(f))), x : Frac

@@ -97,8 +97,8 @@ evaluate far expecting !!_;
 // Error: K344: Native prototype syntax depth exceeds 512.
 evaluate far expecting (1, !!_);
 
-// !_ checks that the value has a weak head, and !!_ that it has a full
-// normal form, below a pattern as at its top. A mark right after evaluate
+// !_ checks that the value has a weak head, !!_ that it has a normal form,
+// and !!!_ that it has a full normal form, below a pattern as at its top. A mark right after evaluate
 // marks the whole pattern.
 evaluate numbers expecting !_;
 

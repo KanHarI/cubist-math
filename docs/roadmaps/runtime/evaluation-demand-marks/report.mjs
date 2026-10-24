@@ -3,8 +3,8 @@
 // as the CLI runs it (web/repl-session.mjs), with the probe's fixed query
 // budget. For each it records the entry's first result and its SHA-256, the
 // query ticks and queries the entry alone spent, and, where the entry
-// normalized a term, how many times and how many of those failed, and for
-// the last normalization, the whole value's under `!!_` after any its
+// normalized a term, fully or folded, how many times and how many of those
+// failed, and for the last normalization, its mode, the whole value's under `!!_` after any its
 // elaboration asked for, its ticks alone and either its failure or the
 // distinct objects of the normal form's decoding and its digest
 // (tools/evaluation-baseline.mjs's sharedNormalDigest, which compares as its
@@ -66,22 +66,27 @@ for (const item of cases) {
     // the last is described, by the normal form's digest, taken while its
     // handle holds (a committed or abandoned entry moves its nodes), or by
     // its failure.
+    // Both queries are counted, the full normal form's and the folded one's
+    // (docs/roadmaps/runtime/folded-normal-forms.md), and the last is named.
     let normalizations = 0, failedNormalizations = 0, normal = null;
-    const { normalize } = kernel, work = () => kernel.work();
-    kernel.normalize = function (handle) {
-      normalizations++;
-      const before = work(), ticks = () => Number(work().querySteps - before.querySteps);
-      try {
-        const result = normalize.call(this, handle);
-        const normalTicks = ticks(), { digest, objects } = sharedNormalDigest(program.checker.syntax.decode(result, program.checker.dimensions));
-        normal = { normalTicks, normalObjects: objects, normalDigest: digest };
-        return result;
-      } catch (error) {
-        failedNormalizations++;
-        normal = { normalTicks: ticks(), normalFailure: error.message };
-        throw error;
-      }
-    };
+    const work = () => kernel.work();
+    for (const [query, normalMode] of [["normalize", "full"], ["normalizeFolded", "folded"]]) {
+      const original = kernel[query];
+      kernel[query] = function (handle) {
+        normalizations++;
+        const before = work(), ticks = () => Number(work().querySteps - before.querySteps);
+        try {
+          const result = original.call(this, handle);
+          const normalTicks = ticks(), { digest, objects } = sharedNormalDigest(program.checker.syntax.decode(result, program.checker.dimensions));
+          normal = { normalMode, normalTicks, normalObjects: objects, normalDigest: digest };
+          return result;
+        } catch (error) {
+          failedNormalizations++;
+          normal = { normalMode, normalTicks: ticks(), normalFailure: error.message };
+          throw error;
+        }
+      };
+    }
     const before = work();
     const [result] = await session.run(entry);
     const after = work();

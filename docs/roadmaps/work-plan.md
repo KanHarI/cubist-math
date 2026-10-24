@@ -58,6 +58,15 @@ objective. The [first actions](#first-actions) give this progression using
 the existing package IDs. HA0–HA6 remain unimplemented; this changes
 direction, not status.
 
+**Simplicial direction, proposed on 2026-10-24.** Add a separate directed
+layer alongside cubical equality, with explicit preservation of ordinary
+universes, setness and assumption scopes, and computing rules for the new
+layer. `x ->[C] y` is the agreed arrow
+spelling; no new syntax or kernel rule is implemented. The
+[simplicial track](#simplicial-types-track) records its semantic gates and
+later mathematical targets. Ordinary category and universal-algebra work
+continue on their existing foundations, and runtime priority is unchanged.
+
 Each slice pairs a language capability with checked examples and its intended
 scope: an explicit reference construction, proofs, relevant negative cases, readable
 source/generated inspection, and measurements where cost matters. Repeated
@@ -112,6 +121,7 @@ between columns.
 | Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305 | EVAL3–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
+| Simplicial types | Design only, proposed on 2026-10-24; `x ->[C] y` spelling agreed | ST0–ST6: preservation/model design, shared ordinary arrow syntax, separate directed shapes/extensions, synthetic categories and later mathematical bridges |
 | Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library now has seventeen self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226). The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
@@ -412,7 +422,7 @@ has an explicit spelling.
 | L2.12 | Implicit arguments in theory operations and derived operations, **proposed** on 2026-10-07: `comp{{x, y, z : Ob}}(g : Arr(y, z), f : Arr(x, y)) : Arr(x, z) notation g ∘ f`, inferred as L4.1b infers a definition's, with notation over the explicit arguments (E810 and E170 refuse both today) | L4.1b | M |
 | L2.6 | Initial/free capabilities. **Specified, not delivered on main.** The [revised contract](high-level-abstractions/core-theories.md#initial-and-free-models-l26) requires opt-ins, a checked construction, uniqueness, universal equivalence and additional-law obligations. [PR #188](https://github.com/KanHarI/cubist-math/pull/188) introduced the construction-and-fold prototype now integrated on main; it registers no checked capability. Higher theories need a supported morphism/coherence interface | L2.4d; L2.11 for general propositional laws; H1 for the first strategy | L |
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2). **First slice** done on 2026-10-06: the implementation plan's box notation, `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and `fill j in A from b at k { … }`, lowers to `comp` and `fill`, faces being formulas of equations with `and` and `or`; a composition prints as its box. Evidence: `cubist-tests/box_notation.cubist`. **Second slice** done the same day: `library/squares.cubist` names a square's edges by its corners, `Square(a0_, a1_, a_0, a_1)`, and builds by conversion the reflexive and naturality squares, transposition and both flips, double composition and its filler (`trans` its case with a constant first edge), and horizontal and vertical composition; the inspector shows a square's edges and corners. Evidence: `cubist-tests/square_constructions.cubist`. **Third slice** done the same day: two squares on the same three sides have equal tops (`top_unique`), which gives the conversions between a square and an equation of composites both ways (`square_to_path`, `path_to_square`, through the diagonal and `retop`), and the library's `naturality_path` and `cong_trans`, the statements of the archive's `homotopy_naturality` and `map_concat`. Open: the archive's raw `comp` lemmas (`homotopy_natural`, `map_concat`, `transport_concat`) re-derived through them, a migration of archive proofs | L2.1; face/source metadata from L1.2r | M |
-| L2.9a | Expected-value patterns for `evaluate`. **Done** on 2026-10-06: an expected value with a hole `_` is a pattern, matched against the normal form part by part (`web/translator/evaluation.mjs`): a hole matches anything; a pair, an injection or a constructor of the part's declared type applied to patterns matches a value built so, in the kernel's argument order; `typed(T, p)` matches as `p` where `T` is the part's type; any other expression is elaborated at the part's type and compared by normal form. `left`, `right` and `typed` are the builtins only where the module does not bind them, and a builtin's or a constructor's arguments are written out as elaboration requires, a hole aside (E701, E378, E379). A mismatch names the differing part (E477), and a hole inside another function's arguments is refused (E478). Since #304 (EVAL5's [demand marks](runtime/evaluation-demand-marks.md)) a pattern computes each part only as far as it observes it: a hole computes nothing, a pair, an injection or a constructor computes the part's weak head, an expression its full normal form, `!p` asks for a weak head, `!!p` for a normal form with stuck definitions folded and `!!!p` for a full normal form ([folded normal forms](runtime/folded-normal-forms.md), FN2); a bare `_` is refused (E485), and a mismatch shows the value as far as it was computed. Evidence: `cubist-tests/evaluate_patterns.cubist`, `tests/evaluation-demand-marks.test.mjs` | L0.1; own pattern contract and L4.1a infrastructure | S |
+| L2.9a | Expected-value patterns for `evaluate`. **Done** on 2026-10-06: an expected value with a hole `_` is a pattern, matched against the normal form part by part (`web/translator/evaluation.mjs`): a hole matches anything; a pair, an injection or a constructor of the part's declared type applied to patterns matches a value built so, in the kernel's argument order; `typed(T, p)` matches as `p` where `T` is the part's type; any other expression is elaborated at the part's type and compared by normal form. `left`, `right` and `typed` are the builtins only where the module does not bind them, and a builtin's or a constructor's arguments are written out as elaboration requires, a hole aside (E701, E378, E379). A mismatch names the differing part (E477), and a hole inside another function's arguments is refused (E478). Since #304 (EVAL5's [demand marks](runtime/evaluation-demand-marks.md)) a pattern computes each part only as far as it observes it: a hole computes nothing, a pair, an injection or a constructor computes the part's weak head, an expression its normal form, stuck definitions folded, `!p` asks for a weak head, `!!p` for a normal form with stuck definitions folded and `!!!p` for a full normal form ([folded normal forms](runtime/folded-normal-forms.md), FN2); a bare `_` is refused (E485), and a mismatch shows the value as far as it was computed. Evidence: `cubist-tests/evaluate_patterns.cubist`, `tests/evaluation-demand-marks.test.mjs` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result. **Done** on 2026-10-06: `print(witness(t));`, and the REPL's `witness TERM;`, read the witness off a closed, computable truncation's normal form, `point(w)` under formal compositions, with its type (`web/translator/evaluation.mjs`). A witness under a composition whose type changes is refused (E481), so the witness has the truncated type's own parameter; transported along a path of types, it is of the type at the path's end. A certificate is part of the witness the kernel checked. Evidence: `cubist-tests/truncation_readout.cubist` | Native H1 `Trunc`, K2.5, L0.1 | M |
 | L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `use v;`, one selection form that also works at a file's top level (decided on 2026-10-05, with `using v;` dropped), extend explicit structure scope, with qualified operators `a G.(+) b`; `use` replaced `open`, which is refused with its `use` form (E183). **Direction adopted** in the [notation roadmap](high-level-abstractions/notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `\|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). **L2.10i done** on 2026-10-06: `~p` and `~i` reverse, prefix `-` is refused (E176) and kept for arithmetic, and a historical source is read with `~` for its prefix `-`. **L2.10k done** on 2026-10-06: `Field` states invertibility as a truncated law, which the law check accepts as a declared proposition; `inv` and `mul_inv` are derived by unique choice in any field, and the rationals' inverse computes. **L2.10a done** the same day for `+`, `*`, `<` and `<=`: named notations (`notation nat { … }` in `library/nat.cubist`), complete selections by `use`, `v.(e)` and qualified operators. **L2.10b done** the same day: `-`, `/`, `^`, unary `-`, `>` and `>=`, operand recipes such as `x ^ nat.(n)`, and derived operations in theories (the library's rings get `-x` and `x - y`). **L2.10c done** the same day: numeric tokens, `library/lexemes.cubist`, numeral and literal rules, a theory's `notation numeral`, and the rationals' parser (`rationals.(1/2)`). **L2.10d done** the same day: printing in the selected notation, qualified elsewhere, literals as written. **L2.10e done** the same day: the roadmap's pilots check (`cubist-tests/notation_pilots.cubist`), costing one selection per expression and one `nat.(…)` per natural argument of an ordinary function. **L2.10j done** the same day: every source selects `nat` (or `binary`, the archive's notation for binary literals), and an operator or numeral outside any selection is an error that suggests `use nat;`; L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred. Type-based automation needs separate evidence later | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
@@ -643,6 +653,49 @@ and L2.4b's structure identity; UA5 is an acceptance example for L3.5's
 examples to those packages without reordering the
 [first actions](#first-actions).
 
+UA0–UA6 have no directed-kernel dependency. UA5's pushout is in ordinary
+`Clone.cat`; UA6 proves an equivalence with an explicit shared-carrier
+model category, including its comparison with the Σ-with-path presentation.
+A coherent pullback universal property in a synthetic category of categories
+is a later ST6 target, requiring an additional comparison and proof.
+
+## Simplicial types track
+
+The [simplicial roadmap](hott/simplicial-types.md) owns ST0–ST6. All remain
+proposed and unimplemented. This is a separate foundational track alongside
+G0/H1 and the ordinary category packages, not a migration of existing `set U`
+or `IsSet` uses. Its preservation contract distinguishes old derivations,
+old computation, old meaning, combined soundness, computation of new
+results and conservativity; none of the latter obligations follows just
+from passing regression tests. New rules must compute: a postulated
+directed principle delivers no ST package.
+
+- **ST0:** settle the ordinary/directed contexts, universes, shape geometry,
+  whether directed coordinates form a sort or a type, explicit embeddings
+  and mixed rules with their computation; review their semantic and
+  operational preservation obligations before enabling a combined kernel
+  for proofs.
+- **ST1:** pair shared `x ->[C] y` notation with L2.12/L3.4's ordinary
+  categorical interfaces. It can ship independently of the directed kernel.
+- **ST2/ST3:** after the ST0 gate, implement shapes, extensions and cells,
+  then derive Segal composition and coherence, functoriality, covariant
+  families and dependent Yoneda. Extension types do not supply arbitrary
+  directed fillers.
+- **ST4/ST5:** separately review the foundations for a directed `Spaces`
+  classifier, checked bridges to ordinary categories and theory models,
+  and coherent diagrams/presheaves. Specify sizes, variance, covariance and
+  existence assumptions for each construction.
+- **ST6:** higher categories and higher algebra, including the stronger
+  UA6 comparison. Removing setness annotations is not a coherent higher
+  algebra construction.
+
+When the language progression resumes, ST1 belongs with its categorical
+interface work. ST0 design can progress independently; ST2 and later stages
+wait for their own review gates. L3.4–L3.6, UA0–UA6 and HA0–HA6 keep their
+existing dependencies. In particular, graph-shaped type colimits and the
+first cubical cohomology examples do not wait for coherent directed diagrams.
+No paused mathematical track resumes through this proposal.
+
 ## Runtime evaluation track
 
 Added on 2026-10-07. The [runtime evaluation roadmap](runtime/runtime-evaluation-roadmap.md)
@@ -866,7 +919,7 @@ are developed with their first consumers.
 | Integration target | Language work exercised | Mathematical acceptance examples |
 | --- | --- | --- |
 | Theory and HoTT interfaces | L2.4d's morphism opt-ins, L2.11's proposition laws, L2.12's implicit operation arguments and notation; L1.4's path vocabulary and constructor congruence | Algebraic models and explicit precategories; circle/suspension and square proofs as baselines for the synthetic strand |
-| Categories and structured equivalences | L3.4's functors, natural transformations and categorical reasoning; L3.1/L3.2's equivalences, extensionality and contractibility; L2.4b's supported structure identity | Identity/composition/opposite laws and naturality; compare isomorphic algebraic structures and equivalent spaces. A precategory is not claimed univalent before its proof |
+| Categories and structured equivalences | L3.4's functors, natural transformations and categorical reasoning; ST1's ordinary `x ->[C] y` notation; L3.1/L3.2's equivalences, extensionality and contractibility; L2.4b's supported structure identity | Identity/composition/opposite laws and naturality; compare isomorphic algebraic structures and equivalent spaces. A precategory is not claimed univalent before its proof; directed comparisons have separate ST gates |
 | Monads, free constructions and higher-inductive proofs | N0/N1's lawful interfaces, then N2/N3a and N4/N5's scoped notation; L2.6's complete equational capabilities; L2.5b and L2.3/L2.3b as their supported proof/derivation slices become available | Identity, native truncation and free-algebra monads with checked laws; substitution through a proved free construction; low-degree `K(G, 1)` admission and proofs using squares, induction and truncation |
 | Universal constructions and synthetic topology | L3.5/L3.6's universal interfaces, quotient lifting and abelian structures; L2.7's supported views, dependent rewriting and L2.8's square migrations | Products, pullbacks, kernels and cokernels; suspensions, pushouts, cofibers and maps out of them. Reuse extensionality, transport and universal-property proofs across these examples |
 | Algebraic homology and synthetic cohomology | HA1/HA2's indexed structures, chain-map interfaces and exactness reasoning; HA4's higher paths, truncations and computational equivalences | Complexes and homology alongside `K(G, n)` and cohomology as truncated mapping spaces, with the supported degrees explicit; long exact sequences and homotopy invariance as proved milestones |
@@ -947,6 +1000,15 @@ scheduled packages from advancing.
    implementation has not started. Variable-degree truncation remains a
    separate HA4 design question. Neither decision blocks the first
    categorical, monadic or low-degree synthetic pilots.
+5. **Simplicial foundations:** ST0 must select the shape algebra, decide
+   whether directed coordinates form a sort or a type, specify
+   ordinary/directed modes or universes and their embeddings, and validate
+   mixed rules and their computation before ST2. The
+   `shape`/`extension`/`cell` grammar is tentative; if adopted, its words
+   are reserved, and keywords take priority over library names.
+   The arrow spelling `x ->[C] y` is agreed, with ST1's resolution and
+   precedence still to specify. This does not block ordinary mathematics;
+   shared spelling does not identify ordinary `U` with directed `Spaces`.
 
 **Open, not blocking**
 

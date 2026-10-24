@@ -8,8 +8,25 @@ import {binaryDigits, parsedLiteral} from "./translator/numeral-printing.mjs";
 // the names it shows them by (sourceText's forms without a source
 // spelling): they show so here, and binders here keep apart from them.
 // Definitions, sorts and eliminators keep the labels `symbols` gives.
-export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map() } = {}) {
+export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map(), dimensions = [] } = {}) {
   let remaining = limit;
+  // The dimensions the term names, bound or free, and those of the context
+  // it is shown in: a definition labeled as one of them is shown by its
+  // kernel name, main__i for i, as no renaming of the dimension would keep
+  // it the context's. A folded normal form keeps such definitions.
+  const dimensionNames = new Set(dimensions), dimensionsSeen = new WeakSet();
+  const collectDimensions = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) dimensionNames.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object" || dimensionsSeen.has(t)) return;
+    dimensionsSeen.add(t);
+    if (typeof t.dim === "string") dimensionNames.add(t.dim);
+    Object.values(t).forEach(collectDimensions);
+  };
+  collectDimensions(term);
   const boundNames = new Map(), namesIn = displayFreeNames();
   const free = (term, variable) => namesIn(term).has(variable);
   const sourceNames = new Map();
@@ -24,10 +41,29 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   }
   const outer = value => !boundNames.has(value) && scope.has(value);
   const label = value => boundNames.get(value) ?? scope.get(value) ?? symbols[value]?.name ?? value;
+  // The names a term shows for what no binder binds: its definitions', its
+  // types' and its constructors'. A folded normal form keeps definitions
+  // under binders, and a binder spelled as one would read as it.
+  const printed = (() => {
+    const memo = new WeakMap(), empty = new Set();
+    const scan = value => {
+      if (!value || typeof value !== "object") return empty;
+      if (memo.has(value)) return memo.get(value);
+      const names = new Set();
+      memo.set(value, names);
+      if (value.tag === "DefRef") names.add(symbols[value.name]?.name ?? value.name);
+      else if (value.tag === "Sort") names.add(symbols[value.signature]?.name ?? value.signature);
+      else if (value.tag === "Con" && value.name) names.add(value.name);
+      for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
+      return names;
+    };
+    return scan;
+  })();
   const underBinder = (variable, body, renderBody) => {
     let spelling = symbols[variable]?.name ?? variable;
     while ([...boundNames].some(([key, name]) => key !== variable && name === spelling)
-      || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))) spelling += "′";
+      || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))
+      || printed(body).has(spelling)) spelling += "′";
     const previous = boundNames.get(variable); boundNames.set(variable, spelling);
     const result = renderBody();
     if (previous === undefined) boundNames.delete(variable); else boundNames.set(variable, previous);
@@ -81,7 +117,10 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   function build(t, child) {
     if (!t || --remaining < 0) return name("…");
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
-    if (t.tag === "DefRef") return { ...name(symbols[t.name]?.name ?? t.name), binding: t.name };
+    if (t.tag === "DefRef") {
+      const shown = symbols[t.name]?.name ?? t.name;
+      return { ...name(dimensionNames.has(shown) ? t.name : shown), binding: t.name };
+    }
     if (t.tag === "Var") {
       const symbol = outer(t.name) ? undefined : symbols[t.name];
       return { ...name(label(t.name)), local: symbol?.kind !== "axiom",
@@ -206,6 +245,6 @@ export function cubicalTextParts(tree) {
   return show(tree);
 }
 
-export function cubicalText(term, symbols = {}, { scope } = {}) {
-  return cubicalTextParts(cubicalMathTree(term, symbols, undefined, { scope })).map(part => part.text).join("");
+export function cubicalText(term, symbols = {}, { scope, dimensions } = {}) {
+  return cubicalTextParts(cubicalMathTree(term, symbols, undefined, { scope, dimensions })).map(part => part.text).join("");
 }

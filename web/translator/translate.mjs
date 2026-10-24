@@ -33,7 +33,7 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -373,6 +373,11 @@ export class Translator {
   }
   evaluate(d,scope) {
     scope.spend("queries");
+    // A !!! inside a !! part is refused before anything is computed, the
+    // term's elaboration too, which a literal's reader computes in, and at
+    // its own mark: parentheses around the part move its start.
+    const full=!d.assertion&&d.expected&&fullInsideFolded(d.mark?{kind:"demand",mark:d.mark,value:d.expected}:d.expected);
+    if(full)throw scope.unit.locate(fullUnderFolded(),{start:full.markStart,end:full.markEnd});
     // Evidence checks use the stated type, or its negation, without fully
     // normalizing the proof. Ascription keeps the stated type's dependencies.
     let type,term;

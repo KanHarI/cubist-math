@@ -20,6 +20,14 @@ main-only `SameRatio` reproduction without the BQ parser. It distinguishes
 this smaller-budget observation from the completed small-inverse reference
 above and preserves the remaining inverse/transport gates.
 
+Update on 2026-10-21 (later), re-measured on 2026-10-23: the
+[debugging plan](../roadmaps/runtime/rational-normalization-debug-plan.md)
+reproduces the small inverse on main alone at about 71M ticks with a
+1.15M-node normal form. It attributes most of that to the
+`prop_type_is_set(U0)` evidence in the negative `bint_decide` certificate,
+finds the same evidence in every literal of main's public rationals, and
+schedules the experiments.
+
 ## Small reproduction on main
 
 The [fixture](../../tests/fixtures/generic-prop-normalization.cubist) contains an
@@ -95,8 +103,9 @@ evaluate bq_inv(-340282366920938463463374607431768211455/18446744073709551615)
   expecting _;
 ```
 
-`expecting _` then requested a full normal form, as `expecting !!_` does
-since the demand marks of #304. It did not skip the certificate. The proof that the inverse's denominator is nonzero reaches
+`expecting _` then requested a full normal form, as `expecting !!_` did
+from the demand marks of #304, and `expecting !!!_` does since the folded
+normal forms of #310. It did not skip the certificate. The proof that the inverse's denominator is nonzero reaches
 `bint_decide` → `difference_decide` → `quotient_effective` → `related_to`,
 which descends into `Prop(U0)`.
 Although the inverse input is closed, the negative equality decision returns

@@ -14,7 +14,8 @@ import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
-// `!` asks for a part's weak head and `!!` for its full normal form, and an
+// `!` asks for a part's weak head, `!!` for its normal form, stuck
+// definitions folded, and `!!!` for its full normal form, and an
 // unmarked part of a pattern is computed only as far as the pattern observes
 // it. The cases with messages are cubist-tests/evaluate_patterns.cubist;
 // here, the tokens, the values evaluations report, what is left uncomputed,
@@ -603,6 +604,9 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
   assert.deepEqual(lint("evaluate e expecting !!!(!!_, !_, _); evaluate e expecting (!!(!!!_, _), !!!3, _);").map(warning => warning.code),
     ["W708", "W708"]);
   assert.match(lint("evaluate e expecting !!!(!!_, _);")[0].message, /it is under !!!, which normalizes its part/);
+  // Nor is a mark of a refused combination reported: removing the inner !!!
+  // or the !! of !!!(!!(!!!_), _) would make the refused entry check.
+  assert.deepEqual(lint("evaluate e expecting !!!(!!(!!!_), _); evaluate e expecting (!!_, !!(tt, !!!_));"), []);
 });
 
 // One closed example of every construct with a term to evaluate, and its
@@ -1078,6 +1082,46 @@ test("the report's digest reads a shared object once", () => {
     assert.equal(objects, distinctObjects(value), name);
     assert.ok(read <= 4 * levels, `${name}: ${read} reads`);
   }
+});
+
+// Parts alike up to the names of bound variables and dimensions count once
+// among the distinct parts, and one object met under bindings that give it
+// two digests counts twice.
+test("the report's digest counts distinct parts up to bound names", () => {
+  const type = { tag: "Var", name: "A" }, path = { tag: "Var", name: "p" }, x = { tag: "Var", name: "x" };
+  const identity = name => ({ tag: "Lam", name, domain: type, body: { tag: "Var", name } });
+  const loop = dim => ({ tag: "PLam", dim, family: type, body: { tag: "PApp", path, arg: [[`${dim}:1`]] } });
+  const counts = value => { const { objects, distinct } = sharedNormalDigest(value); return { objects, distinct }; };
+  // App, both lambdas and their variables, and A; the lambdas alike, and their variables.
+  assert.deepEqual(counts({ tag: "App", fn: identity("x"), arg: identity("y") }), { objects: 6, distinct: 4 });
+  // App, both paths, A, both applications, p, and both formulas with their
+  // clauses; the paths alike, their applications, formulas and clauses.
+  assert.deepEqual(counts({ tag: "App", fn: loop("i"), arg: loop("j") }), { objects: 11, distinct: 7 });
+  // A system and its tubes count as objects do. An empty system: the
+  // composition, A, the system and b, each distinct.
+  const b = { tag: "Var", name: "b" };
+  assert.deepEqual(counts({ tag: "Comp", dim: "i", family: type, system: [], base: b }), { objects: 4, distinct: 4 });
+  // Two compositions alike up to their binders, each with a tube on k whose
+  // term names its binder: twenty objects, and App, the composition, A, the
+  // system, the tube, its face formula and clause, its term's application,
+  // p, formula and clause, and b distinct.
+  const comp = dim => ({ tag: "Comp", dim, family: type, system: [{ face: [["k:1"]], term: { tag: "PApp", path, arg: [[`${dim}:1`]] } }], base: b });
+  assert.deepEqual(counts({ tag: "App", fn: comp("i"), arg: comp("j") }), { objects: 20, distinct: 12 });
+  // A composition's system counts as the same array a Glue term's does, and
+  // its tubes as the same objects: empty, the system once among seven
+  // objects; with one tube on k each, the system, the tube, its formula and
+  // clause once each among fourteen.
+  const t = { tag: "Var", name: "t" };
+  const mixed = system => ({ tag: "App", fn: { tag: "Comp", dim: "i", family: type, system: system(), base: b },
+    arg: { tag: "GlueTerm", as: type, base: b, system: system() } });
+  assert.deepEqual(counts(mixed(() => [])), { objects: 7, distinct: 6 });
+  assert.deepEqual(counts(mixed(() => [{ face: [["k:1"]], term: t }])), { objects: 14, distinct: 10 });
+  // x bound under the lambda and free beside it.
+  assert.deepEqual(counts({ tag: "App", fn: { tag: "Lam", name: "x", domain: type, body: x }, arg: x }), { objects: 4, distinct: 5 });
+  // Applications alike up to their bound names, whose free names sort in
+  // different orders: a before m, and q after it.
+  const m = { tag: "Var", name: "m" }, apply = name => ({ tag: "Lam", name, domain: type, body: { tag: "App", fn: { tag: "Var", name }, arg: m } });
+  assert.deepEqual(counts({ tag: "App", fn: apply("a"), arg: apply("q") }), { objects: 9, distinct: 6 });
 });
 
 // Two constructors of one module, and constructors of one name in two.
