@@ -51,7 +51,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     };
     return scan;
   })();
-  const taken = (term, name) => mentions(term, name) || printedNames(term).has(name);
+  const taken = (term, name) => mentions(term, name) || printedNames(term).has(name) || varies(term, name);
   const numeral = numeralValue;
   // A dimension occurs in a term through interval literals `i:1` and `i:0`.
   const varies = (t, dim, seen = new Set()) => {
@@ -120,7 +120,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   };
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
   // A bound name that also occurs in `outside`, or that `whole` prints as a
-  // definition's, a type's or a constructor's, gets a numbered variant.
+  // definition's, a type's or a constructor's, gets a numbered variant, one
+  // `whole` neither mentions, prints nor uses as a dimension.
   const apart = (name, outside, whole) => {
     if (!mentions(outside, name) && !printedNames(whole).has(name)) return name;
     for (let i = 1; ; i++) if (!taken(whole, numberedName(name, i))) return numberedName(name, i);
@@ -193,7 +194,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       for (let i = 0; i < dimensions; i++) {
         if (body?.tag === "PLam") { dims.push(body.dim); body = body.body; continue; }
         let dim = "i";
-        for (let n = 1; varies(body, dim); n++) dim = numberedName("i", n);
+        for (let n = 1; taken(body, dim); n++) dim = numberedName("i", n);
         dims.push(dim);
         body = { tag: "PApp", path: body, arg: [[`${dim}:1`]] };
       }
@@ -317,6 +318,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         const args = [];
         let head = t;
         while (head.tag === "App" || head.tag === "LApp") { args.unshift(head.tag === "App" ? head.arg : { tag: "U", level: head.level }); head = head.fn; }
+        // An eliminator applied to its value and more prints as the match
+        // or induction on the value, applied to the rest: its function alone
+        // would be written untyped where no type reaches it.
+        if (head.tag === "Elim" && args.length > 1) {
+          const [text, level] = print({ tag: "App", fn: head, arg: args[0] });
+          return atom(`${level < LEVEL.atom ? `(${text})` : text}(${args.slice(1).map(show).join(", ")})`);
+        }
         // The notation that prints this function: the selected one's
         // entry, or the first declared (L2.10d).
         const entries = head.tag === "DefRef" ? symbols[head.name]?.printing : undefined;
