@@ -5,6 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { sourceText } from "../web/cubical-source-text.mjs";
 
 // The folded normal form (docs/roadmaps/runtime/folded-normal-forms.md),
 // through the kernel's JavaScript interface: closed data computes in full,
@@ -149,6 +150,38 @@ def Twice(o : Opt(Unit)) : U0 := Unit -> Unit;
   const { result: back } = await checkProgram(t, declarations + cases.map(([type, , shown], i) =>
     `def back_${i} : ${type} := ${shown};\n`).join(""), { module });
   assert.deepEqual(back.gaps, []);
+});
+
+// The printer's first name for a folded function's argument keeps apart
+// from a dimension its body uses: under path x, an eliminator whose clause
+// is p @ x takes x1, not x.
+test("a name the printer invents keeps apart from the dimensions in scope", () => {
+  const sort = { tag: "Sort", signature: "main__N", parameters: [], levels: [] };
+  const symbols = { main__N: { name: "N", slots: [], constructors: [{ name: "zero", data: 0, positions: 0, dimensions: 0 }] },
+    main__p: { name: "p" }, main__T: { name: "T" } };
+  const elim = { tag: "Elim", signature: "main__N", motive: { tag: "Lam", name: "m", domain: sort, body: { tag: "DefRef", name: "main__T" } },
+    clauses: [{ tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["x:1"]] }] };
+  assert.equal(sourceText({ tag: "PLam", dim: "x", family: null, body: elim }, symbols),
+    "path x => fun (x1 : N) => match x1 return T { zero => p @ x; }");
+});
+
+// A !!! inside a !! part is refused before the evaluated term is elaborated:
+// a rational literal's reader computes, and computes nothing here.
+test("a !!! inside a !! part is refused before the evaluated literal computes", async t => {
+  const { program } = await checkProgram(t, "", { module });
+  const kernel = program.kernel;
+  let calls = 0;
+  for (const query of ["normalize", "normalizeFolded"]) {
+    const original = kernel[query].bind(kernel);
+    kernel[query] = handle => { calls++; return original(handle); };
+  }
+  const warm = await program.check("import rationals;\n\ndef anchor : Unit := tt;\n", "literal_warm", () => {}, { reuseModules: true });
+  assert.deepEqual(warm.gaps, []);
+  calls = 0;
+  const result = await program.check("import rationals;\n\ndef anchor : Unit := tt;\nevaluate rationals.(2/3) expecting !!(!!!_);\n",
+    "literal_refused", () => {}, { reuseModules: true });
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["E486"]);
+  assert.equal(calls, 0, "no normal form is computed before E486");
 });
 
 // An exact value and a pattern's leaf are compared with the value's folded

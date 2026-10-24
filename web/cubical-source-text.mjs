@@ -120,10 +120,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   };
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
   // A bound name that also occurs in `outside`, or that `whole` prints as a
-  // definition's, a type's or a constructor's, gets a numbered variant, one
-  // `whole` neither mentions, prints nor uses as a dimension.
+  // definition's, a type's or a constructor's or uses as a dimension, gets
+  // a numbered variant, one `whole` neither mentions, prints nor uses.
   const apart = (name, outside, whole) => {
-    if (!mentions(outside, name) && !printedNames(whole).has(name)) return name;
+    if (!mentions(outside, name) && !printedNames(whole).has(name) && !varies(whole, name)) return name;
     for (let i = 1; ; i++) if (!taken(whole, numberedName(name, i))) return numberedName(name, i);
   };
   // A function as a lambda: a folded normal form keeps a motive or a clause
