@@ -122,10 +122,10 @@ await browserTest(async ({ browser, base }) => {
   // A read-only REPL transcript forks into the REPL bar, with the example
   // before it loaded, and can be continued there.
   await page.goto(new URL("reference/first-proof.html", base).href);
-  await page.locator("pre.repl-transcript", { hasText: "evaluate lt_succ;" })
+  await page.locator("pre.repl-transcript", { hasText: "evaluate !!lt_succ;" })
     .locator("xpath=following-sibling::div[contains(@class, 'example-bar')][1]").locator(".repl-fork").click();
   await page.waitForFunction(() => document.querySelectorAll(".repl-dock .repl-result").length >= 4 && !document.querySelector(".repl-form.busy"));
-  await enter("evaluate exists_greater_number(10)");
+  await enter("evaluate !!exists_greater_number(10)");
   assert.deepEqual(await lastResults(2), ["(6, 0, refl(6))", "(11, 0, refl(11))"]);
   console.log("PASS read-only REPL transcripts fork into the REPL bar");
   await page.goto(new URL("proof.html?proof=unat", base).href);

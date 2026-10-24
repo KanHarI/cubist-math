@@ -44,19 +44,33 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Version 4 relocates the fixed unary workloads to UNat/unat. Algorithms,
 // contracts and counters stay comparable; free-name and display digests do
 // not, because the checked carrier and public law identities were renamed.
-export const version = 4;
+// Version 5 matches patterns on demand (EVAL5's demand marks,
+// docs/roadmaps/runtime/evaluation-demand-marks.md): a pattern's parts are
+// computed only as far as it observes them, in the new demand phase, and
+// the pattern workload's !! twin keeps the full normalization measured.
+// Version 6 shows REPL and print values as their value forms (DM3): those
+// workloads compute as far as their values are shown, and each has a !!
+// twin, ID-normal, that keeps the full normalization measured.
+// Version 7 folds stuck definitions under !! (folded normal forms,
+// docs/roadmaps/runtime/folded-normal-forms.md): the twins ask for !!!, the
+// full normal form they measured as !!, so their counters do not change.
+export const version = 7;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // The archived Euclid construction and its prerequisites stay fixed for
 // evaluator comparisons (archive/first-library/euclid.cubist, primes.cubist):
 // a change to their algorithm starts a separate series.
-export const workloads = [
-  // Full results: plain REPL evaluation and print both normalize once (EVAL1).
+const fixed = [
+  // Full results: plain REPL evaluation and print both show the value form,
+  // and their !!! twins normalize once (EVAL1).
   { id: "euclid-3", setup: euclid, entry: "evaluate euclid(3);" },
   { id: "euclid-3-print", setup: euclid, entry: "print(evaluate(euclid(3)));" },
   { id: "euclid-4", setup: euclid, entry: "evaluate euclid(4);" },
-  // An expected-value pattern matches the full normal form: its hole saves nothing.
+  // An expected-value pattern computes what it observes: its hole computes
+  // nothing, but the prime it compares is too deep to build. Its !!! twin
+  // matches the full normal form, as every pattern did before EVAL5.
   { id: "euclid-4-pattern", setup: euclid, entry: "evaluate euclid(4) expecting (5, _);" },
+  { id: "euclid-4-pattern-normal", setup: euclid, entry: "evaluate euclid(4) expecting !!!(5, _);" },
   // Prime projections.
   { id: "euclid-3-prime", setup: euclid, entry: "evaluate euclid(3).1;" },
   { id: "euclid-3-prime-expected", setup: euclid, entry: "evaluate euclid(3).1 expecting 7;" },
@@ -86,19 +100,29 @@ export const workloads = [
   // series, on the definition `probe := euclid(n)` the kernel checked.
   ...[3, 4, 5, 6].map(n => ({ id: `scratch-euclid-${n}-prime`, series: "scratch", setup: euclid, entry: `def probe := euclid(${n});` })),
 ];
+// Each REPL and print workload, followed by its !!! twin.
+export const workloads = fixed.flatMap(workload => {
+  const normal = workload.series === "scratch" ? null : /^evaluate (?!.*\bexpecting\b)/.test(workload.entry)
+    ? workload.entry.replace(/^evaluate /, "evaluate !!!") : workload.entry.replace(/^print\(evaluate\(/, "print(evaluate(!!!");
+  return normal && normal !== workload.entry ? [workload, { ...workload, id: `${workload.id}-normal`, entry: normal }] : [workload];
+});
 
 // What each workload's result is, and what it promises.
 export const contracts = {
-  repl: "REPL evaluate: one checked normalization, printed without a redundant self-comparison",
-  print: "print(evaluate(e)): the full normal form, printed",
-  expected: "evaluate e expecting v: the full normal form, compared with v's",
-  pattern: "evaluate e expecting p, p with holes: the full normal form, matched part by part",
+  repl: "REPL evaluate: the value form, computed as far as it is shown",
+  replNormal: "REPL evaluate !!!e: one checked normalization, printed without a redundant self-comparison",
+  print: "print(evaluate(e)): the value form, computed as far as it is shown",
+  printNormal: "print(evaluate(!!!e)): the full normal form, printed",
+  expected: "evaluate e expecting v: the normal form, stuck definitions folded, compared with v's",
+  pattern: "evaluate e expecting p, p with holes or marks: each part computed as far as p observes it",
+  patternNormal: "evaluate e expecting !!!p: the full normal form, matched part by part",
   scratch: "closure experiment: the demanded natural only; untrusted, certifies nothing",
 };
 export const contractOf = workload => workload.series === "scratch" ? "scratch"
-  : /^print\s*\(/.test(workload.entry) ? "print"
-  : !/\bexpecting\b/.test(workload.entry) ? "repl"
-  : /\bexpecting\b[\s\S]*\b_\b/.test(workload.entry) ? "pattern" : "expected";
+  : /^print\s*\(/.test(workload.entry) ? (/^print\(evaluate\(!!!/.test(workload.entry) ? "printNormal" : "print")
+  : !/\bexpecting\b/.test(workload.entry) ? (/^evaluate !!!/.test(workload.entry) ? "replNormal" : "repl")
+  : /\bexpecting\s*!!!/.test(workload.entry) ? "patternNormal"
+  : /\bexpecting\b[\s\S]*(?:\b_\b|!)/.test(workload.entry) ? "pattern" : "expected";
 
 // Where an entry's time and work go. Each phase is a boundary of the code
 // that runs it, observed by wrapping that method of the session's program;
@@ -108,8 +132,9 @@ export const phases = {
   elaborate: "Translator.term: elaborating source terms, with the kernel queries elaboration asks",
   check: "checker.checkSyntax, inside verify: checking the elaborated term",
   normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
-  decode: "checker.syntax.decode of a normal form, inside verify: kernel syntax into terms",
-  inventory: "checker.verify's own work: the closedness, assumption and kernel-extension inventory",
+  decode: "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
+  demand: "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
+  inventory: "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
   render: "checker.displayText, outside other phases: printing a value or message",
   other: "the rest of the entry: parsing, module and session bookkeeping, transactions",
@@ -211,13 +236,125 @@ export function normalDigest(term) {
   return hash.digest("hex").slice(0, 16);
 }
 
+// normalDigest's comparison, for terms whose decodings share too much to
+// walk as trees, as the evaluation demand marks' report compares normal forms
+// (docs/roadmaps/runtime/evaluation-demand-marks/report.mjs): two decoded
+// terms get equal digests exactly when normalDigest gives them equal ones.
+// It reads them as normalDigest does, with its binders and formulas, but
+// digests each object once for each way its free names are bound around it,
+// a bound name by its distance to its binder, and a node from its parts'
+// digests, as JSON so that no field runs into another. The count of the
+// decoding's distinct objects, arrays among them, is returned with it, and
+// the count of its distinct parts up to the names of bound variables and
+// dimensions: an object met under bindings that give it different digests
+// counts once for each, and objects alike up to those names count once.
+// The parts digest reads inline, a formula's clauses, a system and its
+// tubes, count as the objects they are, a system and a tube as an array and
+// an object read alone would.
+export function sharedNormalDigest(term) {
+  const free = new Map(), digests = new Map(), objects = new Set(), distinct = new Set();
+  const dimensionOf = literal => literal.slice(0, literal.lastIndexOf(":"));
+  const isFormula = value => Array.isArray(value) && value.length > 0 && value.every(Array.isArray);
+  // The term and dimension names a value mentions free, as a binder's
+  // fields are read: its own name is bound in the fields it binds.
+  const freeNames = value => {
+    if (value === null || typeof value !== "object") return { terms: [], dims: [] };
+    if (free.has(value)) return free.get(value);
+    objects.add(value);
+    const terms = new Set(), dims = new Set(), add = ({ terms: t, dims: d }, term = null, dim = null) => {
+      for (const name of t) if (name !== term) terms.add(name);
+      for (const name of d) if (name !== dim) dims.add(name);
+    };
+    if (isFormula(value)) for (const clause of value) { objects.add(clause); for (const literal of clause) dims.add(dimensionOf(literal)); }
+    else if (Array.isArray(value)) value.forEach(item => add(freeNames(item)));
+    else if (value.tag === "Var") terms.add(value.name);
+    else {
+      const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
+      const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
+      for (const [key, item] of Object.entries(value)) {
+        if (key === "tag" || key === binder) continue;
+        if (!binds.includes(key)) add(freeNames(item));
+        else if (binder === "name") add(freeNames(item), value.name);
+        else if (key !== "system") add(freeNames(item), null, value.dim);
+        else {
+          objects.add(item);
+          for (const tube of item) { objects.add(tube); add(freeNames(tube.face)); add(freeNames(tube.term), null, value.dim); }
+        }
+      }
+    }
+    const result = { terms: [...terms].sort(), dims: [...dims].sort() };
+    free.set(value, result);
+    return result;
+  };
+  const scopes = { terms: { names: new Map(), depth: 0 }, dims: { names: new Map(), depth: 0 } };
+  const under = (scope, name, visit) => {
+    const had = scope.names.has(name), outer = scope.names.get(name);
+    scope.names.set(name, scope.depth++);
+    const result = visit();
+    scope.depth--;
+    if (had) scope.names.set(name, outer); else scope.names.delete(name);
+    return result;
+  };
+  const named = (scope, name) => scope.names.has(name) ? ["bound", scope.depth - scope.names.get(name) - 1] : ["free", name];
+  const literal = text => [named(scopes.dims, dimensionOf(text)), text.slice(text.lastIndexOf(":") + 1)];
+  const sorted = values => values.map(value => JSON.stringify(value)).sort();
+  // A part read inline, counted among the distinct parts by the digest it
+  // would have read alone.
+  const counted = fields => {
+    const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
+    distinct.add(result);
+    return result;
+  };
+  const digest = value => {
+    if (value === null || typeof value !== "object") return JSON.stringify(["value", JSON.stringify(value) ?? "undefined"]);
+    const { terms, dims } = freeNames(value);
+    const key = JSON.stringify([terms.map(name => named(scopes.terms, name)), dims.map(name => named(scopes.dims, name))]);
+    let known = digests.get(value);
+    if (known?.has(key)) return known.get(key);
+    let fields;
+    // A composition's system, its tube terms under the binder: each tube
+    // counted as the object { face, term } and the system as their array.
+    const tubes = (system, dim) => {
+      const entries = system.map(tube => {
+        const face = digest(tube.face), term = under(scopes.dims, dim, () => digest(tube.term));
+        return { entry: ["face", face, "term", term], tube: counted(["node", "", [["face", face], ["term", term]]]) };
+      });
+      counted(["array", entries.map(({ tube }) => tube)]);
+      return entries.map(({ entry }) => entry);
+    };
+    if (isFormula(value)) fields = ["formula", sorted(value.map(clause => {
+      const literals = sorted(clause.map(literal));
+      counted(["clause", literals]);
+      return literals;
+    }))];
+    else if (Array.isArray(value)) fields = ["array", value.map(digest)];
+    else if (value.tag === "Var") fields = ["Var", named(scopes.terms, value.name)];
+    else {
+      const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
+      const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
+      fields = ["node", value.tag ?? "", Object.entries(value).filter(([key]) => key !== "tag" && key !== binder).map(([key, item]) =>
+        [key, !binds.includes(key) ? digest(item)
+          : binder === "name" ? under(scopes.terms, value.name, () => digest(item))
+          : key !== "system" ? under(scopes.dims, value.dim, () => digest(item))
+          : tubes(item, value.dim)])];
+    }
+    const result = createHash("sha256").update(JSON.stringify(fields)).digest("hex");
+    if (!known) digests.set(value, known = new Map());
+    known.set(key, result);
+    distinct.add(result);
+    return result;
+  };
+  // The root's digest hashed once more: a scalar root's is its text.
+  return { digest: createHash("sha256").update(digest(term)).digest("hex").slice(0, 16), objects: objects.size, distinct: distinct.size };
+}
+
 // Observe a program's phases while `run` runs: each phase's own calls,
 // failures, time, kernel work and arena growth, the run's peak arena, and
-// the normal form of the term it evaluated: the first verified at the
-// entry's top level, before any expected value or pattern.
+// the normal form of the term it evaluated, the first checked for
+// evaluation at the entry's top level, when the entry computed it.
 async function profiled(program, run, { depth = false } = {}) {
   const kernel = program.kernel, checker = program.checker, totals = {}, stack = [], restore = [], depths = {};
-  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null;
+  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null, term = null;
   const read = () => { const r = reading(kernel); peakNodes = Math.max(peakNodes, r.nodes); peakBytes = Math.max(peakBytes, r.bytes); return r; };
   const open = name => { const frame = { name, start: read(), inner: zero }; stack.push(frame); return frame; };
   const close = (frame, failed) => {
@@ -251,10 +388,26 @@ async function profiled(program, run, { depth = false } = {}) {
     restore.push(() => { if (own) owner[method] = original; else delete owner[method]; });
   };
   wrap(Translator.prototype, "term", "elaborate", () => top() === "other");
-  wrap(checker, "verify", "inventory", () => true, result => { if (!evaluated && top() === "other") evaluated = result.normal; });
+  wrap(checker, "evaluated", "inventory", () => true, result => { if (term === null && top() === "other") term = result.expression; });
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
+  wrap(checker, "derivedHead", "demand", () => top() === "other");
   wrap(kernel, "normalize", "normalize", () => top() !== "normalize", result => { normal = result; });
-  wrap(checker.syntax, "decode", "decode", id => top() === "inventory" && id === normal);
+  // The folded normal form (folded-normal-forms.md) is a normalization too.
+  wrap(kernel, "normalizeFolded", "normalize", () => top() !== "normalize", result => { normal = result; });
+  // Only the readback of a normal form, inside normalForm, is decode's: the
+  // same handle decoded elsewhere, by a check or a comparison, is not.
+  let readback = false;
+  wrap(checker.syntax, "decode", "decode", id => readback && top() !== "decode" && id === normal);
+  // normalForm is normalize and decode, observed by those phases.
+  const normalForm = checker.normalForm;
+  checker.normalForm = function (handle, ...rest) {
+    readback = true;
+    let result;
+    try { result = normalForm.call(this, handle, ...rest); } finally { readback = false; }
+    if (!evaluated && handle === term) evaluated = result;
+    return result;
+  };
+  restore.push(() => { delete checker.normalForm; });
   wrap(checker, "equal", "compare", () => top() === "other");
   wrap(checker, "displayText", "render", () => top() === "other");
   const frame = open("other");
@@ -442,8 +595,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       method: "Each sample is a new Node process that loads the kernel, runs the workload's setup entries in a new REPL session "
         + "(web/repl-session.mjs, as the CLI does) and its entry once cold, then the warm runs in the same session. A further "
         + "process times the cold entry with no phase observed, for the observation's cost. An outcome's text is a preview past 160 "
-        + "characters, with the whole text's length and hash; the REPL displays at most 1000 characters of a value, so a kernel "
-        + "outcome also digests the whole normal form evaluated, its bound variables and dimensions numbered by binding depth. "
+        + "characters, with the whole text's length and hash. A value form, which a REPL or print workload shows, is its whole "
+        + "text, never cut at a width; a full normal form, which its !!! twin shows, is displayed to at most 1000 characters, so "
+        + "an outcome whose entry normalizes the whole term also digests that normal form, its bound variables and dimensions "
+        + "numbered by binding depth. "
         + "Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the "
         + "phases nested in it. Counters are the kernel's cumulative work and the arena's net growth, compared across the cold "
         + "samples; times are medians over samples on this machine, and include the observation's wrappers. Failed entries count "

@@ -10,7 +10,10 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 // 42, 1_000, 1/2, 2.3, 6.02e23, 2.5e-3 and 5i. Right after a tight dot a
 // digit is a projection's index, as in p.2.1, never a literal's start.
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
-const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~-]|.`, "gy");
+// `!`, `!!` and `!!!` are evaluation demand marks; `!!` and `!!!` are one
+// token each, so that a space between marks is seen and refused (parse).
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+|!!!|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
+const markTokens = ["!", "!!", "!!!"];
 // The source scanner also serves incomplete editor input. It retains every
 // character, including comments and whitespace; tokenize enforces parser limits
 // and rejects invalid characters after discarding trivia.
@@ -26,7 +29,7 @@ export function tokenize(source) {
     const { text, start } = token;
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|[#\[\](){}:,;.+*\/^<=>@&|~-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|!!!|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: start,
@@ -70,7 +73,7 @@ export const languageKeywords = new Set([
 ]);
 // Unit, Void and tt have fixed meanings in law and literal checking.
 // Universe constants are refused separately by name().
-const primitiveNames = ["Unit", "Void", "tt"];
+export const primitiveNames = ["Unit", "Void", "tt"];
 export const reservedNames = new Set([...languageKeywords, ...primitiveNames]);
 export const isUniverseConstant = name => /^U+[0-9]+$/.test(name);
 
@@ -87,7 +90,10 @@ export function reservedReferences(source) {
 export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false, historicalOver = false } = {}) {
   const ts = tokenize(source), bindableNames = new Set(bindable);
   let i = 0,
-    depth = 0;
+    depth = 0,
+    // Whether a demand mark may start the next expression: in an
+    // evaluation's expected pattern.
+    demandMarks = false;
   const peek = () => ts[i].text;
   function take(text) {
     const t = ts[i];
@@ -451,9 +457,26 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       else return ts[at]?.text === "along";
     }
   }
+  // An evaluation's demand mark (docs/roadmaps/runtime/evaluation-demand-marks.md):
+  // `!` asks for a weak head, `!!` for a normal form with stuck definitions
+  // folded, and `!!!` for a full normal form
+  // (docs/roadmaps/runtime/folded-normal-forms.md). It is read only right
+  // after evaluate and at the start of a part of an expected pattern, and
+  // applies to the whole part after it. It is no term former.
+  function demandMark(mark = take()) {
+    if (markTokens.includes(peek()))
+      throw Object.assign(new Error(`Two demand marks in a row, ${mark.text} ${peek()}, ask for one demand: write !, !! or !!! as one mark.`), { offset: mark.start });
+    return mark;
+  }
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
+    if (markTokens.includes(t.text)) {
+      if (!demandMarks)
+        throw Object.assign(new Error(`The demand mark ${t.text} stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);.`), { offset: t.start });
+      const mark = demandMark(t), value = expr();
+      return { kind: "demand", mark: mark.text, value, markStart: mark.start, markEnd: mark.end, start: mark.start, end: value.end };
+    }
     if (t.text === "with") return unfoldingExpr(t);
     if (t.text === "induction") return inductionExpr(t);
     if (t.text === "match") return matchExpr(t);
@@ -1300,27 +1323,37 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
           ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
         directives.push(directive); placeItem(directive); continue;
       }
+      // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!.
+      const mark = markTokens.includes(peek()) ? demandMark() : null;
       const value = expr();
       take("expecting");
-      const expected = expr();
+      demandMarks = true;
+      let expected;
+      try { expected = expr(); } finally { demandMarks = false; }
       const end = take(";").end;
-      const directive = { kind: "evaluate", value, expected, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
+      const directive = { kind: "evaluate", value, expected,
+        ...(mark ? { mark: mark.text, markStart: mark.start, markEnd: mark.end } : {}),
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       directives.push(directive); placeItem(directive); continue;
     }
     // `print(evaluate(term));`, `print(typeof(term));` and
     // `print(inspect(term));` show what a closed term computes to, its type,
-    // and the term the kernel checked.
+    // and the term the kernel checked. A demand mark may start evaluate's
+    // term: print(evaluate(!!term)).
     if (t.text === "print" && peek() === "(") {
       take("(");
       const show = take();
       if (!["evaluate", "typeof", "inspect", "witness"].includes(show.text))
         throw Object.assign(new Error("print shows evaluate(term), typeof(term), inspect(term) or witness(term)."), { offset: show.start });
       take("(");
+      const mark = show.text === "evaluate" && markTokens.includes(peek()) ? demandMark() : null;
       const value = expr();
       take(")");
       take(")");
       const end = take(";").end;
-      const directive = { kind: "print", show: show.text, value, ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
+      const directive = { kind: "print", show: show.text, value,
+        ...(mark ? { mark: mark.text, markStart: mark.start, markEnd: mark.end } : {}),
+        ...(uses.length ? { uses: [...uses] } : {}), start: t.start, end };
       directives.push(directive); placeItem(directive); continue;
     }
     // `theory T(U < UU0) [extends P, label : Q(f := g notation x + y)] {

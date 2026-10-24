@@ -264,7 +264,7 @@ use unat;
 //   Path to Truncate: Truncate.
 evaluate TruncateIntro(U0, UNat, 3) expecting TruncateIntro(U0, UNat, 3);</code></pre>
             <p>The expected side is normalized too, so it may be any term of the same type. Writing a literal makes the directive state what the term computes to.</p>
-            <p>An expected value with a hole <code>_</code> is a <strong>pattern</strong>, matched against the normal form part by part: a hole matches anything; a pair, <code>left(p)</code>, <code>right(p)</code> or a constructor of the part's type applied to patterns matches a value built so; and any other expression is elaborated at the part's type and compared by normal form. A mismatch names the part that differs. A hole stands only where such a part can be read, not inside another function's arguments.</p>
+            <p>An expected value with a hole <code>_</code> or a demand mark is a <strong>pattern</strong>, matched part by part, and each part of the term is computed only as far as the pattern observes it: a hole matches anything and computes nothing; a pair, <code>left(p)</code>, <code>right(p)</code> or a constructor of the part's type applied to patterns computes the part's weak head and matches a value built so; and any other expression is elaborated at the part's type and compared by full normal form. A part is read at its type, the field's type where it is a constructor's argument. A mismatch names the part that differs and shows the value as far as it was computed, with <code>&lt;unevaluated&gt;</code> for a part nothing computed. A hole stands only where such a part can be read, not inside another function's arguments.</p>
             <pre><code data-check="accept">import lists;
 use unat;
 
@@ -278,15 +278,62 @@ use unat;
 
 def numbers : List(U0, UNat) := cons(1, cons(2, cons(3, nil)));
 
-evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_, nil): cons(2, cons(3, nil)) is not nil.</code></pre>
-            <p>Expected-value evaluation computes full normal forms: it unfolds every definition and ignores <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints.</p>
+evaluate numbers expecting cons(_, nil);  // Error: The term evaluates to cons(&lt;unevaluated&gt;, cons(&lt;unevaluated&gt;, &lt;unevaluated&gt;)), which does not match cons(_, nil): cons(&lt;unevaluated&gt;, &lt;unevaluated&gt;) is not nil.</code></pre>
+            <p>Three <strong>demand marks</strong> ask for more than a pattern observes, by analogy with Haskell's <code>$!</code> and <code>$!!</code>. <code>!p</code> computes the part's weak head, its outermost constructor, pair, injection, function or type, before matching <code>p</code>. <code>!!p</code> computes its normal form, in which data computes in full and a definition whose value is no data, such as a lemma applied to a variable under a proof's binder, stays as written, with its arguments normalized. <code>!!!p</code> computes its full normal form, which unfolds every definition. A mark applies to the whole part after it, and marks apart, <code>! !p</code>, are refused, so that a space never weakens a mark. <code>!_</code> thus checks that a part has a weak head without computing inside it, <code>!!_</code> that it has a normal form, and <code>!!!_</code> that it has a full normal form. Written right after <code>evaluate</code>, as in <code>evaluate !!e expecting p;</code>, a mark applies to the whole pattern. A bare <code>evaluate e expecting _;</code> would compute nothing, and is refused.</p>
+            <pre><code data-check="accept">import unat;
+use unat;
+
+// 2 * 256 is a unary numeral too deep to build, but a pattern that does
+// not observe it does not compute it.
+def far : UNat and UNat := (1, 2 * 256);
+
+evaluate far expecting (1, _);
+evaluate far expecting (_, succ(_));
+evaluate far expecting (_, !_);</code></pre>
+            <pre><code data-check="reject">import unat;
+use unat;
+
+def far : UNat and UNat := (1, 2 * 256);
+
+evaluate far expecting !!_;  // Error: Native prototype syntax depth exceeds 512.</code></pre>
+            <pre><code data-check="reject">import unat;
+use unat;
+
+def three : UNat := 3;
+
+evaluate three expecting _;  // Error: evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form.</code></pre>
+            <p>A weak head is the kernel's <a href="kernel-computation.html#whnf">weak-head normal form</a>, which contracts a function by η: the weak head of <code>fun (n : UNat) =&gt; succ(n)</code> is the constructor <code>succ</code>, and that of <code>fun (n : UNat) =&gt; n + n</code> is the function itself. <code>!</code> therefore says nothing about a proof that is a function, such as a certificate that a number is nonzero: its weak head is that function. <code>!!</code> computes the certificate's body as far as its own definitions are not stuck, and names those that are; only <code>!!!</code> unfolds them all.</p>
+            <pre><code data-check="repl">&gt; import rationals;
+Imported rationals.
+&gt; use unat;
+Selected unat.
+&gt; evaluate !!rationals.(2/3);
+class((class((2, 0)), class((3, 0)), int_succ_nonzero(2)))</code></pre>
+            <p>The literal's data, two integers, is computed, and its certificate that the denominator is not zero is named. Under <code>!!!</code> that certificate unfolds, through <code>quotient_effective</code>, into a normal form of more than a million nodes.</p>
+            <p>Each computation a pattern asks for runs under the evaluation's step budget and time limit, and one that runs out, or builds syntax deeper than the kernel allows, fails the evaluation as it would anywhere, at the part of the pattern that asked for it. A part no pattern observes asks nothing, so it cannot fail. A mark that asks for nothing more is a <a href="errors.html#warnings">warning</a>: a mark under <code>!!</code> or <code>!!!</code> that asks for no more than it, and, where a hole keeps the expected value a pattern without the mark, <code>!</code> before a pair, an injection, a constructor or an expression, which compute at least their part's weak head, and <code>!!</code> before an expression, which is compared by its normal form. A <code>!!!</code> inside a <code>!!</code> part asks for what that part's normal form does not hold, and is refused. A mark that alone makes the expected value a pattern is not reported: without it, the value would be compared whole instead.</p>
+            <pre><code data-check="accept">import unat;
+use unat;
+
+def pairs : UNat and UNat := (3, 4);
+
+evaluate pairs expecting !(3, _);  // Warning: The ! before (3, _) asks for nothing more: a pair, an injection, a constructor or an expression computes its part's weak head itself.
+evaluate pairs expecting (!!3, _);  // Warning: The !! before 3 asks for nothing more: an expression is compared by its normal form.
+evaluate pairs expecting !!(3, !_);  // Warning: The ! before _ asks for nothing more: it is under !!, which normalizes its part.</code></pre>
+            <pre><code data-check="reject">import unat;
+use unat;
+
+def pairs : UNat and UNat := (3, 4);
+
+evaluate pairs expecting !!(3, !!!_);  // Error: A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part.</code></pre>
+            <p>A normal form, of an expression or under <code>!!</code>, unfolds the term asked for to its weak head, and inside it unfolds a definition only where its value is data, so a proof stays named where it is stuck: <code>evaluate !!identity;</code> shows the function, a <code>fun</code>, and where <code>both</code> is defined as <code>(identity, tt)</code>, <code>evaluate !!both;</code> shows <code>(identity, tt)</code>. It is compared with another by conversion; a full normal form, under <code>!!!</code>, unfolds every definition (<a href="kernel-computation.html#normal">normal form</a>). Neither reads <a href="conversion.html#unfolding-hints"><code>with unfolding</code></a> hints.</p>
             <p><code>evaluate nonempty P by proof;</code> instead checks that the supplied evidence inhabits <code>P</code> and that neither the evidence nor its type depends on assumptions. The counterpart <code>evaluate empty P by proof;</code> checks evidence of <code>P -&gt; Void</code>, under the same rules. Neither form searches for a proof or fully normalizes its body. This is useful for disequalities, whose proofs are functions into <code>Void</code>: different proofs need not have identical normal forms.</p>
             <pre><code data-check="accept">evaluate nonempty Unit by tt;
 evaluate nonempty (Void -&gt; Void) by fun (x : Void) =&gt; x;
 evaluate nonempty (Void -&gt; Void) by fun (x : Void) =&gt; absurd(x);
 evaluate empty Void by fun (x : Void) =&gt; x;</code></pre>
             <p>Success is reported as <code>nonempty P</code> or <code>empty P</code>. The directive defines no name, and incorrect evidence makes the module incomplete. <code>computable</code>, <code>evaluate</code>, <code>expecting</code>, <code>nonempty</code> and <code>empty</code> are reserved keywords.</p>
-            <p>The command-line checker prints each success as <code>evaluate at line N: value</code>. After <code>check</code>, its <code>evaluate EXPRESSION</code> command prints the normal form of an expression in the scope of the checked module, under the same rule. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
+            <p>Without <code>expecting</code>, <a href="checking.html#print"><code>print(evaluate(term));</code></a> and the REPL's <code>evaluate term;</code> show the term's value form: its data computed and shown, and a marker such as <code>&lt;fun&gt;</code> where a function, a path or a type stops it. <code>!</code>, <code>!!</code> and <code>!!!</code> written before the term show its weak head, its normal form and its full normal form.</p>
+            <p>The command-line checker prints each success as <code>evaluate at line N: value</code>, the value as far as the directive computed it. After <code>check</code>, its <code>evaluate EXPRESSION</code> command shows an expression in the scope of the checked module, under the same rule and as the REPL does: its value form, or with <code>!!</code> before the expression its normal form, and with <code>!!!</code> its full normal form. <code>inspect NAME</code> lists the declaration’s assumptions, or <code>none</code>. See <a href="checking.html#inspection">checking and inspection</a>.</p>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

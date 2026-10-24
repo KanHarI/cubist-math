@@ -51,12 +51,16 @@ export function stripped(source) {
 // What a check reports, each item at the line (from 0) of the declaration
 // or directive it belongs to: a refused declaration's reason, a failed
 // directive's, what a print directive shows, and each warning, at the
-// declaration or directive it falls in.
+// declaration or directive it falls in. A failed directive's reason may be
+// located inside it, below its start, so both lines anchor a warning.
 export function reported(source, result, main) {
   const lineAt = offset => source.slice(0, offset).split("\n").length - 1;
   const prints = (result.prints ?? []).filter(print => print.module === main);
+  const evaluations = (result.evaluations ?? []).filter(evaluation => evaluation.module === main && evaluation.start !== undefined);
   const starts = [...result.outputs.map(output => lineAt(output.start)), ...prints.map(print => lineAt(print.start)),
-    ...(result.gaps ?? []).filter(gap => (gap.directive || gap.duplicate) && gap.module === main && gap.start !== undefined).map(gap => lineAt(gap.start))]
+    ...evaluations.map(evaluation => lineAt(evaluation.start)),
+    ...(result.gaps ?? []).filter(gap => (gap.directive || gap.duplicate) && gap.module === main)
+      .flatMap(gap => [gap.start, gap.declarationStart]).filter(start => start !== undefined).map(lineAt)]
     .sort((a, b) => a - b);
   const labelled = (code, message) => normal(code ? `${code}: ${message}` : message);
   const items = [];

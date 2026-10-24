@@ -71,6 +71,9 @@ function parsedEntry(entry) {
     const text=source+";",ast=parse(text),items=ast.items??ast.declarations;
     if(ast.imports.length||items.length!==1||items[0].kind!=="print"||!["typeof","evaluate","inspect","witness"].includes(items[0].show))
       throw new TypeError("Expected print(typeof(...)), print(evaluate(...)), print(inspect(...)) or print(witness(...)).");
+    // This console shows a term's weak head in its context; demand marks
+    // ask a closed evaluation for more or less.
+    if(items[0].mark)throw new TypeError("A demand mark asks a closed evaluation, in a file or the REPL; this console shows a term's weak head in its context.");
     return {kind:items[0].show,text,tree:items[0].value};
   }
   const termCommand=/^(typeof|evaluate|inspect|witness)\s+([\s\S]+)$/.exec(source);

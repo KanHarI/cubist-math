@@ -48,18 +48,20 @@ evaluate empty Void by fun x => x;
 });
 
 
-test("evidence assertions do not request full normalization, while expected values do", async t => {
+test("evidence assertions do not request normalization, while expected values do", async t => {
   const { program } = await checkProgram(t, "");
-  const kernel = program.kernel, normalize = kernel.normalize.bind(kernel);
+  const kernel = program.kernel, normalize = kernel.normalize.bind(kernel), normalizeFolded = kernel.normalizeFolded.bind(kernel);
+  // Either normal form, full or folded (docs/roadmaps/runtime/folded-normal-forms.md).
   let calls = 0;
   kernel.normalize = (...args) => { calls++; return normalize(...args); };
+  kernel.normalizeFolded = (...args) => { calls++; return normalizeFolded(...args); };
   const evidence = await program.check(`
     evaluate nonempty (Void -> Void) by fun (x : Void) => absurd(x);
     evaluate empty Void by fun (x : Void) => x;
   `, "evidence", () => {}, { reuseModules: true });
   assert.equal(program.kernel, kernel, "the observation covers the kernel used by the directives");
   assert.deepEqual(evidence.gaps, []);
-  assert.equal(calls, 0, "checking evidence must not expand its full normal form");
+  assert.equal(calls, 0, "checking evidence must not expand its normal form");
   const ordinary = await program.check("evaluate tt expecting tt;", "ordinary", () => {}, { reuseModules: true });
   assert.deepEqual(ordinary.gaps, []);
   assert.ok(calls > 0, "ordinary expected-value evaluation still normalizes");

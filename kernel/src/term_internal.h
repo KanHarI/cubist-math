@@ -145,6 +145,7 @@ struct cc_kernel {
      * admitted signatures are immutable. Rollback/compaction clear both
      * caches before handles can be reused; zero means no completed result. */
     cc_term *normal_cache;
+    cc_term *folded_cache; /* allocated on the first folded normal form */
     /* The syntax hash graph: with CC_SHARE_SYNTAX, identical syntax has one
      * handle. An index of live nodes, never a typing certificate. Discarded
      * handles act as tombstones until the table is rebuilt. */
@@ -297,6 +298,7 @@ cc_term ck_restrict(cc_kernel *, cc_term, cc_clause);
 cc_term ck_whnf(cc_kernel *, cc_term);
 cc_term ck_expose(cc_kernel *, cc_term);
 cc_term ck_normal(cc_kernel *, cc_term);
+cc_term ck_normal_folded(cc_kernel *, cc_term);
 /* Glue eta with its side conditions normalized (CC_STEP_GLUE). */
 cc_term ck_glue_step(cc_kernel *, cc_term);
 cc_term ck_reduce_composition(cc_kernel *, cc_term);

@@ -22,10 +22,10 @@ const cases = [
         fun (a : Unit) => typed(Q, class(a)),
         fun (a, b : Unit, r : Related(a, b)) => class_path(U0, Unit, Related, a, b, r), x
       );
-      evaluate copy expecting _;`, { shareSyntax: false }],
-  ["integer_multiplication", "import binary_integers; evaluate bint_mul expecting _;"],
+      evaluate copy expecting !!!_;`, { shareSyntax: false }],
+  ["integer_multiplication", "import binary_integers; evaluate bint_mul expecting !!!_;"],
   ["binary_fraction_one", `import fractions; import binary_integers;
-      evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one).one expecting _;`],
+      evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one).one expecting !!!_;`],
 ];
 for (const [name, source, optimizations = {}] of cases) {
   const program = new CubicalProgram(module, sourceReader(), { collectReferences: false, optimizations });

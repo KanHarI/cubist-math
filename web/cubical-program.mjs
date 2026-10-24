@@ -212,7 +212,7 @@ export class CubicalProgram {
           ...(directive.blockedBy?{blockedBy:directive.blockedBy}:{}),...(directive.cause?{cause:directive.cause}:{}),
           ...(directive.failure?{failure:directive.failure}:{}),...(directive.diagnostic?{diagnostic:directive.diagnostic}:{})});
       else if(directive.kind==="evaluate")
-        this.evaluations.push({module:name,name:directive.name,value:directive.normalText});
+        this.evaluations.push({module:name,name:directive.name,value:directive.normalText,start:directive.start});
       else if(directive.kind==="print")
         this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start});
     }
@@ -700,7 +700,8 @@ export class CubicalProgram {
     // The kernel extensions of the term as checked: a normal form may no
     // longer mention the declared type it computed through.
     const extensions = this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type));
-    if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
+    // A normal form on request, stuck definitions folded (folded-normal-forms.md).
+    if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalizeFolded(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
     const aliases = local?.aliases ?? [];
     const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };

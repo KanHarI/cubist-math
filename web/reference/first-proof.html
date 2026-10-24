@@ -84,11 +84,11 @@ Imported unat.
 Selected unat.
 &gt; typeof and_swap;
 forall A : U0. forall B : U0. A and B -&gt; B and A
-&gt; evaluate and_swap;
+&gt; evaluate !!and_swap;
 fun (A, B : U0, both : A and B) =&gt; (both.2, both.1)
 &gt; evaluate and_swap(UNat, Unit, (3, tt));
 (tt, 3)</code></pre>
-            <p>The proof is a function of three arguments: the two statements, and the evidence for the first. The block built it, and <code>evaluate</code> shows it as a term. Applied to the types <code>UNat</code> and <code>Unit</code> and the pair <code>(3, tt)</code>, it swaps the pair. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
+            <p>The proof is a function of three arguments: the two statements, and the evidence for the first. The block built it, and <code>evaluate !!</code> shows it as a term: <code>!!</code> asks for the normal form, which computes inside functions too, as plain <code>evaluate</code> computes data and shows a function only as <code>&lt;fun&gt;</code>. Applied to the types <code>UNat</code> and <code>Unit</code> and the pair <code>(3, tt)</code>, it swaps the pair. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
             <p>The components can also be named. <code>obtain (a, b) := both;</code> splits the pair into <code>a : A</code> and <code>b : B</code>:</p>
             <pre><code data-check="accept">def and_swap_again(A, B : U0) : A and B -&gt; B and A {
   intro both;
@@ -148,11 +148,11 @@ def two_lt_seven : lt(2, 7) {
             <p>In the REPL, with the example above loaded, <code>evaluate</code> needs no expected value, unlike the directive:</p>
             <pre><code data-check="repl">&gt; typeof lt;
 UNat -&gt; UNat -&gt; U0
-&gt; evaluate lt;
+&gt; evaluate !!lt;
 fun (n, m : UNat) =&gt; exists k : UNat. succ(induction k return UNat { zero =&gt; n; succ h =&gt; succ(h); }) = m
 &gt; typeof two_lt_seven;
 lt(2, 7)
-&gt; evaluate two_lt_seven;
+&gt; evaluate !!two_lt_seven;
 (4, refl(7))</code></pre>
             <p><code>lt</code> takes two numbers and returns a type in <code>U0</code>. Evaluating it unfolds every definition, <code>+</code> included. <code>unat</code> defines <code>+</code> by recursion on its first argument: <code>0 + b</code> is <code>b</code>, and <code>succ(a) + b</code> is <code>succ(a + b)</code>. So <code>succ(k) + n</code> computes one step, to <code>succ(k + n)</code>. Then <code>k + n</code> is stuck, because <code>k</code> is a variable, not a numeral. The recursive definition waits for a constructor; the REPL shows it as the eliminator it elaborates to, <code>induction k return UNat { zero =&gt; n; succ h =&gt; succ(h); }</code>, where <code>h</code> is the sum for the predecessor. With a numeral in place of <code>k</code>, it runs to the end: <code>succ(4) + 2</code> computes to <code>7</code>. The chapter on <a href="induction.html#recursion">structural recursion</a> shows the definition of addition.</p>
             <p>The same idea works for every <code>n</code>: <code>succ(n)</code> is greater than <code>n</code>, with <code>k = 0</code>. That gives the statement:</p>
@@ -180,12 +180,12 @@ def exists_greater_number : forall n : UNat. exists m : UNat. lt(n, m) {
               <li><code>exact (succ(n), lt_succ(n));</code> gives a value of exactly the goal type: the witness <code>succ(n)</code>, and the evidence <code>lt_succ(n) : lt(n, succ(n))</code>. It finishes the proof.</li>
             </ul>
             <p><a href="#elaboration">The elaborator</a> section below shows every step of this proof.</p>
-            <p>A proof is a value like any other. Evaluating one shows the term its block built:</p>
-            <pre><code data-check="repl">&gt; evaluate lt_succ;
+            <p>A proof is a value like any other. Evaluating one with <code>!!</code> shows the term its block built:</p>
+            <pre><code data-check="repl">&gt; evaluate !!lt_succ;
 fun (n : UNat) =&gt; (0, refl(succ(n)))
-&gt; evaluate exists_greater_number;
+&gt; evaluate !!exists_greater_number;
 fun (n : UNat) =&gt; (succ(n), 0, refl(succ(n)))
-&gt; evaluate exists_greater_number(5);
+&gt; evaluate !!exists_greater_number(5);
 (6, 0, refl(6))</code></pre>
             <p><code>exists_greater_number</code> is a function: given <code>n</code>, it returns the witness <code>succ(n)</code> and the evidence <code>(0, refl(succ(n)))</code>. The REPL writes the nested pair <code>(succ(n), (0, refl(succ(n))))</code> as <code>(succ(n), 0, refl(succ(n)))</code>: a tuple of three is a pair whose second component is a pair. Applied to <code>5</code>, it gives the witness <code>6</code>, with <code>k = 0</code> and <code>refl(6)</code> as evidence that <code>succ(0) + 5 = 6</code>.</p>
             <h3 id="blocks-and-terms">The same proof as a term</h3>
@@ -231,9 +231,9 @@ def exists_greater_number : forall n : UNat. exists m : UNat. n &lt; m {
   intro n;
   exact (succ(n), lt_succ(n));
 }</code></pre>
-            <pre><code data-check="repl">&gt; evaluate 2 &lt; 7;
+            <pre><code data-check="repl">&gt; evaluate !!2 &lt; 7;
 Unit
-&gt; evaluate 7 &lt; 2;
+&gt; evaluate !!7 &lt; 2;
 Void
 &gt; evaluate exists_greater_number(5);
 (6, tt)</code></pre>

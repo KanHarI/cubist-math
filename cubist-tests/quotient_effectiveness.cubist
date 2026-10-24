@@ -44,7 +44,7 @@ computable def one_three_related : SameParity(1, 3) := quotient_effective(
 );
 
 // Output: refl(1)
-print(evaluate(one_three_related));
+print(evaluate(!!one_three_related));
 
 // Two classes are equal exactly when their elements are related.
 computable def parity_classes(m, n : UNat) :
@@ -70,7 +70,7 @@ computable def related_to_zero : Parities -> Prop(U0) := related_to(
 );
 
 // Output: 0 = 0
-print(evaluate(related_to_zero(class(2)).1));
+print(evaluate(!!related_to_zero(class(2)).1));
 
 // Propositional extensionality: propositions that imply each other are
 // equal, as types and as propositions. Transport along the path is the map

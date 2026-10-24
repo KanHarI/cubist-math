@@ -32,6 +32,26 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // Terms share subterms, so each scan visits a node once.
   const free = displayFreeNames();
   const mentions = (term, variable) => free(term).has(variable);
+  // The names a term prints for what no binder binds: its definitions', its
+  // types' and its constructors'. A folded normal form keeps definitions
+  // inside binders (docs/roadmaps/runtime/folded-normal-forms.md), so a
+  // binder of one of these names would capture it in the text.
+  const printedNames = (() => {
+    const memo = new WeakMap(), empty = new Set();
+    const scan = value => {
+      if (!value || typeof value !== "object") return empty;
+      if (memo.has(value)) return memo.get(value);
+      const names = new Set();
+      memo.set(value, names);
+      if (value.tag === "DefRef") names.add(label(value.name));
+      else if (value.tag === "Sort") names.add(label(value.signature));
+      else if (value.tag === "Con" && value.name) names.add(value.name);
+      for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
+      return names;
+    };
+    return scan;
+  })();
+  const taken = (term, name) => mentions(term, name) || printedNames(term).has(name);
   const numeral = numeralValue;
   // A dimension occurs in a term through interval literals `i:1` and `i:0`.
   const varies = (t, dim, seen = new Set()) => {
@@ -99,10 +119,19 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     }
   };
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
-  // A bound name that also occurs in `outside` gets a numbered variant.
+  // A bound name that also occurs in `outside`, or that `whole` prints as a
+  // definition's, a type's or a constructor's, gets a numbered variant.
   const apart = (name, outside, whole) => {
-    if (!mentions(outside, name)) return name;
-    for (let i = 1; ; i++) if (!mentions(whole, numberedName(name, i))) return numberedName(name, i);
+    if (!mentions(outside, name) && !printedNames(whole).has(name)) return name;
+    for (let i = 1; ; i++) if (!taken(whole, numberedName(name, i))) return numberedName(name, i);
+  };
+  // A function as a lambda: a folded normal form keeps a motive or a clause
+  // that is a definition as its name (docs/roadmaps/runtime/folded-normal-forms.md),
+  // shown applied to a new name, as `return Shape(z)` for the motive Shape.
+  const lambda = (term, stem, near) => {
+    if (!term || term.tag === "Lam") return term;
+    const name = apart(stem, near, near);
+    return { tag: "Lam", name, domain: null, body: { tag: "App", fn: term, arg: { tag: "Var", name } } };
   };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
@@ -141,7 +170,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // recursive result, the eliminator is an induction, and that clause names
   // its hypotheses after with: `cons(head, tail) with ih => …`.
   const declaredMatch = (elim, value) => {
-    const constructors = symbols[elim.signature]?.constructors, motive = elim.motive;
+    const constructors = symbols[elim.signature]?.constructors, motive = lambda(elim.motive, "z", { tag: "App", fn: elim, arg: value });
     if (!constructors || constructors.length !== elim.clauses?.length || motive?.tag !== "Lam") return null;
     const clauses = [];
     for (const [c, clause] of elim.clauses.entries()) {
@@ -149,7 +178,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       const args = [], results = [], dims = [];
       let body = clause;
       // A clause that evaluation eta-reduced, as `succ` for fun (ih) =>
-      // succ(ih), is applied to new names instead.
+      // succ(ih), or that a folded normal form keeps as a definition, is
+      // applied to new names instead.
       const take = (into, stem) => {
         if (body?.tag === "Lam") { into.push(body.name); body = body.body; return; }
         const name = apart(stem, body, body);
@@ -158,7 +188,15 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       };
       for (let i = 0; i < data + positions; i++) take(args, "x");
       for (let i = 0; i < positions; i++) take(results, "ih");
-      for (let i = 0; i < dimensions; i++) { if (body?.tag !== "PLam") return null; dims.push(body.dim); body = body.body; }
+      // A path constructor's clause takes its dimensions, applied likewise
+      // to new ones where it is no path abstraction.
+      for (let i = 0; i < dimensions; i++) {
+        if (body?.tag === "PLam") { dims.push(body.dim); body = body.body; continue; }
+        let dim = "i";
+        for (let n = 1; varies(body, dim); n++) dim = numberedName("i", n);
+        dims.push(dim);
+        body = { tag: "PApp", path: body, arg: [[`${dim}:1`]] };
+      }
       const fields = order ? order.map((_, sourceIndex) => args[order.indexOf(sourceIndex)]) : args;
       clauses.push({ name, args: fields, results, dims, body });
     }
@@ -183,6 +221,8 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "LBound": return atom(universeText({ tag: "LConst", tier: t.tier, value: 0 }));
       case "Unit": case "Void": return atom(t.tag);
       case "Point": return atom("tt");
+      // A part an evaluation did not compute, or stopped at (evaluation.mjs).
+      case "Marker": return atom(t.text);
       case "Var": return atom(variable(t.name));
       case "DefRef": return atom(label(t.name));
       case "Pi": case "Sigma": {
@@ -229,7 +269,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           + `succ ${h} => ${successor}; }`, LEVEL.binder];
       }
       case "SumRec": {
-        const { motive, left, right } = t;
+        const motive = lambda(t.motive, "z", t), left = lambda(t.left, "a", t), right = lambda(t.right, "b", t);
         if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
         // `as z` is written only where the return type uses z, as the linter asks.
         const named = mentions(motive.body, motive.name);
@@ -241,12 +281,17 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // function by cases after eta reduction, is the function that applies
       // it: fun (n : Nat) => induction n …, or fun (x : T) => match x …, which
       // the application case below prints.
+      // A folded motive, a definition, has no domain to read: a type
+      // without parameters is its own domain, and the function of any other
+      // is written untyped, its type given by where it is checked.
       case "Elim": {
-        if (t.motive?.tag !== "Lam") return fallback(t);
+        const domain = t.motive?.tag === "Lam" ? t.motive.domain
+          : symbols[t.signature]?.slots?.length === 0 ? { tag: "Sort", signature: t.signature, parameters: [], levels: [] } : null;
         const nat = t.signature === "unat__UNat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
         const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
         const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
-        return text ? [`fun (${x} : ${show(t.motive.domain)}) => ${text}`, LEVEL.binder] : fallback(t);
+        if (!text) return fallback(t);
+        return [`fun ${domain ? `(${x} : ${show(domain)})` : x} => ${text}`, LEVEL.binder];
       }
       case "App": case "LApp": {
         const number=numeral(t);
@@ -257,15 +302,15 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
         // spelling. Eta reduction may leave its successor clause curried.
-        if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="unat__UNat"
-          &&t.fn.motive?.tag==="Lam"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
+        const motive=t.tag==="App"&&t.fn.tag==="Elim"?lambda(t.fn.motive,"k",t):null;
+        if(motive?.tag==="Lam"&&t.fn.signature==="unat__UNat"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
           let step=t.fn.clauses[1];
           if(step.body.tag!=="Lam") {
             const h=apart("h",t,t);
-            step={...step,body:{tag:"Lam",name:h,domain:t.fn.motive.body,
+            step={...step,body:{tag:"Lam",name:h,domain:motive.body,
               body:{tag:"App",fn:step.body,arg:{tag:"Var",name:h}}}};
           }
-          return print({tag:"NatInduction",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
+          return print({tag:"NatInduction",motive,zero:t.fn.clauses[0],step,value:t.arg});
         }
         if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.

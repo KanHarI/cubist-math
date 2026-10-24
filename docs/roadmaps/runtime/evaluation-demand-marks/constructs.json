@@ -1,0 +1,1466 @@
+{
+ "description": "One closed example of each Cubist construct with a term to evaluate, for the evaluation demand marks note: its weak head on main 0b914137, and E324 where evaluation refuses an assumption. Run with probe.mjs constructs.",
+ "setups": {
+  "s1": "import unat;\nuse unat;\ndef seven := 7;",
+  "s2": "import unat;\nuse unat;\ndef double_(n : UNat) := n + n;",
+  "s3": "import unat;\nuse unat;\ndef four : UNat := 4;",
+  "s4": "import unat;\nuse unat;\ndef pair_three : UNat and Unit {\n  exact (3, tt);\n}",
+  "s5": "import unat;\nuse unat;\ncomputable def double_c(n : UNat) := n + n;",
+  "s6": "import lists;\nuse unat;",
+  "s7": "import unat;\nuse unat;\ndef identity_(U < UU0, A : U, x : A) : A := x;",
+  "s8": "import unat;\nuse unat;\ndef count_into(n, total : UNat) : UNat := match n {\n  zero => total;\n  succ(k) => count_into(k, succ(total));\n};",
+  "s9": "import unat;\nuse unat;\ndef add_zero_(n : UNat) : n + 0 = n {\n  match n {\n    zero => { rfl; }\n    succ(k) => { exact cong(succ, add_zero_(k)); }\n  }\n}",
+  "s10": "inductive Bool_ : U0 {\n  false_;\n  true_;\n}",
+  "s11": "import unat;\nuse unat;",
+  "s12": "inductive N_ {\n  z_;\n  s_(n : N_);\n}",
+  "s13": "inductive Flag : type U0 {\n  up;\n  down;\n}",
+  "s14": "import unat;\nuse unat;\ninductive Rose : U0 {\n  leaf;\n  node(children : UNat -> Rose);\n}",
+  "s15": "inductive Circle : U0 {\n  base;\n  loop : base = base;\n}",
+  "s16": "import quotients;\nuse unat;\ndef R(m, n : UNat) : U0 := Unit;",
+  "s17": "inductive N2 {\n  zero2;\n  succ2(n : N2);\n}\ninductive Sq(U < UU0, A : U) {\n  b;\n  l : b = b;\n  s : PathP(fun (i : Interval) => l @ i = l @ i, l, l);\n}\ndef loop_n : typed(Sq(U0, N2), b) = b := l;\ndef square_ : PathP(fun (i : Interval) => loop_n @ i = loop_n @ i, loop_n, loop_n) := s;",
+  "s18": "inductive Circle : U0 {\n  base;\n  loop : base = base;\n}\ndef reverse(c : Circle) : Circle := match c {\n  base => base;\n  loop @ i => loop @ ~i;\n};",
+  "s19": "import h1_truncation;\nuse unat;",
+  "s20": "import quotients;\nuse unat;\ndef R(m, n : UNat) : U0 := Unit;\ndef c_ : Quotient(U0, UNat, R) := class(1);",
+  "s21": "import unat;\nuse unat;\ninductive Gpd(A : U0) : trunc(1) {\n  gpoint(a : A);\n}",
+  "s22": "import algebra;\nuse unat;",
+  "s23": "import integers;\nuse unat;",
+  "s24": "import unat;\nimport hlevels;\nuse unat;\ntheory Magma_(U < UU0) {\n  M : set U;\n  mul(x, y : M) : M notation x * y;\n}\ntheory Pointed_(U < UU0, G : Magma_(U)) {\n  X : set U;\n  point_ : X;\n  shift(x : X) : X;\n}\ndef nat_magma : Magma_(U0) := Magma_.make(M := UNat, M_is_set := unat_is_set, mul := add);\ndef counting_p : Pointed_(U0, nat_magma) := Pointed_.make(nat_magma, X := UNat, X_is_set := unat_is_set, point_ := 0, shift := succ);",
+  "s25": "import unat;\nimport hlevels;\nuse unat;\ntheory Unary_(U < UU0) {\n  M : set U;\n  op(x : M) : M;\n  law self(x : M) : op(x) = op(x);\n}\ntheory Twice_(U < UU0) extends Unary_ {\n  step(x : M) : M;\n  def op(x : M) : M := step(step(x));\n  def self(x : M) : op(x) = op(x) := refl(op(x));\n}\ndef twice_nat : Twice_(U0) := Twice_.make(M := UNat, M_is_set := unat_is_set, step := succ);",
+  "s26": "import unat;\nimport hlevels;\nuse unat;\ntheory Rig(U < UU0) {\n  R : set U;\n  add(x, y : R) : R notation x + y;\n  zero : R;\n  one : R;\n  def of_nat(n : UNat) : R := match n {\n    zero => zero;\n    succ(k) => one + of_nat(k);\n  }\n  notation numeral;\n}\ndef counting : Rig(U0) := Rig.make(R := UNat, R_is_set := unat_is_set, add := add, zero := 0, one := 1);",
+  "s27": "import unat;\nimport hlevels;\nimport algebra;\nuse unat;\ninitial N_ : Monoid(U0);\ndef anchor_ := 0;",
+  "s28": "import unat;\nimport hlevels;\nimport algebra;\nuse unat;\nfree W_(A : U0) : Monoid(U0) on A;\ndef anchor_ := 0;",
+  "s29": "import unat;\nuse unat;\nnotation times {\n  x + y := mul(x, y);\n  numeral(n : UNat) := n;\n}\ndef anchor_ := 0;",
+  "s30": "import nat;\nuse nat;",
+  "s31": "import unat;\nimport hlevels;\nuse unat;\ntheory Monoid_(U < UU0) {\n  M : set U;\n  mul(x, y : M) : M notation x * y;\n  one : M;\n  law one_mul(x : M) : one * x = x;\n}\nsection {{U < UU0}}(G : Monoid_(U)) {\n  def square(x : M) : M := x * x;\n  def square_one : square(one) = one {\n    exact one_mul(one);\n  }\n}\ndef additive_ : Monoid_(U0) := Monoid_.make(\n  M := UNat, M_is_set := unat_is_set, mul := add, one := 0, one_mul := unat_zero_add\n);",
+  "s32": "import algebra;\nuse unat;\ndef multiplicative : Monoid(U0) := nat_multiplicative.monoid;\nuse multiplicative;",
+  "s33": "import unat;\nuse unat;\ndef apply_(U < UU0, A, B : U, f : A -> B, a : A) : B := f(a);",
+  "s34": "import unat;\nuse unat;\ndef same_(U < UU0, A : U, a : A) : A := a;",
+  "s35": "import unat;\nuse unat;\ndef pq : UNat and UNat := (2, 5);",
+  "s36": "import unat;\nuse unat;\ndef Shape(value : Unit or Unit) := match value return U0 {\n  left a => UNat;\n  right b => Unit;\n};",
+  "s37": "import lists;\nuse unat;\ndef second(xs : List(U0, UNat)) : UNat := match xs {\n  cons(x, cons(y, rest)) => y;\n  other => 0;\n};",
+  "s38": "import lists;\nuse unat;\ndef shorter(xs, ys : List(U0, UNat)) : UNat := match xs, ys {\n  nil, _ => 0;\n  _, nil => 1;\n  cons(x, rest), cons(y, more) => 2;\n};",
+  "s39": "import unat;\nuse unat;\ndef p_ : 3 = 3 := refl(3);",
+  "s40": "",
+  "s41": "import nat;",
+  "s42": "import rationals;\nuse unat;",
+  "s43": "import nat;\nimport unat;",
+  "s44": "import algebra;\nuse unat;\ndef multiplicative : Monoid(U0) := nat_multiplicative.monoid;",
+  "s45": "import unat;\nuse unat;\ncomputable def power(x, n : UNat) : UNat := match n {\n  zero => 1;\n  succ(k) => x * power(x, k);\n};\nnotation pw {\n  x ^ unat.(y) := power(x, y);\n  x / y := mul(x, y);\n  numeral(n : UNat) := n;\n}",
+  "s46": "import unat;\nuse unat;\ndef join_by_box(A : U0, x, y, z : A, p : x = y, q : y = z) : x = z := path i => compose j in A from p @ i {\n    on i = 0 => x;\n    on i = 1 => q @ j;\n  };",
+  "s47": "import contractible_maps;\nuse unat;",
+  "s48": "import contractible_maps;\nuse unat;\ndef glued(A : U0) : A = A :=\n  path i => Glue(A, face(i, 0, A, id_contr_equiv(U0, A)), face(i, 1, A, id_contr_equiv(U0, A)));\ndef moved(A : U0, a : A) : A := comp(fun (j : Interval) => glued(A) @ j, a);\ndef unglue_glue(A : U0, a : A) : a = a :=\n  path i => unglue(typed(Glue(A, face(i, 0, A, id_contr_equiv(U0, A))), glue(a, face(i, 0, a))));",
+  "s49": "import univalence;\nuse unat;",
+  "s50": "import paths_;\nuse unat;\ndef swap(p : Unit and UNat) := unpack p as (u, n) return UNat and Unit { typed(UNat and Unit, (n, u)); };\ndef swap_back(p : UNat and Unit) := unpack p as (n, u) return Unit and UNat { typed(Unit and UNat, (u, n)); };\ncomputable def swap_equivalence : Equiv(U0, Unit and UNat, UNat and Unit) {\n  exact (swap, swap_back, fun (p : Unit and UNat) => refl(p), fun (q : UNat and Unit) => refl(q),\n    fun (p : Unit and UNat) => refl(refl(swap(p))));\n}\ncomputable def swapped : (Unit and UNat) = (UNat and Unit) {\n  exact ua(U0, Unit and UNat, UNat and Unit, swap_equivalence);\n}",
+  "s51": "import classical_axioms;",
+  "s52": "import unat;\nuse unat;\ndef four_again : UNat {\n  exact 4;\n}",
+  "s53": "import unat;\nuse unat;\ndef double_b : UNat -> UNat {\n  intro n;\n  exact n + n;\n}",
+  "s54": "import unat;\nuse unat;\ndef generic_identity : forall U < UU0. forall A : U. A -> A {\n  intro U;\n  intro A;\n  intro a;\n  exact a;\n}",
+  "s55": "import unat;\nuse unat;\ndef via_let : UNat {\n  let m := succ(2);\n  let k : UNat := m;\n  let j : UNat {\n    exact k;\n  }\n  exact j;\n}",
+  "s56": "import unat;\nuse unat;\ndef first_of_three(t : UNat and UNat and UNat) : UNat {\n  obtain (a, b, c) := t;\n  exact a;\n}",
+  "s57": "import algebra;\nuse unat;\ndef square_g(G : Monoid(U0), x : G.M) : G.M {\n  use G;\n  exact x * x;\n}",
+  "s58": "import unat;\nuse unat;\ndef swap_sum(A, B : U0, value : A or B) : B or A {\n  match value {\n    left(a) => { exact right(a); }\n    right(b) => { exact left(b); }\n  }\n}",
+  "s59": "import unat;\nuse unat;\ndef pred_(n : UNat) : UNat {\n  match n {\n    zero => { exact 0; }\n    succ(k) => { exact k; }\n  }\n}",
+  "s60": "import unat;\nuse unat;\ndef both_zero(m, n : UNat) : UNat {\n  match m, n {\n    zero, zero => { exact 1; }\n    _, _ => { exact 0; }\n  }\n}",
+  "s61": "import unat;\nuse unat;\ninductive Circle : U0 {\n  base;\n  loop : base = base;\n}\ndef statement_clauses(x : Circle) : UNat {\n  match x {\n    base => { exact 0; }\n  }\n  obligations {\n    loop @ i => { exact 0; }\n  }\n}",
+  "s62": "import unat;\nuse unat;\ninductive Circle : U0 {\n  base;\n  loop : base = base;\n}\ndef flatten_again(c : Circle) : UNat := match c {\n  base => 0;\n} obligations by rfl;",
+  "s63": "import quotients;\nuse unat;\ndef R(m, n : UNat) : U0 := Unit;\ndef by_clause_term(A : U0, R2 : A -> A -> U0, q : Quotient(U0, A, R2)) : UNat := match q {\n  class(a) => 0;\n} obligations by (fun (a, b : A, r : R2(a, b)) => path i => 0);",
+  "s64": "import hlevels;\ninductive Circle : U0 {\n  base;\n  loop : base = base;\n}\ndef circle_to_unit(x : Circle) : Unit {\n  match x {\n    base => { exact tt; }\n  }\n  obligations by hlevel;\n}",
+  "s65": "import h1_truncation;\nuse unat;\ndef discard_(x : Trunc(U0, UNat)) : Unit := match x {\n  point(value) => tt;\n};",
+  "s66": "import unat;\nuse unat;\ndef two_plus_two : 2 + 2 = 4 {\n  rfl;\n}",
+  "s67": "import unat;\nuse unat;\ndef chain : 2 + 2 = 4 {\n  calc {\n    2 + 2 = 3 + 1 by refl(4);\n    _ = 4 by refl(4);\n  }\n}",
+  "s68": "import unat;\nuse unat;\ndef rewrite_then_finish(n, m : UNat, h : n = m) : n + 0 = m {\n  rw [unat_add_zero(n)];\n  exact h;\n}",
+  "s69": "import unat;\nuse unat;\ndef add_zero_twice_simp(n : UNat) : (n + 0) + 0 = n {\n  simp only [unat_add_zero];\n}",
+  "s70": "import unat;\nuse unat;\ndef family_simp(P : UNat -> U0, n : UNat, h : P(n)) : P(n + 0) {\n  simp only [unat_add_zero];\n  exact h;\n}",
+  "s71": "import unat;\nuse unat;\nsimp_rule unat_add_zero priority 10;\nsimp_set nat_units := [unat_add_zero];\ndef default_rules(n, m : UNat) : (n + 0) + (m + 0) = n + m {\n  simp;\n}",
+  "s72": "import unat;\nuse unat;\nsimp_set nat_units := [unat_add_zero];\ndef simplified_copy(n, m : UNat, h : n + 0 = m + 0) : n = m {\n  simp [nat_units] at h as h2;\n  exact h2;\n}",
+  "s73": "import unat;\nuse unat;\ndef simpa_example(n, m : UNat, h : n + 0 = m) : n = m + 0 {\n  simpa only [unat_add_zero] using h;\n}",
+  "s74": "import hlevels;\ndef functions_into_nat(A : U0) : IsSet(U0, A -> UNat) {\n  hlevel;\n}",
+  "s75": "import unat;\nuse unat;\ndef pointwise_path(A, B : U0, f, g : A -> B, h : (forall x : A. f(x) = g(x))) : f = g {\n  ext x;\n  exact h(x);\n}",
+  "s76": "import h1_truncation;\nimport paths_;\nuse unat;\ndef swap(p : Unit and UNat) := unpack p as (u, n) return UNat and Unit { typed(UNat and Unit, (n, u)); };\ndef swap_back(p : UNat and Unit) := unpack p as (n, u) return Unit and UNat { typed(Unit and UNat, (u, n)); };\ncomputable def swap_equivalence : Equiv(U0, Unit and UNat, UNat and Unit) {\n  exact (swap, swap_back, fun (p : Unit and UNat) => refl(p), fun (q : UNat and Unit) => refl(q),\n    fun (p : Unit and UNat) => refl(refl(swap(p))));\n}\ncomputable def swapped : (Unit and UNat) = (UNat and Unit) {\n  exact ua(U0, Unit and UNat, UNat and Unit, swap_equivalence);\n}"
+ },
+ "constructs": [
+  {
+   "id": "A01-def-term",
+   "group": "declaration",
+   "setup": "s1",
+   "term": "seven",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A02-def-params-applied",
+   "group": "declaration",
+   "setup": "s2",
+   "term": "double_(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A03-def-params-unapplied",
+   "group": "declaration",
+   "setup": "s2",
+   "term": "double_",
+   "whnf": "Lam"
+  },
+  {
+   "id": "A04-def-typed-term",
+   "group": "declaration",
+   "setup": "s3",
+   "term": "four",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A05-def-block",
+   "group": "declaration",
+   "setup": "s4",
+   "term": "pair_three",
+   "whnf": "Pair"
+  },
+  {
+   "id": "A06-computable-def",
+   "group": "declaration",
+   "setup": "s5",
+   "term": "double_c(2)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A07-implicit-params-inferred",
+   "group": "declaration",
+   "setup": "s6",
+   "term": "length(typed(List(U0, UNat), cons(4, cons(5, nil))))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A08-implicit-args-explicit",
+   "group": "declaration",
+   "setup": "s6",
+   "term": "length{{U0, UNat}}(cons(1, nil))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A09-implicit-args-named",
+   "group": "declaration",
+   "setup": "s6",
+   "term": "append{{A := UNat}}(cons(1, nil), nil)",
+   "whnf": "Con applied to 2"
+  },
+  {
+   "id": "A10-universe-generic-applied",
+   "group": "declaration",
+   "setup": "s7",
+   "term": "identity_(U0, UNat, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A11-universe-generic-unapplied",
+   "group": "declaration",
+   "setup": "s7",
+   "term": "identity_",
+   "whnf": "LLam"
+  },
+  {
+   "id": "A12-universe-generic-partial",
+   "group": "declaration",
+   "setup": "s7",
+   "term": "identity_(U0)",
+   "whnf": "Lam"
+  },
+  {
+   "id": "A13-recursive-def-match",
+   "group": "declaration",
+   "setup": "s8",
+   "term": "count_into(2, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A14-recursive-def-block",
+   "group": "declaration",
+   "setup": "s9",
+   "term": "add_zero_(2)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "A15-inductive-constructor",
+   "group": "declaration",
+   "setup": "s10",
+   "term": "true_",
+   "whnf": "Con"
+  },
+  {
+   "id": "A16-inductive-type-former",
+   "group": "declaration",
+   "setup": "s10",
+   "term": "Bool_",
+   "whnf": "Sort"
+  },
+  {
+   "id": "A17-inductive-param-former",
+   "group": "declaration",
+   "setup": "s6",
+   "term": "List(U0, UNat)",
+   "whnf": "Sort"
+  },
+  {
+   "id": "A18-inductive-former-unapplied",
+   "group": "declaration",
+   "setup": "s6",
+   "term": "List",
+   "whnf": "LLam"
+  },
+  {
+   "id": "A19-constructor-from-expected",
+   "group": "declaration",
+   "setup": "s6",
+   "term": "typed(List(U0, UNat), cons(1, nil))",
+   "whnf": "Con applied to 2"
+  },
+  {
+   "id": "A20-constructor-unapplied",
+   "group": "declaration",
+   "setup": "s11",
+   "term": "succ",
+   "whnf": "Con"
+  },
+  {
+   "id": "A21-inductive-no-result",
+   "group": "declaration",
+   "setup": "s12",
+   "term": "s_(z_)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A22-inductive-type-modifier",
+   "group": "declaration",
+   "setup": "s13",
+   "term": "down",
+   "whnf": "Con"
+  },
+  {
+   "id": "A23-inductive-function-arg",
+   "group": "declaration",
+   "setup": "s14",
+   "term": "node(fun (n : UNat) => leaf)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A24-hit-point",
+   "group": "declaration",
+   "setup": "s15",
+   "term": "base",
+   "whnf": "Con"
+  },
+  {
+   "id": "A25-hit-path-constructor",
+   "group": "declaration",
+   "setup": "s15",
+   "term": "loop",
+   "whnf": "Con"
+  },
+  {
+   "id": "A26-hit-path-endpoint",
+   "group": "declaration",
+   "setup": "s15",
+   "term": "loop @ 0",
+   "whnf": "Con"
+  },
+  {
+   "id": "A27-hit-path-eta",
+   "group": "declaration",
+   "setup": "s15",
+   "term": "typed(base = base, path i => loop @ i)",
+   "whnf": "Con"
+  },
+  {
+   "id": "A28-hit-path-constructor-args",
+   "group": "declaration",
+   "setup": "s16",
+   "term": "class_path(U0, UNat, R, 1, 3, tt)",
+   "whnf": "Con applied to 3"
+  },
+  {
+   "id": "A29-hit-2-dim-constructor",
+   "group": "declaration",
+   "setup": "s17",
+   "term": "square_",
+   "whnf": "Con"
+  },
+  {
+   "id": "A30-hit-match-point",
+   "group": "declaration",
+   "setup": "s18",
+   "term": "reverse(base)",
+   "whnf": "Con"
+  },
+  {
+   "id": "A31-hit-match-path",
+   "group": "declaration",
+   "setup": "s18",
+   "term": "cong(reverse, loop)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "A32-truncation-point",
+   "group": "declaration",
+   "setup": "s19",
+   "term": "merely(U0, UNat, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A33-truncation-squash",
+   "group": "declaration",
+   "setup": "s19",
+   "term": "Trunc.squash(typed(Trunc(U0, UNat), point(1)), typed(Trunc(U0, UNat), point(2)))",
+   "whnf": "Con applied to 2"
+  },
+  {
+   "id": "A34-truncation-squash-endpoint",
+   "group": "declaration",
+   "setup": "s19",
+   "term": "typed(Trunc(U0, UNat), Trunc.squash(point(1), point(2)) @ 0)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A35-set-hit-point",
+   "group": "declaration",
+   "setup": "s16",
+   "term": "typed(Quotient(U0, UNat, R), class(3))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A36-set-squash",
+   "group": "declaration",
+   "setup": "s20",
+   "term": "Quotient.squash(c_, c_, refl(c_), refl(c_))",
+   "whnf": "Con applied to 4"
+  },
+  {
+   "id": "A37-trunc-n-hit",
+   "group": "declaration",
+   "setup": "s21",
+   "term": "typed(Gpd(UNat), gpoint(2))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A38-hit-transport-hcomp",
+   "group": "declaration",
+   "setup": "s15",
+   "term": "transport base along loop in (fun (c : Circle) => Circle)",
+   "whnf": "HComp"
+  },
+  {
+   "id": "A39-trunc-transport-hcomp",
+   "group": "declaration",
+   "setup": "s19",
+   "term": "transport typed(Trunc(U0, UNat), point(3)) along refl(tt) in (fun (u : Unit) => Trunc(U0, UNat))",
+   "whnf": "HComp"
+  },
+  {
+   "id": "A40-theory-models-type",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "Monoid(U0)",
+   "whnf": "Sigma"
+  },
+  {
+   "id": "A41-theory-former-unapplied",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "Monoid",
+   "whnf": "LLam"
+  },
+  {
+   "id": "A42-theory-make",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "nat_additive",
+   "whnf": "Pair"
+  },
+  {
+   "id": "A43-theory-field",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "nat_additive.mul(2, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A44-theory-carrier",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "nat_additive.M",
+   "whnf": "Sort"
+  },
+  {
+   "id": "A45-theory-law",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "nat_additive.mul_comm",
+   "whnf": "Lam"
+  },
+  {
+   "id": "A46-theory-parent",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "nat_additive.monoid",
+   "whnf": "Pair"
+  },
+  {
+   "id": "A46b-theory-labelled-parent",
+   "group": "declaration",
+   "setup": "s23",
+   "term": "integers.additive_",
+   "whnf": "Pair"
+  },
+  {
+   "id": "A46c-theory-header-params",
+   "group": "declaration",
+   "setup": "s24",
+   "term": "counting_p.shift(counting_p.point_)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A46d-theory-implemented-inherited",
+   "group": "declaration",
+   "setup": "s25",
+   "term": "twice_nat.unary_.op(2)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A47-theory-derived-op",
+   "group": "declaration",
+   "setup": "s26",
+   "term": "counting.of_nat(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A48-theory-notation-numeral",
+   "group": "declaration",
+   "setup": "s26",
+   "term": "counting.(2 + 5)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A49-hom-type",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "CommMonoid.Hom(nat_additive, nat_multiplicative)",
+   "whnf": "Sigma"
+  },
+  {
+   "id": "A50-hom-id-compose",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "CommMonoid.Hom.compose(CommMonoid.Hom.id(nat_additive), CommMonoid.Hom.id(nat_additive)).map(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A51-hom-value",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "CommMonoid.Hom.id(nat_additive)",
+   "whnf": "Pair"
+  },
+  {
+   "id": "A52-iso",
+   "group": "declaration",
+   "setup": "s22",
+   "term": "CommMonoid.Iso.inverse(CommMonoid.Iso.id(nat_additive)).to.map(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A53-initial-constructor",
+   "group": "declaration",
+   "setup": "s27",
+   "term": "typed(N_, N_.mul(N_.one, N_.one))",
+   "whnf": "Con applied to 2"
+  },
+  {
+   "id": "A54-initial-fold",
+   "group": "declaration",
+   "setup": "s27",
+   "term": "N_.fold(nat_additive.monoid).map(N_.mul(N_.one, N_.one))",
+   "whnf": "Con"
+  },
+  {
+   "id": "A55-initial-model",
+   "group": "declaration",
+   "setup": "s27",
+   "term": "N_.model",
+   "whnf": "Pair"
+  },
+  {
+   "id": "A56-free-gen-fold",
+   "group": "declaration",
+   "setup": "s28",
+   "term": "W_.fold(Unit, nat_additive.monoid, fun (a : Unit) => 1).map(typed(W_(Unit), W_.mul(W_.gen(tt), W_.gen(tt))))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A57-free-law-path",
+   "group": "declaration",
+   "setup": "s28",
+   "term": "W_.one_mul(typed(W_(Unit), W_.gen(tt)))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A58-notation-decl",
+   "group": "declaration",
+   "setup": "s29",
+   "term": "times.(3 + 4)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A59-notation-literal-rule",
+   "group": "declaration",
+   "setup": "s30",
+   "term": "1_000",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A60-section",
+   "group": "declaration",
+   "setup": "s31",
+   "term": "square(additive_, 2)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "A61-top-level-use",
+   "group": "declaration",
+   "setup": "s32",
+   "term": "unat.(3) * unat.(4)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B01-lambda",
+   "group": "term",
+   "setup": "s11",
+   "term": "fun (n : UNat) => n + n",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B02-lambda-eta",
+   "group": "term",
+   "setup": "s11",
+   "term": "fun (n : UNat) => succ(n)",
+   "whnf": "Con"
+  },
+  {
+   "id": "B03-lambda-group",
+   "group": "term",
+   "setup": "s11",
+   "term": "fun (m, n : UNat) => m + n",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B04-lambda-untyped",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat -> UNat, fun n => n + n)",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B05-beta",
+   "group": "term",
+   "setup": "s11",
+   "term": "(fun (n : UNat) => n + n)(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B06-partial-application",
+   "group": "term",
+   "setup": "s11",
+   "term": "add(2)",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B07-named-args",
+   "group": "term",
+   "setup": "s33",
+   "term": "apply_(U0, a := 3, f := fun (x : UNat) => succ(x))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B08-holes",
+   "group": "term",
+   "setup": "s34",
+   "term": "same_(_, UNat, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B09-pair",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat and Unit, (3, tt))",
+   "whnf": "Pair"
+  },
+  {
+   "id": "B10-tuple",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat and UNat and UNat, (1, 2, 3))",
+   "whnf": "Pair"
+  },
+  {
+   "id": "B11-dependent-pair",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(exists n : UNat. n = 2, (2, refl(2)))",
+   "whnf": "Pair"
+  },
+  {
+   "id": "B12-projection",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat and UNat, (2, 5)).2",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B13-pair-eta",
+   "group": "term",
+   "setup": "s35",
+   "term": "typed(UNat and UNat, (pq.1, pq.2))",
+   "whnf": "Pair"
+  },
+  {
+   "id": "B14-unpack",
+   "group": "term",
+   "setup": "s11",
+   "term": "unpack typed(UNat and Unit, (3, tt)) as (a, b) return UNat { a; }",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B15-pair-induction",
+   "group": "term",
+   "setup": "s11",
+   "term": "pair_induction(fun (q : UNat and UNat) => UNat, fun (x, y : UNat) => x + y, typed(UNat and UNat, (2, 3)))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B16-inl",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat or Unit, left(3))",
+   "whnf": "Inl"
+  },
+  {
+   "id": "B17-inr",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat or Unit, right(tt))",
+   "whnf": "Inr"
+  },
+  {
+   "id": "B18-sum-match",
+   "group": "term",
+   "setup": "s11",
+   "term": "match typed(Unit or UNat, right(4)) return UNat { left u => 0; right n => n; }",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B19-match-declared",
+   "group": "term",
+   "setup": "s11",
+   "term": "match 3 return UNat { zero => zero; succ(k) => k; }",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B20-match-dependent",
+   "group": "term",
+   "setup": "s36",
+   "term": "match typed(Unit or Unit, left(tt)) as z return Shape(z) { left a => 0; right b => tt; }",
+   "whnf": "Con"
+  },
+  {
+   "id": "B21-match-to-type",
+   "group": "term",
+   "setup": "s36",
+   "term": "Shape(typed(Unit or Unit, right(tt)))",
+   "whnf": "Unit"
+  },
+  {
+   "id": "B22-match-nested",
+   "group": "term",
+   "setup": "s37",
+   "term": "second(cons(1, cons(7, nil)))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B23-match-several",
+   "group": "term",
+   "setup": "s38",
+   "term": "shorter(cons(1, nil), nil)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B24-induction-declared",
+   "group": "term",
+   "setup": "s6",
+   "term": "induction typed(List(U0, UNat), cons(4, cons(5, nil))) return UNat { nil => 0; cons(head, tail) with ih => succ(ih); }",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B25-induction-nat",
+   "group": "term",
+   "setup": "s11",
+   "term": "induction 2 return UNat { zero => 0; succ previous => succ(previous); }",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B26-induction-dependent",
+   "group": "term",
+   "setup": "s11",
+   "term": "induction 2 as k return (k + 0 = k) { zero => refl(0); succ h => cong(fun (n : UNat) => succ(n), h); }",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B27-path-lambda",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(3 = 3, path i => 3)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B28-path-builtin",
+   "group": "term",
+   "setup": "s11",
+   "term": "path(fun (i : Interval) => UNat, fun (i : Interval) => 3)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B29-path-apply",
+   "group": "term",
+   "setup": "s11",
+   "term": "refl(3) @ 1",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B30-at-builtin",
+   "group": "term",
+   "setup": "s11",
+   "term": "at(refl(3), 0)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B31-interval-ops",
+   "group": "term",
+   "setup": "s11",
+   "term": "path(fun (i : Interval) => UNat, fun (i : Interval) => refl(3) @ meet(~i & i, join(flip(i), 0)) | i)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B32-pathp-type",
+   "group": "term",
+   "setup": "s11",
+   "term": "PathP(fun (i : Interval) => UNat, 3, 3)",
+   "whnf": "Path"
+  },
+  {
+   "id": "B33-equality-type",
+   "group": "term",
+   "setup": "s11",
+   "term": "3 =[UNat] 3",
+   "whnf": "Path"
+  },
+  {
+   "id": "B34-refl",
+   "group": "term",
+   "setup": "s11",
+   "term": "refl(3)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B35-sym",
+   "group": "term",
+   "setup": "s39",
+   "term": "~p_",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B36-trans",
+   "group": "term",
+   "setup": "s11",
+   "term": "refl(3) ++ refl(3)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B37-cong",
+   "group": "term",
+   "setup": "s11",
+   "term": "cong(fun (n : UNat) => succ(n), refl(3))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B38-transport-call",
+   "group": "term",
+   "setup": "s11",
+   "term": "transport(fun (n : UNat) => UNat, 3, 3, refl(3), 5)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B39-transport-along",
+   "group": "term",
+   "setup": "s11",
+   "term": "transport 5 along refl(3) in (fun (n : UNat) => UNat)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B40-lift",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(PathP(fun (i : Interval) => UNat, 5, 5), lift refl(5) along refl(3) in (fun (n : UNat) => UNat))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B41-apd",
+   "group": "term",
+   "setup": "s11",
+   "term": "apd(fun (n : UNat) => succ(n), 3, 3, refl(3))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B42-apd-path",
+   "group": "term",
+   "setup": "s11",
+   "term": "apd_path(fun (n : UNat) => succ(n), refl(3))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B43-path-from-transport",
+   "group": "term",
+   "setup": "s11",
+   "term": "path_from_transport(fun (j : Interval) => UNat, 3, 3, refl(3))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B44-path-to-transport",
+   "group": "term",
+   "setup": "s11",
+   "term": "path_to_transport(fun (j : Interval) => UNat, 3, 3, refl(3))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B45-path-induction",
+   "group": "term",
+   "setup": "s11",
+   "term": "path_induction(UNat, fun (a, b : UNat, q : a = b) => b = a, fun (a : UNat) => refl(a), 3, 3, refl(3))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B46-based-induction",
+   "group": "term",
+   "setup": "s11",
+   "term": "based_induction(U0, U0, UNat, 3, fun (b : UNat, q : 3 = b) => UNat, 7, 3, refl(3))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B47-unit-induction",
+   "group": "term",
+   "setup": "s11",
+   "term": "unit_induction(fun (v : Unit) => UNat, 5, tt)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B48-absurd",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(Void -> UNat, fun (v : Void) => absurd(v))",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B49-typed",
+   "group": "term",
+   "setup": "s11",
+   "term": "typed(UNat, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B50-universe",
+   "group": "term",
+   "setup": "s40",
+   "term": "U0",
+   "whnf": "U"
+  },
+  {
+   "id": "B51-universe-large",
+   "group": "term",
+   "setup": "s40",
+   "term": "UU0",
+   "whnf": "U"
+  },
+  {
+   "id": "B52-next-max",
+   "group": "term",
+   "setup": "s40",
+   "term": "max(U0, next(U0))",
+   "whnf": "U"
+  },
+  {
+   "id": "B53-pi",
+   "group": "term",
+   "setup": "s11",
+   "term": "forall n : UNat. n = n",
+   "whnf": "Pi"
+  },
+  {
+   "id": "B54-sigma",
+   "group": "term",
+   "setup": "s11",
+   "term": "exists n : UNat. n = 2",
+   "whnf": "Sigma"
+  },
+  {
+   "id": "B55-sum-type",
+   "group": "term",
+   "setup": "s11",
+   "term": "UNat or Unit",
+   "whnf": "Sum"
+  },
+  {
+   "id": "B56-unit-void-tt",
+   "group": "term",
+   "setup": "s40",
+   "term": "tt",
+   "whnf": "Point"
+  },
+  {
+   "id": "B57-level-pi",
+   "group": "term",
+   "setup": "s40",
+   "term": "forall U < UU0. U -> U",
+   "whnf": "LPi"
+  },
+  {
+   "id": "B58-level-lambda",
+   "group": "term",
+   "setup": "s40",
+   "term": "fun (U < UU0, A : U) => A -> A",
+   "whnf": "LLam"
+  },
+  {
+   "id": "B59-unary-numeral",
+   "group": "term",
+   "setup": "s11",
+   "term": "3",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B60-nat-literal",
+   "group": "term",
+   "setup": "s41",
+   "term": "nat.(18446744073709551616)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B61-binary-literal",
+   "group": "term",
+   "setup": "s41",
+   "term": "nat.(0b101)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B62-rational-literal",
+   "group": "term",
+   "setup": "s42",
+   "term": "rationals.(2/3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B63-decimal-literal",
+   "group": "term",
+   "setup": "s42",
+   "term": "rationals.(0.5)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B64-arith-operators",
+   "group": "term",
+   "setup": "s11",
+   "term": "2 + 3 * 4",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B65-order-operators",
+   "group": "term",
+   "setup": "s11",
+   "term": "3 > 2",
+   "whnf": "Unit"
+  },
+  {
+   "id": "B66-select",
+   "group": "term",
+   "setup": "s43",
+   "term": "unat.(2 * 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B67-qualified-operator",
+   "group": "term",
+   "setup": "s44",
+   "term": "2 multiplicative.(*) 3",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B68-operator-of",
+   "group": "term",
+   "setup": "s44",
+   "term": "multiplicative.(*)",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B69-negation-minus",
+   "group": "term",
+   "setup": "s23",
+   "term": "integers.(5 - 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B70-negation-unary",
+   "group": "term",
+   "setup": "s23",
+   "term": "integers.(-2)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B71-qualified-negation",
+   "group": "term",
+   "setup": "s23",
+   "term": "integers.(-) int(2, 0)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B72-pow-div",
+   "group": "term",
+   "setup": "s45",
+   "term": "pw.(2 ^ 3 / 1)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B73-member",
+   "group": "term",
+   "setup": "s22",
+   "term": "CommMonoid.Hom.id(nat_additive).map(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B74-with-unfolding",
+   "group": "term",
+   "setup": "s2",
+   "term": "with unfolding [double_] { double_(3) }",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B75-compose-box",
+   "group": "term",
+   "setup": "s11",
+   "term": "compose j in UNat from 3 {}",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B76-compose-walls",
+   "group": "term",
+   "setup": "s46",
+   "term": "join_by_box(UNat, 1, 1, 1, refl(1), refl(1))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B77-fill-box",
+   "group": "term",
+   "setup": "s11",
+   "term": "fill j in UNat from 3 at 1 {}",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B78-comp-face-one",
+   "group": "term",
+   "setup": "s11",
+   "term": "comp(fun (j : Interval) => UNat, 3, face_when(1, fun (j : Interval) => 3))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B79-fill-builtin",
+   "group": "term",
+   "setup": "s11",
+   "term": "fill(fun (k : Interval) => UNat, 3, 1)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B80-comp-sigma",
+   "group": "term",
+   "setup": "s11",
+   "term": "comp(fun (j : Interval) => UNat and Unit, typed(UNat and Unit, (3, tt)))",
+   "whnf": "Pair"
+  },
+  {
+   "id": "B81-comp-pi",
+   "group": "term",
+   "setup": "s11",
+   "term": "comp(fun (j : Interval) => UNat -> UNat, fun (n : UNat) => n)",
+   "whnf": "Lam"
+  },
+  {
+   "id": "B82-comp-sum",
+   "group": "term",
+   "setup": "s11",
+   "term": "comp(fun (j : Interval) => UNat or Unit, typed(UNat or Unit, left(3)))",
+   "whnf": "Inl"
+  },
+  {
+   "id": "B83-comp-unit",
+   "group": "term",
+   "setup": "s40",
+   "term": "comp(fun (j : Interval) => Unit, tt)",
+   "whnf": "Point"
+  },
+  {
+   "id": "B84-comp-universe",
+   "group": "term",
+   "setup": "s11",
+   "term": "comp(fun (j : Interval) => U0, UNat)",
+   "whnf": "Glue"
+  },
+  {
+   "id": "B85-glue-type-face-one",
+   "group": "term",
+   "setup": "s47",
+   "term": "Glue(UNat, face_when(1, UNat, id_contr_equiv(U0, UNat)))",
+   "whnf": "Sort"
+  },
+  {
+   "id": "B86-glue-term-face-one",
+   "group": "term",
+   "setup": "s47",
+   "term": "typed(Glue(UNat, face_when(1, UNat, id_contr_equiv(U0, UNat))), glue(3, face_when(1, 3)))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B87-unglue-closed",
+   "group": "term",
+   "setup": "s47",
+   "term": "unglue(typed(Glue(UNat, face_when(1, UNat, id_contr_equiv(U0, UNat))), 3))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B88-glue-under-path",
+   "group": "term",
+   "setup": "s48",
+   "term": "unglue_glue(Unit, tt)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B89-transport-glue-line",
+   "group": "term",
+   "setup": "s48",
+   "term": "moved(Unit or Unit, left(tt))",
+   "whnf": "Inl"
+  },
+  {
+   "id": "B90-transport-glue-path",
+   "group": "term",
+   "setup": "s49",
+   "term": "transport 3 along glue_path(U0, UNat, UNat, id_contr_equiv(U0, UNat)) in (fun (T : U0) => T)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "B91-funext",
+   "group": "term",
+   "setup": "s11",
+   "term": "FunExt(U0, UNat, fun (n : UNat) => UNat, fun (n : UNat) => n, fun (n : UNat) => n, fun (n : UNat) => refl(n))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B92-ua",
+   "group": "term",
+   "setup": "s50",
+   "term": "ua(U0, Unit and UNat, UNat and Unit, swap_equivalence)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B93-transport-ua",
+   "group": "term",
+   "setup": "s50",
+   "term": "transport typed(Unit and UNat, (tt, 3)) along swapped in (fun (T : U0) => T)",
+   "whnf": "Pair"
+  },
+  {
+   "id": "B94-univalence-beta",
+   "group": "term",
+   "setup": "s50",
+   "term": "UnivalenceBeta(U0, Unit and UNat, UNat and Unit, swap_equivalence, typed(Unit and UNat, (tt, 3)))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "B95-assumption-intro",
+   "group": "term",
+   "setup": "s11",
+   "term": "TruncateIntro(U0, UNat, 3)",
+   "whnf": "Lam",
+   "refused": "E324"
+  },
+  {
+   "id": "B96-assumption-former",
+   "group": "term",
+   "setup": "s11",
+   "term": "Truncate(U0, UNat)",
+   "whnf": "Lam",
+   "refused": "E324"
+  },
+  {
+   "id": "B97-assumption-lem",
+   "group": "term",
+   "setup": "s40",
+   "term": "LEM(U0)",
+   "whnf": "Lam",
+   "refused": "E324"
+  },
+  {
+   "id": "B98-assumption-in-library-type",
+   "group": "term",
+   "setup": "s51",
+   "term": "ExcludedMiddle(U0)",
+   "whnf": "Lam",
+   "refused": "E324"
+  },
+  {
+   "id": "C01-exact",
+   "group": "proof block",
+   "setup": "s52",
+   "term": "four_again",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C02-intro",
+   "group": "proof block",
+   "setup": "s53",
+   "term": "double_b(4)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C03-intro-universe",
+   "group": "proof block",
+   "setup": "s54",
+   "term": "generic_identity(U0, UNat, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C04-let",
+   "group": "proof block",
+   "setup": "s55",
+   "term": "via_let",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C05-obtain",
+   "group": "proof block",
+   "setup": "s56",
+   "term": "first_of_three(typed(UNat and UNat and UNat, (1, 2, 3)))",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C06-use-in-block",
+   "group": "proof block",
+   "setup": "s57",
+   "term": "square_g(nat_additive.monoid, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C07-match-stmt-sum",
+   "group": "proof block",
+   "setup": "s58",
+   "term": "swap_sum(UNat, Unit, typed(UNat or Unit, left(3)))",
+   "whnf": "Inr"
+  },
+  {
+   "id": "C08-match-stmt-declared",
+   "group": "proof block",
+   "setup": "s59",
+   "term": "pred_(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C09-match-stmt-several",
+   "group": "proof block",
+   "setup": "s60",
+   "term": "both_zero(0, 0)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C10-induction-stmt",
+   "group": "proof block",
+   "setup": "s6",
+   "term": "append_nil(typed(List(U0, UNat), cons(1, nil)))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C11-obligations-stmt",
+   "group": "proof block",
+   "setup": "s61",
+   "term": "statement_clauses(base)",
+   "whnf": "Con"
+  },
+  {
+   "id": "C12-obligations-by-rfl",
+   "group": "proof block",
+   "setup": "s62",
+   "term": "flatten_again(base)",
+   "whnf": "Con"
+  },
+  {
+   "id": "C12b-obligations-by-term",
+   "group": "proof block",
+   "setup": "s63",
+   "term": "by_clause_term(UNat, R, typed(Quotient(U0, UNat, R), class(2)))",
+   "whnf": "Con"
+  },
+  {
+   "id": "C12c-obligations-by-hlevel",
+   "group": "proof block",
+   "setup": "s64",
+   "term": "circle_to_unit(base)",
+   "whnf": "Point"
+  },
+  {
+   "id": "C13-auto-squash",
+   "group": "proof block",
+   "setup": "s65",
+   "term": "discard_(merely(U0, UNat, 3))",
+   "whnf": "Point"
+  },
+  {
+   "id": "C14-rfl",
+   "group": "proof block",
+   "setup": "s66",
+   "term": "two_plus_two",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C15-calc",
+   "group": "proof block",
+   "setup": "s67",
+   "term": "chain",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C16-rw",
+   "group": "proof block",
+   "setup": "s68",
+   "term": "rewrite_then_finish(2, 2, refl(2))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C17-simp-only",
+   "group": "proof block",
+   "setup": "s69",
+   "term": "add_zero_twice_simp(2)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C18-simp-type-goal",
+   "group": "proof block",
+   "setup": "s70",
+   "term": "family_simp(fun (k : UNat) => UNat, 2, 7)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "C19-simp-registered",
+   "group": "proof block",
+   "setup": "s71",
+   "term": "default_rules(1, 2)",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C20-simp-at",
+   "group": "proof block",
+   "setup": "s72",
+   "term": "simplified_copy(1, 1, refl(1))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C21-simpa",
+   "group": "proof block",
+   "setup": "s73",
+   "term": "simpa_example(2, 2, refl(2))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "C22-hlevel",
+   "group": "proof block",
+   "setup": "s19",
+   "term": "mere_is_prop(U0, UNat)",
+   "whnf": "Con"
+  },
+  {
+   "id": "C23-hlevel-local",
+   "group": "proof block",
+   "setup": "s74",
+   "term": "functions_into_nat(Unit)",
+   "whnf": "Lam"
+  },
+  {
+   "id": "C24-ext",
+   "group": "proof block",
+   "setup": "s75",
+   "term": "pointwise_path(UNat, UNat, fun (n : UNat) => n, fun (n : UNat) => n, fun (x : UNat) => refl(x))",
+   "whnf": "PLam"
+  },
+  {
+   "id": "D01-evaluate-expecting",
+   "group": "directive",
+   "setup": "s11",
+   "term": "2 + 3",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "D02-evaluate-pattern",
+   "group": "directive",
+   "setup": "s6",
+   "term": "typed(List(U0, UNat), cons(1, cons(2, nil)))",
+   "whnf": "Con applied to 2"
+  },
+  {
+   "id": "D03-evaluate-nonempty",
+   "group": "directive",
+   "setup": "s40",
+   "term": "tt",
+   "whnf": "Point"
+  },
+  {
+   "id": "D04-evaluate-empty",
+   "group": "directive",
+   "setup": "s40",
+   "term": "fun (x : Void) => x",
+   "whnf": "Lam"
+  },
+  {
+   "id": "D05-print-evaluate",
+   "group": "directive",
+   "setup": "s2",
+   "term": "double_(3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "D06-print-witness",
+   "group": "directive",
+   "setup": "s19",
+   "term": "merely(U0, UNat, 3)",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "D07-print-witness-transported",
+   "group": "directive",
+   "setup": "s76",
+   "term": "transport typed(Trunc(U0, Unit and UNat), point((tt, 5))) along swapped in (fun (T : U0) => Trunc(U0, T))",
+   "whnf": "HComp"
+  },
+  {
+   "id": "D10-repl-evaluate",
+   "group": "directive",
+   "setup": "s11",
+   "term": "2 * 3",
+   "whnf": "Con applied to 1"
+  },
+  {
+   "id": "D11-repl-witness",
+   "group": "directive",
+   "setup": "s19",
+   "term": "mere_map(U0, U0, UNat, UNat, fun (n : UNat) => n + 1, point(3))",
+   "whnf": "Con applied to 1"
+  }
+ ]
+}

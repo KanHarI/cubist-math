@@ -55,6 +55,13 @@ The [selected rational literal diagnosis](../../reports/rational-literal-normali
 adds a fixed 100,000-tick `SameRatio` reproduction using main's library alone.
 It isolates expensive retained relation syntax without the BQ parser and
 does not close the existing inverse or transport gates.
+The [debugging plan](rational-normalization-debug-plan.md) of 2026-10-21,
+re-measured after the demand marks, reproduces the small inverse on main
+alone and attributes its cost to the setness-of-propositions evidence inside
+the negative integer equality certificate, which every literal of main's
+public rationals also carries. It attributes the smaller costs to the
+quotient induction behind two-argument descent and the integers' laws, and
+orders the library, kernel and host experiments against fixed gates.
 A versioned scratch evaluator supplies feasibility evidence only.
 The [work plan](../work-plan.md#runtime-evaluation-track) schedules this track;
 the [computation notation roadmap](../high-level-abstractions/computation-notation-roadmap.md) owns
@@ -740,7 +747,8 @@ their computed branch. These tests do not establish full rational-value
 normalization. A separate probe before the
 open-normalization fix,
 `evaluate fraction_field(binary_integers, bint_decide, bint_mul_nonzero,
-bint_zero_ne_one).one expecting _;`, exhausted the term arena (`K347`) even
+bint_zero_ne_one).one expecting _;`, written `expecting !!_` since #304,
+exhausted the term arena (`K347`) even
 though its type checks and the individual nontriviality and product
 certificates fully normalize.
 The [kernel normalization fix](../../reports/open-quotient-normalization.md)
@@ -1012,7 +1020,9 @@ unary expansion in mixed closed/open BNat law proofs.
    same work. This semantic work is expected to be needed for the rational failure even if
    EVAL5's user-facing observation interface has not shipped.
 4. **EVAL5/EVAL8: complete typed normalization.** Force every surviving proof
-   and annotation when a full normal form is requested, with explicit-stack
+   and annotation when a full normal form is requested (`!!!` since the
+   [folded normal forms](folded-normal-forms.md); `!!` keeps a stuck
+   definition folded), with explicit-stack
    readback and bounded memory. Validate normal forms, eta, instruction
    isolation, lifecycle and canonicity under the applicable EVAL8 gates.
    Measure complete readback of both retained transport functions, and keep
@@ -1043,6 +1053,32 @@ language-feature work remain outside this track.
 
 ### EVAL5: demand only the result being observed
 
+The [evaluation demand marks](evaluation-demand-marks.md) note of 2026-10-21,
+decided the same day, is this package's observation contract: unmarked
+positions are forced as far as the pattern or printer observes them, `!`
+requests a weak head and `!!` a full normal form, naming the kernel's two
+existing queries. [#304](https://github.com/KanHarI/cubist-math/pull/304)
+implements it for expected-value patterns, and
+[#305](https://github.com/KanHarI/cubist-math/pull/305) for printed values:
+the REPL's `evaluate e` and `print(evaluate(e))` show the value form, with
+a marker such as `<fun>` where a function, a path or a type stops it.
+Its measurements show that the prime of `euclid(4)` itself exceeds the
+syntax-depth guard (`K344`) under head queries, so the Euclid acceptance
+below needs an evaluator change as well as an observation contract. The
+[acceptance report](evaluation-demand-marks/report.md) measures both PRs
+against main. `evaluate small_inverse;` shows its value in 28,085 ticks,
+where main normalizes it in 71,027,452. `expecting !!_` reproduces main's
+counters and normal form exactly. `euclid(4)` against `(5, _)` still stops
+with `K344`.
+
+The [folded normal forms](folded-normal-forms.md) note of 2026-10-23,
+decision D1 of the rational normalization debugging plan, changes what `!!`
+computes: a folded normal form, in which closed data computes in full and a
+definition whose head is no data stays as written, so a stuck proof is
+named, not unfolded. `!!!` names the full normal form, which stage 4 below
+measures. `rationals.(2/3) expecting !!_` falls from 70,301,825 ticks and
+1,116,794 nodes to 43,932 ticks and 936.
+
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
 or explicit full-normalization demand. Printing must respect its output
@@ -1055,13 +1091,15 @@ Expected-value patterns (L2.9a) and the closed-truncation REPL command
 `witness TERM;` (L2.9b) are implemented in
 [#181](https://github.com/KanHarI/cubist-math/pull/181) and
 [#182](https://github.com/KanHarI/cubist-math/pull/182), after this roadmap's
-investigation. Patterns currently match `result.normal`, after full
-normalization: a `_` hole saves no evaluation work. Thus the existing form
-`evaluate euclid(4) expecting (5, _)` still encounters the normalization
-failure, with the same counters as plain `euclid(4)` in the baseline.
-EVAL5 must specify any observation mode that lets this pattern
-avoid forcing the certificate, including its checking and failure contract,
-before changing evaluation behavior. Preserve exact expected-value checks,
+investigation. Until #304, patterns matched `result.normal`, after full
+normalization, so a `_` hole saved no evaluation work, and
+`evaluate euclid(4) expecting (5, _)` failed with the same counters as plain
+`euclid(4)` in the baseline. Since #304 a pattern computes each part only as
+far as it observes it: that pattern no longer forces the certificate, but it
+still fails with `K344` at the prime, which is itself too deep, and its
+`!!!(5, _)` twin (`!!(5, _)` before folded normal forms) keeps the full
+normalization measured. The demand marks
+note specifies the observation mode, its checking and its failure contract. Preserve exact expected-value checks,
 the distinction from full normalization and witness readout's checked type.
 
 **Acceptance:** users can inspect the number and certificates of a Euclid

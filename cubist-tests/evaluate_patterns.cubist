@@ -1,8 +1,10 @@
 // Patterns on the expected side of evaluate (L2.9a): an expected value with
-// holes is matched against the term's normal form part by part. A hole
-// matches anything; a pair, an injection or a constructor matches a value
-// built so; any other expression is elaborated at the part's type and
-// compared by normal form.
+// holes or demand marks is matched against the term part by part, and each
+// part is computed only as far as the pattern observes it. A hole matches
+// anything and computes nothing; !p computes the part's weak head and !!p
+// its full normal form; a pair, an injection or a constructor matches a
+// value built so, computing its weak head; any other expression is
+// elaborated at the part's type and compared by full normal form.
 import unat;
 import lists;
 use unat;
@@ -26,6 +28,40 @@ evaluate append(numbers, numbers) expecting cons(1, cons(2, cons(3, cons(1, _)))
 // typed(T, p) states the part's type.
 evaluate pairs expecting (typed(UNat, _), right(4));
 
+// T is compared with the part's type by their weak heads, part by part,
+// then by conversion, and neither is normalized: the normal form of
+// deep = deep fails with K344.
+def deep := 2 * 256;
+
+def reflexive : exists x : UNat. x = x := (deep, refl(deep));
+
+evaluate reflexive expecting (_, typed(deep = deep, _));
+
+// A type differs from the part's in its weak head, or in a part of its weak
+// head, as Void in Void or (deep = deep).
+// Error: E483: The term evaluates to (<unevaluated>, <unevaluated>), which does not match (_,
+//   typed(Unit, _)): a part of type deep = deep is not typed(Unit, _).
+evaluate reflexive expecting (_, typed(Unit, _));
+
+def either : exists x : UNat. Unit or (x = x) := (deep, left(tt));
+
+// Error: E483: The term evaluates to (<unevaluated>, <unevaluated>), which does not match (_,
+//   typed(Void or (deep = deep), _)): a part of type Unit or deep = deep is not typed(Void or (deep
+//   = deep), _).
+evaluate either expecting (_, typed(Void or (deep = deep), _));
+
+// A part whose weak head takes many steps, as void_at(128), is compared
+// the same way.
+def void_at(n : UNat) : U0 := induction n return U0 {
+    zero => Void;
+    succ h => h;
+  };
+
+// Error: E483: The term evaluates to (<unevaluated>, <unevaluated>), which does not match (_,
+//   typed(void_at(128) or (deep = deep), _)): a part of type Unit or deep = deep is not
+//   typed(void_at(128) or (deep = deep), _).
+evaluate either expecting (_, typed(void_at(128) or (deep = deep), _));
+
 // A constructor's argument is read at its field's declared type, with the
 // arguments before it substituted: box's field is at U1, though Unit
 // alone is at U0, and tagged's second field is at its first.
@@ -45,28 +81,98 @@ def tagged_three : Tagged := tagged(UNat, 3);
 
 evaluate tagged_three expecting tagged(_, typed(UNat, _));
 
-// A mismatch names the part that differs.
-// Error: E477: The term evaluates to (3, right(4)), which does not match (4, _): 3 is not 4.
+// A part the pattern does not observe is not computed: 2 * 256 is too deep
+// a numeral to build (K344), but only its weak head is asked for here.
+def far : UNat and UNat := (1, 2 * 256);
+
+evaluate far expecting (1, _);
+
+evaluate far expecting (_, !_);
+
+evaluate far expecting (_, succ(_));
+
+// Error: K344: Native prototype syntax depth exceeds 512.
+evaluate far expecting !!_;
+
+// Error: K344: Native prototype syntax depth exceeds 512.
+evaluate far expecting (1, !!_);
+
+// !_ checks that the value has a weak head, and !!_ that it has a full
+// normal form, below a pattern as at its top. A mark right after evaluate
+// marks the whole pattern.
+evaluate numbers expecting !_;
+
+evaluate numbers expecting !!_;
+
+evaluate numbers expecting cons(1, !!_);
+
+evaluate !!numbers expecting cons(1, _);
+
+// A function's weak head is a lambda, or what eta makes of it.
+def successor := fun (n : UNat) => succ(n);
+
+evaluate successor expecting !_;
+
+// A bare hole would compute nothing.
+// Error: E485: evaluate e expecting _; would compute nothing: write !_ to compute the value's weak
+//   head, !!_ for its normal form, or !!!_ for its full normal form.
+evaluate pairs expecting _;
+
+// A mark asks for nothing more where a part computes as much already.
+// Warning: W709: The ! before (3, _) asks for nothing more: a pair, an injection, a constructor or
+//   an expression computes its part's weak head itself.
+evaluate pairs expecting !(3, _);
+
+// Warning: W710: The !! before 3 asks for nothing more: an expression is compared by its normal
+//   form.
+evaluate pairs expecting (!!3, _);
+
+// Warning: W708: The ! before _ asks for nothing more: it is under !!, which normalizes its part.
+evaluate pairs expecting !!(3, !_);
+
+// !!! asks for the full normal form, and under !! for what that part's
+// normal form does not hold.
+evaluate pairs expecting !!!_;
+
+// Error: E486: A !!! inside a !! part asks for a full normal form, which the !! part's normal form
+//   does not hold: write !!! on the outer part.
+evaluate pairs expecting !!(3, !!!_);
+
+// A mark starts a part of the pattern, never one inside an expression.
+// Error: E484: A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a
+//   pair's component, an injection's value or a constructor's argument; 1 + !2 is none of these.
+evaluate pairs expecting (1 + !2, _);
+
+def unit_identity := fun (x : Unit) => x;
+
+// Error: E484: A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a
+//   pair's component, an injection's value or a constructor's argument; fun (x : Unit) => !_ is
+//   none of these.
+evaluate unit_identity expecting fun (x : Unit) => !_;
+
+// A mismatch names the part that differs, and shows the value as far as it
+// was computed.
+// Error: E477: The term evaluates to (3, <unevaluated>), which does not match (4, _): 3 is not 4.
 evaluate pairs expecting (4, _);
 
-// Error: E477: The term evaluates to (3, right(4)), which does not match (_, left(_)): right(4) is
-//   not left(_).
+// Error: E477: The term evaluates to (<unevaluated>, right(<unevaluated>)), which does not match
+//   (_, left(_)): right(<unevaluated>) is not left(_).
 evaluate pairs expecting (_, left(_));
 
-// Error: E477: The term evaluates to cons(1, cons(2, cons(3, nil))), which does not match cons(_,
-//   nil): cons(2, cons(3, nil)) is not nil.
+// Error: E477: The term evaluates to cons(<unevaluated>, cons(<unevaluated>, <unevaluated>)), which
+//   does not match cons(_, nil): cons(<unevaluated>, <unevaluated>) is not nil.
 evaluate numbers expecting cons(_, nil);
 
-// Error: E477: The term evaluates to (3, right(4)), which does not match (typed(Unit, _), _): 3 is
-//   not typed(Unit, _).
+// Error: E483: The term evaluates to (<unevaluated>, <unevaluated>), which does not match
+//   (typed(Unit, _), _): a part of type UNat is not typed(Unit, _).
 evaluate pairs expecting (typed(Unit, _), _);
 
-// Error: E477: The term evaluates to box(Unit), which does not match box(typed(U0, _)): Unit is not
-//   typed(U0, _).
+// Error: E483: The term evaluates to box(<unevaluated>), which does not match box(typed(U0, _)): a
+//   part of type U1 is not typed(U0, _).
 evaluate boxed expecting box(typed(U0, _));
 
-// Error: E477: The term evaluates to tagged(UNat, 3), which does not match tagged(_, typed(Unit,
-//   _)): 3 is not typed(Unit, _).
+// Error: E483: The term evaluates to tagged(<unevaluated>, <unevaluated>), which does not match
+//   tagged(_, typed(Unit, _)): a part of type UNat is not typed(Unit, _).
 evaluate tagged_three expecting tagged(_, typed(Unit, _));
 
 // A hole must stand where a part can be read.

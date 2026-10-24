@@ -999,7 +999,7 @@ computable def double(n : UNat) := n + n;</code></pre>
         </div>
         <div class="quick-entry" id="quick-evaluate">
           <h4><code>evaluate</code></h4>
-          <p><code>evaluate term expecting value;</code> checks what a closed term computes to. The term may use no assumption.
+          <p><code>evaluate term expecting value;</code> checks what a closed term computes to. The term may use no assumption. A value with holes, as <code>(7, _)</code>, is a pattern that computes only what it observes, <code>!!_</code> asks for the normal form, and <code>!!!_</code> for the full normal form.
             <a href="reference/assumptions.html#evaluate">Excluded middle, choice and computability →</a></p>
           <pre><code data-check="accept">import unat;
 use unat;

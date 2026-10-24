@@ -1,5 +1,6 @@
 // A Glue line prints as the source writes it, and written back, that source
-// checks. A printed path carries no type: the declaration gives it.
+// checks. A printed path carries no type: the declaration gives it. The full
+// normal form, under !!!, unfolds the fiber the folded one would name.
 // tests/cubist-glue.test.mjs checks that the copy below is what the print
 // shows.
 import glue_;
@@ -8,7 +9,7 @@ import glue_;
 //   refl(y)), fun (p : exists x : A. y = x) => path i => (p.2 @ i, path j => p.2 @ i & j)))),
 //   face(i, 1, A, (fun (x : A) => x, fun (y : A) => ((y, refl(y)), fun (p : exists x : A. y = x) =>
 //   path i => (p.2 @ i, path j => p.2 @ i & j)))))
-print(evaluate(glued_line));
+print(evaluate(!!!glued_line));
 
 def again : forall A : U0. A = A := fun (A : U0) => path i => Glue(
   A,

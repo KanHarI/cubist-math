@@ -52,7 +52,7 @@ derivations, but cannot publish unchecked definitions in the native registry.
 5. [signatures.c](../../kernel/src/signatures.c) and [eliminators.c](../../kernel/src/eliminators.c) admit declared inductive and higher inductive types (H1), check sort instances and constructors, and check and compute dependent elimination.
 6. [term_conversion.c](../../kernel/src/term_conversion.c) and [levels.c](../../kernel/src/levels.c) supply syntactic $\alpha$-equivalence modulo the interval/face algebra, universe-level normal forms, and syntactic cumulativity.
 7. [term_substitution.c](../../kernel/src/term_substitution.c) handles capture-avoiding term substitution, dimension substitution, and face restriction.
-8. [term_normalize.c](../../kernel/src/term_normalize.c) and [term_expose.c](../../kernel/src/term_expose.c) implement call-by-name weak-head reduction (`ck_whnf`), full normalization (`ck_normal`), and compact single-step head exposure (`ck_expose`).
+8. [term_normalize.c](../../kernel/src/term_normalize.c) and [term_expose.c](../../kernel/src/term_expose.c) implement call-by-name weak-head reduction (`ck_whnf`), full normalization (`ck_normal`), the folded normal form that keeps a definition whose weak head is no data as written (`ck_normal_folded`), and compact single-step head exposure (`ck_expose`).
 9. [composition_compute.c](../../kernel/src/composition_compute.c), [inductive_composition.c](../../kernel/src/inductive_composition.c), [hit_composition.c](../../kernel/src/hit_composition.c), [glue_compute.c](../../kernel/src/glue_compute.c), and [equivalence_terms.c](../../kernel/src/equivalence_terms.c) compute composition, homogeneous composition, transport, and derived filling across each type former.
 
 The untrusted [instruction driver](../../web/cubical-instruction-driver.mjs)
@@ -201,7 +201,7 @@ Universe levels denote ordinals $\omega \cdot \text{tier} + n < \omega^2$ built 
 - **Arity:** `0` (`payload = def_index` in `1 .. k->definition_count - 1`, `child[0..3] == 0`).
 - **Role:** Folded handle to a checked, closed definition stored in `k->definitions[def_index]`.
 - **Trust boundary:** Raw syntax construction (`cc_kernel_term`) accepts a `CC_DEFREF` node like any other inert syntax, and it certifies nothing. Only `cc_instr_define(k, symbol, closed)` publishes the judgement that mints a reference, and `cc_instr_lookup(k, reference)` publishes one only after checking `1 <= payload < k->definition_count`. Reducing a `CC_DEFREF` whose payload names no definition fails with `"Unknown definition reached reduction."`.
-- **Reduction ($\delta$):** Kept folded by syntactic comparison (`ck_alpha_equal`) and compact head exposure (`ck_expose`). Unfolded to `k->definitions[payload].value` by `Step(CC_STEP_DELTA)`, `ck_whnf`, and `ck_normal`.
+- **Reduction ($\delta$):** Kept folded by syntactic comparison (`ck_alpha_equal`) and compact head exposure (`ck_expose`). Unfolded to `k->definitions[payload].value` by `Step(CC_STEP_DELTA)`, `ck_whnf`, and `ck_normal`. `ck_normal_folded` keeps an application or projection of it as written inside the term asked for when its weak head is no data.
 
 ---
 
