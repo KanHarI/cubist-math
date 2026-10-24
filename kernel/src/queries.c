@@ -10,7 +10,8 @@ void cc_kernel_arena(const cc_kernel *k, size_t *nodes, size_t *bytes) {
                       (k->syntax_memo ? CC_SYNTAX_MEMO_SIZE * sizeof(cc_syntax_memo) : 0) +
                       (k->alpha_memo ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_memo) : 0) +
                       (k->alpha_scopes ? CC_ALPHA_MEMO_SIZE * sizeof(cc_alpha_scope) : 0) +
-                      (k->interned ? k->intern_capacity * sizeof(cc_term) : 0);
+                      (k->interned ? k->intern_capacity * sizeof(cc_term) : 0) +
+                      (k->folded_cache ? k->capacity * sizeof(cc_term) : 0);
 }
 
 cc_term cc_kernel_normalize(cc_kernel *k, cc_term term) {

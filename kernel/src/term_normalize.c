@@ -395,21 +395,19 @@ static bool stuck_elimination(const cc_kernel *k, cc_term head) {
     }
 }
 
-/* Whether a step rebuilt `last` as `head` in place: an application or
- * projection over the very same root, or the same node with at most one
- * part changed, its stuck value. Another eliminator at the root, even of the
- * same kind, is another computation. */
+/* Whether a step rebuilt `last` as `head` in place, reducing only its stuck
+ * part: the same node, with at most one part changed. An eliminator applied
+ * is stuck on its scrutinee, so there the eliminator itself must be the
+ * one `last` applied, unreduced: an eliminator that a definition or a match
+ * computed is another computation. Each part is compared with the weak head
+ * the step took of it, never with another term, so interning cannot make a
+ * computed part look unchanged. */
 static bool rebuilt_in_place(const cc_kernel *k, cc_term last, cc_term head) {
     cc_node a = k->nodes[last], b = k->nodes[head];
     if (a.kind != b.kind || a.payload != b.payload)
         return false;
-    if (spine_node(a.kind)) {
-        while (spine_node(k->nodes[last].kind))
-            last = k->nodes[last].child[0];
-        while (spine_node(k->nodes[head].kind))
-            head = k->nodes[head].child[0];
-        return last == head;
-    }
+    if (b.kind == CC_APP && k->nodes[b.child[0]].kind == CC_ELIM && a.child[0] != b.child[0])
+        return false;
     unsigned changed = 0;
     for (unsigned i = 0; i < 4; ++i)
         changed += a.child[i] != b.child[i];
@@ -555,9 +553,9 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
              * stuck value reduced, is taken as that step's term, so that a
              * definition stuck inside it folds as written there. Any other
              * head is taken as computed: a transport's formal composition, a
-             * composition with its empty tubes dropped, or an eliminator
-             * another step exposed, as f(x) does where f is an eliminator by
-             * eta, or a match that computes f. */
+             * composition with its empty tubes dropped, or an eliminator a
+             * step computed, as f(x) does where f is an eliminator by eta, or
+             * a match that computes f. */
             bool rebuilt = fold && last && stuck_elimination(k, head) && rebuilt_in_place(k, last, head);
             frame->node = k->nodes[rebuilt ? last : head];
             if (!normal_restrict(k, &frame->node))

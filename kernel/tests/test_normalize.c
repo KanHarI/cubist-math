@@ -665,6 +665,15 @@ static void folded_normal_forms(unsigned optimizations) {
     cc_term x = raw(k, CC_VAR, 600, 0, 0), g = raw(k, CC_VAR, 601, 0, 0);
     cc_term applied = raw(k, CC_APP, 0, stuck, x);
     cc_kernel_set_step_budget(k, 100000);
+    /* The folded memo, allocated by the first folded query, is arena memory:
+     * exactly one handle per node, once the other memos exist. */
+    size_t nodes, before, after, capacity;
+    assert(cc_kernel_normalize(k, applied) && cc_kernel_normalize(k, raw(k, CC_APP, 0, g, applied)));
+    cc_kernel_arena(k, &nodes, &before);
+    capacity = k->capacity;
+    assert(!k->folded_cache && cc_kernel_normalize_folded(k, applied) && k->folded_cache);
+    cc_kernel_arena(k, &nodes, &after);
+    assert(k->capacity == capacity && after == before + capacity * sizeof(cc_term));
 
     /* A part stuck on an eliminator: folded as written, where the full normal
      * form unfolds it. */
@@ -793,6 +802,37 @@ static void folded_normal_forms(unsigned optimizations) {
     cc_kernel_free(k);
 }
 
+/* A compacting commit clears the folded memo: entries that point forward to
+ * nodes the commit discards must not answer for the syntax that refills
+ * their handles. */
+static void folded_compaction(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k), empty = cc_instr_void(k);
+    cc_entry_id s = cc_instr_extend(k, empty, 502);
+    cc_judgement_id body = cc_instr_abort(k, unit, cc_instr_variable(k, s));
+    cc_term stuck = info(k, cc_instr_define(k, 503, cc_instr_lambda(k, s, body))).term;
+    cc_term g = raw(k, CC_VAR, 601, 0, 0);
+    cc_kernel_checkpoint(k);
+    for (unsigned i = 0; i < 300; ++i)
+        raw(k, CC_VAR, 1000 + i, 0, 0);
+    cc_term part = raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 700, 0, 0));
+    cc_term folded = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, part));
+    assert(folded && k->folded_cache[part]);
+    size_t allocated = k->count;
+    assert(cc_kernel_commit_checkpoint(k));
+    assert(k->count < allocated);
+    for (size_t i = 0; i < k->count; ++i)
+        assert(!k->folded_cache[i]);
+    /* Refill the discarded handles with other syntax, and fold again. */
+    while (k->count <= allocated)
+        raw(k, CC_VAR, 2000 + (uint32_t)k->count, 0, 0);
+    cc_term other = raw(k, CC_APP, 0, stuck, raw(k, CC_VAR, 701, 0, 0));
+    cc_term again = cc_kernel_normalize_folded(k, raw(k, CC_APP, 0, g, other));
+    assert(again && ck_alpha_equal(k, again, raw(k, CC_APP, 0, g, other)));
+    cc_kernel_free(k);
+}
+
 int main(void) {
     weak_tail_aliases(CC_SHARE_SYNTAX);
     weak_tail_aliases(0);
@@ -821,5 +861,6 @@ int main(void) {
     unshared_stuck_composition();
     folded_normal_forms(CC_SHARE_SYNTAX);
     folded_normal_forms(0);
+    folded_compaction();
     puts("full normalization cache: ok");
 }

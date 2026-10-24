@@ -68,8 +68,8 @@ definition stays as it was written:
 5. A part that reached its head through no definition is taken in turn,
    as in the full normal form. A stuck elimination, an eliminator, recursor,
    abort or unglue on a value that is no constructor, that its last step
-   rebuilt in place, over the very same root or with only its stuck value
-   changed, is taken as that step's term: the head holds the stuck value reduced,
+   rebuilt in place, with only its stuck part changed and an eliminator
+   applied left as it was, is taken as that step's term: the head holds the stuck value reduced,
    `unitrec(…, abort(…))` where the term had `unitrec(…, stuck(x))`, and the
    term keeps it as written, so it folds. Any other head is taken as
    computed: a transport of a path constructor computes a formal
