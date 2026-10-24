@@ -2424,7 +2424,7 @@
   },
   {
    "path": "library/binary_rationals.cubist",
-   "summary": "The shared fraction field over `BInt`, named `BQ`, with decidable equality, inverse, and the checked integer embedding `bq_of_int`. Integer, fraction, decimal and `0b` literals accumulate binary magnitudes; only glyph digits and source offsets are unary. Values remain quotient representatives. Full inequality-certificate normalization is under investigation; the public `Q` migration remains NUM2 work."
+   "summary": "The shared fraction field over `BInt`, named `BQ`, with decidable equality, inverse, and the checked integer embedding `bq_of_int`. Integer, fraction, decimal and `0b` literals accumulate binary magnitudes; only glyph digits and source offsets are unary. Values remain quotient representatives; their folded normal forms (`!!`) compute, and the full normal forms of their certificates (`!!!`) do not yet (the runtime roadmap's NUM2 section). The public `Q` migration remains NUM2 work."
   },
   {
    "path": "library/binary.cubist",
