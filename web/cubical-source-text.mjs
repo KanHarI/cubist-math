@@ -584,3 +584,45 @@ export function typedMotives(term, definitions) {
   };
   return go(term);
 }
+
+// A definition shown by a dimension's name, as a definition i where a term
+// names a dimension i, would read as that dimension; no source spelling
+// qualifies it, and a dimension the context names keeps its name. Such a
+// definition is shown by its value, which it equals by unfolding. This runs
+// with typedMotives, after it: a recovered domain can bring the definition
+// in. `definitions` gives a definition's decoded value and its label.
+export function apartFromDimensions(term, definitions) {
+  const dimensions = new Set(), seen = new WeakSet();
+  const collect = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) dimensions.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (typeof t.dim === "string") dimensions.add(t.dim);
+    Object.values(t).forEach(collect);
+  };
+  collect(term);
+  if (!dimensions.size) return term;
+  const shown = new WeakMap();
+  const go = (t, depth = 0) => {
+    if (!t || typeof t !== "object") return t;
+    if (shown.has(t)) return shown.get(t);
+    let result = t;
+    if (t.tag === "DefRef" && dimensions.has(definitions.label(t.name)) && depth < 16) {
+      const value = definitions.value(t.name);
+      if (value) result = go(value, depth + 1);
+    } else for (const [key, value] of Object.entries(t)) {
+      const changed = go(value, depth);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
+        result[key] = changed;
+      }
+    }
+    shown.set(t, result);
+    return result;
+  };
+  return go(term);
+}

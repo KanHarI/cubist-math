@@ -96,7 +96,9 @@ path (the elaborator's `displayText`, `displayTexts` and `displayGoal`):
 
 1. `typedMotives` (`cubical-source-text.mjs`) writes each eliminator's folded
    motive, a definition kept by name, as a function of the domain its checked
-   type gives, `λ (z : D). M(z)`.
+   type gives, `λ (z : D). M(z)`; then `apartFromDimensions` shows a
+   definition whose name is a dimension's in the term by its value, since no
+   source spelling tells the two apart and the dimension keeps its name.
 2. `displayTerm` (`cubical-elaborator.mjs`) settles every binder's name, apart
    from every definition, type and constructor the term prints and every
    dimension it names, and `readableDimensions` names the dimensions decoding
