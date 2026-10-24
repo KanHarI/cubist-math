@@ -318,7 +318,10 @@ export class NativeCubicalElaborator {
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    let [shown] = forSource([chained], this.displayNaming(dimensions, reduce ? 256 : 0));
+    // Source text is named by forSource; another print, as cubicalText for
+    // a judgement graph, shows the term as it was checked, its names only
+    // settled.
+    let [shown] = print ? [displayTerm(chained, reduce ? 256 : 0)] : forSource([chained], this.displayNaming(dimensions, reduce ? 256 : 0));
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       // A universe variable's entry is its bound: U < UU0.

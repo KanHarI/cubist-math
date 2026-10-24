@@ -2,7 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import { cubicalMathTree } from "../web/cubical-notation.mjs";
+import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
 import { forSource } from "../web/display-naming.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { checkProgram } from "./check-program.mjs";
@@ -22,6 +22,7 @@ import { checkProgram } from "./check-program.mjs";
 const module = await createCubical();
 
 const declarations = `import unat;
+import hlevels;
 use unat;
 
 inductive Circle {
@@ -42,6 +43,18 @@ inductive Tag(A : U0) {
   tag;
 }
 
+inductive Two2 {
+  two2(p : UNat, q : UNat);
+}
+
+inductive Tr(A : U0) : prop {
+  point(a : A);
+}
+
+inductive LBox(U < UU0) {
+  lbox;
+}
+
 // Named as the display's binder stems.
 def x : U0 := Unit;
 def z(s : Unit or Unit) : U0 := Unit;
@@ -51,7 +64,7 @@ def a(u : Unit) : Unit := u;
 def b(u : Unit) : Unit := u;
 
 // Named as the display's dimension names.
-def i : base = base := path e => loop @ ~e;
+def i(u : Unit) : base = base := path e => loop @ ~e;
 def j : U0 := Unit;
 def d0 : U0 := Unit;
 def z1 : U0 := Unit;
@@ -75,6 +88,12 @@ def FnU : U0 := Tag(x) -> Unit;
 def Around(t : Tag(j)) : U0 := Circle;
 def Inside(t : Tag(d0)) : U0 := Unit;
 def Beside(t : Tag(z1)) : U0 := Unit;
+def choose(m, n : UNat) : UNat := m;
+def keep2(f : Opt(Unit) -> Unit) : Opt(Unit) -> Unit := f;
+def LM(U < UU0, b : LBox(U)) : U0 := Unit;
+def dfam : exists A : U0. A -> U0 := (Opt(Unit), Fits);
+def stepper(p : UNat, ih : forall k : UNat. (p = p) and (k = k)) : forall k : UNat. (succ(p) = succ(p)) and (k = k) :=
+  fun (k : UNat) => (refl(succ(p)), refl(k));
 `;
 
 // Each case: a definition's name and its declaration, and inputs at which
@@ -93,8 +112,18 @@ const cases = [
   ["nat_h", "def nat_h(n : UNat) : UNat := induction n as m return UNat { zero => 0; succ ih => foo(h(m), m, ih); };", [[2, 2], [3, 6]]],
   // A clause whose arguments are invented, beside one the term has.
   ["two_clause", "def two_clause : Two -> Unit := fun (t : Two) => match t return Unit { two(p, q) => a(q); };"],
-  // A path clause folded to a definition named as the dimension's stem.
-  ["path_clause", "def path_clause : (Circle -> Circle) and Unit := (fun (c : Circle) => match c return Circle { base => base; loop @ e => i @ e; }, tt);"],
+  // A path clause folded to a definition, applied, named as the
+  // dimension's stem; shown where the context names i, i is unfolded, and
+  // the path applied reduced.
+  ["path_clause", "def path_clause : (Circle -> Circle) and Unit := (fun (c : Circle) => match c return Circle { base => base; loop @ e => i(tt) @ e; }, tt);"],
+  // A clause folded whole: two new arguments, told apart by computing.
+  ["two2_clause", "def two2_clause : Two2 -> UNat := fun (t : Two2) => match t return UNat { two2(p, q) => choose(p, q); };", [["two2(1, 2)", 1]]],
+  // A truncation's squash clause folded past its arguments: hypotheses
+  // and a dimension, in that order.
+  ["squash_clause", "def squash_clause : Tr(Unit) -> Unit := fun (t : Tr(Unit)) => induction t return Unit { point(a) => a; squash(x, y) @ e with ihx, ihy => unit_is_prop(ihx, ihy) @ e; };"],
+  // Induction whose motive binds the name its folded step's predecessor
+  // takes: the shared `as` name would capture it.
+  ["nat_cap", "def nat_cap(n : UNat) : forall k : UNat. (n = n) and (k = k) := induction n as m return forall k : UNat. (m = m) and (k = k) { zero => fun (k : UNat) => (refl(0), refl(k)); succ ih => stepper(m, ih); };"],
   // An eliminator as a function, where no type reaches it: its domain is
   // read from its folded motive's type, through applications, levels, an
   // alias, projections and a function of types applied.
@@ -110,6 +139,15 @@ const cases = [
   ["tfits_refl", "def tfits_refl : tfits = tfits := refl(fun (o : Opt(Unit)) => match o as w return TFits(w) { none => tt; some(y) => y; });"],
   ["kfits", "def kfits(o : Opt(Unit)) : keep(fun (A : U0) => Opt(A) -> U0, Fits)(o) := match o as w return keep(fun (A : U0) => Opt(A) -> U0, Fits)(w) { none => tt; some(y) => y; };"],
   ["kfits_refl", "def kfits_refl : kfits = kfits := refl(fun (o : Opt(Unit)) => match o as w return keep(fun (A : U0) => Opt(A) -> U0, Fits)(w) { none => tt; some(y) => y; });"],
+  // An eliminator as an application's argument, and one syntax both
+  // applied and not.
+  ["argued", "def argued : (Opt(Unit) -> Unit) and Unit := (keep2(fun (o : Opt(Unit)) => match o return Unit { none => tt; some(y) => y; }), tt);"],
+  ["shared", "def shared : Opt(Unit) -> Unit and (Opt(Unit) -> Unit) := fun (o : Opt(Unit)) => (match o return Unit { none => tt; some(y) => y; }, fun (p : Opt(Unit)) => match p return Unit { none => tt; some(y) => y; });"],
+  // Recovered domains that depend on a level and on a pair's first part.
+  ["lm", "def lm(b : LBox(U0)) : LM(U0, b) := match b as w return LM(U0, w) { lbox => tt; };"],
+  ["lm_refl", "def lm_refl : lm = lm := refl(fun (b : LBox(U0)) => match b as w return LM(U0, w) { lbox => tt; });"],
+  ["dm", "def dm(o : dfam.1) : dfam.2(o) := match o as w return dfam.2(w) { none => tt; some(y) => y; };"],
+  ["dm_refl", "def dm_refl : dm = dm := refl(fun (o : dfam.1) => match o as w return dfam.2(w) { none => tt; some(y) => y; });"],
   // An eliminator applied to its value and more.
   ["twice", "def twice : Opt(Unit) -> Unit := fun (o : Opt(Unit)) => (match o as w return Twice(w) { none => fun (u : Unit) => u; some(y) => fun (u : Unit) => y; })(tt);"],
   // Recovered domains print definitions named as binders around them.
@@ -224,6 +262,8 @@ def g : Tag(i) -> Circle := fun t => match t as v return Around(v) { tag => base
 def d0 : U0 := Unit;
 def pair_(c : Circle) : U0 and Circle := (d0, c);
 def p : pair_(base) = pair_(base) := path j => pair_(loop @ j);
+def op : Opt(Unit) = Opt(Unit) := refl(Opt(Unit));
+def famP : PathP(fun (k : Interval) => (op @ k) -> U0, F, F) := path k => F;
 `;
   const { program, result } = await checkProgram(t, declarations, { module });
   assert.deepEqual(result.gaps, []);
@@ -256,6 +296,18 @@ def p : pair_(base) = pair_(base) := path j => pair_(loop @ j);
   const gShown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }";
   assert.equal(checker.displayText(gTerm, 1000, 1000, undefined, 256, ambient), gShown);
   assert.equal(checker.displayText(gTerm, 1000, 1000, undefined, 256, new Map()), gShown.replace("Tag(Unit)", "Tag(i)"));
+  // An eliminator written as a function, its motive a path of type
+  // families applied at z1: its domain is the family's at z1.
+  const famAt = { tag: "PApp", path: { tag: "DefRef", name: "main__famP" }, arg: [["z1:1"]] };
+  const alone = folded({ tag: "Elim", signature: "main__Opt", motive: famAt, clauses }, new Map([["z1", 0]]));
+  assert.equal(checker.displayText(alone, 1000, 1000), "fun (x : op @ z1) => match x as z return (famP @ z1)(z) { none => tt; some(y) => y; }");
+  // A goal shown where the context names d0 keeps the name, which reads as
+  // an unnamed dimension's; a goal printed in kernel notation, as a
+  // judgement graph prints it, is shown as it was checked.
+  const loopAt = { tag: "PApp", path: { tag: "Con", index: 1, name: "loop", sort: circle }, arg: [["d0:1"]] };
+  assert.equal(checker.displayGoal(new Map(), loopAt, null, 1000, null, true, {}, new Map([["d0", 0]])).goal, "loop @ d0");
+  const kernelGoal = checker.displayGoal(new Map(), alone, null, 1000, cubicalText, false).goal;
+  assert.match(kernelGoal, /^Opt\.elim\(at\(famP, z1:1\), /, kernelGoal);
   const { result: back } = await checkProgram(t, `${declarations}def z1_back : fam = fam := path z1 => ${z1Shown};
 def i_loop : (fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }) = g := path i => ${iShown};
 def g_back : g = g := path i => ${gShown};
@@ -277,4 +329,9 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   assert.equal(sourceText(named, symbols), "path x => fun (x1 : N) => match x1 return T { zero => p @ x; }");
   // The printer chooses no name: unnamed, the eliminator shows as it is.
   assert.equal(sourceText({ tag: "PLam", dim: "x", family: null, body: elim }, symbols), "path x => N.elim(λ (m : N). T, at(p, x:1))");
+  // One eliminator, applied first and then alone: each place is spelled for
+  // itself, though the syntax is shared.
+  const shared = { tag: "Lam", name: "o", domain: sort, body: { tag: "Pair", first: { tag: "App", fn: elim, arg: { tag: "Var", name: "o" } }, second: elim } };
+  const [both] = forSource([shared], { definitions, symbols });
+  assert.equal(sourceText(both, symbols), "fun (o : N) => (match o return T { zero => p @ x; }, fun (x1 : N) => match x1 return T { zero => p @ x; })");
 });

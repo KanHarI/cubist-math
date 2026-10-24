@@ -56,8 +56,10 @@ export function displayTerm(term, budget = 256, names = new Map()) {
 // shows: not a variable's, a dimension's, or a definition's without its
 // module. The terms are shared graphs, so each node is visited and copied
 // once, and sharing is kept.
-export function readableDimensions(terms) {
-  const used = new Set(), seen = new WeakSet();
+// `pinned` names the dimensions of the context the terms are shown in: they
+// keep their names, even one spelled as an unnamed one is, as d0.
+export function readableDimensions(terms, pinned = []) {
+  const used = new Set(pinned), seen = new WeakSet();
   const visit = t => {
     if (typeof t === "string") {
       const literal = /^(.+):[01]$/.exec(t);
@@ -77,7 +79,7 @@ export function readableDimensions(terms) {
     Object.values(t).forEach(visit);
   };
   terms.forEach(visit);
-  const unnamed = [...used].filter(name => /^d[0-9]+_*$/.test(name))
+  const fixed = new Set(pinned), unnamed = [...used].filter(name => /^d[0-9]+_*$/.test(name) && !fixed.has(name))
     .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)) || a.length - b.length);
   if (!unnamed.length) return terms;
   const names = (function* () {
@@ -283,9 +285,11 @@ export function explicitBinders(term, { definitions, symbols = {} }) {
   // from 1 otherwise: displayTerm shows it by its stem where it can, and a
   // display too large for scoped names (globalNames) shows it as it is. A
   // new dimension, d1 and on, is named as decoding's unnamed dimensions are.
+  const next = new Map();
   const fresh = stem => {
-    let name = stem === "d" ? "d1" : stem;
-    for (let n = 1; used.has(name); n++) name = `${stem}${n}`;
+    let n = next.get(stem) ?? (stem === "d" ? 1 : 0), name;
+    do name = n ? `${stem}${n}` : stem, n++; while (used.has(name));
+    next.set(stem, n);
     used.add(name);
     return name;
   };
@@ -438,10 +442,13 @@ export function apartFromDimensions(term, definitions, ambient = []) {
         }
       }
       // A value put where the definition was applied, projected or applied
-      // to a dimension, as explicitBinders applies a clause that is one, is
-      // a redex the source cannot check: (path i => loop @ ~i) @ j. Reduced.
+      // to a dimension, here or below in the spine, as explicitBinders
+      // applies a clause that is one, can leave a redex at the spine's root,
+      // which the source cannot check: (path i => loop @ ~i) @ j. Reduced,
+      // so that the node above sees a value in turn.
       const root = { App: "fn", LApp: "fn", Fst: "pair", Snd: "pair", PApp: "path" }[t.tag];
-      if (root && result[root] !== t[root] && t[root]?.tag === "DefRef") result = reduceRedexes(result);
+      const former = { App: "Lam", LApp: "LLam", Fst: "Pair", Snd: "Pair", PApp: "PLam" }[t.tag];
+      if (root && result[root] !== t[root] && result[root]?.tag === former) result = reduceRedexes(result);
     }
     shown.set(t, result);
     return result;
@@ -475,6 +482,6 @@ export function labelsShown(label) {
 // context the terms are shown in; `reduce` the display's beta budget.
 export function forSource(terms, { definitions, symbols, names = new Map(), dimensions = [], reduce = 256 }) {
   const explicit = terms.map(term => apartFromDimensions(explicitBinders(term, { definitions, symbols }), definitions, dimensions));
-  return readableDimensions(displayTerm(explicit, reduce, names));
+  return readableDimensions(displayTerm(explicit, reduce, names), dimensions);
 }
 

@@ -1,4 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
+import { termBinders } from "./translator/term-shape.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName } from "./translator/names.mjs";
@@ -107,6 +108,23 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     }
   };
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
+  // Whether `from` can be shown as `to` throughout a term: `to` is free in
+  // it nowhere, and no binder or dimension named `to` in it has `from` free
+  // in its scope, which it would capture. Induction's `as k` shows the
+  // motive's variable by the predecessor's name only so.
+  const renamable = (term, from, to) => {
+    if (from === to) return true;
+    if (mentions(term, to)) return false;
+    const seen = new WeakSet();
+    const capture = t => {
+      if (!t || typeof t !== "object" || seen.has(t)) return false;
+      seen.add(t);
+      if (termBinders.has(t.tag) && t.name === from) return false;
+      if ((termBinders.has(t.tag) && t.name === to || t.dim === to) && mentions(t, from)) return true;
+      return Object.values(t).some(capture);
+    };
+    return !capture(term);
+  };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   // An operation printed with its notation's operator, at its level: ^
@@ -267,7 +285,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         // name for nothing else. Otherwise it prints as the declared match.
         const elim=t.tag==="App"&&t.fn.tag==="Elim"?t.fn:null,step=elim?.clauses?.[1];
         if(elim?.signature==="unat__UNat"&&elim.clauses.length===2&&elim.motive?.tag==="Lam"&&step?.tag==="Lam"&&step.body?.tag==="Lam"
-          &&(elim.motive.name===step.name||!mentions(elim.motive.body,step.name)))
+          &&renamable(elim.motive.body,elim.motive.name,step.name))
           return print({tag:"NatInduction",motive:elim.motive,zero:elim.clauses[0],step,value:t.arg});
         if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.
