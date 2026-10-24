@@ -121,6 +121,8 @@ def z(s : Unit or Unit) : U0 := Unit;
 def Shape(n : UNat) : U0 := Unit;
 def Fits(o : Opt(Unit)) : U0 := Unit;
 def rev : base = base := path i => loop @ ~i;
+def i : base = base := path j => loop @ ~j;
+def Twice(o : Opt(Unit)) : U0 := Unit -> Unit;
 `;
   const cases = [
     ["(Unit or Unit) -> Unit", "fun (s : Unit or Unit) => match s return Unit { left x => a(x); right y => y; }",
@@ -133,6 +135,12 @@ def rev : base = base := path i => loop @ ~i;
       "(fun (x : Circle) => match x return Circle { base => base; loop @ i => rev @ i; }, tt)"],
     ["forall o : Opt(Unit). Fits(o)", "fun (o : Opt(Unit)) => match o as w return Fits(w) { none => tt; some(x) => x; }",
       "fun x => match x as z return Fits(z) { none => tt; some(x) => x; }"],
+    // A new dimension keeps apart from the definition i; an eliminator
+    // applied to more than its value keeps the match spelling.
+    ["(Circle -> Circle) and Unit", "(fun (c : Circle) => match c return Circle { base => base; loop @ j => i @ j; }, tt)",
+      "(fun (x : Circle) => match x return Circle { base => base; loop @ i1 => i @ i1; }, tt)"],
+    ["Opt(Unit) -> Unit", "fun (o : Opt(Unit)) => (match o as w return Twice(w) { none => fun (u : Unit) => u; some(x) => fun (u : Unit) => x; })(tt)",
+      "fun (o : Opt(Unit)) => (match o as z return Twice(z) { none => fun (u : Unit) => u; some(x) => fun (u : Unit) => x; })(tt)"],
   ];
   const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
     `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });

@@ -603,6 +603,9 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
   assert.deepEqual(lint("evaluate e expecting !!!(!!_, !_, _); evaluate e expecting (!!(!!!_, _), !!!3, _);").map(warning => warning.code),
     ["W708", "W708"]);
   assert.match(lint("evaluate e expecting !!!(!!_, _);")[0].message, /it is under !!!, which normalizes its part/);
+  // Nor is a mark of a refused combination reported: removing the inner !!!
+  // or the !! of !!!(!!(!!!_), _) would make the refused entry check.
+  assert.deepEqual(lint("evaluate e expecting !!!(!!(!!!_), _); evaluate e expecting (!!_, !!(tt, !!!_));"), []);
 });
 
 // One closed example of every construct with a term to evaluate, and its
