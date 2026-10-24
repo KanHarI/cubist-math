@@ -14,7 +14,8 @@ import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 
 // Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
-// `!` asks for a part's weak head and `!!` for its full normal form, and an
+// `!` asks for a part's weak head, `!!` for its normal form, stuck
+// definitions folded, and `!!!` for its full normal form, and an
 // unmarked part of a pattern is computed only as far as the pattern observes
 // it. The cases with messages are cubist-tests/evaluate_patterns.cubist;
 // here, the tokens, the values evaluations report, what is left uncomputed,

@@ -84,6 +84,11 @@ use unat;
 def double(n : UNat) := n + n;
 def pair_ : UNat and (UNat -> UNat) := (double(3), double);
 def far : UNat and (Unit and Unit) := (2 * 256, (tt, tt));
+inductive Box {
+  box(u : Unit);
+}
+def boxed : Box := box(tt);
+def sided : Unit or Unit := left(tt);
 evaluate pair_ expecting !!(6, !!!_);
 evaluate pair_ expecting (6, !!!_);
 evaluate typed(Unit and Unit, (tt, tt)) expecting !!!(!!(!!!_), _);
@@ -91,11 +96,14 @@ evaluate far expecting (!!!_, !!(tt, !!!_));
 evaluate pair_ expecting !!(6, (
   !!!_
 ));
+evaluate sided expecting !!left(!!!_);
+evaluate boxed expecting !!box(!!!_);
+evaluate tt expecting !!typed(Unit, !!!_);
 print(evaluate(!!!pair_));
 `;
   const { result } = await checkProgram(t, source, { module });
-  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]), Array(4).fill(["E486", "!!!"]));
-  assert.deepEqual(result.gaps.map(gap => source.slice(0, gap.start).split("\n").length), [7, 9, 10, 12]);
+  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]), Array(7).fill(["E486", "!!!"]));
+  assert.deepEqual(result.gaps.map(gap => source.slice(0, gap.start).split("\n").length), [12, 14, 15, 17, 19, 20, 21]);
   assert.deepEqual(result.prints.map(print => print.text), ["(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })"]);
 });
 
@@ -124,6 +132,10 @@ def Fits(o : Opt(Unit)) : U0 := Unit;
 def rev : base = base := path i => loop @ ~i;
 def i : base = base := path j => loop @ ~j;
 def Twice(o : Opt(Unit)) : U0 := Unit -> Unit;
+inductive Two {
+  two(x : Unit, y : Unit);
+}
+def e(o : Opt(Unit)) : Fits(o) := match o as w return Fits(w) { none => tt; some(x) => x; };
 `;
   const cases = [
     ["(Unit or Unit) -> Unit", "fun (s : Unit or Unit) => match s return Unit { left x => a(x); right y => y; }",
@@ -135,13 +147,20 @@ def Twice(o : Opt(Unit)) : U0 := Unit -> Unit;
     ["(Circle -> Circle) and Unit", "(fun (c : Circle) => match c return Circle { base => base; loop @ i => rev @ i; }, tt)",
       "(fun (x : Circle) => match x return Circle { base => base; loop @ i => rev @ i; }, tt)"],
     ["forall o : Opt(Unit). Fits(o)", "fun (o : Opt(Unit)) => match o as w return Fits(w) { none => tt; some(x) => x; }",
-      "fun x => match x as z return Fits(z) { none => tt; some(x) => x; }"],
+      "fun (x : Opt(Unit)) => match x as z return Fits(z) { none => tt; some(x) => x; }"],
     // A new dimension keeps apart from the definition i; an eliminator
     // applied to more than its value keeps the match spelling.
     ["(Circle -> Circle) and Unit", "(fun (c : Circle) => match c return Circle { base => base; loop @ j => i @ j; }, tt)",
       "(fun (x : Circle) => match x return Circle { base => base; loop @ i1 => i @ i1; }, tt)"],
     ["Opt(Unit) -> Unit", "fun (o : Opt(Unit)) => (match o as w return Twice(w) { none => fun (u : Unit) => u; some(x) => fun (u : Unit) => x; })(tt)",
       "fun (o : Opt(Unit)) => (match o as z return Twice(z) { none => fun (u : Unit) => u; some(x) => fun (u : Unit) => x; })(tt)"],
+    // A new argument name keeps apart from the clause's earlier one, which
+    // its rest no longer mentions; a folded motive's domain is read from its
+    // type, where refl gives the function none.
+    ["Two -> Unit", "fun (t : Two) => match t return Unit { two(x, y) => a(y); }",
+      "fun (x : Two) => match x return Unit { two(x, x1) => a(x1); }"],
+    ["e = e", "refl(fun (o : Opt(Unit)) => match o as w return Fits(w) { none => tt; some(x) => x; })",
+      "refl(fun (x : Opt(Unit)) => match x as z return Fits(z) { none => tt; some(x) => x; })"],
   ];
   const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
     `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });
@@ -166,7 +185,8 @@ test("a name the printer invents keeps apart from the dimensions in scope", () =
 });
 
 // A !!! inside a !! part is refused before the evaluated term is elaborated:
-// a rational literal's reader computes, and computes nothing here.
+// a numeral's reader (nat's literal rule) computes, and computes nothing
+// here; nor does a part under a constructor, an injection or typed.
 test("a !!! inside a !! part is refused before the evaluated literal computes", async t => {
   const { program } = await checkProgram(t, "", { module });
   const kernel = program.kernel;
@@ -175,12 +195,15 @@ test("a !!! inside a !! part is refused before the evaluated literal computes", 
     const original = kernel[query].bind(kernel);
     kernel[query] = handle => { calls++; return original(handle); };
   }
-  const warm = await program.check("import rationals;\n\ndef anchor : Unit := tt;\n", "literal_warm", () => {}, { reuseModules: true });
+  const header = "import nat;\nuse nat;\n\ndef anchor : Unit := tt;\ndef sided : Nat or Unit := right(tt);\n";
+  const warm = await program.check(header, "literal_warm", () => {}, { reuseModules: true });
   assert.deepEqual(warm.gaps, []);
   calls = 0;
-  const result = await program.check("import rationals;\n\ndef anchor : Unit := tt;\nevaluate rationals.(2/3) expecting !!(!!!_);\n",
-    "literal_refused", () => {}, { reuseModules: true });
-  assert.deepEqual(result.gaps.map(gap => gap.code), ["E486"]);
+  const result = await program.check(`${header}evaluate 5 expecting !!(!!!_);
+evaluate sided expecting !!left(!!!_);
+evaluate typed(Nat and Unit, (5, tt)) expecting !!typed(Nat and Unit, (!!!_, _));
+`, "literal_refused", () => {}, { reuseModules: true });
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["E486", "E486", "E486"]);
   assert.equal(calls, 0, "no normal form is computed before E486");
 });
 

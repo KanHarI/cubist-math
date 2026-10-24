@@ -103,8 +103,9 @@ evaluate bq_inv(-340282366920938463463374607431768211455/18446744073709551615)
   expecting _;
 ```
 
-`expecting _` then requested a full normal form, as `expecting !!_` does
-since the demand marks of #304. It did not skip the certificate. The proof that the inverse's denominator is nonzero reaches
+`expecting _` then requested a full normal form, as `expecting !!_` did
+from the demand marks of #304, and `expecting !!!_` does since the folded
+normal forms of #310. It did not skip the certificate. The proof that the inverse's denominator is nonzero reaches
 `bint_decide` → `difference_decide` → `quotient_effective` → `related_to`,
 which descends into `Prop(U0)`.
 Although the inverse input is closed, the negative equality decision returns
