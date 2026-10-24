@@ -117,14 +117,23 @@ test("the term asked for is unfolded where a definition is eta an eliminator", a
 }
 
 def f(n : N) := match n return N { zero => zero; succ(k) => k; };
+
+def chooser := match zero return N -> N { zero => f; succ(k) => f; };
 `, { module });
   assert.equal(verdicts.f, true);
+  assert.equal(verdicts.chooser, true);
   const { kernel, checker } = program;
-  const f = kernel.definitions.get("main__f"), domain = checker.syntax.decode(kernel.definition(f).type).domain;
-  const applied = { tag: "App", fn: { tag: "DefRef", name: "main__f" }, arg: { tag: "Var", name: "x" } };
-  const { expression } = checker.checkSyntax(applied, null, new Map([["x", domain]]), new Map());
+  const value = name => kernel.definition(kernel.definitions.get(`main__${name}`));
+  const domain = checker.syntax.decode(value("f").type).domain, x = { tag: "Var", name: "x" };
   const root = handle => kernel.spine(handle).root.kind;
-  assert.equal(root(kernel.head(expression)), "Elim");
-  assert.equal(root(kernel.normalizeFolded(expression)), "Elim");
-  assert.equal(root(kernel.normalize(expression)), "Elim");
+  // f(x) itself, and a match by cases on zero that computes f, applied to x:
+  // another eliminator at the root, even of the same kind, is no rebuild.
+  const applied = { tag: "App", fn: { tag: "DefRef", name: "main__f" }, arg: x };
+  const chosen = { tag: "App", fn: checker.syntax.decode(value("chooser").value), arg: x };
+  for (const term of [applied, chosen]) {
+    const { expression } = checker.checkSyntax(term, null, new Map([["x", domain]]), new Map());
+    assert.equal(root(kernel.head(expression)), "Elim");
+    assert.equal(root(kernel.normalizeFolded(expression)), "Elim");
+    assert.equal(root(kernel.normalize(expression)), "Elim");
+  }
 });

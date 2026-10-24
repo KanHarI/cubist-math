@@ -68,15 +68,17 @@ definition stays as it was written:
 5. A part that reached its head through no definition is taken in turn,
    as in the full normal form. A stuck elimination, an eliminator, recursor,
    abort or unglue on a value that is no constructor, that its last step
-   rebuilt in place, the same node over the same root, is taken as that
-   step's term: the head holds the stuck value reduced,
+   rebuilt in place, over the very same root or with only its stuck value
+   changed, is taken as that step's term: the head holds the stuck value reduced,
    `unitrec(…, abort(…))` where the term had `unitrec(…, stuck(x))`, and the
    term keeps it as written, so it folds. Any other head is taken as
    computed: a transport of a path constructor computes a formal
    composition, a stuck composition drops its tubes on empty faces, whose
-   bodies are then never normalized, and `f(x)`, where `f` is an eliminator
-   by eta, steps straight to that eliminator, which the term asked for
-   shows unfolded.
+   bodies are then never normalized, and an eliminator another step
+   exposed is shown, not the term before: `f(x)`, where `f` is an
+   eliminator by eta, and a match that computes `f`, applied to `x`, both
+   step to `f`'s eliminator, which is another root than theirs, even of the
+   same kind.
 6. Only eta contracts a whole once its parts are folded; reducing it again
    would unfold what was folded.
 
@@ -190,8 +192,9 @@ Recommended, and taken unless the user changes them:
   normal form, a stuck definition folded with its arguments folded, the term
   asked for unfolded, a definition reached through a beta step folded, eta,
   the example above that folding is not idempotent, a stuck composition
-  whose tube on an empty face is never normalized, `f(x)` asked for where
-  `f` is an eliminator by eta, budget and deadline,
+  whose tube on an empty face is never normalized, `f(x)` and a match that
+  computes `f`, applied to `x`, asked for where `f` is an eliminator by eta,
+  budget and deadline,
   rollback and commit, and the full normal form unchanged. The
   kernel reference chapter on normalization documents it.
 - **FN2. The marks.** `!!` computes the folded normal form; `!!!` is lexed,
