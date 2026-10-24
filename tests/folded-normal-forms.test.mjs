@@ -328,9 +328,11 @@ def g : Unit -> Opt(Unit) -> Unit := fun (z : Unit) => fun (x : Opt(Unit)) => ma
   assert.deepEqual(back.gaps, []);
 });
 
-// A definition named as a dimension the term names, here i, read from a
-// recovered domain, is shown by its value: no source spelling tells it from
-// the dimension, which keeps its name. Bound again by path i, the text checks.
+// A definition named as a dimension the term or its context names, here i,
+// read from a recovered domain, is shown by its value: no source spelling
+// tells it from the dimension, which keeps its name. Bound again by path i,
+// the text checks. Kernel notation, which is not read back, shows such a
+// definition by its kernel name instead.
 test("a definition shown by a dimension's name is shown by its value", async t => {
   const declarations = `inductive Tag(A : U0) {
   tag;
@@ -344,10 +346,21 @@ inductive Circle {
 def i : U0 := Unit;
 def Around(t : Tag(i)) : U0 := Circle;
 def g : Tag(i) -> Circle := fun t => match t as v return Around(v) { tag => base; };
+def d0 : U0 := Unit;
+def pair_(x : Circle) : U0 and Circle := (d0, x);
+def f : pair_(base) = pair_(base) := path j => pair_(loop @ j);
 `;
   const { program, result } = await checkProgram(t, declarations, { module });
   assert.deepEqual(result.gaps, []);
   const { kernel, checker } = program;
+  // The kernel's bound dimension is d0, as the definition d0 is labeled.
+  assert.equal(program.inspect("main__f", { normalize: true }).expressionText, "path(λ d0. (main__d0 , at(loop, d0:1)))");
+  // g uses no dimension, but is shown where the context names i.
+  const ambient = new Map([["i", 0]]);
+  const folded = checker.syntax.decode(kernel.normalizeFolded(checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), ambient).expression), ambient);
+  const unused = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }";
+  assert.equal(checker.displayText(folded, 1000, 1000, undefined, 256, ambient), unused);
+  assert.equal(checker.displayText(folded, 1000, 1000, undefined, 256, new Map()), unused.replace("Tag(Unit)", "Tag(i)"));
   const domain = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__Around")).type).domain;
   const circle = { tag: "Sort", signature: "main__Circle", parameters: [], levels: [] };
   const loop = { tag: "PApp", path: { tag: "Con", index: 1, sort: circle }, arg: [["i:1"]] };
@@ -359,7 +372,9 @@ def g : Tag(i) -> Circle := fun t => match t as v return Around(v) { tag => base
   const shown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => loop @ i; }";
   assert.equal(checker.displayText(normal, 1000, 1000), shown);
   assert.equal(checker.displayGoal(new Map(), normal, null, 1000).goal, shown);
-  const { result: back } = await checkProgram(t, `${declarations}def back : g = g := path i => ${shown};\n`, { module });
+  const { result: back } = await checkProgram(t, `${declarations}def back : g = g := path i => ${shown};
+def unused : g = g := path i => ${unused};
+`, { module });
   assert.deepEqual(back.gaps, []);
 });
 

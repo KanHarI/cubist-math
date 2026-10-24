@@ -457,9 +457,10 @@ export class NativeCubicalElaborator {
         ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
   }
   // A term with each folded motive given its domain (typedMotives), and no
-  // definition shown by a dimension's name (apartFromDimensions), from the
-  // checked types and values of definitions, each decoded once.
-  typedMotives(term) {
+  // definition shown by the name of a dimension it or its context names
+  // (apartFromDimensions), from the checked types and values of definitions,
+  // each decoded once. `dimensions` is the context's.
+  typedMotives(term, dimensions = this.dimensions) {
     const decoded = new Map();
     const part = which => name => {
       const key = `${which} ${name}`;
@@ -470,7 +471,7 @@ export class NativeCubicalElaborator {
       return decoded.get(key);
     };
     const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name) };
-    return apartFromDimensions(typedMotives(term, definitions), definitions);
+    return apartFromDimensions(typedMotives(term, definitions), definitions, dimensions?.keys?.() ?? []);
   }
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
@@ -500,8 +501,8 @@ export class NativeCubicalElaborator {
   // as it is.
   // Each display path (displayText, displayTexts, displayGoal) types folded
   // motives first, then settles names, then prints: in that order only.
-  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
-    return this.printed(readableDimensions([displayTerm(this.typedMotives(term), reduce)])[0], width, limit, notation);
+  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256, dimensions = this.dimensions) {
+    return this.printed(readableDimensions([displayTerm(this.typedMotives(term, dimensions), reduce)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
@@ -511,8 +512,8 @@ export class NativeCubicalElaborator {
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints. `names` gives
   // free variables their names, as displayTerm takes them.
-  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map()) {
-    return readableDimensions(displayTerm(terms.map(term => this.typedMotives(term)), 256, names)).map(term => this.printed(term, width, limit, notation));
+  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map(), dimensions = this.dimensions) {
+    return readableDimensions(displayTerm(terms.map(term => this.typedMotives(term, dimensions)), 256, names)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
@@ -524,13 +525,13 @@ export class NativeCubicalElaborator {
   // `print` is sourceText by default; cubicalText gives mathematical notation.
   // A derivation shows its terms as they are: `reduce` false keeps redexes.
   // `notation.selection` names the notation selected at the goal (L2.10d).
-  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}) {
+  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}, dimensions = this.dimensions) {
     // Goals can share large terms; the printer stops after `width` nodes too.
     const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width, notation);
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    let shown = displayTerm(this.typedMotives(chained), reduce ? 256 : 0);
+    let shown = displayTerm(this.typedMotives(chained, dimensions), reduce ? 256 : 0);
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       // A universe variable's entry is its bound: U < UU0.

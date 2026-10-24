@@ -97,8 +97,10 @@ path (the elaborator's `displayText`, `displayTexts` and `displayGoal`):
 1. `typedMotives` (`cubical-source-text.mjs`) writes each eliminator's folded
    motive, a definition kept by name, as a function of the domain its checked
    type gives, `λ (z : D). M(z)`; then `apartFromDimensions` shows a
-   definition whose name is a dimension's in the term by its value, since no
-   source spelling tells the two apart and the dimension keeps its name.
+   definition whose name is a dimension's, in the term or in the context it
+   is shown in (the display entry points take the context's dimensions), by
+   its value, since no source spelling tells the two apart and the dimension
+   keeps its name.
 2. `displayTerm` (`cubical-elaborator.mjs`) settles every binder's name, apart
    from every definition, type and constructor the term prints and every
    dimension it names, and `readableDimensions` names the dimensions decoding
@@ -118,8 +120,9 @@ removed the printer's renaming and fixed them together.
 The kernel-notation views, an inspection's `expressionText` and the
 workbench's, print with `cubicalText` (`cubical-notation.mjs`), which names its
 binders itself, apart from the definitions, types and constructors their
-bodies show; a folded normal form keeps definitions under binders, which a
-full one never did.
+bodies show, and shows a definition named as a dimension of the term or of
+the view's context by its kernel name (`main__i`); a folded normal form keeps
+definitions under binders, which a full one never did.
 
 A printer change is tested by reading its output back: print the value, check
 the text at the value's type in a fresh program, and where two names could

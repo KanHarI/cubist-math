@@ -590,9 +590,11 @@ export function typedMotives(term, definitions) {
 // qualifies it, and a dimension the context names keeps its name. Such a
 // definition is shown by its value, which it equals by unfolding. This runs
 // with typedMotives, after it: a recovered domain can bring the definition
-// in. `definitions` gives a definition's decoded value and its label.
-export function apartFromDimensions(term, definitions) {
-  const dimensions = new Set(), seen = new WeakSet();
+// in. `definitions` gives a definition's decoded value and its label;
+// `ambient` names the dimensions of the context the term is shown in, which
+// the term need not use.
+export function apartFromDimensions(term, definitions, ambient = []) {
+  const dimensions = new Set(ambient), seen = new WeakSet();
   const collect = t => {
     if (typeof t === "string") {
       const literal = /^(.+):[01]$/.exec(t);
