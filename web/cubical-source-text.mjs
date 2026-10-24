@@ -1,5 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
-import { termBinders } from "./translator/term-shape.mjs";
+import { termBinders, dimensionScope } from "./translator/term-shape.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName } from "./translator/names.mjs";
@@ -110,8 +110,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
   // Whether `from` can be shown as `to` throughout a term: `to` is free in
   // it nowhere, and no binder or dimension named `to` in it has `from` free
-  // in its scope, which it would capture. Induction's `as k` shows the
-  // motive's variable by the predecessor's name only so.
+  // in its scope, which it would capture. A binder's scope is the children
+  // it binds in: a Pi's domain is outside it, and a binder of `from` hides
+  // `from` only there. Induction's `as k` shows the motive's variable by the
+  // predecessor's name only so.
   const renamable = (term, from, to) => {
     if (from === to) return true;
     if (mentions(term, to)) return false;
@@ -119,9 +121,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const capture = t => {
       if (!t || typeof t !== "object" || seen.has(t)) return false;
       seen.add(t);
-      if (termBinders.has(t.tag) && t.name === from) return false;
-      if ((termBinders.has(t.tag) && t.name === to || t.dim === to) && mentions(t, from)) return true;
-      return Object.values(t).some(capture);
+      const binder = termBinders.has(t.tag) ? { name: t.name, keys: ["body"] }
+        : dimensionScope.has(t.tag) ? { name: t.dim, keys: dimensionScope.get(t.tag) } : null;
+      return Object.entries(t).some(([key, child]) => !binder?.keys.includes(key) ? capture(child)
+        : termBinders.has(t.tag) && binder.name === from ? false
+        : binder.name === to && mentions(child, from) || capture(child));
     };
     return !capture(term);
   };

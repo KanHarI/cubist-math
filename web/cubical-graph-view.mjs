@@ -138,7 +138,9 @@ export function judgementGraph(program, view, checked = null, {
     const source = judgements.get(info.source);
     const needed = (source?.context ?? []).map(entry => entries.get(entry) ?? graph.entry(entry));
     const scope = new Map([...needed.filter(item => !bare(item)), info].map(item => [item.name, decode(item.type)]));
-    const shown = checker.displayGoal(scope, { tag: "Unit" }, null, 240, cubicalText, false);
+    // Its dimensions, as a judgement's are.
+    const dimensions = new Map(needed.filter(item => item.dimension).map((item, index) => [item.name, index]));
+    const shown = checker.displayGoal(scope, { tag: "Unit" }, null, 240, cubicalText, false, {}, dimensions);
     const locals = [...shown.locals];
     info.fragment = [...needed.map(item => bare(item) ?? locals.shift()).map(local =>
       typeof local === "string" ? local : `${local.name} ${local.relation} ${local.type}`), `${locals.at(-1)?.name ?? info.name} ${locals.at(-1)?.relation ?? ":"} ${locals.at(-1)?.type ?? "…"}`];

@@ -372,26 +372,76 @@ def gq : PathP(fun (e : Interval) => (U0 -> (loop @ e = loop @ e) -> U0) -> (loo
   for (const text of statements) assert.match(text, /k\(main__d0\)/, text);
 });
 
+// An entry's fragment, its context and the entry, is shown over the
+// fragment's dimensions as a judgement is: a : k(d0, q) under the dimension
+// d0 shows the definition d0 by its kernel name.
+test("a judgement graph's context fragments keep a definition apart from their dimensions", async t => {
+  const { program, result } = await checkProgram(t, `inductive Circle {
+  base;
+  loop : base = base;
+}
+
+def d0 : U0 := Unit;
+def at1 : forall k : U0 -> (base = base) -> U0. forall q : base = base. k(d0, q) -> k(d0, q) := fun k => fun q => fun (a : k(d0, q)) => a;
+def ga : PathP(fun (e : Interval) => forall k : U0 -> (loop @ e = loop @ e) -> U0. forall q : loop @ e = loop @ e. k(d0, q) -> k(d0, q), at1, at1) :=
+  path e => fun k => fun q => fun (a : k(d0, q)) => a;
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  const fragments = judgementGraph(program, program.inspect("main__ga")).entries.map(entry => entry.fragment)
+    .filter(fragment => fragment.includes("d0 : 𝕀") && /^a : /.test(fragment.at(-1)));
+  assert.ok(fragments.length, "an entry a under the dimension");
+  for (const fragment of fragments) assert.equal(fragment.at(-1), "a : k(main__d0, q)", fragment.join(", "));
+});
+
 // Induction whose motive binds the predecessor's name, printed as a tool
 // without the elaborator's symbols prints it (tools/proof-migration.mjs):
-// the shared `as` name is the motive's, which the successor clause takes,
-// and the text reads back as the same function.
+// in f, the shared `as` name is the motive's, which the successor clause
+// takes: the motive's binder k has m in its scope. Each text reads back as
+// the same function. In g, the successor clause binds the motive's name m
+// over a type that names the predecessor k, and the motive binds k over a
+// type that names m: neither binder's type is in its scope, so the
+// predecessor's name is shared.
 test("induction's shared name is whichever binder takes it, without symbols too", async t => {
   const declarations = `import unat;
 use unat;
 
-def f(n : UNat) : forall q : n = n. Unit := induction n as m return forall k : m = m. Unit { zero => fun q => tt; succ(k) with ih => fun q => tt; };
+def f(n : UNat) : forall q : n = n. n = n := induction n as m return forall k : m = m. m = m { zero => fun q => q; succ(k) with ih => fun q => q; };
+def g(n : UNat) : forall q : n = n. Unit := induction n as m return forall k : m = m. Unit { zero => fun q => tt; succ(k) with ih => fun (m : succ(k) = succ(k)) => tt; };
 `;
   const { program, result } = await checkProgram(t, declarations, { module });
   assert.deepEqual(result.gaps, []);
   const { kernel, checker } = program;
-  const value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__f")).value);
-  const shown = sourceText(displayTerm(value), {}, 4000, { selection: "unat" });
-  assert.match(shown, /induction n as m return /, shown);
-  const { result: back } = await checkProgram(t, `${declarations}def back : forall n : UNat. forall q : n = n. Unit := ${shown};
-def same : back = f := refl(f);
+  for (const [name, shared] of [["f", "m"], ["g", "k"]]) {
+    const value = checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).value);
+    const shown = sourceText(displayTerm(value), {}, 4000, { selection: "unat" });
+    assert.match(shown, new RegExp(`induction n as ${shared} return `), shown);
+    const type = name === "f" ? "n = n" : "Unit";
+    const { result: back } = await checkProgram(t, `${declarations}def back : forall n : UNat. forall q : n = n. ${type} := ${shown};
+def same : back = ${name} := refl(${name});
 `, { module });
-  assert.deepEqual(back.gaps, [], shown);
+    assert.deepEqual(back.gaps, [], shown);
+  }
+});
+
+// The successor clause binds k again, over a type whose binder m has the
+// predecessor k in its scope: showing the predecessor as the motive's m
+// would read R(m, k) as R(m, m). A binder of k hides k only in its scope,
+// not in its type. Where that binder is x, m is shared. A dimension m
+// captures too: in path m => R(k) @ m, k shown as m reads as the dimension.
+test("induction shares no name that a binder in its successor clause would capture", () => {
+  const nat = { tag: "Sort", signature: "unat__UNat", parameters: [], levels: [] };
+  const v = name => ({ tag: "Var", name }), app = (fn, ...args) => args.reduce((fn, arg) => ({ tag: "App", fn, arg }), fn);
+  const motive = { tag: "Lam", name: "m", domain: nat, body: { tag: "Pi", name: "k", domain: app(v("T"), v("m")), body: app(v("T"), v("m")) } };
+  const induction = body => sourceText({ tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive, clauses: [v("z"),
+    { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body } }] } }, {}, 4000, { selection: "unat" });
+  const rebinding = inner => ({ tag: "Lam", name: "k", domain: { tag: "Pi", name: inner, domain: nat, body: app(v("R"), v(inner), v("k")) },
+    body: { tag: "Point" } });
+  assert.equal(induction(rebinding("m")),
+    "unat__UNat.elim(λ (m : unat__UNat). (T(m) → T(m)), z, λ (k : unat__UNat). λ (ih : I). λ (k : Π (m : unat__UNat), R(m, k)). ⋆)(n)");
+  assert.equal(induction(rebinding("x")),
+    "induction n as m return T(m) -> T(m) { zero => z; succ ih => fun (k : forall x : UNat. R(x, m)) => tt; }");
+  assert.match(induction({ tag: "PLam", dim: "m", family: null, body: { tag: "PApp", path: app(v("R"), v("k")), arg: [["m:1"]] } }),
+    /^unat__UNat\.elim\(/);
 });
 
 // forSource on a term of its own, as a test or a tool would name one: an
