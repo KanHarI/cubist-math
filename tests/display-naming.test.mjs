@@ -3,7 +3,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { cubicalMathTree, cubicalText } from "../web/cubical-notation.mjs";
-import { forSource } from "../web/display-naming.mjs";
+import { displayTerm, forSource } from "../web/display-naming.mjs";
+import { judgementGraph } from "../web/cubical-graph-view.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { checkProgram } from "./check-program.mjs";
 
@@ -338,11 +339,59 @@ def famP : PathP(fun (k : Interval) => (op @ k) -> U0, F, F) := path k => F;
   assert.equal(checker.displayGoal(new Map(), loopAt, null, 1000, null, true, {}, new Map([["d0", 0]])).goal, "loop @ d0");
   const kernelGoal = checker.displayGoal(new Map(), alone, null, 1000, cubicalText, false).goal;
   assert.match(kernelGoal, /^Opt\.elim\(at\(famP, z1:1\), /, kernelGoal);
+  // So is one given the judgement's dimensions, as a judgement graph gives
+  // them: the definition d0 beside the dimension d0 shows by its kernel name.
+  const kVar = { tag: "Var", name: "k" }, kType = { tag: "Pi", name: "_", domain: { tag: "U", level: { tag: "LConst", tier: 0, value: 0 } }, body: { tag: "U", level: { tag: "LConst", tier: 0, value: 0 } } };
+  const graphGoal = checker.displayGoal(new Map([["k", kType]]), { tag: "App", fn: kVar, arg: { tag: "DefRef", name: "main__d0" } }, null, 240, cubicalText, false, {}, new Map([["d0", 0]]));
+  assert.equal(graphGoal.goal, "k(main__d0)");
   const { result: back } = await checkProgram(t, `${declarations}def z1_back : fam = fam := path z1 => ${z1Shown};
 def i_loop : (fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }) = g := path i => ${iShown};
 def g_back : g = g := path i => ${gShown};
 `, { module });
   assert.deepEqual(back.gaps, []);
+});
+
+// A judgement graph names its dimensions, as decoding does, d0 and on: the
+// definition d0, applied under the dimension d0, shows by its kernel name.
+test("a judgement graph keeps a definition apart from the dimensions of its judgements", async t => {
+  const { program, result } = await checkProgram(t, `inductive Circle {
+  base;
+  loop : base = base;
+}
+
+def d0 : U0 := Unit;
+def at0 : (U0 -> (base = base) -> U0) -> (base = base) -> U0 := fun (k : U0 -> (base = base) -> U0) => k(d0);
+def gq : PathP(fun (e : Interval) => (U0 -> (loop @ e = loop @ e) -> U0) -> (loop @ e = loop @ e) -> U0, at0, at0) :=
+  path e => fun (k : U0 -> (loop @ e = loop @ e) -> U0) => k(d0);
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  // k's type names the dimension, so k(d0) is a judgement under it, shown
+  // as a term of its own that names no dimension.
+  const statements = judgementGraph(program, program.inspect("main__gq")).rows.map(row => row.statement).filter(text => /d0 : 𝕀/.test(text) && /k\(/.test(text));
+  assert.ok(statements.length, "a judgement under the dimension applies k");
+  for (const text of statements) assert.match(text, /k\(main__d0\)/, text);
+});
+
+// Induction whose motive binds the predecessor's name, printed as a tool
+// without the elaborator's symbols prints it (tools/proof-migration.mjs):
+// the shared `as` name is the motive's, which the successor clause takes,
+// and the text reads back as the same function.
+test("induction's shared name is whichever binder takes it, without symbols too", async t => {
+  const declarations = `import unat;
+use unat;
+
+def f(n : UNat) : forall q : n = n. Unit := induction n as m return forall k : m = m. Unit { zero => fun q => tt; succ(k) with ih => fun q => tt; };
+`;
+  const { program, result } = await checkProgram(t, declarations, { module });
+  assert.deepEqual(result.gaps, []);
+  const { kernel, checker } = program;
+  const value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__f")).value);
+  const shown = sourceText(displayTerm(value), {}, 4000, { selection: "unat" });
+  assert.match(shown, /induction n as m return /, shown);
+  const { result: back } = await checkProgram(t, `${declarations}def back : forall n : UNat. forall q : n = n. Unit := ${shown};
+def same : back = f := refl(f);
+`, { module });
+  assert.deepEqual(back.gaps, [], shown);
 });
 
 // forSource on a term of its own, as a test or a tool would name one: an

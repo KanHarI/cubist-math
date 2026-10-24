@@ -87,12 +87,15 @@ export function judgementGraph(program, view, checked = null, {
   // A dimension, or a face entry, its clause: shown without a type.
   const bare = item => item.dimension ? `${item.name} : 𝕀` : item.face ? `[${item.name}]` : null;
   const text = (judgement, first, second = null) => {
-    const scope = new Map(), terms = [];
+    const scope = new Map(), terms = [], dimensions = new Map();
     for (const entry of judgement.context) {
       const info = entries.get(entry);
+      if (info.dimension) dimensions.set(info.name, dimensions.size);
       if (!info.dimension && !info.face) { scope.set(info.name, decode(info.type)); terms.push(entry); }
     }
-    const shown = checker.displayGoal(scope, decode(first), second ? decode(second) : null, 240, cubicalText, false);
+    // The judgement's dimensions, which a definition shown by its label must
+    // not read as (display-naming.mjs).
+    const shown = checker.displayGoal(scope, decode(first), second ? decode(second) : null, 240, cubicalText, false, {}, dimensions);
     terms.forEach((entry, index) => { if (!shownNames.has(entry)) shownNames.set(entry, shown.locals[index]?.name); });
     const names = judgement.context.map(entry => {
       const info = entries.get(entry), index = terms.indexOf(entry);

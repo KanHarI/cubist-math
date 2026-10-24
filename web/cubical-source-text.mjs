@@ -246,13 +246,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // Eliminators print as the source forms that build them. The motive's
       // bound name is shown as the one the branches bind: `as k` binds both.
       // NatInduction is no term: it is the source Nat's eliminator, applied,
-      // in the shape its `induction` spelling reads, which the application
-      // case below gives it only where the motive shows the predecessor's
-      // name for nothing else.
+      // in the shape its `induction` spelling reads, `shared` the name the
+      // application case below found for both, which neither captures.
       case "NatInduction": {
-        const { motive, step } = t, k = step.name, h = step.body.name;
+        const { motive, step, shared: k } = t, h = step.body.name;
         const type = under(motive.name, () => renaming(motive.name, k, () => show(motive.body)));
-        const successor = under([k, h], () => show(step.body.body));
+        const successor = under([step.name, h], () => renaming(step.name, k, () => show(step.body.body)));
         // `as k` is written only where the motive or the successor clause uses k.
         const named = mentions(motive.body, motive.name) || mentions(step.body, step.name);
         return [`induction ${show(t.value)}${named ? ` as ${k}` : ""} return ${type} { zero => ${show(t.zero)}; `
@@ -284,9 +283,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         // predecessor as one: only where the motive shows the predecessor's
         // name for nothing else. Otherwise it prints as the declared match.
         const elim=t.tag==="App"&&t.fn.tag==="Elim"?t.fn:null,step=elim?.clauses?.[1];
-        if(elim?.signature==="unat__UNat"&&elim.clauses.length===2&&elim.motive?.tag==="Lam"&&step?.tag==="Lam"&&step.body?.tag==="Lam"
-          &&renamable(elim.motive.body,elim.motive.name,step.name))
-          return print({tag:"NatInduction",motive:elim.motive,zero:elim.clauses[0],step,value:t.arg});
+        if(elim?.signature==="unat__UNat"&&elim.clauses.length===2&&elim.motive?.tag==="Lam"&&step?.tag==="Lam"&&step.body?.tag==="Lam") {
+          // The predecessor's name, where the motive takes it; else the
+          // motive's, where the successor clause takes it.
+          const shared=renamable(elim.motive.body,elim.motive.name,step.name)?step.name
+            :renamable(step.body,step.name,elim.motive.name)?elim.motive.name:null;
+          if(shared)return print({tag:"NatInduction",motive:elim.motive,zero:elim.clauses[0],step,value:t.arg,shared});
+        }
         if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.
         const args = [];

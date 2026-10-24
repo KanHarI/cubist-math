@@ -314,7 +314,10 @@ export class NativeCubicalElaborator {
   // `notation.selection` names the notation selected at the goal (L2.10d).
   displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}, dimensions = this.dimensions) {
     // Goals can share large terms; the printer stops after `width` nodes too.
-    const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width, notation);
+    // A kernel-notation print is given the context's dimensions, so that a
+    // definition named as one shows by its kernel name (cubicalText).
+    const printed = term => print ? print(term, this.displayNames, { dimensions: [...(dimensions?.keys?.() ?? [])] })
+      : sourceText(term, this.displayNames, width, notation);
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
