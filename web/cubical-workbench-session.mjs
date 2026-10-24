@@ -81,9 +81,9 @@ export class WorkbenchSession {
     let text = label(node.handle);
     if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle));
     else if (!["Tube", "GlueSystem", "List", "LBound"].includes(node.kind)) {
-      const term = checker.syntax.decode(node.handle, new Map(view.dimensions ?? []));
+      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions);
       text = checker.displayGoal(new Map(view.context.map(x => [x.name, x.type])),
-        term, null, 180, cubicalText, false).goal;
+        term, null, 180, cubicalText, false, {}, dimensions).goal;
     }
     return { ...node, text, label: label(node.handle),
       actions: kernelReductionActions(kernel, checked, side, path),
