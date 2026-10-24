@@ -423,19 +423,19 @@ export class NativeCubicalElaborator {
   // many, and how many assumptions come before them, so that a call shows
   // them in double braces, as the source writes it. A theory's projection
   // names its field, so that T.f(m) shows as m.f. A checked definition's
-  // type is read on demand, for a printer that needs a folded motive's
-  // domain (cubical-source-text.mjs).
+  // type and value are read on demand, for a printer that needs a folded
+  // motive's domain (cubical-source-text.mjs).
   get displayNames() {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
-      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name), type: () => this.definitionType(name),
+      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name), type: () => this.definitionPart(name, "type"), value: () => this.definitionPart(name, "value"),
         ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}),
         ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
   }
-  definitionType(name) {
+  definitionPart(name, part) {
     const reference = this.kernel.definitions.get(name);
-    return reference ? this.syntax.decode(this.kernel.definition(reference).type) : null;
+    return reference ? this.syntax.decode(this.kernel.definition(reference)[part]) : null;
   }
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;

@@ -136,6 +136,11 @@ inductive Two {
   two(x : Unit, y : Unit);
 }
 def e(o : Opt(Unit)) : Fits(o) := match o as w return Fits(w) { none => tt; some(x) => x; };
+def LFits(U < UU0, o : Opt(Unit)) : U0 := Unit;
+def le(o : Opt(Unit)) : LFits(U0, o) := match o as w return LFits(U0, w) { none => tt; some(x) => x; };
+def Family : U1 := Opt(Unit) -> U0;
+def AFits : Family := fun (o : Opt(Unit)) => Unit;
+def ae(o : Opt(Unit)) : AFits(o) := match o as w return AFits(w) { none => tt; some(x) => x; };
 `;
   const cases = [
     ["(Unit or Unit) -> Unit", "fun (s : Unit or Unit) => match s return Unit { left x => a(x); right y => y; }",
@@ -161,6 +166,11 @@ def e(o : Opt(Unit)) : Fits(o) := match o as w return Fits(w) { none => tt; some
       "fun (x : Two) => match x return Unit { two(x, x1) => a(x1); }"],
     ["e = e", "refl(fun (o : Opt(Unit)) => match o as w return Fits(w) { none => tt; some(x) => x; })",
       "refl(fun (x : Opt(Unit)) => match x as z return Fits(z) { none => tt; some(x) => x; })"],
+    // So for a level-polymorphic motive, and one whose type is an alias.
+    ["le = le", "refl(fun (o : Opt(Unit)) => match o as w return LFits(U0, w) { none => tt; some(x) => x; })",
+      "refl(fun (x : Opt(Unit)) => match x as z return LFits(U0, z) { none => tt; some(x) => x; })"],
+    ["ae = ae", "refl(fun (o : Opt(Unit)) => match o as w return AFits(w) { none => tt; some(x) => x; })",
+      "refl(fun (x : Opt(Unit)) => match x as z return AFits(z) { none => tt; some(x) => x; })"],
   ];
   const { result } = await checkProgram(t, declarations + cases.map(([type, value], i) =>
     `def case_${i} : ${type} := ${value};\nprint(evaluate(!!case_${i}));\n`).join(""), { module });
@@ -169,6 +179,27 @@ def e(o : Opt(Unit)) : Fits(o) := match o as w return Fits(w) { none => tt; some
   const { result: back } = await checkProgram(t, declarations + cases.map(([type, , shown], i) =>
     `def back_${i} : ${type} := ${shown};\n`).join(""), { module });
   assert.deepEqual(back.gaps, []);
+});
+
+// A recovered domain is printed too, so the names chosen around it keep
+// apart from it: here x is a definition, which a binder x would capture.
+test("an invented name keeps apart from the definitions a recovered domain prints", async t => {
+  const declarations = `inductive Tag(A : U0) {
+  tag;
+}
+
+def x : U0 := Unit;
+def Outer(t : Tag(x)) : U0 := Tag(x) -> Unit;
+def Inner(t : Tag(x)) : U0 := Unit;
+`;
+  const type = "forall t : Tag(x). Outer(t)";
+  const value = "fun (t : Tag(x)) => match t as w return Outer(w) { tag => fun (s : Tag(x)) => match s as v return Inner(v) { tag => tt; }; }";
+  const { result } = await checkProgram(t, `${declarations}def nested : ${type} := ${value};\nprint(evaluate(!!nested));\n`, { module });
+  assert.deepEqual(result.gaps, []);
+  const [shown] = result.prints.map(print => print.text);
+  assert.doesNotMatch(shown, /\(x : /, shown);
+  const { result: back } = await checkProgram(t, `${declarations}def back : ${type} := ${shown};\n`, { module });
+  assert.deepEqual(back.gaps, [], shown);
 });
 
 // The printer's first name for a folded function's argument keeps apart

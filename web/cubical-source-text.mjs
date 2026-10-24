@@ -4,7 +4,7 @@ import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 import {binaryDigits as binary, parsedLiteral} from "./translator/numeral-printing.mjs";
-import { substituteTerm } from "./translator/core.mjs";
+import { betaReduce, substituteTerm } from "./translator/core.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -47,6 +47,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       if (value.tag === "DefRef") names.add(label(value.name));
       else if (value.tag === "Sort") names.add(label(value.signature));
       else if (value.tag === "Con" && value.name) names.add(value.name);
+      // An eliminator prints the domain its folded motive's type gives,
+      // which is no part of it, or its type's name.
+      else if (value.tag === "Elim") {
+        names.add(label(value.signature));
+        if (value.motive?.tag !== "Lam") for (const name of scan(motiveDomain(value.motive))) names.add(name);
+      }
       for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
       return names;
     };
@@ -135,19 +141,36 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const name = apart(stem, near, near);
     return { tag: "Lam", name, domain: null, body: { tag: "App", fn: term, arg: { tag: "Var", name } } };
   };
+  // A type with a definition at its head, as an alias of a function type,
+  // that definition's value applied (symbols' value), until it is a
+  // quantifier or no definition heads it, within a few unfoldings.
+  const exposed = type => {
+    for (let unfoldings = 0; type && type.tag !== "Pi" && type.tag !== "LPi" && unfoldings < 16; unfoldings++) {
+      let head = type;
+      while (head.tag === "App" || head.tag === "LApp") head = head.fn;
+      const value = head.tag === "DefRef" ? symbols[head.name]?.value?.() : null;
+      if (!value) break;
+      const headed = spine => spine.tag === "App" || spine.tag === "LApp" ? { ...spine, fn: headed(spine.fn) } : value;
+      type = betaReduce(headed(type));
+    }
+    return type;
+  };
   // A motive's domain: a function's own, or, for a definition applied, as a
   // folded normal form keeps a motive, the next domain of the definition's
-  // checked type (symbols' type), the arguments substituted.
+  // checked type (symbols' type), its arguments and levels substituted.
   const motiveDomain = motive => {
     if (motive?.tag === "Lam") return motive.domain;
-    const args = [];
+    const applied = [];
     let head = motive;
-    while (head?.tag === "App") { args.unshift(head.arg); head = head.fn; }
+    while (head?.tag === "App" || head?.tag === "LApp") { applied.unshift(head); head = head.fn; }
     let type = head?.tag === "DefRef" ? symbols[head.name]?.type?.() : null;
-    for (const arg of args) {
-      if (type?.tag !== "Pi") return null;
-      type = substituteTerm(type.body, type.name, arg);
+    for (const application of applied) {
+      type = exposed(type);
+      const level = application.tag === "LApp";
+      if (type?.tag !== (level ? "LPi" : "Pi")) return null;
+      type = substituteTerm(type.body, type.name, level ? application.level : application.arg);
     }
+    type = exposed(type);
     return type?.tag === "Pi" ? type.domain : null;
   };
   const show = t => print(t)[0];
