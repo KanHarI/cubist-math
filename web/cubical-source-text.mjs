@@ -4,6 +4,7 @@ import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName, numberedName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 import {binaryDigits as binary, parsedLiteral} from "./translator/numeral-printing.mjs";
+import { substituteTerm } from "./translator/core.mjs";
 
 // Print a checked term in Cubist source syntax, for messages and the command
 // line: `A -> B`, `forall x : A. B`, `A and B`, `exists x : A. B`, `A or B`,
@@ -134,6 +135,21 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const name = apart(stem, near, near);
     return { tag: "Lam", name, domain: null, body: { tag: "App", fn: term, arg: { tag: "Var", name } } };
   };
+  // A motive's domain: a function's own, or, for a definition applied, as a
+  // folded normal form keeps a motive, the next domain of the definition's
+  // checked type (symbols' type), the arguments substituted.
+  const motiveDomain = motive => {
+    if (motive?.tag === "Lam") return motive.domain;
+    const args = [];
+    let head = motive;
+    while (head?.tag === "App") { args.unshift(head.arg); head = head.fn; }
+    let type = head?.tag === "DefRef" ? symbols[head.name]?.type?.() : null;
+    for (const arg of args) {
+      if (type?.tag !== "Pi") return null;
+      type = substituteTerm(type.body, type.name, arg);
+    }
+    return type?.tag === "Pi" ? type.domain : null;
+  };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   // An operation printed with its notation's operator, at its level: ^
@@ -176,14 +192,21 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const clauses = [];
     for (const [c, clause] of elim.clauses.entries()) {
       const { name, data, positions, dimensions, order } = constructors[c];
-      const args = [], results = [], dims = [];
+      const args = [], results = [], dims = [], used = new Set();
       let body = clause;
       // A clause that evaluation eta-reduced, as `succ` for fun (ih) =>
       // succ(ih), or that a folded normal form keeps as a definition, is
-      // applied to new names instead.
+      // applied to new names instead, apart from the clause's names before
+      // them, which its rest no longer mentions.
+      const fresh = stem => {
+        let name = apart(stem, body, body);
+        for (let n = 1; used.has(name); n++) name = taken(body, numberedName(stem, n)) ? name : numberedName(stem, n);
+        used.add(name);
+        return name;
+      };
       const take = (into, stem) => {
-        if (body?.tag === "Lam") { into.push(body.name); body = body.body; return; }
-        const name = apart(stem, body, body);
+        if (body?.tag === "Lam") { into.push(body.name); used.add(body.name); body = body.body; return; }
+        const name = fresh(stem);
         into.push(name);
         body = { tag: "App", fn: body, arg: { tag: "Var", name } };
       };
@@ -192,9 +215,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // A path constructor's clause takes its dimensions, applied likewise
       // to new ones where it is no path abstraction.
       for (let i = 0; i < dimensions; i++) {
-        if (body?.tag === "PLam") { dims.push(body.dim); body = body.body; continue; }
+        if (body?.tag === "PLam") { dims.push(body.dim); used.add(body.dim); body = body.body; continue; }
         let dim = "i";
-        for (let n = 1; taken(body, dim); n++) dim = numberedName("i", n);
+        for (let n = 1; taken(body, dim) || used.has(dim); n++) dim = numberedName("i", n);
+        used.add(dim);
         dims.push(dim);
         body = { tag: "PApp", path: body, arg: [[`${dim}:1`]] };
       }
@@ -282,12 +306,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // function by cases after eta reduction, is the function that applies
       // it: fun (n : Nat) => induction n …, or fun (x : T) => match x …, which
       // the application case below prints.
-      // A folded motive, a definition, has no domain to read: a type
-      // without parameters is its own domain, and the function of any other
-      // is written untyped, its type given by where it is checked.
+      // A folded motive, a definition applied, has the domain its checked
+      // type gives after those arguments; without the type, a type without
+      // parameters is its own domain, and the function of any other is
+      // written untyped, its type given by where it is checked.
       case "Elim": {
-        const domain = t.motive?.tag === "Lam" ? t.motive.domain
-          : symbols[t.signature]?.slots?.length === 0 ? { tag: "Sort", signature: t.signature, parameters: [], levels: [] } : null;
+        const domain = motiveDomain(t.motive)
+          ?? (symbols[t.signature]?.slots?.length === 0 ? { tag: "Sort", signature: t.signature, parameters: [], levels: [] } : null);
         const nat = t.signature === "unat__UNat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
         const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
         const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
