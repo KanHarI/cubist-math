@@ -91,41 +91,56 @@ individual JavaScript test files. See the root README for commands.
 
 ## Displaying terms
 
-A term becomes source text in three passes, in this order, on every display
-path (the elaborator's `displayText`, `displayTexts` and `displayGoal`):
+Source text and kernel notation show binders, variables, dimensions and the
+names of definitions, types and constructors in one namespace, as the source
+reads them. One rule holds for every display: in the text, every name means
+what the term means by it. No binder captures a name it does not bind, and two
+things the term tells apart never read alike where both are in scope. Its
+implementation is `display-naming.mjs`; the printers choose no name.
 
-1. `typedMotives` (`cubical-source-text.mjs`) writes each eliminator's folded
-   motive, a definition kept by name, as a function of the domain its checked
-   type gives, `λ (z : D). M(z)`; then `apartFromDimensions` shows a
-   definition whose name is a dimension's, in the term or in the context it
-   is shown in (the display entry points take the context's dimensions), by
-   its value, since no source spelling tells the two apart and the dimension
-   keeps its name.
-2. `displayTerm` (`cubical-elaborator.mjs`) settles every binder's name, apart
-   from every definition, type and constructor the term prints and every
-   dimension it names, and `readableDimensions` names the dimensions decoding
-   left unnamed apart from every printed name.
-3. `sourceText` prints. It renames no binder the term has; the names it
-   invents, a clause's arguments or an eliminator's argument, keep apart from
-   what their scope prints.
+Every source-text display (the elaborator's `displayText`, `displayTexts` and
+`displayGoal`) names its terms by `forSource`, in four passes, in this order:
 
-Whatever a display adds to a term that can print a name, a domain, a binder or
-a label, enters the term before the second pass. In #310's review, rounds 2
-to 7, the printer added a folded motive's recovered domain after the names
-were settled and renamed binders itself to make room for it; each round found
-the capture again under another kind of binder (a match clause, a lambda
-chain, a universe binder, a dimension). Moving the domain ahead of the naming
-removed the printer's renaming and fixed them together.
+1. `explicitBinders` writes into the term every binder the printer would
+   otherwise invent: a folded motive, a definition kept by name, as a function
+   of the domain its checked type gives, `λ (z : D). M(z)`; a clause with fewer
+   arguments, hypotheses or dimensions than its constructor takes; an
+   eliminator written as a function, `λ (x : D). e(x)`. Each is an
+   eta-expansion under a new name.
+2. `apartFromDimensions` shows a definition named as a dimension of the term
+   or of the context it is shown in (the display entry points take the
+   context's dimensions) by its value: no source spelling tells the two apart,
+   and a dimension the context names keeps its name.
+3. `displayTerm` names every term and level binder apart from the labels and
+   dimensions the term shows and the variables in its scope, never shadowing
+   one around it.
+4. `readableDimensions` names the dimensions decoding left unnamed apart from
+   every name shown.
 
-The kernel-notation views, an inspection's `expressionText` and the
-workbench's, print with `cubicalText` (`cubical-notation.mjs`), which names its
-binders itself, apart from the definitions, types and constructors their
-bodies show, and shows a definition named as a dimension of the term or of
-the view's context by its kernel name (`main__i`); a folded normal form keeps
-definitions under binders, which a full one never did.
+`sourceText` then prints the names it is given. A form the term does not spell
+out, as an eta-reduced clause in a term not named so, prints in kernel
+notation instead of under invented names.
 
-A printer change is tested by reading its output back: print the value, check
-the text at the value's type in a fresh program, and where two names could
-trade meanings, evaluate the copy against the original
-(`tests/folded-normal-forms.test.mjs`). Comparing printed text alone does not
-catch a capture.
+Anything that adds to a term what can print a name runs before the third
+pass. In #310's review, rounds 2 to 11, the printer added binders and domains
+after the names were settled and renamed around them itself; each round found
+the capture again for another pairing of binder, label and dimension (a match
+clause, a lambda chain, a universe binder, a dimension, a context's
+dimension). Writing them into the term before one naming pass replaced the
+printer's renaming.
+
+Kernel notation (`cubicalText`, `cubical-notation.mjs`) adds no binder: the
+inspection's `expressionText`, the workbench and the proof page print a term
+as it was checked, spelling kernel variables by their source names, and name
+binders as they print, apart from the definitions, types and constructors
+their bodies show (`labelsShown`); a definition named as a dimension of the
+term or of the view's context (`dimensionNames`) shows by its kernel name,
+`main__i`.
+
+A display change is tested by reading its output back:
+`tests/display-naming.test.mjs` prints the folded normal form of a corpus of
+functions whose definitions are named as the display's own stems and
+dimensions, reads each text back at its type in a fresh program, checks it is
+the same function by conversion and computes alike, and does so again where
+the context names each of those dimensions. Comparing printed text alone does
+not catch a capture.
