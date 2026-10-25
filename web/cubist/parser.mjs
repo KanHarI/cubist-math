@@ -648,9 +648,14 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     }
     const end = take("}").end;
     const [zero, succ] = clauses;
-    if (type && clauses.length === 2 && zero.constructor.text === "zero" && !zero.args && !zero.binders.length && !zero.coordinates.length && !zero.hypotheses
-        && succ.constructor.text === "succ" && !succ.args && succ.binders.length === 1 && !succ.coordinates.length && !succ.hypotheses) {
-      const a = { kind: "induction", value, index: motiveName, type, base: zero.body, hypothesis: succ.binders[0], step: succ.body, start: t.start, end };
+    // Written qualified, unat::succ h, the heads are kept, for the
+    // translator to check that they name the natural numbers' constructors.
+    const named = (head, text) => head.constructor.text === text || head.constructor.text.endsWith(`::${text}`);
+    if (type && clauses.length === 2 && named(zero, "zero") && !zero.args && !zero.binders.length && !zero.coordinates.length && !zero.hypotheses
+        && named(succ, "succ") && !succ.args && succ.binders.length === 1 && !succ.coordinates.length && !succ.hypotheses) {
+      const qualified = zero.constructor.text !== "zero" || succ.constructor.text !== "succ";
+      const a = { kind: "induction", value, index: motiveName, type, base: zero.body, hypothesis: succ.binders[0], step: succ.body,
+        ...(qualified ? { heads: [zero.constructor, succ.constructor] } : {}), start: t.start, end };
       Object.defineProperty(a, "clauses", { value: clauses, enumerable: false });
       return a;
     }

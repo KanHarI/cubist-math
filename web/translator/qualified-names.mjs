@@ -3,15 +3,16 @@
 // binder is named with ::. The parser reads it as one token wherever a name
 // refers to something and refuses it wherever a name is introduced. A
 // binding is the module's own declaration of the name when it is a
-// declaration's (a theory's and a generated one's among them), or a
-// notation's, whose origin is in the module and whose label is the name: a
-// parameter, a local name or a field never is. The environment has each
-// available binding by its identity.
+// declaration's (a theory's and a generated one's among them) whose origin
+// is in the module and whose label is the name: a parameter, a local name
+// or a field never is. The environment has each available binding by its
+// identity, and each notation and theory by its qualified name.
 import {notationBinding,theoryBinding} from "./theories.mjs";
 import {bindingResolution,failedResolution} from "../cubist/bindings.mjs";
+import {declaredNames} from "./declarations.mjs";
 
 export const qualifiedName = name => /^([A-Za-z_][A-Za-z_0-9]*)::(.+)$/.exec(name);
-export const ownedBy = (record, module, local, role = "declaration") => record?.role === role
+export const ownedBy = (record, module, local) => record?.role === "declaration"
   && record.origin?.module === module && record.label === local;
 
 // The qualified names a syntax tree writes, as names or as tokens: a
@@ -40,39 +41,19 @@ function ownTerm(env, module, local, { bindings, adapter }) {
     if (key.startsWith("\u0000id ") && ownedBy(adapter.bindingForKey(key), module, local)) return value;
   return null;
 }
-// The other namespaces a declaration is named in, each by its key: the
-// module's own notation of that label, and its own theory, whose type of
-// models is the module's declaration of that name. Each is the entry in
-// scope by its label, or, where another module's takes the label, any
-// available one, by identity too.
-const record = (table, id) => id ? table.get(id) : null;
-const namespaces = [
-  [notationBinding, (value, table, module, local) => value?.tag === "Notation" && ownedBy(record(table, value.bindingId), module, local, "notation")],
-  [theoryBinding, (value, table, module, local) => value?.tag === "Theory" && ownedBy(record(table, value.record?.modelId), module, local)],
-];
-function ownEntry(env, key, own, table, module, local) {
-  const plain = env.get(key(local));
-  if (own(plain, table, module, local)) return plain;
-  if (!plain) return null;
-  for (const value of env.values()) if (own(value, table, module, local)) return value;
-  return null;
-}
 
-// Each qualified name `syntax` writes, bound in `env` by its own spelling:
-// to its term where it is available, and to its notation, looked up again
-// each time, as a notation can be declared after its model is first used.
-// For a.b.c, the longest prefix the module declares is bound, so that a
-// field of a model is read as m.f is. One available nowhere is bound to its
-// refusal, so that every reader reports it, retained syntax too. Every
-// reader of a name then reads it as it reads any name; the environment
-// grows by the qualified names a module writes, not by its declarations.
+// Each qualified name `syntax` writes, bound in `env` by its own spelling to
+// its term where it is available. For a.b.c, the longest prefix the module
+// declares is bound, so that a field of a model is read as m.f is. One
+// available nowhere is bound to its refusal, so that every reader reports
+// it, retained syntax too. Every reader of a name then reads it as it reads
+// any name; the term namespace grows by the qualified names a module
+// writes, not by its declarations. The notation and theory namespaces,
+// which have few entries, have each by its qualified name from its
+// declaration (theories.mjs).
 export function bindQualifiedNames(env, syntax, options) {
   for (const name of qualifiedNamesIn(syntax)) {
     const [, module, local] = qualifiedName(name), parts = local.split(".");
-    for (const [key, own] of namespaces) {
-      const entry = ownEntry(env, key, own, options.bindings.table, module, local);
-      if (entry) env.set(key(name), entry);
-    }
     if (!env.has(name) || env.get(name)?.tag === "QualifiedFailure") {
       let bound = false;
       for (let length = parts.length; length > 0 && !bound; length--) {
@@ -101,37 +82,43 @@ export function constructorText(text, env, binding, names) {
   return value?.tag === "InductiveConstructor" && value.inductive?.binding === binding ? names[value.index] ?? text : text;
 }
 
-// Why `name`, qualified, is not available in `env`: its module is not
-// imported, declares no such name, or declares it below the use. The
-// module being translated is `current`, whose source declares the names
-// `declaredHere`.
-export function unknownQualifiedName(name, env, { current, declaredHere = new Set(), adapter }) {
+// The names a module's source declares, constructors among them, from its
+// items, as prepared syntax holds them too.
+export const declaredIn = ast => new Set((ast.items ?? ast.declarations ?? []).filter(d => d.name)
+  .flatMap(d => declaredNames(d).map(({ name }) => name)));
+
+// Why `name`, qualified, is available nowhere: its module declares it, or a
+// prefix of it, below the use, which is so where that is not available; its
+// module is not imported; or it declares no such name. The module whose
+// scope this is is `current`, whose source declares `declaredHere` and
+// imports `imports`; `available` says whether a qualified spelling is
+// bound, and `declares` whether any available binding is a module's.
+function unavailable(name, { current, declaredHere = new Set(), imports = new Set(), available, declares }) {
   const [, module, local] = qualifiedName(name), parts = local.split(".");
-  if (module === current && parts.some((_, k) => declaredHere.has(parts.slice(0, k + 1).join("."))))
+  const below = prefix => declaredHere.has(prefix) && !available(`${module}::${prefix}`);
+  if (module === current && parts.some((_, k) => below(parts.slice(0, k + 1).join("."))))
     return Error(`${name} is declared below its use: a declaration uses only the declarations above it.`);
-  // A notation's identity is in the environment too.
-  const imported = module === current || [...env.keys()].some(key => key.startsWith("\u0000id ") && ofModule(adapter.bindingForKey(key), module));
-  return refusal(name, imported);
+  if (!(module === current || imports.has(module) || declares(module)))
+    return Error(`${name} names a declaration of ${module}, which is not imported here: import ${module};`);
+  return Error(`${module} declares no ${local}, so ${name} names nothing.`);
 }
 const ofModule = (record, module) => ["declaration", "notation"].includes(record?.role) && record.origin?.module === module;
-const refusal = (name, imported) => {
-  const [, module, local] = qualifiedName(name);
-  return imported ? Error(`${module} declares no ${local}, so ${name} names nothing.`)
-    : Error(`${name} names a declaration of ${module}, which is not imported here: import ${module};`);
-};
+// In a module's environment, whose bindings are keyed by identity.
+export const unknownQualifiedName = (name, env, { adapter, ...options }) => unavailable(name, { ...options,
+  available: spelled => env.has(spelled) && env.get(spelled).tag !== "QualifiedFailure",
+  declares: module => [...env.keys()].some(key => key.startsWith("\u0000id ") && ofModule(adapter.bindingForKey(key), module)) });
 
 // The lexical entries of the qualified names `syntax` writes, for a context
-// whose available values `values` holds by identity and whose notations are
-// `notations`, as a contextual console entry's: each its module's own
-// declaration, the longest prefix the module declares, or its refusal, and
-// the notation inventory with the module's own notations under their
-// qualified names.
-export function qualifiedLexical(syntax, values, table, notations = null) {
-  const entries = [], named = [];
+// whose available values `values` holds by identity and whose notation
+// inventory is `notations`, as a contextual console entry's: each its
+// module's own declaration, the longest prefix the module declares, or,
+// unless it names a notation, its refusal (unavailable, whose `current`,
+// `declaredHere` and `imports` the context's module gives).
+export function qualifiedLexical(syntax, values, table, notations, scope) {
+  const declares = name => [...values.keys()].some(id => ofModule(table.get(id), name));
+  const entries = [];
   for (const name of qualifiedNamesIn(syntax)) {
     const [, module, local] = qualifiedName(name), parts = local.split(".");
-    const notation = notations?.find(entry => entry.name === local && ownedBy(record(table, entry.notation?.id), module, local, "notation"));
-    if (notation) named.push({ ...notation, name });
     let found = null;
     for (let length = parts.length; length > 0 && !found; length--) {
       const prefix = parts.slice(0, length).join(".");
@@ -139,8 +126,8 @@ export function qualifiedLexical(syntax, values, table, notations = null) {
       if (id) found = [`${module}::${prefix}`, bindingResolution(id)];
     }
     if (found) entries.push(found);
-    else if (!notation) entries.push([name, failedResolution({ message: refusal(name, [...values.keys()].some(id => ofModule(table.get(id), module))).message })]);
+    else if (!notations?.some(entry => entry.name === name))
+      entries.push([name, failedResolution({ message: unavailable(name, { ...scope, available: () => false, declares }).message })]);
   }
-  if (named.length) entries.push([null, { tag: "notation-inventory", entries: [...notations, ...named] }]);
   return entries;
 }

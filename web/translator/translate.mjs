@@ -41,7 +41,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
-import {bindQualifiedNames,unknownQualifiedName} from "./qualified-names.mjs";
+import {bindQualifiedNames,constructorText,declaredIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -549,10 +549,9 @@ export class Translator {
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
-    // The names this module's source declares, constructors among them, for
-    // a qualified use of one above its declaration: its items, as prepared
-    // syntax holds them too.
-    this.declaredHere=new Set((ast.items??ast.declarations??[]).filter(d=>d.name).flatMap(d=>declaredNames(d).map(({name})=>name)));
+    // What this module's source declares and imports, for why a qualified
+    // name is available nowhere.
+    this.declaredHere=declaredIn(ast);this.importedHere=new Set(ast.imports??[]);
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
     const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
@@ -640,7 +639,7 @@ export class Translator {
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
       // The qualified names it writes, bound where they are available.
       bindQualifiedNames(env,queued,{bindings:this.compilationBindings,adapter:this.identityAdapter,
-        current:this.moduleName,declaredHere:this.declaredHere});
+        current:this.moduleName,declaredHere:this.declaredHere,imports:this.importedHere});
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
       const d=retained?.declaration??queued;
       const effects=fileSelectionEffects(d.kind);
@@ -836,7 +835,7 @@ export class Translator {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
           const sectional=d.section?.params.length??0;
-          const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,
+          const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,qualified:`${this.moduleName}::${d.name.text}`,
             params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
@@ -1335,7 +1334,7 @@ export class Translator {
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
         // A qualified name that no item bound, as in syntax made elsewhere.
         if(n.moduleQualifier)throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
-          bindings:this.compilationBindings,adapter:this.identityAdapter});
+          imports:this.importedHere,adapter:this.identityAdapter});
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
@@ -1593,6 +1592,10 @@ export class Translator {
         }
         // Binders keep their source names, so the checked term reads as written.
         const value=tr(n.value,null),natural=this.naturalSignature(scope,inferred(value).type),type=natural.type;
+        // A head written qualified names the natural numbers' constructor.
+        const record=this.checker.inductives.get(type.signature),names=record.constructors.map(c=>c.source);
+        for(const [k,head] of (n.heads??[]).entries())if(constructorText(head.text,env,type.signature,names)!==["zero","succ"][k])
+          throw scope.unit.locate(Error(`${record.source} has no constructor ${head.text}: its constructors are ${names.join(", ")}.`),head);
         const k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
         // Without `as`, the motive is constant and the predecessor unnamed.
         const stepScope=n.index?this.sourceBinding(n.index,T.variable(k),scope.bind(k,type)):scope.bind(k,type);

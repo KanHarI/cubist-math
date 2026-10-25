@@ -588,7 +588,8 @@ test("standalone named notation takes precedence over model receivers and later 
       ${model?operandModels:""}
     `);
     const inventory=inputs.context.notations();
-    assert.deepEqual(inventory.map(({name,model})=>({name,model})),[{name:"recipe",model:null}]);
+    // The notation is in the inventory by its qualified name too.
+    assert.deepEqual(inventory.map(({name,model})=>({name,model})),[{name:"recipe",model:null},{name:"base::recipe",model:null}]);
     assert.equal(inventory[0].notation.tag,"binding");
     assert.doesNotThrow(()=>snapshotSyntax(inventory));
     for(const context of [inputs.context,new LexicalContext(JSON.parse(JSON.stringify(inputs.context.snapshot())))]) {
