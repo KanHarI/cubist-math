@@ -610,6 +610,20 @@ def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u
       assert.deepEqual(back.gaps, [], text);
     }
   });
+  // A projection contracted selects its own component, through the
+  // display's beta reduction and through an unfolding, of a pair whose
+  // components differ.
+  const pairs = [
+    ["Unit", "def g : U0 := (fun (p : U0 and Unit) => p.1)((Unit, tt));"],
+    ["tt", "def g : Unit := (fun (p : U0 and Unit) => p.2)((Unit, tt));"],
+    ["Unit", "def q : U0 and Unit := (Unit, tt);\ndef g : U0 := q.1;"],
+    ["tt", "def q : U0 and Unit := (Unit, tt);\ndef g : Unit := q.2;"]];
+  for (const [index, [component, definitions]] of pairs.entries()) await t.test(`pair ${index + 1}`, async t => {
+    const { program, result } = await checkProgram(t, `${definitions}\n`, { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program;
+    assert.equal(checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value), ["q"]), component);
+  });
   await t.test("shared syntax", async t => {
     const { program } = await checkProgram(t, "def q(u : Unit) : Unit := u;\n", { module });
     const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__q")).value);
