@@ -7,7 +7,7 @@
 // notation's, whose origin is in the module and whose label is the name: a
 // parameter, a local name or a field never is. The environment has each
 // available binding by its identity.
-import {notationBinding} from "./theories.mjs";
+import {notationBinding,theoryBinding} from "./theories.mjs";
 import {bindingResolution,failedResolution} from "../cubist/bindings.mjs";
 
 export const qualifiedName = name => /^([A-Za-z_][A-Za-z_0-9]*)::(.+)$/.exec(name);
@@ -30,23 +30,31 @@ export function qualifiedNamesIn(syntax) {
 
 // The available binding the module owns under that label in `env`: the
 // compilation's declaration of module__local first, then any other entry
-// by identity, as a theory's generated names are.
+// by identity, as a theory's generated names are, and as a contextual
+// entry's scope has each of its values.
 function ownTerm(env, module, local, { bindings, adapter }) {
-  const declaration = bindings.declaration(`${module}__${local}`);
+  const declaration = bindings.declaration?.(`${module}__${local}`);
   if (declaration && ownedBy(bindings.table.get(declaration.binding.id), module, local) && env.has(adapter.key(declaration.binding.id)))
     return env.get(adapter.key(declaration.binding.id));
   for (const [key, value] of env)
     if (key.startsWith("\u0000id ") && ownedBy(adapter.bindingForKey(key), module, local)) return value;
   return null;
 }
-// The module's own notation of that label: the one in scope by it, or,
-// where another module's takes the label, any available one, by identity
-// too.
-function ownNotation(env, module, local, bindings) {
-  const own = value => value?.tag === "Notation" && ownedBy(bindings.table.get(value.bindingId), module, local, "notation");
-  const plain = env.get(notationBinding(local));
-  if (!plain || own(plain)) return plain ?? null;
-  for (const value of env.values()) if (own(value)) return value;
+// The other namespaces a declaration is named in, each by its key: the
+// module's own notation of that label, and its own theory, whose type of
+// models is the module's declaration of that name. Each is the entry in
+// scope by its label, or, where another module's takes the label, any
+// available one, by identity too.
+const record = (table, id) => id ? table.get(id) : null;
+const namespaces = [
+  [notationBinding, (value, table, module, local) => value?.tag === "Notation" && ownedBy(record(table, value.bindingId), module, local, "notation")],
+  [theoryBinding, (value, table, module, local) => value?.tag === "Theory" && ownedBy(record(table, value.record?.modelId), module, local)],
+];
+function ownEntry(env, key, own, table, module, local) {
+  const plain = env.get(key(local));
+  if (own(plain, table, module, local)) return plain;
+  if (!plain) return null;
+  for (const value of env.values()) if (own(value, table, module, local)) return value;
   return null;
 }
 
@@ -61,16 +69,25 @@ function ownNotation(env, module, local, bindings) {
 export function bindQualifiedNames(env, syntax, options) {
   for (const name of qualifiedNamesIn(syntax)) {
     const [, module, local] = qualifiedName(name), parts = local.split(".");
+    for (const [key, own] of namespaces) {
+      const entry = ownEntry(env, key, own, options.bindings.table, module, local);
+      if (entry) env.set(key(name), entry);
+    }
     if (!env.has(name) || env.get(name)?.tag === "QualifiedFailure") {
       let bound = false;
       for (let length = parts.length; length > 0 && !bound; length--) {
         const prefix = parts.slice(0, length).join("."), value = ownTerm(env, module, prefix, options);
-        if (value) { env.set(`${module}::${prefix}`, value); bound = true; }
+        if (value) {
+          env.set(`${module}::${prefix}`, value); bound = true;
+          // A refusal of the whole name, from before its prefix was
+          // declared, gives way to the prefix's field.
+          if (length < parts.length && env.get(name)?.tag === "QualifiedFailure") env.delete(name);
+        }
       }
-      if (!bound) env.set(name, { tag: "QualifiedFailure", name, message: unknownQualifiedName(name, env, options).message });
+      // A notation alone, as unat::unat, is no refusal.
+      if (!bound && !env.has(notationBinding(name)) && !env.has(theoryBinding(name)))
+        env.set(name, { tag: "QualifiedFailure", name, message: unknownQualifiedName(name, env, options).message });
     }
-    const notation = ownNotation(env, module, local, options.bindings);
-    if (notation) env.set(notationBinding(name), notation);
   }
 }
 
@@ -89,8 +106,8 @@ export function constructorText(text, env, binding, names) {
 // module being translated is `current`, whose source declares the names
 // `declaredHere`.
 export function unknownQualifiedName(name, env, { current, declaredHere = new Set(), adapter }) {
-  const [, module, local] = qualifiedName(name);
-  if (module === current && declaredHere.has(local))
+  const [, module, local] = qualifiedName(name), parts = local.split(".");
+  if (module === current && parts.some((_, k) => declaredHere.has(parts.slice(0, k + 1).join("."))))
     return Error(`${name} is declared below its use: a declaration uses only the declarations above it.`);
   // A notation's identity is in the environment too.
   const imported = module === current || [...env.keys()].some(key => key.startsWith("\u0000id ") && ofModule(adapter.bindingForKey(key), module));
@@ -104,20 +121,26 @@ const refusal = (name, imported) => {
 };
 
 // The lexical entries of the qualified names `syntax` writes, for a context
-// whose available values `values` holds by identity, as a contextual
-// console entry's: each its module's own declaration, the longest prefix
-// the module declares, or its refusal.
-export function qualifiedLexical(syntax, values, table) {
-  const entries = [];
+// whose available values `values` holds by identity and whose notations are
+// `notations`, as a contextual console entry's: each its module's own
+// declaration, the longest prefix the module declares, or its refusal, and
+// the notation inventory with the module's own notations under their
+// qualified names.
+export function qualifiedLexical(syntax, values, table, notations = null) {
+  const entries = [], named = [];
   for (const name of qualifiedNamesIn(syntax)) {
     const [, module, local] = qualifiedName(name), parts = local.split(".");
+    const notation = notations?.find(entry => entry.name === local && ownedBy(record(table, entry.notation?.id), module, local, "notation"));
+    if (notation) named.push({ ...notation, name });
     let found = null;
     for (let length = parts.length; length > 0 && !found; length--) {
       const prefix = parts.slice(0, length).join(".");
       const id = [...values.keys()].find(id => ownedBy(table.get(id), module, prefix));
       if (id) found = [`${module}::${prefix}`, bindingResolution(id)];
     }
-    entries.push(found ?? [name, failedResolution({ message: refusal(name, [...values.keys()].some(id => ofModule(table.get(id), module))).message })]);
+    if (found) entries.push(found);
+    else if (!notation) entries.push([name, failedResolution({ message: refusal(name, [...values.keys()].some(id => ofModule(table.get(id), module))).message })]);
   }
+  if (named.length) entries.push([null, { tag: "notation-inventory", entries: [...notations, ...named] }]);
   return entries;
 }
