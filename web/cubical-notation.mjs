@@ -96,7 +96,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
     if (t.tag === "DefRef") {
       const shown = symbols[t.name]?.name ?? t.name;
-      return { ...name(dimensionsNamed.has(shown) ? t.name : shown), binding: t.name };
+      return { ...name(dimensionsNamed.has(shown) || t.qualified ? t.name : shown), binding: t.name };
     }
     if (t.tag === "Var") {
       const symbol = outer(t.name) ? undefined : symbols[t.name];

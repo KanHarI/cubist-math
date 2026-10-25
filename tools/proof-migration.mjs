@@ -196,10 +196,11 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   // Pin text uses the explicit unary view, and labels as the kernel names
   // them, no symbols, so that a pin reads alike however the elaborator
   // displays terms; it is named as every display is (forSource), closed,
-  // over the original bindings. A definition it unfolds is the one the term
-  // is about: for an edited term, the edited module's shadow, its value and
-  // type read with original bindings too. Both the rendered text and the
-  // checked structural hash remain exact ledger requirements.
+  // over the original bindings. The definitions whose types and values it
+  // reads, for a folded motive's domain, are the ones the term is about: for
+  // an edited term, the edited module's shadows, read with original bindings
+  // too. Both the rendered text and the checked structural hash remain
+  // exact ledger requirements.
   const shadowed = name => {
     const index = name.indexOf("__"), module = name.slice(0, index);
     return index > 0 && compared.has(module) ? `${shadowOf(module)}__${name.slice(index + 2)}` : name;

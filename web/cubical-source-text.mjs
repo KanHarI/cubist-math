@@ -95,6 +95,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     try { return fn(); } finally { for (const name of list) bound.set(name, bound.get(name) - 1); }
   };
   const variable = name => bound.get(name) ? name : label(name);
+  // A definition, type or constructor the naming marked qualified, as one
+  // whose label the text shows for a dimension (display-naming.mjs,
+  // qualified): its module's name for it, module::name.
+  const qualifiedText = (text, binding, t) => t.qualified && binding?.includes("__")
+    ? `${binding.slice(0, binding.indexOf("__"))}::${text}` : text;
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   // An operation printed with its notation's operator, at its level: ^
@@ -119,9 +124,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // labels.
   const fallback = t => {
     const scope = new Map([...bound.keys()].filter(name => bound.get(name)).map(name => [name, variable(name)]));
-    // forSource has unfolded each definition named as a dimension of the
-    // term or of its context: none is left here for kernel notation to
-    // qualify.
+    // forSource has marked each definition named as a dimension of the term
+    // or of its context qualified, which kernel notation shows by its
+    // kernel name.
     const text = cubicalText(t, symbols, { scope, dimensions: [] });
     return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
   };
@@ -184,7 +189,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // A part an evaluation did not compute, or stopped at (evaluation.mjs).
       case "Marker": return atom(t.text);
       case "Var": return atom(variable(t.name));
-      case "DefRef": return atom(label(t.name));
+      case "DefRef": return atom(qualifiedText(label(t.name), t.name, t));
       case "Pi": case "Sigma": {
         const pi = t.tag === "Pi";
         if (mentions(t.body, t.name))
@@ -361,14 +366,15 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           && slots.filter(slot => slot === "parameter").length === parameters.length;
         const args = fits ? slots.map(slot => slot === "erased" ? "__U" : slot === "recorded" ? universes.shift() : parameters.shift())
           : [...universes, ...parameters];
-        return atom(args.length ? `${label(t.signature)}(${args.join(", ")})` : label(t.signature));
+        const name = qualifiedText(label(t.signature), t.signature, t);
+        return atom(args.length ? `${name}(${args.join(", ")})` : name);
       }
       case "Con": {
         const n=numeral(t);
         if(n!==null)return natural(n);
         const digits=binary(t);
         if(digits)return bits(digits);
-        return binaryNatural(t) ?? (t.name ? atom(t.name) : fallback(t));
+        return binaryNatural(t) ?? (t.name ? atom(qualifiedText(t.name, t.sort?.signature, t)) : fallback(t));
       }
       case "Path":
         // An equality: a path whose type does not vary along it.

@@ -329,18 +329,19 @@ def famP : PathP(fun (k : Interval) => (op @ k) -> U0, F, F) := path k => F;
     body: { tag: "App", fn: { tag: "Elim", signature: "main__Opt", motive: familyAt, clauses }, arg: { tag: "Var", name: "x" } } } }, new Map([["z1", 0]]));
   const z1Shown = "fun (z : Unit, x : Opt(Unit)) => match x as z2 return (familyPath @ z1)(z2) { none => tt; some(y) => y; }";
   both_(z1, z1Shown);
-  // The definition i, in a recovered domain, beside the dimension i.
+  // The definition i, in a recovered domain, beside the dimension i: shown
+  // qualified.
   const circle = { tag: "Sort", signature: "main__Circle", parameters: [], levels: [] };
   const loop = { tag: "PApp", path: { tag: "Con", index: 1, sort: circle }, arg: [["i:1"]] }, ambient = new Map([["i", 0]]);
   const iTerm = folded({ tag: "Lam", name: "x", domain: typeOfDefinition("Around").domain, body: { tag: "App", arg: { tag: "Var", name: "x" },
     fn: { tag: "Elim", signature: "main__Tag", motive: { tag: "DefRef", name: "main__Around" }, clauses: [loop] } } }, ambient);
-  const iShown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => loop @ i; }";
+  const iShown = "fun (x : Tag(main::i)) => match x as z return Around(z) { tag => loop @ i; }";
   both_(iTerm, iShown);
   // g names no dimension, but is shown where the context names i.
   const gTerm = folded({ tag: "DefRef", name: "main__g" }, ambient);
-  const gShown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }";
+  const gShown = "fun (x : Tag(main::i)) => match x as z return Around(z) { tag => base; }";
   assert.equal(checker.displayText(gTerm, ambient, { width: 1000, limit: 1000 }), gShown);
-  assert.equal(checker.displayText(gTerm, [], { width: 1000, limit: 1000 }), gShown.replace("Tag(Unit)", "Tag(i)"));
+  assert.equal(checker.displayText(gTerm, [], { width: 1000, limit: 1000 }), gShown.replace("Tag(main::i)", "Tag(i)"));
   // An eliminator written as a function, its motive a path of type
   // families applied at z1: its domain is the family's at z1.
   const famAt = { tag: "PApp", path: { tag: "DefRef", name: "main__famP" }, arg: [["z1:1"]] };
@@ -514,86 +515,58 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   while (tuple.length > 1) tuple = Array.from({ length: Math.ceil(tuple.length / 2) }, (_, k) => ({ tag: "Pair", first: tuple[2 * k], second: tuple[2 * k + 1] ?? tuple[2 * k] }));
   const [, alone] = forSource([tuple[0], { tag: "Var", name: "n5" }], { definitions, symbols, names: new Map([["n5", "n"]]), dimensions: [] });
   assert.equal(sourceText(alone, symbols), "n");
-  // A definition named as a dimension of the context, q, applied: its value,
-  // a function of a path, leaves a redex at each level of the spine above
-  // it, each reduced: q(tt) @ j is p @ ~j.
-  const unfolding = { ...definitions, value: name => name === "main__q" ? { tag: "Lam", name: "u", domain: { tag: "Unit" },
-    body: { tag: "PLam", dim: "e", family: null, body: { tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["e:0"]] } } } : null,
-    label: name => name === "main__q" ? "q" : definitions.label(name) };
-  const applied = { tag: "PApp", path: { tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Point" } }, arg: [["j:1"]] };
-  const [spelled] = forSource([applied], { definitions: unfolding, symbols, dimensions: ["q", "j"] });
-  assert.equal(sourceText(spelled, symbols), "p @ ~j");
-  // As the kernel keeps such a value, its path ascribed: the spine consumes
-  // the value, its ascription first.
-  const ascribed = { ...unfolding, value: name => name === "main__q" ? { tag: "Lam", name: "u", domain: { tag: "Unit" },
-    body: { tag: "App", fn: { tag: "Lam", name: "ascription", domain: { tag: "Var", name: "A" }, body: { tag: "Var", name: "ascription" } },
-      arg: { tag: "PLam", dim: "e", family: { tag: "Var", name: "A" }, body: { tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["e:0"]] } } } } : null };
-  const [consumed] = forSource([applied], { definitions: ascribed, symbols, dimensions: ["q", "j"] });
-  assert.equal(sourceText(consumed, symbols), "p @ ~j");
-  // Its value applies its argument, a path: the contraction puts the path
-  // at a spine's root, a redex the unfolding made, contracted in turn. The
-  // term's own redex, the identity applied to that path, is kept.
-  const pathArgument = { tag: "PLam", dim: "e", family: { tag: "Var", name: "A" }, body: { tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["e:1"]] } };
-  const applying = { ...definitions, value: name => name === "main__q" ? { tag: "Lam", name: "r", domain: { tag: "Var", name: "A" },
-    body: { tag: "PLam", dim: "f", family: { tag: "Var", name: "A" }, body: { tag: "PApp", path: { tag: "Var", name: "r" }, arg: [["f:0"]] } } } : null,
-    label: name => name === "main__q" ? "q" : definitions.label(name) };
-  const identity = { tag: "Lam", name: "y", domain: { tag: "Unit" }, body: { tag: "Var", name: "y" } };
-  const [pathApplied] = forSource([{ tag: "Pair", first: { tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: pathArgument },
-    second: { tag: "App", fn: identity, arg: pathArgument } }], { definitions: applying, symbols, dimensions: ["q"], reduce: 0 });
-  assert.equal(sourceText(pathApplied, symbols), "(path f => p @ ~f, (fun (y : Unit) => y)(path e => p @ e))");
-  // An eta-reduced clause that is such a definition, its value a redex of
-  // its own: the clause takes the path its head reduces to, spelled out
-  // again, so that the path the contraction put at a spine's root is
-  // contracted too.
-  const looped = { ...symbols, main__S: { name: "S", slots: [], constructors: [{ name: "loop", data: 0, positions: 0, dimensions: 1 }] } };
-  const redexValue = { ...definitions, value: name => name === "main__q" ? { tag: "App", fn: applying.value("main__q"), arg: pathArgument } : null,
-    label: applying.label };
-  const loopElim = { tag: "Elim", signature: "main__S", motive: { tag: "Lam", name: "x", domain: { tag: "Sort", signature: "main__S", parameters: [], levels: [] },
-    body: { tag: "DefRef", name: "main__T" } }, clauses: [{ tag: "DefRef", name: "main__q" }] };
-  const [settled] = forSource([loopElim], { definitions: redexValue, symbols: looped, dimensions: ["q"] });
-  assert.equal(sourceText(settled, looped), "fun (x : S) => match x return T { loop @ f => p @ ~f; }");
+  // A definition named as a dimension of the context, q, is shown qualified,
+  // main::q, which no dimension shadows: nothing is unfolded. So is one
+  // named as a dimension the source named and the term binds; one named as
+  // a dimension decoding left unnamed is not, as that dimension is renamed.
+  const labeled = { ...symbols, main__q: { name: "q" }, main__d0: { name: "d0" } };
+  const qualifying = { ...definitions, label: name => labeled[name]?.name ?? name };
+  const shown = (term, dimensions) => sourceText(forSource([term], { definitions: qualifying, symbols: labeled, dimensions })[0], labeled);
+  const at = (path, dim) => ({ tag: "PApp", path, arg: [[`${dim}:1`]] });
+  assert.equal(shown(at({ tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Point" } }, "j"), ["q", "j"]), "main::q(tt) @ j");
+  assert.equal(shown({ tag: "PLam", dim: "q", family: null, body: at({ tag: "DefRef", name: "main__q" }, "q") }, []), "path q => main::q @ q");
+  assert.equal(shown({ tag: "PLam", dim: "d0", family: null, body: at({ tag: "DefRef", name: "main__d0" }, "d0") }, []), "path i => d0 @ i");
+  // A free variable the caller names q is shown so, and the definition q
+  // qualified.
+  const [given] = forSource([{ tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Var", name: "v" } }],
+    { definitions: qualifying, symbols: labeled, dimensions: [], names: new Map([["v", "q"]]) });
+  assert.equal(sourceText(given, labeled), "main::q(q)");
+  // Kernel notation, where source text falls back to it, shows the
+  // definition by its kernel name: an eliminator of a type the symbols do
+  // not describe.
+  const [fallen] = forSource([{ tag: "App", fn: { tag: "Elim", signature: "main__Unknown", motive: { tag: "Lam", name: "w", domain: { tag: "Unit" },
+    body: { tag: "Unit" } }, clauses: [{ tag: "DefRef", name: "main__q" }] }, arg: { tag: "Point" } }], { definitions: qualifying, symbols: labeled, dimensions: ["q"] });
+  assert.match(sourceText(fallen, labeled), /\bmain__q\b/, sourceText(fallen, labeled));
 });
 
-// A definition named as the context's dimension q is unfolded, and every
-// redex its value makes contracted, however it is reached: through an
-// ascribed argument the value applies, through a value that is a function
-// applied twice, through the display's beta reduction, and through an
-// eta-reduced clause or its part below a binder. Each text reads back as
-// the value. A redex the
-// term has of its own, though it shares the very syntax of the value, is
-// kept.
-test("an unfolding contracts every redex it makes, and only those", async t => {
+// A definition named as the context's dimension q is shown qualified,
+// main::q, which no dimension shadows, wherever it is: applied, at a path's
+// root, inside a redex of the term's own, an eta-reduced clause, a
+// projection, an instantiation; nothing is unfolded, so no redex is made.
+// Each text reads back as the value, with no beta reduction for display, as
+// evaluation prints, and with it, which contracts each redex it makes: a
+// path put at a path application's root.
+test("a definition named as a dimension of the context is shown qualified", async t => {
   const circle = `inductive Circle {
   base;
   loop : base = base;
 }
 `;
   // Each program is checked in a subtest of its own, which disposes of it:
-  // a module holds eight kernel sessions. With no beta reduction for
-  // display, as evaluation prints, the text is the term with exactly the
-  // unfolding's redexes contracted, the kernel's ascriptions kept; with it,
-  // the display's own contractions follow. Each reads back as the value.
+  // a module holds eight kernel sessions.
   const ascribed = text => `(fun (ascription : base = base) => ascription)(${text})`;
-  const kept = ascribed("path i => (fun (p : base = base) => " + ascribed("path i => p @ ~i") + ")(path i => loop @ i) @ i");
   const values = [
-    // An ascribed argument the value applies.
     ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(typed(base = base, path e => loop @ e));",
-      ascribed(ascribed("path i => loop @ ~i"))],
-    // A value that is a function applied twice.
+      ascribed(`main::q(${ascribed("path i => loop @ i")})`)],
     ["def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;",
-      ascribed("path i => loop @ ~i")],
-    // An unfolding under a redex of the term's own, which is kept; the
-    // display's beta reduction contracts it, and the redexes that makes, a
-    // path put at a path application's root.
+      ascribed("path i => main::q @ ~i")],
     ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := path k => (fun (p : base = base) => q(p))(path j => loop @ j) @ k;",
-      kept],
-    ["def g : base = base := path k => (fun (p : base = base) => typed(base = base, path f => p @ ~f))(path j => loop @ j) @ k;", kept],
-    // An argument the spelling rebuilds, a path through an eliminator.
-    ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(path e => (fun (c : Circle) => match c return Circle { base => base; } obligations by loop)(loop @ e));",
-      ascribed(ascribed("path i => (fun (c : Circle) => match c return Circle { base => base; loop @ j => loop @ j; })(loop @ ~i)"))],
-    // The term's own redex, its type unfolded.
+      ascribed("path i => (fun (p : base = base) => main::q(p))(path i => loop @ i) @ i")],
+    // No definition is named so: the display's beta reduction alone.
+    ["def g : base = base := path k => (fun (p : base = base) => typed(base = base, path f => p @ ~f))(path j => loop @ j) @ k;",
+      ascribed("path i => (fun (p : base = base) => " + ascribed("path i => p @ ~i") + ")(path i => loop @ i) @ i")],
     ["def q : base = base := loop;\ndef g : Unit := (fun (u : q = q) => tt)(refl(q));",
-      `(fun (ascription : Unit) => ascription)((fun (u : ${ascribed("loop")} = ${ascribed("loop")}) => tt)(refl(${ascribed("loop")})))`]];
+      "(fun (ascription : Unit) => ascription)((fun (u : main::q = main::q) => tt)(refl(main::q)))"]];
   for (const [index, [definitions, unreduced]] of values.entries()) await t.test(`value ${index + 1}`, async t => {
     const { program, result } = await checkProgram(t, `${circle}${definitions}\n`, { module });
     assert.deepEqual(result.gaps, []);
@@ -601,67 +574,48 @@ test("an unfolding contracts every redex it makes, and only those", async t => {
     const texts = [0, 256].map(reduce => checker.displayText(value, ["q"], { width: 4000, reduce }));
     assert.equal(texts[0], unreduced);
     for (const text of texts) {
-      assert.doesNotMatch(text, /\bq\b/, text);
+      assert.doesNotMatch(text, /(?<!::)\bq\b/, text);
       const { result: back } = await checkProgram(t, `${circle}${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
       assert.deepEqual(back.gaps, [], text);
     }
   });
-  // A folded normal form keeps an eta-reduced clause that is the
-  // definition, a function of the clause's argument to a path, or a clause
-  // whose part below its own binder is: settled at each binder the clause
-  // takes, with no beta reduction for display too, as evaluation prints.
-  for (const edge of ["q(u) @ j", "q(tt) @ j"]) await t.test(`clause ${edge}`, async t => {
-    const edges = `${circle}inductive S {
+  // A folded normal form keeps an eta-reduced clause that is the definition.
+  for (const [edge, shown] of [["q(u) @ j", /edge\((\w+)\) @ (\w+) => main::q\(\1\) @ \2;/], ["q(tt) @ j", /edge\(\w+\) @ (\w+) => main::q\(tt\) @ \1;/]])
+    await t.test(`clause ${edge}`, async t => {
+      const edges = `${circle}inductive S {
   pt;
   edge(u : Unit) : pt = pt;
 }
 def q(u : Unit) : base = base := path e => loop @ ~e;
 def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => ${edge}; };
 `;
-    const { program, result } = await checkProgram(t, edges, { module });
-    assert.deepEqual(result.gaps, []);
-    const { kernel, checker } = program, context = new Map([["q", 0]]);
-    const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
-    for (const reduce of [0, 256]) {
-      const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000, reduce });
-      assert.match(text, /edge\(u\) @ (\w+) => loop @ ~\1;/, text);
-      const { result: back } = await checkProgram(t, `${edges}def back : g = g := path q => ${text};\n`, { module });
-      assert.deepEqual(back.gaps, [], text);
-    }
-  });
-  // A projection contracted selects its own component, through the
-  // display's beta reduction and through an unfolding, of a pair whose
-  // components differ.
+      const { program, result } = await checkProgram(t, edges, { module });
+      assert.deepEqual(result.gaps, []);
+      const { kernel, checker } = program, context = new Map([["q", 0]]);
+      const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
+      for (const reduce of [0, 256]) {
+        const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000, reduce });
+        assert.match(text, shown, text);
+        const { result: back } = await checkProgram(t, `${edges}def back : g = g := path q => ${text};\n`, { module });
+        assert.deepEqual(back.gaps, [], text);
+      }
+    });
+  // A projection and an instantiation of it, and the display's beta
+  // reduction projecting a pair whose components differ.
   const pairs = [
+    ["main::q.1", "def q : U0 and Unit := (Unit, tt);\ndef g : U0 := q.1;"],
+    ["main::q.2", "def q : U0 and Unit := (Unit, tt);\ndef g : Unit := q.2;"],
+    ["main::q(U1)", "def q(U < UU0) := U;\ndef g : U2 := q(U1);"],
     ["Unit", "def g : U0 := (fun (p : U0 and Unit) => p.1)((Unit, tt));"],
-    ["tt", "def g : Unit := (fun (p : U0 and Unit) => p.2)((Unit, tt));"],
-    ["Unit", "def q : U0 and Unit := (Unit, tt);\ndef g : U0 := q.1;"],
-    ["tt", "def q : U0 and Unit := (Unit, tt);\ndef g : Unit := q.2;"]];
-  for (const [index, [component, definitions]] of pairs.entries()) await t.test(`pair ${index + 1}`, async t => {
+    ["tt", "def g : Unit := (fun (p : U0 and Unit) => p.2)((Unit, tt));"]];
+  for (const [index, [shown, definitions]] of pairs.entries()) await t.test(`pair ${index + 1}`, async t => {
     const { program, result } = await checkProgram(t, `${definitions}\n`, { module });
     assert.deepEqual(result.gaps, []);
     const { kernel, checker } = program;
-    assert.equal(checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value), ["q"]), component);
-  });
-  // An instantiation contracted substitutes its own level: q unfolded at
-  // U1 is U1, read back as g. The display's beta reduction contracts by the
-  // same contractRedex.
-  await t.test("level", async t => {
-    const definitions = "def q(U < UU0) := U;\ndef g : U2 := q(U1);\n";
-    const { program, result } = await checkProgram(t, definitions, { module });
-    assert.deepEqual(result.gaps, []);
-    const { kernel, checker } = program;
     const text = checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value), ["q"]);
-    assert.equal(text, "U1");
-    const { result: back } = await checkProgram(t, `${definitions}def back : g = g := path q => ${text};\n`, { module });
+    assert.equal(text, shown);
+    const { result: back } = await checkProgram(t, `${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
-  });
-  await t.test("shared syntax", async t => {
-    const { program } = await checkProgram(t, "def q(u : Unit) : Unit := u;\n", { module });
-    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__q")).value);
-    const pair = { tag: "Pair", first: { tag: "DefRef", name: "main__q" }, second: { tag: "App", fn: value, arg: { tag: "Point" } } };
-    assert.equal(checker.displayText(pair, ["q"], { width: 4000, reduce: 0 }),
-      "(fun (u : Unit) => (fun (ascription : Unit) => ascription)(u), (fun (u : Unit) => (fun (ascription : Unit) => ascription)(u))(tt))");
   });
 });
 

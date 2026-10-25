@@ -178,11 +178,11 @@ def same : back = f := refl(f);
   }
 });
 
-// A snapshot unfolds the definitions of its own side: d0, named as the
-// dimension decoding gives f's path, shows by its value, the original's in
-// the old snapshot and the edited one's in the new, with its references
-// shown by their original names, and each reads back as its side's f.
-test("a snapshot unfolds the definitions of its side", async t => {
+// A snapshot shows a definition by its name: d0, named as the dimension
+// decoding gives f's path, which is renamed, shows as d0 in both
+// snapshots, whose hashes tell the two values apart, and each text reads
+// back as its side's f.
+test("a snapshot shows a definition by its name, as each side defines it", async t => {
   const before = `inductive Circle {
   base;
   loop : base = base;
@@ -202,7 +202,9 @@ def same : back = f := refl(f);
 `);
     assert.deepEqual(result.gaps, [], text);
   }
-  assert.notEqual(change.oldValue.text, change.newValue.text);
+  assert.equal(change.oldValue.text, "path i => d0 @ i");
+  assert.equal(change.newValue.text, change.oldValue.text);
+  assert.notEqual(change.newValue.hash, change.oldValue.hash);
 });
 
 test("dependents are checked against edited definitions they mention", async () => {

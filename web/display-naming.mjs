@@ -11,33 +11,39 @@ import { localName, numberedName, stem } from "./translator/names.mjs";
 // means by it. No binder captures a name it does not bind, and two things
 // the term tells apart never read alike where both are in scope.
 //
-// Source text is named in three passes, in this order (forSource):
+// Source text is named in four passes, in this order (forSource):
 //  1. spelledOut writes into the terms what the text shows and the terms do
 //     not spell out: every binder the printer would otherwise have to
 //     invent (a folded motive, as a function of the domain its type gives, a
 //     clause's arguments and dimensions, an eliminator written as a
-//     function), the one name induction's `as k` gives its motive's variable
-//     and its predecessor, and the value of a definition named as a
-//     dimension of the term or of its context, which no source spelling
-//     tells apart from the dimension, with the redexes that value makes and
-//     no others contracted. The unfoldings come first, on the term as it was
-//     checked, and the spelling after, each eliminator before its parts, so
-//     that no substitution meets syntax already spelled out. What it adds it
-//     spells out in turn, and its new names are apart from every name of the
-//     terms.
+//     function), and the one name induction's `as k` gives its motive's
+//     variable and its predecessor. Each eliminator is spelled before its
+//     parts, so that no substitution meets syntax already spelled out. What
+//     it adds it spells out in turn, and its new names are apart from every
+//     name of the terms.
 //  2. displayTerm names every term and level binder apart from the labels
 //     and dimensions the terms show and from the variables in its scope.
 //  3. readableDimensions names the dimensions decoding left unnamed apart
 //     from every name shown, the context's dimensions kept.
+//  4. qualified marks a definition, type or constructor whose label the
+//     text shows for a dimension, or for a variable whose name the caller
+//     gives, all of which keep their names: the printer writes it
+//     module::name, which nothing in scope shadows.
 // The printer, sourceText, then chooses no name. A pass that adds what can
 // print a name runs before 2 and 3, and spells out what it adds: added after
 // the naming, or added unspelled, it put printed names under binders already
 // named, a capture #310's and #311's reviews found for each kind of binder.
+// A name clash that renaming cannot settle, where the other name is fixed,
+// is settled by qualifying, not by unfolding the definition: an unfolding
+// makes redexes, which must be contracted where the source cannot check
+// them and kept where they are the term's own, and #312's reviews found the
+// tracking of which is which wrong at every stage it passed through.
 //
 // Kernel notation (cubicalText) adds no binder, and names its binders as it
 // prints, since the views spell kernel variables by their source names; it
 // keeps them apart from the labels a body shows (labelsShown) and shows a
-// definition named as a dimension (dimensionNames) by its kernel name.
+// definition named as a dimension (dimensionNames), or marked qualified, by
+// its kernel name.
 
 const namedBinders = new Set(["Var", ...termBinders]);
 
@@ -324,19 +330,12 @@ function globalNames(shown, given) {
 //    to it is the function that applies it, λ (x : D). e(x);
 //  - the source Nat's induction shows its motive's variable and its
 //    predecessor by one name (inductionBinders): both binders are renamed
-//    to one, apart from what either would capture;
-//  - a definition named as a dimension of the term or of its context, which
-//    no source spelling tells apart from the dimension, is its value; a
-//    redex the value makes at a spine's root is contracted, and a redex the
-//    term has of its own is kept (`exposed` below). This comes first, on the
-//    term as it was checked: a path clause spelled out has no family, which
-//    a substitution cannot read, and the spelling substitutes only into
-//    what it has not spelled yet.
-// Whatever this adds, an unfolded value, a recovered domain, a motive reduced
-// to its function, is spelled out by the same pass, and the new names are
-// apart from every name of every term shown together. Each change is an
-// eta-expansion, a renaming of a bound variable, an unfolding or a
-// reduction: the term says what it said.
+//    to one, apart from what either would capture.
+// Whatever this adds, a recovered domain, a motive reduced to its function,
+// is spelled out by the same pass, and the new names are apart from every
+// name of every term shown together. Each change is an eta-expansion, a
+// renaming of a bound variable or a reduction of a motive's head: the term
+// says what it said.
 // `definitions` gives definitions' decoded types and values and their labels;
 // `symbols` a declared type's constructors as the printer reads them
 // (signatureDisplay); `dimensions` the context's.
@@ -380,20 +379,16 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return { tag: "Lam", name, domain: of, body: { tag: "App", fn, arg: { tag: "Var", name } } };
   };
   // A clause taking each of `takes` in turn: a variable of the stem given,
-  // or a dimension. Each body the clause takes a binder from is consumed by
-  // the expansion: where it is unfolded, the clause or the part of it below
-  // the clause's own binders, `weak` gives its weak head.
-  const clause = (body, takes, weak = null, unfolded = false) => {
+  // or a dimension.
+  const clause = (body, takes) => {
     if (!takes.length || !body) return body;
     const [take, ...rest] = takes;
-    unfolded ||= exposed.has(body);
-    if (unfolded && weak) body = weak(body);
     if (take === "dimension") {
-      if (body.tag === "PLam") return { ...body, body: clause(body.body, rest, weak, unfolded) };
+      if (body.tag === "PLam") return { ...body, body: clause(body.body, rest) };
       const dim = fresh("d");
       return { tag: "PLam", dim, family: null, body: clause({ tag: "PApp", path: body, arg: [[`${dim}:1`]] }, rest) };
     }
-    if (body.tag === "Lam") return { ...body, body: clause(body.body, rest, weak, unfolded) };
+    if (body.tag === "Lam") return { ...body, body: clause(body.body, rest) };
     const name = fresh(take);
     return { tag: "Lam", name, domain: null, body: clause({ tag: "App", fn: body, arg: { tag: "Var", name } }, rest) };
   };
@@ -403,86 +398,22 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     const [argument, result] = signature === "unat__UNat" ? ["k", "h"] : ["x", "ih"];
     return [...Array(data + positions).fill(argument), ...Array(positions).fill(result), ...Array(dimensions).fill("dimension")];
   };
-  // What an unfolding puts in the terms, at this occurrence: a definition's
-  // value, an argument a contraction substitutes, and a contraction's
-  // result, each marked as a copy no other node holds: decoded syntax is
-  // shared, and a mark on a shared node would reach the term's own
-  // occurrences of it. A spine node whose root is marked, and whose root's
-  // weak head is the value former the node takes, is a redex the unfolding
-  // made, which the source cannot check, as (path i => loop @ ~i) @ j:
-  // contracted, so that the node above sees a value in turn. Every other
-  // redex is the term's own, as an ascription typed(A, a) is, and is kept:
-  // contracted, it can leave text the source cannot check.
-  const exposed = new WeakSet();
-  const mark = t => {
-    if (!t || typeof t !== "object") return t;
-    const copy = Array.isArray(t) ? [...t] : { ...t };
-    exposed.add(copy);
-    return copy;
-  };
-  let contractions;
-  // The argument a contraction substitutes, put at a spine's root in the
-  // body, can make a redex there, its own head consumed too.
-  const contract = node => { contractions--; return contractRedex(node, mark); };
-  // The weak head of a value a spine consumes: its own redexes along its
-  // spine go first, as the identity ascription a definition's value can have
-  // around it, or a function applied twice; no other part is touched. A
-  // spine whose head is stuck is the value as it is, its own redexes kept.
-  const head = t => {
+  // A motive that is a redex of its own, as a folded normal form keeps
+  // (λ u. λ m. T)(tt), is consumed by the match the text writes: its head
+  // redexes along its spine are contracted, within a budget, no other part.
+  const head = (t, budget = 256) => {
     const [root, former] = spine[t?.tag] ?? [];
-    if (!root || contractions <= 0) return t;
-    const inner = head(t[root]);
-    return inner.tag === former && contractions > 0 ? head(contract({ ...t, [root]: inner })) : t;
+    if (!root || budget <= 0) return t;
+    const inner = head(t[root], budget - 1);
+    return inner.tag === former ? head(contractRedex({ ...t, [root]: inner }, argument => argument), budget - 1) : t;
   };
   const spell = term => {
-    contractions = 256;
-    // The dimensions this term and its context name, which a definition
-    // shown by its label must not read as.
-    const named = new Set([...dimensions, ...dimensionNames(term)]);
-    // First the unfoldings, on the term as it was checked: each definition
-    // named as a dimension is its value, and each redex that makes is
-    // contracted (`exposed` above). Every substitution is made on what this
-    // pass gives, before anything is spelled out: a path clause spelled out
-    // has no family, which a substitution cannot read.
-    const unfolded = new WeakMap();
-    const unfold = (t, depth = 0) => {
-      if (!t || typeof t !== "object") return t;
-      if (unfolded.has(t)) return unfolded.get(t);
-      let result = t;
-      if (t.tag === "DefRef" && depth < 16 && named.has(definitions.label(t.name)) && definitions.value(t.name))
-        result = mark(unfold(added(definitions.value(t.name)), depth + 1));
-      else {
-        for (const [key, value] of Object.entries(t)) {
-          const changed = unfold(value, depth);
-          if (changed !== value) {
-            if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
-            result[key] = changed;
-          }
-        }
-        if (exposed.has(t)) exposed.add(result);
-        const [root, former] = spine[t.tag] ?? [];
-        if (root && exposed.has(result[root]) && contractions > 0) {
-          const value = head(result[root]);
-          if (value.tag === former && contractions > 0) result = mark(unfold(added(contract({ ...result, [root]: value })), depth + 1));
-        }
-      }
-      unfolded.set(t, result);
-      return result;
-    };
-    // An unfolded value a binder is added around, as an eta-reduced clause
-    // that is a definition named as a dimension: its weak head, unfolded in
-    // turn, so that the function or path it is takes the binder itself; in a
-    // clause, at each binder it takes.
-    const weakHead = value => {
-      const reduced = head(value);
-      return reduced === value ? value : mark(unfold(added(reduced)));
-    };
-    const settle = value => exposed.has(value) ? weakHead(value) : value;
-    // Then the spelling, which substitutes into nothing it has spelled: an
-    // eliminator or a case analysis is spelled before its parts, which are
-    // then spelled in turn. Shared syntax is spelled once for each place it
-    // can occur in: as the function an application applies, or anywhere
-    // else.
+    // An eliminator or a case analysis is spelled before its parts, which
+    // are then spelled in turn, so that a substitution, a motive's head or
+    // induction's renaming, never meets syntax already spelled out: a path
+    // clause spelled out has no family, which a substitution cannot read.
+    // Shared syntax is spelled once for each place it can occur in: as the
+    // function an application applies, or anywhere else.
     const memo = [new WeakMap(), new WeakMap()];
     const go = (t, applying = false) => {
       if (!t || typeof t !== "object") return t;
@@ -490,7 +421,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
       if (table.has(t)) return table.get(t);
       let result = t;
       if (t.tag === "SumRec")
-        result = { ...t, motive: applied(settle(t.motive), "z"), left: applied(settle(t.left), "a"), right: applied(settle(t.right), "b") };
+        result = { ...t, motive: applied(t.motive, "z"), left: applied(t.left, "a"), right: applied(t.right, "b") };
       if (t.tag === "Elim") {
         let motive = t.motive;
         if (motive && motive.tag !== "Lam") {
@@ -498,15 +429,15 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
           // another is applied to a new variable of the domain its type
           // gives.
           const reduced = head(motive);
-          if (reduced.tag === "Lam") motive = unfold(added(reduced));
+          if (reduced.tag === "Lam") motive = added(reduced);
           else {
             const of = domain(motive);
-            motive = applied(motive, "z", of ? unfold(added(of)) : null);
+            motive = applied(motive, "z", of ? added(of) : null);
           }
         }
         const constructors = symbols[t.signature]?.constructors;
         const clauses = constructors?.length === t.clauses?.length
-          ? t.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], t.signature), weakHead))
+          ? t.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], t.signature)))
           : t.clauses;
         result = { ...t, motive, clauses };
         const induction = inductionBinders(result);
@@ -537,7 +468,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
       table.set(t, result);
       return result;
     };
-    return go(unfold(term));
+    return go(term);
   };
   return terms.map(spell);
 }
@@ -619,5 +550,36 @@ export function labelsShown(label) {
 // display's beta budget.
 export function forSource(terms, { definitions, symbols, names = new Map(), dimensions, reduce = 256 }) {
   const context = contextDimensions(dimensions);
-  return readableDimensions(displayTerm(spelledOut(terms, { definitions, symbols, dimensions: context }), reduce, names), context);
+  const named = readableDimensions(displayTerm(spelledOut(terms, { definitions, symbols, dimensions: context }), reduce, names), context);
+  return qualified(named, new Set([...context, ...named.flatMap(term => [...dimensionNames(term)]), ...names.values()]), { definitions, symbols });
+}
+
+// 4. Once names are settled, a definition, type or constructor whose label
+// the text shows for something that keeps its name, a dimension of the
+// context or of the terms, or a free variable the caller names, is marked
+// `qualified`: the printer writes it module::name
+// (web/reference/first-proof.html#qualified-names), which no binder
+// shadows, and kernel notation by its kernel name. `shown` holds those
+// names; the labels are the printer's.
+export function qualified(terms, shown, { definitions, symbols = {} }) {
+  if (!shown.size) return terms;
+  const label = t => t.tag === "DefRef" ? definitions.label(t.name)
+    : t.tag === "Sort" ? symbols[t.signature]?.name ?? localName(t.signature) : t.tag === "Con" ? t.name : null;
+  const copies = new WeakMap();
+  const mark = t => {
+    if (!t || typeof t !== "object") return t;
+    if (copies.has(t)) return copies.get(t);
+    let result = t;
+    for (const [key, value] of Object.entries(t)) {
+      const changed = mark(value);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
+        result[key] = changed;
+      }
+    }
+    if (!Array.isArray(result) && shown.has(label(result))) result = { ...result, qualified: true };
+    copies.set(t, result);
+    return result;
+  };
+  return terms.map(mark);
 }

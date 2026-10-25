@@ -106,7 +106,7 @@ has a default, and each refuses to run without them; the translator shows a
 term in the scope it was met in, a view in the view's dimensions, and a closed
 term in `[]`.
 
-Every source-text display names its terms by `forSource`, in three passes, in
+Every source-text display names its terms by `forSource`, in four passes, in
 this order:
 
 1. `spelledOut` writes into the terms what the text shows and the terms do not
@@ -114,27 +114,29 @@ this order:
    motive, a definition kept by name, as a function of the domain its checked
    type gives, `λ (z : D). M(z)`; a clause with fewer arguments, hypotheses or
    dimensions than its constructor takes; an eliminator written as a function,
-   `λ (x : D). e(x)`); the one name induction's `as k` gives its motive's
+   `λ (x : D). e(x)`), and the one name induction's `as k` gives its motive's
    variable and its predecessor (`inductionBinders`), both binders renamed to
-   it apart from what either would capture; and the value of a definition
-   named as a dimension of the term or of its context, since no source
-   spelling tells the two apart and the dimension keeps its name. An unfolded
-   value contracts the redexes it makes at a spine's root, `q(tt) @ j`, and
-   no other: a redex the term has of its own, as an ascription, is kept. The
-   unfoldings and their contractions come first, on the term as it was
-   checked; the spelling follows, each eliminator before its parts, so that no
-   substitution meets syntax already spelled out (a spelled path clause has no
-   family). What it adds, an unfolded value, a recovered domain, a motive
-   reduced to its function, it spells out in turn; its new names are apart
-   from every name of the terms shown together. Each change is an
-   eta-expansion, a renaming of a bound variable, an unfolding or a reduction.
+   it apart from what either would capture. Each eliminator is spelled before
+   its parts, so that no substitution meets syntax already spelled out (a
+   spelled path clause has no family). What it adds, a recovered domain, a
+   motive reduced to its function, it spells out in turn; its new names are
+   apart from every name of the terms shown together. Each change is an
+   eta-expansion, a renaming of a bound variable or a reduction of a motive's
+   head.
 2. `displayTerm` names every term and level binder apart from the labels and
    dimensions the term shows and the variables in its scope, never shadowing
    one around it. Induction's two binders, one name over one scope, are named
    alike. Its beta reduction for messages contracts each application of a
-   lambda and every other redex its own contractions make, by the same rule.
+   lambda and every other redex its own contractions make: a path or a pair
+   it puts at the root of a path application or a projection.
 3. `readableDimensions` names the dimensions decoding left unnamed apart from
    every name shown, keeping the context's.
+4. `qualified` marks a definition, type or constructor whose label the text
+   shows for something that keeps its name, a dimension of the context or of
+   the terms, or a free variable whose name the caller gives. The printer
+   writes it as its module's name for it, `circle::d0`
+   ([qualified names](reference/first-proof.html#qualified-names)), which no
+   binder shadows: `path d0 => circle::d0 @ d0`.
 
 `sourceText` then prints the names it is given. A form the term does not spell
 out, as an eta-reduced clause in a term not named so, prints in kernel
@@ -156,15 +158,16 @@ them. #311's rounds 5 to 7 found three more classes, each a mechanism outside
 that design: displays given another context's dimensions or none, through a
 default (kernel-notation goals, a judgement graph's context fragments, the
 migration tool); induction's shared name, which the printer still chose after
-the names were settled, with a capture check that each round found too narrow
-or too wide; and a rule that contracted a spine redex wherever a root had
-changed, an ascription's too. The context's dimensions became a required
-input of every display, the shared name the naming pass's, and the unfolding
-contracts only what it exposes. #312's review then found the marks of what an
-unfolding exposes too narrow or too wide (a substituted ascription, a shared
-node, the parts of a clause below its binders), and a substitution into a
-spelled path clause, which has no family: the unfoldings now run before the
-spelling, and each mark is a copy of its own.
+the names were settled; and the unfolding of a definition named as a
+dimension, which had made redexes to contract. The context's dimensions
+became a required input of every display, and the shared name the naming
+pass's. The unfolding was first made to contract exactly the redexes it made,
+which every round of #312's review then found wrong at another stage the
+tracking passed through (substituted arguments, application spines, shared
+syntax, clauses, the display's beta reduction, the order of the passes).
+Unfolding answered a naming problem with a reduction. Qualifying answers it
+with a name: the source now spells such a definition `module::name`, and
+nothing is unfolded.
 
 Kernel notation (`cubicalText`, `cubical-notation.mjs`) adds no binder: the
 inspection's `expressionText`, the workbench, the proof page and judgement
@@ -172,7 +175,8 @@ graphs (`displayGoal` with `kernel`) show a term as it was checked, spelling
 kernel variables by their source names, and name binders as they print, apart
 from the definitions, types and constructors their bodies show
 (`labelsShown`); a definition named as a dimension of the term or of the
-view's context (`dimensionNames`) shows by its kernel name, `main__i`.
+view's context (`dimensionNames`), or marked qualified, shows by its kernel
+name, `main__i`.
 
 A display change is tested by reading its output back:
 `tests/display-naming.test.mjs` prints the folded normal form of a corpus of
