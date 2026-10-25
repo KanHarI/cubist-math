@@ -281,7 +281,7 @@ def hypothesis(n : UNat) : UNat := induction n return UNat { zero => zero; succ(
     assert.equal(scope.equal(result.env.get("picked"),translator.term(parse("succ(zero)",true),scope)),true);
     const term=result.declarations.find(d=>d.name==="hypothesis").term;
     assert.doesNotMatch(JSON.stringify(term),/\\u0000id/);
-    const shown=program.checker.displayText(term,1000);
+    const shown=program.checker.displayText(term,[],{width:1000});
     assert.match(shown,/with h/);
     assert.doesNotMatch(shown,/id \[/);
   }

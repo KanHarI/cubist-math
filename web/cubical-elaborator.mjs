@@ -5,7 +5,7 @@ import { T, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
-import { displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
+import { contextDimensions, displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
@@ -224,7 +224,7 @@ export class NativeCubicalElaborator {
       // Both types named together, once, so that a variable and a dimension
       // read alike in each, apart from every label either prints.
       const [found, expected] = this.displayTexts([error.mismatch.found, error.mismatch.expected]
-        .map(handle => this.syntax.decode(handle, dimensions)));
+        .map(handle => this.syntax.decode(handle, dimensions)), dimensions);
       error.message = `Type mismatch: found ${found}, expected ${expected}.`;
     } catch { /* Keep the kernel's message. */ }
     return error;
@@ -245,8 +245,8 @@ export class NativeCubicalElaborator {
   // How forSource (display-naming.mjs) reads this checker: definitions'
   // checked types and values from the kernel, each decoded once per display,
   // and their labels; declared types' constructors; and the dimensions of
-  // the context a term is shown in, which the caller may give.
-  displayNaming(dimensions = this.dimensions, reduce = 256, names = new Map()) {
+  // the context a term is shown in, which the caller gives.
+  displayNaming(dimensions, reduce = 256, names = new Map()) {
     const decoded = new Map();
     const part = which => name => {
       const key = `${which} ${name}`;
@@ -257,7 +257,7 @@ export class NativeCubicalElaborator {
       return decoded.get(key);
     };
     const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name) };
-    return { definitions, symbols: this.displayNames, names, reduce, dimensions: [...(dimensions?.keys?.() ?? [])] };
+    return { definitions, symbols: this.displayNames, names, reduce, dimensions: contextDimensions(dimensions) };
   }
 
   implicitDisplay(name) {
@@ -286,20 +286,23 @@ export class NativeCubicalElaborator {
   // translated, L2.10j).
   // `reduce` bounds the beta reductions made for display: 0 shows the term
   // as it is.
-  // Each display path (displayText, displayTexts, displayGoal) names its
-  // terms by forSource, then prints: the printer chooses no name.
-  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256, dimensions = this.dimensions) {
+  // Each display path (displayText, displayTexts, displayGoal, kernelText)
+  // names its terms in the context they are shown in, whose dimensions its
+  // caller gives (contextDimensions): source text by forSource, kernel
+  // notation by displayTerm and cubicalText. The printer chooses no name.
+  displayText(term, dimensions, { width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256 } = {}) {
     return this.printed(forSource([term], this.displayNaming(dimensions, reduce))[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
-  kernelText(term, width = 160) {
-    const text = cubicalText(readableDimensions([displayTerm(term, 0)])[0], this.displayNames);
+  kernelText(term, dimensions, width = 160) {
+    const context = contextDimensions(dimensions);
+    const text = cubicalText(readableDimensions([displayTerm(term, 0)], context)[0], this.displayNames, { dimensions: context });
     return text.length > width ? `${text.slice(0, width - 1)}…` : text;
   }
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints. `names` gives
   // free variables their names, as displayTerm takes them.
-  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map(), dimensions = this.dimensions) {
+  displayTexts(terms, dimensions, { width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map() } = {}) {
     return forSource(terms, this.displayNaming(dimensions, 256, names)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
@@ -309,22 +312,23 @@ export class NativeCubicalElaborator {
   }
   // A goal, and the term a statement built for it, shown with one renaming,
   // so the context's names, the target and the term agree.
-  // `print` is sourceText by default; cubicalText gives mathematical notation.
-  // A derivation shows its terms as they are: `reduce` false keeps redexes.
+  // Source text, or with `kernel` mathematical notation, as a judgement
+  // graph shows terms. A derivation shows its terms as they are: `reduce`
+  // false keeps redexes.
   // `notation.selection` names the notation selected at the goal (L2.10d).
-  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}, dimensions = this.dimensions) {
+  displayGoal(context, dimensions, target, built = null, { width = 400, kernel = false, reduce = true, notation = {} } = {}) {
+    const names = contextDimensions(dimensions);
     // Goals can share large terms; the printer stops after `width` nodes too.
-    // A kernel-notation print is given the context's dimensions, so that a
+    // Kernel notation is given the context's dimensions, so that a
     // definition named as one shows by its kernel name (cubicalText).
-    const printed = term => print ? print(term, this.displayNames, { dimensions: [...(dimensions?.keys?.() ?? [])] })
+    const printed = term => kernel ? cubicalText(term, this.displayNames, { dimensions: names })
       : sourceText(term, this.displayNames, width, notation);
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    // Source text is named by forSource; another print, as cubicalText for
-    // a judgement graph, shows the term as it was checked, its names only
-    // settled.
-    let [shown] = print ? [displayTerm(chained, reduce ? 256 : 0)] : forSource([chained], this.displayNaming(dimensions, reduce ? 256 : 0));
+    // Source text is named by forSource; kernel notation shows the term as
+    // it was checked, its names only settled.
+    let [shown] = kernel ? [displayTerm(chained, reduce ? 256 : 0)] : forSource([chained], this.displayNaming(names, reduce ? 256 : 0));
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       // A universe variable's entry is its bound: U < UU0.

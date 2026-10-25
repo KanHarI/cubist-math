@@ -91,7 +91,7 @@ export class CubicalProgram {
   assumptionSymbols() {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
-      verified: true, type: cubicalText(type, this.symbols), axioms: [binding],
+      verified: true, type: cubicalText(type, this.symbols, { dimensions: [] }), axioms: [binding],
       description: "An explicit logical assumption from the library. Its full signature is shown in the Axioms section.",
     }]));
   }
@@ -256,7 +256,7 @@ export class CubicalProgram {
           .map(item => [item.term.tag === "Var" ? item.term.name
             : item.term.tag === "U" && item.term.level?.tag === "Var" ? item.term.level.name : null, { name: item.node.name }])
           .filter(([variable]) => variable));
-        whenRead(info, "type", () => cubicalText(d.type, Object.assign(Object.create(symbols), variables)));
+        whenRead(info, "type", () => cubicalText(d.type, Object.assign(Object.create(symbols), variables), { dimensions: [] }));
       } else info.type = reason;
       this.symbols[binding] = info;
       if (!verified) this.gaps.push({ module: name, name: d.name,
@@ -565,7 +565,7 @@ export class CubicalProgram {
     const { eliminator } = signature;
     const terms = [signature.former, ...signature.constructors.map(c => c.type),
       ...(eliminator ? [eliminator.motiveType, ...eliminator.clauses.map(c => c.type)] : [])];
-    const texts = this.checker.displayTexts(this.qualifyGenerated(terms), Infinity, 1000000, notation);
+    const texts = this.checker.displayTexts(this.qualifyGenerated(terms), [], { width: Infinity, limit: 1000000, notation });
     let next = 0;
     const text = () => texts[next++];
     return { ...signature, former: text(),
@@ -636,8 +636,8 @@ export class CubicalProgram {
       const built = rest ? without(record.proof, rest) : record.proof;
       return { start: record.statement.start, end: record.statement.end, kind: record.statement.kind,
         declaration: record.declaration, closes: !record.next,
-        ...this.checker.displayGoal(record.goal.scope.shownContext([record.goal.target, built]), record.goal.target, built, 400, null, true,
-          notationForScope(record.goal.scope)) };
+        ...this.checker.displayGoal(record.goal.scope.shownContext([record.goal.target, built]), record.goal.scope.dimensions,
+          record.goal.target, built, { width: 400, notation: notationForScope(record.goal.scope) }) };
     }).sort((a, b) => a.start - b.start);
   }
   // Check one more module on top of the loaded ones, as a REPL entry does,
@@ -716,7 +716,7 @@ export class CubicalProgram {
     for (const [name, value] of Object.entries(variableNames)) symbols[name] = { ...value, local: true };
     const view = { backend: "cubical", name: binding,
       expression: checked.term, type: checked.type,
-      expressionText: cubicalText(checked.term, this.symbols), typeText: cubicalText(checked.type, this.symbols),
+      expressionText: cubicalText(checked.term, this.symbols, { dimensions }), typeText: cubicalText(checked.type, this.symbols, { dimensions }),
       dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,
         binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
@@ -738,7 +738,7 @@ export class CubicalProgram {
       // Keep proof blocks compact, with their checked bodies available to inspect.
       if (declaration?.body) view.folded.reference = { tag: "DefRef", name: binding };
       if (!view.statement) {
-        let conclusion = cubicalMathTree(view.folded.type, symbols), raw = view.folded.type;
+        let conclusion = cubicalMathTree(view.folded.type, symbols, undefined, { dimensions }), raw = view.folded.type;
         const parameters = [];
         while (conclusion.kind === "Pi" || conclusion.kind === "LevelPi") {
           const level = conclusion.kind === "LevelPi";
@@ -756,21 +756,22 @@ export class CubicalProgram {
     view.locals = aliases.filter(alias => alias.term.tag !== "Var" && alias.binding !== binding && alias.binding !== view.sourceBinding)
       .map(({ name, binding }) => ({ name, binding }));
     // A parameter shows its source name, as in the statement and the context.
-    view.boundary = this.squareBoundary(view.type, new Map(Object.entries(variableNames).map(([variable, { name }]) => [variable, name])));
+    view.boundary = this.squareBoundary(view.type, dimensions, new Map(Object.entries(variableNames).map(([variable, { name }]) => [variable, name])));
     return view;
   }
   // A square's boundary, for the inspector (L2.8): where a type, under its
   // parameters, is Square(a0_, a1_, a_0, a_1) of library/squares, its
-  // four edges and four corners, as messages show them, with the free
-  // variables `names` gives shown by those names; or null.
-  squareBoundary(type, names = new Map()) {
+  // four edges and four corners, as messages show them in the context of
+  // `dimensions`, with the free variables `names` gives shown by those
+  // names; or null.
+  squareBoundary(type, dimensions, names = new Map()) {
     let body = type;
     while (body?.tag === "Pi" || body?.tag === "LPi") body = body.body;
     const args = [];
     for (; body?.tag === "App"; body = body.fn) args.unshift(body.arg);
     if (body?.tag !== "LApp" || body.fn?.tag !== "DefRef" || body.fn.name !== "squares__Square" || args.length !== 9) return null;
     const [, a00, a01, a10, a11, left, right, bottom, top] = args;
-    const [corner00, corner01, corner10, corner11, ...edges] = this.checker.displayTexts([a00, a01, a10, a11, left, right, bottom, top], 120, undefined, undefined, names);
+    const [corner00, corner01, corner10, corner11, ...edges] = this.checker.displayTexts([a00, a01, a10, a11, left, right, bottom, top], dimensions, { width: 120, names });
     return { corners: { a00: corner00, a01: corner01, a10: corner10, a11: corner11 },
       edges: { left: edges[0], right: edges[1], bottom: edges[2], top: edges[3] } };
   }

@@ -367,8 +367,8 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
   assert.throws(() => derive({ tag: "LLam", name: "x", body: U(v("x")) }, { tag: "LPi", name: "x", body: U(v("x")) }),
     /Type mismatch|not included/);
   // Displays: kernel notation, and the source syntax L1.1 will parse.
-  assert.equal(cubicalText(idType), "Π (y < ω), Π (B : y), (B → B)");
-  assert.equal(cubicalText(atOne), "(λ (x < ω). λ (A : x). λ (a : A). a)(U1, U0, Unit)");
+  assert.equal(cubicalText(idType, {}, { dimensions: [] }), "Π (y < ω), Π (B : y), (B → B)");
+  assert.equal(cubicalText(atOne, {}, { dimensions: [] }), "(λ (x < ω). λ (A : x). λ (a : A). a)(U1, U0, Unit)");
   assert.equal(sourceText(idType), "forall y < UU0. forall B : y. B -> B");
   assert.equal(sourceText(renamed), "forall w < UU0. forall x < UU0. next(max(w, x))");
 });

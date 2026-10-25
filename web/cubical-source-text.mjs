@@ -1,5 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
-import { termBinders, dimensionScope } from "./translator/term-shape.mjs";
+import { inductionBinders } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName } from "./translator/names.mjs";
@@ -85,50 +85,16 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const text = BigInt(digits).toString(10);
     return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
   };
-  // A motive's variable shown under another name; a binder of the same name
-  // inside shadows the renaming.
-  const renames = new Map();
-  const renaming = (from, to, fn) => {
-    if (from === to) return fn();
-    renames.set(from, to);
-    try { return fn(); } finally { renames.delete(from); }
-  };
   // The variables bound where the printer is. A bound variable shows as its
   // binder does; only a free one is a definition or an assumption, shown by
   // its label: a binder a__b is not shown as b.
   const bound = new Map();
   const under = (names, fn) => {
     const list = [names].flat();
-    const shadowed = list.filter(name => renames.has(name)).map(name => [name, renames.get(name)]);
-    for (const [name] of shadowed) renames.delete(name);
     for (const name of list) bound.set(name, (bound.get(name) ?? 0) + 1);
-    try { return fn(); } finally {
-      for (const name of list) bound.set(name, bound.get(name) - 1);
-      for (const [name, to] of shadowed) renames.set(name, to);
-    }
+    try { return fn(); } finally { for (const name of list) bound.set(name, bound.get(name) - 1); }
   };
-  const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
-  // Whether `from` can be shown as `to` throughout a term: `to` is free in
-  // it nowhere, and no binder or dimension named `to` in it has `from` free
-  // in its scope, which it would capture. A binder's scope is the children
-  // it binds in: a Pi's domain is outside it, and a binder of `from` hides
-  // `from` only there. Induction's `as k` shows the motive's variable by the
-  // predecessor's name only so.
-  const renamable = (term, from, to) => {
-    if (from === to) return true;
-    if (mentions(term, to)) return false;
-    const seen = new WeakSet();
-    const capture = t => {
-      if (!t || typeof t !== "object" || seen.has(t)) return false;
-      seen.add(t);
-      const binder = termBinders.has(t.tag) ? { name: t.name, keys: ["body"] }
-        : dimensionScope.has(t.tag) ? { name: t.dim, keys: dimensionScope.get(t.tag) } : null;
-      return Object.entries(t).some(([key, child]) => !binder?.keys.includes(key) ? capture(child)
-        : termBinders.has(t.tag) && binder.name === from ? false
-        : binder.name === to && mentions(child, from) || capture(child));
-    };
-    return !capture(term);
-  };
+  const variable = name => bound.get(name) ? name : label(name);
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
   // An operation printed with its notation's operator, at its level: ^
@@ -148,13 +114,15 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   };
   const atom = text => [text, LEVEL.atom];
   // A form without a source spelling is cubicalText's. It is given the
-  // variables bound around it, and the renamed ones, as this printer shows
-  // them: it shows them alike, and keeps its own binders apart from those
-  // free in their bodies. Definitions keep their labels.
+  // variables bound around it, which it shows alike, and keeps its own
+  // binders apart from those free in their bodies. Definitions keep their
+  // labels.
   const fallback = t => {
-    const scope = new Map([...renames.keys(), ...[...bound.keys()].filter(name => bound.get(name))]
-      .map(name => [name, variable(name)]));
-    const text = cubicalText(t, symbols, { scope });
+    const scope = new Map([...bound.keys()].filter(name => bound.get(name)).map(name => [name, variable(name)]));
+    // forSource has unfolded each definition named as a dimension of the
+    // term or of its context: none is left here for kernel notation to
+    // qualify.
+    const text = cubicalText(t, symbols, { scope, dimensions: [] });
     return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
   };
   // A declared type's eliminator applied to a value, as the match or the
@@ -253,9 +221,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // in the shape its `induction` spelling reads, `shared` the name the
       // application case below found for both, which neither captures.
       case "NatInduction": {
-        const { motive, step, shared: k } = t, h = step.body.name;
-        const type = under(motive.name, () => renaming(motive.name, k, () => show(motive.body)));
-        const successor = under([step.name, h], () => renaming(step.name, k, () => show(step.body.body)));
+        const { motive, step } = t, k = motive.name, h = step.body.name;
+        const type = under(k, () => show(motive.body));
+        const successor = under([k, h], () => show(step.body.body));
         // `as k` is written only where the motive or the successor clause uses k.
         const named = mentions(motive.body, motive.name) || mentions(step.body, step.name);
         return [`induction ${show(t.value)}${named ? ` as ${k}` : ""} return ${type} { zero => ${show(t.zero)}; `
@@ -284,16 +252,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
         // spelling, where `as k` binds the motive's variable and the
-        // predecessor as one: only where the motive shows the predecessor's
-        // name for nothing else. Otherwise it prints as the declared match.
-        const elim=t.tag==="App"&&t.fn.tag==="Elim"?t.fn:null,step=elim?.clauses?.[1];
-        if(elim?.signature==="unat__UNat"&&elim.clauses.length===2&&elim.motive?.tag==="Lam"&&step?.tag==="Lam"&&step.body?.tag==="Lam") {
-          // The predecessor's name, where the motive takes it; else the
-          // motive's, where the successor clause takes it.
-          const shared=renamable(elim.motive.body,elim.motive.name,step.name)?step.name
-            :renamable(step.body,step.name,elim.motive.name)?elim.motive.name:null;
-          if(shared)return print({tag:"NatInduction",motive:elim.motive,zero:elim.clauses[0],step,value:t.arg,shared});
-        }
+        // predecessor as one: where displayTerm named them alike
+        // (inductionBinders). Otherwise it prints as the declared match.
+        const elim=t.tag==="App"&&t.fn.tag==="Elim"?t.fn:null,binders=inductionBinders(elim);
+        if(binders&&binders[0].name===binders[1].name)
+          return print({tag:"NatInduction",motive:elim.motive,zero:elim.clauses[0],step:elim.clauses[1],value:t.arg});
         if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.
         const args = [];

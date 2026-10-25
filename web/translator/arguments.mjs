@@ -523,7 +523,7 @@ class ArgumentSolver {
   }
   // Why a constraint failed, in words.
   mismatch({smaller, larger, origin}) {
-    const [found, wanted] = this.t.shownTogether([this.display(this.zonk(smaller)), this.display(this.zonk(larger))]);
+    const [found, wanted] = this.t.shownTogether([this.display(this.zonk(smaller)), this.display(this.zonk(larger))], this.scope);
     return origin.expected ? `the call has type ${found}, where ${wanted} is expected`
       : `${this.source(origin.slot.node)} has type ${found}, where its ${this.describe(origin.slot)} has type ${wanted}`;
   }
@@ -542,7 +542,7 @@ class ArgumentSolver {
     const type = this.zonk(slot.domain), result = this.scope.attempt(value, type);
     if (result.ok) { this.solution.set(slot.variable, result.term); return; }
     if (result.failure !== "mismatch") throw result.error;
-    const [shown, typeText] = this.t.shownTogether([value, type]);
+    const [shown, typeText] = this.t.shownTogether([value, type], this.scope);
     throw this.scope.unit.locate(Error(`The hole for ${this.describe(slot)} of ${this.called} was solved as ${shown}, which does not have its type ${typeText}.`), slot.node ?? this.call.fn);
   }
   // A hole whose type states an h-level, as a model's setness field left out
@@ -562,14 +562,14 @@ class ArgumentSolver {
   undetermined(slot) {
     if (slot.universe)
       return this.scope.unit.locate(Error(`Nothing determines the universe ${slot.parameter ?? "argument"} of ${this.called}: no argument's type bounds it, and the call's type depends on it. Give it explicitly.`), slot.node ?? this.call.fn);
-    const type = this.t.shown(this.display(this.zonk(slot.domain)));
+    const type = this.t.shown(this.display(this.zonk(slot.domain)), this.scope);
     const candidate = this.ambiguous.get(slot.variable), {called} = this, parameter = this.describe(slot);
     const escaping = this.escaping.get(slot.variable);
     const clash = this.clashes.length ? ` (${this.mismatch(this.clashes[0])})` : "";
     const error = slot.kind === "argument"
       ? Error(`The argument ${this.source(slot.node)} of ${called} needs the type of its ${parameter}, ${type}, which mentions a hole nothing determines${clash}. Give the hole explicitly.`)
-      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate.lower[0] ?? candidate.upper[0])} fits, and so would ${candidate.lower.length ? "a larger" : "a smaller"} universe${clash}. Give it explicitly.`)
-      : escaping ? Error(`The ${parameter} of ${called} would be ${this.t.shown(this.display(escaping))}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
+      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate.lower[0] ?? candidate.upper[0], this.scope)} fits, and so would ${candidate.lower.length ? "a larger" : "a smaller"} universe${clash}. Give it explicitly.`)
+      : escaping ? Error(`The ${parameter} of ${called} would be ${this.t.shown(this.display(escaping), this.scope)}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
       : Error(`Nothing determines the ${parameter} of ${called}, of type ${type}: not the other arguments' types, nor the type expected of the call${clash}. Give it explicitly.`);
     return this.scope.unit.locate(error, slot.node ?? this.call.fn);
   }
@@ -591,7 +591,7 @@ class ArgumentSolver {
       if (!slot.variable || slot.kind === "argument") continue;
       // A universe is shown as the universe it is.
       const value = slot.universe ? T.universe(this.solution.get(slot.variable)) : this.zonk(T.variable(slot.variable));
-      const shown = slot.universe ? universeText(this.solution.get(slot.variable)) : t.shown(value);
+      const shown = slot.universe ? universeText(this.solution.get(slot.variable)) : t.shown(value, scope);
       if (slot.kind === "hole")
         t.reference(scope, {...slot.node, name: "_", expressionSite: true, role: "inferred argument",
           description: `The ${slot.universe ? `universe ${slot.parameter ?? "argument"}` : this.describe(slot)} of ${this.called}, inferred: ${shown}.`}, value);

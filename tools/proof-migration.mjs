@@ -17,7 +17,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
-import { displayTerm } from "../web/cubical-elaborator.mjs";
+import { forSource } from "../web/display-naming.mjs";
 import { validateLedger, ledgerMatches } from "./migration-ledger.mjs";
 import { canonicalHasher } from "./canonical-hash.mjs";
 
@@ -190,9 +190,13 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     return type ? `${label}:${snapshotHash(type)}` : label;
   }});
   const readableBindings = mapDefinitions(originalName, originalName);
-  // Pin text uses the explicit unary view. Both the rendered text and the
-  // checked structural hash remain exact ledger requirements.
-  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)),{},4000,{selection:"unat"})});
+  // Pin text uses the explicit unary view, and labels as the kernel names
+  // them, no symbols, so that a pin reads alike however the elaborator
+  // displays terms; it is named as every display is (forSource), closed.
+  // Both the rendered text and the checked structural hash remain exact
+  // ledger requirements.
+  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(forSource([readableBindings(term)],
+    {...checker.displayNaming([]),symbols:{}})[0],{},4000,{selection:"unat"})});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {

@@ -70,9 +70,9 @@ let program, view, binding, checkedModule, session = null, sessionProgram = null
 // What import can load, for the REPL's /modules.
 const importable = async () => moduleListing;
 function show() {
-  const shown = view.folded ?? view;
-  for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);
-  console.log(`${view.name}\nExpression: ${cubicalText(shown.reference ?? shown.expression, view.symbols)}\nType: ${cubicalText(shown.type, view.symbols)}`);
+  const shown = view.folded ?? view, options = { dimensions: (view.dimensions ?? []).map(([name]) => name) };
+  for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols, options)}`);
+  console.log(`${view.name}\nExpression: ${cubicalText(shown.reference ?? shown.expression, view.symbols, options)}\nType: ${cubicalText(shown.type, view.symbols, options)}`);
 }
 // Entries run in a session over the checked module, or over an empty program
 // before any check. A new check keeps the session: its entries are replayed.

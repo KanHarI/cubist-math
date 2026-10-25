@@ -75,7 +75,7 @@ test("retained inductives elaborate exact self, earlier constructors and complet
   assert.deepEqual(value.slots.map(slot=>slot.source),["A"]);
   assert.deepEqual(value.constructors[0].fields,["Two","x","p","a"]);
   assert.doesNotMatch(JSON.stringify(result.declarations[1].inductive),/\\u0000id/);
-  assert.doesNotMatch(program.checker.displayText(result.declarations.find(d=>d.name==="made").term,1000),/id \[/);
+  assert.doesNotMatch(program.checker.displayText(result.declarations.find(d=>d.name==="made").term,[],{width:1000}),/id \[/);
   const scope=new Scope(translator.unit(),new Map(),result.env);
   assert.equal(scope.equal(result.env.get("chained"),translator.term(parse("chain(made)",true),scope)),true);
   assert.equal(scope.equal(result.env.get("chained"),result.env.get("made")),false);

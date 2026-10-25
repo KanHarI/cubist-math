@@ -235,7 +235,7 @@ function retainedReceiverNotation(t,scope,node) {
 
 function invalidModelSelection(t,scope,site,receiver) {
   return scope.unit.locate(Error(`use selects a model of a theory, such as m : Group(U0); this is a value of type ${
-    t.shown(scope.infer(receiver).type)}.`),site);
+    t.shown(scope.infer(receiver).type,scope)}.`),site);
 }
 
 // The scope with the model `node` selected, by use m; or m.(e) (L2.4c):

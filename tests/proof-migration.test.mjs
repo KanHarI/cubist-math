@@ -7,6 +7,7 @@ import { verifyMigration } from "../tools/proof-migration.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
 const original = `import primes; use unat;
@@ -153,6 +154,28 @@ def concatenated_at(A : U0, x, y : A, p, q : x = y, e : p = q) : x = x := at(e, 
     readEdited: async () => formatCubist(identical.source) });
   assert.deepEqual(report.failures, []);
   assert.equal(report.identical, 2);
+});
+
+// A snapshot is named as every display is (forSource), without symbols:
+// induction prints as induction, its motive's variable and its predecessor
+// one name, though the motive and the successor clause each bind the
+// other's name, and the text reads back as the same function.
+test("a snapshot prints induction as the source does", async t => {
+  const before = `import unat;
+use unat;
+def f(n : UNat) : forall k : UNat. n = n := induction n as m return forall k : UNat. m = m { zero => fun k => refl(0); succ(k) with ih => fun (m : UNat) => refl(succ(k)); };
+`;
+  const after = before.replace("fun k => refl(0)", "fun k => (fun (p : 0 = 0) => p)(refl(0))");
+  const [report] = await verifyMigration({ modules: ["snapshot_fixture"], level: "types",
+    readOriginal: name => name === "snapshot_fixture" ? before : library(name), readEdited: async () => after });
+  assert.deepEqual(report.failures, []);
+  for (const { text } of [report.changes[0].oldValue, report.changes[0].newValue]) {
+    assert.match(text, /^fun \(n : UNat\) => induction n as k return /, text);
+    const { result } = await checkProgram(t, `${before}def back : forall n : UNat. forall k : UNat. n = n := ${text};
+def same : back = f := refl(f);
+`);
+    assert.deepEqual(result.gaps, [], text);
+  }
 });
 
 test("dependents are checked against edited definitions they mention", async () => {
