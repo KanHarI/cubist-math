@@ -9,6 +9,7 @@ import {T,finiteLevel,freeNames,substituteTerm,substituteDimension,betaReduce} f
 import {interval as I} from "./lattice.mjs";
 import {repeatedName,bindingStem} from "./names.mjs";
 import {parameterGroups} from "../cubist/telescopes.mjs";
+import {qualifiedNamesIn} from "./qualified-names.mjs";
 
 export const INDUCTIVE_TAGS = new Set(["Inductive","InductiveSelf","InductiveConstructor"]);
 
@@ -77,6 +78,8 @@ export function lowerInductive(translator, d, scope) {
   // no data type or arity mentions the sort, so none depends on its level.
   const sortName = at.fresh(d.name.text), sortVariable = T.variable(sortName);
   const placeholder = T.universe(declared ?? { tag: "LConst", tier: 1, value: 0 });
+  // The qualified names the declaration writes, its own among them.
+  const written=qualifiedNamesIn(d);
   const declareLocal=(at,token,value,identity)=>{
     // Before admission these are variables in the provisional signature's
     // telescope. Record their introduction here, never from the final module.
@@ -84,10 +87,10 @@ export function lowerInductive(translator, d, scope) {
     const record=at.unit.scopePoints?(token.bindingId?registry.table.get(token.bindingId)
       :registry.declaration(identity).binding):null;
     let named=at.sourceBinding(token.text,value,record);
-    // Its qualified name too, where the declaration writes it, which until
-    // now held the declaration's own refusal (qualified-names.mjs).
+    // Its qualified name too, where the declaration writes it
+    // (qualified-names.mjs); a constructor not yet introduced stays refused.
     const qualified=`${translator.moduleName}::${token.text}`;
-    if(at.env.get(qualified)?.tag==="QualifiedFailure")named=named.alias(qualified,value);
+    if(written.has(qualified))named=named.alias(qualified,value);
     return record||!token.bindingId?named:named.alias(translator.identityAdapter.key(token.bindingId),value);
   };
   let inner = declareLocal(at.bind(sortName, placeholder),d.name,

@@ -87,16 +87,26 @@ export function constructorText(text, env, binding, names) {
 export const declaredIn = ast => new Set((ast.items ?? ast.declarations ?? []).filter(d => d.name)
   .flatMap(d => declaredNames(d).map(({ name }) => name)));
 
-// Why `name`, qualified, is available nowhere: its module declares it, or a
-// prefix of it, below the use, which is so where that is not available; its
+// Whether a prefix of `name`, qualified, is available in `env`, as main::m
+// of main::m.c: then `name` is a member of it, and one it lacks is refused
+// as any name's member is.
+export function availablePrefix(name, env) {
+  const [, module, local] = qualifiedName(name), parts = local.split(".");
+  return parts.slice(1).some((_, k) => {
+    const value = env.get(`${module}::${parts.slice(0, k + 1).join(".")}`);
+    return value && value.tag !== "QualifiedFailure";
+  });
+}
+
+// Why `name`, qualified, is available nowhere, with no prefix available
+// either: its module declares it, or a prefix of it, below the use; its
 // module is not imported; or it declares no such name. The module whose
 // scope this is is `current`, whose source declares `declaredHere` and
-// imports `imports`; `available` says whether a qualified spelling is
-// bound, and `declares` whether any available binding is a module's.
-function unavailable(name, { current, declaredHere = new Set(), imports = new Set(), available, declares }) {
+// imports `imports`; `declares` says whether any available binding is a
+// module's.
+function unavailable(name, { current, declaredHere = new Set(), imports = new Set(), declares }) {
   const [, module, local] = qualifiedName(name), parts = local.split(".");
-  const below = prefix => declaredHere.has(prefix) && !available(`${module}::${prefix}`);
-  if (module === current && parts.some((_, k) => below(parts.slice(0, k + 1).join("."))))
+  if (module === current && parts.some((_, k) => declaredHere.has(parts.slice(0, k + 1).join("."))))
     return Error(`${name} is declared below its use: a declaration uses only the declarations above it.`);
   if (!(module === current || imports.has(module) || declares(module)))
     return Error(`${name} names a declaration of ${module}, which is not imported here: import ${module};`);
@@ -105,7 +115,6 @@ function unavailable(name, { current, declaredHere = new Set(), imports = new Se
 const ofModule = (record, module) => ["declaration", "notation"].includes(record?.role) && record.origin?.module === module;
 // In a module's environment, whose bindings are keyed by identity.
 export const unknownQualifiedName = (name, env, { adapter, ...options }) => unavailable(name, { ...options,
-  available: spelled => env.has(spelled) && env.get(spelled).tag !== "QualifiedFailure",
   declares: module => [...env.keys()].some(key => key.startsWith("\u0000id ") && ofModule(adapter.bindingForKey(key), module)) });
 
 // The lexical entries of the qualified names `syntax` writes, for a context
@@ -127,7 +136,7 @@ export function qualifiedLexical(syntax, values, table, notations, scope) {
     }
     if (found) entries.push(found);
     else if (!notations?.some(entry => entry.name === name))
-      entries.push([name, failedResolution({ message: unavailable(name, { ...scope, available: () => false, declares }).message })]);
+      entries.push([name, failedResolution({ message: unavailable(name, { ...scope, declares }).message })]);
   }
   return entries;
 }
