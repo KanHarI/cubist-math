@@ -23,7 +23,8 @@ test("a qualified name is one token, read where a name refers and refused where 
   assert.equal(value("def a := m::T.Hom;").moduleQualifier.name, "m");
   for (const [source, code] of [["def a := unat :: zero;", "E006"], ["def a := unat:: zero;", "E006"],
     ["def a := (unat)::zero;", "E006"], ["def a := unat::zero::x;", "E005"],
-    ["def unat::zero := tt;", "E007"], ["def f := fun (m::x : U0) => m::x;", "E007"], ["def f(m::x : U0) : U0 := Unit;", "E007"]])
+    ["def unat::zero := tt;", "E007"], ["def f := fun (m::x : U0) => m::x;", "E007"], ["def f(m::x : U0) : U0 := Unit;", "E007"],
+    ["notation n {\n  unat::x + y := y;\n}", "E007"]])
     assert.throws(() => parse(source), error => diagnosticCode(error.message) === code, source);
   const source = "import unat;\ndef two : unat::UNat := unat::succ(unat::succ(unat::zero));\n";
   assert.equal(formatCubist(source), source);
@@ -170,7 +171,12 @@ notation times {
   numeral(n : UNat) := n;
 }
 
+notation viewed {
+  x + unat::unat.(y) := y;
+}
+
 evaluate main::times.(2 + 3) expecting 6;
+evaluate viewed.(tt + 3) expecting 3;
 evaluate unat::unat.(2 + 3) expecting unat::unat.(5);
 evaluate 2 unat::unat.(+) 3 expecting 5;
 def made : main::T(U0) := main::T.make(Unit, fun (n : UNat) => tt, tt);
@@ -273,9 +279,14 @@ inductive O {
 }
 
 def copy(n : unat::UNat) := induction n return unat::UNat { main::zero => n; unat::succ k => n; };
+
+notation bad_view {
+  x + main::unat.(y) := y;
+}
 `, { module });
   assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]),
-    [["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"], ["member", "E343"], ["T4", "E343"], ["Two", "E255"], ["copy", "E528"]]);
+    [["notation bad_view", "E254"], ["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"], ["member", "E343"],
+      ["T4", "E343"], ["Two", "E255"], ["copy", "E528"]]);
   const { result: notations } = await checkProgram(t, "import a;\nimport e;\ndef x : Unit := a::absent;\ndef y : Unit := e::absent;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", e: "" }) });
   assert.deepEqual(notations.gaps.map(gap => [gap.name, gap.code]), [["x", "E254"], ["y", "E254"]]);
@@ -286,7 +297,8 @@ def copy(n : unat::UNat) := induction n return unat::UNat { main::zero => n; una
 // where another import takes their label, and constructors; a refusal is
 // classified by the scope's module, which can have nothing available yet.
 test("a contextual entry reads a qualified name", async t => {
-  const source = "import unat;\nimport a;\nimport b;\nimport e;\nuse unat;\ndef first : Unit {\n  exact tt;\n}\ndef x : U0 := Unit;\ndef f(x : U1) : U1 {\n  exact x;\n}\n";
+  const source = "import unat;\nimport a;\nimport b;\nimport e;\nuse unat;\ndef first : Unit {\n  exact tt;\n}\ndef x : U0 := Unit;\n"
+    + "notation pick {\n  x + y := match x return UNat { unat::zero => y; unat::succ(k) => k; };\n}\ndef f(x : U1) : U1 {\n  exact x;\n}\n";
   const reader = withModules({ a: "notation n {\n  x + y := x;\n}\n", b: "notation n {\n  x + y := y;\n}\n", e: "" });
   const { program, result } = await checkProgram(t, source, { module, reader, options: { collectScopes: true } });
   assert.deepEqual(result.gaps, []);
@@ -303,6 +315,8 @@ test("a contextual entry reads a qualified name", async t => {
   const run = session("exact x;");
   assert.equal((await run("a::n.(Unit + Void)")).text, "Unit");
   assert.equal((await run("b::n.(Unit + Void)")).text, "Void");
+  // A notation's body names its constructors qualified, read where it is used.
+  assert.equal((await run("pick.(zero + succ(zero))")).text, "1");
   assert.equal((await run("typeof x")).text, "U1");
   assert.equal((await run("typeof main::x")).text, "U0");
   const refused = await run("typeof main::y");

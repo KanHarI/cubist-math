@@ -275,7 +275,9 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   // declared: they are y < x and y <= x.
   function notationPattern() {
     const operand = () => {
-      const first = name();
+      // A view names a notation, unat.(y) or unat::unat.(y); an operand is
+      // a binder.
+      const first = ts[i + 1]?.text === "." && ts[i + 2]?.text === "(" ? reference() : name();
       if (peek() !== "." || ts[i + 1].text !== "(") return { token: first, view: null };
       take("."); take("(");
       const inner = name();

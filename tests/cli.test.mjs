@@ -31,6 +31,13 @@ test("CLI checks my-proof.cubist as the module my_proof", async t => {
   await writeFile(join(directory, "my-proof.cubist"), "import helper;\ndef q : Unit := helper::h;\ndef g : Unit := my_proof::q;\n");
   const checked = run(["check", "my-proof.cubist"], { cwd: directory });
   assert.equal(checked.status, 0, checked.stderr); assert.match(checked.stdout, /Checked 2 declarations/);
+  // The test runner checks a selected file as the CLI does.
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  const runner = spawnSync(process.execPath, [fileURLToPath(new URL("../tools/test.mjs", import.meta.url)), "--test-reporter=tap",
+    join(directory, "my-proof.cubist")], { cwd: fileURLToPath(new URL("..", import.meta.url)), encoding: "utf8", timeout: 60000, env });
+  assert.equal(runner.status, 0, runner.stdout + runner.stderr);
+  assert.match(runner.stdout, /^ok 1 - cubical proof: my-proof\.cubist$/m);
 });
 test("CLI reports assumptions and evaluates closed terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));

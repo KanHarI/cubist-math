@@ -41,7 +41,7 @@ export function needsCompiling(t, n, type, scope) {
   for (const head of heads) {
     if (head.constructor?.bindingRole === "pattern") return true;
     if (head.args?.some(arg => arg.kind === "pattern" || arg.bindingRole === "pattern" || arg.text === "_" || mayBeConstructor(t, scope, arg))) return true;
-    const text = constructorText(head.constructor.text, scope.env, type.instance.signature, names);
+    const text = constructorText(head.constructor.text, t.compilationBindings, type.instance.signature, names);
     if (bare(head) && !names.includes(text)) return true;
     if (seen.has(text)) return true;
     seen.add(text);
@@ -127,7 +127,7 @@ function compile(t, scope, columns, rows, context) {
   // A constructor written qualified reads as the name its type declares it
   // by; one that is no constructor of this type is refused below.
   const plain = token => {
-    const text = constructorText(token.text, scope.env, type?.instance?.signature, (type?.constructors ?? []).map(c => c.name));
+    const text = constructorText(token.text, t.compilationBindings, type?.instance?.signature, (type?.constructors ?? []).map(c => c.name));
     return text === token.text ? token : { ...token, text, spelling: token.text };
   };
   const resolved = rows.map(row => {

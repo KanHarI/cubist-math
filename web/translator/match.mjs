@@ -185,7 +185,7 @@ function declaredType(translator, scope, n, instance, locate) {
 // The source's clause for each constructor of the declared type, one each, in
 // any order. A user constructor is named as declared; the generated one is
 // T.squash, or squash when no user constructor has that name.
-function constructorClauses(n, { inductive, info }, locate, env) {
+function constructorClauses(n, { inductive, info }, locate, bindings) {
   const names = inductive.record.constructors;
   const generated = info.constructors.at(-1)?.generated ? info.constructors.length - 1 : -1;
   const keys = names.map((name, k) => k === generated ? `${inductive.source}.squash` : name);
@@ -196,7 +196,7 @@ function constructorClauses(n, { inductive, info }, locate, env) {
   };
   const byIndex = new Map();
   for (const clause of [...n.clauses, ...(n.obligations ?? [])]) {
-    const head = constructorText(clause.constructor.text, env, inductive.binding, keys), k = indexOf(head);
+    const head = constructorText(clause.constructor.text, bindings, inductive.binding, keys), k = indexOf(head);
     if(k<0&&inductive.binding==="bnat__BNat"&&["zero","succ"].includes(head))
       throw locate(Error("Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat."),clause.constructor);
     if (k < 0)
@@ -256,7 +256,7 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
     if (generalizing.length || dependent) {
       const motive = abstractMotive(new Goal(substituteTerm(body, z, value), scope), [value], { generalizing });
       const generalized = recursion ? { ...recursion, generalized: generalizedParameters(recursion, motive) } : null;
-      for (const each of constructorClauses(n, declared, locate, scope.env))
+      for (const each of constructorClauses(n, declared, locate, translator.compilationBindings))
         clauses.push(clause(translator, scope, each, instance, scope.clauseType(motive.term, clauses), generalized,
           (inner, type, built) => {
             const {transition, goal} = branch(translator, motive, value, scope, inner, built);
@@ -265,7 +265,7 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
       return motive.apply(T.app(T.eliminator(instance.signature, motive.term, clauses), value));
     }
     const motive = T.lam(z, instance, body);
-    for (const each of constructorClauses(n, declared, locate, scope.env))
+    for (const each of constructorClauses(n, declared, locate, translator.compilationBindings))
       clauses.push(clause(translator, scope, each, instance, scope.clauseType(motive, clauses), recursion,
         (inner, type) => translator.term(each.source.body, inner, type)));
     return T.app(T.eliminator(instance.signature, motive, clauses), value);
@@ -297,7 +297,7 @@ export function elaborateMatchStatement(translator, n, goal, scope) {
     const motive = abstractMotive(goal.at(scope), [value], { generalizing });
     const own = recursion && { ...recursion, generalized: generalizedParameters(recursion, motive) };
     const clauses = [];
-    for (const each of constructorClauses(n, declared, locate, scope.env))
+    for (const each of constructorClauses(n, declared, locate, translator.compilationBindings))
       clauses.push(clause(translator, scope, each, instance, scope.clauseType(motive.term, clauses), own,
         (inner, type, built) => {
           const {transition, goal} = branch(translator, motive, value, scope, inner, built);

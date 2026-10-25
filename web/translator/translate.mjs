@@ -1597,7 +1597,7 @@ export class Translator {
         const value=tr(n.value,null),natural=this.naturalSignature(scope,inferred(value).type),type=natural.type;
         // A head written qualified names the natural numbers' constructor.
         const record=this.checker.inductives.get(type.signature),names=record.constructors.map(c=>c.source);
-        for(const [k,head] of (n.heads??[]).entries())if(constructorText(head.text,env,type.signature,names)!==["zero","succ"][k])
+        for(const [k,head] of (n.heads??[]).entries())if(constructorText(head.text,this.compilationBindings,type.signature,names)!==["zero","succ"][k])
           throw scope.unit.locate(Error(`${record.source} has no constructor ${head.text}: its constructors are ${names.join(", ")}.`),head);
         const k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
         // Without `as`, the motive is constant and the predecessor unnamed.

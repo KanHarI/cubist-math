@@ -31,10 +31,9 @@ export function qualifiedNamesIn(syntax) {
 
 // The available binding the module owns under that label in `env`: the
 // compilation's declaration of module__local first, then any other entry
-// by identity, as a theory's generated names are, and as a contextual
-// entry's scope has each of its values.
+// by identity, as a theory's generated names are.
 function ownTerm(env, module, local, { bindings, adapter }) {
-  const declaration = bindings.declaration?.(`${module}__${local}`);
+  const declaration = bindings.declaration(`${module}__${local}`);
   if (declaration && ownedBy(bindings.table.get(declaration.binding.id), module, local) && env.has(adapter.key(declaration.binding.id)))
     return env.get(adapter.key(declaration.binding.id));
   for (const [key, value] of env)
@@ -73,13 +72,17 @@ export function bindQualifiedNames(env, syntax, options) {
 }
 
 // A clause's constructor written qualified, unat::succ, as the name its
-// type declares it by (`names`, in order), where `env` has it as a
-// constructor of that type, whose binding is `binding`; else as written,
-// which no constructor is.
-export function constructorText(text, env, binding, names) {
-  if (!qualifiedName(text)) return text;
-  const value = env.get(text);
-  return value?.tag === "InductiveConstructor" && value.inductive?.binding === binding ? names[value.index] ?? text : text;
+// type declares it by (one of `names`), where it is a constructor that
+// module declares of the type whose kernel name is `binding`, as the
+// compilation's `bindings` record its constructors; else as written, which
+// no constructor is. No environment entry is read, so that a notation's
+// retained body reads alike wherever it is used.
+export function constructorText(text, bindings, binding, names) {
+  const [, module, local] = qualifiedName(text) ?? [];
+  if (!module) return text;
+  for (let k = 0, record; (record = bindings.declaration(`${binding}:constructor:${k}`)?.binding); k++)
+    if (ownedBy(record, module, local) && names.includes(local)) return local;
+  return text;
 }
 
 // The names a module's source declares, constructors among them, from its
