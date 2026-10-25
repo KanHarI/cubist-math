@@ -23,6 +23,8 @@ export function bindingInputs(table,values,{reserved=[],lexical=null,notations=n
 export function sourceBindingInputs(registry,env,{reserved=[],simpRegistry=null}={}) {
   const values=new Map(),lexical=[];
   for(const [label,value] of env)if(!label.startsWith("\u0000")) {
+    // A qualified name available nowhere keeps its refusal (qualified-names.mjs).
+    if(value?.tag==="QualifiedFailure"){lexical.push([label,failedResolution({message:value.message})]);continue;}
     const binding=registry.ofValue(value);
     if(binding){values.set(binding.id,value);lexical.push([label,bindingResolution(binding.id)]);}
   }

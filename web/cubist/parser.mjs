@@ -12,7 +12,10 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
 // `!`, `!!` and `!!!` are evaluation demand marks; `!!` and `!!!` are one
 // token each, so that a space between marks is seen and refused (parse).
-const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|::|:=|<-|\+\+|!!!|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
+// A qualified name, unat::zero, is one token: a module's name, :: and a
+// name, with no space between (web/reference/first-proof.html#qualified-names).
+// A `::` left alone is refused (tokenize).
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|::|:=|<-|\+\+|!!!|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*::[A-Za-z_][A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
 const markTokens = ["!", "!!", "!!!"];
 // The source scanner also serves incomplete editor input. It retains every
 // character, including comments and whitespace; tokenize enforces parser limits
@@ -21,6 +24,12 @@ export function* scan(source) {
   for (const match of source.matchAll(tokenPattern))
     yield { text: match[0], start: match.index, end: match.index + match[0].length };
 }
+const word = /^[A-Za-z_][A-Za-z_0-9]*$/, qualifiedWord = /^[A-Za-z_][A-Za-z_0-9]*::[A-Za-z_][A-Za-z_0-9]*$/;
+// A qualified token's module, by its name and source span.
+const moduleQualifier = token => {
+  const name = token.text.slice(0, token.text.indexOf("::"));
+  return { name, start: token.start, end: token.start + name.length };
+};
 export function tokenize(source) {
   if (typeof source !== "string" || source.length > 1000000)
     throw new Error("Source exceeds 1 MB.");
@@ -29,11 +38,17 @@ export function tokenize(source) {
     const { text, start } = token;
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|::|:=|<-|\+\+|!!!|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*(?:::[A-Za-z_][A-Za-z_0-9]*)?|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|::|:=|<-|\+\+|!!!|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: start,
       });
+    if (text === "::") {
+      const previous = tokens.at(-1);
+      if (previous && qualifiedWord.test(previous.text) && previous.end === start)
+        throw Object.assign(new Error("A qualified name names one module: module::name."), { offset: start });
+      throw Object.assign(new Error("A qualified name is a module's name, ::, and a name, with no space between: unat::zero."), { offset: start });
+    }
     tokens.push(token);
     if (tokens.length > 160000) throw new Error("Source has too many tokens.");
   }
@@ -119,9 +134,12 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     if (binds()) return take();
     throw Object.assign(new Error(`Write := to give a value: ${form}`), { offset: ts[i].start });
   }
+  // A name that a declaration, a binder or a parameter introduces: plain.
   function name({ generatedReference = false } = {}) {
     const t = take();
-    if (t.text === "EOF" || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text))
+    if (qualifiedWord.test(t.text))
+      throw Object.assign(new Error(`${t.text} names a module's declaration; a name declared or bound here is plain.`), { offset: t.start });
+    if (t.text === "EOF" || !word.test(t.text))
       throw Object.assign(new Error("Expected a name."), { offset: t.start });
     // U0, UU3 and the like name universes: they cannot be bound or declared.
     if (isUniverseConstant(t.text))
@@ -129,6 +147,10 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     if (reservedNames.has(t.text) && !bindableNames.has(t.text) && !(generatedReference && generatedNames.has(t.text)))
       throw Object.assign(new Error(`${t.text} is reserved${generatedNames.has(t.text) ? " for the generated interface (docs/guides/keywords.md)" : ", as a keyword or a built-in type of the language"}; pick another name.`), { offset: t.start });
     return t;
+  }
+  // A name that refers to a declaration: plain, or qualified, unat::zero.
+  function reference(options) {
+    return qualifiedWord.test(peek()) ? take() : name(options);
   }
   // A binder's type, or a universe binder's bound: `x : A` or `U < UU0`.
   function binderType(example) {
@@ -282,7 +304,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   function qualifiedOperatorAt(at) {
     const word = k => /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[k]?.text ?? "");
     const tight = k => ts[k - 1].end === ts[k].start;
-    if (!word(at)) return null;
+    if (!word(at) && !qualifiedWord.test(ts[at]?.text ?? "")) return null;
     let k = at + 1;
     const dots = [];
     while (ts[k]?.text === "." && tight(k) && word(k + 1) && tight(k + 1)) { dots.push({ start: ts[k].start, end: ts[k].end }); k += 2; }
@@ -291,6 +313,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const text = ts.slice(at, k).map(token => token.text).join("");
     dots.push({ start: ts[k].start, end: ts[k].end });
     return { model: { kind: "name", name: text, start: ts[at].start, end: ts[k - 1].end,
+      ...(qualifiedWord.test(ts[at].text) ? { moduleQualifier: moduleQualifier(ts[at]) } : {}),
       ...(dots.length > 1 ? { qualifiedDots: dots.slice(0, -1) } : {}) }, operator: ts[k + 2], dots, next: k + 4 };
   }
   function expr(min = 0) {
@@ -367,19 +390,6 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
           a = { kind: "select", model: a, body, dot: { start: dot.start, end: dot.end }, open: open.start, close: close.start,
             start: a.start, end: close.end };
         }
-        continue;
-      }
-      // A module's own name, circle::d0, is tight: a module's name, ::, and
-      // a name it declares. No binder is named with ::, so nothing in scope
-      // shadows it, as a dimension or a variable named d0 shadows d0.
-      if (peek() === "::") {
-        const module = a.kind === "name" && !a.qualifiedDot && ts[i - 1].start === a.start && ts[i - 1].end === ts[i].start;
-        if (a.moduleQualifier) throw Object.assign(new Error("A qualified name names one module: module::name."), { offset: ts[i].start });
-        if (!module || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) || ts[i + 1].start !== ts[i].end)
-          throw Object.assign(new Error("A qualified name is a module's name, ::, and a name, with no space between: unat::zero."), { offset: ts[i].start });
-        const separator = take("::"), member = take();
-        a = { kind: "name", name: `${a.name}::${member.text}`, moduleQualifier: { name: a.name, start: a.start, end: a.end,
-          separator: { start: separator.start, end: separator.end } }, start: a.start, end: member.end };
         continue;
       }
       // A qualified name, T.squash, is tight too: a name, a dot and a name.
@@ -595,6 +605,8 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       return { kind: "number", value: Number(t.text), text: t.text, start: t.start, end: t.end };
     if (/^[A-Za-z_][A-Za-z_0-9]*$/.test(t.text) && t.text !== "EOF")
       return { kind: "name", name: t.text, start: t.start, end: t.end };
+    if (qualifiedWord.test(t.text))
+      return { kind: "name", name: t.text, moduleQualifier: moduleQualifier(t), start: t.start, end: t.end };
     throw Object.assign(
       new Error(`Expected an expression, found '${t.text}'.`),
       { offset: t.start },
@@ -606,8 +618,8 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     take("[");
     const hints = [];
     if (peek() !== "]") {
-      hints.push(name());
-      while (peek() === ",") { take(","); hints.push(name()); }
+      hints.push(reference());
+      while (peek() === ",") { take(","); hints.push(reference()); }
     }
     take("]");
     take("{");
@@ -814,7 +826,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const injection = ["left", "right"].includes(peek())
       && (ts[i + 1].text === "(" || !nested && /^[A-Za-z_]/.test(ts[i + 1].text) && ts[i + 1].text !== "EOF");
     const generatedConstructor = ["gen", "squash"].includes(peek()) && ["(", "@"].includes(ts[i + 1].text);
-    let constructor = injection || generatedConstructor ? take() : name(), qualifiedDot = null;
+    let constructor = injection || generatedConstructor ? take() : reference(), qualifiedDot = null;
     if (peek() === "." && ts[i - 1].end === ts[i].start && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text)
         && ts[i + 1].start === ts[i].end) {
       const dot = take("."), member = take();
@@ -822,8 +834,9 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       constructor = { text: `${constructor.text}.${member.text}`, start: constructor.start, end: member.end };
     }
     let args = null;
-    // An argument: a name, or a constructor pattern with its own arguments.
-    const argument = () => /^[A-Za-z_][A-Za-z_0-9]*$/.test(peek()) && (ts[i + 1]?.text === "("
+    // An argument: a name, or a constructor pattern with its own arguments;
+    // a qualified name is always a constructor, unat::zero.
+    const argument = () => qualifiedWord.test(peek()) || /^[A-Za-z_][A-Za-z_0-9]*$/.test(peek()) && (ts[i + 1]?.text === "("
       || ts[i + 1]?.text === "." && ts[i + 1].start === ts[i].end) ? clausePattern(true) : name();
     if (peek() === "(") {
       take("(");
@@ -917,7 +930,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     take(keyword); take("[");
     const names = [];
     if (peek() !== "]") while (true) {
-      names.push(name());
+      names.push(reference());
       if (peek() !== ",") break;
       take(",");
     }
@@ -1285,7 +1298,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         : "A section holds definitions: def and computable def."), { offset: t.start });
     // hlevel_rule lemma; registers a lemma for the hlevel tactic (L2.5b).
     if(t.text==="hlevel_rule") {
-      const rule=name();
+      const rule=reference();
       let priority=0;
       if(peek()==="priority") {
         take("priority");
@@ -1299,7 +1312,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       directives.push(directive);placeItem(directive);continue;
     }
     if(t.text==="simp_rule") {
-      const rule=name();
+      const rule=reference();
       let priority=0;
       if(peek()==="priority") {
         take("priority");
@@ -1316,7 +1329,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       const set=name();define("simp_set name := [rules];");take("[");
       const rules=[];
       if(peek()!=="]")while(true) {
-        rules.push(name());
+        rules.push(reference());
         if(peek()!==",")break;
         take(",");
       }
@@ -1439,7 +1452,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         while (true) {
           const start = ts[i].start, label = ts[i + 1].text === ":" ? name() : null;
           if (label) take(":");
-          const parent = name(), renaming = [];
+          const parent = reference(), renaming = [];
           if (peek() === "(") {
             take("(");
             while (peek() !== ")") {

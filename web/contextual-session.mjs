@@ -7,6 +7,7 @@ import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayP
 import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
+import {qualifiedLexical} from "./translator/qualified-names.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax,lowerBindingReference} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
@@ -270,7 +271,9 @@ export class ContextualSession {
         const execute=(source,index)=>{
           applyKernelReplayPolicy(replay.kernel,selectedPolicy);
           const parsed=parsedEntry(source),reserved=reservedReferences(parsed.text);
-          const {adapter:entryAdapter,context,constructors}=bindingInputs(table,live.values,{reserved,lexical:lexical.snapshot()});
+          // The entry's qualified names, from the scope's available values.
+          const {adapter:entryAdapter,context,constructors}=bindingInputs(table,live.values,{reserved,
+            lexical:[...lexical.snapshot(),...qualifiedLexical(parsed.tree,live.values,table)]});
           const owner=["contextual-session",this.#serial,"entry",String(index)],moduleName=owner.join("/");
           const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,simpSets,
             source:{revision:inputs.revision,module:moduleName}});

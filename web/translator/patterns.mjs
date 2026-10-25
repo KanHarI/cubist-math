@@ -21,6 +21,7 @@ import {RECURSIVE,withRecursion} from "./match.mjs";
 import {decidePatternSlot} from "../cubist/bindings.mjs";
 import {T} from "./core.mjs";
 import {bindClauseName} from "../cubist/telescopes.mjs";
+import {constructorText,qualifiedName} from "./qualified-names.mjs";
 
 // A head of the parser with neither arguments, coordinates nor binders.
 const bare = head => !head.args && !head.coordinates?.length && !head.binders?.length;
@@ -121,8 +122,18 @@ function compile(t, scope, columns, rows, context) {
   const byName = new Map((type?.constructors ?? []).map(constructor => [constructor.name, constructor]));
   // A bare name is a constructor of this type without arguments, if it has
   // one by that name, and otherwise a variable.
+  // A constructor written qualified reads as the name its type declares it
+  // by; one that is no constructor of this type is refused below.
+  const plain = token => {
+    const text = constructorText(token.text, scope.env, type?.instance?.signature, (type?.constructors ?? []).map(c => c.name));
+    return text === token.text ? token : { ...token, text, spelling: token.text };
+  };
   const resolved = rows.map(row => {
-    const [first, ...rest] = row.patterns;
+    let [first, ...rest] = row.patterns;
+    if (first.token) first = { ...first, token: plain(first.token) };
+    // A bare qualified name is a constructor, never a variable.
+    if (first.kind === "name" && (first.token.spelling ?? qualifiedName(first.token.text)))
+      first = { kind: "constructor", token: first.token, args: [], coordinates: [] };
     const nullary = first.kind === "name" && byName.get(first.token.text);
     const head = nullary && !nullary.arity && !nullary.dims || !type && first.kind === "name" && constructorWithout(scope, first.token, row.outcomes)
       ? { kind: "constructor", token: first.token, args: [], coordinates: [] } : first;
