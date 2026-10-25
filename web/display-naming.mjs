@@ -543,8 +543,10 @@ export function labelsShown(label) {
 
 // Terms named for source text, in one naming, by the three passes above:
 // spelledOut, displayTerm and readableDimensions. `definitions` gives
-// definitions' decoded types and values and the labels the printer shows
-// them by; `symbols` a declared type's constructors; `names` the names free
+// definitions' decoded types and values, the labels the printer shows
+// them by, and each declaration's module::name, by its key in the
+// compilation's bindings (qualified, below); `symbols` a declared type's
+// constructors; `names` the names free
 // variables show; `dimensions` the dimensions of the context the terms are
 // shown in, which the caller always gives (contextDimensions); `reduce` the
 // display's beta budget.
@@ -557,14 +559,20 @@ export function forSource(terms, { definitions, symbols, names = new Map(), dime
 // 4. Once names are settled, a definition, type or constructor whose label
 // the text shows for something that keeps its name, a dimension of the
 // context or of the terms, or a free variable the caller names, is marked
-// `qualified`: the printer writes it module::name
+// `qualified` with its module::name
 // (web/reference/first-proof.html#qualified-names), which no binder
-// shadows, and kernel notation by its kernel name. `shown` holds those
-// names; the labels are the printer's.
+// shadows: its declaration's module and label, as the compilation records
+// them, since a kernel name a__b__q is a's b__q or a__b's q. Kernel notation
+// shows it by its kernel name, as source text does one the compilation
+// declares nowhere. `shown` holds those names; the labels are the
+// printer's.
 export function qualified(terms, shown, { definitions, symbols = {} }) {
   if (!shown.size) return terms;
   const label = t => t.tag === "DefRef" ? definitions.label(t.name)
     : t.tag === "Sort" ? symbols[t.signature]?.name ?? localName(t.signature) : t.tag === "Con" ? t.name : null;
+  const spelling = t => t.tag === "DefRef" ? definitions.qualified(t.name) ?? t.name
+    : t.tag === "Sort" ? definitions.qualified(t.signature) ?? t.signature
+    : definitions.qualified(`${t.sort?.signature}:constructor:${t.index}`) ?? t.name;
   const copies = new WeakMap();
   const mark = t => {
     if (!t || typeof t !== "object") return t;
@@ -577,7 +585,7 @@ export function qualified(terms, shown, { definitions, symbols = {} }) {
         result[key] = changed;
       }
     }
-    if (!Array.isArray(result) && shown.has(label(result))) result = { ...result, qualified: true };
+    if (!Array.isArray(result) && shown.has(label(result))) result = { ...result, qualified: spelling(result) };
     copies.set(t, result);
     return result;
   };

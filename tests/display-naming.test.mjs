@@ -7,6 +7,7 @@ import { displayTerm, forSource } from "../web/display-naming.mjs";
 import { judgementGraph } from "../web/cubical-graph-view.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 import { localName } from "../web/translator/names.mjs";
 
 // The display's naming (web/README.md, "Displaying terms"): no two different
@@ -520,7 +521,8 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   // named as a dimension the source named and the term binds; one named as
   // a dimension decoding left unnamed is not, as that dimension is renamed.
   const labeled = { ...symbols, main__q: { name: "q" }, main__d0: { name: "d0" } };
-  const qualifying = { ...definitions, label: name => labeled[name]?.name ?? name };
+  const qualifying = { ...definitions, label: name => labeled[name]?.name ?? name,
+    qualified: name => labeled[name] ? `main::${labeled[name].name}` : null };
   const shown = (term, dimensions) => sourceText(forSource([term], { definitions: qualifying, symbols: labeled, dimensions })[0], labeled);
   const at = (path, dim) => ({ tag: "PApp", path, arg: [[`${dim}:1`]] });
   assert.equal(shown(at({ tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Point" } }, "j"), ["q", "j"]), "main::q(tt) @ j");
@@ -616,6 +618,27 @@ def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u
     assert.equal(text, shown);
     const { result: back } = await checkProgram(t, `${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
+  });
+  // A type and a constructor named as the context's dimension, each with
+  // the display's beta reduction and without; and a definition of a module
+  // whose name holds __, a__b's q, whose kernel name a__b__q is a's b__q
+  // too: its module is its declaration's.
+  const library = sourceReader();
+  const named = [
+    ["T", "U0", "main::T", "inductive T {\n  c;\n}\ndef g : U0 := T;"],
+    ["c", "T", "main::c", "inductive T {\n  c;\n}\ndef g : T := c;"],
+    ["b__q", "Unit", "a__b::q", "import a__b;\ndef g : Unit := q;"]];
+  for (const [dimension, type, shown, definitions] of named) await t.test(`named ${shown}`, async t => {
+    const reader = (name, importer) => name === "a__b" ? "def q : Unit := tt;\n" : library(name, importer);
+    const { program, result } = await checkProgram(t, `${definitions}\n`, { module, reader });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value);
+    for (const reduce of [0, 256]) {
+      const text = checker.displayText(value, [dimension], { width: 4000, reduce });
+      assert.equal(text, reduce ? shown : `(fun (ascription : ${type}) => ascription)(${shown})`);
+      const { result: back } = await checkProgram(t, `${definitions}\ndef back : g = g := path ${dimension} => ${text};\n`, { module, reader });
+      assert.deepEqual(back.gaps, [], text);
+    }
   });
 });
 

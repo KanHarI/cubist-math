@@ -244,7 +244,8 @@ export class NativeCubicalElaborator {
   }
   // How forSource (display-naming.mjs) reads this checker: definitions'
   // checked types and values from the kernel, each decoded once per display,
-  // and their labels; declared types' constructors; and the dimensions of
+  // their labels, and each declaration's module::name, from its binding in
+  // the compilation; declared types' constructors; and the dimensions of
   // the context a term is shown in, which the caller gives.
   displayNaming(dimensions, reduce = 256, names = new Map()) {
     const decoded = new Map();
@@ -256,7 +257,11 @@ export class NativeCubicalElaborator {
       }
       return decoded.get(key);
     };
-    const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name) };
+    const qualified = key => {
+      const record = this.compilationBindings?.declaration(key)?.binding;
+      return record ? `${record.origin.module}::${record.label}` : null;
+    };
+    const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name), qualified };
     return { definitions, symbols: this.displayNames, names, reduce, dimensions: contextDimensions(dimensions) };
   }
 

@@ -133,10 +133,12 @@ this order:
    every name shown, keeping the context's.
 4. `qualified` marks a definition, type or constructor whose label the text
    shows for something that keeps its name, a dimension of the context or of
-   the terms, or a free variable whose name the caller gives. The printer
-   writes it as its module's name for it, `circle::d0`
+   the terms, or a free variable whose name the caller gives, with its
+   module's name for it, `circle::d0`
    ([qualified names](reference/first-proof.html#qualified-names)), which no
-   binder shadows: `path d0 => circle::d0 @ d0`.
+   binder shadows: `path d0 => circle::d0 @ d0`. Its module and label are
+   its declaration's in the compilation's bindings, never read off the kernel
+   name, since `a__b__q` is `a`'s `b__q` or `a__b`'s `q`.
 
 `sourceText` then prints the names it is given. A form the term does not spell
 out, as an eta-reduced clause in a term not named so, prints in kernel
