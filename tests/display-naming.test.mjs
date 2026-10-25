@@ -577,24 +577,30 @@ def h : f = f := path j => (fun (p : f = f) => p)(refl(f)) @ j;
 
 // An eliminator whose motive is another eliminator, a function of the
 // domain that one's motive takes, written as a function: that domain is
-// its lambda's, read before anything is spelled out. The text reads back.
+// its lambda's, read before anything is spelled out, through the inner
+// motive, a lambda or a definition kept by name. The text reads back.
 test("an eliminator whose motive is an eliminator keeps its domain", async t => {
-  const source = `inductive B(A : U0) {
+  const cases = [["(match z return U0 { b => Unit; })", "match z return U0 { b => Unit; }"],
+    ["(match z as w return M(w) { b => Unit; })", "match z as z1 return M(z1) { b => Unit; }"]];
+  for (const [motive, shown] of cases) await t.test(shown, async t => {
+    const source = `inductive B(A : U0) {
   b;
 }
-def f := fun (x : B(Unit)) => match x as z return (match z return U0 { b => Unit; }) { b => tt; };
+def M(z : B(Unit)) : U1 := U0;
+def f := fun (x : B(Unit)) => match x as z return ${motive} { b => tt; };
 `;
-  const { program, result } = await checkProgram(t, source, { module });
-  assert.deepEqual(result.gaps, []);
-  const { kernel, checker } = program;
-  const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
-  const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
-  for (const reduce of [0, 256]) {
-    const text = checker.displayText(folded, [], { width: 4000, reduce });
-    assert.equal(text, "fun (x : B(Unit)) => match x as z return match z return U0 { b => Unit; } { b => tt; }");
-    const { result: back } = await checkProgram(t, `${source}def same : f = f := refl(${text});\n`, { module });
-    assert.deepEqual(back.gaps, [], text);
-  }
+    const { program, result } = await checkProgram(t, source, { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program;
+    const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
+    const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+    for (const reduce of [0, 256]) {
+      const text = checker.displayText(folded, [], { width: 4000, reduce });
+      assert.equal(text, `fun (x : B(Unit)) => match x as z return ${shown} { b => tt; }`);
+      const { result: back } = await checkProgram(t, `${source}def same : f = f := refl(${text});\n`, { module });
+      assert.deepEqual(back.gaps, [], text);
+    }
+  });
 });
 
 // A definition named as the context's dimension q is shown qualified,

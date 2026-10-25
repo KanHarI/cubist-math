@@ -375,11 +375,13 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return name;
   };
   const domain = motiveDomain(definitions);
-  // The domain of an eliminator taken as a function: its motive's, where
-  // that is a function with a domain, else its type, where that has no
-  // parameters; read on syntax not yet spelled out.
-  const eliminated = e => e.motive?.tag === "Lam" && e.motive.domain ? e.motive.domain
-    : symbols[e.signature]?.slots?.length === 0 ? { tag: "Sort", signature: e.signature, parameters: [], levels: [] } : null;
+  // The domain of a function, read on syntax not yet spelled out: a
+  // lambda's; a definition's, as its type gives it after its spine; or an
+  // eliminator's, taken as a function: its motive's, else its type, where
+  // that has no parameters.
+  const domainOf = t => t?.tag === "Lam" ? t.domain : domain(t) ?? (t?.tag === "Elim" ? eliminated(t) : null);
+  const eliminated = e => domainOf(e.motive)
+    ?? (symbols[e.signature]?.slots?.length === 0 ? { tag: "Sort", signature: e.signature, parameters: [], levels: [] } : null);
   const added = t => { collect(t); return t; };
   const free = displayFreeNames(), mentions = (term, name) => free(term).has(name);
   const applied = (fn, stem, of = null) => {
@@ -435,12 +437,11 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
         let motive = t.motive;
         if (motive && motive.tag !== "Lam") {
           // A motive whose head reduces to a function is that function;
-          // another is applied to a new variable of the domain its type
-          // gives, or, an eliminator, it takes.
+          // another is applied to a new variable of its domain.
           const reduced = head(motive);
           if (reduced.tag === "Lam") motive = added(reduced);
           else {
-            const of = domain(motive) ?? (motive.tag === "Elim" ? eliminated(motive) : null);
+            const of = domainOf(motive);
             motive = applied(motive, "z", of ? added(of) : null);
           }
         }
