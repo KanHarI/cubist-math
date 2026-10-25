@@ -1275,6 +1275,7 @@ export class Translator {
         for(const hint of n.hints) {
           const expression=referenceSyntax(hint),{node,scope:at}=this.expressionScope(expression,scope);
           let value=node.kind==="name"?at.env.get(node.name):this.term(node,at,null);
+          if(value?.tag==="QualifiedFailure")throw Error(value.message);
           while(value?.tag==="App")value=value.fn;
           if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${sourceName(expression)}`);
           if(node.kind==="name")this.reference(at,node,value,null);
@@ -1623,7 +1624,7 @@ export class Translator {
         if(n.values)return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         const value=tr(n.value,null),type=inferred(value).type,sum=scope.nf(type);
         const declared=sum.tag==="Sort"&&n.clauses?matchedType(this,scope,value):null;
-        if(declared&&needsCompiling(this,n,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+        if(declared&&needsCompiling(this,n,declared,scope))
           return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         // A declared type's value (L2.2a); otherwise the legacy match on a sum.
         if(sum.tag==="Sort")return elaborateMatch(this,n,value,sum,scope,expected);

@@ -107,9 +107,19 @@ theory T(U < UU0) {
   c : M;
 }
 
+theory S(U < UU0) extends main::T {
+  d : M;
+}
+
 inductive Box(A : U0) : U0 {
   box(a : A);
 }
+
+inductive X : prop U0 {
+  pt;
+}
+
+def sq(x : X) : X := match x return X { main::pt => pt; X.squash(a, b) @ i => X.squash(sq(a), sq(b)) @ i; };
 
 inductive Opt(A : U0) {
   none;
@@ -160,9 +170,10 @@ def wrong(n : UNat) : UNat := match n return UNat { main::none => zero; unat::su
 // A module's own notation, where another import takes its label, and a
 // notation declared after its model is first used qualified.
 test("a qualified name reads its module's own notation", async t => {
-  const { result } = await checkProgram(t, "import a;\nimport b;\nevaluate a::n.(tt + tt) expecting tt;\nevaluate b::n.(tt + tt) expecting tt;\n",
+  const { result } = await checkProgram(t, "import a;\nimport b;\nevaluate a::n.(Unit + Void) expecting Unit;\nevaluate b::n.(Unit + Void) expecting Void;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", b: "notation n {\n  x + y := y;\n}\n" }) });
   assert.deepEqual(result.gaps, []);
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["Unit", "Void"]);
   const { result: later } = await checkProgram(t, `import unat;
 use unat;
 
@@ -197,17 +208,31 @@ theory T3(U < UU0) {
 }
 
 def Later : U0 := Unit;
+
+theory P(U < UU0) {
+  M : U;
+  c : M;
+}
+
+def early := main::m.c;
+def m : P(U0) := P.make(Unit, tt);
+def late : Unit := main::m.c;
+def hinted : Unit := with unfolding [missing::x] { tt };
+def early_hint : Unit := with unfolding [main::h] { tt };
+def h : Unit := tt;
 `, { module });
-  assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]), [["T2", "E253"], ["T3", "E255"]]);
+  assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]),
+    [["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"]]);
   const { result: notations } = await checkProgram(t, "import a;\ndef x : Unit := a::absent;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n" }) });
   assert.deepEqual(notations.gaps.map(gap => [gap.name, gap.code]), [["x", "E254"]]);
 });
 
 // A contextual console entry reads a qualified name from its scope's
-// available declarations, past a parameter of that name.
+// available declarations, past a parameter of that name, and its notations
+// and constructors.
 test("a contextual entry reads a qualified name", async t => {
-  const source = "def x : U0 := Unit;\ndef f(x : U1) : U1 {\n  exact x;\n}\n";
+  const source = "import unat;\nuse unat;\ndef x : U0 := Unit;\ndef f(x : U1) : U1 {\n  exact x;\n}\n";
   const { program, result } = await checkProgram(t, source, { module, options: { collectScopes: true } });
   assert.deepEqual(result.gaps, []);
   const start = source.indexOf("exact x;");
@@ -219,6 +244,8 @@ test("a contextual entry reads a qualified name", async t => {
   assert.equal((await run("typeof main::x")).text, "U0");
   const refused = await run("typeof main::y");
   assert.equal(diagnosticCode(refused.text), "E254", refused.text);
+  assert.equal((await run("unat::unat.(2 + 3)")).text, (await run("unat.(2 + 3)")).text);
+  assert.equal((await run("match unat::succ(unat::zero) return unat::UNat { unat::zero => unat::zero; unat::succ(k) => k; }")).text, "0");
 });
 
 // The migration verifier checks an edited module as its shadow, whose own
@@ -229,6 +256,12 @@ test("a migration reads a module's qualified names in its shadow", async () => {
     readOriginal: (name, importer) => name === "m" ? source : library(name, importer), readEdited: async () => source });
   assert.deepEqual(report.failures, []);
   assert.equal(report.identical, 2);
+  // Each import, wherever the line breaks, names its shadow alike.
+  const sources = { a: "def z : Unit := tt;\n", b: "def y : Unit := tt;\n", m: "import a; import // b, too\n  b;\ndef x : Unit := b::y;\n" };
+  const reports = await verifyMigration({ modules: ["a", "b", "m"], level: "identical",
+    readOriginal: (name, importer) => sources[name] ?? library(name, importer), readEdited: async name => sources[name] });
+  assert.deepEqual(reports.flatMap(report => report.failures), []);
+  assert.deepEqual(reports.map(report => report.identical), [1, 1, 1]);
 });
 
 // Module and declaration names can hold __, so the kernel name a__b__x is
