@@ -43,6 +43,12 @@ export const placeOfFile = (path, root = projectRoot) =>
 // library-first, as `check NAME` does. `files` maps explicit place/name aliases
 // to files, for corpus examples checked under synthetic module names. They
 // still obey that place's import policy; a missing explicit file is an error.
+// The module a file is checked as: its name without .cubist, as an
+// identifier, since module::name spells each of its declarations
+// (web/reference/first-proof.html#qualified-names): any other character is
+// _, and a leading digit follows one, so my-proof.cubist is my_proof.
+export const moduleOfFile = path => basename(path, ".cubist").replace(/[^A-Za-z0-9_]/g, "_").replace(/^(?=[0-9])/, "_");
+
 export function sourceReader({ path = null, root = projectRoot, files = new Map() } = {}) {
   const local = path === null ? null : dirname(real(path));
   const readSource = moduleReader((place, name) => {
@@ -51,7 +57,7 @@ export function sourceReader({ path = null, root = projectRoot, files = new Map(
     return place === "local" ? (local === null ? null : text(join(local, `${name}.cubist`)))
       : text(join(root, moduleRoots[place], `${name}.cubist`));
   });
-  if (path !== null) readSource.place(basename(path, ".cubist"), placeOfFile(path, root));
+  if (path !== null) readSource.place(moduleOfFile(path), placeOfFile(path, root));
   return readSource;
 }
 

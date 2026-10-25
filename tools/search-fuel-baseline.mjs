@@ -16,7 +16,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { archiveModules, libraryModules } from "../web/cubist/modules.mjs";
 import { referenceExamples } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { archiveReader, sourceReader } from "./module-sources.mjs";
+import { archiveReader, moduleOfFile, sourceReader } from "./module-sources.mjs";
 // A stale WASM kernel would run code it does not contain.
 assertFreshBuild();
 
@@ -32,14 +32,15 @@ const exampleReader = path => sourceReader({ path: fileURLToPath(new URL(path, r
 const unlimited = Object.fromEntries(["visits", "candidates", "rewrites", "premises", "nodes", "queries"].map(kind => [kind, Infinity]));
 const kinds = Object.keys(unlimited);
 
-// One workload: a source, checked in a new kernel with its imports, and every
-// declaration's fuel read back.
-async function measure(name, source, readSource) {
+// One workload, `name`: a source, checked in a new kernel with its imports
+// as the module `main`, an identifier, and every declaration's fuel read
+// back.
+async function measure(name, source, readSource, main = name) {
   const program = new CubicalProgram(await createCubical(), readSource,
     { collectReferences: false, searchFuel: unlimited, declarationFuel: { queries: Infinity } });
   const started = performance.now(), before = program.kernel.work();
   try {
-    const result = await program.check(source, name);
+    const result = await program.check(source, main);
     const after = program.kernel.work();
     const declarations = [...result.imports, ...result.outputs];
     const most = Object.fromEntries(kinds.map(kind => [kind, { spent: 0, declaration: null }]));
@@ -75,7 +76,7 @@ const examples = [
   ...(await readdir(new URL("docs/examples/proof-ergonomics/current/", root))).filter(file => file.endsWith(".cubist"))
     .map(file => `docs/examples/proof-ergonomics/current/${file}`).map(path => [path, archiveReader(path)]),
 ];
-for (const [path, readSource] of examples) workloads.push(await measure(path, await text(path), readSource));
+for (const [path, readSource] of examples) workloads.push(await measure(path, await text(path), readSource, moduleOfFile(path)));
 // The reference's checked examples, accepted and rejected: a rejected one's
 // search must still stop with the error it states, not for want of fuel.
 const pages = ["language.html", ...(await readdir(new URL("web/reference/", root))).filter(name => name.endsWith(".html"))
@@ -86,7 +87,7 @@ for (const page of pages) {
   for (const { attrs, text: source, label } of referenceExamples(page, await text(`web/${page}`))) {
     if (!["accept", "reject"].includes(attrs["data-check"])) continue;
     let measured;
-    try { measured = await measure(label, source, sourceReader()); } catch { continue; }
+    try { measured = await measure(label, source, sourceReader(), "reference_example"); } catch { continue; }
     for (const key of ["declarations", "checked", "gaps", "searches", "seconds", "kernelSteps"]) reference[key] += measured[key];
     for (const kind of kinds) if (measured.most[kind].spent > reference.most[kind].spent) reference.most[kind] = { ...measured.most[kind], declaration: `${label} ${measured.most[kind].declaration}` };
     if (measured.declarationQueries.spent > reference.declarationQueries.spent)

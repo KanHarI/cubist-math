@@ -41,6 +41,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
+import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -561,6 +562,9 @@ export class Translator {
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
+    // What this module's source declares and imports, for why a qualified
+    // name is available nowhere.
+    this.declaredHere=declaredIn(ast);this.importedHere=new Set(ast.imports??[]);
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
     const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
@@ -646,6 +650,9 @@ export class Translator {
         continue;
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
+      // The qualified names it writes, bound where they are available.
+      bindQualifiedNames(env,queued,{bindings:this.compilationBindings,adapter:this.identityAdapter,
+        current:this.moduleName,declaredHere:this.declaredHere,imports:this.importedHere});
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
       const d=retained?.declaration??queued;
       const effects=fileSelectionEffects(d.kind);
@@ -841,7 +848,9 @@ export class Translator {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
           const sectional=d.section?.params.length??0;
+          const spelled=`${this.moduleName}::${d.name.text}`;
           const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,
+            ...(qualifiedNamesIn(d).has(spelled)?{qualified:spelled}:{}),
             params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
@@ -1242,6 +1251,8 @@ export class Translator {
       throw error;
     }
     if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+    // A qualified name available nowhere (bindQualifiedNames).
+    if(value.tag==="QualifiedFailure")throw Error(value.message);
     if(value.tag==="Ambiguous")throw Error(value.message);
     if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
     if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
@@ -1263,6 +1274,7 @@ export class Translator {
         for(const hint of n.hints) {
           const expression=referenceSyntax(hint),{node,scope:at}=this.expressionScope(expression,scope);
           let value=node.kind==="name"?at.env.get(node.name):this.term(node,at,null);
+          if(value?.tag==="QualifiedFailure")throw Error(value.message);
           while(value?.tag==="App")value=value.fn;
           if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${sourceName(expression)}`);
           if(node.kind==="name")this.reference(at,node,value,null);
@@ -1335,6 +1347,10 @@ export class Translator {
           throw Error(`${theory}.Model is now ${theory}: a theory's name is the type of its models, as in ${theory}(U0).`);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
+        // A qualified name that no item bound, as in syntax made elsewhere;
+        // a member its available prefix lacks is refused as any name's is.
+        if(n.moduleQualifier&&!availablePrefix(n.name,env))throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
+          imports:this.importedHere,adapter:this.identityAdapter});
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
@@ -1592,6 +1608,10 @@ export class Translator {
         }
         // Binders keep their source names, so the checked term reads as written.
         const value=tr(n.value,null),natural=this.naturalSignature(scope,inferred(value).type),type=natural.type;
+        // A head written qualified names the natural numbers' constructor.
+        const record=this.checker.inductives.get(type.signature),names=record.constructors.map(c=>c.source);
+        for(const [k,head] of (n.heads??[]).entries())if(constructorText(head.text,this.compilationBindings,type.signature,names)!==["zero","succ"][k])
+          throw scope.unit.locate(Error(`${record.source} has no constructor ${head.text}: its constructors are ${names.join(", ")}.`),head);
         const k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
         // Without `as`, the motive is constant and the predecessor unnamed.
         const stepScope=n.index?this.sourceBinding(n.index,T.variable(k),scope.bind(k,type)):scope.bind(k,type);
@@ -1608,7 +1628,7 @@ export class Translator {
         if(n.values)return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         const value=tr(n.value,null),type=inferred(value).type,sum=scope.nf(type);
         const declared=sum.tag==="Sort"&&n.clauses?matchedType(this,scope,value):null;
-        if(declared&&needsCompiling(this,n,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+        if(declared&&needsCompiling(this,n,declared,scope))
           return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         // A declared type's value (L2.2a); otherwise the legacy match on a sum.
         if(sum.tag==="Sort")return elaborateMatch(this,n,value,sum,scope,expected);

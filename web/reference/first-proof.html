@@ -446,6 +446,20 @@ def twice_named := 0;
 
 def twice_named := 1;  // Error: Duplicate declaration twice_named: a declaration in this module already owns that name.</code></pre>
             <p>Inside a declaration, parameters and local names shadow outer ones. Pick fresh local names when a clash would be confusing to the reader.</p>
+            <p id="qualified-names">A module's declaration is also <code>module::name</code>, written with no space around <code>::</code>, and nothing shadows it: no parameter, local name or dimension is named with <code>::</code>. A type, a constructor, a theory and a notation are named so too, as <code>unat::UNat</code>, <code>unat::zero</code> and, in <code>use unat::unat;</code> or <code>unat::unat.(2 + 3)</code>, the notation <code>unat</code>. It is read wherever a name refers to a declaration: in a term, a match's or an induction's constructors, a theory's parent, a rule's name, a hint and a selection, and a model's field, as <code>main::m.c</code>; in its own declaration too, where a type's constructors name the type or a definition calls itself. Where a name is introduced, by a declaration, a binder or a parameter, it is refused:</p>
+            <pre><code data-check="accept">import unat;
+use unat;
+
+// The parameter succ shadows unat's constructor; unat::succ is the constructor.
+def shift(succ : UNat -&gt; UNat, n : UNat) : UNat := unat::succ(succ(n));
+
+evaluate shift(fun (m : UNat) =&gt; m, 1) expecting 2;</code></pre>
+            <p>The module is the one the name is written in, or one imported, and it declares the name:</p>
+            <pre><code data-check="reject">import unat;
+
+def missing := unat::nothing;  // Error: unat declares no nothing, so unat::nothing names nothing.
+
+def unloaded := hlevels::IsProp;  // Error: hlevels::IsProp names a declaration of hlevels, which is not imported here: import hlevels;</code></pre>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">

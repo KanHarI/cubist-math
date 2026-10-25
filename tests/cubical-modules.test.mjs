@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
 const selected = JSON.parse(process.env.CUBIST_TEST_PROOFS ?? "[]");
 if (!selected.length) throw new Error("Select sources with npm test -- MODULE.");
 const module = await createCubical();
@@ -16,7 +16,7 @@ for (const path of selected) {
     const program = new CubicalProgram(module, sourceReader({ path }),
       { optimizations: JSON.parse(process.env.CUBIST_OPTIMIZATIONS ?? "{}") });
     t.after(() => program.dispose());
-    const result = await program.check(await readFile(path, "utf8"), basename(path, ".cubist"));
+    const result = await program.check(await readFile(path, "utf8"), moduleOfFile(path));
     assert.equal(result.complete, true, JSON.stringify(result.gaps, null, 2));
     t.diagnostic(`${result.outputs.length} declarations; ${result.instructionCount.toLocaleString()} native C checking steps`);
     t.diagnostic(`Axioms used: ${result.axiomCount ?? 0}`);

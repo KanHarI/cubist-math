@@ -43,7 +43,8 @@ const barePattern = pattern => !pattern.args && !pattern.binders?.length && !pat
 function patternScopes(pattern) {
   const groups=[];
   const add=(binders,role)=>groups.push({binders:present(binders),role,keys:["body","obligation"]});
-  if(barePattern(pattern)&&pattern.kind!=="pattern")add([pattern.constructor],"pattern");
+  // A qualified name, unat::zero, is a constructor, never a variable.
+  if(barePattern(pattern)&&pattern.kind!=="pattern"&&!pattern.constructor.text.includes("::"))add([pattern.constructor],"pattern");
   for(const {tokens,role} of clauseTelescope(pattern))for(const token of tokens) {
     if(token.kind==="pattern")groups.push(...patternScopes(token));
     else add([token],role);

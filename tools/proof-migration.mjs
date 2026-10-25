@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
-import { parse } from "../web/cubist/parser.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { displayTerm } from "../web/cubical-elaborator.mjs";
 import { validateLedger, ledgerMatches } from "./migration-ledger.mjs";
@@ -67,13 +67,24 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const allowedChanges = validateLedger(ledger);
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
+  // A compared module's imports and qualified names, m::x, name its shadow,
+  // its own among them, as the parser reads them: by its tokens. A source
+  // that does not tokenize is checked as it is, and fails as it is.
+  const shadowSource = source => {
+    let tokens;
+    try { tokens = tokenize(source); } catch { return source; }
+    const named = tokens.flatMap((token, k) => {
+      const module = tokens[k - 1]?.text === "import" ? token.text : /^([A-Za-z_][A-Za-z_0-9]*)::/.exec(token.text)?.[1];
+      return compared.has(module) ? [[token.start, token.start + module.length]] : [];
+    });
+    return named.reduceRight((text, [start, end]) => text.slice(0, start) + shadowOf(text.slice(start, end)) + text.slice(end), source);
+  };
   const editedSource = async module => {
     if (!editedSources.has(module)) {
       const source = await readEdited(module);
       const place = readEdited.placeOf?.(module);
       if (place) readOriginal.place?.(shadowOf(module), place);
-      editedSources.set(module, source.replace(/^(\s*import\s+)([A-Za-z_][A-Za-z_0-9]*)(\s*;)/gm,
-        (text, head, name, tail) => compared.has(name) ? `${head}${shadowOf(name)}${tail}` : text));
+      editedSources.set(module, shadowSource(source));
     }
     return editedSources.get(module);
   };

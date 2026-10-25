@@ -253,7 +253,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
       }
       const space = previous && sectionStarts.has(previous.start) || previous && !punctuation.has(text) && !["(", "["].includes(previous.text)
         && !prefixOperators.has(previous.start)
-        && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !keyword(previous) && !transportKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
+        && !(text === "(" && (/^[A-Za-z_0-9]+(?:::[A-Za-z_0-9]+)?$/.test(previous.text) && !keyword(previous) && !transportKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");
       if (space && ![",", "."].includes(previous.text)) {

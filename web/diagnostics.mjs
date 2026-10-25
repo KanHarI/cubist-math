@@ -131,6 +131,9 @@ export const diagnostics = [
   ["E002", "Historical unary migration would capture existing binding …."],
   ["E003", "Two demand marks in a row, … …, ask for one demand: write !, !! or !!! as one mark."],
   ["E004", "The demand mark … stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);."],
+  ["E005", "A qualified name names one module: module::name."],
+  ["E006", "A qualified name is a module's name, ::, and a name, with no space between: unat::zero."],
+  ["E007", "… names a module's declaration; a name declared or bound here is plain."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -184,6 +187,9 @@ export const diagnostics = [
   ["E250", "Test pragmas require explicit test mode."],
   ["E251", "Unknown workbench state."],
   ["E252", "Unsupported workbench operation."],
+  ["E253", "… names a declaration of …, which is not imported here: import …;"],
+  ["E254", "… declares no …, so … names nothing."],
+  ["E255", "… is declared below its use: a declaration uses only the declarations above it."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],
