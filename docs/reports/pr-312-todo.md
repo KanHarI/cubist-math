@@ -18,3 +18,17 @@ unfixed here.
   redexes. A variable's domain is in the type of the binder that binds it,
   which spelledOut does not track; shared syntax is spelled once per place,
   so tracking it needs binder types keyed by scope, not by node.
+
+- [ ] A truncated type's generated constructor is shown without its type's
+  name, which does not read back. With
+  `inductive T : prop U0 { c; } def g : c = c := T.squash(c,c);`, g's value
+  displays as `squash(c, c)` (under a dimension c, as
+  `squash(main::c, main::c)`), and reading it back fails with E343,
+  "Untranslated name: squash". Main at `8beac486` shows `squash(c, c)` too;
+  #312's review (round 13) reproduced it on the base. The source spells it
+  `T.squash`. A constructor term is decoded with the kernel signature
+  record's name for it, `squash` (`shownConstructor` in
+  `web/cubical-elaborator.mjs`, `decode` in `web/cubical-syntax.mjs`), and
+  `sourceText` prints that name. Only `signatureDisplay`'s constructor list,
+  which a match's clauses use, writes a generated constructor as
+  `T.squash`.
