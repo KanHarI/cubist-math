@@ -21,6 +21,17 @@ test("CLI checks custom sibling imports, rejects false proofs, and explores actu
   assert.match(shell.stdout, /Expression:/); assert.match(shell.stdout, /CC_(LAM|PATH)/);
   assert.match(run(["--help"]).stdout, /FILE.cubist/);
 });
+// A file whose name is no identifier is checked as the module its name
+// gives (moduleOfFile), whose declarations module::name spells, and whose
+// imports are its siblings.
+test("CLI checks my-proof.cubist as the module my_proof", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "helper.cubist"), "def h : Unit := tt;\n");
+  await writeFile(join(directory, "my-proof.cubist"), "import helper;\ndef q : Unit := helper::h;\ndef g : Unit := my_proof::q;\n");
+  const checked = run(["check", "my-proof.cubist"], { cwd: directory });
+  assert.equal(checked.status, 0, checked.stderr); assert.match(checked.stdout, /Checked 2 declarations/);
+});
 test("CLI reports assumptions and evaluates closed terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));

@@ -6,7 +6,7 @@ import { parse, tokenize } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
 import { ContextualSession } from "../web/contextual-session.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
 
@@ -289,6 +289,13 @@ test("a contextual entry reads a qualified name", async t => {
   assert.equal(diagnosticCode(refused.text), "E254", refused.text);
   assert.equal((await run("unat::unat.(2 + 3)")).text, (await run("unat.(2 + 3)")).text);
   assert.equal((await run("match unat::succ(unat::zero) return unat::UNat { unat::zero => unat::zero; unat::succ(k) => k; }")).text, "0");
+});
+
+// A module's name is an identifier, so that module::name spells it: a
+// file's is made one, and a program refuses any other.
+test("a module's name is an identifier", async t => {
+  assert.deepEqual(["dir/my-proof.cubist", "1st.cubist", "plain.cubist"].map(moduleOfFile), ["my_proof", "_1st", "plain"]);
+  await assert.rejects(checkProgram(t, "def q : Unit := tt;\n", { module, name: "my-proof" }), TypeError);
 });
 
 // The migration verifier checks an edited module as its shadow, whose own
