@@ -83,7 +83,11 @@ export function lowerInductive(translator, d, scope) {
     const registry=translator.compilationBindings;
     const record=at.unit.scopePoints?(token.bindingId?registry.table.get(token.bindingId)
       :registry.declaration(identity).binding):null;
-    const named=at.sourceBinding(token.text,value,record);
+    let named=at.sourceBinding(token.text,value,record);
+    // Its qualified name too, where the declaration writes it, which until
+    // now held the declaration's own refusal (qualified-names.mjs).
+    const qualified=`${translator.moduleName}::${token.text}`;
+    if(at.env.get(qualified)?.tag==="QualifiedFailure")named=named.alias(qualified,value);
     return record||!token.bindingId?named:named.alias(translator.identityAdapter.key(token.bindingId),value);
   };
   let inner = declareLocal(at.bind(sortName, placeholder),d.name,

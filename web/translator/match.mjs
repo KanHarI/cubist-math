@@ -43,6 +43,11 @@ export function withRecursion(scope,record,{introduce=false}={}) {
   const key=record.key??record.source;
   if(introduce)scope=scope.sourceBinding(key,record,scope.unit.scopePoints?.compilation.ofValue(record,scope.unit));
   else if(scope.env.get(key)?.tag==="Recursive")scope=scope.refine(key,record);
+  // Its qualified name too, where the declaration writes it, which until
+  // then held the declaration's own refusal (qualified-names.mjs).
+  const qualified=scope.env.get(record.qualified);
+  if(introduce&&qualified?.tag==="QualifiedFailure")scope=scope.alias(record.qualified,record);
+  else if(!introduce&&qualified?.tag==="Recursive")scope=scope.refine(record.qualified,record);
   return scope.alias(RECURSIVE,record);
 }
 

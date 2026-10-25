@@ -276,6 +276,11 @@ export class CubicalProgram {
     return this.check(modules.map(name => `import ${name};`).join("\n"), main, onProgress);
   }
   async check(source, main = "current", onProgress = () => {}, {reuseModules=false} = {}) {
+    // A module's name is an identifier, as an import's is, since
+    // module::name spells each of its declarations
+    // (reference/first-proof.html#qualified-names); a file's is
+    // moduleOfFile's (tools/module-sources.mjs).
+    if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(main)) throw new TypeError(`A module's name is an identifier, as my_proof is: ${JSON.stringify(main)} is not.`);
     // Discover the source graph before checking. This only reads and parses
     // source; it does not run the mathematical library or count repeated
     // imports twice.

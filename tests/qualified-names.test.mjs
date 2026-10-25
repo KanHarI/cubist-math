@@ -6,7 +6,7 @@ import { parse, tokenize } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { checkProgram } from "./check-program.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
 import { ContextualSession } from "../web/contextual-session.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
 
@@ -121,6 +121,21 @@ inductive X : prop U0 {
 
 def sq(x : X) : X := match x return X { main::pt => pt; X.squash(a, b) @ i => X.squash(sq(a), sq(b)) @ i; };
 
+inductive Ring {
+  base;
+  loop : main::base = main::base;
+}
+
+inductive N {
+  z;
+  s(n : main::N);
+}
+
+def double(n : UNat) : UNat := match n return UNat { zero => zero; succ(k) => succ(succ(main::double(k))); };
+evaluate double(2) expecting 4;
+def copy(n : UNat) := induction n return UNat { unat::zero => zero; unat::succ h => succ(succ(h)); };
+evaluate copy(2) expecting 4;
+
 inductive Opt(A : U0) {
   none;
   some(y : A);
@@ -167,9 +182,13 @@ def wrong(n : UNat) : UNat := match n return UNat { main::none => zero; unat::su
   assert.deepEqual(other.gaps.map(gap => [gap.name, gap.code]), [["wrong", "E528"]]);
 });
 
-// A module's own notation, where another import takes its label, and a
-// notation declared after its model is first used qualified.
+// A module's own notation and theory, where another import takes its
+// label, and a notation declared after its model is first used qualified.
 test("a qualified name reads its module's own notation", async t => {
+  const theory = "theory T(U < UU0) {\n  M : U;\n  c : M;\n}\n";
+  const { result: theories } = await checkProgram(t, "import a;\nimport b;\ntheory S(U < UU0) extends a::T {\n  d : M;\n}\n",
+    { module, reader: withModules({ a: theory, b: theory }) });
+  assert.deepEqual(theories.gaps, []);
   const { result } = await checkProgram(t, "import a;\nimport b;\nevaluate a::n.(Unit + Void) expecting Unit;\nevaluate b::n.(Unit + Void) expecting Void;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", b: "notation n {\n  x + y := y;\n}\n" }) });
   assert.deepEqual(result.gaps, []);
@@ -197,7 +216,9 @@ evaluate main::m.(0) expecting 1;
 // Retained syntax, a theory's, reports a qualified name's refusal; a module
 // of notations only is imported, and declares no other name.
 test("a qualified name's refusal is reported wherever it is read", async t => {
-  const { result } = await checkProgram(t, `theory T2(U < UU0) {
+  const { result } = await checkProgram(t, `import unat;
+
+theory T2(U < UU0) {
   M : U;
   c(n : missing::Nat) : M;
 }
@@ -220,32 +241,61 @@ def late : Unit := main::m.c;
 def hinted : Unit := with unfolding [missing::x] { tt };
 def early_hint : Unit := with unfolding [main::h] { tt };
 def h : Unit := tt;
+def member := main::h.foo;
+
+inductive Two {
+  p : main::q = main::q;
+  q;
+}
+
+inductive O {
+  zero;
+}
+
+def copy(n : unat::UNat) := induction n return unat::UNat { main::zero => n; unat::succ k => n; };
 `, { module });
   assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]),
-    [["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"]]);
-  const { result: notations } = await checkProgram(t, "import a;\ndef x : Unit := a::absent;\n",
-    { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n" }) });
-  assert.deepEqual(notations.gaps.map(gap => [gap.name, gap.code]), [["x", "E254"]]);
+    [["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"], ["member", "E254"], ["Two", "E255"], ["copy", "E528"]]);
+  const { result: notations } = await checkProgram(t, "import a;\nimport e;\ndef x : Unit := a::absent;\ndef y : Unit := e::absent;\n",
+    { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", e: "" }) });
+  assert.deepEqual(notations.gaps.map(gap => [gap.name, gap.code]), [["x", "E254"], ["y", "E254"]]);
 });
 
 // A contextual console entry reads a qualified name from its scope's
-// available declarations, past a parameter of that name, and its notations
-// and constructors.
+// available declarations, past a parameter of that name, and its notations,
+// where another import takes their label, and constructors; a refusal is
+// classified by the scope's module, which can have nothing available yet.
 test("a contextual entry reads a qualified name", async t => {
-  const source = "import unat;\nuse unat;\ndef x : U0 := Unit;\ndef f(x : U1) : U1 {\n  exact x;\n}\n";
-  const { program, result } = await checkProgram(t, source, { module, options: { collectScopes: true } });
+  const source = "import unat;\nimport a;\nimport b;\nimport e;\nuse unat;\ndef first : Unit {\n  exact tt;\n}\ndef x : U0 := Unit;\ndef f(x : U1) : U1 {\n  exact x;\n}\n";
+  const reader = withModules({ a: "notation n {\n  x + y := x;\n}\n", b: "notation n {\n  x + y := y;\n}\n", e: "" });
+  const { program, result } = await checkProgram(t, source, { module, reader, options: { collectScopes: true } });
   assert.deepEqual(result.gaps, []);
-  const start = source.indexOf("exact x;");
-  const point = [...program.scopePoints.values()].find(point => point.origin.module === "main" && point.origin.start === start && point.phase === "before");
-  const session = new ContextualSession(program, point.id);
-  t.after(() => session.dispose());
-  const run = async input => (await session.run(input))[0];
+  const session = text => {
+    const start = source.indexOf(text);
+    const point = [...program.scopePoints.values()].find(point => point.origin.module === "main" && point.origin.start === start && point.phase === "before");
+    const opened = new ContextualSession(program, point.id);
+    t.after(() => opened.dispose());
+    return async input => (await opened.run(input))[0];
+  };
+  const early = session("exact tt;");
+  for (const [input, code] of [["typeof main::absent", "E254"], ["typeof main::x", "E255"], ["typeof e::absent", "E254"]])
+    assert.equal(diagnosticCode((await early(input)).text), code, input);
+  const run = session("exact x;");
+  assert.equal((await run("a::n.(Unit + Void)")).text, "Unit");
+  assert.equal((await run("b::n.(Unit + Void)")).text, "Void");
   assert.equal((await run("typeof x")).text, "U1");
   assert.equal((await run("typeof main::x")).text, "U0");
   const refused = await run("typeof main::y");
   assert.equal(diagnosticCode(refused.text), "E254", refused.text);
   assert.equal((await run("unat::unat.(2 + 3)")).text, (await run("unat.(2 + 3)")).text);
   assert.equal((await run("match unat::succ(unat::zero) return unat::UNat { unat::zero => unat::zero; unat::succ(k) => k; }")).text, "0");
+});
+
+// A module's name is an identifier, so that module::name spells it: a
+// file's is made one, and a program refuses any other.
+test("a module's name is an identifier", async t => {
+  assert.deepEqual(["dir/my-proof.cubist", "1st.cubist", "plain.cubist"].map(moduleOfFile), ["my_proof", "_1st", "plain"]);
+  await assert.rejects(checkProgram(t, "def q : Unit := tt;\n", { module, name: "my-proof" }), TypeError);
 });
 
 // The migration verifier checks an edited module as its shadow, whose own

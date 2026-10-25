@@ -7,7 +7,7 @@ import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayP
 import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
-import {bindQualifiedNames,qualifiedLexical} from "./translator/qualified-names.mjs";
+import {bindQualifiedNames,declaredIn,qualifiedLexical} from "./translator/qualified-names.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax,lowerBindingReference} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
@@ -268,12 +268,15 @@ export class ContextualSession {
           throw new ElaborationStop(failure("unavailable",error,{stage:"validation"}));
         } finally {scope?.unit.fuel?.close();costs.validation=spent(replay.kernel,validation);}
 
+        // The scope's module, for why a qualified name is available nowhere.
+        const module=this.#point.origin.module,ast=replay.sourceAsts.get(module);
+        const scopeModule={current:module,declaredHere:ast?declaredIn(ast):new Set(),imports:new Set(ast?.imports??[])};
         const execute=(source,index)=>{
           applyKernelReplayPolicy(replay.kernel,selectedPolicy);
           const parsed=parsedEntry(source),reserved=reservedReferences(parsed.text);
           // The entry's qualified names, from the scope's available values.
           const {adapter:entryAdapter,context,constructors}=bindingInputs(table,live.values,{reserved,
-            lexical:[...lexical.snapshot(),...qualifiedLexical(parsed.tree,live.values,table,lexical.notations())]});
+            lexical:[...lexical.snapshot(),...qualifiedLexical(parsed.tree,live.values,table,lexical.notations(),scopeModule)]});
           const owner=["contextual-session",this.#serial,"entry",String(index)],moduleName=owner.join("/");
           const syntax=resolveBindingSyntax(parsed.tree,{table,owner,context,constructors,simpSets,
             source:{revision:inputs.revision,module:moduleName}});

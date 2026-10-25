@@ -207,6 +207,9 @@ export function notationDeclaration(t,module,d,env,declared=new Set()) {
     throw new TypeError("A retained notation entry needs its activated source artifact.");
   const notation=retainedNotationReceipt(t,d.retainedNotation,new Scope(module,new Map(),env));
   env.set(notationBinding(d.name.text),notation);
+  // By its qualified name too, which an import's notation of its name
+  // leaves in place (qualified-names.mjs).
+  env.set(notationBinding(`${t.moduleName}::${d.name.text}`),notation);
   env.set(t.identityAdapter.key(notation.bindingId),notation);
   registerRetainedNotationPrinting(t,d.retainedNotation,env);
 }
@@ -353,7 +356,11 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
       return env.get(theoryBinding(name))?.record??null;
     };
     const built=retainedTheoryDeclarations(t,module,d,env,{lookup,isTheory:name=>env.has(theoryBinding(name))});
-    env.set(theoryBinding(d.name.text),{tag:"Theory",name:d.name.text,record:built.record});
+    const theory={tag:"Theory",name:d.name.text,record:built.record};
+    env.set(theoryBinding(d.name.text),theory);
+    // By its qualified name too, which an import's theory of its name
+    // leaves in place (qualified-names.mjs).
+    env.set(theoryBinding(`${t.moduleName}::${d.name.text}`),theory);
     return built.declarations;
   } catch(failure) {
     propagateElaborationStop(failure);
