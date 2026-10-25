@@ -63,7 +63,7 @@ test("inferred induction statements simplify the motive and retain source binder
   assert.ok(k);
   let conclusion = view.folded.type;
   while (conclusion.tag === "Pi") conclusion = conclusion.body;
-  const tree = cubicalMathTree(conclusion, view.symbols);
+  const tree = cubicalMathTree(conclusion, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
   assert.equal(tree.left.args.at(-1).kind, "Lambda");
   assert.equal(tree.left.args.at(-1).name, "i");
   assert.equal(tree.left.args.at(-1).domain.fn.name, "Fin");
@@ -126,24 +126,24 @@ test("aliases abbreviate exact syntax and never cross a binder or rewrite stored
 test("notation preserves dependency and distinguishes renamed shadowing variables", () => {
   const symbols = { outer: { name: "x", local: true }, inner: { name: "x", local: true } };
   const body = { tag: "Pair", first: variable("inner"), second: variable("outer") };
-  const lambda = cubicalMathTree({ tag: "Lam", name: "inner", domain: unat, body }, symbols);
+  const lambda = cubicalMathTree({ tag: "Lam", name: "inner", domain: unat, body }, symbols, undefined, { dimensions: [] });
   assert.equal(lambda.name, "x′");
   assert.equal(lambda.body.left.name, "x′");
   assert.equal(lambda.body.right.name, "x");
-  assert.equal(cubicalMathTree({ tag: "Pi", name: "x", domain: unat, body: unat }).kind, "Arrow");
-  assert.equal(cubicalMathTree({ tag: "Sigma", name: "x", domain: unat, body: variable("x") }).kind, "Sigma");
+  assert.equal(cubicalMathTree({ tag: "Pi", name: "x", domain: unat, body: unat }, {}, undefined, { dimensions: [] }).kind, "Arrow");
+  assert.equal(cubicalMathTree({ tag: "Sigma", name: "x", domain: unat, body: variable("x") }, {}, undefined, { dimensions: [] }).kind, "Sigma");
 });
 
 test("path notation and raw syntax display stay bounded on shared terms", () => {
   let shared = unat;
   for (let i = 0; i < 28; i++) shared = { tag: "App", fn: shared, arg: shared };
   const constant = { tag: "PLam", dim: "i", family: shared, body: variable("x") };
-  assert.equal(cubicalMathTree(constant, {}, 1).fn.name, "refl");
+  assert.equal(cubicalMathTree(constant, {}, 1, { dimensions: [] }).fn.name, "refl");
   assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: shared,
-    left: variable("x"), right: variable("x") }, {}, 1).kind, "Identity");
+    left: variable("x"), right: variable("x") }, {}, 1, { dimensions: [] }).kind, "Identity");
   const varying = { tag: "PApp", path: variable("p"), arg: [["i:0"]] };
   assert.equal(cubicalMathTree({ tag: "Path", dim: "i", family: varying,
-    left: variable("x"), right: variable("x") }).fn.name, "PathP");
+    left: variable("x"), right: variable("x") }, {}, undefined, { dimensions: [] }).fn.name, "PathP");
   assert.equal(boundedSyntaxJson(shared), null);
   assert.equal(boundedSyntaxJson(unat), JSON.stringify(unat, null, 2));
   let deep = unat;
@@ -154,11 +154,11 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const { program } = await cases(t, "axiom_labels");
   const view = program.inspect("inspection_axiom_labels__Mere");
-  const tree = cubicalMathTree(view.folded.expression, view.symbols);
+  const tree = cubicalMathTree(view.folded.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
   assert.equal(tree.body.fn.axiomNotation, "truncation");
   assert.equal(tree.body.fn.truncationArgument, 1);
   assert.equal(program.inspect(tree.body.fn.binding).expression.tag, "Var");
-  const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } });
+  const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } }, undefined, { dimensions: [] });
   assert.equal(ordinary.axiomNotation, undefined);
 });
 

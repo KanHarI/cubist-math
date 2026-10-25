@@ -49,7 +49,7 @@ const tactics = {
       scope.checkDeadline();
       const left=step.left.kind==="name"&&step.left.name==="_"?previous:t.term(step.left,scope,path.family);
       if(!scope.equal(left,previous)) {
-        const [starts,ends]=t.termTexts([left,previous]);
+        const [starts,ends]=t.termTexts([left,previous],scope);
         throw Error(`calc step left endpoint does not match the preceding endpoint. The step starts at ${
           starts}; the chain so far ends at ${ends}.`);
       }
@@ -65,7 +65,7 @@ const tactics = {
       previous=right;
     }
     if(!scope.equal(previous,path.right)) {
-      const [ends,right]=t.termTexts([previous,path.right]);
+      const [ends,right]=t.termTexts([previous,path.right],scope);
       throw Error(`calc final endpoint does not match the goal. The chain ends at ${ends}; the goal's right side is ${right}.`);
     }
     scope.check(proof,goal.target);
@@ -251,7 +251,7 @@ const tactics = {
     // on one value each (patterns.mjs).
     if(!first.induction) {
       const declared=first.values?null:matchedType(t,scope,t.term(first.value,scope,null));
-      if(first.values||declared&&needsCompiling(t,first,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+      if(first.values||declared&&needsCompiling(t,first,declared,scope))
         return compileMatch(t,first,scope,{statement:true,goal,typeOf:(value,at)=>matchedType(t,at,value)});
     }
     return elaborateMatchStatement(t,first,goal,scope);

@@ -25,7 +25,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import {checkedSource} from "./checked-source.mjs";
 import {testProblems} from "../web/cubist/test-pragmas.mjs";
 import { cubistTestModules } from "../web/cubist/modules.mjs";
-import { sourceReader } from "./module-sources.mjs";
+import { moduleOfFile, sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 // The comments' syntax and what they state, which the benchmark reads too.
 import { readComment, normal, stated } from "../web/cubist/stated-comments.mjs";
@@ -120,15 +120,16 @@ if (process.argv[1]?.endsWith("inline-errors.mjs")) {
   const module = await createCubical();
   let differing = 0;
   for (const name of names.length ? names : cubistTestModules) {
-    const path = testModulePath(name), source = await readFile(path, "utf8");
+    // A module named by its file's path is the module the file's name gives.
+    const path = testModulePath(name), main = moduleOfFile(path), source = await readFile(path, "utf8");
     if (write) {
       const plain = stripped(source);
-      const {result}=await checkedTestSource(plain,name,path,module);
-      const text = inlined(plain, reported(plain, result, name));
+      const {result}=await checkedTestSource(plain,main,path,module);
+      const text = inlined(plain, reported(plain, result, main));
       if (text !== source) { await writeFile(path, text); console.log(`wrote ${name}`); }
     } else {
-      const { result } = await checkedModule(name, module);
-      if (JSON.stringify(reported(source, result, name)) !== JSON.stringify(stated(source))) {
+      const { result } = await checkedTestSource(source, main, path, module);
+      if (JSON.stringify(reported(source, result, main)) !== JSON.stringify(stated(source))) {
         differing++;
         console.log(`${name}: its checked comments differ from what the checker reports`);
       }

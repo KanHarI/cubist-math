@@ -49,9 +49,9 @@ test("projections print as p.1 and p.2 in source text and in mathematical notati
   assert.equal(sourceText({ tag: "Fst", pair: { tag: "App", fn: f, arg: p } }), "f(p).1");
   assert.equal(sourceText({ tag: "App", fn: { tag: "Snd", pair: p }, arg: f }), "p.2(f)");
   assert.equal(sourceText({ tag: "Fst", pair: lambda }), "(fun (x : Unit) => x).1");
-  assert.deepEqual(cubicalMathTree({ tag: "Snd", pair: p }), { kind: "Projection", index: 2, value: { kind: "Name", name: "p", local: true } });
-  assert.equal(cubicalText({ tag: "Fst", pair: { tag: "Snd", pair: p } }), "p.2.1");
-  assert.equal(cubicalText({ tag: "Fst", pair: lambda }), "(λ (x : Unit). x).1");
+  assert.deepEqual(cubicalMathTree({ tag: "Snd", pair: p }, {}, undefined, { dimensions: [] }), { kind: "Projection", index: 2, value: { kind: "Name", name: "p", local: true } });
+  assert.equal(cubicalText({ tag: "Fst", pair: { tag: "Snd", pair: p } }, {}, { dimensions: [] }), "p.2.1");
+  assert.equal(cubicalText({ tag: "Fst", pair: lambda }, {}, { dimensions: [] }), "(λ (x : Unit). x).1");
   // The source text reads back as the same projections.
   const text = sourceText({ tag: "Fst", pair: { tag: "App", fn: { tag: "Snd", pair: p }, arg: f } });
   assert.equal(text, "p.2(f).1");

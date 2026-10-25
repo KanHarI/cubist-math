@@ -3,10 +3,10 @@
 // assumptions before writing. With no --write, report the proposed changes.
 // Induction clauses in directives are not migrated: their lines are reported.
 import { readFile, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { sourceReader } from "./module-sources.mjs";
+import { moduleOfFile, sourceReader } from "./module-sources.mjs";
 import { verifyMigration } from "./proof-migration.mjs";
 import { checkedHypothesisStarts, migrateInductionHypotheses } from "./induction-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
@@ -17,7 +17,7 @@ if (!paths.length || paths.some(path => !path.endsWith(".cubist")))
 assertFreshBuild();
 const kernel = await createCubical();
 for (const file of paths) {
-  const path = resolve(file), name = basename(path, ".cubist"), source = await readFile(path, "utf8");
+  const path = resolve(file), name = moduleOfFile(path), source = await readFile(path, "utf8");
   const reader = sourceReader({ path }), program = new CubicalProgram(kernel, reader);
   let migration;
   try {

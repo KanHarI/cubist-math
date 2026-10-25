@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Source is elaborated by JavaScript; all accepted judgements come from C/WASM.
 import { readFile, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
@@ -11,7 +11,7 @@ import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
 import { moduleListing } from "../web/module-listing.mjs";
 import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
@@ -70,9 +70,9 @@ let program, view, binding, checkedModule, session = null, sessionProgram = null
 // What import can load, for the REPL's /modules.
 const importable = async () => moduleListing;
 function show() {
-  const shown = view.folded ?? view;
-  for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols)}`);
-  console.log(`${view.name}\nExpression: ${cubicalText(shown.reference ?? shown.expression, view.symbols)}\nType: ${cubicalText(shown.type, view.symbols)}`);
+  const shown = view.folded ?? view, options = { dimensions: (view.dimensions ?? []).map(([name]) => name) };
+  for (const entry of shown.context) console.log(`${entry.label ?? entry.name} : ${cubicalText(entry.type, view.symbols, options)}`);
+  console.log(`${view.name}\nExpression: ${cubicalText(shown.reference ?? shown.expression, view.symbols, options)}\nType: ${cubicalText(shown.type, view.symbols, options)}`);
 }
 // Entries run in a session over the checked module, or over an empty program
 // before any check. A new check keeps the session: its entries are replayed.
@@ -110,7 +110,7 @@ async function execute(line) {
     // A file is checked where it lives; a module name is found library-first.
     const file = value.endsWith(".cubist"), imports = sourceReader(file ? { path: value } : {});
     const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
-    const main = basename(value, ".cubist");
+    const main = file ? moduleOfFile(value) : value;
     program?.dispose(); view = null; binding = null;
     program = new CubicalProgram(module, imports, { optimizations });
     const result = await program.check(source, main);

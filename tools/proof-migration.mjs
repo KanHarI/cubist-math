@@ -15,9 +15,9 @@ import { createHash } from "node:crypto";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
-import { parse } from "../web/cubist/parser.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
-import { displayTerm } from "../web/cubical-elaborator.mjs";
+import { forSource } from "../web/display-naming.mjs";
 import { validateLedger, ledgerMatches } from "./migration-ledger.mjs";
 import { canonicalHasher } from "./canonical-hash.mjs";
 
@@ -67,13 +67,24 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const allowedChanges = validateLedger(ledger);
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
+  // A compared module's imports and qualified names, m::x, name its shadow,
+  // its own among them, as the parser reads them: by its tokens. A source
+  // that does not tokenize is checked as it is, and fails as it is.
+  const shadowSource = source => {
+    let tokens;
+    try { tokens = tokenize(source); } catch { return source; }
+    const named = tokens.flatMap((token, k) => {
+      const module = tokens[k - 1]?.text === "import" ? token.text : /^([A-Za-z_][A-Za-z_0-9]*)::/.exec(token.text)?.[1];
+      return compared.has(module) ? [[token.start, token.start + module.length]] : [];
+    });
+    return named.reduceRight((text, [start, end]) => text.slice(0, start) + shadowOf(text.slice(start, end)) + text.slice(end), source);
+  };
   const editedSource = async module => {
     if (!editedSources.has(module)) {
       const source = await readEdited(module);
       const place = readEdited.placeOf?.(module);
       if (place) readOriginal.place?.(shadowOf(module), place);
-      editedSources.set(module, source.replace(/^(\s*import\s+)([A-Za-z_][A-Za-z_0-9]*)(\s*;)/gm,
-        (text, head, name, tail) => compared.has(name) ? `${head}${shadowOf(name)}${tail}` : text));
+      editedSources.set(module, shadowSource(source));
     }
     return editedSources.get(module);
   };
@@ -190,9 +201,28 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     return type ? `${label}:${snapshotHash(type)}` : label;
   }});
   const readableBindings = mapDefinitions(originalName, originalName);
-  // Pin text uses the explicit unary view. Both the rendered text and the
-  // checked structural hash remain exact ledger requirements.
-  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(displayTerm(readableBindings(term)),{},4000,{selection:"unat"})});
+  // Pin text uses the explicit unary view, and labels as the kernel names
+  // them, no symbols, so that a pin reads alike however the elaborator
+  // displays terms; it is named as every display is (forSource), closed,
+  // over the original bindings. The definitions whose types and values it
+  // reads, for a folded motive's domain, are the ones the term is about: for
+  // an edited term, the edited module's shadows, read with original bindings
+  // too. Both the rendered text and the checked structural hash remain
+  // exact ledger requirements.
+  const shadowed = name => {
+    const index = name.indexOf("__"), module = name.slice(0, index);
+    return index > 0 && compared.has(module) ? `${shadowOf(module)}__${name.slice(index + 2)}` : name;
+  };
+  const snapshotNaming = edited => {
+    const { definitions } = checker.displayNaming([]);
+    const read = part => name => {
+      const term = definitions[part](edited ? shadowed(name) : name);
+      return term && readableBindings(term);
+    };
+    return { definitions: { ...definitions, type: read("type"), value: read("value") }, symbols: {}, dimensions: [] };
+  };
+  const snapshot = (term, edited = false) => ({hash:snapshotHash(term),
+    text:sourceText(forSource([readableBindings(term)],snapshotNaming(edited))[0],{},4000,{selection:"unat"})});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {
@@ -255,8 +285,8 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
             && checker.assumptionLabels.get(symbol) === label));
           if (removed.includes(old) && variants.length === 1) assumptionsReplaced.push({old,new:variants[0]});
         }
-        const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type),
-          oldValue:snapshot(before.term),newValue:snapshot(after.term),assumptionsReplaced,
+        const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type,true),
+          oldValue:snapshot(before.term),newValue:snapshot(after.term,true),assumptionsReplaced,
           hypothesesAdded:difference(newParameters.get(name) ?? [],oldParameters.get(name) ?? []),
           assumptionsRemoved:removed.filter(label => !assumptionsReplaced.some(change => change.old === label)),
           assumptionsRetained:oldAssumptions.filter(value => newAssumptions.includes(value)),

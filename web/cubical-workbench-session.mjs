@@ -6,7 +6,6 @@ import { kernelAssembly, operandNames, opcodeName } from "./cubical-assembly.mjs
 import { kernelOccurrence, kernelReductionActions, kernelStep } from "./cubical-kernel-step.mjs";
 import { judgementGraph } from "./cubical-graph-view.mjs";
 import { checkReduction, reduceView } from "./cubical-reduction.mjs";
-import { cubicalText } from "./cubical-notation.mjs";
 import { levelText } from "./cubical-levels.mjs";
 import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
@@ -81,9 +80,9 @@ export class WorkbenchSession {
     let text = label(node.handle);
     if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle));
     else if (!["Tube", "GlueSystem", "List", "LBound"].includes(node.kind)) {
-      const term = checker.syntax.decode(node.handle, new Map(view.dimensions ?? []));
+      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions);
       text = checker.displayGoal(new Map(view.context.map(x => [x.name, x.type])),
-        term, null, 180, cubicalText, false).goal;
+        dimensions, term, null, { width: 180, kernel: true, reduce: false }).goal;
     }
     return { ...node, text, label: label(node.handle),
       actions: kernelReductionActions(kernel, checked, side, path),

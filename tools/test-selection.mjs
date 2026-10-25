@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, relative, basename } from "node:path";
 import { parse } from "../web/cubist/parser.mjs";
 import { moduleNamePattern, moduleRoots } from "../web/module-resolution.mjs";
-import { projectRoot, sourceReader } from "./module-sources.mjs";
+import { moduleOfFile, projectRoot, sourceReader } from "./module-sources.mjs";
 
 export { projectRoot };
 export const defaultTests = readdirSync(new URL("../tests/", import.meta.url))
@@ -107,7 +107,7 @@ export function selectTests(args, { root = projectRoot, changed = () => changedP
 // importer's imports are validated after they load: two modules that would
 // load one name from different places are refused, and the refusal is thrown.
 export async function loadProof(path, root = projectRoot) {
-  const sources = {}, readSource = sourceReader({ path, root }), main = basename(path, ".cubist");
+  const sources = {}, readSource = sourceReader({ path, root }), main = moduleOfFile(path);
   const source = await readFile(path, "utf8");
   async function visit(importer, text) {
     const imports = parse(text).imports;

@@ -10,7 +10,7 @@ import {formatCubist} from "../web/cubist/formatter.mjs";
 import {parse} from "../web/cubist/parser.mjs";
 import {expandedSyntax} from "../web/cubist/tuples.mjs";
 import {budget} from "./timing.mjs";
-import {sourceReader} from "../tools/module-sources.mjs";
+import {moduleOfFile,sourceReader} from "../tools/module-sources.mjs";
 import {testModulePath} from "../tools/inline-errors.mjs";
 import {checkProgram,checkTestModule} from "./check-program.mjs";
 
@@ -40,7 +40,7 @@ test("short arithmetic, cubical and dependent examples elaborate to native axiom
   for(const name of ["arithmetic","cubical","dependent","type-transport"]) {
     const program=new CubicalProgram(await createCubical(),readLibrary);
     t.after(()=>program.dispose());
-    const result=await program.check(await sample(name),`ergonomics_${name}`);
+    const result=await program.check(await sample(name),`ergonomics_${moduleOfFile(name)}`);
     assert.equal(result.complete,true,`${name}: ${JSON.stringify(result.gaps)}`);
     assert.ok(result.outputs.every(d=>d.verified&&d.axioms.length===0),name);
     if(name==="arithmetic") for(const role of ["calculation witness","rewrite witness","simplification witness"]) {

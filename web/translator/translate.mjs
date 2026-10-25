@@ -41,6 +41,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
+import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -365,7 +366,7 @@ export class Translator {
     // The answer is read from its normal form, a numeral, not from its text.
     const normal=this.checker.verify(this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parse_answer")},
       args:[applied.node],...at},applied.scope,null)).normal,answer=numeralValue(normal);
-    if(answer===null)throw literalUnevaluated(selection,n.text,this.shown(normal));
+    if(answer===null)throw literalUnevaluated(selection,n.text,this.shown(normal,scope));
     if(answer!==0)throw scope.unit.locate(literalRefused(selection,n.text,answer-1),
       {start:n.start+answer-1,end:n.start+answer});
     return this.term({kind:"call",fn:{kind:"name",name:lexemeKey("parsed_value")},args:[applied.node,{kind:"name",name:"tt"}],
@@ -507,10 +508,12 @@ export class Translator {
         return this.inNotation(scope,()=>this.inspectSignature(body.signature));
     }
     const definition=d.value.kind==="name"&&result.term.tag==="DefRef"?this.checker.definitionViews?.get(result.term.name):null;
-    return this.checker.kernelText(definition?.term??result.term,1000);
+    return this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000);
   }
-  // A term as messages show it: source names, generated suffixes removed.
-  shown(term) {return this.checker.displayText?.(term,1000)??sourceText(term);}
+  // A term as messages show it, in `scope`'s context: source names,
+  // generated suffixes removed. Every display here is given the scope it
+  // shows terms in, whose dimensions name them (contextDimensions).
+  shown(term,scope) {return this.checker.displayText?.(term,scope?.dimensions,{width:1000})??sourceText(term);}
   itemScope(scope,item) {
     const selected=sourceItemScope(this,scope,item);
     this.checker.notation=notationForScope(selected);
@@ -528,12 +531,12 @@ export class Translator {
   // A term as read where `scope`'s notation is selected (L2.10d).
   shownIn(term,scope,{width=1000,reduce=256}={}) {
     const notation=notationForScope(scope);
-    return this.checker.displayText?.(term,width,printedNodes,notation,reduce)??sourceText(term,{},printedNodes,notation);
+    return this.checker.displayText?.(term,scope.dimensions,{width,limit:printedNodes,notation,reduce})??sourceText(term,{},printedNodes,notation);
   }
   // Terms in one scope that a message shows, named together: a variable
   // reads alike in each, apart from every label any of them prints. Closed
   // terms share no variable, and are shown alone.
-  shownTogether(terms) {return this.checker.displayTexts?.(terms,1000)??terms.map(term=>sourceText(term));}
+  shownTogether(terms,scope) {return this.checker.displayTexts?.(terms,scope?.dimensions,{width:1000})??terms.map(term=>sourceText(term));}
   translate(source, imported=new Map()) {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
@@ -561,6 +564,9 @@ export class Translator {
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
+    // What this module's source declares and imports, for why a qualified
+    // name is available nowhere.
+    this.declaredHere=declaredIn(ast);this.importedHere=new Set(ast.imports??[]);
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
     const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
@@ -646,6 +652,9 @@ export class Translator {
         continue;
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
+      // The qualified names it writes, bound where they are available.
+      bindQualifiedNames(env,queued,{bindings:this.compilationBindings,adapter:this.identityAdapter,
+        current:this.moduleName,declaredHere:this.declaredHere,imports:this.importedHere});
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
       const d=retained?.declaration??queued;
       const effects=fileSelectionEffects(d.kind);
@@ -788,7 +797,7 @@ export class Translator {
           const scope=new Scope(unit.with({references:null}),new Map(),env);
           const term=this.term({kind:"name",name:d.rule.text,start:d.rule.start,end:d.rule.end},scope,null);
           const type=scope.infer(term).type;
-          const shape=ruleShape(type,t=>this.shown(t));
+          const shape=ruleShape(type,t=>this.shown(t,scope));
           if(shape.refusal)throw unit.locate(noRule(d.rule.text,shape.refusal),d.rule);
           const identity=term.tag==="DefRef"?term.name:d.rule.text;
           if(this.simpRegistry.hlevel.get(identity)?.origin===this.moduleName)
@@ -841,7 +850,9 @@ export class Translator {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
           const sectional=d.section?.params.length??0;
+          const spelled=`${this.moduleName}::${d.name.text}`;
           const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,
+            ...(qualifiedNamesIn(d).has(spelled)?{qualified:spelled}:{}),
             params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
@@ -1242,6 +1253,8 @@ export class Translator {
       throw error;
     }
     if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+    // A qualified name available nowhere (bindQualifiedNames).
+    if(value.tag==="QualifiedFailure")throw Error(value.message);
     if(value.tag==="Ambiguous")throw Error(value.message);
     if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
     if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
@@ -1263,6 +1276,7 @@ export class Translator {
         for(const hint of n.hints) {
           const expression=referenceSyntax(hint),{node,scope:at}=this.expressionScope(expression,scope);
           let value=node.kind==="name"?at.env.get(node.name):this.term(node,at,null);
+          if(value?.tag==="QualifiedFailure")throw Error(value.message);
           while(value?.tag==="App")value=value.fn;
           if(value?.tag!=="DefRef")throw Error(`No checked definition to unfold: ${sourceName(expression)}`);
           if(node.kind==="name")this.reference(at,node,value,null);
@@ -1335,6 +1349,10 @@ export class Translator {
           throw Error(`${theory}.Model is now ${theory}: a theory's name is the type of its models, as in ${theory}(U0).`);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
+        // A qualified name that no item bound, as in syntax made elsewhere;
+        // a member its available prefix lacks is refused as any name's is.
+        if(n.moduleQualifier&&!availablePrefix(n.name,env))throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
+          imports:this.importedHere,adapter:this.identityAdapter});
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
@@ -1549,7 +1567,7 @@ export class Translator {
         // checked type of p, so nothing is passed explicitly (HoTT A8).
         const pair=tr(n.value,null),type=inferred(pair).type;
         if(scope.nf(type).tag!=="Sigma")
-          throw scope.unit.locate(Error(`Projection .${n.index} requires a dependent pair; found a value of type ${this.shown(type)}.`),
+          throw scope.unit.locate(Error(`Projection .${n.index} requires a dependent pair; found a value of type ${this.shown(type,scope)}.`),
             {start:n.dot.start,end:n.digit.end});
         return n.index===1?T.first(pair):T.second(pair);
       }
@@ -1592,6 +1610,10 @@ export class Translator {
         }
         // Binders keep their source names, so the checked term reads as written.
         const value=tr(n.value,null),natural=this.naturalSignature(scope,inferred(value).type),type=natural.type;
+        // A head written qualified names the natural numbers' constructor.
+        const record=this.checker.inductives.get(type.signature),names=record.constructors.map(c=>c.source);
+        for(const [k,head] of (n.heads??[]).entries())if(constructorText(head.text,this.compilationBindings,type.signature,names)!==["zero","succ"][k])
+          throw scope.unit.locate(Error(`${record.source} has no constructor ${head.text}: its constructors are ${names.join(", ")}.`),head);
         const k=scope.fresh(bindingStem(n.index)),ih=scope.fresh(bindingStem(n.hypothesis));
         // Without `as`, the motive is constant and the predecessor unnamed.
         const stepScope=n.index?this.sourceBinding(n.index,T.variable(k),scope.bind(k,type)):scope.bind(k,type);
@@ -1608,7 +1630,7 @@ export class Translator {
         if(n.values)return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         const value=tr(n.value,null),type=inferred(value).type,sum=scope.nf(type);
         const declared=sum.tag==="Sort"&&n.clauses?matchedType(this,scope,value):null;
-        if(declared&&needsCompiling(this,n,new Set(declared.constructors.map(constructor=>constructor.name)),scope))
+        if(declared&&needsCompiling(this,n,declared,scope))
           return compileMatch(this,n,scope,{expected,typeOf:(value,at)=>matchedType(this,at,value)});
         // A declared type's value (L2.2a); otherwise the legacy match on a sum.
         if(sum.tag==="Sort")return elaborateMatch(this,n,value,sum,scope,expected);
@@ -1683,7 +1705,7 @@ export class Translator {
     if(statement.type) {
       const type=this.term(statement.type,scope,null),sort=scope.infer(type).type;
       if(scope.nf(sort).tag!=="U")
-        throw unit.locate(Error(`let states a type after the colon; found a value of type ${this.shown(sort)}.`),statement.type);
+        throw unit.locate(Error(`let states a type after the colon; found a value of type ${this.shown(sort,scope)}.`),statement.type);
       const checked=statement.body?scope.check(this.block(statement.body,new Goal(type,scope)),type)
         :scope.check(this.term(statement.value,scope,type),type);
       return this.sourceBinding(statement.target,scope.ascribe(checked,type),scope);
@@ -1768,19 +1790,19 @@ export class Translator {
       const term=this.term(node,scope,null),type=scope.infer(term).type;
       if(hlevelStatement(type))return {term,type};
       if(!["Pi","LPi"].includes(scope.nf(type).tag))
-        throw Error(`The hint ${this.shown(term)} has type ${this.shown(type)}, which states no h-level.`);
-      const shape=ruleShape(type,t=>this.shown(t));
-      if(shape.refusal)throw noRule(`The hint ${this.shown(term)}`,shape.refusal);
+        throw Error(`The hint ${this.shown(term,scope)} has type ${this.shown(type,scope)}, which states no h-level.`);
+      const shape=ruleShape(type,t=>this.shown(t,scope));
+      if(shape.refusal)throw noRule(`The hint ${this.shown(term,scope)}`,shape.refusal);
       return {term,type};
     });
     const locals=this.hlevelLocals(scope);
     const proof=this.search(scope,"hlevel",at=>{
-      const search=new HLevelSearch(at,hints,term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)});
+      const search=new HLevelSearch(at,hints,term=>this.shown(term,at),locals,{rules:orderedHLevelRules(this.simpRegistry)});
       const stated=hlevelStatement(goal.target);
       try {
         if(stated)return search.prove(stated.level,stated.universe,stated.type);
         const path=goal.equality();
-        if(!path)throw Error(`hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ${this.shown(goal.target)}.`);
+        if(!path)throw Error(`hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ${this.shown(goal.target,at)}.`);
         const sort=at.nf(at.infer(path.family).type);
         if(sort.tag!=="U")throw Error("hlevel needs the type of the equality's sides to be in a universe.");
         return T.app(T.app(search.prove(0,sort.level,path.family),path.left),path.right);
@@ -1790,10 +1812,10 @@ export class Translator {
         // Each variable the search introduced for a binder is shown by that
         // binder's name.
         const shown=(term,names)=>this.shown([...names].reduce((renamed,[name,binder])=>
-          substituteTerm(renamed,name,T.variable(stem(binder))),term));
+          substituteTerm(renamed,name,T.variable(stem(binder))),term),at);
         const needs=error.chain.slice(1).map(step=>`${shown(step.type,step.names)} to be ${levelName(step.level)}`
           +(step.binder?` for every ${stem(step.binder.name)} : ${shown(step.binder.domain,step.names)}`:""));
-        throw Error(`hlevel could not prove ${this.shown(goal.target)}${needs.length?`: it needs ${needs.join(", which needs ")}`:""}; ${error.reason}.`);
+        throw Error(`hlevel could not prove ${this.shown(goal.target,at)}${needs.length?`: it needs ${needs.join(", which needs ")}`:""}; ${error.reason}.`);
       }
     });
     return this.conclude(first,new Transition(goal),proof,()=>({
@@ -1821,7 +1843,7 @@ export class Translator {
     const locals=this.hlevelLocals(scope);
     try {
       return scope.check(this.search(scope,"hlevel",at=>
-        new HLevelSearch(at,[],term=>this.shown(term),locals,{rules:orderedHLevelRules(this.simpRegistry)})
+        new HLevelSearch(at,[],term=>this.shown(term,at),locals,{rules:orderedHLevelRules(this.simpRegistry)})
           .prove(stated.level,stated.universe,stated.type)),type);
     } catch(error) {
       propagateElaborationStop(error);
@@ -1876,8 +1898,8 @@ export class Translator {
   // A goal for a diagnostic (HoTT A6): its target in source syntax, bounded
   // in length.
   goalText(goal,width=160) {
-    try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.target,null,width,null,true,
-      notationForScope(goal.scope)).goal??sourceText(goal.target);}
+    try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.scope.dimensions,goal.target,null,
+      {width,notation:notationForScope(goal.scope)}).goal??sourceText(goal.target);}
     catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
   // Two goals one diagnostic shows, named together when they share a scope,
@@ -1885,8 +1907,8 @@ export class Translator {
   goalTexts(goal,other,width=160) {
     if(goal.scope!==other.scope||!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
     try {
-      const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.target,other.target,width,null,true,
-        notationForScope(goal.scope));
+      const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.scope.dimensions,goal.target,other.target,
+        {width,notation:notationForScope(goal.scope)});
       return [shown.goal,shown.built];
     } catch (control) {propagateElaborationStop(control);return ["(too large to show)","(too large to show)"];}
   }
@@ -1903,14 +1925,10 @@ export class Translator {
     const shown=this.goalText(goal);
     return ` Remaining goal: ${shown}${shown.endsWith("…")?"":"."} ${this.rewriteSummary(trace)}`;
   }
-  // A term for a diagnostic, in source syntax, bounded in length.
-  termText(term,width=160) {
-    try {return this.checker.displayText?.(term,width)??sourceText(term);}
-    catch (control) {propagateElaborationStop(control);return "(too large to show)";}
-  }
-  // Terms one diagnostic shows, named together, each bounded in length.
-  termTexts(terms,width=160) {
-    try {return this.checker.displayTexts?.(terms,width)??terms.map(term=>sourceText(term));}
+  // Terms one diagnostic shows in `scope`, named together, each bounded in
+  // length.
+  termTexts(terms,scope,width=160) {
+    try {return this.checker.displayTexts?.(terms,scope.dimensions,{width})??terms.map(term=>sourceText(term));}
     catch (control) {propagateElaborationStop(control);return terms.map(()=>"(too large to show)");}
   }
   // A search stopped by a limit or by its fuel says where it stopped, once:

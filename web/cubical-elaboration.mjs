@@ -81,7 +81,7 @@ export function elaboration(program, module) {
       const view = program.inspect(info.binding), checker = program.checker, dimensions = new Map(view.dimensions ?? []);
       const notation = info.notation;
       return { ...result, steps,
-        type: checker.displayText(view.type, 600, 4000, notation), term: checker.displayText(view.expression, 600, 4000, notation),
+        type: checker.displayText(view.type, dimensions, { width: 600, notation }), term: checker.displayText(view.expression, dimensions, { width: 600, notation }),
         derivation: derivation(program, view) };
     } catch (error) {
       return { ...result, steps, reason: error.message };

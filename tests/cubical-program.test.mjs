@@ -65,10 +65,10 @@ test("unsupported foundations and invalid proofs remain explicitly unverified", 
 });
 
 test("native notation preserves named references and dependent path families", () => {
-  assert.deepEqual(cubicalMathTree({ tag: "DefRef", name: "m__F" }, { m__F: { name: "F" } }),
+  assert.deepEqual(cubicalMathTree({ tag: "DefRef", name: "m__F" }, { m__F: { name: "F" } }, undefined, { dimensions: [] }),
     { kind: "Name", name: "F", binding: "m__F" });
   const family = { tag: "PApp", path: { tag: "Var", name: "p" }, arg: [["i:1"]] };
-  const tree = cubicalMathTree({ tag: "Path", dim: "i", family, left: { tag: "Var", name: "a" }, right: { tag: "Var", name: "b" } });
+  const tree = cubicalMathTree({ tag: "Path", dim: "i", family, left: { tag: "Var", name: "a" }, right: { tag: "Var", name: "b" } }, {}, undefined, { dimensions: [] });
   assert.equal(tree.fn.name, "PathP");
 });
 
@@ -253,7 +253,7 @@ test("every named reference in the generic group definitions is inspectable with
   }
   const view = program.inspect("group_universes__GroupAssociativeAt");
   assert.equal(view.type.tag, "LPi");
-  const notation = JSON.stringify(cubicalMathTree(view.expression, view.symbols));
+  const notation = JSON.stringify(cubicalMathTree(view.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) }));
   for (const name of ["U", "A", "multiply", "x", "y", "z"]) assert.ok(notation.includes(`"name":"${name}"`), name);
   assert.doesNotMatch(notation, /"name":"(?:U|A|multiply|x|y|z)_?[0-9]+"/);
 });

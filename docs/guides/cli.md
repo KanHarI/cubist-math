@@ -32,6 +32,10 @@ Check it with:
 node cli/repl.mjs check example.cubist
 ```
 
+The file is checked as the module its name gives, as an identifier:
+`my-proof.cubist` is the module `my_proof`, whose declarations are
+`my_proof::name` ([qualified names](../../web/reference/first-proof.html#qualified-names)).
+
 A successful check prints the declaration and kernel-step counts and exits with
 status 0. Parse errors, missing imports, or unchecked declarations exit nonzero,
 each printed on a line of its own with its code, as

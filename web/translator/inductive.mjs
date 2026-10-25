@@ -9,6 +9,7 @@ import {T,finiteLevel,freeNames,substituteTerm,substituteDimension,betaReduce} f
 import {interval as I} from "./lattice.mjs";
 import {repeatedName,bindingStem} from "./names.mjs";
 import {parameterGroups} from "../cubist/telescopes.mjs";
+import {qualifiedNamesIn} from "./qualified-names.mjs";
 
 export const INDUCTIVE_TAGS = new Set(["Inductive","InductiveSelf","InductiveConstructor"]);
 
@@ -77,13 +78,19 @@ export function lowerInductive(translator, d, scope) {
   // no data type or arity mentions the sort, so none depends on its level.
   const sortName = at.fresh(d.name.text), sortVariable = T.variable(sortName);
   const placeholder = T.universe(declared ?? { tag: "LConst", tier: 1, value: 0 });
+  // The qualified names the declaration writes, its own among them.
+  const written=qualifiedNamesIn(d);
   const declareLocal=(at,token,value,identity)=>{
     // Before admission these are variables in the provisional signature's
     // telescope. Record their introduction here, never from the final module.
     const registry=translator.compilationBindings;
     const record=at.unit.scopePoints?(token.bindingId?registry.table.get(token.bindingId)
       :registry.declaration(identity).binding):null;
-    const named=at.sourceBinding(token.text,value,record);
+    let named=at.sourceBinding(token.text,value,record);
+    // Its qualified name too, where the declaration writes it
+    // (qualified-names.mjs); a constructor not yet introduced stays refused.
+    const qualified=`${translator.moduleName}::${token.text}`;
+    if(written.has(qualified))named=named.alias(qualified,value);
     return record||!token.bindingId?named:named.alias(translator.identityAdapter.key(token.bindingId),value);
   };
   let inner = declareLocal(at.bind(sortName, placeholder),d.name,
@@ -230,7 +237,7 @@ function substituteAll(term, pairs) {
 // its arguments in the order the source wrote them.
 export function resolveInductive(translator, node, value, args, scope, expected) {
   const locate = error => scope.unit.locate(error, node);
-  const shown = term => translator.shown(term);
+  const shown = term => translator.shown(term, scope);
   const reference = term => {
     // A type occurrence points to its source declaration, including a
     // recursive occurrence while its constructors are being elaborated.
