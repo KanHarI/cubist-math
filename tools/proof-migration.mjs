@@ -192,11 +192,25 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const readableBindings = mapDefinitions(originalName, originalName);
   // Pin text uses the explicit unary view, and labels as the kernel names
   // them, no symbols, so that a pin reads alike however the elaborator
-  // displays terms; it is named as every display is (forSource), closed.
-  // Both the rendered text and the checked structural hash remain exact
-  // ledger requirements.
-  const snapshot = term => ({hash:snapshotHash(term),text:sourceText(forSource([readableBindings(term)],
-    {...checker.displayNaming([]),symbols:{}})[0],{},4000,{selection:"unat"})});
+  // displays terms; it is named as every display is (forSource), closed,
+  // over the original bindings. A definition it unfolds is the one the term
+  // is about: for an edited term, the edited module's shadow, its value and
+  // type read with original bindings too. Both the rendered text and the
+  // checked structural hash remain exact ledger requirements.
+  const shadowed = name => {
+    const index = name.indexOf("__"), module = name.slice(0, index);
+    return index > 0 && compared.has(module) ? `${shadowOf(module)}__${name.slice(index + 2)}` : name;
+  };
+  const snapshotNaming = edited => {
+    const { definitions } = checker.displayNaming([]);
+    const read = part => name => {
+      const term = definitions[part](edited ? shadowed(name) : name);
+      return term && readableBindings(term);
+    };
+    return { definitions: { ...definitions, type: read("type"), value: read("value") }, symbols: {}, dimensions: [] };
+  };
+  const snapshot = (term, edited = false) => ({hash:snapshotHash(term),
+    text:sourceText(forSource([readableBindings(term)],snapshotNaming(edited))[0],{},4000,{selection:"unat"})});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {
@@ -259,8 +273,8 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
             && checker.assumptionLabels.get(symbol) === label));
           if (removed.includes(old) && variants.length === 1) assumptionsReplaced.push({old,new:variants[0]});
         }
-        const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type),
-          oldValue:snapshot(before.term),newValue:snapshot(after.term),assumptionsReplaced,
+        const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type,true),
+          oldValue:snapshot(before.term),newValue:snapshot(after.term,true),assumptionsReplaced,
           hypothesesAdded:difference(newParameters.get(name) ?? [],oldParameters.get(name) ?? []),
           assumptionsRemoved:removed.filter(label => !assumptionsReplaced.some(change => change.old === label)),
           assumptionsRetained:oldAssumptions.filter(value => newAssumptions.includes(value)),

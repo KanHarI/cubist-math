@@ -546,6 +546,36 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   assert.equal(sourceText(settled, looped), "fun (x : S) => match x return T { loop @ f => p @ ~f; }");
 });
 
+// A definition named as the context's dimension q is unfolded, and every
+// redex its value makes contracted, however it is reached: through an
+// ascribed argument the value applies, and through a value that is a
+// function applied twice. Each text reads back as the value. A redex the
+// term has of its own, though it shares the very syntax of the value, is
+// kept.
+test("an unfolding contracts every redex it makes, and only those", async t => {
+  const circle = `inductive Circle {
+  base;
+  loop : base = base;
+}
+`;
+  for (const definitions of [
+    "def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(typed(base = base, path e => loop @ e));",
+    "def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;"]) {
+    const { program, result } = await checkProgram(t, `${circle}${definitions}\n`, { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program;
+    const text = checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value), ["q"], { width: 4000 });
+    assert.doesNotMatch(text, /\bq\b/, text);
+    const { result: back } = await checkProgram(t, `${circle}${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
+    assert.deepEqual(back.gaps, [], text);
+  }
+  const { program } = await checkProgram(t, "def q(u : Unit) : Unit := u;\n", { module });
+  const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__q")).value);
+  const pair = { tag: "Pair", first: { tag: "DefRef", name: "main__q" }, second: { tag: "App", fn: value, arg: { tag: "Point" } } };
+  assert.equal(checker.displayText(pair, ["q"], { width: 4000, reduce: 0 }),
+    "(fun (u : Unit) => (fun (ascription : Unit) => ascription)(u), (fun (u : Unit) => (fun (ascription : Unit) => ascription)(u))(tt))");
+});
+
 // An ascription is the term's own redex, kept though the eliminator in its
 // type is spelled out: evaluation's weak head leaves one inside the value.
 test("a display keeps the term's own redexes", async t => {

@@ -364,33 +364,44 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
   };
   // A spine node, its root, and the value former it takes there.
   const spine = { App: ["fn", "Lam"], LApp: ["fn", "LLam"], Fst: ["pair", "Pair"], Snd: ["pair", "Pair"], PApp: ["path", "PLam"] };
-  const redex = t => spine[t?.tag] && t[spine[t.tag][0]]?.tag === spine[t.tag][1];
-  // What an unfolding puts in the terms: a definition's value, an argument
-  // a contraction substitutes, and a contraction's result. A spine node whose
-  // root is one of these, and is the value former the node takes, is a redex
-  // the unfolding made, which the source cannot check, as
-  // (path i => loop @ ~i) @ j: contracted, so that the node above sees a
-  // value in turn. Every other redex is the term's own, as an ascription
-  // typed(A, a) is, and is kept: contracted, it can leave text the source
-  // cannot check.
+  // What an unfolding puts in the terms, at this occurrence: a definition's
+  // value, an argument a contraction substitutes, and a contraction's
+  // result, each marked as a copy no other node holds: decoded syntax is
+  // shared, and a mark on a shared node would reach the term's own
+  // occurrences of it. A spine node whose root is marked, and whose root's
+  // weak head is the value former the node takes, is a redex the unfolding
+  // made, which the source cannot check, as (path i => loop @ ~i) @ j:
+  // contracted, so that the node above sees a value in turn. Every other
+  // redex is the term's own, as an ascription typed(A, a) is, and is kept:
+  // contracted, it can leave text the source cannot check.
   const exposed = new WeakSet();
-  const expose = t => { if (t && typeof t === "object") exposed.add(t); return t; };
-  const formers = new Set(Object.values(spine).map(([, former]) => former));
+  const mark = t => {
+    if (!t || typeof t !== "object") return t;
+    const copy = Array.isArray(t) ? [...t] : { ...t };
+    exposed.add(copy);
+    return copy;
+  };
   let contractions;
   const contract = node => {
     contractions--;
     const value = node[spine[node.tag][0]];
-    // An argument that is a value, put at a spine's root in the body, makes
-    // a redex there: substituted as a copy no other node holds, it marks it.
-    if (node.tag === "App") return substituteTerm(value.body, value.name, formers.has(node.arg?.tag) ? expose({ ...node.arg }) : node.arg);
+    // The argument, put at a spine's root in the body, can make a redex
+    // there, its own head consumed too.
+    if (node.tag === "App") return substituteTerm(value.body, value.name, mark(node.arg));
     if (node.tag === "LApp") return substituteTerm(value.body, value.name, node.level);
     if (node.tag === "PApp") return substituteDimension(value.body, value.dim, node.arg);
     return node.tag === "Fst" ? value.first : value.second;
   };
-  // A value at a spine's root is consumed by the spine: its own head
-  // redexes go first, as the identity ascription a definition's value can
-  // have around it.
-  const head = t => { while (redex(t) && contractions > 0) t = contract(t); return t; };
+  // The weak head of a value a spine consumes: its own redexes along its
+  // spine go first, as the identity ascription a definition's value can have
+  // around it, or a function applied twice; no other part is touched.
+  const head = t => {
+    const [root, former] = spine[t?.tag] ?? [];
+    if (!root || contractions <= 0) return t;
+    const inner = head(t[root]);
+    if (inner.tag === former) return head(contract({ ...t, [root]: inner }));
+    return inner === t[root] ? t : { ...t, [root]: inner };
+  };
   const spell = term => {
     contractions = 256;
     // The dimensions this term and its context name, which a definition
@@ -405,7 +416,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
       if (table.has(t)) return table.get(t);
       let result = t;
       if (t.tag === "DefRef" && depth < 16 && named.has(definitions.label(t.name)) && definitions.value(t.name)) {
-        result = expose(go(added(definitions.value(t.name)), applying, depth + 1));
+        result = mark(go(added(definitions.value(t.name)), applying, depth + 1));
         table.set(t, result);
         return result;
       }
@@ -416,17 +427,19 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
           result[key] = changed;
         }
       }
-      if (exposed.has(t)) expose(result);
+      if (exposed.has(t)) exposed.add(result);
       // An unfolded value a binder is added around, as an eta-reduced clause
-      // that is a definition named as a dimension: its head redexes
-      // contracted, and spelled out again, so that the function or path its
-      // head is takes the binder itself.
-      const settle = value => exposed.has(value) && redex(value) && contractions > 0
-        ? expose(go(added(head(value)), false, depth + 1)) : value;
+      // that is a definition named as a dimension: its weak head, spelled out
+      // again, so that the function or path it is takes the binder itself.
+      const settle = value => {
+        if (!exposed.has(value) || contractions <= 0) return value;
+        const reduced = head(value);
+        return reduced === value ? value : mark(go(added(reduced), false, depth + 1));
+      };
       const [root, former] = spine[t.tag] ?? [];
       if (root && exposed.has(result[root]) && contractions > 0) {
         const value = head(result[root]);
-        if (value.tag === former) result = expose(go(added(contract({ ...result, [root]: value })), applying, depth + 1));
+        if (value.tag === former) result = mark(go(added(contract({ ...result, [root]: value })), applying, depth + 1));
       }
       if (result.tag === "SumRec")
         result = { ...result, motive: applied(settle(result.motive), "z"), left: applied(settle(result.left), "a"), right: applied(settle(result.right), "b") };

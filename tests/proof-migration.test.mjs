@@ -178,6 +178,33 @@ def same : back = f := refl(f);
   }
 });
 
+// A snapshot unfolds the definitions of its own side: d0, named as the
+// dimension decoding gives f's path, shows by its value, the original's in
+// the old snapshot and the edited one's in the new, with its references
+// shown by their original names, and each reads back as its side's f.
+test("a snapshot unfolds the definitions of its side", async t => {
+  const before = `inductive Circle {
+  base;
+  loop : base = base;
+}
+def l : base = base := loop;
+def d0 : base = base := l;
+def f : base = base := path i => d0 @ i;
+`;
+  const after = before.replace("def d0 : base = base := l;", "def d0 : base = base := path j => l @ ~j;");
+  const [report] = await verifyMigration({ modules: ["unfold_fixture"], level: "types",
+    readOriginal: name => name === "unfold_fixture" ? before : library(name), readEdited: async () => after });
+  assert.deepEqual(report.failures, []);
+  const change = report.changes.find(change => change.declaration === "f");
+  for (const [source, { text }] of [[before, change.oldValue], [after, change.newValue]]) {
+    const { result } = await checkProgram(t, `${source}def back : base = base := ${text};
+def same : back = f := refl(f);
+`);
+    assert.deepEqual(result.gaps, [], text);
+  }
+  assert.notEqual(change.oldValue.text, change.newValue.text);
+});
+
 test("dependents are checked against edited definitions they mention", async () => {
   const originals = {
     // n + 0 does not reduce for a variable n, so the edited pick is not
