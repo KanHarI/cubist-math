@@ -41,7 +41,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
-import {qualifiedValue,unknownQualifiedName} from "./qualified-names.mjs";
+import {bindQualifiedNames,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -564,9 +564,10 @@ export class Translator {
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
-    // The names this module's source declares, for a qualified use of one
-    // above its declaration.
-    this.declaredHere=new Set(ast.declarations.map(d=>d.name?.text).filter(Boolean));
+    // The names this module's source declares, constructors among them, for
+    // a qualified use of one above its declaration: its items, as prepared
+    // syntax holds them too.
+    this.declaredHere=new Set((ast.items??ast.declarations??[]).filter(d=>d.name).flatMap(d=>declaredNames(d).map(({name})=>name)));
     const env=new Map(imported),declarations=[],directives=[];
     const declarationKey=d=>d.name.bindingId?this.identityAdapter.key(d.name.bindingId):null;
     const publish=(d,value)=>this.publishDeclaration(env,d.name.text,value);
@@ -652,6 +653,8 @@ export class Translator {
         continue;
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
+      // The qualified names it writes, bound where they are available.
+      bindQualifiedNames(env,queued,{bindings:this.compilationBindings,adapter:this.identityAdapter});
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
       const d=retained?.declaration??queued;
       const effects=fileSelectionEffects(d.kind);
@@ -1320,13 +1323,10 @@ export class Translator {
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.
         if(isHole(n))throw Error("A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.");
-        // module::name, a module's declaration by a name no binder shadows.
-        if(n.moduleQualifier) {
-          const value=qualifiedValue(n.name,env,this.compilationBindings,this.identityAdapter);
-          if(value)return this.valueTerm(n,value,scope,expected);
+        // module::name, bound where it is available (bindQualifiedNames).
+        if(n.moduleQualifier&&!env.has(n.name))
           throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere??new Set(),
             bindings:this.compilationBindings,adapter:this.identityAdapter});
-        }
         if(env.has(n.name))return this.valueTerm(n,env.get(n.name),scope,expected);
         const constant=universeConstant(n.name);
         if(constant!==null)return T.universe(constant);
