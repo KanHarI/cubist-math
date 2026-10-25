@@ -5,7 +5,9 @@
 // each part is computed only as far as p observes it:
 //   _ matches anything and computes nothing;
 //   !p computes the part's weak head, then matches p;
-//   !!p computes the part's full normal form, then matches p against it;
+//   !!p computes the part's normal form, stuck definitions folded
+//     (docs/roadmaps/runtime/folded-normal-forms.md), then matches p
+//     against it, and !!!p likewise its full normal form;
 //   (p, q) matches a pair whose components match p and q;
 //   left(p) and right(p) match a sum's injections;
 //   c(p, …), a constructor of the part's declared type, matches c applied to
@@ -17,7 +19,7 @@
 //   any other expression, as nat.(2 + 3), is elaborated at the part's type
 //     and matches a part with the same normal form.
 // A pair, an injection and a constructor compute the part's weak head and
-// read it; an expression computes the part's full normal form. A part is
+// read it; an expression computes the part's normal form, folded. A part is
 // read by its type, never by its weak head's kind: after eta a function's
 // weak head can be a constructor. A bare `_` would compute nothing, and is
 // refused where the whole value is expected (translate.mjs).
@@ -31,12 +33,22 @@
 import {T,substituteTerm} from "./core.mjs";
 import {isHole,writtenOut} from "./arguments.mjs";
 
-const within = (node, found) => {
-  if (!node || typeof node !== "object") return false;
-  if (Array.isArray(node)) return node.some(item => within(item, found));
-  if (found(node)) return true;
-  return Object.entries(node).some(([key, value]) => key !== "start" && key !== "end" && within(value, found));
+// The first node in `node` that `found` accepts, or null.
+const first = (node, found) => {
+  if (!node || typeof node !== "object") return null;
+  if (Array.isArray(node)) {
+    for (const item of node) { const inner = first(item, found); if (inner) return inner; }
+    return null;
+  }
+  if (found(node)) return node;
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "start" || key === "end") continue;
+    const inner = first(value, found);
+    if (inner) return inner;
+  }
+  return null;
 };
+const within = (node, found) => first(node, found) !== null;
 // Whether an expected value is a pattern: whether a hole or a demand mark is
 // in it. One that is neither is compared whole, as an expression.
 export const hasHole = node => within(node, isHole);
@@ -57,9 +69,21 @@ export const typedMismatch = (shown, pattern, type, expected) =>
 export const holeInExpression = expression =>
   Error(`A hole in an expected value stands for a pair's component, an injection's value or a constructor's argument; ${expression} is none of these, so write it out.`);
 export const markInExpression = expression =>
-  Error(`A demand mark, ! or !!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; ${expression} is none of these.`);
+  Error(`A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; ${expression} is none of these.`);
 export const bareHole = () =>
-  Error("evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, or !!_ for its full normal form.");
+  Error("evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form.");
+// A !! part's normal form keeps stuck definitions folded, so a !!! inside it
+// would ask for what it does not hold (docs/roadmaps/runtime/folded-normal-forms.md).
+export const fullUnderFolded = () =>
+  Error("A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part.");
+// The first !!! inside a !! part, anywhere in an expected value, under any
+// other mark too: the whole value is read for it before anything is
+// computed, since a part matched against a normal form reads no marks.
+export const fullInsideFolded = expected => {
+  const full = node => node.kind === "demand" && node.mark === "!!!";
+  const folded = first(expected, node => node.kind === "demand" && node.mark === "!!" && first(node.value, full));
+  return folded ? first(folded.value, full) : null;
+};
 
 // A hole or a mark where no part can be read: a mark is refused first, as
 // writing the term for a hole would not make its place one.
@@ -74,8 +98,9 @@ const misplaced = (pattern, source) => (hasMark(pattern) ? markInExpression : ho
 const sameType = (annotation, type, scope) => !scope.differ(annotation, type) && scope.equal(annotation, type);
 
 // The first part of the normal form `value` that does not match `pattern`,
-// as { value, pattern }, or null when it matches: a pattern under `!!`,
-// whose marks change nothing. `type` is the value's type, and `at` gives
+// as { value, pattern }, or null when it matches: a pattern under `!!` or
+// `!!!`, whose marks change nothing (a !!! under !! is refused before, by
+// fullInsideFolded). `type` is the value's type, and `at` gives
 // elaborate, annotation and source, as observe takes them. A failure is
 // located at the part of the pattern that met it.
 export function mismatch(pattern, value, type, scope, at) {

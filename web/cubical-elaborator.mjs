@@ -5,7 +5,7 @@ import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
-import { sourceText } from "./cubical-source-text.mjs";
+import { apartFromDimensions, sourceText, typedMotives } from "./cubical-source-text.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
@@ -76,6 +76,11 @@ const namedBinders = new Set(["Var", ...termBinders]);
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
 // names would clash. The result is never checked or stored.
+// This is where a display's names are settled, apart from every label the
+// term prints, and readableDimensions settles its dimensions after it. A
+// display that adds to the term what can print a name does so before both,
+// as typedMotives does for folded motives (cubical-source-text.mjs); the
+// printer only prints (web/README.md).
 // `names` maps free variables to the names they show, where the caller knows
 // their source names, as an inspection does: a stem cannot tell the source's
 // x1 (x1_4) from x1_ (x1_4 too). Every other name keeps apart from those.
@@ -171,6 +176,26 @@ export function printedLabels(term) {
   return labels;
 }
 
+// The dimensions a term names, bound or free: a variable shown by one of
+// these names would read as the dimension where both are in scope, and
+// readableDimensions renames only the dimensions decoding left unnamed.
+export function dimensionNames(term) {
+  const names = new Set(), seen = new WeakSet();
+  const visit = t => {
+    if (typeof t === "string") {
+      const literal = /^(.+):[01]$/.exec(t);
+      if (literal) names.add(literal[1]);
+      return;
+    }
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (typeof t.dim === "string") names.add(t.dim);
+    Object.values(t).forEach(visit);
+  };
+  visit(term);
+  return names;
+}
+
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
 // shows the stem numbered from 1, n1. The copy is a tree, so a term that
@@ -215,7 +240,7 @@ function scopedNames(term, names, limit = 2000) {
   // Free variables, such as a goal's context, show their stems when no two
   // share one, and the names given them as given; binders then avoid those
   // names.
-  const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
+  const outer = [...free(term)], count = new Map(), labels = new Set([...printedLabels(term), ...dimensionNames(term)]);
   const given = outer.filter(name => names.has(name)), loose = outer.filter(name => !names.has(name));
   const avoid = new Set([...labels, ...given.map(name => names.get(name))]);
   for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
@@ -244,7 +269,7 @@ function globalNames(shown, given) {
   };
   collect(shown);
   const fixed = new Set([...names].filter(name => given.has(name) && !bound.has(name))), loose = [...names].filter(name => !fixed.has(name));
-  const count = new Map(), labels = printedLabels(shown), avoid = new Set([...labels, ...[...fixed].map(name => given.get(name))]);
+  const count = new Map(), labels = new Set([...printedLabels(shown), ...dimensionNames(shown)]), avoid = new Set([...labels, ...[...fixed].map(name => given.get(name))]);
   for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
   const renames = apartFromLabels(new Map(loose.map(name => [name, count.get(stem(name)) === 1
     && !(names.has(stem(name)) && stem(name) !== name) && !avoid.has(stem(name)) ? stem(name) : name])), avoid);
@@ -427,9 +452,26 @@ export class NativeCubicalElaborator {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
-      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name),
+      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name), 
         ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}),
         ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
+  }
+  // A term with each folded motive given its domain (typedMotives), and no
+  // definition shown by the name of a dimension it or its context names
+  // (apartFromDimensions), from the checked types and values of definitions,
+  // each decoded once. `dimensions` is the context's.
+  typedMotives(term, dimensions = this.dimensions) {
+    const decoded = new Map();
+    const part = which => name => {
+      const key = `${which} ${name}`;
+      if (!decoded.has(key)) {
+        const reference = this.kernel.definitions.get(name);
+        decoded.set(key, reference ? this.syntax.decode(this.kernel.definition(reference)[which]) : null);
+      }
+      return decoded.get(key);
+    };
+    const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name) };
+    return apartFromDimensions(typedMotives(term, definitions), definitions, dimensions?.keys?.() ?? []);
   }
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
@@ -457,8 +499,10 @@ export class NativeCubicalElaborator {
   // translated, L2.10j).
   // `reduce` bounds the beta reductions made for display: 0 shows the term
   // as it is.
-  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
-    return this.printed(readableDimensions([displayTerm(term, reduce)])[0], width, limit, notation);
+  // Each display path (displayText, displayTexts, displayGoal) types folded
+  // motives first, then settles names, then prints: in that order only.
+  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256, dimensions = this.dimensions) {
+    return this.printed(readableDimensions([displayTerm(this.typedMotives(term, dimensions), reduce)])[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
@@ -468,8 +512,8 @@ export class NativeCubicalElaborator {
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints. `names` gives
   // free variables their names, as displayTerm takes them.
-  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map()) {
-    return readableDimensions(displayTerm(terms, 256, names)).map(term => this.printed(term, width, limit, notation));
+  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map(), dimensions = this.dimensions) {
+    return readableDimensions(displayTerm(terms.map(term => this.typedMotives(term, dimensions)), 256, names)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
@@ -481,13 +525,13 @@ export class NativeCubicalElaborator {
   // `print` is sourceText by default; cubicalText gives mathematical notation.
   // A derivation shows its terms as they are: `reduce` false keeps redexes.
   // `notation.selection` names the notation selected at the goal (L2.10d).
-  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}) {
+  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}, dimensions = this.dimensions) {
     // Goals can share large terms; the printer stops after `width` nodes too.
     const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width, notation);
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    let shown = displayTerm(chained, reduce ? 256 : 0);
+    let shown = displayTerm(this.typedMotives(chained, dimensions), reduce ? 256 : 0);
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       // A universe variable's entry is its bound: U < UU0.
@@ -776,9 +820,11 @@ export class NativeCubicalElaborator {
     return { ...checked, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
   }
-  // The normal form of a derived handle, decoded.
-  normalForm(handle) {
-    return this.syntax.decode(this.kernel.normalize(handle), this.dimensions);
+  // The normal form of a derived handle, decoded: folded, a stuck
+  // definition kept as written, unless the full one is asked for
+  // (docs/roadmaps/runtime/folded-normal-forms.md).
+  normalForm(handle, { full = false } = {}) {
+    return this.syntax.decode(full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle), this.dimensions);
   }
   // The weak head of a handle, computed once a declaration, as nf's are. The
   // head of a derived handle, and its data parts (a pair's components, an

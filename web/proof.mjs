@@ -971,7 +971,8 @@ function renderCubicalKernel(view) {
   const render = (target, term) => {
     target.classList.toggle("typeset", !raw);
     if (raw) target.textContent = boundedSyntaxJson(term) ?? syntaxDisplayLimitMessage;
-    else renderMathNotation(target, cubicalMathTree(term, view.symbols, kernelDisplayLimit), navigation);
+    else renderMathNotation(target, cubicalMathTree(term, view.symbols, kernelDisplayLimit,
+      { dimensions: (view.dimensions ?? []).map(([name]) => name) }), navigation);
   };
   for (const [list, entries] of [["kernel-context-list", context], ["kernel-axioms-list", axioms]]) for (const entry of entries) {
     const row = document.createElement("li"); row.className = "kernel-context-row"; row.dataset.name = entry.label;
