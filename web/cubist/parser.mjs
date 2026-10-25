@@ -10,12 +10,13 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 // 42, 1_000, 1/2, 2.3, 6.02e23, 2.5e-3 and 5i. Right after a tight dot a
 // digit is a projection's index, as in p.2.1, never a literal's start.
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
-// `!` and `!!` are evaluation demand marks; `!!` is one token, so that a
-// space between two `!` is seen and refused (parse).
+// `!`, `!!` and `!!!` are evaluation demand marks; `!!` and `!!!` are one
+// token each, so that a space between marks is seen and refused (parse).
 // A qualified name, unat::zero, is one token: a module's name, :: and a
 // name, with no space between (web/reference/first-proof.html#qualified-names).
 // A `::` left alone is refused (tokenize).
-const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|::|:=|<-|\+\+|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*::[A-Za-z_][A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|::|:=|<-|\+\+|!!!|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*::[A-Za-z_][A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
+const markTokens = ["!", "!!", "!!!"];
 // The source scanner also serves incomplete editor input. It retains every
 // character, including comments and whitespace; tokenize enforces parser limits
 // and rejects invalid characters after discarding trivia.
@@ -37,7 +38,7 @@ export function tokenize(source) {
     const { text, start } = token;
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*(?:::[A-Za-z_][A-Za-z_0-9]*)?|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|::|:=|<-|\+\+|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*(?:::[A-Za-z_][A-Za-z_0-9]*)?|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|::|:=|<-|\+\+|!!!|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: start,
@@ -483,18 +484,20 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     }
   }
   // An evaluation's demand mark (docs/roadmaps/runtime/evaluation-demand-marks.md):
-  // `!` asks for a weak head and `!!` for a full normal form. It is read only
-  // right after evaluate and at the start of a part of an expected pattern,
-  // and applies to the whole part after it. It is no term former.
+  // `!` asks for a weak head, `!!` for a normal form with stuck definitions
+  // folded, and `!!!` for a full normal form
+  // (docs/roadmaps/runtime/folded-normal-forms.md). It is read only right
+  // after evaluate and at the start of a part of an expected pattern, and
+  // applies to the whole part after it. It is no term former.
   function demandMark(mark = take()) {
-    if (mark.text === "!" && peek() === "!")
-      throw Object.assign(new Error("Two ! marks apart ask for a weak head twice, which is once: write !! together for a full normal form."), { offset: mark.start });
+    if (markTokens.includes(peek()))
+      throw Object.assign(new Error(`Two demand marks in a row, ${mark.text} ${peek()}, ask for one demand: write !, !! or !!! as one mark.`), { offset: mark.start });
     return mark;
   }
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
-    if (t.text === "!" || t.text === "!!") {
+    if (markTokens.includes(t.text)) {
       if (!demandMarks)
         throw Object.assign(new Error(`The demand mark ${t.text} stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);.`), { offset: t.start });
       const mark = demandMark(t), value = expr();
@@ -1355,7 +1358,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         directives.push(directive); placeItem(directive); continue;
       }
       // evaluate !e expecting p; is evaluate e expecting !p;, and likewise !!.
-      const mark = ["!", "!!"].includes(peek()) ? demandMark() : null;
+      const mark = markTokens.includes(peek()) ? demandMark() : null;
       const value = expr();
       take("expecting");
       demandMarks = true;
@@ -1377,7 +1380,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       if (!["evaluate", "typeof", "inspect", "witness"].includes(show.text))
         throw Object.assign(new Error("print shows evaluate(term), typeof(term), inspect(term) or witness(term)."), { offset: show.start });
       take("(");
-      const mark = show.text === "evaluate" && ["!", "!!"].includes(peek()) ? demandMark() : null;
+      const mark = show.text === "evaluate" && markTokens.includes(peek()) ? demandMark() : null;
       const value = expr();
       take(")");
       take(")");

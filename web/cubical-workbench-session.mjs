@@ -81,9 +81,9 @@ export class WorkbenchSession {
     let text = label(node.handle);
     if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle));
     else if (!["Tube", "GlueSystem", "List", "LBound"].includes(node.kind)) {
-      const term = checker.syntax.decode(node.handle, new Map(view.dimensions ?? []));
+      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions);
       text = checker.displayGoal(new Map(view.context.map(x => [x.name, x.type])),
-        term, null, 180, cubicalText, false).goal;
+        term, null, 180, cubicalText, false, {}, dimensions).goal;
     }
     return { ...node, text, label: label(node.handle),
       actions: kernelReductionActions(kernel, checked, side, path),
@@ -139,7 +139,9 @@ export class WorkbenchSession {
         const dimensions = new Map(view.dimensions ?? []);
         const original = this.program.checker.checkView(view[side], null,
           view.context.map(x => [x.name, x.type]), dimensions);
-        const term = this.program.checker.syntax.decode(this.program.kernel.normalize(original.expression), dimensions);
+        // Folded, as every normal form shown on request is; checkReduction
+        // checks it by conversion, as it would the full one.
+        const term = this.program.checker.syntax.decode(this.program.kernel.normalizeFolded(original.expression), dimensions);
         result = { ...checkReduction(this.program, view, side, term), change: { rule: "Normalized", name: side } };
       } else result = reduceView(this.program, view, side, kind, path);
       if (!result.change) return { change: null };

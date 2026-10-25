@@ -88,3 +88,63 @@ The full language reference is `language.html`, an index of chapter pages in
 them is checked by `tests/reference-examples.test.mjs`, and
 `tests/reference-structure.test.mjs` checks their navigation and links. The test runner accepts module names, `.cubist` paths, and
 individual JavaScript test files. See the root README for commands.
+
+## Displaying terms
+
+Source text and kernel notation show binders, variables, dimensions and the
+names of definitions, types and constructors in one namespace, as the source
+reads them. One rule holds for every display: in the text, every name means
+what the term means by it. No binder captures a name it does not bind, and two
+things the term tells apart never read alike where both are in scope. Its
+implementation is `display-naming.mjs`; the printers choose no name.
+
+Every source-text display (the elaborator's `displayText`, `displayTexts` and
+`displayGoal`) names its terms by `forSource`, in three passes, in this order:
+
+1. `spelledOut` writes into the terms what the text shows and the terms do not
+   spell out: every binder the printer would otherwise invent (a folded
+   motive, a definition kept by name, as a function of the domain its checked
+   type gives, `λ (z : D). M(z)`; a clause with fewer arguments, hypotheses or
+   dimensions than its constructor takes; an eliminator written as a function,
+   `λ (x : D). e(x)`), and the value of a definition named as a dimension of
+   the term or of the context it is shown in (the display entry points take
+   the context's dimensions), since no source spelling tells the two apart and
+   the dimension keeps its name. What it adds, an unfolded value, a recovered
+   domain, a motive reduced to its function, it spells out in turn; its new
+   names are apart from every name of the terms shown together. Each change is
+   an eta-expansion, an unfolding or a reduction.
+2. `displayTerm` names every term and level binder apart from the labels and
+   dimensions the term shows and the variables in its scope, never shadowing
+   one around it.
+3. `readableDimensions` names the dimensions decoding left unnamed apart from
+   every name shown, keeping the context's.
+
+`sourceText` then prints the names it is given. A form the term does not spell
+out, as an eta-reduced clause in a term not named so, prints in kernel
+notation instead of under invented names.
+
+Anything that adds to a term what can print a name runs before the second
+pass, and spells out what it adds. In #310's review, rounds 2 to 11, the
+printer added binders and domains after the names were settled and renamed
+around them itself; in #311's first rounds a pass added syntax, an unfolded
+value or a recovered domain, that it did not spell out in turn. Each round
+found the capture again for another pairing of binder, label and dimension
+(a match clause, a lambda chain, a universe binder, a dimension, a context's
+dimension). One pass that spells everything out before one naming replaced
+them.
+
+Kernel notation (`cubicalText`, `cubical-notation.mjs`) adds no binder: the
+inspection's `expressionText`, the workbench, the proof page and judgement
+graphs (`displayGoal` given a `print`) show a term as it was checked, spelling
+kernel variables by their source names, and name binders as they print, apart
+from the definitions, types and constructors their bodies show
+(`labelsShown`); a definition named as a dimension of the term or of the
+view's context (`dimensionNames`) shows by its kernel name, `main__i`.
+
+A display change is tested by reading its output back:
+`tests/display-naming.test.mjs` prints the folded normal form of a corpus of
+functions whose definitions are named as the display's own stems and
+dimensions, reads each text back at its type in a fresh program, checks it is
+the same function by conversion and computes alike, and does so again where
+the context names each of those dimensions. Comparing printed text alone does
+not catch a capture.

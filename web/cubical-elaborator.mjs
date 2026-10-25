@@ -1,11 +1,11 @@
 import { isResourceLimit } from "./resource-limits.mjs";
 import { termBinders } from "./translator/term-shape.mjs";
-import { displayFreeNames } from "./translator/display-names.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { T, substituteTerm, withoutEmptyFaces } from "./translator/core.mjs";
+import { T, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
-import { NameSupply, localName, numberedName, stem } from "./translator/names.mjs";
+import { NameSupply, localName } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
+import { displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
@@ -13,6 +13,8 @@ import { KernelError } from "./cubical-kernel.mjs";
 import { admitSignature } from "./cubical-signatures.mjs";
 
 const speculativeFailure = kind => kind === "mismatch" || isResourceLimit(kind);
+// A display's naming lives in display-naming.mjs; these were defined here.
+export { betaReduce, dimensionNames, displayTerm, printedLabels, readableDimensions } from "./display-naming.mjs";
 
 // Binder names the instruction driver made up, such as x'1 for a context
 // entry named apart from another x, taken back to their stems for display
@@ -71,197 +73,6 @@ class SourceNames {
     return this.results.get(value);
   }
 }
-const namedBinders = new Set(["Var", ...termBinders]);
-
-// For messages only: reduce beta-redexes, within a budget, and give generated
-// names back their source stems (`A3` → `A`, `native10` → `x`) where no two
-// names would clash. The result is never checked or stored.
-// `names` maps free variables to the names they show, where the caller knows
-// their source names, as an inspection does: a stem cannot tell the source's
-// x1 (x1_4) from x1_ (x1_4 too). Every other name keeps apart from those.
-export function displayTerm(term, budget = 256, names = new Map()) {
-  const shown = betaReduce(term, budget);
-  return scopedNames(shown, names) ?? globalNames(shown, names);
-}
-
-// Dimensions a message has no source name for, bound or free, which decoding
-// calls d0, d1, …: renamed together in several terms, after their display
-// names are settled, to i, j, k, … (then i1, j1, …), names none of them
-// shows: not a variable's, a dimension's, or a definition's without its
-// module. The terms are shared graphs, so each node is visited and copied
-// once, and sharing is kept.
-export function readableDimensions(terms) {
-  const used = new Set(), seen = new WeakSet();
-  const visit = t => {
-    if (typeof t === "string") {
-      const literal = /^(.+):[01]$/.exec(t);
-      if (literal) used.add(literal[1]);
-      return;
-    }
-    if (!t || typeof t !== "object" || seen.has(t)) return;
-    seen.add(t);
-    if (typeof t.dim === "string") used.add(t.dim);
-    // Every name the printer shows: variables, definitions and constructors,
-    // and declared types, which a sort or an eliminator names by signature.
-    for (const name of [t.name, t.signature])
-      if (typeof name === "string") {
-        used.add(name);
-        used.add(localName(name));
-      }
-    Object.values(t).forEach(visit);
-  };
-  terms.forEach(visit);
-  const unnamed = [...used].filter(name => /^d[0-9]+_*$/.test(name))
-    .sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)) || a.length - b.length);
-  if (!unnamed.length) return terms;
-  const names = (function* () {
-    for (let round = 0; ; round++)
-      for (const letter of "ijklmn") {
-        const name = round ? `${letter}${round}` : letter;
-        if (!used.has(name)) yield name;
-      }
-  })();
-  const renaming = new Map(unnamed.map(name => [name, names.next().value]));
-  const copies = new WeakMap();
-  const rename = t => {
-    if (typeof t === "string") {
-      const literal = /^(.+):([01])$/.exec(t);
-      return literal && renaming.has(literal[1]) ? `${renaming.get(literal[1])}:${literal[2]}` : t;
-    }
-    if (!t || typeof t !== "object") return t;
-    if (copies.has(t)) return copies.get(t);
-    const copy = Array.isArray(t) ? [] : {};
-    copies.set(t, copy);
-    for (const [key, value] of Object.entries(t)) copy[key] = rename(value);
-    if (!Array.isArray(t) && typeof t.dim === "string" && renaming.has(t.dim)) copy.dim = renaming.get(t.dim);
-    return copy;
-  };
-  return terms.map(rename);
-}
-
-// Beta-reduce within a budget of substitutions, keeping every name.
-export function betaReduce(term, budget = 256) {
-  const reduced = new WeakMap();
-  const beta = t => {
-    if (!t || typeof t !== "object") return t;
-    if (reduced.has(t)) return reduced.get(t);
-    let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
-    while (result.tag === "App" && result.fn?.tag === "Lam" && budget-- > 0)
-      result = beta(substituteTerm(result.fn.body, result.fn.name, result.arg));
-    reduced.set(t, result);
-    return result;
-  };
-  return beta(term);
-}
-
-// The names a term prints without binding them: a declared type or an
-// eliminator by its signature, a constructor, and a definition, each as the
-// printer labels it, without its module. A binder must not take one, and no
-// variable is shown by a stem that is one.
-export function printedLabels(term) {
-  const labels = new Set(), seen = new WeakSet();
-  const visit = t => {
-    if (!t || typeof t !== "object" || seen.has(t)) return;
-    seen.add(t);
-    const label = t.tag === "Sort" || t.tag === "Elim" ? t.signature : t.tag === "Con" || t.tag === "DefRef" ? t.name : null;
-    if (typeof label === "string") labels.add(localName(label));
-    Object.values(t).forEach(visit);
-  };
-  visit(term);
-  return labels;
-}
-
-// Each binder shows its stem, n for n11, unless a binder around it already
-// shows that name or its body uses the name for another variable; then it
-// shows the stem numbered from 1, n1. The copy is a tree, so a term that
-// shares much structure is left to globalNames.
-// A name shown as a label would read as that label: a variable a term shows
-// by a declared type's, a constructor's or a definition's name is numbered
-// instead, apart from every other name shown.
-function apartFromLabels(shownAs, labels) {
-  const taken = new Set([...shownAs.keys(), ...shownAs.values(), ...labels]);
-  for (const [name, shown] of shownAs) {
-    if (!labels.has(shown)) continue;
-    let index = 1, renamed;
-    do renamed = numberedName(stem(name), index++); while (taken.has(renamed));
-    taken.add(renamed);
-    shownAs.set(name, renamed);
-  }
-  return shownAs;
-}
-
-function scopedNames(term, names, limit = 2000) {
-  let work = 0;
-  const free = displayFreeNames();
-  const go = (t, shownAs, inScope) => {
-    if (++work > limit) throw scopedNames;
-    if (!t || typeof t !== "object") return t;
-    if (Array.isArray(t)) return t.map(item => go(item, shownAs, inScope));
-    if (t.tag === "Var") return shownAs.has(t.name) ? { ...t, name: shownAs.get(t.name) } : t;
-    const result = {};
-    if (termBinders.has(t.tag) && typeof t.name === "string") {
-      const others = new Set([...free(t.body)].filter(name => name !== t.name).map(name => shownAs.get(name) ?? name));
-      const taken = candidate => inScope.has(candidate) || others.has(candidate);
-      let name = stem(t.name);
-      for (let index = 1; taken(name); index++) name = numberedName(stem(t.name), index);
-      for (const [key, value] of Object.entries(t))
-        result[key] = key === "body" ? go(value, new Map(shownAs).set(t.name, name), new Set(inScope).add(name))
-          : key === "name" ? name : go(value, shownAs, inScope);
-      return result;
-    }
-    for (const [key, value] of Object.entries(t)) result[key] = go(value, shownAs, inScope);
-    return result;
-  };
-  // Free variables, such as a goal's context, show their stems when no two
-  // share one, and the names given them as given; binders then avoid those
-  // names.
-  const outer = [...free(term)], count = new Map(), labels = printedLabels(term);
-  const given = outer.filter(name => names.has(name)), loose = outer.filter(name => !names.has(name));
-  const avoid = new Set([...labels, ...given.map(name => names.get(name))]);
-  for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const shownAs = apartFromLabels(new Map(loose.map(name => [name,
-    count.get(stem(name)) === 1 && !(outer.includes(stem(name)) && stem(name) !== name) && !avoid.has(stem(name))
-      ? stem(name) : name])), avoid);
-  for (const name of given) shownAs.set(name, names.get(name));
-  try { return go(term, shownAs, new Set([...shownAs.values(), ...labels])); }
-  catch (error) { if (error === scopedNames) return null; throw error; }
-}
-
-// Every generated name whose stem no other name shares shows its stem, and a
-// free variable given a name shows that name. Names are renamed wherever
-// they occur, so a name some binder binds is never given one: two binders
-// given the same name could capture each other's variables.
-function globalNames(shown, given) {
-  const names = new Set(), bound = new Set(), seen = new WeakSet();
-  const collect = t => {
-    if (!t || typeof t !== "object" || seen.has(t)) return;
-    seen.add(t);
-    if (namedBinders.has(t.tag) && typeof t.name === "string") {
-      names.add(t.name);
-      if (t.tag !== "Var") bound.add(t.name);
-    }
-    Object.values(t).forEach(collect);
-  };
-  collect(shown);
-  const fixed = new Set([...names].filter(name => given.has(name) && !bound.has(name))), loose = [...names].filter(name => !fixed.has(name));
-  const count = new Map(), labels = printedLabels(shown), avoid = new Set([...labels, ...[...fixed].map(name => given.get(name))]);
-  for (const name of loose) count.set(stem(name), (count.get(stem(name)) ?? 0) + 1);
-  const renames = apartFromLabels(new Map(loose.map(name => [name, count.get(stem(name)) === 1
-    && !(names.has(stem(name)) && stem(name) !== name) && !avoid.has(stem(name)) ? stem(name) : name])), avoid);
-  for (const name of fixed) renames.set(name, given.get(name));
-  const rename = name => renames.get(name) ?? name;
-  const renamed = new WeakMap();
-  const apply = t => {
-    if (!t || typeof t !== "object") return t;
-    if (renamed.has(t)) return renamed.get(t);
-    const result = Array.isArray(t) ? t.map(apply) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, apply(value)]));
-    if (namedBinders.has(t.tag) && typeof t.name === "string") result.name = rename(t.name);
-    renamed.set(t, result);
-    return result;
-  };
-  return apply(shown);
-}
-
 // Elaboration queries use the native checker and demand only a type's outer
 // constructor. JavaScript neither normalizes proofs nor approves conversions.
 export class NativeCubicalElaborator {
@@ -427,10 +238,28 @@ export class NativeCubicalElaborator {
     return this.displaySymbols ??= new Proxy({}, { get: (_, name) => typeof name !== "string" ? undefined
       : this.assumptionLabels.has(name) ? { name: this.assumptionLabels.get(name), kind: "axiom" }
       : this.kernel.signatures?.has(name) ? this.signatureDisplay(name)
-      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name),
+      : localName(name) !== name ? { name: localName(name), ...this.implicitDisplay(name), 
         ...(this.theoryProjections?.has(name) ? { projection: this.theoryProjections.get(name) } : {}),
         ...(this.notationPrinting?.has(name) ? { printing: this.notationPrinting.get(name) } : {}) } : undefined });
   }
+  // How forSource (display-naming.mjs) reads this checker: definitions'
+  // checked types and values from the kernel, each decoded once per display,
+  // and their labels; declared types' constructors; and the dimensions of
+  // the context a term is shown in, which the caller may give.
+  displayNaming(dimensions = this.dimensions, reduce = 256, names = new Map()) {
+    const decoded = new Map();
+    const part = which => name => {
+      const key = `${which} ${name}`;
+      if (!decoded.has(key)) {
+        const reference = this.kernel.definitions.get(name);
+        decoded.set(key, reference ? this.syntax.decode(this.kernel.definition(reference)[which]) : null);
+      }
+      return decoded.get(key);
+    };
+    const definitions = { type: part("type"), value: part("value"), label: name => this.displayNames[name]?.name ?? localName(name) };
+    return { definitions, symbols: this.displayNames, names, reduce, dimensions: [...(dimensions?.keys?.() ?? [])] };
+  }
+
   implicitDisplay(name) {
     const view = this.definitionViews.get(name), implicit = view?.parameters?.filter(parameter => parameter.implicit).length;
     return implicit ? { implicit, assumed: view.assumptions.size } : {};
@@ -457,8 +286,10 @@ export class NativeCubicalElaborator {
   // translated, L2.10j).
   // `reduce` bounds the beta reductions made for display: 0 shows the term
   // as it is.
-  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256) {
-    return this.printed(readableDimensions([displayTerm(term, reduce)])[0], width, limit, notation);
+  // Each display path (displayText, displayTexts, displayGoal) names its
+  // terms by forSource, then prints: the printer chooses no name.
+  displayText(term, width = 160, limit = 4000, notation = this.notation ?? {}, reduce = 256, dimensions = this.dimensions) {
+    return this.printed(forSource([term], this.displayNaming(dimensions, reduce))[0], width, limit, notation);
   }
   // A term in kernel notation as it was checked, no redex reduced.
   kernelText(term, width = 160) {
@@ -468,8 +299,8 @@ export class NativeCubicalElaborator {
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints. `names` gives
   // free variables their names, as displayTerm takes them.
-  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map()) {
-    return readableDimensions(displayTerm(terms, 256, names)).map(term => this.printed(term, width, limit, notation));
+  displayTexts(terms, width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map(), dimensions = this.dimensions) {
+    return forSource(terms, this.displayNaming(dimensions, 256, names)).map(term => this.printed(term, width, limit, notation));
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
@@ -481,13 +312,19 @@ export class NativeCubicalElaborator {
   // `print` is sourceText by default; cubicalText gives mathematical notation.
   // A derivation shows its terms as they are: `reduce` false keeps redexes.
   // `notation.selection` names the notation selected at the goal (L2.10d).
-  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}) {
+  displayGoal(context, target, built = null, width = 400, print = null, reduce = true, notation = {}, dimensions = this.dimensions) {
     // Goals can share large terms; the printer stops after `width` nodes too.
-    const printed = term => print ? print(term, this.displayNames) : sourceText(term, this.displayNames, width, notation);
+    // A kernel-notation print is given the context's dimensions, so that a
+    // definition named as one shows by its kernel name (cubicalText).
+    const printed = term => print ? print(term, this.displayNames, { dimensions: [...(dimensions?.keys?.() ?? [])] })
+      : sourceText(term, this.displayNames, width, notation);
     const show = term => { const text = printed(term); return text.length > width ? `${text.slice(0, width - 1)}…` : text; };
     let chained = { tag: "Pair", first: target, second: built ?? { tag: "Point" } };
     for (const [name, type] of [...context].reverse()) chained = T.pi(name, type, chained);
-    let shown = displayTerm(chained, reduce ? 256 : 0);
+    // Source text is named by forSource; another print, as cubicalText for
+    // a judgement graph, shows the term as it was checked, its names only
+    // settled.
+    let [shown] = print ? [displayTerm(chained, reduce ? 256 : 0)] : forSource([chained], this.displayNaming(dimensions, reduce ? 256 : 0));
     const locals = [];
     while (locals.length < context.size && shown.tag === "Pi") {
       // A universe variable's entry is its bound: U < UU0.
@@ -776,9 +613,11 @@ export class NativeCubicalElaborator {
     return { ...checked, native: { ok: true, arenaNodes: checked.arenaNodes, arenaBytes: checked.arenaBytes, axioms: [...this.requiredAssumptions(checked.term, checked.type).keys()],
       extensions: this.extensionsOf(checked.term, checked.type) } };
   }
-  // The normal form of a derived handle, decoded.
-  normalForm(handle) {
-    return this.syntax.decode(this.kernel.normalize(handle), this.dimensions);
+  // The normal form of a derived handle, decoded: folded, a stuck
+  // definition kept as written, unless the full one is asked for
+  // (docs/roadmaps/runtime/folded-normal-forms.md).
+  normalForm(handle, { full = false } = {}) {
+    return this.syntax.decode(full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle), this.dimensions);
   }
   // The weak head of a handle, computed once a declaration, as nf's are. The
   // head of a derived handle, and its data parts (a pair's components, an

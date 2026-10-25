@@ -88,7 +88,7 @@ forall A : U0. forall B : U0. A and B -&gt; B and A
 fun (A, B : U0, both : A and B) =&gt; (both.2, both.1)
 &gt; evaluate and_swap(UNat, Unit, (3, tt));
 (tt, 3)</code></pre>
-            <p>The proof is a function of three arguments: the two statements, and the evidence for the first. The block built it, and <code>evaluate !!</code> shows it as a term: <code>!!</code> asks for the full normal form, as plain <code>evaluate</code> computes data and shows a function only as <code>&lt;fun&gt;</code>. Applied to the types <code>UNat</code> and <code>Unit</code> and the pair <code>(3, tt)</code>, it swaps the pair. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
+            <p>The proof is a function of three arguments: the two statements, and the evidence for the first. The block built it, and <code>evaluate !!</code> shows it as a term: <code>!!</code> asks for the normal form, which computes inside functions too, as plain <code>evaluate</code> computes data and shows a function only as <code>&lt;fun&gt;</code>. Applied to the types <code>UNat</code> and <code>Unit</code> and the pair <code>(3, tt)</code>, it swaps the pair. <em>Fork into REPL</em> copies the session into the REPL bar, to continue it there.</p>
             <p>The components can also be named. <code>obtain (a, b) := both;</code> splits the pair into <code>a : A</code> and <code>b : B</code>:</p>
             <pre><code data-check="accept">def and_swap_again(A, B : U0) : A and B -&gt; B and A {
   intro both;

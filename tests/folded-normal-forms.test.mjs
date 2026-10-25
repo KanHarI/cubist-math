@@ -57,6 +57,125 @@ test("the folded normal form is asked of derived terms only", async t => {
   assert.throws(() => program.kernel.normalizeFolded(raw), /Normalize a term or type an instruction derived/);
 });
 
+// The marks (FN2): !! computes the folded normal form, !!! the full one; an
+// exact expected value is compared by the folded normal forms of both sides.
+test("!! prints a literal folded, and an exact rational value is compared folded", async t => {
+  const { program, result } = await checkProgram(t, `import rationals;
+use unat;
+
+print(evaluate(!!rationals.(2/3)));
+evaluate rationals.(2/3) expecting rationals.(2/3);
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  assert.deepEqual(result.prints.map(print => print.text), ["class((class((2, 0)), class((3, 0)), int_succ_nonzero(2)))"]);
+  // Both sides' full normal forms are 70M ticks each.
+  assert.ok(program.kernel.work().querySteps < 10000000n, String(program.kernel.work().querySteps));
+});
+
+// Anywhere inside a !! part, under another mark too, and before anything is
+// computed: far's first component, 512, is too deep for a full normal form
+// (K344), which E486 comes before. Each is located at its own mark, even
+// inside parentheses.
+test("a !!! inside a !! part is refused, and !!! alone asks for the full normal form", async t => {
+  const source = `import unat;
+use unat;
+
+def double(n : UNat) := n + n;
+def pair_ : UNat and (UNat -> UNat) := (double(3), double);
+def far : UNat and (Unit and Unit) := (2 * 256, (tt, tt));
+inductive Box {
+  box(u : Unit);
+}
+def boxed : Box := box(tt);
+def sided : Unit or Unit := left(tt);
+evaluate pair_ expecting !!(6, !!!_);
+evaluate pair_ expecting (6, !!!_);
+evaluate typed(Unit and Unit, (tt, tt)) expecting !!!(!!(!!!_), _);
+evaluate far expecting (!!!_, !!(tt, !!!_));
+evaluate pair_ expecting !!(6, (
+  !!!_
+));
+evaluate sided expecting !!left(!!!_);
+evaluate boxed expecting !!box(!!!_);
+evaluate tt expecting !!typed(Unit, !!!_);
+print(evaluate(!!!pair_));
+`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(gap.start, gap.end)]), Array(7).fill(["E486", "!!!"]));
+  assert.deepEqual(result.gaps.map(gap => source.slice(0, gap.start).split("\n").length), [12, 14, 15, 17, 19, 20, 21]);
+  assert.deepEqual(result.prints.map(print => print.text), ["(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })"]);
+});
+
+// A !!! inside a !! part is refused before the evaluated term is elaborated:
+// a numeral's reader (nat's literal rule) computes, and computes nothing
+// here; nor does a part under a constructor, an injection or typed.
+test("a !!! inside a !! part is refused before the evaluated literal computes", async t => {
+  const { program } = await checkProgram(t, "", { module });
+  const kernel = program.kernel;
+  let calls = 0;
+  for (const query of ["normalize", "normalizeFolded"]) {
+    const original = kernel[query].bind(kernel);
+    kernel[query] = handle => { calls++; return original(handle); };
+  }
+  const header = "import nat;\nuse nat;\n\ndef anchor : Unit := tt;\ndef sided : Nat or Unit := right(tt);\n";
+  const warm = await program.check(header, "literal_warm", () => {}, { reuseModules: true });
+  assert.deepEqual(warm.gaps, []);
+  calls = 0;
+  const result = await program.check(`${header}evaluate 5 expecting !!(!!!_);
+evaluate sided expecting !!left(!!!_);
+evaluate typed(Nat and Unit, (5, tt)) expecting !!typed(Nat and Unit, (!!!_, _));
+`, "literal_refused", () => {}, { reuseModules: true });
+  assert.deepEqual(result.gaps.map(gap => gap.code), ["E486", "E486", "E486"]);
+  assert.equal(calls, 0, "no normal form is computed before E486");
+});
+
+// An exact value and a pattern's leaf are compared with the value's folded
+// normal form by conversion: a and b are distinct definitions of one
+// function, so pa and pb fold apart, to (a, 1) and (b, 1).
+test("an expected value is compared with a folded normal form by conversion", async t => {
+  const source = `import unat;
+use unat;
+
+def a(n : UNat) : UNat := n;
+def b(n : UNat) : UNat := n;
+def c(n : UNat) : UNat := n + 1;
+def pa : (UNat -> UNat) and UNat := (a, 1);
+def pb : (UNat -> UNat) and UNat := (b, 1);
+def pc : (UNat -> UNat) and UNat := (c, 1);
+def nested : ((UNat -> UNat) and UNat) and UNat := (pa, 1);
+evaluate pa expecting pb;
+evaluate nested expecting (pb, _);
+evaluate pa expecting pc;
+evaluate nested expecting (pc, _);
+`;
+  const { result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(a, 1)", "((a, 1), <unevaluated>)"]);
+  assert.deepEqual(result.gaps.map(gap => [gap.code, source.slice(0, gap.start).split("\n").length]), [["E326", 13], ["E477", 14]]);
+});
+
+// Each caller asks for the normal form its table row in the note assigns:
+// an exact value, folded; a witness, full; !! folded and !!! full.
+test("exact values fold, and !!! and witness ask for the full normal form", async t => {
+  const { program } = await checkProgram(t, "", { module });
+  const kernel = program.kernel, asked = [];
+  for (const query of ["normalize", "normalizeFolded"]) {
+    const original = kernel[query].bind(kernel);
+    kernel[query] = handle => { asked.push(query); return original(handle); };
+  }
+  // Each source a module of its own name, which reuseModules keeps apart.
+  let runs = 0;
+  const run = async source => {
+    asked.length = 0;
+    const result = await program.check(`import h1_truncation;\nuse unat;\n${source}`, `routing_${runs++}`, () => {}, { reuseModules: true });
+    assert.deepEqual(result.gaps, [], source);
+    return [...new Set(asked)];
+  };
+  assert.deepEqual(await run("evaluate 2 + 2 expecting 4;"), ["normalizeFolded"]);
+  assert.deepEqual(await run("evaluate 2 + 2 expecting !!_;"), ["normalizeFolded"]);
+  assert.deepEqual(await run("evaluate 2 + 2 expecting !!!_;"), ["normalize"]);
+  assert.deepEqual(await run("print(witness(typed(Trunc(U0, UNat), point(3))));"), ["normalize"]);
+});
+
 // The term asked for is unfolded even where one step takes it to a stuck
 // elimination: f is eta its eliminator, so f(x) steps straight to it, and
 // the folded normal form shows that eliminator, as the weak head does; and

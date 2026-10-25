@@ -134,7 +134,9 @@ prints a type. `evaluate`, or a term alone, prints the value form of a closed
 term that uses no assumption: its data, computed as far as it is shown, and a
 marker such as `<fun>` where a function, a path or a type stops it.
 `evaluate !TERM;` prints its weak head, its arguments as they are, and
-`evaluate !!TERM;` its full normal form. A term that uses an assumption is
+`evaluate !!TERM;` its normal form, a definition whose value is no data kept
+by name, and `evaluate !!!TERM;` its full normal form, every definition
+unfolded. A term that uses an assumption is
 refused with the chain through which it enters. An entry continues on the next line while a bracket
 is open, so a proof block is one entry. A rejected entry changes nothing.
 Entries also work noninteractively:

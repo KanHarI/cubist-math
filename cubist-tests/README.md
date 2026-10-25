@@ -21,7 +21,8 @@ workbench's Kernel graph.
   shows in an `// Output: …` comment above it, which the tool writes and the
   test compares in the same way: `print(evaluate(e));` shows a closed
   term's value form, its data computed and a marker such as `<fun>` where a
-  function stops it, `print(evaluate(!!e));` its full normal form,
+  function stops it, `print(evaluate(!!e));` its normal form, a stuck
+  definition named, `print(evaluate(!!!e));` its full normal form,
   `print(typeof(e));` its type and `print(inspect(e));` the term the kernel
   checked, in kernel notation.
 - A module's JavaScript test, where it has one, checks what neither a
@@ -123,7 +124,7 @@ workbench's Kernel graph.
 | [`inductive_one_parameter_name`](inductive_one_parameter_name.cubist) | Inspection: a parameter has one name in the whole view, and T.squash is distinct from squash. |
 | [`computability`](computability.cubist) | For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it. |
 | [`computability_evaluation`](computability_evaluation.cubist) | evaluate checks the normal form of a closed, assumption-free term; each failed evaluation's error is stated above it. |
-| [`evaluate_patterns`](evaluate_patterns.cubist) | `evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, each part computed only as far as the pattern observes it, other expressions by full normal form, the demand marks `!` and `!!`, the refused bare `_` and the marks' warnings, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor. |
+| [`evaluate_patterns`](evaluate_patterns.cubist) | `evaluate … expecting` a pattern: holes, pairs, injections, constructors and `typed` matched part by part, each part computed only as far as the pattern observes it, other expressions by their normal forms, stuck definitions folded, the demand marks `!`, `!!` and `!!!`, the refused bare `_` and the marks' warnings, and the part a mismatch names; braces and named arguments refused at a builtin or a constructor. |
 | [`box_notation`](box_notation.cubist) | The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula. |
 | [`square_constructions`](square_constructions.cubist) | `library/squares.cubist`: squares with named edges, their transposes and flips, naturality, double composition and its filler, and horizontal and vertical composition, each by conversion. |
 | [`truncation_readout`](truncation_readout.cubist) | `print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation. |

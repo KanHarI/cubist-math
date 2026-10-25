@@ -705,7 +705,8 @@ export class CubicalProgram {
     // The kernel extensions of the term as checked: a normal form may no
     // longer mention the declared type it computed through.
     const extensions = this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type));
-    if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalize(checked.expression), dimensions);
+    // A normal form on request, stuck definitions folded (folded-normal-forms.md).
+    if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalizeFolded(checked.expression), dimensions);
     const bindings = this.declarationBindings.get(binding) ?? [];
     const aliases = local?.aliases ?? [];
     const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };
@@ -733,8 +734,8 @@ export class CubicalProgram {
     const presentation = simplifiedType === view.type ? view
       : checkReduction(this, view, "type", simplifiedType).view;
     view.folded = foldedInspection(presentation, aliases);
-    view.expressionText = cubicalText(view.folded.expression, symbols);
-    view.typeText = cubicalText(view.folded.type, symbols);
+    view.expressionText = cubicalText(view.folded.expression, symbols, { dimensions: [...dimensions.keys()] });
+    view.typeText = cubicalText(view.folded.type, symbols, { dimensions: [...dimensions.keys()] });
     if (info?.verified && !local) {
       const module = info.sourceModule ?? this.main;
       const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === info.name);

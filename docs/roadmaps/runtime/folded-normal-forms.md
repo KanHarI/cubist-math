@@ -4,8 +4,8 @@ Status: decided on 2026-10-23, as decision D1 of the
 [rational normalization debugging plan](https://github.com/KanHarI/cubist-math/pull/302).
 This note specifies the decision before evaluation changes, as the
 [demand marks](evaluation-demand-marks.md) did for theirs. FN1 adds the
-kernel query; FN2 makes `!!` compute it and adds `!!!` for the full normal
-form.
+kernel query ([#309](https://github.com/KanHarI/cubist-math/pull/309)); FN2
+makes `!!` compute it and adds `!!!` for the full normal form.
 
 ## The problem
 
@@ -164,7 +164,9 @@ Recommended, and taken unless the user changes them:
 
 1. **Data is what computes.** The heads listed in rule 3. A record of a
    theory, such as `integers`, is a pair, so it is computed into its fields,
-   each of which folds.
+   each of which folds. Where a record is a section's parameter, as the
+   integers' semiring is in their laws, it is shown in full at each use:
+   the normal form shares it, and only its printed text repeats it.
 2. **The term asked for is always unfolded.** `!!` on `integers.add_assoc`
    shows its proof's outermost structure, with the lemmas it applies
    folded, not the name back.
@@ -199,12 +201,21 @@ Recommended, and taken unless the user changes them:
   rollback and commit, and the full normal form unchanged. The
   kernel reference chapter on normalization documents it.
 - **FN2. The marks.** `!!` computes the folded normal form; `!!!` is lexed,
-  parsed, formatted and linted as `!!` is and computes the full one. The
-  callers are routed as the table above assigns them: exact expected
-  values, expression leaves and the normalizing views fold, and `witness`
-  keeps the full normal form. The language reference, the error reference
-  (E485 names both), the demand marks note and the runtime roadmap's stage 4
-  say so. Every gate of decision 5 moves to `!!!`, and the corpus test
+  parsed, formatted and linted as `!!` is and computes the full one. Two
+  marks in a row are refused, so that no spacing turns `! !!` into `!!!`,
+  and a `!!!` inside a `!!` part, which that part's normal form cannot
+  honor, is refused too (E486). A folded motive or clause prints applied to
+  a new name, as `match value as z return Shape(z) { … }`, with the domain
+  its definition's checked type gives: the display writes such binders into
+  the term before one naming pass settles every name
+  ([web/README.md](../../../web/README.md#displaying-terms),
+  `web/display-naming.mjs`), since inventing them in the printer, after the
+  names were settled, leaked one capture per binder kind. The callers are
+  routed as the table above assigns them: exact expected values, expression
+  leaves and the normalizing views fold, and `witness` keeps the full normal
+  form. The language reference, the error reference (E485 names both), the
+  demand marks note and the runtime roadmap's stage 4 say so. Every gate of
+  decision 5 moves to `!!!`, and the corpus test
   covers the constructs whose full normal forms it leaves out under `!!_`.
 
 **Acceptance.** The measurements above, re-measured with FN1 and recorded

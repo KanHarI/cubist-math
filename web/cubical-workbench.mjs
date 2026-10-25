@@ -10,6 +10,9 @@ import { assemblyText, renderAssembly, opcodeName } from "./cubical-assembly.mjs
 import { renderJudgementGraph } from "./cubical-graph-view.mjs";
 import { renderNativeTree } from "./cubical-ast-tree.mjs";
 import { WorkbenchTrace, traceAttempt, traceError } from "./cubical-workbench-trace.mjs";
+// The dimensions a view's context names, which its notation keeps apart
+// from the definitions it shows (cubicalMathTree).
+const viewDimensions = view => (view.dimensions ?? []).map(([name]) => name);
 const $ = id => document.getElementById(id), history = [];
 const trace = new WorkbenchTrace();
 trace.metadata.page = location.href;
@@ -146,7 +149,7 @@ async function display(updateSyntax = true) {
     const label = document.createElement("span"), button = document.createElement("button");
     button.className = "reference"; button.textContent = entry.label ?? entry.name; button.disabled = !entry.binding;
     button.onclick = () => inspect(entry.binding); label.append(button, " :");
-    const type = document.createElement("div"); renderMathNotation(type, cubicalMathTree(entry.type, view.symbols), options());
+    const type = document.createElement("div"); renderMathNotation(type, cubicalMathTree(entry.type, view.symbols, undefined, { dimensions: viewDimensions(view) }), options());
     row.append(label, type); $(target).append(row);
   }
   for (const side of ["expression", "type"]) {
@@ -163,7 +166,7 @@ async function display(updateSyntax = true) {
       return element;
     } : null;
     renderMathNotation($(side), cubicalMathTree(active ? view[side] : display[side], view.symbols,
-      active ? reductionLimit : 1200, { paths: active }), { ...options(), decorateTerm,
+      active ? reductionLimit : 1200, { paths: active, dimensions: viewDimensions(view) }), { ...options(), decorateTerm,
         ...(active ? { truncationSugar: false } : {}) });
   }
   for (const side of ["expression", "type"]) for (const kind of ["beta", "delta"])
@@ -198,7 +201,7 @@ async function displayAssembly() {
   $("assembly-math").replaceChildren(...[["Term", view.expression], ["Type", view.type]].map(([label, term]) => {
     const row = document.createElement("div"), name = document.createElement("span"), math = document.createElement("div");
     row.className = "assembly-math-row"; name.textContent = label; math.className = "kernel-term typeset";
-    renderMathNotation(math, cubicalMathTree(term, view.symbols, 1200), options());
+    renderMathNotation(math, cubicalMathTree(term, view.symbols, 1200, { dimensions: viewDimensions(view) }), options());
     row.append(name, math);
     return row;
   }));

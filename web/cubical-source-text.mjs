@@ -1,7 +1,8 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
+import { termBinders, dimensionScope } from "./translator/term-shape.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
-import { localName, numberedName } from "./translator/names.mjs";
+import { localName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 import {binaryDigits as binary, parsedLiteral} from "./translator/numeral-printing.mjs";
 
@@ -25,6 +26,14 @@ const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/":
 // (L2.10d): an operation prints with its notation's operator only where
 // that notation is selected, and is qualified, as nat.(x + y), elsewhere,
 // even where nothing is selected (L2.10j).
+// The printer chooses no name. A display names its term first
+// (display-naming.mjs, forSource): every binder the text shows is in the
+// term, a folded motive's and an eta-reduced clause's too, named apart from
+// what it would capture. A form the term does not spell out, as a clause
+// with fewer binders than its constructor takes in a term not named so,
+// prints in kernel notation instead of under invented names: inventing them
+// here, where names are settled, was the source of #310's captures
+// (web/README.md, "Displaying terms").
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
   const label = binding => symbols[binding]?.name
@@ -99,10 +108,26 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     }
   };
   const variable = name => renames.get(name) ?? (bound.get(name) ? name : label(name));
-  // A bound name that also occurs in `outside` gets a numbered variant.
-  const apart = (name, outside, whole) => {
-    if (!mentions(outside, name)) return name;
-    for (let i = 1; ; i++) if (!mentions(whole, numberedName(name, i))) return numberedName(name, i);
+  // Whether `from` can be shown as `to` throughout a term: `to` is free in
+  // it nowhere, and no binder or dimension named `to` in it has `from` free
+  // in its scope, which it would capture. A binder's scope is the children
+  // it binds in: a Pi's domain is outside it, and a binder of `from` hides
+  // `from` only there. Induction's `as k` shows the motive's variable by the
+  // predecessor's name only so.
+  const renamable = (term, from, to) => {
+    if (from === to) return true;
+    if (mentions(term, to)) return false;
+    const seen = new WeakSet();
+    const capture = t => {
+      if (!t || typeof t !== "object" || seen.has(t)) return false;
+      seen.add(t);
+      const binder = termBinders.has(t.tag) ? { name: t.name, keys: ["body"] }
+        : dimensionScope.has(t.tag) ? { name: t.dim, keys: dimensionScope.get(t.tag) } : null;
+      return Object.entries(t).some(([key, child]) => !binder?.keys.includes(key) ? capture(child)
+        : termBinders.has(t.tag) && binder.name === from ? false
+        : binder.name === to && mentions(child, from) || capture(child));
+    };
+    return !capture(term);
   };
   const show = t => print(t)[0];
   const sub = (t, needed) => { const [text, level] = print(t); return level < needed ? `(${text})` : text; };
@@ -148,17 +173,22 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       const { name, data, positions, dimensions, order } = constructors[c];
       const args = [], results = [], dims = [];
       let body = clause;
-      // A clause that evaluation eta-reduced, as `succ` for fun (ih) =>
-      // succ(ih), is applied to new names instead.
-      const take = (into, stem) => {
-        if (body?.tag === "Lam") { into.push(body.name); body = body.body; return; }
-        const name = apart(stem, body, body);
-        into.push(name);
-        body = { tag: "App", fn: body, arg: { tag: "Var", name } };
+      // A clause binds its constructor's data and positions, a recursive
+      // result for each position, then its dimensions; spelledOut
+      // spells out a clause that binds fewer (display-naming.mjs).
+      const take = into => {
+        if (body?.tag !== "Lam") return false;
+        into.push(body.name);
+        body = body.body;
+        return true;
       };
-      for (let i = 0; i < data + positions; i++) take(args, "x");
-      for (let i = 0; i < positions; i++) take(results, "ih");
-      for (let i = 0; i < dimensions; i++) { if (body?.tag !== "PLam") return null; dims.push(body.dim); body = body.body; }
+      for (let i = 0; i < data + positions; i++) if (!take(args)) return null;
+      for (let i = 0; i < positions; i++) if (!take(results)) return null;
+      for (let i = 0; i < dimensions; i++) {
+        if (body?.tag !== "PLam") return null;
+        dims.push(body.dim);
+        body = body.body;
+      }
       const fields = order ? order.map((_, sourceIndex) => args[order.indexOf(sourceIndex)]) : args;
       clauses.push({ name, args: fields, results, dims, body });
     }
@@ -199,11 +229,15 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "LPi": return [`forall ${t.name} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "LLam": return [`fun (${t.name} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "Lam": {
+        // A binder of no domain, as spelledOut gives a function whose
+        // domain no type it reads gives, stands alone: fun x => body, its
+        // type given by where it is checked.
+        if (!t.domain) return [`fun ${t.name} => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
         // fun (x, y : A, z : B) => body, each domain in the scope of the
         // binders before it
         const groups = [], names = [];
         let body = t;
-        while (body.tag === "Lam") {
+        while (body.tag === "Lam" && body.domain) {
           const last = groups.at(-1), domain = under(names, () => show(body.domain));
           if (last?.domain === domain && !last.names.some(name => mentions(body.domain, name))) last.names.push(body.name);
           else groups.push({ names: [body.name], domain });
@@ -216,15 +250,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // Eliminators print as the source forms that build them. The motive's
       // bound name is shown as the one the branches bind: `as k` binds both.
       // NatInduction is no term: it is the source Nat's eliminator, applied,
-      // in the shape its `induction` spelling reads.
+      // in the shape its `induction` spelling reads, `shared` the name the
+      // application case below found for both, which neither captures.
       case "NatInduction": {
-        const { motive, step } = t;
-        if (motive?.tag !== "Lam" || step?.tag !== "Lam" || step.body?.tag !== "Lam") return fallback(t);
-        // `induction k as k` would be correct but hard to read.
-        const k = apart(step.name, t.value, t), h = apart(step.body.name, t.value, t);
+        const { motive, step, shared: k } = t, h = step.body.name;
         const type = under(motive.name, () => renaming(motive.name, k, () => show(motive.body)));
-        const successor = under([step.name, step.body.name], () =>
-          renaming(step.name, k, () => renaming(step.body.name, h, () => show(step.body.body))));
+        const successor = under([step.name, h], () => renaming(step.name, k, () => show(step.body.body)));
         // `as k` is written only where the motive or the successor clause uses k.
         const named = mentions(motive.body, motive.name) || mentions(step.body, step.name);
         return [`induction ${show(t.value)}${named ? ` as ${k}` : ""} return ${type} { zero => ${show(t.zero)}; `
@@ -241,15 +272,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       }
       // A declared type's eliminator on its own, as evaluation leaves a
       // function by cases after eta reduction, is the function that applies
-      // it: fun (n : Nat) => induction n …, or fun (x : T) => match x …, which
-      // the application case below prints.
-      case "Elim": {
-        if (t.motive?.tag !== "Lam") return fallback(t);
-        const nat = t.signature === "unat__UNat" && t.clauses?.length === 2 && t.clauses[1]?.tag === "Lam";
-        const x = apart(nat ? "n" : "x", t, t), arg = { tag: "Var", name: x };
-        const text = under(x, () => nat ? show({ tag: "App", fn: t, arg }) : declaredMatch(t, arg));
-        return text ? [`fun (${x} : ${show(t.motive.domain)}) => ${text}`, LEVEL.binder] : fallback(t);
-      }
+      // it, fun (x : T) => match x …, which spelledOut writes into the
+      // term; one that reaches the printer unwritten is shown as it is.
+      case "Elim": return fallback(t);
       case "App": case "LApp": {
         const number=numeral(t);
         if(number!==null)return natural(number);
@@ -258,22 +283,29 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         const decimal=binaryNatural(t);
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
-        // spelling. Eta reduction may leave its successor clause curried.
-        if(t.tag==="App"&&t.fn.tag==="Elim"&&t.fn.signature==="unat__UNat"
-          &&t.fn.motive?.tag==="Lam"&&t.fn.clauses?.length===2&&t.fn.clauses[1]?.tag==="Lam") {
-          let step=t.fn.clauses[1];
-          if(step.body.tag!=="Lam") {
-            const h=apart("h",t,t);
-            step={...step,body:{tag:"Lam",name:h,domain:t.fn.motive.body,
-              body:{tag:"App",fn:step.body,arg:{tag:"Var",name:h}}}};
-          }
-          return print({tag:"NatInduction",motive:t.fn.motive,zero:t.fn.clauses[0],step,value:t.arg});
+        // spelling, where `as k` binds the motive's variable and the
+        // predecessor as one: only where the motive shows the predecessor's
+        // name for nothing else. Otherwise it prints as the declared match.
+        const elim=t.tag==="App"&&t.fn.tag==="Elim"?t.fn:null,step=elim?.clauses?.[1];
+        if(elim?.signature==="unat__UNat"&&elim.clauses.length===2&&elim.motive?.tag==="Lam"&&step?.tag==="Lam"&&step.body?.tag==="Lam") {
+          // The predecessor's name, where the motive takes it; else the
+          // motive's, where the successor clause takes it.
+          const shared=renamable(elim.motive.body,elim.motive.name,step.name)?step.name
+            :renamable(step.body,step.name,elim.motive.name)?elim.motive.name:null;
+          if(shared)return print({tag:"NatInduction",motive:elim.motive,zero:elim.clauses[0],step,value:t.arg,shared});
         }
         if(t.tag==="App"&&t.fn.tag==="Elim"){const text=declaredMatch(t.fn,t.arg);if(text)return [text,LEVEL.binder];}
         // An instantiation is an application to a universe.
         const args = [];
         let head = t;
         while (head.tag === "App" || head.tag === "LApp") { args.unshift(head.tag === "App" ? head.arg : { tag: "U", level: head.level }); head = head.fn; }
+        // An eliminator applied to its value and more prints as the match
+        // or induction on the value, applied to the rest: its function alone
+        // would be written untyped where no type reaches it.
+        if (head.tag === "Elim" && args.length > 1) {
+          const [text, level] = print({ tag: "App", fn: head, arg: args[0] });
+          return atom(`${level < LEVEL.atom ? `(${text})` : text}(${args.slice(1).map(show).join(", ")})`);
+        }
         // The notation that prints this function: the selected one's
         // entry, or the first declared (L2.10d).
         const entries = head.tag === "DefRef" ? symbols[head.name]?.printing : undefined;

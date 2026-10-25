@@ -2,14 +2,21 @@ import { displayFreeNames } from "./translator/display-names.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 import {binaryDigits, parsedLiteral} from "./translator/numeral-printing.mjs";
+import { dimensionNames, labelsShown } from "./display-naming.mjs";
 // Display the native checked syntax itself. Definition references stay named;
 // this does not reconstruct an unchecked expression from Cubist source.
 // `scope` maps variables bound around the term by an enclosing printer to
 // the names it shows them by (sourceText's forms without a source
 // spelling): they show so here, and binders here keep apart from them.
 // Definitions, sorts and eliminators keep the labels `symbols` gives.
-export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map() } = {}) {
+export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = false, scope = new Map(), dimensions = [] } = {}) {
   let remaining = limit;
+  // The dimensions the term names, bound or free, and those of the context
+  // it is shown in: a definition labeled as one of them is shown by its
+  // kernel name, main__i for i, as no renaming of the dimension would keep
+  // it the context's. A folded normal form keeps such definitions; the rule
+  // is display-naming.mjs's, which source text follows by unfolding.
+  const dimensionsNamed = new Set([...dimensions, ...dimensionNames(term)]);
   const boundNames = new Map(), namesIn = displayFreeNames();
   const free = (term, variable) => namesIn(term).has(variable);
   const sourceNames = new Map();
@@ -24,10 +31,15 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   }
   const outer = value => !boundNames.has(value) && scope.has(value);
   const label = value => boundNames.get(value) ?? scope.get(value) ?? symbols[value]?.name ?? value;
+  // The labels a body shows for definitions, types and constructors: a
+  // folded normal form keeps definitions under binders, and a binder spelled
+  // as one would read as it (display-naming.mjs).
+  const printed = labelsShown(name => symbols[name]?.name ?? name);
   const underBinder = (variable, body, renderBody) => {
     let spelling = symbols[variable]?.name ?? variable;
     while ([...boundNames].some(([key, name]) => key !== variable && name === spelling)
-      || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))) spelling += "′";
+      || (sourceNames.get(spelling) ?? []).some(key => key !== variable && !boundNames.has(key) && free(body, key))
+      || printed(body).has(spelling)) spelling += "′";
     const previous = boundNames.get(variable); boundNames.set(variable, spelling);
     const result = renderBody();
     if (previous === undefined) boundNames.delete(variable); else boundNames.set(variable, previous);
@@ -81,7 +93,10 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   function build(t, child) {
     if (!t || --remaining < 0) return name("…");
     if (t.tag === "DisplayRef") return { ...name(t.name), contextBinding: t.binding, local: true };
-    if (t.tag === "DefRef") return { ...name(symbols[t.name]?.name ?? t.name), binding: t.name };
+    if (t.tag === "DefRef") {
+      const shown = symbols[t.name]?.name ?? t.name;
+      return { ...name(dimensionsNamed.has(shown) ? t.name : shown), binding: t.name };
+    }
     if (t.tag === "Var") {
       const symbol = outer(t.name) ? undefined : symbols[t.name];
       return { ...name(label(t.name)), local: symbol?.kind !== "axiom",
@@ -206,6 +221,6 @@ export function cubicalTextParts(tree) {
   return show(tree);
 }
 
-export function cubicalText(term, symbols = {}, { scope } = {}) {
-  return cubicalTextParts(cubicalMathTree(term, symbols, undefined, { scope })).map(part => part.text).join("");
+export function cubicalText(term, symbols = {}, { scope, dimensions } = {}) {
+  return cubicalTextParts(cubicalMathTree(term, symbols, undefined, { scope, dimensions })).map(part => part.text).join("");
 }
