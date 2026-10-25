@@ -557,7 +557,8 @@ test("forSource spells out an eliminator as a function, apart from the dimension
 // A definition named as the context's dimension q is unfolded, and every
 // redex its value makes contracted, however it is reached: through an
 // ascribed argument the value applies, through a value that is a function
-// applied twice, and through an eta-reduced clause. Each text reads back as
+// applied twice, through the display's beta reduction, and through an
+// eta-reduced clause or its part below a binder. Each text reads back as
 // the value. A redex the
 // term has of its own, though it shares the very syntax of the value, is
 // kept.
@@ -567,9 +568,17 @@ test("an unfolding contracts every redex it makes, and only those", async t => {
   loop : base = base;
 }
 `;
-  for (const definitions of [
+  // Each program is checked in a subtest of its own, which disposes of it:
+  // a module holds eight kernel sessions.
+  const values = [
     "def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(typed(base = base, path e => loop @ e));",
-    "def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;"]) {
+    "def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;",
+    // The display's own beta reduction contracts the redexes it makes, of
+    // an unfolded value's and of the term's own: here a path put at a path
+    // application's root.
+    "def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := path k => (fun (p : base = base) => q(p))(path j => loop @ j) @ k;",
+    "def g : base = base := path k => (fun (p : base = base) => typed(base = base, path f => p @ ~f))(path j => loop @ j) @ k;"];
+  for (const [index, definitions] of values.entries()) await t.test(`value ${index + 1}`, async t => {
     const { program, result } = await checkProgram(t, `${circle}${definitions}\n`, { module });
     assert.deepEqual(result.gaps, []);
     const { kernel, checker } = program;
@@ -577,30 +586,37 @@ test("an unfolding contracts every redex it makes, and only those", async t => {
     assert.doesNotMatch(text, /\bq\b/, text);
     const { result: back } = await checkProgram(t, `${circle}${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
-  }
+  });
   // A folded normal form keeps an eta-reduced clause that is the
-  // definition: its value, a function of the clause's argument to a path,
-  // is settled at each binder the clause takes.
-  const edges = `${circle}inductive S {
+  // definition, a function of the clause's argument to a path, or a clause
+  // whose part below its own binder is: settled at each binder the clause
+  // takes, with no beta reduction for display too, as evaluation prints.
+  for (const edge of ["q(u) @ j", "q(tt) @ j"]) await t.test(`clause ${edge}`, async t => {
+    const edges = `${circle}inductive S {
   pt;
   edge(u : Unit) : pt = pt;
 }
 def q(u : Unit) : base = base := path e => loop @ ~e;
-def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => q(u) @ j; };
+def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => ${edge}; };
 `;
-  const { program: folded, result: edgesChecked } = await checkProgram(t, edges, { module });
-  assert.deepEqual(edgesChecked.gaps, []);
-  const context = new Map([["q", 0]]);
-  const { expression } = folded.checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
-  const edgeText = folded.checker.displayText(folded.checker.syntax.decode(folded.kernel.normalizeFolded(expression), context), context, { width: 4000 });
-  assert.match(edgeText, /edge\(u\) @ (\w+) => loop @ ~\1;/, edgeText);
-  const { result: edgesBack } = await checkProgram(t, `${edges}def back : g = g := path q => ${edgeText};\n`, { module });
-  assert.deepEqual(edgesBack.gaps, [], edgeText);
-  const { program } = await checkProgram(t, "def q(u : Unit) : Unit := u;\n", { module });
-  const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__q")).value);
-  const pair = { tag: "Pair", first: { tag: "DefRef", name: "main__q" }, second: { tag: "App", fn: value, arg: { tag: "Point" } } };
-  assert.equal(checker.displayText(pair, ["q"], { width: 4000, reduce: 0 }),
-    "(fun (u : Unit) => (fun (ascription : Unit) => ascription)(u), (fun (u : Unit) => (fun (ascription : Unit) => ascription)(u))(tt))");
+    const { program, result } = await checkProgram(t, edges, { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program, context = new Map([["q", 0]]);
+    const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
+    for (const reduce of [0, 256]) {
+      const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000, reduce });
+      assert.match(text, /edge\(u\) @ (\w+) => loop @ ~\1;/, text);
+      const { result: back } = await checkProgram(t, `${edges}def back : g = g := path q => ${text};\n`, { module });
+      assert.deepEqual(back.gaps, [], text);
+    }
+  });
+  await t.test("shared syntax", async t => {
+    const { program } = await checkProgram(t, "def q(u : Unit) : Unit := u;\n", { module });
+    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__q")).value);
+    const pair = { tag: "Pair", first: { tag: "DefRef", name: "main__q" }, second: { tag: "App", fn: value, arg: { tag: "Point" } } };
+    assert.equal(checker.displayText(pair, ["q"], { width: 4000, reduce: 0 }),
+      "(fun (u : Unit) => (fun (ascription : Unit) => ascription)(u), (fun (u : Unit) => (fun (ascription : Unit) => ascription)(u))(tt))");
+  });
 });
 
 // An ascription is the term's own redex, kept though the eliminator in its

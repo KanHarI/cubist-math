@@ -123,15 +123,45 @@ export function readableDimensions(terms, pinned) {
   return terms.map(rename);
 }
 
-// Beta-reduce within a budget of substitutions, keeping every name.
+// A spine node, its root, and the value former it takes there.
+const spine = { App: ["fn", "Lam"], LApp: ["fn", "LLam"], Fst: ["pair", "Pair"], Snd: ["pair", "Pair"], PApp: ["path", "PLam"] };
+// One contraction of a spine node whose root is the value former it takes.
+// `place` gives the argument it substitutes, which can make a redex where
+// the body puts it at a spine's root.
+function contractRedex(node, place) {
+  const value = node[spine[node.tag][0]];
+  if (node.tag === "App") return substituteTerm(value.body, value.name, place(node.arg));
+  if (node.tag === "LApp") return substituteTerm(value.body, value.name, node.level);
+  if (node.tag === "PApp") return substituteDimension(value.body, value.dim, node.arg);
+  return node.tag === "Fst" ? value.first : value.second;
+}
+
+// Beta-reduce within a budget of substitutions, keeping every name: every
+// application of a lambda, and every other redex the reduction makes,
+// where a contraction puts a path, a pair or a function at the root of a
+// path application, a projection or an instantiation, as substituting
+// (path j => a) for p in p @ i does. Each is marked as a copy no other
+// node holds. A redex of another kind that the term has of its own is
+// kept.
 export function betaReduce(term, budget = 256) {
-  const reduced = new WeakMap();
+  const reduced = new WeakMap(), placed = new WeakSet();
+  const place = t => {
+    if (!t || typeof t !== "object") return t;
+    const copy = Array.isArray(t) ? [...t] : { ...t };
+    placed.add(copy);
+    return copy;
+  };
   const beta = t => {
     if (!t || typeof t !== "object") return t;
     if (reduced.has(t)) return reduced.get(t);
     let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
-    while (result.tag === "App" && result.fn?.tag === "Lam" && budget-- > 0)
-      result = beta(substituteTerm(result.fn.body, result.fn.name, result.arg));
+    if (placed.has(t)) placed.add(result);
+    for (;;) {
+      const [root, former] = spine[result.tag] ?? [];
+      if (!root || result[root]?.tag !== former || result.tag !== "App" && !placed.has(result[root]) || budget <= 0) break;
+      budget--;
+      result = place(beta(contractRedex(result, place)));
+    }
     reduced.set(t, result);
     return result;
   };
@@ -344,19 +374,20 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return { tag: "Lam", name, domain: of, body: { tag: "App", fn, arg: { tag: "Var", name } } };
   };
   // A clause taking each of `takes` in turn: a variable of the stem given,
-  // or a dimension. `settled` gives the weak head of each body the clause
-  // takes a binder from, where the clause is an unfolded value: the
-  // expansion consumes it, at every binder of the clause.
-  const clause = (body, takes, settled = body => body) => {
+  // or a dimension. Each body the clause takes a binder from is consumed by
+  // the expansion: where it is unfolded, the clause or the part of it below
+  // the clause's own binders, `weak` gives its weak head.
+  const clause = (body, takes, weak = null, unfolded = false) => {
     if (!takes.length || !body) return body;
     const [take, ...rest] = takes;
-    body = settled(body);
+    unfolded ||= exposed.has(body);
+    if (unfolded && weak) body = weak(body);
     if (take === "dimension") {
-      if (body.tag === "PLam") return { ...body, body: clause(body.body, rest, settled) };
+      if (body.tag === "PLam") return { ...body, body: clause(body.body, rest, weak, unfolded) };
       const dim = fresh("d");
       return { tag: "PLam", dim, family: null, body: clause({ tag: "PApp", path: body, arg: [[`${dim}:1`]] }, rest) };
     }
-    if (body.tag === "Lam") return { ...body, body: clause(body.body, rest, settled) };
+    if (body.tag === "Lam") return { ...body, body: clause(body.body, rest, weak, unfolded) };
     const name = fresh(take);
     return { tag: "Lam", name, domain: null, body: clause({ tag: "App", fn: body, arg: { tag: "Var", name } }, rest) };
   };
@@ -366,8 +397,6 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     const [argument, result] = signature === "unat__UNat" ? ["k", "h"] : ["x", "ih"];
     return [...Array(data + positions).fill(argument), ...Array(positions).fill(result), ...Array(dimensions).fill("dimension")];
   };
-  // A spine node, its root, and the value former it takes there.
-  const spine = { App: ["fn", "Lam"], LApp: ["fn", "LLam"], Fst: ["pair", "Pair"], Snd: ["pair", "Pair"], PApp: ["path", "PLam"] };
   // What an unfolding puts in the terms, at this occurrence: a definition's
   // value, an argument a contraction substitutes, and a contraction's
   // result, each marked as a copy no other node holds: decoded syntax is
@@ -386,16 +415,9 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return copy;
   };
   let contractions;
-  const contract = node => {
-    contractions--;
-    const value = node[spine[node.tag][0]];
-    // The argument, put at a spine's root in the body, can make a redex
-    // there, its own head consumed too.
-    if (node.tag === "App") return substituteTerm(value.body, value.name, mark(node.arg));
-    if (node.tag === "LApp") return substituteTerm(value.body, value.name, node.level);
-    if (node.tag === "PApp") return substituteDimension(value.body, value.dim, node.arg);
-    return node.tag === "Fst" ? value.first : value.second;
-  };
+  // The argument a contraction substitutes, put at a spine's root in the
+  // body, can make a redex there, its own head consumed too.
+  const contract = node => { contractions--; return contractRedex(node, mark); };
   // The weak head of a value a spine consumes: its own redexes along its
   // spine go first, as the identity ascription a definition's value can have
   // around it, or a function applied twice; no other part is touched.
@@ -463,7 +485,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
         }
         const constructors = symbols[result.signature]?.constructors;
         const clauses = constructors?.length === result.clauses?.length
-          ? result.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], result.signature), exposed.has(body) ? weakHead : undefined))
+          ? result.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], result.signature), weakHead))
           : result.clauses;
         result = { ...result, motive, clauses };
         const induction = inductionBinders(result);
