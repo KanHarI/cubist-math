@@ -283,10 +283,22 @@ def copy(n : unat::UNat) := induction n return unat::UNat { main::zero => n; una
 notation bad_view {
   x + main::unat.(y) := y;
 }
+
+theory Orphan(U < UU0) extends missing::T {
+  N : U;
+}
+
+theory Early(U < UU0) extends main::Later_theory {
+  N : U;
+}
+
+theory Later_theory(U < UU0) {
+  M : U;
+}
 `, { module });
   assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]),
     [["notation bad_view", "E254"], ["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"], ["member", "E343"],
-      ["T4", "E343"], ["Two", "E255"], ["copy", "E528"]]);
+      ["T4", "E343"], ["Two", "E255"], ["copy", "E528"], ["Orphan", "E253"], ["Early", "E255"]]);
   const { result: notations } = await checkProgram(t, "import a;\nimport e;\ndef x : Unit := a::absent;\ndef y : Unit := e::absent;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", e: "" }) });
   assert.deepEqual(notations.gaps.map(gap => [gap.name, gap.code]), [["x", "E254"], ["y", "E254"]]);

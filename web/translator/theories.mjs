@@ -347,12 +347,12 @@ export function theoryDeclarations(t,sourceUnit,d,env,declarations) {
   const module=sourceUnit.declaration(t.declarationFuel).with({references:null});
   try {
     const lookup=name=>{
-      const binding=env.get(name);
-      if(binding?.tag==="Untranslated") {
-        const at=d.parents.find(parent=>parent.name.text===name)?.name??d.name;
+      const binding=env.get(name),at=d.parents.find(parent=>parent.name.text===name)?.name??d.name;
+      if(binding?.tag==="Untranslated")
         throw module.locate(Object.assign(Error(`Untranslated dependency: ${name}`),
           {blockedBy:binding.blockedBy??binding.binding,cause:binding.cause??binding.reason}),at);
-      }
+      // A qualified parent available nowhere (qualified-names.mjs).
+      if(binding?.tag==="QualifiedFailure")throw module.locate(Error(binding.message),at);
       return env.get(theoryBinding(name))?.record??null;
     };
     const built=retainedTheoryDeclarations(t,module,d,env,{lookup,isTheory:name=>env.has(theoryBinding(name))});
