@@ -446,6 +446,20 @@ def twice_named := 0;
 
 def twice_named := 1;  // Error: Duplicate declaration twice_named: a declaration in this module already owns that name.</code></pre>
             <p>Inside a declaration, parameters and local names shadow outer ones. Pick fresh local names when a clash would be confusing to the reader.</p>
+            <p id="qualified-names">A module's declaration is also <code>module::name</code>, written with no space around <code>::</code>, and nothing shadows it: no parameter, local name or dimension is named with <code>::</code>. A type or a constructor is named so too, as <code>unat::UNat</code> and <code>unat::zero</code>:</p>
+            <pre><code data-check="accept">import unat;
+use unat;
+
+// The parameter succ shadows unat's constructor; unat::succ is the constructor.
+def shift(succ : UNat -&gt; UNat, n : UNat) : UNat := unat::succ(succ(n));
+
+evaluate shift(fun (m : UNat) =&gt; m, 1) expecting 2;</code></pre>
+            <p>The module is the one the name is written in, or one imported, and it declares the name:</p>
+            <pre><code data-check="reject">import unat;
+
+def missing := unat::nothing;  // Error: unat declares no nothing, so unat::nothing names nothing.
+
+def unloaded := hlevels::IsProp;  // Error: hlevels::IsProp names a declaration of hlevels, which is not imported here: import hlevels;</code></pre>
           </section>
 
           <nav class="pager" aria-label="Chapter navigation">
