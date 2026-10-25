@@ -37,7 +37,7 @@ test("a rational literal's folded normal form names its certificate", async t =>
   const { checker, folded: result } = folded(program, "two_thirds");
   // Its full normal form is 70M ticks and over a million nodes.
   assert.ok(program.kernel.work().querySteps - before < 1000000);
-  const text = checker.displayText(checker.syntax.decode(result, checker.dimensions), 1000, 1000, checker.notation ?? {}, 0);
+  const text = checker.displayText(checker.syntax.decode(result, checker.dimensions), checker.dimensions, { width: 1000, limit: 1000, reduce: 0 });
   assert.equal(text, "class((class((unat.(2), unat.(0))), class((unat.(3), unat.(0))), int_succ_nonzero(unat.(2))))");
 });
 
@@ -256,7 +256,7 @@ def f(s : Box) := match s return Unit -> Unit { box(g) => g; };
     const boxed = { tag: "App", fn: { tag: "Con", index: 0, sort: domain }, arg: { tag: "App", fn: { tag: "DefRef", name: "main__f" }, arg: x } };
     const term = { tag: "App", fn: { tag: "App", fn: eliminator, arg: boxed }, arg: { tag: "Point" } };
     const { expression } = checker.checkSyntax(term, null, new Map([["x", domain]]), new Map());
-    shown.push(checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression)), 1000, 1000, {}, 0));
+    shown.push(checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression)), [], { width: 1000, limit: 1000, notation: {}, reduce: 0 }));
   }
   assert.equal(shown[0], shown[1]);
 });

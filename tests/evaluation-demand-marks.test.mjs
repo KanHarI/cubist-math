@@ -511,7 +511,7 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   checker.derivedHead(kernel.term("Pair", 0, annotation, first, second));
   assert.throws(() => kernel.normalize(first), /instruction derived/);
   assert.deepEqual(kernel.node(checker.derivedHead(expression)).children.slice(0, 3), [annotation, first, second]);
-  assert.equal(checker.displayText(checker.normalForm(first)), "unat.(3)");
+  assert.equal(checker.displayText(checker.normalForm(first), []), "unat.(3)");
   assert.equal(checker.normalForm(second).tag, "Lam");
   // Nothing below the data parts is admitted: not a lambda's domain or body,
   // even once the lambda's own head is asked, nor the parts of a part,
@@ -522,7 +522,7 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   const [inner] = kernel.spine(kernel.head(first)).args;
   assert.throws(() => kernel.normalize(inner), /instruction derived/);
   assert.equal(kernel.spine(checker.derivedHead(first)).args[0], inner);
-  assert.equal(checker.displayText(checker.normalForm(inner)), "unat.(2)");
+  assert.equal(checker.displayText(checker.normalForm(inner), []), "unat.(2)");
 });
 
 test("normalize accepts no annotation of a derived handle's weak head that was not derived already", async t => {
@@ -541,7 +541,7 @@ def nested_ : ((UNat and UNat) or Unit) and UNat := (left((1, 2)), 2 + 1);`, { m
   assert.deepEqual([injection.kind, inner.kind, constructor.kind], ["Inl", "Pair", "Con"]);
   for (const annotation of [injection.children[0], inner.children[0], constructor.children[0]])
     assert.throws(() => kernel.normalize(annotation), /instruction derived/);
-  assert.equal(checker.displayText(checker.normalForm(inner.children[1])), "unat.(1)");
+  assert.equal(checker.displayText(checker.normalForm(inner.children[1]), []), "unat.(1)");
 });
 
 test("the head of a derived path or level lambda admits nothing under its binder", async t => {

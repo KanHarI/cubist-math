@@ -588,13 +588,13 @@ function automaticClauseAt(translator, scope, type, name, node, proof, index) {
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};
     });
-    const search = new HLevelSearch(at, hints, term => translator.shown(term), locals,
+    const search = new HLevelSearch(at, hints, term => translator.shown(term, at), locals,
       {instantiate:true, rules:orderedHLevelRules(translator.simpRegistry)});
     try { return pathEvidence(search, path, at); }
     catch (error) {
       propagateElaborationStop(error);
       if (!(error instanceof HLevelUnproved)) throw error;
-      throw scope.unit.locate(Error(`Cannot generate ${name}: ${translator.shown(error.chain.at(-1).type)} must be ${error.chain.at(-1).level === 0 ? "a proposition" : `of h-level ${error.chain.at(-1).level}`}; ${error.reason}. Give checked h-level evidence, or an explicit obligation.`), node);
+      throw scope.unit.locate(Error(`Cannot generate ${name}: ${translator.shown(error.chain.at(-1).type, at)} must be ${error.chain.at(-1).level === 0 ? "a proposition" : `of h-level ${error.chain.at(-1).level}`}; ${error.reason}. Give checked h-level evidence, or an explicit obligation.`), node);
     }
   };
   const term = translator.search(scope, `Generating ${name}`, at => build(at, type));

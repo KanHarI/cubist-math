@@ -7,6 +7,8 @@ import { displayTerm, forSource } from "../web/display-naming.mjs";
 import { judgementGraph } from "../web/cubical-graph-view.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
+import { localName } from "../web/translator/names.mjs";
 
 // The display's naming (web/README.md, "Displaying terms"): no two different
 // things show one name where both are in scope. A folded normal form keeps
@@ -209,7 +211,7 @@ const shown = async t => {
   return { program, texts };
 };
 const typeOf = (program, name) => program.checker.displayText(program.checker.syntax.decode(
-  program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).type), 1000, 1000, undefined, 256, new Map());
+  program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).type), [], { width: 1000, limit: 1000 });
 
 test("each folded normal form reads back as the same function, and computes alike", async t => {
   const { program, texts } = await shown(t);
@@ -230,12 +232,25 @@ test("shown where the context names a dimension, each reads back bound by it", a
     const context = new Map([[dimension, 0]]);
     for (const [name] of cases) {
       const { expression } = checker.checkSyntax({ tag: "DefRef", name: `main__${name}` }, null, new Map(), context);
-      const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), 4000, 4000, undefined, 256, context);
+      const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000 });
       back.push(`def ${dimension}_${name} : ${name} = ${name} := path ${dimension} => ${text};`);
     }
   }
   const { result } = await checkProgram(t, `${source}${back.join("\n")}\n`, { module });
   assert.deepEqual(result.gaps.map(gap => `${gap.name}: ${gap.code} ${gap.reason}`), []);
+});
+
+// No display has a default context: each is given the dimensions of the
+// context its terms are shown in, as a scope's Map or their names, [] for
+// none (contextDimensions). A view's [name, index] entries are neither.
+test("every display is given its context's dimensions", async t => {
+  const { program } = await checkProgram(t, "def u : Unit := tt;\n", { module });
+  const { checker } = program, term = { tag: "Point" };
+  for (const display of [() => checker.displayText(term), () => checker.displayTexts([term]), () => checker.kernelText(term),
+    () => checker.displayGoal(new Map(), undefined, term), () => forSource([term], { ...checker.displayNaming([]), dimensions: undefined }),
+    () => cubicalText(term), () => checker.displayText(term, [["i", 0]])])
+    assert.throws(display, TypeError);
+  assert.equal(checker.displayText(term, []), "tt");
 });
 
 // In kernel notation, a definition is a name with its binding; it must not
@@ -305,8 +320,8 @@ def famP : PathP(fun (k : Interval) => (op @ k) -> U0, F, F) := path k => F;
   const typeOfDefinition = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).type);
   const folded = (term, dimensions) => checker.syntax.decode(kernel.normalizeFolded(checker.checkSyntax(term, null, new Map(), dimensions).expression), dimensions);
   const both_ = (term, shown) => {
-    assert.equal(checker.displayText(term, 1000, 1000), shown);
-    assert.equal(checker.displayGoal(new Map(), term, null, 1000).goal, shown);
+    assert.equal(checker.displayText(term, [], { width: 1000, limit: 1000 }), shown);
+    assert.equal(checker.displayGoal(new Map(), [], term, null, { width: 1000 }).goal, shown);
   };
   // A folded motive beside the dimension z1, which the term names.
   const familyAt = { tag: "PApp", path: { tag: "DefRef", name: "main__familyPath" }, arg: [["z1:1"]] };
@@ -315,34 +330,36 @@ def famP : PathP(fun (k : Interval) => (op @ k) -> U0, F, F) := path k => F;
     body: { tag: "App", fn: { tag: "Elim", signature: "main__Opt", motive: familyAt, clauses }, arg: { tag: "Var", name: "x" } } } }, new Map([["z1", 0]]));
   const z1Shown = "fun (z : Unit, x : Opt(Unit)) => match x as z2 return (familyPath @ z1)(z2) { none => tt; some(y) => y; }";
   both_(z1, z1Shown);
-  // The definition i, in a recovered domain, beside the dimension i.
+  // The definition i, in a recovered domain, beside the dimension i: shown
+  // qualified.
   const circle = { tag: "Sort", signature: "main__Circle", parameters: [], levels: [] };
   const loop = { tag: "PApp", path: { tag: "Con", index: 1, sort: circle }, arg: [["i:1"]] }, ambient = new Map([["i", 0]]);
   const iTerm = folded({ tag: "Lam", name: "x", domain: typeOfDefinition("Around").domain, body: { tag: "App", arg: { tag: "Var", name: "x" },
     fn: { tag: "Elim", signature: "main__Tag", motive: { tag: "DefRef", name: "main__Around" }, clauses: [loop] } } }, ambient);
-  const iShown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => loop @ i; }";
+  const iShown = "fun (x : Tag(main::i)) => match x as z return Around(z) { tag => loop @ i; }";
   both_(iTerm, iShown);
   // g names no dimension, but is shown where the context names i.
   const gTerm = folded({ tag: "DefRef", name: "main__g" }, ambient);
-  const gShown = "fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }";
-  assert.equal(checker.displayText(gTerm, 1000, 1000, undefined, 256, ambient), gShown);
-  assert.equal(checker.displayText(gTerm, 1000, 1000, undefined, 256, new Map()), gShown.replace("Tag(Unit)", "Tag(i)"));
+  const gShown = "fun (x : Tag(main::i)) => match x as z return Around(z) { tag => base; }";
+  assert.equal(checker.displayText(gTerm, ambient, { width: 1000, limit: 1000 }), gShown);
+  assert.equal(checker.displayText(gTerm, [], { width: 1000, limit: 1000 }), gShown.replace("Tag(main::i)", "Tag(i)"));
   // An eliminator written as a function, its motive a path of type
   // families applied at z1: its domain is the family's at z1.
   const famAt = { tag: "PApp", path: { tag: "DefRef", name: "main__famP" }, arg: [["z1:1"]] };
   const alone = folded({ tag: "Elim", signature: "main__Opt", motive: famAt, clauses }, new Map([["z1", 0]]));
-  assert.equal(checker.displayText(alone, 1000, 1000), "fun (x : op @ z1) => match x as z return (famP @ z1)(z) { none => tt; some(y) => y; }");
+  assert.equal(checker.displayText(alone, [], { width: 1000, limit: 1000 }), "fun (x : op @ z1) => match x as z return (famP @ z1)(z) { none => tt; some(y) => y; }");
   // A goal shown where the context names d0 keeps the name, which reads as
   // an unnamed dimension's; a goal printed in kernel notation, as a
   // judgement graph prints it, is shown as it was checked.
   const loopAt = { tag: "PApp", path: { tag: "Con", index: 1, name: "loop", sort: circle }, arg: [["d0:1"]] };
-  assert.equal(checker.displayGoal(new Map(), loopAt, null, 1000, null, true, {}, new Map([["d0", 0]])).goal, "loop @ d0");
-  const kernelGoal = checker.displayGoal(new Map(), alone, null, 1000, cubicalText, false).goal;
+  assert.equal(checker.displayGoal(new Map(), new Map([["d0", 0]]), loopAt, null, { width: 1000 }).goal, "loop @ d0");
+  const kernelGoal = checker.displayGoal(new Map(), [], alone, null, { width: 1000, kernel: true, reduce: false }).goal;
   assert.match(kernelGoal, /^Opt\.elim\(at\(famP, z1:1\), /, kernelGoal);
   // So is one given the judgement's dimensions, as a judgement graph gives
   // them: the definition d0 beside the dimension d0 shows by its kernel name.
   const kVar = { tag: "Var", name: "k" }, kType = { tag: "Pi", name: "_", domain: { tag: "U", level: { tag: "LConst", tier: 0, value: 0 } }, body: { tag: "U", level: { tag: "LConst", tier: 0, value: 0 } } };
-  const graphGoal = checker.displayGoal(new Map([["k", kType]]), { tag: "App", fn: kVar, arg: { tag: "DefRef", name: "main__d0" } }, null, 240, cubicalText, false, {}, new Map([["d0", 0]]));
+  const graphGoal = checker.displayGoal(new Map([["k", kType]]), new Map([["d0", 0]]), { tag: "App", fn: kVar, arg: { tag: "DefRef", name: "main__d0" } }, null,
+    { width: 240, kernel: true, reduce: false });
   assert.equal(graphGoal.goal, "k(main__d0)");
   const { result: back } = await checkProgram(t, `${declarations}def z1_back : fam = fam := path z1 => ${z1Shown};
 def i_loop : (fun (x : Tag(Unit)) => match x as z return Around(z) { tag => base; }) = g := path i => ${iShown};
@@ -393,30 +410,32 @@ def ga : PathP(fun (e : Interval) => forall k : U0 -> (loop @ e = loop @ e) -> U
   for (const fragment of fragments) assert.equal(fragment.at(-1), "a : k(main__d0, q)", fragment.join(", "));
 });
 
-// Induction whose motive binds the predecessor's name, printed as a tool
-// without the elaborator's symbols prints it (tools/proof-migration.mjs):
-// in f, the shared `as` name is the motive's, which the successor clause
-// takes: the motive's binder k has m in its scope. Each text reads back as
-// the same function. In g, the successor clause binds the motive's name m
-// over a type that names the predecessor k, and the motive binds k over a
-// type that names m: neither binder's type is in its scope, so the
-// predecessor's name is shared.
-test("induction's shared name is whichever binder takes it, without symbols too", async t => {
+// Induction named by forSource without the elaborator's symbols: spelledOut
+// gives the motive's variable and the predecessor one name
+// (inductionBinders), the predecessor's first, each binder renamed apart
+// from what it would capture, and displayTerm names both alike. Each text
+// reads back as the same function. In f, the motive's own binder k is
+// renamed apart from the shared k; in g, the successor clause's binder m
+// keeps its name; in h, the parameter k is in scope, and the shared name is
+// shown apart from it.
+const bare = { definitions: { type: () => null, value: () => null, label: localName }, symbols: {}, dimensions: [] };
+test("induction's shared name is settled by the naming, without symbols too", async t => {
   const declarations = `import unat;
 use unat;
 
-def f(n : UNat) : forall q : n = n. n = n := induction n as m return forall k : m = m. m = m { zero => fun q => q; succ(k) with ih => fun q => q; };
+def f(n : UNat) : forall q : n = n. q = q := induction n as m return forall k : m = m. k = k { zero => fun q => refl(q); succ(k) with ih => fun q => refl(q); };
 def g(n : UNat) : forall q : n = n. Unit := induction n as m return forall k : m = m. Unit { zero => fun q => tt; succ(k) with ih => fun (m : succ(k) = succ(k)) => tt; };
+def h(k : UNat) : forall q : k = k. Unit := induction k as m return forall q : m = m. Unit { zero => fun q => tt; succ(k) with ih => fun q => tt; };
 `;
   const { program, result } = await checkProgram(t, declarations, { module });
   assert.deepEqual(result.gaps, []);
   const { kernel, checker } = program;
-  for (const [name, shared] of [["f", "m"], ["g", "k"]]) {
+  for (const [name, spelled, type] of [["f", /induction n as k return forall k1 : k = k\. k1 = k1 /, "n = n. q = q"],
+    ["g", /induction n as k return /, "n = n. Unit"], ["h", /induction k as k1 return /, "k = k. Unit"]]) {
     const value = checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).value);
-    const shown = sourceText(displayTerm(value), {}, 4000, { selection: "unat" });
-    assert.match(shown, new RegExp(`induction n as ${shared} return `), shown);
-    const type = name === "f" ? "n = n" : "Unit";
-    const { result: back } = await checkProgram(t, `${declarations}def back : forall n : UNat. forall q : n = n. ${type} := ${shown};
+    const shown = sourceText(forSource([value], bare)[0], {}, 4000, { selection: "unat" });
+    assert.match(shown, spelled, shown);
+    const { result: back } = await checkProgram(t, `${declarations}def back : forall ${name === "h" ? "k" : "n"} : UNat. forall q : ${type} := ${shown};
 def same : back = ${name} := refl(${name});
 `, { module });
     assert.deepEqual(back.gaps, [], shown);
@@ -424,24 +443,42 @@ def same : back = ${name} := refl(${name});
 });
 
 // The successor clause binds k again, over a type whose binder m has the
-// predecessor k in its scope: showing the predecessor as the motive's m
-// would read R(m, k) as R(m, m). A binder of k hides k only in its scope,
-// not in its type. Where that binder is x, m is shared. A dimension m
-// captures too: in path m => R(k) @ m, k shown as m reads as the dimension.
-test("induction shares no name that a binder in its successor clause would capture", () => {
+// predecessor k in its scope, or binds a dimension k: the shared name is
+// apart from both, and the clause's own binders from it. Where the motive
+// shows k for another variable, the motive's name m is shared, and where
+// the successor clause shows m for another one too, a new name. The
+// printer, on terms not named, shows the motive's variable and the
+// predecessor as they are, unalike: kernel notation.
+test("induction's shared name captures nothing in its successor clause", () => {
   const nat = { tag: "Sort", signature: "unat__UNat", parameters: [], levels: [] };
   const v = name => ({ tag: "Var", name }), app = (fn, ...args) => args.reduce((fn, arg) => ({ tag: "App", fn, arg }), fn);
   const motive = { tag: "Lam", name: "m", domain: nat, body: { tag: "Pi", name: "k", domain: app(v("T"), v("m")), body: app(v("T"), v("m")) } };
-  const induction = body => sourceText({ tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive, clauses: [v("z"),
-    { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body } }] } }, {}, 4000, { selection: "unat" });
-  const rebinding = inner => ({ tag: "Lam", name: "k", domain: { tag: "Pi", name: inner, domain: nat, body: app(v("R"), v(inner), v("k")) },
-    body: { tag: "Point" } });
-  assert.equal(induction(rebinding("m")),
+  const induction = body => ({ tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive, clauses: [v("z"),
+    { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body } }] } });
+  const named = term => sourceText(forSource([term], bare)[0], {}, 4000, { selection: "unat" });
+  const rebinding = { tag: "Lam", name: "k", domain: { tag: "Pi", name: "m", domain: nat, body: app(v("R"), v("m"), v("k")) }, body: { tag: "Point" } };
+  assert.equal(named(induction(rebinding)),
+    "induction n as k return T(k) -> T(k) { zero => z; succ ih => fun (k1 : forall m : UNat. R(m, k)) => tt; }");
+  assert.equal(named(induction({ tag: "PLam", dim: "k", family: null, body: { tag: "PApp", path: app(v("R"), v("k")), arg: [["k:1"]] } })),
+    "induction n as k1 return T(k1) -> T(k1) { zero => z; succ ih => path k => R(k1) @ k; }");
+  const outer = { tag: "Lam", name: "m", domain: nat, body: app(v("T"), v("k")) };
+  assert.equal(named({ tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive: outer, clauses: [v("z"),
+    { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body: app(v("S"), v("k")) } }] } }),
+    "induction n as m return T(k) { zero => z; succ ih => S(m); }");
+  // The successor clause shows m for another variable too: a new name.
+  assert.equal(named({ tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive: outer, clauses: [v("z"),
+    { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body: app(v("S"), v("k"), v("m")) } }] } }),
+    "induction n as k1 return T(k) { zero => z; succ ih => S(k1, m); }");
+  // A new name is numbered apart from the universes: U_1, not U1, though a
+  // term too large for scoped names (globalNames) shows it as it is.
+  const universal = { tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive: { tag: "Lam", name: "m", domain: nat, body: app(v("Ty"), v("U")) },
+    clauses: [v("z"), { tag: "Lam", name: "U", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body: app(v("S"), v("U"), v("m")) } }] } };
+  let large = v("w");
+  for (let level = 0; level < 11; level++) large = { tag: "Pair", first: large, second: large };
+  assert.equal(sourceText(forSource([universal, large], bare)[0], {}, 4000, { selection: "unat" }),
+    "induction n as U_1 return Ty(U) { zero => z; succ ih => S(U_1, m); }");
+  assert.equal(sourceText(induction(rebinding), {}, 4000, { selection: "unat" }),
     "unat__UNat.elim(λ (m : unat__UNat). (T(m) → T(m)), z, λ (k : unat__UNat). λ (ih : I). λ (k : Π (m : unat__UNat), R(m, k)). ⋆)(n)");
-  assert.equal(induction(rebinding("x")),
-    "induction n as m return T(m) -> T(m) { zero => z; succ ih => fun (k : forall x : UNat. R(x, m)) => tt; }");
-  assert.match(induction({ tag: "PLam", dim: "m", family: null, body: { tag: "PApp", path: app(v("R"), v("k")), arg: [["m:1"]] } }),
-    /^unat__UNat\.elim\(/);
 });
 
 // forSource on a term of its own, as a test or a tool would name one: an
@@ -454,21 +491,21 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   const elim = { tag: "Elim", signature: "main__N", motive: { tag: "Lam", name: "m", domain: sort, body: { tag: "DefRef", name: "main__T" } },
     clauses: [{ tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["x:1"]] }] };
   const definitions = { type: () => null, value: () => null, label: name => symbols[name]?.name ?? name };
-  const [named] = forSource([{ tag: "PLam", dim: "x", family: null, body: elim }], { definitions, symbols });
+  const [named] = forSource([{ tag: "PLam", dim: "x", family: null, body: elim }], { definitions, symbols, dimensions: [] });
   assert.equal(sourceText(named, symbols), "path x => fun (x1 : N) => match x1 return T { zero => p @ x; }");
   // The printer chooses no name: unnamed, the eliminator shows as it is.
   assert.equal(sourceText({ tag: "PLam", dim: "x", family: null, body: elim }, symbols), "path x => N.elim(λ (m : N). T, at(p, x:1))");
   // One eliminator, applied first and then alone: each place is spelled for
   // itself, though the syntax is shared.
   const shared = { tag: "Lam", name: "o", domain: sort, body: { tag: "Pair", first: { tag: "App", fn: elim, arg: { tag: "Var", name: "o" } }, second: elim } };
-  const [both] = forSource([shared], { definitions, symbols });
+  const [both] = forSource([shared], { definitions, symbols, dimensions: [] });
   assert.equal(sourceText(both, symbols), "fun (o : N) => (match o return T { zero => p @ x; }, fun (x1 : N) => match x1 return T { zero => p @ x; })");
   // A motive that reduces to a function gives its domain: here of a type
   // with a parameter, whose domain only the function tells.
   const typed = { ...symbols, main__P: { name: "P", slots: ["parameter"], constructors: [{ name: "pz", data: 0, positions: 0, dimensions: 0 }] } };
   const pUnit = { tag: "Sort", signature: "main__P", parameters: [{ tag: "Unit" }], levels: [] };
   const redex = { tag: "App", fn: { tag: "Lam", name: "u", domain: { tag: "Unit" }, body: { tag: "Lam", name: "m", domain: pUnit, body: { tag: "DefRef", name: "main__T" } } }, arg: { tag: "Point" } };
-  const [reduced] = forSource([{ tag: "Elim", signature: "main__P", motive: redex, clauses: [{ tag: "Point" }] }], { definitions, symbols: typed });
+  const [reduced] = forSource([{ tag: "Elim", signature: "main__P", motive: redex, clauses: [{ tag: "Point" }] }], { definitions, symbols: typed, dimensions: [] });
   assert.equal(sourceText(reduced, typed), "fun (x : P(Unit)) => match x return T { pz => tt; }");
   // Terms shown together get new names apart from all of them: the source
   // Nat eliminators of a large tuple take n, n1, …, none n5, which the other
@@ -477,15 +514,222 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   let tuple = Array.from({ length: 256 }, (_, k) => ({ tag: "Elim", signature: "unat__UNat",
     motive: { tag: "Lam", name: "m", domain: nat, body: { tag: "Var", name: `T${k}` } }, clauses: [{ tag: "Var", name: `z${k}` }, { tag: "Var", name: `s${k}` }] }));
   while (tuple.length > 1) tuple = Array.from({ length: Math.ceil(tuple.length / 2) }, (_, k) => ({ tag: "Pair", first: tuple[2 * k], second: tuple[2 * k + 1] ?? tuple[2 * k] }));
-  const [, alone] = forSource([tuple[0], { tag: "Var", name: "n5" }], { definitions, symbols, names: new Map([["n5", "n"]]) });
+  const [, alone] = forSource([tuple[0], { tag: "Var", name: "n5" }], { definitions, symbols, names: new Map([["n5", "n"]]), dimensions: [] });
   assert.equal(sourceText(alone, symbols), "n");
-  // A definition named as a dimension of the context, q, applied: its value,
-  // a function of a path, leaves a redex at each level of the spine above
-  // it, each reduced: q(tt) @ j is p @ ~j.
-  const unfolding = { ...definitions, value: name => name === "main__q" ? { tag: "Lam", name: "u", domain: { tag: "Unit" },
-    body: { tag: "PLam", dim: "e", family: null, body: { tag: "PApp", path: { tag: "DefRef", name: "main__p" }, arg: [["e:0"]] } } } : null,
-    label: name => name === "main__q" ? "q" : definitions.label(name) };
-  const applied = { tag: "PApp", path: { tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Point" } }, arg: [["j:1"]] };
-  const [spelled] = forSource([applied], { definitions: unfolding, symbols, dimensions: ["q", "j"] });
-  assert.equal(sourceText(spelled, symbols), "p @ ~j");
+  // A definition named as a dimension of the context, q, is shown qualified,
+  // main::q, which no dimension shadows: nothing is unfolded. So is one
+  // named as a dimension the source named and the term binds; one named as
+  // a dimension decoding left unnamed is not, as that dimension is renamed.
+  const labeled = { ...symbols, main__q: { name: "q" }, main__d0: { name: "d0" } };
+  const qualifying = { ...definitions, label: name => labeled[name]?.name ?? name,
+    qualified: name => labeled[name] ? `main::${labeled[name].name}` : null };
+  const shown = (term, dimensions) => sourceText(forSource([term], { definitions: qualifying, symbols: labeled, dimensions })[0], labeled);
+  const at = (path, dim) => ({ tag: "PApp", path, arg: [[`${dim}:1`]] });
+  assert.equal(shown(at({ tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Point" } }, "j"), ["q", "j"]), "main::q(tt) @ j");
+  assert.equal(shown({ tag: "PLam", dim: "q", family: null, body: at({ tag: "DefRef", name: "main__q" }, "q") }, []), "path q => main::q @ q");
+  assert.equal(shown({ tag: "PLam", dim: "d0", family: null, body: at({ tag: "DefRef", name: "main__d0" }, "d0") }, []), "path i => d0 @ i");
+  // A free variable the caller names q is shown so, and the definition q
+  // qualified.
+  const [given] = forSource([{ tag: "App", fn: { tag: "DefRef", name: "main__q" }, arg: { tag: "Var", name: "v" } }],
+    { definitions: qualifying, symbols: labeled, dimensions: [], names: new Map([["v", "q"]]) });
+  assert.equal(sourceText(given, labeled), "main::q(q)");
+  // Kernel notation, where source text falls back to it, shows the
+  // definition by its kernel name: an eliminator of a type the symbols do
+  // not describe.
+  const [fallen] = forSource([{ tag: "App", fn: { tag: "Elim", signature: "main__Unknown", motive: { tag: "Lam", name: "w", domain: { tag: "Unit" },
+    body: { tag: "Unit" } }, clauses: [{ tag: "DefRef", name: "main__q" }] }, arg: { tag: "Point" } }], { definitions: qualifying, symbols: labeled, dimensions: ["q"] });
+  assert.match(sourceText(fallen, labeled), /\bmain__q\b/, sourceText(fallen, labeled));
+});
+
+// The display's beta reduction contracts before anything is spelled out: a
+// path put at a path application's root, whose body holds a folded
+// eliminator whose clause spelledOut writes as a path without a family,
+// which a substitution cannot read. Each text reads back.
+test("the display's beta reduction never substitutes into spelled syntax", async t => {
+  const source = `inductive Circle {
+  base;
+  loop : base = base;
+}
+inductive S {
+  pt;
+  edge(u : Unit) : pt = pt;
+}
+def f : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => loop @ j; };
+def h : f = f := path j => (fun (p : f = f) => p)(refl(f)) @ j;
+`;
+  const { program, result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.gaps, []);
+  const { kernel, checker } = program;
+  // h's value, f in it as its folded normal form, whose edge clause is
+  // eta-reduced.
+  const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
+  const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+  const inline = t => !t || typeof t !== "object" ? t : t.tag === "DefRef" && t.name === "main__f" ? folded
+    : Array.isArray(t) ? t.map(inline) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, inline(value)]));
+  const value = inline(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__h")).value));
+  const texts = [0, 256].map(reduce => checker.displayText(value, [], { width: 4000, reduce }));
+  assert.equal(texts[1], "refl(fun (x : S) => match x return Circle { pt => base; edge(u) @ j => loop @ j; })");
+  for (const text of texts) {
+    const { result: back } = await checkProgram(t, `${source}def back : f = f := ${text};\n`, { module });
+    assert.deepEqual(back.gaps, [], text);
+  }
+});
+
+// An eliminator whose motive is another eliminator, a function of the
+// domain that one's motive takes, written as a function: that domain is
+// its lambda's, read before anything is spelled out, through the inner
+// motive in each form it takes: a lambda, a definition kept by name, and a
+// lambda at the root of a projection, a path application or an
+// application, which kernel-checked syntax can hold. The text reads back.
+test("an eliminator whose motive is an eliminator keeps its domain", async t => {
+  const source = motive => `inductive B(A : U0) {
+  b;
+}
+def M(z : B(Unit)) : U1 := U0;
+def f := fun (x : B(Unit)) => match x as z return ${motive} { b => tt; };
+def pair : (B(Unit) -> U1) and Unit := (fun (w : B(Unit)) => U0, tt);
+def line : (fun (w : B(Unit)) => U0) = (fun (w : B(Unit)) => U0) := refl(fun (w : B(Unit)) => U0);
+`;
+  const plain = "(match z return U0 { b => Unit; })", shownPlain = "match z return U0 { b => Unit; }";
+  // The inner eliminator's motive, as source writes it or replaced in f's
+  // folded normal form, Elim(Elim(λ w. U0, [Unit]), [tt]).
+  const cases = [["lambda", plain, null, shownPlain],
+    ["definition", "(match z as w return M(w) { b => Unit; })", null, "match z as z1 return M(z1) { b => Unit; }"],
+    ["projection", plain, value => ({ tag: "Fst", pair: value("main__pair") }), shownPlain],
+    ["path application", plain, value => ({ tag: "PApp", path: value("main__line"), arg: [] }), shownPlain],
+    ["application", plain, (value, lambda) => ({ tag: "App", fn: { tag: "Lam", name: "u", domain: { tag: "Unit" }, body: lambda }, arg: { tag: "Point" } }), shownPlain]];
+  for (const [label, motive, replace, shown] of cases) await t.test(label, async t => {
+    const { program, result } = await checkProgram(t, source(motive), { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program;
+    const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value);
+    const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
+    let folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+    if (replace) {
+      assert.equal(folded.motive.tag, "Elim");
+      folded = { ...folded, motive: { ...folded.motive, motive: replace(value, folded.motive.motive) } };
+    }
+    for (const reduce of [0, 256]) {
+      const text = checker.displayText(folded, [], { width: 4000, reduce });
+      assert.equal(text, `fun (x : B(Unit)) => match x as z return ${shown} { b => tt; }`);
+      const { result: back } = await checkProgram(t, `${source(motive)}def same : f = f := refl(${text});\n`, { module });
+      assert.deepEqual(back.gaps, [], text);
+    }
+  });
+});
+
+// A definition named as the context's dimension q is shown qualified,
+// main::q, which no dimension shadows, wherever it is: applied, at a path's
+// root, inside a redex of the term's own, an eta-reduced clause, a
+// projection, an instantiation; nothing is unfolded, so no redex is made.
+// Each text reads back as the value, with no beta reduction for display, as
+// evaluation prints, and with it, which contracts each redex it makes: a
+// path put at a path application's root.
+test("a definition named as a dimension of the context is shown qualified", async t => {
+  const circle = `inductive Circle {
+  base;
+  loop : base = base;
+}
+`;
+  // Each program is checked in a subtest of its own, which disposes of it:
+  // a module holds eight kernel sessions.
+  const ascribed = text => `(fun (ascription : base = base) => ascription)(${text})`;
+  const values = [
+    ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(typed(base = base, path e => loop @ e));",
+      ascribed(`main::q(${ascribed("path i => loop @ i")})`)],
+    ["def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;",
+      ascribed("path i => main::q @ ~i")],
+    ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := path k => (fun (p : base = base) => q(p))(path j => loop @ j) @ k;",
+      ascribed("path i => (fun (p : base = base) => main::q(p))(path i => loop @ i) @ i")],
+    // No definition is named so: the display's beta reduction alone.
+    ["def g : base = base := path k => (fun (p : base = base) => typed(base = base, path f => p @ ~f))(path j => loop @ j) @ k;",
+      ascribed("path i => (fun (p : base = base) => " + ascribed("path i => p @ ~i") + ")(path i => loop @ i) @ i")],
+    ["def q : base = base := loop;\ndef g : Unit := (fun (u : q = q) => tt)(refl(q));",
+      "(fun (ascription : Unit) => ascription)((fun (u : main::q = main::q) => tt)(refl(main::q)))"]];
+  for (const [index, [definitions, unreduced]] of values.entries()) await t.test(`value ${index + 1}`, async t => {
+    const { program, result } = await checkProgram(t, `${circle}${definitions}\n`, { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value);
+    const texts = [0, 256].map(reduce => checker.displayText(value, ["q"], { width: 4000, reduce }));
+    assert.equal(texts[0], unreduced);
+    for (const text of texts) {
+      assert.doesNotMatch(text, /(?<!::)\bq\b/, text);
+      const { result: back } = await checkProgram(t, `${circle}${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
+      assert.deepEqual(back.gaps, [], text);
+    }
+  });
+  // A folded normal form keeps an eta-reduced clause that is the definition.
+  for (const [edge, shown] of [["q(u) @ j", /edge\((\w+)\) @ (\w+) => main::q\(\1\) @ \2;/], ["q(tt) @ j", /edge\(\w+\) @ (\w+) => main::q\(tt\) @ \1;/]])
+    await t.test(`clause ${edge}`, async t => {
+      const edges = `${circle}inductive S {
+  pt;
+  edge(u : Unit) : pt = pt;
+}
+def q(u : Unit) : base = base := path e => loop @ ~e;
+def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => ${edge}; };
+`;
+      const { program, result } = await checkProgram(t, edges, { module });
+      assert.deepEqual(result.gaps, []);
+      const { kernel, checker } = program, context = new Map([["q", 0]]);
+      const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
+      for (const reduce of [0, 256]) {
+        const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000, reduce });
+        assert.match(text, shown, text);
+        const { result: back } = await checkProgram(t, `${edges}def back : g = g := path q => ${text};\n`, { module });
+        assert.deepEqual(back.gaps, [], text);
+      }
+    });
+  // A projection and an instantiation of it, and the display's beta
+  // reduction projecting a pair whose components differ.
+  const pairs = [
+    ["main::q.1", "def q : U0 and Unit := (Unit, tt);\ndef g : U0 := q.1;"],
+    ["main::q.2", "def q : U0 and Unit := (Unit, tt);\ndef g : Unit := q.2;"],
+    ["main::q(U1)", "def q(U < UU0) := U;\ndef g : U2 := q(U1);"],
+    ["Unit", "def g : U0 := (fun (p : U0 and Unit) => p.1)((Unit, tt));"],
+    ["tt", "def g : Unit := (fun (p : U0 and Unit) => p.2)((Unit, tt));"]];
+  for (const [index, [shown, definitions]] of pairs.entries()) await t.test(`pair ${index + 1}`, async t => {
+    const { program, result } = await checkProgram(t, `${definitions}\n`, { module });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program;
+    const text = checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value), ["q"]);
+    assert.equal(text, shown);
+    const { result: back } = await checkProgram(t, `${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
+    assert.deepEqual(back.gaps, [], text);
+  });
+  // A type and a constructor named as the context's dimension, each with
+  // the display's beta reduction and without; and a definition of a module
+  // whose name holds __, a__b's q, whose kernel name a__b__q is a's b__q
+  // too: its module is its declaration's.
+  const library = sourceReader();
+  const named = [
+    ["T", "U0", "main::T", "inductive T {\n  c;\n}\ndef g : U0 := T;"],
+    ["c", "T", "main::c", "inductive T {\n  c;\n}\ndef g : T := c;"],
+    ["b__q", "Unit", "a__b::q", "import a__b;\ndef g : Unit := q;"]];
+  for (const [dimension, type, shown, definitions] of named) await t.test(`named ${shown}`, async t => {
+    const reader = (name, importer) => name === "a__b" ? "def q : Unit := tt;\n" : library(name, importer);
+    const { program, result } = await checkProgram(t, `${definitions}\n`, { module, reader });
+    assert.deepEqual(result.gaps, []);
+    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value);
+    for (const reduce of [0, 256]) {
+      const text = checker.displayText(value, [dimension], { width: 4000, reduce });
+      assert.equal(text, reduce ? shown : `(fun (ascription : ${type}) => ascription)(${shown})`);
+      const { result: back } = await checkProgram(t, `${definitions}\ndef back : g = g := path ${dimension} => ${text};\n`, { module, reader });
+      assert.deepEqual(back.gaps, [], text);
+    }
+  });
+});
+
+// An ascription is the term's own redex, kept though the eliminator in its
+// type is spelled out: evaluation's weak head leaves one inside the value.
+test("a display keeps the term's own redexes", async t => {
+  const declarations = `inductive N { zero; }
+inductive C { base; loop : base = base; }
+def P : U0 := typed((match zero return C { zero => base; }) = base, path i => loop @ i) = loop;
+print(evaluate(!P));
+`;
+  const { result } = await checkProgram(t, declarations, { module });
+  const text = result.prints[0].text;
+  assert.match(text, /=> ascription\)\(path i => loop @ i\) = loop$/, text);
+  const { result: back } = await checkProgram(t, `${declarations}def back : U0 := ${text};\ndef same : back = P := refl(P);\n`, { module });
+  assert.deepEqual(back.gaps, [], text);
 });

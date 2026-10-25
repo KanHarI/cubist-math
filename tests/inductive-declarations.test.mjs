@@ -150,7 +150,7 @@ test("a display numbers a variable named as a printed label apart from it", asyn
   const { program } = await cases(t, "one_parameter_name");
   const { T } = await import("../web/translator/core.mjs");
   const constructor = T.constructor(0, T.sort("inductive_one_parameter_name__T"), "c");
-  assert.equal(program.checker.displayText(T.app(T.app(T.variable("f"), T.variable("c")), constructor)), "f(c1, c)");
+  assert.equal(program.checker.displayText(T.app(T.app(T.variable("f"), T.variable("c")), constructor), []), "f(c1, c)");
 });
 
 

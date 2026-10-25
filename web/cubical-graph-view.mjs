@@ -2,7 +2,6 @@
 // instruction kernel derives it, with the premises and consumers of each
 // judgement, its context entries, and each step's highlighted subterm. Term
 // and type handles lead into the syntax graph (the assembly view).
-import { cubicalText } from "./cubical-notation.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { ththNames } from "./cubical-instructions.mjs";
 
@@ -95,7 +94,7 @@ export function judgementGraph(program, view, checked = null, {
     }
     // The judgement's dimensions, which a definition shown by its label must
     // not read as (display-naming.mjs).
-    const shown = checker.displayGoal(scope, decode(first), second ? decode(second) : null, 240, cubicalText, false, {}, dimensions);
+    const shown = checker.displayGoal(scope, dimensions, decode(first), second ? decode(second) : null, { width: 240, kernel: true, reduce: false });
     terms.forEach((entry, index) => { if (!shownNames.has(entry)) shownNames.set(entry, shown.locals[index]?.name); });
     const names = judgement.context.map(entry => {
       const info = entries.get(entry), index = terms.indexOf(entry);
@@ -140,7 +139,7 @@ export function judgementGraph(program, view, checked = null, {
     const scope = new Map([...needed.filter(item => !bare(item)), info].map(item => [item.name, decode(item.type)]));
     // Its dimensions, as a judgement's are.
     const dimensions = new Map(needed.filter(item => item.dimension).map((item, index) => [item.name, index]));
-    const shown = checker.displayGoal(scope, { tag: "Unit" }, null, 240, cubicalText, false, {}, dimensions);
+    const shown = checker.displayGoal(scope, dimensions, { tag: "Unit" }, null, { width: 240, kernel: true, reduce: false });
     const locals = [...shown.locals];
     info.fragment = [...needed.map(item => bare(item) ?? locals.shift()).map(local =>
       typeof local === "string" ? local : `${local.name} ${local.relation} ${local.type}`), `${locals.at(-1)?.name ?? info.name} ${locals.at(-1)?.relation ?? ":"} ${locals.at(-1)?.type ?? "…"}`];

@@ -237,7 +237,7 @@ function substituteAll(term, pairs) {
 // its arguments in the order the source wrote them.
 export function resolveInductive(translator, node, value, args, scope, expected) {
   const locate = error => scope.unit.locate(error, node);
-  const shown = term => translator.shown(term);
+  const shown = term => translator.shown(term, scope);
   const reference = term => {
     // A type occurrence points to its source declaration, including a
     // recursive occurrence while its constructors are being elaborated.

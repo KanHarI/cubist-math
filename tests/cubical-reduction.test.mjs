@@ -100,7 +100,7 @@ test("selection notation exposes every occurrence, including annotations and inn
   const shared = app(lambda("x", variable("x")), zero);
   const pair = { tag: "Pair", as: { tag: "DefRef", name: "PairType" }, first: shared, second: shared };
   const term = app(lambda("p", variable("p")), pair);
-  const tree = cubicalMathTree(term, {}, 5000, { paths: true });
+  const tree = cubicalMathTree(term, {}, 5000, { paths: true, dimensions: [] });
   const paths = [];
   const walk = node => {
     if (!node || typeof node !== "object") return;
@@ -110,7 +110,7 @@ test("selection notation exposes every occurrence, including annotations and inn
   walk(tree);
   assert.deepEqual(paths, [[], ["arg", "first"], ["arg", "second"]]);
   assert.deepEqual(tree.args[0].args[0].sourcePath, ["arg", "as"]);
-  const nested = cubicalMathTree(app(shared, zero), {}, 5000, { paths: true });
+  const nested = cubicalMathTree(app(shared, zero), {}, 5000, { paths: true, dimensions: [] });
   assert.deepEqual(nested.fn.sourcePath, ["fn"]);
 });
 
@@ -119,7 +119,7 @@ test("delta selection retains the function path through universe instantiation",
   await program.check("def poly(U < UU0, A : U, x : A) : A := x;", "universe_selection");
   const reference = { tag: "DefRef", name: "universe_selection__poly" };
   const term = app(app({ tag: "LApp", fn: reference, level: 0 }, unat), zero);
-  const tree = cubicalMathTree(term, {}, 5000, { paths: true });
+  const tree = cubicalMathTree(term, {}, 5000, { paths: true, dimensions: [] });
   const selected = tree.fn.fn.fn;
   assert.deepEqual(selected.sourcePath, ["fn", "fn", "fn"]);
   assert.deepEqual(reductionRule(termAtPath(term, selected.sourcePath), "delta"), { rule: "δ", name: reference.name });

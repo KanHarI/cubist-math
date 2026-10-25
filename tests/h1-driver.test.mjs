@@ -259,9 +259,9 @@ test("displays name instances, constructors and eliminators as the source does",
   assert.equal(sourceText(shown(app(con(listN, 1), numeral(1), con(listN, 0)))), "cons(succ(zero), nil)");
   assert.equal(sourceText(shown(listN)), "List(N)");
   assert.equal(sourceText(shown(sort("Pointed", [], [0]))), "Pointed(U0)");
-  assert.equal(cubicalText(shown(sort("Pointed", [], [1]))), "Pointed(U1)");
+  assert.equal(cubicalText(shown(sort("Pointed", [], [1])), {}, { dimensions: [] }), "Pointed(U1)");
   const double = elim("N", lam("z", N, N), [zero, lam("m", N, lam("h", N, succ(succ(v("h")))))]);
-  assert.equal(cubicalText(shown(app(double, zero))), "N.elim(λ (z : N). N, zero, λ (m : N). λ (h : N). succ(succ(h)))(zero)");
+  assert.equal(cubicalText(shown(app(double, zero)), {}, { dimensions: [] }), "N.elim(λ (z : N). N, zero, λ (m : N). λ (h : N). succ(succ(h)))(zero)");
 });
 
 // A2: the torus and the sphere are admitted. A8: a boundary that names a

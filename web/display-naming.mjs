@@ -11,35 +11,62 @@ import { localName, numberedName, stem } from "./translator/names.mjs";
 // means by it. No binder captures a name it does not bind, and two things
 // the term tells apart never read alike where both are in scope.
 //
-// Source text is named in three passes, in this order (forSource):
+// Source text is named, once the display's beta reduction (betaReduce) has
+// contracted its redexes on the kernel's syntax alone, before anything is
+// spelled out, since a substitution cannot read a path clause spelled
+// without its family, in four passes, in this order (forSource):
 //  1. spelledOut writes into the terms what the text shows and the terms do
 //     not spell out: every binder the printer would otherwise have to
 //     invent (a folded motive, as a function of the domain its type gives, a
 //     clause's arguments and dimensions, an eliminator written as a
-//     function), and the value of a definition named as a dimension of the
-//     term or of its context, which no source spelling tells apart from the
-//     dimension. What it adds it spells out in turn, and its new names are
-//     apart from every name of the terms.
+//     function), and the one name induction's `as k` gives its motive's
+//     variable and its predecessor. Each eliminator is spelled before its
+//     parts, so that no substitution meets syntax already spelled out. What
+//     it adds it spells out in turn, and its new names are apart from every
+//     name of the terms.
 //  2. displayTerm names every term and level binder apart from the labels
 //     and dimensions the terms show and from the variables in its scope.
 //  3. readableDimensions names the dimensions decoding left unnamed apart
 //     from every name shown, the context's dimensions kept.
+//  4. qualified marks a definition, type or constructor whose label the
+//     text shows for a dimension, or for a variable whose name the caller
+//     gives, all of which keep their names: the printer writes it
+//     module::name, which nothing in scope shadows.
 // The printer, sourceText, then chooses no name. A pass that adds what can
 // print a name runs before 2 and 3, and spells out what it adds: added after
 // the naming, or added unspelled, it put printed names under binders already
 // named, a capture #310's and #311's reviews found for each kind of binder.
+// A name clash that renaming cannot settle, where the other name is fixed,
+// is settled by qualifying, not by unfolding the definition: an unfolding
+// makes redexes, which must be contracted where the source cannot check
+// them and kept where they are the term's own, and #312's reviews found the
+// tracking of which is which wrong at every stage it passed through.
 //
 // Kernel notation (cubicalText) adds no binder, and names its binders as it
 // prints, since the views spell kernel variables by their source names; it
 // keeps them apart from the labels a body shows (labelsShown) and shows a
-// definition named as a dimension (dimensionNames) by its kernel name.
+// definition named as a dimension (dimensionNames), or marked qualified, by
+// its kernel name.
 
 const namedBinders = new Set(["Var", ...termBinders]);
 
+// The dimensions of the context a display shows its terms in, which every
+// display is given, as a scope's Map or their names, [] where there are
+// none: a definition labeled as one is not shown by its label. No display
+// has a default. A default is some context's, and each display #311's
+// reviews found wrong had been given another context's or none (web/README.md,
+// "Displaying terms").
+export function contextDimensions(dimensions) {
+  if (dimensions instanceof Map) return [...dimensions.keys()];
+  if (Array.isArray(dimensions) && dimensions.every(name => typeof name === "string")) return dimensions;
+  throw new TypeError("A display is given the dimensions of the context it shows its terms in: a Map, their names, or [] for none.");
+}
+
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
-// names would clash. The result is never checked or stored.
-// 3. This is where a display's names are settled, apart from every label
+// names would clash. The result is never checked or stored. forSource
+// reduces before it spells a term out, and gives this no budget.
+// 2. This is where a display's names are settled, apart from every label
 // and dimension the term shows; readableDimensions settles its dimensions
 // after it. Whatever adds to the term what can print a name does so before
 // both, as spelledOut does (see the head of this module).
@@ -59,7 +86,8 @@ export function displayTerm(term, budget = 256, names = new Map()) {
 // once, and sharing is kept.
 // `pinned` names the dimensions of the context the terms are shown in: they
 // keep their names, even one spelled as an unnamed one is, as d0.
-export function readableDimensions(terms, pinned = []) {
+export function readableDimensions(terms, pinned) {
+  pinned = contextDimensions(pinned);
   const used = new Set(pinned), seen = new WeakSet();
   const visit = t => {
     if (typeof t === "string") {
@@ -108,15 +136,45 @@ export function readableDimensions(terms, pinned = []) {
   return terms.map(rename);
 }
 
-// Beta-reduce within a budget of substitutions, keeping every name.
+// A spine node, its root, and the value former it takes there.
+const spine = { App: ["fn", "Lam"], LApp: ["fn", "LLam"], Fst: ["pair", "Pair"], Snd: ["pair", "Pair"], PApp: ["path", "PLam"] };
+// One contraction of a spine node whose root is the value former it takes.
+// `place` gives the argument it substitutes, which can make a redex where
+// the body puts it at a spine's root.
+function contractRedex(node, place) {
+  const value = node[spine[node.tag][0]];
+  if (node.tag === "App") return substituteTerm(value.body, value.name, place(node.arg));
+  if (node.tag === "LApp") return substituteTerm(value.body, value.name, node.level);
+  if (node.tag === "PApp") return substituteDimension(value.body, value.dim, node.arg);
+  return node.tag === "Fst" ? value.first : value.second;
+}
+
+// Beta-reduce within a budget of substitutions, keeping every name: every
+// application of a lambda, and every other redex the reduction makes,
+// where a contraction puts a path, a pair or a function at the root of a
+// path application, a projection or an instantiation, as substituting
+// (path j => a) for p in p @ i does. Each is marked as a copy no other
+// node holds. A redex of another kind that the term has of its own is
+// kept.
 export function betaReduce(term, budget = 256) {
-  const reduced = new WeakMap();
+  const reduced = new WeakMap(), placed = new WeakSet();
+  const place = t => {
+    if (!t || typeof t !== "object") return t;
+    const copy = Array.isArray(t) ? [...t] : { ...t };
+    placed.add(copy);
+    return copy;
+  };
   const beta = t => {
     if (!t || typeof t !== "object") return t;
     if (reduced.has(t)) return reduced.get(t);
     let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
-    while (result.tag === "App" && result.fn?.tag === "Lam" && budget-- > 0)
-      result = beta(substituteTerm(result.fn.body, result.fn.name, result.arg));
+    if (placed.has(t)) placed.add(result);
+    for (;;) {
+      const [root, former] = spine[result.tag] ?? [];
+      if (!root || result[root]?.tag !== former || result.tag !== "App" && !placed.has(result[root]) || budget <= 0) break;
+      budget--;
+      result = place(beta(contractRedex(result, place)));
+    }
     reduced.set(t, result);
     return result;
   };
@@ -177,6 +235,18 @@ function apartFromLabels(shownAs, labels) {
     shownAs.set(name, renamed);
   }
   return shownAs;
+}
+
+// The binders a source text shows as one: the source Nat's induction
+// writes its motive's variable and its successor clause's predecessor as
+// the one name of `as k` (sourceText's NatInduction). spelledOut gives them
+// one name, so displayTerm names them alike, as two binders of one name
+// over one scope; the printer writes induction only where they are named
+// alike, and chooses no name itself.
+export function inductionBinders(elim) {
+  const step = elim?.clauses?.[1];
+  return elim?.tag === "Elim" && elim.signature === "unat__UNat" && elim.clauses.length === 2 && elim.motive?.tag === "Lam"
+    && step?.tag === "Lam" && step.body?.tag === "Lam" ? [elim.motive, step] : null;
 }
 
 function scopedNames(term, names, limit = 2000) {
@@ -262,16 +332,19 @@ function globalNames(shown, given) {
 //    that is a definition, is applied to new ones, and so are a sum's
 //    clauses and motive; an eliminator written where no function is applied
 //    to it is the function that applies it, λ (x : D). e(x);
-//  - a definition named as a dimension of the term or of its context, which
-//    no source spelling tells apart from the dimension, is its value.
-// Whatever this adds, an unfolded value, a recovered domain, a motive reduced
-// to its function, is spelled out by the same pass, and the new names are
-// apart from every name of every term shown together. Each change is an
-// eta-expansion, an unfolding or a reduction: the term says what it said.
+//  - the source Nat's induction shows its motive's variable and its
+//    predecessor by one name (inductionBinders): both binders are renamed
+//    to one, apart from what either would capture.
+// Whatever this adds, a recovered domain, a motive reduced to its function,
+// is spelled out by the same pass, and the new names are apart from every
+// name of every term shown together. Each change is an eta-expansion, a
+// renaming of a bound variable or a reduction of a motive's head: the term
+// says what it said.
 // `definitions` gives definitions' decoded types and values and their labels;
 // `symbols` a declared type's constructors as the printer reads them
 // (signatureDisplay); `dimensions` the context's.
-export function spelledOut(terms, { definitions, symbols = {}, dimensions = [] }) {
+export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
+  dimensions = contextDimensions(dimensions);
   // Every name the terms have, a dimension's too: a new binder is none of
   // them. Syntax added later is collected as it is added.
   const used = new Set(dimensions), seen = new WeakSet();
@@ -289,19 +362,31 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions = [] }
   };
   terms.forEach(collect);
   // A new variable is its stem where no name is, and numbered from 1
-  // otherwise, each stem counting on: displayTerm shows it by its stem where
-  // it can, and a display too large for scoped names (globalNames) as it is.
-  // A new dimension, d1 and on, is named as decoding's unnamed ones are.
+  // otherwise (numberedName: U_1, not the universe U1), each stem counting
+  // on: displayTerm shows it by its stem where it can, and a display too
+  // large for scoped names (globalNames) as it is. A new dimension, d1 and
+  // on, is named as decoding's unnamed ones are.
   const next = new Map();
   const fresh = stem => {
     let n = next.get(stem) ?? (stem === "d" ? 1 : 0), name;
-    do name = n ? `${stem}${n}` : stem, n++; while (used.has(name));
+    do name = n ? numberedName(stem, n) : stem, n++; while (used.has(name));
     next.set(stem, n);
     used.add(name);
     return name;
   };
   const domain = motiveDomain(definitions);
+  // The domain of a function, read on syntax not yet spelled out, once its
+  // head redexes are contracted (head, below): a lambda's; a definition's, as
+  // its type gives it after its spine; or an eliminator's, taken as a
+  // function: its motive's, else its type, where that has no parameters.
+  const domainOf = t => {
+    const reduced = t && head(t);
+    return reduced?.tag === "Lam" ? reduced.domain : domain(reduced) ?? (reduced?.tag === "Elim" ? eliminated(reduced) : null);
+  };
+  const eliminated = e => domainOf(e.motive)
+    ?? (symbols[e.signature]?.slots?.length === 0 ? { tag: "Sort", signature: e.signature, parameters: [], levels: [] } : null);
   const added = t => { collect(t); return t; };
+  const free = displayFreeNames(), mentions = (term, name) => free(term).has(name);
   const applied = (fn, stem, of = null) => {
     if (!fn || fn.tag === "Lam") return fn;
     const name = fresh(stem);
@@ -327,61 +412,69 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions = [] }
     const [argument, result] = signature === "unat__UNat" ? ["k", "h"] : ["x", "ih"];
     return [...Array(data + positions).fill(argument), ...Array(positions).fill(result), ...Array(dimensions).fill("dimension")];
   };
-  const spine = { App: ["fn", "Lam"], LApp: ["fn", "LLam"], Fst: ["pair", "Pair"], Snd: ["pair", "Pair"], PApp: ["path", "PLam"] };
+  // A motive that is a redex of its own, as a folded normal form keeps
+  // (λ u. λ m. T)(tt), is consumed by the match the text writes: its head
+  // redexes along its spine are contracted, within a budget, no other part.
+  const head = (t, budget = 256) => {
+    const [root, former] = spine[t?.tag] ?? [];
+    if (!root || budget <= 0) return t;
+    const inner = head(t[root], budget - 1);
+    return inner.tag === former ? head(contractRedex({ ...t, [root]: inner }, argument => argument), budget - 1) : t;
+  };
   const spell = term => {
-    // The dimensions this term and its context name, which a definition
-    // shown by its label must not read as.
-    const named = new Set([...dimensions, ...dimensionNames(term)]);
+    // An eliminator or a case analysis is spelled before its parts, which
+    // are then spelled in turn, so that a substitution, a motive's head or
+    // induction's renaming, never meets syntax already spelled out: a path
+    // clause spelled out has no family, which a substitution cannot read.
     // Shared syntax is spelled once for each place it can occur in: as the
     // function an application applies, or anywhere else.
     const memo = [new WeakMap(), new WeakMap()];
-    const go = (t, applying = false, depth = 0) => {
+    const go = (t, applying = false) => {
       if (!t || typeof t !== "object") return t;
       const table = memo[applying ? 1 : 0];
       if (table.has(t)) return table.get(t);
       let result = t;
-      if (t.tag === "DefRef" && depth < 16 && named.has(definitions.label(t.name)) && definitions.value(t.name)) {
-        // Its value reduced, an identity ascription around it as well.
-        result = go(added(reduceRedexes(definitions.value(t.name))), applying, depth + 1);
-        table.set(t, result);
-        return result;
+      if (t.tag === "SumRec")
+        result = { ...t, motive: applied(t.motive, "z"), left: applied(t.left, "a"), right: applied(t.right, "b") };
+      if (t.tag === "Elim") {
+        let motive = t.motive;
+        if (motive && motive.tag !== "Lam") {
+          // A motive whose head reduces to a function is that function;
+          // another is applied to a new variable of its domain.
+          const reduced = head(motive);
+          if (reduced.tag === "Lam") motive = added(reduced);
+          else {
+            const of = domainOf(motive);
+            motive = applied(motive, "z", of ? added(of) : null);
+          }
+        }
+        const constructors = symbols[t.signature]?.constructors;
+        const clauses = constructors?.length === t.clauses?.length
+          ? t.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], t.signature)))
+          : t.clauses;
+        result = { ...t, motive, clauses };
+        const induction = inductionBinders(result);
+        if (induction) {
+          // The predecessor's name, where the motive does not show it for
+          // another variable; else the motive's, where the successor clause
+          // does not; else a new one. Each binder is renamed apart from what
+          // it would capture.
+          const [motive, step] = induction;
+          const name = !mentions(motive.body, step.name) ? step.name : !mentions(step.body, motive.name) ? motive.name : fresh(stem(step.name));
+          const renamed = binder => binder.name === name ? binder
+            : added({ ...binder, name, body: substituteTerm(binder.body, binder.name, { tag: "Var", name }) });
+          result = { ...result, motive: renamed(motive), clauses: [result.clauses[0], renamed(step)] };
+        }
       }
-      for (const [key, value] of Object.entries(t)) {
-        const changed = go(value, t.tag === "App" && key === "fn", depth);
+      for (const [key, value] of Object.entries(result)) {
+        const changed = go(value, result.tag === "App" && key === "fn");
         if (changed !== value) {
           if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
           result[key] = changed;
         }
       }
-      // A value put at a spine's root, as an unfolding below puts one, is
-      // a redex the source cannot check, (path i => loop @ ~i) @ j: reduced,
-      // so that the node above sees a value in turn.
-      const [root, former] = spine[t.tag] ?? [];
-      if (root && result[root] !== t[root] && result[root]?.tag === former) result = go(added(reduceRedexes(result)), applying, depth + 1);
-      if (result.tag === "SumRec")
-        result = { ...result, motive: applied(result.motive, "z"), left: applied(result.left, "a"), right: applied(result.right, "b") };
-      if (result.tag === "Elim") {
-        let motive = result.motive;
-        if (motive && motive.tag !== "Lam") {
-          // A motive that reduces to a function is that function; another
-          // is applied to a new variable of the domain its type gives.
-          const reduced = reduceRedexes(motive);
-          if (reduced.tag === "Lam") motive = go(added(reduced), false, depth + 1);
-          else {
-            const of = domain(motive);
-            motive = applied(motive, "z", of ? go(added(of), false, depth + 1) : null);
-          }
-        }
-        const constructors = symbols[result.signature]?.constructors;
-        const clauses = constructors?.length === result.clauses?.length
-          ? result.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], result.signature))) : result.clauses;
-        result = { ...result, motive, clauses };
-        if (!applying) {
-          const of = motive?.tag === "Lam" && motive.domain ? motive.domain
-            : symbols[result.signature]?.slots?.length === 0 ? { tag: "Sort", signature: result.signature, parameters: [], levels: [] } : null;
-          result = applied(result, result.signature === "unat__UNat" ? "n" : "x", of);
-        }
-      }
+      if (result.tag === "Elim" && !applying)
+        result = applied(result, result.signature === "unat__UNat" ? "n" : "x", eliminated(result));
       table.set(t, result);
       return result;
     };
@@ -458,12 +551,55 @@ export function labelsShown(label) {
   return scan;
 }
 
-// Terms named for source text, in one naming, by the three passes above:
-// spelledOut, displayTerm and readableDimensions. `definitions` gives
-// definitions' decoded types and values and the labels the printer shows
-// them by; `symbols` a declared type's constructors; `names` the names free
+// Terms named for source text, in one naming: the display's beta reduction,
+// then the four passes above, spelledOut, displayTerm's naming,
+// readableDimensions and qualified. `definitions` gives
+// definitions' decoded types and values, the labels the printer shows
+// them by, and each declaration's module::name, by its key in the
+// compilation's bindings (qualified, below); `symbols` a declared type's
+// constructors; `names` the names free
 // variables show; `dimensions` the dimensions of the context the terms are
-// shown in; `reduce` the display's beta budget.
-export function forSource(terms, { definitions, symbols, names = new Map(), dimensions = [], reduce = 256 }) {
-  return readableDimensions(displayTerm(spelledOut(terms, { definitions, symbols, dimensions }), reduce, names), dimensions);
+// shown in, which the caller always gives (contextDimensions); `reduce` the
+// display's beta budget.
+export function forSource(terms, { definitions, symbols, names = new Map(), dimensions, reduce = 256 }) {
+  const context = contextDimensions(dimensions);
+  const reduced = betaReduce(terms, reduce);
+  const named = readableDimensions(displayTerm(spelledOut(reduced, { definitions, symbols, dimensions: context }), 0, names), context);
+  return qualified(named, new Set([...context, ...named.flatMap(term => [...dimensionNames(term)]), ...names.values()]), { definitions, symbols });
+}
+
+// 4. Once names are settled, a definition, type or constructor whose label
+// the text shows for something that keeps its name, a dimension of the
+// context or of the terms, or a free variable the caller names, is marked
+// `qualified` with its module::name
+// (web/reference/first-proof.html#qualified-names), which no binder
+// shadows: its declaration's module and label, as the compilation records
+// them, since a kernel name a__b__q is a's b__q or a__b's q. Kernel notation
+// shows it by its kernel name, as source text does one the compilation
+// declares nowhere. `shown` holds those names; the labels are the
+// printer's.
+export function qualified(terms, shown, { definitions, symbols = {} }) {
+  if (!shown.size) return terms;
+  const label = t => t.tag === "DefRef" ? definitions.label(t.name)
+    : t.tag === "Sort" ? symbols[t.signature]?.name ?? localName(t.signature) : t.tag === "Con" ? t.name : null;
+  const spelling = t => t.tag === "DefRef" ? definitions.qualified(t.name) ?? t.name
+    : t.tag === "Sort" ? definitions.qualified(t.signature) ?? t.signature
+    : definitions.qualified(`${t.sort?.signature}:constructor:${t.index}`) ?? t.name;
+  const copies = new WeakMap();
+  const mark = t => {
+    if (!t || typeof t !== "object") return t;
+    if (copies.has(t)) return copies.get(t);
+    let result = t;
+    for (const [key, value] of Object.entries(t)) {
+      const changed = mark(value);
+      if (changed !== value) {
+        if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
+        result[key] = changed;
+      }
+    }
+    if (!Array.isArray(result) && shown.has(label(result))) result = { ...result, qualified: spelling(result) };
+    copies.set(t, result);
+    return result;
+  };
+  return terms.map(mark);
 }

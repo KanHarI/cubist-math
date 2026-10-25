@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
+import { forSource } from "../web/display-naming.mjs";
+import { localName } from "../web/translator/names.mjs";
 import { naturalSort as unat, numeral as number } from "../web/translator/numerals.mjs";
 
 const U0 = { tag: "U", level: 0 }, unit = { tag: "Unit" }, v = { tag: "Void" };
@@ -113,21 +115,27 @@ test("recursion and case analysis print as induction and match", () => {
   const recursion = { motive: { tag: "Lam", name: "b", domain: unat, body: unat }, zero: variable("n"),
     step: { tag: "Lam", name: "k", domain: unat, body: { tag: "Lam", name: "h", domain: unat, body: succ(variable("h")) } },
     value: variable("m") };
+  // The motive's variable and the predecessor print as one name, `as k`,
+  // where forSource named them alike (display-naming.mjs,
+  // inductionBinders); unnamed, they print as they are.
+  const named = term => forSource([term], { definitions: { type: () => null, value: () => null, label: localName },
+    symbols: {}, dimensions: [], reduce: 0 })[0];
   // A constant motive, and a successor clause that does not use the
   // predecessor, need no `as`.
-  assert.equal(sourceText(induction(recursion)), "induction m return UNat { zero => n; succ h => succ(h); }");
+  assert.equal(sourceText(named(induction(recursion))), "induction m return UNat { zero => n; succ h => succ(h); }");
+  assert.match(sourceText(induction(recursion)), /^unat__UNat\.elim\(/);
   const predecessor = { ...recursion, step: { ...recursion.step, body: { ...recursion.step.body, body: variable("k") } } };
-  assert.equal(sourceText(induction(predecessor)), "induction m as k return UNat { zero => n; succ h => k; }");
+  assert.equal(sourceText(named(induction(predecessor))), "induction m as k return UNat { zero => n; succ h => k; }");
   // The motive's variable reads as the name `as` binds.
   const dependent = { ...recursion, motive: { tag: "Lam", name: "b", domain: unat, body: equal(variable("b"), variable("b")) } };
-  assert.match(sourceText(induction(dependent)), /^induction m as k return k = k \{/);
+  assert.match(sourceText(named(induction(dependent))), /^induction m as k return k = k \{/);
   const cases = { tag: "SumRec", motive: { tag: "Lam", name: "z", domain: sum(unit, unit), body: U0 },
     left: { tag: "Lam", name: "a", domain: unit, body: unat }, right: { tag: "Lam", name: "b", domain: unit, body: unit }, value: variable("v") };
   // As the linter asks, `as z` is written only where the return type uses z.
   assert.equal(sourceText(cases), "match v return U0 { left a => UNat; right b => Unit; }");
   const dependentCases = { ...cases, motive: { ...cases.motive, body: equal(variable("z"), variable("z")) } };
   assert.match(sourceText(dependentCases), /^match v as z return z = z \{ left a => /);
-  assert.equal(natText(add(induction(recursion), number(1))), "(induction m return UNat { zero => n; succ h => succ(h); }) + 1");
+  assert.equal(natText(named(add(induction(recursion), number(1)))), "(induction m return UNat { zero => n; succ h => succ(h); }) + 1");
 });
 
 test("messages name unnamed dimensions once, keep sharing, and avoid the names they show", async () => {
@@ -135,18 +143,18 @@ test("messages name unnamed dimensions once, keep sharing, and avoid the names t
   // A compact shared type: each level uses the one below twice.
   let shared = { tag: "PApp", path: variable("p"), arg: [["d0:1"]] };
   for (let depth = 0; depth < 60; depth++) shared = { tag: "App", fn: shared, arg: shared };
-  const [renamed] = readableDimensions([shared]);
+  const [renamed] = readableDimensions([shared], []);
   assert.equal(renamed.fn, renamed.arg, "shared subterms stay shared");
   // i2 is shown as i: the dimension takes another name.
   const line = { tag: "PLam", dim: "d0", family: variable("A"), body: { tag: "PApp", path: variable("i2"), arg: [["d0:1"]] } };
-  assert.equal(sourceText(readableDimensions([displayTerm(line)])[0]), "path j => i @ j");
+  assert.equal(sourceText(readableDimensions([displayTerm(line)], [])[0]), "path j => i @ j");
   // A declared type named i, shown without its module: the dimension is j.
   const typed = { tag: "PLam", dim: "d0", family: variable("A"),
     body: { tag: "App", fn: { tag: "PApp", path: variable("p"), arg: [["d0:1"]] }, arg: { tag: "Sort", signature: "main__i", parameters: [], levels: [] } } };
-  assert.equal(sourceText(readableDimensions([displayTerm(typed)])[0], { main__i: { name: "i" } }), "path j => (p @ j)(i)");
+  assert.equal(sourceText(readableDimensions([displayTerm(typed)], [])[0], { main__i: { name: "i" } }), "path j => (p @ j)(i)");
   // Seven dimensions in two terms: one renaming for both, past the letters.
   const at = (...dims) => ({ tag: "PApp", path: variable("p"), arg: [dims.map(d => `d${d}:1`)] });
-  const [found, expected] = readableDimensions([at(0, 6), at(1, 2, 3, 4, 5, 6)]);
+  const [found, expected] = readableDimensions([at(0, 6), at(1, 2, 3, 4, 5, 6)], []);
   assert.equal(sourceText(found), "p @ i & i1");
   assert.equal(sourceText(expected), "p @ j & k & l & m & n & i1");
 });
