@@ -41,7 +41,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
-import {bindQualifiedNames,constructorText,declaredIn,unknownQualifiedName} from "./qualified-names.mjs";
+import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -835,7 +835,9 @@ export class Translator {
           // Its parameters are known by their binders' tokens, and each is
           // recorded where it is bound (ownParameter), never looked up by name.
           const sectional=d.section?.params.length??0;
-          const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,qualified:`${this.moduleName}::${d.name.text}`,
+          const spelled=`${this.moduleName}::${d.name.text}`;
+          const recursive={tag:"Recursive",source:d.name.text,key:declarationKey(d)??d.name.text,
+            ...(qualifiedNamesIn(d).has(spelled)?{qualified:spelled}:{}),
             params:own.map(p=>p.name.text),labels:own.map(p=>p.name.label??p.name.text),implicit:own.map(p=>!!p.implicit),
             section:own.map((p,k)=>k<sectional),
             tokens:own.map(p=>p.name),bindings:new Map(),site};
@@ -1332,8 +1334,9 @@ export class Translator {
           throw Error(`${theory}.Model is now ${theory}: a theory's name is the type of its models, as in ${theory}(U0).`);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
-        // A qualified name that no item bound, as in syntax made elsewhere.
-        if(n.moduleQualifier)throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
+        // A qualified name that no item bound, as in syntax made elsewhere;
+        // a member its available prefix lacks is refused as any name's is.
+        if(n.moduleQualifier&&!availablePrefix(n.name,env))throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
           imports:this.importedHere,adapter:this.identityAdapter});
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }

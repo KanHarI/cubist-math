@@ -126,9 +126,17 @@ inductive Ring {
   loop : main::base = main::base;
 }
 
+notation N {
+  x + y := x;
+}
+
 inductive N {
   z;
   s(n : main::N);
+}
+
+notation double {
+  x + y := y;
 }
 
 def double(n : UNat) : UNat := match n return UNat { zero => zero; succ(k) => succ(succ(main::double(k))); };
@@ -185,9 +193,15 @@ def wrong(n : UNat) : UNat := match n return UNat { main::none => zero; unat::su
 // A module's own notation and theory, where another import takes its
 // label, and a notation declared after its model is first used qualified.
 test("a qualified name reads its module's own notation", async t => {
-  const theory = "theory T(U < UU0) {\n  M : U;\n  c : M;\n}\n";
-  const { result: theories } = await checkProgram(t, "import a;\nimport b;\ntheory S(U < UU0) extends a::T {\n  d : M;\n}\n",
-    { module, reader: withModules({ a: theory, b: theory }) });
+  const theory = field => `theory T(U < UU0) {\n  M : U;\n  ${field} : M;\n}\n`;
+  const { result: theories } = await checkProgram(t, `import a;
+import b;
+theory S(U < UU0) extends a::T {
+  d : M;
+}
+def s : S(U0) := S.make(Unit, tt, tt);
+def inherited : Unit := s.c;
+`, { module, reader: withModules({ a: theory("c"), b: theory("e") }) });
   assert.deepEqual(theories.gaps, []);
   const { result } = await checkProgram(t, "import a;\nimport b;\nevaluate a::n.(Unit + Void) expecting Unit;\nevaluate b::n.(Unit + Void) expecting Void;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", b: "notation n {\n  x + y := y;\n}\n" }) });
@@ -214,7 +228,8 @@ evaluate main::m.(0) expecting 1;
 });
 
 // Retained syntax, a theory's, reports a qualified name's refusal; a module
-// of notations only is imported, and declares no other name.
+// of notations only is imported, and declares no other name; a member an
+// available prefix lacks is refused as any name's is, E343.
 test("a qualified name's refusal is reported wherever it is read", async t => {
   const { result } = await checkProgram(t, `import unat;
 
@@ -243,6 +258,11 @@ def early_hint : Unit := with unfolding [main::h] { tt };
 def h : Unit := tt;
 def member := main::h.foo;
 
+theory T4(U < UU0) {
+  M : U;
+  c(x : main::h.foo) : M;
+}
+
 inductive Two {
   p : main::q = main::q;
   q;
@@ -255,7 +275,7 @@ inductive O {
 def copy(n : unat::UNat) := induction n return unat::UNat { main::zero => n; unat::succ k => n; };
 `, { module });
   assert.deepEqual(result.gaps.map(gap => [gap.name, gap.code]),
-    [["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"], ["member", "E254"], ["Two", "E255"], ["copy", "E528"]]);
+    [["T2", "E253"], ["T3", "E255"], ["early", "E255"], ["hinted", "E253"], ["early_hint", "E255"], ["member", "E343"], ["T4", "E343"], ["Two", "E255"], ["copy", "E528"]]);
   const { result: notations } = await checkProgram(t, "import a;\nimport e;\ndef x : Unit := a::absent;\ndef y : Unit := e::absent;\n",
     { module, reader: withModules({ a: "notation n {\n  x + y := x;\n}\n", e: "" }) });
   assert.deepEqual(notations.gaps.map(gap => [gap.name, gap.code]), [["x", "E254"], ["y", "E254"]]);
@@ -287,6 +307,8 @@ test("a contextual entry reads a qualified name", async t => {
   assert.equal((await run("typeof main::x")).text, "U0");
   const refused = await run("typeof main::y");
   assert.equal(diagnosticCode(refused.text), "E254", refused.text);
+  // A member its available prefix lacks is refused as any name's is.
+  assert.equal(diagnosticCode((await run("typeof main::x.foo")).text), "E343");
   assert.equal((await run("unat::unat.(2 + 3)")).text, (await run("unat.(2 + 3)")).text);
   assert.equal((await run("match unat::succ(unat::zero) return unat::UNat { unat::zero => unat::zero; unat::succ(k) => k; }")).text, "0");
 });
