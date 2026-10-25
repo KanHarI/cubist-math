@@ -639,7 +639,8 @@ export class Translator {
       }
       if(queued.kind==="publicationEnd") { finishPublication(true); continue; }
       // The qualified names it writes, bound where they are available.
-      bindQualifiedNames(env,queued,{bindings:this.compilationBindings,adapter:this.identityAdapter});
+      bindQualifiedNames(env,queued,{bindings:this.compilationBindings,adapter:this.identityAdapter,
+        current:this.moduleName,declaredHere:this.declaredHere});
       const retained=queued.bindings?lowerBindingDeclaration(queued,this.compilationBindings.table):null;
       const d=retained?.declaration??queued;
       const effects=fileSelectionEffects(d.kind);
@@ -1236,6 +1237,8 @@ export class Translator {
       throw error;
     }
     if(value.tag==="Dimension")throw Error("Interval coordinates can only be used in interval arguments.");
+    // A qualified name available nowhere (bindQualifiedNames).
+    if(value.tag==="QualifiedFailure")throw Error(value.message);
     if(value.tag==="Ambiguous")throw Error(value.message);
     if(INDUCTIVE_TAGS.has(value.tag))return resolveInductive(this,n,value,null,scope,expected);
     if(value.tag==="Recursive")return resolveRecursive(this,n,value,null,scope);
@@ -1308,10 +1311,6 @@ export class Translator {
       case "name": {
         // A binder _ binds nothing to refer to; a hole is a call's argument.
         if(isHole(n))throw Error("A hole _ stands for an argument of a call, which the call's other arguments or the type expected of it determine; anywhere else, write the term.");
-        // module::name, bound where it is available (bindQualifiedNames).
-        if(n.moduleQualifier&&!env.has(n.name))
-          throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere??new Set(),
-            bindings:this.compilationBindings,adapter:this.identityAdapter});
         if(env.has(n.name))return this.valueTerm(n,env.get(n.name),scope,expected);
         const constant=universeConstant(n.name);
         if(constant!==null)return T.universe(constant);
@@ -1333,6 +1332,9 @@ export class Translator {
           throw Error(`${theory}.Model is now ${theory}: a theory's name is the type of its models, as in ${theory}(U0).`);
         // The printer writes __U where an instance's universe is erased.
         if(/^__U[0-9]*$/.test(n.name))throw Error(`${n.name} stands for a universe that the printer could not show: write the universe in its place, such as U0 or a universe variable.`);
+        // A qualified name that no item bound, as in syntax made elsewhere.
+        if(n.moduleQualifier)throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
+          bindings:this.compilationBindings,adapter:this.identityAdapter});
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {

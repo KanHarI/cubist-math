@@ -133,6 +133,7 @@ export const diagnostics = [
   ["E004", "The demand mark … stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);."],
   ["E005", "A qualified name names one module: module::name."],
   ["E006", "A qualified name is a module's name, ::, and a name, with no space between: unat::zero."],
+  ["E007", "… names a module's declaration; a name declared or bound here is plain."],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],

@@ -72,8 +72,11 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       const source = await readEdited(module);
       const place = readEdited.placeOf?.(module);
       if (place) readOriginal.place?.(shadowOf(module), place);
+      // A compared module's imports and qualified names, m::x, name its
+      // shadow, its own among them.
       editedSources.set(module, source.replace(/^(\s*import\s+)([A-Za-z_][A-Za-z_0-9]*)(\s*;)/gm,
-        (text, head, name, tail) => compared.has(name) ? `${head}${shadowOf(name)}${tail}` : text));
+        (text, head, name, tail) => compared.has(name) ? `${head}${shadowOf(name)}${tail}` : text)
+        .replace(/\b([A-Za-z_][A-Za-z_0-9]*)::(?=[A-Za-z_])/g, (text, name) => compared.has(name) ? `${shadowOf(name)}::` : text));
     }
     return editedSources.get(module);
   };
