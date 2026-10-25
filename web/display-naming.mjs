@@ -375,11 +375,14 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return name;
   };
   const domain = motiveDomain(definitions);
-  // The domain of a function, read on syntax not yet spelled out: a
-  // lambda's; a definition's, as its type gives it after its spine; or an
-  // eliminator's, taken as a function: its motive's, else its type, where
-  // that has no parameters.
-  const domainOf = t => t?.tag === "Lam" ? t.domain : domain(t) ?? (t?.tag === "Elim" ? eliminated(t) : null);
+  // The domain of a function, read on syntax not yet spelled out, once its
+  // head redexes are contracted (head, below): a lambda's; a definition's, as
+  // its type gives it after its spine; or an eliminator's, taken as a
+  // function: its motive's, else its type, where that has no parameters.
+  const domainOf = t => {
+    const reduced = t && head(t);
+    return reduced?.tag === "Lam" ? reduced.domain : domain(reduced) ?? (reduced?.tag === "Elim" ? eliminated(reduced) : null);
+  };
   const eliminated = e => domainOf(e.motive)
     ?? (symbols[e.signature]?.slots?.length === 0 ? { tag: "Sort", signature: e.signature, parameters: [], levels: [] } : null);
   const added = t => { collect(t); return t; };

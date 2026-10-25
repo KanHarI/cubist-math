@@ -578,26 +578,41 @@ def h : f = f := path j => (fun (p : f = f) => p)(refl(f)) @ j;
 // An eliminator whose motive is another eliminator, a function of the
 // domain that one's motive takes, written as a function: that domain is
 // its lambda's, read before anything is spelled out, through the inner
-// motive, a lambda or a definition kept by name. The text reads back.
+// motive in each form it takes: a lambda, a definition kept by name, and a
+// lambda at the root of a projection, a path application or an
+// application, which kernel-checked syntax can hold. The text reads back.
 test("an eliminator whose motive is an eliminator keeps its domain", async t => {
-  const cases = [["(match z return U0 { b => Unit; })", "match z return U0 { b => Unit; }"],
-    ["(match z as w return M(w) { b => Unit; })", "match z as z1 return M(z1) { b => Unit; }"]];
-  for (const [motive, shown] of cases) await t.test(shown, async t => {
-    const source = `inductive B(A : U0) {
+  const source = motive => `inductive B(A : U0) {
   b;
 }
 def M(z : B(Unit)) : U1 := U0;
 def f := fun (x : B(Unit)) => match x as z return ${motive} { b => tt; };
+def pair : (B(Unit) -> U1) and Unit := (fun (w : B(Unit)) => U0, tt);
+def line : (fun (w : B(Unit)) => U0) = (fun (w : B(Unit)) => U0) := refl(fun (w : B(Unit)) => U0);
 `;
-    const { program, result } = await checkProgram(t, source, { module });
+  const plain = "(match z return U0 { b => Unit; })", shownPlain = "match z return U0 { b => Unit; }";
+  // The inner eliminator's motive, as source writes it or replaced in f's
+  // folded normal form, Elim(Elim(λ w. U0, [Unit]), [tt]).
+  const cases = [["lambda", plain, null, shownPlain],
+    ["definition", "(match z as w return M(w) { b => Unit; })", null, "match z as z1 return M(z1) { b => Unit; }"],
+    ["projection", plain, value => ({ tag: "Fst", pair: value("main__pair") }), shownPlain],
+    ["path application", plain, value => ({ tag: "PApp", path: value("main__line"), arg: [] }), shownPlain],
+    ["application", plain, (value, lambda) => ({ tag: "App", fn: { tag: "Lam", name: "u", domain: { tag: "Unit" }, body: lambda }, arg: { tag: "Point" } }), shownPlain]];
+  for (const [label, motive, replace, shown] of cases) await t.test(label, async t => {
+    const { program, result } = await checkProgram(t, source(motive), { module });
     assert.deepEqual(result.gaps, []);
     const { kernel, checker } = program;
+    const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value);
     const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
-    const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+    let folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+    if (replace) {
+      assert.equal(folded.motive.tag, "Elim");
+      folded = { ...folded, motive: { ...folded.motive, motive: replace(value, folded.motive.motive) } };
+    }
     for (const reduce of [0, 256]) {
       const text = checker.displayText(folded, [], { width: 4000, reduce });
       assert.equal(text, `fun (x : B(Unit)) => match x as z return ${shown} { b => tt; }`);
-      const { result: back } = await checkProgram(t, `${source}def same : f = f := refl(${text});\n`, { module });
+      const { result: back } = await checkProgram(t, `${source(motive)}def same : f = f := refl(${text});\n`, { module });
       assert.deepEqual(back.gaps, [], text);
     }
   });
