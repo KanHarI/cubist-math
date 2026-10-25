@@ -46,6 +46,8 @@ const fileGroups = [
   [/^web\/translator\/arguments\.mjs$/, "E7"],
   // Notation's messages in elaboration, also beyond full E3 (L2.10).
   [/^web\/translator\/notations\.mjs$/, "E9"],
+  // Qualified names, module::name, are about modules, beyond full E3.
+  [/^web\/translator\/qualified-names\.mjs$/, "E2"],
   [/^web\/translator\//, "E3"],
   [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction)\.mjs$/, "E6"],
   [/^(web|cli)\//, "E2"],

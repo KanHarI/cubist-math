@@ -12,7 +12,7 @@ export const notationOperators = ["+", "-", "*", "/", "^", "<", "<="];
 const numericToken = String.raw`(?<!\.)[0-9][A-Za-z0-9_]*(?:[./][0-9][A-Za-z0-9_]*|(?<=[eE])[+-][0-9][A-Za-z0-9_]*)*`;
 // `!` and `!!` are evaluation demand marks; `!!` is one token, so that a
 // space between two `!` is seen and refused (parse).
-const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|:=|<-|\+\+|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
+const tokenPattern = new RegExp(String.raw`\s+|\/\/[^\n]*|(?:<=|>=|=>|->|::|:=|<-|\+\+|!!)|0b[A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|${numericToken}|[0-9]+|[#\[\](){}:,;.+*\/^<=>@&|~!-]|.`, "gy");
 // The source scanner also serves incomplete editor input. It retains every
 // character, including comments and whitespace; tokenize enforces parser limits
 // and rejects invalid characters after discarding trivia.
@@ -28,7 +28,7 @@ export function tokenize(source) {
     const { text, start } = token;
     if (/^\s|^\/\//.test(text)) continue;
     if (
-      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|:=|<-|\+\+|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
+      !/^(?:0b[01]+|[A-Za-z_][A-Za-z_0-9]*|[0-9][A-Za-z0-9_.\/+-]*|<=|>=|=>|->|::|:=|<-|\+\+|!!|[#\[\](){}:,;.+*\/^<=>@&|~!-])$/.test(text)
     )
       throw Object.assign(new Error(`Unexpected character ${text}`), {
         offset: start,
@@ -368,6 +368,19 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         }
         continue;
       }
+      // A module's own name, circle::d0, is tight: a module's name, ::, and
+      // a name it declares. No binder is named with ::, so nothing in scope
+      // shadows it, as a dimension or a variable named d0 shadows d0.
+      if (peek() === "::") {
+        const module = a.kind === "name" && !a.qualifiedDot && ts[i - 1].start === a.start && ts[i - 1].end === ts[i].start;
+        if (a.moduleQualifier) throw Object.assign(new Error("A qualified name names one module: module::name."), { offset: ts[i].start });
+        if (!module || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) || ts[i + 1].start !== ts[i].end)
+          throw Object.assign(new Error("A qualified name is a module's name, ::, and a name, with no space between: unat::zero."), { offset: ts[i].start });
+        const separator = take("::"), member = take();
+        a = { kind: "name", name: `${a.name}::${member.text}`, moduleQualifier: { name: a.name, start: a.start, end: a.end,
+          separator: { start: separator.start, end: separator.end } }, start: a.start, end: member.end };
+        continue;
+      }
       // A qualified name, T.squash, is tight too: a name, a dot and a name.
       if (a.kind === "name" && peek() === "." && ts[i - 1].end === ts[i].start
           && /^[A-Za-z_][A-Za-z_0-9]*$/.test(ts[i + 1].text) && ts[i + 1].start === ts[i].end) {
@@ -376,6 +389,7 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
         // Every dot of a longer one, m.group.monoid, is tight.
         a = { kind: "name", name: `${a.name}.${member.text}`, qualifiedDot: { start: dot.start, end: dot.end },
           ...(a.qualifiedDot ? { qualifiedDots: [...(a.qualifiedDots ?? [a.qualifiedDot]), { start: dot.start, end: dot.end }] } : {}),
+          ...(a.moduleQualifier ? { moduleQualifier: a.moduleQualifier } : {}),
           start: a.start, end: member.end };
         continue;
       }

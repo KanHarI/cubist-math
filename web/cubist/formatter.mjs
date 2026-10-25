@@ -14,7 +14,8 @@ const flow = body => ({ kind: "flow", body });
 // fits; otherwise the line breaks before the type or value, as `broken` says.
 const hug = (head, rest, broken) => ({ kind: "hug", head, rest, broken });
 // A quantifier's `.` ends its type like a comma: no space before, a break after.
-const punctuation = new Set([",", ".", ";", ")", "]", "}"]);
+// A module's ::, circle::d0, is tight on both sides.
+const punctuation = new Set([",", ".", "::", ";", ")", "]", "}"]);
 const operators = new Set(["=", "->", "=>", "++", "+", "*", "&", "|", "<", "<=", "and", "or"]);
 
 function render(document, width) {
@@ -256,7 +257,7 @@ export function formatCubist(source, { printWidth = 100, linearizeTuples = true 
         && !(text === "(" && (/^[A-Za-z_0-9]+$/.test(previous.text) && !keyword(previous) && !transportKeywords.has(previous.start) || [")", "]"].includes(previous.text) || previous.text === "}" && (expressionBlockEnds.has(previous.end) || implicitCloses.has(previous.end))))
         && !(text === "{" && implicitOpens.has(token.start))
         && !(text === "[" && previous.text === "=");
-      if (space && ![",", "."].includes(previous.text)) {
+      if (space && ![",", ".", "::"].includes(previous.text)) {
         if (annotationStarts.has(token.start)) annotation = statement.length;
         else if (proofBodyStarts.has(token.start)) proofBody = statement.length;
         else if (assignmentTokens.has(previous.start) && assignment < 0) assignment = statement.length;
