@@ -120,15 +120,19 @@ this order:
    named as a dimension of the term or of its context, since no source
    spelling tells the two apart and the dimension keeps its name. An unfolded
    value contracts the redexes it makes at a spine's root, `q(tt) @ j`, and
-   no other: a redex the term has of its own, as an ascription, is kept. What
-   it adds, an unfolded value, a recovered domain, a motive reduced to its
-   function, it spells out in turn; its new names are apart from every name of
-   the terms shown together. Each change is an eta-expansion, a renaming of a
-   bound variable, an unfolding or a reduction.
+   no other: a redex the term has of its own, as an ascription, is kept. The
+   unfoldings and their contractions come first, on the term as it was
+   checked; the spelling follows, each eliminator before its parts, so that no
+   substitution meets syntax already spelled out (a spelled path clause has no
+   family). What it adds, an unfolded value, a recovered domain, a motive
+   reduced to its function, it spells out in turn; its new names are apart
+   from every name of the terms shown together. Each change is an
+   eta-expansion, a renaming of a bound variable, an unfolding or a reduction.
 2. `displayTerm` names every term and level binder apart from the labels and
    dimensions the term shows and the variables in its scope, never shadowing
    one around it. Induction's two binders, one name over one scope, are named
-   alike.
+   alike. Its beta reduction for messages contracts each application of a
+   lambda and every other redex its own contractions make, by the same rule.
 3. `readableDimensions` names the dimensions decoding left unnamed apart from
    every name shown, keeping the context's.
 
@@ -156,7 +160,11 @@ the names were settled, with a capture check that each round found too narrow
 or too wide; and a rule that contracted a spine redex wherever a root had
 changed, an ascription's too. The context's dimensions became a required
 input of every display, the shared name the naming pass's, and the unfolding
-contracts only what it exposes.
+contracts only what it exposes. #312's review then found the marks of what an
+unfolding exposes too narrow or too wide (a substituted ascription, a shared
+node, the parts of a clause below its binders), and a substitution into a
+spelled path clause, which has no family: the unfoldings now run before the
+spelling, and each mark is a copy of its own.
 
 Kernel notation (`cubicalText`, `cubical-notation.mjs`) adds no binder: the
 inspection's `expressionText`, the workbench, the proof page and judgement
