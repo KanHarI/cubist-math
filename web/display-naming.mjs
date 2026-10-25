@@ -323,13 +323,14 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
   };
   terms.forEach(collect);
   // A new variable is its stem where no name is, and numbered from 1
-  // otherwise, each stem counting on: displayTerm shows it by its stem where
-  // it can, and a display too large for scoped names (globalNames) as it is.
-  // A new dimension, d1 and on, is named as decoding's unnamed ones are.
+  // otherwise (numberedName: U_1, not the universe U1), each stem counting
+  // on: displayTerm shows it by its stem where it can, and a display too
+  // large for scoped names (globalNames) as it is. A new dimension, d1 and
+  // on, is named as decoding's unnamed ones are.
   const next = new Map();
   const fresh = stem => {
     let n = next.get(stem) ?? (stem === "d" ? 1 : 0), name;
-    do name = n ? `${stem}${n}` : stem, n++; while (used.has(name));
+    do name = n ? numberedName(stem, n) : stem, n++; while (used.has(name));
     next.set(stem, n);
     used.add(name);
     return name;
@@ -343,16 +344,19 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return { tag: "Lam", name, domain: of, body: { tag: "App", fn, arg: { tag: "Var", name } } };
   };
   // A clause taking each of `takes` in turn: a variable of the stem given,
-  // or a dimension.
-  const clause = (body, takes) => {
+  // or a dimension. `settled` gives the weak head of each body the clause
+  // takes a binder from, where the clause is an unfolded value: the
+  // expansion consumes it, at every binder of the clause.
+  const clause = (body, takes, settled = body => body) => {
     if (!takes.length || !body) return body;
     const [take, ...rest] = takes;
+    body = settled(body);
     if (take === "dimension") {
-      if (body.tag === "PLam") return { ...body, body: clause(body.body, rest) };
+      if (body.tag === "PLam") return { ...body, body: clause(body.body, rest, settled) };
       const dim = fresh("d");
       return { tag: "PLam", dim, family: null, body: clause({ tag: "PApp", path: body, arg: [[`${dim}:1`]] }, rest) };
     }
-    if (body.tag === "Lam") return { ...body, body: clause(body.body, rest) };
+    if (body.tag === "Lam") return { ...body, body: clause(body.body, rest, settled) };
     const name = fresh(take);
     return { tag: "Lam", name, domain: null, body: clause({ tag: "App", fn: body, arg: { tag: "Var", name } }, rest) };
   };
@@ -399,7 +403,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     const [root, former] = spine[t?.tag] ?? [];
     if (!root || contractions <= 0) return t;
     const inner = head(t[root]);
-    if (inner.tag === former) return head(contract({ ...t, [root]: inner }));
+    if (inner.tag === former && contractions > 0) return head(contract({ ...t, [root]: inner }));
     return inner === t[root] ? t : { ...t, [root]: inner };
   };
   const spell = term => {
@@ -430,16 +434,17 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
       if (exposed.has(t)) exposed.add(result);
       // An unfolded value a binder is added around, as an eta-reduced clause
       // that is a definition named as a dimension: its weak head, spelled out
-      // again, so that the function or path it is takes the binder itself.
-      const settle = value => {
-        if (!exposed.has(value) || contractions <= 0) return value;
+      // again, so that the function or path it is takes the binder itself;
+      // in a clause, at each binder it takes.
+      const weakHead = value => {
         const reduced = head(value);
         return reduced === value ? value : mark(go(added(reduced), false, depth + 1));
       };
+      const settle = value => exposed.has(value) ? weakHead(value) : value;
       const [root, former] = spine[t.tag] ?? [];
       if (root && exposed.has(result[root]) && contractions > 0) {
         const value = head(result[root]);
-        if (value.tag === former) result = mark(go(added(contract({ ...result, [root]: value })), applying, depth + 1));
+        if (value.tag === former && contractions > 0) result = mark(go(added(contract({ ...result, [root]: value })), applying, depth + 1));
       }
       if (result.tag === "SumRec")
         result = { ...result, motive: applied(settle(result.motive), "z"), left: applied(settle(result.left), "a"), right: applied(settle(result.right), "b") };
@@ -458,7 +463,8 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
         }
         const constructors = symbols[result.signature]?.constructors;
         const clauses = constructors?.length === result.clauses?.length
-          ? result.clauses.map((body, index) => clause(settle(body), constructorTakes(constructors[index], result.signature))) : result.clauses;
+          ? result.clauses.map((body, index) => clause(body, constructorTakes(constructors[index], result.signature), exposed.has(body) ? weakHead : undefined))
+          : result.clauses;
         result = { ...result, motive, clauses };
         const induction = inductionBinders(result);
         if (induction) {

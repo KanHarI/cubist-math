@@ -467,6 +467,14 @@ test("induction's shared name captures nothing in its successor clause", () => {
   assert.equal(named({ tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive: outer, clauses: [v("z"),
     { tag: "Lam", name: "k", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body: app(v("S"), v("k"), v("m")) } }] } }),
     "induction n as k1 return T(k) { zero => z; succ ih => S(k1, m); }");
+  // A new name is numbered apart from the universes: U_1, not U1, though a
+  // term too large for scoped names (globalNames) shows it as it is.
+  const universal = { tag: "App", arg: v("n"), fn: { tag: "Elim", signature: "unat__UNat", motive: { tag: "Lam", name: "m", domain: nat, body: app(v("Ty"), v("U")) },
+    clauses: [v("z"), { tag: "Lam", name: "U", domain: nat, body: { tag: "Lam", name: "ih", domain: v("I"), body: app(v("S"), v("U"), v("m")) } }] } };
+  let large = v("w");
+  for (let level = 0; level < 11; level++) large = { tag: "Pair", first: large, second: large };
+  assert.equal(sourceText(forSource([universal, large], bare)[0], {}, 4000, { selection: "unat" }),
+    "induction n as U_1 return Ty(U) { zero => z; succ ih => S(U_1, m); }");
   assert.equal(sourceText(induction(rebinding), {}, 4000, { selection: "unat" }),
     "unat__UNat.elim(λ (m : unat__UNat). (T(m) → T(m)), z, λ (k : unat__UNat). λ (ih : I). λ (k : Π (m : unat__UNat), R(m, k)). ⋆)(n)");
 });
@@ -548,8 +556,9 @@ test("forSource spells out an eliminator as a function, apart from the dimension
 
 // A definition named as the context's dimension q is unfolded, and every
 // redex its value makes contracted, however it is reached: through an
-// ascribed argument the value applies, and through a value that is a
-// function applied twice. Each text reads back as the value. A redex the
+// ascribed argument the value applies, through a value that is a function
+// applied twice, and through an eta-reduced clause. Each text reads back as
+// the value. A redex the
 // term has of its own, though it shares the very syntax of the value, is
 // kept.
 test("an unfolding contracts every redex it makes, and only those", async t => {
@@ -569,6 +578,24 @@ test("an unfolding contracts every redex it makes, and only those", async t => {
     const { result: back } = await checkProgram(t, `${circle}${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
   }
+  // A folded normal form keeps an eta-reduced clause that is the
+  // definition: its value, a function of the clause's argument to a path,
+  // is settled at each binder the clause takes.
+  const edges = `${circle}inductive S {
+  pt;
+  edge(u : Unit) : pt = pt;
+}
+def q(u : Unit) : base = base := path e => loop @ ~e;
+def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => q(u) @ j; };
+`;
+  const { program: folded, result: edgesChecked } = await checkProgram(t, edges, { module });
+  assert.deepEqual(edgesChecked.gaps, []);
+  const context = new Map([["q", 0]]);
+  const { expression } = folded.checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
+  const edgeText = folded.checker.displayText(folded.checker.syntax.decode(folded.kernel.normalizeFolded(expression), context), context, { width: 4000 });
+  assert.match(edgeText, /edge\(u\) @ (\w+) => loop @ ~\1;/, edgeText);
+  const { result: edgesBack } = await checkProgram(t, `${edges}def back : g = g := path q => ${edgeText};\n`, { module });
+  assert.deepEqual(edgesBack.gaps, [], edgeText);
   const { program } = await checkProgram(t, "def q(u : Unit) : Unit := u;\n", { module });
   const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__q")).value);
   const pair = { tag: "Pair", first: { tag: "DefRef", name: "main__q" }, second: { tag: "App", fn: value, arg: { tag: "Point" } } };
