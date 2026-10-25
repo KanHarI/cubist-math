@@ -116,7 +116,7 @@ four passes, in this order:
 1. `spelledOut` writes into the terms what the text shows and the terms do not
    spell out: every binder the printer would otherwise invent (a folded
    motive, a definition kept by name, as a function of the domain its checked
-   type gives, `λ (z : D). M(z)`; a clause with fewer arguments, hypotheses or
+   type gives, or an eliminator, of the domain it takes, `λ (z : D). M(z)`; a clause with fewer arguments, hypotheses or
    dimensions than its constructor takes; an eliminator written as a function,
    `λ (x : D). e(x)`), and the one name induction's `as k` gives its motive's
    variable and its predecessor (`inductionBinders`), both binders renamed to

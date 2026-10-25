@@ -375,6 +375,11 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     return name;
   };
   const domain = motiveDomain(definitions);
+  // The domain of an eliminator taken as a function: its motive's, where
+  // that is a function with a domain, else its type, where that has no
+  // parameters; read on syntax not yet spelled out.
+  const eliminated = e => e.motive?.tag === "Lam" && e.motive.domain ? e.motive.domain
+    : symbols[e.signature]?.slots?.length === 0 ? { tag: "Sort", signature: e.signature, parameters: [], levels: [] } : null;
   const added = t => { collect(t); return t; };
   const free = displayFreeNames(), mentions = (term, name) => free(term).has(name);
   const applied = (fn, stem, of = null) => {
@@ -431,11 +436,11 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
         if (motive && motive.tag !== "Lam") {
           // A motive whose head reduces to a function is that function;
           // another is applied to a new variable of the domain its type
-          // gives.
+          // gives, or, an eliminator, it takes.
           const reduced = head(motive);
           if (reduced.tag === "Lam") motive = added(reduced);
           else {
-            const of = domain(motive);
+            const of = domain(motive) ?? (motive.tag === "Elim" ? eliminated(motive) : null);
             motive = applied(motive, "z", of ? added(of) : null);
           }
         }
@@ -464,11 +469,8 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
           result[key] = changed;
         }
       }
-      if (result.tag === "Elim" && !applying) {
-        const of = result.motive?.tag === "Lam" && result.motive.domain ? result.motive.domain
-          : symbols[result.signature]?.slots?.length === 0 ? { tag: "Sort", signature: result.signature, parameters: [], levels: [] } : null;
-        result = applied(result, result.signature === "unat__UNat" ? "n" : "x", of);
-      }
+      if (result.tag === "Elim" && !applying)
+        result = applied(result, result.signature === "unat__UNat" ? "n" : "x", eliminated(result));
       table.set(t, result);
       return result;
     };
