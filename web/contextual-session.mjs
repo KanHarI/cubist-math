@@ -7,7 +7,7 @@ import {replayReader,replayPolicyCallbacks,kernelReplayPolicy,applyKernelReplayP
 import {parse,reservedReferences} from "./cubist/parser.mjs";
 import {BindingAdapter,bindingResolution} from "./cubist/bindings.mjs";
 import {bindingInputs,sourceSimpSets} from "./translator/binding-module.mjs";
-import {bindQualifiedNames,declaredIn,qualifiedLexical} from "./translator/qualified-names.mjs";
+import {declaredIn,qualifiedLexical} from "./translator/qualified-names.mjs";
 import {resolveBindingSyntax,lowerBindingSyntax,lowerBindingReference} from "./cubist/binding-syntax.mjs";
 import {NameSupply} from "./translator/names.mjs";
 import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
@@ -288,8 +288,6 @@ export class ContextualSession {
           let current,result,extension=null;
           try {
             current=copiedScope(scope,unit,used);
-            // A clause's constructor is read by its spelling, as in source.
-            bindQualifiedNames(current.env,parsed.tree,{bindings:{table},adapter:entryAdapter});
             if(parsed.kind==="help")result={kind:"help",text:help};
             else if(parsed.kind==="locals")result=localBindings(translator,current,lexical,entryAdapter,table);
             else if(parsed.kind==="goal") {
