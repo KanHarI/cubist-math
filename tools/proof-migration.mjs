@@ -70,7 +70,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   // A compared module's imports and qualified names, m::x, name its shadow,
   // its own among them, as the parser reads them: by its tokens. A source
   // that does not tokenize is checked as it is, and fails as it is.
-  const shadowed = source => {
+  const shadowSource = source => {
     let tokens;
     try { tokens = tokenize(source); } catch { return source; }
     const named = tokens.flatMap((token, k) => {
@@ -84,7 +84,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       const source = await readEdited(module);
       const place = readEdited.placeOf?.(module);
       if (place) readOriginal.place?.(shadowOf(module), place);
-      editedSources.set(module, shadowed(source));
+      editedSources.set(module, shadowSource(source));
     }
     return editedSources.get(module);
   };
