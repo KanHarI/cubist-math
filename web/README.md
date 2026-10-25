@@ -106,8 +106,12 @@ has a default, and each refuses to run without them; the translator shows a
 term in the scope it was met in, a view in the view's dimensions, and a closed
 term in `[]`.
 
-Every source-text display names its terms by `forSource`, in four passes, in
-this order:
+Every source-text display names its terms by `forSource`. First its beta
+reduction for messages (`betaReduce`) contracts each application of a lambda
+and every other redex its own contractions make, a path or a pair it puts at
+the root of a path application or a projection, on the kernel's syntax alone:
+a substitution cannot read a path clause spelled without its family. Then
+four passes, in this order:
 
 1. `spelledOut` writes into the terms what the text shows and the terms do not
    spell out: every binder the printer would otherwise invent (a folded
@@ -126,9 +130,7 @@ this order:
 2. `displayTerm` names every term and level binder apart from the labels and
    dimensions the term shows and the variables in its scope, never shadowing
    one around it. Induction's two binders, one name over one scope, are named
-   alike. Its beta reduction for messages contracts each application of a
-   lambda and every other redex its own contractions make: a path or a pair
-   it puts at the root of a path application or a projection.
+   alike.
 3. `readableDimensions` names the dimensions decoding left unnamed apart from
    every name shown, keeping the context's.
 4. `qualified` marks a definition, type or constructor whose label the text
@@ -169,7 +171,10 @@ tracking passed through (substituted arguments, application spines, shared
 syntax, clauses, the display's beta reduction, the order of the passes).
 Unfolding answered a naming problem with a reduction. Qualifying answers it
 with a name: the source now spells such a definition `module::name`, and
-nothing is unfolded.
+nothing is unfolded. With nothing unfolded, the display's beta reduction no
+longer has redexes of the spelling's to contract, and runs before it, so
+that it never substitutes into spelled syntax, which round 9 of #312's
+review found it doing.
 
 Kernel notation (`cubicalText`, `cubical-notation.mjs`) adds no binder: the
 inspection's `expressionText`, the workbench, the proof page and judgement

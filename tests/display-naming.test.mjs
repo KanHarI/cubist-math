@@ -541,6 +541,40 @@ test("forSource spells out an eliminator as a function, apart from the dimension
   assert.match(sourceText(fallen, labeled), /\bmain__q\b/, sourceText(fallen, labeled));
 });
 
+// The display's beta reduction contracts before anything is spelled out: a
+// path put at a path application's root, whose body holds a folded
+// eliminator whose clause spelledOut writes as a path without a family,
+// which a substitution cannot read. Each text reads back.
+test("the display's beta reduction never substitutes into spelled syntax", async t => {
+  const source = `inductive Circle {
+  base;
+  loop : base = base;
+}
+inductive S {
+  pt;
+  edge(u : Unit) : pt = pt;
+}
+def f : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u) @ j => loop @ j; };
+def h : f = f := path j => (fun (p : f = f) => p)(refl(f)) @ j;
+`;
+  const { program, result } = await checkProgram(t, source, { module });
+  assert.deepEqual(result.gaps, []);
+  const { kernel, checker } = program;
+  // h's value, f in it as its folded normal form, whose edge clause is
+  // eta-reduced.
+  const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
+  const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+  const inline = t => !t || typeof t !== "object" ? t : t.tag === "DefRef" && t.name === "main__f" ? folded
+    : Array.isArray(t) ? t.map(inline) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, inline(value)]));
+  const value = inline(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__h")).value));
+  const texts = [0, 256].map(reduce => checker.displayText(value, [], { width: 4000, reduce }));
+  assert.equal(texts[1], "refl(fun (x : S) => match x return Circle { pt => base; edge(u) @ j => loop @ j; })");
+  for (const text of texts) {
+    const { result: back } = await checkProgram(t, `${source}def back : f = f := ${text};\n`, { module });
+    assert.deepEqual(back.gaps, [], text);
+  }
+});
+
 // A definition named as the context's dimension q is shown qualified,
 // main::q, which no dimension shadows, wherever it is: applied, at a path's
 // root, inside a redex of the term's own, an eta-reduced clause, a

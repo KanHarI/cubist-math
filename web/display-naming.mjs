@@ -11,7 +11,10 @@ import { localName, numberedName, stem } from "./translator/names.mjs";
 // means by it. No binder captures a name it does not bind, and two things
 // the term tells apart never read alike where both are in scope.
 //
-// Source text is named in four passes, in this order (forSource):
+// Source text is named, once the display's beta reduction (betaReduce) has
+// contracted its redexes on the kernel's syntax alone, before anything is
+// spelled out, since a substitution cannot read a path clause spelled
+// without its family, in four passes, in this order (forSource):
 //  1. spelledOut writes into the terms what the text shows and the terms do
 //     not spell out: every binder the printer would otherwise have to
 //     invent (a folded motive, as a function of the domain its type gives, a
@@ -61,8 +64,9 @@ export function contextDimensions(dimensions) {
 
 // For messages only: reduce beta-redexes, within a budget, and give generated
 // names back their source stems (`A3` → `A`, `native10` → `x`) where no two
-// names would clash. The result is never checked or stored.
-// 3. This is where a display's names are settled, apart from every label
+// names would clash. The result is never checked or stored. forSource
+// reduces before it spells a term out, and gives this no budget.
+// 2. This is where a display's names are settled, apart from every label
 // and dimension the term shows; readableDimensions settles its dimensions
 // after it. Whatever adds to the term what can print a name does so before
 // both, as spelledOut does (see the head of this module).
@@ -541,8 +545,9 @@ export function labelsShown(label) {
   return scan;
 }
 
-// Terms named for source text, in one naming, by the three passes above:
-// spelledOut, displayTerm and readableDimensions. `definitions` gives
+// Terms named for source text, in one naming: the display's beta reduction,
+// then the four passes above, spelledOut, displayTerm's naming,
+// readableDimensions and qualified. `definitions` gives
 // definitions' decoded types and values, the labels the printer shows
 // them by, and each declaration's module::name, by its key in the
 // compilation's bindings (qualified, below); `symbols` a declared type's
@@ -552,7 +557,8 @@ export function labelsShown(label) {
 // display's beta budget.
 export function forSource(terms, { definitions, symbols, names = new Map(), dimensions, reduce = 256 }) {
   const context = contextDimensions(dimensions);
-  const named = readableDimensions(displayTerm(spelledOut(terms, { definitions, symbols, dimensions: context }), reduce, names), context);
+  const reduced = betaReduce(terms, reduce);
+  const named = readableDimensions(displayTerm(spelledOut(reduced, { definitions, symbols, dimensions: context }), 0, names), context);
   return qualified(named, new Set([...context, ...named.flatMap(term => [...dimensionNames(term)]), ...names.values()]), { definitions, symbols });
 }
 
