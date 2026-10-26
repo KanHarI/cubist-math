@@ -7,6 +7,8 @@ export class RuntimeError extends Error {
   constructor(kind, message) { super(message); this.kind = kind; }
 }
 const fail = (kind, message) => { throw new RuntimeError(kind, message); };
+// The term binders of ck_term_binder: each binds its payload in its second child.
+const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 const yieldTask = typeof setImmediate === "function" ? () => new Promise(setImmediate)
   : () => new Promise(resolve => {
     const channel = new MessageChannel();
@@ -30,17 +32,20 @@ class Budget {
     this.deadline = performance.now() + milliseconds; this.signal = signal;
   }
   finish() { this.deadline = 0; this.signal = undefined; }
+  // A stop carries the counters it reached and, at a work or allocation
+  // budget, that budget.
+  stop(kind, message, limit) { throw Object.assign(new RuntimeError(kind, message), { stats: { ...this.stats }, limit }); }
   check() {
-    if (this.signal?.aborted) fail("cancelled", "Runtime query cancelled.");
-    if (this.deadline && performance.now() >= this.deadline) fail("deadline", "Runtime operation deadline exceeded.");
+    if (this.signal?.aborted) this.stop("cancelled", "Runtime query cancelled.");
+    if (this.deadline && performance.now() >= this.deadline) this.stop("deadline", "Runtime operation deadline exceeded.");
   }
   tick() {
-    if (++this.stats.steps > this.maxSteps) fail("budget", "Runtime query work budget exhausted.");
+    if (++this.stats.steps > this.maxSteps) this.stop("budget", "Runtime query work budget exhausted.", this.maxSteps);
     if ((this.stats.steps & 1023) === 0) this.check();
   }
   allocate(n = 1) {
     this.tick();
-    if (this.stats.allocatedCells + n > this.maxCells) fail("resource", "Runtime query allocation budget exhausted.");
+    if (this.stats.allocatedCells + n > this.maxCells) this.stop("resource", "Runtime query allocation budget exhausted.", this.maxCells);
     this.stats.allocatedCells += n;
   }
 }
@@ -162,7 +167,11 @@ export class RuntimeQuery {
     if (!c.arities) fail("unsupported", "Execution of a constructor with cubical recursive positions is not implemented.");
     return c;
   }
-  async #force(root) {
+  // The machine for one demanded cell. It pauses after each slice of work:
+  // observe resumes it after yielding to the event loop, observeNow at once.
+  // Either way the resumed machine checks disposal, cancellation and its
+  // deadline before continuing, so a failure resets its pending cells.
+  *#run(root) {
     const budget = this.#budget, stack = [];
     let task = { operation: "force", cell: root }, value, slice = 0;
     const push = frame => {
@@ -176,7 +185,7 @@ export class RuntimeQuery {
       for (;;) {
         this.#open(); budget.tick();
         if (++slice >= budget.slice) {
-          slice = 0; await yieldTask();
+          slice = 0; yield;
           this.#open(); budget.check();
         }
         if (task?.operation === "lookup") {
@@ -204,6 +213,10 @@ export class RuntimeQuery {
               force(this.#definitions.get(n.payload)); break;
             case "Lam": case "LLam":
               returned(this.#value({ tag: n.kind, symbol: n.payload, body: c[1], env, domain: delay(c[0]) })); break;
+            // A path abstraction is a weak head too, kept with its
+            // environment. Applying one, at an interval point, is cubical
+            // demand, so nothing here substitutes a dimension.
+            case "PLam": returned(this.#value({ tag: "PLam", body: c[1], env })); break;
             case "App": case "LApp":
               push({ operation: "apply", argument: delay(c[1]), level: n.kind === "LApp" }); force(delay(c[0])); break;
             case "Pair":
@@ -224,6 +237,10 @@ export class RuntimeQuery {
             case "Elim":
               this.#signature(n.payload);
               returned(this.#value({ tag: "Elim", signature: n.payload, motive: delay(c[0]), clauses: this.#list(c[1], env) })); break;
+            // A type former is its own weak head. Its parts stay unevaluated;
+            // Glue, which can reduce on its faces, is cubical demand.
+            case "U": case "Pi": case "Sigma": case "Path": case "Sum": case "Unit": case "Void": case "Sort": case "LPi":
+              returned(this.#value({ tag: "Type" })); break;
             default: fail("unsupported", `Runtime execution of ${n.kind} is not implemented.`);
           }
           continue;
@@ -295,27 +312,98 @@ export class RuntimeQuery {
       throw error;
     }
   }
-  async observe(handle = this.root, options = {}) {
+  // The weak head of a cell as the kernel's ck_whnf has it: a lambda whose
+  // body applies a function to the lambda's variable, not free in that
+  // function, is that function (η, of term and level lambdas alike), whose
+  // weak head is then taken in turn. The body is inspected, never evaluated.
+  *#head(cell) {
+    let value = yield* this.#run(cell);
+    for (let f; (f = this.#eta(value));) value = yield* this.#run(this.#delay(f, value.env));
+    return value;
+  }
+  #eta(value) {
+    // The kernel contracts path i => p @ i to p when i is not free in p,
+    // which reads dimension formulas this fragment does not interpret.
+    if (value.tag === "PLam" && this.#image.nodes.get(value.body).kind === "PApp")
+      fail("unsupported", "Runtime η of a path abstraction is not implemented.");
+    if (value.tag !== "Lam" && value.tag !== "LLam") return 0;
+    const body = this.#image.nodes.get(value.body);
+    if (body.kind !== (value.tag === "Lam" ? "App" : "LApp")) return 0;
+    const argument = this.#image.nodes.get(body.children[1]);
+    return argument.kind === "Var" && argument.payload === value.symbol && !this.#free(body.children[0], value.symbol)
+      ? body.children[0] : 0;
+  }
+  // Whether a variable occurs free in syntax, as ck_term_free decides it:
+  // Π, λ, Σ and their level forms bind their payload in their second child.
+  #free(code, symbol) {
+    const seen = new Set(), pending = [code];
+    while (pending.length) {
+      this.#budget.tick();
+      const id = pending.pop();
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      const n = this.#image.nodes.get(id);
+      if (n.kind === "Var" && n.payload === symbol) return true;
+      const bound = binders.has(n.kind) && n.payload === symbol;
+      n.children.forEach((child, i) => { if (!(bound && i === 1)) pending.push(child); });
+    }
+    return false;
+  }
+  // An observation is the weak head the kernel computes for the represented
+  // term, classified: a constructor applied to all of its arguments or to
+  // the first ones (`arity` tells which), a pair, an injection, the point, a
+  // term or level function, a path abstraction, or a type. A function's
+  // parts and a type's are not exposed. Nothing is published once the query
+  // is disposed.
+  #observation(value) {
+    this.#open(); this.#budget.check();
+    const wrap = c => this.#wrap(c);
+    switch (value.tag) {
+      case "Point": return Object.freeze({ kind: "Point" });
+      case "Pair": return Object.freeze({ kind: "Pair", type: wrap(value.type), first: wrap(value.first), second: wrap(value.second) });
+      case "Inl": case "Inr": return Object.freeze({ kind: value.tag, type: wrap(value.type), item: wrap(value.item) });
+      case "Con":
+        return Object.freeze({ kind: "Con", signature: value.signature, index: value.index, instance: wrap(value.instance),
+          args: Object.freeze(value.args.map(wrap)), arity: this.#descriptor(value.signature, value.index).count });
+      // An unapplied eliminator and a lifted hypothesis, λ y. elim(q(y)) in
+      // the kernel, are term functions.
+      case "Lam": case "Elim": case "Lift": return Object.freeze({ kind: "Function" });
+      case "LLam": return Object.freeze({ kind: "LevelFunction" });
+      case "PLam": return Object.freeze({ kind: "PathAbstraction" });
+      case "Type": return Object.freeze({ kind: "Type" });
+      default: fail("unsupported", `Observation of ${value.tag} is not implemented.`);
+    }
+  }
+  #begin(handle) {
     this.#open();
     if (this.#running) fail("input", "A runtime query already has an active observation.");
-    const cell = this.#unwrap(handle); this.#running = true;
+    return this.#unwrap(handle);
+  }
+  // Observe a handle, yielding to the event loop between slices of work.
+  async observe(handle = this.root, options = {}) {
+    const cell = this.#begin(handle); this.#running = true;
     try {
       this.#budget.start(options);
-      const value = await this.#force(cell), wrap = c => this.#wrap(c);
+      const steps = this.#head(cell);
+      let step = steps.next();
+      while (!step.done) { await yieldTask(); step = steps.next(); }
       // Even a force that never yields returns through an await boundary.
-      this.#open(); this.#budget.check();
-      switch (value.tag) {
-        case "Point": return Object.freeze({ kind: "Point" });
-        case "Pair": return Object.freeze({ kind: "Pair", type: wrap(value.type), first: wrap(value.first), second: wrap(value.second) });
-        case "Inl": case "Inr": return Object.freeze({ kind: value.tag, type: wrap(value.type), item: wrap(value.item) });
-        case "Con":
-          if (value.args.length < this.#descriptor(value.signature, value.index).count)
-            return Object.freeze({ kind: "Function" });
-          return Object.freeze({ kind: "Con", signature: value.signature, index: value.index,
-            instance: wrap(value.instance), args: Object.freeze(value.args.map(wrap)) });
-        case "Lam": case "LLam": case "Elim": case "Lift": return Object.freeze({ kind: "Function" });
-        default: fail("unsupported", `Observation of ${value.tag} is not implemented.`);
-      }
+      await null;
+      return this.#observation(step.value);
+    } finally { this.#budget.finish(); this.#running = false; }
+  }
+  // Observe a handle synchronously, for a caller that cannot yield, as the
+  // translator's evaluation cannot: the same machine, limits and deadline,
+  // with nothing else running until it returns or fails. A signal can then
+  // only have been aborted before the call.
+  observeNow(handle = this.root, options = {}) {
+    const cell = this.#begin(handle); this.#running = true;
+    try {
+      this.#budget.start(options);
+      const steps = this.#head(cell);
+      let step;
+      while (!(step = steps.next()).done);
+      return this.#observation(step.value);
     } finally { this.#budget.finish(); this.#running = false; }
   }
   // Retained objects after an observation, separate from cumulative allocation.
