@@ -58,8 +58,10 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Version 8 observes REPL and print value forms by the runtime (EVAL3/EVAL4,
 // docs/reports/runtime-repl-evaluation.md): its snapshot and observations
 // are the runtime phase, its own counters are recorded beside the kernel's,
-// and the prime projections of euclid(4) and euclid(5), and euclid(4)'s value
-// form, show values where the kernel's head queries stopped with K344.
+// the weak head of the term's type, which decides whether to ask the
+// runtime, is a demand, and the prime projections of euclid(4) and
+// euclid(5), and euclid(4)'s value form, show values where the kernel's head
+// queries stopped with K344.
 export const version = 8;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
@@ -139,7 +141,7 @@ export const phases = {
   check: "checker.checkSyntax, inside verify: checking the elaborated term",
   normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
   decode: "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
-  demand: "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
+  demand: "checker.derivedHead and checker.runtimeRefusal, outside other phases: the weak heads a pattern's parts demand, and a value form's type's",
   runtime: "checker.runtimeQuery and RuntimeQuery.observeNow, outside other phases: the runtime's snapshot and observations of a value form",
   inventory: "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
@@ -398,6 +400,7 @@ async function profiled(program, run, { depth = false } = {}) {
   wrap(checker, "evaluated", "inventory", () => true, result => { if (term === null && top() === "other") term = result.expression; });
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
   wrap(checker, "derivedHead", "demand", () => top() === "other");
+  wrap(checker, "runtimeRefusal", "demand", () => top() === "other");
   // The runtime's own counters are its last query's, read when it is done.
   wrap(checker, "runtimeQuery", "runtime", () => top() === "other", query => { if (query) runtimeQuery = query; });
   wrap(RuntimeQuery.prototype, "observeNow", "runtime", () => top() === "other");

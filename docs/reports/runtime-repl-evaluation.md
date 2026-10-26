@@ -36,13 +36,14 @@ so do files and the command-line checker.
 4. `valueForm` (`web/translator/evaluation.mjs`), unchanged, walks the value
    form; its head query is the runtime's `observeNow`, synchronous, one
    query of the directive's fuel per head as the kernel's head query spends.
-5. **The fallback, specified once:** a `RuntimeError` of kind `unsupported`
-   from step 2, the snapshot or any observation abandons the runtime's walk, which
-   is not shown, and the same walk is computed again from the start by the
-   kernel's head queries (`demandQueries`), exactly once. Unsupported demand
-   is: a path applied, a composition (`Comp`, `HComp`, `Trans`), Glue, a
-   Glue term, `unglue`, `abort`, a higher or truncated sort, a constructor
-   with cubical recursive positions, and η of a path abstraction.
+5. **The fallback, specified once:** a `RuntimeError` of kind
+   `unsupported` from step 2, the snapshot or any observation abandons the
+   runtime's walk, which is not shown, and the same walk is computed again
+   from the start by the kernel's head queries (`demandQueries`), exactly
+   once. Unsupported demand is: a path applied, a composition (`Comp`,
+   `HComp`, `Trans`), Glue, a Glue term, `unglue`, `abort`, a higher or
+   truncated sort, a constructor with cubical recursive positions, and η of
+   a path abstraction.
 6. A stop at the runtime's limits is reported and not retried: E487 (work,
    100M steps), E488 (allocation, 20M cells) or E489 (time, 30 s a part),
    and, when the declaration's time limit set the runtime's deadline, that
@@ -123,7 +124,8 @@ the value form's markers need:
   functions, types and path abstractions against the kernel's own weak
   heads; `observeNow` against `observe`, its deadline and disposal.
 - The evaluation baseline, version 8, records a runtime phase and the
-  runtime's counters for each value form, bounded as the kernel's work is.
+  runtime's counters for each value form, bounded as the kernel's work is;
+  the type's weak head that decides whether to ask the runtime is a demand.
 - `tests/site.browser.mjs` checks the REPL page's worker: a value past the
   kernel's guard, then E488, then a further entry.
 
