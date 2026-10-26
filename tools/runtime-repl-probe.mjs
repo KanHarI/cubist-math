@@ -1,11 +1,13 @@
 // The REPL's value form computed by the runtime and by the kernel's head
 // queries alone, for fixed workloads (docs/reports/runtime-repl-evaluation.md).
-// Each sample is a fresh process: the setup is checked as a REPL session,
-// then one `evaluate` entry is measured. Neither path's answer is evidence.
+// Each sample, one workload by one path, is a fresh process, named or not:
+// the setup is checked as a REPL session, then one `evaluate` entry is
+// measured, so that the process's peak memory is that sample's alone.
+// Neither path's answer is evidence.
 // Before the runtime query is disposed of, its retained runtime objects are
-// counted and the heap is measured after a collection (run with
-// --expose-gc, as the default run does), so that retained memory is the
-// query's live graph, not its garbage.
+// counted and the heap is measured after a collection (each sample's
+// process runs with --expose-gc), so that retained memory is the query's
+// live graph, not its garbage.
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel]
 import { execFileSync } from "node:child_process";
@@ -54,14 +56,19 @@ export const workloads = {
 };
 
 assertFreshBuild();
-const [names, only] = process.argv.slice(2);
+const args = process.argv.slice(2), child = args[0] === "--child";
+const [names, only] = child ? args.slice(1) : args;
 const root = fileURLToPath(new URL("..", import.meta.url));
-if (!names) {
-  for (const name of Object.keys(workloads)) for (const path of ["runtime", "kernel"])
-    execFileSync(process.execPath, ["--expose-gc", fileURLToPath(import.meta.url), name, path], { stdio: "inherit" });
+const selected = (names ? names.split(",") : Object.keys(workloads)).flatMap(name => (only ? [only] : ["runtime", "kernel"]).map(path => {
+  if (!workloads[name] || !["runtime", "kernel"].includes(path)) throw new Error(`Unknown workload or path: ${name} ${path}`);
+  return [name, path];
+}));
+if (!child) {
+  for (const [name, path] of selected)
+    execFileSync(process.execPath, ["--expose-gc", fileURLToPath(import.meta.url), "--child", name, path], { stdio: "inherit" });
 } else {
-  for (const name of names.split(",")) for (const path of only ? [only] : ["runtime", "kernel"]) {
-    if (!workloads[name] || !["runtime", "kernel"].includes(path)) throw new Error(`Unknown workload or path: ${name} ${path}`);
+  if (selected.length !== 1) throw new Error("A child process measures one workload by one path.");
+  for (const [name, path] of selected) {
     const [setup, entry] = workloads[name];
     const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false, runtimeEvaluation: path === "runtime" });
     try {
