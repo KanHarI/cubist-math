@@ -117,6 +117,59 @@ def binary_rational_second_period : BQ := 1.2.3;
 # expect_error(E905)
 def binary_rational_second_slash : BQ := 1/2/3;
 
+// A refusal names the character it refuses, by its position from 0:
+// parse_answer gives k + 1 for the character k, and 0 for a success. Each
+// literal is its reader's input, written out as a lexeme.
+# test(binary_rationals.second_slash_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)), cons(slash, cons(digit(unat.(2)), cons(slash, cons(digit(unat.(3)), nil))))
+    )
+  )
+) expecting unat.(4);
+
+# test(binary_rationals.second_period_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)), cons(period, cons(digit(unat.(2)), cons(period, cons(digit(unat.(3)), nil))))
+    )
+  )
+) expecting unat.(4);
+
+# test(binary_rationals.integer_letter_position)
+evaluate parse_answer(
+  bq_literal(cons(digit(unat.(1)), cons(digit(unat.(2)), cons(lower(unat.(23)), nil))))
+) expecting unat.(3);
+
+# test(binary_rationals.decimal_letter_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(digit(unat.(1)), cons(period, cons(digit(unat.(2)), cons(lower(unat.(23)), nil))))
+  )
+) expecting unat.(4);
+
+// The denominator's refusal is placed after the numerator, its underscore
+// and the slash: 1_0/2a refuses the a, at 5.
+# test(binary_rationals.denominator_letter_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)),
+      cons(
+        underscore,
+        cons(digit(unat.(0)), cons(slash, cons(digit(unat.(2)), cons(lower(unat.(0)), nil))))
+      )
+    )
+  )
+) expecting unat.(6);
+
+# test(binary_rationals.fraction_answer)
+evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(slash, cons(digit(unat.(2)), nil))))) expecting unat.(
+  0
+);
+
 # test(binary_rationals.unary_argument)
 # expect_error(E606)
 def binary_rational_unary_argument : BQ := bq_of_int(unat.(1));
