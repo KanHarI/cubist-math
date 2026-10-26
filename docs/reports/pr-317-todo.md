@@ -12,3 +12,17 @@ the axiom change, and remain unfixed here.
   fails with "A source capture requires a closed core value." It fails
   closed, as it already does for lemmas that use assumptions. Rules over
   assumptions need a capture that carries the assumption, if wanted.
+
+Found while fixing the second review of #317, also on main `e7b67376`:
+
+- [ ] A truncation's universe argument displays as the binder's internal
+  name, and is not instantiated in the display: after
+  `def k(U < UU0, A : U, t : Trunc(U, A)) : Trunc(U, A) := t;`, `typeof k;`
+  shows `forall U < UU0. forall A : U. Trunc(__U, A) -> Trunc(__U, A)` and
+  `typeof k(U0);` still shows `Trunc(__U, A)`. Checking is unaffected
+  (`LEM(U0)` checks against `ExcludedMiddle(U0)`); the axioms' types
+  display so too, as `typeof LEM(U0, Unit);`.
+- [ ] A checked file with print directives and no declaration fails
+  `check` with only `<module> did not check.`: `complete` requires a
+  declaration (`outputs.length > 0` in `web/cubical-program.mjs`), and no
+  gap says why.

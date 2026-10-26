@@ -45,7 +45,7 @@ export async function elaborationFingerprint({ modules, readSource }) {
     for (const [binding, symbol] of Object.entries(program.symbols)) {
       if (binding.startsWith("fingerprint__")) continue;
       // An axiom has no definition: its type is the statement it assumes.
-      const view = views.get(binding), assumed = program.checker.assumptions.get(binding);
+      const view = views.get(binding), assumed = program.checker.assumptions.get(program.checker.axioms.get(binding));
       declarations[binding] = { status: symbol.status, reason: symbol.reason ?? null,
         errorStart: symbol.errorStart ?? null, errorEnd: symbol.errorEnd ?? null,
         axioms: [...symbol.axioms].sort(),

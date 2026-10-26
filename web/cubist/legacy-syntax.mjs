@@ -113,7 +113,11 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
   try {
     tokens = tokenize(source);
     if (!tokens.some(token => Object.hasOwn(renamedReserved, token.text))) return source;
-    ast = parse(source, false, { bindable: Object.keys(renamedReserved) });
+    // A source that imports a declaration named axiom calls that name, even
+    // where the axiom form could stand (parse's `axiomNames`).
+    const importsAxiom = importedNames.includes("axiom") || importedDeclarations.some(item =>
+      item.name?.text === "axiom" || (item.constructors ?? []).some(constructor => constructor.name.text === "axiom"));
+    ast = parse(source, false, { bindable: Object.keys(renamedReserved), ...(importsAxiom ? { axiomNames: true } : {}) });
   } catch { return source; }
   // A replacement must not capture an existing name, even in an inner
   // scope. Use one fresh spelling throughout this source, including labels.

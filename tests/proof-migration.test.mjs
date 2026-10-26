@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { canonicalHasher } from "../tools/canonical-hash.mjs";
-import { verifyMigration } from "../tools/proof-migration.mjs";
+import { mapDefinitions, verifyMigration } from "../tools/proof-migration.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
@@ -444,4 +444,22 @@ test("axioms compare by their assumed statements, and stand for the original in 
   ]);
   const [defined] = await run(source, source.replace("def A := axiom Unit;", "def A := tt;"));
   assert.match(defined.failures[0].reason, /One version assumes this declaration as an axiom, and the other defines it/);
+});
+
+// The edited axiom stands for the original as a free variable only: a binder
+// of the same spelling keeps its occurrences (#317's review round 2,
+// finding 2). Nor does an axiom's assumption take a binder's name.
+test("the verifier renames only an axiom's free occurrences, never a binder's", async () => {
+  const variable = name => ({ tag: "Var", name });
+  const rename = mapDefinitions(name => name, name => name, name => name === "edited" ? "original" : name);
+  const term = { tag: "App", fn: { tag: "Lam", name: "edited", domain: { tag: "Unit" }, body: variable("edited") }, arg: variable("edited") };
+  assert.deepEqual(rename(term), { ...term, arg: variable("original") });
+  const before = "def F(m__migration_check__A : Unit or Unit) : m__migration_check__A = m__migration_check__A := "
+    + "refl(m__migration_check__A);\ndef A1 := axiom Unit or Unit;\ndef use_(x : Unit or Unit) : A1 = A1 := refl(A1);\n";
+  const after = before.replace("def use_(x : Unit or Unit) : A1 = A1 := refl(A1);", "def use_ := (fun (unused : Unit or Unit) => F)(A1);");
+  for (const level of ["types", "identical"]) {
+    const [report] = await verifyMigration({ modules: ["m"], level, readOriginal: async name => name === "m" ? before : library(name),
+      readEdited: async () => after });
+    assert.deepEqual(report.failures.map(failure => failure.name), ["use_"], level);
+  }
 });

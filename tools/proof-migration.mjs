@@ -24,29 +24,37 @@ import { canonicalHasher } from "./canonical-hash.mjs";
 const SHADOW = "__migration_check";
 
 // Copy a checked term with its definition references renamed, and its free
-// assumptions by `variableName`, sharing every unchanged subterm. An
-// assumption's name is never a binder's (the elaborator's names avoid it).
-function mapDefinitions(rename, signatureName = name => name, variableName = name => name) {
-  const memo = new WeakMap();
-  function map(node) {
+// assumptions by `variableName`, sharing every unchanged subterm. Only a
+// free variable is renamed: a binder of the same spelling hides the
+// assumption in its body, so a term is memoized per the renamed names bound
+// around it (usually none).
+const termBinders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+export function mapDefinitions(rename, signatureName = name => name, variableName = name => name) {
+  const memos = new Map();
+  function map(node, bound = []) {
     if (!node || typeof node !== "object") return node;
+    const key = bound.join("\u0000");
+    let memo = memos.get(key);
+    if (!memo) memos.set(key, memo = new WeakMap());
     if (memo.has(node)) return memo.get(node);
     let result = node;
     if (Array.isArray(node)) {
-      const items = node.map(map);
+      const items = node.map(item => map(item, bound));
       if (items.some((item, index) => item !== node[index])) result = items;
     } else if (node.tag === "DefRef") {
       const name = rename(node.name);
       if (name !== node.name) result = { ...node, name };
     } else if (node.tag === "Var") {
-      const name = variableName(node.name);
+      const name = bound.includes(node.name) ? node.name : variableName(node.name);
       if (name !== node.name) result = { ...node, name };
     } else {
       let copy = null;
       if ((node.tag === "Sort" || node.tag === "Elim") && signatureName(node.signature) !== node.signature)
         copy = {...node,signature:signatureName(node.signature)};
+      // A binder hides a renamed name in its body.
+      const hides = termBinders.has(node.tag) && variableName(node.name) !== node.name && !bound.includes(node.name);
       for (const [key, value] of Object.entries(node)) {
-        const mapped = map(value);
+        const mapped = map(value, hides && key === "body" ? [...bound, node.name].sort() : bound);
         if (mapped !== value) (copy ??= { ...node })[key] = mapped;
       }
       if (copy) result = copy;
@@ -54,7 +62,7 @@ function mapDefinitions(rename, signatureName = name => name, variableName = nam
     memo.set(node, result);
     return result;
   }
-  return map;
+  return node => map(node);
 }
 
 // modules: names of the library modules to compare, normally the edited
@@ -361,10 +369,11 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       // compared instead. The same statement makes the edited axiom stand for
       // the original; a changed one is reported, as a changed type is.
       const compareAxiom = (name, originalBinding, editedBinding) => {
-        const before = checker.assumptions.get(originalBinding), after = checker.assumptions.get(editedBinding);
-        if (!before || !after) return fail(name, "One version assumes this declaration as an axiom, and the other defines it.");
-        if (hashTerm(before) !== hashTerm(after)) return fail(name, "The axiom's assumed statement changed.");
-        axiomCorrespondence.set(editedBinding, originalBinding);
+        const original = checker.axioms.get(originalBinding), edited = checker.axioms.get(editedBinding);
+        if (!original || !edited) return fail(name, "One version assumes this declaration as an axiom, and the other defines it.");
+        if (hashTerm(checker.assumptions.get(original)) !== hashTerm(checker.assumptions.get(edited)))
+          return fail(name, "The axiom's assumed statement changed.");
+        axiomCorrespondence.set(edited, original);
         identical.add(`${module}__${name}`); report.identical++;
       };
       // Establish schema correspondences before comparing terms that use
@@ -389,7 +398,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
           continue;
         }
         // In source order, so that a statement's earlier definitions are decided.
-        if (checker.assumptions.has(symbol.binding) || checker.assumptions.has(output.binding)) {
+        if (checker.axioms.has(symbol.binding) || checker.axioms.has(output.binding)) {
           compareAxiom(symbol.name, symbol.binding, output.binding);
           continue;
         }

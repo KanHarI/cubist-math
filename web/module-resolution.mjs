@@ -99,8 +99,8 @@ export function moduleReader(read) {
   // Whether `text` is the module `name` exactly as library/ holds it: read
   // from there, or given as that same text, as the command line gives a
   // library file it checks. An edited source, or one placed elsewhere, is
-  // not. Only the library's classical_axioms names its axioms bare LEM and
-  // Choice (web/cubical-assumptions.mjs).
+  // not. Only a library module names its axioms by their bare names, as
+  // LEM and Choice (web/cubical-assumptions.mjs).
   readSource.fromLibrary = async (name, text) => placed.get(name) === "library" && await probe("library", name) === text;
   readSource.beginCheck = () => probes.clear();
   // Called after a module's imports are loaded: a refusal message when one of

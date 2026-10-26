@@ -86,6 +86,8 @@ export class CubicalProgram {
     // Proof statements of each checked module, with their goals (see steps()).
     this.moduleSteps = new Map();
     this.failedImports = new Map();
+    // Whether each module checked is the library's, imports included.
+    this.libraryModules = new Map();
   }
   dispose() { this.scopeReady=false; this.kernel.dispose(); }
   assumptionSymbols() {
@@ -119,14 +121,19 @@ export class CubicalProgram {
         error.kind??="parse";
         throw new SourceUnit({checker:this.checker,source:text,moduleName:name}).locate(error,null);
       }
-      // Whether it is the library's own module, as read from library/: only
-      // that one's axioms may take the library's bare labels.
-      const library = await this.readSource.fromLibrary?.(name, text) ?? false;
-      prepared.set(name, { text, ast, library });
+      const own = await this.readSource.fromLibrary?.(name, text) ?? false;
+      const entry = { text, ast, library: false };
+      prepared.set(name, entry);
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
         phase: "loading", unit: "declarations", instructions: this.checker.steps });
       for (const dependency of ast.imports) await this.discover(discovery, dependency, null, name, onProgress);
+      // Whether it is the library's, as library/ holds it, and so is every
+      // module it reads, transitively: only then do its axioms take their
+      // bare names as labels, since an axiom's statement is read through its
+      // imports.
+      entry.library = own && ast.imports.every(dependency => prepared.get(dependency)?.library
+        ?? this.libraryModules.get(dependency) ?? false);
       const refused = await this.readSource.checkImports?.(name, ast.imports);
       if (refused) prepared.set(name, { error: new Error(refused) });
     } catch (error) { prepared.set(name, { error }); }
@@ -217,7 +224,7 @@ export class CubicalProgram {
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText,start:directive.start});
       else if(directive.kind==="print")
-        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start});
+        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start,axioms:directive.axioms??[]});
     }
     const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
     for (const d of result.declarations) {
@@ -339,6 +346,7 @@ export class CubicalProgram {
         if (!entry) throw new Error(`Source was not discovered: ${name}`);
         if (entry.error) throw entry.error;
         ({ text, ast, library } = entry);
+        this.libraryModules.set(name, library);
       }
       catch (error) {
         if (name === main) throw error;
@@ -694,8 +702,10 @@ export class CubicalProgram {
     if (info && !info.verified) throw new Error(info.reason);
     let term, expected = null, context = [], dimensions = new Map();
     if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; }
-    else if (this.checker.assumptions.has(binding)) {
-      term = { tag: "Var", name: binding }; expected = this.checker.assumptions.get(binding);
+    else if (this.checker.assumptions.has(this.checker.axioms.get(binding) ?? binding)) {
+      // An axiom definition is inspected as the assumption it states.
+      const name = this.checker.axioms.get(binding) ?? binding;
+      term = { tag: "Var", name }; expected = this.checker.assumptions.get(name);
     } else {
       const reference = this.kernel.definitions.get(binding);
       if (!reference) throw new Error("No checked native definition for this name.");

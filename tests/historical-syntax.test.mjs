@@ -123,6 +123,25 @@ test("historical readers keep current axiom definitions and rename an old binder
   assert.match(rewritten, /def f\(axiom_ : Unit\) : Unit := axiom_;\ndef axiom_ := f\(tt\);/);
 });
 
+// A historical source that names `axiom` reads the word as that name
+// throughout, where the form could stand too, and so does one that imports
+// a declaration of that name: no call becomes an assumption (#317's review
+// round 2, finding 3).
+test("historical sources that bind or import axiom call it, as written then", async t => {
+  const source = "def axiom(A : U0) := A;\ndef result := axiom(Unit);\nprint(typeof(result));";
+  assert.equal(await checked(t, source, ["U0"]), "def axiom_(A : U0) := A;\ndef result := axiom_(Unit);\nprint(typeof(result));");
+  const dependency = "def axiom(A : U0) := A;", importer = "import provider;\ndef result := axiom(Unit);\nprint(typeof(result));";
+  const options = { implicitNat: false, minusReverses: false, renaming: reservedBindingRenaming([dependency, importer]) };
+  const importedDeclarations = parse(dependency, false, { bindable: [...languageKeywords] }).declarations;
+  const program = new CubicalProgram(module, async () => historicalSource(dependency, "provider", options));
+  t.after(() => program.dispose());
+  const rewritten = historicalSource(importer, "history", { ...options, importedDeclarations });
+  assert.equal(rewritten, "import provider;\ndef result := axiom_(Unit);\nprint(typeof(result));");
+  const result = await program.check(rewritten, "history");
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
+  assert.deepEqual([program.prints.map(print => print.text), result.outputs[0].axioms], [["U0"], []]);
+});
+
 test("historical fill binders leave the box keyword intact", async t => {
   assert.doesNotThrow(() => parse(read("def f(A : U0, a : A, fill : A) : a = a := fun (i : Interval) => fill j in A from a at i { };")));
   const rewritten = await checked(t,

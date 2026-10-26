@@ -273,3 +273,22 @@ test("context queries retain published declarations with explicit logical assump
   await query(session,"typeof merely(Unit, x)","type");
   await query(session,"witness merely(Unit, x)","error");
 });
+
+// Each result is reported with every assumption it relies on: through its
+// terms, and through the local hypotheses they use, whose types may use one;
+// an assumption-free result says nothing more (#317's review round 2,
+// finding 4).
+test("every context result reports the assumptions it relies on, and an assumption-free one none",async t=>{
+  const source="def Pointed := axiom Unit;\ndef f(A : U0, h : Pointed = Pointed, k : (Pointed = Pointed) -> Unit) : Unit { exact tt; }";
+  const {session}=await setup(t,source,"exact tt;");
+  const texts=async input=>(await session.run(input)).map(result=>`${result.kind}: ${result.text}`);
+  assert.deepEqual(await texts("let p := Pointed"),["defined: p : Unit","info: p assumes main::Pointed"]);
+  assert.deepEqual(await texts("let q := h"),["defined: q : main::Pointed = main::Pointed","info: q assumes main::Pointed"]);
+  assert.deepEqual(await texts("let s := k(h)"),["defined: s : Unit","info: s assumes main::Pointed"]);
+  assert.deepEqual(await texts("typeof Pointed"),["type: Unit","info: assumes main::Pointed"]);
+  assert.deepEqual(await texts("typeof p"),["type: Unit","info: assumes main::Pointed"]);
+  assert.deepEqual((await texts("Pointed")).at(-1),"info: assumes main::Pointed");
+  assert.deepEqual((await texts("inspect Pointed")).at(-1),"info: assumes main::Pointed");
+  assert.deepEqual(await texts("let r := A"),["defined: r : U0"]);
+  assert.deepEqual(await texts("typeof tt"),["type: Unit"]);
+});

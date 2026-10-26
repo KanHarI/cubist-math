@@ -55,6 +55,28 @@ test("a definition that relies on assumptions is shown with every one of them", 
   assert.deepEqual(texts(await repl.run("let plain := tt;")), ["defined: plain : Unit"]);
 });
 
+// Every result is shown with the assumptions it relies on, whichever entry
+// asks: typeof, a print of a type or an inspection, a print in a declaring
+// entry; a result that relies on none says nothing more, and evaluation
+// refuses an assumption (#317's review round 2, finding 4).
+test("every result that relies on assumptions is shown with them, and one that relies on none is quiet", async t => {
+  const repl = await session(t);
+  await repl.run("import classical_axioms;");
+  await repl.run("def Pointed := axiom Unit;");
+  await repl.run("let both : ExcludedMiddle(U0) and Unit := (LEM(U0), Pointed);");
+  assert.deepEqual(texts(await repl.run("typeof both;")),
+    ["type: ExcludedMiddle(U0) and Unit", "info: assumes LEM, repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("print(typeof(Pointed));")), ["value: Unit", "info: assumes repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("print(inspect(Pointed));")).at(-1), "info: assumes repl_2::Pointed");
+  assert.deepEqual(texts(await repl.run("def shown := tt;\nprint(typeof(both));")).slice(1),
+    ["value: ExcludedMiddle(U0) and Unit", "info: assumes LEM, repl_2::Pointed"]);
+  assert.match(texts(await repl.run("evaluate Pointed;"))[0], /^error: /);
+  assert.deepEqual(texts(await repl.run("typeof tt;")), ["type: Unit"]);
+  assert.deepEqual(texts(await repl.run("print(typeof(tt));")), ["value: Unit"]);
+  assert.deepEqual(texts(await repl.run("print(inspect(tt));")), ["value: ⋆"]);
+  assert.deepEqual(texts(await repl.run("evaluate tt;")), ["value: tt"]);
+});
+
 test("let binds, typeof shows the type, and evaluate the value", async t => {
   const repl = await session(t);
   assert.deepEqual(texts(await repl.run("import unat;")), ["info: Imported unat."]);

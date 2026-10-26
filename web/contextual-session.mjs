@@ -14,7 +14,8 @@ import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
 import {notationContextKey} from "./translator/notation-context.mjs";
-import {T} from "./translator/core.mjs";
+import {T,freeNames} from "./translator/core.mjs";
+import {assumptionNote} from "./axiom-labels.mjs";
 import {Goal} from "./translator/proof-goals.mjs";
 import {Scope} from "./translator/elaboration.mjs";
 import {replStatements} from "./repl-session.mjs";
@@ -26,6 +27,16 @@ const freeze=value=>{
   return value;
 };
 const failure=(kind,error,extra={})=>({kind,text:error.message??String(error),failure:error.kind??"other",...extra});
+// The line that reports what a result relies on: every assumption its terms
+// use, and every one the types of the local values and hypotheses they
+// mention use (web/axiom-labels.mjs), or null for none.
+function reliedOn(scope,subject,...terms) {
+  const context=scope.context,pending=[...terms],types=[],seen=new Set();
+  while(pending.length)for(const name of freeNames(pending.pop()))if(!seen.has(name)&&context.has(name)) {
+    seen.add(name);types.push(context.get(name));pending.push(context.get(name));
+  }
+  return assumptionNote([...scope.checker.requiredAssumptions(...terms,...types).keys()],scope.checker.assumptionLabels,subject);
+}
 const unavailable=text=>({kind:"unavailable",text,failure:"context"});
 const measure=kernel=>({time:performance.now(),work:kernel.work()});
 const spent=(kernel,start)=>({elapsedMs:performance.now()-start.time,work:Object.fromEntries(
@@ -229,7 +240,12 @@ export class ContextualSession {
       const {statements,rest}=replStatements(input);
       if(rest)statements.push(rest);
       const results=[];
-      for(const entry of statements)results.push(await this.#request(entry));
+      // Each result, then the assumptions it relies on, if any.
+      for(const entry of statements) {
+        const {assumes,...answer}=await this.#request(entry);
+        results.push(freeze(answer));
+        if(assumes)results.push(freeze({kind:"info",text:assumes}));
+      }
       return results;
     });
     this.#queue=work.catch(()=>{});
@@ -303,16 +319,20 @@ export class ContextualSession {
               current=translator.bindLet(tree[0],current);
               const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
               const type=current.infer(value).type;
-              result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`};
+              result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`,
+                assumes:reliedOn(current,record.label,value,type)};
               extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
               lexical=lexical.bind(record.label,bindingResolution(id));
               scope=current;
-            } else if(parsed.kind==="inspect")result={kind:"inspection",text:translator.printed({show:"inspect",value:tree},current)};
-            else if(parsed.kind==="witness")result={kind:"value",text:translator.printed({show:"witness",value:tree},current)};
-            else {
+            } else if(parsed.kind==="inspect"||parsed.kind==="witness") {
+              const {text}=translator.printed({show:parsed.kind,value:tree},current);
+              const checked=current.infer(translator.term(tree,current));
+              result={kind:parsed.kind==="inspect"?"inspection":"value",text,assumes:reliedOn(current,null,checked.term,checked.type)};
+            } else {
               const term=translator.term(tree,current),checked=current.infer(term);
               const value=current.nf(parsed.kind==="typeof"?checked.type:checked.term);
-              result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current)};
+              result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current),
+                assumes:reliedOn(current,null,checked.term,checked.type)};
             }
             return {result:{...result,conditional:true,scope:this.#point.id,fuel:translator.fuelRecord(unit)},extension};
           } finally {unit.fuel.close();}

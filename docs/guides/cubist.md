@@ -101,9 +101,12 @@ library's `classical_axioms` states `def LEM := axiom ExcludedMiddle;` and
 entry of that type, named by the definition, and the kernel checks every proof
 that uses it abstracted over it; no new rule is trusted. Every result and the
 inspector list the assumptions it uses, including dependencies in types and
-contexts, by their labels: `LEM` and `Choice` for the library's own
-`classical_axioms`, as read from `library/`, and `module::Name` for any
-other, a module of that name from elsewhere or edited included. Two
+contexts, by their labels: its bare name for an axiom of the library, as
+read from `library/` with every module it imports, as `LEM` and `Choice`
+are, and `module::Name` for any other, a module of a library module's name
+from elsewhere or edited, or one importing such a module, included. Every
+result is reported with them: a declaration, a print, a REPL entry's or the
+workspace console's result. Two
 modules' declarations whose identities, `module__name`, would coincide, as
 `a::b__c` and `a__b::c` do, cannot both be checked: the later is refused. An imported but unused assumption does not
 appear in that result's list. A `computable` declaration, an `evaluate` and a

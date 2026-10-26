@@ -44,11 +44,13 @@ export function libraryAssumption(checker,name,context=new Map()) {
   checker.assumptionLabels.set(value.name,label);
   return value;
 }
-// The library's own axioms keep their names as labels; any other axiom is
-// labelled by its module's name and its own, module::Name. A bare label
-// needs the library's module itself, read from library/ (`library`): a
-// module of the same name elsewhere, or edited, is labelled as any other.
-const canonicalAxioms=new Map([['classical_axioms',new Set(['LEM','Choice'])]]);
+// The library's axioms keep their names as labels, as LEM and Choice do; any
+// other axiom is labelled by its module's name and its own, module::Name
+// (the user's decision of 2026-10-26). A bare label needs a library module
+// itself, read from library/ (`library`): a module of the same name
+// elsewhere, or edited, is labelled as any other. tests/library.test.mjs
+// keeps the library's axiom names distinct; the legacy builtins' labels are
+// reserved words or carry brackets, as LEM[Truncate] does.
 // `def Name := axiom F;` (docs/roadmaps/hott/h1-truncation-migration.md,
 // "Axioms as definitions"). F, already elaborated in `scope`, is a type, or
 // a family of types: a telescope of universe and ordinary parameters with a
@@ -81,12 +83,14 @@ export function axiomAssumption(checker,{module,declaration,binding,library=fals
   const closed=binders.reduceRight((body,binder)=>binder.domain ? pi(binder.name,binder.domain,body)
     : {tag:'LPi',name:binder.name,body},body);
   scope.spend('queries');
-  // The assumption is named by the definition's identity exactly. Its
-  // translator has refused a declaration whose identity another holds
-  // (identityClash in web/translator/translate.mjs).
-  const label=library&&canonicalAxioms.get(module)?.has(declaration) ? declaration : `${module}::${declaration}`;
-  const value=checker.assume(binding,closed,new Set(scope.context.keys()),{exact:true});
-  checker.assumptionOrigins.set(value.name,{kind:'axiom',module,declaration});
+  // The assumption is named by the definition's identity, unless that
+  // spelling is already a kernel symbol, as an earlier binder's generated
+  // name may be: then a fresh one, so that a context entry never shares a
+  // binder's name. `axioms` maps the identity to it.
+  const label=library ? declaration : `${module}::${declaration}`;
+  const value=checker.assume(binding,closed,new Set(scope.context.keys()));
+  checker.axioms.set(binding,value.name);
+  checker.assumptionOrigins.set(value.name,{kind:'axiom',module,declaration,binding});
   checker.libraryAssumptions.set(label,value);
   checker.assumptionLabels.set(value.name,label);
   return value;

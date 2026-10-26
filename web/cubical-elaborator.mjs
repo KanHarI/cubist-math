@@ -88,6 +88,9 @@ export class NativeCubicalElaborator {
     this.libraryAssumptions = new Map();
     this.assumptionLabels = new Map();
     this.assumptionOrigins = new Map();
+    // Each axiom definition's identity, module__Name, and the name of the
+    // assumption it states (web/cubical-assumptions.mjs).
+    this.axioms = new Map();
     this.definitionViews = new Map();
     // Theories' records, by the binding of the type each describes (a type
     // of models, of homomorphisms or of isomorphisms), and the field each
@@ -180,10 +183,8 @@ export class NativeCubicalElaborator {
     }
   }
   context(local = new Map()) { return new Map([...this.assumptions, ...local]); }
-  // An assumption's name is fresh, unless `exact`: an axiom's is its
-  // definition's identity, which no other declaration holds.
-  assume(name, type, avoid = new Set(), { exact = false } = {}) {
-    while (!exact && (avoid.has(name) || this.kernel.names.has(name))) name += "_";
+  assume(name, type, avoid = new Set()) {
+    while (avoid.has(name) || this.kernel.names.has(name)) name += "_";
     const dimensions = this.dimensions;
     let checked;
     try { this.dimensions = new Map(); checked = this.infer(type); }

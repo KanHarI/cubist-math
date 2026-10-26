@@ -470,7 +470,9 @@ export class Translator {
   // its type; and
   // `print(inspect(e));` the term the kernel checked, in kernel notation. A
   // name shows what the CLI's inspect shows: a definition's checked body, or
-  // a declared type's signature and its eliminator's clause types.
+  // a declared type's signature and its eliminator's clause types. It gives
+  // the text with the assumptions the printed term relies on: none for an
+  // evaluation or a witness, which refuse any.
   printed(d,scope) {
     if(d.show==="evaluate"||d.show==="witness") {
       scope.spend("queries");
@@ -489,29 +491,29 @@ export class Translator {
       // the kernel leaves it, its arguments uncomputed; and
       // print(evaluate(!!e)); and print(evaluate(!!!e)); the normal form.
       if(d.show==="evaluate") {
-        if(d.mark==="!!"||d.mark==="!!!")return this.shownIn(normal,scope);
+        if(d.mark==="!!"||d.mark==="!!!")return {text:this.shownIn(normal,scope),axioms:[]};
         const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
         // A weak head and a value form are shown as computed, reducing
         // nothing more for display; a value form whole, within the budget
         // its walk kept.
-        if(d.mark==="!")return this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0});
-        return this.shownIn(valueForm(result.expression,at,d.value),scope,{width:Infinity,reduce:0});
+        if(d.mark==="!")return {text:this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0}),axioms:[]};
+        return {text:this.shownIn(valueForm(result.expression,at,d.value),scope,{width:Infinity,reduce:0}),axioms:[]};
       }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
       const {witness,type}=witnessOf(normal,result.type,scope,term=>this.shownIn(term,scope));
-      return `${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`;
+      return {text:`${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`,axioms:[]};
     }
-    const result=scope.infer(this.term(d.value,scope));
-    if(d.show==="typeof")return this.shownIn(result.type,scope);
+    const result=scope.infer(this.term(d.value,scope)),axioms=result.native?.axioms??[];
+    if(d.show==="typeof")return {text:this.shownIn(result.type,scope),axioms};
     if(d.value.kind==="name") {
       let body=result.term;
       while(body.tag==="Lam"||body.tag==="LLam")body=body.body;
       if(body.tag==="Sort"&&this.inspectSignature)
-        return this.inNotation(scope,()=>this.inspectSignature(body.signature));
+        return {text:this.inNotation(scope,()=>this.inspectSignature(body.signature)),axioms};
     }
     const definition=d.value.kind==="name"&&result.term.tag==="DefRef"?this.checker.definitionViews?.get(result.term.name):null;
-    return this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000);
+    return {text:this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000),axioms};
   }
   // A term as messages show it, in `scope`'s context: source names,
   // generated suffixes removed. Every display here is given the scope it
@@ -765,7 +767,7 @@ export class Translator {
           // A file-level use selects for directives too, which print in it.
           const scope=this.itemScope(new Scope(unit,new Map(),env),d);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            text:this.printed(d,scope)});
+            ...this.printed(d,scope)});
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",

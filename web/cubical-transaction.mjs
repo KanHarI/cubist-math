@@ -16,6 +16,7 @@ export class CubicalDeclarationTransaction {
       [checker.assumptions,checker.assumptions.size],
       [checker.assumptionLabels,checker.assumptionLabels.size],
       [checker.assumptionOrigins,checker.assumptionOrigins.size],
+      [checker.axioms,checker.axioms.size],
       [checker.libraryAssumptions,checker.libraryAssumptions.size],
     ]);
     // These maps contain frontend metadata as well as identities. Snapshot

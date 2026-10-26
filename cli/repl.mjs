@@ -9,7 +9,7 @@ import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
-import { assumptionLines } from "../web/axiom-labels.mjs";
+import { assumptionLines, assumptionNote } from "../web/axiom-labels.mjs";
 import { moduleListing } from "../web/module-listing.mjs";
 import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
 import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
@@ -126,8 +126,12 @@ async function execute(line) {
       console.log(diagnosticLine({ severity: "warning", ...warning }));
     for (const evaluation of result.evaluations ?? [])
       console.log(`evaluate ${evaluation.name}${evaluation.module === main ? "" : ` (${evaluation.module})`}: ${evaluation.value}`);
-    for (const print of result.prints ?? [])
-      console.log(`print ${print.name}${print.module === main ? "" : ` (${print.module})`}: ${print.text}`);
+    for (const print of result.prints ?? []) {
+      const subject = `print ${print.name}${print.module === main ? "" : ` (${print.module})`}`;
+      console.log(`${subject}: ${print.text}`);
+      const note = assumptionNote(print.axioms, result.assumptionLabels, subject);
+      if (note) console.log(note);
+    }
     return;
   }
   if (!program) throw Error("Check a source first.");

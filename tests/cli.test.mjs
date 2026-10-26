@@ -74,6 +74,16 @@ test("CLI check reports every assumption a result relies on, a user's axiom amon
   const checked = run(["check", "uses.cubist"], { cwd: directory });
   assert.equal(checked.status, 0, checked.stderr);
   assert.match(checked.stdout, /kernel steps\nboth assumes LEM, assumed::Pointed\nagain assumes LEM, assumed::Pointed\n$/);
+  // A print is a result too: it is followed by the assumptions its term
+  // relies on, if any (#317's review round 2, finding 4).
+  await writeFile(join(directory, "prints.cubist"), "import classical_axioms;\nimport assumed;\n"
+    + "def plain := tt;\nprint(typeof(LEM(U0, Unit)));\nprint(inspect(Pointed));\nprint(typeof(plain));\n");
+  const printed = run(["check", "prints.cubist"], { cwd: directory });
+  assert.equal(printed.status, 0, printed.stderr);
+  assert.match(printed.stdout, /^print typeof at line 4: .*\nprint typeof at line 4 assumes LEM\n/m);
+  assert.match(printed.stdout, /^print inspect at line 5: .*\nprint inspect at line 5 assumes assumed::Pointed\n/m);
+  assert.match(printed.stdout, /^print typeof at line 6: Unit\n?$/m);
+  assert.doesNotMatch(printed.stdout, /line 6 assumes|plain assumes/);
 });
 // The H1 specification's 6.5: inspecting a declared type prints its signature
 // in normal form and its eliminator's clause types, and no kernel extension

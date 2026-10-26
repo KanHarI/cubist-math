@@ -98,6 +98,15 @@ await browserTest(async ({ browser, base }) => {
   assert.deepEqual(await inspector.locator("#inspect-constructors li code").allTextContents(), ["zero : UNat", "succ : UNat -> UNat"]);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?proof=unat&name=UNat$/);
   console.log("PASS reference excerpts: checked with their module, linked names, the module's workspace link");
+  // A print is reported with the assumptions its term relies on (#317's
+  // review round 2, finding 4).
+  await page.goto(new URL("reference/assumptions.html", base).href);
+  const printed = page.locator('pre > code[data-check="accept"]', { hasText: "print(inspect(LEM(U0)));" });
+  await printed.scrollIntoViewIfNeeded();
+  const printedBar = printed.locator("xpath=../following-sibling::div[contains(@class, 'example-bar')][1]").locator("span").first();
+  await printedBar.filter({ hasText: "print inspect" }).waitFor();
+  assert.match(await printedBar.textContent(), /print inspect at line 3: LEM\(U0\), assumes LEM$/);
+  console.log("PASS reference prints: each with the assumptions its term relies on");
   // The reference's REPL bar opens and closes.
   const dockToggle = page.locator(".repl-dock-toggle");
   await dockToggle.click();

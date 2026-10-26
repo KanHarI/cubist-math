@@ -9,7 +9,7 @@ import { replTranscript } from "../repl-session.mjs";
 import { moduleListing } from "../module-listing.mjs";
 import { moduleRoots } from "../module-resolution.mjs";
 import { WorkerRequests } from "../worker-requests.mjs";
-import { assumptionsOf } from "../axiom-labels.mjs";
+import { assumptionNote, assumptionsOf } from "../axiom-labels.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
@@ -255,9 +255,11 @@ function enhance(pre, code) {
     const links = result?.links ?? [];
     if (links.length) render(code, source, links);
     const evaluations = (result?.evaluations ?? []).map(evaluation => `${evaluation.name}: ${evaluation.value}`);
-    const prints = (result?.prints ?? []).map(print => `print ${print.name}: ${print.text}`);
+    // Each print, followed by the assumptions its term relies on, if any.
+    const prints = (result?.prints ?? []).map(print => [`print ${print.name}: ${print.text}`,
+      assumptionNote(print.axioms, result.assumptionLabels ?? {})].filter(Boolean).join(", "));
     const warnings = (result?.warnings ?? []).map(warning => `warning at line ${warning.line}: ${warning.message}`);
-    // Every assumption the example's checked results rely on.
+    // Every assumption the example's checked declarations rely on.
     const assumed = [...new Set((result?.outputs ?? []).filter(output => output.verified)
       .flatMap(output => assumptionsOf(output, result.assumptionLabels ?? {})))].sort();
     status.textContent = [links.length ? "Click a name to inspect its kernel term" : result?.error ? "Not checked" : "",

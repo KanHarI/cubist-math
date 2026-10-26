@@ -326,8 +326,8 @@ These lines are currently comments in the library, not admitted assumptions.
 `continuum_hypothesis` can assume `CH` and `GCH` so, with the families over
 `U < UU0` whose bodies live in `next(next(U))`, and that every result that
 uses one lists it; there they are labelled `continuum_axioms::CH` and
-`continuum_axioms::GCH`, and the library's own would be
-`continuum_hypothesis::CH` under the label rule below.
+`continuum_axioms::GCH`. Admitted in the library, they would be labelled
+`CH` and `GCH`, by the label rule below.
 The targets `DecidableCH -> LEM` and `DecidableGCH -> Choice` are follow-up
 proofs. [Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
 uses propositional resizing; adapting it must account explicitly for that
@@ -388,12 +388,18 @@ transition land together.
    parameter, takes the weak head of that application as the body, and
    refuses an `F` that is no type or family of types (E666). The checker
    assumes the closed type under the definition's own binding,
-   `module__Name`; the definition's value is that variable, and no kernel
-   definition is admitted. Labels are `LEM` and `Choice` for the axioms of
-   the library's own `classical_axioms`, as the module reader read it from
-   `library/` (`fromLibrary` in `web/module-resolution.mjs`), and
-   `module::Name` for any other, a module of that name from elsewhere or
-   edited included; an `expect_axioms` list names assumptions by their
+   `module__Name`, or under a fresh name where an earlier binder's
+   generated name already spells it (`checker.axioms` maps the binding to
+   its assumption); the definition's value is that variable, and no kernel
+   definition is admitted. An axiom of a library module is labelled by its
+   bare name, as `LEM` and `Choice` are, when the module reader read that
+   module and every module it imports, transitively, unedited from
+   `library/` (`fromLibrary` in `web/module-resolution.mjs`, combined over
+   the imports in `CubicalProgram.discover`); any other is labelled
+   `module::Name`, a module of a library module's name from elsewhere or
+   edited, or one that imports such a module, included, and
+   `tests/library.test.mjs` keeps the library's axiom names distinct; an
+   `expect_axioms` list names assumptions by their
    labels, the legacy builtins as `LEM[Truncate]` and `Choice[Truncate]`.
    A declaration's identity is `module__Name`, so two modules' spellings can
    meet in one, as `a::b__c` and `a__b::c` do: the later declaration is
@@ -402,14 +408,21 @@ transition land together.
    declaration publishes under another module's identity. The migration
    verifier compares an axiom by its assumed statement; an unchanged one
    stands for the original in its dependents' terms, types and assumption
-   lists, and a changed one is reported. A historical reader, which lets any
-   keyword be bound, reads `axiom` as the form where it stands, a
-   definition's whole value followed by its statement, and as a name
-   elsewhere, so current sources stay readable as baselines. Every report of
-   a result lists every assumption it relies on: the command line's `check`
-   (`recover assumes LEM`) and `inspect`, a REPL definition, a reference
-   example's status, the workspace's declarations and inspector, and
-   `expect_axioms`. `LEM` and `Choice` are no longer
+   lists, renamed only where it occurs free (`mapDefinitions` in
+   `tools/proof-migration.mjs`), and a changed one is reported. A historical
+   reader, which lets any keyword be bound, reads `axiom` as the form where
+   it stands, a definition's whole value followed by its statement, and as a
+   name elsewhere, so current sources stay readable as baselines; in a
+   source that binds or imports a name `axiom`, as sources before the form
+   could, it reads `axiom` as that name everywhere. Every report of a result
+   lists every assumption it relies on: the command line's `check`
+   (`recover assumes LEM`, and after each print `print typeof at line 4
+   assumes LEM`) and `inspect`, every REPL result (a definition, `typeof`, a
+   print), the workspace console's results (`let`, `typeof`, a term,
+   `inspect`, `witness`, through the local hypotheses they use), a reference
+   example's status and each of its prints, the workspace's declarations
+   and inspector, and `expect_axioms`; a result that relies on none is
+   reported alone. `LEM` and `Choice` are no longer
    reserved, so an import or declaration binds them before the builtin
    fallback. The aliases `excluded_middle_assumed` and
    `axiom_of_choice_assumed` were dropped, and `universe_automorphisms`'s two
@@ -487,11 +500,17 @@ transition land together.
   declarations and reviewed expectation lists. The newly added continuum
   modules currently admit none. The library tests continue checking each
   module's exact assumption list.
-- **Labels.** The canonical `classical_axioms` definitions display the bare
-  names `LEM` and `Choice`, only as read from `library/`; other axioms
-  display their module-qualified names, `module::Name`. Internal identities
-  include their defining module and declaration, aliases retain those
-  identities, and one identity names one declaration. In step 1 the legacy builtins are
+- **Labels.** **Decided on 2026-10-26** (the user): every library axiom is
+  labelled by its bare name, `LEM` and `Choice` and later `CH`, `GCH` and
+  the like, wherever its module and every module it imports are read
+  unedited from `library/`; user and
+  other non-library axioms display their module-qualified names,
+  `module::Name`. This replaced a table of `classical_axioms`'s two names.
+  The library's axiom names are distinct, which `tests/library.test.mjs`
+  checks; the legacy builtins' labels are reserved words or carry brackets.
+  Internal identities include their defining module and declaration,
+  aliases retain those identities, and one identity names one declaration.
+  In step 1 the legacy builtins are
   relabelled `LEM[Truncate]` and `Choice[Truncate]` for their remaining
   archive life, before any new axiom uses a bare canonical label.
 - **Module names.** `h1_truncation` and `h1_classical` keep their prefixes

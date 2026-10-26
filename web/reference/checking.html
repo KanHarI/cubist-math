@@ -99,7 +99,7 @@ def recover(P : U0, prop_ : IsProp(U0, P), nn : (P -&gt; Void) -&gt; Void) : P {
 }
 
 evaluate double(2) expecting 4;</code></pre>
-            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each declaration that relies on an assumption with every assumption it relies on, each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints each failure on a line of its own, as <code>error E606 at line 2:3 (wrong): Type mismatch: …</code>, and exits with a nonzero status. Each code has an entry among the <a href="errors.html#errors">error messages</a>.</p>
+            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each declaration that relies on an assumption with every assumption it relies on, each <a href="#warnings">warning</a>, each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result and each <a href="#print">print</a>, a print followed by the assumptions its term relies on, as <code>print typeof at line 4 assumes LEM</code>, and exits with status 0. A file that does not check completely prints each failure on a line of its own, as <code>error E606 at line 2:3 (wrong): Type mismatch: …</code>, and exits with a nonzero status. Each code has an entry among the <a href="errors.html#errors">error messages</a>.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
 recover assumes LEM
@@ -158,7 +158,7 @@ Expression: λ (n : UNat). (λ …)(n, n)</code></pre>
           </section>
           <section id="repl">
             <h2>The REPL</h2>
-            <p>The REPL checks Cubist one entry at a time. An entry is a definition, a <code>typeof</code> or <code>evaluate</code> request, an import, a <code>use</code>, or any declaration of a file. The kernel checks each entry as a small module that imports the entries before it, so later entries see earlier names. A definition is shown with its type, and, when it relies on assumptions, with every one it relies on, as <code>excluded assumes LEM</code>. A <code>use</code> selects a notation for every entry after it, as at a file’s top level, and entries after <code>check</code> read in the selections the checked file ends with. An entry that does not check changes nothing.</p>
+            <p>The REPL checks Cubist one entry at a time. An entry is a definition, a <code>typeof</code> or <code>evaluate</code> request, an import, a <code>use</code>, or any declaration of a file. The kernel checks each entry as a small module that imports the entries before it, so later entries see earlier names. Every result is shown with every assumption it relies on: a definition after its type, as <code>excluded assumes LEM</code>, and a type, a printed result or a console’s result after itself, as <code>assumes LEM</code>. A result that relies on none is shown alone. A <code>use</code> selects a notation for every entry after it, as at a file’s top level, and entries after <code>check</code> read in the selections the checked file ends with. An entry that does not check changes nothing.</p>
             <ul>
               <li>In the browser, the <a href="../repl.html">REPL page</a> starts from an empty program. Every page of this reference has a REPL bar at the bottom.</li>
               <li>In the <a href="../proof.html">proof workspace</a>, the console under a proof has the proof’s checked names loaded. After an edit is checked, the console replays its own definitions on the new version.</li>
@@ -193,6 +193,21 @@ E606: Type mismatch: found 7 = 7, expected x = 8.
 &lt;fun&gt;
 &gt; evaluate !!(fun (n : UNat) =&gt; x);
 fun (n : UNat) =&gt; 7</code></pre>
+            <p>A result that relies on an assumption is followed by every one it relies on, through the definitions it uses:</p>
+            <pre><code data-check="cli">$ node cli/repl.mjs
+&gt; import classical_axioms;
+Imported classical_axioms.
+&gt; def excluded : ExcludedMiddle(U0) := LEM(U0);
+excluded : ExcludedMiddle(U0)
+excluded assumes LEM
+&gt; typeof excluded;
+ExcludedMiddle(U0)
+assumes LEM
+&gt; print(typeof(excluded));
+ExcludedMiddle(U0)
+assumes LEM
+&gt; typeof tt;
+Unit</code></pre>
             <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. An evaluation shows the term's value as far as <a href="#print"><code>print(evaluate(…))</code></a> does: a function is <code>&lt;fun&gt;</code>, and <code>evaluate !!TERM;</code> shows its normal form. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
           </section>
           <section id="print">
