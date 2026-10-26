@@ -198,6 +198,25 @@ evaluate parse_answer(
   )
 ) expecting unat.(5);
 
+// A period needs a digit after it, so 1. and 1._2 are refused at the
+// period, 1; a literal starts with a digit, so .5 is refused at 0; and 0b
+// needs a binary digit, so it is refused at its b, as bnat_literal places it.
+# test(binary_rationals.trailing_period_position)
+evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(period, nil)))) expecting unat.(2);
+
+# test(binary_rationals.period_underscore_position)
+evaluate parse_answer(
+  bq_literal(cons(digit(unat.(1)), cons(period, cons(underscore, cons(digit(unat.(2)), nil)))))
+) expecting unat.(2);
+
+# test(binary_rationals.leading_period_position)
+evaluate parse_answer(bq_literal(cons(period, cons(digit(unat.(5)), nil)))) expecting unat.(1);
+
+# test(binary_rationals.empty_binary_position)
+evaluate parse_answer(bq_literal(cons(digit(unat.(0)), cons(lower(unat.(1)), nil)))) expecting unat.(
+  2
+);
+
 # test(binary_rationals.fraction_answer)
 evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(slash, cons(digit(unat.(2)), nil))))) expecting unat.(
   0
