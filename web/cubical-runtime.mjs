@@ -7,6 +7,12 @@ export class RuntimeError extends Error {
   constructor(kind, message) { super(message); this.kind = kind; }
 }
 const fail = (kind, message) => { throw new RuntimeError(kind, message); };
+// The declared types whose values this fragment executes: untruncated, with
+// no path constructor and no generated one (kernel.signature's record). A
+// value of any other is refused when its constructor or eliminator is
+// demanded, with this reason.
+export const ordinarySignature = s => s.modifier === 0 && s.constructors.every(c => c.dimensions === 0 && !c.generated);
+export const higherDataRefused = "Higher and truncated data execution is not implemented.";
 // The term binders of ck_term_binder: each binds its payload in its second child.
 const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 const yieldTask = typeof setImmediate === "function" ? () => new Promise(setImmediate)
@@ -82,7 +88,7 @@ function snapshot(kernel, judgement, budget) {
     const s = kernel.signature(n.payload);
     if (!s.admitted) fail("input", "Runtime execution requires an admitted signature.");
     budget.allocate(1 + s.constructors.length);
-    const ordinary = s.modifier === 0 && s.constructors.every(c => c.dimensions === 0 && !c.generated);
+    const ordinary = ordinarySignature(s);
     const constructors = s.constructors.map(c => {
       pending.push(c.type);
       const arities = [];
@@ -159,7 +165,7 @@ export class RuntimeQuery {
   }
   #signature(index) {
     const s = this.#image.signatures.get(index);
-    if (!s?.ordinary) fail("unsupported", "Higher and truncated data execution is not implemented.");
+    if (!s?.ordinary) fail("unsupported", higherDataRefused);
     return s;
   }
   #descriptor(signature, index) {

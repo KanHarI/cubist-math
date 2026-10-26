@@ -12,6 +12,7 @@ import { checkProgram } from "./check-program.mjs";
 import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
+import { Translator } from "../web/translator/translate.mjs";
 
 // Evaluation demand marks (docs/roadmaps/historical/evaluation-demand-marks.md):
 // `!` asks for a part's weak head, `!!` for its normal form, stuck
@@ -451,7 +452,9 @@ print(evaluate(hundreds(250)));`, { module, options: { runtimeEvaluation } });
     assert.ok(spent.at(-1) <= 4100, `the walk asked ${spent.at(-1)} queries`);
     assert.match(result.prints[0].text, /^cons\(100, cons\(100, /);
   }
-  assert.equal(spent[0], spent[1]);
+  // The runtime's walk asks the type's weak head first, which decides
+  // whether the runtime is asked at all.
+  assert.equal(spent[0], spent[1] + 1);
 });
 
 test("the value form shows no part deeper than the kernel's terms, however deep the value", async t => {
@@ -668,12 +671,17 @@ for (const setup of Object.keys(corpus.setups)) {
       at.set(lines.join("\n").split("\n").length + 1, [item, "kernel print"]);
       lines.push(`print(evaluate(probe_${index}));`);
     });
-    const { program, evaluations } = recordedProgram(t), { checker } = program, runtimeQuery = checker.runtimeQuery.bind(checker);
-    // Only a value form asks for a runtime query: the first of each pair of
-    // prints is the runtime's, the second the kernel's alone.
+    const { program, evaluations } = recordedProgram(t), valueFormOf = Translator.prototype.valueFormOf;
+    // Of each pair of value forms, the first may ask the runtime and the
+    // second is the kernel's queries' alone.
     let turn = 0;
-    checker.runtimeQuery = judgement => turn++ % 2 === 0 ? runtimeQuery(judgement) : null;
-    const result = await program.check(lines.join("\n"), "main");
+    Translator.prototype.valueFormOf = function (...args) {
+      this.checker.runtimeEvaluation = turn++ % 2 === 0;
+      try { return valueFormOf.apply(this, args); } finally { this.checker.runtimeEvaluation = true; }
+    };
+    let result;
+    try { result = await program.check(lines.join("\n"), "main"); }
+    finally { Translator.prototype.valueFormOf = valueFormOf; }
     const outcome = new Map([...result.evaluations.map(evaluation => [evaluation.start, evaluation.value]),
       ...result.prints.map(print => [print.start, print.text]),
       ...result.gaps.filter(gap => gap.directive).map(gap => [gap.declarationStart, { refused: gap.code }])]);
@@ -700,6 +708,8 @@ for (const setup of Object.keys(corpus.setups)) {
         const by = computed.get(runtime);
         if (by.by === "runtime") valueForms.runtime++;
         else valueForms.unsupported[by.unsupported] = (valueForms.unsupported[by.unsupported] ?? 0) + 1;
+        // A fallback decided from the type takes no snapshot.
+        if (by.by === "kernel" && !by.runtime) valueForms.early++;
         continue;
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
@@ -745,18 +755,21 @@ for (const setup of Object.keys(corpus.setups)) {
 }
 // What computed the value forms above, the runtime or, for the demand it
 // reports unsupported, the kernel's head queries. The four assumptions are
-// refused before anything is computed.
-const valueForms = { runtime: 0, unsupported: {} };
+// refused before anything is computed. Of the fallbacks at a higher or
+// truncated sort, 18 are values of such a sort, decided from their types
+// before any snapshot, and 16 contain one.
+const valueForms = { runtime: 0, unsupported: {}, early: 0 };
 test("the runtime computes the value forms of the constructs on ordinary data", () => {
   assert.equal(valueForms.runtime, 135);
   assert.deepEqual(valueForms.unsupported, {
-    "Higher and truncated data execution is not implemented.": 29,
-    "Runtime execution of Comp is not implemented.": 20,
-    "Runtime execution of PApp is not implemented.": 4,
+    "Higher and truncated data execution is not implemented.": 34,
+    "Runtime execution of Comp is not implemented.": 17,
+    "Runtime execution of PApp is not implemented.": 2,
     "Runtime η of a path abstraction is not implemented.": 3,
     "Runtime execution of Glue is not implemented.": 1,
     "Runtime execution of Unglue is not implemented.": 1,
   });
+  assert.equal(valueForms.early, 18);
 });
 
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/

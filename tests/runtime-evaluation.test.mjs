@@ -67,9 +67,51 @@ print(evaluate(typed(Unit and Circle, (tt, base))));
   assert.ok(shared.steps < 1.5 * single.steps, `the shared pair took ${shared.steps} steps, one number ${single.steps}`);
   assert.equal(circle.unsupported, "Higher and truncated data execution is not implemented.");
   // Each observation spends the query of fuel the head query it stands for
-  // spends.
+  // spends, and the type's weak head, which decides whether to ask the
+  // runtime, one more.
   const fuel = result => result.directiveFuel.filter(directive => directive.kind === "print").map(directive => directive.searchFuel.queries);
-  assert.deepEqual(fuel(runtime).slice(0, 5), fuel(kernel).slice(0, 5));
+  assert.deepEqual(fuel(runtime).slice(0, 5), fuel(kernel).slice(0, 5).map(queries => queries + 1));
+});
+
+// A value of a declared type the runtime does not execute, as a quotient or
+// a higher inductive type, has such a constructor or a composition at its
+// weak head: the fallback is decided from the type, with its reason and no
+// snapshot. A value whose type is ordinary still asks the runtime, which
+// reports the same demand where it meets it.
+const early = { by: "kernel", unsupported: "Higher and truncated data execution is not implemented." };
+test("a value of a quotient or higher sort falls back before the snapshot, and ordinary data does not", async t => {
+  const { runtime, kernel } = await bothWays(t, `import quotients;
+use unat;
+inductive Circle : U0 {
+  base;
+  loop : base = base;
+}
+def R(m, n : UNat) : U0 := Unit;
+def three : Quotient(U0, UNat, R) := class(3);
+print(evaluate(three));
+print(evaluate(base));
+print(evaluate(typed(Quotient(U0, UNat, R) and Unit, (three, tt))));
+print(evaluate(typed(UNat and Unit, (3, tt))));
+`);
+  assert.deepEqual(outcomes(runtime), outcomes(kernel));
+  assert.deepEqual(outcomes(runtime), ["class(3)", "base", "(class(3), tt)", "(3, tt)"]);
+  const [quotient, circle, pair, data] = runtime.prints.map(print => print.valueForm);
+  assert.deepEqual([quotient, circle], [early, early]);
+  // A pair's type decides nothing: the runtime is asked, and meets the
+  // quotient's constructor itself.
+  assert.equal(pair.by, "kernel");
+  assert.equal(pair.unsupported, early.unsupported);
+  assert.ok(pair.runtime.snapshotNodes > 0);
+  assert.equal(data.by, "runtime");
+});
+
+test("a binary rational's value form goes to the kernel's queries before any snapshot", async t => {
+  const { result } = await checkProgram(t, `import binary_rationals;
+use binary_rationals;
+print(evaluate(2/3 + 1/6));
+`, { module });
+  assert.deepEqual(result.gaps, []);
+  assert.deepEqual(result.prints[0].valueForm, early);
 });
 
 test("the runtime shows a value whose weak head the kernel builds too deep, as the reference shows", async t => {

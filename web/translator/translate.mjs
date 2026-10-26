@@ -474,9 +474,19 @@ export class Translator {
   // is evidence: the kernel's queries certify nothing either. Which
   // computed it is recorded on the print directive (valueFormRecord), with
   // the runtime's counters, and on a fallback the demand it did not support.
+  // The fallback is decided before the runtime's snapshot where the term's
+  // type shows that the first head is demand the runtime refuses, as for a
+  // value of a quotient: the same decision, at the cost of the type's weak
+  // head, a query of the evaluation's fuel, and recorded with no runtime
+  // counters.
   valueFormOf(result,scope,node,kernel) {
     let query=null,unsupported=null;
     try {
+      if(this.checker.runtimeEvaluation!==false) {
+        scope.spend("queries");
+        const refused=this.checker.runtimeRefusal(result.typeHandle);
+        if(refused)throw new RuntimeError("unsupported",refused);
+      }
       query=this.checker.runtimeQuery(result.judgement);
       if(query) {
         const value=valueForm(query.root,this.runtimeQueries(scope,query,kernel),node);
@@ -491,7 +501,7 @@ export class Translator {
         if(error.kind==="deadline")this.checker.kernel.checkDeadline();
         throw scope.unit.locate(runtimeStop(error),node);
       }
-      unsupported={unsupported:error.message,runtime:query?.stats};
+      unsupported={unsupported:error.message,...query?{runtime:query.stats}:{}};
     } finally {query?.dispose();}
     const value=valueForm(result.expression,kernel,node);
     this.valueFormRecord={by:"kernel",...unsupported};
