@@ -141,7 +141,7 @@ between columns.
 | Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done. Since 2026-10-17 a child theory can implement inherited operations and laws (#268), and the algebra lattice has ordered-ring and ordered-field interfaces (#267) | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](high-level-abstractions/categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
 | Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI, green remotely since #264; agreed RC refactoring and source-test migrations in #243–#263; one naming pass for every display (#311, #312); `module::name` references, which nothing shadows (#313) | Preserve the delivered contracts; no CB or agreed RC package remains. Display read-back defects in [pr-312-todo](../reports/pr-312-todo.md) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305; folded normal forms, `!!` folded and `!!!` full (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284); a first internal EVAL3/EVAL4 runtime query for ordinary data (#289), which no REPL uses yet | EVAL3/EVAL4 integration into the REPLs, EVAL5's typed readback, EVAL6–EVAL8 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305; folded normal forms, `!!` folded and `!!!` full (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284); a first EVAL3/EVAL4 runtime query for ordinary data (#289), which since 2026-10-26 computes the REPLs' value forms, falling back once to the kernel's head queries | EVAL3/EVAL4's constructor patterns, quotient point constructors and EVAL4's open items, EVAL5's typed readback, EVAL6–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's removal of the legacy truncation assumptions through `axiom` definitions (steps 1–4 scheduled on 2026-10-26; step 5 with I0.5); a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Simplicial types | Design only, proposed on 2026-10-24; `x ->[C] y` spelling agreed | ST0–ST6: preservation/model design, shared ordinary arrow syntax, separate directed shapes/extensions, synthetic categories and later mathematical bridges |
@@ -755,9 +755,10 @@ its inverse contracts by the user's decision of 2026-10-26. The default
 2026-10-26). Full normalization of the inverses remains a target of the
 [debugging plan](runtime/rational-normalization-debug-plan.md), not a gate.
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a first internal
-EVAL3/EVAL4 runtime query for ordinary data, which no REPL uses yet. Its
-signatures must be untruncated, without path constructors, so quotient values
-such as `BInt`'s and `BQ`'s are refused as unsupported. EVAL5's observation
+EVAL3/EVAL4 runtime query for ordinary data. Since 2026-10-26 the REPLs
+compute value forms through it, falling back once to the kernel's head
+queries on unsupported demand. Its signatures must be untruncated, without
+path constructors, so quotient values such as `BInt`'s and `BQ`'s fall back. EVAL5's observation
 contract shipped as the demand marks and folded normal forms. The rest of
 EVAL3–EVAL8 remains planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
@@ -964,6 +965,30 @@ Each step lands in focused PRs under the review rule above.
       and `BQ` values evaluate. User-facing use also needs EVAL4's open items:
       a responsive snapshot copy, memory calibration and closed-environment
       pruning.
+      - **Value forms, done on 2026-10-26**
+        ([report](../reports/runtime-repl-evaluation.md)): `evaluate e` in
+        the CLI REPL, the REPL page, the reference pages' REPL bar and the
+        proof workspace's console, and `print(evaluate(e))` in files, are
+        observed by the runtime. Where it reports unsupported demand, the
+        whole value form is computed again by the kernel's head queries,
+        once. Over the demand marks' 197 constructs the runtime computes 135
+        value forms, each the kernel's. The contextual console shows a weak
+        head in its context and does not compute value forms; it is
+        unchanged. `!`, `!!`, `!!!`, `witness` and every `evaluate …
+        expecting` stay on the kernel's queries. The runtime runs inside the
+        check, synchronously, as the kernel's queries do, bounded by 100M
+        steps, 20M allocated cells and a time limit, the declaration's or 30
+        seconds a part; a responsive snapshot matters only for asynchronous
+        use. A value whose type is a quotient or another higher or truncated
+        sort, as a binary rational's, falls back before the runtime's
+        snapshot, from its type's weak head.
+      - **Decided on 2026-10-26:** constructor patterns stay on the kernel's
+        queries until typed readback (4) and the applicable EVAL8 review: a
+        pattern's verdict is a check, which the runtime's observations may
+        not decide, and its expression leaves need kernel terms for runtime
+        parts. A stop at the runtime's limits stays reported, not retried;
+        sharing a call written twice, which the kernel's weak-head cache
+        shares by syntax and the runtime computes twice, is EVAL4 work.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. `!!`, `!!!`, exact expected values and a
