@@ -612,10 +612,13 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // One closed example of every construct with a term to evaluate, and its
 // weak head on main, from the demand marks note. Each evaluates under !_,
 // shown as its recorded head, under !!_, and printed, as its value form,
-// except the assumptions, which evaluation refuses. Three examples whose full normal forms cost about 30
-// seconds each are not evaluated under !!!_; the DM5 report
-// (docs/roadmaps/historical/evaluation-demand-marks/report.md) records that
-// they complete. Their folded normal forms, under !!_, are quick.
+// except the assumptions, which evaluation refuses. Three examples whose
+// full normal forms are slow are not evaluated under !!!_: A46b's costs
+// about 30 seconds, and since B8's direct proof of prop_type_is_set the
+// literals B62 and B63 about 11.6M ticks and 5 to 10 seconds each. The DM5
+// report (docs/roadmaps/historical/evaluation-demand-marks/report.md)
+// records that they complete. Their folded normal forms, under !!_, are
+// quick.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/historical/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);

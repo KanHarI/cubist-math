@@ -52,27 +52,23 @@ computable def prop_path(U < UU0, x, y : Prop(U), f : x.1 -> y.1, g : y.1 -> x.1
   );
 }
 
-// The propositions form a set. A path between two is a path between their
-// types, a proposition, with a path over it between their evidence, which
-// is one too.
+// The propositions form a set. Two paths between two propositions have
+// paths between their types, equal by univalence since the types are
+// propositions, and paths over those between their evidence, equal over
+// that equality since evidence lives in a proposition.
 computable def prop_type_is_set(U < UU0) : IsSet(next(U), Prop(U)) {
-  intro x, y;
-  exact retract_has_level(
-    next(U), 0, exists p : x.1 = y.1. PathP(fun (i : Interval) => IsProp(U, p @ i), x.2, y.2),
-    x = y, fun (w : x = y) => (path i => (w @ i).1, path i => (w @ i).2),
-    fun (q : exists p : x.1 = y.1. PathP(fun (i : Interval) => IsProp(U, p @ i), x.2, y.2)) => path i => (
-      q.1 @ i, q.2 @ i
-    ), fun (w : x = y) => refl(w),
-    sigma_has_level(
-      next(U), 0, x.1 = y.1,
-      fun (p : x.1 = y.1) => PathP(fun (i : Interval) => IsProp(U, p @ i), x.2, y.2),
-      path_into_prop_is_prop(U, x.1, y.1, y.2),
-      fun (p : x.1 = y.1) => pathp_has_level(
-        next(U), 0, U, fun (X : U) => IsProp(U, X),
-        fun (X : U) => prop_is_set(next(U), IsProp(U, X), is_prop_is_prop(U, X)), x.1, x.2, y.1, p,
-        y.2
-      )
-    )
+  intro x, y, v, w;
+  let types := path_into_prop_is_prop(U, x.1, y.1, y.2, path i => (v @ i).1, path i => (w @ i).1);
+  exact path j => path i => (
+    types @ j @ i,
+    prop_over(
+      next(U), x.1 = y.1,
+      fun (q : x.1 = y.1) => PathP(fun (k : Interval) => IsProp(U, q @ k), x.2, y.2),
+      fun (q : x.1 = y.1) => prop_over_unique(
+        next(U), U, fun (X : U) => IsProp(U, X), fun (X : U) => is_prop_is_prop(U, X), x.1, y.1, q,
+        x.2, y.2
+      ), path k => (v @ k).1, path k => (w @ k).1, types, path k => (v @ k).2, path k => (w @ k).2
+    ) @ j @ i
   );
 }
 

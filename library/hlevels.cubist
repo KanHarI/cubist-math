@@ -215,6 +215,22 @@ computable def prop_over(
     comp(fun (j : Interval) => B(p @ (i | ~j)), d, face(i, 1, fun (j : Interval) => d))
   ) @ i;
 
+// Two paths over one path in a family of propositions agree: fill the square
+// in the family, its sides the proposition's own paths.
+computable def prop_over_unique(
+  U < UU0, A : U, B : A -> U, h : forall a : A. IsProp(U, B(a)), a, c : A, p : a = c, b : B(a),
+  d : B(c)
+) :
+  IsProp(U, PathP(fun (i : Interval) => B(p @ i), b, d)) {
+  intro q, t;
+  exact path j => path i => comp(
+    fun (k : Interval) => B(p @ i), q @ i, face(i, 0, fun (k : Interval) => h(a, b, b) @ k),
+    face(i, 1, fun (k : Interval) => h(c, d, d) @ k),
+    face(j, 0, fun (k : Interval) => h(p @ i, q @ i, q @ i) @ k),
+    face(j, 1, fun (k : Interval) => h(p @ i, q @ i, t @ i) @ k)
+  );
+}
+
 // Over a path of A, a family whose values have level n + 1 has paths of
 // level n between its elements: carried along the path from its start, as
 // path induction does, a path over a point is a path in its fiber.
