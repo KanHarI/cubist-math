@@ -150,6 +150,20 @@ evaluate parse_answer(
   )
 ) expecting unat.(4);
 
+// A decimal's underscore counts as a character: 1.2_3x refuses the x, at 5.
+# test(binary_rationals.decimal_underscore_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)),
+      cons(
+        period,
+        cons(digit(unat.(2)), cons(underscore, cons(digit(unat.(3)), cons(lower(unat.(23)), nil))))
+      )
+    )
+  )
+) expecting unat.(6);
+
 // The denominator's refusal is placed after the numerator, its underscore
 // and the slash: 1_0/2a refuses the a, at 5.
 # test(binary_rationals.denominator_letter_position)
