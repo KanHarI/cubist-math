@@ -3,11 +3,13 @@ import { parse, tokenize, languageKeywords } from "./parser.mjs";
 // The archived over statements all closed with one exact expression. Read
 // those historical proofs as lift expressions, preserving their comments.
 // Normal checking never opts into the retired statement grammar.
-export function currentLiftSyntax(source) {
+// `bindable` lists the words the source's revision did not reserve
+// (legacy-syntax.mjs, historicalKeywords).
+export function currentLiftSyntax(source, bindable = languageKeywords) {
   if (!/\bover\b/.test(source)) return source;
   const tokens = tokenize(source);
   if (!tokens.some(token => token.text === "over")) return source;
-  const syntax = parse(source, false, { bindable: languageKeywords, historicalOver: true });
+  const syntax = parse(source, false, { bindable, historicalOver: true });
   const indices = new Map(tokens.map((token, index) => [token.start, index]));
   const edits = [], seen = new Set();
   const visit = node => {

@@ -3,7 +3,7 @@ import { termBinders } from "./translator/term-shape.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
-import { NameSupply, localName } from "./translator/names.mjs";
+import { NameSupply, assumptionMark, localName } from "./translator/names.mjs";
 import { sourceText } from "./cubical-source-text.mjs";
 import { contextDimensions, displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
@@ -183,8 +183,12 @@ export class NativeCubicalElaborator {
     }
   }
   context(local = new Map()) { return new Map([...this.assumptions, ...local]); }
-  assume(name, type, avoid = new Set()) {
-    while (avoid.has(name) || this.kernel.names.has(name)) name += "_";
+  // An assumption is named by its stem and the assumption mark, a name
+  // apart from every other (names.mjs, assumptionMark); a second assumption
+  // of one stem, after a rollback, takes another.
+  assume(stem, type) {
+    let name = `${stem}${assumptionMark}`;
+    while (this.kernel.names.has(name)) name += "_";
     const dimensions = this.dimensions;
     let checked;
     try { this.dimensions = new Map(); checked = this.infer(type); }

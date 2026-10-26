@@ -106,37 +106,12 @@ export function reservedReferences(source) {
 }
 
 // `bindable` lists reserved words a historical source may still bind
-// (web/cubist/legacy-syntax.mjs). `axiomNames` says whether the word axiom
-// is a name, as a historical source of a time before the axiom form may
-// bind and call it, rather than the form. A reader that may bind `axiom` and
-// does not say decides by the source: if it names `axiom` anywhere, as a
-// declaration, a binder or a reference, or reads only so, the word is that
-// name throughout; otherwise it is the form, as current sources write it.
-// A reader that knows an imported declaration of that name says so
-// (renameReservedBindings).
-export function parse(source, typeOnly = false, options = {}) {
-  const { bindable = [], axiomNames } = options;
-  if (axiomNames === undefined && new Set(bindable).has("axiom") && /\baxiom\b/.test(source)) {
-    let current;
-    try { current = parseSource(source, typeOnly, { ...options, axiomNames: false }); }
-    catch { return parseSource(source, typeOnly, { ...options, axiomNames: true }); }
-    return namesAxiom(current) ? parseSource(source, typeOnly, { ...options, axiomNames: true }) : current;
-  }
-  return parseSource(source, typeOnly, options);
-}
-// Whether a syntax tree names `axiom`: a token of it, which only a name, a
-// binder or a reference is where the word is the form.
-const namesAxiom = tree => {
-  const seen = new WeakSet(), visit = node => {
-    if (!node || typeof node !== "object" || seen.has(node)) return false;
-    seen.add(node);
-    if (node.text === "axiom" && node.kind === undefined) return true;
-    return Object.values(node).some(visit);
-  };
-  return visit(tree);
-};
-function parseSource(source, typeOnly, { bindable = [], historicalTransport = false, historicalOver = false, axiomNames = false } = {}) {
-  const ts = tokenize(source), bindableNames = new Set(bindable);
+// (web/cubist/legacy-syntax.mjs), the words its revision did not reserve.
+// Before the axiom form, no revision gave `axiom` any meaning: a reader of
+// such a revision lists it, and the word is then a name wherever it stands,
+// as it was then (historicalKeywords).
+export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false, historicalOver = false } = {}) {
+  const ts = tokenize(source), bindableNames = new Set(bindable), axiomNames = bindableNames.has("axiom");
   let i = 0,
     depth = 0,
     // Whether a demand mark may start the next expression: in an
@@ -536,8 +511,8 @@ function parseSource(source, typeOnly, { bindable = [], historicalTransport = fa
     // `axiom F` states an assumption of F's type, or of its family's body
     // closed over the family's parameters. It is the whole value of a
     // top-level definition without parameters, which names it:
-    // def LEM := axiom ExcludedMiddle;. A historical source may read the
-    // word as a name instead (`axiomNames`, parse).
+    // def LEM := axiom ExcludedMiddle;. A source of a revision before the
+    // form reads the word as a name instead (`bindable`, parse).
     const axiomAllowed = axiomPosition;
     axiomPosition = false;
     if (t.text === "axiom" && !axiomNames) {

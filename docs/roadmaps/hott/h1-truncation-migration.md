@@ -387,15 +387,21 @@ transition land together.
    its type, applying `F` to a fresh variable for each universe or ordinary
    parameter, takes the weak head of that application as the body, and
    refuses an `F` that is no type or family of types (E666). The checker
-   assumes the closed type under the definition's own binding,
-   `module__Name`, or under a fresh name where an earlier binder's
-   generated name already spells it (`checker.axioms` maps the binding to
-   its assumption); the definition's value is that variable, and no kernel
-   definition is admitted. An axiom of a library module is labelled by its
+   assumes the closed type under the definition's binding with the
+   assumption mark, `module__Name#`: every assumption's name carries the
+   mark, which no identifier, declaration identity, generated or kernel
+   name holds (`assumptionMark` in `web/translator/names.mjs`), so no
+   declaration, binder or generated name can spell, capture or overwrite
+   one (`checker.axioms` maps the binding to its assumption); the
+   definition's value is that variable, and no kernel definition is
+   admitted. An axiom of a library module is labelled by its
    bare name, as `LEM` and `Choice` are, when the module reader read that
    module and every module it imports, transitively, unedited from
    `library/` (`fromLibrary` in `web/module-resolution.mjs`, combined over
-   the imports in `CubicalProgram.discover`); any other is labelled
+   the imports in `CubicalProgram.discover`). A replay of a check keeps the
+   provenance it recorded (`ReplayInputs`), and the workbench asks which
+   transferred sources are the library's text (`libraryProvenance`); any
+   other is labelled
    `module::Name`, a module of a library module's name from elsewhere or
    edited, or one that imports such a module, included, and
    `tests/library.test.mjs` keeps the library's axiom names distinct; an
@@ -410,16 +416,22 @@ transition land together.
    stands for the original in its dependents' terms, types and assumption
    lists, renamed only where it occurs free (`mapDefinitions` in
    `tools/proof-migration.mjs`), and a changed one is reported. A historical
-   reader, which lets any keyword be bound, reads `axiom` as the form where
-   it stands, a definition's whole value followed by its statement, and as a
-   name elsewhere, so current sources stay readable as baselines; in a
-   source that binds or imports a name `axiom`, as sources before the form
-   could, it reads `axiom` as that name everywhere. Every report of a result
+   reader reads `axiom` as the source's revision did (`historicalKeywords`
+   in `web/cubist/legacy-syntax.mjs`; the verifier reads the revision off
+   its parser): a revision with the form reserves the word and reads the
+   form, and current sources stay readable as baselines; before it, no
+   Cubist revision gave `axiom` any meaning, so every occurrence is a name,
+   renamed with its declaration wherever its binding comes from, a selected
+   model's member or an import included. A qualified reference,
+   `module::name`, follows its declaration's renaming for every renamed
+   word, as `provider::left` did not on main. Every report of a result
    lists every assumption it relies on: the command line's `check`
    (`recover assumes LEM`, and after each print `print typeof at line 4
    assumes LEM`) and `inspect`, every REPL result (a definition, `typeof`, a
    print), the workspace console's results (`let`, `typeof`, a term,
-   `inspect`, `witness`, through the local hypotheses they use), a reference
+   `inspect`, `witness`, `/goal`, `/locals`, `/prove`, through the local
+   hypotheses they use; the console refuses a result that does not say), a
+   reference
    example's status and each of its prints, the workspace's declarations
    and inspector, and `expect_axioms`; a result that relies on none is
    reported alone. `LEM` and `Choice` are no longer

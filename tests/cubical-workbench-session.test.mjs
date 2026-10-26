@@ -1,8 +1,13 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
 import { WorkbenchSession } from "../web/cubical-workbench-session.mjs";
+import { libraryProvenance } from "../web/module-resolution.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 import { traceSnapshot } from "../web/cubical-workbench-trace.mjs";
 
 const module = await createCubical();
@@ -172,4 +177,26 @@ test("workbench normalization keeps a named function folded and checks the resul
   assert.equal(next.view.expression.first.tag, "DefRef");
   assert.equal(next.view.expression.second.tag, "Point");
   assert.equal(session.program.checker.driver.graph.judgement(next.checked.judgement).kind, "typing");
+});
+
+// A transfer's sources are text no reader placed: the workbench asks which
+// are the library's, as library/ holds them, so a library axiom keeps its
+// bare name, and an edited import, or no way to ask, leaves it qualified
+// (#317's review round 3, finding 4).
+test("a transfer keeps the library's labels only for the library's own text", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.check("import classical_axioms;\ndef excluded : ExcludedMiddle(U0) := LEM(U0);", "workbench");
+  const exported = program.export("workbench__excluded");
+  const fromLibrary = libraryProvenance(moduleListing, path => readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+  const label = async (sources, options) => {
+    const session = new WorkbenchSession(module, options);
+    t.after(() => session.dispose());
+    const loaded = await session.load({ ...exported, sources });
+    return Object.values(loaded.view.symbols).filter(symbol => symbol.kind === "axiom").map(symbol => symbol.name).sort();
+  };
+  assert.deepEqual(await label(exported.sources, { fromLibrary }), ["Choice", "LEM"]);
+  assert.deepEqual(await label(exported.sources, {}), ["classical_axioms::Choice", "classical_axioms::LEM"]);
+  const edited = { ...exported.sources, h1_truncation: `${exported.sources.h1_truncation}\ndef extra := tt;\n` };
+  assert.deepEqual(await label(edited, { fromLibrary }), ["classical_axioms::Choice", "classical_axioms::LEM"]);
 });

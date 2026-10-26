@@ -32,13 +32,13 @@ function assumptionType(name, universe, truncate) {
 // keeps the archive's signature, into U0. Excluded middle and choice over it
 // are labelled LEM[Truncate] and Choice[Truncate], apart from the library's
 // axioms LEM and Choice over Trunc, so that a program using both lists both.
-export function libraryAssumption(checker,name,context=new Map()) {
+export function libraryAssumption(checker,name) {
   const level='assumption_level',universe=U(V(level));
   const label=['LEM','Choice'].includes(name) ? `${name}[Truncate]` : name;
   if(checker.libraryAssumptions.has(label))return checker.libraryAssumptions.get(label);
-  const truncate=()=>({tag:'LApp',fn:libraryAssumption(checker,'Truncate',context),level:V(level)});
+  const truncate=()=>({tag:'LApp',fn:libraryAssumption(checker,'Truncate'),level:V(level)});
   const type={tag:'LPi',name:level,body:assumptionType(name,universe,truncate)};
-  const value=checker.assume(`__assumption_${name}`,type,new Set(context.keys()));
+  const value=checker.assume(`__assumption_${name}`,type);
   checker.assumptionOrigins.set(value.name,{kind:'generic-assumption',name,implementation:'web/cubical-assumptions.mjs'});
   checker.libraryAssumptions.set(label,value);
   checker.assumptionLabels.set(value.name,label);
@@ -83,12 +83,11 @@ export function axiomAssumption(checker,{module,declaration,binding,library=fals
   const closed=binders.reduceRight((body,binder)=>binder.domain ? pi(binder.name,binder.domain,body)
     : {tag:'LPi',name:binder.name,body},body);
   scope.spend('queries');
-  // The assumption is named by the definition's identity, unless that
-  // spelling is already a kernel symbol, as an earlier binder's generated
-  // name may be: then a fresh one, so that a context entry never shares a
-  // binder's name. `axioms` maps the identity to it.
+  // The assumption is named by the definition's identity with the
+  // assumption mark, which no declaration, binder or generated name holds
+  // (names.mjs, assumptionMark). `axioms` maps the identity to it.
   const label=library ? declaration : `${module}::${declaration}`;
-  const value=checker.assume(binding,closed,new Set(scope.context.keys()));
+  const value=checker.assume(binding,closed);
   checker.axioms.set(binding,value.name);
   checker.assumptionOrigins.set(value.name,{kind:'axiom',module,declaration,binding});
   checker.libraryAssumptions.set(label,value);

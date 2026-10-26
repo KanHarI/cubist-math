@@ -77,7 +77,7 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   const { program } = await checkTestModule(t, "assembly_generic_assumptions", { module });
   // The command line and the workbench check through the instruction kernel;
   // the term checker has no level rules.
-  const view = program.inspect("__assumption_Choice");
+  const view = program.inspect("__assumption_Choice#");
   const checked = program.checker.checkView(view.expression, view.type, view.context.map(entry => [entry.name, entry.type]), new Map(view.dimensions));
   assert.equal(view.expression.tag, "Var");
   assert.equal(view.type.tag, "LPi");
@@ -87,7 +87,7 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   for (const level of [0, 1]) {
     const use = program.inspect(`assembly_generic_assumptions__choice${level}`).expression;
     assert.equal(use.tag, "LApp");
-    assert.deepEqual([use.fn, use.level], [{ tag: "Var", name: "__assumption_Choice" }, level]);
+    assert.deepEqual([use.fn, use.level], [{ tag: "Var", name: "__assumption_Choice#" }, level]);
   }
   // One assumption, whatever levels it is used at (G0 Q4).
   // Choice's statement mentions Truncate.

@@ -100,7 +100,7 @@ function Truncate({t,builtin,n,scope,tr,inferred}) {
   scope.spend("queries");
   // One generic assumption each, for the universes below UU0.
   if(!finiteLevel(universe.level))throw scope.unit.locate(Error(`${builtin} holds only for universes below UU0.`),n.args[0]);
-  let fn=T.levelApply(libraryAssumption(t.checker,builtin,scope.context),universe.level);
+  let fn=T.levelApply(libraryAssumption(t.checker,builtin),universe.level);
   for(const arg of n.args.slice(1)) {
     const type=scope.nf(inferred(fn).type);
     if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);

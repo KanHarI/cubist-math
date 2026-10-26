@@ -6,7 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
-import { parse } from "../web/cubist/parser.mjs";
+import { parse, scan } from "../web/cubist/parser.mjs";
+import { assumptionMark, isAssumptionName } from "../web/translator/names.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { observeTestCases } from "../web/cubist/test-pragmas.mjs";
 import { listedReader } from "../web/module-resolution.mjs";
@@ -127,20 +128,23 @@ test("definitions expose their checked bodies, and a refused one admits nothing"
 test("an axiom is one assumption of its family's closed body, shared by its uses and listed by its label", async t => {
   const { program, result } = await checkTestModule(t, "declarations_axioms");
   const binding = "declarations_axioms__Shift", get = name => result.outputs.find(output => output.name === name);
-  // The definition names the assumption, a context entry and no kernel definition.
+  // The definition names the assumption, a context entry and no kernel
+  // definition, which its identity names with the assumption mark.
+  const assumption = program.checker.axioms.get(binding);
+  assert.equal(assumption, `${binding}${assumptionMark}`);
   assert.equal(program.kernel.definitions.has(binding), false);
-  assert.equal(program.checker.libraryAssumptions.get("declarations_axioms::Shift")?.name, binding);
-  assert.equal(result.assumptionLabels[binding], "declarations_axioms::Shift");
-  for (const name of ["Shift", "shifted", "shift_large", "shift_again"]) assert.deepEqual(get(name).axioms, [binding], name);
+  assert.equal(program.checker.libraryAssumptions.get("declarations_axioms::Shift")?.name, assumption);
+  assert.equal(result.assumptionLabels[assumption], "declarations_axioms::Shift");
+  for (const name of ["Shift", "shifted", "shift_large", "shift_again"]) assert.deepEqual(get(name).axioms, [assumption], name);
   // Its type closes the family's body, not the family's own type, U < UU0 -> next(U).
-  const type = program.checker.assumptions.get(binding);
+  const type = program.checker.assumptions.get(assumption);
   assert.deepEqual([type.tag, type.body.tag, type.body.domain.tag], ["LPi", "Pi", "U"]);
   const view = program.inspect(binding);
-  assert.deepEqual(view.axioms, [binding]);
-  assert.equal(view.symbols[binding].kind, "axiom");
-  assert.equal(view.symbols[binding].name, "declarations_axioms::Shift");
+  assert.deepEqual(view.axioms, [assumption]);
+  assert.equal(view.symbols[assumption].kind, "axiom");
+  assert.equal(view.symbols[assumption].name, "declarations_axioms::Shift");
   // A type is assumed as it is.
-  assert.equal(program.checker.assumptions.get("declarations_axioms__Unknown").tag, "Sort");
+  assert.equal(program.checker.assumptions.get(program.checker.axioms.get("declarations_axioms__Unknown")).tag, "Sort");
 });
 
 // Sources given by module name, each module importing nothing it is not given.
@@ -196,7 +200,7 @@ test("a module assumes the continuum hypotheses, and every result that uses one 
   assert.deepEqual(used("ch_from_gch"), ["continuum_axioms::GCH"]);
   for (const name of ["both", "at_zero"]) assert.deepEqual(used(name), ["continuum_axioms::CH", "continuum_axioms::GCH"], name);
   // One entry generic over U < UU0, whose body is the statement at U.
-  const type = program.checker.assumptions.get("continuum_axioms__CH");
+  const type = program.checker.assumptions.get(program.checker.axioms.get("continuum_axioms__CH"));
   assert.deepEqual([type.tag, type.body.tag], ["LPi", "Pi"]);
   assert.match(result.outputs.find(output => output.name === "computed").reason,
     /^This computable declaration depends on non-computing assumptions: continuum_axioms::CH\./);
@@ -211,10 +215,51 @@ test("an axiom whose identity an earlier binder spells takes a fresh assumption 
     { module: await createCubical(), reader: inMemory({}) });
   const assumption = program.checker.axioms.get("main__A1");
   assert.equal(program.checker.definitionViews.get("main__F").term.name, "main__A1");
-  assert.notEqual(assumption, "main__A1");
+  assert.equal(assumption, `main__A1${assumptionMark}`);
   for (const name of ["A1", "use_"]) assert.deepEqual(result.outputs.find(output => output.name === name).axioms, [assumption], name);
   assert.deepEqual(labelsOf(result, result.outputs.find(output => output.name === "use_")), ["main::A1"]);
   assert.deepEqual(program.inspect("main__A1").axioms, [assumption]);
+});
+
+// An assumption's name carries a mark that no other name holds (names.mjs,
+// assumptionMark). The review's module m binds m__A, whose generated names
+// are m__A1, m__A1_, …: its axiom A1 is m__A1# and its definition A1_ keeps
+// m__A1_, its value, its type and its display records. Every producer of
+// names, a declaration, a constructor, a theory's fields and generated
+// members, a binder and its generated names, a universe's variants, a
+// qualified identity, a library axiom and a legacy builtin, leaves the mark
+// to assumptions, and no identifier can write it (#317's review round 3,
+// finding 1).
+test("assumption names live where no declaration, constructor, binder or generated name can", async t => {
+  const modules = inMemory({ a: "def b__c := axiom Unit;\ndef d := b__c;\n", a__b: "def e := tt;\n" });
+  const fallback = sourceReader();
+  const source = "import classical_axioms;\nimport a;\nimport a__b;\n"
+    + "def F(m__A : Unit) : Unit := m__A;\ndef A1 := axiom Void;\ndef A1_ := tt;\n"
+    + "def G(m__A1 : Unit, x : Unit) : Unit := (fun (y : Unit) => m__A1)(x);\n"
+    + "inductive T { c; A1__(t : T); }\ntheory Th(U < UU0) { M : U; point : M; }\n"
+    + "def poly(U < UU0, A : U, a : A) : A := a;\ndef applied := poly(U1, U0, Unit);\n"
+    + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef legacy := Truncate(U0, Unit);\ndef qualified := a::b__c;\n";
+  const reader = async (name, importer) => await modules(name) ?? fallback(name, importer);
+  reader.fromLibrary = fallback.fromLibrary;
+  const { program, result, get } = await checkProgram(t, source, { name: "m", module: await createCubical(), reader });
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
+  // The review's case: inspect A1_ shows the definition, and A1 the axiom.
+  const definition = program.inspect("m__A1_");
+  assert.deepEqual([program.checker.displayText(definition.type, []), definition.axioms, definition.symbols.m__A1_.kind, definition.symbols.m__A1_.name],
+    ["Unit", [], "def", "A1_"]);
+  const axiom = program.inspect("m__A1");
+  assert.deepEqual([program.checker.displayText(axiom.type, []), axiom.axioms], ["Void", [`m__A1${assumptionMark}`]]);
+  assert.deepEqual(get("A1_").axioms, []);
+  // Every name the kernel holds that carries the mark is an assumption's,
+  // and every assumption's carries it.
+  const assumptions = new Set(program.checker.assumptions.keys());
+  assert.deepEqual([...program.kernel.names.keys()].filter(isAssumptionName).sort(), [...assumptions].sort());
+  for (const name of assumptions) assert.ok(isAssumptionName(name), name);
+  assert.deepEqual(result.symbols.map(symbol => symbol.binding).filter(isAssumptionName).sort(), [...assumptions].sort());
+  for (const label of ["LEM", "Truncate", "a::b__c", "m::A1"])
+    assert.ok([...program.checker.assumptionLabels.values()].includes(label), label);
+  // No identifier writes the mark: the tokenizer reads it apart.
+  assert.deepEqual([...scan(`a${assumptionMark}b`)].map(token => token.text), ["a", assumptionMark, "b"]);
 });
 
 // A rule names its declaration by identity, not spelling: two modules'
@@ -224,8 +269,8 @@ test("hlevel rules that name axioms are registered by the axiom's identity", asy
     m2: "import hlevels;\ndef P := axiom IsProp(U0, Void);\nhlevel_rule P;" });
   const { program, result } = await checkProgram(t, "import m1;\nimport m2;\ndef unit_prop : IsProp(U0, Unit) { hlevel; }",
     { module: await createCubical(), reader: async (name, importer) => await modules(name) ?? fallback(name, importer) });
-  assert.deepEqual([...program.simpRegistries.get("main").hlevel.keys()].sort(), ["m1__P", "m2__P"]);
-  assert.deepEqual(result.outputs[0].axioms, ["m1__P"]);
+  assert.deepEqual([...program.simpRegistries.get("main").hlevel.keys()].sort(), [`m1__P${assumptionMark}`, `m2__P${assumptionMark}`]);
+  assert.deepEqual(result.outputs[0].axioms, [`m1__P${assumptionMark}`]);
 });
 
 // Only the library's own classical_axioms, read from library/, names its

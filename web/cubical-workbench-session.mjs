@@ -9,8 +9,11 @@ import { checkReduction, reduceView } from "./cubical-reduction.mjs";
 import { levelText } from "./cubical-levels.mjs";
 import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
+// A transfer's sources are text, which no reader placed: `fromLibrary` says
+// which of them is the library's (module-resolution.mjs, libraryProvenance),
+// so that a library axiom keeps its bare name; without it none is.
 export class WorkbenchSession {
-  constructor(module) { this.module = module; this.states = []; }
+  constructor(module, { fromLibrary = null } = {}) { this.module = module; this.states = []; this.fromLibrary = fromLibrary; }
   dispose() { this.program?.dispose(); }
   state(id) {
     const state = this.states[id];
@@ -39,10 +42,12 @@ export class WorkbenchSession {
     if (payload.format !== "thth-cubical" || payload.version !== 1)
       throw new Error("Unsupported cubical transfer format.");
     this.dispose(); this.states = [];
-    this.program = new CubicalProgram(this.module, async name => {
+    const read = async name => {
       if (typeof payload.sources?.[name] !== "string") throw new Error(`Missing source module ${name}.`);
       return payload.sources[name];
-    });
+    };
+    if (this.fromLibrary) read.fromLibrary = this.fromLibrary;
+    this.program = new CubicalProgram(this.module, read);
     await this.program.check(payload.source, payload.main, progress);
     // Supplied term/type claims are informational; replay source for evidence.
     let view = this.program.inspect(payload.binding);

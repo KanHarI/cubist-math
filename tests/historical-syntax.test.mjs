@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
-import { historicalSource, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
+import { historicalKeywords, historicalSource, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
 import { parse, languageKeywords } from "../web/cubist/parser.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
@@ -111,14 +111,14 @@ test("historical references use identifier spans inside parentheses and comments
   assert.match(rewritten, /\(\(m\).law_\)/);
 });
 
-// A historical reader lets any keyword be bound. `axiom` is then a name,
-// except where the form stands, a definition's whole value followed by its
-// statement: current sources read as written (#317's review, finding 3).
+// A revision reads `axiom` as it did: one with the axiom form reads current
+// sources as written, and one before names something by the word (#317's
+// review, finding 3, and round 3, finding 2).
 test("historical readers keep current axiom definitions and rename an old binder named axiom", async t => {
   const current = await readFile(new URL("../library/classical_axioms.cubist", import.meta.url), "utf8");
-  assert.deepEqual(parse(current, false, { bindable: [...languageKeywords] }).declarations.map(d => d.value.kind),
+  assert.deepEqual(parse(current, false, { bindable: historicalKeywords({ axiomForm: true }) }).declarations.map(d => d.value.kind),
     ["lambda", "lambda", "axiom", "axiom"]);
-  assert.equal(read(current), current);
+  assert.equal(historicalSource(current, "classical_axioms", { implicitNat: false, minusReverses: false, axiomForm: true }), current);
   const rewritten = await checked(t, "def f(axiom : Unit) : Unit := axiom;\ndef axiom := f(tt);\nprint(evaluate(axiom));", ["tt"]);
   assert.match(rewritten, /def f\(axiom_ : Unit\) : Unit := axiom_;\ndef axiom_ := f\(tt\);/);
 });
@@ -140,6 +140,46 @@ test("historical sources that bind or import axiom call it, as written then", as
   const result = await program.check(rewritten, "history");
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   assert.deepEqual([program.prints.map(print => print.text), result.outputs[0].axioms], [["U0"], []]);
+});
+
+// Before the axiom form no revision gave `axiom` a meaning, so a source of
+// that time names something by it wherever the word stands: a selected
+// model's member, a member after a dot, a qualified declaration. Every
+// occurrence is renamed with its declaration, whatever scope supplies it,
+// and no call becomes an assumption. A qualified name of any renamed word
+// names a declaration, and follows it: provider::left too, which main
+// left as it was (#317's review round 3, findings 2 and 3).
+test("a revision before the axiom form reads every axiom as the name it was, selected and qualified ones too", async t => {
+  const sources = {
+    provider: "def axiom(A : U0) : U0 := A;\ndef left(A : U0) : U0 := A;\n",
+    models: "theory Provider(U < UU0) { M : U; axiom(A : M) : M; }\n"
+      + "def selected : Provider(U1) := Provider.make(U0, fun (A : U0) => A);\n",
+    selecting: "import models;\nuse selected;\ndef result := axiom(Unit);\ndef member := selected.axiom(Unit);\n"
+      + "print(typeof(result));\nprint(typeof(member));\n",
+    qualifying: "import provider;\ndef result := provider::axiom(Unit);\ndef injected := provider::left(Unit);\n"
+      + "print(typeof(result));\nprint(typeof(injected));\n",
+  };
+  const renaming = reservedBindingRenaming(Object.values(sources));
+  const options = { implicitNat: false, minusReverses: false, renaming };
+  const declarationsOf = name => parse(sources[name], false, { bindable: historicalKeywords() }).items;
+  const read = name => historicalSource(sources[name], name, { ...options,
+    importedDeclarations: name === "selecting" ? declarationsOf("models") : name === "qualifying" ? declarationsOf("provider") : [] });
+  assert.equal(read("selecting"), "import models;\nuse selected;\ndef result := axiom_(Unit);\ndef member := selected.axiom_(Unit);\n"
+    + "print(typeof(result));\nprint(typeof(member));\n");
+  assert.equal(read("qualifying"), "import provider;\ndef result := provider::axiom_(Unit);\ndef injected := provider::left_(Unit);\n"
+    + "print(typeof(result));\nprint(typeof(injected));\n");
+  for (const [main, type] of [["selecting", "selected.M"], ["qualifying", "U0"]]) {
+    const program = new CubicalProgram(module, async name => read(name));
+    t.after(() => program.dispose());
+    const result = await program.check(read(main), main);
+    assert.equal(result.complete, true, JSON.stringify(program.gaps));
+    assert.deepEqual([program.prints.map(print => print.text), result.outputs.map(output => output.axioms)], [[type, type], [[], []]]);
+  }
+  // The migration verifier tells the call from an explicit axiom.
+  const readOriginal = migrationSourceReader(async (place, name) => place === "library" && sources[name] ? read(name) : null, ["selecting"]);
+  const [report] = await verifyMigration({ modules: ["selecting"], readOriginal,
+    readEdited: async () => "import models;\nuse selected;\ndef result := axiom Unit;\ndef member := selected.axiom_(Unit);\n" });
+  assert.deepEqual(report.failures.map(failure => failure.name), ["result"]);
 });
 
 test("historical fill binders leave the box keyword intact", async t => {

@@ -125,6 +125,13 @@ export function moduleReader(read) {
   return readSource;
 }
 
+// Whether a source given as text, as a transfer gives one, is the module
+// `name` exactly as library/ holds it, read through `fetchText` as
+// listedReader reads it: the provenance of a module no reader placed. Only
+// such a module names its axioms by their bare names (fromLibrary).
+export const libraryProvenance = (listing, fetchText) => async (name, text) =>
+  !!listing.library?.includes(name) && await fetchText(`${moduleRoots.library}${name}.cubist`) === text;
+
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of each root, and fetchText(path) reads one by its path from the
 // repository root. An unlisted name is never fetched. `main` is the checked

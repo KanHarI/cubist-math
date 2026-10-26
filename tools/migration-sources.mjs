@@ -3,7 +3,7 @@
 // imports resolve by their importer's place, never by a global library-first
 // fallback. `read` supplies pinned files and any explicitly shared foundations.
 import { moduleReader, moduleNamePattern, moduleRoots, placeOfPath, searchOrder } from "../web/module-resolution.mjs";
-import { currentSyntax, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
+import { currentSyntax, historicalKeywords, historicalRenamingAt, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
 import { parse, tokenize, languageKeywords } from "../web/cubist/parser.mjs";
 
 // The relocation is valid only for the source unary epoch. A transitional
@@ -71,16 +71,18 @@ export function importedDeclarationsReader({ available, readSyntax, modulePath, 
 
 // Only the selected modules and their dependencies participate in the shared
 // fresh-name plan. Syntax errors in that graph retain the importing path;
-// unrelated historical files are never read or tokenized.
-export function historicalMigrationSources({ available, readSource, modulePath, placeOf, implicitNat = false }) {
+// unrelated historical files are never read or tokenized. `axiomForm` says
+// whether the revision reads the axiom form (legacy-syntax.mjs,
+// historicalKeywords).
+export function historicalMigrationSources({ available, readSource, modulePath, placeOf, implicitNat = false, axiomForm = false }) {
   const sources = new Map(), syntax = new Map();
   const source = path => {
-    if (!sources.has(path)) sources.set(path, currentSyntax(readSource(path)));
+    if (!sources.has(path)) sources.set(path, currentSyntax(readSource(path), { axiomForm }));
     return sources.get(path);
   };
   const importsOf = importedDeclarationsReader({ available, modulePath, placeOf, readSyntax: path => {
     if (!syntax.has(path)) {
-      const ast = parse(source(path), false, { bindable: languageKeywords });
+      const ast = parse(source(path), false, { bindable: historicalKeywords({ axiomForm }) });
       if (implicitNat && !path.endsWith("/nat.cubist") && !ast.imports.includes("nat")) ast.imports.unshift("nat");
       syntax.set(path, ast);
     }
@@ -88,7 +90,7 @@ export function historicalMigrationSources({ available, readSource, modulePath, 
   } });
   const renamingFor = paths => {
     for (const path of paths) importsOf(path);
-    return reservedBindingRenaming([...syntax.keys()].map(source));
+    return reservedBindingRenaming([...syntax.keys()].map(source), historicalRenamingAt({ axiomForm }));
   };
   return { source, importsOf, renamingFor };
 }
