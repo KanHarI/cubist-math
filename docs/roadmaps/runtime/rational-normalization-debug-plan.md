@@ -17,20 +17,23 @@ supplements the [inverse normalization report](../../reports/rational-normalizat
 and the roadmap's [completion path](runtime-evaluation-roadmap.md#rational-full-normalization-completion-path);
 it does not close any of their gates.
 
-**Progress at main `7230825e` (2026-10-26).** Phase A's first item is done
-in #302, and its items 2–4 are not. Of Phase C, step 1 is #302 and step 2,
+**Progress at main `21f55b55` (2026-10-26).** Phase A's first item is done
+in #302, and its items 2–4 are not. Of Phase C, step 1 is #302, step 2,
 D1, is done: the folded normal form
 ([#307](https://github.com/KanHarI/cubist-math/pull/307),
 [#309](https://github.com/KanHarI/cubist-math/pull/309),
-[#310](https://github.com/KanHarI/cubist-math/pull/310)). #283's 32 contracts
-were rebased onto `!!_` and pass, and its API was released on folded normal
-forms on 2026-10-26 by the user's decision. B8, step 3, is next: the
-[work plan](../work-plan.md#first-actions) scheduled it on 2026-10-26, which
-accepts D3's smaller certificates for it. Targets T1–T6 remain open: they
-measure the full normal form, `!!!`, and the measurements below are unchanged.
-They gate neither the binary-rational API nor, by the same day's decision,
-the default `Z`/`Q` switch, both of which check folded normal forms. D2, and
-D3 for B2, are undecided.
+[#310](https://github.com/KanHarI/cubist-math/pull/310)), and step 3, B8, is
+done: the direct proof that the propositions form a set, which the
+[work plan](../work-plan.md#first-actions) scheduled on 2026-10-26, accepting
+D3's smaller certificates for it. #283's 32 contracts were rebased onto
+`!!_` and pass, and its API was released on folded normal forms on
+2026-10-26 by the user's decision. Targets T1–T6 remain open: they measure
+the full normal form, `!!!`. Section 1 measures main before B8; B8's
+measurements are in its section, and leave the small inverse at 12.4M ticks
+and a literal of main's rationals at 11.5M, both over T1's and T6's 10M.
+The targets gate neither the binary-rational API nor, by the same day's
+decision, the default `Z`/`Q` switch, both of which check folded normal
+forms. D2, and D3 for B2, are undecided.
 
 Every measurement below was taken with the retained
 [probe](rational-normalization-debug-plan/probe.mjs): a fresh checked program
@@ -344,12 +347,12 @@ waits on it.
 
 | Target | Today | Gate |
 | --- | ---: | --- |
-| T1 small inverse, `q_inv(2/3)` and `q_inv(-2/3)`, fresh program | about 71M ticks, 1.15M output nodes | full normal form under the fixed 10M diagnostic budget: this plan's `probe.mjs normalize small_inverse,small_inverse_neg 10000000` reports `normalized` for both; the older `rational-literal-normalization/probe.mjs`, a `SameRatio` diagnostic at 100,000 ticks, unchanged |
+| T1 small inverse, `q_inv(2/3)` and `q_inv(-2/3)`, fresh program | 12.4M ticks, 298k output nodes since B8; about 71M, 1.15M before | full normal form under the fixed 10M diagnostic budget: this plan's `probe.mjs normalize small_inverse,small_inverse_neg 10000000` reports `normalized` for both; the older `rational-literal-normalization/probe.mjs`, a `SameRatio` diagnostic at 100,000 ticks, unchanged |
 | T2 open inverse `q_inv_open` and the wide inverse | `K344` at 80M; `K337` at 393M or the 400M budget | both complete under the default growing budget without K336, K337 or the syntax guard; `binary_rationals.normalize_wide_inverse` passes in #283's contract within CI's time |
 | T3 rational value, `bint_mul`, `bint_add`, the field's `one` | 3.5M ticks, 97k nodes | provisional: under 1M ticks and 20k nodes each, to be re-based from B2's first measurement; alpha-equal output wherever only the kernel changed |
 | T4 evaluator gates `moved_setness`, `moved_path` | 10M exhausted | unchanged from the roadmap; a library fix does not claim them |
 | T5 host | historical 309 s against a 30 s deadline | either reproduced and attributed, or recorded as not reproducible on `6d1bd75b` with the evidence in 1.1 |
-| T6 main's rationals: `rationals.(2/3)`, `rationals.(0.5)`, `integers.additive_` | 70M ticks, 1.12M nodes for a literal; 73M, 1.8M for the group | each full normal form under the fixed 10M diagnostic budget, `rationals.one` no larger than today; B8 brings a literal to 11.5M, and the group waits on its laws (1.7) |
+| T6 main's rationals: `rationals.(2/3)`, `rationals.(0.5)`, `integers.additive_` | 11.5M ticks, 265k nodes for a literal since B8, 70M and 1.12M before; 73M, 1.8M for the group | each full normal form under the fixed 10M diagnostic budget, `rationals.one` no larger than today; the group waits on its laws (1.7) |
 
 Since D1 (section 4) these are the targets of the full normal form, which
 `!!!` computes. The folded normal form of `!!` meets T1, T2 and T6 in D1's
@@ -582,6 +585,30 @@ proposition's carrier. What remains is univalence: `prop_over_unique` is
 standard retract of a path into a proposition onto the equivalence it
 gives, makes up nearly all of the 183,370.
 
+Done on 2026-10-26, as measured above. Re-measured that day with the
+retained probe against main `21f55b55`, kernel sources `ee6c58b8a64a…`,
+fixtures `binary` `8b412f8b…` and `unary` `c7b42262…`, before and after the
+change: every node count of the table reproduced to the node, and so did
+`setness`'s compositions under `survey`, 532,172 and 87,869. Ticks are a
+margin, and the kernel sources have changed since 2026-10-23:
+
+| Query | Before | After |
+| --- | ---: | ---: |
+| `setness` | 67,123,923 | 8,353,991 |
+| `eff_open` | 69,363,286 | 8,984,264 |
+| `small_inverse` | 70,493,184 | 12,433,446 |
+| `q_two_thirds` | 72,018,614 | 11,502,392 |
+| `q_half` | 70,024,311 | 11,592,568 |
+| `z_decision` | 69,328,535 | 8,824,904 |
+
+After it, `small_inverse_neg` takes 12,532,136 ticks and 298,366 nodes, and
+both small inverses still exhaust T1's 10M budget. `rationals.one`, 72,159
+nodes, and `integers.additive_`, 1,799,676, are unchanged. In a checked
+file, `evaluate rationals.(2/3) expecting !!!_;` adds 11.5M ticks. The
+library keeps `retract_has_level`, `sigma_has_level` and `pathp_has_level`:
+`path_into_prop_is_prop`, the other level lemmas and the `hlevel` tactic
+use them.
+
 ### Phase C: fixes, in this order, one PR each
 
 1. Phase A artifacts.
@@ -591,8 +618,8 @@ gives, makes up nearly all of the 183,370.
    `expecting _;` lines are `E485` on main. Rebase them as `expecting !!_;`,
    or `expecting !!!_;` where a contract means to measure full
    normalization, before re-running.
-3. B8, kept (section 3, B8): the direct proof of `prop_type_is_set` and
-   `prop_over_unique`, with the library's tests.
+3. B8, done on 2026-10-26 (section 3, B8): the direct proof of
+   `prop_type_is_set` and `prop_over_unique`, with the library's tests.
 4. B3, with the baseline digests and native suites.
 5. B2, with T3 re-based from its measurement and the quotient regressions.
 6. B5 and B6 on the wide inverse's full normal form.
@@ -646,7 +673,8 @@ with no rule of their own.
 change; the certificates that `descend2` and `prop_type_is_set` compute to
 do. Confirm that this is acceptable for the computability
 contract: closed decisions still return `left` or `right` with a checked
-proof, only a smaller one.
+proof, only a smaller one. Accepted for B8 on 2026-10-26, when the work plan
+scheduled it; open for B2.
 
 ## 5. What this plan does not do
 

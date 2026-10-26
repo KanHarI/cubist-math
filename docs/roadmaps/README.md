@@ -14,7 +14,8 @@ and compatibility gates passed. The reals roadmap stays paused. See the
 **Sequence decided on 2026-10-26** ([first actions](work-plan.md#first-actions)):
 1. Restore site publication.
 2. Runtime and numbers:
-   - B8 of the [debugging plan](runtime/rational-normalization-debug-plan.md);
+   - B8 of the [debugging plan](runtime/rational-normalization-debug-plan.md),
+     done on 2026-10-26;
    - the default binary `Z`/`Q`, gated on folded normal forms;
    - #289's runtime in the REPLs;
    - typed readback;
@@ -165,7 +166,7 @@ and `module::name` references as continuing contracts.
   observation contract has shipped, but not its typed readback. EVAL6–EVAL8
   remain.
 - [Rational normalization debugging plan](runtime/rational-normalization-debug-plan.md):
-  the attribution of the rational full-normalization cluster; D1 done, B8 next.
+  the attribution of the rational full-normalization cluster; D1 and B8 done.
 
 EVAL5's observation contract, the
 [evaluation demand marks](historical/evaluation-demand-marks.md) (DM0–DM6,

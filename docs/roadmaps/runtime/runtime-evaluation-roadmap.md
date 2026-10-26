@@ -1280,7 +1280,8 @@ alone does not.
 
 The order from 2026-10-26 on is in the work plan's
 [first actions](../work-plan.md#first-actions):
-1. B8 of the [debugging plan](rational-normalization-debug-plan.md);
+1. B8 of the [debugging plan](rational-normalization-debug-plan.md), done on
+   2026-10-26;
 2. the default `Z`/`Q`;
 3. #289's runtime in the REPLs: ordinary data first, then the point
    constructors of set quotients so that `BInt` and `BQ` values evaluate;

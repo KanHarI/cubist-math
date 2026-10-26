@@ -944,11 +944,13 @@ Each step lands in focused PRs under the review rule above.
    it are unverified. Run the complete static-site test on a fresh build, and
    confirm that the Pages run publishes after the merge.
 2. **Runtime and numbers.**
-   1. **B8** of the [debugging plan](runtime/rational-normalization-debug-plan.md):
-      the direct proof that the propositions form a set, with
-      `prop_over_unique`. Public statements stay. The certificates shrink,
-      which scheduling B8 accepts for it (D3). Its measurement takes a
-      literal of main's rationals from 70.3M to 11.5M ticks under `!!!`.
+   1. **B8** of the [debugging plan](runtime/rational-normalization-debug-plan.md),
+      done on 2026-10-26: the direct proof that the propositions form a
+      set, with `prop_over_unique`. Public statements stay. The
+      certificates shrink, which scheduling B8 accepts for it (D3): under
+      `!!!`, a literal of main's rationals falls from 72.0M ticks and
+      1,116,794 nodes to 11.5M and 265,250, still over the plan's 10M
+      target.
    2. **NUM2's default `Z`/`Q`:** the public carriers become the binary
       `BInt` and `BQ`, with generic ring numeral interpretation, numerical
       casts and rendering, gated on folded normal forms. The unary integers
