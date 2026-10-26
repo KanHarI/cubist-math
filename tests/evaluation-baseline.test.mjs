@@ -64,6 +64,11 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
       const figures = live.phases[phase], expected = record.phases[phase];
       assert.deepEqual(figures && [figures.calls, figures.failures], expected && [expected.calls, expected.failures ?? 0], `${label}: ${phase}`);
     }
+    // The runtime's work and allocation, where it observed the value form,
+    // grow by at most a quarter too.
+    assert.equal(Boolean(live.runtime), Boolean(record.runtime), `${label}: observed by the runtime`);
+    for (const counter of ["steps", "allocatedCells"]) if (record.runtime)
+      assert.ok(live.runtime[counter] <= bound(record.runtime[counter]), `${label}: the runtime's ${counter} is ${live.runtime[counter]}, recorded ${record.runtime[counter]}`);
     // The report leaves out counters that are zero.
     for (const [part, figures, expected] of [["the entry", live.entry, record.total],
       ...Object.entries(record.phases).map(([phase, expected]) => [phase, live.phases[phase] ?? {}, expected])])
@@ -81,7 +86,9 @@ test("REPL evaluation and print show the value form, normalizing nothing", async
   for (const run of [repl, print]) {
     assert.equal(run.phases.normalize, undefined);
     assert.equal(run.phases.compare, undefined);
-    assert.ok(run.phases.demand.calls > 0);
+    // The runtime observes it, asking the kernel for no weak head.
+    assert.ok(run.phases.runtime.calls > 0 && run.runtime.steps > 0);
+    assert.equal(run.phases.demand, undefined);
     assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
   }
 });
@@ -115,12 +122,16 @@ test("the depth failures are reproduced, with the work done before them", async 
     assert.ok(run.phases.normalize.querySteps > 0 && run.phases.normalize.nodes > 10000, `${id} counts the failed normalization's work`);
     assert.equal(run.phases.compare, undefined, `${id} fails before any comparison`);
   }
-  // The value form fails at a head too deep to build, the prime's.
-  for (const id of ["euclid-4", "euclid-4-prime", "euclid-4-prime-print", "euclid-5-prime"]) {
+  // The kernel's head queries fail at the prime, a head too deep to build;
+  // the runtime builds no syntax and shows it, the certificate's path and
+  // function as such.
+  for (const [id, value] of [["euclid-4", "(5, (3, <path>, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],
+    ["euclid-5-prime", "11"]]) {
     const run = await cold(id);
-    assert.equal(run.outcome.code, "K344", id);
-    assert.equal(run.phases.demand.failures, 1, id);
+    assert.equal(run.outcome.text, value, id);
+    assert.equal(run.phases.demand, undefined, id);
     assert.equal(run.phases.normalize, undefined, id);
+    assert.equal(run.phases.runtime.nodes, 0, `${id}: the runtime builds no kernel syntax`);
   }
   // A unary 510 fits at the syntax-depth limit. Plain evaluation must not
   // introduce another wrapper through a redundant equality comparison.
