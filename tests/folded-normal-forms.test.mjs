@@ -35,7 +35,7 @@ test("a rational literal's folded normal form names its certificate", async t =>
   assert.equal(verdicts.two_thirds, true);
   const before = program.kernel.work().querySteps;
   const { checker, folded: result } = folded(program, "two_thirds");
-  // Its full normal form is 70M ticks and over a million nodes.
+  // Its full normal form is 11.5M ticks and 265,250 nodes.
   assert.ok(program.kernel.work().querySteps - before < 1000000);
   const text = checker.displayText(checker.syntax.decode(result, checker.dimensions), checker.dimensions, { width: 1000, limit: 1000, reduce: 0 });
   assert.equal(text, "class((class((unat.(2), unat.(0))), class((unat.(3), unat.(0))), int_succ_nonzero(unat.(2))))");
@@ -68,7 +68,7 @@ evaluate rationals.(2/3) expecting rationals.(2/3);
 `, { module });
   assert.deepEqual(result.gaps, []);
   assert.deepEqual(result.prints.map(print => print.text), ["class((class((2, 0)), class((3, 0)), int_succ_nonzero(2)))"]);
-  // Both sides' full normal forms are 70M ticks each.
+  // Both sides' full normal forms are 11.5M ticks each.
   assert.ok(program.kernel.work().querySteps < 10000000n, String(program.kernel.work().querySteps));
 });
 

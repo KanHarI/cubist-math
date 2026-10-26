@@ -113,8 +113,12 @@ await browserTest(async ({ browser, base }) => {
   };
   const lastResults = async count => (await page.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-count);
   // Any checked example opens in the REPL bar, which shows what it defines.
+  // Examples are found by their source, and enhanced once scrolled near.
+  const seven = (tab = page) => tab.locator("#values pre", { hasText: "def seven := 7;" });
+  const sevenBar = (tab = page) => seven(tab).locator("xpath=following-sibling::div[contains(@class, 'example-bar')][1]");
   await page.goto(new URL("reference/types.html", base).href);
-  await page.locator("#values .example-bar .repl-fork").first().click();
+  await seven().scrollIntoViewIfNeeded();
+  await sevenBar().locator(".repl-fork").click();
   await page.waitForFunction(() => [...document.querySelectorAll(".repl-dock .repl-result")].some(line => line.textContent === "seven : UNat"));
   await enter("evaluate seven");
   assert.deepEqual(await lastResults(1), ["7"]);
@@ -246,7 +250,8 @@ await browserTest(async ({ browser, base }) => {
   await failed.locator('#read-source a.reference[data-name="unat"]').click();
   await failed.waitForURL("**/proof.html?proof=unat");
   await failed.goto(new URL("reference/types.html", base).href);
-  await failed.waitForFunction(() => document.querySelector("#values .example-bar")?.textContent.includes("Not checked"));
+  await seven(failed).scrollIntoViewIfNeeded();
+  await sevenBar(failed).filter({ hasText: "Not checked" }).waitFor();
   // Enhancement is lazy: scroll to start a new request after failure is known.
   const laterExample = failed.locator('pre > code[data-check="reject"]').last();
   await laterExample.scrollIntoViewIfNeeded();
