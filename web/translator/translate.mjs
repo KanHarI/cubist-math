@@ -466,15 +466,14 @@ export class Translator {
   // observed by the runtime (EVAL3/EVAL4, web/cubical-runtime.mjs): a closed
   // judgement's data executes with shared closures, building no kernel
   // syntax, and only the heads the walk shows are demanded. Its one
-  // fallback is demand the runtime reports unsupported, as of a path, a
-  // composition, Glue or a higher constructor: the kernel's head queries,
-  // `kernel`, then compute the whole walk again from the start, as they did
-  // before the runtime, and nothing the runtime computed is shown. A
-  // runtime stop at its limits is reported, not retried. Neither answer is
-  // evidence: the kernel's queries certify nothing either.
-  // Which computed it is recorded on the print directive (valueFormRecord),
-  // with the runtime's counters, and on a fallback the demand it did not
-  // support.
+  // fallback is demand the runtime reports unsupported, such as a path
+  // applied, a composition, Glue or a higher constructor: the kernel's head
+  // queries, `kernel`, then compute the whole walk again from the start, as
+  // they did before the runtime, and nothing the runtime computed is shown.
+  // A runtime stop at its limits is reported, not retried. Neither answer
+  // is evidence: the kernel's queries certify nothing either. Which
+  // computed it is recorded on the print directive (valueFormRecord), with
+  // the runtime's counters, and on a fallback the demand it did not support.
   valueFormOf(result,scope,node,kernel) {
     let query=null,unsupported=null;
     try {
