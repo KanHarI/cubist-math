@@ -108,22 +108,19 @@ maps. [Archive retirement](archive-retirement.md) (I0.5, direction adopted on
 2026-10-20) owns the follow-ups: confining new dependencies, deciding per
 results-catalog area what the library rebuilds before deletion, and moving or
 retiring the fixtures, tests, tools and docs that read the archive. One part
-goes early, by the decisions of 2026-10-26: EVAL7 builds primality,
-divisibility and Euclid in the library over binary `Nat`. Once every consumer
-has moved, those primitives leave the archive's `primes` and its `euclid` is
-deleted. In Cubist sources on main, only `euclid` uses `primes`' divisibility
-and primality definitions: `Divides`, its decision and lemmas, `Prime`,
-`prime_divisor_exists`, `factorial_positive` and
-`bounded_divisor_of_factorial`. JavaScript tests, the evaluation baseline and
-the Cubist guide name some of them and move to the library versions. `primes`
-keeps three groups, which stay until R3/R4:
-- its nine unary order and equality lemmas (`unat_zero_ne_succ`,
-  `nat_le_zero`, `nat_le_step`, `nat_le_trans`, `nat_le_total`,
-  `nat_le_succ_split`, `nat_le_add`, `nat_eq_decidable` and
-  `nat_add_positive`), which polynomial, analysis, dimension and radix
-  modules use through transitive imports;
-- its bounded least-witness search, which `natural_minimum` uses;
-- its unary `factorial`, which four radix and binary transfer modules use.
+goes early, by the direction of 2026-10-26: all of the archive's number
+theory moves to the library and then leaves the archive
+([number theory in the library](archive-retirement.md#number-theory-in-the-library),
+NT1–NT5). That covers:
+- `primes`' divisibility and primality, and `euclid`, rebuilt by EVAL7 over
+  binary `Nat`;
+- `primes`' nine unary order lemmas, moved to `unat` for the archive's other
+  areas;
+- its least-witness search with `natural_minimum`;
+- the binary and radix numerals.
+
+Then 20 modules leave the archive. Whether the counting results of the same
+catalog area are included is open.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -334,7 +331,7 @@ and `univalence` exhaust the kernel's step budget.
 | I0.2 | Archive the first library | Done: 368 sources in `archive/first-library/`; keep it as regression evidence. Its prelude `nat` moved to `library/` on 2026-10-04, and `sets` gave way to the library's `hlevels` on 2026-10-05 |
 | I0.3 | Start `library/` | Done: the modules listed above, self-contained since 2026-10-04; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
-| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. One early part is scheduled in it (2026-10-26): EVAL7 moves primality and divisibility to the library, removes them from `primes` and deletes `euclid`. [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
+| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. One early part is scheduled in it (2026-10-26): all of the archive's number theory moves to the library and leaves the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library), with EVAL7 as NT2). [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
 | D0.2 | Reference chapters and quick reference | Chapter 5 done with G0. Chapter 6 rewritten on 2026-09-30, when H1 became the default: declarations, parameters, `match`, structural recursion, dependent matches, path and truncation clauses, with the library's Nat, `add` and W quoted as checked, inspectable excerpts. An H1 chapter waits for D2.1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct (`inductive` and `match` on declared types added on 2026-09-30) |
@@ -930,10 +927,22 @@ Each step lands in focused PRs under the review rule above.
 
 1. **Restore site publication.** Every Pages run since #278 (2026-10-18) has
    failed in `npm run test:site`, which PR CI does not run, so the published
-   site is still #277's. Select the types chapter's example by its source,
-   not its position ([pr-293-todo](../reports/pr-293-todo.md)), run the
-   complete static-site test on a fresh build, and confirm that the Pages
-   run publishes after the merge.
+   site is still #277's. Two scenarios of `tests/site.browser.mjs` fail,
+   both because #278 put a new first example, `wide`, in the types chapter's
+   `#values` section:
+   - The REPL-bar scenario forks the section's first example and waits for
+     `seven : UNat`. Select the example by its source, not its position
+     ([pr-293-todo](../reports/pr-293-todo.md)).
+   - The worker-failure scenario waits for that section's first example bar
+     to read "Not checked" without scrolling to it. Examples are enhanced
+     lazily (an `IntersectionObserver` with a 400px margin), and that
+     example now starts about 1,122px down a 720px viewport, so no bar is
+     created. Scroll it into view first.
+
+   A local diagnosis on 2026-10-26 confirmed both causes. With the first fix,
+   16 scenarios passed and the run stopped at the second. The scenarios after
+   it are unverified. Run the complete static-site test on a fresh build, and
+   confirm that the Pages run publishes after the merge.
 2. **Runtime and numbers.**
    1. **B8** of the [debugging plan](runtime/rational-normalization-debug-plan.md):
       the direct proof that the propositions form a set, with
@@ -957,11 +966,17 @@ Each step lands in focused PRs under the review rule above.
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. `!!`, `!!!`, exact expected values and a
       fallback in mid-computation can then go through the runtime.
-   5. **EVAL7:** primality, divisibility and Euclid in `library/` over binary
-      `Nat`. Move every consumer of the archive's `euclid` to it, remove the
-      primitives from the archive's `primes` and delete its `euclid`. The
-      evaluator workloads and their acceptance move to the library Euclid. It
-      depends only on NUM1 and can proceed alongside 3 and 4.
+   5. **The archive's number theory in the library**
+      ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
+      1. NT1: the unary order lemmas move to `unat`.
+      2. NT2 is EVAL7: primality, divisibility and Euclid over binary `Nat`.
+         Every consumer of the archive's `euclid` moves to it, and the
+         evaluator workloads and their acceptance move to the library Euclid.
+      3. NT3: least elements.
+      4. NT4: binary and radix numerals.
+      5. NT5: the 20 archive modules are deleted.
+
+      This depends only on NUM1 and can proceed alongside 3 and 4.
 3. **Alongside the runtime phase: K2.5's `axiom` definitions**, steps 1–4 of
    the [removal plan](hott/h1-truncation-migration.md#steps):
    `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`
@@ -1096,8 +1111,9 @@ scheduled packages from advancing.
    - the site fix first;
    - then B8, the default `Z`/`Q`, #289's runtime in the REPLs, typed
      readback and EVAL7;
-   - EVAL7 migrates primality and divisibility to the library and removes
-     them, and the archive's `euclid`, from the archive;
+   - all of the archive's number theory moves to the library and leaves the
+     archive (NT1–NT5, with EVAL7 as NT2); whether counting is included is
+     open;
    - K2.5's `axiom` steps 1–4 run alongside;
    - simplicial ST0 and ST2 follow the phase, ahead of the categorical
      progression.

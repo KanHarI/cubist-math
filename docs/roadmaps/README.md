@@ -18,8 +18,9 @@ and compatibility gates passed. The reals roadmap stays paused. See the
    - the default binary `Z`/`Q`, gated on folded normal forms;
    - #289's runtime in the REPLs;
    - typed readback;
-   - EVAL7, which moves primality, divisibility and Euclid to the library
-     and removes them from the archive.
+   - all of the archive's number theory moved to the library and removed
+     from the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)),
+     with EVAL7's primality, divisibility and Euclid as NT2.
 3. Alongside the runtime phase: K2.5's `axiom` definitions.
 4. After it: simplicial ST0 and ST2, then the language direction below.
 

@@ -92,8 +92,10 @@ stays within its stated contract.
   binary-rational API's release was.
 - This phase also connects the runtime query of #289 to the REPLs, adds
   typed readback and lands EVAL7.
-- EVAL7 moves primality and divisibility to `library/`. The archive's `euclid`
-  and `primes`' primality primitives are deleted once their consumers move.
+- EVAL7 moves primality and divisibility to `library/`, as step NT2 of moving
+  all of the archive's number theory there. The archive's `euclid`, `primes`
+  and numeral modules are deleted once their consumers move
+  ([archive retirement](../archive-retirement.md#number-theory-in-the-library)).
 - The [work plan](../work-plan.md#first-actions) orders these steps after the
   site-publication fix and B8 of the
   [debugging plan](rational-normalization-debug-plan.md).
@@ -1209,10 +1211,13 @@ primality and divisibility move to the library over binary `Nat`.
    primality definitions: `Divides`, its decision and lemmas, `Prime`,
    `prime_divisor_exists`, `factorial_positive` and
    `bounded_divisor_of_factorial`. In Cubist sources only `euclid` uses them.
-3. `primes` keeps its unary order and equality lemmas, its bounded
-   least-witness search (used by `natural_minimum`) and its unary `factorial`
-   (used by four radix and binary transfer modules) until R3/R4 of the
-   [archive retirement](../archive-retirement.md).
+3. EVAL7 is step NT2 of moving all of the archive's number theory to the
+   library ([NT1–NT5](../archive-retirement.md#number-theory-in-the-library)).
+   The other steps cover the rest of `primes`, which then goes entirely:
+   - its unary order lemmas move to `unat`;
+   - its least-witness search moves with `natural_minimum`;
+   - its unary `factorial` gives way to `nat`'s, with the binary and radix
+     numerals.
 
 Until the switch, the archived modules stay intact as the fixed workload for
 EVAL0–EVAL5 comparisons. After it, those comparisons and EVAL3–EVAL5's
