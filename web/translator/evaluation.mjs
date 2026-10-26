@@ -184,6 +184,18 @@ function shownHead(head, at, parts = () => unevaluated) {
 }
 const once = compute => { let done = false, value; return () => done ? value : (done = true, value = compute()); };
 
+// A stop of the runtime's evaluation of a value form at one of its limits
+// (web/cubical-runtime.mjs), with the runtime's kind, budget, resource or
+// deadline, as a kernel stop has its own: no other computation is tried.
+// Any other runtime failure on checked input is the runtime's defect, and is
+// reported as one.
+export const runtimeStop = error => Object.assign(Error(
+  error.kind === "budget" ? `The runtime's evaluation of the value form exhausted its work budget of ${error.limit.toLocaleString("en-US")} steps.`
+  : error.kind === "resource" ? `The runtime's evaluation of the value form exhausted its allocation budget of ${error.limit.toLocaleString("en-US")} cells.`
+  : error.kind === "deadline" ? "The runtime's evaluation of the value form exceeded its time limit."
+  : `The runtime failed to evaluate the value form: ${error.message}`),
+{ kind: ["budget", "resource", "deadline"].includes(error.kind) ? error.kind : "other" });
+
 // The printer's budget, in the nodes it prints (cubical-source-text.mjs): a
 // value form is shown whole within it, never cut at a width.
 export const printedNodes = 4000;

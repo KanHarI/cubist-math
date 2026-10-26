@@ -10,9 +10,12 @@ import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
+import { RuntimeQuery, ordinarySignature, higherDataRefused } from "./cubical-runtime.mjs";
 import { admitSignature } from "./cubical-signatures.mjs";
 
 const speculativeFailure = kind => kind === "mismatch" || isResourceLimit(kind);
+// The kernel steps runtimeRefusal may spend on an evaluated term's type.
+const RUNTIME_TYPE_STEPS = 100000;
 // A display's naming lives in display-naming.mjs; these were defined here.
 export { betaReduce, dimensionNames, displayTerm, printedLabels, readableDimensions } from "./display-naming.mjs";
 
@@ -679,7 +682,40 @@ export class NativeCubicalElaborator {
   shownConstructor(handle) {
     const node = this.kernel.node(handle), sort = this.kernel.node(node.children[0]);
     if (sort.kind !== "Sort") return this.decoded(handle);
-    const record = this.syntax.signatureRecord(sort.payload), name = record.constructors[node.payload];
-    return { tag: "Con", index: node.payload, ...(name ? { name } : {}), sort: { tag: "Sort", signature: record.name, parameters: [], levels: [] } };
+    return this.shownConstructorOf(sort.payload, node.payload);
+  }
+  // The constructor at `index` of the signature at kernel index `signature`,
+  // as shownConstructor shows it.
+  shownConstructorOf(signature, index) {
+    const record = this.syntax.signatureRecord(signature), name = record.constructors[index];
+    return { tag: "Con", index, ...(name ? { name } : {}), sort: { tag: "Sort", signature: record.name, parameters: [], levels: [] } };
+  }
+  // A runtime query (web/cubical-runtime.mjs) over a closed judgement this
+  // elaborator derived, as `evaluated` returns it, or null: when runtime
+  // evaluation is switched off, for a comparison with the kernel's queries
+  // alone, and for a judgement with a context, which the runtime refuses.
+  // The query copies what it executes; the caller disposes of it. Its
+  // snapshot, and each observation, keep the declaration's deadline when
+  // one is set.
+  runtimeQuery(judgement) {
+    if (this.runtimeEvaluation === false || this.driver.graph.judgement(judgement).context.length) return null;
+    return new RuntimeQuery(this.kernel, judgement, this.runtimeLimits());
+  }
+  // Unsupported demand the runtime would certainly report for a value of
+  // this type, known from its weak head before any snapshot, or null. A
+  // closed value of a declared type the runtime does not execute, a higher
+  // or truncated sort, has a constructor of that type at its weak head, or a
+  // composition: the runtime refuses either, so the value form's first head
+  // falls back. The type's head is asked within a small budget; one that
+  // does not come within it decides nothing.
+  runtimeRefusal(typeHandle) {
+    const head = this.driver.graph.head(typeHandle, RUNTIME_TYPE_STEPS);
+    if (!head) return null;
+    const node = this.kernel.node(head);
+    return node.kind === "Sort" && !ordinarySignature(this.kernel.signature(node.payload)) ? higherDataRefused : null;
+  }
+  runtimeLimits() {
+    this.kernel.checkDeadline();
+    return this.kernel.deadline ? { milliseconds: Math.max(1, Math.ceil(this.kernel.deadline - performance.now())) } : {};
   }
 }

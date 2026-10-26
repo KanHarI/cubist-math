@@ -378,6 +378,10 @@ export const diagnostics = [
   ["E484", "A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; … is none of these."],
   ["E485", "evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form."],
   ["E486", "A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part."],
+  ["E487", "The runtime's evaluation of the value form exhausted its work budget of … steps."],
+  ["E488", "The runtime's evaluation of the value form exhausted its allocation budget of … cells."],
+  ["E489", "The runtime's evaluation of the value form exceeded its time limit."],
+  ["E490", "The runtime failed to evaluate the value form: …"],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

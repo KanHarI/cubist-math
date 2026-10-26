@@ -3,7 +3,9 @@
 // proof file, or nothing), `repl_2` imports `repl_1`, and so on, so every
 // entry sees what came before. Declarations and imports that check extend
 // the session; `typeof` and `evaluate` check a scratch module and leave the
-// session as it was. Every result is checked by the kernel like a file.
+// session as it was. Every entry is checked by the kernel like a file; a
+// value it shows is computed for display, by the runtime or the kernel's
+// queries (valueFormOf in translator/translate.mjs), and certifies nothing.
 // A `use` selects for every entry after it, as at a file's top level, and an
 // entry reads in the selections its base file ends with (L2.10j).
 import { withCode } from "./diagnostics.mjs";

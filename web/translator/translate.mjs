@@ -34,7 +34,8 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,runtimeStop,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {RuntimeError} from "../cubical-runtime.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope} from "./notation-context.mjs";
@@ -464,6 +465,69 @@ export class Translator {
       source,
     };
   }
+  // The value form of an evaluated term (DM3, valueForm in evaluation.mjs),
+  // observed by the runtime (EVAL3/EVAL4, web/cubical-runtime.mjs): a closed
+  // judgement's data executes with shared closures, building no kernel
+  // syntax, and only the heads the walk shows are demanded. Its one
+  // fallback is demand the runtime reports unsupported, such as a path
+  // applied, a composition, Glue or a higher constructor: the kernel's head
+  // queries, `kernel`, then compute the whole walk again from the start, as
+  // they did before the runtime, and nothing the runtime computed is shown.
+  // A runtime stop at its limits is reported, not retried. Neither answer
+  // is evidence: the kernel's queries certify nothing either. Which
+  // computed it is recorded on the print directive (valueFormRecord), with
+  // the runtime's counters, and on a fallback the demand it did not support.
+  // The fallback is decided before the runtime's snapshot where the term's
+  // type shows that the first head is demand the runtime refuses, as for a
+  // value of a quotient: the same decision, at the cost of the type's weak
+  // head, a query of the evaluation's fuel, and recorded with no runtime
+  // counters.
+  valueFormOf(result,scope,node,kernel) {
+    let query=null,unsupported=null;
+    try {
+      if(this.checker.runtimeEvaluation!==false) {
+        scope.spend("queries");
+        const refused=this.checker.runtimeRefusal(result.typeHandle);
+        if(refused)throw new RuntimeError("unsupported",refused);
+      }
+      query=this.checker.runtimeQuery(result.judgement);
+      if(query) {
+        const value=valueForm(query.root,this.runtimeQueries(scope,query,kernel),node);
+        this.valueFormRecord={by:"runtime",...query.stats};
+        return value;
+      }
+    } catch(error) {
+      if(!(error instanceof RuntimeError))throw scope.unit.locate(error,node);
+      if(error.kind!=="unsupported") {
+        // The declaration's time limit, when it is what ran out, as the
+        // kernel's queries report it.
+        if(error.kind==="deadline")this.checker.kernel.checkDeadline();
+        throw scope.unit.locate(runtimeStop(error),node);
+      }
+      unsupported={unsupported:error.message,...query?{runtime:query.stats}:{}};
+    } finally {query?.dispose();}
+    const value=valueForm(result.expression,kernel,node);
+    this.valueFormRecord={by:"kernel",...unsupported};
+    return value;
+  }
+  // The runtime's answers to the value form's walk, read as the kernel's
+  // (demandQueries): a head is an observation, whose spine names it by the
+  // kernel's node kinds, and each spends a query of the evaluation's fuel,
+  // as the head query it stands for does. An observation's signature is the
+  // kernel's index at the query's snapshot, which no kernel operation
+  // changes before the walk ends.
+  runtimeQueries(scope,query,kernel) {
+    const checker=this.checker,shape=(kind,children=[])=>({root:{kind,children},args:[]});
+    return {
+      head:handle=>{scope.spend("queries");return query.observeNow(handle,checker.runtimeLimits());},
+      spine:head=>head.kind==="Con"?{root:{kind:"Con",id:head},args:head.args}
+        :head.kind==="Pair"?shape("Pair",[0,head.first,head.second])
+        :head.kind==="Inl"||head.kind==="Inr"?shape(head.kind,[0,head.item])
+        :shape({Function:"Lam",LevelFunction:"LLam",PathAbstraction:"PLam",Type:"U"}[head.kind]??head.kind),
+      constructor:head=>checker.shownConstructorOf(head.signature,head.index),
+      fieldOrder:kernel.fieldOrder,
+    };
+  }
   // `print(evaluate(e));` shows the value form of a closed, assumption-free
   // term, `print(evaluate(!!e));` its normal form, stuck definitions folded,
   // and `print(evaluate(!!!e));` its full normal form; `print(typeof(e));`
@@ -497,7 +561,7 @@ export class Translator {
         // nothing more for display; a value form whole, within the budget
         // its walk kept.
         if(d.mark==="!")return {text:this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0}),axioms:[]};
-        return {text:this.shownIn(valueForm(result.expression,at,d.value),scope,{width:Infinity,reduce:0}),axioms:[]};
+        return {text:this.shownIn(this.valueFormOf(result,scope,d.value,at),scope,{width:Infinity,reduce:0}),axioms:[]};
       }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
@@ -766,8 +830,10 @@ export class Translator {
         try {
           // A file-level use selects for directives too, which print in it.
           const scope=this.itemScope(new Scope(unit,new Map(),env),d);
-          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            ...this.printed(d,scope)});
+          this.valueFormRecord=null;
+          const printed=this.printed(d,scope);
+          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,...printed,
+            ...(this.valueFormRecord?{valueForm:this.valueFormRecord}:{})});
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",

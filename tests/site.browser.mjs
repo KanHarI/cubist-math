@@ -155,6 +155,12 @@ await browserTest(async ({ browser, base }) => {
   for (const text of ["import unat;", "use unat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : UNat", "UNat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
+  // The worker's runtime shows a value form where the kernel's head queries
+  // stop (K344), and a stop at its limits leaves the session usable.
+  for (const text of ["def count_into(n, total : UNat) : UNat := match n {\n  zero => total;\n  succ(k) => count_into(k, succ(total));\n};",
+    "evaluate count_into(2 * 255, 0);", "evaluate count_into(100 * 100 * 100, 0);", "evaluate x + 1;"]) await enter(text);
+  assert.deepEqual(await lastResults(3), ["510", "E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells.", "8"]);
+  console.log("PASS REPL page: the runtime's value forms and its limits");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
   await enter("/modules lists");
