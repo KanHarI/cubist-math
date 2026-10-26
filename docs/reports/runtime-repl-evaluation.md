@@ -161,7 +161,7 @@ entry's start.
 | `factorial(40)`, BNat | value, 51,104,955 ticks | fallback at a composition | 26,009 before it | 32,125 | 45 / 1.3 MiB | 7,798 / 8,457 | 303 / 302 |
 | `2/3 + 1/6`, binary rationals | value, 56,153 ticks | fallback from its type, no snapshot | none | none | none | 91 / 126 | 547 / 545 |
 | `duplicated-calls-24` | `tt`, 1,141 ticks | E488 at 20M cells | — | 20,000,000 | — | 1,735 / 3 | 110 / 93 |
-| list parity, 200,000 cells retained | "Invalid cubical session." | E488 at 20M cells | — | 20,000,000 | 2,496,166 / 475.6 MiB | 3,049 / 12 | 910 / 140 |
+| list parity, 200,000 cells retained | K336 after 141,381 ticks (since #321; "Invalid cubical session." before) | E488 at 20M cells | — | 20,000,000 | 2,496,166 / 475.6 MiB | 3,049 / 12 | 910 / 140 |
 
 The runtime builds no kernel syntax: each runtime row's arena grew only by
 the entry's own checking and its type's weak head (1 to 272 nodes, and
@@ -206,10 +206,12 @@ for the asynchronous `observe` only; the snapshot here is at most 6,043
 nodes in the workloads measured (`factorial(40)`), and a binary rational
 takes none.
 
-**Pre-existing, on main.** The list-parity setup's evaluation by the
-kernel's queries reports "Invalid cubical session." on main `e7b67376` too
-(the error message of a freed kernel session), with or without this
-change; it is not investigated here.
+**Fixed on main by #321.** The list-parity setup's evaluation by the
+kernel's queries reported "Invalid cubical session." on main `e7b67376` too:
+nested eliminators overflowed the 2 MiB WASM stack, placed after the static
+data, and overwrote the bridge's session table. Since #321 the stack comes
+first with 8 MiB, and the kernel's queries stop at the recursion guard, K336,
+after 141,381 ticks (re-measured on this branch merged with main `b7482e84`).
 
 ## Decisions of 2026-10-26
 
