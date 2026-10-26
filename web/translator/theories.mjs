@@ -9,7 +9,7 @@ import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
-import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe} from "./model-notation.mjs";
+import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe,notationPrintingViews} from "./model-notation.mjs";
 export {recordOf} from "./model-notation.mjs";
 import {operatorBinding,SELECTION,bindNotationContext,notationBinding} from "./notation-context.mjs";
 import {retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
@@ -53,7 +53,8 @@ export function registerTheoryDeclaration(t,d) {
       const record=t.checker.theories.get(binding),field=[...record.fields,...record.derived].find(field=>field.id===rule.field);
       const projection=t.compilationBindings.table.get(field.projectionId).label;
       (t.checker.notationPrinting??=new Map()).set(t.bindingName(projection),
-        [operator==="numeral"?{theoryNumeral:true}:{operator,model:true,recipe:notationPrintingRecipe(rule.recipe)}]);
+        [operator==="numeral"?{theoryNumeral:true}
+          :{operator,model:true,recipe:notationPrintingRecipe(rule.recipe),views:notationPrintingViews(rule.recipe)}]);
     }
 }
 

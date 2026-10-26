@@ -3,7 +3,7 @@ import {sourceOrigin} from "../cubist/bindings.mjs";
 import {bindingSyntaxAdapter} from "./binding-module.mjs";
 import {retainNamedNotation} from "../cubist/named-notation.mjs";
 import {enterSourceItem} from "./retained-source-context.mjs";
-import {notationPrintingRecipe} from "./model-notation.mjs";
+import {notationPrintingRecipe,notationPrintingViews} from "./model-notation.mjs";
 import {SELECTION,notationContextKey,NUMERAL_NAT,lexemeKey} from "./notation-context.mjs";
 import {naturalReaders} from "../cubist/named-notation.mjs";
 
@@ -51,7 +51,8 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       if(signature) {
         const printing=t.checker.notationPrinting??=new Map();
         printing.set(signature,[...(printing.get(signature)??[]),
-          {notation:artifact.binding.label,identity:artifact.binding.id,identityNumeral:true}]);
+          {notation:artifact.binding.label,identity:artifact.binding.id,identityNumeral:true,
+            ...(artifact.model?{attached:true}:{})}]);
       }
       continue;
     }
@@ -64,7 +65,7 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       &&v.args.every(arg=>arg.name===operands[0]||arg.kind==="number"))
       entry={numeral:v.args.map(arg=>arg.kind==="number"?arg.value:null)};
     else if(operands.length===2&&v.args.length===2&&v.args.every((arg,i)=>arg.name===operands[i]))
-      entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe)};
+      entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe),views:notationPrintingViews(rule.recipe)};
     if(entry) {
       const printing=t.checker.notationPrinting??=new Map();
       printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,identity:artifact.binding.id,

@@ -40,9 +40,11 @@ test("mathematical displays show computed binary magnitudes and retained rationa
 });
 
 test("a same-named non-identity view cannot turn unary values into bare numerals", () => {
-  const symbols = { unat__UNat: { printing: [{ notation: "view", identity: "original", identityNumeral: true }] } };
-  assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "original" }), "10");
-  assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "shadow" }), "unat.(10)");
+  const symbols = { unat__UNat: { printing: [{ notation: "unat", identity: "unary", identityNumeral: true },
+    { notation: "view", identity: "original", identityNumeral: true }] } };
+  const reads = name => ({ unat: "unary", view: "shadow" })[name] ?? null, opens = () => false;
+  assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "original", reads, opens }), "10");
+  assert.equal(sourceText(numeral(10), symbols, 4000, { selection: "view", selectionIdentity: "shadow", reads, opens }), "unat.(10)");
 });
 
 test("public natural notation stays binary under transitive unary imports", async t => {

@@ -35,9 +35,13 @@ test("types print as they are written, with only the parentheses the parser need
   assert.equal(sourceText(pi("_", pi("n", unat, equal(variable("n"), variable("n"))), unit)), "(forall n : UNat. n = n) -> Unit");
 });
 
-// Where unat's notation is selected, as after use unat;.
+// Where unat's notation is selected, as after use unat;. A scope's lookups
+// say which notation each name selects (notationContext); a numeral prints
+// abbreviated only where they establish it.
+const scoped = identities => ({ reads: name => identities[name] ?? null, opens: () => false });
 const unarySymbols = { unat__UNat: { printing: [{ notation: "unat", identity: "unary-view", identityNumeral: true }] } };
-const natText = term => sourceText(term, unarySymbols, 4000, { selection: "unat", selectionIdentity: "unary-view" });
+const unaryScope = scoped({ unat: "unary-view" });
+const natText = term => sourceText(term, unarySymbols, 4000, { selection: "unat", selectionIdentity: "unary-view", ...unaryScope });
 
 test("values and arithmetic print in source syntax", () => {
   assert.equal(natText(equal(add(number(2), number(2)), number(5))), "2 + 2 = 5");
@@ -52,8 +56,12 @@ test("values and arithmetic print in source syntax", () => {
   assert.equal(natText(app({ tag: "Lam", name: "x", domain: unat, body: variable("x") }, number(1))), "(fun (x : UNat) => x)(1)");
   // Where nothing is selected, unat's operations and numerals are qualified,
   // so the text reads back (L2.10j).
-  assert.equal(sourceText(equal(add(number(2), number(2)), number(5)), unarySymbols), "unat.(2 + 2) = unat.(5)");
+  assert.equal(sourceText(equal(add(number(2), number(2)), number(5)), unarySymbols, 4000, unaryScope), "unat.(2 + 2) = unat.(5)");
   assert.equal(sourceText(add(variable("m"), variable("n"))), "unat.(m + n)");
+  // Without a scope that establishes unat's notation, a numeral prints as
+  // its constructors, which read back anywhere UNat's do.
+  assert.equal(sourceText(number(2), unarySymbols), "succ(succ(zero))");
+  assert.equal(sourceText(number(2), unarySymbols, 4000, scoped({ unat: "shadow" })), "succ(succ(zero))");
 });
 
 // Messages, evaluations and prints in source syntax are
@@ -84,11 +92,14 @@ test("binary numbers print as binary literals", () => {
   const bit = (digit, p) => ({ tag: "App", fn: constructor("BinaryPositive", digit ? 2 : 1, `binary_bit${digit}`), arg: p });
   // Where binary's notation is selected they print as written, and
   // elsewhere qualified (L2.10j).
-  const binaryText = term => sourceText(term, {}, 4000, { selection: "binary" });
+  const symbols = { binary_naturals__binary_literal: { printing: [{ notation: "binary", identity: "binary-reader", literal: true }] } };
+  const scope = scoped({ binary: "binary-reader" });
+  const binaryText = term => sourceText(term, symbols, 4000, { selection: "binary", selectionIdentity: "binary-reader", ...scope });
   assert.equal(binaryText(zero), "0b0");
   assert.equal(binaryText(positive(bit(0, bit(1, one)))), "0b110");
-  assert.equal(sourceText(positive(bit(0, bit(1, one)))), "binary.(0b110)");
-  assert.equal(sourceText(zero, {}, 4000, { selection: "unat" }), "binary.(0b0)");
+  assert.equal(sourceText(positive(bit(0, bit(1, one))), symbols, 4000, scope), "binary.(0b110)");
+  assert.equal(sourceText(zero, symbols, 4000, { selection: "unat", ...scope }), "binary.(0b0)");
+  assert.equal(sourceText(zero, symbols), "binary_zero");
   // Anything else in the same type prints as it is built.
   assert.match(sourceText(positive(variable("p"))), /^binary_positive\(p\)$/);
   assert.match(sourceText(positive(bit(1, variable("p")))), /^binary_positive\(binary_bit1\(p\)\)$/);
@@ -99,16 +110,21 @@ test("binary-natural normal forms print only through a known reader", () => {
   const zero = constructor("BNat", 0, "b_zero"), positive = p => app(constructor("BNat", 1, "b_positive"), p);
   const one = constructor("BPositive", 0, "bp_one");
   const odd = p => app(constructor("BPositive", 2, "bp_odd"), p);
-  const symbols = { bnat_notation__bnat_literal: { printing: [{ notation: "bnat", literal: true }] } };
+  const symbols = { bnat_notation__bnat_literal: { printing: [{ notation: "bnat", identity: "bnat-reader", literal: true }] } };
+  const scope = scoped({ bnat: "bnat-reader" });
   assert.equal(sourceText(zero), "b_zero");
-  assert.equal(sourceText(positive(one), {}, 4000, { selection: "bnat" }), "b_positive(bp_one)");
-  assert.equal(sourceText(zero, symbols), "bnat.(0)");
-  assert.equal(sourceText(positive(one), symbols, 4000, { selection: "unat" }), "bnat.(1)");
-  assert.equal(sourceText(positive(odd(one)), symbols, 4000, { selection: "bnat" }), "3");
-  assert.equal(sourceText(positive(variable("p")), symbols), "b_positive(p)");
-  assert.equal(sourceText(positive(odd(variable("p"))), symbols), "b_positive(bp_odd(p))");
-  const unrelated = { other__parse: { printing: [{ notation: "bnat", literal: true }] } };
-  assert.equal(sourceText(zero, unrelated, 4000, { selection: "bnat" }), "b_zero");
+  assert.equal(sourceText(positive(one), {}, 4000, { selection: "bnat", ...scope }), "b_positive(bp_one)");
+  assert.equal(sourceText(zero, symbols, 4000, scope), "bnat.(0)");
+  assert.equal(sourceText(positive(one), symbols, 4000, { selection: "unat", ...scope }), "bnat.(1)");
+  assert.equal(sourceText(positive(odd(one)), symbols, 4000, { selection: "bnat", selectionIdentity: "bnat-reader", ...scope }), "3");
+  assert.equal(sourceText(positive(variable("p")), symbols, 4000, scope), "b_positive(p)");
+  assert.equal(sourceText(positive(odd(variable("p"))), symbols, 4000, scope), "b_positive(bp_odd(p))");
+  const unrelated = { other__parse: { printing: [{ notation: "bnat", identity: "bnat-reader", literal: true }] } };
+  assert.equal(sourceText(zero, unrelated, 4000, { selection: "bnat", selectionIdentity: "bnat-reader", ...scope }), "b_zero");
+  // Without a scope, or where bnat names another notation, the reader cannot
+  // be established, and the value prints as its constructors.
+  assert.equal(sourceText(zero, symbols), "b_zero");
+  assert.equal(sourceText(positive(odd(one)), symbols, 4000, scoped({ bnat: "shadow" })), "b_positive(bp_odd(bp_one))");
 });
 
 test("recursion and case analysis print as induction and match", () => {
