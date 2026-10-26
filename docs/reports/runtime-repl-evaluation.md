@@ -20,29 +20,39 @@ so do files and the command-line checker.
 1. The term is checked and its assumptions inventoried as before
    (`checker.evaluated`, `requiredAssumptions`); a term that uses one is
    refused (E324) before anything is computed.
-2. `checker.runtimeQuery` (`web/cubical-elaborator.mjs`) makes a
+2. `checker.runtimeRefusal` asks the kernel for the weak head of the term's
+   type, within 100,000 steps, for one query of the directive's fuel. If it
+   is a declared type the runtime does not execute (`ordinarySignature` in
+   `web/cubical-runtime.mjs`: a quotient or another higher or truncated
+   sort), the value's weak head is a constructor of that type or a
+   composition, both of which the runtime refuses: the fallback of step 5
+   is taken here, before any snapshot, with the reason the runtime would
+   give. A type whose head does not come within the budget decides nothing.
+3. `checker.runtimeQuery` (`web/cubical-elaborator.mjs`) makes a
    `RuntimeQuery` over the closed typing judgement the check derived. A
    judgement with a context gets none and is walked by the kernel's queries
    alone; a print is top-level, so none has been seen. The query copies the
    reachable syntax, definitions and admitted signatures.
-3. `valueForm` (`web/translator/evaluation.mjs`), unchanged, walks the value
+4. `valueForm` (`web/translator/evaluation.mjs`), unchanged, walks the value
    form; its head query is the runtime's `observeNow`, synchronous, one
    query of the directive's fuel per head as the kernel's head query spends.
-4. **The fallback, specified once:** a `RuntimeError` of kind `unsupported`
-   from the snapshot or any observation abandons the runtime's walk, which
+5. **The fallback, specified once:** a `RuntimeError` of kind `unsupported`
+   from step 2, the snapshot or any observation abandons the runtime's walk, which
    is not shown, and the same walk is computed again from the start by the
    kernel's head queries (`demandQueries`), exactly once. Unsupported demand
    is: a path applied, a composition (`Comp`, `HComp`, `Trans`), Glue, a
    Glue term, `unglue`, `abort`, a higher or truncated sort, a constructor
    with cubical recursive positions, and η of a path abstraction.
-5. A stop at the runtime's limits is reported and not retried: E487 (work,
+6. A stop at the runtime's limits is reported and not retried: E487 (work,
    100M steps), E488 (allocation, 20M cells) or E489 (time, 30 s a part),
    and, when the declaration's time limit set the runtime's deadline, that
    limit's E629 as the kernel's queries report it. Any other runtime
    failure on checked input is a defect, E490.
 
 The print directive records which computed its value form, with the
-runtime's counters (`valueForm` on each entry of `prints`).
+runtime's counters (`valueForm` on each entry of `prints`). A fallback
+records its reason, and the runtime's counters only when a query was made:
+a fallback decided in step 2 has none.
 
 Unchanged, on the kernel's queries: `evaluate !e` (the weak head as the
 kernel leaves it, which needs kernel terms for its arguments), `!!`, `!!!`,
@@ -90,8 +100,9 @@ the value form's markers need:
   197 closed examples of every construct, each printed by the runtime and by
   the kernel's queries alone (`tests/evaluation-demand-marks.test.mjs`):
   every value form is the kernel's. The runtime computes 135; 58 fall back
-  (29 higher or truncated sorts, 20 compositions, 4 path applications, 3 η
-  of a path abstraction, 1 Glue, 1 `unglue`); 4 assumptions are refused.
+  (34 higher or truncated sorts, 18 of them decided from the value's type
+  before any snapshot, 17 compositions, 2 path applications, 3 η of a path
+  abstraction, 1 Glue, 1 `unglue`); 4 assumptions are refused.
 - Every module with a `print(evaluate(…))` among `cubist-tests/`,
   `library/` and `tests/fixtures/`, all 31 of them in `cubist-tests/`,
   with 146 prints, checked both ways in a separate run: identical prints and
@@ -100,8 +111,11 @@ the value form's markers need:
   kernel's queries, and `npm test` checks them with the runtime.
 - `tests/runtime-evaluation.test.mjs`: capture and shadowing, an unused
   path argument and an unused argument that would cost 2^24 calls, a thunk
-  shared by both components of a pair, a fallback with its reason, equal
-  fuel by either computation, the depth and budget cuts by either
+  shared by both components of a pair, a fallback with its reason, fuel
+  equal by either computation but for the type's weak head, values of a
+  quotient, a higher inductive type and a binary rational decided from
+  their types with no snapshot while a pair containing a quotient and
+  ordinary data still ask the runtime, the depth and budget cuts by either
   computation (in `tests/evaluation-demand-marks.test.mjs`), values past
   the kernel's syntax depth guard, a stop at the allocation cap reported as
   E488 and not retried, and the declaration's time limit.
@@ -117,41 +131,50 @@ the value form's markers need:
 
 `node tools/runtime-repl-probe.mjs` checks each workload's setup in a fresh
 REPL session and measures one `evaluate` entry, by the runtime and by the
-kernel's queries alone, in fresh processes. Three runs at `38d8e585` plus
-the probe's own uncommitted additions, Node 24.13.0, macOS arm64 (Apple M3
-Pro), runtime SHA-256 prefix `421deb2f985f38ce`; every counter was the
-same in all three. The machine was shared with other heavy jobs (load
-average 20–35), so the times are medians of three loaded samples, not
-speed claims. Steps are runtime transitions, ticks the kernel's query
-steps; the units differ. Retained memory is measured after a collection
-with the query still alive: the runtime objects reachable from its roots
-and the heap above the entry's start.
+kernel's queries alone, each sample in a process of its own. Every row was
+re-measured after the first review round, which found that a run naming
+workloads measured them in one process; the table had been taken by the
+run naming none, whose samples were already separate. The type check of
+step 2 changed the rational's row. Three runs at `1f283e42` plus that
+round's changes, Node 24.13.0, macOS arm64 (Apple M3 Pro), runtime SHA-256
+prefix `12e703bcb1787daf`; every counter was the same in all three. The
+machine was shared with other heavy jobs (load average 11–58 during the
+runs), so the times are medians of three loaded samples, not speed claims.
+Steps are runtime transitions, ticks the kernel's query steps; the units
+differ. Retained memory is measured after a collection with the query still
+alive: the runtime objects reachable from its roots and the heap above the
+entry's start.
 
 | Workload | Kernel's queries | Runtime | Runtime steps | Cells allocated | Retained objects / heap | Median entry ms (runtime / kernel) | Max RSS MiB (runtime / kernel) |
 | --- | --- | --- | ---: | ---: | --- | --- | --- |
-| `euclid(3)` | value, 150,918 ticks, 38,736 nodes | same value | 247,542 | 145,770 | 18,962 / 1.8 MiB | 64 / 21 | 142 / 142 |
-| `euclid(4).1` | K344 after 655,030 ticks | `5` | 469,175 | 267,045 | 52,493 / 4.0 MiB | 65 / 102 | 149 / 160 |
-| `euclid(4)` | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,385,819 | 771,843 | 104,930 / 7.6 MiB | 128 / 125 | 175 / 160 |
-| `euclid(5).1` | K344 after 887,726 ticks | `11` | 28,187,952 | 15,566,553 | 3,382,822 / 229.2 MiB | 3,144 / 198 | 621 / 165 |
-| `euclid(6).1` | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | — / 269.6 MiB | 1,566 / 97 | 511 / 161 |
-| `count_into(2 * 255, 0)` | K344 after 44,646 ticks | `510` | 67,835 | 38,927 | 10,247 / 1.3 MiB | 77 / 16 | 127 / 122 |
-| `(2 * 255, 2 * 255)` | value, 16,645 ticks | same value | 63,698 | 37,172 | 9,250 / 1.6 MiB | 68 / 56 | 133 / 133 |
-| `doubling(8)` | value, 8,918 ticks | same value | 15,143 | 8,572 | 1,869 / 0 MiB | 26 / 18 | 120 / 121 |
-| BNat product of two 20-digit numerals | value, 921,830 ticks | same value | 655,044 | 369,444 | 108,197 / 8.1 MiB | 129 / 128 | 276 / 285 |
-| `factorial(40)`, BNat | value, 51,104,955 ticks | fallback at a composition | 26,009 before it | 32,125 | 45 / 1.3 MiB | 4,129 / 3,998 | 305 / 305 |
-| `2/3 + 1/6`, binary rationals | value, 56,153 ticks | fallback at the quotient | 121,925 before it | 161,110 | 97 / 7.8 MiB | 192 / 64 | 595 / 617 |
-| `duplicated-calls-24` | `tt`, 1,141 ticks | E488 at 20M cells | — | 20,000,000 | — | 732 / 4 | 109 / 94 |
-| list parity, 200,000 cells retained | "Invalid cubical session." | E488 at 20M cells | — | 20,000,000 | 2,496,166 / 475.6 MiB | 2,962 / 14 | 904 / 141 |
+| `euclid(3)` | value, 150,918 ticks, 38,736 nodes | same value | 247,542 | 145,770 | 18,962 / 1.8 MiB | 53 / 29 | 144 / 146 |
+| `euclid(4).1` | K344 after 655,030 ticks | `5` | 469,175 | 267,045 | 52,493 / 4.0 MiB | 66 / 108 | 147 / 161 |
+| `euclid(4)` | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,385,819 | 771,843 | 104,930 / 7.6 MiB | 162 / 187 | 170 / 157 |
+| `euclid(5).1` | K344 after 887,726 ticks | `11` | 28,187,952 | 15,566,553 | 3,382,822 / 229.2 MiB | 3,281 / 154 | 606 / 165 |
+| `euclid(6).1` | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | — / 268.0 MiB | 1,837 / 84 | 510 / 158 |
+| `count_into(2 * 255, 0)` | K344 after 44,646 ticks | `510` | 67,835 | 38,927 | 10,247 / 1.3 MiB | 67 / 23 | 127 / 121 |
+| `(2 * 255, 2 * 255)` | value, 16,645 ticks | same value | 63,698 | 37,172 | 9,250 / 1.6 MiB | 118 / 67 | 133 / 135 |
+| `doubling(8)` | value, 8,918 ticks | same value | 15,143 | 8,572 | 1,869 / 0.1 MiB | 50 / 18 | 119 / 121 |
+| BNat product of two 20-digit numerals | value, 921,830 ticks | same value | 655,044 | 369,444 | 108,197 / 8.1 MiB | 221 / 229 | 275 / 286 |
+| `factorial(40)`, BNat | value, 51,104,955 ticks | fallback at a composition | 26,009 before it | 32,125 | 45 / 1.3 MiB | 7,798 / 8,457 | 303 / 302 |
+| `2/3 + 1/6`, binary rationals | value, 56,153 ticks | fallback from its type, no snapshot | none | none | none | 91 / 126 | 547 / 545 |
+| `duplicated-calls-24` | `tt`, 1,141 ticks | E488 at 20M cells | — | 20,000,000 | — | 1,735 / 3 | 110 / 93 |
+| list parity, 200,000 cells retained | "Invalid cubical session." | E488 at 20M cells | — | 20,000,000 | 2,496,166 / 475.6 MiB | 3,049 / 12 | 910 / 140 |
 
 The runtime builds no kernel syntax: each runtime row's arena grew only by
-the entry's own checking (14–272 nodes), where the kernel's walk allocates
+the entry's own checking and its type's weak head (1 to 272 nodes, and
+3,646 for the product's binary literals), where the kernel's walk allocates
 up to 231,050 nodes before K344. In the evaluation baseline, also recorded
 under load, the decision whether 5 divides 121 shows `right(<fun>)` where
 the kernel's queries stop with K344.
 
-The rational's fallback is mostly its snapshot: 32,015 copied nodes,
-reachable through 383 definitions (30,380 without definition and
-constructor types), for 149 forces before the quotient's constructor.
+Before the type check, the rational's fallback was mostly its snapshot:
+32,015 copied nodes, reachable through 383 definitions (30,380 without
+definition and constructor types), and 121,925 runtime steps for 149 forces
+before the quotient's constructor (192 against 64 ms in that loaded
+sample). Now its type's weak head decides the fallback, for 604 kernel
+ticks and 89 arena nodes more than the kernel's queries alone spend, and no
+snapshot.
 
 ## Findings
 
@@ -167,8 +190,8 @@ unchanged (3,967,646 against 3,968,762) and raised the retained objects from
 3,382,827 to 8,450,145 and the heap after measurement from 456 to 1,406 MiB.
 
 **Memory.** The 20M-cell cap bounds the runtime's memory; it is not
-calibrated in bytes. At the cap the probe measured a process peak of 511 MiB
-(`euclid(6).1`) and 904 MiB with every cell retained (list parity), against
+calibrated in bytes. At the cap the probe measured a process peak of 510 MiB
+(`euclid(6).1`) and 910 MiB with every cell retained (list parity), against
 about 140–165 MiB for the kernel's walk of the same setups. Closed-environment
 pruning and a byte calibration remain EVAL4 work.
 
@@ -177,48 +200,32 @@ the kernel's queries do: the browser worker answers no message during an
 entry either way, and the page's watchdog still bounds a REPL entry. The
 runtime adds its own bounds: 100M steps, 20M cells and a time limit (the
 declaration's, else 30 seconds a part). A responsive snapshot copy matters
-for the asynchronous `observe` only; the snapshot here is at most 32,015
-nodes in the workloads measured.
+for the asynchronous `observe` only; the snapshot here is at most 6,043
+nodes in the workloads measured (`factorial(40)`), and a binary rational
+takes none.
 
 **Pre-existing, on main.** The list-parity setup's evaluation by the
 kernel's queries reports "Invalid cubical session." on main `e7b67376` too
 (the error message of a freed kernel session), with or without this
 change; it is not investigated here.
 
-## Decisions needed
+## Decisions of 2026-10-26
 
-**Constructor patterns.** The work plan has the REPLs compute constructor
-patterns through the runtime as well. A pattern's verdict is a check: an
-`evaluate … expecting` directive passes or fails, and contracts gate on it.
-The runtime's observations are not kernel evidence, so a runtime verdict
-would let unreviewed code pass a check the kernel's queries would decide.
-Patterns' expression leaves also compare a part's normal form with the
-leaf's by conversion, and a runtime part has no kernel term until typed
-readback (step 2.4). Options:
+The two questions this slice left open were decided the same day:
 
-1. Keep patterns on the kernel's queries until typed readback and the
-   applicable EVAL8 review (step 2.4), where a read-back part can be checked
-   by the kernel. Nothing changes for directives. **Recommended**: it
-   preserves every existing check, and the value form already shows what
-   the runtime can compute.
-2. Let the runtime decide a pattern's skeleton (holes, `!_`, pairs,
-   injections and constructors), falling back whole on any leaf that needs a
-   kernel term. Directives pass on runtime verdicts; this needs the
-   decision that an unreviewed observation may pass a directive.
-3. As 2, but in the REPL only, with the verdict shown as a runtime
-   observation and files kept on the kernel's queries: two meanings for one
-   directive.
-4. Runtime verdicts confirmed by the kernel's queries: no saving, and no
-   verdict where the kernel's queries stop.
-
-**Stops at the runtime's limits.** A stop is reported, as the slice's
-contract states, so `duplicated-calls-24` shows E488 where the kernel's
-queries show `tt`. Options:
-
-1. Keep reporting the stop (this change); track sharing of repeated calls,
-   by a memo whose retention is measured, as EVAL4 work. **Recommended**:
-   the stop is controlled and bounded, `evaluate !!e` still asks the kernel,
-   and the fallback stays a single, stated rule.
-2. Also fall back to the kernel's queries on a stop: every outcome is then
-   today's, at up to the runtime's limits in wasted work (about 0.7–3 s and
-   up to 0.9 GiB in the rows above), and the runtime's stop is not reported.
+- **Constructor patterns stay on the kernel's queries** until typed
+  readback and the applicable EVAL8 review (the work plan's step 2.4). A
+  pattern's verdict is a check: an `evaluate … expecting` directive passes
+  or fails, and contracts gate on it, so the runtime's observations, which
+  are not kernel evidence, may not decide it. Patterns' expression leaves
+  also compare a part's normal form with the leaf's by conversion, and a
+  runtime part has no kernel term until typed readback. The options
+  considered were a runtime verdict for the pattern's skeleton, in files
+  and the REPL or in the REPL only as a labelled observation, and runtime
+  verdicts confirmed by the kernel's queries, which save nothing.
+- **A stop at the runtime's limits stays reported, not retried**, so
+  `duplicated-calls-24` shows E488 where the kernel's queries show `tt`;
+  `evaluate !!e` still asks the kernel. Sharing a call written twice is
+  EVAL4 work, by a memo whose retention is measured. The option considered
+  was a second fallback on a stop, which would give today's outcome at up
+  to the runtime's limits in wasted work and would not report the stop.

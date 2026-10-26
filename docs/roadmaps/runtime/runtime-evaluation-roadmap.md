@@ -102,6 +102,15 @@ stays within its stated contract.
 - The [work plan](../work-plan.md#first-actions) orders these steps after the
   site-publication fix and B8 of the
   [debugging plan](rational-normalization-debug-plan.md).
+- With the runtime in the REPLs, constructor patterns stay on the kernel's
+  queries, with exact expected values and the demand marks, until typed
+  readback and the applicable EVAL8 review: a pattern's verdict is a check,
+  which the runtime's observations may not decide.
+- A stop at the runtime's limits is reported, not retried: the one fallback
+  is demand the runtime reports unsupported. Sharing a call written twice,
+  which the kernel's weak-head cache shares by syntax and the runtime
+  computes twice ([`duplicated-calls-24`](../../reports/runtime-repl-evaluation.md#findings)),
+  is EVAL4 work.
 
 ## Goal and current failure
 
@@ -396,7 +405,7 @@ scope, as in the work plan.
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); the default `Z`/`Q` migration, generic numerals and rendering remain | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
-| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration and closed-environment pruning remain | EVAL3 design; implement alongside it | M |
+| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
 | EVAL7 | Efficient checked divisibility and search over BNat | NUM1, EVAL0; independent of the new evaluator | M |
@@ -1035,21 +1044,33 @@ reports unsupported, such as a path applied, a composition, Glue, a higher
 or truncated sort or η of a path abstraction, is the one fallback: the whole
 walk is computed again from the start by the kernel's head queries, once,
 and nothing the runtime computed is shown. A runtime stop at its limits is
-reported (E487–E489, or the declaration's time limit), not retried. The
+reported (E487–E489, or the declaration's time limit), not retried. Where
+the evaluated term's type is a declared type the runtime does not execute, a
+quotient or another higher or truncated sort, the same fallback is decided
+before the snapshot from the type's weak head, with the same reason: the
+value's first head is that type's constructor or a composition. The
 observation now takes the kernel's weak head: η of term and level lambdas,
 partially applied constructors with their arity, types, and unapplied path
 abstractions.
 
 Over the demand marks' 197 constructs, the runtime computes 135 value forms
-and falls back on 58, and every value form is the kernel's. The runtime shows
+and falls back on 58, 18 of them from the value's type, and every value form
+is the kernel's. The runtime shows
 `euclid(4)`'s value form and the primes of `euclid(4)` and `euclid(5)`,
 where the kernel's queries stop with K344; `euclid(6).1` stops at the
 runtime's 20M-cell cap. A computation written twice in nested functions,
 which the kernel's weak-head cache shares by syntax, is computed twice by the
 runtime: the report's `duplicated-calls-24` stops at the cap where the
-kernel's queries answer. Constructor patterns wait on a decision the
-report sets out: their verdicts are checks, and patterns' expression leaves
-need kernel terms for runtime parts, which typed readback provides.
+kernel's queries answer.
+
+Decided on 2026-10-26: constructor patterns stay on the kernel's queries
+until typed readback and the applicable EVAL8 review, since a pattern's
+verdict is a check and its expression leaves need kernel terms for runtime
+parts; and a stop at the runtime's limits stays reported, not retried.
+EVAL4's open items are a responsive snapshot copy for asynchronous use,
+memory calibration, closed-environment pruning, and sharing of repeated
+calls, a memo whose retention is measured: a per-environment memo of
+delayed syntax was tried and withdrawn, as the report records.
 
 ### Rational full-normalization completion path
 

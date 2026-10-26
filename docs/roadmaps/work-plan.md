@@ -979,15 +979,16 @@ Each step lands in focused PRs under the review rule above.
         check, synchronously, as the kernel's queries do, bounded by 100M
         steps, 20M allocated cells and a time limit, the declaration's or 30
         seconds a part; a responsive snapshot matters only for asynchronous
-        use.
-      - **Constructor patterns wait on a decision**: a pattern's verdict is
-        a check, which the runtime's observations may not decide alone, and
-        its expression leaves need kernel terms for runtime parts, which
-        typed readback (4) provides. The report sets out the options.
-      - A computation written twice in nested functions is shared by the
-        kernel's weak-head cache but computed twice by the runtime, which
-        can stop at its cap where the kernel's queries answer; the report
-        measures it and the options.
+        use. A value whose type is a quotient or another higher or truncated
+        sort, as a binary rational's, falls back before the runtime's
+        snapshot, from its type's weak head.
+      - **Decided on 2026-10-26:** constructor patterns stay on the kernel's
+        queries until typed readback (4) and the applicable EVAL8 review: a
+        pattern's verdict is a check, which the runtime's observations may
+        not decide, and its expression leaves need kernel terms for runtime
+        parts. A stop at the runtime's limits stays reported, not retried;
+        sharing a call written twice, which the kernel's weak-head cache
+        shares by syntax and the runtime computes twice, is EVAL4 work.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. `!!`, `!!!`, exact expected values and a
