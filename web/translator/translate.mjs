@@ -557,13 +557,13 @@ export class Translator {
   // no printing or second source-resolution pass occurs at this boundary.
   translateSyntax(ast,source,imported=new Map()) {
     requireTestMode(ast,this.testMode);
-    // An imported module returns its importer's context. After the outermost
-    // module, terms shown later (inspection, the workbench, a program's
-    // callers) print in its scope, with no notation selected.
+    // Modules are translated one after another, imports first. After one,
+    // terms shown later (inspection, a program's callers) print in its
+    // scope, with no notation selected.
     const notation=this.checker.notation;
     let result;
     try { return result=this.translateModule(ast,source,imported); }
-    finally { this.checker.notation=notation??(result?notationForUses(result.env,this.checker,[]):undefined); }
+    finally { this.checker.notation=result?notationForUses(result.env,this.checker,[]):notation; }
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});

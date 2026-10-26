@@ -1,6 +1,8 @@
 // A checked notation effect is an ephemeral elaboration value. Canonical
 // syntax retains only the identity of the activation/operand parameter that
 // supplies it; neither live environments nor spelling lookups are serialized.
+import {sourceBindingInputs} from "./binding-module.mjs";
+
 export const operatorBinding = operator => "\u0000operator " + operator;
 export const SELECTION = "\u0000selection";
 export const NUMERAL_NAT="\u0000notation UNat";
@@ -15,26 +17,28 @@ export const notationBinding=name=>"\u0000notation "+name;
 // printer learns the scope it prints for (cubical-source-text.mjs), and
 // what name.(…) selects there, as theories.mjs's selected decides it: a
 // named notation first, then a model's notation, with the rules its module
-// added where the name is still that model. A scope with a retained lexical
-// context resolves names through it (LexicalContext.selector), deciding a
-// slot or an opening by the scope's outcomes; one without resolves them by
-// label. Either answers undefined where it cannot tell, and the printer then
-// prints no abbreviation.
+// added where the name is still that model. Names resolve through a lexical
+// context (LexicalContext.selector), deciding a slot or an opening by the
+// scope's outcomes. A lookup answers undefined where it cannot tell, and the
+// printer then prints no abbreviation.
 export function notationContext({env,lexical=null,slotOutcomes=null,checker=null},selected) {
+  // Names resolve as source written in this environment resolves them: a
+  // scope's retained lexical context, or one the environment's bindings and
+  // notation inventory give, built on the first lookup (binding-module.mjs).
+  let context=lexical;
+  const resolve=name=>{
+    context??=checker?.compilationBindings?sourceBindingInputs(checker.compilationBindings,env).context:null;
+    if(!context)return undefined;
+    let found=context.selector(name).value;
+    if(slotOutcomes&&["slot","opening","member","application"].includes(found.tag))found=slotOutcomes.resolve(found);
+    return found;
+  };
   const selector=name=>{
-    if(lexical) {
-      let found;
-      try {
-        found=lexical.selector(name).value;
-        if(slotOutcomes&&["slot","opening","member","application"].includes(found.tag))found=slotOutcomes.resolve(found);
-      } catch {return undefined;}
-      return found.tag==="notation"?{identity:found.id,named:!found.model}:found.tag==="binding"?{binding:found.id}
-        :found.tag==="missing"?null:found.tag==="member"?{member:true}:undefined;
-    }
-    const notation=env.get(notationBinding(name)),value=env.get(name);
-    if(notation?.tag==="Notation"&&!notation.model)return {identity:notation.bindingId??null,named:true};
-    if(notation?.tag==="Notation"&&value===notation.model)return {identity:notation.bindingId??null,value};
-    return value===undefined?null:{value};
+    let found;
+    try {found=resolve(name);}
+    catch {return undefined;}
+    return found===undefined?undefined:found.tag==="notation"?{identity:found.id,named:!found.model}
+      :found.tag==="binding"?{binding:found.id}:found.tag==="missing"?null:found.tag==="member"?{member:true}:undefined;
   };
   return {selection:selected?.name??null,selectionIdentity:selected?.identity??selected?.extension??null,
     selectionReceiver:selected?.receiver??null,
@@ -53,8 +57,7 @@ export function notationContext({env,lexical=null,slotOutcomes=null,checker=null
       if(found?.named)return false;
       if(model.tag==="Var")return boundInText||found?.identity===undefined;
       if(found?.identity!==undefined)return false;
-      if(lexical)return found?.binding!==undefined&&found.binding===checker?.compilationBindings?.ofValue(model)?.id;
-      return found?.value?.tag==="DefRef"&&found.value.name===model.name;
+      return found?.binding!==undefined&&found.binding===checker?.compilationBindings?.ofValue(model)?.id;
     }};
 }
 
