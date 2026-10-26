@@ -3,9 +3,18 @@
 Status: decided on 2026-10-23, as decision D1 of the
 [rational normalization debugging plan](https://github.com/KanHarI/cubist-math/pull/302).
 This note specifies the decision before evaluation changes, as the
-[demand marks](evaluation-demand-marks.md) did for theirs. FN1 adds the
-kernel query ([#309](https://github.com/KanHarI/cubist-math/pull/309)); FN2
-makes `!!` compute it and adds `!!!` for the full normal form.
+[demand marks](evaluation-demand-marks.md) did for theirs. Both work items
+are done. FN1 adds the kernel query
+([#309](https://github.com/KanHarI/cubist-math/pull/309)). FN2
+([#310](https://github.com/KanHarI/cubist-math/pull/310), 2026-10-24) makes
+`!!` compute it and adds `!!!` for the full normal form. One naming pass
+then replaced the display fixes FN2's review made case by case
+([#311](https://github.com/KanHarI/cubist-math/pull/311),
+[#312](https://github.com/KanHarI/cubist-math/pull/312)). #283's
+binary-rational contracts were rebased onto `!!_`, and its API was released
+on these folded normal forms on 2026-10-26. The full normal forms of its wide
+inverse and negative decision still stop at `K337` and `K344` under `!!!_`,
+and do not gate that release.
 
 ## The problem
 
@@ -188,7 +197,7 @@ Recommended, and taken unless the user changes them:
 
 ## Work
 
-- **FN1. The kernel query.** `cc_kernel_normalize_folded` in
+- **FN1. The kernel query.** Done in #309. `cc_kernel_normalize_folded` in
   `kernel/src/term_normalize.c`, sharing the full normalizer's explicit
   stack, with a cache of its own that every checkpoint clears, and its
   bridge export. Native tests: closed first-order data equal to the full
@@ -200,7 +209,8 @@ Recommended, and taken unless the user changes them:
   budget and deadline,
   rollback and commit, and the full normal form unchanged. The
   kernel reference chapter on normalization documents it.
-- **FN2. The marks.** `!!` computes the folded normal form; `!!!` is lexed,
+- **FN2. The marks.** Done in #310, with the display naming in #311 and #312.
+  `!!` computes the folded normal form; `!!!` is lexed,
   parsed, formatted and linted as `!!` is and computes the full one. Two
   marks in a row are refused, so that no spacing turns `! !!` into `!!!`,
   and a `!!!` inside a `!!` part, which that part's normal form cannot

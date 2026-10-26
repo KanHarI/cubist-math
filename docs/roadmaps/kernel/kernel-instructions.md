@@ -1,12 +1,24 @@
 # Kernel instructions: a THTH-style forward kernel
 
-Status reconciled on 2026-10-17 against main `e729c2d5`; dated measurements
+Status reconciled on 2026-10-26 against main `7230825e`; dated measurements
 and review decisions below retain their original revisions.
 
 The merged [refactoring work](../historical/refactoring-and-testing.md) adds WASM enum parity
 checks, a shared step-budget wrapper and explicit builtin dispatch. Stage-6
 performance/certificate work remains open; instruction-driver reorganization
 is deferred.
+
+Kernel changes since come from the
+[runtime track](../runtime/runtime-evaluation-roadmap.md), which records them:
+the full-normalization cache (#269), bounded continuations for full
+normalization (#291), weak-head tail chains (#292), stack-safe substitution
+and dependency scans (#294), comparison and level worklists (#297), resource
+failures preserved across the kernel and elaborator APIs (#285), and the
+folded normal-form query `cc_kernel_normalize_folded` (#309). They do not
+close stage 6's native search, certificate compaction or content hashes.
+The kernel chapters of the language reference (#301) and the
+[kernel guide](../../guides/kernel.md) (#299) document the trusted terms,
+reduction and instructions.
 
 2026-09-30 update: Nat and W are now source-defined H1 inductives. Their
 primitive formation, constructor and elimination instructions have been
@@ -523,6 +535,13 @@ The Elaboration panels show the same derivation in THTH's form:
 
 If a derivation cannot be shown, a panel shows the reason; since Stage 5
 there is no term checker's trace to fall back to.
+
+Since [#298](https://github.com/KanHarI/cubist-math/pull/298) (2026-10-20)
+the workbench's AST view applies an existing kernel reduction rule to one
+selected occurrence by issuing the `Step` instruction
+(`web/cubical-kernel-step.mjs`), and can undo it. The rules include β, δ, eliminators, paths, composition, Glue, WHNF and
+normalization. Each attempt and its counters are recorded in a copyable
+trace. No C rule changes.
 
 ## Costs and risks
 

@@ -83,6 +83,20 @@ Each step is small enough for one pull request, or a few.
 Acceptance for R5 is the measure in its row, with the catalog's per-area
 decisions of R3 recorded before the deletion.
 
+**Scheduled early, on 2026-10-26.** Two steps are no longer waiting for the
+runtime phase to end.
+
+- EVAL7 ([runtime roadmap](runtime/runtime-evaluation-roadmap.md#eval7-reduce-the-algorithms-work))
+  rebuilds primality, divisibility and Euclid in the library over binary
+  `Nat`. Once every consumer has moved:
+  - `euclid.cubist` is deleted;
+  - `primes` loses its divisibility and primality definitions, which only
+    `euclid` uses among Cubist sources;
+  - `primes` keeps its unary order and equality lemmas, its bounded
+    least-witness search (for `natural_minimum`) and its unary `factorial`
+    (for four radix and binary transfer modules), which R3/R4 handle.
+- R2, K2.5's steps 1–4, runs alongside the runtime phase.
+
 ## Relation to other work
 
 - [K2.5](work-plan.md#stage-2-one-sort-signatures-basic-theories-and-matching):
@@ -98,7 +112,8 @@ decisions of R3 recorded before the deletion.
   what the library rebuilds.
 - The [runtime evaluation track](runtime/runtime-evaluation-roadmap.md):
   evaluation baselines that run archive workloads need library workloads
-  before R5.
+  before R5. EVAL7's library Euclid supplies the Euclid workloads and
+  replaces the archive's.
 - The [deferred library backlog](work-plan.md#deferred-library-backlog):
   R3's decisions name which B3–B5 results the retirement waits for.
 
@@ -109,4 +124,5 @@ decisions of R3 recorded before the deletion.
 2. Whether the retired-syntax readers go with the archive, or stay for
    historical sources outside the tree.
 3. When R3–R5 start: after the runtime phase, and not as a gate of the
-   language progression.
+   language progression. The EVAL7 removal of `euclid` and `primes`'
+   primality definitions, and R2, are scheduled earlier (2026-10-26).

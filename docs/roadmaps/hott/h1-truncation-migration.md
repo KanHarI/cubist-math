@@ -5,7 +5,9 @@ ledger remains a review draft at main `e729c2d5` on 2026-10-17; the CB/RC
 merges do not complete the remaining K2.5 archive remedies. On 2026-10-20 the
 remaining remedies were dropped: the legacy assumptions are removed with the
 archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-assumptions)
-plans. The
+plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
+runtime phase, starting with `axiom` definitions. Step 5 waits for the
+archive's deletion. None is implemented yet. The
 [ledger](h1-truncation-ledger.json) pins 17 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05. Its acceptance permits the listed changes; it does not certify
 that the old and new proofs are identical or that all 47 declarations of

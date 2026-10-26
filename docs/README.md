@@ -8,10 +8,12 @@ Moving these documents does not change their recorded status or resume paused wo
 
 ## Plan
 
-Progress reconciled on 2026-10-17 against main `e729c2d5`. The
+Progress reconciled on 2026-10-26 against main `7230825e`. The
 [roadmap overview](roadmaps/README.md#at-a-glance) records delivered work and
-remaining packages; the [branch record](roadmaps/work-plan.md#branch-work)
-distinguishes the merged CB/RC stacks from the unmerged Hydra draft.
+remaining packages, and the [work plan](roadmaps/work-plan.md#first-actions)
+the sequence decided that day. The
+[branch record](roadmaps/work-plan.md#branch-work) lists open branches; none
+is open now.
 
 - [Work plan](roadmaps/work-plan.md): staged, dependency-ordered work across the
   language, its kernel support and the language reference. Runtime optimization

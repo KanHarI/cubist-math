@@ -7,9 +7,21 @@ not resume when a language milestone ships.
 
 **Current priority, directed on 2026-10-17:** runtime optimization and the
 natural/integer/rational foundations, including ordered-ring/field definitions.
-Switch to binary `Nat` when its correctness and compatibility gates pass.
-The reals roadmap stays paused. After this phase, resume the language
-direction below; see the [runtime roadmap](runtime/runtime-evaluation-roadmap.md).
+Public `Nat` became binary `BNat` on 2026-10-18 (#278), once its correctness
+and compatibility gates passed. The reals roadmap stays paused. See the
+[runtime roadmap](runtime/runtime-evaluation-roadmap.md).
+
+**Sequence decided on 2026-10-26** ([first actions](work-plan.md#first-actions)):
+1. Restore site publication.
+2. Runtime and numbers:
+   - B8 of the [debugging plan](runtime/rational-normalization-debug-plan.md);
+   - the default binary `Z`/`Q`, gated on folded normal forms;
+   - #289's runtime in the REPLs;
+   - typed readback;
+   - EVAL7, which moves primality, divisibility and Euclid to the library
+     and removes them from the archive.
+3. Alongside the runtime phase: K2.5's `axiom` definitions.
+4. After it: simplicial ST0 and ST2, then the language direction below.
 
 **Language direction selected on 2026-10-17:** develop the language through categories,
 monads, algebraic homology and synthetic cohomology as a sustained testbed.
@@ -27,40 +39,46 @@ assumption scopes, with computing rules for the new layer. The
 `x ->[C] y` spelling, proposed shape syntax and open semantic gates.
 Ordinary categories and UA0–UA6 continue independently; this does not
 change the runtime priority or claim a conservative extension is proved.
+Since 2026-10-26, ST0 and ST2 are scheduled after the runtime phase, ahead of
+the categorical progression.
 
 ## At a glance
 
-Roadmap status reconciled on 2026-10-17 against main `e729c2d5`, including
-the merged CB and refactoring stacks. That audit records main; the EVAL1 row
-additionally records the implementation in
-[#266](https://github.com/KanHarI/cubist-math/pull/266).
-The linked specifications, mathematical approvals and dated measurements retain
-their original evidence; this status audit does not rerun those reviews.
+Roadmap status reconciled on 2026-10-26 against main `7230825e`, after the
+runtime and numerical stacks (#266–#297), the demand marks and folded normal
+forms (#303–#310), the display and qualified-name changes (#311–#313) and the
+binary rationals (#283). The linked specifications, mathematical approvals and
+dated measurements retain their original evidence; this status audit does not
+rerun those reviews.
 
 | Track | Implemented | Still open |
 | --- | --- | --- |
-| Kernel and universes | Instruction-kernel stages 1–5; checker retirement; G0; face restriction; checking/bridge optimizations #194–#197 | Remaining stage-6 performance/certificate work; optional E1/E2 |
+| Kernel and universes | Instruction-kernel stages 1–5; checker retirement; G0; face restriction; checking/bridge optimizations #194–#197. For the runtime track: the full-normalization cache (#269), explicit-stack normalization, weak-head, substitution and comparison traversals (#291, #292, #294, #297), resource failures preserved across APIs (#285) and the folded normal-form query (#309); workbench reduction controls (#298); kernel reference chapters 14–17 (#301) | Remaining stage-6 performance/certificate work; composition, Glue and HIT tube helpers still recurse natively; optional E1/E2 |
 | Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand; legacy truncation removal (K2.5), completed by the archive retirement (I0.5) |
 | Proof ergonomics | Rewriting, simplification, `let`, holes, inference, implicit parameters, cubical shorthand, two h-level solver slices, evaluation patterns/readout, box notation and squares | Folded path rules, constructor descent, induction tooling, broader dependent rewriting, solver and square-migration remainders |
-| Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
+| Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators; inherited operations and laws implemented by a child theory (#268); the algebra lattice with ordered-ring and ordered-field interfaces (#267) | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
-| Evaluation/numbers | EVAL0 measurement harness and recorded outcomes; EVAL1 one-pass REPL evaluation (#266) | EVAL2–EVAL8; NUM0–NUM2 binary foundations. Existing `Z`/`Q` use unary naturals |
-| Library/reference | Seventeen self-contained foundation modules, including the universe-smallness proofs; checked reference, explorer and quick reference | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
+| Evaluation/numbers | EVAL0 harness; EVAL1 one-pass REPL evaluation (#266); EVAL2 full-normalization cache (#269); a first internal EVAL3/EVAL4 query for ordinary data, used by no checker or page yet (#289); EVAL5's observation contract: demand marks `!`/`!!` in patterns and printing (#303–#306), then `!!` the folded and `!!!` the full normal form (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284). NUM0/NUM1 and public `Nat` as binary `BNat` (#272–#278); NUM2's binary integers (#279–#281) and the binary-rational API, released on folded normal forms (#283) | EVAL3/EVAL4 integration; EVAL5's typed readback; EVAL6–EVAL8. NUM2's default `Z`/`Q` migration, gated on folded normal forms (2026-10-26), with generic numerals and rendering; public `Z`/`Q` remain unary-backed. The [debugging plan](runtime/rational-normalization-debug-plan.md)'s remaining phases, B8 next |
+| Library/reference | Forty self-contained foundation modules, including the universe-smallness proofs, binary naturals, integers and rationals, ordered algebra, and the continuum-hypothesis statements (#295); checked reference, explorer and quick reference; kernel chapters 14–17 (#301) | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | [Simplicial types](hott/simplicial-types.md) | Design only; arrow spelling agreed | ST0–ST6: preservation and model, shared ordinary arrow syntax, directed shapes/extensions, synthetic categories, coherent diagrams and higher algebra |
 | Learned search | Phases 1–2: explicit driver choices and work/trajectory measurement | Phases 3–5, conditional on demonstrated benefit |
-| [Frontend/bindings](historical/capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs | No CB packages remain; preserve the semantic and resource gates |
-| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling | No agreed implementation slices remain; verify the #264 assertion-reporting fix in remote mutation CI. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
+| [Frontend/bindings](historical/capture-bindings.md) | CB0–CB7, both cleanup passes, generated inspection and arbitrary-context REPLs; one naming pass for every display (#311, #312); `module::name` references, which nothing shadows (#313) | No CB packages remain; preserve the semantic and resource gates. Two display read-back defects are recorded in [pr-312-todo](../reports/pr-312-todo.md) |
+| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and final cleanup, #243–#263: publication ownership, Cubist test pragmas/migrations and shared tooling. The remote mutation gate is green: all 16 probes passed in #264's CI and in every passing CI run since | No agreed implementation slices remain. Instruction-driver reorganization is deferred; build prerequisites/native discovery are excluded |
 
 **Frontend integration is complete:** initial/free construction and fold
 behavior, CB0–CB7, cleanup and the agreed #224 refactoring ideas are on main.
 The older #219–#225 and #227 proposals are closed as superseded;
 [#242](https://github.com/KanHarI/cubist-math/pull/242) supplies the mutation CI hook.
 Checked universal capabilities and their mathematical proofs remain unfinished.
-The [branch record](work-plan.md#branch-work) separately tracks Hydra #233,
-which remains an unmerged draft. Site publication succeeded; the
+Hydra #233 was closed unmerged on 2026-10-26, to be re-developed when the
+language is more mature ([branch record](work-plan.md#branch-work)). The
 [RC verification record](historical/refactoring-and-testing.md#verification-record) records
-the unresolved termination of the final CI mutation probe.
+the mutation probe's remote pass. **Site publication has failed since #278**
+(2026-10-18): `npm run test:site` times out waiting for `seven : UNat` on
+the types chapter, whose first example now defines `wide`
+([pr-293-todo](../reports/pr-293-todo.md)). PR CI does not run that script,
+and the published site is still #277's.
 
 After the runtime phase, language work pairs morphism opt-ins (L2.4d), general proposition laws
 (L2.11) and implicit operation arguments (L2.12) with categorical examples,
@@ -130,13 +148,25 @@ those foundations:
 [frontend/](frontend/README.md) indexes the continuing binding, generation,
 publication, inspection and contextual-REPL contracts. The CB/FG/RC migrations
 are complete; their plans and checkpoint records are in [historical/](historical/README.md).
-The [work plan](work-plan.md#first-actions) retains the unresolved remote CI
-mutation check as a validation follow-up.
+The remote CI mutation check has passed. The index also lists display naming
+and `module::name` references as continuing contracts.
 
 ## Runtime
 
-[runtime/](runtime/) contains [evaluation and binary foundations](runtime/runtime-evaluation-roadmap.md):
-EVAL0 and EVAL1 are implemented; EVAL2–EVAL8 and NUM0–NUM2 remain planned.
+[runtime/](runtime/) owns evaluation and the binary numerical foundations:
+
+- [Runtime evaluation](runtime/runtime-evaluation-roadmap.md): EVAL0–EVAL2,
+  NUM0, NUM1 and the default binary `Nat` are implemented; NUM2's binary
+  integers and rationals are on main, and its default `Z`/`Q` migration is
+  open. EVAL3/EVAL4 has a first internal query, not yet integrated. EVAL5's
+  observation contract has shipped, but not its typed readback. EVAL6–EVAL8
+  remain.
+- [Evaluation demand marks](runtime/evaluation-demand-marks.md): EVAL5's
+  observation contract, DM0–DM6 done (#304–#306).
+- [Folded normal forms](runtime/folded-normal-forms.md): `!!` folded, `!!!`
+  full; FN1 (#309) and FN2 (#310) done.
+- [Rational normalization debugging plan](runtime/rational-normalization-debug-plan.md):
+  the attribution of the rational full-normalization cluster; D1 done, B8 next.
 
 ## Mathematics
 

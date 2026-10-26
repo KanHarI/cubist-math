@@ -23,8 +23,12 @@ printing only. Update of 2026-10-23: D1 is decided. `!!` is to compute a
 folded normal form, which keeps a stuck definition as written, and a new
 `!!!` the full normal form this note gives `!!`
 ([folded normal forms](https://github.com/KanHarI/cubist-math/pull/307)).
-Gates that measure full normalization move to `!!!_` when that lands; until
-then `!!` is as below.
+Update of 2026-10-26: that landed in
+[#310](https://github.com/KanHarI/cubist-math/pull/310) on 2026-10-24
+([folded normal forms](folded-normal-forms.md)), and the gates that measure
+full normalization moved to `!!!_`. Below, `!!` means the full normal form,
+which `!!!` now names, and the measurements keep their dates. The marks'
+observation semantics are otherwise unchanged.
 
 ## What evaluation did before the marks
 

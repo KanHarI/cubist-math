@@ -5,7 +5,9 @@ rules, syntax or library packages are implemented by this roadmap. The
 spelling `x ->[C] y` is agreed; the other syntax below is a design sketch.
 The mixed type theory, its model and its preservation arguments remain open.
 The [work plan](../work-plan.md#simplicial-types-track) owns scheduling;
-runtime and numerical work retain their current priority.
+runtime and numerical work retain their current priority. Scheduled on
+2026-10-26: ST0, then ST2, follow the runtime phase, ahead of the categorical
+progression. ST1 comes with L2.12/L3.4.
 
 ## Purpose and existing foundations
 

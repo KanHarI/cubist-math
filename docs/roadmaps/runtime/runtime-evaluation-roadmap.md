@@ -16,7 +16,15 @@ correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
 NUM2 is in progress: the binary integer ring/domain and rational field are
 constructed; certificate-normalization validation and the default `Z`/`Q`
-migration remain. EVAL3–EVAL8 remain.
+migration remain. EVAL3–EVAL8 remain open:
+[#289](https://github.com/KanHarI/cubist-math/pull/289) adds a
+[first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
+data, which no checker, REPL or page uses yet. EVAL5's observation contract
+has shipped as the [demand marks](evaluation-demand-marks.md) and
+[folded normal forms](folded-normal-forms.md); its typed readback has not.
+[#284](https://github.com/KanHarI/cubist-math/pull/284)'s explicit-evidence
+directives, `evaluate nonempty P by w;` and `evaluate empty P by r;`, check
+evidence without normalizing it.
 The [open quotient normalization fix and API audit](../../reports/open-quotient-normalization.md)
 extend EVAL2: dimension substitution preserves shared work, partial bodies
 normalize under their face conditions, shared universe levels avoid repeated
@@ -27,9 +35,10 @@ The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
 budget failures. The [nondependent descent change](../../reports/nondependent-quotient-descent.md)
 closes the generic quotient gate. The quotient-free transport gates and the
-binary-rational inverses' full normalization, which gates the default `Z`/`Q`
-migration, remain open; the binary-rational API is released on the inverses'
-folded normal forms (2026-10-26). These fixes do not complete NUM2.
+binary-rational inverses' full normalization remain open. The binary-rational
+API was released on the inverses' folded normal forms (2026-10-26), and the
+default `Z`/`Q` migration is gated the same way, by the decision of that day.
+These fixes do not complete NUM2.
 The [explicit normalization stack](../../reports/normalization-stack.md) covers
 the existing full normalizer's traversal. The
 [weak-head tail loop](../../reports/weak-head-tail.md) also removes native
@@ -77,6 +86,17 @@ ordered-ring and ordered-field definitions. Make binary naturals the public
 completeness. After performance work, return to language features, monads,
 categories and homology/cohomology. The existing EVAL7 natural-number pilot
 stays within its stated contract.
+
+**Decisions of 2026-10-26:**
+- The default `Z`/`Q` switch is gated on folded normal forms, as the
+  binary-rational API's release was.
+- This phase also connects the runtime query of #289 to the REPLs, adds
+  typed readback and lands EVAL7.
+- EVAL7 moves primality and divisibility to `library/`. The archive's `euclid`
+  and `primes`' primality primitives are deleted once their consumers move.
+- The [work plan](../work-plan.md#first-actions) orders these steps after the
+  site-publication fix and B8 of the
+  [debugging plan](rational-normalization-debug-plan.md).
 
 ## Goal and current failure
 
@@ -358,7 +378,9 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
-release validation passed; the other rows remain. Sizes are relative scope, as in the work plan.
+release validation passed (#278, 2026-10-18). NUM2, EVAL3/EVAL4 and EVAL5 are
+partly delivered, as their rows say; the other rows remain. Sizes are relative
+scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
 | --- | --- | --- | --- |
@@ -366,11 +388,11 @@ release validation passed; the other rows remain. Sizes are relative scope, as i
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
-| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs | NUM1; current quotients, rings and fractions | L |
+| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); the default `Z`/`Q` migration, generic numerals and rendering remain | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
-| EVAL3 | Closure evaluator for a specified data fragment | EVAL0 and semantic contract | L |
-| EVAL4 | Explicit evaluation stack and bounded runtime | EVAL3 design; implement alongside it | M |
-| EVAL5 | Lazy observation and typed readback | EVAL3, EVAL4 | L |
+| EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289); integration remains | EVAL0 and semantic contract | L |
+| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop; snapshot responsiveness and memory calibration remain | EVAL3 design; implement alongside it | M |
+| EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
 | EVAL7 | Efficient checked divisibility and search over BNat | NUM1, EVAL0; independent of the new evaluator | M |
 | EVAL8 | Cubical integration, semantic review and release | Packages selected for release | L |
@@ -386,8 +408,10 @@ work, allocated nodes, peak live memory, thunk forces/cache hits and maximum
 machine-stack depth where available. Include failed queries and time spent
 before failure; do not count only successful normalization.
 
-Keep the archived Euclid algorithm fixed for evaluator comparisons. A
-source algorithm change gets a separate series. Keep scratch evaluator
+Keep the archived Euclid algorithm fixed for evaluator comparisons until EVAL7
+replaces it (decided 2026-10-26). Then the comparisons move to the library
+Euclid under a new baseline version, and the unary series keeps its recorded
+revisions. A source algorithm change gets a separate series. Keep scratch evaluator
 results separate from trusted normal forms and measure their different
 output contracts explicitly.
 
@@ -847,11 +871,13 @@ new APIs; keep the archive checking under the documented imports and
 unary-natural compatibility policy.
 The binary rational API (#283) is released on the folded normal form: its
 small and wide inverse contracts check under `!!_`, by the user's decision of
-2026-10-26. Full small and wide rational inverse contracts must normalize,
-including their surviving certificates and annotations, before switching the
-default `Z`/`Q`. This is an outcome gate, not a requirement to finish
-every EVAL3–EVAL8 package: an earlier general kernel/elaborator fix can satisfy
-it, together with any needed NUM proof-algorithm change. The
+2026-10-26. By the decision of the same day, the default `Z`/`Q` switch is
+gated the same way: the migrated API's contracts check under folded normal
+forms. Full normalization of the small and wide rational inverses, including
+their surviving certificates and annotations, remains a target, not a gate.
+It does not require finishing every EVAL3–EVAL8 package: an earlier general
+kernel/elaborator fix can meet it, together with any needed NUM
+proof-algorithm change. The
 [completion path](#rational-full-normalization-completion-path)
 tracks the structural work currently planned to address the failures.
 Record the new library's source-representation gains separately from
@@ -970,6 +996,25 @@ capture/shadowing and unused-argument cases; `euclid(4).1 = 5` and
 diagnostic, never a host stack overflow. Measure retained closure memory
 as well as avoided syntax allocation.
 
+#### First implementation (#289)
+
+[#289](https://github.com/KanHarI/cubist-math/pull/289) (2026-10-19) adds
+`RuntimeQuery` in `web/cubical-runtime.mjs`, described in its
+[report](../../reports/shared-runtime-evaluation.md). It is an internal query
+over a snapshot of a closed judgement: syntax thunks with linked environments,
+one shared thunk per definition, admitted constructor/eliminator descriptors
+including higher-order recursive positions, and a loop with a continuation
+array. Observation is shallow, and unsupported demand reports `unsupported`
+with no fallback. Higher constructors, paths, composition, Glue and transport
+are unsupported, and observations are not kernel evidence. In one exploratory
+sample the primes of `euclid(4)` and `euclid(5)` observe as 5 and 11 with no
+native syntax allocation, at 469,195 and 28,187,972 work. `euclid(6)` stops
+at a 2M work limit. Retained memory is substantial (about 667 MiB process RSS
+after the 5 case). No checker, REPL or page uses the query. Still open: the
+written readback correspondence (EVAL5/EVAL8), a responsive snapshot copy,
+memory calibration and closed-environment pruning, cubical execution, and
+the integration that would let a user's `evaluate euclid(4).1` use it.
+
 ### Rational full-normalization completion path
 
 The [nondependent quotient-descent change](../../reports/nondependent-quotient-descent.md)
@@ -1047,10 +1092,10 @@ unary expansion in mixed closed/open BNat law proofs.
    transport reproduction throughout. A library improvement does not by
    itself satisfy the evaluator gates. Re-run full small and
    wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
-   migration checks. Those results gate NUM2's default migration; its
-   binary-rational release checks the inverses' folded normal forms
-   (2026-10-26). Construction work can proceed independently, and an
-   earlier general fix can satisfy the gates without all EVAL packages.
+   migration checks. Since 2026-10-26 those full-normalization results are
+   targets, not gates: the binary-rational release and the default migration
+   check folded normal forms. Construction work can proceed independently, and
+   an earlier general fix can meet the targets without all EVAL packages.
 
 The implementation order can overlap the source-proof and cubical work as
 dependencies allow. The ordinary-data evaluator alone is not predicted to
@@ -1152,8 +1197,27 @@ EVAL7 owns the small `library/` modules for binary divisibility, primality
 and least-prime-divisor search, and a separate checked binary Euclid pilot
 using NUM1's factorial. Port the required definitions and certificate
 proofs from the archive; these modules depend on the new numerical
-foundations, never on archived `primes`. Keep the archived modules intact
-as the fixed workload for EVAL0–EVAL5 comparisons.
+foundations, never on archived `primes`.
+
+**Migration and archive removal (decided 2026-10-26).** EVAL7 is where
+primality and divisibility move to the library over binary `Nat`.
+1. Every consumer of the archive's `euclid` moves to the library Euclid: the
+   landing page, quick reference and reference examples; the site, inspector,
+   program and instruction-driver tests; the evaluation baseline; #289's
+   probe and tests; and the demand-marks report.
+2. `euclid.cubist` is deleted, and `primes` loses its divisibility and
+   primality definitions: `Divides`, its decision and lemmas, `Prime`,
+   `prime_divisor_exists`, `factorial_positive` and
+   `bounded_divisor_of_factorial`. In Cubist sources only `euclid` uses them.
+3. `primes` keeps its unary order and equality lemmas, its bounded
+   least-witness search (used by `natural_minimum`) and its unary `factorial`
+   (used by four radix and binary transfer modules) until R3/R4 of the
+   [archive retirement](../archive-retirement.md).
+
+Until the switch, the archived modules stay intact as the fixed workload for
+EVAL0–EVAL5 comparisons. After it, those comparisons and EVAL3–EVAL5's
+Euclid acceptance read the library Euclid, with a new baseline version, and
+the unary measurements keep their revisions.
 Candidate-divisor bounds such as the square root require their mathematical
 proof. Preserve the least-divisor behavior if replacing this construction,
 or expose and name a different algorithm separately. Factorial remains
@@ -1191,9 +1255,8 @@ Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them, including
 numerical induction and recursion. NUM2's new binary-backed `Z` and `Q`
 follow the natural semiring foundations. These packages are independent
 of the closure evaluator for their mathematical construction. NUM2's
-default migration additionally requires the full normalization contracts in
-its acceptance section; its binary-rational release checks folded normal
-forms. The
+binary-rational release and its default migration check folded normal forms
+(decided 2026-10-26); its full normalization contracts are targets. The
 [completion path](#rational-full-normalization-completion-path) coordinates
 the applicable EVAL work; it does not require finishing all EVAL packages.
 EVAL2 can proceed independently once its cache contract is clear. Design
@@ -1205,3 +1268,13 @@ new numerical library and the unchanged-source evaluator comparison.
 Mathematical coverage, resource behavior and the output contract gate
 promotion; a faster prime projection
 alone does not.
+
+The order from 2026-10-26 on is in the work plan's
+[first actions](../work-plan.md#first-actions):
+1. B8 of the [debugging plan](rational-normalization-debug-plan.md);
+2. the default `Z`/`Q`;
+3. #289's runtime in the REPLs: ordinary data first, then the point
+   constructors of set quotients so that `BInt` and `BQ` values evaluate;
+4. typed readback (EVAL5).
+
+EVAL7, with the archive's `euclid` deleted, proceeds alongside 3 and 4.
