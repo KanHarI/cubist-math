@@ -11,7 +11,7 @@ import {failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
 import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe} from "./model-notation.mjs";
 export {recordOf} from "./model-notation.mjs";
-import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
+import {operatorBinding,SELECTION,bindNotationContext,notationBinding} from "./notation-context.mjs";
 import {retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {retainedTheoryDeclarations} from "./retained-theories.mjs";
@@ -24,7 +24,7 @@ export const theoryBinding = name => "\u0000theory " + name;
 // scope's key for the selected notation: its name and the operators it
 // binds. A selection is complete: an operator it does not bind is an error,
 // never an earlier selection's or a function named add.
-export const notationBinding = name => "\u0000notation " + name;
+export {notationBinding};
 // A theory's records, by the binding of its type of models, and its
 // projections, which print as m.f.
 export function registerTheoryDeclaration(t,d) {
@@ -171,7 +171,7 @@ function checkedOpening(t,scope,node,{complete=true,effects=selectionEffects.all
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).
-  if(effects.notation)added.push([SELECTION,{name:spelling??"this model",recipes:modelOperandRecipes(t,receiverScope,receiver,record),complete,numeral,literal:null,
+  if(effects.notation)added.push([SELECTION,{name:spelling??"this model",receiver,recipes:modelOperandRecipes(t,receiverScope,receiver,record),complete,numeral,literal:null,
     operators:new Set([...notations.keys(),...Object.keys(record.ambiguousNotations??{})])}]);
   return {scope,added,record,receiver,effects};
 }

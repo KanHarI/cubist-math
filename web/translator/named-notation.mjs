@@ -67,7 +67,8 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe)};
     if(entry) {
       const printing=t.checker.notationPrinting??=new Map();
-      printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,identity:artifact.binding.id,...entry}]);
+      printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,identity:artifact.binding.id,
+        ...(artifact.model?{attached:true}:{}),...entry}]);
     }
   }
 }
