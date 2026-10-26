@@ -522,9 +522,8 @@ export class Translator {
   inNotation(scope,run) {
     // Messages and signature inspection use the actual retained selection,
     // including in captured operands, then return to the caller's context.
-    const previous=this.checker.notation,selected=scope.env.get(SELECTION);
-    if(previous?.selection!==(selected?.name??null)||previous?.selectionIdentity!==(selected?.identity??null))
-      this.checker.notation=notationForScope(scope);
+    const previous=this.checker.notation;
+    this.checker.notation=notationForScope(scope);
     try {return run();}
     finally {this.checker.notation=previous;}
   }

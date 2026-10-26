@@ -36,6 +36,31 @@ const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/":
 // (web/README.md, "Displaying terms").
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
+  let selectionReceiver = context.selectionReceiver ?? null;
+  // A numeral or literal prints abbreviated only where its text reads back as
+  // the same term (L2.10d): bare where the selected notation is the one that
+  // reads it, by name and, where known, by identity; qualified, name.(…),
+  // where `name` selects that notation in the scope the text is read in.
+  // notationForScope gives that scope's lookups, `reads` and `opens`; a
+  // context without them, as a hand-built one, or an answer the scope cannot
+  // give, trusts the notation's name.
+  const scoped = typeof context.reads === "function";
+  const selects = entry => selection === entry.notation
+    && (selectionIdentity === undefined || selectionIdentity === entry.identity);
+  // A model's notation is read by the model's name, which a binder of the
+  // printed text shadows; a named notation is read before any value.
+  const qualifies = entry => {
+    if (entry.attached && bound.get(entry.notation)) return false;
+    const identity = scoped ? context.reads(entry.notation) : undefined;
+    return identity === undefined || entry.identity !== undefined && identity === entry.identity;
+  };
+  // A reading among `entries` that prints the text: bare, qualified, or
+  // none, when no notation in scope reads it back.
+  const readBack = (entries, text) => {
+    if (entries.some(selects)) return atom(text);
+    const reading = entries.find(qualifies);
+    return reading ? atom(`${reading.notation}.(${text})`) : null;
+  };
   const label = binding => symbols[binding]?.name
     ?? localName(binding);
   // Terms share subterms, so each scan visits a node once.
@@ -63,14 +88,21 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     ? `face(${equation(formula[0][0])}, ${parts.join(", ")})`
     : `face_when(${formula.length ? formula.map(clause => clause.length ? clause.map(text => `on(${equation(text)})`).join(" and ") : "1").join(" or ") : "0"}, ${parts.join(", ")})`;
   // A natural number reads back where a notation is selected, and as nat's
-  // where none is; a binary number, where binary is (L2.10j).
+  // where none is; a binary number, where binary is (L2.10j). Where `unat`
+  // does not select unat's notation, a unary number prints as constructors
+  // (null here).
   const natural = n => {
     const unary = symbols.unat__UNat;
-    const own = !unary && selection === "unat" || unary?.printing?.some(entry => entry.identityNumeral
-      && entry.notation === selection && (selectionIdentity === undefined || entry.identity === selectionIdentity));
-    return atom(own ? String(n) : `unat.(${n})`);
+    if (!unary) return atom(selection === "unat" ? String(n) : `unat.(${n})`);
+    const entries = unary.printing?.filter(entry => entry.identityNumeral) ?? [];
+    if (entries.some(selects)) return atom(String(n));
+    const own = entries.find(entry => entry.notation === "unat");
+    return !scoped || own && qualifies(own) ? atom(`unat.(${n})`) : null;
   };
-  const bits = text => atom(selection === "binary" ? text : `binary.(${text})`);
+  const bits = text => {
+    const readings = symbols.binary_naturals__binary_literal?.printing?.filter(entry => entry.literal);
+    return readings?.length ? readBack(readings, text) : atom(selection === "binary" ? text : `binary.(${text})`);
+  };
   // The rebuilt binary carrier prints decimal magnitudes directly from its
   // bits. Use a notation known to read this exact parser, including aliases;
   // without one, a numeral rule that reads binary naturals as themselves,
@@ -78,18 +110,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // without either, retain the constructor spelling. BigInt here is display
   // arithmetic only: the checked term remains ordinary constructors.
   const binaryNatural = t => {
-    const readings = symbols.bnat_notation__bnat_literal?.printing;
-    const reading = readings?.find(entry => entry.literal && entry.notation === selection)
-      ?? readings?.find(entry => entry.literal);
-    const numerals = reading ? [] : symbols.bnat__BNat?.printing?.filter(entry => entry.identityNumeral) ?? [];
-    if (!reading && !numerals.length) return null;
+    const readings = [...symbols.bnat_notation__bnat_literal?.printing?.filter(entry => entry.literal) ?? [],
+      ...symbols.bnat__BNat?.printing?.filter(entry => entry.identityNumeral) ?? []];
+    if (!readings.length) return null;
     const digits = binary(t, "bnat__BNat", "bnat__BPositive");
-    if (digits === null) return null;
-    const text = BigInt(digits).toString(10);
-    if (reading) return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
-    const own = numerals.some(entry => entry.notation === selection
-      && (selectionIdentity === undefined || entry.identity === selectionIdentity));
-    return atom(own ? text : `${numerals[0].notation}.(${text})`);
+    return digits === null ? null : readBack(readings, BigInt(digits).toString(10));
   };
   // The variables bound where the printer is. A bound variable shows as its
   // binder does; only a free one is a definition or an assumption, shown by
@@ -115,10 +140,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const level = operatorLevel[printing.operator], recipe = printing.recipe ?? {};
     const levels = printing.operator === "^" ? [level + 1, level] : [level === LEVEL.compare ? level + 1 : level, level + 1];
     const operand = (arg, view, at) => {
-      const saved = selection, savedIdentity = selectionIdentity;
+      const saved = selection, savedIdentity = selectionIdentity, savedReceiver = selectionReceiver;
       selection = view ?? own;
       selectionIdentity = view ? undefined : printing.identity;
-      try { return sub(arg, at); } finally { selection = saved; selectionIdentity = savedIdentity; }
+      selectionReceiver = null;
+      try { return sub(arg, at); } finally { selection = saved; selectionIdentity = savedIdentity; selectionReceiver = savedReceiver; }
     };
     return [`${operand(left, recipe.left, levels[0])} ${printing.operator} ${operand(right, recipe.right, levels[1])}`, level];
   };
@@ -254,10 +280,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // term; one that reaches the printer unwritten is shown as it is.
       case "Elim": return fallback(t);
       case "App": case "LApp": {
-        const number=numeral(t);
-        if(number!==null)return natural(number);
-        const digits=binary(t);
-        if(digits)return bits(digits);
+        const number=numeral(t),unary=number===null?null:natural(number);
+        if(unary)return unary;
+        const digits=binary(t),shown=digits&&bits(digits);
+        if(shown)return shown;
         const decimal=binaryNatural(t);
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
@@ -292,12 +318,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         }
         // A literal read from its characters prints as it was written, in
         // its notation (L2.10c): parsed_value(parse(lexeme), tt).
-        const parsed = parsedLiteral(t, symbols, selection);
-        if (parsed) return atom(selection === parsed.reading.notation ? parsed.text
-          : `${parsed.reading.notation}.(${parsed.text})`);
+        const parsed = parsedLiteral(t, symbols, selection), literal = parsed && readBack(parsed.readings, parsed.text);
+        if (literal) return literal;
         // A numeral rule's application to a numeral, as int(3, 0), prints as
         // the numeral where its notation is selected.
-        if (printing?.numeral && selection === printing.notation && args.length >= printing.numeral.length) {
+        if (printing?.numeral && selects(printing) && args.length >= printing.numeral.length) {
           // Each place of the numeral holds the same one, and each fixed
           // argument its own.
           const values = args.slice(args.length - printing.numeral.length).map(numeral);
@@ -306,11 +331,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
             return atom(String(value));
         }
         // A theory's numeral operation applied to a model and a numeral, as
-        // CommRing.of_nat(A, n), prints as the numeral where the model's
-        // notation is selected, and as A.(n) elsewhere, when the model reads
-        // numerals by that operation: a model variable, or a model whose
-        // module added no numeral or literal rule. That text reads back as
-        // the same call (L2.10c). Otherwise the call prints as written.
+        // CommRing.of_nat(A, n), reads back from the numeral in the model's
+        // notation when the model reads numerals by that operation: a model
+        // variable, or a model whose module added no numeral or literal rule
+        // (L2.10c). It prints bare where that very model is selected, and as
+        // A.(n) where A opens it: no named notation A in scope, and for a
+        // declared model, A still that model. Otherwise the call prints as
+        // written.
         if (printing?.theoryNumeral) {
           const at = (symbols[head.name].assumed ?? 0) + (symbols[head.name].implicit ?? 0);
           const [model, n] = args.slice(at), unary = n ? numeral(n) : null;
@@ -319,8 +346,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           const name = model?.tag === "Var" ? variable(model.name)
             : model?.tag === "DefRef" && !symbols[model.name]?.printing?.some(entry => entry.modelRules)
               ? qualifiedText(label(model.name), model) : null;
-          if (args.length === at + 2 && value !== null && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name ?? ""))
-            return atom(selection === name ? value : `${name}.(${value})`);
+          if (args.length === at + 2 && value !== null && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name ?? "")) {
+            if (model.tag === "DefRef" && selection === name && selectionReceiver?.tag === "DefRef"
+              && selectionReceiver.name === model.name) return atom(value);
+            const opens = scoped ? context.opens(name, model) : undefined;
+            if (opens !== false && !(model.tag === "DefRef" && bound.get(name))) return atom(`${name}.(${value})`);
+          }
         }
         const operator = head.tag === "DefRef" && args.length === 2 && !printing && arithmetic.exec(head.name)?.[1];
         if (operator) {
@@ -392,10 +423,10 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         return atom(args.length ? `${name}(${args.join(", ")})` : name);
       }
       case "Con": {
-        const n=numeral(t);
-        if(n!==null)return natural(n);
-        const digits=binary(t);
-        if(digits)return bits(digits);
+        const n=numeral(t),unary=n===null?null:natural(n);
+        if(unary)return unary;
+        const digits=binary(t),shown=digits&&bits(digits);
+        if(shown)return shown;
         return binaryNatural(t) ?? (t.name ? atom(qualifiedText(t.name, t)) : fallback(t));
       }
       case "Path":

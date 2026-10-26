@@ -2111,6 +2111,10 @@
    "summary": "Named notations (L2.10a): the library's `nat`, a notation of one's own, its rules read where declared, the operation alone, two models on one carrier, nested selections, and the refusals of an operator a selection does not bind."
   },
   {
+   "path": "cubist-tests/numeral_display_scopes.cubist",
+   "summary": "Numerals printed abbreviated only where they read back in the printing scope: a parameter named as the selected model, a named notation that takes a model variable's name, and notations that shadow `unat` and `bnat_numerals`, each with the exact form printed and read back."
+  },
+  {
    "path": "cubist-tests/path_operators.cubist",
    "summary": "Path and coordinate operators, for `tests/path-operators.test.mjs`: ~p, p ++ q, ~i, & and"
   },

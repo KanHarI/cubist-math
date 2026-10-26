@@ -840,17 +840,29 @@ A named notation's numeral rule over `BNat`, `numeral(n : BNat) := e`, reads
 the bits the same way. `bnat_numerals` in the import-free `bnat` module is
 one, so where `bnat_notation`'s literal reader is not imported, a binary
 value prints as `bnat_numerals.(n)`, which reads back as the same bits. A
-generic numeral, `CommRing.of_nat(A, n)` for a numeral `n`, prints as `A.(n)`,
-or bare where `A`'s notation is selected, when `A` reads numerals by its
-theory: a model variable, or a model whose module added no numeral or
-literal rule. A model with rules of its own would read the text otherwise,
-so its numeral prints as the call (`theoryNumeral` in
-`web/cubical-source-text.mjs`). Before, a unary numeral printed as
+generic numeral, `CommRing.of_nat(A, n)` for a numeral `n`, prints as `A.(n)`
+when `A` reads numerals by its theory: a model variable, or a model whose
+module added no numeral or literal rule. It prints bare only where the
+selected model is that declared model. A model with rules of its own would
+read the text otherwise, so its numeral prints as the call (`theoryNumeral`
+in `web/cubical-source-text.mjs`). Before, a unary numeral printed as
 `CommRing.of_nat{{U}}(A, unat.(2))`.
+Every numeral or literal abbreviation, bare or `name.(n)`, now prints only
+where it reads back in the scope it is printed for. `notationForScope`
+(`web/translator/notation-context.mjs`) resolves what `name.(…)` selects
+there as `selected` does, through the scope's lexical context where it has
+one; `selects`, `qualifies` and `readBack` in `sourceText` apply it. A
+shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
+a model variable whose name a named notation takes prints its numeral as
+the call; this also covers `unat.(n)` and the literal readers' qualifiers,
+which main printed by name alone. Operators and a model's bare operators
+keep the name-only check
+([pr-318-todo](../../reports/pr-318-todo.md)).
 [ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
-checks these displays with only the algebra and the number modules imported,
-and the contracts check mixed bit patterns against the binary integers'
-literal reader.
+and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
+check these displays with only the algebra and the number modules imported,
+each read back, and the contracts check mixed bit patterns against the
+binary integers' literal reader.
 
 **Default migration (2026-10-26).** Public `Z` and `Q` alias `BInt` and
 `BQ`. The facades [integers.cubist](../../../library/integers.cubist) and
