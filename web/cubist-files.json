@@ -1596,7 +1596,7 @@
   },
   {
    "path": "cubist-tests/default_numbers.cubist",
-   "summary": "Public `Z` and `Q` as the binary `BInt` and `BQ`: computed integers and rationals printed as quotient representatives with decimal magnitudes from their bits, wide literals printed as written, a literal qualified in another carrier's view, and the unary rationals' unary representatives."
+   "summary": "Public `Z` and `Q` as the binary `BInt` and `BQ`: computed integers and rationals printed as quotient representatives with decimal magnitudes from their bits, wide literals printed as written, a literal qualified in another carrier's view, and generic numerals at the integers and rationals, whose literal rules keep them as calls."
   },
   {
    "path": "cubist-tests/dimension_degree_regression.cubist",
@@ -2236,7 +2236,7 @@
   },
   {
    "path": "cubist-tests/ring_numeral_display.cubist",
-   "summary": "Generic ring numerals displayed where only the algebra and the library's number modules are imported: `A.(3)` in a section over a commutative ring and a 128-bit numeral, a model whose module added no rule, bare where its notation is selected, and the integers' and rationals' calls, whose binary naturals print through `bnat_numerals`; each text reads back."
+   "summary": "Generic ring numerals displayed where only the algebra is imported: `A.(3)` in a section over a commutative ring and a 128-bit numeral, a model whose module added no rule, bare where its notation is selected, and a test-local unary ring with a numeral rule of its own, whose generic numeral keeps the call and prints its binary natural through `bnat_numerals`; each text reads back."
   },
   {
    "path": "cubist-tests/source_text_messages.cubist",
@@ -2496,7 +2496,7 @@
   },
   {
    "path": "library/differences.cubist",
-   "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, an injective semiring embedding, compact zero-decision certificates, and no-zero-divisor laws from multiplicative cancellation and additive trichotomy. Unary and binary integers instantiate this shared construction."
+   "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, an injective semiring embedding, compact zero-decision certificates, and no-zero-divisor laws from multiplicative cancellation and additive trichotomy. The binary integers instantiate this shared construction."
   },
   {
    "path": "library/finite_sets.cubist",
@@ -2565,14 +2565,6 @@
   {
    "path": "library/squares.cubist",
    "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
-  },
-  {
-   "path": "library/unary_integers.cubist",
-   "summary": "The unary compatibility integers `UInt` instantiate the shared ring and domain proofs in `differences`: a pair of unary naturals `(a, b)` stands for `a - b`, with negation, addition and multiplication, the `unary_integers` commutative ring, no zero divisors (`uint_mul_nonzero`), zero not one, decidable equality (`uint_decide`) through the quotient's effectiveness, and the numeral rule `unary_integers.(2)`, `uint(2, 0)`. Every operation computes on closed integers."
-  },
-  {
-   "path": "library/unary_rationals.cubist",
-   "summary": "The unary compatibility rationals `UQ`, the unary integers' field of fractions (`unary_rationals`), with `uq_rat(a, k)` for `a / (k + 1)`, decidable equality (`uq_decide`) and checked fraction/decimal literals. Arithmetic computes on closed rationals."
   },
   {
    "path": "library/unat_models.cubist",

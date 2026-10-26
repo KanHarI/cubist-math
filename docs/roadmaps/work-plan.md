@@ -958,8 +958,8 @@ Each step lands in focused PRs under the review rule above.
       (`ring_numerals`); the casts `int_of_nat`, `rat_of_int` and
       `rat_of_nat` keep binary magnitudes, and computed values print
       decimal magnitudes from their bits. The unary integers and rationals
-      stay as compatibility clients, renamed in `unary_integers` and
-      `unary_rationals`.
+      were removed by the user's decision; `UNat` remains for structural
+      recursion.
    3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
       browser and contextual REPLs compute the value form and constructor
       patterns through the runtime query, with one specified fallback to

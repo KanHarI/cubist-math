@@ -90,6 +90,9 @@ stays within its stated contract.
 **Decisions of 2026-10-26:**
 - The default `Z`/`Q` switch is gated on folded normal forms, as the
   binary-rational API's release was.
+- The unary integers and rationals are not kept after the switch: only
+  tests and measurement fixtures used them. `UNat` remains the one unary
+  number type, for structural recursion.
 - This phase also connects the runtime query of #289 to the REPLs, adds
   typed readback and lands EVAL7.
 - EVAL7 moves primality and divisibility to `library/`, as step NT2 of moving
@@ -323,11 +326,10 @@ Define both representations early, independently of the new evaluator:
   fractions of that binary-backed `Z`. They must not implement arithmetic
   by converting magnitudes through `UNat`.
 
-This is a new numerical library. The unary
-[integers](../../../library/unary_integers.cubist) and
-[rationals](../../../library/unary_rationals.cubist) provide construction evidence;
-comparison maps, isomorphisms and universe paths to those old types are
-outside this track. The unary/binary natural equivalence remains an early
+This is a new numerical library. The unary integers and rationals built on
+2026-10-05 provided construction evidence, and were removed when the binary
+ones became the default on 2026-10-26; comparison maps, isomorphisms and
+universe paths to those old types were outside this track. The unary/binary natural equivalence remains an early
 deliverable because both representations are useful. Here `BNat` names the
 binary carrier explicitly; once NUM0/NUM1's correctness and compatibility
 gates pass, expose it as the new default `Nat` as directed on 2026-10-17.
@@ -863,19 +865,20 @@ with the generic numerals. `rat`'s nonzero certificate uses the integers'
 zero decision, as the literal reader's does: in one fresh program each, the
 folded normal form of `rat(int(2, 0), 2)` took 44,197 query ticks and 942
 nodes, and the full one 3,493,093 ticks and 97,457 nodes. The unary
-constructions and proofs moved, renamed, to `unary_integers` (`UInt`,
-`uint_`) and `unary_rationals` (`UQ`, `uq_`); the library README records the
-renames and the import transition. Tests and probes that measure the unary
-certificates import those modules; the debugging plan's `q_two_thirds` still
-normalizes to 265,250 nodes. The migrated API's contracts check under folded
-normal forms in
+constructions and proofs were removed the same day, by the user's
+decision: nothing in the library used them. Tests that covered general
+behavior use the public binary carriers; those that covered a unary numeral
+rule use test-local models, a ring over `unat_models` among them. The
+debugging plan's probe and its T6 target measure the public binary
+rationals, and its unary measurements stay as history. The migrated API's
+contracts check under folded normal forms in
 [default_number_contracts.cubist](../../../tests/fixtures/contracts/default_number_contracts.cubist),
 including a wide inverse. [default_numbers.cubist](../../../cubist-tests/default_numbers.cubist)
 checks the displays: computed values print as quotient representatives
 whose magnitudes are decimal from their bits, and literals print as
-written. The printers needed no change: both read `BNat` bits into decimal
-(`binaryNatural` in `web/cubical-source-text.mjs`, `binaryDigits` in
-`web/cubical-notation.mjs`). The archive imports neither module. The
+written. Beyond the generic numerals above, the printers needed no change:
+both read `BNat` bits into decimal (`binaryNatural` in
+`web/cubical-source-text.mjs`, `binaryDigits` in `web/cubical-notation.mjs`). The archive imports neither module. The
 evaluation baseline's workloads import neither, and it was not refreshed.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
@@ -898,8 +901,8 @@ work remains proposed under the [number-order decision](../work-plan.md#open-dec
 the 2026-10-17 direction includes only ordered-ring/field definitions and
 keeps this further work paused. NUM2 does not wait for it. R2 and the later real constructions target the
 new `Q`, with positive-rational precision and binary natural bounds. The
-older unary-backed carriers remain compatibility clients, rather than a
-second target for the new order development. No comparison to them is
+older unary-backed carriers were not a second target for the new order
+development, and were removed on 2026-10-26. No comparison to them is
 required here. The later signed-integer and lowest-terms presentations
 must use binary magnitudes and present these same new carriers.
 

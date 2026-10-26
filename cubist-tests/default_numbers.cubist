@@ -1,8 +1,12 @@
-// The public Z and Q are binary; unary clients use explicit UInt and UQ.
-// Computed values print their quotient representatives with decimal
-// magnitudes read from their bits, and literals print as written.
+// The public Z and Q are binary. Computed values print their quotient
+// representatives with decimal magnitudes read from their bits, literals
+// print as written, and a generic numeral at a model with a literal rule of
+// its own prints as the call.
 import rationals;
-import unary_rationals;
+
+section {{U < UU0}}(A : CommRing(U)) {
+  def six : 6 = 6 := refl(6);
+}
 
 def default_integers : Z = BInt {
   rfl;
@@ -43,8 +47,21 @@ print(evaluate(rat_of_nat(340282366920938463463374607431768211456)));
 // Output: integers.(7) = integers.(7)
 print(typeof(refl(typed(Z, integers.(7)))));
 
-use unary_rationals;
+// The integers' and the rationals' literal rules would read a numeral
+// otherwise, so a generic numeral at them keeps the call; its binary natural
+// prints in decimal through the literal reader.
+// Output: CommRing.of_nat{{U0}}(integers, 6) = CommRing.of_nat{{U0}}(integers, 6)
+print(typeof(six(integers)));
 
-// The unary rationals keep their unary representatives.
-// Output: class((class((unat.(1), unat.(0))), class((unat.(2), unat.(0))), <fun>))
-print(evaluate(1/2));
+def integer_six_again :
+  CommRing.of_nat{{U0}}(integers, 6) = CommRing.of_nat{{U0}}(integers, 6) := six(integers);
+
+section {{U < UU0}}(F : Field(U)) {
+  def ten : 10 = 10 := refl(10);
+}
+
+// Output: Field.of_nat{{U0}}(rationals, 10) = Field.of_nat{{U0}}(rationals, 10)
+print(typeof(ten(rationals)));
+
+def rational_ten_again :
+  Field.of_nat{{U0}}(rationals, 10) = Field.of_nat{{U0}}(rationals, 10) := ten(rationals);

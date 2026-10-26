@@ -45,9 +45,9 @@ def free_path(B : U0) : typed(W(B), W.point(unat.(1))) = W.point(unat.(1)) := W.
 });
 
 test("theory capture respects ring zero opened over UNat's zero", async t => {
-  await verified(t, `import unat; import hlevels; import algebra; import unary_integers;
-use unary_integers;
-theory Scaled(U < UU0) { M : set U; scale(r : UInt, x : M) : M;
+  await verified(t, `import integers; import unat; import hlevels; import algebra;
+use integers;
+theory Scaled(U < UU0) { M : set U; scale(r : Z, x : M) : M;
   law scale_zero(x, y : M) : scale(zero, x) = scale(zero, y); }
 `);
 });

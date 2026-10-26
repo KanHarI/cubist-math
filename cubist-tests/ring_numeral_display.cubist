@@ -2,10 +2,11 @@
 // is imported. A numeral of a model that reads numerals by its theory, a
 // model variable or a model whose module added no rule, prints as the
 // numeral where the model is selected and as m.(n) elsewhere; a model with
-// rules of its own keeps the call. Each text reads back as the same term.
+// a rule of its own keeps the call. Each text reads back as the same term.
 import algebra;
-import integers;
-import rationals;
+import differences;
+import unat_models;
+use unat;
 
 section {{U < UU0}}(A : CommRing(U)) {
   def three : 3 = 3 := refl(3);
@@ -28,27 +29,41 @@ def wide_again :
   forall U < UU0. forall A : CommRing(U).
   A.(340282366920938463463374607431768211455) = A.(340282366920938463463374607431768211455) := wide;
 
+// A test-local ring, the differences of unary naturals, whose module adds a
+// numeral rule of its own: a unary numeral read into the ring.
+def counted : CommRing(U0) := difference_ring{{U0}}(unat_semiring, unat_decide, unat_add_cancel);
+
+computable def counted_pair(a, b : UNat) :
+  counted.R := difference{{U0}}(unat_semiring, unat_decide, unat_add_cancel, a, b);
+
+notation counted {
+  numeral(n : UNat) := counted_pair(n, 0);
+}
+
+// Its numeral rule prints back as the numeral only where it is selected.
+// Output: counted_pair(2, 0) = counted_pair(2, 0)
+print(typeof(refl(counted.(2))));
+
+def counted_two : counted.(2) = counted_pair(2, 0) := refl(counted.(2));
+
 // A model whose module added no rule reads numerals by its theory.
-def ring_copy : CommRing(U0) := integers;
+def ring_copy : CommRing(U0) := counted;
 
 // Output: ring_copy.(6) = ring_copy.(6)
 print(typeof(refl(ring_copy.(6))));
 
 def six_again : ring_copy.(6) = ring_copy.(6) := refl(ring_copy.(6));
 
-// The integers' and the rationals' modules add rules of their own, so their
-// generic numerals print as calls; without the binary literal reader the
-// binary natural is bnat_numerals', which reads back as the same bits.
-// Output: CommRing.of_nat{{U0}}(integers, bnat_numerals.(6)) = CommRing.of_nat{{U0}}(integers, bnat_numerals.(6))
-print(typeof(refl(integers.of_nat(bnat_numerals.(6)))));
+// counted's own rule would read a numeral otherwise, so its generic numeral
+// prints as the call; without bnat_notation's literal reader the binary
+// natural prints through bnat_numerals, which reads back as the same bits.
+// Output: CommRing.of_nat{{U0}}(counted, bnat_numerals.(6)) = CommRing.of_nat{{U0}}(counted, bnat_numerals.(6))
+print(typeof(refl(counted.of_nat(bnat_numerals.(6)))));
 
-def integer_six_again :
-  CommRing.of_nat{{U0}}(integers, bnat_numerals.(6)) = CommRing.of_nat{{U0}}(
-    integers, bnat_numerals.(6)
-  ) := refl(integers.of_nat(bnat_numerals.(6)));
-
-// Output: Field.of_nat{{U0}}(rationals, bnat_numerals.(10)) = Field.of_nat{{U0}}(rationals, bnat_numerals.(10))
-print(typeof(refl(rationals.of_nat(bnat_numerals.(10)))));
+def counted_six_again :
+  CommRing.of_nat{{U0}}(counted, bnat_numerals.(6)) = CommRing.of_nat{{U0}}(
+    counted, bnat_numerals.(6)
+  ) := refl(counted.of_nat(bnat_numerals.(6)));
 
 use ring_copy;
 

@@ -6,7 +6,6 @@
 // back, where it is shown, as the term it shows.
 import integers;
 import rationals;
-import unary_integers;
 import unat;
 import lists;
 import lexemes;
@@ -116,14 +115,22 @@ print(typeof(refl(pick(unat.(2), unat.(3)))));
 // Output: 2 = 2
 print(typeof(refl(pick(unat.(2), unat.(2)))));
 
-use unary_integers;
+// A numeral rule with a fixed argument, as tallied(n, 0), prints back as
+// the numeral where its notation is selected.
+use unat;
 
-// Where the unary integers are selected, their numeral rule prints back as
-// the numeral.
-def five : unary_integers.R := 5;
+def tallied(a, b : UNat) : UNat := a + b;
+
+notation tally {
+  numeral(n : UNat) := tallied(n, 0);
+}
+
+use tally;
+
+def five : UNat := 5;
 
 // Output: 5 = 5
-print(typeof(refl(typed(unary_integers.R, 5))));
+print(typeof(refl(typed(UNat, 5))));
 
 // The printed text reads back as the term, where it was printed.
 def again : 5 = 5 := refl(five);

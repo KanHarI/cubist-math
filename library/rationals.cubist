@@ -1,6 +1,5 @@
 // The public rationals are the binary-backed BQ: the field of fractions of
-// the public integers. Unary compatibility clients import unary_rationals
-// and use UQ.
+// the public integers.
 import binary_rationals;
 import integers;
 use nat;

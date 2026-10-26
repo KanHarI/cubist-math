@@ -2,12 +2,11 @@
 // 1_000, is read by the selected notation's literal rule from its
 // characters; a plain numeral by its numeral rule, or its literal rule; and
 // a notation with neither reads none. A model's module may add rules to its
-// notation, as the rationals' and the integers' literal rules and the unary
-// integers' numeral rule do, and a theory's derived operation marked
+// notation, as the rationals' and the integers' literal rules and the box
+// model's numeral rule below do, and a theory's derived operation marked
 // notation numeral reads numerals in its models.
 import integers;
 import rationals;
-import unary_integers;
 import unat;
 import lists;
 import lexemes;
@@ -36,14 +35,8 @@ print(evaluate(equal_or_not(rationals.(1_2/4), rationals.(3))));
 // Error: E905: rationals's literal rule refuses 1/0 at its character 3.
 def undefined : Q := rationals.(1/0);
 
-// The unary integers' module gives them numerals: unary_integers.(2) is
-// uint(2, 0).
-def two : unary_integers.(2) = uint(2, 0) {
-  rfl;
-}
-
 // The integers' literal rule reads the binary magnitude into the cast.
-def binary_two : integers.(2) = int_of_nat(nat.(2)) {
+def two : integers.(2) = int_of_nat(nat.(2)) {
   rfl;
 }
 
@@ -104,13 +97,11 @@ print(evaluate(count.(257)));
 print(evaluate(count.(0b101)));
 
 // A literal's and a numeral's names are where their rules are declared: a
-// local UNat changes neither the rationals' parse, the integers' nor the
-// unary integers' numeral.
+// local UNat changes neither the rationals' parse nor the integers', nor,
+// below, the box model's numeral.
 def half_under(UNat : U0) : Q := rationals.(1/2);
 
 def two_under(UNat : U0) : Z := integers.(2);
-
-def unary_two_under(UNat : U0) : UInt := unary_integers.(2);
 
 // The rules a module adds are its model's: a parameter that takes the
 // model's name reads numerals in its own theory's notation, which has none.
@@ -127,6 +118,8 @@ notation box {
 
 // Output: 3
 print(evaluate(box.(2)));
+
+def box_under(UNat : U0) : box.M := box.(2);
 
 // Error: E907: box's notation reads no numeral 2: write nat.(2) for a natural number, or select a
 //   notation that reads it.

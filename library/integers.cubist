@@ -1,6 +1,5 @@
 // The public integers are the binary-backed BInt: pairs of public binary
-// naturals, (a, b) standing for a - b, with the same difference. Unary
-// compatibility clients import unary_integers and use UInt.
+// naturals, (a, b) standing for a - b, with the same difference.
 import ring_numerals;
 import binary_integers;
 import nat;
