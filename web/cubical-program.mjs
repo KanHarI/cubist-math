@@ -1,5 +1,5 @@
 import { sourceStatement } from "./cubical-statement.mjs";
-import { CubicalKernel } from "./cubical-kernel.mjs";
+import { CubicalKernel, moduleFault } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
 import {SourceUnit} from "./translator/elaboration.mjs";
 import { Translator } from "./translator/translate.mjs";
@@ -397,6 +397,10 @@ export class CubicalProgram {
             phase: "checked", unit: "declarations", instructions: checker.steps });
         },
         onDeclarationStart: declaration => {
+          // A failed kernel instance ends the check: what comes after it
+          // computed nothing, and is not reported as checked or refused.
+          const fault = moduleFault(this.kernel.module);
+          if (fault) throw fault;
           current = declaration.name.text;
           publication.beginDeclaration();
           this.onDeclarationStart?.(name, declaration, checker);
@@ -426,6 +430,8 @@ export class CubicalProgram {
       return result.env;
     };
     await load(main, source);
+    const fault = moduleFault(this.kernel.module);
+    if (fault) throw fault;
     if(collectScopes)this.scopeReady=true;
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     this.main = main;

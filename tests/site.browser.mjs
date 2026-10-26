@@ -163,6 +163,37 @@ await browserTest(async ({ browser, base }) => {
   assert.deepEqual(await lastResults(6), ["deep : parity(2 * 200) = dark",
     ...Array(4).fill("K336: Native reduction recursion depth exceeded."), "after : toggle(dark) = lit"]);
   console.log("PASS REPL page: the kernel's recursion guard in the worker, and the worker after it");
+  // A kernel instance that fails, as when the engine's own stack runs out
+  // inside it, is never entered again: the worker replaces it, says so, and
+  // checks the session's entries again on the new one. The failure is
+  // injected: the first folded normal form (evaluate !!) throws the engine's
+  // RangeError out of the kernel's export.
+  const injected = await browser.newContext();
+  await injected.route("**/dist/cubical.mjs*", async route => {
+    const response = await route.fetch(), body = await response.text();
+    assert.match(body, /export default Module;\s*$/);
+    await route.fulfill({ response, body: body.replace(/export default Module;\s*$/, `let injected = false;
+export default async options => {
+  const module = await Module(options), normalize = module._cb_normalize_folded;
+  module._cb_normalize_folded = (...args) => {
+    if (!injected) { injected = true; throw new RangeError("Maximum call stack size exceeded"); }
+    return normalize(...args);
+  };
+  return module;
+};`) });
+  });
+  const faulty = await injected.newPage();
+  await faulty.goto(new URL("repl.html", base).href);
+  for (const text of ["import unat;", "use unat;", "let x := 7;", "evaluate !!x;", "evaluate x + 1;", "typeof x;"]) {
+    await faulty.locator(".repl-text").last().fill(text);
+    await faulty.locator(".repl-text").last().press("Enter");
+    await faulty.waitForFunction(() => !document.querySelector(".repl-form.busy"));
+  }
+  assert.deepEqual((await faulty.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-4), [
+    "E666: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.",
+    "The kernel was restarted, and the session's entries were checked again.", "8", "UNat"]);
+  await injected.close();
+  console.log("PASS REPL page: a failed kernel instance is replaced, and the session goes on");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
   await enter("/modules lists");

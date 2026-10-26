@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { moduleFault } from "../web/cubical-kernel.mjs";
 import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
@@ -62,8 +63,13 @@ assertFreshBuild();
 // An error as the checker prints it: a failed check's lines as they are,
 // any other message with its code in front.
 const shown = error => error.lines ? error.message : withCode(error.message);
-const module = await createCubical();
+// The kernel's instance. One that failed is replaced (recover).
+let module = await createCubical();
 let program, view, binding, checkedModule, session = null, sessionProgram = null;
+// The source of the last check that finished, to check again on a new
+// instance.
+let checked = null;
+const checkedReader = ({ file, value }) => sourceReader(file ? { path: value } : {});
 // Imports resolve as web/module-resolution.mjs specifies: an archive module
 // imports only from the archive; anything else imports library-first, and a
 // checked file outside both roots first imports from its own directory.
@@ -84,6 +90,31 @@ async function replSession() {
     session = new ReplSession(sessionProgram, { modules: importable });
   }
   return session;
+}
+// An instance that failed is never entered again (guardModule in
+// web/cubical-kernel.mjs): what was built on it is dropped, and built again
+// on a new instance. The last source checked is checked again, and the
+// session replays the entries that extended it (ReplSession.rebase). If the
+// new instance fails too, nothing is built on it.
+async function recover() {
+  const replayed = session, fresh = session !== null && session.program === sessionProgram;
+  program = sessionProgram = session = view = binding = null;
+  module = await createCubical();
+  try {
+    if (checked) {
+      program = new CubicalProgram(module, checkedReader(checked), { optimizations });
+      await program.check(checked.source, checked.main);
+    }
+    if (replayed && fresh) session = await replayed.rebase(sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations }));
+    else if (replayed && program) session = await replayed.rebase(program, checkedModule);
+  } catch { /* a failure here is the new instance's, read below */ }
+  if (moduleFault(module)) {
+    program = sessionProgram = session = checked = checkedModule = null;
+    module = await createCubical();
+  }
+  console.error(program && session ? "The kernel was restarted: the last source checked, and the session's entries, were checked again."
+    : program ? "The kernel was restarted, and the last source checked was checked again."
+    : session ? "The kernel was restarted, and the session's entries were checked again." : "The kernel was restarted.");
 }
 const commands = new Set(["help", "--help", "-h", "quit", "exit", "check", "inspect", "assembly", "beta", "delta", "export"]);
 async function execute(line) {
@@ -108,12 +139,13 @@ async function execute(line) {
   if (operation === "check") {
     if (!value) throw Error("check requires a module or .cubist file.");
     // A file is checked where it lives; a module name is found library-first.
-    const file = value.endsWith(".cubist"), imports = sourceReader(file ? { path: value } : {});
+    const file = value.endsWith(".cubist"), imports = checkedReader({ file, value });
     const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
     const main = file ? moduleOfFile(value) : value;
-    program?.dispose(); view = null; binding = null;
+    program?.dispose(); view = null; binding = null; checked = null;
     program = new CubicalProgram(module, imports, { optimizations });
     const result = await program.check(source, main);
+    checked = { file, value, source, main };
     // Each failure on a line of its own, with its code (web/diagnostics.mjs).
     if (!result.complete) throw Object.assign(Error(result.gaps.map(gap => diagnosticLine({ code: gap.code, message: gap.reason,
       declaration: gap.name && (gap.module === main ? gap.name : `${gap.module}.${gap.name}`) })).join("\n") || `${main} did not check.`), { lines: true });
@@ -196,6 +228,7 @@ try {
         pending = "";
         try { if (await execute(entry) === false) break; }
         catch (error) { console.error(shown(error)); }
+        if (moduleFault(module)) await recover();
         prompt("cubist> ");
       }
     } finally { input.close(); }

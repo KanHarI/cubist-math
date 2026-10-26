@@ -6,7 +6,9 @@ import { ReplSession } from "./repl-session.mjs";
 import { ContextualSession } from "./contextual-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
 import { generatedCubist } from "./generated-cubist.mjs";
-const module = await createCubical();
+import { moduleFault } from "./cubical-kernel.mjs";
+// The kernel's instance. One that failed is replaced (recover).
+let module = await createCubical();
 // What import can load, for the REPL's /modules.
 const importable = async () => moduleListing;
 let program = null;
@@ -23,10 +25,11 @@ self.postMessage({ ready: true, backend: "cubical" });
 // A REPL session runs over the checked proof, or over its own program when
 // the page has no proof (the REPL page and the reference pages).
 let session = null, sessionProgram = null, programMain = null;
+const freshProgram = () => new CubicalProgram(module, readSource(), { collectReferences: false });
 async function repl({ input, fresh }) {
   if (fresh) {
     if (!sessionProgram) {
-      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false });
+      sessionProgram = freshProgram();
       session = new ReplSession(sessionProgram, { modules: importable });
     }
   } else if (!program) throw new Error("Check a proof first.");
@@ -54,53 +57,96 @@ function contextual(id) {
   if (!context) throw new Error("This contextual session is stale or closed. Select a context from the current check.");
   return context;
 }
+// The proof's check on the current instance, and the last one that
+// completed, to check again on a new instance.
+let checked = null;
+async function checkProof(args, onProgress = () => {}) {
+  const next = new CubicalProgram(module, readSource(args.module, args.place),
+    { optimizations: args.optimizations, collectGeneration: true, collectScopes: !!args.collectScopes });
+  try { return { next, result: await next.check(args.source, args.module ?? "current", onProgress) }; }
+  catch (error) { next.dispose(); throw error; }
+}
+// An instance that failed is never entered again (guardModule in
+// cubical-kernel.mjs): what was built on it is dropped, and built again on a
+// new instance. The proof is checked again, unless its own check failed, and
+// a REPL session replays the entries that extended it (ReplSession.rebase).
+// If the new instance fails too, nothing is built on it.
+async function recover() {
+  invalidateContexts();
+  const replayed = session, fresh = session !== null && session.program === sessionProgram;
+  program = sessionProgram = session = null;
+  module = await createCubical();
+  try {
+    if (checked) program = (await checkProof(checked)).next;
+    if (replayed && fresh) session = await replayed.rebase(sessionProgram = freshProgram());
+    else if (replayed && program) session = await replayed.rebase(program, programMain);
+  } catch { /* a failure here is the new instance's, read below */ }
+  if (moduleFault(module)) {
+    program = sessionProgram = session = checked = null;
+    module = await createCubical();
+  }
+}
+async function run({ data: { id, command, args } }, epoch) {
+  if (command === "check") {
+    const { next, result } = await checkProof(args, progress => self.postMessage({ id, progress }));
+    program?.dispose(); program = next; programMain = args.module ?? "current"; checked = args;
+    // An edit or a newer submitted check invalidates these contexts even
+    // when it arrived while this check was loading an import.
+    if (epoch !== contextEpoch) program.scopeReady = false;
+    return result;
+  }
+  if (command === "elaborate") {
+    // A source of its own, checked apart from the proof: every declaration's
+    // steps, terms and native opcode trees.
+    const scratch = new CubicalProgram(module, readSource(args.module, args.place));
+    try {
+      await scratch.check(args.source, args.module ?? "current");
+      return elaboration(scratch, args.module ?? "current");
+    } finally { scratch.dispose(); }
+  }
+  if (command === "repl" || command === "repl-reset") return command === "repl" ? repl(args) : resetRepl();
+  if (command === "context-run") return contextual(args.session).run(args.input);
+  if (!program) throw new Error("Check a proof first.");
+  if (command === "contexts") {
+    if (!program.scopeReady) throw new Error("Check the current source with contextual scopes enabled.");
+    const module = args.module ?? programMain;
+    return {revision:program.scopeRevision,points:[...program.scopePoints.values()]
+      .filter(point=>point.owner[1]===module||point.origin.module===module).map(contextDescription)};
+  }
+  if (command === "context-open") {
+    const context = new ContextualSession(program,args.scope),session = `context-${++contextSerial}`;
+    contexts.set(session,context);
+    return {session,point:contextDescription(context.point)};
+  }
+  if (command === "inspect") return program.inspect(args.binding, args);
+  if (command === "generation") return generatedCubist(program, args.module ?? programMain);
+  // A declared type has no checked definition: its signature and eliminator.
+  if (command === "signature") return program.signatureView(args.binding);
+  if (command === "export-inspection") return program.export(args.binding, args.side);
+  if (command === "export") return program.export();
+  throw new Error("Unsupported cubical command.");
+}
 // Checking and queries observe submission order. Capability revocation is
 // immediate and does not touch a live kernel handle.
 let queue = Promise.resolve();
-async function handle({ data: { id, command, args } }, epoch) {
-  try {
-    let result;
-    if (command === "check") {
-      const next = new CubicalProgram(module, readSource(args.module, args.place),
-        { optimizations: args.optimizations, collectGeneration: true, collectScopes: !!args.collectScopes });
-      try { result = await next.check(args.source, args.module ?? "current", progress => self.postMessage({ id, progress })); }
-      catch (error) { next.dispose(); throw error; }
-      program?.dispose(); program = next; programMain = args.module ?? "current";
-      // An edit or a newer submitted check invalidates these contexts even
-      // when it arrived while this check was loading an import.
-      if (epoch !== contextEpoch) program.scopeReady = false;
-    } else if (command === "elaborate") {
-      // A source of its own, checked apart from the proof: every declaration's
-      // steps, terms and native opcode trees.
-      const scratch = new CubicalProgram(module, readSource(args.module, args.place));
-      try {
-        await scratch.check(args.source, args.module ?? "current");
-        result = elaboration(scratch, args.module ?? "current");
-      } finally { scratch.dispose(); }
-    } else if (command === "repl" || command === "repl-reset") {
-      result = await (command === "repl" ? repl(args) : resetRepl());
-    } else if (command === "context-run") {
-      result = await contextual(args.session).run(args.input);
-    } else if (!program) throw new Error("Check a proof first.");
-    else if (command === "contexts") {
-      if (!program.scopeReady) throw new Error("Check the current source with contextual scopes enabled.");
-      const module = args.module ?? programMain;
-      result = {revision:program.scopeRevision,points:[...program.scopePoints.values()]
-        .filter(point=>point.owner[1]===module||point.origin.module===module).map(contextDescription)};
-    } else if (command === "context-open") {
-      const context = new ContextualSession(program,args.scope),session = `context-${++contextSerial}`;
-      contexts.set(session,context);
-      result = {session,point:contextDescription(context.point)};
-    }
-    else if (command === "inspect") result = program.inspect(args.binding, args);
-    else if (command === "generation") result = generatedCubist(program, args.module ?? programMain);
-    // A declared type has no checked definition: its signature and eliminator.
-    else if (command === "signature") result = program.signatureView(args.binding);
-    else if (command === "export-inspection") result = program.export(args.binding, args.side);
-    else if (command === "export") result = program.export();
-    else throw new Error("Unsupported cubical command.");
-    self.postMessage({ id, result });
-  } catch (error) { self.postMessage({ id, error: { message: error.message, offset: error.offset, diagnostic:error.diagnostic } }); }
+async function handle(event, epoch) {
+  const { id, command } = event.data, instance = module;
+  let reply;
+  try { reply = { id, result: await run(event, epoch) }; }
+  catch (error) { reply = { id, error: { message: error.message, offset: error.offset, diagnostic:error.diagnostic } }; }
+  const fault = moduleFault(instance);
+  if (fault) {
+    if (command === "check") checked = null;
+    await recover();
+    // A REPL entry's results end at the statement that failed, which says
+    // so; any other command's result is dropped for the failure.
+    if (command === "repl" && reply.result)
+      reply.result = [...reply.result, { kind: "info", text: session
+        ? "The kernel was restarted, and the session's entries were checked again."
+        : "The kernel was restarted; check the proof again to continue." }];
+    else reply = { id, error: { message: fault.message } };
+  }
+  self.postMessage(reply);
 }
 self.onmessage = event => {
   // This revokes only contextual capabilities, never a live kernel handle.

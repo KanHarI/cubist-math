@@ -9,6 +9,7 @@
 // A `use` selects for every entry after it, as at a file's top level, and an
 // entry reads in the selections its base file ends with (L2.10j).
 import { withCode } from "./diagnostics.mjs";
+import { moduleFault } from "./cubical-kernel.mjs";
 
 export const replHelp = [
   "let NAME := TERM;     define a name (def works too, with any declaration form)",
@@ -122,14 +123,22 @@ export class ReplSession {
     return session;
   }
 
-  // Run every statement of the input; a last statement may omit its `;`.
+  // Run every statement of the input; a last statement may omit its `;`. A
+  // statement whose kernel instance failed (KernelFault) ends the input: its
+  // owner replaces the instance and rebases the session, which replays what
+  // extended it.
   async run(input) {
     const { statements, rest } = replStatements(input);
     if (rest) statements.push(rest);
     const results = [];
-    for (const statement of statements) results.push(...await this.statement(statement));
+    for (const statement of statements) {
+      results.push(...await this.statement(statement));
+      if (this.faulted) break;
+    }
     return results;
   }
+
+  get faulted() { return moduleFault(this.program.kernel?.module) !== null; }
 
   async statement(entry) {
     // Comments before a statement, as in a pasted file, are not part of it.

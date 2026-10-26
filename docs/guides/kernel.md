@@ -1061,4 +1061,16 @@ WebAssembly the engine keeps frames on its own stack, about 0.5 MiB in a
 Chromium worker, and the cycles measured take 0.6 to 0.9 KiB of it a step,
 so their 512 steps end before it does.
 
+An exception out of a WebAssembly export is never the kernel's answer: the
+engine's own stack ran out (a `RangeError`), or the instance trapped (a
+`WebAssembly.RuntimeError`). It unwinds the kernel's frames without running
+them to their end, so the instance's memory may be half changed. The
+JavaScript driver therefore never enters such an instance again: `guardModule`
+(`web/cubical-kernel.mjs`) wraps each export, and after the first exception
+every call throws `KernelFault` (`E666`) without entering. A check on that
+instance ends at its next declaration. The pages' worker
+(`web/cubical-worker.mjs`) and the command line replace the instance, check
+the proof again, and replay the REPL session's entries on the new one; the
+workbench's worker reports the failure as fatal and closes, as for a trap.
+
 Full cubical canonicity for every implemented constructor is not claimed by this project.
