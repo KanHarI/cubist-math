@@ -16,6 +16,45 @@ section {{U < UU0}}(A : CommRing(U)) {
   # test(ring_numerals.unary)
   # expect_axioms([])
   def unary_three : R := of_unat(unat.(3));
+
+  // Mixed bits and the boundaries around 2^64: 5 is 101 and 6 is 110, each
+  // the other with its bits after the leading one reversed; neither 2^64 + 1
+  // nor 2^64 + 2 reads the same reversed.
+  # test(ring_numerals.section_zero)
+  # expect_axioms([])
+  def numeral_zero : R := 0;
+
+  # test(ring_numerals.section_one)
+  # expect_axioms([])
+  def numeral_one : R := 1;
+
+  # test(ring_numerals.section_five)
+  # expect_axioms([])
+  def numeral_five : R := 5;
+
+  # test(ring_numerals.section_six)
+  # expect_axioms([])
+  def numeral_six : R := 6;
+
+  # test(ring_numerals.section_ten)
+  # expect_axioms([])
+  def numeral_ten : R := 10;
+
+  # test(ring_numerals.section_below_power)
+  # expect_axioms([])
+  def numeral_below_power : R := 18446744073709551615;
+
+  # test(ring_numerals.section_power)
+  # expect_axioms([])
+  def numeral_power : R := 18446744073709551616;
+
+  # test(ring_numerals.section_power_one)
+  # expect_axioms([])
+  def numeral_power_one : R := 18446744073709551617;
+
+  # test(ring_numerals.section_power_two)
+  # expect_axioms([])
+  def numeral_power_two : R := 18446744073709551618;
 }
 
 # test(ring_numerals.unary_agreement)
@@ -58,3 +97,74 @@ theory Pointed(U < UU0) {
   point : M;
   def at_(m : M) : M := point notation numeral;
 }
+
+// Each section numeral agrees with the binary integers' literal reader,
+// which reads the digits independently of the numeral's bits.
+computable def same_integer(x, y : BInt) : BNat := match bint_decide(x, y) return BNat {
+    left same => bnat.(1);
+    right different => bnat.(0);
+  };
+
+# test(ring_numerals.value_zero)
+evaluate same_integer(numeral_zero(binary_integers), binary_integers.(0)) expecting bnat.(1);
+
+# test(ring_numerals.value_one)
+evaluate same_integer(numeral_one(binary_integers), binary_integers.(1)) expecting bnat.(1);
+
+# test(ring_numerals.value_five)
+evaluate same_integer(numeral_five(binary_integers), binary_integers.(5)) expecting bnat.(1);
+
+# test(ring_numerals.value_six)
+evaluate same_integer(numeral_six(binary_integers), binary_integers.(6)) expecting bnat.(1);
+
+# test(ring_numerals.value_ten)
+evaluate same_integer(numeral_ten(binary_integers), binary_integers.(10)) expecting bnat.(1);
+
+# test(ring_numerals.value_below_power)
+evaluate same_integer(numeral_below_power(binary_integers), binary_integers.(18446744073709551615)) expecting bnat.(
+  1
+);
+
+# test(ring_numerals.value_power)
+evaluate same_integer(numeral_power(binary_integers), binary_integers.(18446744073709551616)) expecting bnat.(
+  1
+);
+
+# test(ring_numerals.value_power_one)
+evaluate same_integer(numeral_power_one(binary_integers), binary_integers.(18446744073709551617)) expecting bnat.(
+  1
+);
+
+# test(ring_numerals.value_power_two)
+evaluate same_integer(numeral_power_two(binary_integers), binary_integers.(18446744073709551618)) expecting bnat.(
+  1
+);
+
+// bnat_numerals reads a numeral as its own bits, as the literal reader does.
+
+# test(ring_numerals.bits_zero)
+evaluate typed(BNat, bnat_numerals.(0)) expecting bnat.(0);
+
+# test(ring_numerals.bits_one)
+evaluate typed(BNat, bnat_numerals.(1)) expecting bnat.(1);
+
+# test(ring_numerals.bits_five)
+evaluate typed(BNat, bnat_numerals.(5)) expecting bnat.(5);
+
+# test(ring_numerals.bits_six)
+evaluate typed(BNat, bnat_numerals.(6)) expecting bnat.(6);
+
+# test(ring_numerals.bits_ten)
+evaluate typed(BNat, bnat_numerals.(10)) expecting bnat.(10);
+
+# test(ring_numerals.bits_below_power)
+evaluate typed(BNat, bnat_numerals.(18446744073709551615)) expecting bnat.(18446744073709551615);
+
+# test(ring_numerals.bits_power)
+evaluate typed(BNat, bnat_numerals.(18446744073709551616)) expecting bnat.(18446744073709551616);
+
+# test(ring_numerals.bits_power_one)
+evaluate typed(BNat, bnat_numerals.(18446744073709551617)) expecting bnat.(18446744073709551617);
+
+# test(ring_numerals.bits_power_two)
+evaluate typed(BNat, bnat_numerals.(18446744073709551618)) expecting bnat.(18446744073709551618);

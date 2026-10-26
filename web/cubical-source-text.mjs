@@ -73,17 +73,23 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const bits = text => atom(selection === "binary" ? text : `binary.(${text})`);
   // The rebuilt binary carrier prints decimal magnitudes directly from its
   // bits. Use a notation known to read this exact parser, including aliases;
-  // without such a reader, retain the constructor spelling. BigInt here is
-  // display arithmetic only: the checked term remains ordinary constructors.
+  // without one, a numeral rule that reads binary naturals as themselves,
+  // as bnat.cubist's bnat_numerals, which reads back as these very bits;
+  // without either, retain the constructor spelling. BigInt here is display
+  // arithmetic only: the checked term remains ordinary constructors.
   const binaryNatural = t => {
     const readings = symbols.bnat_notation__bnat_literal?.printing;
     const reading = readings?.find(entry => entry.literal && entry.notation === selection)
       ?? readings?.find(entry => entry.literal);
-    if (!reading) return null;
+    const numerals = reading ? [] : symbols.bnat__BNat?.printing?.filter(entry => entry.identityNumeral) ?? [];
+    if (!reading && !numerals.length) return null;
     const digits = binary(t, "bnat__BNat", "bnat__BPositive");
     if (digits === null) return null;
     const text = BigInt(digits).toString(10);
-    return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
+    if (reading) return atom(selection === reading.notation ? text : `${reading.notation}.(${text})`);
+    const own = numerals.some(entry => entry.notation === selection
+      && (selectionIdentity === undefined || entry.identity === selectionIdentity));
+    return atom(own ? text : `${numerals[0].notation}.(${text})`);
   };
   // The variables bound where the printer is. A bound variable shows as its
   // binder does; only a free one is a definition or an assumption, shown by
@@ -298,6 +304,23 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           const value = values[printing.numeral.indexOf(null)];
           if (values.every((v, k) => v !== null && v === (printing.numeral[k] ?? value)))
             return atom(String(value));
+        }
+        // A theory's numeral operation applied to a model and a numeral, as
+        // CommRing.of_nat(A, n), prints as the numeral where the model's
+        // notation is selected, and as A.(n) elsewhere, when the model reads
+        // numerals by that operation: a model variable, or a model whose
+        // module added no numeral or literal rule. That text reads back as
+        // the same call (L2.10c). Otherwise the call prints as written.
+        if (printing?.theoryNumeral) {
+          const at = (symbols[head.name].assumed ?? 0) + (symbols[head.name].implicit ?? 0);
+          const [model, n] = args.slice(at), unary = n ? numeral(n) : null;
+          const digits = n && unary === null ? binary(n, "bnat__BNat", "bnat__BPositive") : null;
+          const value = unary !== null && unary <= 256 ? String(unary) : digits ? BigInt(digits).toString(10) : null;
+          const name = model?.tag === "Var" ? variable(model.name)
+            : model?.tag === "DefRef" && !symbols[model.name]?.printing?.some(entry => entry.modelRules)
+              ? qualifiedText(label(model.name), model) : null;
+          if (args.length === at + 2 && value !== null && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name ?? ""))
+            return atom(selection === name ? value : `${name}.(${value})`);
         }
         const operator = head.tag === "DefRef" && args.length === 2 && !printing && arithmetic.exec(head.name)?.[1];
         if (operator) {
