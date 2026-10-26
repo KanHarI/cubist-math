@@ -152,6 +152,17 @@ await browserTest(async ({ browser, base }) => {
     "evaluate count_into(2 * 255, 0);", "evaluate count_into(100 * 100 * 100, 0);", "evaluate x + 1;"]) await enter(text);
   assert.deepEqual(await lastResults(3), ["510", "E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells.", "8"]);
   console.log("PASS REPL page: the runtime's value forms and its limits");
+  // Nested eliminators: past the kernel's recursion guard (ck_enter, 512
+  // steps) a path judgement fails with K336, as often as asked, before the
+  // worker's own engine stack runs out at about 620 levels; the worker goes on.
+  for (const text of ["inductive Lamp { dark; lit; }", "def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };",
+    "def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };",
+    "def deep : parity(2 * 200) = dark := refl(dark);",
+    ...[1, 2, 3, 4].map(i => `def past_${i} : parity(10 * 200) = dark := refl(dark);`),
+    "def after : toggle(dark) = lit := refl(lit);"]) await enter(text);
+  assert.deepEqual(await lastResults(6), ["deep : parity(2 * 200) = dark",
+    ...Array(4).fill("K336: Native reduction recursion depth exceeded."), "after : toggle(dark) = lit"]);
+  console.log("PASS REPL page: the kernel's recursion guard in the worker, and the worker after it");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
   await enter("/modules lists");

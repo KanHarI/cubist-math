@@ -642,6 +642,83 @@ static void weak_tail_raw_cycle(void) {
     cc_kernel_free(k);
 }
 
+/* Nested unit eliminations, each through a definition of its own: a head
+ * query recurses once a level (ck_whnf). Past the recursion guard it fails
+ * as a resource error and leaves no step entered; the next query computes. */
+static void nested_heads(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k), point = cc_instr_point(k);
+    cc_entry_id x = cc_instr_extend(k, unit, 100);
+    cc_judgement_id motive = cc_instr_lambda(k, x, unit);
+    cc_judgement_id point_type = cc_instr_step(k, cc_instr_refl(k, cc_instr_apply(k, motive, point)), 0, NULL, 0, CC_STEP_BETA);
+    cc_judgement_id point_case = cc_instr_convert(k, point, point_type), value = point;
+    cc_term shallow = 0;
+    for (unsigned i = 1; i <= CC_RECURSION_LIMIT + 100; ++i) {
+        cc_judgement_id result = cc_instr_unit_elim(k, motive, point_case, value);
+        cc_judgement_id type = cc_instr_step(k, cc_instr_refl(k, cc_instr_apply(k, motive, value)), 1, NULL, 0, CC_STEP_BETA);
+        value = cc_instr_define(k, 100 + i, cc_instr_convert(k, result, type));
+        assert(value);
+        if (i == CC_RECURSION_LIMIT - 100)
+            shallow = info(k, value).term;
+    }
+    cc_term deep = info(k, value).term, unit_point = info(k, point).term;
+    assert(!cc_kernel_whnf(k, deep) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE && !k->recursion);
+    assert(!strcmp(cc_kernel_error(k), "Native reduction recursion depth exceeded."));
+    cc_kernel_clear_error(k);
+    assert(cc_kernel_whnf(k, shallow) == unit_point && !k->error[0] && !k->recursion);
+    assert(cc_kernel_whnf(k, unit_point) == unit_point && !k->error[0]);
+    cc_kernel_free(k);
+}
+
+/* The guard bounds bytes too (ck_enter): a step entered more than
+ * CC_STACK_BUDGET bytes below the outermost step fails, whatever the count.
+ * Steps of 64 KiB frames reach it after about CC_STACK_BUDGET / 64 KiB of
+ * them, far fewer than CC_RECURSION_LIMIT. Each frame is a variable-length
+ * array, which stays on the stack under a sanitizer too; its size is read at
+ * run time, so the compiler allocates all of it, where it is declared. */
+static volatile size_t step_bytes = 65536, below_bytes = 1 << 20;
+static unsigned stack_steps(cc_kernel *k, unsigned depth) {
+    volatile char used[step_bytes];
+    used[0] = 1;
+    if (!ck_enter(k, "Test stack depth exceeded."))
+        return depth;
+    unsigned reached = stack_steps(k, depth + 1);
+    ck_leave(k);
+    return reached + (unsigned)used[0] - 1;
+}
+
+/* 1 MiB further down the stack, then steps of 64 KiB from there. */
+static unsigned stack_steps_below(cc_kernel *k) {
+    volatile char used[below_bytes];
+    used[0] = 1;
+    return stack_steps(k, 0) + (unsigned)used[0] - 1;
+}
+
+static void stack_budget(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    const unsigned most = (unsigned)(CC_STACK_BUDGET / step_bytes) + 1;
+    unsigned reached = stack_steps(k, 0);
+    assert(reached >= most - 2 && reached <= most && reached < CC_RECURSION_LIMIT);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_RESOURCE && !strcmp(cc_kernel_error(k), "Test stack depth exceeded."));
+    assert(!k->recursion);
+    cc_kernel_clear_error(k);
+    /* The next outermost step records its own base: deeper on the stack, it
+     * goes as far again. */
+    unsigned again = stack_steps_below(k);
+    assert(again == reached && !k->recursion);
+    cc_kernel_clear_error(k);
+    /* A nested step never moves the base: inside a step, 1 MiB further down,
+     * 16 fewer steps of 64 KiB remain. */
+    assert(ck_enter(k, "Test stack depth exceeded.") && k->recursion == 1);
+    unsigned nested = stack_steps_below(k);
+    assert(nested >= reached - 17 && nested <= reached - 15);
+    ck_leave(k);
+    assert(!k->recursion);
+    cc_kernel_free(k);
+}
+
 /* The folded normal form computes data in full and keeps a definition whose
  * weak head is no data as written, its arguments folded; the term asked for
  * is unfolded. Its answer does not depend on the weak cache, and it leaves
@@ -843,6 +920,8 @@ int main(void) {
     weak_tail_aliases(0);
     weak_tail_beta();
     weak_tail_raw_cycle();
+    nested_heads();
+    stack_budget();
     normalization_continuations();
     normal_glue_boundaries(CC_SHARE_SYNTAX);
     normal_glue_boundaries(0);

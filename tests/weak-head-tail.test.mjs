@@ -65,31 +65,42 @@ test("nested prerequisite heads retain a controlled WASM recursion failure", asy
   }
 });
 
-// A declared type's eliminator nested in itself takes about 3.7 KiB of the
-// WASM stack a level. On a 2 MiB stack placed after the static data, 600
-// levels ran past its end without a trap and overwrote the session table:
-// the declaration, and every later one, failed with "Invalid cubical session.".
+// A declared type's eliminator nested in itself takes about 3.6 KiB of the
+// WASM stack a level, and about 0.85 KiB of the engine's own stack: a
+// Chromium worker's runs out at about 620 levels, Node's at about 1,100. On a
+// 2 MiB WASM stack placed after the static data, 600 levels ran past its end
+// without a trap and overwrote the session table. The recursion guard
+// (ck_enter) stops at 512 steps, before either, as often as asked, and the
+// session goes on.
 test("nested declared eliminators reach the recursion guard within the WASM stack", async t => {
   const { verdicts } = await checkProgram(t, `import unat;
 use unat;
 inductive Lamp { dark; lit; }
 def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
 def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
-def deep : parity(5 * 200) = dark := refl(dark);
-def past_the_guard : parity(10 * 200) = dark := refl(dark);
+def deep : parity(2 * 200) = dark := refl(dark);
+def past_the_guard : parity(5 * 200) = dark := refl(dark);
+def again : parity(5 * 200) = dark := refl(dark);
+def far_past_the_guard : parity(10 * 200) = dark := refl(dark);
 def after : toggle(dark) = lit := refl(lit);
 `);
   assert.deepEqual(verdicts.deep, true);
-  assert.match(verdicts.past_the_guard, /Native reduction recursion depth exceeded/);
+  for (const name of ["past_the_guard", "again", "far_past_the_guard"])
+    assert.match(verdicts[name], /^Native reduction recursion depth exceeded\./, name);
   assert.deepEqual(verdicts.after, true);
 });
 
 // The stack lies below the static data (the Makefile's --stack-first), so an
 // overflow runs below address 0 and traps rather than overwriting that data:
-// a static string of the bridge lies past the whole stack.
-test("the WASM stack lies below the static data", async () => {
+// a static string of the bridge lies past the whole stack. The recursion
+// guard's budget of stack bytes is at most half of the stack: the rest holds
+// the frames above the outermost step and below the deepest.
+test("the WASM stack lies below the static data and holds the guard's budget", async () => {
   const module = await createCubical();
   const makefile = await readFile(new URL("../Makefile", import.meta.url), "utf8");
   const stack = Number(makefile.match(/-sSTACK_SIZE=(\d+)/)[1]);
   assert.ok(module._cb_error(0) >= stack, `"Invalid cubical session." at ${module._cb_error(0)}, below the stack's end at ${stack}`);
+  const header = await readFile(new URL("../kernel/src/term_internal.h", import.meta.url), "utf8");
+  const [, units, shift] = header.match(/#define CC_STACK_BUDGET \(\(uintptr_t\)(\d+) << (\d+)\)/);
+  assert.ok(2 * Number(units) * 2 ** Number(shift) <= stack);
 });

@@ -443,10 +443,8 @@ static bool canonical_ready(cc_kernel *k, cc_term term, cc_term *result) {
 }
 
 static cc_term canonical_traverse(cc_kernel *k, cc_term term) {
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Level normalization depth exceeded."), 0;
-    }
+    if (!ck_enter(k, "Level normalization depth exceeded."))
+        return 0;
     canonical_frame local[32], *frames = local;
     size_t count = 1, capacity = sizeof local / sizeof *local;
     cc_term result = 0;
@@ -482,7 +480,7 @@ static cc_term canonical_traverse(cc_kernel *k, cc_term term) {
         frames[count++] = (canonical_frame){child, k->nodes[child], 0, 0};
     }
     if (frames != local) free(frames);
-    --k->recursion;
+    ck_leave(k);
     return k->error[0] ? 0 : result;
 }
 

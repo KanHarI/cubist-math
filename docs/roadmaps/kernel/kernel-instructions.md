@@ -24,6 +24,9 @@ and dependency scans (#294), comparison and level worklists (#297), resource
 failures preserved across the kernel and elaborator APIs (#285), and the
 folded normal-form query `cc_kernel_normalize_folded` (#309). They do not
 close stage 6's native search, certificate compaction or content hashes.
+After the WebAssembly stack was placed below the static data (#321), the
+recursion guards became one, `ck_enter`, which bounds a recursion's stack
+bytes as well as its steps.
 The kernel chapters of the language reference (#301) and the
 [kernel guide](../../guides/kernel.md) (#299) document the trusted terms,
 reduction and instructions.
