@@ -569,7 +569,7 @@ export const diagnostics = [
   ["E843", "A model's notation is its theory's; …'s adds only a numeral or a literal rule."],
   ["E844", "A literal rule reads a Lexeme: import lexemes, which defines …."],
   ["E845", "… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory."],
-  ["E846", "notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : UNat) : R := … notation numeral."],
+  ["E846", "notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : BNat) : R := … notation numeral."],
   ["E847", "A numeral rule reads a unary natural number: import unat."],
   ["E848", "…'s label would be …, which is reserved: label it, as in other : …."],
   ["E850", "… takes a theory at its universes and parameters, as …; … is none."],

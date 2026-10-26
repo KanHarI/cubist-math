@@ -390,7 +390,7 @@ scope, as in the work plan.
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
-| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); the default `Z`/`Q` migration, generic numerals and rendering remain | NUM1; current quotients, rings and fractions | L |
+| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283), and binary generic ring numerals; the default `Z`/`Q` migration and rendering remain | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289); integration remains | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop; snapshot responsiveness and memory calibration remain | EVAL3 design; implement alongside it | M |
@@ -805,9 +805,9 @@ the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
 `bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
 (`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
 The new API is released on these folded normal forms (2026-10-26). Public
-`Z`/`Q`, generic ring numeral interpretation and numerical rendering still
-require their migration; no
-canonical signed or lowest-terms presentation is claimed.
+`Z`/`Q` and numerical rendering still require their migration; generic ring
+numerals are binary (below). No canonical signed or lowest-terms
+presentation is claimed.
 
 The original bounded follow-up probes localized the growth to full normalization of the
 open integer multiplication function within the quotient's cross-multiplication
@@ -817,6 +817,23 @@ deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduced
 on merged main after #280, before these domain changes. Closed large integer
 products still normalize. These timings are diagnostic observations on one
 machine, not benchmark thresholds or a change to normal evaluation limits.
+
+**Generic ring numerals (2026-10-26).** `Ring.of_nat`, the derived
+operation marked `notation numeral`, now takes a `BNat` and doubles from the
+leading bit: `bp_even(q)` is `(one + one) * of_bpositive(q)` and `bp_odd(q)`
+is one more. The unary operation is kept as `of_unat`. When a theory's
+numeral operation takes the canonical `BNat`, the translator builds the
+numeral's bits directly (`binaryNatural` in `web/translator/translate.mjs`),
+so its size is the number of bits and the unary limit of 256 does not apply.
+[ring_numerals.cubist](../../../library/ring_numerals.cubist) proves, in any
+ring, that `of_nat` agrees with `of_unat` through the explicit conversions,
+and that a map from `BNat` preserving zero, one, addition and multiplication
+agrees with `of_nat`, as `bint_of_nat` does. A 128-bit numeral in a section
+over an arbitrary commutative ring computes at `binary_integers`. At
+`binary_rationals` each doubling also composes a nonzero-denominator
+certificate: a 64-bit numeral's folded normal form computes, and a 128-bit
+one stops at the syntax depth (`K344`). The rationals' own literal rule
+builds the value directly and is unaffected.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.

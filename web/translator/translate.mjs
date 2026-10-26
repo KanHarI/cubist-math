@@ -336,13 +336,13 @@ export class Translator {
       if(selection.numeral.model) {
         const natural=selection.numeral.natural;
         const reads={kind:"name",name:operatorBinding("numeral"),...at};
-        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
+        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),text:n.text,natural,...at}],...at}:reads;
         return this.term(node,scope,expected);
       }
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRetainedRule(this,natural,selection.numeral,
-        {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
+        {kind:"rawNumeral",value:Number(n.text),text:n.text,natural:selection.numeral.aliases.get(selection.numeral.natural),
           ...at},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
@@ -1241,6 +1241,24 @@ export class Translator {
       throw Error("Numerals and induction require an imported UNat with zero and succ constructors. For binary Nat, use nat_peano.");
     return {type,zero:T.constructor(zero,type,"zero"),succ:T.constructor(succ,type,"succ")};
   }
+  // The library's canonical binary naturals (bnat), when `type` is theirs: a
+  // function from a nonnegative BigInt to its constructors, the least
+  // significant bit outermost, as bnat.cubist declares them. Otherwise null.
+  binaryNatural(scope,type) {
+    type=scope.nf(type);
+    const natural=type.tag==="Sort"&&type.signature==="bnat__BNat"?this.checker.inductives?.get(type.signature):null;
+    const positive=natural&&this.checker.inductives?.get("bnat__BPositive");
+    if(!positive)return null;
+    const positiveSort=T.sort("bnat__BPositive");
+    const constructor=(record,sort,name)=>T.constructor(record.constructors.findIndex(c=>c.source===name),sort,name);
+    return value=>{
+      if(value===0n)return constructor(natural,type,"b_zero");
+      let bits=constructor(positive,positiveSort,"bp_one");
+      for(const bit of value.toString(2).slice(1))
+        bits=T.app(constructor(positive,positiveSort,bit==="0"?"bp_even":"bp_odd"),bits);
+      return T.app(constructor(natural,type,"b_positive"),bits);
+    };
+  }
   // Both a source binding and a closed notation capture supply an elaboration
   // value. Resolve descriptors through the same path, without looking their
   // public label up again in the destination environment.
@@ -1379,10 +1397,17 @@ export class Translator {
         // A reader's input is lazy data over its own checked Nat. Building it
         // only when used preserves ignored-operand and refused-rule behavior.
         // No source/destination name is consulted, even under a binding adapter.
-        if(n.value>256)throw Error("Unary numerals are limited to 256. Import nat and use nat for binary naturals.");
         if(!n.natural)throw new TypeError("A numeral reader requires its captured natural-number type.");
         // The implicit type is not another authored occurrence at the token.
         const type=this.valueTerm({kind:"name",name:n.natural.source??"UNat"},n.natural,scope);
+        // A binary reader's numeral is built from its bits, so its size is
+        // their number and a large numeral never passes through UNat.
+        const bits=this.binaryNatural(scope,type);
+        if(bits) {
+          const value=bits(BigInt(n.text??n.value));
+          this.reference(scope,{...n,name:n.text??String(n.value)},value);return value;
+        }
+        if(n.value>256)throw Error("Unary numerals are limited to 256. Import nat and use nat for binary naturals.");
         const natural=this.naturalSignature(scope,type);
         let value=natural.zero;for(let i=0;i<n.value;i++)value=T.app(natural.succ,value);
         this.reference(scope,{...n,name:String(n.value)},value);return value;

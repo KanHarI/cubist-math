@@ -1,0 +1,60 @@
+// NUM2 generic ring numerals: a ring reads a numeral as a binary natural,
+// by doubling, and agrees with its unary numerals.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num2-build-the-new-binary-backed-integers-and-rationals
+import ring_numerals;
+import binary_integers;
+
+section {{U < UU0}}(A : CommRing(U)) {
+  # test(ring_numerals.doubling)
+  # expect_axioms([])
+  def two_doubles : 2 = (one + one) * one := refl(2);
+
+  # test(ring_numerals.wide)
+  # expect_axioms([])
+  def wide : R := 340282366920938463463374607431768211455;
+
+  # test(ring_numerals.unary)
+  # expect_axioms([])
+  def unary_three : R := of_unat(unat.(3));
+}
+
+# test(ring_numerals.unary_agreement)
+# expect_axioms([])
+computable def unary_agreement(U < UU0, A : Ring(U), n : BNat) :
+  A.of_nat(n) = A.of_unat(bnat_to_unat(n)) := of_nat_unary(A, n);
+
+# test(ring_numerals.binary_agreement)
+# expect_axioms([])
+computable def binary_agreement(U < UU0, A : Ring(U), n : UNat) :
+  A.of_nat(bnat_of_unat(n)) = A.of_unat(n) := of_unat_binary(A, n);
+
+# test(ring_numerals.cast_agreement)
+# expect_axioms([])
+computable def cast_agreement(n : BNat) : bint_of_nat(n) = binary_integers.of_nat(n) := of_nat_map(
+  binary_integers.ring, bint_of_nat, bint_of_nat_zero, bint_of_nat_one, bint_of_nat_add,
+  bint_of_nat_mul, n
+);
+
+# test(ring_numerals.wide_value)
+evaluate match bint_decide(
+  wide(binary_integers), binary_integers.(340282366920938463463374607431768211455)
+) return BNat {
+  left same => bnat.(1);
+  right different => bnat.(0);
+}
+expecting bnat.(1);
+
+# test(ring_numerals.unary_value)
+evaluate match bint_decide(unary_three(binary_integers), binary_integers.(3)) return BNat {
+  left same => bnat.(1);
+  right different => bnat.(0);
+}
+expecting bnat.(1);
+
+# test(ring_numerals.not_natural)
+# expect_error(E846)
+theory Pointed(U < UU0) {
+  M : set U;
+  point : M;
+  def at_(m : M) : M := point notation numeral;
+}

@@ -2416,7 +2416,7 @@
   },
   {
    "path": "library/algebra.cubist",
-   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
+   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. A ring reads numerals in binary: `of_nat(n : BNat)` doubles from the leading bit, so its work and size grow with the number of bits, and `of_unat(n : UNat)` keeps the unary numeral. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
    "path": "library/binary_integers.cubist",
@@ -2545,6 +2545,10 @@
   {
    "path": "library/rationals.cubist",
    "summary": "The integers' field of fractions (`rationals`, `Q`), with `rat(a, k)` for `a / (k + 1)`, decidable equality and checked fraction/decimal literals. Arithmetic computes on closed rationals."
+  },
+  {
+   "path": "library/ring_numerals.cubist",
+   "summary": "A ring's binary numerals agree with its unary ones (`of_nat_unary`, `of_unat_binary`), and a map from `BNat` that preserves zero, one, addition and multiplication sends each natural to the ring's numeral (`of_nat_map`), as `bint_of_nat` does."
   },
   {
    "path": "library/semirings.cubist",
