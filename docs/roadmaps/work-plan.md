@@ -927,22 +927,22 @@ Each step lands in focused PRs under the review rule above.
 
 1. **Restore site publication.** Every Pages run since #278 (2026-10-18) has
    failed in `npm run test:site`, which PR CI does not run, so the published
-   site is still #277's. Two scenarios of `tests/site.browser.mjs` fail,
+   site is still #277's. Two scenarios of `tests/site.browser.mjs` failed,
    both because #278 put a new first example, `wide`, in the types chapter's
    `#values` section:
-   - The REPL-bar scenario forks the section's first example and waits for
-     `seven : UNat`. Select the example by its source, not its position
-     ([pr-293-todo](../reports/pr-293-todo.md)).
-   - The worker-failure scenario waits for that section's first example bar
-     to read "Not checked" without scrolling to it. Examples are enhanced
-     lazily (an `IntersectionObserver` with a 400px margin), and that
-     example now starts about 1,122px down a 720px viewport, so no bar is
-     created. Scroll it into view first.
+   - The REPL-bar scenario forked the section's first example and waited
+     for `seven : UNat`. It now selects the example by its source, not its
+     position ([pr-293-todo](../reports/pr-293-todo.md)).
+   - The worker-failure scenario waited for that section's first example
+     bar to read "Not checked" without scrolling to it. Examples are
+     enhanced lazily (an `IntersectionObserver` with a 400px margin), and
+     that example starts about 1,122px down a 720px viewport, so no bar was
+     created. It now scrolls the same example, found by its source, into
+     view first.
 
-   A local diagnosis on 2026-10-26 confirmed both causes. With the first fix,
-   16 scenarios passed and the run stopped at the second. The scenarios after
-   it are unverified. Run the complete static-site test on a fresh build, and
-   confirm that the Pages run publishes after the merge.
+   The test is fixed in this change: the complete static-site test passes
+   on a fresh build, all 17 scenarios, and no later scenario failed.
+   Confirming that the Pages run publishes after the merge remains.
 2. **Runtime and numbers.**
    1. **B8** of the [debugging plan](runtime/rational-normalization-debug-plan.md):
       the direct proof that the propositions form a set, with
