@@ -842,10 +842,11 @@ literals and rendering work on large binary magnitudes without allocation
 proportional to their unary value. Update consumers and notation for the
 new APIs; keep the archive checking under the documented imports and
 unary-natural compatibility policy.
-Full small and wide rational inverse contracts must normalize, including
-their surviving certificates and annotations, before releasing the binary
-rational API and switching the default `Z`/`Q`. Draft #283 remains blocked
-on these contracts. This is an outcome gate, not a requirement to finish
+The binary rational API (#283) is released on the folded normal form: its
+small and wide inverse contracts check under `!!_`, by the user's decision of
+2026-10-26. Full small and wide rational inverse contracts must normalize,
+including their surviving certificates and annotations, before switching the
+default `Z`/`Q`. This is an outcome gate, not a requirement to finish
 every EVAL3–EVAL8 package: an earlier general kernel/elaborator fix can satisfy
 it, together with any needed NUM proof-algorithm change. The
 [completion path](#rational-full-normalization-completion-path)
@@ -1043,8 +1044,9 @@ unary expansion in mixed closed/open BNat law proofs.
    transport reproduction throughout. A library improvement does not by
    itself satisfy the evaluator gates. Re-run full small and
    wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
-   migration checks. Those results gate NUM2's binary-rational release and
-   default migration; construction work can proceed independently, and an
+   migration checks. Those results gate NUM2's default migration; its
+   binary-rational release checks the inverses' folded normal forms
+   (2026-10-26). Construction work can proceed independently, and an
    earlier general fix can satisfy the gates without all EVAL packages.
 
 The implementation order can overlap the source-proof and cubical work as
@@ -1186,8 +1188,9 @@ Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them, including
 numerical induction and recursion. NUM2's new binary-backed `Z` and `Q`
 follow the natural semiring foundations. These packages are independent
 of the closure evaluator for their mathematical construction. NUM2's
-binary-rational release and default migration additionally require the full
-normalization contracts in its acceptance section. The
+default migration additionally requires the full normalization contracts in
+its acceptance section; its binary-rational release checks folded normal
+forms. The
 [completion path](#rational-full-normalization-completion-path) coordinates
 the applicable EVAL work; it does not require finishing all EVAL packages.
 EVAL2 can proceed independently once its cache contract is clear. Design

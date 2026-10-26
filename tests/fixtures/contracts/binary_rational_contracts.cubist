@@ -179,6 +179,25 @@ evaluate parse_answer(
   )
 ) expecting unat.(6);
 
+// A zero denominator is refused at the denominator, 1/0 at 2; a bad binary
+// digit at itself, 0b102's 2 at 4, as bnat_literal places it.
+# test(binary_rationals.zero_denominator_position)
+evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(slash, cons(digit(unat.(0)), nil))))) expecting unat.(
+  3
+);
+
+# test(binary_rationals.bad_binary_digit_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(0)),
+      cons(
+        lower(unat.(1)), cons(digit(unat.(1)), cons(digit(unat.(0)), cons(digit(unat.(2)), nil)))
+      )
+    )
+  )
+) expecting unat.(5);
+
 # test(binary_rationals.fraction_answer)
 evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(slash, cons(digit(unat.(2)), nil))))) expecting unat.(
   0

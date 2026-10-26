@@ -5,6 +5,12 @@ unreleased; the default `Z`/`Q` migration is pending. The structural work is
 part of the [runtime roadmap](../roadmaps/runtime/runtime-evaluation-roadmap.md#rational-full-normalization-completion-path),
 not a separate language-feature or real-number project.
 
+Update on 2026-10-26: #283's binary-rational API is released on the folded
+normal form (`!!`), which its inverse contracts check, by the user's
+decision. The full normal form, this report's subject, still fails
+(`!!!_` of the wide inverse stops at `K337`). It remains the gate for the
+default `Z`/`Q` migration.
+
 Update on 2026-10-20: [nondependent quotient descent](nondependent-quotient-descent.md)
 now passes the unchanged generic-Prop fixture's 10M full-normalization gate.
 The small rational inverse also completes in a reference run at the normal
