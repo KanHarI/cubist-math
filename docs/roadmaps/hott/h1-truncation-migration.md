@@ -6,10 +6,14 @@ merges do not complete the remaining K2.5 archive remedies. On 2026-10-20 the
 remaining remedies were dropped: the legacy assumptions are removed with the
 archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-assumptions)
 plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
-runtime phase, starting with `axiom` definitions. Step 5 waits for the
-archive's deletion. None is implemented yet. The
-[ledger](h1-truncation-ledger.json) pins 17 checked public changes against
-`f4d1961`, rebased from `cc6b50f` on 2026-10-05. Its acceptance permits the listed changes; it does not certify
+runtime phase, starting with `axiom` definitions. Step 1 is implemented
+(2026-10-26): excluded middle and choice are the library's axioms, and the
+legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2–4
+are not implemented yet, and step 5 waits for the archive's deletion. The
+[ledger](h1-truncation-ledger.json) pins 12 checked public changes against
+`f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
+comparisons that step 1 retired, with the revision at which they last
+passed. Its acceptance permits the listed changes; it does not certify
 that the old and new proofs are identical or that all 47 declarations of
 specification section 8.4 have been rebuilt.
 
@@ -24,8 +28,8 @@ until it retires.
 | G2 | `small_mere_eliminate`, from a small truncation directly into a proposition in U1 | H1; no assumption |
 | G4 | Version 2: exact old/new public-type and value hashes and renderings, hypotheses, assumption lists, explicit LEM/Choice replacements and H1 markers; the same change unlisted, or a changed pin, fails | Both versions must first check; local public/value dependencies must be identical or ledgered within the comparison scope |
 | G5 | Rebuilt `EventualClose` truncates its small witness at U0; `CauchySame` remains a relation into U0 | H1; neither predicate has assumptions |
-| G6 | `resize_prop` decides a proposition using rebuilt LEM at U1, returning Unit or Void with proposition evidence and maps both ways | `LEM[h1_truncation.Trunc]` only; set evidence for `StrictlyAbove` is rejected |
-| G7 | Rebuilt `no_maximal_strict_successor` uses double-negation elimination at U1 on its large truncated conclusion | Legacy LEM explicitly replaced by `LEM[h1_truncation.Trunc]`; the four legacy truncation dependencies removed |
+| G6 | `resize_prop` decides a proposition using rebuilt LEM at U1, returning Unit or Void with proposition evidence and maps both ways | `LEM` of `classical_axioms` only (`LEM[h1_truncation.Trunc]` before step 1); set evidence for `StrictlyAbove` is rejected |
+| G7 | Rebuilt `no_maximal_strict_successor` uses double-negation elimination at U1 on its large truncated conclusion | Legacy LEM explicitly replaced by `LEM[h1_truncation.Trunc]`, now `classical_axioms`'s `LEM`; the four legacy truncation dependencies removed. Its ledger comparison retired in step 1 |
 
 `cubist-tests/h1_cauchy_quotient.cubist` has 16 declarations: five verify as identical and
 eleven have exact ledger changes. Its representative-selection wrappers
@@ -33,9 +37,10 @@ still call the archived predicate quotient and retain its legacy truncation
 dependencies. Those wrappers are recorded explicitly; this slice rebuilds
 the small equivalence relation and its laws, not the quotient foundation.
 
-The Zorn comparison selects `no_maximal_strict_successor` and its five
-unchanged local dependencies. The field-logic comparison includes the
-unchanged `FieldProp` predicate alongside `small_mere_eliminate`. Neither
+The Zorn comparison selected `no_maximal_strict_successor` and its five
+unchanged local dependencies, until step 1 retired it. The field-logic
+comparison includes the unchanged `FieldProp` predicate alongside
+`small_mere_eliminate`. Neither
 claims to rebuild `zorn_chain_complete`, the tower or all of the other remedy
 groups. `tower_induction_large` and `tower_relative_induction` are explicitly
 deferred to H2, and group 5 is refused by the implemented ledger validator.
@@ -48,20 +53,22 @@ the library, as today's checks do.
 
 ## Classical signatures
 
-`LEM(Trunc, U, ...)` and `Choice(Trunc, U, ...)` explicitly restate the two
-assumptions over the admitted proposition truncation. The former must have
-one erased universe parameter, one carrier parameter, an `A -> Trunc(A)`
-point and the generated proposition squash. An arbitrary proposition former
-is refused. They report `LEM[h1_truncation.Trunc]` and
-`Choice[h1_truncation.Trunc]` separately from H1 and retain their
-non-computing status. The old `LEM(U, ...)` and `Choice(U, ...)` keep their
-archived signatures and can coexist in the same session.
-Aliases of one checked truncation share an assumption; different admitted
-truncations have different labels. The ledger records a replacement explicitly
-and does not describe these new signatures as retained legacy assumptions.
+Until step 1, `LEM(Trunc, U, ...)` and `Choice(Trunc, U, ...)` restated the
+two assumptions over an admitted proposition truncation, named by its former,
+and reported `LEM[h1_truncation.Trunc]` and `Choice[h1_truncation.Trunc]`.
+Step 1 retired that form: `library/classical_axioms.cubist` states
+`ExcludedMiddle` and `AxiomOfChoice` over `Trunc` and assumes them as
+`def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`,
+listed as `LEM` and `Choice`. They keep their non-computing status. Where
+nothing binds `LEM` or `Choice`, the old `LEM(U, ...)` and `Choice(U, ...)`
+keep their archived signatures, listed as `LEM[Truncate]` and
+`Choice[Truncate]`, and can coexist with the axioms in the same session. A
+ledger records a replacement of a legacy builtin by the axiom of its name
+explicitly.
 
-`h1_classical.cubist` proves generic double-negation elimination, decidability
-of propositions and proposition resizing. Resizing takes explicit
+`h1_classical.cubist` imports `classical_axioms` and proves generic
+double-negation elimination, decidability of propositions and proposition
+resizing. Resizing takes explicit
 `IsProp(U1, P)` evidence; it cannot extract or resize a witness type merely
 from its being a set. For propositions, maps in both directions give an
 equivalence because both composites are identified with identities by their
@@ -85,9 +92,28 @@ dependency even when its public type stays the same.
 ```sh
 node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file cubist-tests/h1_cauchy_quotient.cubist --ledger docs/roadmaps/hott/h1-truncation-ledger.json cauchy_quotient
 node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file docs/examples/h1/migrations/field_logic.cubist --declarations FieldProp,small_mere_eliminate --ledger docs/roadmaps/hott/h1-truncation-ledger.json field_logic
+```
+
+Step 1 retired the Zorn and classical comparisons, whose pins it invalidated,
+and the ledger's `retired` list keeps their scopes and pinned changes as the
+record. Both last passed at main `21f55b55`, checked on 2026-10-26 before the
+change; the verifier refuses them, naming that revision. The classical
+comparison's edited `h1_classical` now imports the compared
+`classical_axioms` and no longer declares the compared definitions, and its
+replacements name `LEM[h1_truncation.Trunc]` and `Choice[h1_truncation.Trunc]`,
+labels that no longer exist. The Zorn comparison's baseline reads
+`h1_classical` at `f4d1961`, whose `double_negation` uses the retired
+`LEM(Trunc, U, ...)`, and its replacement names the same labels. To reproduce
+either, check out `21f55b55` and run its command there:
+
+```sh
 node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file cubist-tests/h1_zorn_step.cubist --declarations OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor --ledger docs/roadmaps/hott/h1-truncation-ledger.json zorn_chain_complete
 node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file library/h1_classical.cubist --declarations ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed --ledger docs/roadmaps/hott/h1-truncation-ledger.json classical_axioms
 ```
+
+The field-logic and Cauchy comparisons were rechecked after step 1, and their
+pins hold: neither involves `LEM` or `Choice`, and the four legacy truncation
+labels are unchanged.
 
 The pins were refreshed at H1's release on 2026-10-02. Results no longer
 carry the `kernel extension: H1` marker, so every change's
@@ -116,9 +142,10 @@ checked dependency closures. Every other pin, readable value and assumption
 list was checked unchanged before writing the hashes. All four migration
 comparisons pass; no mathematical source was changed.
 
-`tests/truncation-migration.test.mjs` checks G2 and G5–G7, the ledger file,
-coexistence with the legacy signatures and rejection of a false truncation
-former, and the CLI's pinned baseline for a module stored in `library/`.
+`tests/truncation-migration.test.mjs` checks G2 and G5–G7, the ledger file
+and its retired comparisons, coexistence of the library's `LEM` with the
+archive's `LEM[Truncate]`, and the CLI's refusal of another baseline, of a
+retired comparison and of a module without a baseline.
 Compared modules require a baseline at the requested Git revision in
 `library/` or `archive/first-library/`; an untracked new module cannot supply
 its own baseline. `tests/proof-migration.test.mjs` checks listed/unlisted G4 changes,
@@ -284,7 +311,7 @@ Added on 2026-10-21, with no assumptions:
   records the constructive binary-sequence formulation, with
   `Cantor := DecidablePowerSet(U0, Nat)`.
 
-Once axiom expressions are implemented, optional assumptions can reuse
+With axiom expressions, implemented in step 1, optional assumptions can reuse
 these type families in the same way:
 
 ```text
@@ -346,6 +373,31 @@ transition land together.
    them only while their pins remain valid, retiring any affected comparison
    in the same transition rather than postponing it. Ordinary proof
    migration checks remain strict.
+
+   **Done on 2026-10-26.** The parser reads `axiom F` only as the whole
+   value of a top-level definition without parameters, declared type or
+   section, `def Name := axiom F;`, and refuses it anywhere else (E008).
+   `axiomAssumption` (`web/cubical-assumptions.mjs`) reads `F`'s telescope off
+   its type, applying `F` to a fresh variable for each universe or ordinary
+   parameter, takes the weak head of that application as the body, and
+   refuses an `F` that is no type or family of types (E666). The checker
+   assumes the closed type under the definition's own binding,
+   `module__Name`; the definition's value is that variable, and no kernel
+   definition is admitted. Labels are `LEM` and `Choice` for
+   `classical_axioms`'s axioms and `module::Name` for any other; an
+   `expect_axioms` list names assumptions by their labels, the legacy builtins
+   as `LEM[Truncate]` and `Choice[Truncate]`. `LEM` and `Choice` are no longer
+   reserved, so an import or declaration binds them before the builtin
+   fallback. The aliases `excluded_middle_assumed` and
+   `axiom_of_choice_assumed` were dropped, and `universe_automorphisms`'s two
+   directions, assumption-free over `Trunc`, became `computable`. The Zorn and
+   classical comparisons retired, last passing at main `21f55b55`; the
+   field-logic and Cauchy pins hold. A ledger replacement is now
+   `LEM[Truncate]` or `Choice[Truncate]` by the library's axiom of its name.
+   Direct legacy-builtin probes remain in two JavaScript tests,
+   `tests/test-contracts.test.mjs`'s label check and
+   `tests/proof-migration.test.mjs`'s replacement, for step 4 to place in
+   archive sources or retire.
 2. **Remaining fixtures off the legacy assumptions.**
    Fixtures that test the legacy signatures themselves are restated over
    `Trunc` and the axioms;
@@ -411,8 +463,8 @@ transition land together.
   module's exact assumption list.
 - **Labels.** The canonical `classical_axioms` definitions display the bare
   names `LEM` and `Choice`; other axioms display their module-qualified
-  names. Internal identities include their defining module and declaration,
-  and aliases retain those identities. In step 1 the legacy builtins are
+  names, `module::Name`. Internal identities include their defining module
+  and declaration, and aliases retain those identities. In step 1 the legacy builtins are
   relabelled `LEM[Truncate]` and `Choice[Truncate]` for their remaining
   archive life, before any new axiom uses a bare canonical label.
 - **Module names.** `h1_truncation` and `h1_classical` keep their prefixes

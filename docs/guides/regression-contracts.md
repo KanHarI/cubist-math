@@ -32,9 +32,11 @@ exactly one refusal owned by that target, excluding dependent cascades. Repeat
 requires every checked output owned by the target (including each generated
 family member) to have exactly those external transitive assumptions, including
 type dependencies and excluding bound hypotheses. It cannot accompany an
-expected refusal. Use an assumption name such as `Truncate`, or a signature
-identity such as `LEM[h1_truncation.Trunc]` for a rebuilt assumption. The latter
-names the defining module and signature, independently of source aliases.
+expected refusal. Name each assumption by its label: `LEM` or `Choice` for
+the library's axioms, `module::Name` for another module's axiom, and
+`Truncate` or `LEM[Truncate]` for the archive's legacy builtins. An axiom's
+label names its defining module and declaration, independently of source
+aliases.
 
 Pragmas can target definitions, inductives, theories, initial/free models,
 `evaluate` and `print`; assumption expectations require a declaration. Parser

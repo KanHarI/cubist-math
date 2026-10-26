@@ -18,7 +18,7 @@ import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { parse, tokenize } from "../web/cubist/parser.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { forSource } from "../web/display-naming.mjs";
-import { validateLedger, ledgerMatches } from "./migration-ledger.mjs";
+import { validateLedger, ledgerMatches, retiredComparison, REPLACEMENTS } from "./migration-ledger.mjs";
 import { canonicalHasher } from "./canonical-hash.mjs";
 
 const SHADOW = "__migration_check";
@@ -65,6 +65,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   if (experimental !== undefined)
     throw new Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
   const allowedChanges = validateLedger(ledger);
+  for (const module of modules) {
+    const retired = retiredComparison(ledger, module);
+    if (retired) throw Error(`The ledger retired its ${module} comparison, which last passed at ${retired.lastPassing}: ${retired.reason}`);
+  }
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
   // A compared module's imports and qualified names, m::x, name its shadow,
@@ -278,13 +282,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         const oldAssumptions = list(assumptions(originalBinding)), newAssumptions = list(assumptions(editedBinding));
         const oldExtensions = list(extensions(originalBinding)), newExtensions = list(extensions(editedBinding));
         const removed = difference(oldAssumptions,newAssumptions), added = difference(newAssumptions,oldAssumptions);
-        const assumptionsReplaced = [];
-        for (const old of ["LEM", "Choice"]) {
-          const variants = added.filter(label => [...checker.assumptionOrigins].some(([symbol, origin]) =>
-            origin.kind === "generic-assumption" && origin.name === old && origin.truncateSignature
-            && checker.assumptionLabels.get(symbol) === label));
-          if (removed.includes(old) && variants.length === 1) assumptionsReplaced.push({old,new:variants[0]});
-        }
+        // A legacy builtin removed where the library's axiom of its name is
+        // added, which a ledger entry must still list.
+        const assumptionsReplaced = [...REPLACEMENTS].filter(([old,value]) => removed.includes(old) && added.includes(value))
+          .map(([old,value]) => ({old,new:value}));
         const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type,true),
           oldValue:snapshot(before.term),newValue:snapshot(after.term,true),assumptionsReplaced,
           hypothesesAdded:difference(newParameters.get(name) ?? [],oldParameters.get(name) ?? []),

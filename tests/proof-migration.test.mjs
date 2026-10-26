@@ -386,18 +386,27 @@ test("ledgered public dependencies cannot be hidden outside a declaration scope"
   assert.match(unpinned.failures.find(item => item.name === "witness_").reason,/must be identical or have its own verified ledger entry/);
 });
 
-test("rebuilt classical assumptions require explicit, pinned replacements", async () => {
+// The legacy builtin LEM[Truncate] replaced by the library's axiom LEM.
+test("the library's axioms replace legacy builtins only by explicit, pinned replacements", async () => {
   const source = async name => name === "replacement" ? before
     : readFile(new URL(`../library/${name}.cubist`,import.meta.url),"utf8");
-  const before = "import h1_truncation;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
-  const after = "import h1_truncation;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(Trunc, U0, A, h);\n";
+  const before = "def value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
+  const after = "import classical_axioms;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
   const run = async ledger => (await verifyMigration({modules:["replacement"],ledger,
     readOriginal:source,readEdited:async () => after}))[0];
   const change = {...(await run(null)).changes[0],remedyGroup:6};
-  assert.deepEqual(change.assumptionsReplaced,[{old:"LEM",new:"LEM[h1_truncation.Trunc]"}]);
+  assert.deepEqual(change.assumptionsReplaced,[{old:"LEM[Truncate]",new:"LEM"}]);
+  assert.deepEqual(change.assumptionsRemoved,["Truncate"]);
   assert.deepEqual(change.assumptionsRetained,[]);
   assert.deepEqual((await run({version:2,changes:[change]})).failures,[]);
   assert.match((await run({version:2,changes:[{...change,assumptionsReplaced:[]}]})).failures[0].reason,/assumptionsReplaced/);
+  await assert.rejects(run({version:2,changes:[{...change,assumptionsReplaced:[{old:"LEM[Truncate]",new:"Choice"}]}]}),
+    /may replace only LEM\[Truncate\] and Choice\[Truncate\]/);
+  const retired = changes => [{comparison:"replacement",lastPassing:"21f55b55",reason:"Retired.",changes}];
+  await assert.rejects(run({version:2,changes:[change],retired:retired([])}),
+    /belongs to the retired replacement comparison/);
+  await assert.rejects(run({version:2,changes:[],retired:retired([change])}),
+    /The ledger retired its replacement comparison, which last passed at 21f55b55: Retired\./);
 });
 
 test("pinned source resolution keeps archive imports isolated from library collisions", async () => {

@@ -134,6 +134,7 @@ export const diagnostics = [
   ["E005", "A qualified name names one module: module::name."],
   ["E006", "A qualified name is a module's name, ::, and a name, with no space between: unat::zero."],
   ["E007", "… names a module's declaration; a name declared or bound here is plain."],
+  ["E008", "An axiom is the whole value of a top-level definition without parameters: def Name := axiom Statement;"],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -294,7 +295,7 @@ export const diagnostics = [
   ["E402", "… takes a universe below UU0."],
   ["E403", "Too many arguments to …."],
   ["E404", "… needs a universe argument."],
-  ["E405", "… with a truncation former needs a universe argument."],
+  ["E405", "… with a truncation former needs a universe argument.", "retired"],
   ["E406", "Logical assumptions require a universe and an explicit native context."],
   ["E407", "… holds only for universes below UU0."],
   ["E408", "Invalid arguments to …."],
@@ -454,8 +455,8 @@ export const diagnostics = [
   ["E580", "Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
-  ["E602", "Only LEM and Choice have rebuilt truncation signatures."],
-  ["E603", "Rebuilt LEM and Choice require an admitted proposition truncation."],
+  ["E602", "Only LEM and Choice have rebuilt truncation signatures.", "retired"],
+  ["E603", "Rebuilt LEM and Choice require an admitted proposition truncation.", "retired"],
   ["E604", "Instruction kernel: …"],
   ["E605", "An assumption needs a checked type."],
   ["E606", "Type mismatch: found …, expected …."],
@@ -518,6 +519,7 @@ export const diagnostics = [
   ["E663", "A path is applied at an interval point; found a face formula."],
   ["E664", "A transport's face is a face formula; found an interval point."],
   ["E665", "A partial element's face is a face formula; found an interval point."],
+  ["E666", "An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],

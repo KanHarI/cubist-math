@@ -15,9 +15,9 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 // The assumptions each module's declarations use; a module not listed uses none.
 const assumptions = {
-  classical_axioms: ["Choice", "LEM", "Truncate"],
-  universe_automorphisms: ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
-  h1_classical: ["Choice[h1_truncation.Trunc]", "LEM[h1_truncation.Trunc]"],
+  classical_axioms: ["Choice", "LEM"],
+  universe_automorphisms: ["LEM"],
+  h1_classical: ["LEM"],
 };
 
 test("every library module checks completely", async t => {

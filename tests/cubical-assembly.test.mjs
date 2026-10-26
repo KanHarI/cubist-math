@@ -92,8 +92,8 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   // One assumption, whatever levels it is used at (G0 Q4).
   // Choice's statement mentions Truncate.
   const labels = name => program.symbols[name].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
-  assert.deepEqual(labels("assembly_generic_assumptions__choice0"), ["Choice", "Truncate"]);
-  assert.deepEqual(labels("assembly_generic_assumptions__choice1"), ["Choice", "Truncate"]);
+  assert.deepEqual(labels("assembly_generic_assumptions__choice0"), ["Choice[Truncate]", "Truncate"]);
+  assert.deepEqual(labels("assembly_generic_assumptions__choice1"), ["Choice[Truncate]", "Truncate"]);
   // Truncate keeps the archive's resizing signature until H1 (G0 Q5): the
   // module prints its type.
 });

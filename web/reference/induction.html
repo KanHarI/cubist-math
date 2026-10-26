@@ -178,12 +178,12 @@ def first_wins(n : UNat) : UNat := match n {
             <p>When the expected type mentions the matched variable, each clause is checked at its constructor, as in the <a href="#dependent-match">match statement</a>: in <code>pick</code>, the zero clause gives a <code>Unit</code> and the successor clause a number.</p>
             <pre><code data-check="accept">import unat;
 
-def Choice_(n : UNat) : U0 := match n {
+def Picked(n : UNat) : U0 := match n {
   zero =&gt; Unit;
   succ(m) =&gt; UNat;
 };
 
-def pick(n : UNat) : Choice_(n) := match n {
+def pick(n : UNat) : Picked(n) := match n {
   zero =&gt; tt;
   succ(m) =&gt; m;
 };</code></pre>

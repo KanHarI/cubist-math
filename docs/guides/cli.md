@@ -44,7 +44,11 @@ each printed on a line of its own with its code, as
 [error messages](../../web/reference/errors.html) chapter of the language
 reference, and `node tools/diagnostic-codes.mjs` checks that every message
 in the sources has one.
-There is no `axiom` declaration: a source file cannot add assumptions. Each
+A definition whose value is an axiom expression, `def Name := axiom F;`,
+adds an assumption: one of the type `F`, or of `F`'s body over its
+parameters, as the library's `classical_axioms` states excluded middle and
+choice ([declarations](../../web/reference/first-proof.html#axiom-definitions)).
+Every result that uses it lists it, and none that does is computable. Each
 `evaluate` directive's result is printed after the counts.
 A declaration with a universe variable `U < UU0` is checked once, for every
 universe.

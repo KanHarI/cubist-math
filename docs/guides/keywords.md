@@ -18,6 +18,13 @@ existing bindings of that name were renamed to `lift_`. The retired `over`
 statement and standalone transport prefix are not part of the current language;
 `over` is now an ordinary name.
 
+`axiom` is reserved since K2.5 step 1 (2026-10-26): it starts an axiom
+expression, the whole value of `def Name := axiom F;`
+([axioms](../../web/reference/first-proof.html#axiom-definitions)). `LEM` and
+`Choice` became ordinary names then: the library's `classical_axioms` declares
+them, and only where nothing binds them do they fall back to the archive's
+builtins over `Truncate`.
+
 The deriving vocabulary from #187 and #198 is reserved now: `deriving`,
 `isomorphisms`, `morphisms`, `free`, `initial`, `limits`, `preadditive`,
 `additive`, `preabelian` and `abelian`, together with the inductive

@@ -19,9 +19,24 @@ test("axiom and opaque are not declarations, and imports come first", () => {
   assert.throws(() => parse("axiom assumed : UNat;"), /Expected a declaration or directive: def, computable def/);
   assert.throws(() => parse("opaque def boxed := 0;"), /Expected a declaration or directive: def, computable def/);
   assert.throws(() => parse("def zero_again := 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
-  // `axiom` and `opaque` are ordinary names elsewhere.
-  assert.equal(parse("def axiom(n : UNat) := n;").declarations[0].name.text, "axiom");
+  // `axiom` starts an expression and is reserved; `opaque` is an ordinary name.
+  assert.throws(() => parse("def axiom(n : UNat) := n;"),
+    /^Error: axiom is reserved, as a keyword or a built-in type of the language; pick another name\.$/);
   assert.equal(parse("def opaque(n : UNat) := n;").declarations[0].name.text, "opaque");
+});
+
+// def Name := axiom Statement; (docs/roadmaps/hott/h1-truncation-migration.md).
+test("an axiom is the whole value of a top-level definition without parameters", () => {
+  const [lem, stated] = parse("def LEM := axiom ExcludedMiddle;\ndef Stated := axiom forall A : U0. A -> A;").declarations;
+  assert.deepEqual([lem.name.text, lem.value.kind, lem.value.statement.name], ["LEM", "axiom", "ExcludedMiddle"]);
+  assert.equal(stated.value.statement.kind, "forall");
+  for (const source of ["def X(A : U0) := axiom A;", "def X{{U < UU0}} := axiom U;", "def X : U0 := axiom Unit;",
+    "def X := (axiom Unit);", "def X := fun (x : Unit) => axiom Unit;", "section (A : U0) { def X := axiom A; }",
+    "def X : Unit { exact axiom Unit; }"])
+    assert.throws(() => parse(source), error => error.offset === source.indexOf("axiom")
+      && error.message === "An axiom is the whole value of a top-level definition without parameters: def Name := axiom Statement;", source);
+  // Excluded middle and choice are the library's definitions, not reserved words.
+  assert.equal(parse("def LEM := tt;\ndef Choice(LEM : Unit) := LEM;").declarations.length, 2);
 });
 
 // `print(evaluate|typeof|inspect(term));` is a top-level directive; `print`,
@@ -94,4 +109,25 @@ test("definitions expose their checked bodies, and a refused one admits nothing"
   assert.equal(view.statement.parameters.length, 0);
   assert.equal(program.inspect("declarations_definitions__identity").folded.reference, undefined);
   assert.equal(program.kernel.definitions.has("declarations_definitions__false_claim"), false);
+});
+
+// The axioms are cubist-tests/declarations_axioms.cubist, whose comments
+// state the refusals (tests/cubist-tests.test.mjs).
+test("an axiom is one assumption of its family's closed body, shared by its uses and listed by its label", async t => {
+  const { program, result } = await checkTestModule(t, "declarations_axioms");
+  const binding = "declarations_axioms__Shift", get = name => result.outputs.find(output => output.name === name);
+  // The definition names the assumption, a context entry and no kernel definition.
+  assert.equal(program.kernel.definitions.has(binding), false);
+  assert.equal(program.checker.libraryAssumptions.get("declarations_axioms::Shift")?.name, binding);
+  assert.equal(result.assumptionLabels[binding], "declarations_axioms::Shift");
+  for (const name of ["Shift", "shifted", "shift_large", "shift_again"]) assert.deepEqual(get(name).axioms, [binding], name);
+  // Its type closes the family's body, not the family's own type, U < UU0 -> next(U).
+  const type = program.checker.assumptions.get(binding);
+  assert.deepEqual([type.tag, type.body.tag, type.body.domain.tag], ["LPi", "Pi", "U"]);
+  const view = program.inspect(binding);
+  assert.deepEqual(view.axioms, [binding]);
+  assert.equal(view.symbols[binding].kind, "axiom");
+  assert.equal(view.symbols[binding].name, "declarations_axioms::Shift");
+  // A type is assumed as it is.
+  assert.equal(program.checker.assumptions.get("declarations_axioms__Unknown").tag, "Sort");
 });

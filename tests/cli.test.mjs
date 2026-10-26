@@ -55,9 +55,9 @@ evaluate double(2) expecting 4;
   assert.equal(shell.status, 0, shell.stderr);
   assert.match(shell.stdout, /evaluate at line 7: 4\n/);
   assert.match(shell.stdout, /Type: .*\nAssumptions: none\n/);
-  assert.match(shell.stdout, /Assumptions: LEM, Truncate, TruncateElim\n/);
+  assert.match(shell.stdout, /Assumptions: LEM\[Truncate\], Truncate, TruncateElim\n/);
   assert.match(shell.stdout, /\n6\n/);
-  assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM.*Path to LEM: recover \(sample\) → double_negation \(classical\) → LEM\./);
+  assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM\[Truncate\].*Path to LEM\[Truncate\]: recover \(sample\) → double_negation \(classical\) → LEM\[Truncate\]\./);
   assert.match(shell.stderr, /missing_name/);
 });
 // The H1 specification's 6.5: inspecting a declared type prints its signature

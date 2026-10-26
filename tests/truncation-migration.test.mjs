@@ -35,7 +35,7 @@ test("G5: the rebuilt CauchySame relation and EventualClose stay in U0 without a
 test("G6: resizing a proposition uses only LEM; a StrictlyAbove witness cannot use set evidence",async t=>{
   const {get,assumptions}=await check(t,"truncation_resize");
   assert.ok(get("resized")?.verified,get("resized")?.reason);
-  assert.deepEqual(assumptions(get("resized")),["LEM[h1_truncation.Trunc]"]);
+  assert.deepEqual(assumptions(get("resized")),["LEM"]);
   assert.equal(get("rejected").verified,false);
   assert.match(get("rejected").reason,/mismatch/i);
 });
@@ -43,26 +43,29 @@ test("G6: resizing a proposition uses only LEM; a StrictlyAbove witness cannot u
 test("G7: no_maximal_strict_successor applies double negation at U1 and retains LEM",async t=>{
   const {get,assumptions}=await check(t,"truncation_strict_successor");
   assert.ok(get("replay")?.verified,get("replay")?.reason);
-  assert.deepEqual(assumptions(get("replay")),["LEM[h1_truncation.Trunc]"]);
+  assert.deepEqual(assumptions(get("replay")),["LEM"]);
 });
 
-test("G4: the checked migration ledger has exact pins and defers the H2 tower declarations",async()=>{
+// K2.5 step 1 retired the Zorn and classical comparisons, whose pins it
+// invalidated; each records the last revision at which it passed.
+test("G4: the checked migration ledger has exact pins, records its retired comparisons and defers the H2 tower declarations",async()=>{
   const ledger=JSON.parse(await readFile(new URL("../docs/roadmaps/hott/h1-truncation-ledger.json",import.meta.url),"utf8"));
-  assert.equal(validateLedger(ledger).size,17);
+  assert.equal(validateLedger(ledger).size,12);
+  assert.deepEqual(ledger.retired.map(record=>[record.comparison,record.lastPassing,record.changes.length]),
+    [["zorn_chain_complete","21f55b55",1],["classical_axioms","21f55b55",4]]);
   assert.deepEqual(ledger.deferred,["tower_induction_large","tower_relative_induction"]);
+  assert.throws(()=>validateLedger({...ledger,changes:[...ledger.changes,ledger.retired[0].changes[0]]}),
+    /belongs to the retired zorn_chain_complete comparison/);
 });
 
-test("G4: the CLI uses a pinned library baseline and refuses a new module without a baseline",()=>{
+test("G4: the CLI refuses a baseline other than the pinned one, a retired comparison and a new module without a baseline",()=>{
   const args=["tools/verify-proof-migration.mjs","--base","f4d1961","--no-dependents",
     "--edited-file","library/h1_classical.cubist"];
-  const report=execFileSync(process.execPath,[...args,"--declarations",
-    "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
-    "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json","classical_axioms"],{encoding:"utf8"});
-  assert.match(report,/4 exact ledger changes/); assert.match(report,/0 failures/);
-  assert.throws(()=>execFileSync(process.execPath,[...args.slice(0,2),"cc6b50f",...args.slice(3),"--declarations",
-    "ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",
-    "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json","classical_axioms"],{stdio:"pipe"}),
+  const ledger=["--ledger","docs/roadmaps/hott/h1-truncation-ledger.json"];
+  assert.throws(()=>execFileSync(process.execPath,[...args.slice(0,2),"cc6b50f",...args.slice(3),...ledger,"classical_axioms"],{stdio:"pipe"}),
     error=>error.status===1 && /Ledger baseline is f4d1961.*different revision/.test(String(error.stderr)));
+  assert.throws(()=>execFileSync(process.execPath,[...args,...ledger,"classical_axioms"],{stdio:"pipe"}),
+    error=>error.status===1 && /The ledger retired its classical_axioms comparison, which last passed at 21f55b55/.test(String(error.stderr)));
   assert.throws(()=>execFileSync(process.execPath,[...args,"migration_no_baseline_fixture"],{stdio:"pipe"}),
     error=>error.status===1 && /No baseline for compared module migration_no_baseline_fixture/.test(String(error.stderr)));
 });
@@ -74,12 +77,10 @@ test("archive module names check from the CLI and the verifier, with no marker",
   assert.match(migration,/0 failures/);
 });
 
-test("all four documented ledger comparisons verify their pinned changes and local public dependencies",()=>{
+test("both remaining documented ledger comparisons verify their pinned changes and local public dependencies",()=>{
   const cases = [
     ["cauchy_quotient","cubist-tests/h1_cauchy_quotient.cubist",null,11],
     ["field_logic","docs/examples/h1/migrations/field_logic.cubist","FieldProp,small_mere_eliminate",1],
-    ["zorn_chain_complete","cubist-tests/h1_zorn_step.cubist","OrderMaximal,StrictlyAbove,strict_above_point,strict_above_laws,strict_above_is_set,no_maximal_strict_successor",1],
-    ["classical_axioms","library/h1_classical.cubist","ExcludedMiddle,AxiomOfChoice,excluded_middle_assumed,axiom_of_choice_assumed",4]
   ];
   for (const [module,file,scope,count] of cases) {
     const args=["tools/verify-proof-migration.mjs","--no-dependents","--edited-file",file,
@@ -89,16 +90,12 @@ test("all four documented ledger comparisons verify their pinned changes and loc
   }
 });
 
-test("rebuilt classical assumptions coexist with legacy signatures and reject a false truncation former",async t=>{
+test("the library's excluded middle coexists with the archive's legacy builtin, and a program that uses both lists both",async t=>{
   const {get,assumptions}=await check(t,"truncation_rebuilt_classical");
-  assert.ok(get("old").verified); assert.ok(get("rebuilt").verified);
-  assert.deepEqual(assumptions(get("old")),["LEM","Truncate"]);
-  assert.deepEqual(assumptions(get("rebuilt")),["LEM[h1_truncation.Trunc]"]);
-  assert.deepEqual(assumptions(get("both")),["LEM","LEM[h1_truncation.Trunc]","Truncate"]);
-  assert.ok(get("aliased").verified,get("aliased").reason);
-  assert.deepEqual(get("aliased").axioms,get("rebuilt").axioms);
-  assert.ok(get("other").verified,get("other").reason);
-  assert.deepEqual(assumptions(get("other")),["LEM[truncation_rebuilt_classical.Other]"]);
+  for(const name of ["old","rebuilt","both"])assert.ok(get(name).verified,get(name).reason);
+  assert.deepEqual(assumptions(get("old")),["LEM[Truncate]","Truncate","TruncateElim"]);
+  assert.deepEqual(assumptions(get("rebuilt")),["LEM"]);
+  assert.deepEqual(assumptions(get("both")),["LEM","LEM[Truncate]","Truncate","TruncateElim"]);
   assert.equal(get("rejected").verified,false);
-  assert.match(get("rejected").reason,/admitted proposition truncation/);
+  assert.match(get("rejected").reason,/^Expected a universe/);
 });

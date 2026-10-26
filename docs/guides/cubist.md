@@ -93,13 +93,19 @@ reduction: `(fun (x : UNat) => succ(x))(1)` computes to `2`. Proof blocks appear
 by name in the inspector, with their bodies available to open. This presentation
 does not change checking or introduce an axiom.
 
-An explicit assumption uses `axiom name(params) : T;`. It has no proof body;
-the kernel checks its type and records an `Axiom` instruction. Every result and
-the inspector list the names of the axioms used by its recorded derivation,
-including dependencies in types and contexts. Click an axiom to inspect it and
-view its source. An imported but unused axiom does not appear in that result's
-list. The module-wide count is displayed separately. The CLI's `show` command
-also lists dependencies.
+An explicit assumption is a definition whose whole value is an axiom
+expression, `def Name := axiom F;`. `F` is a type, or a family of types such as
+`ExcludedMiddle(U < UU0)`, whose body is closed over its parameters: the
+library's `classical_axioms` states `def LEM := axiom ExcludedMiddle;` and
+`def Choice := axiom AxiomOfChoice;` over `Trunc`. The checker adds one context
+entry of that type, named by the definition, and the kernel checks every proof
+that uses it abstracted over it; no new rule is trusted. Every result and the
+inspector list the assumptions it uses, including dependencies in types and
+contexts, by their labels: `LEM` and `Choice` for the library's, and
+`module::Name` for any other. An imported but unused assumption does not
+appear in that result's list. A `computable` declaration, an `evaluate` and a
+declared type's signature cannot use one. There is no standalone
+`axiom name(params) : T;` declaration.
 
 Types include `forall x : A. B`, `exists x : A. B`, `A -> B`, `A and B`, and
 `A or B`. A pair is `(a, b)`. Its expected type supplies the dependent family;

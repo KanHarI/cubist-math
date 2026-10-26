@@ -22,6 +22,7 @@ import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-r
 import {SearchFuel,SearchFuelExhausted,SEARCH_FUEL,recordSearch,emptySearchRecord} from "./fuel.mjs";
 import {copySimpRegistry,orderedDefaultRules,orderedHLevelRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
 import {builtinTerm} from "./builtins.mjs";
+import {axiomAssumption} from "../cubical-assumptions.mjs";
 import {transportToDependentPath} from "./path-over.mjs";
 import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
@@ -861,7 +862,14 @@ export class Translator {
         // Resolve file-level uses once, outside the parameter/section scopes.
         // The closing kernel check reports in this same retained notation.
         bodyScope=this.itemScope(bodyScope,d);
-        const term=this.term(expression,bodyScope);
+        // `def Name := axiom F;` names an assumption, which is its value.
+        const axiom=expression.kind==="axiom";
+        const assumed=statement=>{
+          try {return axiomAssumption(this.checker,{module:this.moduleName,declaration:d.name.text,
+            binding:this.bindingName(d.name.text)},statement,bodyScope);}
+          catch(error) {throw unit.locate(error,expression.statement);}
+        };
+        const term=axiom?assumed(this.term(expression.statement,bodyScope,null)):this.term(expression,bodyScope);
         // Normal forms are optional inspection output, not a prerequisite for
         // checking a declaration whose Nat value may have millions of successors.
         // The declaration's closing check, and its admission below, are
@@ -877,10 +885,10 @@ export class Translator {
           if(assumptions.length)throw Error(this.nonComputingMessage("This computable declaration",
             assumptions,checked.term,checked.type));
         }
-        if(this.checker.define)unit.fuel.spend("queries");
+        if(this.checker.define&&!axiom)unit.fuel.spend("queries");
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
-        const definition=this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
+        const definition=axiom?checked.term:this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
           own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         publish(d,definition);

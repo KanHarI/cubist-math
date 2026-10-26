@@ -92,7 +92,7 @@ export class CubicalProgram {
     return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
       binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
       verified: true, type: cubicalText(type, this.symbols, { dimensions: [] }), axioms: [binding],
-      description: "An explicit logical assumption from the library. Its full signature is shown in the Axioms section.",
+      description: "An explicit logical assumption: a name with a type and no computation rule. Its full signature is shown in the Axioms section.",
     }]));
   }
   // Read and parse a module and, before it, its imports, into
