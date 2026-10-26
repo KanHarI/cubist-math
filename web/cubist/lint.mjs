@@ -101,11 +101,11 @@ export function lint(source, ast = parse(source)) {
   };
   visit(ast.declarations);
   // Demand marks that ask for nothing more than their part already computes
-  // (docs/roadmaps/runtime/evaluation-demand-marks.md): ! before a part that
+  // (docs/roadmaps/historical/evaluation-demand-marks.md): ! before a part that
   // computes its weak head itself, a pair, an injection, a constructor or an
   // expression; !! before an expression, which is compared by its normal
   // form; and a mark under !! or !!! that asks for no more than it, whose
-  // part is normalized (docs/roadmaps/runtime/folded-normal-forms.md). A !!!
+  // part is normalized (docs/roadmaps/historical/folded-normal-forms.md). A !!!
   // under !! asks for more, which the checker refuses (E486).
   // What a part computes by itself, read from its syntax alone: a hole
   // nothing, typed(T, p) what p does, and anything else at least the part's

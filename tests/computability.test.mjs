@@ -51,7 +51,7 @@ evaluate empty Void by fun x => x;
 test("evidence assertions do not request normalization, while expected values do", async t => {
   const { program } = await checkProgram(t, "");
   const kernel = program.kernel, normalize = kernel.normalize.bind(kernel), normalizeFolded = kernel.normalizeFolded.bind(kernel);
-  // Either normal form, full or folded (docs/roadmaps/runtime/folded-normal-forms.md).
+  // Either normal form, full or folded (docs/roadmaps/historical/folded-normal-forms.md).
   let calls = 0;
   kernel.normalize = (...args) => { calls++; return normalize(...args); };
   kernel.normalizeFolded = (...args) => { calls++; return normalizeFolded(...args); };

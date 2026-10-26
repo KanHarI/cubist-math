@@ -232,6 +232,13 @@ all 42 publication tests also pass locally. Resource limits and mutation failure
 classification are unchanged. The remote signal's sender remains unconfirmed;
 verify the fix in CI before marking the remote mutation gate green.
 
+Verified on 2026-10-26: #264's final head `98667d7b` passed
+[CI run 39038564069](https://github.com/KanHarI/cubist-math/actions/runs/39038564069),
+including the frontend mutation step with all 16 probes, and that step has
+passed in every successful CI run since, most recently #283's
+[run 40275548329](https://github.com/KanHarI/cubist-math/actions/runs/40275548329).
+The remote mutation gate is green.
+
 [Publication run 39026745357](https://github.com/KanHarI/cubist-math/actions/runs/39026745357)
 completed successfully on 2026-10-17 at main `e729c2d5`, including its build,
 full test suite, published-site browser checks and deployment.

@@ -83,6 +83,43 @@ Each step is small enough for one pull request, or a few.
 Acceptance for R5 is the measure in its row, with the catalog's per-area
 decisions of R3 recorded before the deletion.
 
+**Scheduled early, on 2026-10-26.** Two parts no longer wait for the runtime
+phase to end: R2 (K2.5's steps 1–4) runs alongside it, and so does the
+archive's number theory, below.
+
+## Number theory in the library
+
+**Directed on 2026-10-26:** all number theory in the archive moves to the
+library, and then leaves the archive. This is R3's decision for the
+arithmetic part of "Numbers and counting": rebuild. The scope below was
+measured on main `7230825e`; imports are transitive, so "used by" counts
+every module that reaches a definition, not only direct importers.
+
+| Archive source | What it holds and who uses it | In the library |
+| --- | --- | --- |
+| `primes` (637 lines): divisibility and primality | `Divides`, its decision and lemmas, `Prime`, `prime_divisor_exists`, `factorial_positive`, `bounded_divisor_of_factorial`. Among Cubist sources only `euclid` uses them; JavaScript tests, the evaluation baseline and the Cubist guide name some of them | EVAL7: remainder-based divisibility, primality and least-prime-divisor search over binary `Nat`, with `nat`'s binary factorial |
+| `euclid` (25 lines) | Euclid's theorem ★; the showcase example of the site, the reference and many tests, and the evaluation baseline's workload | EVAL7's checked binary Euclid |
+| `primes`: nine unary order and equality lemmas | `unat_zero_ne_succ`, `nat_le_zero`, `nat_le_step`, `nat_le_trans`, `nat_le_total`, `nat_le_succ_split`, `nat_le_add`, `nat_eq_decidable`, `nat_add_positive`. Used by polynomial, linear-algebra, Galois, analysis and radix modules, and the `h1_cauchy_quotient` fixture | `unat`, which already holds `unat_zero_ne_succ`; the archive imports them from there, as it did `nat`'s arithmetic |
+| `primes`: bounded least-witness search; `natural_minimum` (72 lines) | Least elements of decidable predicates; `polynomial_degree` and `artin_degree` import `natural_minimum` | A library module over binary `Nat`, with a unary form if those two still need one |
+| `primes`: unary `factorial` | Used by four binary and radix transfer modules | `nat`'s binary factorial, with the numerals below |
+| `binary_*` (6 modules, 672 lines) | Binary numerals: induction, arithmetic, equivalence with unary, correctness and the 10! transfer. Helper imports from the fixtures `wasm_binary_literal`, `computability_evaluation` and `wasm_bad_factorial` | Mostly rebuilt by NUM0/NUM1 (`bnat_*`). Check each result against them and add what is missing, such as 10! carried by transport |
+| `radix_*` (11 modules, 2,347 lines) | Positional numerals in every base b ≥ 2: uniqueness, arithmetic and factorial correspondence, direct conversion to binary, 10! in bases 2 and 10 | Rebuilt over binary `Nat` |
+
+Steps, each one or a few pull requests:
+
+| Step | Work |
+| --- | --- |
+| NT1 | The unary order and equality lemmas move to `unat`; the archive's users import them there |
+| NT2 | EVAL7: divisibility, primality and Euclid in the library; every consumer of `euclid` moves to it |
+| NT3 | Least elements: the bounded search and `natural_minimum` in the library; `polynomial_degree` and `artin_degree` import it |
+| NT4 | Numerals: the binary results checked against `bnat_*` and completed; radix numerals rebuilt over binary `Nat`; the helper fixtures moved |
+| NT5 | Delete `primes`, `euclid`, `natural_minimum`, `binary_*` and `radix_*` (20 modules) from the archive, update the catalog's module table and record the rebuilt results |
+
+**Open:** whether the counting results of the same catalog area count as
+number theory here: finite cardinalities, counting functions and
+permutations, binomial types and fibered counting (8 modules, 1,323 lines).
+They stay in the archive until decided.
+
 ## Relation to other work
 
 - [K2.5](work-plan.md#stage-2-one-sort-signatures-basic-theories-and-matching):
@@ -98,7 +135,8 @@ decisions of R3 recorded before the deletion.
   what the library rebuilds.
 - The [runtime evaluation track](runtime/runtime-evaluation-roadmap.md):
   evaluation baselines that run archive workloads need library workloads
-  before R5.
+  before R5. EVAL7's library Euclid supplies the Euclid workloads and
+  replaces the archive's.
 - The [deferred library backlog](work-plan.md#deferred-library-backlog):
   R3's decisions name which B3–B5 results the retirement waits for.
 
@@ -109,4 +147,8 @@ decisions of R3 recorded before the deletion.
 2. Whether the retired-syntax readers go with the archive, or stay for
    historical sources outside the tree.
 3. When R3–R5 start: after the runtime phase, and not as a gate of the
-   language progression.
+   language progression. The number theory (NT1–NT5) and R2 are scheduled
+   earlier (2026-10-26).
+4. Whether the counting results (finite cardinalities, functions and
+   permutations, binomial types, fibered counting) join the number theory's
+   early migration or wait for R3.

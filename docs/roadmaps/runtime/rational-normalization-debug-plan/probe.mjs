@@ -16,7 +16,7 @@ import { CubicalProgram } from "../../../../web/cubical-program.mjs";
 import { sourceReader } from "../../../../tools/module-sources.mjs";
 import { assertFreshBuild, sourceHash } from "../../../../tools/build-stamp.mjs";
 import { sharedNormalDigest } from "../../../../tools/evaluation-baseline.mjs";
-import { sources } from "../evaluation-demand-marks/probe-sources.mjs";
+import { sources } from "../../historical/evaluation-demand-marks/probe-sources.mjs";
 
 assertFreshBuild();
 // `binary`: the binary rationals without #283, the demand marks' report's

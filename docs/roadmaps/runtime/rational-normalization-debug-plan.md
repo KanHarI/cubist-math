@@ -17,6 +17,21 @@ supplements the [inverse normalization report](../../reports/rational-normalizat
 and the roadmap's [completion path](runtime-evaluation-roadmap.md#rational-full-normalization-completion-path);
 it does not close any of their gates.
 
+**Progress at main `7230825e` (2026-10-26).** Phase A's first item is done
+in #302, and its items 2–4 are not. Of Phase C, step 1 is #302 and step 2,
+D1, is done: the folded normal form
+([#307](https://github.com/KanHarI/cubist-math/pull/307),
+[#309](https://github.com/KanHarI/cubist-math/pull/309),
+[#310](https://github.com/KanHarI/cubist-math/pull/310)). #283's 32 contracts
+were rebased onto `!!_` and pass, and its API was released on folded normal
+forms on 2026-10-26 by the user's decision. B8, step 3, is next: the
+[work plan](../work-plan.md#first-actions) scheduled it on 2026-10-26, which
+accepts D3's smaller certificates for it. Targets T1–T6 remain open: they
+measure the full normal form, `!!!`, and the measurements below are unchanged.
+They gate neither the binary-rational API nor, by the same day's decision,
+the default `Z`/`Q` switch, both of which check folded normal forms. D2, and
+D3 for B2, are undecided.
+
 Every measurement below was taken with the retained
 [probe](rational-normalization-debug-plan/probe.mjs): a fresh checked program
 per query, main's library only, a fixed query budget, a 600-second deadline,
@@ -267,7 +282,7 @@ literal carries the certificate of 1.2, without any decision:
 | `integers.add_comm` | 13,114,858 | 294,322 / 247 |
 | `integers.add_assoc` | 57,719,427 | 1,460,386 / 249 |
 
-The demand marks' [acceptance report](evaluation-demand-marks/report.md)
+The demand marks' [acceptance report](../historical/evaluation-demand-marks/report.md)
 measures `rationals.(2/3) expecting !!_;` at 71,001,788 ticks in the REPL,
 the full normal form, which `!!!_` computes since D1: this is that cost. The data of the literal is a few dozen nodes; the
 certificate is 1,045,246 of its 1,116,794, and the sort annotation the rest.

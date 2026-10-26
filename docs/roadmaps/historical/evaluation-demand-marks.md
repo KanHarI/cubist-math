@@ -1,5 +1,10 @@
 # Evaluation demand marks: `!` and `!!`
 
+**Archived on 2026-10-26:** every work item is done, so this note moved from
+`runtime/` to `historical/`. Its decisions remain EVAL5's observation
+contract; the [runtime roadmap](../runtime/runtime-evaluation-roadmap.md#eval5-demand-only-the-result-being-observed)
+holds the open EVAL5 work.
+
 Status: proposed on 2026-10-21 and decided the same day (DM0, the
 [decisions](#decisions) below). The marks in `evaluate … expecting` (DM1,
 DM2) are implemented in [#304](https://github.com/KanHarI/cubist-math/pull/304),
@@ -9,13 +14,13 @@ the [acceptance report](evaluation-demand-marks/report.md) (DM5), in
 [#306](https://github.com/KanHarI/cubist-math/pull/306), measures them
 against main. This is the observation
 contract that EVAL5 of the
-[runtime roadmap](runtime-evaluation-roadmap.md#eval5-demand-only-the-result-being-observed)
+[runtime roadmap](../runtime/runtime-evaluation-roadmap.md#eval5-demand-only-the-result-being-observed)
 requires before evaluation behavior changes. It proposes no kernel change
 and no new reduction: the two marks name the kernel's two existing reduction
 queries.
 
 It does not resolve decision D1 of the
-[rational normalization debugging plan](rational-normalization-debug-plan.md).
+[rational normalization debugging plan](../runtime/rational-normalization-debug-plan.md).
 D1 asks what a full normal form unfolds, and `!!` below keeps today's full
 normal form unchanged, so D1 still bounds every engine gate written with
 `!!`. This note takes full normalization out of inspection, patterns and
@@ -23,8 +28,12 @@ printing only. Update of 2026-10-23: D1 is decided. `!!` is to compute a
 folded normal form, which keeps a stuck definition as written, and a new
 `!!!` the full normal form this note gives `!!`
 ([folded normal forms](https://github.com/KanHarI/cubist-math/pull/307)).
-Gates that measure full normalization move to `!!!_` when that lands; until
-then `!!` is as below.
+Update of 2026-10-26: that landed in
+[#310](https://github.com/KanHarI/cubist-math/pull/310) on 2026-10-24
+([folded normal forms](folded-normal-forms.md)), and the gates that measure
+full normalization moved to `!!!_`. Below, `!!` means the full normal form,
+which `!!!` now names, and the measurements keep their dates. The marks'
+observation semantics are otherwise unchanged.
 
 ## What evaluation did before the marks
 

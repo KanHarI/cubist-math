@@ -12,7 +12,7 @@ import { localName } from "../web/translator/names.mjs";
 
 // The display's naming (web/README.md, "Displaying terms"): no two different
 // things show one name where both are in scope. A folded normal form keeps
-// definitions under binders (docs/roadmaps/runtime/folded-normal-forms.md),
+// definitions under binders (docs/roadmaps/historical/folded-normal-forms.md),
 // so this corpus names its definitions as the display's own stems, the
 // names it gives binders (x, z, k, h, a, b) and dimensions (i, j, d0, z1),
 // and every case is a function by cases, a lambda chain or a path whose

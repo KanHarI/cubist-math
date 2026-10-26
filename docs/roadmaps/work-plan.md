@@ -1,9 +1,11 @@
 # Work plan: language features and their kernel support
 
-Status: reconciled on 2026-10-17 against main `3be74796`, after the CB,
-refactoring, EVAL1 and algebra stacks merged, with EVAL2 recorded below.
-Package measurements and mathematical approvals
-retain their earlier dated evidence.
+Status: reconciled on 2026-10-26 against main `7230825e`, after the runtime
+and numerical stacks, the demand marks and folded normal forms, the display
+and qualified-name changes and the binary rationals. The scheduling decisions
+of 2026-10-26 are in [first actions](#first-actions) and
+[open decisions](#open-decisions). Package measurements and mathematical
+approvals retain their earlier dated evidence.
 Delivered means present on main. The current tables include L2.4c's six
 slices, notation L2.10a–e and i–k, h-level registration, evaluation patterns
 and closed truncation readout, squares, and EVAL0's recorded baseline.
@@ -14,8 +16,8 @@ revision notes and superseded first-action list; the
 Initial/free construction and fold behavior, CB0–CB7 and their separate cleanup
 are on main. The older frontend implementations are superseded. The
 [refactoring and source-test record](historical/refactoring-and-testing.md) records the
-completed agreed #224 scope in #243–#263; [branch work](#branch-work) distinguishes
-that merged work from the Hydra draft. This does
+completed agreed #224 scope in #243–#263; [branch work](#branch-work) records
+the branches since, of which none is open. This does
 not complete L2.6's checked universal capabilities or resume paused mathematics.
 
 This is the scheduling authority for the linked roadmaps. Package IDs from
@@ -34,13 +36,18 @@ option and the marker were removed.
 **Current priority, directed on 2026-10-17.** Complete the runtime evaluation
 and numerical-foundation track before returning to the language progression
 below. Mathematical scope is natural numbers, integers and rationals, plus
-the definitions of ordered rings and ordered fields. Switch the public `Nat`
-to binary naturals when NUM0/NUM1's arithmetic, equivalence, induction and
-compatibility gates pass; retain explicit `UNat` for unary clients. NUM2
-supplies binary-backed `Z` and `Q`. This does not schedule the reals roadmap,
-`PosRat`, Archimedean bounds, completeness or analysis. The existing EVAL7
-natural-number computation pilot remains bounded by its runtime contract.
-After performance optimization, resume language features, monads, categories
+the definitions of ordered rings and ordered fields. The public `Nat` became
+binary on 2026-10-18 (#278), after NUM0/NUM1's arithmetic, equivalence,
+induction and compatibility gates passed; explicit `UNat` serves unary
+clients. NUM2 supplies binary-backed `Z` and `Q`. Their default switch is
+gated on folded normal forms, as #283's release was (decided 2026-10-26).
+This does not schedule the reals roadmap, `PosRat`, Archimedean bounds,
+completeness or analysis. The EVAL7 natural-number computation pilot
+remains bounded by its runtime contract. By the decisions of 2026-10-26,
+the phase also connects the runtime query of #289 to the REPLs, adds typed
+readback, and lands EVAL7's library Euclid, which replaces the archive's;
+K2.5's `axiom` definitions proceed alongside. After the phase, the simplicial
+track's ST0 and ST2 come first, then language features, monads, categories
 and algebraic homology/synthetic cohomology in the progression below.
 
 Deliver this work in focused PRs. Each PR receives Claude Opus 5.5 review
@@ -66,6 +73,9 @@ spelling; no new syntax or kernel rule is implemented. The
 [simplicial track](#simplicial-types-track) records its semantic gates and
 later mathematical targets. Ordinary category and universal-algebra work
 continue on their existing foundations, and runtime priority is unchanged.
+**Scheduled on 2026-10-26:** ST0 and ST2 follow the runtime phase, ahead of
+the categorical progression. ST1 joins L2.12/L3.4, whose ordinary interfaces
+its notation needs.
 
 Each slice pairs a language capability with checked examples and its intended
 scope: an explicit reference construction, proofs, relevant negative cases, readable
@@ -97,7 +107,20 @@ bijections and half-adjoint equivalences, where the library has contractible
 maps. [Archive retirement](archive-retirement.md) (I0.5, direction adopted on
 2026-10-20) owns the follow-ups: confining new dependencies, deciding per
 results-catalog area what the library rebuilds before deletion, and moving or
-retiring the fixtures, tests, tools and docs that read the archive.
+retiring the fixtures, tests, tools and docs that read the archive. One part
+goes early, by the direction of 2026-10-26: all of the archive's number
+theory moves to the library and then leaves the archive
+([number theory in the library](archive-retirement.md#number-theory-in-the-library),
+NT1–NT5). That covers:
+- `primes`' divisibility and primality, and `euclid`, rebuilt by EVAL7 over
+  binary `Nat`;
+- `primes`' nine unary order lemmas, moved to `unat` for the archive's other
+  areas;
+- its least-witness search with `natural_minimum`;
+- the binary and radix numerals.
+
+Then 20 modules leave the archive. Whether the counting results of the same
+catalog area are included is open.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -112,17 +135,17 @@ between columns.
 
 | Area | Delivered | Still open |
 | --- | --- | --- |
-| Instruction kernel | Stages 1–5, plus the checking/bridge optimizations in #194–#197; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict; I1.2b, the term checker and conversion oracle retired (2026-10-02); I1.2c, judgements on a face and partial elements on a face-dependent context, with its two remaining gaps closed (2026-10-04) | Stage-6 performance and certificate work |
+| Instruction kernel | Stages 1–5, plus the checking/bridge optimizations in #194–#197; every elaboration check is derived; K1.4's own conversion guide is the default; explicit driver options and cumulative kernel-work counters (learned-search phases 1–2); I1.2a, instruction isolation: no untrusted query can change an instruction's verdict; I1.2b, the term checker and conversion oracle retired (2026-10-02); I1.2c, judgements on a face and partial elements on a face-dependent context, with its two remaining gaps closed (2026-10-04). For the runtime track: the full-normalization cache (#269), explicit-stack normalization, weak-head, substitution and comparison traversals (#291, #292, #294, #297), resource failures preserved across APIs (#285) and the folded normal-form query (#309); workbench reduction controls (#298) | Stage-6 performance and certificate work |
 | G0 universes | K1.1–K1.4 and L1.1; `U < UU0`, `next`, `max`, generic builtins and rewriting; all 43 former templates check generically | E1 and E2, deferred proposals |
 | Proof ergonomics | Grouped binders, `let` with a stated type or a proof block (which replaced `have`, `show` and `suffices` on 2026-09-30), `rfl`, `calc`, `rw`, registered/conditional `simp` and `simpa`, cubical shorthand; Σ projections `p.1`/`p.2` (L1.5); path-operator notation (`&`, `\|`, `path i =>`) and readable path diagnostics (PR #71); `~p` and `~i` for reversal, in place of prefix `-` (L2.10i, 2026-10-06); `hlevel`, L2.5b's first two slices (the second, 2026-10-06: `hlevel_rule`, quantified hints and evidence as rules, setness fields filled by the search); holes `_` and named arguments (L4.1a); implicit parameters and universe inference (L4.1b); the keywords of terms and statements and the built-in `Unit` and `Void` reserved (E175), and on 2026-10-06 a sum's injections, `left` and `right`; the box notation for compositions and `library/squares.cubist` (L2.8's first three slices, 2026-10-06). `apply` and `refine` (L4.4) withdrawn | L1.4 (folded path rules, constructor descent), B1 (`Path` induction), broader dependent rewriting, L2.5b's remainder, L2.8's last item (the archive's raw `comp` lemmas through squares) |
-| Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](high-level-abstractions/categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
-| Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI; agreed RC refactoring and source-test migrations in #243–#263 | Preserve the delivered contracts; no CB or agreed RC package remains |
+| Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done. Since 2026-10-17 a child theory can implement inherited operations and laws (#268), and the algebra lattice has ordered-ring and ordered-field interfaces (#267) | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](high-level-abstractions/categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
+| Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI, green remotely since #264; agreed RC refactoring and source-test migrations in #243–#263; one naming pass for every display (#311, #312); `module::name` references, which nothing shadows (#313) | Preserve the delivered contracts; no CB or agreed RC package remains. Display read-back defects in [pr-312-todo](../reports/pr-312-todo.md) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305 | EVAL3–EVAL8 |
-| Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's other archive remedies; a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305; folded normal forms, `!!` folded and `!!!` full (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284); a first internal EVAL3/EVAL4 runtime query for ordinary data (#289), which no REPL uses yet | EVAL3/EVAL4 integration into the REPLs, EVAL5's typed readback, EVAL6–EVAL8 |
+| Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's removal of the legacy truncation assumptions through `axiom` definitions (steps 1–4 scheduled on 2026-10-26; step 5 with I0.5); a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Simplicial types | Design only, proposed on 2026-10-24; `x ->[C] y` spelling agreed | ST0–ST6: preservation/model design, shared ordinary arrow syntax, separate directed shapes/extensions, synthetic categories and later mathematical bridges |
-| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. The library now has seventeen self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226). The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. Since 2026-10-21 the language reference has kernel chapters 14–17 (#301). The library now has forty self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226); since 2026-10-17 the binary naturals (`unat`, `unat_models`, `bnat` and its ten `bnat_*` modules), `semirings`, `differences`, `fractions`, `binary_integers`, `binary_rationals` and `ordered_algebra`; and #295's `finite_sets`, `binary`, `powersets` and `continuum_hypothesis`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -226,14 +249,14 @@ from an instruction to the conversion search or the typing rules. Archive
 coverage stays complete with the driver's guide, at essentially unchanged
 work, and with the conversion oracle, at about 1% more kernel steps, since
 side conditions the leaky memo answered are now derived. The
-[kernel instructions](kernel/kernel-instructions.md#what-remains-of-the-term-checker)
+[kernel instructions](historical/kernel-instructions-history.md#what-remains-of-the-term-checker)
 record the boundary, the evidence and the measurements.
 
 **I1.2b, optional checker retirement (M). Done on 2026-10-02:** the term
 checker, the conversion search, the unfolding hints and the trace are
 deleted from the kernel and the bridge, their test-only clients moved to
 instructions, and archive coverage with the guide is unchanged; see
-[what remains of the term checker](kernel/kernel-instructions.md#what-remains-of-the-term-checker).
+[what remains of the term checker](historical/kernel-instructions-history.md#what-remains-of-the-term-checker).
 K1.4 removed the runtime dependency, but deletion also required migrating
 test-only clients and bridge exports. Move the trusted helpers out of the old checker files,
 preserve required syntax builders, and remove old APIs only after the
@@ -308,7 +331,7 @@ and `univalence` exhaust the kernel's step budget.
 | I0.2 | Archive the first library | Done: 368 sources in `archive/first-library/`; keep it as regression evidence. Its prelude `nat` moved to `library/` on 2026-10-04, and `sets` gave way to the library's `hlevels` on 2026-10-05 |
 | I0.3 | Start `library/` | Done: the modules listed above, self-contained since 2026-10-04; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
-| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
+| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. One early part is scheduled in it (2026-10-26): all of the archive's number theory moves to the library and leaves the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library), with EVAL7 as NT2). [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
 | D0.2 | Reference chapters and quick reference | Chapter 5 done with G0. Chapter 6 rewritten on 2026-09-30, when H1 became the default: declarations, parameters, `match`, structural recursion, dependent matches, path and truncation clauses, with the library's Nat, `add` and W quoted as checked, inspectable excerpts. An H1 chapter waits for D2.1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct (`inductive` and `match` on declared types added on 2026-09-30) |
@@ -408,7 +431,7 @@ has an explicit spelling.
 | K2.4a | **Historical:** representation replay and differential fixtures X1–X8. Their release gate, oracle, translation and tools were retired on 2026-10-02 after Nat, W and pushouts became source declarations; sums stay native. The [historical evidence](historical/h1-differential-evidence.md) retains what ran and its limits. The unfinished replay criterion is not an active obligation | Retired contract | — |
 | K2.4b | **Completed by a replacement approach:** Nat and W primitives retired on 2026-09-30, pushouts on 2026-10-01, using H1 source declarations. The former τ replay criterion was superseded; its old oracle was removed. See the [source-type API](historical/h1-program-types.md) | H1 | — |
 | K2.4c | Wider retirement of the sum, W and pushout instructions. **Decided** on 2026-10-01: sums stay native at every level, and pushouts are an H1 declaration in `pushout.cubist`, their instructions retired as W's were on 2026-09-30. Nothing remains to retire. A W type or pushout over `UU`-tier types needs a separate fixed-universe declaration | — | — |
-| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](hott/h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided, and the policy approved, on 2026-09-27. **Implemented:** the exact ledger verifier, 17 pinned changes and G2/G4–G7 fixtures; see the [scoped migration record](hott/h1-truncation-migration.md). Two of the migrated slices, `h1_cauchy_quotient` and `h1_zorn_step`, build on archive developments and moved to `cubist-tests/` when the library became self-contained (2026-10-04). **Decided on 2026-10-20:** the legacy `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` assumptions, and the `LEM`/`Choice` signatures stated over them, are removed ([removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions)): excluded middle and choice become `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;` in `library/classical_axioms.cubist`, reusing its type families restated over `Trunc` (syntax revised on 2026-10-21); the library, fixtures, reference and guides move to them; the legacy signatures are then accepted only in archive modules; and they are deleted with the archive ([I0.5](archive-retirement.md)). The rest of the archive remedies is not pursued: a universe-preserving `Truncate` fails the same 47 declarations in 20 modules as in September (measured 2026-10-20), and the retirement rebuilds or records those results rather than migrating them in place; the two H2-dependent tower declarations go with them | K2.1; implementation with K2.3/L2.1; completion with I0.5 | M |
+| K2.5 | G2 truncation/resizing policy and migration ledger. Policy and measured ledger in the [H1 specification](hott/h1-signature-specification.md#8-k25-truncation-and-resizing-g2); no resizing assumption (Q12) and the 8.4 remedy groups (Q17) decided, and the policy approved, on 2026-09-27. **Implemented:** the exact ledger verifier, 17 pinned changes and G2/G4–G7 fixtures; see the [scoped migration record](hott/h1-truncation-migration.md). Two of the migrated slices, `h1_cauchy_quotient` and `h1_zorn_step`, build on archive developments and moved to `cubist-tests/` when the library became self-contained (2026-10-04). **Decided on 2026-10-20:** the legacy `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` assumptions, and the `LEM`/`Choice` signatures stated over them, are removed ([removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions)): excluded middle and choice become `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;` in `library/classical_axioms.cubist`, reusing its type families restated over `Trunc` (syntax revised on 2026-10-21); the library, fixtures, reference and guides move to them; the legacy signatures are then accepted only in archive modules; and they are deleted with the archive ([I0.5](archive-retirement.md)). The rest of the archive remedies is not pursued: a universe-preserving `Truncate` fails the same 47 declarations in 20 modules as in September (measured 2026-10-20), and the retirement rebuilds or records those results rather than migrating them in place; the two H2-dependent tower declarations go with them. **Scheduled on 2026-10-26** alongside the runtime phase: steps 1–4 of the removal plan, from `axiom` definitions to confinement; step 5 waits for I0.5 | K2.1; implementation with K2.3/L2.1; completion with I0.5 | M |
 | L2.1 | One-sort `inductive` declarations and signature diagnostics. **Released** on 2026-10-02: the header's result position, lowering with data before positions, universe classification and the least level, uses of the type and its constructors, precise refusals. Reference chapter 6 teaches them since 2026-09-30 (D2.1). Excluded by the specification: a composite boundary such as `Torus2`'s `trans(p, q) = trans(q, p)` (its 1.4, Q3; the square torus is admitted), and proof-first `: set`/`: prop`, which is L2.3b | K2.3 | L |
 | L2.2a | Explicit `match`, motives, structural recursion and path clauses. **Released, first slice:** the expression `match v [as z] [return T] { c(xs) @ i => … }`, each clause checked against the kernel's clause type; dependent motives; path clauses and hand-written squash clauses with `T.squash`; recursion on a constructor's argument with the other arguments fixed, in a definition whose whole body is the match, where the matched parameter stands for the clause's constructor. The H1 winding-number fixture computes in source. **Released, second slice** (written on 2026-09-29): the closing proof statement `match v { c(xs) @ i => { … } … }`, its motive the goal over `v` through the A5 motive service. A hypothesis whose type mentions `v` is generalized and bound again, under its own name, in each clause. There a variable `v` names the constructor, and a local definition made from either is made again from their values; a recursive call passes its own value for each generalized parameter. **Released, third slice** (written on 2026-09-29): recursion whose other arguments vary. When a recursive call changes another parameter, or passes one whose type mentions the matched parameter, the match, in either form, takes its motive from the motive service, over the declaration's other parameters but those the matched parameter's type depends on; each clause binds them again under their own names, and a call passes values of its own for them. It passes those the matched parameter's type depends on, and universe parameters, unchanged. Name resolution decides, so no spelling of a call or a binder changes it; a match whose calls pass the other parameters unchanged, or that never calls itself, is elaborated as written. The motive over the other parameters also stands when the match as written fails before any call and that motive makes one, as when a dependent parameter is used at its refined type first. Only the elaboration kept spends the declaration's fuel. A goal shows a parameter bound again under its source name, without the one it supersedes. Acceptance cases: an accumulator, computed and proved equal to addition; a call spelled with an operator; parameters before the matched one, dependent (used before the call too), shadowed and taken apart by a nested match; a squash clause over a generalized parameter; fuel and searches recorded once. **Released, fourth slice** on 2026-10-04 (`web/translator/patterns.mjs`): several values, `match xs, ys { nil, _ => …; … }`, in both forms; nested patterns, `cons(x, cons(y, rest))`; a variable or `_` in a constructor's place, and a constructor without arguments by its name inside a pattern; clauses tried in order, the first that fits taking a case, with a missing case and a clause never reached refused. Compiled value by value into matches on one value each, which elaborate as before, so recursion on the first value taken apart still works. The expression form takes its motive from the motive service when its expected type mentions the matched variable, binding the hypotheses about it again in each clause; and a match whose first elaboration fails as written is kept elaborated over the declaration's other parameters, recursive call or not. Evidence: `cubist-tests/patterns.cubist`, the reference's [patterns](../../web/reference/induction.html#patterns). **`cases` retired** on 2026-10-04: the match statement takes a sum apart, `left(a) => { … } right(b) => { … }`, each clause proving the goal at its side through the motive service; a goal that depends on the value only through a redex that drops it, as after `intro`, is the motive itself, as `cases` made it. The 26 `cases` statements, 24 in 11 archive modules and two in test sources, became matches: at the migration's commit (1118c1a), where `cases` still parses, `node tools/verify-proof-migration.mjs --base main` reports identical terms for all 50 modules compared, 39 of them dependents. `cases` is refused with its match form (E164), and a historical source reads `cases` as `match` (`web/cubist/legacy-syntax.mjs`). Evidence: `cubist-tests/sum_match.cubist`, the reference's [taking a sum apart](../../web/reference/proof-blocks.html#sums). **Induction hypotheses separated** on 2026-10-11 ([decision](historical/induction-hypothesis-syntax.md)): an induction clause names the constructor's fields in parentheses and its hypotheses after `with`, `c(xs) @ i with hs => …`, in both forms; the appended spelling is still read, a clause cannot mix the two, printed proofs write `with`, and `tools/migrate-induction-hypotheses.mjs` migrates checked declarations with identical terms. No kernel rule changed. Evidence: `tests/induction-hypotheses.test.mjs`, the reference's [induction](../../web/reference/induction.html#induction) | L2.1, L1.2; relevant L1.2r metadata; L4.1a improves the release without gating it | L |
 | L2.2b | Automatic clauses and explicit `obligations`. **Released** with H1 on 2026-10-02: dependent set and groupoid squash clauses derive from checked h-level evidence; expression and statement forms accept explicit obligations. E4/E11 and evidence/refusal/inspection regressions are in `tests/automatic-clauses.test.mjs`. The broader h-level solver remains independent of this package | L2.2a, L2.5b; checked h-level evidence | M |
@@ -422,7 +445,7 @@ has an explicit spelling.
 | L2.12 | Implicit arguments in theory operations and derived operations, **proposed** on 2026-10-07: `comp{{x, y, z : Ob}}(g : Arr(y, z), f : Arr(x, y)) : Arr(x, z) notation g ∘ f`, inferred as L4.1b infers a definition's, with notation over the explicit arguments (E810 and E170 refuse both today) | L4.1b | M |
 | L2.6 | Initial/free capabilities. **Specified, not delivered on main.** The [revised contract](high-level-abstractions/core-theories.md#initial-and-free-models-l26) requires opt-ins, a checked construction, uniqueness, universal equivalence and additional-law obligations. [PR #188](https://github.com/KanHarI/cubist-math/pull/188) introduced the construction-and-fold prototype now integrated on main; it registers no checked capability. Higher theories need a supported morphism/coherence interface | L2.4d; L2.11 for general propositional laws; H1 for the first strategy | L |
 | L2.8 | Squares and `cell` face syntax with boundary inspection (HoTT E2). **First slice** done on 2026-10-06: the implementation plan's box notation, `compose j in A from b { on i = 0 => x; on i = 1 => q @ j; }` and `fill j in A from b at k { … }`, lowers to `comp` and `fill`, faces being formulas of equations with `and` and `or`; a composition prints as its box. Evidence: `cubist-tests/box_notation.cubist`. **Second slice** done the same day: `library/squares.cubist` names a square's edges by its corners, `Square(a0_, a1_, a_0, a_1)`, and builds by conversion the reflexive and naturality squares, transposition and both flips, double composition and its filler (`trans` its case with a constant first edge), and horizontal and vertical composition; the inspector shows a square's edges and corners. Evidence: `cubist-tests/square_constructions.cubist`. **Third slice** done the same day: two squares on the same three sides have equal tops (`top_unique`), which gives the conversions between a square and an equation of composites both ways (`square_to_path`, `path_to_square`, through the diagonal and `retop`), and the library's `naturality_path` and `cong_trans`, the statements of the archive's `homotopy_naturality` and `map_concat`. Open: the archive's raw `comp` lemmas (`homotopy_natural`, `map_concat`, `transport_concat`) re-derived through them, a migration of archive proofs | L2.1; face/source metadata from L1.2r | M |
-| L2.9a | Expected-value patterns for `evaluate`. **Done** on 2026-10-06: an expected value with a hole `_` is a pattern, matched against the normal form part by part (`web/translator/evaluation.mjs`): a hole matches anything; a pair, an injection or a constructor of the part's declared type applied to patterns matches a value built so, in the kernel's argument order; `typed(T, p)` matches as `p` where `T` is the part's type; any other expression is elaborated at the part's type and compared by normal form. `left`, `right` and `typed` are the builtins only where the module does not bind them, and a builtin's or a constructor's arguments are written out as elaboration requires, a hole aside (E701, E378, E379). A mismatch names the differing part (E477), and a hole inside another function's arguments is refused (E478). Since #304 (EVAL5's [demand marks](runtime/evaluation-demand-marks.md)) a pattern computes each part only as far as it observes it: a hole computes nothing, a pair, an injection or a constructor computes the part's weak head, an expression its normal form, stuck definitions folded, `!p` asks for a weak head, `!!p` for a normal form with stuck definitions folded and `!!!p` for a full normal form ([folded normal forms](runtime/folded-normal-forms.md), FN2); a bare `_` is refused (E485), and a mismatch shows the value as far as it was computed. Evidence: `cubist-tests/evaluate_patterns.cubist`, `tests/evaluation-demand-marks.test.mjs` | L0.1; own pattern contract and L4.1a infrastructure | S |
+| L2.9a | Expected-value patterns for `evaluate`. **Done** on 2026-10-06: an expected value with a hole `_` is a pattern, matched against the normal form part by part (`web/translator/evaluation.mjs`): a hole matches anything; a pair, an injection or a constructor of the part's declared type applied to patterns matches a value built so, in the kernel's argument order; `typed(T, p)` matches as `p` where `T` is the part's type; any other expression is elaborated at the part's type and compared by normal form. `left`, `right` and `typed` are the builtins only where the module does not bind them, and a builtin's or a constructor's arguments are written out as elaboration requires, a hole aside (E701, E378, E379). A mismatch names the differing part (E477), and a hole inside another function's arguments is refused (E478). Since #304 (EVAL5's [demand marks](historical/evaluation-demand-marks.md)) a pattern computes each part only as far as it observes it: a hole computes nothing, a pair, an injection or a constructor computes the part's weak head, an expression its normal form, stuck definitions folded, `!p` asks for a weak head, `!!p` for a normal form with stuck definitions folded and `!!!p` for a full normal form ([folded normal forms](historical/folded-normal-forms.md), FN2); a bare `_` is refused (E485), and a mismatch shows the value as far as it was computed. Evidence: `cubist-tests/evaluate_patterns.cubist`, `tests/evaluation-demand-marks.test.mjs` | L0.1; own pattern contract and L4.1a infrastructure | S |
 | L2.9b | Closed truncation witness readout: a closed computable input, a checked error certificate, and the extracted witness's type specified under transported truncations, which its tests include. Native truncation alone supplies no approximation result. **Done** on 2026-10-06: `print(witness(t));`, and the REPL's `witness TERM;`, read the witness off a closed, computable truncation's normal form, `point(w)` under formal compositions, with its type (`web/translator/evaluation.mjs`). A witness under a composition whose type changes is refused (E481), so the witness has the truncated type's own parameter; transported along a path of types, it is of the type at the path's end. A certificate is part of the witness the kernel checked. Evidence: `cubist-tests/truncation_readout.cubist` | Native H1 `Trunc`, K2.5, L0.1 | M |
 | L2.10 | Explicit notation views and literals: select a view before elaborating an operator, use declared operand views for literals and subexpressions, and preserve that meaning when printing. `v.(e)` and `use v;`, one selection form that also works at a file's top level (decided on 2026-10-05, with `using v;` dropped), extend explicit structure scope, with qualified operators `a G.(+) b`; `use` replaced `open`, which is refused with its `use` form (E183). **Direction adopted** in the [notation roadmap](high-level-abstractions/notation.md), with **decisions** recorded on 2026-10-05: no name-based operators or numerals, so that an operator or literal outside any view is an error (L2.10j); `~` for path and coordinate reversal so that `-` is arithmetic, with `@`, `~`, `&` and `\|` binding tighter than any view's operator (L2.10i); notation declared as it is used; sections and `open` selecting their model's view, innermost first; literals read by the library's total parsers from their `Lexeme` and checked by evaluation (L2.10c); and a partial field inverse (L2.10k). **L2.10i done** on 2026-10-06: `~p` and `~i` reverse, prefix `-` is refused (E176) and kept for arithmetic, and a historical source is read with `~` for its prefix `-`. **L2.10k done** on 2026-10-06: `Field` states invertibility as a truncated law, which the law check accepts as a declared proposition; `inv` and `mul_inv` are derived by unique choice in any field, and the rationals' inverse computes. **L2.10a done** the same day for `+`, `*`, `<` and `<=`: named notations (`notation nat { … }` in `library/nat.cubist`), complete selections by `use`, `v.(e)` and qualified operators. **L2.10b done** the same day: `-`, `/`, `^`, unary `-`, `>` and `>=`, operand recipes such as `x ^ nat.(n)`, and derived operations in theories (the library's rings get `-x` and `x - y`). **L2.10c done** the same day: numeric tokens, `library/lexemes.cubist`, numeral and literal rules, a theory's `notation numeral`, and the rationals' parser (`rationals.(1/2)`). **L2.10d done** the same day: printing in the selected notation, qualified elsewhere, literals as written. **L2.10e done** the same day: the roadmap's pilots check (`cubist-tests/notation_pilots.cubist`), costing one selection per expression and one `nat.(…)` per natural argument of an ordinary function. **L2.10j done** the same day: every source selects `nat` (or `binary`, the archive's notation for binary literals), and an operator or numeral outside any selection is an error that suggests `use nat;`; L2.10f (large numerals), L2.10g (independent `decide`) and L2.10h (notation rules, proposed) stay deferred. Type-based automation needs separate evidence later | L2.4 | L |
 | D2.1 | Checked reference, formatter and inspection for each released construct | Corresponding package, including L2.8/L2.9 | L |
@@ -689,9 +712,10 @@ directed principle delivers no ST package.
   UA6 comparison. Removing setness annotations is not a coherent higher
   algebra construction.
 
-When the language progression resumes, ST1 belongs with its categorical
-interface work. ST0 design can progress independently; ST2 and later stages
-wait for their own review gates. L3.4–L3.6, UA0–UA6 and HA0–HA6 keep their
+**Scheduled on 2026-10-26:** ST0 and then ST2 follow the runtime phase,
+ahead of the categorical progression. ST2 still waits for ST0's review gate,
+and ST3 onward for their own. ST1 belongs with its categorical interface
+work, L2.12/L3.4, since its notation resolves to their ordinary precategories. L3.4–L3.6, UA0–UA6 and HA0–HA6 keep their
 existing dependencies. In particular, graph-shaped type colimits and the
 first cubical cohomology examples do not wait for coherent directed diagrams.
 No paused mathematical track resumes through this proposal.
@@ -726,9 +750,16 @@ Decimal I/O and both printers are migrated; the default-Nat release checks
 pass. NUM2 is in progress: binary integers are on main, where a contract also
 checks the binary instantiation of generic `fraction_field`. #283 adds the
 binary-rational library API, released on the folded normal form (`!!`) of
-its inverse contracts by the user's decision of 2026-10-26; the default
-`Z`/`Q` migration remains blocked on full rational inverse normalization.
-EVAL3–EVAL8 remain planned. The ordered-ring/field
+its inverse contracts by the user's decision of 2026-10-26. The default
+`Z`/`Q` migration is gated the same way, on folded normal forms (decided
+2026-10-26). Full normalization of the inverses remains a target of the
+[debugging plan](runtime/rational-normalization-debug-plan.md), not a gate.
+[#289](https://github.com/KanHarI/cubist-math/pull/289) adds a first internal
+EVAL3/EVAL4 runtime query for ordinary data, which no REPL uses yet. Its
+signatures must be untruncated, without path constructors, so quotient values
+such as `BInt`'s and `BQ`'s are refused as unsupported. EVAL5's observation
+contract shipped as the demand marks and folded normal forms. The rest of
+EVAL3–EVAL8 remains planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -763,10 +794,10 @@ no real-number construction or analysis is scheduled.
   comparison maps and universe paths to the old integers and rationals
   are outside this track. Later numerical constructions default to `BNat`;
   constructing these foundations does not wait for a new runtime evaluator
-  or packed-integer specialization. Switching default `Z`/`Q` additionally
-  requires NUM2's full normalization contracts; the binary-rational API
-  (#283) is released on their folded normal forms (2026-10-26). They can be
-  satisfied by a general fix before all EVAL packages are complete.
+  or packed-integer specialization. Switching the default `Z`/`Q` requires
+  the migrated API's contracts under folded normal forms (`!!`), as the
+  binary-rational API's release did (#283, decided 2026-10-26). Their full
+  normal forms (`!!!`) remain targets of the completion path, not gates.
 - NUM2 owns the new carriers and algebraic APIs. The
   [reals roadmap's R1](mathematics/reals-roadmap.md#milestones) owns their further
   decidable orders, ordered-ring/field laws, `PosRat` and Archimedean
@@ -780,13 +811,19 @@ no real-number construction or analysis is scheduled.
   also requires depth-independent traversal, applicable EVAL8 cubical
   execution, complete proof/annotation readback and separate NUM proof
   algorithm work. Its [small arithmetic-free reproduction](../reports/rational-normalization.md)
-  remains a required workload. A lazy rational data result does not complete
-  NUM2's full-normalization gate.
-- EVAL6's packed binary arithmetic follows NUM0–NUM2 and profiling; EVAL7's
-  checked BNat search improvements are a separate computation pilot, keeping
-  the archived algorithm fixed for evaluator comparisons and broader
-  mathematics paused. EVAL7 supplies its binary divisibility and
-  prime-search modules in `library/`, without imports from the archive.
+  remains a required workload. A lazy rational data result does not meet
+  the full-normalization targets.
+- EVAL6's packed binary arithmetic follows NUM0–NUM2 and profiling. EVAL7
+  migrates primality and divisibility to `library/` over binary `Nat`, with
+  remainder-based divisibility, least-prime-divisor search and a checked
+  binary Euclid on NUM1's factorial, without imports from the archive. By
+  the decisions of 2026-10-26, every consumer of the archive's `euclid`
+  (site pages, reference, tests, the evaluation baseline, #289's probe and
+  the demand-marks report) moves to the library version. The primitives then
+  leave the archive's `primes`, and its `euclid` is deleted. Evaluator
+  comparisons continue on the library workloads under a new baseline
+  version; the unary measurements keep their recorded revisions. Broader
+  mathematics stays paused.
 - EVAL8's applicable semantic review, instruction isolation, canonicity and
   resource checks gate production integration. A query result does not
   establish equality merely because its type checks.
@@ -883,16 +920,75 @@ not implemented; no prototype-only result counts as the checked capability.
 
 ## First actions
 
-**Runtime first (2026-10-17).** EVAL1 and its updated baseline are implemented
-in #266; EVAL2's full-normalization cache and NUM0's binary foundations are
-implemented, as are NUM1's semiring agreement, universe transport, bitwise
-setness, comparison correctness and coherent dependent strong recursion.
-Finish the default-`Nat` migration gates: recheck the unary library/archive
-clients, frontend and browser behavior, then obtain the required review;
-NUM2 follows. Develop the joint EVAL3/EVAL4 design, then EVAL5 and applicable
-EVAL8 review. EVAL6 requires fresh binary profiles; EVAL7 follows NUM1. The
-ordered ring/field definitions landed in #267. Resume the language
-progression below after performance work; the reals roadmap stays paused.
+**Sequence decided on 2026-10-26.** The runtime phase of 2026-10-17
+continues: EVAL0–EVAL2, NUM0, NUM1, the default binary `Nat` and the
+binary-rational API are on main, and EVAL5's observation contract has shipped.
+Each step lands in focused PRs under the review rule above.
+
+1. **Restore site publication.** Every Pages run since #278 (2026-10-18) has
+   failed in `npm run test:site`, which PR CI does not run, so the published
+   site is still #277's. Two scenarios of `tests/site.browser.mjs` fail,
+   both because #278 put a new first example, `wide`, in the types chapter's
+   `#values` section:
+   - The REPL-bar scenario forks the section's first example and waits for
+     `seven : UNat`. Select the example by its source, not its position
+     ([pr-293-todo](../reports/pr-293-todo.md)).
+   - The worker-failure scenario waits for that section's first example bar
+     to read "Not checked" without scrolling to it. Examples are enhanced
+     lazily (an `IntersectionObserver` with a 400px margin), and that
+     example now starts about 1,122px down a 720px viewport, so no bar is
+     created. Scroll it into view first.
+
+   A local diagnosis on 2026-10-26 confirmed both causes. With the first fix,
+   16 scenarios passed and the run stopped at the second. The scenarios after
+   it are unverified. Run the complete static-site test on a fresh build, and
+   confirm that the Pages run publishes after the merge.
+2. **Runtime and numbers.**
+   1. **B8** of the [debugging plan](runtime/rational-normalization-debug-plan.md):
+      the direct proof that the propositions form a set, with
+      `prop_over_unique`. Public statements stay. The certificates shrink,
+      which scheduling B8 accepts for it (D3). Its measurement takes a
+      literal of main's rationals from 70.3M to 11.5M ticks under `!!!`.
+   2. **NUM2's default `Z`/`Q`:** the public carriers become the binary
+      `BInt` and `BQ`, with generic ring numeral interpretation, numerical
+      casts and rendering, gated on folded normal forms. The unary integers
+      and rationals stay as compatibility clients.
+   3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
+      browser and contextual REPLs compute the value form and constructor
+      patterns through the runtime query, with one specified fallback to
+      today's kernel queries where it reports unsupported demand. Then the
+      runtime executes point constructors of set quotients and other higher
+      sorts, leaving path and composition demand unsupported, so that `BInt`
+      and `BQ` values evaluate. User-facing use also needs EVAL4's open items:
+      a responsive snapshot copy, memory calibration and closed-environment
+      pruning.
+   4. **Typed readback** (EVAL5): read runtime values back into kernel terms
+      by their types, with the written readback correspondence and the
+      applicable EVAL8 review. `!!`, `!!!`, exact expected values and a
+      fallback in mid-computation can then go through the runtime.
+   5. **The archive's number theory in the library**
+      ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
+      1. NT1: the unary order lemmas move to `unat`.
+      2. NT2 is EVAL7: primality, divisibility and Euclid over binary `Nat`.
+         Every consumer of the archive's `euclid` moves to it, and the
+         evaluator workloads and their acceptance move to the library Euclid.
+      3. NT3: least elements.
+      4. NT4: binary and radix numerals.
+      5. NT5: the 20 archive modules are deleted.
+
+      This depends only on NUM1 and can proceed alongside 3 and 4.
+3. **Alongside the runtime phase: K2.5's `axiom` definitions**, steps 1–4 of
+   the [removal plan](hott/h1-truncation-migration.md#steps):
+   `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`
+   over `Trunc`, then the fixtures, reference and guides off the legacy
+   assumptions, then their confinement to the archive.
+4. **After the runtime phase: simplicial ST0, then ST2**, ahead of the
+   categorical progression below. ST1 comes with L2.12/L3.4.
+5. **Then the language progression below.** The reals roadmap and the other
+   paused mathematics stay paused.
+
+Hydra (#233) was closed unmerged on 2026-10-26, to be re-developed when the
+language is more mature. Its branch is kept.
 
 Completed plans and checkpoints are archived under [historical/](historical/README.md);
 active plans and normative specifications are grouped by subject in the
@@ -906,10 +1002,8 @@ Preserve the integrated [frontend contracts and semantic gate](#frontend-generat
 when extending generators. The [refactoring stack](historical/refactoring-and-testing.md)
 and its final cleanup are merged; there is no remaining CB/RC implementation
 prerequisite for the steps below. L2.6's universal proofs remain separate.
-The remaining validation follow-up is to verify #264's assertion-reporting fix
-for the final mutation probe in CI; see the
+#264's assertion-reporting fix passed the remote mutation gate; see the
 [RC verification record](historical/refactoring-and-testing.md#verification-record).
-The site publication run succeeded.
 
 The progression below develops language breadth through increasingly demanding
 examples. Rows identify integration targets, not a requirement to finish every
@@ -926,7 +1020,7 @@ are developed with their first consumers.
 | Algebraic homology and synthetic cohomology | HA1/HA2's indexed structures, chain-map interfaces and exactness reasoning; HA4's higher paths, truncations and computational equivalences | Complexes and homology alongside `K(G, n)` and cohomology as truncated mapping spaces, with the supported degrees explicit; long exact sequences and homotopy invariance as proved milestones |
 | Computation and comparison | EVAL/NUM improvements and closed evaluation; HA3/HA5/HA6's larger reusable proofs | Finite matrix homology, presented-group Ext/Tor, and comparison of cellular and synthetic cohomology on finite complexes, with their stated assumptions |
 
-After the runtime phase, start with the first row and N0/N1's existing prerequisites. L2.12's
+After the runtime phase and simplicial ST0/ST2, start with the first row and N0/N1's existing prerequisites. L2.12's
 composition-notation decision belongs to the categorical interface; it does
 not block the equational L2.6 proof slice. L2.6 must establish uniqueness,
 `T.Hom.ext`, universal equivalence and its inverse laws before publishing a
@@ -950,8 +1044,8 @@ computations use NUM2 and the remaining evaluator work as needed. H2/H3,
 variable-level truncation and universe extensions retain their independent
 design and soundness gates. Ordinary families or complex shapes do not by
 themselves require indexed or inductive-inductive kernel declarations. Worker
-cancellation, K2.5's legacy truncation removal with the archive retirement
-(I0.5) and the remaining HoTT packages stay
+cancellation, the rest of the archive retirement (I0.5), including K2.5's
+final step, and the remaining HoTT packages stay
 visible; prioritize their slices when the testbed exercises them. Paused
 analysis, Galois and RH remain paused. The public `Nat` transition and bounded
 ordered-interface scope are decided below; neither resumes the reals roadmap.
@@ -962,18 +1056,18 @@ where supplying them checks.
 
 ## Branch work
 
-Snapshot on 2026-10-17 at main `e729c2d5`. The earlier #188/#204–#212
+Snapshot on 2026-10-26 at main `7230825e`. The earlier #188/#204–#212
 implementation was replaced by #215 onward; CB0–CB7 then integrated the
-frontend work. All ready implementation PRs through #263 are merged.
-Hydra is the only remaining implementation draft and is excluded from this delivery.
+frontend work. Every implementation PR through #313 is merged or closed, and
+none is open. Hydra was closed unmerged on 2026-10-26.
 
 | Track | Branch progress | Remaining obligation |
 | --- | --- | --- |
 | L2.6 construction behavior | Declared carriers, models and computing folds are integrated | Opt-ins, uniqueness, universal properties and additional laws |
 | [Capture/bindings](historical/capture-bindings.md) | CB0–CB7 and cleanup integrated; #219–#223, #225 and #227 closed as superseded | Preserve semantic and resource gates when extending interfaces |
 | [Mutation CI, #242](https://github.com/KanHarI/cubist-math/pull/242) | Merged as `165ac956`; subsequent RC work extends the runner to 16 semantic probes | Preserve passing baselines and semantic kills; CI evidence is recorded in the RC verification record |
-| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and cleanup merged in #243–#263; #224 closed as superseded | Implementation complete; verify #264's assertion-reporting fix in CI as described in the [verification record](historical/refactoring-and-testing.md#verification-record); keep excluded/deferred work separate |
-| [Hydra, #233](https://github.com/KanHarI/cubist-math/pull/233) | Open draft on `hydra-termination`, head `14c3e279`; absent from main | Finish and review separately; explicitly excluded from the stack merge |
+| [Refactoring/testing](historical/refactoring-and-testing.md) | Agreed RC scope and cleanup merged in #243–#263; #224 closed as superseded | Implementation complete; #264's assertion-reporting fix passed in CI, as the [verification record](historical/refactoring-and-testing.md#verification-record) records; keep excluded/deferred work separate |
+| [Hydra, #233](https://github.com/KanHarI/cubist-math/pull/233) | Closed unmerged on 2026-10-26 at the user's request; branch `hydra-termination` kept at `14c3e279` | None scheduled: Hydra is to be re-developed once the language is more mature |
 
 The earlier FG0 known-defect staging is retired: the integrated harness requires
 the desired semantic results directly. Historical reports retain their pinned
@@ -1010,6 +1104,19 @@ scheduled packages from advancing.
    The arrow spelling `x ->[C] y` is agreed, with ST1's resolution and
    precedence still to specify. This does not block ordinary mathematics;
    shared spelling does not identify ordinary `U` with directed `Spaces`.
+6. **Default `Z`/`Q` gate — decided 2026-10-26:** folded normal forms, as for
+   #283's binary-rational API. Full normalization of the rational inverses
+   stays a target of the debugging plan.
+7. **Runtime-phase scope — decided 2026-10-26:**
+   - the site fix first;
+   - then B8, the default `Z`/`Q`, #289's runtime in the REPLs, typed
+     readback and EVAL7;
+   - all of the archive's number theory moves to the library and leaves the
+     archive (NT1–NT5, with EVAL7 as NT2); whether counting is included is
+     open;
+   - K2.5's `axiom` steps 1–4 run alongside;
+   - simplicial ST0 and ST2 follow the phase, ahead of the categorical
+     progression.
 
 **Open, not blocking**
 

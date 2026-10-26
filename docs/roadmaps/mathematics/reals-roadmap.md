@@ -7,7 +7,11 @@ Those definitions do not resume R1's order models, `PosRat`, Archimedean
 bounds, completeness or any real-number construction. R3's planned Cauchy
 construction requires H3; the algebraic ordered interfaces do not.
 
-Status: unchanged at main `e729c2d5` on 2026-10-17: paused during language
+Status: unchanged in scope at main `7230825e` on 2026-10-26. NUM2's binary
+carriers now exist in the library: `BInt` in `binary_integers` and `BQ` in
+`binary_rationals`, released on folded normal forms.
+They are not yet the default `Z`/`Q`, and no order work has started on them.
+Previously: unchanged at main `e729c2d5` on 2026-10-17: paused during language
 development, but for R1's integers and
 rationals, built on 2026-10-05; corrected on 2026-09-28 after
 the [work-plan audit](../historical/audits/2026-09-28-audit.md) (previously reviewed

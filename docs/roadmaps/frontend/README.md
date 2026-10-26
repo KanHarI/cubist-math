@@ -7,14 +7,17 @@ needed for future frontend changes discoverable without a second specification.
 
 | Boundary | Continuing contract and evidence |
 | --- | --- |
-| Binding identities, scopes and substitution | [Binding design](../historical/capture-bindings.md#shared-representation), [resolution](../historical/capture-bindings.md#resolution-and-scoping) and [retained interfaces](../historical/capture-bindings-cb2.md) |
+| Binding identities, scopes and substitution | [Binding design](../historical/capture-bindings.md#shared-representation), [resolution](../historical/capture-bindings.md#resolution-and-scoping) and [retained interfaces](../historical/capture-bindings-cb2.md); `module::name` resolves through the declaration's identity, so no binder, local name or dimension shadows it (#313, [reference](../../../web/reference/first-proof.html#order), `tests/qualified-names.test.mjs`) |
+| Displaying terms | One naming pass for every display, each given its context's dimensions; the printer invents no names (#311, #312, [web/README.md](../../../web/README.md#displaying-terms), `web/display-naming.mjs`, `tests/display-naming.test.mjs`). Open read-back defects: [pr-312-todo](../../reports/pr-312-todo.md) |
 | Deferred scopes and checked evidence | [CB3](../historical/capture-bindings-cb3.md) |
 | Generation, universes and declaration admission | [Shared generation contracts](../historical/frontend-generation.md#shared-contracts), [artifact builder](../historical/capture-bindings-cb4.md) and [semantic preservation gate](../historical/frontend-generation.md#fg6-make-preservation-tests-and-measurements-a-release-gate) |
 | Diagnostics, generated views and contextual REPLs | [CB5](../historical/capture-bindings-cb5.md), [CB6](../historical/capture-bindings-cb6.md) and the [REPL contract](../historical/capture-bindings.md#contextual-repl-at-arbitrary-nesting-depth) |
 | Publication ownership and source tests | [Publication lifecycle](../historical/refactoring-and-testing.md#publication-ownership) and the [regression-contract guide](../../guides/regression-contracts.md) |
 | Release and resource limits | [CB7 evidence](../historical/capture-bindings-cb7.md), including its recorded allowances and RSS exception |
 
-The [work plan](../work-plan.md#first-actions) owns new implementation and the
-unresolved remote mutation-check follow-up. Checked initial/free capabilities
+The [work plan](../work-plan.md#first-actions) owns new implementation. The
+remote mutation check passed (see the
+[verification record](../historical/refactoring-and-testing.md#verification-record)).
+Checked initial/free capabilities
 and their universal proofs remain [L2.6 work](../high-level-abstractions/core-theories.md#initial-and-free-models-l26);
 completion of the frontend migration does not establish those proofs.

@@ -161,7 +161,7 @@ test("native trace records raw nodes, source identity, costs and retained state 
 });
 
 // The workbench's normalize shows the folded normal form, as every normal
-// form shown on request is (docs/roadmaps/runtime/folded-normal-forms.md):
+// form shown on request is (docs/roadmaps/historical/folded-normal-forms.md):
 // identity(tt) computes, and identity, a function, stays named.
 test("workbench normalization keeps a named function folded and checks the result", async t => {
   const session = new WorkbenchSession(module);
