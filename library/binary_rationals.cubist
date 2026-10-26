@@ -1,0 +1,98 @@
+import fractions;
+import binary_integers;
+
+// Binary rationals reuse the field of fractions over the binary integer ring.
+def binary_rationals :
+  Field(U0) := fraction_field(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one);
+
+def BQ : U0 := binary_rationals.R;
+
+computable def bq(n, d : BInt, nonzero : d = bint_zero -> Void) : BQ := class((n, d, nonzero));
+
+computable def bq_decide(x, y : BQ) : Decidable(U0, x = y) := q_decide{{U0}}(
+  binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x, y
+);
+
+computable def bq_inv(x : BQ) :
+  BQ := q_inv{{U0}}(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x);
+
+// The embedding laws are instances of the shared fraction construction.
+computable def bq_of_int(x : BInt) :
+  BQ := q_embed{{U0}}(binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x);
+
+computable def bq_of_int_zero : bq_of_int(bint_zero) = binary_rationals.zero := q_embed_zero{{U0}}(
+  binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one
+);
+
+computable def bq_of_int_one : bq_of_int(bint_one) = binary_rationals.one := q_embed_one{{U0}}(
+  binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one
+);
+
+computable def bq_of_int_add(x, y : BInt) :
+  bq_of_int(bint_add(x, y)) = binary_rationals.add(bq_of_int(x), bq_of_int(y)) := q_embed_add{{U0}}(
+    binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x, y
+  );
+
+computable def bq_of_int_mul(x, y : BInt) :
+  bq_of_int(bint_mul(x, y)) = binary_rationals.mul(bq_of_int(x), bq_of_int(y)) := q_embed_mul{{U0}}(
+    binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x, y
+  );
+
+computable def bq_of_int_neg(x : BInt) :
+  bq_of_int(bint_neg(x)) = binary_rationals.neg(bq_of_int(x)) := q_embed_neg{{U0}}(
+    binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x
+  );
+
+computable def bq_of_int_injective(x, y : BInt, p : bq_of_int(x) = bq_of_int(y)) :
+  x = y := q_embed_injective{{U0}}(
+    binary_integers, bint_decide, bint_mul_nonzero, bint_zero_ne_one, x, y, p
+  );
+
+// All accumulated magnitudes and decimal scales are binary. Unary naturals
+// hold only source positions and individual digit glyphs.
+computable def bq_parsed_ratio(n, d : BNat, at_ : UNat) :
+  Parsed(U0, BQ) := match bint_decide_zero(bint_of_nat(d)) return Parsed(U0, BQ) {
+    left same => error(at_);
+    right nonzero => ok(bq(bint_of_nat(n), bint_of_nat(d), nonzero));
+  };
+
+computable def bq_literal_fraction(n : BNat, at_ : UNat, s : Lexeme) :
+  Parsed(U0, BQ) := match bnat_literal(s) {
+    ok(d) => bq_parsed_ratio(n, d, at_);
+    error(offset) => error(add(at_, offset));
+  };
+
+computable def bq_decimal_digits(s : Lexeme, n, d : BNat, at_ : UNat) : Parsed(U0, BQ) := match s {
+    nil => bq_parsed_ratio(n, d, at_);
+    cons(digit(g), rest) => bq_decimal_digits(
+      rest, bnat_add(bnat_mul(n, bnat.(10)), bnat_digit_value(g)), bnat_mul(d, bnat.(10)), succ(at_)
+    );
+    cons(underscore, rest) => bq_decimal_digits(rest, n, d, succ(at_));
+    cons(_, rest) => error(at_);
+  };
+
+computable def bq_integer_digits(s : Lexeme, n : BNat, at_ : UNat) : Parsed(U0, BQ) := match s {
+    nil => ok(bq_of_int(bint_of_nat(n)));
+    cons(digit(g), rest) => bq_integer_digits(
+      rest, bnat_add(bnat_mul(n, bnat.(10)), bnat_digit_value(g)), succ(at_)
+    );
+    cons(underscore, rest) => bq_integer_digits(rest, n, succ(at_));
+    cons(slash, rest) => bq_literal_fraction(n, succ(at_), rest);
+    cons(period, cons(digit(g), rest)) => bq_decimal_digits(
+      cons(digit(g), rest), n, bnat.(1), succ(at_)
+    );
+    cons(_, rest) => error(at_);
+  };
+
+computable def bq_literal(s : Lexeme) : Parsed(U0, BQ) := match s {
+    cons(digit(zero), cons(lower(succ(zero)), rest)) => match bnat_literal(s) {
+      ok(n) => ok(bq_of_int(bint_of_nat(n)));
+      error(at_) => error(at_);
+    };
+    cons(digit(g), rest) => bq_integer_digits(s, bnat.(0), zero);
+    _ => error(zero);
+  };
+
+notation binary_rationals {
+  literal(s : Lexeme) := bq_literal(s);
+}

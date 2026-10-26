@@ -1,0 +1,231 @@
+// NUM2 binary fractions reuse the generic field and its coefficient embedding.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num2-build-the-new-binary-backed-integers-and-rationals
+import binary_rationals;
+use binary_rationals;
+
+# test(binary_rationals.field)
+# expect_axioms([])
+def binary_rational_field : Field(U0) := binary_rationals;
+
+# test(binary_rationals.embedding_zero)
+# expect_axioms([])
+computable def binary_rational_embed_zero : bq_of_int(bint_zero) = 0 := bq_of_int_zero;
+
+# test(binary_rationals.embedding_one)
+# expect_axioms([])
+computable def binary_rational_embed_one : bq_of_int(bint_one) = 1 := bq_of_int_one;
+
+# test(binary_rationals.embedding_add)
+# expect_axioms([])
+computable def binary_rational_embed_add(x, y : BInt) :
+  bq_of_int(bint_add(x, y)) = bq_of_int(x) + bq_of_int(y) := bq_of_int_add(x, y);
+
+# test(binary_rationals.embedding_mul)
+# expect_axioms([])
+computable def binary_rational_embed_mul(x, y : BInt) :
+  bq_of_int(bint_mul(x, y)) = bq_of_int(x) * bq_of_int(y) := bq_of_int_mul(x, y);
+
+# test(binary_rationals.embedding_neg)
+# expect_axioms([])
+computable def binary_rational_embed_neg(x : BInt) :
+  bq_of_int(bint_neg(x)) = -bq_of_int(x) := bq_of_int_neg(x);
+
+# test(binary_rationals.embedding_injective)
+# expect_axioms([])
+computable def binary_rational_embed_injective(x, y : BInt, p : bq_of_int(x) = bq_of_int(y)) :
+  x = y := bq_of_int_injective(x, y, p);
+
+# test(binary_rationals.equal)
+# expect_axioms([])
+computable def binary_rational_equal(x, y : BQ) : BNat := match bq_decide(x, y) return BNat {
+    left same => bnat.(1);
+    right different => bnat.(0);
+  };
+
+# test(binary_rationals.add)
+evaluate binary_rational_equal(1/2 + 1/3, 5/6) expecting bnat.(1);
+# test(binary_rationals.neg_mul)
+evaluate binary_rational_equal((-2/3) * (-3/2), 1) expecting bnat.(1);
+# test(binary_rationals.distinct)
+evaluate binary_rational_equal(1/2, 2/3) expecting bnat.(0);
+# test(binary_rationals.decimal)
+evaluate binary_rational_equal(0.75, 3/4) expecting bnat.(1);
+# test(binary_rationals.decimal_scale)
+evaluate binary_rational_equal(18446744073709551615.125, 147573952589676412921/8) expecting bnat.(1);
+# test(binary_rationals.separators)
+evaluate binary_rational_equal(1_000.0_01, 1000001/1000) expecting bnat.(1);
+# test(binary_rationals.binary_literal)
+evaluate binary_rational_equal(0b1010, 10) expecting bnat.(1);
+# test(binary_rationals.binary_denominator)
+evaluate binary_rational_equal(1/0b100, 0.25) expecting bnat.(1);
+# test(binary_rationals.wide_ratio)
+evaluate binary_rational_equal(
+  18446744073709551615/340282366920938463463374607431768211455, 1/18446744073709551617
+) expecting bnat.(1);
+# test(binary_rationals.inverse)
+evaluate binary_rational_equal(bq_inv(-2/3), -3/2) expecting bnat.(1);
+# test(binary_rationals.zero_inverse)
+evaluate binary_rational_equal(bq_inv(0), 0) expecting bnat.(1);
+# test(binary_rationals.wide_embedding)
+evaluate binary_rational_equal(
+  bq_of_int(binary_integers.(-340282366920938463463374607431768211455)),
+  -340282366920938463463374607431768211455
+) expecting bnat.(1);
+
+// Full-value checks cover fraction representation and inverse computation:
+// the folded normal form (`!!_`) computes each value's data in full and keeps
+// its certificates named (docs/roadmaps/runtime/folded-normal-forms.md).
+// Disequality tests observe the computed branch, without normalizing refutations.
+# test(binary_rationals.normalize_wide_fraction)
+evaluate typed(BQ, 18446744073709551615/340282366920938463463374607431768211455) expecting !!_;
+# test(binary_rationals.normalize_wide_decimal)
+evaluate typed(BQ, 18446744073709551615.125) expecting !!_;
+# test(binary_rationals.wide_distinct)
+evaluate binary_rational_equal(-340282366920938463463374607431768211455/18446744073709551615, 1/2) expecting bnat.(
+  0
+);
+
+# test(binary_rationals.normalize_wide_inverse)
+evaluate bq_inv(-340282366920938463463374607431768211455/18446744073709551615) expecting !!_;
+
+# test(binary_rationals.integer_distinct)
+evaluate match bint_decide(
+  binary_integers.(340282366920938463463374607431768211455), binary_integers.(-1)
+) return BNat {
+  left same => bnat.(1);
+  right different => bnat.(0);
+}
+expecting bnat.(0);
+
+# test(binary_rationals.zero_denominator)
+# expect_error(E905)
+def binary_rational_zero_denominator : BQ := 1/0;
+
+# test(binary_rationals.separated_zero_denominator)
+# expect_error(E905)
+def binary_rational_separated_zero_denominator : BQ := 1_000/0;
+
+# test(binary_rationals.bad_binary_digit)
+# expect_error(E905)
+def binary_rational_bad_binary_digit : BQ := 0b102;
+
+# test(binary_rationals.second_period)
+# expect_error(E905)
+def binary_rational_second_period : BQ := 1.2.3;
+
+# test(binary_rationals.second_slash)
+# expect_error(E905)
+def binary_rational_second_slash : BQ := 1/2/3;
+
+// A refusal names the character it refuses, by its position from 0:
+// parse_answer gives k + 1 for the character k, and 0 for a success. Each
+// literal is its reader's input, written out as a lexeme.
+# test(binary_rationals.second_slash_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)), cons(slash, cons(digit(unat.(2)), cons(slash, cons(digit(unat.(3)), nil))))
+    )
+  )
+) expecting unat.(4);
+
+# test(binary_rationals.second_period_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)), cons(period, cons(digit(unat.(2)), cons(period, cons(digit(unat.(3)), nil))))
+    )
+  )
+) expecting unat.(4);
+
+# test(binary_rationals.integer_letter_position)
+evaluate parse_answer(
+  bq_literal(cons(digit(unat.(1)), cons(digit(unat.(2)), cons(lower(unat.(23)), nil))))
+) expecting unat.(3);
+
+# test(binary_rationals.decimal_letter_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(digit(unat.(1)), cons(period, cons(digit(unat.(2)), cons(lower(unat.(23)), nil))))
+  )
+) expecting unat.(4);
+
+// A decimal's underscore counts as a character: 1.2_3x refuses the x, at 5.
+# test(binary_rationals.decimal_underscore_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)),
+      cons(
+        period,
+        cons(digit(unat.(2)), cons(underscore, cons(digit(unat.(3)), cons(lower(unat.(23)), nil))))
+      )
+    )
+  )
+) expecting unat.(6);
+
+// The denominator's refusal is placed after the numerator, its underscore
+// and the slash: 1_0/2a refuses the a, at 5.
+# test(binary_rationals.denominator_letter_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(1)),
+      cons(
+        underscore,
+        cons(digit(unat.(0)), cons(slash, cons(digit(unat.(2)), cons(lower(unat.(0)), nil))))
+      )
+    )
+  )
+) expecting unat.(6);
+
+// A zero denominator is refused at the denominator, 1/0 at 2; a bad binary
+// digit at itself, 0b102's 2 at 4, as bnat_literal places it.
+# test(binary_rationals.zero_denominator_position)
+evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(slash, cons(digit(unat.(0)), nil))))) expecting unat.(
+  3
+);
+
+# test(binary_rationals.bad_binary_digit_position)
+evaluate parse_answer(
+  bq_literal(
+    cons(
+      digit(unat.(0)),
+      cons(
+        lower(unat.(1)), cons(digit(unat.(1)), cons(digit(unat.(0)), cons(digit(unat.(2)), nil)))
+      )
+    )
+  )
+) expecting unat.(5);
+
+// A period needs a digit after it, so 1. and 1._2 are refused at the
+// period, 1; a literal starts with a digit, so .5 is refused at 0; and 0b
+// needs a binary digit, so it is refused at its b, as bnat_literal places it.
+# test(binary_rationals.trailing_period_position)
+evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(period, nil)))) expecting unat.(2);
+
+# test(binary_rationals.period_underscore_position)
+evaluate parse_answer(
+  bq_literal(cons(digit(unat.(1)), cons(period, cons(underscore, cons(digit(unat.(2)), nil)))))
+) expecting unat.(2);
+
+# test(binary_rationals.leading_period_position)
+evaluate parse_answer(bq_literal(cons(period, cons(digit(unat.(5)), nil)))) expecting unat.(1);
+
+# test(binary_rationals.empty_binary_position)
+evaluate parse_answer(bq_literal(cons(digit(unat.(0)), cons(lower(unat.(1)), nil)))) expecting unat.(
+  2
+);
+
+# test(binary_rationals.fraction_answer)
+evaluate parse_answer(bq_literal(cons(digit(unat.(1)), cons(slash, cons(digit(unat.(2)), nil))))) expecting unat.(
+  0
+);
+
+# test(binary_rationals.unary_argument)
+# expect_error(E606)
+def binary_rational_unary_argument : BQ := bq_of_int(unat.(1));
+
+# test(binary_rationals.false_arithmetic)
+# expect_error(E606)
+def binary_rational_false_arithmetic : 1/2 = 2/3 := refl(1/2);

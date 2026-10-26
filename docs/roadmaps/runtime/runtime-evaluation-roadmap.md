@@ -14,7 +14,9 @@ representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
-NUM2 and EVAL3–EVAL8 remain.
+NUM2 is in progress: the binary integer ring/domain and rational field are
+constructed; certificate-normalization validation and the default `Z`/`Q`
+migration remain. EVAL3–EVAL8 remain.
 The [open quotient normalization fix and API audit](../../reports/open-quotient-normalization.md)
 extend EVAL2: dimension substitution preserves shared work, partial bodies
 normalize under their face conditions, shared universe levels avoid repeated
@@ -24,8 +26,10 @@ the arithmetic definitions or raising kernel limits.
 The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
 budget failures. The [nondependent descent change](../../reports/nondependent-quotient-descent.md)
-closes the generic quotient gate. The quotient-free transport gates and
-binary-rational inverse release remain open; these fixes do not complete NUM2.
+closes the generic quotient gate. The quotient-free transport gates and the
+binary-rational inverses' full normalization, which gates the default `Z`/`Q`
+migration, remain open; the binary-rational API is released on the inverses'
+folded normal forms (2026-10-26). These fixes do not complete NUM2.
 The [explicit normalization stack](../../reports/normalization-stack.md) covers
 the existing full normalizer's traversal. The
 [weak-head tail loop](../../reports/weak-head-tail.md) also removes native
@@ -714,12 +718,9 @@ one, addition and multiplication are checked without assumptions. Its
 `binary_integers` notation reads decimal and `0b` magnitudes directly into
 binary pairs. Computed output still shows quotient representatives; this
 is not a canonical signed presentation. The public `Z`/`Q` APIs and generic
-`Ring.of_nat` compatibility path have not switched. A binary instantiation of
-generic `fraction_field` checks in a contract on main; there is no released
-binary-rational library instance yet. That library instance
-and integer-to-rational embedding, generic binary numeral interpretation, and
-the default migration remain open on main. Draft #283 develops the binary
-rational API; its full inverse normalization is still unresolved. This source
+`Ring.of_nat` compatibility path have not switched. The binary fraction instance
+and integer-to-rational embedding are supplied below. Generic binary numeral
+interpretation and the default migration remain open. This source
 representation work changes no evaluator or kernel code.
 
 **Shared integer domain proofs (2026-10-18).** `differences` derives absence
@@ -755,7 +756,32 @@ certificates fully normalize.
 The [kernel normalization fix](../../reports/open-quotient-normalization.md)
 resolves this failure. This expression and the isolated quotient operation
 now have permanent full-normalization regressions under a fixed work budget.
-The rational API/default migration remains NUM2 work.
+The default migration remains NUM2 work.
+
+**Binary rational API (in progress).**
+[binary_rationals.cubist](../../../library/binary_rationals.cubist) instantiates
+the existing fraction field at `binary_integers`; it adds no second quotient
+or field-law construction. `BQ` has the field operations, `bq_decide`, total
+inverse `bq_inv`, and `bq_of_int`. The shared `fractions` layer now proves the
+coefficient embedding injective and preserving zero, one, addition,
+multiplication and negation; the binary instance uses those proofs.
+Its literal reader accumulates binary integer/fraction magnitudes and decimal
+scales directly. `0b` integers and binary denominators also use the binary
+reader. Unary values hold only individual glyph digits and source positions.
+
+Initial contracts check the field and embeddings without assumptions,
+arithmetic/equality decisions, 64/128-bit fraction components, large decimals,
+and the normal forms of wide values and an inverse under `!!_`, the
+[folded normal form](folded-normal-forms.md), which computes their data in full
+and keeps their certificates named. Their full normal forms are not gated:
+measured on 2026-10-24 in fresh programs, `!!!_` of the wide inverse stops at
+the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
+`bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
+(`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
+The new API is released on these folded normal forms (2026-10-26). Public
+`Z`/`Q`, generic ring numeral interpretation and numerical rendering still
+require their migration; no
+canonical signed or lowest-terms presentation is claimed.
 
 The original bounded follow-up probes localized the growth to full normalization of the
 open integer multiplication function within the quotient's cross-multiplication
@@ -819,10 +845,11 @@ literals and rendering work on large binary magnitudes without allocation
 proportional to their unary value. Update consumers and notation for the
 new APIs; keep the archive checking under the documented imports and
 unary-natural compatibility policy.
-Full small and wide rational inverse contracts must normalize, including
-their surviving certificates and annotations, before releasing the binary
-rational API and switching the default `Z`/`Q`. Draft #283 remains blocked
-on these contracts. This is an outcome gate, not a requirement to finish
+The binary rational API (#283) is released on the folded normal form: its
+small and wide inverse contracts check under `!!_`, by the user's decision of
+2026-10-26. Full small and wide rational inverse contracts must normalize,
+including their surviving certificates and annotations, before switching the
+default `Z`/`Q`. This is an outcome gate, not a requirement to finish
 every EVAL3–EVAL8 package: an earlier general kernel/elaborator fix can satisfy
 it, together with any needed NUM proof-algorithm change. The
 [completion path](#rational-full-normalization-completion-path)
@@ -1020,8 +1047,9 @@ unary expansion in mixed closed/open BNat law proofs.
    transport reproduction throughout. A library improvement does not by
    itself satisfy the evaluator gates. Re-run full small and
    wide rational inverses, all NUM2 contracts and the default `Z`/`Q`
-   migration checks. Those results gate NUM2's binary-rational release and
-   default migration; construction work can proceed independently, and an
+   migration checks. Those results gate NUM2's default migration; its
+   binary-rational release checks the inverses' folded normal forms
+   (2026-10-26). Construction work can proceed independently, and an
    earlier general fix can satisfy the gates without all EVAL packages.
 
 The implementation order can overlap the source-proof and cubical work as
@@ -1163,8 +1191,9 @@ Start with EVAL0 and EVAL1, and start NUM0/NUM1 alongside them, including
 numerical induction and recursion. NUM2's new binary-backed `Z` and `Q`
 follow the natural semiring foundations. These packages are independent
 of the closure evaluator for their mathematical construction. NUM2's
-binary-rational release and default migration additionally require the full
-normalization contracts in its acceptance section. The
+default migration additionally requires the full normalization contracts in
+its acceptance section; its binary-rational release checks folded normal
+forms. The
 [completion path](#rational-full-normalization-completion-path) coordinates
 the applicable EVAL work; it does not require finishing all EVAL packages.
 EVAL2 can proceed independently once its cache contract is clear. Design
