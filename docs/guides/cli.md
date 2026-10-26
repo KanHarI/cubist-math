@@ -132,7 +132,13 @@ that numerals and operators mean the naturals'; after `check`, entries read
 in the selections the checked file ends with. `typeof`
 prints a type. `evaluate`, or a term alone, prints the value form of a closed
 term that uses no assumption: its data, computed as far as it is shown, and a
-marker such as `<fun>` where a function, a path or a type stops it.
+marker such as `<fun>` where a function, a path or a type stops it. The
+runtime evaluator (`web/cubical-runtime.mjs`) computes the value form of
+ordinary data, building no kernel term; a value form that needs a path
+applied, a composition, Glue or a higher constructor is computed again by the
+kernel's weak-head queries. Neither certifies the value: the kernel checks
+the term's type and that it uses no assumption. The runtime stops at 100M
+steps, 20M allocated cells and 30 seconds a part (E487 to E489).
 `evaluate !TERM;` prints its weak head, its arguments as they are, and
 `evaluate !!TERM;` its normal form, a definition whose value is no data kept
 by name, and `evaluate !!!TERM;` its full normal form, every definition

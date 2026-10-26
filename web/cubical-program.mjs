@@ -37,7 +37,7 @@ function whenRead(object, key, compute) {
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
     const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,collectGeneration=false,optimizations={},manageTransactions=true,
-      searchFuel,declarationFuel,experimental,representation,bundledUNat=true,prelude}=options;
+      searchFuel,declarationFuel,experimental,representation,bundledUNat=true,prelude,runtimeEvaluation=true}=options;
     this.options={...options};
     if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     // The representation map τ to declared counterparts was the differential
@@ -55,6 +55,9 @@ export class CubicalProgram {
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
+    // Value forms are observed by the runtime unless this is false, which
+    // leaves them to the kernel's head queries alone, for a comparison.
+    this.checker.runtimeEvaluation = runtimeEvaluation;
     this.readSource = readSource;
     // Nothing is imported automatically. Structural unary clients import
     // unat, which a reader with no library can still load from
@@ -214,7 +217,8 @@ export class CubicalProgram {
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText,start:directive.start});
       else if(directive.kind==="print")
-        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start});
+        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start,
+          ...(directive.valueForm?{valueForm:directive.valueForm}:{})});
     }
     const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
     for (const d of result.declarations) {

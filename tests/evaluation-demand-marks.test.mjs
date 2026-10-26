@@ -379,9 +379,9 @@ def grow(n : UNat) : Tree := match n {
 };
 def far : (Tree and Tree) and UNat := ((grow(10), grow(9)), euclid(4).1);
 print(evaluate(node(grow(12), euclid(4).1, leaf)));
-print(evaluate(far));`, { module });
-  // euclid(4)'s prime has a weak head too deep to build (K344), and neither
-  // print reaches it.
+print(evaluate(far));`, { module, options: { runtimeEvaluation: false } });
+  // euclid(4)'s prime has a weak head too deep for the kernel to build
+  // (K344), and neither print reaches it.
   assert.deepEqual(result.gaps.map(gap => gap.reason), []);
   assert.equal(result.prints.length, 2);
 });
@@ -431,39 +431,46 @@ print(evaluate(!!g));`, { module });
   assert.deepEqual(result.prints.map(print => print.text), ["glue(2)", "glue(1 + 1)", "glue(2)"]);
 });
 
+// Each head a value form computes, an observation of the runtime or a head
+// query of the kernel's, spends a query of its print's fuel.
+const printFuel = result => result.directiveFuel.find(directive => directive.kind === "print").searchFuel.queries;
 test("the value form computes no more heads than the printer shows", async t => {
-  const queries = async source => {
-    const { program, result } = await checkProgram(t, `import lists;
+  const spent = [];
+  for (const runtimeEvaluation of [true, false]) {
+    const { result } = await checkProgram(t, `import lists;
 use unat;
 def hundreds(n : UNat) : List(U0, UNat) := match n {
   zero => nil;
   succ(k) => cons(100, hundreds(k));
 };
-${source}`, { module });
-    assert.deepEqual(result.gaps.map(gap => gap.reason), [], source);
-    return { queries: Number(program.kernel.work().queries), text: result.prints[0]?.text };
-  };
-  const none = await queries(""), some = await queries("print(evaluate(hundreds(250)));");
-  // 250 elements of 102 heads each are past the budget of 4,000 heads.
-  assert.ok(some.queries - none.queries <= 4100, `the walk asked ${some.queries - none.queries} queries`);
-  assert.match(some.text, /^cons\(100, cons\(100, /);
+print(evaluate(hundreds(250)));`, { module, options: { runtimeEvaluation } });
+    assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+    assert.equal(result.prints[0].valueForm.by, runtimeEvaluation ? "runtime" : "kernel");
+    // 250 elements of 102 heads each are past the budget of 4,000 heads.
+    spent.push(printFuel(result));
+    assert.ok(spent.at(-1) <= 4100, `the walk asked ${spent.at(-1)} queries`);
+    assert.match(result.prints[0].text, /^cons\(100, cons\(100, /);
+  }
+  assert.equal(spent[0], spent[1]);
 });
 
 test("the value form shows no part deeper than the kernel's terms, however deep the value", async t => {
-  const run = async source => {
-    const { program, result } = await checkProgram(t, `import unat;
+  const texts = [];
+  for (const runtimeEvaluation of [true, false]) {
+    const { result } = await checkProgram(t, `import unat;
 use unat;
 def d := 2 * 256;
 def deep := d + d + d + d + d + d + d + d;
-${source}`, { module });
-    assert.deepEqual(result.gaps.map(gap => gap.reason), [], source);
-    return { queries: Number(program.kernel.work().queries), text: result.prints[0]?.text };
-  };
-  // 4096 levels of succ: the walk keeps its own stack, and computes heads
-  // only to 512 levels, where the kernel's own terms end.
-  const none = await run(""), deep = await run("print(evaluate(deep));");
-  assert.match(deep.text, /^succ\(succ\(succ\(/);
-  assert.ok(deep.queries - none.queries <= 600, `the walk asked ${deep.queries - none.queries} queries`);
+print(evaluate(deep));`, { module, options: { runtimeEvaluation } });
+    assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+    assert.equal(result.prints[0].valueForm.by, runtimeEvaluation ? "runtime" : "kernel");
+    // 4096 levels of succ: the walk keeps its own stack, and computes heads
+    // only to 512 levels, where the kernel's own terms end.
+    texts.push(result.prints[0].text);
+    assert.match(texts.at(-1), /^succ\(succ\(succ\(/);
+    assert.ok(printFuel(result) <= 600, `the walk asked ${printFuel(result)} queries`);
+  }
+  assert.equal(texts[0], texts[1]);
 });
 
 test("the REPL reads the marks after evaluate and before a term alone", async () => {
@@ -618,7 +625,10 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // literals B62 and B63 about 11.6M ticks and 5 to 10 seconds each. The DM5
 // report (docs/roadmaps/historical/evaluation-demand-marks/report.md)
 // records that they complete. Their folded normal forms, under !!_, are
-// quick.
+// quick. Each is printed twice: its value form observed by the runtime
+// (web/cubical-runtime.mjs), which reports the demand it does not support
+// and leaves it to the kernel's head queries, and by those queries alone,
+// which must show the same value.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/historical/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
@@ -655,13 +665,21 @@ for (const setup of Object.keys(corpus.setups)) {
       }
       at.set(lines.join("\n").split("\n").length + 1, [item, "print"]);
       lines.push(`print(evaluate(probe_${index}));`);
+      at.set(lines.join("\n").split("\n").length + 1, [item, "kernel print"]);
+      lines.push(`print(evaluate(probe_${index}));`);
     });
-    const { program, evaluations } = recordedProgram(t), result = await program.check(lines.join("\n"), "main");
+    const { program, evaluations } = recordedProgram(t), { checker } = program, runtimeQuery = checker.runtimeQuery.bind(checker);
+    // Only a value form asks for a runtime query: the first of each pair of
+    // prints is the runtime's, the second the kernel's alone.
+    let turn = 0;
+    checker.runtimeQuery = judgement => turn++ % 2 === 0 ? runtimeQuery(judgement) : null;
+    const result = await program.check(lines.join("\n"), "main");
     const outcome = new Map([...result.evaluations.map(evaluation => [evaluation.start, evaluation.value]),
       ...result.prints.map(print => [print.start, print.text]),
       ...result.gaps.filter(gap => gap.directive).map(gap => [gap.declarationStart, { refused: gap.code }])]);
     const source = lines.join("\n"), lineOf = offset => source.slice(0, offset).split("\n").length;
     const outcomes = new Map([...outcome].map(([start, value]) => [lineOf(start), value]));
+    const computed = new Map(result.prints.map(print => [lineOf(print.start), print.valueForm]));
     // Each directive checks its probe once for evaluation, in order: whether
     // it normalized the whole term is the directive's demand.
     const checked = new Map(items.map((_, index) => [index, evaluations.filter(evaluation => evaluation.name === `main__probe_${index}`)]));
@@ -672,6 +690,16 @@ for (const setup of Object.keys(corpus.setups)) {
       if (item.refused) {
         assert.deepEqual(value, { refused: item.refused }, `${item.id} ${mark}`);
         assert.notEqual(wholeNormalized, true, `${item.id} ${mark}: refused before computing`);
+        continue;
+      }
+      if (mark === "kernel print") {
+        // The runtime's value form, or its fallback, is the kernel's.
+        const runtime = [...at].find(([, [other, kind]]) => other === item && kind === "print")[0];
+        assert.equal(outcomes.get(runtime), value, `${item.id}: the runtime's value form is the kernel's`);
+        assert.equal(computed.get(line).by, "kernel", item.id);
+        const by = computed.get(runtime);
+        if (by.by === "runtime") valueForms.runtime++;
+        else valueForms.unsupported[by.unsupported] = (valueForms.unsupported[by.unsupported] ?? 0) + 1;
         continue;
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
@@ -715,6 +743,21 @@ for (const setup of Object.keys(corpus.setups)) {
     }
   });
 }
+// What computed the value forms above, the runtime or, for the demand it
+// reports unsupported, the kernel's head queries. The four assumptions are
+// refused before anything is computed.
+const valueForms = { runtime: 0, unsupported: {} };
+test("the runtime computes the value forms of the constructs on ordinary data", () => {
+  assert.equal(valueForms.runtime, 135);
+  assert.deepEqual(valueForms.unsupported, {
+    "Higher and truncated data execution is not implemented.": 29,
+    "Runtime execution of Comp is not implemented.": 20,
+    "Runtime execution of PApp is not implemented.": 4,
+    "Runtime η of a path abstraction is not implemented.": 3,
+    "Runtime execution of Glue is not implemented.": 1,
+    "Runtime execution of Unglue is not implemented.": 1,
+  });
+});
 
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/
 // report.md) compares normal forms by sharedNormalDigest, which reads each
