@@ -1,6 +1,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { historicalSource, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
 import { parse, languageKeywords } from "../web/cubist/parser.mjs";
@@ -108,6 +109,18 @@ test("historical references use identifier spans inside parentheses and comments
   const rewritten = await checked(t, source, ["tt"]);
   assert.match(rewritten, /\(\( \/\/ preserve this\n left_\)\)/);
   assert.match(rewritten, /\(\(m\).law_\)/);
+});
+
+// A historical reader lets any keyword be bound. `axiom` is then a name,
+// except where the form stands, a definition's whole value followed by its
+// statement: current sources read as written (#317's review, finding 3).
+test("historical readers keep current axiom definitions and rename an old binder named axiom", async t => {
+  const current = await readFile(new URL("../library/classical_axioms.cubist", import.meta.url), "utf8");
+  assert.deepEqual(parse(current, false, { bindable: [...languageKeywords] }).declarations.map(d => d.value.kind),
+    ["lambda", "lambda", "axiom", "axiom"]);
+  assert.equal(read(current), current);
+  const rewritten = await checked(t, "def f(axiom : Unit) : Unit := axiom;\ndef axiom := f(tt);\nprint(evaluate(axiom));", ["tt"]);
+  assert.match(rewritten, /def f\(axiom_ : Unit\) : Unit := axiom_;\ndef axiom_ := f\(tt\);/);
 });
 
 test("historical fill binders leave the box keyword intact", async t => {

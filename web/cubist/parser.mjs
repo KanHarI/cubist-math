@@ -96,6 +96,10 @@ export const languageKeywords = new Set([
 export const primitiveNames = ["Unit", "Void", "tt"];
 export const reservedNames = new Set([...languageKeywords, ...primitiveNames]);
 export const isUniverseConstant = name => /^U+[0-9]+$/.test(name);
+// Whether a token can start an axiom's statement: a name, a keyword that
+// starts an expression, a numeral, a group or a reversal; not `;` or an
+// operator, which can only follow `axiom` as a name.
+const startsStatement = text => /^[A-Za-z_0-9(~]/.test(text) && !["and", "or", "EOF"].includes(text);
 
 // The explicit late-lookup allowlist for resolved source expressions. Other
 // keywords and generated member labels are not expression-level builtins.
@@ -508,15 +512,22 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     // `axiom F` states an assumption of F's type, or of its family's body
     // closed over the family's parameters. It is the whole value of a
     // top-level definition without parameters, which names it:
-    // def LEM := axiom ExcludedMiddle;. A historical source that binds the
-    // word predates the form, and reads it as a name.
+    // def LEM := axiom ExcludedMiddle;. A reader of historical sources may
+    // also let `axiom` be bound, as a name of a time before it was reserved
+    // (`bindable`). It then reads the word as the form exactly where the
+    // form stands, a definition's whole value followed by its statement, so
+    // that current sources read as they are written, and as a name
+    // elsewhere. No checked history writes axiom(…) as such a value.
     const axiomAllowed = axiomPosition;
     axiomPosition = false;
-    if (t.text === "axiom" && !bindableNames.has("axiom")) {
-      if (!axiomAllowed)
+    if (t.text === "axiom") {
+      const bindable = bindableNames.has("axiom");
+      if (axiomAllowed && (!bindable || startsStatement(peek()))) {
+        const statement = expr();
+        return { kind: "axiom", statement, keywordStart: t.start, keywordEnd: t.end, start: t.start, end: statement.end };
+      }
+      if (!bindable)
         throw Object.assign(new Error("An axiom is the whole value of a top-level definition without parameters: def Name := axiom Statement;"), { offset: t.start });
-      const statement = expr();
-      return { kind: "axiom", statement, keywordStart: t.start, keywordEnd: t.end, start: t.start, end: statement.end };
     }
     if (markTokens.includes(t.text)) {
       if (!demandMarks)

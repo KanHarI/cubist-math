@@ -33,7 +33,8 @@ requires every checked output owned by the target (including each generated
 family member) to have exactly those external transitive assumptions, including
 type dependencies and excluding bound hypotheses. It cannot accompany an
 expected refusal. Name each assumption by its label: `LEM` or `Choice` for
-the library's axioms, `module::Name` for another module's axiom, and
+the library's axioms (only as read from `library/`), `module::Name` for
+another module's axiom, and
 `Truncate` or `LEM[Truncate]` for the archive's legacy builtins. An axiom's
 label names its defining module and declaration, independently of source
 aliases.

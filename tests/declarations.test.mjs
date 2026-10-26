@@ -1,9 +1,18 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import createCubical from "../web/dist/cubical.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
-import { checkTestModule } from "./check-program.mjs";
+import { observeTestCases } from "../web/cubist/test-pragmas.mjs";
+import { listedReader } from "../web/module-resolution.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
+import { checkProgram, checkTestModule } from "./check-program.mjs";
 
 test("removed theorem declarations are rejected in both source forms", () => {
   for (const source of [
@@ -130,4 +139,119 @@ test("an axiom is one assumption of its family's closed body, shared by its uses
   assert.equal(view.symbols[binding].name, "declarations_axioms::Shift");
   // A type is assumed as it is.
   assert.equal(program.checker.assumptions.get("declarations_axioms__Unknown").tag, "Sort");
+});
+
+// Sources given by module name, each module importing nothing it is not given.
+const inMemory = modules => {
+  const sources = new Map(Array.isArray(modules) ? modules : Object.entries(modules));
+  return async name => sources.get(name) ?? null;
+};
+const labelsOf = (result, output) => [...new Set(output.axioms.map(name => result.assumptionLabels[name] ?? name))].sort();
+
+// A declaration's identity joins its module's name and its own with __, so
+// a::b__c and a__b::c meet in a__b__c. Whichever kinds the two declarations
+// are, and in either order, the later is refused, and neither qualified name
+// reads the other's value: an axiom stays tracked (#317's review, finding 1).
+test("two modules' declarations that would share one identity: the later is refused", async t => {
+  const module = await createCubical();
+  const clash = /^(a::b__c and a__b::c|a__b::c and a::b__c) would be one identity, a__b__c: rename one of them\./;
+  for (const [modules, imports, refused, uses] of [
+    [{ a: "def b__c := axiom Unit;", a__b: "def c := tt;" }, ["a", "a__b"], "a__b__c",
+      { "a::b__c": /depends on non-computing assumptions: a::b__c/, "a__b::c": /a__b declares no c/ }],
+    [{ a: "def b__c := axiom Unit;", a__b: "def c := tt;" }, ["a__b", "a"], "a__b__c",
+      { "a::b__c": /a declares no b__c/, "a__b::c": true }],
+    [{ a: "inductive T { b__c; }", a__b: "def c := axiom Unit;" }, ["a__b", "a"], "a__T",
+      { "a::b__c": /a declares no b__c/, "a__b::c": /depends on non-computing assumptions: a__b::c/ }],
+    [{ a: "inductive T { b__c; }", a__b: "import a;\ndef c := axiom T;" }, ["a", "a__b"], "a__b__c",
+      { "a::b__c": true, "a__b::c": /a__b declares no c/ }],
+    [{ a: "inductive b__c { k; }", a__b: "def c := tt;" }, ["a", "a__b"], "a__b__c",
+      { "a::b__c": true, "a__b::c": /a__b declares no c/ }],
+  ]) {
+    const uses_ = Object.keys(uses).map((name, index) => `computable def use_${index} := ${name};`);
+    const source = [...imports.map(name => `import ${name};`), ...uses_].join("\n");
+    const { result } = await checkProgram(t, source, { module, reader: inMemory(modules) });
+    const failed = result.imports.find(output => output.binding === refused);
+    assert.match(failed?.reason ?? "", clash, JSON.stringify(modules));
+    for (const [index, expected] of Object.values(uses).entries()) {
+      const output = result.outputs.find(item => item.name === `use_${index}`);
+      if (expected === true) assert.ok(output.verified, output.reason);
+      else assert.match(output.reason ?? "", expected, `${JSON.stringify(modules)}: ${Object.keys(uses)[index]}`);
+    }
+  }
+  // An evaluation cannot compute through the identity either.
+  const { program } = await checkProgram(t, "import a;\nimport a__b;\nevaluate a::b__c expecting tt;",
+    { module, reader: inMemory({ a: "def b__c := axiom Unit;", a__b: "def c := tt;" }) });
+  assert.match(program.gaps.find(gap => gap.directive)?.reason ?? "", /depends on non-computing assumptions: a::b__c/);
+});
+
+// The continuum hypotheses will be assumed so (h1-truncation-migration.md,
+// "Continuum hypotheses"); cubist-tests/continuum_axioms.cubist assumes them
+// in a module of its own, which states every refusal in its comments.
+test("a module assumes the continuum hypotheses, and every result that uses one lists it", async t => {
+  const { program, result } = await checkTestModule(t, "continuum_axioms");
+  const used = name => labelsOf(result, result.outputs.find(output => output.name === name));
+  assert.deepEqual(used("CH"), ["continuum_axioms::CH"]);
+  assert.deepEqual(used("ch_from_gch"), ["continuum_axioms::GCH"]);
+  for (const name of ["both", "at_zero"]) assert.deepEqual(used(name), ["continuum_axioms::CH", "continuum_axioms::GCH"], name);
+  // One entry generic over U < UU0, whose body is the statement at U.
+  const type = program.checker.assumptions.get("continuum_axioms__CH");
+  assert.deepEqual([type.tag, type.body.tag], ["LPi", "Pi"]);
+  assert.match(result.outputs.find(output => output.name === "computed").reason,
+    /^This computable declaration depends on non-computing assumptions: continuum_axioms::CH\./);
+});
+
+// A rule names its declaration by identity, not spelling: two modules'
+// axioms spelled alike register two hlevel rules, as two definitions do.
+test("hlevel rules that name axioms are registered by the axiom's identity", async t => {
+  const fallback = sourceReader(), modules = inMemory({ m1: "import hlevels;\ndef P := axiom IsProp(U0, Unit);\nhlevel_rule P;",
+    m2: "import hlevels;\ndef P := axiom IsProp(U0, Void);\nhlevel_rule P;" });
+  const { program, result } = await checkProgram(t, "import m1;\nimport m2;\ndef unit_prop : IsProp(U0, Unit) { hlevel; }",
+    { module: await createCubical(), reader: async (name, importer) => await modules(name) ?? fallback(name, importer) });
+  assert.deepEqual([...program.simpRegistries.get("main").hlevel.keys()].sort(), ["m1__P", "m2__P"]);
+  assert.deepEqual(result.outputs[0].axioms, ["m1__P"]);
+});
+
+// Only the library's own classical_axioms, read from library/, names its
+// axioms LEM and Choice; a module of that name from anywhere else, or edited,
+// is labelled as any other, so it cannot pass for them (finding 2).
+test("bare axiom labels need the library's own module, in the command line, the browser and the REPL", async t => {
+  const module = await createCubical();
+  const path = fileURLToPath(new URL("../library/classical_axioms.cubist", import.meta.url));
+  const library = await readFile(path, "utf8");
+  const forged = "# test(forged) # expect_axioms([LEM])\ndef LEM := axiom Void;\ndef contradiction : Void := LEM;\n";
+  const browser = () => listedReader(moduleListing, async file => readFile(fileURLToPath(new URL(`../${file}`, import.meta.url)), "utf8"),
+    "classical_axioms", "library");
+  for (const [reader, text, labels] of [
+    [sourceReader({ path }), library, ["Choice", "LEM"]],
+    [browser(), library, ["Choice", "LEM"]],
+    [sourceReader({ path }), forged, ["classical_axioms::LEM"]],
+    [browser(), forged, ["classical_axioms::LEM"]],
+    [sourceReader(), forged, ["classical_axioms::LEM"]],
+    [inMemory({}), forged, ["classical_axioms::LEM"]],
+  ]) {
+    const { program, result } = await checkProgram(t, text, { module, reader, name: "classical_axioms", options: { testMode: true } });
+    assert.deepEqual([...new Set(result.outputs.flatMap(output => labelsOf(result, output)))].sort(), labels);
+    if (text === forged) assert.deepEqual(observeTestCases(program, result).cases[0].failures[0], "Unknown checked assumption LEM.");
+  }
+  // An import reads the library's module, as a REPL entry's does.
+  const { result } = await checkProgram(t, "import classical_axioms;\ndef excluded := LEM(U0);", { module });
+  assert.deepEqual(labelsOf(result, result.outputs[0]), ["LEM"]);
+});
+
+// Module names are user text: none reaches a prototype's property (finding 5).
+// They are served as library modules, where the library's own names are
+// looked up.
+test("axioms of modules named as an object's properties are labelled as any other", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-axiom-modules-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const files = new Map();
+  for (const [name, source] of [["constructor", "def X := axiom Unit;\n"], ["toString", "def Y := axiom Unit;\n"]]) {
+    await writeFile(join(directory, `${name}.cubist`), source);
+    files.set(`library/${name}`, join(directory, `${name}.cubist`));
+  }
+  const { result } = await checkProgram(t, "import constructor;\nimport toString;\ndef both : Unit and Unit := (X, Y);",
+    { module: await createCubical(), reader: sourceReader({ files }) });
+  assert.deepEqual(result.imports.map(output => [output.binding, labelsOf(result, output)]),
+    [["constructor__X", ["constructor::X"]], ["toString__Y", ["toString::Y"]]]);
+  assert.deepEqual(labelsOf(result, result.outputs[0]), ["constructor::X", "toString::Y"]);
 });

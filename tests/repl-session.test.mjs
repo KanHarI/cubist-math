@@ -41,6 +41,20 @@ test("statements end at ; outside brackets, and a block declaration at its brace
     ["def t : compose j in U0 from Unit {} {\n  exact tt;\n}"]);
 });
 
+// A definition is shown with every assumption it relies on: an axiom of the
+// session, one imported, or one reached through earlier entries.
+test("a definition that relies on assumptions is shown with every one of them", async t => {
+  const repl = await session(t);
+  assert.deepEqual(texts(await repl.run("import classical_axioms;")), ["info: Imported classical_axioms."]);
+  assert.deepEqual(texts(await repl.run("def Pointed := axiom Unit;")),
+    ["defined: Pointed : Unit", "info: Pointed assumes repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("let both : ExcludedMiddle(U0) and Unit := (LEM(U0), Pointed);")),
+    ["defined: both : ExcludedMiddle(U0) and Unit", "info: both assumes LEM, repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("let again := both;")),
+    ["defined: again : ExcludedMiddle(U0) and Unit", "info: again assumes LEM, repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("let plain := tt;")), ["defined: plain : Unit"]);
+});
+
 test("let binds, typeof shows the type, and evaluate the value", async t => {
   const repl = await session(t);
   assert.deepEqual(texts(await repl.run("import unat;")), ["info: Imported unat."]);

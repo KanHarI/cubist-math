@@ -322,6 +322,12 @@ def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;
 ```
 
 These lines are currently comments in the library, not admitted assumptions.
+`cubist-tests/continuum_axioms.cubist` checks that a module importing
+`continuum_hypothesis` can assume `CH` and `GCH` so, with the families over
+`U < UU0` whose bodies live in `next(next(U))`, and that every result that
+uses one lists it; there they are labelled `continuum_axioms::CH` and
+`continuum_axioms::GCH`, and the library's own would be
+`continuum_hypothesis::CH` under the label rule below.
 The targets `DecidableCH -> LEM` and `DecidableGCH -> Choice` are follow-up
 proofs. [Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
 uses propositional resizing; adapting it must account explicitly for that
@@ -383,10 +389,27 @@ transition land together.
    refuses an `F` that is no type or family of types (E666). The checker
    assumes the closed type under the definition's own binding,
    `module__Name`; the definition's value is that variable, and no kernel
-   definition is admitted. Labels are `LEM` and `Choice` for
-   `classical_axioms`'s axioms and `module::Name` for any other; an
-   `expect_axioms` list names assumptions by their labels, the legacy builtins
-   as `LEM[Truncate]` and `Choice[Truncate]`. `LEM` and `Choice` are no longer
+   definition is admitted. Labels are `LEM` and `Choice` for the axioms of
+   the library's own `classical_axioms`, as the module reader read it from
+   `library/` (`fromLibrary` in `web/module-resolution.mjs`), and
+   `module::Name` for any other, a module of that name from elsewhere or
+   edited included; an `expect_axioms` list names assumptions by their
+   labels, the legacy builtins as `LEM[Truncate]` and `Choice[Truncate]`.
+   A declaration's identity is `module__Name`, so two modules' spellings can
+   meet in one, as `a::b__c` and `a__b::c` do: the later declaration is
+   refused (E256, `identityClash` in `web/translator/translate.mjs`), whether
+   it is a definition, a declared type or constructor, or an axiom, and no
+   declaration publishes under another module's identity. The migration
+   verifier compares an axiom by its assumed statement; an unchanged one
+   stands for the original in its dependents' terms, types and assumption
+   lists, and a changed one is reported. A historical reader, which lets any
+   keyword be bound, reads `axiom` as the form where it stands, a
+   definition's whole value followed by its statement, and as a name
+   elsewhere, so current sources stay readable as baselines. Every report of
+   a result lists every assumption it relies on: the command line's `check`
+   (`recover assumes LEM`) and `inspect`, a REPL definition, a reference
+   example's status, the workspace's declarations and inspector, and
+   `expect_axioms`. `LEM` and `Choice` are no longer
    reserved, so an import or declaration binds them before the builtin
    fallback. The aliases `excluded_middle_assumed` and
    `axiom_of_choice_assumed` were dropped, and `universe_automorphisms`'s two
@@ -453,7 +476,10 @@ transition land together.
   labelled copy of the assumption, equivalent but noise. A definition using
   `axiom` in `library/classical_axioms.cubist` states each once. Direction of
   2026-10-20, with the definition syntax revised on 2026-10-21.
-- **Where `axiom` is allowed.** Recommended: in any module. Every axiom is a
+- **Where `axiom` is allowed.** **Decided on 2026-10-26** (the user):
+  user-supplied axioms are allowed, in any module, file, workspace or REPL,
+  and every result must report, alongside it, every axiom it relies on; the
+  continuum hypothesis is to be introduced so. Every axiom is a
   listed non-computing dependency, `computable` refuses its dependents, and a
   result that wants a classical hypothesis still takes it as a parameter, as
   `h1_classical`'s statements allow. `classical_axioms` supplies the standard
@@ -462,9 +488,10 @@ transition land together.
   modules currently admit none. The library tests continue checking each
   module's exact assumption list.
 - **Labels.** The canonical `classical_axioms` definitions display the bare
-  names `LEM` and `Choice`; other axioms display their module-qualified
-  names, `module::Name`. Internal identities include their defining module
-  and declaration, and aliases retain those identities. In step 1 the legacy builtins are
+  names `LEM` and `Choice`, only as read from `library/`; other axioms
+  display their module-qualified names, `module::Name`. Internal identities
+  include their defining module and declaration, aliases retain those
+  identities, and one identity names one declaration. In step 1 the legacy builtins are
   relabelled `LEM[Truncate]` and `Choice[Truncate]` for their remaining
   archive life, before any new axiom uses a bare canonical label.
 - **Module names.** `h1_truncation` and `h1_classical` keep their prefixes

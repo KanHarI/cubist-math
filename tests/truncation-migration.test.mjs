@@ -77,6 +77,18 @@ test("archive module names check from the CLI and the verifier, with no marker",
   assert.match(migration,/0 failures/);
 });
 
+// The verifier reads its baseline as a historical source, and compares an
+// axiom by its assumed statement: the library's axioms and every declaration
+// that uses them verify against their committed sources (#317's review,
+// findings 3 and 4).
+test("the library's axiom modules verify unchanged against their committed baseline",()=>{
+  const report=execFileSync(process.execPath,["tools/verify-proof-migration.mjs","--no-dependents","--edited-root","library",
+    "classical_axioms","h1_classical","universe_automorphisms"],{encoding:"utf8"});
+  assert.match(report,/ok {3}classical_axioms: 4 identical/);
+  assert.match(report,/ok {3}universe_automorphisms: 23 identical/);
+  assert.match(report,/3 modules \(0 dependents\), 0 failures/);
+});
+
 test("both remaining documented ledger comparisons verify their pinned changes and local public dependencies",()=>{
   const cases = [
     ["cauchy_quotient","cubist-tests/h1_cauchy_quotient.cubist",null,11],

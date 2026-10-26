@@ -9,6 +9,7 @@ import { replTranscript } from "../repl-session.mjs";
 import { moduleListing } from "../module-listing.mjs";
 import { moduleRoots } from "../module-resolution.mjs";
 import { WorkerRequests } from "../worker-requests.mjs";
+import { assumptionsOf } from "../axiom-labels.mjs";
 
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
@@ -256,7 +257,11 @@ function enhance(pre, code) {
     const evaluations = (result?.evaluations ?? []).map(evaluation => `${evaluation.name}: ${evaluation.value}`);
     const prints = (result?.prints ?? []).map(print => `print ${print.name}: ${print.text}`);
     const warnings = (result?.warnings ?? []).map(warning => `warning at line ${warning.line}: ${warning.message}`);
+    // Every assumption the example's checked results rely on.
+    const assumed = [...new Set((result?.outputs ?? []).filter(output => output.verified)
+      .flatMap(output => assumptionsOf(output, result.assumptionLabels ?? {})))].sort();
     status.textContent = [links.length ? "Click a name to inspect its kernel term" : result?.error ? "Not checked" : "",
+      ...assumed.length ? [`assumes ${assumed.join(", ")}`] : [],
       ...evaluations.map(text => `evaluate ${text}`), ...prints, ...warnings].filter(Boolean).join(" · ");
   });
 }

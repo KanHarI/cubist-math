@@ -253,3 +253,4 @@ workbench's Kernel graph.
 | [`declared_match_operator_call`](declared_match_operator_call.cubist) | A recursion whose other arguments vary, with `+` given to it by a notation of the module's own; a function named `add` gives `+` no meaning. |
 | [`declarations_definitions`](declarations_definitions.cubist) | Constructions and proofs checked with their bodies exposed, and a false claim refused. |
 | [`declarations_axioms`](declarations_axioms.cubist) | `def Name := axiom F;`: one assumption of F's body closed over its parameters, shared by every use, listed by its label, and refused by `computable`, `evaluate` and a declared type. |
+| [`continuum_axioms`](continuum_axioms.cubist) | The continuum hypotheses of `continuum_hypothesis` as user-supplied axioms, `def CH := axiom ContinuumHypothesis;`: every result that uses one lists it. |

@@ -7,6 +7,7 @@
 // A `use` selects for every entry after it, as at a file's top level, and an
 // entry reads in the selections its base file ends with (L2.10j).
 import { withCode } from "./diagnostics.mjs";
+import { assumptionLines } from "./axiom-labels.mjs";
 
 export const replHelp = [
   "let NAME := TERM;     define a name (def works too, with any declaration form)",
@@ -201,7 +202,9 @@ export class ReplSession {
     const defined = (result.declarations ?? []).filter(info => info.verified);
     if (defined.length || !failures.length && !result.error) this.advance(result, text);
     return [
-      ...defined.map(info => ({ kind: "defined", text: `${info.name} : ${this.typeText(info)}` })),
+      // Each definition with every assumption it relies on, if any.
+      ...defined.flatMap(info => [{ kind: "defined", text: `${info.name} : ${this.typeText(info)}` },
+        ...assumptionLines([info], this.program.checker.assumptionLabels).map(text => ({ kind: "info", text }))]),
       ...(result.evaluations ?? []).map(evaluation => ({ kind: "value", text: evaluation.value })),
       ...(result.prints ?? []).map(print => ({ kind: "value", text: print.text })),
       ...failures,

@@ -45,8 +45,10 @@ export function libraryAssumption(checker,name,context=new Map()) {
   return value;
 }
 // The library's own axioms keep their names as labels; any other axiom is
-// labelled by its module's name and its own, module::Name.
-const canonicalAxioms={classical_axioms:['LEM','Choice']};
+// labelled by its module's name and its own, module::Name. A bare label
+// needs the library's module itself, read from library/ (`library`): a
+// module of the same name elsewhere, or edited, is labelled as any other.
+const canonicalAxioms=new Map([['classical_axioms',new Set(['LEM','Choice'])]]);
 // `def Name := axiom F;` (docs/roadmaps/hott/h1-truncation-migration.md,
 // "Axioms as definitions"). F, already elaborated in `scope`, is a type, or
 // a family of types: a telescope of universe and ordinary parameters with a
@@ -58,7 +60,7 @@ const canonicalAxioms={classical_axioms:['LEM','Choice']};
 // type, named by the definition, module__Name, and every use, alias and
 // application shares it. Like any assumption it computes nothing, and is
 // listed by its label wherever a result depends on it.
-export function axiomAssumption(checker,{module,declaration,binding},statement,scope) {
+export function axiomAssumption(checker,{module,declaration,binding,library=false},statement,scope) {
   const binders=[];
   let inner=scope,applied=statement,type=scope.nf(scope.infer(statement).type);
   while(type.tag==='LPi'||type.tag==='Pi') {
@@ -79,8 +81,11 @@ export function axiomAssumption(checker,{module,declaration,binding},statement,s
   const closed=binders.reduceRight((body,binder)=>binder.domain ? pi(binder.name,binder.domain,body)
     : {tag:'LPi',name:binder.name,body},body);
   scope.spend('queries');
-  const label=canonicalAxioms[module]?.includes(declaration) ? declaration : `${module}::${declaration}`;
-  const value=checker.assume(binding,closed,new Set(scope.context.keys()));
+  // The assumption is named by the definition's identity exactly. Its
+  // translator has refused a declaration whose identity another holds
+  // (identityClash in web/translator/translate.mjs).
+  const label=library&&canonicalAxioms.get(module)?.has(declaration) ? declaration : `${module}::${declaration}`;
+  const value=checker.assume(binding,closed,new Set(scope.context.keys()),{exact:true});
   checker.assumptionOrigins.set(value.name,{kind:'axiom',module,declaration});
   checker.libraryAssumptions.set(label,value);
   checker.assumptionLabels.set(value.name,label);

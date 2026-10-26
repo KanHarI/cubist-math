@@ -119,7 +119,10 @@ export class CubicalProgram {
         error.kind??="parse";
         throw new SourceUnit({checker:this.checker,source:text,moduleName:name}).locate(error,null);
       }
-      prepared.set(name, { text, ast });
+      // Whether it is the library's own module, as read from library/: only
+      // that one's axioms may take the library's bare labels.
+      const library = await this.readSource.fromLibrary?.(name, text) ?? false;
+      prepared.set(name, { text, ast, library });
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
         phase: "loading", unit: "declarations", instructions: this.checker.steps });
@@ -330,12 +333,12 @@ export class CubicalProgram {
       if (visiting.has(name)) throw new Error(`Cyclic source import: ${name}`);
       if (this.modules.has(name)) return this.modules.get(name);
       visiting.add(name);
-      let ast;
+      let ast, library;
       try {
         const entry = prepared.get(name);
         if (!entry) throw new Error(`Source was not discovered: ${name}`);
         if (entry.error) throw entry.error;
-        ({ text, ast } = entry);
+        ({ text, ast, library } = entry);
       }
       catch (error) {
         if (name === main) throw error;
@@ -366,7 +369,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,definitionModule:name,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);

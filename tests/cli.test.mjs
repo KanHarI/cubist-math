@@ -59,6 +59,21 @@ evaluate double(2) expecting 4;
   assert.match(shell.stdout, /\n6\n/);
   assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM\[Truncate\].*Path to LEM\[Truncate\]: recover \(sample\) → double_negation \(classical\) → LEM\[Truncate\]\./);
   assert.match(shell.stderr, /missing_name/);
+  // check reports each result that relies on an assumption, with all of them.
+  assert.match(shell.stdout, /kernel steps\nrecover assumes LEM\[Truncate\], Truncate, TruncateElim\nevaluate at line 7/);
+});
+// A user's axiom, a library axiom and one reached through an import are
+// reported with every result that relies on them; a result that relies on
+// none is not reported.
+test("CLI check reports every assumption a result relies on, a user's axiom among them", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "assumed.cubist"), "def Pointed := axiom Unit;\n");
+  await writeFile(join(directory, "uses.cubist"), "import classical_axioms;\nimport assumed;\n"
+    + "def both : ExcludedMiddle(U0) and Unit := (LEM(U0), Pointed);\ndef plain := tt;\ndef again := both;\n");
+  const checked = run(["check", "uses.cubist"], { cwd: directory });
+  assert.equal(checked.status, 0, checked.stderr);
+  assert.match(checked.stdout, /kernel steps\nboth assumes LEM, assumed::Pointed\nagain assumes LEM, assumed::Pointed\n$/);
 });
 // The H1 specification's 6.5: inspecting a declared type prints its signature
 // in normal form and its eliminator's clause types, and no kernel extension

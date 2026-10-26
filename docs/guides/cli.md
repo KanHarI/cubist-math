@@ -36,8 +36,9 @@ The file is checked as the module its name gives, as an identifier:
 `my-proof.cubist` is the module `my_proof`, whose declarations are
 `my_proof::name` ([qualified names](../../web/reference/first-proof.html#qualified-names)).
 
-A successful check prints the declaration and kernel-step counts and exits with
-status 0. Parse errors, missing imports, or unchecked declarations exit nonzero,
+A successful check prints the declaration and kernel-step counts, then each
+declaration that relies on an assumption with every assumption it relies on,
+as `recover assumes LEM`, and exits with status 0. Parse errors, missing imports, or unchecked declarations exit nonzero,
 each printed on a line of its own with its code, as
 `error E606 at line 2:3 (wrong): Type mismatch: …`; a warning prints as
 `warning W703 at line 1:37 (copy): …`. Every code has an entry in the

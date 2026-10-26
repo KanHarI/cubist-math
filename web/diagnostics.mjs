@@ -191,6 +191,7 @@ export const diagnostics = [
   ["E253", "… names a declaration of …, which is not imported here: import …;"],
   ["E254", "… declares no …, so … names nothing."],
   ["E255", "… is declared below its use: a declaration uses only the declarations above it."],
+  ["E256", "…::… and …::… would be one identity, …: rename one of them."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

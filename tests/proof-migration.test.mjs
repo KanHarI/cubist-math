@@ -388,8 +388,10 @@ test("ledgered public dependencies cannot be hidden outside a declaration scope"
 
 // The legacy builtin LEM[Truncate] replaced by the library's axiom LEM.
 test("the library's axioms replace legacy builtins only by explicit, pinned replacements", async () => {
-  const source = async name => name === "replacement" ? before
-    : readFile(new URL(`../library/${name}.cubist`,import.meta.url),"utf8");
+  // The library's axioms keep their bare labels only as read from library/.
+  const source = migrationSourceReader(async (place,name) => name === "replacement" ? (place === "archive" ? before : null)
+    : place === "library" ? readFile(new URL(`../library/${name}.cubist`,import.meta.url),"utf8").catch(() => null) : null,
+    ["replacement"]);
   const before = "def value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
   const after = "import classical_axioms;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
   const run = async ledger => (await verifyMigration({modules:["replacement"],ledger,
@@ -421,4 +423,25 @@ test("pinned source resolution keeps archive imports isolated from library colli
   original.place("library_root","library");
   assert.equal(await original("collision","library_root"),rebuilt.get("collision"));
   assert.match(await original.checkImports("root",["collision"]),/loaded collision from library/);
+});
+
+// An axiom has no definition to compare: its assumed statement is compared,
+// and an unchanged one stands for the original in its dependents, in its own
+// module and in another. A changed statement is reported, as are its users.
+test("axioms compare by their assumed statements, and stand for the original in their dependents", async () => {
+  const client = "import axioms_fixture;\ndef again := use_;\n";
+  const run = async (before, after, modules = ["axioms_fixture"]) => verifyMigration({ modules,
+    readOriginal: async name => name === "axioms_fixture" ? before : name === "axiom_client" ? client : library(name),
+    readEdited: async name => name === "axioms_fixture" ? after : client });
+  const source = "def A := axiom Unit;\ndef use_ := A;\ndef Family(U < UU0) := forall X : U. X -> X;\ndef Assumed := axiom Family;\n";
+  const same = await run(source, source, ["axioms_fixture", "axiom_client"]);
+  assert.deepEqual(same.map(report => report.failures), [[], []]);
+  assert.deepEqual(same.map(report => report.identical), [4, 1]);
+  const [changed] = await run(source, source.replace("axiom Unit", "axiom Unit -> Unit"));
+  assert.deepEqual(changed.failures.map(failure => [failure.name, failure.reason]), [
+    ["A", "The axiom's assumed statement changed."],
+    ["use_", "Assumptions changed: axioms_fixture::A -> axioms_fixture__migration_check::A"],
+  ]);
+  const [defined] = await run(source, source.replace("def A := axiom Unit;", "def A := tt;"));
+  assert.match(defined.failures[0].reason, /One version assumes this declaration as an axiom, and the other defines it/);
 });

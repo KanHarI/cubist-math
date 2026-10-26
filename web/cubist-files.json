@@ -1575,6 +1575,10 @@
    "summary": "For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it."
   },
   {
+   "path": "cubist-tests/continuum_axioms.cubist",
+   "summary": "The continuum hypotheses of `continuum_hypothesis` as user-supplied axioms, `def CH := axiom ContinuumHypothesis;`: every result that uses one lists it."
+  },
+  {
    "path": "cubist-tests/declarations_axioms.cubist",
    "summary": "`def Name := axiom F;`: one assumption of F's body closed over its parameters, shared by every use, listed by its label, and refused by `computable`, `evaluate` and a declared type."
   },

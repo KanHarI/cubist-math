@@ -42,7 +42,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
-import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
+import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,identityCollision,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -90,12 +90,14 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
 export class Translator {
-  constructor({checker,definitionModule=null,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
+  constructor({checker,definitionModule=null,libraryModule=false,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
     // Definition ownership is separate from source provenance. Raw translator
     // clients omit the namespace; program modules pass it explicitly.
     this.definitionModule=definitionModule;
+    // Whether the module is the library's own, read from library/.
+    this.libraryModule=libraryModule;
     this.testMode=testMode;
     this.sources=sources;
     this.collectGeneration=collectGeneration;
@@ -162,7 +164,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,definitionModule:this.definitionModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,libraryModule:this.libraryModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -542,6 +544,18 @@ export class Translator {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
   }
+  // The other module whose declaration already holds `key`, module__name, or
+  // null. Two modules' spellings can join to one key, as a::b__c and
+  // a__b::c do in a__b__c; the later declaration is refused (identityClash),
+  // so that neither qualified name can ever read the other's value.
+  identityHolder(key) {
+    const holder=this.compilationBindings.keyModule(key);
+    return holder!==undefined&&holder!==this.moduleName?holder:null;
+  }
+  identityClash(local,key=this.bindingName(local)) {
+    const holder=this.identityHolder(key);
+    return holder?identityCollision(this.moduleName,local,holder,key):null;
+  }
   // Availability has one writer for public names and exact identities.
   // Reservations carry no values; a failed/rolled-back family publishes the
   // same refusal under every alias, never a previous imported value.
@@ -549,7 +563,8 @@ export class Translator {
     env.set(name,value);
     const key=this.bindingName(name);
     const declared=this.compilationBindings.declaration(key);
-    if(declared) {
+    // Never under another module's identity: its declaration keeps its value.
+    if(declared&&!this.identityHolder(key)) {
       this.compilationBindings.published(declared.binding,value);
       env.set(this.identityAdapter.key(declared.binding.id),value);
     }
@@ -800,7 +815,11 @@ export class Translator {
           const type=scope.infer(term).type;
           const shape=ruleShape(type,t=>this.shown(t,scope));
           if(shape.refusal)throw unit.locate(noRule(d.rule.text,shape.refusal),d.rule);
-          const identity=term.tag==="DefRef"?term.name:d.rule.text;
+          // The rule's declaration, by its identity, not its spelling: a
+          // definition, applied to any assumptions it uses, or an axiom.
+          let head=term;
+          while(head.tag==="App")head=head.fn;
+          const identity=head.tag==="DefRef"||head.tag==="Var"&&this.checker.assumptions?.has(head.name)?head.name:d.rule.text;
           if(this.simpRegistry.hlevel.get(identity)?.origin===this.moduleName)
             throw unit.locate(ruleTwice(d.rule.text),d.rule);
           const existing=this.simpRegistry.hlevel.get(identity);
@@ -826,6 +845,8 @@ export class Translator {
         bindingAdapter:retained?.adapter});
       this.onDeclarationStart?.(d);
       try {
+        const clash=this.identityClash(d.name.text);
+        if(clash)throw unit.locate(clash,d.name);
         // A theory's sorts need their evidence's definitions (L2.4).
         const missing=missingEvidence(d,env);
         if(missing)throw unit.locate(missing,d.name);
@@ -866,7 +887,7 @@ export class Translator {
         const axiom=expression.kind==="axiom";
         const assumed=statement=>{
           try {return axiomAssumption(this.checker,{module:this.moduleName,declaration:d.name.text,
-            binding:this.bindingName(d.name.text)},statement,bodyScope);}
+            binding:this.bindingName(d.name.text),library:this.libraryModule},statement,bodyScope);}
           catch(error) {throw unit.locate(error,expression.statement);}
         };
         const term=axiom?assumed(this.term(expression.statement,bodyScope,null)):this.term(expression,bodyScope);
@@ -949,6 +970,11 @@ export class Translator {
         failure.reason??failure.message,root));
     };
     try {
+      // The type's identity, and each constructor's, module__name.
+      for(const [name,at] of [[d.name.text,d.name],...d.constructors.map(c=>[c.name.text,c.name])]) {
+        const clash=this.identityClash(name);
+        if(clash)throw unit.locate(clash,at);
+      }
       const scope=this.itemScope(new Scope(unit,new Map(),env),d);
       const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)this.publishDeclaration(env,name,value);

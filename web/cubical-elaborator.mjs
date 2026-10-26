@@ -180,8 +180,10 @@ export class NativeCubicalElaborator {
     }
   }
   context(local = new Map()) { return new Map([...this.assumptions, ...local]); }
-  assume(name, type, avoid = new Set()) {
-    while (avoid.has(name) || this.kernel.names.has(name)) name += "_";
+  // An assumption's name is fresh, unless `exact`: an axiom's is its
+  // definition's identity, which no other declaration holds.
+  assume(name, type, avoid = new Set(), { exact = false } = {}) {
+    while (!exact && (avoid.has(name) || this.kernel.names.has(name))) name += "_";
     const dimensions = this.dimensions;
     let checked;
     try { this.dimensions = new Map(); checked = this.infer(type); }

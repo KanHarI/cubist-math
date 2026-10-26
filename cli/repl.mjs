@@ -9,6 +9,7 @@ import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
 import { ReplSession, replStatements } from "../web/repl-session.mjs";
+import { assumptionLines } from "../web/axiom-labels.mjs";
 import { moduleListing } from "../web/module-listing.mjs";
 import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
 import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
@@ -119,6 +120,8 @@ async function execute(line) {
       declaration: gap.name && (gap.module === main ? gap.name : `${gap.module}.${gap.name}`) })).join("\n") || `${main} did not check.`), { lines: true });
     checkedModule = main;
     console.log(`Checked ${result.outputs.length} declarations · ${result.instructionCount.toLocaleString()} kernel steps`);
+    // Each result that relies on an assumption, with every one it relies on.
+    for (const line of assumptionLines(result.outputs, result.assumptionLabels)) console.log(line);
     for (const warning of result.warnings ?? [])
       console.log(diagnosticLine({ severity: "warning", ...warning }));
     for (const evaluation of result.evaluations ?? [])
