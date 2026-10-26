@@ -1,246 +1,124 @@
-import differences;
-import unat_models;
-use unat;
+// The public integers are the binary-backed BInt: pairs of public binary
+// naturals, (a, b) standing for a - b, with the same difference. Unary
+// compatibility clients import unary_integers and use UInt.
+import ring_numerals;
+import binary_integers;
+import nat;
+use nat;
 
-// The unary compatibility integers instantiate the shared difference ring.
-// Public names and their stated types stay available to existing clients.
+def SameDifference(p, q : Nat and Nat) : U0 := BIntSameDifference(p, q);
 
-def SameDifference(p, q : UNat and UNat) :
-  U0 := DifferenceRelation{{U0}}(unat_semiring, unat_decide, unat_add_cancel, p, q);
+def Z : U0 := BInt;
 
-computable def same_difference_props(p, q : UNat and UNat) :
-  IsProp(U0, SameDifference(p, q)) := difference_same_difference_props{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q
-  );
+computable def int_is_set : IsSet(U0, Z) := bint_is_set;
 
-computable def same_difference_refl(p : UNat and UNat) :
-  SameDifference(p, p) := difference_same_difference_refl{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p
-  );
+computable def int(a, b : Nat) : Z := bint(a, b);
 
-computable def same_difference_sym(p, q : UNat and UNat, r : SameDifference(p, q)) :
-  SameDifference(q, p) := difference_same_difference_sym{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q, r
-  );
+computable def int_path(p, q : Nat and Nat, r : SameDifference(p, q)) :
+  typed(Z, class(p)) = typed(Z, class(q)) := bint_path(p, q, r);
 
-computable def same_difference_trans(
-  p, q, s : UNat and UNat, r : SameDifference(p, q), t : SameDifference(q, s)
-) :
-  SameDifference(p, s) := difference_same_difference_trans{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q, s, r, t
-  );
-
-def Z : U0 := Difference{{U0}}(unat_semiring, unat_decide, unat_add_cancel);
-
-computable def int_is_set :
-  IsSet(U0, Z) := difference_is_set{{U0}}(unat_semiring, unat_decide, unat_add_cancel);
-
-computable def int(a, b : UNat) :
-  Z := difference{{U0}}(unat_semiring, unat_decide, unat_add_cancel, a, b);
-
-computable def int_path(p, q : UNat and UNat, r : SameDifference(p, q)) :
-  typed(Z, class(p)) = typed(Z, class(q)) := difference_path{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q, r
-  );
-
-computable def int_pairs(p, q : UNat and UNat, e : p = q) :
-  typed(Z, class(p)) = typed(Z, class(q)) := difference_pairs{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q, e
-  );
+computable def int_pairs(p, q : Nat and Nat, e : p = q) :
+  typed(Z, class(p)) = typed(Z, class(q)) := bint_pairs(p, q, e);
 
 computable def int_induction(
-  P : Z -> U0, props : (forall z : Z. IsProp(U0, P(z))),
-  f : (forall p : UNat and UNat. P(class(p))), z : Z
+  P : Z -> U0, props : (forall z : Z. IsProp(U0, P(z))), f : (forall p : Nat and Nat. P(class(p))),
+  z : Z
 ) :
-  P(z) := difference_induction{{U0}}(unat_semiring, unat_decide, unat_add_cancel, P, props, f, z);
+  P(z) := bint_induction(P, props, f, z);
 
-computable def int_zero : Z := difference_zero{{U0}}(unat_semiring, unat_decide, unat_add_cancel);
+computable def int_zero : Z := bint_zero;
 
-computable def int_one : Z := difference_one{{U0}}(unat_semiring, unat_decide, unat_add_cancel);
+computable def int_one : Z := bint_one;
 
-computable def int_neg(x : Z) :
-  Z := difference_neg{{U0}}(unat_semiring, unat_decide, unat_add_cancel, x);
+computable def int_neg(x : Z) : Z := bint_neg(x);
 
-computable def add_pairs(p, q : UNat and UNat) :
-  UNat and UNat := difference_add_pairs{{U0}}(unat_semiring, unat_decide, unat_add_cancel, p, q);
+computable def int_add(x, y : Z) : Z := bint_add(x, y);
 
-computable def add_pairs_left(p, s, q : UNat and UNat, r : SameDifference(p, s)) :
-  SameDifference(add_pairs(p, q), add_pairs(s, q)) := difference_add_pairs_left{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, s, q, r
-  );
-
-computable def add_pairs_comm(p, q : UNat and UNat) :
-  add_pairs(p, q) = add_pairs(q, p) := difference_add_pairs_comm{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q
-  );
-
-computable def int_add(x, y : Z) :
-  Z := difference_add{{U0}}(unat_semiring, unat_decide, unat_add_cancel, x, y);
-
-computable def mul_pairs(p, q : UNat and UNat) :
-  UNat and UNat := difference_mul_pairs{{U0}}(unat_semiring, unat_decide, unat_add_cancel, p, q);
-
-computable def mul_pairs_left(p, s, q : UNat and UNat, r : SameDifference(p, s)) :
-  SameDifference(mul_pairs(p, q), mul_pairs(s, q)) := difference_mul_pairs_left{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, s, q, r
-  );
-
-computable def mul_pairs_comm(p, q : UNat and UNat) :
-  mul_pairs(p, q) = mul_pairs(q, p) := difference_mul_pairs_comm{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, p, q
-  );
-
-computable def int_mul(x, y : Z) :
-  Z := difference_mul{{U0}}(unat_semiring, unat_decide, unat_add_cancel, x, y);
+computable def int_mul(x, y : Z) : Z := bint_mul(x, y);
 
 computable def int_equation(
-  f, g : Z -> Z, e : (forall p : UNat and UNat. f(class(p)) = g(class(p))), x : Z
+  f, g : Z -> Z, e : (forall p : Nat and Nat. f(class(p)) = g(class(p))), x : Z
 ) :
-  f(x) = g(x) := difference_equation{{U0}}(unat_semiring, unat_decide, unat_add_cancel, f, g, e, x);
+  f(x) = g(x) := bint_equation(f, g, e, x);
 
 computable def int_equation2(
   f, g : Z -> Z -> Z,
-  e : (forall p, q : UNat and UNat. f(class(p), class(q)) = g(class(p), class(q))), x, y : Z
+  e : (forall p, q : Nat and Nat. f(class(p), class(q)) = g(class(p), class(q))), x, y : Z
 ) :
-  f(x, y) = g(x, y) := difference_equation2{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, f, g, e, x, y
-  );
+  f(x, y) = g(x, y) := bint_equation2(f, g, e, x, y);
 
 computable def int_equation3(
   f, g : Z -> Z -> Z -> Z,
   e : (
-    forall p, q, s : UNat and UNat.
-    f(class(p), class(q), class(s)) = g(class(p), class(q), class(s))
+    forall p, q, s : Nat and Nat. f(class(p), class(q), class(s)) = g(class(p), class(q), class(s))
   ), x, y, z : Z
 ) :
-  f(x, y, z) = g(x, y, z) := difference_equation3{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, f, g, e, x, y, z
-  );
+  f(x, y, z) = g(x, y, z) := bint_equation3(f, g, e, x, y, z);
 
 computable def int_add_assoc(x, y, z : Z) :
-  int_add(int_add(x, y), z) = int_add(x, int_add(y, z)) := difference_add_assoc{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, x, y, z
-  );
+  int_add(int_add(x, y), z) = int_add(x, int_add(y, z)) := bint_add_assoc(x, y, z);
 
-computable def int_add_comm(x, y : Z) : int_add(x, y) = int_add(y, x) := difference_add_comm{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x, y
-);
+computable def int_add_comm(x, y : Z) : int_add(x, y) = int_add(y, x) := bint_add_comm(x, y);
 
-computable def int_zero_add(x : Z) : int_add(int_zero, x) = x := difference_zero_add{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x
-);
+computable def int_zero_add(x : Z) : int_add(int_zero, x) = x := bint_zero_add(x);
 
-computable def int_add_zero(x : Z) : int_add(x, int_zero) = x := difference_add_zero{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x
-);
+computable def int_add_zero(x : Z) : int_add(x, int_zero) = x := bint_add_zero(x);
 
-computable def int_neg_add(x : Z) : int_add(int_neg(x), x) = int_zero := difference_neg_add{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x
-);
+computable def int_neg_add(x : Z) : int_add(int_neg(x), x) = int_zero := bint_neg_add(x);
 
-computable def int_add_neg(x : Z) : int_add(x, int_neg(x)) = int_zero := difference_add_neg{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x
-);
-
-computable def pairs_mul_assoc(a, b, c, d, e, f : UNat) :
-  (a * c + b * d) * e + (a * d + b * c) * f = a * (c * e + d * f) + b * (c * f + d * e) := difference_pairs_mul_assoc{{
-    U0
-  }}(unat_semiring, unat_decide, unat_add_cancel, a, b, c, d, e, f);
-
-computable def pairs_mul_add(a, b, c, d, e, f : UNat) :
-  a * (c + e) + b * (d + f) = (a * c + b * d) + (a * e + b * f) := difference_pairs_mul_add{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, a, b, c, d, e, f
-  );
+computable def int_add_neg(x : Z) : int_add(x, int_neg(x)) = int_zero := bint_add_neg(x);
 
 computable def int_mul_assoc(x, y, z : Z) :
-  int_mul(int_mul(x, y), z) = int_mul(x, int_mul(y, z)) := difference_mul_assoc{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, x, y, z
-  );
+  int_mul(int_mul(x, y), z) = int_mul(x, int_mul(y, z)) := bint_mul_assoc(x, y, z);
 
-computable def int_mul_comm(x, y : Z) : int_mul(x, y) = int_mul(y, x) := difference_mul_comm{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x, y
-);
+computable def int_mul_comm(x, y : Z) : int_mul(x, y) = int_mul(y, x) := bint_mul_comm(x, y);
 
-computable def int_one_mul(x : Z) : int_mul(int_one, x) = x := difference_one_mul{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x
-);
+computable def int_one_mul(x : Z) : int_mul(int_one, x) = x := bint_one_mul(x);
 
-computable def int_mul_one(x : Z) : int_mul(x, int_one) = x := difference_mul_one{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x
-);
+computable def int_mul_one(x : Z) : int_mul(x, int_one) = x := bint_mul_one(x);
 
 computable def int_mul_add(x, y, z : Z) :
-  int_mul(x, int_add(y, z)) = int_add(int_mul(x, y), int_mul(x, z)) := difference_mul_add{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, x, y, z
-  );
+  int_mul(x, int_add(y, z)) = int_add(int_mul(x, y), int_mul(x, z)) := bint_mul_add(x, y, z);
 
-computable def int_decide(x, y : Z) : Decidable(U0, x = y) := difference_decide{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, x, y
-);
+computable def int_decide(x, y : Z) : Decidable(U0, x = y) := bint_decide(x, y);
 
-def integers : CommRing(U0) := difference_ring{{U0}}(unat_semiring, unat_decide, unat_add_cancel);
+// A zero decision with a compact certificate for nonzero values.
+computable def int_decide_zero(x : Z) : Decidable(U0, x = int_zero) := bint_decide_zero(x);
 
-// Supply the natural-semiring hypotheses for the shared domain proof.
-computable def int_natural_mul_cancel(k, a, b : UNat, nonzero : k = 0 -> Void, p : a * k = b * k) :
-  a = b := match k {
-    zero => absurd(nonzero(refl(0)));
-    succ(s) => unat_mul_cancel(s, a, b, p);
-  };
-
-computable def int_natural_trichotomy(a, b : UNat) :
-  DifferenceTrichotomy{{U0}}(unat_semiring, unat_decide, unat_add_cancel, a, b) := match unat_trichotomy(
-    a, b
-  ) return DifferenceTrichotomy{{U0}}(unat_semiring, unat_decide, unat_add_cancel, a, b) {
-    left above => left(
-      (succ(above.1), above.2, fun (p : succ(above.1) = 0) => unat_zero_ne_succ(above.1, sym(p)))
-    );
-    right rest => match rest return DifferenceTrichotomy{{U0}}(
-      unat_semiring, unat_decide, unat_add_cancel, a, b
-    ) {
-      left same => right(left(same));
-      right below => right(
-        right(
-          (
-            succ(below.1), below.2,
-            fun (p : succ(below.1) = 0) => unat_zero_ne_succ(below.1, sym(p))
-          )
-        )
-      );
-    };
-  };
-
-// Preserve the existing unary statements as instances of the shared proof.
-computable def pairs_product_cancel(
-  b, s, c, d : UNat, h : (b + succ(s)) * c + b * d = (b + succ(s)) * d + b * c
-) :
-  c = d := difference_pairs_product_cancel{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, int_natural_mul_cancel, b, succ(s), c, d,
-    fun (p : succ(s) = 0) => unat_zero_ne_succ(s, sym(p)), h
-  );
-
-computable def int_zero_divisors(
-  p, q : UNat and UNat, np : typed(Z, class(p)) = int_zero -> Void,
-  nq : typed(Z, class(q)) = int_zero -> Void, r : SameDifference(mul_pairs(p, q), (0, 0))
-) :
-  Void := difference_zero_divisors{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, int_natural_mul_cancel, int_natural_trichotomy, p,
-    q, np, nq, r
-  );
+def integers : CommRing(U0) := binary_integers;
 
 computable def int_mul_nonzero(
   x, y : Z, nx : x = int_zero -> Void, ny : y = int_zero -> Void, p : int_mul(x, y) = int_zero
 ) :
-  Void := difference_mul_nonzero{{U0}}(
-    unat_semiring, unat_decide, unat_add_cancel, int_natural_mul_cancel, int_natural_trichotomy, x,
-    y, nx, ny, p
-  );
+  Void := bint_mul_nonzero(x, y, nx, ny, p);
 
-// The shared construction keeps zero and one distinct.
-computable def int_zero_ne_one(p : int_zero = int_one) : Void := difference_zero_ne_one{{U0}}(
-  unat_semiring, unat_decide, unat_add_cancel, fun (e : 0 = 1) => unat_zero_ne_succ(0, e), p
+computable def int_zero_ne_one(p : int_zero = int_one) : Void := bint_zero_ne_one(p);
+
+// A natural number is an integer: the cast keeps its binary magnitude.
+computable def int_of_nat(n : Nat) : Z := bint_of_nat(n);
+
+computable def int_of_nat_zero : int_of_nat(0) = int_zero := bint_of_nat_zero;
+
+computable def int_of_nat_one : int_of_nat(1) = int_one := bint_of_nat_one;
+
+computable def int_of_nat_add(a, b : Nat) :
+  int_of_nat(a + b) = int_add(int_of_nat(a), int_of_nat(b)) := bint_of_nat_add(a, b);
+
+computable def int_of_nat_mul(a, b : Nat) :
+  int_of_nat(a * b) = int_mul(int_of_nat(a), int_of_nat(b)) := bint_of_nat_mul(a, b);
+
+computable def int_of_nat_injective(a, b : Nat, p : int_of_nat(a) = int_of_nat(b)) :
+  a = b := bint_of_nat_injective(a, b, p);
+
+// The cast, which the literal rule reads into, agrees with the ring's
+// generic numeral.
+computable def int_of_nat_numeral(n : Nat) : int_of_nat(n) = integers.of_nat(n) := of_nat_map(
+  integers.ring, int_of_nat, int_of_nat_zero, int_of_nat_one, int_of_nat_add, int_of_nat_mul, n
 );
 
-// The integers' numerals (L2.10c): integers.(2) is int(2, 0).
+// Decimal and 0b literals enter binary magnitudes directly.
+computable def int_literal(s : Lexeme) : Parsed(U0, Z) := bint_literal(s);
+
 notation integers {
-  numeral(n : UNat) := int(n, 0);
+  literal(s : Lexeme) := int_literal(s);
 }

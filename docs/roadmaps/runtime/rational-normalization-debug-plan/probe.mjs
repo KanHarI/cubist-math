@@ -111,39 +111,40 @@ def m_set := difference_is_set{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel
 def m_add_left := fun (p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) =>
   difference_add_pairs_left{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, p, s, q, r);
 `;
-// `unary`: main's public rationals and integers, over UNat.
-const unary = `import rationals;
-import integers;
+// `unary`: the unary compatibility rationals and integers, over UNat, which
+// were main's public ones until NUM2's default switch.
+const unary = `import unary_rationals;
+import unary_integers;
 use unat;
 
-def q_two_thirds := rationals.(2/3);
+def q_two_thirds := unary_rationals.(2/3);
 
-def q_half := rationals.(0.5);
+def q_half := unary_rationals.(0.5);
 
-def q_one := rationals.one;
+def q_one := unary_rationals.one;
 
 // A literal's nonzero certificate, open in the equation it refutes.
-def q_nonzero_open := int_succ_nonzero(2);
+def q_nonzero_open := uq_succ_nonzero(2);
 
 def q_effective_open := quotient_effective(
-  U0, UNat and UNat, SameDifference, same_difference_props, same_difference_refl,
-  same_difference_sym, same_difference_trans, (succ(2), 0), (0, 0)
+  U0, UNat and UNat, UIntSameDifference, uint_same_difference_props, uint_same_difference_refl,
+  uint_same_difference_sym, uint_same_difference_trans, (succ(2), 0), (0, 0)
 );
 
-def z_decision := int_decide(int(2, 0), int_zero);
+def z_decision := uint_decide(uint(2, 0), uint_zero);
 
 // The additive group and the operations and laws it carries.
-def z_additive := integers.additive_;
+def z_additive := unary_integers.additive_;
 
-def z_add := integers.add;
+def z_add := unary_integers.add;
 
-def z_zero_add := integers.zero_add;
+def z_zero_add := unary_integers.zero_add;
 
-def z_neg_add := integers.neg_add;
+def z_neg_add := unary_integers.neg_add;
 
-def z_add_comm := integers.add_comm;
+def z_add_comm := unary_integers.add_comm;
 
-def z_add_assoc := integers.add_assoc;
+def z_add_assoc := unary_integers.add_assoc;
 `;
 const fixtures = { binary, unary };
 const sha256 = text => createHash("sha256").update(text).digest("hex");

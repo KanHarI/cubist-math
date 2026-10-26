@@ -43,7 +43,10 @@ no automatic budget increase, and graph metrics of the completed normal form
 from different queries are separate measurements, never an additive
 breakdown. The probe's two fixtures are inline, `binary` (the demand marks'
 `rational` source with this plan's further queries) and `unary` (main's
-public rationals and integers); a query checks the whole fixture that
+public rationals and integers, which NUM2's default switch of 2026-10-26
+renamed `unary_rationals` and `unary_integers`; the fixture imports them by
+those names, and `q_two_thirds` still normalizes to 265,250 nodes); a query
+checks the whole fixture that
 defines its name. Every record of 2026-10-23 is in
 [`results.jsonl`](rational-normalization-debug-plan/results.jsonl) with its
 kernel and fixture hashes. Run the probe from the repository root after

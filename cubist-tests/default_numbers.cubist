@@ -1,0 +1,50 @@
+// The public Z and Q are binary; unary clients use explicit UInt and UQ.
+// Computed values print their quotient representatives with decimal
+// magnitudes read from their bits, and literals print as written.
+import rationals;
+import unary_rationals;
+
+def default_integers : Z = BInt {
+  rfl;
+}
+
+def default_rationals : Q = BQ {
+  rfl;
+}
+
+use integers;
+
+// Output: class((bnat.(2), bnat.(5)))
+print(evaluate(2 - 5));
+
+// Output: class((bnat.(0), bnat.(340282366920938463426481119284349108225)))
+print(evaluate(18446744073709551615 * -18446744073709551615));
+
+// Output: 18446744073709551615 = 18446744073709551615
+print(typeof(refl(typed(Z, 18446744073709551615))));
+
+use rationals;
+
+// Output: class((class((bnat.(5), bnat.(0))), class((bnat.(6), bnat.(0))), <fun>))
+print(evaluate(1/2 + 1/3));
+
+// Output: 18446744073709551615/2 = 18446744073709551615/2
+print(typeof(refl(typed(Q, 18446744073709551615/2))));
+
+use nat;
+
+// Output: class((2, 5))
+print(evaluate(int(2, 5)));
+
+// Output: class((class((340282366920938463463374607431768211456, 0)), class((1, 0)), <fun>))
+print(evaluate(rat_of_nat(340282366920938463463374607431768211456)));
+
+// A literal of one carrier is qualified in another's view.
+// Output: integers.(7) = integers.(7)
+print(typeof(refl(typed(Z, integers.(7)))));
+
+use unary_rationals;
+
+// The unary rationals keep their unary representatives.
+// Output: class((class((unat.(1), unat.(0))), class((unat.(2), unat.(0))), <fun>))
+print(evaluate(1/2));

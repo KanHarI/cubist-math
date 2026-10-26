@@ -1,78 +1,79 @@
-import unat;
-import lists;
-import lexemes;
-import fractions;
+// The public rationals are the binary-backed BQ: the field of fractions of
+// the public integers. Unary compatibility clients import unary_rationals
+// and use UQ.
+import binary_rationals;
 import integers;
-use unat;
+use nat;
 
-// The rationals: the integers' field of fractions.
-def rationals : Field(U0) := fraction_field(integers, int_decide, int_mul_nonzero, int_zero_ne_one);
+def rationals : Field(U0) := binary_rationals;
 
-def Q : U0 := rationals.R;
+def Q : U0 := BQ;
 
-// k + 1 is not zero.
-computable def int_succ_nonzero(k : UNat, p : int(succ(k), 0) = int_zero) :
-  Void := unat_zero_ne_succ(
-    k + 0,
-    sym(
-      quotient_effective(
-        U0, UNat and UNat, SameDifference, same_difference_props, same_difference_refl,
-        same_difference_sym, same_difference_trans, (succ(k), 0), (0, 0), p
-      )
-    )
+computable def rat_decide(x, y : Q) : Decidable(U0, x = y) := bq_decide(x, y);
+
+// The total inverse: zero's is zero.
+computable def rat_inv(x : Q) : Q := bq_inv(x);
+
+// An integer is a rational, its own numerator over one.
+computable def rat_of_int(x : Z) : Q := bq_of_int(x);
+
+computable def rat_of_int_zero : rat_of_int(int_zero) = rationals.zero := bq_of_int_zero;
+
+computable def rat_of_int_one : rat_of_int(int_one) = rationals.one := bq_of_int_one;
+
+computable def rat_of_int_add(x, y : Z) :
+  rat_of_int(int_add(x, y)) = rationals.add(rat_of_int(x), rat_of_int(y)) := bq_of_int_add(x, y);
+
+computable def rat_of_int_mul(x, y : Z) :
+  rat_of_int(int_mul(x, y)) = rationals.mul(rat_of_int(x), rat_of_int(y)) := bq_of_int_mul(x, y);
+
+computable def rat_of_int_neg(x : Z) :
+  rat_of_int(int_neg(x)) = rationals.neg(rat_of_int(x)) := bq_of_int_neg(x);
+
+computable def rat_of_int_injective(x, y : Z, p : rat_of_int(x) = rat_of_int(y)) :
+  x = y := bq_of_int_injective(x, y, p);
+
+// A natural number is a rational through the integers; the casts keep its
+// binary magnitude.
+computable def rat_of_nat(n : Nat) : Q := rat_of_int(int_of_nat(n));
+
+computable def rat_of_nat_zero :
+  rat_of_nat(0) = rationals.zero := trans(cong(rat_of_int, int_of_nat_zero), rat_of_int_zero);
+
+computable def rat_of_nat_one :
+  rat_of_nat(1) = rationals.one := trans(cong(rat_of_int, int_of_nat_one), rat_of_int_one);
+
+computable def rat_of_nat_add(a, b : Nat) :
+  rat_of_nat(a + b) = rationals.add(rat_of_nat(a), rat_of_nat(b)) := trans(
+    cong(rat_of_int, int_of_nat_add(a, b)), rat_of_int_add(int_of_nat(a), int_of_nat(b))
   );
 
+computable def rat_of_nat_mul(a, b : Nat) :
+  rat_of_nat(a * b) = rationals.mul(rat_of_nat(a), rat_of_nat(b)) := trans(
+    cong(rat_of_int, int_of_nat_mul(a, b)), rat_of_int_mul(int_of_nat(a), int_of_nat(b))
+  );
+
+// The cast agrees with the field's generic numeral.
+computable def rat_of_nat_numeral(n : Nat) : rat_of_nat(n) = rationals.of_nat(n) := of_nat_map(
+  rationals.comm_ring.ring, rat_of_nat, rat_of_nat_zero, rat_of_nat_one, rat_of_nat_add,
+  rat_of_nat_mul, n
+);
+
+// k + 1 is not zero. For a closed k the zero decision computes, and the
+// certificate is the literal reader's compact one.
+computable def rat_succ_nonzero(k : Nat, p : int_of_nat(succ(k)) = int_zero) :
+  Void := match int_decide_zero(int_of_nat(succ(k))) return Void {
+    left same => nat_zero_ne_succ(k, sym(int_of_nat_injective(succ(k), 0, same)));
+    right nonzero => nonzero(p);
+  };
+
 // The rational a / (k + 1).
-computable def rat(a : Z, k : UNat) : Q := class((a, int(succ(k), 0), int_succ_nonzero(k)));
+computable def rat(a : Z, k : Nat) : Q := bq(a, int_of_nat(succ(k)), rat_succ_nonzero(k));
 
-computable def rat_decide(x, y : Q) :
-  Decidable(U0, x = y) := q_decide(integers, int_decide, int_mul_nonzero, int_zero_ne_one, x, y);
-
-// The rationals' literals (L2.10c): an integer, n/d with d not zero, or a
-// decimal, a.b, read from their characters, so rationals.(1/2 + 0.75) needs
-// no evidence. 1/0 is refused at its denominator.
-computable def rational_fraction(numerator, at_ : UNat, s : Lexeme) : Parsed(U0, Q) {
-  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
-  exact match read.2 return Parsed(U0, Q) {
-    nil => match read.1.1 return Parsed(U0, Q) {
-      zero => error(at_);
-      succ(d) => ok(rat(int(numerator, 0), d));
-    };
-    cons(g, rest) => error(add(at_, read.1.2));
-  };
-}
-
-computable def rational_decimal(whole, at_ : UNat, s : Lexeme) : Parsed(U0, Q) {
-  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
-  exact match read.2 return Parsed(U0, Q) {
-    nil => match power_of_ten(read.1.2) return Parsed(U0, Q) {
-      zero => error(at_);
-      succ(d) => match read.1.2 return Parsed(U0, Q) {
-        zero => error(at_);
-        succ(k) => ok(rat(int(add(mul(whole, power_of_ten(read.1.2)), read.1.1), 0), d));
-      };
-    };
-    cons(g, rest) => error(add(at_, read.1.2));
-  };
-}
-
-computable def rational_literal(s : Lexeme) : Parsed(U0, Q) {
-  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
-  exact match read.2 return Parsed(U0, Q) {
-    nil => ok(rat(int(read.1.1, 0), 0));
-    cons(g, rest) => match g return Parsed(U0, Q) {
-      slash => rational_fraction(read.1.1, succ(read.1.2), rest);
-      period => rational_decimal(read.1.1, succ(read.1.2), rest);
-      digit(d) => error(read.1.2);
-      lower(n) => error(read.1.2);
-      upper(n) => error(read.1.2);
-      underscore => error(read.1.2);
-      plus => error(read.1.2);
-      minus => error(read.1.2);
-    };
-  };
-}
+// Integer, fraction, decimal and 0b literals accumulate binary magnitudes;
+// 1/0 is refused at its denominator.
+computable def rat_literal(s : Lexeme) : Parsed(U0, Q) := bq_literal(s);
 
 notation rationals {
-  literal(s : Lexeme) := rational_literal(s);
+  literal(s : Lexeme) := rat_literal(s);
 }

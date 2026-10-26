@@ -1,0 +1,82 @@
+import unat;
+import lists;
+import lexemes;
+import fractions;
+import unary_integers;
+use unat;
+
+// The unary compatibility rationals: the unary integers' field of fractions.
+// The public rationals are binary; unary clients import this module.
+def unary_rationals :
+  Field(U0) := fraction_field(unary_integers, uint_decide, uint_mul_nonzero, uint_zero_ne_one);
+
+def UQ : U0 := unary_rationals.R;
+
+// k + 1 is not zero.
+computable def uq_succ_nonzero(k : UNat, p : uint(succ(k), 0) = uint_zero) :
+  Void := unat_zero_ne_succ(
+    k + 0,
+    sym(
+      quotient_effective(
+        U0, UNat and UNat, UIntSameDifference, uint_same_difference_props,
+        uint_same_difference_refl, uint_same_difference_sym, uint_same_difference_trans,
+        (succ(k), 0), (0, 0), p
+      )
+    )
+  );
+
+// The rational a / (k + 1).
+computable def uq_rat(a : UInt, k : UNat) : UQ := class((a, uint(succ(k), 0), uq_succ_nonzero(k)));
+
+computable def uq_decide(x, y : UQ) : Decidable(U0, x = y) := q_decide(
+  unary_integers, uint_decide, uint_mul_nonzero, uint_zero_ne_one, x, y
+);
+
+// The unary rationals' literals (L2.10c): an integer, n/d with d not zero, or a
+// decimal, a.b, read from their characters, so unary_rationals.(1/2 + 0.75) needs
+// no evidence. 1/0 is refused at its denominator.
+computable def uq_literal_fraction(numerator, at_ : UNat, s : Lexeme) : Parsed(U0, UQ) {
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, UQ) {
+    nil => match read.1.1 return Parsed(U0, UQ) {
+      zero => error(at_);
+      succ(d) => ok(uq_rat(uint(numerator, 0), d));
+    };
+    cons(g, rest) => error(add(at_, read.1.2));
+  };
+}
+
+computable def uq_literal_decimal(whole, at_ : UNat, s : Lexeme) : Parsed(U0, UQ) {
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, UQ) {
+    nil => match power_of_ten(read.1.2) return Parsed(U0, UQ) {
+      zero => error(at_);
+      succ(d) => match read.1.2 return Parsed(U0, UQ) {
+        zero => error(at_);
+        succ(k) => ok(uq_rat(uint(add(mul(whole, power_of_ten(read.1.2)), read.1.1), 0), d));
+      };
+    };
+    cons(g, rest) => error(add(at_, read.1.2));
+  };
+}
+
+computable def uq_literal(s : Lexeme) : Parsed(U0, UQ) {
+  let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);
+  exact match read.2 return Parsed(U0, UQ) {
+    nil => ok(uq_rat(uint(read.1.1, 0), 0));
+    cons(g, rest) => match g return Parsed(U0, UQ) {
+      slash => uq_literal_fraction(read.1.1, succ(read.1.2), rest);
+      period => uq_literal_decimal(read.1.1, succ(read.1.2), rest);
+      digit(d) => error(read.1.2);
+      lower(n) => error(read.1.2);
+      upper(n) => error(read.1.2);
+      underscore => error(read.1.2);
+      plus => error(read.1.2);
+      minus => error(read.1.2);
+    };
+  };
+}
+
+notation unary_rationals {
+  literal(s : Lexeme) := uq_literal(s);
+}

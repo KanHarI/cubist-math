@@ -1595,6 +1595,10 @@
    "summary": "Default binary naturals compute decimal arithmetic beyond 64 bits, factorial and dependent recursion, with explicit unary notation in mixed views."
   },
   {
+   "path": "cubist-tests/default_numbers.cubist",
+   "summary": "Public `Z` and `Q` as the binary `BInt` and `BQ`: computed integers and rationals printed as quotient representatives with decimal magnitudes from their bits, wide literals printed as written, a literal qualified in another carrier's view, and the unary rationals' unary representatives."
+  },
+  {
    "path": "cubist-tests/dimension_degree_regression.cubist",
    "summary": "Extension degree: positive, one for the identity, invariant under extension equality."
   },
@@ -2048,7 +2052,7 @@
   },
   {
    "path": "cubist-tests/integer_examples.cubist",
-   "summary": "The library's integers at work: equality decided and arithmetic computed on closed integers, a commutative ring's lemma at the integers, and the natural numbers embedded as a homomorphism of additive monoids."
+   "summary": "The library's binary integers at work: equality decided and arithmetic computed on closed integers, a 128-bit product included, a commutative ring's lemma at the integers, and the binary natural numbers embedded as a homomorphism of additive monoids."
   },
   {
    "path": "cubist-tests/let_statements.cubist",
@@ -2088,7 +2092,7 @@
   },
   {
    "path": "cubist-tests/notation_literals.cubist",
-   "summary": "Literals in a selected notation (L2.10c): the rationals' literal rule reading `1/2`, `0.75` and `1_000/4` and refusing `1/0` at its denominator, the integers' numerals, a theory's numeral rule computing, and the refusals of a numeral where no rule reads it and of a literal `nat` cannot read."
+   "summary": "Literals in a selected notation (L2.10c): the rationals' literal rule reading `1/2`, `0.75` and `1_000/4` and refusing `1/0` at its denominator, the integers' binary literals and the unary integers' numerals, a theory's numeral rule computing, and the refusals of a numeral where no rule reads it and of a literal `nat` cannot read."
   },
   {
    "path": "cubist-tests/notation_operators.cubist",
@@ -2100,7 +2104,7 @@
   },
   {
    "path": "cubist-tests/notation_printing.cubist",
-   "summary": "Faithful printing (L2.10d): an operation printed with its operator where its notation is selected and qualified elsewhere, a literal printed as written, a numeral rule's application printed as the numeral where selected, and a printed text read back where it was printed."
+   "summary": "Faithful printing (L2.10d): an operation printed with its operator where its notation is selected and qualified elsewhere, a literal printed as written, a wide integer literal included, a numeral rule's application printed as the numeral where selected, and a printed text read back where it was printed."
   },
   {
    "path": "cubist-tests/notation_views.cubist",
@@ -2224,7 +2228,7 @@
   },
   {
    "path": "cubist-tests/rational_examples.cubist",
-   "summary": "The library's rationals at work: sums, equal fractions and the inverse of a negative fraction, decided by computation, and a ring lemma at the rationals' ring."
+   "summary": "The library's binary rationals at work: sums, equal fractions and the inverse of a negative fraction, decided by computation, and a ring lemma at the rationals' ring."
   },
   {
    "path": "cubist-tests/reduction_demo.cubist",
@@ -2420,11 +2424,11 @@
   },
   {
    "path": "library/binary_integers.cubist",
-   "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. The shared no-zero-divisor proof is instantiated as `bint_mul_nonzero`; `bint_decide_zero` supplies compact nonzero certificates. Computed values remain quotient representatives; the public `Z` migration follows in NUM2."
+   "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. The shared no-zero-divisor proof is instantiated as `bint_mul_nonzero`; `bint_decide_zero` supplies compact nonzero certificates. Computed values remain quotient representatives. Public `integers` aliases it."
   },
   {
    "path": "library/binary_rationals.cubist",
-   "summary": "The shared fraction field over `BInt`, named `BQ`, with decidable equality, inverse, and the checked integer embedding `bq_of_int`. Integer, fraction, decimal and `0b` literals accumulate binary magnitudes; only glyph digits and source offsets are unary. Values remain quotient representatives; their folded normal forms (`!!`) compute, and the full normal forms of their certificates (`!!!`) do not yet (the runtime roadmap's NUM2 section). The public `Q` migration remains NUM2 work."
+   "summary": "The shared fraction field over `BInt`, named `BQ`, with decidable equality, inverse, and the checked integer embedding `bq_of_int`. Integer, fraction, decimal and `0b` literals accumulate binary magnitudes; only glyph digits and source offsets are unary. Values remain quotient representatives; their folded normal forms (`!!`) compute, and the full normal forms of their certificates (`!!!`) do not yet (the runtime roadmap's NUM2 section). Public `rationals` aliases it."
   },
   {
    "path": "library/binary.cubist",
@@ -2512,7 +2516,7 @@
   },
   {
    "path": "library/integers.cubist",
-   "summary": "The unary compatibility integers instantiate the shared ring and domain proofs in `differences`: a pair of unary naturals `(a, b)` stands for `a - b`, and pairs with the same difference are one integer, `Z`. Negation, addition and multiplication descend to it; it is a commutative ring (`integers`), with no zero divisors (`int_mul_nonzero`) and zero not one, and its equality is decidable (`int_decide`), through the quotient's effectiveness. Every operation computes on closed integers."
+   "summary": "Public integers `Z`, an alias of `BInt` from `binary_integers`: `int(a, b)` over `Nat`, negation, addition, multiplication and their ring laws, quotient induction and equations, the `integers` commutative ring, decidable equality (`int_decide`, and `int_decide_zero` with compact certificates), no zero divisors (`int_mul_nonzero`), zero not one, and the cast `int_of_nat`, injective and preserving zero, one, addition and multiplication, which agrees with the ring's numerals (`int_of_nat_numeral`). Literals enter binary magnitudes directly."
   },
   {
    "path": "library/lexemes.cubist",
@@ -2544,7 +2548,7 @@
   },
   {
    "path": "library/rationals.cubist",
-   "summary": "The integers' field of fractions (`rationals`, `Q`), with `rat(a, k)` for `a / (k + 1)`, decidable equality and checked fraction/decimal literals. Arithmetic computes on closed rationals."
+   "summary": "Public rationals `Q`, an alias of `BQ` from `binary_rationals`, the field `rationals` of fractions of `Z`, with `rat(a, k)` for `a / (k + 1)`, decidable equality (`rat_decide`), the total inverse `rat_inv`, and the casts `rat_of_int`, injective and preserving the ring operations, and `rat_of_nat`, which agrees with the field's numerals (`rat_of_nat_numeral`). Integer, fraction, decimal and `0b` literals accumulate binary magnitudes."
   },
   {
    "path": "library/ring_numerals.cubist",
@@ -2557,6 +2561,14 @@
   {
    "path": "library/squares.cubist",
    "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
+  },
+  {
+   "path": "library/unary_integers.cubist",
+   "summary": "The unary compatibility integers `UInt` instantiate the shared ring and domain proofs in `differences`: a pair of unary naturals `(a, b)` stands for `a - b`, with negation, addition and multiplication, the `unary_integers` commutative ring, no zero divisors (`uint_mul_nonzero`), zero not one, decidable equality (`uint_decide`) through the quotient's effectiveness, and the numeral rule `unary_integers.(2)`, `uint(2, 0)`. Every operation computes on closed integers."
+  },
+  {
+   "path": "library/unary_rationals.cubist",
+   "summary": "The unary compatibility rationals `UQ`, the unary integers' field of fractions (`unary_rationals`), with `uq_rat(a, k)` for `a / (k + 1)`, decidable equality (`uq_decide`) and checked fraction/decimal literals. Arithmetic computes on closed rationals."
   },
   {
    "path": "library/unat_models.cubist",
