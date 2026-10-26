@@ -208,3 +208,18 @@ notation powers {
     assert.ok(seen.get("operator").has("powers"));
   });
 });
+
+// Terms shown after checking, as an inspector shows them, print in the last
+// module's scope, whose transitively imported readers it resolves.
+test("terms shown after checking print in the checked module's scope", async () => {
+  await withChecked("import nat;\ndef big : Nat := nat.(18446744073709551616);\n", async (program, result) => {
+    assert.ok(result.complete, JSON.stringify(result.gaps));
+    const { checker } = program;
+    const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__big" }, null, new Map(), new Map());
+    const text = checker.displayText(checker.normalForm(expression), []);
+    assert.equal(text, "bnat.(18446744073709551616)");
+    const again = await withChecked(`import nat;\ndef big_again : Nat := ${text};\ndef same : big_again = nat.(18446744073709551616) := refl(big_again);\n`,
+      (_, read) => read.outputs.every(output => output.verified));
+    assert.ok(again);
+  });
+});
