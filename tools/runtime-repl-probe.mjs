@@ -1,0 +1,99 @@
+// The REPL's value form computed by the runtime and by the kernel's head
+// queries alone, for fixed workloads (docs/reports/runtime-repl-evaluation.md).
+// Each sample is a fresh process: the setup is checked as a REPL session,
+// then one `evaluate` entry is measured. Neither path's answer is evidence.
+// Before the runtime query is disposed of, its retained runtime objects are
+// counted and the heap is measured after a collection (run with
+// --expose-gc, as the default run does), so that retained memory is the
+// query's live graph, not its garbage.
+//   node tools/runtime-repl-probe.mjs                 every workload, both paths
+//   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel]
+import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import createCubical from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { ReplSession } from "../web/repl-session.mjs";
+import { RuntimeQuery } from "../web/cubical-runtime.mjs";
+import { sourceReader } from "./module-sources.mjs";
+import { assertFreshBuild, sourceHash } from "./build-stamp.mjs";
+
+export const workloads = {
+  "euclid-3": ["import euclid; use unat;", "evaluate euclid(3);"],
+  "euclid-4-prime": ["import euclid; use unat;", "evaluate euclid(4).1;"],
+  "euclid-4": ["import euclid; use unat;", "evaluate euclid(4);"],
+  "euclid-5-prime": ["import euclid; use unat;", "evaluate euclid(5).1;"],
+  "euclid-6-prime": ["import euclid; use unat;", "evaluate euclid(6).1;"],
+  "unary-510": ["import unat; use unat;", "evaluate typed(UNat and UNat, (2 * 255, 2 * 255));"],
+  // An accumulator the kernel substitutes into each call, past its syntax
+  // depth (web/reference/checking.html#print).
+  "count-into-510": ["import unat; use unat; def count_into(n, total : UNat) : UNat := match n { zero => total; succ(k) => count_into(k, succ(total)); };",
+    "evaluate count_into(2 * 255, 0);"],
+  // A list the definition retains while its parity forces every cell: the
+  // runtime's allocation cap with its cells retained.
+  "list-parity-200000": ["import lists; use unat; inductive Lamp { dark; lit; } "
+    + "def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; }; "
+    + "def rep(n : UNat) : List(U0, Unit) := match n { zero => nil; succ(m) => cons(tt, rep(m)); }; "
+    + "def parity(xs : List(U0, Unit)) : Lamp := induction xs return Lamp { nil => dark; cons(x, rest) with below => toggle(below); }; "
+    + "def big : List(U0, Unit) := rep(100 * 100 * 20);", "evaluate parity(big);"],
+  // The same recursive call twice: structural recursion shares it as one
+  // hypothesis.
+  "unary-doubling-8": ["import unat; use unat; def doubling(n : UNat) : UNat := match n { zero => 1; succ(m) => doubling(m) + doubling(m); };",
+    "evaluate doubling(8);"],
+  // The same non-recursive call twice, through 24 definitions: the kernel
+  // caches weak heads by shared syntax, so each g_i(tt) is computed once;
+  // the runtime shares a thunk by occurrence, so g_24(tt) costs 2^24 calls.
+  "duplicated-calls-24": [["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);",
+    "def g0(u : Unit) : Unit := u;",
+    ...Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`)].join(" "),
+    "evaluate g24(tt);"],
+  "binary-factorial-40": ["import nat; use nat;", "evaluate factorial(40);"],
+  "binary-product": ["import nat; use nat;", "evaluate 12345678901234567890 * 98765432109876543210;"],
+  "binary-rational": ["import binary_rationals; use binary_rationals;", "evaluate 2/3 + 1/6;"],
+};
+
+assertFreshBuild();
+const [names, only] = process.argv.slice(2);
+const root = fileURLToPath(new URL("..", import.meta.url));
+if (!names) {
+  for (const name of Object.keys(workloads)) for (const path of ["runtime", "kernel"])
+    execFileSync(process.execPath, ["--expose-gc", fileURLToPath(import.meta.url), name, path], { stdio: "inherit" });
+} else {
+  for (const name of names.split(",")) for (const path of only ? [only] : ["runtime", "kernel"]) {
+    if (!workloads[name] || !["runtime", "kernel"].includes(path)) throw new Error(`Unknown workload or path: ${name} ${path}`);
+    const [setup, entry] = workloads[name];
+    const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false, runtimeEvaluation: path === "runtime" });
+    try {
+      const session = new ReplSession(program);
+      const prepared = await session.run(setup);
+      const failed = prepared.find(result => result.kind === "error");
+      if (failed) throw new Error(failed.text);
+      globalThis.gc?.();
+      const before = { work: program.kernel.work(), arena: program.kernel.arena().nodes, heap: process.memoryUsage().heapUsed };
+      let captured = null, retained = null;
+      const dispose = RuntimeQuery.prototype.dispose;
+      RuntimeQuery.prototype.dispose = function () {
+        globalThis.gc?.();
+        retained = { heapMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1) };
+        try { Object.assign(retained, this.retainedObjects()); } catch (error) { retained.walk = error.kind; }
+        return dispose.call(this);
+      };
+      const check = program.checkEntry.bind(program);
+      program.checkEntry = async (...args) => (captured = await check(...args));
+      const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started;
+      const after = program.kernel.work();
+      globalThis.gc?.();
+      console.log(JSON.stringify({ workload: name, path, entry, result: answer.text.slice(0, 120), kind: answer.kind,
+        computedBy: captured?.prints?.at(-1)?.valueForm ?? null, retained, milliseconds: Math.round(elapsed),
+        kernelQuerySteps: Number(after.querySteps - before.work.querySteps), kernelQueries: Number(after.queries - before.work.queries),
+        arenaNodes: program.kernel.arena().nodes - before.arena,
+        heapAfterGcMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1),
+        processMaxRssMiB: Math.round(process.resourceUsage().maxRSS / 1024),
+        revision: execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
+        modified: execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: root, encoding: "utf8" }).trim() !== "",
+        runtimeSha256: createHash("sha256").update(await readFile(new URL("../web/cubical-runtime.mjs", import.meta.url))).digest("hex").slice(0, 16),
+        kernelSourceHash: sourceHash("kernel").slice(0, 16), node: process.version, platform: `${process.platform}/${process.arch}` }));
+    } finally { program.dispose(); }
+  }
+}

@@ -964,6 +964,29 @@ Each step lands in focused PRs under the review rule above.
       and `BQ` values evaluate. User-facing use also needs EVAL4's open items:
       a responsive snapshot copy, memory calibration and closed-environment
       pruning.
+      - **Value forms, done on 2026-10-26**
+        ([report](../reports/runtime-repl-evaluation.md)): `evaluate e` in
+        the CLI REPL, the REPL page, the reference pages' REPL bar and the
+        proof workspace's console, and `print(evaluate(e))` in files, are
+        observed by the runtime. Where it reports unsupported demand, the
+        whole value form is computed again by the kernel's head queries,
+        once. Over the demand marks' 197 constructs the runtime computes 135
+        value forms, each the kernel's. The contextual console shows a weak
+        head in its context and does not compute value forms; it is
+        unchanged. `!`, `!!`, `!!!`, `witness` and every `evaluate …
+        expecting` stay on the kernel's queries. The runtime runs inside the
+        check, synchronously, as the kernel's queries do, bounded by 100M
+        steps, 20M allocated cells and a time limit, the declaration's or 30
+        seconds a part; a responsive snapshot matters only for asynchronous
+        use.
+      - **Constructor patterns wait on a decision**: a pattern's verdict is
+        a check, which the runtime's observations may not decide alone, and
+        its expression leaves need kernel terms for runtime parts, which
+        typed readback (4) provides. The report sets out the options.
+      - A computation written twice in nested functions is shared by the
+        kernel's weak-head cache but computed twice by the runtime, which
+        can stop at its cap where the kernel's queries answer; the report
+        measures it and the options.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. `!!`, `!!!`, exact expected values and a

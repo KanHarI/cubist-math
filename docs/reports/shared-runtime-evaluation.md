@@ -5,6 +5,13 @@ checker, REPL or page uses it yet. It returns observations, not kernel evidence
 or full typed normal forms. Cubical execution, deep typed readback and the
 rational full-normalization gates remain open.
 
+Update of 2026-10-26: the REPLs and `print(evaluate(e))` now compute value
+forms through this query ([REPL integration](runtime-repl-evaluation.md)),
+which adds a synchronous `observeNow` and extends the observations below to
+the kernel's weak head: η, partially applied constructors with their arity,
+level functions, path abstractions and types. The rest of this report
+describes the query as #289 added it.
+
 ## Boundary and representation
 
 `RuntimeQuery(kernel, judgement, options)` accepts an existing typing judgement
