@@ -16,19 +16,20 @@ export const notationBinding=name=>"\u0000notation "+name;
 // what name.(…) selects there, as theories.mjs's selected decides it: a
 // named notation first, then a model's notation, with the rules its module
 // added where the name is still that model. A scope with a retained lexical
-// context resolves names through it (LexicalContext.selector); one without
-// resolves them by label. Either answers undefined where it cannot tell.
-export function notationForScope(scope) {
-  const selected=scope.env.get(SELECTION),env=scope.env,lexical=scope.lexical;
-  // The named notation name.(…) selects, or the model value with the
-  // identity of the notation its module attached where that applies.
+// context resolves names through it (LexicalContext.selector), deciding a
+// slot or an opening by the scope's outcomes; one without resolves them by
+// label. Either answers undefined where it cannot tell, and the printer then
+// prints no abbreviation.
+export function notationContext({env,lexical=null,slotOutcomes=null,checker=null},selected) {
   const selector=name=>{
     if(lexical) {
       let found;
-      try {found=lexical.selector(name).value;}
-      catch {return undefined;}
-      return found.tag==="notation"?{identity:found.id,named:!found.model}
-        :found.tag==="binding"?{binding:found.id}:found.tag==="missing"?null:undefined;
+      try {
+        found=lexical.selector(name).value;
+        if(slotOutcomes&&["slot","opening","member","application"].includes(found.tag))found=slotOutcomes.resolve(found);
+      } catch {return undefined;}
+      return found.tag==="notation"?{identity:found.id,named:!found.model}:found.tag==="binding"?{binding:found.id}
+        :found.tag==="missing"?null:found.tag==="member"?{member:true}:undefined;
     }
     const notation=env.get(notationBinding(name)),value=env.get(name);
     if(notation?.tag==="Notation"&&!notation.model)return {identity:notation.bindingId??null,named:true};
@@ -41,17 +42,38 @@ export function notationForScope(scope) {
     // none, undefined where the scope cannot tell.
     reads:name=>{const found=selector(name);return found===undefined?undefined:found?.identity??null;},
     // Whether name.(…) opens `model`, a variable or a declared model, with
-    // its theory's notation: no named notation takes the name, and a
-    // declared model is still the name's value.
-    opens:(name,model)=>{
+    // its theory's notation. No named notation takes the name. A variable
+    // the printed text binds shadows any other value of its name; a free
+    // one is named apart by display naming, so the name must not reach a
+    // model's notation instead. A declared model must still be the name's
+    // value, with no notation its module attached.
+    opens:(name,model,boundInText)=>{
       const found=selector(name);
-      if(found===undefined)return undefined;
+      if(found===undefined)return false;
       if(found?.named)return false;
-      if(model.tag==="Var")return true;
+      if(model.tag==="Var")return boundInText||found?.identity===undefined;
       if(found?.identity!==undefined)return false;
-      if(lexical)return found?.binding!==undefined&&found.binding===scope.checker?.compilationBindings?.ofValue(model)?.id;
+      if(lexical)return found?.binding!==undefined&&found.binding===checker?.compilationBindings?.ofValue(model)?.id;
       return found?.value?.tag==="DefRef"&&found.value.name===model.name;
     }};
+}
+
+export const notationForScope=scope=>notationContext({env:scope.env,lexical:scope.lexical,
+  slotOutcomes:scope.slotOutcomes,checker:scope.checker},scope.env.get(SELECTION));
+
+// The selection a declaration's file-level uses make, read from the
+// module's environment as selected reads it, without elaborating them: a
+// declaration's messages print in it before its own scope is entered.
+export function notationForUses(env,checker,uses) {
+  const use=uses?.at(-1),name=use?.kind==="name"?use.name:null;
+  let selected=null;
+  if(name) {
+    const notation=env.get(notationBinding(name)),value=env.get(name);
+    selected=notation?.tag==="Notation"&&!notation.model?{name,identity:notation.bindingId??null}
+      :{name,receiver:value??null,...(notation?.tag==="Notation"&&value!==undefined&&notation.model===value
+        ?{extension:notation.bindingId??null}:{})};
+  }
+  return notationContext({env,checker},selected);
 }
 
 export function checkedNotationContext(scope) {

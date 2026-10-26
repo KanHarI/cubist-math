@@ -1,14 +1,14 @@
 # PR #318: display follow-up
 
-Found while fixing #318's second review (numeral abbreviations that did not
-read back in the scope they print for). #318 checks numerals and literals:
-the printer prints `n` bare only where the selected notation reads it, by
-name and identity, and `name.(n)` only where `name` selects that notation in
-the printing scope (`notationForScope` in
-`web/translator/notation-context.mjs`, which resolves names as
-`selected` in `web/translator/theories.mjs` does, through the scope's
-lexical context where it has one). The printer applies that check in
-`selects`, `qualifies` and `readBack` at the top of `sourceText`
+Found while fixing #318's second and third reviews (numeral abbreviations
+that did not read back in the scope they print for). #318 checks numerals
+and literals: the printer prints `n` bare only where the selected notation
+reads it, by identity, and `name.(n)` only where `name` selects that
+notation in the printing scope (`notationContext` in
+`web/translator/notation-context.mjs`, which resolves names as `selected` in
+`web/translator/theories.mjs` does). Where the scope cannot establish it,
+the term prints as written. The printer applies that check in `selects`,
+`qualifies` and `readBack` at the top of `sourceText`
 (`web/cubical-source-text.mjs`). The items below are outside numerals and
 remain unfixed; each reproduces on main.
 
@@ -36,9 +36,3 @@ remain unfixed; each reproduces on main.
   definitions belongs to display naming (`forSource` in
   `web/display-naming.mjs`), which marks a name qualified only for a
   dimension of the same spelling.
-
-- [ ] A context that `notationForScope` did not build carries no scope
-  lookup, and the printer then trusts a notation's name, as it did before
-  #318: the file-level context a declaration's messages print in before its
-  item scope (`{selection: selectionName(d.uses), selectionIdentity: null}`
-  in `web/translator/translate.mjs`) and hand-built contexts in tests.

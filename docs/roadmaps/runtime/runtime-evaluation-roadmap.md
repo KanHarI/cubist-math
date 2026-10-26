@@ -846,16 +846,28 @@ read the text otherwise, so its numeral prints as the call (`theoryNumeral`
 in `web/cubical-source-text.mjs`). Before, a unary numeral printed as
 `CommRing.of_nat{{U}}(A, unat.(2))`.
 Every numeral or literal abbreviation, bare or `name.(n)`, now prints only
-where it reads back in the scope it is printed for. `notationForScope`
-(`web/translator/notation-context.mjs`) resolves what `name.(…)` selects
-there as `selected` does, through the scope's lexical context where it has
-one; `selects`, `qualifies` and `readBack` in `sourceText` apply it. A
+where the scope it is printed for establishes that it reads back.
+`notationContext` (`web/translator/notation-context.mjs`) resolves what
+`name.(…)` selects there as `selected` does: by label, or through the
+scope's lexical context, deciding a slot or an opening by the scope's
+outcomes. `selects`, `qualifies` and `readBack` in `sourceText` require a
+positive answer; where the scope cannot give one, or a context has no
+lookups, the term prints as written, a call or constructors. Every context
+that shows text is given lookups: a declaration's own scope, the file-level
+uses a declaration's messages print in before it (`notationForUses`), a
+module's scope for terms shown after checking, and contextual queries.
+Generated-Cubist displays read no environment and print explicit forms. A
 shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
 a model variable whose name a named notation takes prints its numeral as
 the call; this also covers `unat.(n)` and the literal readers' qualifiers,
 which main printed by name alone. Operators and a model's bare operators
 keep the name-only check
 ([pr-318-todo](../../reports/pr-318-todo.md)).
+`tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
+name (a named notation, a binder, `use`, an import, a section opening) with
+each numeral kind, and reads every printed text back on each surface: a
+print, a type mismatch, a `use` message, the elaboration view, a REPL and a
+contextual `typeof`.
 [ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
 and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
 check these displays with only the algebra and the number modules imported,

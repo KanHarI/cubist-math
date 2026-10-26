@@ -36,10 +36,10 @@ import {numeralValue} from "./numerals.mjs";
 import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {lexemeKey,notationForScope} from "./notation-context.mjs";
+import {lexemeKey,notationForScope,notationForUses} from "./notation-context.mjs";
 import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
@@ -557,9 +557,13 @@ export class Translator {
   // no printing or second source-resolution pass occurs at this boundary.
   translateSyntax(ast,source,imported=new Map()) {
     requireTestMode(ast,this.testMode);
+    // An imported module returns its importer's context. After the outermost
+    // module, terms shown later (inspection, the workbench, a program's
+    // callers) print in its scope, with no notation selected.
     const notation=this.checker.notation;
-    try { return this.translateModule(ast,source,imported); }
-    finally { this.checker.notation=notation; }
+    let result;
+    try { return result=this.translateModule(ast,source,imported); }
+    finally { this.checker.notation=notation??(result?notationForUses(result.env,this.checker,[]):undefined); }
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
@@ -665,7 +669,7 @@ export class Translator {
         if(conflict) { rejectDuplicate(d,conflict); continue; }
       }
       // Its messages print in what a file-level use selects for it (L2.10j).
-      if(this.checker)this.checker.notation={selection:selectionName(d.uses),selectionIdentity:null};
+      if(this.checker)this.checker.notation=notationForUses(env,this.checker,d.uses);
       // A theory, or an initial or free model (L2.6), is checked as the
       // declarations it expands to: the ones beyond its own are declarations
       // to count too.
