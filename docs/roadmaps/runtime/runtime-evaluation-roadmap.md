@@ -26,8 +26,10 @@ the arithmetic definitions or raising kernel limits.
 The [elaborator audit](../../reports/elaborator-path-family-normalization.md)
 addresses false dependence in constant path families and local reduction
 budget failures. The [nondependent descent change](../../reports/nondependent-quotient-descent.md)
-closes the generic quotient gate. The quotient-free transport gates and
-binary-rational inverse release remain open; these fixes do not complete NUM2.
+closes the generic quotient gate. The quotient-free transport gates and the
+binary-rational inverses' full normalization, which gates the default `Z`/`Q`
+migration, remain open; the binary-rational API is released on the inverses'
+folded normal forms (2026-10-26). These fixes do not complete NUM2.
 The [explicit normalization stack](../../reports/normalization-stack.md) covers
 the existing full normalizer's traversal. The
 [weak-head tail loop](../../reports/weak-head-tail.md) also removes native
@@ -776,8 +778,9 @@ measured on 2026-10-24 in fresh programs, `!!!_` of the wide inverse stops at
 the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
 `bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
 (`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
-The new API is not release-validated. Public `Z`/`Q`, generic ring numeral
-interpretation and numerical rendering still require their migration; no
+The new API is released on these folded normal forms (2026-10-26). Public
+`Z`/`Q`, generic ring numeral interpretation and numerical rendering still
+require their migration; no
 canonical signed or lowest-terms presentation is claimed.
 
 The original bounded follow-up probes localized the growth to full normalization of the
