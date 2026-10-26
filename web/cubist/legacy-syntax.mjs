@@ -134,11 +134,11 @@ export const unaryNaturalRenaming = Object.freeze({nat:"unat",Nat:"UNat",
 // Only binders and their references change; grammar tokens keep their roles.
 export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [], importedDeclarations = [], fixedNames = {} } = {}) => {
   let ast, tokens;
-  // A qualified name's own part, which names a declaration of its module.
-  const named = token => token.text.includes("::") ? token.text.slice(token.text.indexOf("::") + 2) : token.text;
+  // A token's words: a qualified name's module and name, or the word.
+  const words = token => token.text.split("::");
   try {
     tokens = tokenize(source);
-    if (!tokens.some(token => Object.hasOwn(renamedReserved, named(token)))) return source;
+    if (!tokens.some(token => words(token).some(word => Object.hasOwn(renamedReserved, word)))) return source;
     ast = parse(source, false, { bindable: Object.keys(renamedReserved) });
   } catch { return source; }
   // A replacement must not capture an existing name, even in an inner
@@ -422,19 +422,17 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     module = bind(module, [item.name], declarationType(item));
     module = bind(module, (item.constructors ?? []).map(constructor => constructor.name));
   }
-  // A qualified name, module::name, always names a declaration of that
-  // module, which is renamed where it is declared: so is the name. And a
-  // word that meant nothing then (meaningless) is a name wherever it
-  // stands, but as the module an import names.
-  let importing = false;
+  // A qualified name, module::name: its module is renamed with the plan, as
+  // every import names a module (above), and its name, which always names a
+  // declaration of that module, as that declaration is. These are the
+  // places a module's name stands. And a word that meant nothing then
+  // (meaningless) is a name wherever it stands.
   for (const token of tokens) {
-    if (token.text === "import") importing = true;
-    else if (token.text === ";") importing = false;
-    const part = named(token);
-    if (part !== token.text && Object.hasOwn(renamedReserved, part)) {
-      const start = token.end - part.length;
-      edits.set(start, [token.end, renamedReserved[part]]);
-    } else if (!importing && meaningless.has(token.text) && Object.hasOwn(renamedReserved, token.text) && !edits.has(token.start))
+    const [module, part] = words(token);
+    if (part !== undefined) {
+      if (Object.hasOwn(renamedReserved, module)) edits.set(token.start, [token.start + module.length, renamedReserved[module]]);
+      if (Object.hasOwn(renamedReserved, part)) edits.set(token.end - part.length, [token.end, renamedReserved[part]]);
+    } else if (meaningless.has(token.text) && Object.hasOwn(renamedReserved, token.text) && !edits.has(token.start))
       edits.set(token.start, [token.end, renamedReserved[token.text]]);
   }
   let text = source;

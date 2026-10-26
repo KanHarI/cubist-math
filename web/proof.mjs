@@ -544,7 +544,7 @@ function renderAxioms(target, axioms, extensions = []) {
     button.className = "reference";
     button.dataset.axiom = binding;
     button.textContent = last.assumptionLabels?.[binding] ?? axiomLabels[binding] ?? binding;
-    button.title = `Inspect ${binding} and its declared type`;
+    button.title = `Inspect ${button.textContent} and its declared type`;
     button.onclick = () => inspect(axiomInfo(binding));
     target.append(button);
   }

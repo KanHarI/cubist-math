@@ -192,6 +192,7 @@ export const diagnostics = [
   ["E254", "… declares no …, so … names nothing."],
   ["E255", "… is declared below its use: a declaration uses only the declarations above it."],
   ["E256", "…::… and …::… would be one identity, …: rename one of them."],
+  ["E257", "The transfer did not replay completely: …"],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

@@ -200,3 +200,27 @@ test("a transfer keeps the library's labels only for the library's own text", as
   const edited = { ...exported.sources, h1_truncation: `${exported.sources.h1_truncation}\ndef extra := tt;\n` };
   assert.deepEqual(await label(edited, { fromLibrary }), ["classical_axioms::Choice", "classical_axioms::LEM"]);
 });
+
+// Provenance only names axioms: a transfer whose library text cannot be
+// fetched keeps its own sources, with qualified labels, and loads the term
+// that was checked, over classical_axioms's LEM; one that does not replay
+// completely, which would load another term, is refused (#317's review
+// round 4, finding 1).
+test("a transfer whose provenance cannot be read keeps its sources, and an incomplete one is refused", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.check("import classical_axioms;\ndef e := LEM(U0);", "workbench");
+  const exported = program.export("workbench__e");
+  const offline = () => Promise.reject(new Error("offline"));
+  for (const fromLibrary of [libraryProvenance(moduleListing, offline), offline]) {
+    const session = new WorkbenchSession(module, { fromLibrary });
+    t.after(() => session.dispose());
+    const loaded = await session.load(exported);
+    assert.deepEqual(loaded.view.axioms.map(name => loaded.view.symbols[name].name), ["classical_axioms::LEM"]);
+  }
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  const { h1_truncation, ...missing } = exported.sources;
+  assert.equal(typeof h1_truncation, "string");
+  await assert.rejects(session.load({ ...exported, sources: missing }), /did not replay completely/);
+});

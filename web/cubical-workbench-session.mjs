@@ -48,7 +48,11 @@ export class WorkbenchSession {
     };
     if (this.fromLibrary) read.fromLibrary = this.fromLibrary;
     this.program = new CubicalProgram(this.module, read);
-    await this.program.check(payload.source, payload.main, progress);
+    // A transfer replays its sources: one that does not check completely
+    // is no transfer of what was checked, and is refused.
+    const replayed = await this.program.check(payload.source, payload.main, progress);
+    if (!replayed.complete)
+      throw new Error(`The transfer did not replay completely: ${replayed.gaps[0]?.reason ?? "a declaration did not check"}`);
     // Supplied term/type claims are informational; replay source for evidence.
     let view = this.program.inspect(payload.binding);
     if (payload.side === "type") {

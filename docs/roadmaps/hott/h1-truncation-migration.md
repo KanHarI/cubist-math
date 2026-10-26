@@ -400,7 +400,10 @@ transition land together.
    `library/` (`fromLibrary` in `web/module-resolution.mjs`, combined over
    the imports in `CubicalProgram.discover`). A replay of a check keeps the
    provenance it recorded (`ReplayInputs`), and the workbench asks which
-   transferred sources are the library's text (`libraryProvenance`); any
+   transferred sources are the library's text (`libraryProvenance`). A
+   provenance that cannot be read, as when `library/` is unreachable,
+   leaves a module the text it is, with qualified labels, and the
+   workbench refuses a transfer that does not replay completely. Any
    other is labelled
    `module::Name`, a module of a library module's name from elsewhere or
    edited, or one that imports such a module, included, and
@@ -423,8 +426,9 @@ transition land together.
    Cubist revision gave `axiom` any meaning, so every occurrence is a name,
    renamed with its declaration wherever its binding comes from, a selected
    model's member or an import included. A qualified reference,
-   `module::name`, follows its declaration's renaming for every renamed
-   word, as `provider::left` did not on main. Every report of a result
+   `module::name`, follows the renaming of its module, as imports do, and
+   of its declaration, for every renamed word, as `provider::left` did not
+   on main. Every report of a result
    lists every assumption it relies on: the command line's `check`
    (`recover assumes LEM`, and after each print `print typeof at line 4
    assumes LEM`) and `inspect`, every REPL result (a definition, `typeof`, a
@@ -434,7 +438,12 @@ transition land together.
    reference
    example's status and each of its prints, the workspace's declarations
    and inspector, and `expect_axioms`; a result that relies on none is
-   reported alone. `LEM` and `Choice` are no longer
+   reported alone. Every text the program renders shows an assumption by
+   its label, never by its kernel name or its axiom's identity: a
+   declaration's type through the program's symbols, whose prototype
+   answers for each assumption, an inspection, an assembly listing and a
+   tooltip (`tests/assumption-display.test.mjs` sweeps every surface).
+   `LEM` and `Choice` are no longer
    reserved, so an import or declaration binds them before the builtin
    fallback. The aliases `excluded_middle_assumed` and
    `axiom_of_choice_assumed` were dropped, and `universe_automorphisms`'s two

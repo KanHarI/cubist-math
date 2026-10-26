@@ -182,6 +182,28 @@ test("a revision before the axiom form reads every axiom as the name it was, sel
   assert.deepEqual(report.failures.map(failure => failure.name), ["result"]);
 });
 
+// A module's name stands in imports and in qualified names, and both are
+// renamed with one plan: a historical module named axiom is axiom_ wherever
+// it is named, and the verifier finds it so (#317's review round 4,
+// finding 2).
+test("a historical module named by a renamed word keeps one name in imports and qualified names", async t => {
+  const sources = { axiom: "def f : U0 := Unit;\ndef left(A : U0) : U0 := A;\n",
+    history: "import axiom;\ndef result := axiom::f;\ndef injected := axiom::left(Unit);\nprint(typeof(result));\n" };
+  const options = { implicitNat: false, minusReverses: false, renaming: reservedBindingRenaming(Object.values(sources)) };
+  const declarations = parse(sources.axiom, false, { bindable: historicalKeywords() }).items;
+  const read = name => historicalSource(sources[name], name, { ...options, importedDeclarations: name === "history" ? declarations : [] });
+  assert.equal(read("history"), "import axiom_;\ndef result := axiom_::f;\ndef injected := axiom_::left_(Unit);\nprint(typeof(result));\n");
+  const program = new CubicalProgram(module, async name => name === "axiom_" ? read("axiom") : null);
+  t.after(() => program.dispose());
+  const result = await program.check(read("history"), "history");
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
+  assert.deepEqual(program.prints.map(print => print.text), ["U0"]);
+  const readOriginal = migrationSourceReader(async (place, name) => place !== "library" ? null
+    : name === "axiom_" ? read("axiom") : name === "history" ? read("history") : null, ["history"]);
+  const [report] = await verifyMigration({ modules: ["history"], readOriginal, readEdited: async () => read("history") });
+  assert.deepEqual([report.failures, report.identical], [[], 2]);
+});
+
 test("historical fill binders leave the box keyword intact", async t => {
   assert.doesNotThrow(() => parse(read("def f(A : U0, a : A, fill : A) : a = a := fun (i : Interval) => fill j in A from a at i { };")));
   const rewritten = await checked(t,

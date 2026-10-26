@@ -78,7 +78,15 @@ export class CubicalProgram {
     this.manageTransactions = manageTransactions;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
-    this.modules = new Map(); this.symbols = {}; this.views = new Map();
+    // The program's declarations by binding. An assumption is none, but
+    // every text the program renders through the table shows it by its
+    // label, as the checker's displays do: the table's prototype answers
+    // for each assumption name, so its own entries stay the declarations.
+    const checker = this.checker;
+    this.symbols = Object.create(new Proxy({}, { get: (_, name) => typeof name === "string" && checker.assumptionLabels.has(name)
+      ? { binding: name, name: checker.assumptionLabels.get(name), kind: "axiom", role: "explicit axiom", verified: true, axioms: [name] }
+      : undefined }));
+    this.modules = new Map(); this.views = new Map();
     this.publications = new Map();
     this.generation = new Map();
     this.sourceAsts = new Map();
@@ -124,7 +132,11 @@ export class CubicalProgram {
         error.kind??="parse";
         throw new SourceUnit({checker:this.checker,source:text,moduleName:name}).locate(error,null);
       }
-      const own = await this.readSource.fromLibrary?.(name, text) ?? false;
+      // Provenance only names axioms: a module whose provenance cannot be
+      // read, as when library/ is unreachable, is the text it is, with
+      // qualified labels, and is never lost for it.
+      let own = false;
+      try { own = await this.readSource.fromLibrary?.(name, text) ?? false; } catch { own = false; }
       const entry = { text, ast, library: false };
       prepared.set(name, entry);
       if(!this.modules.has(name))discovery.total += ast.declarations.length;

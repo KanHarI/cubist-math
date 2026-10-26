@@ -129,8 +129,12 @@ export function moduleReader(read) {
 // `name` exactly as library/ holds it, read through `fetchText` as
 // listedReader reads it: the provenance of a module no reader placed. Only
 // such a module names its axioms by their bare names (fromLibrary).
-export const libraryProvenance = (listing, fetchText) => async (name, text) =>
-  !!listing.library?.includes(name) && await fetchText(`${moduleRoots.library}${name}.cubist`) === text;
+// A text that cannot be compared, as when library/ is unreachable, is not
+// the library's.
+export const libraryProvenance = (listing, fetchText) => async (name, text) => {
+  if (!listing.library?.includes(name)) return false;
+  try { return await fetchText(`${moduleRoots.library}${name}.cubist`) === text; } catch { return false; }
+};
 
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of each root, and fetchText(path) reads one by its path from the
