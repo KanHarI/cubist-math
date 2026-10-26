@@ -1,0 +1,57 @@
+// A ring's numerals are binary and print compactly where only the algebra
+// is imported. A numeral of a model that reads numerals by its theory, a
+// model variable or a model whose module added no rule, prints as the
+// numeral where the model is selected and as m.(n) elsewhere; a model with
+// rules of its own keeps the call. Each text reads back as the same term.
+import algebra;
+import integers;
+import rationals;
+
+section {{U < UU0}}(A : CommRing(U)) {
+  def three : 3 = 3 := refl(3);
+
+  def wide :
+    340282366920938463463374607431768211455 = 340282366920938463463374607431768211455 := refl(
+      340282366920938463463374607431768211455
+    );
+}
+
+// Output: forall U < UU0. forall A : CommRing(U). A.(3) = A.(3)
+print(typeof(three));
+
+// Output: forall U < UU0. forall A : CommRing(U). A.(340282366920938463463374607431768211455) = A.(340282366920938463463374607431768211455)
+print(typeof(wide));
+
+def three_again : forall U < UU0. forall A : CommRing(U). A.(3) = A.(3) := three;
+
+def wide_again :
+  forall U < UU0. forall A : CommRing(U).
+  A.(340282366920938463463374607431768211455) = A.(340282366920938463463374607431768211455) := wide;
+
+// A model whose module added no rule reads numerals by its theory.
+def ring_copy : CommRing(U0) := integers;
+
+// Output: ring_copy.(6) = ring_copy.(6)
+print(typeof(refl(ring_copy.(6))));
+
+def six_again : ring_copy.(6) = ring_copy.(6) := refl(ring_copy.(6));
+
+// The integers' and the rationals' modules add rules of their own, so their
+// generic numerals print as calls; without the binary literal reader the
+// binary natural is bnat_numerals', which reads back as the same bits.
+// Output: CommRing.of_nat{{U0}}(integers, bnat_numerals.(6)) = CommRing.of_nat{{U0}}(integers, bnat_numerals.(6))
+print(typeof(refl(integers.of_nat(bnat_numerals.(6)))));
+
+def integer_six_again :
+  CommRing.of_nat{{U0}}(integers, bnat_numerals.(6)) = CommRing.of_nat{{U0}}(
+    integers, bnat_numerals.(6)
+  ) := refl(integers.of_nat(bnat_numerals.(6)));
+
+// Output: Field.of_nat{{U0}}(rationals, bnat_numerals.(10)) = Field.of_nat{{U0}}(rationals, bnat_numerals.(10))
+print(typeof(refl(rationals.of_nat(bnat_numerals.(10)))));
+
+use ring_copy;
+
+// Where the model is selected, a numeral prints bare.
+// Output: 6 = 6
+print(typeof(refl(typed(ring_copy.R, 6))));

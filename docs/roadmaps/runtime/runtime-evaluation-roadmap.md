@@ -834,6 +834,21 @@ over an arbitrary commutative ring computes at `binary_integers`. At
 certificate: a 64-bit numeral's folded normal form computes, and a 128-bit
 one stops at the syntax depth (`K344`). The rationals' own literal rule
 builds the value directly and is unaffected.
+A named notation's numeral rule over `BNat`, `numeral(n : BNat) := e`, reads
+the bits the same way. `bnat_numerals` in the import-free `bnat` module is
+one, so where `bnat_notation`'s literal reader is not imported, a binary
+value prints as `bnat_numerals.(n)`, which reads back as the same bits. A
+generic numeral, `CommRing.of_nat(A, n)` for a numeral `n`, prints as `A.(n)`,
+or bare where `A`'s notation is selected, when `A` reads numerals by its
+theory: a model variable, or a model whose module added no numeral or
+literal rule. A model with rules of its own would read the text otherwise,
+so its numeral prints as the call (`theoryNumeral` in
+`web/cubical-source-text.mjs`). Before, a unary numeral printed as
+`CommRing.of_nat{{U}}(A, unat.(2))`.
+[ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
+checks these displays with only the algebra and the number modules imported,
+and the contracts check mixed bit patterns against the binary integers'
+literal reader.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.

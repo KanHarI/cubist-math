@@ -2231,6 +2231,10 @@
    "summary": "Declarations that `tests/cubical-reduction.test.mjs` reduces by delta and beta steps."
   },
   {
+   "path": "cubist-tests/ring_numeral_display.cubist",
+   "summary": "Generic ring numerals displayed where only the algebra and the library's number modules are imported: `A.(3)` in a section over a commutative ring and a 128-bit numeral, a model whose module added no rule, bare where its notation is selected, and the integers' and rationals' calls, whose binary naturals print through `bnat_numerals`; each text reads back."
+  },
+  {
    "path": "cubist-tests/source_text_messages.cubist",
    "summary": "Messages, evaluations and prints in source syntax."
   },
@@ -2416,7 +2420,7 @@
   },
   {
    "path": "library/algebra.cubist",
-   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. A ring reads numerals in binary: `of_nat(n : BNat)` doubles from the leading bit, so its work and size grow with the number of bits, and `of_unat(n : UNat)` keeps the unary numeral. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
+   "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. A ring reads numerals in binary: `of_nat(n : BNat)` doubles from the leading bit, so its work and size grow with the number of bits, and `of_unat(n : UNat)` keeps the unary numeral. A generic numeral prints as `A.(2)`, or bare where `A`'s notation is selected. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
    "path": "library/binary_integers.cubist",
@@ -2472,7 +2476,7 @@
   },
   {
    "path": "library/bnat.cubist",
-   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws. The binary core has no imports."
+   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws; and `bnat_numerals`, whose numeral rule reads a plain numeral as its bits, so binary values print compactly and read back where only this module is imported. The binary core has no imports."
   },
   {
    "path": "library/classical_axioms.cubist",

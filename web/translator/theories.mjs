@@ -45,13 +45,15 @@ export function registerTheoryDeclaration(t,d) {
   }
   if(d.generated?.role==="projection")(t.checker.theoryProjections??=new Map()).set(binding,d.generated.field);
   // A projection whose field a notation names prints with that operator
-  // where its model is selected (L2.10d), each operand in its view.
+  // where its model is selected (L2.10d), each operand in its view; the
+  // derived operation that reads numerals prints back as the numeral
+  // (cubical-source-text.mjs).
   if(d.theory)for(const [operator,rule] of Object.entries(d.theory.notationBindings??{}))
-    if(!["unary -","numeral"].includes(operator)) {
+    if(operator!=="unary -") {
       const record=t.checker.theories.get(binding),field=[...record.fields,...record.derived].find(field=>field.id===rule.field);
       const projection=t.compilationBindings.table.get(field.projectionId).label;
       (t.checker.notationPrinting??=new Map()).set(t.bindingName(projection),
-        [{operator,model:true,recipe:notationPrintingRecipe(rule.recipe)}]);
+        [operator==="numeral"?{theoryNumeral:true}:{operator,model:true,recipe:notationPrintingRecipe(rule.recipe)}]);
     }
 }
 
