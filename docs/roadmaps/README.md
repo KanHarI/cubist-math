@@ -136,7 +136,9 @@ those foundations:
 [kernel/](kernel/) covers trusted instructions and their untrusted driver:
 
 - [Kernel instructions](kernel/kernel-instructions.md): current checker/driver
-  boundary and remaining performance/certificate work.
+  boundary and remaining performance/certificate work. Its migration record,
+  through the term checker's retirement, is
+  [historical](historical/kernel-instructions-history.md).
 - [Kernel extensions](kernel/cubical-kernel-roadmap.md): G0/H1 delivered;
   H2–H4, resizing migrations and optional computation extensions.
 - [Language proposals](kernel/language-enhancement-proposals.md): deferred
@@ -162,12 +164,14 @@ and `module::name` references as continuing contracts.
   open. EVAL3/EVAL4 has a first internal query, not yet integrated. EVAL5's
   observation contract has shipped, but not its typed readback. EVAL6–EVAL8
   remain.
-- [Evaluation demand marks](runtime/evaluation-demand-marks.md): EVAL5's
-  observation contract, DM0–DM6 done (#304–#306).
-- [Folded normal forms](runtime/folded-normal-forms.md): `!!` folded, `!!!`
-  full; FN1 (#309) and FN2 (#310) done.
 - [Rational normalization debugging plan](runtime/rational-normalization-debug-plan.md):
   the attribution of the rational full-normalization cluster; D1 done, B8 next.
+
+EVAL5's observation contract, the
+[evaluation demand marks](historical/evaluation-demand-marks.md) (DM0–DM6,
+#304–#306) and [folded normal forms](historical/folded-normal-forms.md)
+(`!!` folded, `!!!` full; FN1/FN2, #309/#310), is complete and archived in
+[historical/](historical/README.md); its rules remain in force.
 
 ## Mathematics
 
@@ -205,6 +209,9 @@ completed migration records, superseded sequences and dated validation:
 - The completed induction-hypothesis syntax change and Nat/W/pushout migrations.
 - G0's completed specification, H1 release/review history, retired differential
   evidence, older scheduling/ergonomics sequences and the dated work-plan audit.
+- The evaluation demand marks and folded normal forms, EVAL5's completed
+  observation contract, with the marks' acceptance report and probes; the
+  instruction kernel's migration record through the term checker's retirement.
 
 Archiving a completed plan preserves its linked contracts, regression tests and
 resource limits. Unfinished or paused work stays in its subject folder. Dated

@@ -20,8 +20,8 @@ migration remain. EVAL3–EVAL8 remain open:
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
 data, which no checker, REPL or page uses yet. EVAL5's observation contract
-has shipped as the [demand marks](evaluation-demand-marks.md) and
-[folded normal forms](folded-normal-forms.md); its typed readback has not.
+has shipped as the [demand marks](../historical/evaluation-demand-marks.md) and
+[folded normal forms](../historical/folded-normal-forms.md); its typed readback has not.
 [#284](https://github.com/KanHarI/cubist-math/pull/284)'s explicit-evidence
 directives, `evaluate nonempty P by w;` and `evaluate empty P by r;`, check
 evidence without normalizing it.
@@ -798,7 +798,7 @@ reader. Unary values hold only individual glyph digits and source positions.
 Initial contracts check the field and embeddings without assumptions,
 arithmetic/equality decisions, 64/128-bit fraction components, large decimals,
 and the normal forms of wide values and an inverse under `!!_`, the
-[folded normal form](folded-normal-forms.md), which computes their data in full
+[folded normal form](../historical/folded-normal-forms.md), which computes their data in full
 and keeps their certificates named. Their full normal forms are not gated:
 measured on 2026-10-24 in fresh programs, `!!!_` of the wide inverse stops at
 the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
@@ -1076,7 +1076,7 @@ unary expansion in mixed closed/open BNat law proofs.
    EVAL5's user-facing observation interface has not shipped.
 4. **EVAL5/EVAL8: complete typed normalization.** Force every surviving proof
    and annotation when a full normal form is requested (`!!!` since the
-   [folded normal forms](folded-normal-forms.md); `!!` keeps a stuck
+   [folded normal forms](../historical/folded-normal-forms.md); `!!` keeps a stuck
    definition folded), with explicit-stack
    readback and bounded memory. Validate normal forms, eta, instruction
    isolation, lifecycle and canonicity under the applicable EVAL8 gates.
@@ -1109,7 +1109,11 @@ language-feature work remain outside this track.
 
 ### EVAL5: demand only the result being observed
 
-The [evaluation demand marks](evaluation-demand-marks.md) note of 2026-10-21,
+Both notes below are complete and archived in `historical/` (2026-10-26).
+Their decisions remain this package's contract, and the open work is in this
+section.
+
+The [evaluation demand marks](../historical/evaluation-demand-marks.md) note of 2026-10-21,
 decided the same day, is this package's observation contract: unmarked
 positions are forced as far as the pattern or printer observes them, `!`
 requests a weak head and `!!` a full normal form, naming the kernel's two
@@ -1121,13 +1125,13 @@ a marker such as `<fun>` where a function, a path or a type stops it.
 Its measurements show that the prime of `euclid(4)` itself exceeds the
 syntax-depth guard (`K344`) under head queries, so the Euclid acceptance
 below needs an evaluator change as well as an observation contract. The
-[acceptance report](evaluation-demand-marks/report.md) measures both PRs
+[acceptance report](../historical/evaluation-demand-marks/report.md) measures both PRs
 against main. `evaluate small_inverse;` shows its value in 28,085 ticks,
 where main normalizes it in 71,027,452. `expecting !!_` reproduces main's
 counters and normal form exactly. `euclid(4)` against `(5, _)` still stops
 with `K344`.
 
-The [folded normal forms](folded-normal-forms.md) note of 2026-10-23,
+The [folded normal forms](../historical/folded-normal-forms.md) note of 2026-10-23,
 decision D1 of the rational normalization debugging plan, changes what `!!`
 computes: a folded normal form, in which closed data computes in full and a
 definition whose head is no data stays as written, so a stuck proof is

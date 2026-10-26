@@ -483,10 +483,10 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       else return ts[at]?.text === "along";
     }
   }
-  // An evaluation's demand mark (docs/roadmaps/runtime/evaluation-demand-marks.md):
+  // An evaluation's demand mark (docs/roadmaps/historical/evaluation-demand-marks.md):
   // `!` asks for a weak head, `!!` for a normal form with stuck definitions
   // folded, and `!!!` for a full normal form
-  // (docs/roadmaps/runtime/folded-normal-forms.md). It is read only right
+  // (docs/roadmaps/historical/folded-normal-forms.md). It is read only right
   // after evaluate and at the start of a part of an expected pattern, and
   // applies to the whole part after it. It is no term former.
   function demandMark(mark = take()) {

@@ -151,8 +151,8 @@ and kernel counters equal main's.
 ## Reproducing
 
 ```
-node docs/roadmaps/runtime/evaluation-demand-marks/report.mjs
-node docs/roadmaps/runtime/evaluation-demand-marks/report.mjs --root=MAIN_CHECKOUT
+node docs/roadmaps/historical/evaluation-demand-marks/report.mjs
+node docs/roadmaps/historical/evaluation-demand-marks/report.mjs --root=MAIN_CHECKOUT
 ```
 
 Each side takes about three minutes. A case's id, as `small-inverse-normal`,

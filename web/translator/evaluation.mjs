@@ -1,12 +1,12 @@
 // Patterns on the expected side of evaluate (L2.9a), with demand marks
-// (EVAL5; docs/roadmaps/runtime/evaluation-demand-marks.md):
+// (EVAL5; docs/roadmaps/historical/evaluation-demand-marks.md):
 // `evaluate e expecting p;` where p has holes or marks. The evaluated term,
 // closed and free of assumptions, is matched against p part by part, and
 // each part is computed only as far as p observes it:
 //   _ matches anything and computes nothing;
 //   !p computes the part's weak head, then matches p;
 //   !!p computes the part's normal form, stuck definitions folded
-//     (docs/roadmaps/runtime/folded-normal-forms.md), then matches p
+//     (docs/roadmaps/historical/folded-normal-forms.md), then matches p
 //     against it, and !!!p likewise its full normal form;
 //   (p, q) matches a pair whose components match p and q;
 //   left(p) and right(p) match a sum's injections;
@@ -73,7 +73,7 @@ export const markInExpression = expression =>
 export const bareHole = () =>
   Error("evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form.");
 // A !! part's normal form keeps stuck definitions folded, so a !!! inside it
-// would ask for what it does not hold (docs/roadmaps/runtime/folded-normal-forms.md).
+// would ask for what it does not hold (docs/roadmaps/historical/folded-normal-forms.md).
 export const fullUnderFolded = () =>
   Error("A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part.");
 // The first !!! inside a !! part, anywhere in an expected value, under any

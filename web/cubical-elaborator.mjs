@@ -624,7 +624,7 @@ export class NativeCubicalElaborator {
   }
   // The normal form of a derived handle, decoded: folded, a stuck
   // definition kept as written, unless the full one is asked for
-  // (docs/roadmaps/runtime/folded-normal-forms.md).
+  // (docs/roadmaps/historical/folded-normal-forms.md).
   normalForm(handle, { full = false } = {}) {
     return this.syntax.decode(full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle), this.dimensions);
   }
@@ -633,7 +633,7 @@ export class NativeCubicalElaborator {
   // injection's value, a constructor's arguments), are recorded as derived,
   // so that the kernel's normalize accepts them: the evaluation demand marks
   // normalize the parts a pattern reaches, as `!!` and expression leaves ask
-  // (docs/roadmaps/runtime/evaluation-demand-marks.md, decision 3).
+  // (docs/roadmaps/historical/evaluation-demand-marks.md, decision 3).
   // The guard admits normalization only of terms whose reduction
   // terminates, and these are such terms: the weak head of a closed,
   // well-typed term is well-typed by subject reduction, and its data parts

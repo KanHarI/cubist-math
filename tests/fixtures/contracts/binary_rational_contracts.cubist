@@ -74,7 +74,7 @@ evaluate binary_rational_equal(
 
 // Full-value checks cover fraction representation and inverse computation:
 // the folded normal form (`!!_`) computes each value's data in full and keeps
-// its certificates named (docs/roadmaps/runtime/folded-normal-forms.md).
+// its certificates named (docs/roadmaps/historical/folded-normal-forms.md).
 // Disequality tests observe the computed branch, without normalizing refutations.
 # test(binary_rationals.normalize_wide_fraction)
 evaluate typed(BQ, 18446744073709551615/340282366920938463463374607431768211455) expecting !!_;

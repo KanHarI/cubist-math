@@ -282,7 +282,7 @@ literal carries the certificate of 1.2, without any decision:
 | `integers.add_comm` | 13,114,858 | 294,322 / 247 |
 | `integers.add_assoc` | 57,719,427 | 1,460,386 / 249 |
 
-The demand marks' [acceptance report](evaluation-demand-marks/report.md)
+The demand marks' [acceptance report](../historical/evaluation-demand-marks/report.md)
 measures `rationals.(2/3) expecting !!_;` at 71,001,788 ticks in the REPL,
 the full normal form, which `!!!_` computes since D1: this is that cost. The data of the literal is a few dozen nodes; the
 certificate is 1,045,246 of its 1,116,794, and the sort annotation the rest.

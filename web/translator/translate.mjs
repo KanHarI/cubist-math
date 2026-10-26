@@ -399,7 +399,7 @@ export class Translator {
     // A pattern demands what it observes, so nothing is computed before the
     // assumptions are checked; an exact expected value computes its normal
     // form first, stuck definitions folded, as it computed the full one
-    // before folded normal forms (docs/roadmaps/runtime/folded-normal-forms.md).
+    // before folded normal forms (docs/roadmaps/historical/folded-normal-forms.md).
     const result=d.assertion?this.checker.infer(term):this.checker.evaluated(term);
     const normal=expected&&!isPattern(expected)?this.checker.normalForm(result.expression):null;
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];

@@ -45,14 +45,14 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // contracts and counters stay comparable; free-name and display digests do
 // not, because the checked carrier and public law identities were renamed.
 // Version 5 matches patterns on demand (EVAL5's demand marks,
-// docs/roadmaps/runtime/evaluation-demand-marks.md): a pattern's parts are
+// docs/roadmaps/historical/evaluation-demand-marks.md): a pattern's parts are
 // computed only as far as it observes them, in the new demand phase, and
 // the pattern workload's !! twin keeps the full normalization measured.
 // Version 6 shows REPL and print values as their value forms (DM3): those
 // workloads compute as far as their values are shown, and each has a !!
 // twin, ID-normal, that keeps the full normalization measured.
 // Version 7 folds stuck definitions under !! (folded normal forms,
-// docs/roadmaps/runtime/folded-normal-forms.md): the twins ask for !!!, the
+// docs/roadmaps/historical/folded-normal-forms.md): the twins ask for !!!, the
 // full normal form they measured as !!, so their counters do not change.
 export const version = 7;
 
@@ -238,7 +238,7 @@ export function normalDigest(term) {
 
 // normalDigest's comparison, for terms whose decodings share too much to
 // walk as trees, as the evaluation demand marks' report compares normal forms
-// (docs/roadmaps/runtime/evaluation-demand-marks/report.mjs): two decoded
+// (docs/roadmaps/historical/evaluation-demand-marks/report.mjs): two decoded
 // terms get equal digests exactly when normalDigest gives them equal ones.
 // It reads them as normalDigest does, with its binders and formulas, but
 // digests each object once for each way its free names are bound around it,

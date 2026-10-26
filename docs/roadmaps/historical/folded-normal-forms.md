@@ -1,5 +1,10 @@
 # Folded normal forms: `!!` and `!!!`
 
+**Archived on 2026-10-26:** FN1 and FN2 are done, so this note moved from
+`runtime/` to `historical/`. `!!` folded and `!!!` full remain the contract.
+The full-normal-form targets stay in the
+[debugging plan](../runtime/rational-normalization-debug-plan.md).
+
 Status: decided on 2026-10-23, as decision D1 of the
 [rational normalization debugging plan](https://github.com/KanHarI/cubist-math/pull/302).
 This note specifies the decision before evaluation changes, as the

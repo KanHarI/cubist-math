@@ -13,7 +13,7 @@ import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.m
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 
-// Evaluation demand marks (docs/roadmaps/runtime/evaluation-demand-marks.md):
+// Evaluation demand marks (docs/roadmaps/historical/evaluation-demand-marks.md):
 // `!` asks for a part's weak head, `!!` for its normal form, stuck
 // definitions folded, and `!!!` for its full normal form, and an
 // unmarked part of a pattern is computed only as far as the pattern observes
@@ -60,7 +60,7 @@ function recordedProgram(t) {
   };
   // Directives run in turn, and a later one may check the same term to the
   // same handle: the normalization is the latest evaluation's, folded or full
-  // (docs/roadmaps/runtime/folded-normal-forms.md).
+  // (docs/roadmaps/historical/folded-normal-forms.md).
   const normalizing = (query, folded) => function (handle) {
     asked.push({ query, handle });
     const result = query === "normalize" ? normalize.call(this, handle) : normalizeFolded.call(this, handle);
@@ -614,9 +614,9 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // shown as its recorded head, under !!_, and printed, as its value form,
 // except the assumptions, which evaluation refuses. Three examples whose full normal forms cost about 30
 // seconds each are not evaluated under !!!_; the DM5 report
-// (docs/roadmaps/runtime/evaluation-demand-marks/report.md) records that
+// (docs/roadmaps/historical/evaluation-demand-marks/report.md) records that
 // they complete. Their folded normal forms, under !!_, are quick.
-const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/runtime/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
+const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/historical/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
 const shownHead = whnf => {
@@ -713,7 +713,7 @@ for (const setup of Object.keys(corpus.setups)) {
   });
 }
 
-// The acceptance report (docs/roadmaps/runtime/evaluation-demand-marks/
+// The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/
 // report.md) compares normal forms by sharedNormalDigest, which reads each
 // shared object of a decoding once for each way its free names are bound, as
 // normal forms too large to walk as trees need. It must tell terms apart

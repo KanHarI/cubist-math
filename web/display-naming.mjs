@@ -325,7 +325,7 @@ function globalNames(shown, given) {
 // into the terms before displayTerm and readableDimensions settle names:
 //  - every binder the printer would otherwise invent: a motive that is no
 //    function, as a folded normal form keeps one that is a definition
-//    (docs/roadmaps/runtime/folded-normal-forms.md), is λ (z : D). M(z), D
+//    (docs/roadmaps/historical/folded-normal-forms.md), is λ (z : D). M(z), D
 //    the domain M's type gives where it can be read (motiveDomain); a clause
 //    with fewer arguments, hypotheses or dimensions than its constructor
 //    takes, as evaluation eta-reduces one and a folded normal form keeps one

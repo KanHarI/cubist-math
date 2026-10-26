@@ -6,7 +6,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 
-// The folded normal form (docs/roadmaps/runtime/folded-normal-forms.md),
+// The folded normal form (docs/roadmaps/historical/folded-normal-forms.md),
 // through the kernel's JavaScript interface: closed data computes in full,
 // and a definition whose weak head is no data stays as written.
 const module = await createCubical();

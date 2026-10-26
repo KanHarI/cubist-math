@@ -67,7 +67,7 @@ for (const item of cases) {
     // handle holds (a committed or abandoned entry moves its nodes), or by
     // its failure.
     // Both queries are counted, the full normal form's and the folded one's
-    // (docs/roadmaps/runtime/folded-normal-forms.md), and the last is named.
+    // (docs/roadmaps/historical/folded-normal-forms.md), and the last is named.
     let normalizations = 0, failedNormalizations = 0, normal = null;
     const work = () => kernel.work();
     for (const [query, normalMode] of [["normalize", "full"], ["normalizeFolded", "folded"]]) {
