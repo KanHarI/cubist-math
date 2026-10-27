@@ -446,6 +446,32 @@ test("axioms compare by their assumed statements, and stand for the original in 
   assert.match(defined.failures[0].reason, /One version assumes this declaration as an axiom, and the other defines it/);
 });
 
+// At level types an axiom's statement is compared as a public type is, by
+// bounded kernel conversion: (fun (X : U0) => X)(Unit) stands for Unit, and
+// the axiom's dependents keep their types. At level identical the statement
+// must be the same, and an unconvertible one fails at either level (#317's
+// review round 6, finding 2).
+test("at level types an axiom's convertible statement stands for the original", async () => {
+  const before = "def A := axiom Unit;\ndef use_ := A;\n";
+  const run = (after, level) => verifyMigration({ modules: ["axioms_fixture"], level,
+    readOriginal: async name => name === "axioms_fixture" ? before : library(name), readEdited: async () => after });
+  const convertible = before.replace("axiom Unit", "axiom (fun (X : U0) => X)(Unit)");
+  const [types] = await run(convertible, "types");
+  // use_'s type is A's statement, so it is preserved too, not identical.
+  assert.deepEqual([types.failures, types.typesPreserved, types.identical], [[], 2, 0]);
+  const [identical] = await run(convertible, "identical");
+  assert.deepEqual(identical.failures[0], { name: "A", reason: "The axiom's assumed statement changed." });
+  const [changed] = await run(before.replace("axiom Unit", "axiom Void"), "types");
+  assert.deepEqual(changed.failures[0], { name: "A", reason: "The axiom's assumed statement changed." });
+  // What a statement relies on is compared first: B's statement mentions A,
+  // which no longer stands for the original.
+  const chain = "def A := axiom U0;\ndef B := axiom A;\n";
+  const [dependent] = await verifyMigration({ modules: ["axioms_fixture"], level: "types",
+    readOriginal: async name => name === "axioms_fixture" ? chain : library(name), readEdited: async () => chain.replace("axiom U0", "axiom U1") });
+  assert.deepEqual(dependent.failures.map(failure => failure.name), ["A", "B"]);
+  assert.match(dependent.failures[1].reason, /^The axiom's statement relies on other assumptions: axioms_fixture::A -> /);
+});
+
 // The edited axiom stands for the original as a free variable only: a binder
 // of the same spelling keeps its occurrences (#317's review round 2,
 // finding 2). Nor does an axiom's assumption take a binder's name.

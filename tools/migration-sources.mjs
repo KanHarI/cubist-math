@@ -97,9 +97,14 @@ export function historicalMigrationSources({ available, readSource, modulePath, 
     }
     return syntax.get(path);
   } });
+  // A fresh spelling names no module of the revision either: a renamed
+  // import, as axiom read as axiom_, would otherwise name another module,
+  // the importing one itself where it is axiom_.
+  const modules = [...available].filter(path => path.endsWith(".cubist"))
+    .map(path => path.slice(path.lastIndexOf("/") + 1, -".cubist".length));
   const renamingFor = paths => {
     for (const path of paths) importsOf(path);
-    return reservedBindingRenaming([...syntax.keys()].map(source), historicalRenamingAt({ axiomForm }));
+    return reservedBindingRenaming([...syntax.keys()].map(source), historicalRenamingAt({ axiomForm }), modules);
   };
   return { source, importsOf, renamingFor };
 }

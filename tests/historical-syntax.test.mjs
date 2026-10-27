@@ -230,6 +230,31 @@ test("a module the plan spells twice over is found through the plan, not a suffi
   assert.deepEqual([report.failures, report.identical], [[], 2]);
 });
 
+// A fresh spelling names no module the migration may read: where the
+// importing module is itself axiom_, the plan spells axiom axiom__, so the
+// renamed import names the module it renames, not its importer (#317's
+// review round 6, finding 1).
+test("the plan spells a renamed module apart from every module's name", async t => {
+  const sources = new Map([["library/axiom.cubist", "def f : Unit := tt;\n"],
+    ["library/axiom_.cubist", "import axiom;\ndef result : Unit := axiom::f;\n"]]);
+  const available = new Set(sources.keys());
+  let renaming = null;
+  const paths = historicalModulePaths({ available, spellings: () => renaming ?? {} });
+  const history = historicalMigrationSources({ available, ...paths, readSource: path => sources.get(path) });
+  renaming = history.renamingFor(["library/axiom_.cubist"]);
+  assert.equal(renaming.axiom, "axiom__");
+  const read = path => historicalSource(history.source(path), path.slice("library/".length, -".cubist".length),
+    { implicitNat: false, minusReverses: false, renaming, importedDeclarations: history.importsOf(path) });
+  const rewritten = read("library/axiom_.cubist");
+  assert.equal(rewritten, "import axiom__;\ndef result : Unit := axiom__::f;\n");
+  const readOriginal = migrationSourceReader(async (place, name) => {
+    const path = paths.modulePath(place, name);
+    return path && available.has(path) ? read(path) : null;
+  }, ["axiom_"]);
+  const [report] = await verifyMigration({ modules: ["axiom_"], readOriginal, readEdited: async () => rewritten });
+  assert.deepEqual([report.failures, report.identical], [[], 1]);
+});
+
 test("historical fill binders leave the box keyword intact", async t => {
   assert.doesNotThrow(() => parse(read("def f(A : U0, a : A, fill : A) : a = a := fun (i : Interval) => fill j in A from a at i { };")));
   const rewritten = await checked(t,

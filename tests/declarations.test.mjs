@@ -249,6 +249,26 @@ test("an inspected assumption states its own axiom, whatever else its label spel
   assert.equal(program.inspect("main__LEM").statement.conclusion.map(part => part.text).join(""), "Unit");
 });
 
+// An assumption is published with the site of its axiom definition, found
+// through its recorded origin, so every link to it can show the source: in
+// the check's symbols, which the axiom list reads, and in an inspection's,
+// which the inspector reads. A legacy builtin has no source (#317's review
+// round 6, finding 3).
+test("an assumption is published with its axiom definition's site", async t => {
+  const { program, result } = await checkProgram(t,
+    "import classical_axioms;\ndef P := axiom Unit;\ndef used : ExcludedMiddle(U0) and Unit := (LEM(U0), P);\ndef legacy := Truncate(U0, Unit);", { module: await createCubical() });
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
+  const published = binding => result.symbols.find(symbol => symbol.binding === binding);
+  for (const [declaration, module] of [["classical_axioms__LEM", "classical_axioms"], ["main__P", "main"]]) {
+    const assumption = program.checker.axioms.get(declaration), site = published(assumption).definitionSite;
+    assert.deepEqual(site, program.symbols[declaration].definitionSite, declaration);
+    assert.deepEqual([site.module, site.name], [module, declaration.split("__")[1]]);
+    assert.deepEqual(program.inspect("main__used").symbols[assumption].definitionSite, site);
+  }
+  assert.match(published(program.checker.axioms.get("classical_axioms__LEM")).description, /^Excluded middle, assumed/);
+  assert.equal(published("__assumption_Truncate#").definitionSite, undefined);
+});
+
 test("assumption names live where no declaration, constructor, binder or generated name can", async t => {
   const modules = inMemory({ a: "def b__c := axiom Unit;\ndef d := b__c;\n", a__b: "def e := tt;\n" });
   const fallback = sourceReader();

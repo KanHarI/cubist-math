@@ -110,8 +110,11 @@ const meaningless = new Set(["axiom"]);
 // A migration across modules uses one plan for declarations, imported
 // references and argument labels. Include every original source so a local
 // spelling in an importer cannot capture a dependency's renamed export.
-export const reservedBindingRenaming = (sources, preferred = historicalRenaming) => {
-  const taken = new Set(sources.flatMap(source => tokenize(source).map(token => token.text)));
+// `reserved` names what else a spelling must avoid, as the modules a
+// migration may read, whose names an import of a renamed module would
+// otherwise take.
+export const reservedBindingRenaming = (sources, preferred = historicalRenaming, reserved = []) => {
+  const taken = new Set([...sources.flatMap(source => tokenize(source).map(token => token.text)), ...reserved]);
   return Object.fromEntries(Object.entries(preferred).map(([word, stem]) => {
     let name = stem;
     while (taken.has(name)) name += "_";

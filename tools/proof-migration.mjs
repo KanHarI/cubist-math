@@ -366,15 +366,39 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         else fail(name, through.length ? `${reason} It mentions changed definitions from: ${through.join(", ")}.` : reason);
       };
       // An axiom has no definition to compare: its assumed statement is
-      // compared instead. The same statement makes the edited axiom stand for
-      // the original; a changed one is reported, as a changed type is.
+      // compared instead, as a declaration's public type is. The same
+      // statement, or at level types a convertible one, makes the edited
+      // axiom stand for the original; a changed one is reported, as a
+      // changed type is. What the statements rely on is compared first:
+      // every other assumption, by its correspondence, and every kernel
+      // extension.
       const compareAxiom = (name, originalBinding, editedBinding) => {
         const original = checker.axioms.get(originalBinding), edited = checker.axioms.get(editedBinding);
         if (!original || !edited) return fail(name, "One version assumes this declaration as an axiom, and the other defines it.");
-        if (hashTerm(checker.assumptions.get(original)) !== hashTerm(checker.assumptions.get(edited)))
-          return fail(name, "The axiom's assumed statement changed.");
-        axiomCorrespondence.set(edited, original);
-        identical.add(`${module}__${name}`); report.identical++;
+        const [before, after] = [checker.assumptions.get(original), checker.assumptions.get(edited)];
+        const reliedOn = statement => [...new Set([...checker.requiredAssumptions(statement).keys()].map(assumptionName)
+          .map(name => checker.assumptionLabels.get(name) ?? name))].sort().join(",");
+        if (reliedOn(before) !== reliedOn(after))
+          return fail(name, `The axiom's statement relies on other assumptions: ${reliedOn(before) || "none"} -> ${reliedOn(after) || "none"}`);
+        if (extensions(originalBinding) !== extensions(editedBinding))
+          return fail(name, `Kernel extensions changed: ${extensions(originalBinding) || "none"} -> ${extensions(editedBinding) || "none"}`);
+        if (hashTerm(before) === hashTerm(after)) {
+          axiomCorrespondence.set(edited, original);
+          identical.add(`${module}__${name}`); report.identical++; return;
+        }
+        if (level === "identical") return fail(name, "The axiom's assumed statement changed.");
+        // As a public type is compared: bounded kernel conversion, rolled back.
+        let same, reason = "The axiom's assumed statement changed.";
+        const transaction = new CubicalDeclarationTransaction(program.kernel, checker);
+        program.kernel.setDeadline(typeTimeLimitMs);
+        try { same = checker.equal(before, toOriginal(after)); }
+        catch (error) {
+          same = false;
+          if (error.kind === "deadline")
+            reason = `The axiom's assumed statements were not shown convertible within ${typeTimeLimitMs} ms.`;
+        } finally { program.kernel.setDeadline(); transaction.finish(false); }
+        if (!same) return fail(name, reason);
+        axiomCorrespondence.set(edited, original); report.typesPreserved++;
       };
       // Establish schema correspondences before comparing terms that use
       // them. This grants a verifier renaming, never kernel conversion

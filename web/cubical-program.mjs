@@ -101,12 +101,22 @@ export class CubicalProgram {
     this.libraryModules = new Map();
   }
   dispose() { this.scopeReady=false; this.kernel.dispose(); }
+  // Each assumption, as the pages and the inspector show it. An axiom's is
+  // defined where its axiom definition is, by the origin the checker
+  // recorded, never by its label: its site, so that every link to it can
+  // show its source, and its documentation. A legacy builtin has neither.
   assumptionSymbols() {
-    return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
-      binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
-      verified: true, type: cubicalText(type, this.displaySymbols, { dimensions: [] }), axioms: [binding],
-      description: "An explicit logical assumption: a name with a type and no computation rule. Its full signature is shown in the Axioms section.",
-    }]));
+    return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => {
+      const origin = this.checker.assumptionOrigins.get(binding);
+      const definition = origin?.kind === "axiom" ? this.symbols[origin.binding] : null;
+      return [binding, {
+        binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
+        verified: true, type: cubicalText(type, this.displaySymbols, { dimensions: [] }), axioms: [binding],
+        ...(definition?.definitionSite ? { definitionSite: definition.definitionSite } : {}),
+        description: definition?.description
+          || "An explicit logical assumption: a name with a type and no computation rule. Its full signature is shown in the Axioms section.",
+      }];
+    }));
   }
   // Read and parse a module and, before it, its imports, into
   // `discovery.prepared`, counting their declarations into `discovery.total`.

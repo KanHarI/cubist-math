@@ -151,6 +151,24 @@ await browserTest(async ({ browser, base }) => {
   await enter("y");
   assert.deepEqual(await lastResults(3), ["forall x : UNat. forall y : UNat. x + y = y + x", "y : UNat", "5"]);
   console.log("PASS library module in the workspace, with its console");
+  // Every link to an axiom shows its definition's source: the axioms a
+  // result relies on, and the inspector's axiom lists (#317's review round
+  // 6, finding 3).
+  await page.goto(new URL("proof.html?proof=h1_classical", base).href);
+  const axiomSource = async button => {
+    await button.click();
+    await page.locator("#inspect-name").filter({ hasText: /^LEM$/ }).waitFor();
+    await page.locator("#view-source:not([hidden])").waitFor();
+    assert.match(await page.locator("#view-source").getAttribute("href"), /^proof\.html\?proof=classical_axioms&name=LEM&offset=\d+$/);
+  };
+  await axiomSource(page.locator("#result .axiom-dependencies button", { hasText: /^LEM$/ }).first());
+  const userOfLEM = page.locator("#result > div", { has: page.locator(".axiom-dependencies button", { hasText: /^LEM$/ }) }).first().locator("button").first();
+  for (const list of ["#inspect-axioms", "#kernel-axioms-list"]) {
+    await userOfLEM.click();
+    await page.locator(`${list} button`, { hasText: /^LEM$/ }).waitFor();
+    await axiomSource(page.locator(`${list} button`, { hasText: /^LEM$/ }));
+  }
+  console.log("PASS axiom links show their definitions' source");
   await page.goto(new URL("repl.html", base).href);
   for (const text of ["import unat;", "use unat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : UNat", "UNat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);

@@ -418,7 +418,10 @@ transition land together.
    refused (E256, `identityClash` in `web/translator/translate.mjs`), whether
    it is a definition, a declared type or constructor, or an axiom, and no
    declaration publishes under another module's identity. The migration
-   verifier compares an axiom by its assumed statement; an unchanged one
+   verifier compares an axiom by its assumed statement, as a declaration's
+   public type: what the statements rely on first, then the same statement,
+   or at level `types` a statement the kernel shows convertible within the
+   time limit; such a one
    stands for the original in its dependents' terms, types and assumption
    lists, renamed only where it occurs free (`mapDefinitions` in
    `tools/proof-migration.mjs`), and a changed one is reported. A historical
@@ -434,7 +437,9 @@ transition land together.
    on main. A renamed module's file is found through the renaming plan's
    inverse (`historicalModulePaths`), never from a spelling's suffix, so
    `axiom__`, the plan's spelling where a source declares `axiom_`, is
-   read from `axiom.cubist`. Every report of a result
+   read from `axiom.cubist`; and no spelling names a module of the
+   revision, so an import renamed `axiom_` never names a module `axiom_`.
+   Every report of a result
    lists every assumption it relies on: the command line's `check`
    (`recover assumes LEM`, and after each print `print typeof at line 4
    assumes LEM`) and `inspect`, every REPL result (a definition, `typeof`, a
@@ -450,7 +455,10 @@ transition land together.
    (`tests/assumption-display.test.mjs` sweeps every surface). Rendering
    reads its names from `displaySymbols`; the program's `symbols` hold its
    declarations alone, and an inspected assumption states its axiom
-   through the origin the checker recorded, never through its label.
+   through the origin the checker recorded, never through its label. An
+   assumption is published with its axiom definition's site, by the same
+   origin, so every link to it, in the axiom lists of the workspace and
+   the inspector, shows the definition's source.
    `LEM` and `Choice` are no longer
    reserved, so an import or declaration binds them before the builtin
    fallback. The aliases `excluded_middle_assumed` and
