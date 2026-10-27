@@ -21,7 +21,9 @@ migration remain. EVAL3–EVAL8 remain open:
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
 data. Since its [REPL integration](#repl-integration) of 2026-10-26 it
 computes the value form of `evaluate e` and `print(evaluate(e))`, with one
-fallback to the kernel's head queries; no checker uses it, and patterns,
+fallback to the kernel's head queries, and since 2026-10-28 it executes the
+point constructors of quotients and other higher and truncated sorts, as
+binary integers' and rationals'; no checker uses it, and patterns,
 `!`, `!!`, `!!!` and expected values stay on the kernel's queries. EVAL5's observation contract
 has shipped as the [demand marks](../historical/evaluation-demand-marks.md) and
 [folded normal forms](../historical/folded-normal-forms.md); its typed readback has not.
@@ -1040,22 +1042,32 @@ design, the trust statement, the differential coverage and measurements.
 The translator's `valueFormOf` asks the elaborator for a query over the
 closed judgement it checked, after the assumption check, and walks the value
 form with synchronous observations (`observeNow`). Demand the runtime
-reports unsupported, such as a path applied, a composition, Glue, a higher
-or truncated sort or η of a path abstraction, is the one fallback: the whole
+reports unsupported, such as a path applied, a path constructor, a
+composition, Glue or η of a path abstraction, is the one fallback: the whole
 walk is computed again from the start by the kernel's head queries, once,
 and nothing the runtime computed is shown. A runtime stop at its limits is
-reported (E487–E489, or the declaration's time limit), not retried. Where
-the evaluated term's type is a declared type the runtime does not execute, a
-quotient or another higher or truncated sort, the same fallback is decided
-before the snapshot from the type's weak head, with the same reason: the
-value's first head is that type's constructor or a composition. The
+reported (E487–E489, or the declaration's time limit), not retried. The
 observation now takes the kernel's weak head: η of term and level lambdas,
 partially applied constructors with their arity, types, and unapplied path
 abstractions.
 
-Over the demand marks' 197 constructs, the runtime computes 135 value forms
-and falls back on 58, 18 of them from the value's type, and every value form
-is the kernel's. The runtime shows
+Since 2026-10-28 the runtime executes the point constructors of quotients
+and other higher and truncated sorts, and their eliminators' clauses for
+them, as the kernel's iota does; path constructors, the squash among
+them, stay unsupported, with paths applied and compositions
+([report](../../reports/runtime-repl-evaluation.md#higher-sorts-point-constructors)).
+Binary integers' and rationals' arithmetic, inverses and decisions compute
+their value forms in the runtime, but for a decision that finds two values
+equal, which holds the quotient's path constructor. A binary rational's
+snapshot, about 32,000 nodes, is most of its runtime cost, as the report
+measures.
+The first slice's check of the evaluated term's type, which took the
+fallback before the snapshot for a value of such a sort, is removed: no
+type decides the fallback now.
+
+Over the demand marks' 197 constructs, the runtime computes 156 value forms
+and falls back on 37 (135 and 58, 18 of them from the value's type, on
+2026-10-26), and every value form is the kernel's. The runtime shows
 `euclid(4)`'s value form and the primes of `euclid(4)` and `euclid(5)`,
 where the kernel's queries stop with K344; `euclid(6).1` stops at the
 runtime's 20M-cell cap. A computation written twice in nested functions,

@@ -9,8 +9,13 @@ Update of 2026-10-26: the REPLs and `print(evaluate(e))` now compute value
 forms through this query ([REPL integration](runtime-repl-evaluation.md)),
 which adds a synchronous `observeNow` and extends the observations below to
 the kernel's weak head: η, partially applied constructors with their arity,
-level functions, path abstractions and types. The rest of this report
-describes the query as #289 added it.
+level functions, path abstractions and types. Update of 2026-10-28: the
+supported signature fragment includes the point constructors of higher and
+truncated declared types, with their eliminators' clauses for them, by the
+same descriptors and the same elimination rule as ordinary data
+([higher sorts' point constructors](runtime-repl-evaluation.md#higher-sorts-point-constructors));
+path constructors, the squash among them, stay unsupported. The rest of
+this report describes the query as #289 added it.
 
 ## Boundary and representation
 
