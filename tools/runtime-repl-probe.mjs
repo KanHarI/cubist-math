@@ -53,6 +53,16 @@ export const workloads = {
   "binary-factorial-40": ["import nat; use nat;", "evaluate factorial(40);"],
   "binary-product": ["import nat; use nat;", "evaluate 12345678901234567890 * 98765432109876543210;"],
   "binary-rational": ["import binary_rationals; use binary_rationals;", "evaluate 2/3 + 1/6;"],
+  // Binary integers and rationals are set quotients: their point
+  // constructors execute in the runtime, and a path constructor falls back.
+  "binary-rational-wide-inverse": ["import binary_rationals; use binary_rationals;",
+    "evaluate bq_inv(-340282366920938463463374607431768211455/18446744073709551615);"],
+  "binary-rational-distinct": ["import binary_rationals; use binary_rationals;", "evaluate bq_decide(1/2, 2/3);"],
+  "binary-rational-equal": ["import binary_rationals; use binary_rationals;", "evaluate bq_decide(1/2 + 1/3, 5/6);"],
+  "binary-integer-wide-product": ["import binary_integers; use binary_integers;",
+    "evaluate 340282366920938463463374607431768211455 * 340282366920938463463374607431768211455;"],
+  "binary-integer-distinct": ["import binary_integers; use binary_integers;",
+    "evaluate bint_decide(340282366920938463463374607431768211455, -1);"],
 };
 
 assertFreshBuild();
