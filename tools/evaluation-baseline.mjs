@@ -141,7 +141,7 @@ export const phases = {
   check: "checker.checkSyntax, inside verify: checking the elaborated term",
   normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
   decode: "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
-  demand: "checker.derivedHead and checker.runtimeRefusal, outside other phases: the weak heads a pattern's parts demand, and a value form's type's",
+  demand: "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
   runtime: "checker.runtimeQuery and RuntimeQuery.observeNow, outside other phases: the runtime's snapshot and observations of a value form",
   inventory: "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
@@ -400,7 +400,6 @@ async function profiled(program, run, { depth = false } = {}) {
   wrap(checker, "evaluated", "inventory", () => true, result => { if (term === null && top() === "other") term = result.expression; });
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
   wrap(checker, "derivedHead", "demand", () => top() === "other");
-  wrap(checker, "runtimeRefusal", "demand", () => top() === "other");
   // The runtime's own counters are its last query's, read when it is done.
   wrap(checker, "runtimeQuery", "runtime", () => top() === "other", query => { if (query) runtimeQuery = query; });
   wrap(RuntimeQuery.prototype, "observeNow", "runtime", () => top() === "other");

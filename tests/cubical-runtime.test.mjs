@@ -107,7 +107,7 @@ test("two fields share a demanded argument and unsupported siblings remain suspe
   const { query } = await setup(t, `
 def shared : Unit and Unit := (fun (x : Unit) => typed(Unit and Unit, (x, x)))((fun (y : Unit) => y)(tt));
 inductive Circle { base; loop : base = base; }
-def suspended : Unit and Circle := (tt, base);
+def suspended : Unit and Circle := (tt, loop @ 0);
 def abstraction : Unit and (tt = tt) := (tt, refl(tt));
 `);
   const shared = query("shared"), pair = await shared.observe();
@@ -362,19 +362,65 @@ test("observation deadlines exclude idle time and expiry leaves the query usable
   assert.deepEqual(await runtime.observe(), { kind: "Point" });
 });
 
-test("unsupported signatures and positions are refused only when demanded", async t => {
+// A path constructor, the squash among them, and a point constructor with a
+// position whose cube is a path type are refused when demanded, not because
+// their signature occurs; the point constructors beside them compute.
+test("path constructors and cubical positions are refused only when demanded", async t => {
   const { query } = await setup(t, `
+import h1_truncation;
 inductive Cube { cbase; pack(p : cbase = cbase); }
 inductive Circle { base; loop : base = base; }
 def unused_cube : Unit := (fun (c : Cube) => tt)(pack(refl(cbase)));
 def cube_leaf : Cube := cbase;
 def cube_path : Cube := pack(refl(cbase));
 def circle_value : Circle := base;
+def circle_loop : base = base := loop;
+def circle_endpoint : Circle := loop @ 1;
+def unused_loop : Unit := (fun (p : base = base) => tt)(loop);
+def squashed := Trunc.squash(typed(Trunc(U0, Unit), point(tt)), typed(Trunc(U0, Unit), point(tt)));
 `);
+  const refused = message => error => fails("unsupported")(error) && error.message === message;
   assert.deepEqual(await query("unused_cube").observe(), { kind: "Point" });
   assert.equal((await query("cube_leaf").observe()).kind, "Con");
-  await assert.rejects(query("cube_path").observe(), fails("unsupported"));
-  await assert.rejects(query("circle_value").observe(), fails("unsupported"));
+  await assert.rejects(query("cube_path").observe(), refused("Execution of a constructor with cubical recursive positions is not implemented."));
+  assert.deepEqual((({ kind, index, args, arity }) => ({ kind, index, args, arity }))(await query("circle_value").observe()),
+    { kind: "Con", index: 0, args: [], arity: 0 });
+  await assert.rejects(query("circle_loop").observe(), refused("Execution of a path constructor is not implemented."));
+  await assert.rejects(query("squashed").observe(), refused("Execution of a path constructor is not implemented."));
+  await assert.rejects(query("circle_endpoint").observe(), refused("Runtime execution of PApp is not implemented."));
+  assert.deepEqual(await query("unused_loop").observe(), { kind: "Point" });
+});
+
+// The eliminator of a higher or truncated sort, applied to a point
+// constructor, selects the clause the kernel's iota selects; its other
+// clauses, for paths and the squash, are never demanded.
+test("point constructors of higher and truncated sorts compute, with their eliminators' point clauses", async t => {
+  const { query, kernel, normal } = await setup(t, `
+import quotients; import h1_truncation; use unat;
+inductive Circle { base; loop : base = base; }
+def R(m, n : UNat) : U0 := Unit;
+def doubled(q : Quotient(U0, UNat, R)) : Quotient(U0, UNat, R) := match q {
+  class(a) => class(a + a);
+} obligations by (fun (a, b : UNat, r : R(a, b)) => class_path(U0, UNat, R, a + a, b + b, tt));
+def to_nat(c : Circle) : UNat := match c { base => 3; loop @ i => 3; };
+def doubled_class : Quotient(U0, UNat, R) := doubled(class(2));
+def circle_nat : UNat := to_nat(base);
+def mapped : Trunc(U0, UNat) := mere_map(U0, U0, UNat, UNat, fun (n : UNat) => n + 1, point(4));
+`);
+  const natural = kernel.signatures.get("unat__UNat").index;
+  // The constructor's index and its one argument, by the runtime and in the
+  // kernel's normal form.
+  for (const [name, signature, value] of [["doubled_class", "quotients__Quotient", 4], ["mapped", "h1_truncation__Trunc", 5]]) {
+    const runtime = query(name), observed = await runtime.observe();
+    assert.deepEqual([observed.kind, observed.signature, observed.index, observed.arity],
+      ["Con", kernel.signatures.get(signature).index, 0, 1], name);
+    assert.equal(await unary(runtime, natural, observed.args[0]), value, name);
+    const native = kernel.node(normal(name)), constructor = kernel.node(native.children[0]);
+    assert.deepEqual([native.kind, constructor.kind, constructor.payload], ["App", "Con", 0], name);
+    assert.equal(nativeUnary(kernel, natural, native.children[1]), value, name);
+  }
+  assert.equal(await unary(query("circle_nat"), natural), 3);
+  assert.equal(nativeUnary(kernel, natural, normal("circle_nat")), 3);
 });
 
 test("the MessageChannel scheduler yields and releases its ports", () => {

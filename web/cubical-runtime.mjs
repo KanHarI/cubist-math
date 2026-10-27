@@ -7,12 +7,15 @@ export class RuntimeError extends Error {
   constructor(kind, message) { super(message); this.kind = kind; }
 }
 const fail = (kind, message) => { throw new RuntimeError(kind, message); };
-// The declared types whose values this fragment executes: untruncated, with
-// no path constructor and no generated one (kernel.signature's record). A
-// value of any other is refused when its constructor or eliminator is
-// demanded, with this reason.
-export const ordinarySignature = s => s.modifier === 0 && s.constructors.every(c => c.dimensions === 0 && !c.generated);
-export const higherDataRefused = "Higher and truncated data execution is not implemented.";
+// The constructors this fragment executes are the point constructors of any
+// admitted declared type, ordinary, higher or truncated (kernel.signature's
+// record): no dimensions, so not a path constructor or the squash, which is
+// generated with at least one, and recursive positions whose cube is the
+// sort itself. Their eliminator's point clauses compute as the kernel's
+// iota does (ck_eliminate with no path application). A constructor of
+// either other kind is refused when it is demanded, with these reasons.
+const pathConstructorRefused = "Execution of a path constructor is not implemented.";
+const cubicalPositionsRefused = "Execution of a constructor with cubical recursive positions is not implemented.";
 // The term binders of ck_term_binder: each binds its payload in its second child.
 const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 const yieldTask = typeof setImmediate === "function" ? () => new Promise(setImmediate)
@@ -88,28 +91,26 @@ function snapshot(kernel, judgement, budget) {
     const s = kernel.signature(n.payload);
     if (!s.admitted) fail("input", "Runtime execution requires an admitted signature.");
     budget.allocate(1 + s.constructors.length);
-    const ordinary = ordinarySignature(s);
     const constructors = s.constructors.map(c => {
       pending.push(c.type);
+      const count = c.data + c.positions;
+      if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: pathConstructorRefused };
       const arities = [];
-      let supported = ordinary;
-      if (ordinary) {
-        let type = c.type;
-        for (let i = 0; i < c.data + c.positions; i++) {
-          const pi = read(type);
-          if (pi.kind !== "Pi") fail("input", "Invalid admitted constructor telescope.");
-          if (i >= c.data) {
-            let position = read(pi.children[0]), arity = 0;
-            while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
-            if (position.kind !== "Var" || position.payload !== s.sort) supported = false;
-            arities.push(arity);
-          }
-          type = pi.children[1];
+      let type = c.type, refused = null;
+      for (let i = 0; i < count; i++) {
+        const pi = read(type);
+        if (pi.kind !== "Pi") fail("input", "Invalid admitted constructor telescope.");
+        if (i >= c.data) {
+          let position = read(pi.children[0]), arity = 0;
+          while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
+          if (position.kind !== "Var" || position.payload !== s.sort) refused = cubicalPositionsRefused;
+          arities.push(arity);
         }
+        type = pi.children[1];
       }
-      return { data: c.data, count: c.data + c.positions, arities: supported ? arities : null };
+      return { data: c.data, count, arities: refused ? null : arities, refused };
     });
-    signatures.set(n.payload, { ordinary, constructors });
+    signatures.set(n.payload, { constructors });
   }
   budget.check(); budget.stats.snapshotNodes = nodes.size;
   return { nodes, definitions, signatures, expression: checked.term, type: checked.type };
@@ -163,14 +164,10 @@ export class RuntimeQuery {
     }
     return items;
   }
-  #signature(index) {
-    const s = this.#image.signatures.get(index);
-    if (!s?.ordinary) fail("unsupported", higherDataRefused);
-    return s;
-  }
   #descriptor(signature, index) {
-    const c = this.#signature(signature).constructors[index];
-    if (!c.arities) fail("unsupported", "Execution of a constructor with cubical recursive positions is not implemented.");
+    const c = this.#image.signatures.get(signature)?.constructors[index];
+    if (!c) fail("input", "A constructor requires an admitted signature.");
+    if (c.refused) fail("unsupported", c.refused);
     return c;
   }
   // The machine for one demanded cell. It pauses after each slice of work:
@@ -240,8 +237,9 @@ export class RuntimeQuery {
               this.#descriptor(instance.payload, n.payload);
               returned(this.#value({ tag: "Con", signature: instance.payload, index: n.payload, instance: delay(c[0]), args: [] })); break;
             }
+            // An eliminator of any admitted signature is a value; only the
+            // clause of the constructor it meets is ever demanded.
             case "Elim":
-              this.#signature(n.payload);
               returned(this.#value({ tag: "Elim", signature: n.payload, motive: delay(c[0]), clauses: this.#list(c[1], env) })); break;
             // A type former is its own weak head. Its parts stay unevaluated;
             // Glue, which can reduce on its faces, is cubical demand.

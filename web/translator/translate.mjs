@@ -467,26 +467,19 @@ export class Translator {
   // judgement's data executes with shared closures, building no kernel
   // syntax, and only the heads the walk shows are demanded. Its one
   // fallback is demand the runtime reports unsupported, such as a path
-  // applied, a composition, Glue or a higher constructor: the kernel's head
+  // applied, a composition, Glue or a path constructor: the kernel's head
   // queries, `kernel`, then compute the whole walk again from the start, as
   // they did before the runtime, and nothing the runtime computed is shown.
   // A runtime stop at its limits is reported, not retried. Neither answer
   // is evidence: the kernel's queries certify nothing either. Which
   // computed it is recorded on the print directive (valueFormRecord), with
   // the runtime's counters, and on a fallback the demand it did not support.
-  // The fallback is decided before the runtime's snapshot where the term's
-  // type shows that the first head is demand the runtime refuses, as for a
-  // value of a quotient: the same decision, at the cost of the type's weak
-  // head, a query of the evaluation's fuel, and recorded with no runtime
-  // counters.
+  // No type decides the fallback beforehand: a value of a quotient or
+  // another higher sort has a point constructor at its weak head, which the
+  // runtime executes, or a composition, which it refuses where it meets it.
   valueFormOf(result,scope,node,kernel) {
     let query=null,unsupported=null;
     try {
-      if(this.checker.runtimeEvaluation!==false) {
-        scope.spend("queries");
-        const refused=this.checker.runtimeRefusal(result.typeHandle);
-        if(refused)throw new RuntimeError("unsupported",refused);
-      }
       query=this.checker.runtimeQuery(result.judgement);
       if(query) {
         const value=valueForm(query.root,this.runtimeQueries(scope,query,kernel),node);
