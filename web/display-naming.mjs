@@ -218,6 +218,28 @@ export function dimensionNames(term) {
   return names;
 }
 
+// Every name a source text of the term binds, wherever it binds it, as
+// "term" (a term or level binder's, termBinders) or "dimension" (a
+// dimension's, bound or free, dimensionNames), which a name both are is.
+// Every binder the text shows is the term's, whichever form prints it
+// (the head of this module), so this is every name it binds. The printer
+// writes one name the term holds no binder or label for, a model's
+// notation's qualifier, m.(n), and only where none of these is that name
+// (sourceText), over the whole text, as qualified (below) treats a
+// dimension's name.
+export function textBinders(term) {
+  const names = new Map(), seen = new WeakSet();
+  const visit = t => {
+    if (!t || typeof t !== "object" || seen.has(t)) return;
+    seen.add(t);
+    if (termBinders.has(t.tag) && typeof t.name === "string") names.set(t.name, "term");
+    Object.values(t).forEach(visit);
+  };
+  visit(term);
+  for (const name of dimensionNames(term)) names.set(name, "dimension");
+  return names;
+}
+
 // Each binder shows its stem, n for n11, unless a binder around it already
 // shows that name or its body uses the name for another variable; then it
 // shows the stem numbered from 1, n1. The copy is a tree, so a term that

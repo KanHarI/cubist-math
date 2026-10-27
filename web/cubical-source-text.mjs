@@ -1,5 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
-import { inductionBinders } from "./display-naming.mjs";
+import { inductionBinders, textBinders } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName } from "./translator/names.mjs";
@@ -48,9 +48,15 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const opens = typeof context.opens === "function" ? context.opens : () => false;
   const known = identity => identity !== undefined && identity !== null;
   const selects = entry => selection === entry.notation && known(selectionIdentity) && selectionIdentity === entry.identity;
-  // A model's notation is read by the model's name, which a binder of the
-  // printed text shadows; a named notation is read before any value.
-  const qualifies = entry => !(entry.attached && bound.get(entry.notation))
+  // The names the printed text binds, anywhere, by any form: its term and
+  // level binders and its dimensions (textBinders, display-naming.mjs). A
+  // model's notation is read by the model's name, which any of them may
+  // take where the qualifier is read, so a model's name is not written
+  // where the text binds it; a named notation is read before any value or
+  // dimension. A bare numeral reads no name.
+  let binders = null;
+  const binds = name => (binders ??= textBinders(term)).get(name);
+  const qualifies = entry => !(entry.attached && binds(entry.notation))
     && known(entry.identity) && reads(entry.notation) === entry.identity;
   // A reading among `entries` that prints the text: bare, qualified, or
   // none, when no notation in scope reads it back.
@@ -340,7 +346,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           if (args.length === at + 2 && value !== null && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name ?? "")) {
             if (model.tag === "DefRef" && selection === name && selectionReceiver?.tag === "DefRef"
               && selectionReceiver.name === model.name) return atom(value);
-            if (!(model.tag === "DefRef" && bound.get(name)) && opens(name, model, !!bound.get(name)) === true)
+            // A model variable is the binder of its name where one is
+            // around it: display naming names no binder as a dimension, or
+            // as a variable free where it binds.
+            const binder = binds(name);
+            if ((!binder || model.tag === "Var" && binder === "term" && bound.get(name))
+              && opens(name, model, !!bound.get(name)) === true)
               return atom(`${name}.(${value})`);
           }
         }

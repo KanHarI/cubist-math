@@ -307,3 +307,101 @@ test("a printing scope's lookups read the environment without walking it", async
     assert.ok(costs[0] <= 100 * 12, `${costs[0]} reads for 100 displays`);
   });
 });
+
+// A model's name is no qualifier where the printed text binds it, by any
+// binder the printer writes: a dimension's too (#318's fifth review). Every
+// form the printer handles, or the core has, is classified here: one that
+// binds a name builds a term binding `name` over `inner`, printed where the
+// binder scopes; one that binds nothing is null; one the printer leaves to
+// kernel notation, which writes no qualifier, is "kernel". A new form fails
+// until it is classified.
+test("a model's name is no qualifier under any binder of the printed text", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { sourceText } = await import("../web/cubical-source-text.mjs");
+  const { termChildren } = await import("../web/translator/term-shape.mjs");
+  const v = name => ({ tag: "Var", name }), app = (fn, ...args) => args.reduce((f, arg) => ({ tag: "App", fn: f, arg }), fn);
+  const at = (path, dim) => ({ tag: "PApp", path, arg: [[`${dim}:1`]] });
+  const lam = (name, body, domain = { tag: "Unit" }) => ({ tag: "Lam", name, domain, body });
+  const con = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `bnat__${type}` } });
+  const three = app(con("BNat", 1, "b_positive"), app(con("BPositive", 2, "bp_odd"), con("BPositive", 0, "bp_one")));
+  const motive = lam("z", { tag: "Unit" });
+  const forms = {
+    U: null, LBound: null, Unit: null, Void: null, Point: null, Marker: null, Var: null, DefRef: null, Sum: null,
+    App: null, LApp: null, Pair: null, PApp: null, Inl: null, Inr: null, Abort: null, Fst: null, Snd: null,
+    Sort: null, Con: null, Glue: null, GlueTerm: null, Unglue: null,
+    UnitRec: "kernel", HComp: "kernel", Trans: "kernel",
+    Pi: [(name, inner) => ({ tag: "Pi", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
+    Sigma: [(name, inner) => ({ tag: "Sigma", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
+    Lam: [(name, inner) => lam(name, app(v("h"), v(name), inner)), (name, inner) => lam(name, app(v("h"), v(name), inner), null)],
+    LPi: [(name, inner) => ({ tag: "LPi", name, body: app(v("P"), inner) })],
+    LLam: [(name, inner) => ({ tag: "LLam", name, body: app(v("h"), inner) })],
+    NatInduction: [(name, inner) => ({ tag: "NatInduction", value: v("n"), motive: lam("k", { tag: "Unit" }, null), zero: { tag: "Point" },
+      step: lam("k", lam(name, app(v("h"), v(name), inner), null), null) })],
+    SumRec: [(name, inner) => ({ tag: "SumRec", value: v("s"), motive, left: lam(name, app(v("h"), v(name), inner)), right: lam("b", v("b")) })],
+    // A declared type's eliminator, applied, prints as a match whose clauses
+    // bind a constructor's data and a path constructor's dimensions.
+    Elim: [(name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam(name, app(v("h"), v(name), inner)),
+      { tag: "PLam", dim: "j", family: null, body: at(v("q"), "j") }] }, v("s")),
+      (name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam("x", v("x")),
+        { tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("q"), name), inner) }] }, v("s"))],
+    Path: [(name, inner) => ({ tag: "Path", dim: name, family: app(v("F"), at(v("q"), name), inner), left: v("a"), right: v("b") })],
+    PLam: [(name, inner) => ({ tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("p"), name), inner) })],
+    Comp: [(name, inner) => ({ tag: "Comp", dim: name, family: v("A"), base: v("a"),
+      system: [{ face: [["j:1"]], term: app(v("h"), at(v("p"), name), inner) }] })],
+  };
+  const printer = readFileSync(new URL("../web/cubical-source-text.mjs", import.meta.url), "utf8");
+  const cases = new Set([...printer.matchAll(/case "([A-Za-z]+)":/g)].map(match => match[1]));
+  const all = new Set([...cases, ...Object.keys(termChildren)]);
+  assert.deepEqual([...all].filter(tag => !(tag in forms)), [], "unclassified forms");
+  assert.deepEqual(Object.keys(forms).filter(tag => !all.has(tag)), [], "forms neither printed nor in the core");
+  for (const [tag, kind] of Object.entries(forms)) if (kind === "kernel") assert.ok(!cases.has(tag), `${tag} has a source form`);
+  // Two readings by m's name: m's attached identity rule over BNat, and a
+  // theory numeral of the declared model m.
+  const symbols = {
+    bnat__BNat: { printing: [{ identityNumeral: true, notation: "m", identity: "m-id", attached: true }] },
+    main__Counted__of_nat: { printing: [{ theoryNumeral: true }] },
+    shape: { constructors: [{ name: "c", data: 1, positions: 0, dimensions: 0 }, { name: "loop", data: 0, positions: 0, dimensions: 1 }] },
+  };
+  const context = { reads: name => name === "m" ? "m-id" : null, opens: name => name === "m" };
+  const inners = { attached: three, theory: app({ tag: "DefRef", name: "main__Counted__of_nat" }, { tag: "DefRef", name: "main__m" }, three) };
+  for (const [tag, builders] of Object.entries(forms)) if (Array.isArray(builders))
+    for (const [k, build] of builders.entries()) for (const [reading, inner] of Object.entries(inners)) {
+      const free = sourceText(build("k", inner), symbols, 4000, context), bound = sourceText(build("m", inner), symbols, 4000, context);
+      assert.ok(free.includes("m.(3)"), `${tag} ${k} ${reading}: ${free}`);
+      assert.ok(!bound.includes("m.(3)") && bound.includes("b_positive(bp_odd(bp_one))"), `${tag} ${k} ${reading}: ${bound}`);
+    }
+});
+
+// The review's case: a path's dimension i, under which m's rule's
+// qualifier i.(3) would read i as the coordinate. A named notation i is
+// read before the dimension, so its qualifier stays.
+test("a numeral under a dimension of its reader's name reads back", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const type = `forall h : Unit -> BNat -> Unit. forall x : Unit. forall p : x = x. h(x, ${three}) = h(x, ${three})`;
+  for (const [reader, expected] of [["def i : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);\n", three], ["", "i.(3)"]]) {
+    const source = `import unat;
+import bnat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+${reader}notation i {
+  numeral(n : BNat) := n;
+}
+notation bnat_numerals {
+  numeral(n : BNat) := b_zero;
+}
+def f : ${type} := fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i => h(p @ i, ${three});
+`;
+    await withChecked(source, async (program, result) => {
+      assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+      const { checker } = program;
+      const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
+      const text = checker.displayText(checker.normalForm(expression), []);
+      assert.equal(text, `fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i => h(p @ i, ${expected})`);
+      await withChecked(`${source}def again : ${type} := ${text};\n`, (_, again) =>
+        assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+    });
+  }
+});
